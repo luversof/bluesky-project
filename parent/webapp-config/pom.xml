@@ -7,4 +7,7 @@
   </parent>
   <artifactId>webapp-config</artifactId>
   <packaging>pom</packaging>
+  <modules>
+  	<module>webapp-config-core</module>
+  </modules>
 </project>

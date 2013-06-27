@@ -1,0 +1,22 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-spring3-3.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+	layout:decorator="layout/defaultLayout">
+<div layout:fragment="container">
+	test2
+	<script>
+		function test() {
+			$.ajax({
+				url : "/web/",
+				dataType : "json",
+				success : function(e) {
+					console.log("success");
+				}
+			})
+		}
+		test();
+	</script>
+	<br />왜 안보이지?<br />
+</div>
+</html>

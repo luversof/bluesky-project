@@ -7,4 +7,7 @@
   </parent>
   <artifactId>webapp</artifactId>
   <packaging>pom</packaging>
+  <modules>
+  	<module>webapp-bluesky</module>
+  </modules>
 </project>
