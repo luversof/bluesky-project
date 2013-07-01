@@ -3,6 +3,7 @@ package net.luversof.blog;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.blog.domain.Blog;
+import net.luversof.blog.domain.QBlog;
 import net.luversof.blog.repository.BlogRepository;
 import net.luversof.core.config.GeneralTest;
 
@@ -18,6 +19,7 @@ public class BlogTest extends GeneralTest {
 
 	@Autowired
 	private BlogRepository blogRepository;
+	
 
 	@Test
 	@Ignore
@@ -44,5 +46,13 @@ public class BlogTest extends GeneralTest {
 		Pageable pageable = new PageRequest(1, 20);
 		Page<Blog> blogPage = blogRepository.findAll(pageable);
 		log.debug("blogPage : {}", blogPage);
+	}
+	
+	@Test
+	public void 테스트() {
+		QBlog blog = QBlog.blog;
+		
+//		Iterable<Blog> list = blogRepository.findAll(blog.content.startsWith("c%"));
+//		log.debug("list : {}", list);
 	}
 }

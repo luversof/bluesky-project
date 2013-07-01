@@ -15,6 +15,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<spring.version>3.2.3.RELEASE</spring.version>
 		<spring.security.version>3.1.4.RELEASE</spring.security.version>
+		<querydsl.version>3.2.1</querydsl.version>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -200,12 +201,12 @@
 			<dependency>
 				<groupId>com.mysema.querydsl</groupId>
 				<artifactId>querydsl-jpa</artifactId>
-				<version>3.2.1</version>
+				<version>${querydsl.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>com.mysema.querydsl</groupId>
 				<artifactId>querydsl-apt</artifactId>
-				<version>3.2.1</version>
+				<version>${querydsl.version}</version>
 			</dependency>
 			<!-- (e) db -->
 
@@ -272,6 +273,33 @@
 				</configuration>
 			</plugin>
 		</plugins>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>com.mysema.maven</groupId>
+					<artifactId>apt-maven-plugin</artifactId>
+					<version>1.1.0</version>
+					<dependencies>
+						<dependency>
+							<groupId>com.mysema.querydsl</groupId>
+							<artifactId>querydsl-apt</artifactId>
+							<version>${querydsl.version}</version>
+						</dependency>
+					</dependencies>
+					<executions>
+						<execution>
+							<goals>
+								<goal>process</goal>
+							</goals>
+							<configuration>
+								<outputDirectory>target/generated-sources/java</outputDirectory>
+								<processor>com.mysema.query.apt.jpa.JPAAnnotationProcessor</processor>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 	</build>
 
 </project>
