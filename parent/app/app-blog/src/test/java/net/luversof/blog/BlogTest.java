@@ -52,7 +52,7 @@ public class BlogTest extends GeneralTest {
 	public void 테스트() {
 		QBlog blog = QBlog.blog;
 		
-//		Iterable<Blog> list = blogRepository.findAll(blog.content.startsWith("c%"));
-//		log.debug("list : {}", list);
+		Iterable<Blog> list = blogRepository.findAll(blog.content.startsWith("c"));
+		log.debug("list : {}", list);
 	}
 }
