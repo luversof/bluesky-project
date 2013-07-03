@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Properties;
 
 import nz.net.ultraq.thymeleaf.LayoutDialect;
 
@@ -18,7 +17,6 @@ import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.FilterType;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.accept.ContentNegotiationManager;
@@ -34,7 +32,6 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
-import org.springframework.web.servlet.handler.SimpleMappingExceptionResolver;
 import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 import org.springframework.web.servlet.view.ContentNegotiatingViewResolver;
@@ -48,7 +45,6 @@ import org.thymeleaf.templateresolver.ServletContextTemplateResolver;
 @ComponentScan(basePackages = "net.luversof",useDefaultFilters=false,includeFilters=@Filter(type=FilterType.ANNOTATION, value={ Controller.class, ControllerAdvice.class }))
 //@PropertySource(name="mvcProps", value="classpath:props/mvc.properties")
 @EnableAspectJAutoProxy
-
 public class WebMvcConfig  extends WebMvcConfigurerAdapter {
 
 	@Autowired
@@ -97,17 +93,17 @@ public class WebMvcConfig  extends WebMvcConfigurerAdapter {
 		return new LocaleChangeInterceptor();
 	}
 
-	@Bean
-	public SimpleMappingExceptionResolver simpleMappingExceptionResolver () {
-		SimpleMappingExceptionResolver simpleMappingExceptionResolver = new SimpleMappingExceptionResolver();
-		simpleMappingExceptionResolver.setDefaultErrorView("error/error");
-		Properties mappings = new Properties();
-		mappings.put("net.luversof.core.exception.GenericException", "error/error");
-		mappings.put("net.luversof.core.exception.UnauthorizedException", "error/error");
-		simpleMappingExceptionResolver.setExceptionMappings(mappings);
-
-		return simpleMappingExceptionResolver;
-	}
+//	@Bean
+//	public SimpleMappingExceptionResolver simpleMappingExceptionResolver () {
+//		SimpleMappingExceptionResolver simpleMappingExceptionResolver = new SimpleMappingExceptionResolver();
+//		simpleMappingExceptionResolver.setDefaultErrorView("error/error");
+//		Properties mappings = new Properties();
+//		mappings.put("net.luversof.core.exception.GenericException", "error/error");
+//		mappings.put("net.luversof.core.exception.UnauthorizedException", "error/error");
+//		simpleMappingExceptionResolver.setExceptionMappings(mappings);
+//
+//		return simpleMappingExceptionResolver;
+//	}
 
 
 	@Bean
@@ -168,10 +164,8 @@ public class WebMvcConfig  extends WebMvcConfigurerAdapter {
 		templateResolver.setTemplateMode("HTML5");
 		// templateResolver.setCharacterEncoding("UTF-8");
 		// 개발시엔 false로 설정하자.
-		templateResolver.setCacheable(true);
-		String[] profiles = applicationContext.getEnvironment().getActiveProfiles();
 
-		if (ArrayUtils.contains(profiles, "live")) {
+		if (ArrayUtils.contains(applicationContext.getEnvironment().getActiveProfiles(), "live")) {
 			templateResolver.setCacheable(true);
 		} else {
 			templateResolver.setCacheable(false);

@@ -5,6 +5,7 @@ import javax.servlet.Filter;
 import net.luversof.core.config.AppConfig;
 import net.luversof.web.core.config.WebMvcConfig;
 
+import org.springframework.orm.jpa.support.OpenEntityManagerInViewFilter;
 import org.springframework.web.filter.CharacterEncodingFilter;
 import org.springframework.web.filter.HiddenHttpMethodFilter;
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
@@ -24,14 +25,14 @@ public class DispatcherServletInitializer extends AbstractAnnotationConfigDispat
 	@Override
 	protected String[] getServletMappings() {
 		return new String[] { "/" };
-	}
+	}	
+	
 
 	@Override
 	protected Filter[] getServletFilters() {
 		CharacterEncodingFilter characterEncodingFilter = new CharacterEncodingFilter();
 		characterEncodingFilter.setEncoding("UTF-8");
 		characterEncodingFilter.setForceEncoding(true);
-		return new Filter[] { new HiddenHttpMethodFilter(), characterEncodingFilter };
+		return new Filter[] { new HiddenHttpMethodFilter(), characterEncodingFilter, new OpenEntityManagerInViewFilter()};
 	}
-
 }
