@@ -29,7 +29,7 @@ public class Blog {
 	// @Temporal(TemporalType.TIMESTAMP)
 	// @DateTimeFormat(iso = ISO.DATE)
 	@CreatedDate
-	private Date CreatedDate;
+	private Date createdDate;
 
 	@LastModifiedDate
 	private Date lastModifiedDate;

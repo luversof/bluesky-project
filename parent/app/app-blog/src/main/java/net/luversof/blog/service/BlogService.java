@@ -14,6 +14,10 @@ public class BlogService {
 	@Autowired
 	private BlogRepository blogRepository;
 	
+	public void save(Blog blog) {
+		blogRepository.save(blog);
+	}
+	
 	public Blog view(Long id) {
 		return blogRepository.findOne(id);
 	}

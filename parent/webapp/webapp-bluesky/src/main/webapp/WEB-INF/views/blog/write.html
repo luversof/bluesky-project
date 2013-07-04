@@ -1,0 +1,27 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-spring3-3.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+	layout:decorator="/layout/defaultLayout">
+<div layout:fragment="content">
+	<form class="form-horizontal">
+		<div class="control-group">
+			<label class="control-label" for="title">title</label>
+			<div class="controls">
+				<input type="text" id="title" placeholder="title" />
+			</div>
+		</div>
+		<div class="control-group">
+			<label class="control-label" for="content">content</label>
+			<div class="controls">
+				<textarea rows="3" placeholder="content"></textarea>
+			</div>
+		</div>
+		<div class="control-group">
+			<div class="controls">
+				<button type="submit" class="btn">write</button>
+			</div>
+		</div>
+	</form>
+</div>
+</html>

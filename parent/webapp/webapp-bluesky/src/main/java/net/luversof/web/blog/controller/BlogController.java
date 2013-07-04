@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 @Slf4j
 @Controller
@@ -17,10 +18,18 @@ public class BlogController {
 	@Autowired
 	private BlogService blogService;
 	
-	@RequestMapping
-	public String get() {
-		log.debug("blog get");
-		return "/blog/index";
+	@RequestMapping(value={"","/write"})
+	public void page() {}
+	
+//	@RequestMapping
+//	public String get() {
+//		log.debug("blog get");
+//		return "/blog/index";
+//	}
+	
+	@RequestMapping(method=RequestMethod.POST)
+	public void save(Blog blog) {
+		blogService.save(blog);
 	}
 	
 	
@@ -28,6 +37,8 @@ public class BlogController {
 	public void list(ModelMap modelMap) {
 		modelMap.addAttribute(blogService.list());
 	}
+	
+	
 	
 	@RequestMapping("/{id}")
 	public void view(Long id, ModelMap modelMap) {
