@@ -19,20 +19,41 @@
 						Logged in as <a href="#" class="navbar-link">Username</a>
 					</p>
 					<ul class="nav">
-						<li class="active"><a href="#">Home</a></li>
-						<li><a href="#about">About</a></li>
+						<li class="active"><a href="/">Home</a></li>
+						<li><a href="/blog">blog</a></li>
 						<li><a href="#contact">Contact</a></li>
 					</ul>
 				</div>
 				<!--/.nav-collapse -->
 			</div>
+			<script>
+				$(document).ready(function(){
+					menuActive();
+				});
+				
+				function menuActive() {
+					if (location.pathname == "/") {
+						$(".navbar .nav li:eq(0)").addClass("active");
+						return;
+					}
+					$(".navbar .nav li").each(function() {
+						console.log("pathname : %s", location.pathname);
+						if (location.pathname.search($(this).text()) > 0) {
+							$(this).addClass("active");
+						}
+						else {
+							$(this).removeClass();
+						}
+					})
+				}
+			</script>
 		</div>
 	</div>
 	<!-- (s) top -->
 
 	<div class="container-fluid">
 		<div class="row-fluid">
-			<div class="span3">
+			<div class="span3" th:include="./menu :: menu-sub">
 				<div class="well sidebar-nav">
 					<ul class="nav nav-list">
 						<li class="nav-header">Sidebar</li>

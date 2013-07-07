@@ -30,7 +30,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableAspectJAutoProxy
 @EnableTransactionManagement
 @EnableJpaRepositories(basePackages="net.luversof")
-//@ImportResource("classpath:net/luversof/core/config/repository/RepositoryContext.xml")
+@ImportResource("classpath:net/luversof/core/config/repository/RepositoryContext.xml")
 public class RepositoryConfig {
 
 //	/**

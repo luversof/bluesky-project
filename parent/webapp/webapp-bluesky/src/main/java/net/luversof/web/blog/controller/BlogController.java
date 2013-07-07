@@ -29,6 +29,7 @@ public class BlogController {
 	
 	@RequestMapping(method=RequestMethod.POST)
 	public void save(Blog blog) {
+		log.debug("save blog : {}", blog);
 		blogService.save(blog);
 	}
 	
