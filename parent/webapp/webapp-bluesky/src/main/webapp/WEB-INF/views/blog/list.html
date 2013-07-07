@@ -7,16 +7,16 @@
 	<table class="table">
 		<thead>
 			<tr>
-				<th>1</th>
-				<th>하하</th>
-				<th>흠</th>
+				<th>id</th>
+				<th>title</th>
+				<th>memberId</th>
 			</tr>
 		</thead>
 		<tbody>
-			<tr>
-				<td>1</td>
-				<td>하하</td>
-				<td>흠</td>
+			<tr th:each="blog : ${blogList}">
+				<td th:text="${blog.id}">1</td>
+				<td><a th:href="${blog.id}" th:text="${blog.title}">title</a></td>
+				<td th:text="${blog.memberId}">흠</td>
 			</tr>
 		</tbody>
 	</table>

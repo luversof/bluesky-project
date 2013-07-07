@@ -3,25 +3,27 @@
 	xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="/layout/defaultLayout">
-<div layout:fragment="content">
-	<form class="form-horizontal" action="./" method="post">
-		<div class="control-group">
-			<label class="control-label" for="title">title</label>
-			<div class="controls">
-				<input type="text" name="title" id="title" placeholder="title" />
+<body>
+	<div layout:fragment="content">
+		<form class="form-horizontal" action="./" method="post">
+			<div class="control-group">
+				<label class="control-label" for="title">title</label>
+				<div class="controls">
+					<input type="text" name="title" id="title" placeholder="title" />
+				</div>
 			</div>
-		</div>
-		<div class="control-group">
-			<label class="control-label" for="content">content</label>
-			<div class="controls">
-				<textarea rows="3" name="content" id="content" placeholder="content"></textarea>
+			<div class="control-group">
+				<label class="control-label" for="content">content</label>
+				<div class="controls">
+					<textarea rows="3" name="content" id="content" placeholder="content"></textarea>
+				</div>
 			</div>
-		</div>
-		<div class="control-group">
-			<div class="controls">
-				<button type="submit" class="btn">write</button>
+			<div class="control-group">
+				<div class="controls">
+					<button type="submit" class="btn">write</button>
+				</div>
 			</div>
-		</div>
-	</form>
-</div>
+		</form>
+	</div>
+</body>
 </html>

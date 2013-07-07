@@ -7,6 +7,7 @@ import net.luversof.blog.service.BlogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
@@ -37,13 +38,17 @@ public class BlogController {
 	@RequestMapping("/list")
 	public void list(ModelMap modelMap) {
 		modelMap.addAttribute(blogService.list());
+		log.debug("modelMap : {}", modelMap);
 	}
 	
 	
 	
 	@RequestMapping("/{id}")
-	public void view(Long id, ModelMap modelMap) {
+	public String view(@PathVariable Long id, ModelMap modelMap) {
+		log.debug("id : {}", id);
 		modelMap.addAttribute(blogService.view(id));
+		log.debug("modelMap : {}", modelMap);
+		return "/blog/view";
 	}
 
 }

@@ -5,20 +5,9 @@
 	layout:decorator="/layout/defaultLayout">
 <body>
 	<div layout:fragment="content">
-		test3
-		<script>
-			function test() {
-				$.ajax({
-					url : "/web/",
-					dataType : "json",
-					success : function(e) {
-						console.log("success");
-					}
-				})
-			}
-			test();
-		</script>
-		<br />왜 안보이지?<br />
+		<h1 th:text="${blog.title}">title</h1>
+		<p th:text="${blog.content}">content</p>
+		<a href="list"><button class="btn" type="button">리스트</button></a>
 	</div>
 </body>
 </html>

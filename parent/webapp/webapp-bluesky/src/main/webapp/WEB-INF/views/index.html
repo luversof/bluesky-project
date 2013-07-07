@@ -3,20 +3,22 @@
 	xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="/layout/defaultLayout">
-<div layout:fragment="content">
-	test2
-	<script>
-		function test() {
-			$.ajax({
-				url : "/web/",
-				dataType : "json",
-				success : function(e) {
-					console.log("success");
-				}
-			})
-		}
-		test();
-	</script>
-	<br />왜 안보이지?<br />
-</div>
+<body>
+	<div layout:fragment="content">
+		test2
+		<script>
+			function test() {
+				$.ajax({
+					url : "/web/",
+					dataType : "json",
+					success : function(e) {
+						console.log("success");
+					}
+				})
+			}
+			test();
+		</script>
+		<br />왜 안보이지?<br />
+	</div>
+</body>
 </html>
