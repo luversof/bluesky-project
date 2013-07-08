@@ -13,10 +13,10 @@
 			</tr>
 		</thead>
 		<tbody>
-			<tr th:each="blog : ${blogList}">
-				<td th:text="${blog.id}">1</td>
-				<td><a th:href="${blog.id}" th:text="${blog.title}">title</a></td>
-				<td th:text="${blog.memberId}">흠</td>
+			<tr th:each="blogPost : ${blogPostList}">
+				<td th:text="${blogPost.id}">1</td>
+				<td><a th:href="${blogPost.id}" th:text="${blogPost.title}">title</a></td>
+				<td th:text="${blogPost.memberId}">흠</td>
 			</tr>
 		</tbody>
 	</table>

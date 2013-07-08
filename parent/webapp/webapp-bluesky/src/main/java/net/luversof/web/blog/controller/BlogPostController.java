@@ -1,8 +1,8 @@
 package net.luversof.web.blog.controller;
 
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.blog.domain.Blog;
-import net.luversof.blog.service.BlogService;
+import net.luversof.blog.domain.BlogPost;
+import net.luversof.blog.service.BlogPostService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -13,11 +13,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 @Slf4j
 @Controller
-@RequestMapping("/blog")
-public class BlogController {
+@RequestMapping("/blogPost")
+public class BlogPostController {
 	
 	@Autowired
-	private BlogService blogService;
+	private BlogPostService blogPostService;
 	
 	@RequestMapping(value={"","/write"})
 	public void page() {}
@@ -29,15 +29,15 @@ public class BlogController {
 //	}
 	
 	@RequestMapping(method=RequestMethod.POST)
-	public void save(Blog blog) {
-		log.debug("save blog : {}", blog);
-		blogService.save(blog);
+	public void save(BlogPost blogPost) {
+		log.debug("save blogPost : {}", blogPost);
+		blogPostService.save(blogPost);
 	}
 	
 	
 	@RequestMapping("/list")
 	public void list(ModelMap modelMap) {
-		modelMap.addAttribute(blogService.list());
+		modelMap.addAttribute(blogPostService.list());
 		log.debug("modelMap : {}", modelMap);
 	}
 	
@@ -46,9 +46,9 @@ public class BlogController {
 	@RequestMapping("/{id}")
 	public String view(@PathVariable Long id, ModelMap modelMap) {
 		log.debug("id : {}", id);
-		modelMap.addAttribute(blogService.view(id));
+		modelMap.addAttribute(blogPostService.view(id));
 		log.debug("modelMap : {}", modelMap);
-		return "/blog/view";
+		return "/blogPost/view";
 	}
 
 }

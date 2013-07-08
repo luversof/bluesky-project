@@ -14,7 +14,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 
 @Entity
 @Data
-public class Blog {
+public class BlogPost {
 	@Id
 	@GeneratedValue
 	private long id;
@@ -35,6 +35,6 @@ public class Blog {
 	private Date lastModifiedDate;
 
 	@OneToOne
-	private Category category;
+	private BlogCategory blogCategory;
 
 }

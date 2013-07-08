@@ -5,8 +5,8 @@
 	layout:decorator="/layout/defaultLayout">
 <body>
 	<div layout:fragment="content">
-		<h1 th:text="${blog.title}">title</h1>
-		<p th:text="${blog.content}">content</p>
+		<h1 th:text="${blogPost.title}">title</h1>
+		<p th:text="${blogPost.content}">content</p>
 		<a href="list"><button class="btn" type="button">리스트</button></a>
 	</div>
 </body>

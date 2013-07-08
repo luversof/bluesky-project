@@ -2,9 +2,9 @@ package net.luversof.blog;
 
 
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.blog.domain.Blog;
+import net.luversof.blog.domain.BlogPost;
 import net.luversof.blog.domain.QBlog;
-import net.luversof.blog.repository.BlogRepository;
+import net.luversof.blog.repository.BlogPostRepository;
 import net.luversof.core.config.GeneralTest;
 
 import org.junit.Ignore;
@@ -18,25 +18,25 @@ import org.springframework.data.domain.Pageable;
 public class BlogTest extends GeneralTest {
 
 	@Autowired
-	private BlogRepository blogRepository;
+	private BlogPostRepository blogRepository;
 	
 
 	@Test
 	@Ignore
 	public void 셀렉트테스트() {
-		Blog blog = blogRepository.findOne((long) 1);
+		BlogPost blog = blogRepository.findOne((long) 1);
 		log.debug("result : {}", blog);
 	}
 
 	@Test
 //	@Ignore
 	public void save테스트() {
-		Blog blog = new Blog();
+		BlogPost blog = new BlogPost();
 		blog.setMemberId(1);
 		blog.setTitle("title");
 		blog.setContent("content");
 
-		Blog savedBlog = blogRepository.save(blog);
+		BlogPost savedBlog = blogRepository.save(blog);
 		log.debug("savedBlog : {}", savedBlog);
 	}
 
@@ -44,14 +44,14 @@ public class BlogTest extends GeneralTest {
 	@Ignore
 	public void selectPaging테스트() {
 		Pageable pageable = new PageRequest(1, 20);
-		Page<Blog> blogPage = blogRepository.findAll(pageable);
+		Page<BlogPost> blogPage = blogRepository.findAll(pageable);
 		log.debug("blogPage : {}", blogPage);
 	}
 	
 	@Test
 	public void 테스트() {
 		QBlog blog = QBlog.blog;
-		Iterable<Blog> list = blogRepository.findAll(blog.content.startsWith("c"));
+		Iterable<BlogPost> list = blogRepository.findAll(blog.content.startsWith("c"));
 		log.debug("list : {}", list);
 	}
 }

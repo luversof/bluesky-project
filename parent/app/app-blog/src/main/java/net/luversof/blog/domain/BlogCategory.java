@@ -15,7 +15,7 @@ import lombok.Data;
 
 @Entity
 @Data
-public class Category {
+public class BlogCategory {
 	@Id
 	@GeneratedValue
 	private long id;
@@ -26,8 +26,8 @@ public class Category {
 
 	@ManyToOne(cascade = { CascadeType.ALL })
 	@JoinColumn(name = "upperMenu_id")
-	private Category upperCategory;
+	private BlogCategory upperCategory;
 
 	@OneToMany(mappedBy = "upperCategory", fetch = FetchType.EAGER)
-	private List<Category> lowerCategories;
+	private List<BlogCategory> lowerCategories;
 }
