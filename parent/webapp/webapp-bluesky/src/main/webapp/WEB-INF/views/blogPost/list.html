@@ -13,13 +13,45 @@
 			</tr>
 		</thead>
 		<tbody>
-			<tr th:each="blogPost : ${blogPostList}">
+			<tr th:if="${pageImpl.hasContent()}" th:each="blogPost : ${pageImpl.getContent()}">
 				<td th:text="${blogPost.id}">1</td>
 				<td><a th:href="${blogPost.id}" th:text="${blogPost.title}">title</a></td>
-				<td th:text="${blogPost.memberId}">흠</td>
+				<td th:text="${blogPost.memberId}">memberId</td>
 			</tr>
 		</tbody>
+		<tfoot>
+			<tr>
+				<td colspan="3" class="center">
+					<div class="pagination pagination-centered">
+						<ul>
+							<li th:if="${pageImpl.hasPreviousPage()}"><a href="#">Prev</a></li>
+							<li th:each="asd : ${pageImpl.iterator()}"><a href="#" th:text="${asd.next()}">?</a></li>
+							<li><a href="#">1</a></li>
+							<li><a href="#">2</a></li>
+							<li><a href="#">3</a></li>
+							<li><a href="#">4</a></li>
+							<li><a href="#">5</a></li>
+							<li th:if="${pageImpl.hasNextPage()}"><a href="#">Next</a></li>
+						</ul>
+					</div>
+				</td>
+			</tr>
+		</tfoot>
 	</table>
-	<a href="write"><button class="btn" type="button">글쓰기</button></a>
+	
+	<a href="write"><button class="btn" type="button" th:text="#{blogPost.menu.write}">write</button></a>
+
+
+	<div th:text="${pageImpl.number}"></div>
+	<div th:text="${pageImpl.size}"></div>
+	<div th:text="${pageImpl.totalPages}"></div>
+	<hr />
+	<div th:text="${pageImpl.totalElements}"></div>
+	<div th:text="${pageImpl.numberOfElements}"></div>
+	<div th:text="${pageImpl.hasPreviousPage()}"></div>
+	<div th:text="${pageImpl.hasNextPage()}"></div>
+	<hr />
+	<div th:text="${pageImpl.iterator()}"></div>
+
 </div>
 </html>

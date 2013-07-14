@@ -29,7 +29,7 @@ public class BlogTest extends GeneralTest {
 	}
 
 	@Test
-//	@Ignore
+	@Ignore
 	public void save테스트() {
 		BlogPost blog = new BlogPost();
 		blog.setMemberId(1);
@@ -41,14 +41,16 @@ public class BlogTest extends GeneralTest {
 	}
 
 	@Test
-	@Ignore
+//	@Ignore
 	public void selectPaging테스트() {
-		Pageable pageable = new PageRequest(1, 20);
+		Pageable pageable = new PageRequest(0, 20);
 		Page<BlogPost> blogPage = blogRepository.findAll(pageable);
 		log.debug("blogPage : {}", blogPage);
+		log.debug("blogPage : {}", blogPage.getContent());
 	}
 	
 	@Test
+	@Ignore
 	public void 테스트() {
 		QBlog blog = QBlog.blog;
 		Iterable<BlogPost> list = blogRepository.findAll(blog.content.startsWith("c"));

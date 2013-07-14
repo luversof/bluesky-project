@@ -9,5 +9,4 @@ import org.springframework.stereotype.Controller;
 @Configuration
 @ComponentScan(basePackages = "net.luversof", excludeFilters = @Filter(type = FilterType.ANNOTATION, value = { Controller.class }))
 public class AppConfig {
-
 }

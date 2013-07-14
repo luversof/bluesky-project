@@ -5,23 +5,23 @@
 	layout:decorator="/layout/defaultLayout">
 <body>
 	<div layout:fragment="content">
-		<form class="form-horizontal" action="./" method="post">
+		<form class="form-horizontal" action="." method="post">
+			<input type="hidden" name="_method" value="put" />
 			<div class="control-group">
 				<label class="control-label" for="title">title</label>
 				<div class="controls">
-					<input type="text" name="title" id="title" placeholder="title" />
+					<input type="text" name="title" id="title" placeholder="title" th:value="${blogPost.title}" />
 				</div>
 			</div>
 			<div class="control-group">
 				<label class="control-label" for="content">content</label>
 				<div class="controls">
-					<textarea rows="3" name="content" id="content" placeholder="content"></textarea>
+					<textarea rows="3" name="content" id="content" placeholder="content" th:text="${blogPost.content}"></textarea>
 				</div>
 			</div>
 			<div class="control-group">
 				<div class="controls">
-					<button type="submit" class="btn" th:text="#{blogPost.menu.write}">write</button>
-					<a href="list"><button type="button" class="btn" th:text="#{blogPost.menu.list}">list</button></a>
+					<button type="submit" class="btn">write</button>
 				</div>
 			</div>
 		</form>

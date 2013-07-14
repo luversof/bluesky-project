@@ -27,12 +27,11 @@ public class DispatcherServletInitializer extends AbstractAnnotationConfigDispat
 		return new String[] { "/" };
 	}	
 	
-
 	@Override
 	protected Filter[] getServletFilters() {
 		CharacterEncodingFilter characterEncodingFilter = new CharacterEncodingFilter();
 		characterEncodingFilter.setEncoding("UTF-8");
 		characterEncodingFilter.setForceEncoding(true);
-		return new Filter[] { new HiddenHttpMethodFilter(), characterEncodingFilter, new OpenEntityManagerInViewFilter()};
+		return new Filter[] { characterEncodingFilter, new HiddenHttpMethodFilter(), new OpenEntityManagerInViewFilter()};
 	}
 }

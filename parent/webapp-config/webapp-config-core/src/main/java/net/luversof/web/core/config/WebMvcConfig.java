@@ -6,17 +6,20 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import lombok.extern.slf4j.Slf4j;
 import nz.net.ultraq.thymeleaf.LayoutDialect;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.accept.ContentNegotiationManager;
@@ -40,15 +43,17 @@ import org.thymeleaf.spring3.SpringTemplateEngine;
 import org.thymeleaf.spring3.view.ThymeleafViewResolver;
 import org.thymeleaf.templateresolver.ServletContextTemplateResolver;
 
+@Slf4j
 @Configuration
 @EnableWebMvc
 @ComponentScan(basePackages = "net.luversof",useDefaultFilters=false,includeFilters=@Filter(type=FilterType.ANNOTATION, value={ Controller.class, ControllerAdvice.class }))
 //@PropertySource(name="mvcProps", value="classpath:props/mvc.properties")
 @EnableAspectJAutoProxy
-public class WebMvcConfig  extends WebMvcConfigurerAdapter {
+public class WebMvcConfig extends WebMvcConfigurerAdapter {
 
 	@Autowired
 	private ApplicationContext applicationContext;
+	
 
 	@Override
 	public void addViewControllers(ViewControllerRegistry registry) {
@@ -178,7 +183,18 @@ public class WebMvcConfig  extends WebMvcConfigurerAdapter {
 		SpringTemplateEngine springTemplateEngine = new SpringTemplateEngine();
 		springTemplateEngine.setTemplateResolver(templateResolver());
 		springTemplateEngine.addDialect(new LayoutDialect());	// thymeleaf-layout-dialect 사용 설정
+		springTemplateEngine.setMessageSource(messageSource());
 		return springTemplateEngine;
+	}
+
+	@Bean
+	public MessageSource messageSource() {
+		log.debug("setting up message source");
+		ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
+		messageSource.setBasename("public-resources/message/message");
+		messageSource.setCacheSeconds(5);
+		messageSource.setDefaultEncoding("UTF-8");
+		return messageSource;
 	}
 
 	// @Bean
