@@ -3,7 +3,7 @@ package net.luversof.blog;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.blog.domain.BlogPost;
-import net.luversof.blog.domain.QBlog;
+import net.luversof.blog.domain.QBlogPost;
 import net.luversof.blog.repository.BlogPostRepository;
 import net.luversof.core.config.GeneralTest;
 
@@ -52,8 +52,8 @@ public class BlogTest extends GeneralTest {
 	@Test
 	@Ignore
 	public void 테스트() {
-		QBlog blog = QBlog.blog;
-		Iterable<BlogPost> list = blogRepository.findAll(blog.content.startsWith("c"));
+		QBlogPost blogPost = QBlogPost.blogPost;
+		Iterable<BlogPost> list = blogRepository.findAll(blogPost.content.startsWith("c"));
 		log.debug("list : {}", list);
 	}
 }
