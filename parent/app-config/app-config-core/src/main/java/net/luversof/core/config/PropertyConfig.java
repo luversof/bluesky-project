@@ -1,5 +1,7 @@
 package net.luversof.core.config;
 
+import lombok.extern.slf4j.Slf4j;
+
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 import org.jasypt.encryption.pbe.config.EnvironmentPBEConfig;
@@ -18,6 +20,7 @@ import org.springframework.core.io.Resource;
  * @author bluesky
  *
  */
+@Slf4j
 @Configuration
 public class PropertyConfig {
 
@@ -55,7 +58,7 @@ public class PropertyConfig {
 	@Bean
 	public EncryptablePropertyPlaceholderConfigurer encryptablePropertyPlaceholderConfigurer(@Value("#{systemProperties['spring.profiles.active']}") String springProfilesActive) {
 		EncryptablePropertyPlaceholderConfigurer encryptablePropertyPlaceholderConfigurer = new EncryptablePropertyPlaceholderConfigurer(standardPBEStringEncryptor());
-
+		log.debug("repository-{}.properties loaded", springProfilesActive);
 		Resource[] locations = {
 			new ClassPathResource("net/luversof/core/config/property/repository-" + springProfilesActive + ".properties"),	
 		};

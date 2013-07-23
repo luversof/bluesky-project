@@ -25,7 +25,7 @@
 					<div class="pagination pagination-centered">
 						<ul>
 							<li th:if="${pageImpl.hasPreviousPage()}"><a href="#">Prev</a></li>
-							<li th:each="asd : ${pageImpl.iterator()}"><a href="#" th:text="${asd.next()}">?</a></li>
+							<li th:each="iterator : ${pageImpl.iterator()}" th:if="${iterator.hasNext()}"><a th:href="@{/blogPost/list(page=${pageImpl.number})}" th:text="${iterator.next()}">?</a></li>
 							<li><a href="#">1</a></li>
 							<li><a href="#">2</a></li>
 							<li><a href="#">3</a></li>
