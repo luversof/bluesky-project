@@ -33,15 +33,22 @@ public class BlogTest extends GeneralTest {
 	public void save테스트() {
 		BlogPost blog = new BlogPost();
 		blog.setMemberId(1);
-		blog.setTitle("title");
-		blog.setContent("content");
+		blog.setTitle("한글제목");
+		blog.setContent("한글내용");
 
 		BlogPost savedBlog = blogRepository.save(blog);
 		log.debug("savedBlog : {}", savedBlog);
 	}
+	
+	@Test
+	public void 대량save테스트() {
+		for (int i = 0 ; i < 10000 ; i++) {
+			save테스트();
+		}
+	}
 
 	@Test
-//	@Ignore
+	@Ignore
 	public void selectPaging테스트() {
 		Pageable pageable = new PageRequest(0, 20);
 		Page<BlogPost> blogPage = blogRepository.findAll(pageable);
