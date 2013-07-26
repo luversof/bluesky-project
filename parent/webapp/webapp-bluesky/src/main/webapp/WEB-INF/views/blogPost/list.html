@@ -27,24 +27,10 @@
 							<li th:each="i : ${#numbers.sequence(startPage, endPage)}" th:class="${i == currentPage} ? 'active' : ''"><a th:href="@{/blogPost/list(page=${i})}" th:text="${i}">?</a></li>
 						</ul>
 					</div>
+					<a href="write"><button class="btn" type="button" th:text="#{blogPost.menu.write}">write</button></a>
 				</td>
 			</tr>
 		</tfoot>
 	</table>
-	
-	<a href="write"><button class="btn" type="button" th:text="#{blogPost.menu.write}">write</button></a>
-
-
-	<div th:text="${currentPage}"></div>
-	<div th:text="${startPage}"></div>
-	<div th:text="${endPage}"></div>
-	<hr />
-	<div th:text="${pageImpl.totalElements}"></div>
-	<div th:text="${pageImpl.numberOfElements}"></div>
-	<div th:text="${pageImpl.hasPreviousPage()}"></div>
-	<div th:text="${pageImpl.hasNextPage()}"></div>
-	<hr />
-	<div th:text="${pageImpl.iterator()}"></div>
-
 </div>
 </html>
