@@ -9,5 +9,6 @@
   <packaging>pom</packaging>
   <modules>
   	<module>webapp-config-core</module>
+  	<module>webapp-config-security</module>
   </modules>
 </project>

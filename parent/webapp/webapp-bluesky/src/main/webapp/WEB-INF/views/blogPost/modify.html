@@ -5,23 +5,31 @@
 	layout:decorator="/layout/defaultLayout">
 <body>
 	<div layout:fragment="content">
+		<script type="text/javascript">
+			$(document).ready(function() {
+				$("button.btn.cancel").on("click", function() {
+					history.back();
+				});
+			});
+		</script>
 		<form class="form-horizontal" action="." method="post">
 			<input type="hidden" name="_method" value="put" />
 			<div class="control-group">
-				<label class="control-label" for="title">title</label>
+				<label class="control-label" for="title" th:text="#{blogPost.text.title}">title</label>
 				<div class="controls">
-					<input type="text" name="title" id="title" placeholder="title" th:value="${blogPost.title}" />
+					<input type="text" name="title" id="title" th:placeholder="#{blogPost.text.title}" th:value="${blogPost.title}" />
 				</div>
 			</div>
 			<div class="control-group">
-				<label class="control-label" for="content">content</label>
+				<label class="control-label" for="content" th:text="#{blogPost.text.content}">content</label>
 				<div class="controls">
-					<textarea rows="3" name="content" id="content" placeholder="content" th:text="${blogPost.content}"></textarea>
+					<textarea rows="3" name="content" id="content" th:placeholder="#{blogPost.text.content}" th:text="${blogPost.content}"></textarea>
 				</div>
 			</div>
 			<div class="control-group">
 				<div class="controls">
-					<button type="submit" class="btn">write</button>
+					<button type="submit" class="btn btn-primary" th:text="#{blogPost.menu.save}">save</button>
+					<button class="btn cancel" type="button" th:text="#{blogPost.menu.cancel}">cancel</button>
 				</div>
 			</div>
 		</form>

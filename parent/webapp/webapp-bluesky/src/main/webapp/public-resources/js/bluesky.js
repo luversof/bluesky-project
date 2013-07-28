@@ -16,16 +16,23 @@ function navbarDisplay() {
 	});
 }
 
+
 /**
- * 
- * @param blogPostId
+ * blogPost관련 script
+ * display를 별도 분리 처리 하지 않음
  */
-function deleteBlogPost(blogPostId) {
-	$("<form />").attr({
-		"action" : "/blogPost/" + blogPostId,
-		"method" : "post"
-	}).append($("<input />").attr({
-		"type" : "hidden",
-		"name" : "_method"
-	}).val("delete")).submit();
-}
+var blogPost = {
+		/**
+		 * 포스트 삭제
+		 * @param blogPostId
+		 */
+		remove : function (blogPostId) {
+			$("<form />").attr({
+				"action" : "/blogPost/" + blogPostId,
+				"method" : "post"
+			}).append($("<input />").attr({
+				"type" : "hidden",
+				"name" : "_method"
+			}).val("delete")).submit();
+		}		
+};

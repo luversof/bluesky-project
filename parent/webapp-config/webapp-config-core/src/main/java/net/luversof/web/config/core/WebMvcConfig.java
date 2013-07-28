@@ -1,4 +1,4 @@
-package net.luversof.web.core.config;
+package net.luversof.web.config.core;
 
 import java.util.ArrayList;
 import java.util.HashMap;

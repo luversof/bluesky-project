@@ -3,21 +3,18 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>net.luversof</groupId>
-		<artifactId>webapp</artifactId>
+		<artifactId>webapp-config</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>webapp-bluesky</artifactId>
-	<packaging>war</packaging>
+	<artifactId>webapp-config-security</artifactId>
 	<dependencies>
 		<dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>webapp-config-core</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-web</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>webapp-config-security</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-javaconfig</artifactId>
 		</dependency>
 
 		<!-- (s) provided -->

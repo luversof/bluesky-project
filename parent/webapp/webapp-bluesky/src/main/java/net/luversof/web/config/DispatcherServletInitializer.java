@@ -3,7 +3,7 @@ package net.luversof.web.config;
 import javax.servlet.Filter;
 
 import net.luversof.core.config.AppConfig;
-import net.luversof.web.core.config.WebMvcConfig;
+import net.luversof.web.config.core.WebMvcConfig;
 
 import org.springframework.orm.jpa.support.OpenEntityManagerInViewFilter;
 import org.springframework.web.filter.CharacterEncodingFilter;

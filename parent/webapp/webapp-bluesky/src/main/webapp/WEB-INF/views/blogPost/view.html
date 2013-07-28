@@ -9,17 +9,16 @@
 			$(document).ready(function() {
 				var blogPostId = "[[${blogPost.id}]]";
 				$("button.btn.delete").on("click", function() {
-					//alert(1);
-					deleteBlogPost(blogPostId);
-				})
+					blogPost.remove(blogPostId);
+				});
 			});
 
 		</script>
 		<h1 th:text="${blogPost.title}">title</h1>
 		<p th:text="${blogPost.content}">content</p>
-		<a href="modify" th:href="@{'/blogPost/' + ${blogPost.id} + '/modify'}"><button class="btn" type="button" th:text="#{blogPost.menu.modify}">modify</button></a>
+		<a th:href="@{'/blogPost/' + ${blogPost.id} + '/modify'}"><button class="btn" type="button" th:text="#{blogPost.menu.modify}">modify</button></a>
 		<button class="btn delete" type="button" th:text="#{blogPost.menu.delete}">delete</button>
-		<a href="list"><button class="btn" type="button" th:text="#{blogPost.menu.list}">list</button></a>
+		<a th:href="@{list}"><button class="btn" type="button" th:text="#{blogPost.menu.list}">list</button></a>
 	</div>
 </body>
 </html>
