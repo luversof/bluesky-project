@@ -1,5 +1,7 @@
 package net.luversof.core.config;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import javax.inject.Inject;
@@ -7,6 +9,8 @@ import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
 import lombok.SneakyThrows;
+import net.luversof.core.datasource.DataSourceType;
+import net.luversof.core.datasource.RoutingDataSource;
 
 import org.apache.tomcat.dbcp.dbcp.BasicDataSource;
 import org.hibernate.SessionFactory;
@@ -84,8 +88,8 @@ public class RepositoryConfig {
 	@Value("${hibernate.hbm2ddl.import_files}")
 	private String hbm2ddlImportFiles;
 
-	@Bean
-	public DataSource dataSource() {
+	@Bean(name = "testDataSource", destroyMethod = "close")
+	public DataSource testDataSource() {
 		BasicDataSource dataSource = new BasicDataSource();
 		dataSource.setDriverClassName(driverClassName);
 		dataSource.setUrl(url);
@@ -93,6 +97,19 @@ public class RepositoryConfig {
 		dataSource.setPassword(password);
 		return dataSource;
 	}
+	
+	@Bean
+	public RoutingDataSource dataSource() {
+		RoutingDataSource routingDataSource = new RoutingDataSource();
+		Map<Object, Object> targetDataSources = new HashMap<>();
+		targetDataSources.put(DataSourceType.DEFAULT, testDataSource());
+		targetDataSources.put(DataSourceType.TEST, testDataSource());
+		routingDataSource.setTargetDataSources(targetDataSources);
+		routingDataSource.setDefaultTargetDataSource(testDataSource());
+		return routingDataSource;
+	}
+	
+	
 
 	@Bean
 	@SneakyThrows
