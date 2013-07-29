@@ -57,13 +57,16 @@ public class PropertyConfig {
 	 */
 	@Bean
 	public EncryptablePropertyPlaceholderConfigurer encryptablePropertyPlaceholderConfigurer(@Value("#{systemProperties['spring.profiles.active']}") String springProfilesActive) {
-		EncryptablePropertyPlaceholderConfigurer encryptablePropertyPlaceholderConfigurer = new EncryptablePropertyPlaceholderConfigurer(standardPBEStringEncryptor());
+		EncryptablePropertyPlaceholderConfigurer configurer = new EncryptablePropertyPlaceholderConfigurer(standardPBEStringEncryptor());
 		log.debug("repository-{}.properties loaded", springProfilesActive);
 		Resource[] locations = {
 			new ClassPathResource("net/luversof/core/config/property/repository-" + springProfilesActive + ".properties"),	
 		};
-		encryptablePropertyPlaceholderConfigurer.setLocations(locations);
-		return encryptablePropertyPlaceholderConfigurer;
+		configurer.setLocations(locations);
+//		configurer.setOrder(1);
+//		configurer.setSearchSystemEnvironment(true);
+//		configurer.setSystemPropertiesMode(PropertyPlaceholderConfigurer.SYSTEM_PROPERTIES_MODE_OVERRIDE);
+		return configurer;
 	}
 
 }

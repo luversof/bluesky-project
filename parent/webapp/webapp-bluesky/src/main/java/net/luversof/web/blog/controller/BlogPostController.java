@@ -6,6 +6,7 @@ import net.luversof.blog.service.BlogPostService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,7 +27,7 @@ public class BlogPostController {
 	}
 
 	@RequestMapping(method = RequestMethod.POST)
-	public String save(BlogPost blogPost) {
+	public String save(BlogPost blogPost, Authentication authentication) {
 		log.debug("save blogPost : {}", blogPost);
 		blogPostService.save(blogPost);
 		return "redirect:/blogPost/list";

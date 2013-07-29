@@ -19,12 +19,5 @@
 			<artifactId>webapp-config-security</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
-
-		<!-- (s) provided -->
-		<dependency>
-			<groupId>javax.servlet</groupId>
-			<artifactId>javax.servlet-api</artifactId>
-		</dependency>
-		<!-- (e) provided -->
 	</dependencies>
 </project>

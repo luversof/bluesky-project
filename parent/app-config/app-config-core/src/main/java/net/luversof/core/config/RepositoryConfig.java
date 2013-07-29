@@ -2,6 +2,7 @@ package net.luversof.core.config;
 
 import java.util.Properties;
 
+import javax.inject.Inject;
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
@@ -9,7 +10,6 @@ import lombok.SneakyThrows;
 
 import org.apache.tomcat.dbcp.dbcp.BasicDataSource;
 import org.hibernate.SessionFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -51,7 +51,7 @@ public class RepositoryConfig {
 //	static class Live {
 //	}
 
-	@Autowired
+	@Inject
 	private Environment environment;
 
 	@Value("${datasource.driverClassName}")

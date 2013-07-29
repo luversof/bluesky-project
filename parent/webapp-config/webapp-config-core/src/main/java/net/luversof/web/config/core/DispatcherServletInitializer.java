@@ -1,4 +1,4 @@
-package net.luversof.web.config;
+package net.luversof.web.config.core;
 
 import javax.servlet.Filter;
 
