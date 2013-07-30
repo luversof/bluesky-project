@@ -16,10 +16,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
 	@Override
 	public void configure(WebSecurity web) throws Exception {
-		web.ignoring().antMatchers("/resources/**", "/css/**", "/js/**", "/img/**");
-		// TODO Auto-generated method stub
-		super.configure(web);
+		web.ignoring().antMatchers("/resources/**", "/css/**", "/js/**", "/img/**", "/favicon.ico");
 	}
-	
-	
+
 }

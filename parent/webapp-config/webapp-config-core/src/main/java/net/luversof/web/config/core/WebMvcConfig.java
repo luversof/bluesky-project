@@ -65,6 +65,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		registry.addResourceHandler("/resources/**").addResourceLocations("/public-resources/");
 		registry.addResourceHandler("/css/**").addResourceLocations("/public-resources/css/");
 		registry.addResourceHandler("/js/**").addResourceLocations("/public-resources/js/");
+		registry.addResourceHandler("/favicon.ico").addResourceLocations("/public-resources/img/favicon.ico").setCachePeriod(31556926);
 		registry.addResourceHandler("/img/**").addResourceLocations("/public-resources/img/").setCachePeriod(31556926);
 	}
 
