@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.inject.Inject;
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
@@ -19,7 +18,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.ImportResource;
-import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.hibernate4.HibernateExceptionTranslator;
 import org.springframework.orm.hibernate4.LocalSessionFactoryBean;
@@ -36,27 +34,6 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableJpaRepositories(basePackages="net.luversof")
 @ImportResource("classpath:net/luversof/core/config/repository/RepositoryContext.xml")
 public class RepositoryConfig {
-
-//	/**
-//	 * Properties to support the 'embedded' mode of operation.
-//	 */
-//	@Configuration
-//	@Profile("dev")
-//	@PropertySource("classpath:net/luversof/config/repository-dev.properties")
-//	static class Dev {
-//	}
-//
-//	/**
-//	 * Properties to support the 'embedded' mode of operation.
-//	 */
-//	@Configuration
-//	@Profile("live")
-//	@PropertySource("classpath:net/luversof/config/repository-live.properties")
-//	static class Live {
-//	}
-
-	@Inject
-	private Environment environment;
 
 	@Value("${datasource.driverClassName}")
 	private String driverClassName;
@@ -109,8 +86,6 @@ public class RepositoryConfig {
 		return routingDataSource;
 	}
 	
-	
-
 	@Bean
 	@SneakyThrows
 	public SessionFactory sessionFactory() {

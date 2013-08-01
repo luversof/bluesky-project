@@ -39,6 +39,7 @@ import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 import org.springframework.web.servlet.view.ContentNegotiatingViewResolver;
 import org.springframework.web.servlet.view.json.MappingJacksonJsonView;
+import org.thymeleaf.extras.springsecurity3.dialect.SpringSecurityDialect;
 import org.thymeleaf.spring3.SpringTemplateEngine;
 import org.thymeleaf.spring3.view.ThymeleafViewResolver;
 import org.thymeleaf.templateresolver.ServletContextTemplateResolver;
@@ -183,8 +184,9 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 	public SpringTemplateEngine templateEngine() {
 		SpringTemplateEngine springTemplateEngine = new SpringTemplateEngine();
 		springTemplateEngine.setTemplateResolver(templateResolver());
-		springTemplateEngine.addDialect(new LayoutDialect());	// thymeleaf-layout-dialect 사용 설정
 		springTemplateEngine.setMessageSource(messageSource());
+		springTemplateEngine.addDialect(new LayoutDialect());	// thymeleaf-layout-dialect 사용 설정
+		springTemplateEngine.addDialect(new SpringSecurityDialect());	//thymeleaf-extras-springsecurity3 사용 설정
 		return springTemplateEngine;
 	}
 
