@@ -21,13 +21,12 @@
 		</tbody>
 		<tfoot>
 			<tr>
-				<td colspan="3" class="center">
-					<div class="pagination pagination-centered">
-						<ul>
-							<li th:each="i : ${#numbers.sequence(startPage, endPage)}" th:class="${i == currentPage} ? 'active' : ''"><a th:href="@{/blogPost/list(page=${i})}" th:text="${i}">?</a></li>
-						</ul>
-					</div>
-					<a href="write"><button class="btn" type="button" th:text="#{blogPost.menu.write}">write</button></a>
+				<td colspan="3" class="text-center">
+					<ul class="pagination" >
+						<li th:each="i : ${#numbers.sequence(startPage, endPage)}" th:class="${i == currentPage} ? 'active'"><a th:href="@{/blogPost/list(page=${i})}" th:text="${i}">?</a></li>
+					</ul>
+					<br />
+					<a href="write"><button class="btn btn-primary" type="button" th:text="#{blogPost.menu.write}">write</button></a>
 				</td>
 			</tr>
 		</tfoot>

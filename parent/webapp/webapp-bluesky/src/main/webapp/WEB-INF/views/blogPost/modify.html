@@ -14,22 +14,20 @@
 		</script>
 		<form class="form-horizontal" action="." method="post">
 			<input type="hidden" name="_method" value="put" />
-			<div class="control-group">
-				<label class="control-label" for="title" th:text="#{blogPost.text.title}">title</label>
-				<div class="controls">
-					<input type="text" name="title" id="title" th:placeholder="#{blogPost.text.title}" th:value="${blogPost.title}" />
+			<h2 th:text="#{blogPost.menu.modify}">modify</h2>
+			<div class="form-group">
+				<label class="col-lg-2 control-label" for="title" th:text="#{blogPost.text.title}">title</label>
+				<div class="col-lg-6">
+					<input class="form-control" type="text" name="title" id="title" th:placeholder="#{blogPost.text.title}" th:value="${blogPost.title}" />
 				</div>
 			</div>
-			<div class="control-group">
-				<label class="control-label" for="content" th:text="#{blogPost.text.content}">content</label>
-				<div class="controls">
-					<textarea rows="3" name="content" id="content" th:placeholder="#{blogPost.text.content}" th:text="${blogPost.content}"></textarea>
-				</div>
-			</div>
-			<div class="control-group">
-				<div class="controls">
-					<button type="submit" class="btn btn-primary" th:text="#{blogPost.menu.save}">save</button>
-					<button class="btn cancel" type="button" th:text="#{blogPost.menu.cancel}">cancel</button>
+			<div class="form-group">
+				<label class="col-lg-2 control-label" for="content" th:text="#{blogPost.text.content}">content</label>
+				<div class="col-lg-6">
+					<textarea class="form-control" rows="3" name="content" id="content" th:placeholder="#{blogPost.text.content}" th:text="${blogPost.content}"></textarea>
+					<br />
+					<button class="btn btn-primary" type="submit" th:text="#{blogPost.menu.save}">save</button>
+					<button class="btn btn-default cancel" type="button" th:text="#{blogPost.menu.cancel}">cancel</button>
 				</div>
 			</div>
 		</form>
