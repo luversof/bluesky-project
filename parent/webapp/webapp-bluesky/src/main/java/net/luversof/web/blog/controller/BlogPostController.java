@@ -28,6 +28,7 @@ public class BlogPostController {
 
 	@RequestMapping(method = RequestMethod.POST)
 	public String save(BlogPost blogPost, Authentication authentication) {
+		blogPost.setUserName(authentication.getName());
 		log.debug("save blogPost : {}", blogPost);
 		blogPostService.save(blogPost);
 		return "redirect:/blogPost/list";
@@ -36,7 +37,7 @@ public class BlogPostController {
 	@RequestMapping("/list")
 	public void list(@RequestParam(defaultValue = "1") int page, ModelMap modelMap) throws Throwable {
 		Page<BlogPost> blogPostPage = blogPostService.list(page - 1);
-		if (blogPostPage.getTotalPages() < page) {
+		if (blogPostPage.getTotalPages() > 0 && blogPostPage.getTotalPages() < page) {
 			throw new Exception();
 		}
 		//요청받은 page가 blogPostPage.getTotalPages()보다 큰 경우 예외처리가 필요
@@ -59,7 +60,10 @@ public class BlogPostController {
 
 	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
 	public String modify(BlogPost blogPost) {
-		blogPostService.save(blogPost);
+		BlogPost targetBlogPost = blogPostService.view(blogPost.getId());
+		targetBlogPost.setTitle(blogPost.getTitle());
+		targetBlogPost.setContent(blogPost.getContent());
+		blogPostService.save(targetBlogPost);
 		return "redirect:/blogPost/" + blogPost.getId();
 	}
 

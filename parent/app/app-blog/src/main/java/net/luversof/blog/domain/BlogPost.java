@@ -2,6 +2,7 @@ package net.luversof.blog.domain;
 
 import java.util.Date;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -19,7 +20,7 @@ public class BlogPost {
 	@GeneratedValue
 	private long id;
 
-	private long memberId;
+	private String userName;
 
 	private String title;
 
@@ -29,6 +30,7 @@ public class BlogPost {
 	// @Temporal(TemporalType.TIMESTAMP)
 	// @DateTimeFormat(iso = ISO.DATE)
 	@CreatedDate
+	@Column(updatable=false)
 	private Date createdDate;
 
 	@LastModifiedDate
