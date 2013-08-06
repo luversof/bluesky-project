@@ -9,7 +9,7 @@
 			<tr>
 				<th th:text="#{blogPost.text.id}">id</th>
 				<th th:text="#{blogPost.text.title}">title</th>
-				<th th:text="#{blogPost.text.userName}">userName</th>
+				<th th:text="#{blogPost.text.username}">username</th>
 				<th th:text="#{blogPost.text.createdDate}">createdDate</th>
 			</tr>
 		</thead>
@@ -17,7 +17,7 @@
 			<tr th:if="${pageImpl.hasContent()}" th:each="blogPost : ${pageImpl.getContent()}">
 				<td th:text="${blogPost.id}">1</td>
 				<td><a th:href="${blogPost.id}" th:text="${blogPost.title}">title</a></td>
-				<td th:text="${blogPost.userName}">userName</td>
+				<td th:text="${blogPost.username}">username</td>
 				<td th:text="${#dates.format(blogPost.createdDate, 'yyyy-MM-dd')}">createdDate</td>
 			</tr>
 			<tr th:if="${!pageImpl.hasContent()}" class="text-center">

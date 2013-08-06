@@ -18,7 +18,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
 	@Override
 	public void configure(WebSecurity web) throws Exception {
-		web.ignoring().antMatchers("/resources/**", "/css/**", "/js/**", "/img/**", "/favicon.ico");
+		web.ignoring().antMatchers("/resources/**", "/css/**", "/js/**", "/img/**", "/favicon.ico", "/loginPage");
 	}
 
 	@Override
@@ -27,11 +27,12 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 		logoutSuccessHandler.setUseReferer(true);
 		http
 			.authorizeUrls()
-				.antMatchers("/").permitAll()
+				.antMatchers("/**").permitAll()
 				.anyRequest().authenticated()
 			.and()
 			.logout().logoutSuccessHandler(logoutSuccessHandler).and()
-			.formLogin().and()
+			.formLogin().loginPage("/loginPage").and()
+			.rememberMe().and()
             .httpBasic();
 //		super.configure(http);
 	}

@@ -20,7 +20,7 @@ public class BlogPost {
 	@GeneratedValue
 	private long id;
 
-	private String userName;
+	private String username;
 
 	private String title;
 

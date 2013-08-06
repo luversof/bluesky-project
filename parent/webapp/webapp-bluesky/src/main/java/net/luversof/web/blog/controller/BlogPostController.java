@@ -6,6 +6,7 @@ import net.luversof.blog.service.BlogPostService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
@@ -22,13 +23,18 @@ public class BlogPostController {
 	@Autowired
 	private BlogPostService blogPostService;
 	
-	@RequestMapping(value = { "", "/write" })
+	@RequestMapping(value = { "" })
+	public void index() {
+	}
+	
+	@PreAuthorize("hasRole('ROLE_USER')")
+	@RequestMapping(value = { "/write" })
 	public void page() {
 	}
 
 	@RequestMapping(method = RequestMethod.POST)
 	public String save(BlogPost blogPost, Authentication authentication) {
-		blogPost.setUserName(authentication.getName());
+		blogPost.setUsername(authentication.getName());
 		log.debug("save blogPost : {}", blogPost);
 		blogPostService.save(blogPost);
 		return "redirect:/blogPost/list";

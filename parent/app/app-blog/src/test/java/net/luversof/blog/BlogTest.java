@@ -32,7 +32,7 @@ public class BlogTest extends GeneralTest {
 	@Ignore
 	public void save테스트() {
 		BlogPost blog = new BlogPost();
-		blog.setUserName("test");
+		blog.setUsername("test");
 		blog.setTitle("한글제목");
 		blog.setContent("한글내용");
 
