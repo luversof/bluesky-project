@@ -13,9 +13,9 @@
 	</modules>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<spring.version>3.2.3.RELEASE</spring.version>
+		<spring.version>3.2.4.RELEASE</spring.version>
 		<spring.security.version>3.1.4.RELEASE</spring.security.version>
-		<querydsl.version>2.9.0</querydsl.version>
+		<querydsl.version>2.9.0.FIXED</querydsl.version>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -39,7 +39,7 @@
 				<groupId>javax.servlet</groupId>
 				<artifactId>javax.servlet-api</artifactId>
 				<version>3.1.0</version>
-				<scope>provided</scope>
+				<scope>runtime</scope>
 			</dependency>
 			<!-- (e) provided -->
 
@@ -48,6 +48,11 @@
 				<groupId>ch.qos.logback</groupId>
 				<artifactId>logback-classic</artifactId>
 				<version>1.0.13</version>
+			</dependency>
+			<dependency>
+				<groupId>org.fusesource.jansi</groupId>
+				<artifactId>jansi</artifactId>
+				<version>1.11</version>
 			</dependency>
 			<!-- (e) log -->
 
@@ -183,9 +188,8 @@
 			<dependency>
 				<groupId>org.springframework.data</groupId>
 				<artifactId>spring-data-jpa</artifactId>
-				<version>1.3.2.RELEASE</version>
+				<version>1.3.4.RELEASE</version>
 			</dependency>
-
 
 			<dependency>
 				<groupId>org.springframework.plugin</groupId>
@@ -195,7 +199,7 @@
 			<dependency>
 				<groupId>org.springframework.hateoas</groupId>
 				<artifactId>spring-hateoas</artifactId>
-				<version>0.6.0.RELEASE</version>
+				<version>0.7.0.RELEASE</version>
 			</dependency>
 			<dependency>
 				<groupId>org.springframework.data</groupId>
@@ -233,7 +237,7 @@
 			<dependency>
 				<groupId>mysql</groupId>
 				<artifactId>mysql-connector-java</artifactId>
-				<version>5.1.25</version>
+				<version>5.1.26</version>
 			</dependency>
 			<dependency>
 				<groupId>com.mysema.querydsl</groupId>
@@ -264,7 +268,7 @@
 			<dependency>
 				<groupId>nz.net.ultraq.thymeleaf</groupId>
 				<artifactId>thymeleaf-layout-dialect</artifactId>
-				<version>1.1.1</version>
+				<version>1.1.2</version>
 			</dependency>
 			<dependency>
 				<groupId>org.thymeleaf.extras</groupId>
@@ -294,6 +298,10 @@
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.fusesource.jansi</groupId>
+			<artifactId>jansi</artifactId>
 		</dependency>
 		<!-- (e) log -->
 

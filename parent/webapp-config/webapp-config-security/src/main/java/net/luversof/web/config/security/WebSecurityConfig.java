@@ -11,6 +11,7 @@ import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuc
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+	
 	@Override
 	protected void registerAuthentication(AuthenticationManagerBuilder auth) throws Exception {
 		auth.inMemoryAuthentication().withUser("user").password("password").roles("USER");
@@ -27,8 +28,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 		logoutSuccessHandler.setUseReferer(true);
 		http
 			.authorizeUrls()
-				.antMatchers("/**").permitAll()
-				.anyRequest().authenticated()
+				.antMatchers("/test/**").permitAll()
+//				.anyRequest().authenticated()
 			.and()
 			.logout().logoutSuccessHandler(logoutSuccessHandler).and()
 			.formLogin().loginPage("/loginPage").and()

@@ -1,5 +1,7 @@
 package net.luversof.web.blog.controller;
 
+import javax.servlet.http.HttpServletRequest;
+
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.blog.domain.BlogPost;
 import net.luversof.blog.service.BlogPostService;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.HandlerMapping;
 
 @Slf4j
 @Controller
@@ -27,11 +30,18 @@ public class BlogPostController {
 	public void index() {
 	}
 	
+	@RequestMapping(value = "/**")
+	public void test(HttpServletRequest request) {
+		 String remainingPaths = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+		log.debug("mapping : {}", remainingPaths);
+	}
+	
 	@PreAuthorize("hasRole('ROLE_USER')")
 	@RequestMapping(value = { "/write" })
 	public void page() {
 	}
 
+	@PreAuthorize("hasRole('ROLE_USER')")
 	@RequestMapping(method = RequestMethod.POST)
 	public String save(BlogPost blogPost, Authentication authentication) {
 		blogPost.setUsername(authentication.getName());
@@ -57,6 +67,7 @@ public class BlogPostController {
 		log.debug("modelMap : {}", modelMap);
 	}
 
+	@PreAuthorize("hasRole('ROLE_USER')")
 	@RequestMapping("/{id}/modify")
 	public String modifyPage(@PathVariable long id, ModelMap modelMap) {
 		log.debug("id : {}", id);
@@ -64,6 +75,7 @@ public class BlogPostController {
 		return "/blogPost/modify";
 	}
 
+	@PreAuthorize("hasRole('ROLE_USER')")
 	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
 	public String modify(BlogPost blogPost) {
 		BlogPost targetBlogPost = blogPostService.view(blogPost.getId());
@@ -81,6 +93,7 @@ public class BlogPostController {
 		return "/blogPost/view";
 	}
 
+	@PreAuthorize("hasRole('ROLE_USER')")
 	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
 	public String delete(@PathVariable long id, ModelMap modelMap) {
 		log.debug("id : {}", id);
