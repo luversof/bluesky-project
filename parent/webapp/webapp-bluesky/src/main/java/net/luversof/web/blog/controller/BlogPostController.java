@@ -1,7 +1,5 @@
 package net.luversof.web.blog.controller;
 
-import javax.servlet.http.HttpServletRequest;
-
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.blog.domain.BlogPost;
 import net.luversof.blog.service.BlogPostService;
@@ -16,7 +14,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.HandlerMapping;
 
 @Slf4j
 @Controller
@@ -29,13 +26,7 @@ public class BlogPostController {
 	@RequestMapping(value = { "" })
 	public void index() {
 	}
-	
-	@RequestMapping(value = "/**")
-	public void test(HttpServletRequest request) {
-		 String remainingPaths = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
-		log.debug("mapping : {}", remainingPaths);
-	}
-	
+
 	@PreAuthorize("hasRole('ROLE_USER')")
 	@RequestMapping(value = { "/write" })
 	public void page() {
