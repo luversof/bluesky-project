@@ -41,7 +41,7 @@ public class BlogPostController {
 		return "redirect:/blogPost/list";
 	}
 
-	@RequestMapping("/list")
+	@RequestMapping(value = { "/list", "/listView" })
 	public void list(@RequestParam(defaultValue = "1") int page, ModelMap modelMap) throws Throwable {
 		Page<BlogPost> blogPostPage = blogPostService.list(page - 1);
 		if (blogPostPage.getTotalPages() > 0 && blogPostPage.getTotalPages() < page) {
