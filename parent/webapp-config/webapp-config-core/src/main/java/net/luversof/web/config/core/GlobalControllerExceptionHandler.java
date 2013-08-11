@@ -1,16 +1,25 @@
 package net.luversof.web.config.core;
 
-import org.springframework.ui.ModelMap;
+import java.util.HashMap;
+import java.util.Map;
+
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.ModelAndView;
 
+@Slf4j
 @ControllerAdvice
 public class GlobalControllerExceptionHandler {
 	
 	@ExceptionHandler
-	public String handleException(Exception exception, ModelMap modelMap) {
-//		modelMap.addAttribute(attributeName, attributeValue)
-		return "/error";
+	public ModelAndView handleException(Exception exception) {
+		Map<String, Object> map = new HashMap<>();
+		map.put("test", "asdfsdf");
+		log.debug("Exception called");
+		return new ModelAndView("/error", map);
 	}
+	
 
 }

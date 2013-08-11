@@ -91,5 +91,10 @@ public class BlogPostController {
 		blogPostService.delete(id);
 		return "redirect:/blogPost/list";
 	}
+	
+	@RequestMapping("/test")
+	public void test() throws Exception {
+		throw new Exception();
+	}
 
 }
