@@ -49,7 +49,7 @@ import org.thymeleaf.templateresolver.ServletContextTemplateResolver;
 @EnableWebMvc
 @ComponentScan(basePackages = "net.luversof",useDefaultFilters=false,includeFilters=@Filter(type=FilterType.ANNOTATION, value={ Controller.class, ControllerAdvice.class }))
 //@PropertySource(name="mvcProps", value="classpath:props/mvc.properties")
-@EnableAspectJAutoProxy
+@EnableAspectJAutoProxy(proxyTargetClass=true)
 public class WebMvcConfig extends WebMvcConfigurerAdapter {
 
 	@Autowired

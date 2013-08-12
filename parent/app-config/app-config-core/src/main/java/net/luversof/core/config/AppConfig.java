@@ -8,7 +8,7 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.stereotype.Controller;
 
 @Configuration
-@EnableAspectJAutoProxy
+@EnableAspectJAutoProxy(proxyTargetClass=true)
 @ComponentScan(basePackages = "net.luversof", excludeFilters = @Filter(type = FilterType.ANNOTATION, value = { Controller.class }))
 public class AppConfig {
 }
