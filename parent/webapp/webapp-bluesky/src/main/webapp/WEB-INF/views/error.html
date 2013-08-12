@@ -5,7 +5,8 @@
 	layout:decorator="/layout/defaultLayout">
 <body>
 	<div layout:fragment="content">
-		에러
+		<h1 th:text="#{error}">error</h1>
+		<div th:text="${exception.message}">exception message</div>
 		<br />왜 안보이지?<br />
 	</div>
 </body>

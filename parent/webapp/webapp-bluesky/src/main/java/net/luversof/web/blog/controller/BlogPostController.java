@@ -94,7 +94,7 @@ public class BlogPostController {
 	
 	@RequestMapping("/test")
 	public void test() throws Exception {
-		throw new Exception();
+		throw new Exception("tesasa");
 	}
 
 }

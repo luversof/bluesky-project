@@ -16,10 +16,8 @@ public class GlobalControllerExceptionHandler {
 	@ExceptionHandler
 	public ModelAndView handleException(Exception exception) {
 		Map<String, Object> map = new HashMap<>();
-		map.put("test", "asdfsdf");
-		log.debug("Exception called");
+		map.put("exception", exception);
+		log.debug("@ExceptionHandler called");
 		return new ModelAndView("/error", map);
 	}
-	
-
 }

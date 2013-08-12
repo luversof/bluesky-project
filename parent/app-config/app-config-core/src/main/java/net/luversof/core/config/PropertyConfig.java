@@ -23,6 +23,21 @@ import org.springframework.core.io.Resource;
 @Slf4j
 @Configuration
 public class PropertyConfig {
+	
+//	@Configuration
+//	@Profile("dev")
+//	@PropertySource("net/luversof/core/config/property/repository-dev.properties")
+//	static class PropertiesDev {}
+//	
+//	@Configuration
+//	@Profile("localdev")
+//	@PropertySource("net/luversof/core/config/property/repository-localdev.properties")
+//	static class PropertiesLocalDev {}
+//	
+//	@Configuration
+//	@Profile("live")
+//	@PropertySource("net/luversof/core/config/property/repository-live.properties")
+//	static class PropertiesLive {}
 
 	@Bean
 	public BouncyCastleProvider bouncyCastleProvider() {

@@ -2,6 +2,8 @@ package net.luversof.blog.service;
 
 import net.luversof.blog.domain.BlogPost;
 import net.luversof.blog.repository.BlogPostRepository;
+import net.luversof.core.datasource.DataSource;
+import net.luversof.core.datasource.DataSourceType;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -12,12 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional(readOnly = true)
+@DataSource(DataSourceType.BLOG)
 public class BlogPostService {
+	
+	private static final int PAGE_SIZE = 10;
 	
 	@Autowired
 	private BlogPostRepository blogPostRepository;
-	
-	private static final int PAGE_SIZE = 10;
 
 	@Transactional
 	public void save(BlogPost blogPost) {

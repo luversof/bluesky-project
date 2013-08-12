@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import javax.annotation.Resource;
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
@@ -11,7 +12,6 @@ import lombok.SneakyThrows;
 import net.luversof.core.datasource.DataSourceType;
 import net.luversof.core.datasource.RoutingDataSource;
 
-import org.apache.tomcat.dbcp.dbcp.BasicDataSource;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -29,23 +29,11 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @Configuration
-@EnableAspectJAutoProxy
+//@EnableAspectJAutoProxy
 @EnableTransactionManagement
 @EnableJpaRepositories(basePackages="net.luversof")
 @ImportResource("classpath:net/luversof/core/config/repository/RepositoryContext.xml")
 public class RepositoryConfig {
-
-	@Value("${datasource.driverClassName}")
-	private String driverClassName;
-
-	@Value("${datasource.url}")
-	private String url;
-
-	@Value("${datasource.username}")
-	private String username;
-
-	@Value("${datasource.password}")
-	private String password;
 
 	@Value("${hibernate.packagesToScan[]}")
 	private String[] packagesToScan;
@@ -64,25 +52,21 @@ public class RepositoryConfig {
 
 	@Value("${hibernate.hbm2ddl.import_files}")
 	private String hbm2ddlImportFiles;
-
-	@Bean(name = "testDataSource", destroyMethod = "close")
-	public DataSource testDataSource() {
-		BasicDataSource dataSource = new BasicDataSource();
-		dataSource.setDriverClassName(driverClassName);
-		dataSource.setUrl(url);
-		dataSource.setUsername(username);
-		dataSource.setPassword(password);
-		return dataSource;
-	}
+	
+	@Resource(name = "defaultDataSource")
+	private DataSource defaultDataSource;
+	
+	@Resource(name = "blogDataSource")
+	private DataSource blogDataSource;
 	
 	@Bean
 	public RoutingDataSource dataSource() {
 		RoutingDataSource routingDataSource = new RoutingDataSource();
 		Map<Object, Object> targetDataSources = new HashMap<>();
-		targetDataSources.put(DataSourceType.DEFAULT, testDataSource());
-		targetDataSources.put(DataSourceType.TEST, testDataSource());
+		targetDataSources.put(DataSourceType.DEFAULT, defaultDataSource);
+		targetDataSources.put(DataSourceType.BLOG, blogDataSource);
 		routingDataSource.setTargetDataSources(targetDataSources);
-		routingDataSource.setDefaultTargetDataSource(testDataSource());
+		routingDataSource.setDefaultTargetDataSource(defaultDataSource);
 		return routingDataSource;
 	}
 	
