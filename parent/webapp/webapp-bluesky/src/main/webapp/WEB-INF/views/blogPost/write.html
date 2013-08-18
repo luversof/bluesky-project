@@ -5,10 +5,17 @@
 	layout:decorator="/layout/defaultLayout">
 <body>
 	<div layout:fragment="content">
-		<script type="text/javascript">
+		<script type="text/javascript" th:src="@{/resources/wysihtml5/js/wysihtml5-0.3.0.js}"></script>
+		<script type="text/javascript" th:src="@{/resources/wysihtml5/js/advanced.js}"></script>
+		<script type="text/javascript" th:inline="text">
 			$(document).ready(function() {
 				$("button.btn.cancel").on("click", function() {
 					history.back();
+				});
+				var editor = new wysihtml5.Editor("content", { // id of textarea element
+					  toolbar : "wysihtml5-toolbar", // id of toolbar element
+					  parserRules : wysihtml5ParserRules, // defined in parser rules set
+					  stylesheets : "[[@{/resources/wysihtml5/css/stylesheet.css}]]"
 				});
 			});
 		</script>
@@ -24,6 +31,29 @@
 			<div class="form-group">
 				<label class="col-lg-2 control-label" for="content" th:text="#{blogPost.text.content}">content</label>
 				<div class="col-lg-6">
+
+
+<div id="wysihtml5-toolbar" style="display: none;">
+  <a data-wysihtml5-command="bold">bold</a>
+  <a data-wysihtml5-command="italic">italic</a>
+  
+  <!-- Some wysihtml5 commands require extra parameters -->
+  <a data-wysihtml5-command="foreColor" data-wysihtml5-command-value="red">red</a>
+  <a data-wysihtml5-command="foreColor" data-wysihtml5-command-value="green">green</a>
+  <a data-wysihtml5-command="foreColor" data-wysihtml5-command-value="blue">blue</a>
+  
+  <!-- Some wysihtml5 commands like 'createLink' require extra paramaters specified by the user (eg. href) -->
+  <a data-wysihtml5-command="createLink">insert link</a>
+  <div data-wysihtml5-dialog="createLink" style="display: none;">
+    <label>
+      Link:
+      <input data-wysihtml5-dialog-field="href" value="http://" class="text" />
+    </label>
+    <a data-wysihtml5-dialog-action="save">OK</a> <a data-wysihtml5-dialog-action="cancel">Cancel</a>
+  </div>
+</div>
+
+
 					<textarea class="form-control" rows="3" name="content" id="content" th:placeholder="#{blogPost.text.content}"></textarea>
 					<br />
 					<button class="btn btn-primary" type="submit" th:text="#{blogPost.menu.save}">save</button>

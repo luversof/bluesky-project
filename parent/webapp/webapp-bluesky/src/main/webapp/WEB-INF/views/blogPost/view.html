@@ -8,6 +8,8 @@
 		<script type="text/javascript" th:inline="text">
 			$(document).ready(function() {
 				var blogPostId = "[[${blogPost.id}]]";
+				var blogPostContent = "[[${#strings.escapeJavaScript(blogPost.content)}]]";
+				$("p:contains('content')").html(blogPostContent);
 				$("button.btn.delete").on("click", function() {
 					blogPost.remove(blogPostId);
 				});
@@ -17,7 +19,7 @@
 		<article>
 			<h1 th:text="${blogPost.title}">title</h1>
 			<p>published <time pubdate="pubdate" th:text="${#dates.format(blogPost.createdDate, 'yyyy-MM-dd HH:mm:ss')}">createdDate</time></p>
-			<p th:text="${blogPost.content}">content</p>
+			<p>content</p>
 			<a th:href="@{'/blogPost/' + ${blogPost.id} + '/modify'}" class="btn btn-primary" th:text="#{blogPost.menu.modify}">modify</a>
 			<button class="btn btn-warning delete" type="button" th:text="#{blogPost.menu.delete}">delete</button>
 			<a th:href="@{list}" class="btn btn-default" th:text="#{blogPost.menu.list}">list</a>
