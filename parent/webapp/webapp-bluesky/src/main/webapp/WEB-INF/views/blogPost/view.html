@@ -16,16 +16,36 @@
 				});
 				blogPost.displayContext();
 			});
-
 		</script>
+		<div class="page-header">
+			<h1>BlogPost <small th:text="#{blogPost.menu.view}">view</small></h1>
+		</div>
 		<article>
 			<h1 th:text="${blogPost.title}">title</h1>
 			<p>published <time pubdate="pubdate" th:text="${#dates.format(blogPost.createdDate, 'yyyy-MM-dd HH:mm:ss')}">createdDate</time></p>
-			<p th:attr="data-blogPost-content=${blogPost.content}">content</p>
+			<div class="panel panel-default">
+				<div class="panel-body" th:attr="data-blogPost-content=${blogPost.content}">content</div>
+			</div>
 			<a th:href="@{'/blogPost/' + ${blogPost.id} + '/modify'}" class="btn btn-primary" th:text="#{blogPost.menu.modify}">modify</a>
 			<button class="btn btn-warning delete" type="button" th:text="#{blogPost.menu.delete}">delete</button>
 			<a th:href="@{list}" class="btn btn-default" th:text="#{blogPost.menu.list}">list</a>
 		</article>
+		
+		<!-- facebook 댓글은 나중에 고민하자, width 가변 문제 해결 필요
+		<hr />
+		
+		<div id="fb-root"></div>
+		<script type="text/javascript">(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/ko_KR/all.js#xfbml=1&amp;appId=124755777691522";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+		<div class="panel panel-default">
+			<div class="fb-comments panel-body" data-href="http://example.com" data-width="1000px"></div>
+		</div>
+		 -->
 	</div>
 </body>
 </html>

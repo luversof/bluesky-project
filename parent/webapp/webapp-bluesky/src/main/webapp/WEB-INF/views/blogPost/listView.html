@@ -10,10 +10,15 @@
 			blogPost.displayContext();
 		});
 	</script>
+	<div class="page-header">
+		<h1>BlogPost <small>listView</small></h1>
+	</div>
 	<article th:if="${pageImpl.hasContent()}" th:each="blogPost : ${pageImpl.getContent()}">
 		<h1 th:text="${blogPost.title}">title</h1>
 		<p>published <time pubdate="pubdate" th:text="${#dates.format(blogPost.createdDate, 'yyyy-MM-dd HH:mm:ss')}">createdDate</time></p>
-		<p th:attr="data-blogPost-content=${blogPost.content}">content</p>
+		<div class="panel panel-default">
+			<div class="panel-body" th:attr="data-blogPost-content=${blogPost.content}">content</div>
+		</div>
 		<!-- 
 		<a th:href="@{'/blogPost/' + ${blogPost.id} + '/modify'}" class="btn btn-primary" th:text="#{blogPost.menu.modify}">modify</a>
 		<button class="btn btn-warning delete" type="button" th:text="#{blogPost.menu.delete}">delete</button>
@@ -21,37 +26,5 @@
 		 -->
 		 <hr />
 	</article>
-	<table class="table">
-		<thead>
-			<tr>
-				<th th:text="#{blogPost.text.id}">id</th>
-				<th th:text="#{blogPost.text.title}">title</th>
-				<th th:text="#{blogPost.text.username}">username</th>
-				<th th:text="#{blogPost.text.createdDate}">createdDate</th>
-			</tr>
-		</thead>
-		<tbody>
-			<tr th:if="${pageImpl.hasContent()}" th:each="blogPost : ${pageImpl.getContent()}">
-				<td th:text="${blogPost.id}">1</td>
-				<td><a th:href="${blogPost.id}" th:text="${blogPost.title}">title</a></td>
-				<td th:text="${blogPost.username}">username</td>
-				<td th:text="${#dates.format(blogPost.createdDate, 'yyyy-MM-dd')}">createdDate</td>
-			</tr>
-			<tr th:if="${!pageImpl.hasContent()}" class="text-center">
-				<td colspan="4" th:text="#{blogPost.message.empty.content}">blogPost.message.empty.content</td>
-			</tr>
-		</tbody>
-		<tfoot>
-			<tr>
-				<td colspan="4" class="text-center">
-					<ul class="pagination" th:if="${pageImpl.totalPages} > 0">
-						<li th:each="i : ${#numbers.sequence(startPage, endPage)}" th:class="${i == currentPage} ? 'active'"><a th:href="@{/blogPost/list(page=${i})}" th:text="${i}">?</a></li>
-					</ul>
-					<br />
-					<a href="write"><button class="btn btn-primary" type="button" th:text="#{blogPost.menu.write}">write</button></a>
-				</td>
-			</tr>
-		</tfoot>
-	</table>
 </div>
 </html>
