@@ -6,7 +6,7 @@
 <body>
 	<div layout:fragment="content">
 		<script type="text/javascript" th:src="@{/resources/wysihtml5/js/wysihtml5-0.3.0.js}"></script>
-		<script type="text/javascript" th:src="@{/resources/wysihtml5/js/advanced.js}"></script>
+		<script type="text/javascript" th:src="@{/resources/wysihtml5/js/advanced_bluesky.js}"></script>
 		<script type="text/javascript" th:inline="text">
 			$(document).ready(function() {
 				$("button.btn.cancel").on("click", function() {
@@ -15,7 +15,8 @@
 				var editor = new wysihtml5.Editor("content", { // id of textarea element
 					toolbar : "wysihtml5-toolbar", // id of toolbar element
 					parserRules : wysihtml5ParserRules, // defined in parser rules set
-					stylesheets : "[[@{/resources/wysihtml5/css/stylesheet.css}]]"
+					stylesheets : "[[@{/resources/wysihtml5/css/stylesheet.css}]]",
+					"html": true
 				});
 			});
 		</script>
@@ -51,6 +52,7 @@
 							</label>
 							<a data-wysihtml5-dialog-action="save">OK</a> <a data-wysihtml5-dialog-action="cancel">Cancel</a>
 						</div>
+						<a data-wysihtml5-action="change_view" title="Show HTML" class="action">show html</a>
 					</div>
 
 					<textarea class="form-control" rows="13" name="content" id="content" th:placeholder="#{blogPost.text.content}"></textarea>
