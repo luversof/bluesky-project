@@ -1,25 +1,27 @@
 <!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-spring3-3.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"
-	xmlns:th="http://www.thymeleaf.org"
+<html xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="/layout/defaultLayout">
 <body>
 	<div layout:fragment="content">
+		<link th:href="@{/resources/wysihtml5/css/stylesheet.css}" rel="stylesheet" />
 		<script type="text/javascript" th:inline="text">
 			$(document).ready(function() {
 				var blogPostId = "[[${blogPost.id}]]";
-				var blogPostContent = "[[${#strings.escapeJavaScript(blogPost.content)}]]";
-				$("p:contains('content')").html(blogPostContent);
+				//var blogPostContent = "[[${#strings.escapeJavaScript(blogPost.content)}]]";
+				//console.log("2" + blogPostContent);
+				//$("p:contains('content')").html(blogPostContent);
 				$("button.btn.delete").on("click", function() {
 					blogPost.remove(blogPostId);
 				});
+				blogPost.displayContext();
 			});
 
 		</script>
 		<article>
 			<h1 th:text="${blogPost.title}">title</h1>
 			<p>published <time pubdate="pubdate" th:text="${#dates.format(blogPost.createdDate, 'yyyy-MM-dd HH:mm:ss')}">createdDate</time></p>
-			<p>content</p>
+			<p th:attr="data-blogPost-content=${blogPost.content}">content</p>
 			<a th:href="@{'/blogPost/' + ${blogPost.id} + '/modify'}" class="btn btn-primary" th:text="#{blogPost.menu.modify}">modify</a>
 			<button class="btn btn-warning delete" type="button" th:text="#{blogPost.menu.delete}">delete</button>
 			<a th:href="@{list}" class="btn btn-default" th:text="#{blogPost.menu.list}">list</a>

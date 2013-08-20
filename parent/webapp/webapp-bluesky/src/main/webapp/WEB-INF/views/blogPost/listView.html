@@ -4,10 +4,16 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="/layout/defaultLayout">
 <div layout:fragment="content">
+	<link th:href="@{/resources/wysihtml5/css/stylesheet.css}" rel="stylesheet" />
+	<script type="text/javascript">
+		$(document).ready(function() {
+			blogPost.displayContext();
+		});
+	</script>
 	<article th:if="${pageImpl.hasContent()}" th:each="blogPost : ${pageImpl.getContent()}">
 		<h1 th:text="${blogPost.title}">title</h1>
 		<p>published <time pubdate="pubdate" th:text="${#dates.format(blogPost.createdDate, 'yyyy-MM-dd HH:mm:ss')}">createdDate</time></p>
-		<p th:text="${blogPost.content}">content</p>
+		<p th:attr="data-blogPost-content=${blogPost.content}">content</p>
 		<!-- 
 		<a th:href="@{'/blogPost/' + ${blogPost.id} + '/modify'}" class="btn btn-primary" th:text="#{blogPost.menu.modify}">modify</a>
 		<button class="btn btn-warning delete" type="button" th:text="#{blogPost.menu.delete}">delete</button>

@@ -36,5 +36,13 @@ var blogPost = {
 			"type" : "hidden",
 			"name" : "_method"
 		}).val("delete")).submit();
+	},
+	/**
+	 * data-blogPost-content attribute가 선언된 태그의 안에 해당 content 삽입 처
+	 */
+	displayContext : function() {
+		$("[data-blogPost-content]").each(function() {
+			$(this).html($(this).attr("data-blogPost-content"));
+		});
 	}
 };
