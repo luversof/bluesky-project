@@ -116,7 +116,7 @@ var wysihtml5ParserRules = {
         },
         "code": {
         	"check_attributes": {
-        		"data-gist" : "numbers"
+        		"data-gist-id" : "numbers"
         	}
         },
         "acronym": {

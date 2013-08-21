@@ -5,6 +5,7 @@
 <body>
 	<div layout:fragment="content">
 		<link th:href="@{/resources/wysihtml5/css/stylesheet.css}" rel="stylesheet" />
+		<script type="text/javascript" th:src="@{/js/gist-embed.min.js}" defer="defer"></script>
 		<script type="text/javascript" th:inline="text">
 			$(document).ready(function() {
 				var blogPostId = "[[${blogPost.id}]]";
