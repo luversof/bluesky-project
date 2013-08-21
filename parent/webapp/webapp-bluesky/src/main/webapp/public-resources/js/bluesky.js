@@ -42,6 +42,7 @@ var blogPost = {
 	 */
 	displayContext : function() {
 		$("[data-blogPost-content]").each(function() {
+			console.log($(this).attr("data-blogPost-content"));
 			$(this).html($(this).attr("data-blogPost-content"));
 		});
 	}

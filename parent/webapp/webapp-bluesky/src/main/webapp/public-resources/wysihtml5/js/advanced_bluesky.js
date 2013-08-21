@@ -114,7 +114,11 @@ var wysihtml5ParserRules = {
         "rt": {
             "rename_tag": "span"
         },
-        "code": {},
+        "code": {
+        	"check_attributes": {
+        		"data-gist" : "numbers"
+        	}
+        },
         "acronym": {
             "rename_tag": "span"
         },
@@ -505,9 +509,7 @@ var wysihtml5ParserRules = {
             "remove": 1
         },
         "script": {
-        	"check_attributes": {
-        		"src" : "url"
-        	}
+            "remove": 1
         },
         "bdo": {
             "rename_tag": "span"
