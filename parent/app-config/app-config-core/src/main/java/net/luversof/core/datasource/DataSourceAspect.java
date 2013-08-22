@@ -12,12 +12,13 @@ import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.aop.support.AopUtils;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Aspect
 @Component
 @Slf4j
-//@Order(value=1)
+@Order(value=1)
 public class DataSourceAspect {
 
 	@Pointcut("@within(net.luversof.core.datasource.DataSource)")
