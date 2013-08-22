@@ -41,6 +41,7 @@ public class BlogTest extends GeneralTest {
 	}
 	
 	@Test
+	@Ignore
 	public void 대량save테스트() {
 		for (int i = 0 ; i < 10000 ; i++) {
 			save테스트();

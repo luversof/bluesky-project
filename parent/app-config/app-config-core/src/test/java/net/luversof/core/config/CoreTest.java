@@ -22,14 +22,11 @@ public class CoreTest extends GeneralTest {
 	@Value("#{systemProperties['spring.profiles.active']}")
 	String properties;
 
-	@Value("${datasource.username}")
-    private String datasourceUsername;
-
 	@Autowired
 	private StandardPBEStringEncryptor standardPBEStringEncryptor;
 
 	@Test
 	public void 테스트() {
-		log.debug("datasourceUsername : {}", properties);
+		log.debug("properties : {}", properties);
 	}
 }

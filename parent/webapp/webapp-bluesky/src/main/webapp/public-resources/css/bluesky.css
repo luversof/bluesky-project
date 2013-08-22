@@ -1,7 +1,12 @@
 * {
-  font-family: 'Verdana', '맑은 고딕';
+	font-family: 'Verdana', '맑은 고딕';
 }
 
 body {
-  padding: 15px;
+	padding: 15px;
 }
+
+code[data-gist-id] {
+	background-color: #ffffff;
+}
+
