@@ -20,7 +20,7 @@ public class BlogCategory {
 	@GeneratedValue
 	private long id;
 
-	private long memberId;
+	private String username;
 
 	private String title;
 
