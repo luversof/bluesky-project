@@ -2,9 +2,12 @@ package net.luversof.blog;
 
 
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.blog.domain.BlogCategory;
 import net.luversof.blog.domain.BlogPost;
 import net.luversof.blog.domain.QBlogPost;
 import net.luversof.blog.repository.BlogPostRepository;
+import net.luversof.blog.service.BlogCategoryService;
+import net.luversof.blog.service.BlogPostService;
 import net.luversof.core.config.GeneralTest;
 
 import org.junit.Ignore;
@@ -20,24 +23,34 @@ public class BlogTest extends GeneralTest {
 	@Autowired
 	private BlogPostRepository blogRepository;
 	
+	@Autowired
+	private BlogPostService blogPostService;
+	
+	@Autowired
+	private BlogCategoryService blogCategoryService;
+	
 
 	@Test
 	@Ignore
 	public void 셀렉트테스트() {
-		BlogPost blog = blogRepository.findOne((long) 1);
+		BlogPost blog = blogPostService.view(28);
 		log.debug("result : {}", blog);
 	}
 
 	@Test
-	@Ignore
+//	@Ignore
 	public void save테스트() {
 		BlogPost blog = new BlogPost();
 		blog.setUsername("test");
 		blog.setTitle("한글제목");
 		blog.setContent("한글내용");
+		
+		BlogCategory blogCategory = blogCategoryService.view(1);
+		blog.setBlogCategory(blogCategory);
 
-		BlogPost savedBlog = blogRepository.save(blog);
+		BlogPost savedBlog = blogPostService.save(blog);
 		log.debug("savedBlog : {}", savedBlog);
+		log.debug("savedBlog : {}", savedBlog.getId());
 	}
 	
 	@Test

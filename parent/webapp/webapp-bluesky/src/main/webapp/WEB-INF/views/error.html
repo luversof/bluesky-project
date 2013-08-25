@@ -5,10 +5,11 @@
 	layout:decorator="/layout/defaultLayout">
 <body>
 	<div layout:fragment="content">
-		<h1 th:text="#{error}">error</h1>
-		<div th:text="${exception.class}">exception class</div>
-		<div th:text="${exception.message}">exception message</div>
-		<br />왜 안보이지?<br />
+		<br />
+		<div class="panel panel-danger">
+			<div class="panel-heading" th:text="#{error}">Panel heading without title</div>
+			<div class="panel-body" th:text="${exception.message + ' ' + exception.class}">Panel content</div>
+		</div>
 	</div>
 </body>
 </html>

@@ -3,9 +3,11 @@ package net.luversof.web.blog.controller;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.blog.domain.BlogPost;
 import net.luversof.blog.service.BlogPostService;
+import net.luversof.core.exception.BlueskyException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -58,7 +60,7 @@ public class BlogPostController {
 		log.debug("modelMap : {}", modelMap);
 	}
 
-	@PreAuthorize("hasRole('ROLE_USER')")
+	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[blogPost].username == authentication.name")
 	@RequestMapping("/{id}/modify")
 	public String modifyPage(@PathVariable long id, ModelMap modelMap) {
 		log.debug("id : {}", id);
@@ -68,8 +70,13 @@ public class BlogPostController {
 
 	@PreAuthorize("hasRole('ROLE_USER')")
 	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
-	public String modify(BlogPost blogPost) {
+	public String modify(BlogPost blogPost, Authentication authentication) {
 		BlogPost targetBlogPost = blogPostService.view(blogPost.getId());
+		
+		if (authentication.getName().equals(targetBlogPost.getUsername())) {
+			throw new BlueskyException("username is not owner");
+		}
+		
 		targetBlogPost.setTitle(blogPost.getTitle());
 		targetBlogPost.setContent(blogPost.getContent());
 		blogPostService.save(targetBlogPost);
@@ -86,15 +93,13 @@ public class BlogPostController {
 
 	@PreAuthorize("hasRole('ROLE_USER')")
 	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
-	public String delete(@PathVariable long id, ModelMap modelMap) {
+	public String delete(@PathVariable long id, Authentication authentication, ModelMap modelMap) {
+		BlogPost targetBlogPost = blogPostService.view(id);
+		if (authentication.getName().equals(targetBlogPost.getUsername())) {
+			throw new BlueskyException("username is not owner");
+		}
 		log.debug("id : {}", id);
 		blogPostService.delete(id);
 		return "redirect:/blogPost/list";
 	}
-	
-	@RequestMapping("/test")
-	public void test() throws Exception {
-		throw new Exception("tesasa");
-	}
-
 }

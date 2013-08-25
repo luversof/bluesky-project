@@ -27,8 +27,9 @@
 			<div class="panel panel-default">
 				<div class="panel-body" th:attr="data-blogPost-content=${blogPost.content}">content</div>
 			</div>
-			<a th:href="@{'/blogPost/' + ${blogPost.id} + '/modify'}" class="btn btn-primary" th:text="#{blogPost.menu.modify}">modify</a>
-			<button class="btn btn-warning delete" type="button" th:text="#{blogPost.menu.delete}">delete</button>
+			<a href="write" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blogPost.menu.write}">write</a>
+			<a th:if="${#authentication.name == blogPost.username}" th:href="@{'/blogPost/' + ${blogPost.id} + '/modify'}" class="btn btn-primary" th:text="#{blogPost.menu.modify}">modify</a>
+			<a th:if="${#authentication.name == blogPost.username}" class="btn btn-warning delete" th:text="#{blogPost.menu.delete}">delete</a>
 			<a th:href="@{list}" class="btn btn-default" th:text="#{blogPost.menu.list}">list</a>
 		</article>
 		

@@ -34,7 +34,7 @@
 						<li th:each="i : ${#numbers.sequence(startPage, endPage)}" th:class="${i == currentPage} ? 'active'"><a th:href="@{/blogPost/list(page=${i})}" th:text="${i}">?</a></li>
 					</ul>
 					<br />
-					<a href="write"><button class="btn btn-primary" type="button" th:text="#{blogPost.menu.write}">write</button></a>
+					<a href="write" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blogPost.menu.write}">write</a>
 				</td>
 			</tr>
 		</tfoot>

@@ -13,30 +13,31 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional(readOnly = true)
+@Transactional
 @DataSource(DataSourceType.BLOG)
 public class BlogPostService {
-	
+
 	private static final int PAGE_SIZE = 10;
-	
+
 	@Autowired
 	private BlogPostRepository blogPostRepository;
 
-	@Transactional
-	public void save(BlogPost blogPost) {
-		blogPostRepository.save(blogPost);
+	public BlogPost save(BlogPost blogPost) {
+		return blogPostRepository.save(blogPost);
 	}
-	
+
+	@Transactional(readOnly = true)
 	public BlogPost view(long id) {
 		return blogPostRepository.findOne(id);
 	}
 
+	@Transactional(readOnly = true)
 	public Page<BlogPost> list(int page) {
 		Sort sort = new Sort(Sort.Direction.DESC, "id");
 		PageRequest pageRequest = new PageRequest(page, PAGE_SIZE, sort);
 		return blogPostRepository.findAll(pageRequest);
 	}
-	
+
 	@Transactional
 	public void delete(long id) {
 		blogPostRepository.delete(id);
