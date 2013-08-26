@@ -43,8 +43,8 @@
 		  js.src = "//connect.facebook.net/ko_KR/all.js#xfbml=1&amp;appId=124755777691522";
 		  fjs.parentNode.insertBefore(js, fjs);
 		}(document, 'script', 'facebook-jssdk'));</script>
-		<div class="panel panel-default">
-			<div class="fb-comments panel-body" th:attr="data-href='http://luversof.cafe24.com/blogPost/' + ${blogPost.id}" data-width="1000px"></div>
+		<div class="panel panel-default text-center">
+			<div class="fb-comments panel-body" th:attr="data-href='http://luversof.cafe24.com/blogPost/' + ${blogPost.id}" ></div>
 		</div>
 		<!-- facebook 댓글은 나중에 고민하자, width 가변 문제 해결 필요
 		 -->
