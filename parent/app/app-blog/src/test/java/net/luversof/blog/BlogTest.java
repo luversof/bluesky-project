@@ -1,6 +1,8 @@
 package net.luversof.blog;
 
 
+import java.util.List;
+
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.blog.domain.BlogCategory;
 import net.luversof.blog.domain.BlogPost;
@@ -14,8 +16,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
 @Slf4j
 public class BlogTest extends GeneralTest {
@@ -33,19 +33,19 @@ public class BlogTest extends GeneralTest {
 	@Test
 	@Ignore
 	public void 셀렉트테스트() {
-		BlogPost blog = blogPostService.view(28);
+		BlogPost blog = blogPostService.findOne(28);
 		log.debug("result : {}", blog);
 	}
 
 	@Test
-//	@Ignore
+	@Ignore
 	public void save테스트() {
 		BlogPost blog = new BlogPost();
 		blog.setUsername("test");
 		blog.setTitle("한글제목");
 		blog.setContent("한글내용");
 		
-		BlogCategory blogCategory = blogCategoryService.view(1);
+		BlogCategory blogCategory = blogCategoryService.findOne(1);
 		blog.setBlogCategory(blogCategory);
 
 		BlogPost savedBlog = blogPostService.save(blog);
@@ -62,12 +62,11 @@ public class BlogTest extends GeneralTest {
 	}
 
 	@Test
-	@Ignore
+//	@Ignore
 	public void selectPaging테스트() {
-		Pageable pageable = new PageRequest(0, 20);
-		Page<BlogPost> blogPage = blogRepository.findAll(pageable);
-		log.debug("blogPage : {}", blogPage);
-		log.debug("blogPage : {}", blogPage.getContent());
+		Page<BlogPost> blogPostList = blogPostService.findAll(0);
+		log.debug("blogPostList : {}", blogPostList);
+		log.debug("blogPostList : {}", blogPostList.getContent());
 	}
 	
 	@Test
@@ -75,6 +74,14 @@ public class BlogTest extends GeneralTest {
 	public void 테스트() {
 		QBlogPost blogPost = QBlogPost.blogPost;
 		Iterable<BlogPost> list = blogRepository.findAll(blogPost.content.startsWith("c"));
+		log.debug("list : {}", list);
+	}
+	
+	@Test
+	public void 블로그카테고리테스트() {
+		List<BlogCategory> list = blogCategoryService.findByUsername("bluesky");
+		
+		
 		log.debug("list : {}", list);
 	}
 }

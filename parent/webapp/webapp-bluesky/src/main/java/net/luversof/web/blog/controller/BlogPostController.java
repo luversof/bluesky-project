@@ -2,6 +2,7 @@ package net.luversof.web.blog.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.blog.domain.BlogPost;
+import net.luversof.blog.service.BlogCategoryService;
 import net.luversof.blog.service.BlogPostService;
 import net.luversof.core.exception.BlueskyException;
 
@@ -25,13 +26,17 @@ public class BlogPostController {
 	@Autowired
 	private BlogPostService blogPostService;
 	
+	@Autowired
+	private BlogCategoryService blogCategoryService;
+	
 	@RequestMapping(value = { "" })
 	public void index() {
 	}
 
 	@PreAuthorize("hasRole('ROLE_USER')")
 	@RequestMapping(value = { "/write" })
-	public void page() {
+	public void writePage(Authentication authentication, ModelMap modelMap) {
+		modelMap.addAttribute(blogCategoryService.findByUsername(authentication.getName()));
 	}
 
 	@PreAuthorize("hasRole('ROLE_USER')")
@@ -45,7 +50,7 @@ public class BlogPostController {
 
 	@RequestMapping(value = { "/list", "/listView" })
 	public void list(@RequestParam(defaultValue = "1") int page, ModelMap modelMap) throws Throwable {
-		Page<BlogPost> blogPostPage = blogPostService.list(page - 1);
+		Page<BlogPost> blogPostPage = blogPostService.findAll(page - 1);
 		if (blogPostPage.getTotalPages() > 0 && blogPostPage.getTotalPages() < page) {
 			throw new Exception();
 		}
@@ -62,16 +67,17 @@ public class BlogPostController {
 
 	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[blogPost].username == authentication.name")
 	@RequestMapping("/{id}/modify")
-	public String modifyPage(@PathVariable long id, ModelMap modelMap) {
+	public String modifyPage(@PathVariable long id, Authentication authentication, ModelMap modelMap) {
 		log.debug("id : {}", id);
-		modelMap.addAttribute(blogPostService.view(id));
+		modelMap.addAttribute(blogPostService.findOne(id));
+		modelMap.addAttribute(blogCategoryService.findByUsername(authentication.getName()));
 		return "/blogPost/modify";
 	}
 
 	@PreAuthorize("hasRole('ROLE_USER')")
 	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
 	public String modify(BlogPost blogPost, Authentication authentication) {
-		BlogPost targetBlogPost = blogPostService.view(blogPost.getId());
+		BlogPost targetBlogPost = blogPostService.findOne(blogPost.getId());
 		
 		if (authentication.getName().equals(targetBlogPost.getUsername())) {
 			throw new BlueskyException("username is not owner");
@@ -86,7 +92,7 @@ public class BlogPostController {
 	@RequestMapping("/{id}")
 	public String view(@PathVariable long id, ModelMap modelMap) {
 		log.debug("id : {}", id);
-		modelMap.addAttribute(blogPostService.view(id));
+		modelMap.addAttribute(blogPostService.findOne(id));
 		log.debug("modelMap : {}", modelMap);
 		return "/blogPost/view";
 	}
@@ -94,7 +100,7 @@ public class BlogPostController {
 	@PreAuthorize("hasRole('ROLE_USER')")
 	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
 	public String delete(@PathVariable long id, Authentication authentication, ModelMap modelMap) {
-		BlogPost targetBlogPost = blogPostService.view(id);
+		BlogPost targetBlogPost = blogPostService.findOne(id);
 		if (authentication.getName().equals(targetBlogPost.getUsername())) {
 			throw new BlueskyException("username is not owner");
 		}

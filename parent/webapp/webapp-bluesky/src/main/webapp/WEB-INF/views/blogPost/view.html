@@ -22,8 +22,8 @@
 			<h1>BlogPost <small th:text="#{blogPost.menu.view}">view</small></h1>
 		</div>
 		<article>
-			<h1 th:text="${blogPost.title}">title</h1>
-			<p>published <time pubdate="pubdate" th:text="${#dates.format(blogPost.createdDate, 'yyyy-MM-dd HH:mm:ss')}">createdDate</time></p>
+			<h1 th:text="${blogPost.blogCategory} ? #{blogPost.message.title(${blogPost.title}, ${blogPost.blogCategory.title})} : ${blogPost.title}">title</h1>
+			<p><time pubdate="pubdate" th:text="${#dates.format(blogPost.createdDate, 'yyyy-MM-dd HH:mm:ss')}">createdDate</time></p>
 			<div class="panel panel-default">
 				<div class="panel-body" th:attr="data-blogPost-content=${blogPost.content}">content</div>
 			</div>
@@ -33,7 +33,6 @@
 			<a th:href="@{list}" class="btn btn-default" th:text="#{blogPost.menu.list}">list</a>
 		</article>
 		
-		<!-- facebook 댓글은 나중에 고민하자, width 가변 문제 해결 필요
 		<hr />
 		
 		<div id="fb-root"></div>
@@ -45,8 +44,9 @@
 		  fjs.parentNode.insertBefore(js, fjs);
 		}(document, 'script', 'facebook-jssdk'));</script>
 		<div class="panel panel-default">
-			<div class="fb-comments panel-body" data-href="http://example.com" data-width="1000px"></div>
+			<div class="fb-comments panel-body" th:attr="data-href='http://luversof.cafe24.com/blogPost/' + ${blogPost.id}" data-width="1000px"></div>
 		</div>
+		<!-- facebook 댓글은 나중에 고민하자, width 가변 문제 해결 필요
 		 -->
 	</div>
 </body>

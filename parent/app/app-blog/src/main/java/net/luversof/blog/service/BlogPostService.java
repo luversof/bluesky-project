@@ -27,12 +27,12 @@ public class BlogPostService {
 	}
 
 	@Transactional(readOnly = true)
-	public BlogPost view(long id) {
+	public BlogPost findOne(long id) {
 		return blogPostRepository.findOne(id);
 	}
 
 	@Transactional(readOnly = true)
-	public Page<BlogPost> list(int page) {
+	public Page<BlogPost> findAll(int page) {
 		Sort sort = new Sort(Sort.Direction.DESC, "id");
 		PageRequest pageRequest = new PageRequest(page, PAGE_SIZE, sort);
 		return blogPostRepository.findAll(pageRequest);

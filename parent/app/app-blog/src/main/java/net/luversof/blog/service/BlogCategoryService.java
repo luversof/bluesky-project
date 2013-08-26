@@ -1,5 +1,7 @@
 package net.luversof.blog.service;
 
+import java.util.List;
+
 import net.luversof.blog.domain.BlogCategory;
 import net.luversof.blog.repository.BlogCategoryRepository;
 
@@ -23,8 +25,13 @@ public class BlogCategoryService {
 	}
 
 	@Transactional(readOnly = true)
-	public BlogCategory view(long id) {
+	public BlogCategory findOne(long id) {
 		return blogCategoryRepository.findOne(id);
+	}
+	
+	@Transactional(readOnly = true)
+	public List<BlogCategory> findByUsername(String username) {
+		return blogCategoryRepository.findByUsername(username);
 	}
 
 	@Transactional
