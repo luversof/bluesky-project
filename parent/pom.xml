@@ -79,7 +79,7 @@
 			<dependency>
 				<groupId>joda-time</groupId>
 				<artifactId>joda-time</artifactId>
-				<version>2.2</version>
+				<version>2.3</version>
 			</dependency>
 			<dependency>
 				<groupId>org.codehaus.jackson</groupId>
@@ -94,7 +94,7 @@
 			<dependency>
 				<groupId>org.hibernate</groupId>
 				<artifactId>hibernate-entitymanager</artifactId>
-				<version>4.2.3.Final</version>
+				<version>4.2.4.Final</version>
 			</dependency>
 			<dependency>
 				<groupId>org.hibernate</groupId>
@@ -229,7 +229,7 @@
 			<dependency>
 				<groupId>org.jasypt</groupId>
 				<artifactId>jasypt-spring31</artifactId>
-				<version>1.9.0</version>
+				<version>1.9.1</version>
 			</dependency>
 			<!-- (e) encryption -->
 
