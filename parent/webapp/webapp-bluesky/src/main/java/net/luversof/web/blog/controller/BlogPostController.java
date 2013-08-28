@@ -25,10 +25,10 @@ public class BlogPostController {
 
 	@Autowired
 	private BlogPostService blogPostService;
-	
+
 	@Autowired
 	private BlogCategoryService blogCategoryService;
-	
+
 	@RequestMapping(value = { "" })
 	public void index() {
 	}
@@ -44,6 +44,9 @@ public class BlogPostController {
 	public String save(BlogPost blogPost, Authentication authentication) {
 		blogPost.setUsername(authentication.getName());
 		log.debug("save blogPost : {}", blogPost);
+		if (blogPost.getBlogCategory() != null && blogPost.getBlogCategory().getId() != 0) {
+			blogPost.setBlogCategory(blogCategoryService.findOne(blogPost.getBlogCategory().getId()));
+		}
 		blogPostService.save(blogPost);
 		return "redirect:/blogPost/list";
 	}
@@ -54,7 +57,7 @@ public class BlogPostController {
 		if (blogPostPage.getTotalPages() > 0 && blogPostPage.getTotalPages() < page) {
 			throw new Exception();
 		}
-		//요청받은 page가 blogPostPage.getTotalPages()보다 큰 경우 예외처리가 필요
+		// 요청받은 page가 blogPostPage.getTotalPages()보다 큰 경우 예외처리가 필요
 		int startPage = Math.max(1, page - 5);
 		int endPage = Math.min(startPage + 10 - 1, blogPostPage.getTotalPages());
 
@@ -78,13 +81,16 @@ public class BlogPostController {
 	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
 	public String modify(BlogPost blogPost, Authentication authentication) {
 		BlogPost targetBlogPost = blogPostService.findOne(blogPost.getId());
-		
-		if (authentication.getName().equals(targetBlogPost.getUsername())) {
+
+		if (!authentication.getName().equals(targetBlogPost.getUsername())) {
 			throw new BlueskyException("username is not owner");
 		}
-		
+
 		targetBlogPost.setTitle(blogPost.getTitle());
 		targetBlogPost.setContent(blogPost.getContent());
+		if (blogPost.getBlogCategory() != null && blogPost.getBlogCategory().getId() != 0) {
+			targetBlogPost.setBlogCategory(blogCategoryService.findOne(blogPost.getBlogCategory().getId()));
+		}
 		blogPostService.save(targetBlogPost);
 		return "redirect:/blogPost/" + blogPost.getId();
 	}
@@ -101,7 +107,7 @@ public class BlogPostController {
 	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
 	public String delete(@PathVariable long id, Authentication authentication, ModelMap modelMap) {
 		BlogPost targetBlogPost = blogPostService.findOne(id);
-		if (authentication.getName().equals(targetBlogPost.getUsername())) {
+		if (!authentication.getName().equals(targetBlogPost.getUsername())) {
 			throw new BlueskyException("username is not owner");
 		}
 		log.debug("id : {}", id);

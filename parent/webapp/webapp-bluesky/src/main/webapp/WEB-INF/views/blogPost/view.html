@@ -22,7 +22,7 @@
 			<h1>BlogPost <small th:text="#{blogPost.menu.view}">view</small></h1>
 		</div>
 		<article>
-			<h1 th:text="${blogPost.blogCategory} ? #{blogPost.message.title(${blogPost.title}, ${blogPost.blogCategory.title})} : ${blogPost.title}">title</h1>
+			<h2 th:text="${blogPost.blogCategory} ? #{blogPost.message.title(${blogPost.title}, ${blogPost.blogCategory.title})} : ${blogPost.title}">title</h2>
 			<p><time pubdate="pubdate" th:text="${#dates.format(blogPost.createdDate, 'yyyy-MM-dd HH:mm:ss')}">createdDate</time></p>
 			<div class="panel panel-default">
 				<div class="panel-body" th:attr="data-blogPost-content=${blogPost.content}">content</div>

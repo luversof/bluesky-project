@@ -30,6 +30,14 @@
 					<input class="form-control" type="text" name="title" id="title" th:placeholder="#{blogPost.text.title}" th:value="${blogPost.title}" />
 				</div>
 			</div>
+			<div class="form-group" th:if="${blogCategoryList}">
+				<label class="col-lg-2 control-label" for="blogCategory.id" th:text="#{blogPost.text.category}">category</label>
+				<div class="col-lg-6">
+					<select id="blogCategory.id" name="blogCategory.id" class="form-control">
+						<option th:each="blogCategory : ${blogCategoryList}" th:value="${blogCategory.id}" th:text="${blogCategory.title}" th:selected="${blogCategory.id == blogPost.blogCategory.id}">category</option>
+					</select>
+				</div>
+			</div>
 			<div class="form-group">
 				<label class="col-lg-2 control-label" for="content" th:text="#{blogPost.text.content}">content</label>
 				<div class="col-lg-6">
