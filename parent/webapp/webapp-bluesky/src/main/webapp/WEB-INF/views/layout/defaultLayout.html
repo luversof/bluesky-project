@@ -11,6 +11,7 @@
 			navbar.display();
 		});
 	</script>
+	
 	<div class="navbar navbar-default navbar-fixed-top">
 		<div class="container">
 			<div class="navbar-header">
@@ -38,7 +39,7 @@
 	</div>
 	<!-- (e) top -->
 	<div class="container">
-
+		<div th:substituteby="/layout/breadcrumb :: breadcrumb" ></div>
 		<div layout:fragment="content"></div>
 
 		<hr />
