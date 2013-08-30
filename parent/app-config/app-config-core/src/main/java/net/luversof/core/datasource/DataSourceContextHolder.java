@@ -1,5 +1,9 @@
 package net.luversof.core.datasource;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor(access=AccessLevel.PRIVATE)
 public class DataSourceContextHolder {
 	private static final ThreadLocal<DataSourceType> CONTEXT_HOLDER = new ThreadLocal<>();
 	

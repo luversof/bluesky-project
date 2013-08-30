@@ -10,3 +10,4 @@ code[data-gist-id] {
 	background-color: #ffffff;
 }
 
+.fb-comments, .fb-comments * {width:100% !important;}

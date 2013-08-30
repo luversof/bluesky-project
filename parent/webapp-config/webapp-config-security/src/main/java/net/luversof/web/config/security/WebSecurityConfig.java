@@ -30,7 +30,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	}
 
 	@Override
-	public void configure(WebSecurity web) throws Exception {
+	public void configure(WebSecurity web) {
 		web.ignoring().antMatchers("/resources/**", "/css/**", "/js/**", "/img/**", "/favicon.ico", "/loginPage");
 	}
 
@@ -48,6 +48,5 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 			.formLogin().loginPage("/loginPage").and()
 			.rememberMe().and()
             .httpBasic();
-//		super.configure(http);
 	}
 }

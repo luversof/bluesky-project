@@ -65,25 +65,6 @@ public class RepositoryConfig {
 		routingDataSource.setDefaultTargetDataSource(defaultDataSource);
 		return routingDataSource;
 	}
-	
-//	@Bean
-//	@SneakyThrows
-//	public SessionFactory sessionFactory() {
-//		LocalSessionFactoryBean localSessionFactoryBean = new LocalSessionFactoryBean();
-//		localSessionFactoryBean.setDataSource(dataSource());
-//		localSessionFactoryBean.setPackagesToScan(packagesToScan);
-//
-//		Properties hibernateProperties = new Properties();
-//		hibernateProperties.put("hibernate.dialect", dialect);
-//		hibernateProperties.put("hibernate.format_sql", formatSql);
-//		hibernateProperties.put("hibernate.show_sql", showSql);
-//		hibernateProperties.put("hibernate.hbm2ddl.auto", hbm2ddlAuto);
-//		hibernateProperties.put("hibernate.hbm2ddl.import_files", hbm2ddlImportFiles);
-//		localSessionFactoryBean.setHibernateProperties(hibernateProperties);
-//
-//		localSessionFactoryBean.afterPropertiesSet();
-//		return localSessionFactoryBean.getObject();
-//	}
 
 	@Bean
 	public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
@@ -113,11 +94,6 @@ public class RepositoryConfig {
 		txManager.setEntityManagerFactory(entityManagerFactory().getObject());
 		return txManager;
 	}
-	
-//	@Bean
-//	public QueryDslJdbcTemplate queryDslJdbcTemplate() {
-//		return new QueryDslJdbcTemplate(dataSource());
-//	}
 
 	@Bean
 	public HibernateExceptionTranslator hibernateExceptionTranslator() {
