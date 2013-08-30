@@ -2,6 +2,8 @@ package net.luversof.web.config.security;
 
 import javax.sql.DataSource;
 
+import lombok.SneakyThrows;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -22,7 +24,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	private PasswordEncoder passwordEncoder;
 	
 	@Override
-	protected void registerAuthentication(AuthenticationManagerBuilder auth) throws Exception {
+	@SneakyThrows
+	protected void registerAuthentication(AuthenticationManagerBuilder auth) {
 		auth.jdbcAuthentication().dataSource(securityDataSource).passwordEncoder(passwordEncoder);
 	}
 
@@ -32,7 +35,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	}
 
 	@Override
-	protected void configure(HttpSecurity http) throws Exception {
+	@SneakyThrows
+	protected void configure(HttpSecurity http) {
 		SimpleUrlLogoutSuccessHandler logoutSuccessHandler = new SimpleUrlLogoutSuccessHandler();
 		logoutSuccessHandler.setUseReferer(true);
 		http

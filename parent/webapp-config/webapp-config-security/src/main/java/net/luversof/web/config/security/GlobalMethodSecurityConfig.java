@@ -2,6 +2,8 @@ package net.luversof.web.config.security;
 
 import javax.sql.DataSource;
 
+import lombok.SneakyThrows;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -19,7 +21,8 @@ public class GlobalMethodSecurityConfig extends GlobalMethodSecurityConfiguratio
 	private PasswordEncoder passwordEncoder;
 
 	@Override
-	protected void registerAuthentication(AuthenticationManagerBuilder auth) throws Exception {
+	@SneakyThrows
+	protected void registerAuthentication(AuthenticationManagerBuilder auth) {
 		auth.jdbcAuthentication().dataSource(securityDataSource).passwordEncoder(passwordEncoder);
 	}
 }
