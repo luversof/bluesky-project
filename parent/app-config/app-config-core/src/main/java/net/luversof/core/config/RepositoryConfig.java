@@ -94,11 +94,6 @@ public class RepositoryConfig {
 		txManager.setEntityManagerFactory(entityManagerFactory().getObject());
 		return txManager;
 	}
-	
-//	@Bean
-//	public QueryDslJdbcTemplate queryDslJdbcTemplate() {
-//		return new QueryDslJdbcTemplate(dataSource());
-//	}
 
 	@Bean
 	public HibernateExceptionTranslator hibernateExceptionTranslator() {

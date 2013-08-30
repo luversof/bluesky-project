@@ -62,9 +62,6 @@ public class PropertyConfig {
 		log.debug("repository-{}.properties loaded", springProfilesActive);
 		Resource[] locations = { new ClassPathResource("net/luversof/core/config/property/repository-" + springProfilesActive + ".properties"), };
 		configurer.setLocations(locations);
-		// configurer.setOrder(1);
-		// configurer.setSearchSystemEnvironment(true);
-		// configurer.setSystemPropertiesMode(PropertyPlaceholderConfigurer.SYSTEM_PROPERTIES_MODE_OVERRIDE);
 		return configurer;
 	}
 

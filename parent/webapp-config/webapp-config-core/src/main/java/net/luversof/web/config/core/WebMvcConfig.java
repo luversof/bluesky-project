@@ -112,22 +112,6 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		ContentNegotiationManager contentNegotiationManager = new ContentNegotiationManager(pathExtensionContentNegotiationStrategy, headerContentNegotiationStrategy);
 		viewResolver.setContentNegotiationManager(contentNegotiationManager);
 
-
-		 /*contentNegotiationManagerFactoryBean의 mediaType를 사용한 방법*/
-
-		// ContentNegotiationManagerFactoryBean
-		// contentNegotiationManagerFactoryBean = new
-		// ContentNegotiationManagerFactoryBean();
-		// Properties mediaTypes2 = new Properties();
-		// mediaTypes2.put("html", "text/html");
-		// mediaTypes2.put("json", "application/json");
-		// contentNegotiationManagerFactoryBean.setMediaTypes(mediaTypes2);
-		// try {
-		// viewResolver.setContentNegotiationManager(contentNegotiationManagerFactoryBean.getObject());
-		// } catch (Exception e) {
-		// e.printStackTrace();
-		// }
-
 		List<ViewResolver> viewResolvers = new ArrayList<ViewResolver>();
 
 		ThymeleafViewResolver thymeleafViewResolver = new ThymeleafViewResolver();
@@ -165,8 +149,10 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		SpringTemplateEngine springTemplateEngine = new SpringTemplateEngine();
 		springTemplateEngine.setTemplateResolver(templateResolver());
 		springTemplateEngine.setMessageSource(messageSource());
-		springTemplateEngine.addDialect(new LayoutDialect());	// thymeleaf-layout-dialect 사용 설정
-		springTemplateEngine.addDialect(new SpringSecurityDialect());	//thymeleaf-extras-springsecurity3 사용 설정
+		// thymeleaf-layout-dialect 사용 설정
+		springTemplateEngine.addDialect(new LayoutDialect());
+		// thymeleaf-extras-springsecurity3 사용 설정
+		springTemplateEngine.addDialect(new SpringSecurityDialect());
 		return springTemplateEngine;
 	}
 
