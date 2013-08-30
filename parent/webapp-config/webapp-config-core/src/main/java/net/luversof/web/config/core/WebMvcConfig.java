@@ -76,12 +76,6 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		configurer.enable();
 	}
 
-
-//	@Bean
-//	public LoginCheckInterceptor loginCheckInterceptor() {
-//		return new LoginCheckInterceptor();
-//	}
-//	
 	@Override
 	public void addInterceptors(InterceptorRegistry registry) {
 		registry.addInterceptor(new LocaleChangeInterceptor());
@@ -100,19 +94,6 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 	public LocaleChangeInterceptor localeChangeInterceptor() {
 		return new LocaleChangeInterceptor();
 	}
-
-//	@Bean
-//	public SimpleMappingExceptionResolver simpleMappingExceptionResolver () {
-//		SimpleMappingExceptionResolver simpleMappingExceptionResolver = new SimpleMappingExceptionResolver();
-//		simpleMappingExceptionResolver.setDefaultErrorView("error/error");
-//		Properties mappings = new Properties();
-//		mappings.put("net.luversof.core.exception.GenericException", "error/error");
-//		mappings.put("net.luversof.core.exception.UnauthorizedException", "error/error");
-//		simpleMappingExceptionResolver.setExceptionMappings(mappings);
-//
-//		return simpleMappingExceptionResolver;
-//	}
-
 
 	@Bean
 	public ContentNegotiatingViewResolver contentNegotiatingViewResolver() {
@@ -170,8 +151,6 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		templateResolver.setPrefix("/WEB-INF/views/");
 		templateResolver.setSuffix(".html");
 		templateResolver.setTemplateMode("HTML5");
-		// templateResolver.setCharacterEncoding("UTF-8");
-		// 개발시엔 false로 설정하자.
 
 		if (ArrayUtils.contains(applicationContext.getEnvironment().getActiveProfiles(), "live")) {
 			templateResolver.setCacheable(true);
@@ -200,15 +179,4 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		messageSource.setDefaultEncoding("UTF-8");
 		return messageSource;
 	}
-
-	// @Bean
-	// public ThymeleafViewResolver thymeleafViewResolver() {
-	// ThymeleafViewResolver thymeleafViewResolver = new
-	// ThymeleafViewResolver();
-	// thymeleafViewResolver.setTemplateEngine(templateEngine());
-	// thymeleafViewResolver.setCharacterEncoding("UTF-8");
-	// // thymeleafViewResolver.setCache(false);
-	// return thymeleafViewResolver;
-	// }
-
 }

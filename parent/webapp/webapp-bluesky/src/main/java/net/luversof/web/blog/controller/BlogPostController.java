@@ -52,10 +52,10 @@ public class BlogPostController {
 	}
 
 	@RequestMapping(value = { "/list", "/listView" })
-	public void list(@RequestParam(defaultValue = "1") int page, ModelMap modelMap) throws Throwable {
+	public void list(@RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
 		Page<BlogPost> blogPostPage = blogPostService.findAll(page - 1);
 		if (blogPostPage.getTotalPages() > 0 && blogPostPage.getTotalPages() < page) {
-			throw new Exception();
+			throw new BlueskyException("invalid page");
 		}
 		// 요청받은 page가 blogPostPage.getTotalPages()보다 큰 경우 예외처리가 필요
 		int startPage = Math.max(1, page - 5);

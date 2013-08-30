@@ -6,9 +6,7 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.AfterThrowing;
 import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
-import org.springframework.stereotype.Component;
 
 /**
  * 이거 안되는거 이유가 궁금하네..
@@ -25,7 +23,7 @@ public class ExceptionAspect {
 	}
 
 	@AfterThrowing(pointcut = "pointcut()", throwing = "error")
-	public void afterThrowing(JoinPoint thisJoinPoint, Throwable error) throws Exception {
+	public void afterThrowing(JoinPoint thisJoinPoint, Throwable error) {
 		Object args[] = thisJoinPoint.getArgs();
 		
 		log.warn("\n************ Exception Aspect Executed*****************");
@@ -45,8 +43,7 @@ public class ExceptionAspect {
 		try {
 			pjp.proceed();
 		} catch (Throwable e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error("{}", e.getMessage());
 		}
 	}
 }
