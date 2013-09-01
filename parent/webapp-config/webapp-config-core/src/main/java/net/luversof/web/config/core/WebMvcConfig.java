@@ -51,6 +51,9 @@ import org.thymeleaf.templateresolver.ServletContextTemplateResolver;
 //@PropertySource(name="mvcProps", value="classpath:props/mvc.properties")
 @EnableAspectJAutoProxy(proxyTargetClass=true)
 public class WebMvcConfig extends WebMvcConfigurerAdapter {
+	
+	private static final int RESOURCE_CACHE_PERIOD = 31556926; 
+	private static final int MESSAGE_SOURCE_CACHE_SECOND = 5;
 
 	@Autowired
 	private ApplicationContext applicationContext;
@@ -67,8 +70,8 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		registry.addResourceHandler("/resources/**").addResourceLocations("/public-resources/");
 		registry.addResourceHandler("/css/**").addResourceLocations("/public-resources/css/");
 		registry.addResourceHandler("/js/**").addResourceLocations("/public-resources/js/");
-		registry.addResourceHandler("/favicon.ico").addResourceLocations("/public-resources/img/favicon.ico").setCachePeriod(31556926);
-		registry.addResourceHandler("/img/**").addResourceLocations("/public-resources/img/").setCachePeriod(31556926);
+		registry.addResourceHandler("/favicon.ico").addResourceLocations("/public-resources/img/favicon.ico").setCachePeriod(RESOURCE_CACHE_PERIOD);
+		registry.addResourceHandler("/img/**").addResourceLocations("/public-resources/img/").setCachePeriod(RESOURCE_CACHE_PERIOD);
 	}
 
 	@Override
@@ -161,7 +164,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		log.debug("setting up message source");
 		ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
 		messageSource.setBasename("public-resources/message/message");
-		messageSource.setCacheSeconds(5);
+		messageSource.setCacheSeconds(MESSAGE_SOURCE_CACHE_SECOND);
 		messageSource.setDefaultEncoding("UTF-8");
 		return messageSource;
 	}

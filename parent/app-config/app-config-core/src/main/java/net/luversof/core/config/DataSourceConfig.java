@@ -29,7 +29,7 @@ public class DataSourceConfig {
 		dataSource.setPassword(password);
 		return dataSource;
 	}
-	
+
 	@Bean(name = "securityDataSource", destroyMethod = "close")
 	public DataSource securityDataSource(@Value("${datasource.security.driverClassName}") String driverClassName, @Value("${datasource.security.url}") String url, @Value("${datasource.security.username}") String username, @Value("${datasource.security.password}") String password) {
 		BasicDataSource dataSource = new BasicDataSource();

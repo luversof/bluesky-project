@@ -22,6 +22,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 @RequestMapping("/blogPost")
 public class BlogPostController {
+	
+	private static final int PAGE_BLOCK_SIZE = 10;
+	private static final String PRE_AUTHORIZE_ROLE = "hasRole('ROLE_USER')";
 
 	@Autowired
 	private BlogPostService blogPostService;
@@ -33,13 +36,13 @@ public class BlogPostController {
 	public void index() {
 	}
 
-	@PreAuthorize("hasRole('ROLE_USER')")
+	@PreAuthorize(PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = { "/write" })
 	public void writePage(Authentication authentication, ModelMap modelMap) {
 		modelMap.addAttribute(blogCategoryService.findByUsername(authentication.getName()));
 	}
 
-	@PreAuthorize("hasRole('ROLE_USER')")
+	@PreAuthorize(PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST)
 	public String save(BlogPost blogPost, Authentication authentication) {
 		blogPost.setUsername(authentication.getName());
@@ -51,6 +54,7 @@ public class BlogPostController {
 		return "redirect:/blogPost/list";
 	}
 
+	
 	@RequestMapping(value = { "/list", "/listView" })
 	public void list(@RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
 		Page<BlogPost> blogPostPage = blogPostService.findAll(page - 1);
@@ -58,8 +62,8 @@ public class BlogPostController {
 			throw new BlueskyException("invalid page");
 		}
 		// 요청받은 page가 blogPostPage.getTotalPages()보다 큰 경우 예외처리가 필요
-		int startPage = Math.max(1, page - 5);
-		int endPage = Math.min(startPage + 10 - 1, blogPostPage.getTotalPages());
+		int startPage = Math.max(1, page - (PAGE_BLOCK_SIZE / 2));
+		int endPage = Math.min(startPage + PAGE_BLOCK_SIZE - 1, blogPostPage.getTotalPages());
 
 		modelMap.addAttribute("pageImpl", blogPostPage);
 		modelMap.addAttribute("currentPage", page);
@@ -77,7 +81,7 @@ public class BlogPostController {
 		return "/blogPost/modify";
 	}
 
-	@PreAuthorize("hasRole('ROLE_USER')")
+	@PreAuthorize(PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
 	public String modify(BlogPost blogPost, Authentication authentication) {
 		BlogPost targetBlogPost = blogPostService.findOne(blogPost.getId());
@@ -103,7 +107,7 @@ public class BlogPostController {
 		return "/blogPost/view";
 	}
 
-	@PreAuthorize("hasRole('ROLE_USER')")
+	@PreAuthorize(PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
 	public String delete(@PathVariable long id, Authentication authentication, ModelMap modelMap) {
 		BlogPost targetBlogPost = blogPostService.findOne(id);
