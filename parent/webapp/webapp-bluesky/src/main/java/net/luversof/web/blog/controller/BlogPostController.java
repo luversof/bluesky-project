@@ -33,7 +33,8 @@ public class BlogPostController {
 	private BlogCategoryService blogCategoryService;
 
 	@RequestMapping(value = { "" })
-	public void index() {
+	public String index() {
+		return "redirect:/blogPost/list";
 	}
 
 	@PreAuthorize(PRE_AUTHORIZE_ROLE)

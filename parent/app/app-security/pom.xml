@@ -2,13 +2,15 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>net.luversof</groupId>
-    <artifactId>parent</artifactId>
+    <artifactId>app</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <artifactId>app</artifactId>
-  <packaging>pom</packaging>
-  <modules>
-  	<module>app-blog</module>
-  	<module>app-security</module>
-  </modules>
+  <artifactId>app-security</artifactId>
+  <dependencies>
+  	<dependency>
+  		<groupId>net.luversof</groupId>
+  		<artifactId>app-config-core</artifactId>
+  		<version>0.0.1-SNAPSHOT</version>
+  	</dependency>
+  </dependencies>
 </project>
