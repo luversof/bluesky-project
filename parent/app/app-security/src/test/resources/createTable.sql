@@ -4,7 +4,7 @@ CREATE TABLE `User` (
 	`password` VARCHAR(255) NULL DEFAULT NULL,
 	`enable` TINYINT NULL DEFAULT NULL,
 	PRIMARY KEY (`id`),
-	INDEX `FK_User_username` (`username`),
+	INDEX `FK_User_username` (`username`)
 )
 COLLATE='utf8_general_ci'
 ENGINE=InnoDB;
@@ -19,5 +19,4 @@ CREATE TABLE `UserAuthority` (
 	CONSTRAINT `FK_UserAuthority_user_id` FOREIGN KEY (`user_id`) REFERENCES `User` (`id`)
 )
 COLLATE='utf8_general_ci'
-ENGINE=InnoDB
-AUTO_INCREMENT=26;
+ENGINE=InnoDB;
