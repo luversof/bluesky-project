@@ -20,7 +20,7 @@ public class BlueskyUserDetailsService implements UserDetailsService {
 	}
 
 	@Override
-	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+	public UserDetails loadUserByUsername(String username) {
 		User user = userService.findByUsername(username);
 		
 		List<UserAuthority> userAuthorityList = user.getUserAuthorityList();
@@ -29,9 +29,7 @@ public class BlueskyUserDetailsService implements UserDetailsService {
 		for (UserAuthority userAuthority : userAuthorityList) {
 			authoritySet.add(new SimpleGrantedAuthority(userAuthority.getAuthority()));
 		}
-		
-		org.springframework.security.core.userdetails.User userDetails = new org.springframework.security.core.userdetails.User(username, user.getPassword(), user.isEnable(), true, true, true, authoritySet);
-		return userDetails;
+		return new org.springframework.security.core.userdetails.User(username, user.getPassword(), user.isEnable(), true, true, true, authoritySet);
 	}
 
 }
