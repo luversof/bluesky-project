@@ -9,6 +9,5 @@
   <packaging>pom</packaging>
   <modules>
   	<module>app-config-core</module>
-  	<module>app-config-security</module>
   </modules>
 </project>
