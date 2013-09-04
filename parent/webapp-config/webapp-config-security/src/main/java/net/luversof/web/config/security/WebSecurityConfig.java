@@ -1,7 +1,5 @@
 package net.luversof.web.config.security;
 
-import javax.sql.DataSource;
-
 import lombok.SneakyThrows;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,22 +9,24 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
 
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
-	@Autowired
-	private DataSource securityDataSource;
-	
+
 	@Autowired
 	private PasswordEncoder passwordEncoder;
+	
+	@Autowired
+	private UserDetailsService userDetailsService;
 	
 	@Override
 	@SneakyThrows
 	protected void registerAuthentication(AuthenticationManagerBuilder auth) {
-		auth.jdbcAuthentication().dataSource(securityDataSource).passwordEncoder(passwordEncoder);
+		auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder);
 	}
 
 	@Override
