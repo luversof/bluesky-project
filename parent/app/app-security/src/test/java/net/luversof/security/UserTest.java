@@ -21,7 +21,7 @@ public class UserTest {
 	private UserService userService;
 	@Test
 	public void 테스트() {
-		User user = userService.findOne(1);
+		User user = userService.findByUsername("bluesky");
 		log.debug("user : {}", user);
 	}
 }
