@@ -9,6 +9,12 @@
 	<artifactId>webapp-bluesky</artifactId>
 	<packaging>war</packaging>
 	<dependencies>
+		<!-- (s) provided -->
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+		</dependency>
+		<!-- (e) provided -->
 		<dependency>
 			<groupId>net.luversof</groupId>
 			<artifactId>webapp-config-core</artifactId>
