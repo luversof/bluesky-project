@@ -38,7 +38,6 @@ public class BlogPostService {
 		return blogPostRepository.findAll(pageRequest);
 	}
 
-	@Transactional
 	public void delete(long id) {
 		blogPostRepository.delete(id);
 	}

@@ -6,6 +6,10 @@ body {
 	padding: 15px;
 }
 
+.navbar {
+	opacity : 0.85;
+}
+
 code[data-gist-id] {
 	background-color: #ffffff;
 }

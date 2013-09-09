@@ -10,7 +10,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>net.luversof</groupId>
-			<artifactId>app-blog</artifactId>
+			<artifactId>app-config-core</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 

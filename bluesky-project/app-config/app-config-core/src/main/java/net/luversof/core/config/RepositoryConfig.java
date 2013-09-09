@@ -48,19 +48,23 @@ public class RepositoryConfig {
 	@Resource(name = "defaultDataSource")
 	private DataSource defaultDataSource;
 	
+	@Resource(name = "securityDataSource")
+	private DataSource securityDataSource;
+	
 	@Resource(name = "blogDataSource")
 	private DataSource blogDataSource;
 	
-	@Resource(name = "securityDataSource")
-	private DataSource securityDataSource;
+	@Resource(name = "assetDataSource")
+	private DataSource assetDataSource;
 	
 	@Bean
 	public RoutingDataSource dataSource() {
 		RoutingDataSource routingDataSource = new RoutingDataSource();
 		Map<Object, Object> targetDataSources = new HashMap<>();
 		targetDataSources.put(DataSourceType.DEFAULT, defaultDataSource);
-		targetDataSources.put(DataSourceType.BLOG, blogDataSource);
 		targetDataSources.put(DataSourceType.SECURITY, securityDataSource);
+		targetDataSources.put(DataSourceType.BLOG, blogDataSource);
+		targetDataSources.put(DataSourceType.ASSET, assetDataSource);
 		routingDataSource.setTargetDataSources(targetDataSources);
 		routingDataSource.setDefaultTargetDataSource(defaultDataSource);
 		return routingDataSource;

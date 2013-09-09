@@ -17,6 +17,16 @@
 		<!-- (e) provided -->
 		<dependency>
 			<groupId>net.luversof</groupId>
+			<artifactId>app-blog</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>net.luversof</groupId>
+			<artifactId>app-asset</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>net.luversof</groupId>
 			<artifactId>webapp-config-core</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>

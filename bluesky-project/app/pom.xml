@@ -10,5 +10,6 @@
   <modules>
   	<module>app-blog</module>
   	<module>app-security</module>
+  	<module>app-asset</module>
   </modules>
 </project>

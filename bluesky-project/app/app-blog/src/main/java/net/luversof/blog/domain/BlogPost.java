@@ -2,7 +2,6 @@ package net.luversof.blog.domain;
 
 import java.util.Date;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -37,7 +36,7 @@ public class BlogPost {
 	@LastModifiedDate
 	private Date lastModifiedDate;
 
-	@OneToOne(cascade=CascadeType.ALL)
+	@OneToOne
 	private BlogCategory blogCategory;
 
 }

@@ -12,7 +12,8 @@
 				//var blogPostContent = "[[${#strings.escapeJavaScript(blogPost.content)}]]";
 				//console.log("2" + blogPostContent);
 				//$("p:contains('content')").html(blogPostContent);
-				$("button.btn.delete").on("click", function() {
+				$("article .btn.delete").on("click", function() {
+					console.log("button.btn.delete click");
 					blogPost.remove(blogPostId);
 				});
 				blogPost.displayContext();
@@ -31,7 +32,7 @@
 				<a href="write" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blogPost.menu.write}">write</a>
 				<a th:if="${#authentication.name == blogPost.username}" th:href="@{'/blogPost/' + ${blogPost.id} + '/modify'}" class="btn btn-primary" th:text="#{blogPost.menu.modify}">modify</a>
 				<a th:if="${#authentication.name == blogPost.username}" class="btn btn-warning delete" th:text="#{blogPost.menu.delete}">delete</a>
-				<a th:href="@{list}" class="btn btn-default" th:text="#{blogPost.menu.list}">list</a>
+				<a th:href="@{'/blogPost'}" class="btn btn-default" th:text="#{blogPost.menu.list}">list</a>
 			</div>
 		</article>
 		

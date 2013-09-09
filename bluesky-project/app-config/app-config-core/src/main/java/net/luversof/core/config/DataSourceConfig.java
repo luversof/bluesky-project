@@ -34,8 +34,8 @@ public class DataSourceConfig {
 	@Value("${dataSource.default.minIdle}")
 	private int minIdle;
 	
-	
-	private void setDataSourceDefaultConfig(BasicDataSource dataSource) {
+	private DataSource getDefaultDataSource(String url, String username, String password) {
+		BasicDataSource dataSource = new BasicDataSource();
 		dataSource.setDriverClassName(driverClassName);
 		dataSource.setTestOnBorrow(testOnBorrow);
 		dataSource.setTestOnReturn(testOnReturn);
@@ -44,36 +44,29 @@ public class DataSourceConfig {
 		dataSource.setMaxActive(maxActive);
 		dataSource.setMaxIdle(maxIdle);
 		dataSource.setMinIdle(minIdle);
+		dataSource.setUrl(url);
+		dataSource.setUsername(username);
+		dataSource.setPassword(password);
+		return dataSource;
 	}
-	
 
 	@Bean(name = "defaultDataSource", destroyMethod = "close")
 	public DataSource defaultDataSource(@Value("${dataSource.default.url}") String url, @Value("${dataSource.default.username}") String username, @Value("${dataSource.default.password}") String password) {
-		BasicDataSource dataSource = new BasicDataSource();
-		setDataSourceDefaultConfig(dataSource);
-		dataSource.setUrl(url);
-		dataSource.setUsername(username);
-		dataSource.setPassword(password);
-		return dataSource;
-	}
-
-	@Bean(name = "blogDataSource", destroyMethod = "close")
-	public DataSource blogDataSource(@Value("${dataSource.blog.url}") String url, @Value("${dataSource.blog.username}") String username, @Value("${dataSource.blog.password}") String password) {
-		BasicDataSource dataSource = new BasicDataSource();
-		setDataSourceDefaultConfig(dataSource);
-		dataSource.setUrl(url);
-		dataSource.setUsername(username);
-		dataSource.setPassword(password);
-		return dataSource;
+		return getDefaultDataSource(url, username, password);
 	}
 
 	@Bean(name = "securityDataSource", destroyMethod = "close")
 	public DataSource securityDataSource(@Value("${dataSource.security.url}") String url, @Value("${dataSource.security.username}") String username, @Value("${dataSource.security.password}") String password) {
-		BasicDataSource dataSource = new BasicDataSource();
-		setDataSourceDefaultConfig(dataSource);
-		dataSource.setUrl(url);
-		dataSource.setUsername(username);
-		dataSource.setPassword(password);
-		return dataSource;
+		return getDefaultDataSource(url, username, password);
+	}
+
+	@Bean(name = "blogDataSource", destroyMethod = "close")
+	public DataSource blogDataSource(@Value("${dataSource.blog.url}") String url, @Value("${dataSource.blog.username}") String username, @Value("${dataSource.blog.password}") String password) {
+		return getDefaultDataSource(url, username, password);
+	}
+
+	@Bean(name = "assetDataSource", destroyMethod = "close")
+	public DataSource assetDataSource(@Value("${dataSource.asset.url}") String url, @Value("${dataSource.asset.username}") String username, @Value("${dataSource.asset.password}") String password) {
+		return getDefaultDataSource(url, username, password);
 	}
 }

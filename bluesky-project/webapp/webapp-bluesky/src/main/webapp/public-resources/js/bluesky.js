@@ -52,6 +52,7 @@ var blogPost = {
 	 * @param blogPostId
 	 */
 	remove : function(blogPostId) {
+		console.log("blogPost.remove");
 		$("<form />").attr({
 			"action" : "/blogPost/" + blogPostId,
 			"method" : "post"

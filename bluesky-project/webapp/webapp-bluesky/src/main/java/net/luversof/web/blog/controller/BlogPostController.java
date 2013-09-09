@@ -32,11 +32,6 @@ public class BlogPostController {
 	@Autowired
 	private BlogCategoryService blogCategoryService;
 
-	@RequestMapping(value = { "" })
-	public String index() {
-		return "redirect:/blogPost/list";
-	}
-
 	@PreAuthorize(PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = { "/write" })
 	public void writePage(Authentication authentication, ModelMap modelMap) {
@@ -52,12 +47,12 @@ public class BlogPostController {
 			blogPost.setBlogCategory(blogCategoryService.findOne(blogPost.getBlogCategory().getId()));
 		}
 		blogPostService.save(blogPost);
-		return "redirect:/blogPost/list";
+		return "redirect:/blogPost";
 	}
 
 	
-	@RequestMapping(value = { "/list", "/listView" })
-	public void list(@RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
+	@RequestMapping(value = { "" })
+	public String list(@RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
 		Page<BlogPost> blogPostPage = blogPostService.findAll(page - 1);
 		if (blogPostPage.getTotalPages() > 0 && blogPostPage.getTotalPages() < page) {
 			throw new BlueskyException("invalid page");
@@ -71,6 +66,7 @@ public class BlogPostController {
 		modelMap.addAttribute("startPage", startPage);
 		modelMap.addAttribute("endPage", endPage);
 		log.debug("modelMap : {}", modelMap);
+		return "/blogPost/list";
 	}
 
 	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[blogPost].username == authentication.name")
@@ -117,6 +113,6 @@ public class BlogPostController {
 		}
 		log.debug("id : {}", id);
 		blogPostService.delete(id);
-		return "redirect:/blogPost/list";
+		return "redirect:/blogPost";
 	}
 }
