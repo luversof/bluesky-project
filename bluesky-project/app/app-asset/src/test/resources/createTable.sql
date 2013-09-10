@@ -1,3 +1,14 @@
+-- 자산그룹
+CREATE TABLE `AssetGroup` (
+	`id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '자산그룹 일련번호',
+	`username` VARCHAR(255) NULL DEFAULT NULL COMMENT '소유회원 고유이름',
+	`name` VARCHAR(255) NULL DEFAULT NULL COMMENT '자산그룹 이름',
+	`assetType_id` BIGINT(20),
+	PRIMARY KEY (`id`)
+)
+COLLATE='utf8_general_ci'
+ENGINE=InnoDB;
+
 CREATE TABLE `Asset` (
 	`id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '자산 일련번호',
 	`username` VARCHAR(255) NULL DEFAULT NULL COMMENT '소유회원 고유이름',
@@ -13,13 +24,3 @@ CREATE TABLE `Asset` (
 COLLATE='utf8_general_ci'
 ENGINE=InnoDB;
 
--- 자산그룹
-CREATE TABLE `AssetGroup` (
-	`id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '자산그룹 일련번호',
-	`username` VARCHAR(255) NULL DEFAULT NULL COMMENT '소유회원 고유이름',
-	`name` VARCHAR(255) NULL DEFAULT NULL COMMENT '자산그룹 이름',
-	`assetType_id` BIGINT(20),
-	PRIMARY KEY (`id`)
-)
-COLLATE='utf8_general_ci'
-ENGINE=InnoDB;

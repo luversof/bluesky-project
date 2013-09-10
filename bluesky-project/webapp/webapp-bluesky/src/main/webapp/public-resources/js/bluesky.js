@@ -49,12 +49,12 @@ var blog = {
 	/**
 	 * 포스트 삭제
 	 * 
-	 * @param blogPostId
+	 * @param blogId
 	 */
-	remove : function(blogPostId) {
+	remove : function(blogId) {
 		console.log("blog.remove");
 		$("<form />").attr({
-			"action" : "/blog/" + blogPostId,
+			"action" : "/blog/" + blogId,
 			"method" : "post"
 		}).append($("<input />").attr({
 			"type" : "hidden",
@@ -62,7 +62,7 @@ var blog = {
 		}).val("delete")).submit();
 	},
 	/**
-	 * data-blogPost-content attribute가 선언된 태그의 안에 해당 content 삽입 처
+	 * data-blog-content attribute가 선언된 태그의 안에 해당 content 삽입 처
 	 */
 	displayContext : function() {
 		$("[data-blog-content]").each(function() {
