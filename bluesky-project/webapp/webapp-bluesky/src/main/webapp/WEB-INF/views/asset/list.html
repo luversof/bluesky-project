@@ -1,0 +1,45 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-spring3-3.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+	layout:decorator="/layout/defaultLayout">
+<div layout:fragment="content">
+	<div class="page-header">
+		<h1>BlogPost <small th:text="#{blogPost.menu.list}">list</small></h1>
+	</div>
+	<table class="table">
+		<thead>
+			<tr>
+				<th th:text="#{blogPost.text.id}">id</th>
+				<th th:text="#{blogPost.text.category}">category</th>
+				<th th:text="#{blogPost.text.title}">title</th>
+				<th th:text="#{blogPost.text.username}">username</th>
+				<th th:text="#{blogPost.text.createdDate}">createdDate</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr th:if="${pageImpl.hasContent()}" th:each="blogPost : ${pageImpl.getContent()}">
+				<td th:text="${blogPost.id}">id</td>
+				<td th:text="${blogPost.blogCategory} ? ${blogPost.blogCategory.title}">category</td>
+				<td><a th:href="@{'/blogPost/' + ${blogPost.id}}" th:text="${blogPost.title}">title</a></td>
+				<td th:text="${blogPost.username}">username</td>
+				<td th:text="${#dates.format(blogPost.createdDate, 'yyyy-MM-dd')}">createdDate</td>
+			</tr>
+			<tr th:if="${!pageImpl.hasContent()}" class="text-center">
+				<td colspan="5" th:text="#{blogPost.message.empty.content}">blogPost.message.empty.content</td>
+			</tr>
+		</tbody>
+		<tfoot>
+			<tr>
+				<td colspan="5" class="text-center">
+					<ul class="pagination" th:if="${pageImpl.totalPages} > 0">
+						<li th:each="i : ${#numbers.sequence(startPage, endPage)}" th:class="${i == currentPage} ? 'active'"><a th:href="@{/blogPost/list(page=${i})}" th:text="${i}">?</a></li>
+					</ul>
+					<br />
+					<a th:href="@{'/blogPost/write'}" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blogPost.menu.write}">write</a>
+				</td>
+			</tr>
+		</tfoot>
+	</table>
+</div>
+</html>
