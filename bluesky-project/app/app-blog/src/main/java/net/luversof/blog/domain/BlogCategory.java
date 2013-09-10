@@ -22,7 +22,7 @@ public class BlogCategory {
 
 	private String username;
 
-	private String title;
+	private String name;
 
 	@ManyToOne(cascade = { CascadeType.ALL })
 	@JoinColumn(name = "upperMenu_id")

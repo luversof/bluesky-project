@@ -1,7 +1,7 @@
 package net.luversof.blog.service;
 
-import net.luversof.blog.domain.BlogPost;
-import net.luversof.blog.repository.BlogPostRepository;
+import net.luversof.blog.domain.Blog;
+import net.luversof.blog.repository.BlogRepository;
 import net.luversof.core.datasource.DataSource;
 import net.luversof.core.datasource.DataSourceType;
 
@@ -15,30 +15,30 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 @DataSource(DataSourceType.BLOG)
-public class BlogPostService {
+public class BlogService {
 
 	private static final int PAGE_SIZE = 10;
 
 	@Autowired
-	private BlogPostRepository blogPostRepository;
+	private BlogRepository blogRepository;
 
-	public BlogPost save(BlogPost blogPost) {
-		return blogPostRepository.save(blogPost);
+	public Blog save(Blog blog) {
+		return blogRepository.save(blog);
 	}
 
 	@Transactional(readOnly = true)
-	public BlogPost findOne(long id) {
-		return blogPostRepository.findOne(id);
+	public Blog findOne(long id) {
+		return blogRepository.findOne(id);
 	}
 
 	@Transactional(readOnly = true)
-	public Page<BlogPost> findAll(int page) {
+	public Page<Blog> findAll(int page) {
 		Sort sort = new Sort(Sort.Direction.DESC, "id");
 		PageRequest pageRequest = new PageRequest(page, PAGE_SIZE, sort);
-		return blogPostRepository.findAll(pageRequest);
+		return blogRepository.findAll(pageRequest);
 	}
 
 	public void delete(long id) {
-		blogPostRepository.delete(id);
+		blogRepository.delete(id);
 	}
 }

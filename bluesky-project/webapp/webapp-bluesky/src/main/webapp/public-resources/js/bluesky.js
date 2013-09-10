@@ -43,18 +43,18 @@ $(function() {
 });
 
 /**
- * blogPost관련 script display를 별도 분리 처리 하지 않음
+ * blog관련 script display를 별도 분리 처리 하지 않음
  */
-var blogPost = {
+var blog = {
 	/**
 	 * 포스트 삭제
 	 * 
 	 * @param blogPostId
 	 */
 	remove : function(blogPostId) {
-		console.log("blogPost.remove");
+		console.log("blog.remove");
 		$("<form />").attr({
-			"action" : "/blogPost/" + blogPostId,
+			"action" : "/blog/" + blogPostId,
 			"method" : "post"
 		}).append($("<input />").attr({
 			"type" : "hidden",
@@ -65,9 +65,9 @@ var blogPost = {
 	 * data-blogPost-content attribute가 선언된 태그의 안에 해당 content 삽입 처
 	 */
 	displayContext : function() {
-		$("[data-blogPost-content]").each(function() {
-			console.log($(this).attr("data-blogPost-content"));
-			$(this).html($(this).attr("data-blogPost-content"));
+		$("[data-blog-content]").each(function() {
+			console.log($(this).attr("data-blog-content"));
+			$(this).html($(this).attr("data-blog-content"));
 		});
 	}
 };

@@ -4,12 +4,12 @@ package net.luversof.blog;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.blog.domain.Blog;
 import net.luversof.blog.domain.BlogCategory;
-import net.luversof.blog.domain.BlogPost;
-import net.luversof.blog.domain.QBlogPost;
-import net.luversof.blog.repository.BlogPostRepository;
+import net.luversof.blog.domain.QBlog;
+import net.luversof.blog.repository.BlogRepository;
 import net.luversof.blog.service.BlogCategoryService;
-import net.luversof.blog.service.BlogPostService;
+import net.luversof.blog.service.BlogService;
 import net.luversof.core.config.GeneralTest;
 
 import org.junit.Ignore;
@@ -21,10 +21,10 @@ import org.springframework.data.domain.Page;
 public class BlogTest extends GeneralTest {
 
 	@Autowired
-	private BlogPostRepository blogRepository;
+	private BlogRepository blogRepository;
 	
 	@Autowired
-	private BlogPostService blogPostService;
+	private BlogService blogService;
 	
 	@Autowired
 	private BlogCategoryService blogCategoryService;
@@ -33,14 +33,14 @@ public class BlogTest extends GeneralTest {
 	@Test
 	@Ignore
 	public void 셀렉트테스트() {
-		BlogPost blog = blogPostService.findOne(28);
+		Blog blog = blogService.findOne(28);
 		log.debug("result : {}", blog);
 	}
 
 	@Test
 	@Ignore
 	public void save테스트() {
-		BlogPost blog = new BlogPost();
+		Blog blog = new Blog();
 		blog.setUsername("test");
 		blog.setTitle("한글제목");
 		blog.setContent("한글내용");
@@ -48,7 +48,7 @@ public class BlogTest extends GeneralTest {
 		BlogCategory blogCategory = blogCategoryService.findOne(1);
 		blog.setBlogCategory(blogCategory);
 
-		BlogPost savedBlog = blogPostService.save(blog);
+		Blog savedBlog = blogService.save(blog);
 		log.debug("savedBlog : {}", savedBlog);
 		log.debug("savedBlog : {}", savedBlog.getId());
 	}
@@ -64,16 +64,16 @@ public class BlogTest extends GeneralTest {
 	@Test
 //	@Ignore
 	public void selectPaging테스트() {
-		Page<BlogPost> blogPostList = blogPostService.findAll(0);
-		log.debug("blogPostList : {}", blogPostList);
-		log.debug("blogPostList : {}", blogPostList.getContent());
+		Page<Blog> blogList = blogService.findAll(0);
+		log.debug("blogList : {}", blogList);
+		log.debug("blogList : {}", blogList.getContent());
 	}
 	
 	@Test
 	@Ignore
 	public void 테스트() {
-		QBlogPost blogPost = QBlogPost.blogPost;
-		Iterable<BlogPost> list = blogRepository.findAll(blogPost.content.startsWith("c"));
+		QBlog blog = QBlog.blog;
+		Iterable<Blog> list = blogRepository.findAll(blog.content.startsWith("c"));
 		log.debug("list : {}", list);
 	}
 	
