@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>net.luversof</groupId>
-    <artifactId>parent</artifactId>
+    <artifactId>bluesky-project</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
   <artifactId>webapp</artifactId>
