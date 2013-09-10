@@ -1,5 +1,7 @@
 package net.luversof.asset.service;
 
+import java.util.List;
+
 import net.luversof.asset.domain.Asset;
 import net.luversof.asset.repository.AssetRepository;
 import net.luversof.core.datasource.DataSource;
@@ -28,5 +30,9 @@ public class AssetService {
 	
 	public void delete(long id) {
 		assetRepository.delete(id);
+	}
+	
+	public List<Asset> findByUsername(String username) {
+		return assetRepository.findByUsername(username);
 	}
 }

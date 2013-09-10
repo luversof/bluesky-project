@@ -3,14 +3,12 @@ package net.luversof.asset.domain;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.OneToOne;
 
 import lombok.Data;
 
 @Entity
 @Data
-public class Asset {
-
+public class AssetGroup {
 	@Id
 	@GeneratedValue
 	private long id;
@@ -19,10 +17,5 @@ public class Asset {
 	
 	private String username;
 	
-	private long amount;
-	
-	private boolean enable;
-	
-	@OneToOne
-	private AssetGroup assetGroup;
+	private long assetType_id;
 }
