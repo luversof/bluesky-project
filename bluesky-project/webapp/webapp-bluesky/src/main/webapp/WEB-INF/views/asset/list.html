@@ -86,9 +86,9 @@
 			function showMenu(target) {
 				console.log("showMenu");
 				target.find("td:eq(6)").empty().append(
-					$("<span />").addClass("glyphicon glyphicon-edit")
+					$("<span />").addClass("glyphicon glyphicon-edit").attr("title", "edit").tooltip()
 				).append(" ").append(
-					$("<span />").addClass("glyphicon glyphicon-remove")
+					$("<span />").addClass("glyphicon glyphicon-remove").attr("title", "remove").tooltip()
 				);
 			}
 			function hideMenu(target) {
