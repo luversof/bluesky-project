@@ -9,24 +9,92 @@
 	<script type="text/javascript">
 		$(document).ready(function() {
 			//table tr 위로 마우스가 올라갔을때 수행 
-			$("table tr").on("mouseenter", function() {
-				//1 해당 tr의 데이터 추출
-				var asset = {
-						id : $(this).find("td:eq(0)").text(),
-						name : $(this).find("td:eq(1)").text(),
-						username : $(this).find("td:eq(2)").text(),
-						amount : $(this).find("td:eq(3)").text(),
-						enable : $(this).find("td:eq(4)").text(),
-						assetGroup : {
-							name : $(this).find("td:eq(5)").text()
-						}
-				}
-				//2. 해당 데이터를 보관
-				$(this).attr("data-asset", asset);
-				
+			$("table tr").on("mouseenter", function(event) {
+				asset.setAssetDataFromUi($(this));
+				//수정 and 삭제 아이콘 활성화
 				console.log("" + $(this).html());
-				console.log("data : " + asset.id);
+				showMenu($(this));
+				event.preventDefault();
 			});
+			$("table tr").on("mouseleave", function(event) {
+				hideMenu($(this));
+				event.preventDefault();
+			});
+			
+			var asset = {
+				config : {
+					dataAttribute : "data-asset",
+					uiPosition : {
+						id : "td:eq(0)",
+						name : "td:eq(1)",
+						username : "td:eq(2)",
+						amount : "td:eq(3)",
+						enable : "td:eq(4)",
+						assetGroup : {
+							name : "td:eq(5)"
+						}
+					}
+				},
+				setAssetDataFromUi : function(target) {
+					if (target.attr(this.config.dataAttribute) == null) {
+						console.log("data-asset set and get");
+						//해당 tr의 데이터 추출
+						var asset = {
+								id : target.find(this.config.uiPosition.id).text(),
+								name : target.find(this.config.uiPosition.name).text(),
+								username : target.find(this.config.uiPosition.username).text(),
+								amount : target.find(this.config.uiPosition.amount).text(),
+								enable : target.find(this.config.uiPosition.enable).text(),
+								assetGroup : {
+									name : target.find(this.config.uiPosition.assetGroup.name).text()
+								}
+						}
+						//해당 데이터를 보관
+						target.attr(this.config.dataAttribute, asset);
+						return asset;
+					} else {
+						console.log("data-asset get");
+						return target.attr(this.config.dataAttribute);	
+					}
+				}
+			}
+			
+			/*
+			function getAsset(target) {
+				if (target.attr("data-asset") == null) {
+					console.log("data-asset set and get");
+					//해당 tr의 데이터 추출
+					var asset = {
+							id : target.find("td:eq(0)").text(),
+							name : target.find("td:eq(1)").text(),
+							username : target.find("td:eq(2)").text(),
+							amount : target.find("td:eq(3)").text(),
+							enable : target.find("td:eq(4)").text(),
+							assetGroup : {
+								name : target.find("td:eq(5)").text()
+							}
+					}
+					//해당 데이터를 보관
+					target.attr("data-asset", asset);
+					return asset;
+				} else {
+					console.log("data-asset get");
+					return target.attr("data-asset");	
+				}
+			}
+			*/
+			function showMenu(target) {
+				console.log("showMenu");
+				target.find("td:eq(6)").empty().append(
+					$("<span />").addClass("glyphicon glyphicon-edit")
+				).append(" ").append(
+					$("<span />").addClass("glyphicon glyphicon-remove")
+				);
+			}
+			function hideMenu(target) {
+				console.log("hideMenu");
+				target.find("td:eq(6)").empty();	
+			}
 		});
 	</script>
 
@@ -53,7 +121,7 @@
 				<td th:text="${asset.amount}">amount</td>
 				<td th:text="${asset.enable}">enable</td>
 				<td th:if="${asset.assetGroup != null}" th:text="${asset.assetGroup.name}">assetGroup.name</td>
-				<td></td>
+				<td><span class="glyphicon glyphicon-remove"></span> gg <span class="glyphicon glyphicon-edit"></span></td>
 			</tr>
 			<tr th:if="${#lists.isEmpty(assetList)}" class="text-center">
 				<td colspan="7" th:text="#{asset.message.empty.content}">asset.message.empty.content</td>

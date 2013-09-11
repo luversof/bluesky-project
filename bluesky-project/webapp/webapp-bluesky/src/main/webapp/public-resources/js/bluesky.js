@@ -19,6 +19,9 @@ var navbar = {
 	}
 };
 
+/**
+ * 상단 navbar scroll에 따른 hide 처리 
+ */
 $(function() {
 	var $nav = $(".navbar"),
 	_hideShowOffset = 20,

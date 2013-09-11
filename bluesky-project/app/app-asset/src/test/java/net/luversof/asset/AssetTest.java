@@ -29,6 +29,7 @@ public class AssetTest extends GeneralTest {
 		AssetGroup assetGroup = new AssetGroup();
 		assetGroup.setAssetType_id(1);
 		assetGroup.setName("test");
+		assetGroup.setUsername("bluesky");
 		AssetGroup resultAssetGroup = assetGroupService.save(assetGroup);
 		log.debug("resultAssetGroup : {}", resultAssetGroup);
 	}
