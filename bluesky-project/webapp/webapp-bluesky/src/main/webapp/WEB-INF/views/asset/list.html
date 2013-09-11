@@ -5,7 +5,29 @@
 	layout:decorator="/layout/defaultLayout">
 <div layout:fragment="content">
 
+	<!-- 동적으로 데이터를 변경할 수 있는 기능 제공 -->
 	<script type="text/javascript">
+		$(document).ready(function() {
+			//table tr 위로 마우스가 올라갔을때 수행 
+			$("table tr").on("mouseenter", function() {
+				//1 해당 tr의 데이터 추출
+				var asset = {
+						id : $(this).find("td:eq(0)").text(),
+						name : $(this).find("td:eq(1)").text(),
+						username : $(this).find("td:eq(2)").text(),
+						amount : $(this).find("td:eq(3)").text(),
+						enable : $(this).find("td:eq(4)").text(),
+						assetGroup : {
+							name : $(this).find("td:eq(5)").text()
+						}
+				}
+				//2. 해당 데이터를 보관
+				$(this).attr("data-asset", asset);
+				
+				console.log("" + $(this).html());
+				console.log("data : " + asset.id);
+			});
+		});
 	</script>
 
 	<div class="page-header">
