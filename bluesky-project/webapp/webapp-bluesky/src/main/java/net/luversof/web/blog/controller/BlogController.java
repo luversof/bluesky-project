@@ -5,6 +5,7 @@ import net.luversof.blog.domain.Blog;
 import net.luversof.blog.service.BlogCategoryService;
 import net.luversof.blog.service.BlogService;
 import net.luversof.core.exception.BlueskyException;
+import net.luversof.web.AuthorizeRole;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -24,7 +25,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class BlogController {
 	
 	private static final int PAGE_BLOCK_SIZE = 10;
-	private static final String PRE_AUTHORIZE_ROLE = "hasRole('ROLE_USER')";
 
 	@Autowired
 	private BlogService blogService;
@@ -32,13 +32,13 @@ public class BlogController {
 	@Autowired
 	private BlogCategoryService blogCategoryService;
 
-	@PreAuthorize(PRE_AUTHORIZE_ROLE)
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = { "/write" })
 	public void writePage(Authentication authentication, ModelMap modelMap) {
 		modelMap.addAttribute(blogCategoryService.findByUsername(authentication.getName()));
 	}
 
-	@PreAuthorize(PRE_AUTHORIZE_ROLE)
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST)
 	public String save(Blog blog, Authentication authentication) {
 		blog.setUsername(authentication.getName());
@@ -78,7 +78,7 @@ public class BlogController {
 		return "/blog/modify";
 	}
 
-	@PreAuthorize(PRE_AUTHORIZE_ROLE)
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
 	public String modify(Blog blog, Authentication authentication) {
 		Blog targetBlog = blogService.findOne(blog.getId());
@@ -104,7 +104,7 @@ public class BlogController {
 		return "/blog/view";
 	}
 
-	@PreAuthorize(PRE_AUTHORIZE_ROLE)
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
 	public String delete(@PathVariable long id, Authentication authentication, ModelMap modelMap) {
 		Blog targetBlog = blogService.findOne(id);

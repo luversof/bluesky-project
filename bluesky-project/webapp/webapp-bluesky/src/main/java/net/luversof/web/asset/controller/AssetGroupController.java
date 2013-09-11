@@ -2,8 +2,11 @@ package net.luversof.web.asset.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.asset.service.AssetGroupService;
+import net.luversof.web.AuthorizeRole;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,10 +19,12 @@ public class AssetGroupController {
 	
 	@Autowired
 	private AssetGroupService assetGroupService;
-	
+
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = { "" })
-	public String list(@RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
+	public String list(@RequestParam(defaultValue = "1") int page, Authentication authentication, ModelMap modelMap) {
 		log.debug("modelMap : {}", modelMap);
+		modelMap.addAttribute(assetGroupService.findByUsername(authentication.getName()));
 		return "/assetGroup/list";
 	}
 	
