@@ -11,11 +11,11 @@ import net.luversof.security.service.UserService;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-public class BlueskyUserDetailsService implements UserDetailsService {
+public class LuversofUserDetailsService implements UserDetailsService {
 
 	private UserService userService;
 	
-	public BlueskyUserDetailsService(UserService userService) {
+	public LuversofUserDetailsService(UserService userService) {
 		this.userService = userService;
 	}
 

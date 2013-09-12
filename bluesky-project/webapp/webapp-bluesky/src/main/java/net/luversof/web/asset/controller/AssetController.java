@@ -1,7 +1,11 @@
 package net.luversof.web.asset.controller;
 
+import java.text.MessageFormat;
+
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.asset.domain.Asset;
 import net.luversof.asset.service.AssetService;
+import net.luversof.core.exception.BlueskyException;
 import net.luversof.web.AuthorizeRole;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Slf4j
@@ -26,5 +31,21 @@ public class AssetController {
 		log.debug("modelMap : {}", modelMap);
 		modelMap.addAttribute(assetService.findByUsername(authentication.getName()));
 		return "/asset/list";
+	}
+	
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@RequestMapping(value = "/{assetId}", method = RequestMethod.PUT)
+	public String modify(Asset asset, Authentication authentication) {
+		Asset targetAsset = assetService.findOne(asset.getId());
+		
+		if (!authentication.getName().equals(targetAsset.getUsername())) {
+			throw new BlueskyException("username is not owner");
+		}
+		targetAsset.setName(asset.getName());
+		targetAsset.setAmount(asset.getAmount());
+		targetAsset.setEnable(asset.isEnable());
+		
+		assetService.save(targetAsset);
+		return MessageFormat.format("redirect:/user/{0}/asset", "test");
 	}
 }

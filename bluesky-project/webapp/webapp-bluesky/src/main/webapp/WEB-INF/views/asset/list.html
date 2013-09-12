@@ -6,101 +6,17 @@
 <div layout:fragment="content">
 
 	<!-- 동적으로 데이터를 변경할 수 있는 기능 제공 -->
-	<script type="text/javascript">
+	<script type="text/javascript" th:inline="text">
 		$(document).ready(function() {
-			//table tr 위로 마우스가 올라갔을때 수행 
-			$("table tr").on("mouseenter", function(event) {
-				asset.setAssetDataFromUi($(this));
-				//수정 and 삭제 아이콘 활성화
-				console.log("" + $(this).html());
-				showMenu($(this));
-				event.preventDefault();
-			});
-			$("table tr").on("mouseleave", function(event) {
-				hideMenu($(this));
-				event.preventDefault();
-			});
-			
-			var asset = {
-				config : {
-					dataAttribute : "data-asset",
-					uiPosition : {
-						id : "td:eq(0)",
-						name : "td:eq(1)",
-						username : "td:eq(2)",
-						amount : "td:eq(3)",
-						enable : "td:eq(4)",
-						assetGroup : {
-							name : "td:eq(5)"
-						}
-					}
-				},
-				setAssetDataFromUi : function(target) {
-					if (target.attr(this.config.dataAttribute) == null) {
-						console.log("data-asset set and get");
-						//해당 tr의 데이터 추출
-						var asset = {
-								id : target.find(this.config.uiPosition.id).text(),
-								name : target.find(this.config.uiPosition.name).text(),
-								username : target.find(this.config.uiPosition.username).text(),
-								amount : target.find(this.config.uiPosition.amount).text(),
-								enable : target.find(this.config.uiPosition.enable).text(),
-								assetGroup : {
-									name : target.find(this.config.uiPosition.assetGroup.name).text()
-								}
-						}
-						//해당 데이터를 보관
-						target.attr(this.config.dataAttribute, asset);
-						return asset;
-					} else {
-						console.log("data-asset get");
-						return target.attr(this.config.dataAttribute);	
-					}
-				}
-			}
-			
-			/*
-			function getAsset(target) {
-				if (target.attr("data-asset") == null) {
-					console.log("data-asset set and get");
-					//해당 tr의 데이터 추출
-					var asset = {
-							id : target.find("td:eq(0)").text(),
-							name : target.find("td:eq(1)").text(),
-							username : target.find("td:eq(2)").text(),
-							amount : target.find("td:eq(3)").text(),
-							enable : target.find("td:eq(4)").text(),
-							assetGroup : {
-								name : target.find("td:eq(5)").text()
-							}
-					}
-					//해당 데이터를 보관
-					target.attr("data-asset", asset);
-					return asset;
-				} else {
-					console.log("data-asset get");
-					return target.attr("data-asset");	
-				}
-			}
-			*/
-			function showMenu(target) {
-				console.log("showMenu");
-				target.find("td:eq(6)").empty().append(
-					$("<span />").addClass("glyphicon glyphicon-edit").attr("title", "edit").tooltip()
-				).append(" ").append(
-					$("<span />").addClass("glyphicon glyphicon-remove").attr("title", "remove").tooltip()
-				);
-			}
-			function hideMenu(target) {
-				console.log("hideMenu");
-				target.find("td:eq(6)").empty();	
-			}
+			asset.contextPath = "[[@{/}]]";
+			asset.start();
 		});
 	</script>
 
 	<div class="page-header">
 		<h1>Asset <small th:text="#{asset.menu.list}">list</small></h1>
 	</div>
+	
 	<table class="table table-hover">
 		<thead>
 			<tr>
@@ -110,26 +26,28 @@
 				<th th:text="#{asset.text.amount}">amount</th>
 				<th th:text="#{asset.text.enable}">enable</th>
 				<th th:text="#{asset.text.assetGroup.name}">assetGroup.name</th>
+				<th width="70px;"></th>
 				<th></th>
 			</tr>
 		</thead>
 		<tbody>
 			<tr th:if="${!#lists.isEmpty(assetList)}" th:each="asset : ${assetList}">
 				<td th:text="${asset.id}">id</td>
-				<td th:text="${asset.name}">name</td>
+				<td th:text="${asset.name}" contenteditable="true">name</td>
 				<td th:text="${asset.username}">username</td>
-				<td th:text="${asset.amount}">amount</td>
-				<td th:text="${asset.enable}">enable</td>
+				<td th:text="${asset.amount}" contenteditable="true">amount</td>
+				<td th:text="${asset.enable}" contenteditable="true">enable</td>
 				<td th:if="${asset.assetGroup != null}" th:text="${asset.assetGroup.name}">assetGroup.name</td>
-				<td><span class="glyphicon glyphicon-remove"></span> gg <span class="glyphicon glyphicon-edit"></span></td>
+				<td></td>
+				<td></td>
 			</tr>
 			<tr th:if="${#lists.isEmpty(assetList)}" class="text-center">
-				<td colspan="7" th:text="#{asset.message.empty.content}">asset.message.empty.content</td>
+				<td colspan="8" th:text="#{asset.message.empty.content}">asset.message.empty.content</td>
 			</tr>
 		</tbody>
 		<tfoot>
 			<tr>
-				<td colspan="7" class="text-center">
+				<td colspan="8" class="text-center">
 					<a th:href="@{'/asset/write'}" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{asset.menu.add}">add</a>
 				</td>
 			</tr>

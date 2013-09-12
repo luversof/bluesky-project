@@ -5,7 +5,7 @@ import net.luversof.security.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.core.userdetails.BlueskyUserDetailsService;
+import org.springframework.security.core.userdetails.LuversofUserDetailsService;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +23,6 @@ public class SecurityConfig {
 	
 	@Bean
 	public UserDetailsService userDetailsService() {
-		return new BlueskyUserDetailsService(userService);
+		return new LuversofUserDetailsService(userService);
 	}
 }
