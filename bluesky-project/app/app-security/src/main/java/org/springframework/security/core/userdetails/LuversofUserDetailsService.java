@@ -29,7 +29,7 @@ public class LuversofUserDetailsService implements UserDetailsService {
 		for (UserAuthority userAuthority : userAuthorityList) {
 			authoritySet.add(new SimpleGrantedAuthority(userAuthority.getAuthority()));
 		}
-		return new org.springframework.security.core.userdetails.User(username, user.getPassword(), user.isEnable(), true, true, true, authoritySet);
+		return new LuversofUser(user.getId(), user.getUsername(), user.getPassword(), authoritySet, true, true, true, user.isEnable());
 	}
 
 }

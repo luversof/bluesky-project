@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @Slf4j
 @Controller
-@RequestMapping("/user/{id}/asset")
+@RequestMapping("/user/{userId}/asset")
 public class AssetController {
 	
 	@Autowired

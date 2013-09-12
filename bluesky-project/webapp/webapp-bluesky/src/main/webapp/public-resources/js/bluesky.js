@@ -1,3 +1,10 @@
+String.prototype.format = function() {
+    var args = arguments;
+    return this.replace(/\{(\d+)\}/g, function() {
+        return args[arguments[1]];
+    });
+};
+
 /**
  * 상단 메뉴 표시
  * contextPath에 대한 메뉴 url 변경 적용
@@ -81,8 +88,9 @@ var blog = {
  * 기능이 추가되면 재정의 필요
  */
 var asset = {
-	contextPath : "/",
 	config : {
+		contextPath : "/",
+		userId : null,
 		dataKey : "data-asset",
 		uiPosition : {
 			target : "table tr",
@@ -98,6 +106,9 @@ var asset = {
 				editMenu : "td:eq(6)",
 				cancelMenu : "td:eq(7)",
 			}
+		},
+		url : {
+			modify : "{0}user/{1}/asset/{2}"
 		}
 	},
 	/**
@@ -106,6 +117,21 @@ var asset = {
 	currentTarget : null,
 	
 	/* (s) util */
+	setContextPath : function(contextPath) {
+		this.config.contextPath = contextPath;
+	},
+	setUserId : function(userId) {
+		this.config.userId = userId;
+	},
+	/**
+	 * modify url을 구함.
+	 * argument 0 : contextPath
+	 * argument 1 : userId
+	 * argument 2 : assetId - from assetData 
+	 */
+	getUrlModify : function() {
+		return this.config.url.modify.format(this.config.contextPath, this.config.userId, this.getAssetData().id);	
+	},
 	/**
 	 * ui에서 획득한 asset data를 저장
 	 */
@@ -133,7 +159,7 @@ var asset = {
 		return this.currentTarget.data(this.config.dataKey);
 	},
 	/**
-	 * ui에서 asset data를 획
+	 * ui에서 asset data를 획득
 	 * @returns asset json
 	 */
 	getAssetDataFromUi : function() {
@@ -151,8 +177,18 @@ var asset = {
 	/* (e) util */
 	/* (s) action */
 	modify : function(asset) {
+		
+		console.log("modify : ", this.getUrlModify());
+		asset._method = "put";
+		console.log("test : ", this.getAssetData().assetGroup.name);
+		this.getAssetData().assetGroup = null;
 		$.ajax({
-			url : this.contextPath + ""
+			url : this.getUrlModify(),
+			type : "post",
+			data : asset,
+			success : function() {
+				
+			}
 		});
 	},
 	/* (e) action */
@@ -176,6 +212,7 @@ var asset = {
 					return;
 				}
 				console.log("change");
+				assetObj.modify(changedAsset);
 			})
 		).append(" ").append(
 			$("<span>").addClass("glyphicon glyphicon-remove").attr("title", "remove").css("cursor", "pointer").tooltip()
