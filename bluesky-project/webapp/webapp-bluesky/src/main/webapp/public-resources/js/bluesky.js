@@ -43,9 +43,9 @@ $(function() {
 	
 	if (t >= _detachPoint || 0 >= t || t > -1) {
 		if ("down" === e && i >= _hideShowOffset) {
-			$nav.slideUp();
+			$nav.fadeOut();
 		} else if("up" === e && i >= _hideShowOffset) {
-			$nav.slideDown();
+			$nav.fadeIn();
 		}
 	}
 	
