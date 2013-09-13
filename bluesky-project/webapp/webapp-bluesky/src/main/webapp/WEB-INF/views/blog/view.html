@@ -2,16 +2,16 @@
 <html xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="/layout/defaultLayout">
+<head>
+	<script layout:fragment="serviceScript" th:src="@{/js/bluesky_blog.js}"></script>
+	<link layout:fragment="serviceCss" th:href="@{/resources/wysihtml5/css/stylesheet.css}" rel="stylesheet" />
+</head>
 <body>
 	<div layout:fragment="content">
-		<link th:href="@{/resources/wysihtml5/css/stylesheet.css}" rel="stylesheet" />
 		<script type="text/javascript" th:src="@{/js/gist-embed.min.js}" defer="defer"></script>
 		<script type="text/javascript" th:inline="text">
 			$(document).ready(function() {
 				var blogId = "[[${blog.id}]]";
-				//var blogContent = "[[${#strings.escapeJavaScript(blog.content)}]]";
-				//console.log("2" + blogContent);
-				//$("p:contains('content')").html(blogContent);
 				$("article .btn.delete").on("click", function() {
 					console.log("button.btn.delete click");
 					blog.remove(blogId);

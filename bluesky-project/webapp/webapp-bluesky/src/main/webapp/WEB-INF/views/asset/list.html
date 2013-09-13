@@ -3,14 +3,16 @@
 	xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="/layout/defaultLayout">
+<head>
+	<script layout:fragment="serviceScript" th:src="@{/js/bluesky_asset.js}"></script>
+</head>
+<body>
 <div layout:fragment="content">
 
 	<!-- 동적으로 데이터를 변경할 수 있는 기능 제공 -->
 	<script type="text/javascript" th:inline="text">
 		$(document).ready(function() {
-			asset.setContextPath("[[@{/}]]");
-			asset.setUserId([[${#authentication.principal.id}]]);
-			asset.start();
+			asset.start("[[@{/}]]", [[${#authentication.principal.id}]]);
 		});
 	</script>
 	<div class="page-header">
@@ -52,4 +54,5 @@
 		</tfoot>
 	</table>
 </div>
+</body>
 </html>

@@ -17,7 +17,10 @@ public class GlobalControllerExceptionHandler {
 	public ModelAndView handleException(Exception exception) {
 		Map<String, Object> map = new HashMap<>();
 		map.put("exception", exception);
-		log.debug("@ExceptionHandler called");
+		// MappingJacksonJsonView의 경우  (entry.getValue() instanceof BindingResult) 조건 체크를 하여 exception은 리턴하지 않으므로 별도의 결과값을 주어야 함
+		// Exception Message 규칙을 정할 필요가 있음
+		map.put("message", exception.getLocalizedMessage());
+		log.debug("GlobalControllerExceptionHandler called {}", exception);
 		return new ModelAndView("/error", map);
 	}
 }

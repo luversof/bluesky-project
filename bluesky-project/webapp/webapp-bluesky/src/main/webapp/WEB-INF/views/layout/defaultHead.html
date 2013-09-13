@@ -11,6 +11,7 @@
 <!-- Bootstrap core CSS -->
 <link th:href="@{/resources/bootstrap/css/bootstrap.css}" rel="stylesheet" />
 <link th:href="@{/resources/css/bluesky.css}" rel="stylesheet" />
+<link layout:fragment="serviceCss" />
 
 <!-- Custom styles for this template -->
 <style type="text/css">
@@ -24,7 +25,13 @@ body {
 <script type="text/javascript" th:src="@{/js/bluesky.js}"></script>
 <script type="text/javascript" th:src="@{/resources/bootstrap/js/bootstrap.js}"></script>
 <!-- <script type="text/javascript" src="../../public-resources/js/doT.min.js" th:src="@{/js/doT.min.js}"></script> -->
-
+<script layout:fragment="serviceScript"></script>
+<script type="text/javascript" th:inline="text">
+	$(document).ready(function() {
+		navbar.contextPath = "[[@{/}]]";
+		navbar.display();
+	});
+</script>
 </head>
 <body>
 </body>

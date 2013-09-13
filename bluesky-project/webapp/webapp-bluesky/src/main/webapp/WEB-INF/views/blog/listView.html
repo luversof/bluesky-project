@@ -3,6 +3,10 @@
 	xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="/layout/defaultLayout">
+<head>
+	<script layout:fragment="serviceScript" th:src="@{/js/bluesky_blog.js}"></script>
+	<link layout:fragment="serviceCss" th:href="@{/resources/wysihtml5/css/stylesheet.css}" rel="stylesheet" />
+</head>
 <div layout:fragment="content">
 	<link th:href="@{/resources/wysihtml5/css/stylesheet.css}" rel="stylesheet" />
 	<script type="text/javascript">

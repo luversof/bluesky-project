@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -47,5 +48,17 @@ public class AssetController {
 		
 		assetService.save(targetAsset);
 		return MessageFormat.format("redirect:/user/{0}/asset", "test");
+	}
+	
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@RequestMapping(value = "/{assetId}", method = RequestMethod.DELETE)
+	public String delete(@PathVariable long assetId, Authentication authentication, ModelMap modelMap) {
+		Asset targetAsset = assetService.findOne(assetId);
+		if (!authentication.getName().equals(targetAsset.getUsername())) {
+			throw new BlueskyException("username is not owner");
+		}
+		log.debug("id : {}", assetId);
+		assetService.delete(assetId);
+		return "redirect:/blog";
 	}
 }
