@@ -30,6 +30,7 @@ var asset = {
 			}
 		},
 		url : {
+			add : "{0}user/{1}/asset.json",
 			modify : "{0}user/{1}/asset/{2}.json",
 			remove : "{0}user/{1}/asset/{2}.json"
 		}
@@ -38,20 +39,26 @@ var asset = {
 	 * event 대상 target
 	 */
 	currentTarget : null,
-	
-	/* (s) util */
 	setContextPath : function(contextPath) {
 		this.config.contextPath = contextPath;
 	},
 	setUserId : function(userId) {
 		this.config.userId = userId;
 	},
-	/**
-	 * modify url을 구함.
-	 * argument 0 : contextPath
-	 * argument 1 : userId
-	 * argument 2 : assetId - from assetData 
-	 */
+	
+	/* (s) util */
+	showMessageModal : function(message) {
+		$("<div>").addClass("modal fade").html(
+			$("<div>").addClass("modal-dialog").html(
+				$("<div>").addClass("modal-content").html(
+					$("<div>").addClass("modal-body").text(message)
+				)
+			)
+		).modal();
+	},
+	getUrlAdd : function() {
+		return this.config.url.add.format(this.config.contextPath, this.config.userId);
+	},
 	getUrlModify : function() {
 		return this.config.url.modify.format(this.config.contextPath, this.config.userId, this.getAssetData().id);	
 	},
@@ -62,13 +69,7 @@ var asset = {
 	 * ui에서 획득한 asset data를 저장
 	 */
 	setAssetDataFromUi : function() {
-		if (this.currentTarget.data(this.config.dataKey) != null) {
-			return;
-		}
-		console.log("data-asset set and get");
-		//해당 tr의 데이터 추출
 		var asset = this.getAssetDataFromUi();
-		//해당 데이터를 보관
 		this.currentTarget.data(this.config.dataKey, asset);
 	},
 	setUiFromAssetData : function() {
@@ -104,8 +105,8 @@ var asset = {
 	 * modify는 ui에서 가져온 변경된 정보만 수정 요청함
 	 */
 	modify : function() {
-		var asset = assetObj.getAssetData();
-		var changedAsset = assetObj.getAssetDataFromUi();
+		var asset = this.getAssetData();
+		var changedAsset = this.getAssetDataFromUi();
 		var isChange = false;
 		for (var key in asset) {
 			if (typeof asset[key] != "object" && asset[key] != changedAsset[key]) {
@@ -117,23 +118,27 @@ var asset = {
 			return;
 		}
 		changedAsset._method = "put";
+		
+		var assetObj = this;
 		$.ajax({
 			url : this.getUrlModify(),
 			type : "post",
 			data : changedAsset,
 			success : function() {
-				
+				assetObj.showMessageModal("asset changed");
+				assetObj.setAssetDataFromUi();
 			}
 		});
 	},
 	remove : function() {
-		var target = this.currentTarget;
+		var assetObj = this;
 		$.ajax({
 			url : this.getUrlRemove(),
 			type : "post",
 			data : {_method : "delete"},
 			success : function() {
-				target.remove();
+				assetObj.showMessageModal("asset changed");
+				assetObj.currentTarget.remove();
 			}
 		});
 	},
@@ -153,17 +158,11 @@ var asset = {
 		).append(" ").append(
 			$("<span>").addClass("glyphicon glyphicon-refresh").attr("title", "reset").css("cursor", "pointer").tooltip().on("click", function(event) {
 				assetObj.setUiFromAssetData();
-			})
+			}).hide()
 		);
 	},
 	hideEditMenu : function() {
 		this.currentTarget.find(this.config.uiPosition.menu.editMenu).empty();	
-	},
-	changeNormalText : function() {
-		
-	},
-	showCancelMenu : function() {
-		
 	},
 	/* (e) ui method */
 	/* (s) event method */
@@ -171,10 +170,27 @@ var asset = {
 		assetObj = this;
 		$(this.config.uiPosition.target).on("mouseenter", function(event) {
 			assetObj.currentTarget = $(this);
-			assetObj.setAssetDataFromUi();
+			if (assetObj.currentTarget.data(assetObj.config.dataKey) == null) {
+				console.log("data-asset set and get");
+				assetObj.setAssetDataFromUi();
+				assetObj.eventChange();
+			}
 			//수정 and 삭제 아이콘 활성화
 			assetObj.showEditMenu();
 			event.preventDefault();
+		});
+	},
+	eventChange : function() {
+		assetObj = this;
+		this.currentTarget.find(
+			this.config.uiPosition.id + "," +
+			this.config.uiPosition.name + "," +
+			this.config.uiPosition.username + "," +
+			this.config.uiPosition.amount + "," +
+			this.config.uiPosition.enable + "," +
+			this.config.uiPosition.assetGroup.name
+		).on("focusout", function(event) {
+			assetObj.currentTarget.find(assetObj.config.uiPosition.menu.editMenu).find(".glyphicon-refresh").fadeIn();
 		});
 	},
 	eventLeave : function() {

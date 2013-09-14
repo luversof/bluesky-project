@@ -26,17 +26,30 @@ public class AssetController {
 	@Autowired
 	private AssetService assetService;
 
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
 	@RequestMapping(value = { "" })
-	public String list(@RequestParam(defaultValue = "1") int page, Authentication authentication, ModelMap modelMap) {
+	public String list(@PathVariable long userId, @RequestParam(defaultValue = "1") int page, Authentication authentication, ModelMap modelMap) {
 		log.debug("modelMap : {}", modelMap);
 		modelMap.addAttribute(assetService.findByUsername(authentication.getName()));
 		return "/asset/list";
 	}
 	
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
+	@RequestMapping(method = RequestMethod.POST)
+	public String save(@PathVariable long userId, Asset asset, Authentication authentication) {
+		asset.setUsername(authentication.getName());
+		log.debug("save asset : {}", asset);
+		if (asset.getAssetGroup() != null && asset.getAssetGroup().getId() != 0) {
+//			asset.setAssetGroup(assetGroupService.findOne(asset.getAssetGroup().getId()));
+		}
+		assetService.save(asset);
+		return MessageFormat.format("redirect:/user/{0}/asset", userId);
+	}
+
+	
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
 	@RequestMapping(value = "/{assetId}", method = RequestMethod.PUT)
-	public String modify(Asset asset, Authentication authentication) {
+	public String modify(@PathVariable long userId, Asset asset, Authentication authentication) {
 		Asset targetAsset = assetService.findOne(asset.getId());
 		
 		if (!authentication.getName().equals(targetAsset.getUsername())) {
@@ -47,12 +60,12 @@ public class AssetController {
 		targetAsset.setEnable(asset.isEnable());
 		
 		assetService.save(targetAsset);
-		return MessageFormat.format("redirect:/user/{0}/asset", "test");
+		return MessageFormat.format("redirect:/user/{0}/asset", userId);
 	}
 	
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
 	@RequestMapping(value = "/{assetId}", method = RequestMethod.DELETE)
-	public String delete(@PathVariable long assetId, Authentication authentication, ModelMap modelMap) {
+	public String delete(@PathVariable long userId, @PathVariable long assetId, Authentication authentication, ModelMap modelMap) {
 		Asset targetAsset = assetService.findOne(assetId);
 		if (!authentication.getName().equals(targetAsset.getUsername())) {
 			throw new BlueskyException("username is not owner");
