@@ -4,6 +4,7 @@ import java.text.MessageFormat;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.asset.domain.Asset;
+import net.luversof.asset.service.AssetGroupService;
 import net.luversof.asset.service.AssetService;
 import net.luversof.core.exception.BlueskyException;
 import net.luversof.web.AuthorizeRole;
@@ -25,12 +26,16 @@ public class AssetController {
 	
 	@Autowired
 	private AssetService assetService;
+	
+	@Autowired
+	private AssetGroupService assetGroupService;
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
 	@RequestMapping(value = { "" })
 	public String list(@PathVariable long userId, @RequestParam(defaultValue = "1") int page, Authentication authentication, ModelMap modelMap) {
 		log.debug("modelMap : {}", modelMap);
 		modelMap.addAttribute(assetService.findByUsername(authentication.getName()));
+		modelMap.addAttribute(assetGroupService.findByUsername(authentication.getName()));
 		return "/asset/list";
 	}
 	

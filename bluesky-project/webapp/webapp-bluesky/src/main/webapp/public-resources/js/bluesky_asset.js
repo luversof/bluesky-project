@@ -25,8 +25,8 @@ var asset = {
 				name : "td:eq(5)"
 			},
 			menu : {
-				editMenu : "td:eq(6)",
-				cancelMenu : "td:eq(7)",
+				edit : "td:eq(6)",
+				add : ".asset-menu-add"
 			}
 		},
 		url : {
@@ -101,6 +101,9 @@ var asset = {
 	},
 	/* (e) util */
 	/* (s) action */
+	add : function() {
+		
+	},
 	/**
 	 * modify는 ui에서 가져온 변경된 정보만 수정 요청함
 	 */
@@ -144,10 +147,10 @@ var asset = {
 	},
 	/* (e) action */
 	/* (s) ui method */
-	showEditMenu : function() {
+	showMenuEdit : function() {
 		var assetObj = this;
 		
-		this.currentTarget.find(this.config.uiPosition.menu.editMenu).empty().append(
+		this.currentTarget.find(this.config.uiPosition.menu.edit).empty().append(
 			$("<span>").addClass("glyphicon glyphicon-edit").attr("title", "edit").css("cursor", "pointer").tooltip().on("click", function(event) {
 				assetObj.modify();
 			})
@@ -161,8 +164,8 @@ var asset = {
 			}).hide()
 		);
 	},
-	hideEditMenu : function() {
-		this.currentTarget.find(this.config.uiPosition.menu.editMenu).empty();	
+	hideMenuEdit : function() {
+		this.currentTarget.find(this.config.uiPosition.menu.edit).empty();	
 	},
 	/* (e) ui method */
 	/* (s) event method */
@@ -176,7 +179,7 @@ var asset = {
 				assetObj.eventChange();
 			}
 			//수정 and 삭제 아이콘 활성화
-			assetObj.showEditMenu();
+			assetObj.showMenuEdit();
 			event.preventDefault();
 		});
 	},
@@ -190,20 +193,32 @@ var asset = {
 			this.config.uiPosition.enable + "," +
 			this.config.uiPosition.assetGroup.name
 		).on("focusout", function(event) {
-			assetObj.currentTarget.find(assetObj.config.uiPosition.menu.editMenu).find(".glyphicon-refresh").fadeIn();
+			assetObj.currentTarget.find(assetObj.config.uiPosition.menu.edit).find(".glyphicon-refresh").fadeIn();
 		});
 	},
 	eventLeave : function() {
 		$(this.config.uiPosition.target).on("mouseleave", function(event) {
-			assetObj.hideEditMenu();
+			assetObj.hideMenuEdit();
 			event.preventDefault();
 		});
 	},
+	eventMenuAdd : function() {
+		$(this.config.uiPosition.menu.add).on("click", function() {
+			console.log("eventMenuAdd");
+			$(".asset-add-modal").modal();
+		});
+	},
+	/* (s) event method */
+	/**
+	 * 사용할 페이지에서 호출하는 메소드 이 메소드 이외에는 closer로 숨겨도 될거 같긴하다.
+	 */
 	start : function(contextPath, userId) {
 		this.setContextPath(contextPath);
 		this.setUserId(userId);
 		this.eventEnter();
 		this.eventLeave();
+		this.eventMenuAdd();
+		$(this.config.uiPosition.menu.add).css("cursor", "pointer");
 	}
-	/* (s) event method */
+	
 };
