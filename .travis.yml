@@ -2,5 +2,5 @@
 language: java
 
 script: 
-  cd bluesky-project; \
+  cd bluesky-project;
   mvn install -Dspring.profiles.active=dev
