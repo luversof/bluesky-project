@@ -86,6 +86,22 @@ var asset = {
 		return this.currentTarget.data(this.config.dataKey);
 	},
 	/**
+	 * 추가 대상 asset data 획득
+	 */
+	getAssetDataAdd : function () {
+		console.log("name : %s", $("#name").val());
+		console.log("amount : %s", $("#amount").val());
+		console.log("assetGroup.name : %s", $("#assetGroup.name").val());
+		console.log("enable : %s", $("#enable").val());
+		var asset = {
+			name : $("#name").val(),
+			amount : $("#amount").val(),
+			"assetGroup.name" : $("#assetGroup.name").val(),
+			enable : $("#enable").val()
+		}
+		return asset;
+	},
+	/**
 	 * ui에서 asset data를 획득
 	 * @returns asset json
 	 */
@@ -102,7 +118,15 @@ var asset = {
 	/* (e) util */
 	/* (s) action */
 	add : function() {
-		
+		var asset = this.getAssetDataAdd();
+		$.ajax({
+			url : this.getUrlAdd(),
+			type : "post",
+			data : {},
+			success : function(event) {
+				
+			}
+		});
 	},
 	/**
 	 * modify는 ui에서 가져온 변경된 정보만 수정 요청함
