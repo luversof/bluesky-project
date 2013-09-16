@@ -1,5 +1,4 @@
 # .travis.yml
 language: java
 
-cd bluesky-project
-mvn test -Dspring.profiles.active=dev
+bluesky-project/mvn test -Dspring.profiles.active=dev
