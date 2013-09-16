@@ -3,4 +3,4 @@ language: java
 
 script: 
   cd bluesky-project;
-  mvn install -Dspring.profiles.active=dev
+  mvn install -DskipTests=true -Dspring.profiles.active=dev
