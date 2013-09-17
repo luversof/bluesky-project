@@ -81,10 +81,10 @@
 							</div>
 						</div>
 						<div class="form-group">
-							<label for="assetGroup.name" class="col-lg-2 control-label" th:text="#{asset.text.assetGroup.name}">assetGroup.name</label>
+							<label for="assetGroup.id" class="col-lg-2 control-label" th:text="#{asset.text.assetGroup.name}">assetGroup.name</label>
 							<div class="col-lg-10">
-								<select class="form-control" id="assetGroup.name">
-									<option th:each="assetGroup : ${assetGroupList}" th:value="${assetGroup.name}" th:text="${assetGroup.name}">1</option>
+								<select class="form-control" id="assetGroup.id">
+									<option th:each="assetGroup : ${assetGroupList}" th:value="${assetGroup.id}" th:text="${assetGroup.name}">1</option>
 								</select>
 							</div>
 						</div>

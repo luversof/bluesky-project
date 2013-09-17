@@ -25,8 +25,8 @@ var asset = {
 				name : "td:eq(5)"
 			},
 			menu : {
-				edit : "td:eq(6)",
-				add : ".asset-menu-add"
+				edit : { area : "td:eq(6)" },
+				add : { area : ".asset-menu-add", evnetTarget : ".asset-add"}
 			}
 		},
 		url : {
@@ -89,16 +89,12 @@ var asset = {
 	 * 추가 대상 asset data 획득
 	 */
 	getAssetDataAdd : function () {
-		console.log("name : %s", $("#name").val());
-		console.log("amount : %s", $("#amount").val());
-		console.log("assetGroup.name : %s", $("#assetGroup.name").val());
-		console.log("enable : %s", $("#enable").val());
 		var asset = {
 			name : $("#name").val(),
 			amount : $("#amount").val(),
-			"assetGroup.name" : $("#assetGroup.name").val(),
+			"assetGroup.id" : $("[id='assetGroup.id']").val(),
 			enable : $("#enable").val()
-		}
+		};
 		return asset;
 	},
 	/**
@@ -122,9 +118,9 @@ var asset = {
 		$.ajax({
 			url : this.getUrlAdd(),
 			type : "post",
-			data : {},
+			data : asset,
 			success : function(event) {
-				
+				location.reload(true);
 			}
 		});
 	},
@@ -174,7 +170,7 @@ var asset = {
 	showMenuEdit : function() {
 		var assetObj = this;
 		
-		this.currentTarget.find(this.config.uiPosition.menu.edit).empty().append(
+		this.currentTarget.find(this.config.uiPosition.menu.edit.area).empty().append(
 			$("<span>").addClass("glyphicon glyphicon-edit").attr("title", "edit").css("cursor", "pointer").tooltip().on("click", function(event) {
 				assetObj.modify();
 			})
@@ -189,12 +185,12 @@ var asset = {
 		);
 	},
 	hideMenuEdit : function() {
-		this.currentTarget.find(this.config.uiPosition.menu.edit).empty();	
+		this.currentTarget.find(this.config.uiPosition.menu.edit.area).empty();	
 	},
 	/* (e) ui method */
 	/* (s) event method */
 	eventEnter : function() {
-		assetObj = this;
+		var assetObj = this;
 		$(this.config.uiPosition.target).on("mouseenter", function(event) {
 			assetObj.currentTarget = $(this);
 			if (assetObj.currentTarget.data(assetObj.config.dataKey) == null) {
@@ -208,7 +204,7 @@ var asset = {
 		});
 	},
 	eventChange : function() {
-		assetObj = this;
+		var assetObj = this;
 		this.currentTarget.find(
 			this.config.uiPosition.id + "," +
 			this.config.uiPosition.name + "," +
@@ -217,20 +213,26 @@ var asset = {
 			this.config.uiPosition.enable + "," +
 			this.config.uiPosition.assetGroup.name
 		).on("focusout", function(event) {
-			assetObj.currentTarget.find(assetObj.config.uiPosition.menu.edit).find(".glyphicon-refresh").fadeIn();
+			assetObj.currentTarget.find(assetObj.config.uiPosition.menu.edit.area).find(".glyphicon-refresh").fadeIn();
 		});
 	},
 	eventLeave : function() {
+		var assetObj = this;
 		$(this.config.uiPosition.target).on("mouseleave", function(event) {
 			assetObj.hideMenuEdit();
 			event.preventDefault();
 		});
 	},
 	eventMenuAdd : function() {
-		$(this.config.uiPosition.menu.add).on("click", function() {
+		var assetObj = this;
+		$(this.config.uiPosition.menu.add.area).on("click", function(event) {
 			console.log("eventMenuAdd");
 			$(".asset-add-modal").modal();
 		});
+		$(this.config.uiPosition.menu.add.evnetTarget).on("click", function(){
+			assetObj.add();
+		});
+		
 	},
 	/* (s) event method */
 	/**
@@ -242,7 +244,7 @@ var asset = {
 		this.eventEnter();
 		this.eventLeave();
 		this.eventMenuAdd();
-		$(this.config.uiPosition.menu.add).css("cursor", "pointer");
+		$(this.config.uiPosition.menu.add.area).css("cursor", "pointer");
 	}
 	
 };
