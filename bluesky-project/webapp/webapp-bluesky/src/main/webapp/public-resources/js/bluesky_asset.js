@@ -8,6 +8,7 @@ String.prototype.format = function() {
 /**
  * 현재 asset 관리 페이지의 편집기능을 위해 만들어짐
  * 기능이 추가되면 재정의 필요
+ * template 변환 관련 좋은 라이브러리가 있으면 좋은데..
  */
 var asset = {
 	config : {
@@ -15,7 +16,8 @@ var asset = {
 		userId : null,
 		dataKey : "data-asset",
 		uiPosition : {
-			target : "table tr",
+			target : "table tbody tr",
+			addPosition : "table tbody",
 			id : "td:eq(0)",
 			name : "td:eq(1)",
 			username : "td:eq(2)",
@@ -48,7 +50,7 @@ var asset = {
 	
 	/* (s) util */
 	showMessageModal : function(message) {
-		$("<div>").addClass("modal fade").html(
+		return $("<div>").addClass("modal fade").html(
 			$("<div>").addClass("modal-dialog").html(
 				$("<div>").addClass("modal-content").html(
 					$("<div>").addClass("modal-body").text(message)
@@ -70,6 +72,10 @@ var asset = {
 	 */
 	setAssetDataFromUi : function() {
 		var asset = this.getAssetDataFromUi();
+		//console.log("setAssetDataFromUi asset : " + asset.id);
+		this.setAssetData(asset);
+	},
+	setAssetData : function(asset) {
 		this.currentTarget.data(this.config.dataKey, asset);
 	},
 	setUiFromAssetData : function() {
@@ -107,20 +113,35 @@ var asset = {
 				name : this.currentTarget.find(this.config.uiPosition.name).text(),
 				username : this.currentTarget.find(this.config.uiPosition.username).text(),
 				amount : this.currentTarget.find(this.config.uiPosition.amount).text(),
-				enable : this.currentTarget.find(this.config.uiPosition.enable).text(),
+				enable : eval(this.currentTarget.find(this.config.uiPosition.enable).text()),
 				"assetGroup.name" : this.currentTarget.find(this.config.uiPosition.assetGroup.name).text()
 		};
+	},
+	addUi : function(asset) {
+		return 	$("<tr>")
+				.append($("<td>").text(asset.id))
+				.append($("<td>").text(asset.name))
+				.append($("<td>").text(asset.username))
+				.append($("<td>").text(asset.amount))
+				.append($("<td>").text(asset.enable))
+				.append($("<td>").text(asset.assetGroup.name))
+				.append($("<td>"))
+				.appendTo($(this.config.uiPosition.addPosition));
 	},
 	/* (e) util */
 	/* (s) action */
 	add : function() {
+		var assetObj = this;
 		var asset = this.getAssetDataAdd();
 		$.ajax({
 			url : this.getUrlAdd(),
 			type : "post",
 			data : asset,
-			success : function(event) {
-				location.reload(true);
+			success : function(data) {
+				var target = assetObj.addUi(data.asset);
+				$(".asset-add-modal").modal("hide");
+				$("html, body").animate({scrollTop : target.offset().top});
+				target.hide().fadeIn(1500);
 			}
 		});
 	},
@@ -137,7 +158,7 @@ var asset = {
 			}
 		}
 		if (!isChange) {
-			console.log("not change");
+			//console.log("not change");
 			return;
 		}
 		changedAsset._method = "put";
@@ -147,7 +168,7 @@ var asset = {
 			url : this.getUrlModify(),
 			type : "post",
 			data : changedAsset,
-			success : function() {
+			success : function(data) {
 				assetObj.showMessageModal("asset changed");
 				assetObj.setAssetDataFromUi();
 			}
@@ -155,13 +176,15 @@ var asset = {
 	},
 	remove : function() {
 		var assetObj = this;
+		var target = this.currentTarget;
 		$.ajax({
 			url : this.getUrlRemove(),
 			type : "post",
 			data : {_method : "delete"},
 			success : function() {
-				assetObj.showMessageModal("asset changed");
-				assetObj.currentTarget.remove();
+				assetObj.showMessageModal("asset changed").on("hidden.bs.modal", function() {
+					target.remove();
+				});
 			}
 		});
 	},
@@ -187,6 +210,23 @@ var asset = {
 	hideMenuEdit : function() {
 		this.currentTarget.find(this.config.uiPosition.menu.edit.area).empty();	
 	},
+	/**
+	 * ui와 저장된 data가 다른 경우 reset 메뉴를 보여줌
+	 */
+	showMenuReset : function() {
+		var assetData = this.getAssetData();
+		var assetDataFromUi = this.getAssetDataFromUi();
+		var checkData = true;
+		for (key in assetDataFromUi) {
+			if (assetData[key] != assetDataFromUi[key]) {
+				checkData = false;
+				console.log("showMenuReset because : old [" + key + "] : " + typeof assetData[key] + ", ui : "  + typeof assetDataFromUi[key] + ", boolean : " + (assetData[key] != assetDataFromUi[key]));
+			}
+		}
+		if (!checkData) {
+			this.currentTarget.find(this.config.uiPosition.menu.edit.area).find(".glyphicon-refresh").fadeIn();
+		}
+	},
 	/* (e) ui method */
 	/* (s) event method */
 	eventEnter : function() {
@@ -195,11 +235,13 @@ var asset = {
 			assetObj.currentTarget = $(this);
 			if (assetObj.currentTarget.data(assetObj.config.dataKey) == null) {
 				console.log("data-asset set and get");
+				var asset = assetObj.getAssetDataFromUi();
 				assetObj.setAssetDataFromUi();
 				assetObj.eventChange();
 			}
 			//수정 and 삭제 아이콘 활성화
 			assetObj.showMenuEdit();
+			assetObj.showMenuReset();
 			event.preventDefault();
 		});
 	},
@@ -213,7 +255,7 @@ var asset = {
 			this.config.uiPosition.enable + "," +
 			this.config.uiPosition.assetGroup.name
 		).on("focusout", function(event) {
-			assetObj.currentTarget.find(assetObj.config.uiPosition.menu.edit.area).find(".glyphicon-refresh").fadeIn();
+			assetObj.showMenuReset();
 		});
 	},
 	eventLeave : function() {
