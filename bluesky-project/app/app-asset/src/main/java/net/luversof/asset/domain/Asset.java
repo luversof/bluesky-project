@@ -7,6 +7,11 @@ import javax.persistence.OneToOne;
 
 import lombok.Data;
 
+/**
+ * 자산 정보
+ * @author bluesky
+ *
+ */
 @Entity
 @Data
 public class Asset {

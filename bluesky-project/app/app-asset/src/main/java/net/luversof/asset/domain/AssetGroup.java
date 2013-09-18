@@ -6,6 +6,11 @@ import javax.persistence.Id;
 
 import lombok.Data;
 
+/**
+ * 유저별 자산그룹
+ * @author bluesky
+ *
+ */
 @Entity
 @Data
 public class AssetGroup {

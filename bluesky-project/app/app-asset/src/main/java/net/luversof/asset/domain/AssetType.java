@@ -2,6 +2,11 @@ package net.luversof.asset.domain;
 
 import lombok.Getter;
 
+/**
+ * 자산 유형
+ * @author bluesky
+ *
+ */
 public enum AssetType {
 	WALLET(1),
 	BANK(2),
