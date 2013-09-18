@@ -1,4 +1,4 @@
-package net.luversof.asset;
+package net.luversof.bookkeeping;
 
 import java.util.List;
 
@@ -7,10 +7,10 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.asset.domain.Asset;
-import net.luversof.asset.domain.AssetGroup;
-import net.luversof.asset.service.AssetGroupService;
-import net.luversof.asset.service.AssetService;
+import net.luversof.bookkeeping.domain.Asset;
+import net.luversof.bookkeeping.domain.AssetGroup;
+import net.luversof.bookkeeping.service.AssetGroupService;
+import net.luversof.bookkeeping.service.AssetService;
 import net.luversof.core.config.GeneralTest;
 
 @Slf4j

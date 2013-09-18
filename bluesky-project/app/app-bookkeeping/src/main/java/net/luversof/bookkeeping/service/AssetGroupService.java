@@ -1,9 +1,9 @@
-package net.luversof.asset.service;
+package net.luversof.bookkeeping.service;
 
 import java.util.List;
 
-import net.luversof.asset.domain.AssetGroup;
-import net.luversof.asset.repository.AssetGroupRepository;
+import net.luversof.bookkeeping.domain.AssetGroup;
+import net.luversof.bookkeeping.repository.AssetGroupRepository;
 import net.luversof.core.datasource.DataSource;
 import net.luversof.core.datasource.DataSourceType;
 

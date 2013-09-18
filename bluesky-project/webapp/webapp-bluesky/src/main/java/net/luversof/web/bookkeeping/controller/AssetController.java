@@ -1,9 +1,9 @@
-package net.luversof.web.asset.controller;
+package net.luversof.web.bookkeeping.controller;
 
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.asset.domain.Asset;
-import net.luversof.asset.service.AssetGroupService;
-import net.luversof.asset.service.AssetService;
+import net.luversof.bookkeeping.domain.Asset;
+import net.luversof.bookkeeping.service.AssetGroupService;
+import net.luversof.bookkeeping.service.AssetService;
 import net.luversof.core.exception.BlueskyException;
 import net.luversof.web.AuthorizeRole;
 
@@ -34,7 +34,7 @@ public class AssetController {
 		log.debug("modelMap : {}", modelMap);
 		modelMap.addAttribute(assetService.findByUsername(authentication.getName()));
 		modelMap.addAttribute(assetGroupService.findByUsername(authentication.getName()));
-		return "/asset/list";
+		return "/bookkeeping/asset/list";
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
@@ -66,13 +66,12 @@ public class AssetController {
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
 	@RequestMapping(value = "/{assetId}", method = RequestMethod.DELETE)
-	public String delete(@PathVariable long userId, @PathVariable long assetId, Authentication authentication, ModelMap modelMap) {
+	public void delete(@PathVariable long userId, @PathVariable long assetId, Authentication authentication, ModelMap modelMap) {
 		Asset targetAsset = assetService.findOne(assetId);
 		if (!authentication.getName().equals(targetAsset.getUsername())) {
 			throw new BlueskyException("username is not owner");
 		}
 		log.debug("id : {}", assetId);
 		assetService.delete(assetId);
-		return "redirect:/blog";
 	}
 }

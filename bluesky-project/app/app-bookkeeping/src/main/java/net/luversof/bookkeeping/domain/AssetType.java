@@ -1,4 +1,4 @@
-package net.luversof.asset.domain;
+package net.luversof.bookkeeping.domain;
 
 import lombok.Getter;
 

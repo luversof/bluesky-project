@@ -13,6 +13,5 @@ public class SecurityTest {
 	public void test() {
 		PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 		log.debug("passwordEncoder : {}", passwordEncoder.encode("----"));
-
 	}
 }
