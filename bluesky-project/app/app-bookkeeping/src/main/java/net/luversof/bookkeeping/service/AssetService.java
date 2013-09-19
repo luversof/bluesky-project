@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
-@DataSource(DataSourceType.ASSET)
+@DataSource(DataSourceType.BOOKKEEPING)
 public class AssetService {
 
 	@Autowired

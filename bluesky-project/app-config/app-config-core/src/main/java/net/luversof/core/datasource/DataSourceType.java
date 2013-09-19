@@ -1,5 +1,5 @@
 package net.luversof.core.datasource;
 
 public enum DataSourceType {
-	DEFAULT, SECURITY, BLOG, ASSET
+	DEFAULT, SECURITY, BLOG, BOOKKEEPING
 }

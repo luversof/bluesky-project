@@ -5,8 +5,7 @@ package net.luversof.bookkeeping.domain;
  * @author bluesky
  *
  */
-public enum RecordType {
-	INCOME,
-	EXPENSE,
-	TRANSFER
+public enum EntryType {
+	DEBIT,	//인출
+	CREDIT	//입금
 }

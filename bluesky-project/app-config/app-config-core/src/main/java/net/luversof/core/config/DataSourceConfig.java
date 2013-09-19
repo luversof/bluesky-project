@@ -65,8 +65,8 @@ public class DataSourceConfig {
 		return getDefaultDataSource(url, username, password);
 	}
 
-	@Bean(name = "assetDataSource", destroyMethod = "close")
-	public DataSource assetDataSource(@Value("${dataSource.asset.url}") String url, @Value("${dataSource.asset.username}") String username, @Value("${dataSource.asset.password}") String password) {
+	@Bean(name = "bookkeepingDataSource", destroyMethod = "close")
+	public DataSource bookkeepingDataSource(@Value("${dataSource.bookkeeping.url}") String url, @Value("${dataSource.bookkeeping.username}") String username, @Value("${dataSource.bookkeeping.password}") String password) {
 		return getDefaultDataSource(url, username, password);
 	}
 }

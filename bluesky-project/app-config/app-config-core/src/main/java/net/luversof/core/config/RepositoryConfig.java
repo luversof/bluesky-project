@@ -54,8 +54,8 @@ public class RepositoryConfig {
 	@Resource(name = "blogDataSource")
 	private DataSource blogDataSource;
 	
-	@Resource(name = "assetDataSource")
-	private DataSource assetDataSource;
+	@Resource(name = "bookkeepingDataSource")
+	private DataSource bookkeepingDataSource;
 	
 	@Bean
 	public RoutingDataSource dataSource() {
@@ -64,7 +64,7 @@ public class RepositoryConfig {
 		targetDataSources.put(DataSourceType.DEFAULT, defaultDataSource);
 		targetDataSources.put(DataSourceType.SECURITY, securityDataSource);
 		targetDataSources.put(DataSourceType.BLOG, blogDataSource);
-		targetDataSources.put(DataSourceType.ASSET, assetDataSource);
+		targetDataSources.put(DataSourceType.BOOKKEEPING, bookkeepingDataSource);
 		routingDataSource.setTargetDataSources(targetDataSources);
 		routingDataSource.setDefaultTargetDataSource(defaultDataSource);
 		return routingDataSource;
