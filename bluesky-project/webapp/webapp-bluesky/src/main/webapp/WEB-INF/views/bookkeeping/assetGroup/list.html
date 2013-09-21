@@ -1,0 +1,91 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-spring3-3.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+	layout:decorator="/layout/defaultLayout">
+<head>
+	<script layout:fragment="serviceScript" th:src="@{/js/bluesky_assetGroup.js}"></script>
+</head>
+<body>
+<div layout:fragment="content">
+
+	<!-- 동적으로 데이터를 변경할 수 있는 기능 제공 -->
+	<script type="text/javascript" th:inline="text">
+		$(document).ready(function() {
+			assetGroup.start("[[@{/}]]", [[${#authentication.principal.id}]]);
+			//이거 안해도 되게 안되나?
+			$("[data-toggle=tooltip]").tooltip();
+		});
+	</script>
+	<div class="page-header">
+		<h1>AssetGroup <small th:text="#{assetGroup.menu.list}">list</small></h1>
+	</div>
+
+	<table class="table table-hover">
+		<thead>
+			<tr>
+				<th class="col-lg-1" th:text="#{assetGroup.text.id}">id</th>
+				<th class="col-lg-1" th:text="#{assetGroup.text.name}">name</th>
+				<th class="col-lg-1" th:text="#{assetGroup.text.username}">username</th>
+				<th class="col-lg-1" th:text="#{assetGroup.text.assetType.name}">assetType.name</th>
+				<th class="col-lg-1 assetGroup-menu-add"><span class="glyphicon glyphicon-plus"></span> <span th:text="#{assetGroup.menu.add}">add</span></th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr th:if="${!#lists.isEmpty(assetGroupList)}" th:each="assetGroup : ${assetGroupList}">
+				<td th:text="${assetGroup.id}">id</td>
+				<td th:text="${assetGroup.name}" contenteditable="true">name</td>
+				<td th:text="${assetGroup.username}">username</td>
+				<td th:text="${assetGroup.assetType}">assetType.name</td>
+				<td></td>
+			</tr>
+			<tr th:if="${#lists.isEmpty(assetGroupList)}" class="text-center">
+				<td colspan="5" th:text="#{assetGroup.message.empty.content}">assetGroup.message.empty.content</td>
+			</tr>
+		</tbody>
+		<tfoot>
+			<tr>
+				<td colspan="5" class="text-center">
+					<button sec:authorize="isAuthenticated()" class="btn btn-primary assetGroup-menu-add" th:text="#{assetGroup.menu.add}">add</button>
+				</td>
+			</tr>
+		</tfoot>
+	</table>
+	
+	<!-- (s) assetGroup add modal -->
+	<div class="modal fade assetGroup-add-modal">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" >&times;</button>
+					<h4 class="modal-title">AssetGroup <small th:text="#{assetGroup.menu.add}">add</small></h4>
+				</div>
+				<div class="modal-body">
+					<form class="form-horizontal" role="form">
+						<div class="form-group">
+							<label for="name" class="col-lg-2 control-label" th:text="#{assetGroup.text.name}">name</label>
+							<div class="col-lg-10">
+								<input type="text" class="form-control" id="name" th:placeholder="#{assetGroup.text.name}" />
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="assetType.id" class="col-lg-2 control-label" th:text="#{assetGroup.text.assetType.name}">assetType.name</label>
+							<div class="col-lg-10">
+								<select class="form-control" id="assetType.id">
+									<option th:each="assetType : ${T(net.luversof.bookkeeping.domain.AssetType).values()}" th:value="${assetType.name()}" th:text="${assetType.name()}">1</option>
+								</select>
+							</div>
+						</div>
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal" th:text="#{close}">close</button>
+					<button type="button" class="btn btn-primary assetGroup-add" th:text="#{assetGroup.menu.add}">add</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- (e) assetGroup add modal -->
+</div>
+</body>
+</html>

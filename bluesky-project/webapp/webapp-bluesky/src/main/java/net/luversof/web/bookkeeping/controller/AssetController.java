@@ -29,7 +29,7 @@ public class AssetController {
 	private AssetGroupService assetGroupService;
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
-	@RequestMapping(method = RequestMethod.GET, value = { "" })
+	@RequestMapping(method = RequestMethod.GET, value = "")
 	public String list(@PathVariable long userId, @RequestParam(defaultValue = "1") int page, Authentication authentication, ModelMap modelMap) {
 		log.debug("modelMap : {}", modelMap);
 		modelMap.addAttribute(assetService.findByUsername(authentication.getName()));
@@ -47,7 +47,6 @@ public class AssetController {
 		}
 		modelMap.addAttribute(assetService.save(asset));
 	}
-
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
 	@RequestMapping(value = "/{assetId}", method = RequestMethod.PUT)

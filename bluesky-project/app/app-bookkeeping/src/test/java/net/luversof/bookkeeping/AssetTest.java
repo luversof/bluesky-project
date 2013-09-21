@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.domain.AssetGroup;
+import net.luversof.bookkeeping.domain.AssetType;
 import net.luversof.bookkeeping.service.AssetGroupService;
 import net.luversof.bookkeeping.service.AssetService;
 import net.luversof.core.config.GeneralTest;
@@ -27,7 +28,7 @@ public class AssetTest extends GeneralTest {
 	public void assetGroup추가() {
 		
 		AssetGroup assetGroup = new AssetGroup();
-		assetGroup.setAssetType_id(1);
+		assetGroup.setAssetType(AssetType.CARD);
 		assetGroup.setName("test");
 		assetGroup.setUsername("bluesky");
 		AssetGroup resultAssetGroup = assetGroupService.save(assetGroup);

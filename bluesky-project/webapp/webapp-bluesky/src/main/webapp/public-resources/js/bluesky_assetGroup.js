@@ -6,35 +6,33 @@ String.prototype.format = function() {
 };
 
 /**
- * 현재 asset 관리 페이지의 편집기능을 위해 만들어짐
+ * 현재 assetGroup 관리 페이지의 편집기능을 위해 만들어짐
  * 기능이 추가되면 재정의 필요
  * template 변환 관련 좋은 라이브러리가 있으면 좋은데..
  */
-var asset = {
+var assetGroup = {
 	config : {
 		contextPath : "/",
 		userId : null,
-		dataKey : "data-asset",
+		dataKey : "data-assetGroup",
 		uiPosition : {
 			target : "table tbody tr",
 			addPosition : "table tbody",
 			id : "td:eq(0)",
 			name : "td:eq(1)",
 			username : "td:eq(2)",
-			amount : "td:eq(3)",
-			enable : "td:eq(4)",
-			assetGroup : {
-				name : "td:eq(5)"
+			assetType : {
+				name : "td:eq(3)"
 			},
 			menu : {
-				edit : { area : "td:eq(6)" },
-				add : { area : ".asset-menu-add", evnetTarget : ".asset-add"}
+				edit : { area : "td:eq(4)" },
+				add : { area : ".assetGroup-menu-add", evnetTarget : ".assetGroup-add"}
 			}
 		},
 		url : {
-			add : "{0}user/{1}/asset.json",
-			modify : "{0}user/{1}/asset/{2}.json",
-			remove : "{0}user/{1}/asset/{2}.json"
+			add : "{0}user/{1}/assetGroup.json",
+			modify : "{0}user/{1}/assetGroup/{2}.json",
+			remove : "{0}user/{1}/assetGroup/{2}.json"
 		}
 	},
 	/**
@@ -62,85 +60,79 @@ var asset = {
 		return this.config.url.add.format(this.config.contextPath, this.config.userId);
 	},
 	getUrlModify : function() {
-		return this.config.url.modify.format(this.config.contextPath, this.config.userId, this.getAssetData().id);	
+		return this.config.url.modify.format(this.config.contextPath, this.config.userId, this.getAssetGroupData().id);	
 	},
 	getUrlRemove : function() {
-		return this.config.url.remove.format(this.config.contextPath, this.config.userId, this.getAssetData().id);	
+		return this.config.url.remove.format(this.config.contextPath, this.config.userId, this.getAssetGroupData().id);	
 	},
 	/**
-	 * ui에서 획득한 asset data를 저장
+	 * ui에서 획득한 assetGroup data를 저장
 	 */
-	setAssetDataFromUi : function() {
-		var asset = this.getAssetDataFromUi();
-		//console.log("setAssetDataFromUi asset : " + asset.id);
-		this.setAssetData(asset);
+	setAssetGroupDataFromUi : function() {
+		var assetGroup = this.getAssetGroupDataFromUi();
+		//console.log("setAssetGroupDataFromUi assetGroup : " + assetGroup.id);
+		this.setAssetGroupData(assetGroup);
 	},
-	setAssetData : function(asset) {
-		this.currentTarget.data(this.config.dataKey, asset);
+	setAssetGroupData : function(assetGroup) {
+		this.currentTarget.data(this.config.dataKey, assetGroup);
 	},
-	setUiFromAssetData : function() {
-		var asset = this.getAssetData();
+	setUiFromAssetGroupData : function() {
+		var assetGroup = this.getAssetGroupData();
 		this.currentTarget
-			.find(this.config.uiPosition.id).text(asset.id).end()
-			.find(this.config.uiPosition.name).text(asset.text).end()
-			.find(this.config.uiPosition.username).text(asset.username).end()
-			.find(this.config.uiPosition.amount).text(asset.amount).end()
-			.find(this.config.uiPosition.enable).text(asset.enable).end()
-			.find(this.config.uiPosition.assetGroup.name).text(asset["assetGroup.name"]);
+			.find(this.config.uiPosition.id).text(assetGroup.id).end()
+			.find(this.config.uiPosition.name).text(assetGroup.text).end()
+			.find(this.config.uiPosition.username).text(assetGroup.username).end()
+			.find(this.config.uiPosition.assetType.name).text(assetGroup["assetType.name"]);
 	},
-	getAssetData : function() {
+	getAssetGroupData : function() {
 		return this.currentTarget.data(this.config.dataKey);
 	},
 	/**
-	 * 추가 대상 asset data 획득
+	 * 추가 대상 assetGroup data 획득
 	 */
-	getAssetDataAdd : function () {
-		var asset = {
+	getAssetGroupDataAdd : function () {
+		var assetGroup = {
 			name : $("#name").val(),
 			amount : $("#amount").val(),
 			"assetGroup.id" : $("[id='assetGroup.id']").val(),
 			enable : $("#enable").val()
 		};
-		return asset;
+		return assetGroup;
 	},
 	/**
-	 * ui에서 asset data를 획득
-	 * @returns asset json
+	 * ui에서 assetGroup data를 획득
+	 * @returns assetGroup json
 	 */
-	getAssetDataFromUi : function() {
+	getAssetGroupDataFromUi : function() {
 		return {
 				id : this.currentTarget.find(this.config.uiPosition.id).text(),
 				name : this.currentTarget.find(this.config.uiPosition.name).text(),
 				username : this.currentTarget.find(this.config.uiPosition.username).text(),
-				amount : this.currentTarget.find(this.config.uiPosition.amount).text(),
-				enable : eval(this.currentTarget.find(this.config.uiPosition.enable).text()),
-				"assetGroup.name" : this.currentTarget.find(this.config.uiPosition.assetGroup.name).text()
+				"assetType.name" : this.currentTarget.find(this.config.uiPosition.assetType.name).text()
 		};
 	},
-	addUi : function(asset) {
+	addUi : function(assetGroup) {
 		return 	$("<tr>")
-				.append($("<td>").text(asset.id))
-				.append($("<td>").text(asset.name))
-				.append($("<td>").text(asset.username))
-				.append($("<td>").text(asset.amount))
-				.append($("<td>").text(asset.enable))
-				.append($("<td>").text(asset.assetGroup.name))
+				.append($("<td>").text(assetGroup.id))
+				.append($("<td>").text(assetGroup.name))
+				.append($("<td>").text(assetGroup.username))
+				.append($("<td>").text(assetGroup.assetType.name))
 				.append($("<td>"))
 				.appendTo($(this.config.uiPosition.addPosition));
 	},
 	/* (e) util */
 	/* (s) action */
 	add : function() {
-		var assetObj = this;
-		var asset = this.getAssetDataAdd();
+		var assetGroupObj = this;
+		var assetGroup = this.getAssetGroupDataAdd();
 		$.ajax({
 			url : this.getUrlAdd(),
 			type : "post",
-			data : asset,
+			data : assetGroup,
 			success : function(data) {
 				//최초 add인 경우 처리는?
-				var target = assetObj.addUi(data.asset);
-				$(".asset-add-modal").modal("hide");
+				var target = assetGroupObj.addUi(data.assetGroup);
+				$(".assetGroup-add-modal").modal("hide");
 				$("html, body").animate({scrollTop : target.offset().top});
 				target.hide().fadeIn(1500);
 			}
@@ -150,11 +142,11 @@ var asset = {
 	 * modify는 ui에서 가져온 변경된 정보만 수정 요청함
 	 */
 	modify : function() {
-		var asset = this.getAssetData();
-		var changedAsset = this.getAssetDataFromUi();
+		var assetGroup = this.getAssetGroupData();
+		var changedAssetGroup = this.getAssetGroupDataFromUi();
 		var isChange = false;
-		for (var key in asset) {
-			if (typeof asset[key] != "object" && asset[key] != changedAsset[key]) {
+		for (var key in assetGroup) {
+			if (typeof assetGroup[key] != "object" && assetGroup[key] != changedAssetGroup[key]) {
 				isChange = true;
 			}
 		}
@@ -162,28 +154,28 @@ var asset = {
 			//console.log("not change");
 			return;
 		}
-		changedAsset._method = "put";
+		changedAssetGroup._method = "put";
 		
-		var assetObj = this;
+		var assetGroupObj = this;
 		$.ajax({
 			url : this.getUrlModify(),
 			type : "post",
-			data : changedAsset,
+			data : changedAssetGroup,
 			success : function(data) {
-				assetObj.showMessageModal("asset changed");
-				assetObj.setAssetDataFromUi();
+				assetGroupObj.showMessageModal("assetGroup changed");
+				assetGroupObj.setAssetGroupDataFromUi();
 			}
 		});
 	},
 	remove : function() {
-		var assetObj = this;
+		var assetGroupObj = this;
 		var target = this.currentTarget;
 		$.ajax({
 			url : this.getUrlRemove(),
 			type : "post",
 			data : {_method : "delete"},
 			success : function() {
-				assetObj.showMessageModal("asset changed").on("hidden.bs.modal", function() {
+				assetGroupObj.showMessageModal("assetGroup changed").on("hidden.bs.modal", function() {
 					target.remove();
 				});
 				
@@ -194,18 +186,18 @@ var asset = {
 	/* (e) action */
 	/* (s) ui method */
 	showMenuEdit : function() {
-		var assetObj = this;
+		var assetGroupObj = this;
 		this.currentTarget.find(this.config.uiPosition.menu.edit.area).empty().append(
 			$("<span>").addClass("glyphicon glyphicon-edit").attr("title", "edit").css("cursor", "pointer").tooltip().on("click", function(event) {
-				assetObj.modify();
+				assetGroupObj.modify();
 			})
 		).append(" ").append(
 			$("<span>").addClass("glyphicon glyphicon-remove").attr("title", "remove").css("cursor", "pointer").tooltip().on("click", function(event) {
-				assetObj.remove();
+				assetGroupObj.remove();
 			})
 		).append(" ").append(
 			$("<span>").addClass("glyphicon glyphicon-refresh").attr("title", "reset").css("cursor", "pointer").tooltip().on("click", function(event) {
-				assetObj.setUiFromAssetData();
+				assetGroupObj.setUiFromassetGroupData();
 			}).hide()
 		);
 	},
@@ -216,13 +208,13 @@ var asset = {
 	 * ui와 저장된 data가 다른 경우 reset 메뉴를 보여줌
 	 */
 	showMenuReset : function() {
-		var assetData = this.getAssetData();
-		var assetDataFromUi = this.getAssetDataFromUi();
+		var assetGroupData = this.getAssetGroupData();
+		var assetGroupDataFromUi = this.getAssetGroupDataFromUi();
 		var checkData = true;
-		for (key in assetDataFromUi) {
-			if (assetData[key] != assetDataFromUi[key]) {
+		for (key in assetGroupDataFromUi) {
+			if (assetGroupData[key] != assetGroupDataFromUi[key]) {
 				checkData = false;
-				console.log("showMenuReset because : old [" + key + "] : " + typeof assetData[key] + ", ui : "  + typeof assetDataFromUi[key] + ", boolean : " + (assetData[key] != assetDataFromUi[key]));
+				console.log("showMenuReset because : old [" + key + "] : " + typeof assetGroupData[key] + ", ui : "  + typeof assetGroupDataFromUi[key] + ", boolean : " + (assetGroupData[key] != assetGroupDataFromUi[key]));
 			}
 		}
 		if (!checkData) {
@@ -232,49 +224,47 @@ var asset = {
 	/* (e) ui method */
 	/* (s) event method */
 	eventEnter : function() {
-		var assetObj = this;
+		var assetGroupObj = this;
 		$(this.config.uiPosition.target).on("mouseenter", function(event) {
-			assetObj.currentTarget = $(this);
-			if (assetObj.currentTarget.data(assetObj.config.dataKey) == null) {
-				console.log("data-asset set and get");
-				var asset = assetObj.getAssetDataFromUi();
-				assetObj.setAssetDataFromUi();
-				assetObj.eventChange();
+			assetGroupObj.currentTarget = $(this);
+			if (assetGroupObj.currentTarget.data(assetGroupObj.config.dataKey) == null) {
+				console.log("data-assetGroup set and get");
+				var assetGroup = assetGroupObj.getAssetGroupDataFromUi();
+				assetGroupObj.setAssetGroupDataFromUi();
+				assetGroupObj.eventChange();
 			}
 			//수정 and 삭제 아이콘 활성화
-			assetObj.showMenuEdit();
-			assetObj.showMenuReset();
+			assetGroupObj.showMenuEdit();
+			assetGroupObj.showMenuReset();
 			event.preventDefault();
 		});
 	},
 	eventChange : function() {
-		var assetObj = this;
+		var assetGroupObj = this;
 		this.currentTarget.find(
 			this.config.uiPosition.id + "," +
 			this.config.uiPosition.name + "," +
 			this.config.uiPosition.username + "," +
-			this.config.uiPosition.amount + "," +
-			this.config.uiPosition.enable + "," +
-			this.config.uiPosition.assetGroup.name
+			this.config.uiPosition.assetType.name
 		).on("focusout", function(event) {
-			assetObj.showMenuReset();
+			assetGroupObj.showMenuReset();
 		});
 	},
 	eventLeave : function() {
-		var assetObj = this;
+		var assetGroupObj = this;
 		$(this.config.uiPosition.target).on("mouseleave", function(event) {
-			assetObj.hideMenuEdit();
+			assetGroupObj.hideMenuEdit();
 			event.preventDefault();
 		});
 	},
 	eventMenuAdd : function() {
-		var assetObj = this;
+		var assetGroupObj = this;
 		$(this.config.uiPosition.menu.add.area).on("click", function(event) {
 			console.log("eventMenuAdd");
-			$(".asset-add-modal").modal();
+			$(".assetGroup-add-modal").modal();
 		});
 		$(this.config.uiPosition.menu.add.evnetTarget).on("click", function(){
-			assetObj.add();
+			assetGroupObj.add();
 		});
 	},
 	/* (s) event method */

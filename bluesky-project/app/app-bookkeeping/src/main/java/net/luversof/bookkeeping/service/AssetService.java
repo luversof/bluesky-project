@@ -32,6 +32,7 @@ public class AssetService {
 		assetRepository.delete(id);
 	}
 	
+	@Transactional(readOnly = true)
 	public List<Asset> findByUsername(String username) {
 		return assetRepository.findByUsername(username);
 	}

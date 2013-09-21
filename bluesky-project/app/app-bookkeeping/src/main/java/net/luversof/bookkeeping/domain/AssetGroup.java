@@ -1,6 +1,8 @@
 package net.luversof.bookkeeping.domain;
 
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
@@ -22,5 +24,6 @@ public class AssetGroup {
 	
 	private String username;
 	
-	private long assetType_id;
+	@Enumerated(EnumType.ORDINAL)
+	private AssetType assetType;
 }
