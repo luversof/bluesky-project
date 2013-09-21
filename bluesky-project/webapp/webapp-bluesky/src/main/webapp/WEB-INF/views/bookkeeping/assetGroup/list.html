@@ -27,7 +27,7 @@
 				<th class="col-lg-1" th:text="#{assetGroup.text.id}">id</th>
 				<th class="col-lg-1" th:text="#{assetGroup.text.name}">name</th>
 				<th class="col-lg-1" th:text="#{assetGroup.text.username}">username</th>
-				<th class="col-lg-1" th:text="#{assetGroup.text.assetType.name}">assetType.name</th>
+				<th class="col-lg-1" th:text="#{assetGroup.text.assetType}">assetType</th>
 				<th class="col-lg-1 assetGroup-menu-add"><span class="glyphicon glyphicon-plus"></span> <span th:text="#{assetGroup.menu.add}">add</span></th>
 			</tr>
 		</thead>
@@ -36,7 +36,7 @@
 				<td th:text="${assetGroup.id}">id</td>
 				<td th:text="${assetGroup.name}" contenteditable="true">name</td>
 				<td th:text="${assetGroup.username}">username</td>
-				<td th:text="${assetGroup.assetType}">assetType.name</td>
+				<td th:text="${assetGroup.assetType}">assetType</td>
 				<td></td>
 			</tr>
 			<tr th:if="${#lists.isEmpty(assetGroupList)}" class="text-center">
@@ -69,9 +69,9 @@
 							</div>
 						</div>
 						<div class="form-group">
-							<label for="assetType.id" class="col-lg-2 control-label" th:text="#{assetGroup.text.assetType.name}">assetType.name</label>
+							<label for="assetType" class="col-lg-2 control-label" th:text="#{assetGroup.text.assetType}">assetType</label>
 							<div class="col-lg-10">
-								<select class="form-control" id="assetType.id">
+								<select class="form-control" id="assetType">
 									<option th:each="assetType : ${T(net.luversof.bookkeeping.domain.AssetType).values()}" th:value="${assetType.name()}" th:text="${assetType.name()}">1</option>
 								</select>
 							</div>

@@ -94,7 +94,7 @@ var assetGroup = {
 		var assetGroup = {
 			name : $("#name").val(),
 			amount : $("#amount").val(),
-			"assetGroup.id" : $("[id='assetGroup.id']").val(),
+			"assetType" : $("[id='assetType']").val(),
 			enable : $("#enable").val()
 		};
 		return assetGroup;
@@ -116,7 +116,7 @@ var assetGroup = {
 				.append($("<td>").text(assetGroup.id))
 				.append($("<td>").text(assetGroup.name))
 				.append($("<td>").text(assetGroup.username))
-				.append($("<td>").text(assetGroup.assetType.name))
+				.append($("<td>").text(assetGroup.assetType))
 				.append($("<td>"))
 				.appendTo($(this.config.uiPosition.addPosition));
 	},
