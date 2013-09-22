@@ -28,9 +28,9 @@ var assetGroup = {
 			}
 		},
 		url : {
-			add : "{0}user/{1}/assetGroup.json",
-			modify : "{0}user/{1}/assetGroup/{2}.json",
-			remove : "{0}user/{1}/assetGroup/{2}.json"
+			add : "{0}user/{1}/bookkeeping/assetGroup.json",
+			modify : "{0}user/{1}/bookkeeping/assetGroup/{2}.json",
+			remove : "{0}user/{1}/bookkeeping/assetGroup/{2}.json"
 		}
 	},
 	/**

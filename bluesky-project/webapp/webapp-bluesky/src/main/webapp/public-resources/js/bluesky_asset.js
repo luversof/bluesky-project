@@ -32,9 +32,9 @@ var asset = {
 			}
 		},
 		url : {
-			add : "{0}user/{1}/asset.json",
-			modify : "{0}user/{1}/asset/{2}.json",
-			remove : "{0}user/{1}/asset/{2}.json"
+			add : "{0}user/{1}/bookkeeping/asset.json",
+			modify : "{0}user/bookkeeping/{1}/bookkeeping/asset/{2}.json",
+			remove : "{0}user/{1}/bookkeeping/asset/{2}.json"
 		}
 	},
 	/**

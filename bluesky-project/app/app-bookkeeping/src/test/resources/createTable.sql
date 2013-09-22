@@ -24,7 +24,7 @@ CREATE TABLE EntryGroup (
 	id BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '기입그룹 일련번호',
 	username VARCHAR(255) NULL DEFAULT NULL COMMENT '소유회원 고유이름',
 	name VARCHAR(255) NULL DEFAULT NULL COMMENT '기입그룹 이름',
-	entryType_id BIGINT(20),
+	entryType BIGINT(20),
 	PRIMARY KEY (id)
 );
 

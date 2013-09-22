@@ -1,13 +1,15 @@
 package net.luversof.bookkeeping.domain;
 
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
 import lombok.Data;
 
-//@Entity
-//@Data
+@Entity
+@Data
 public class EntryGroup {
 	@Id
 	@GeneratedValue
@@ -17,5 +19,6 @@ public class EntryGroup {
 	
 	private String username;
 	
-	private long entryType_id;
+	@Enumerated(EnumType.ORDINAL)
+	private EntryType entryType;
 }
