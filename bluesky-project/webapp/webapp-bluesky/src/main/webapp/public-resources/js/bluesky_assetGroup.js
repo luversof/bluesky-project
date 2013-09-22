@@ -21,9 +21,7 @@ var assetGroup = {
 			id : "td:eq(0)",
 			name : "td:eq(1)",
 			username : "td:eq(2)",
-			assetType : {
-				name : "td:eq(3)"
-			},
+			assetType : "td:eq(3)",
 			menu : {
 				edit : { area : "td:eq(4)" },
 				add : { area : ".assetGroup-menu-add", evnetTarget : ".assetGroup-add"}
@@ -82,7 +80,7 @@ var assetGroup = {
 			.find(this.config.uiPosition.id).text(assetGroup.id).end()
 			.find(this.config.uiPosition.name).text(assetGroup.text).end()
 			.find(this.config.uiPosition.username).text(assetGroup.username).end()
-			.find(this.config.uiPosition.assetType.name).text(assetGroup["assetType.name"]);
+			.find(this.config.uiPosition.assetType).text(assetGroup.assetType);
 	},
 	getAssetGroupData : function() {
 		return this.currentTarget.data(this.config.dataKey);
@@ -94,7 +92,7 @@ var assetGroup = {
 		var assetGroup = {
 			name : $("#name").val(),
 			amount : $("#amount").val(),
-			"assetType" : $("[id='assetType']").val(),
+			assetType : $("#assetType").val(),
 			enable : $("#enable").val()
 		};
 		return assetGroup;
@@ -108,7 +106,7 @@ var assetGroup = {
 				id : this.currentTarget.find(this.config.uiPosition.id).text(),
 				name : this.currentTarget.find(this.config.uiPosition.name).text(),
 				username : this.currentTarget.find(this.config.uiPosition.username).text(),
-				"assetType.name" : this.currentTarget.find(this.config.uiPosition.assetType.name).text()
+				assetType : this.currentTarget.find(this.config.uiPosition.assetType).text()
 		};
 	},
 	addUi : function(assetGroup) {
@@ -245,7 +243,7 @@ var assetGroup = {
 			this.config.uiPosition.id + "," +
 			this.config.uiPosition.name + "," +
 			this.config.uiPosition.username + "," +
-			this.config.uiPosition.assetType.name
+			this.config.uiPosition.assetType
 		).on("focusout", function(event) {
 			assetGroupObj.showMenuReset();
 		});
