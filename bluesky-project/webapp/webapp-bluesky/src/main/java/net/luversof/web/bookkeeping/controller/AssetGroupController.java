@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 @RequestMapping("/user/{userId}/bookkeeping/assetGroup")
 public class AssetGroupController {
-	
+
 	@Autowired
 	private AssetGroupService assetGroupService;
 
@@ -31,7 +31,7 @@ public class AssetGroupController {
 		modelMap.addAttribute(assetGroupService.findByUsername(authentication.getName()));
 		return "/bookkeeping/assetGroup/list";
 	}
-	
+
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
 	@RequestMapping(method = RequestMethod.POST)
 	public void save(@PathVariable long userId, AssetGroup assetGroup, Authentication authentication, ModelMap modelMap) {
@@ -39,7 +39,7 @@ public class AssetGroupController {
 		log.debug("save assetGroup : {}", assetGroup);
 		modelMap.addAttribute(assetGroupService.save(assetGroup));
 	}
-	
+
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
 	@RequestMapping(value = "/{assetGroupId}", method = RequestMethod.PUT)
 	public void modify(@PathVariable long userId, AssetGroup assetGroup, Authentication authentication, ModelMap modelMap) {
@@ -50,7 +50,7 @@ public class AssetGroupController {
 		targetAssetGroup.setName(assetGroup.getName());
 		modelMap.addAttribute(assetGroupService.save(targetAssetGroup));
 	}
-	
+
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
 	@RequestMapping(value = "/{assetGroupId}", method = RequestMethod.DELETE)
 	public void delete(@PathVariable long userId, @PathVariable long assetGroupId, Authentication authentication, ModelMap modelMap) {
@@ -61,5 +61,5 @@ public class AssetGroupController {
 		log.debug("id : {}", assetGroupId);
 		assetGroupService.delete(assetGroupId);
 	}
-	
+
 }

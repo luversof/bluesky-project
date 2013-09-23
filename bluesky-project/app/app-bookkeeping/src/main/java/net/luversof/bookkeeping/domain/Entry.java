@@ -9,8 +9,8 @@ import javax.persistence.OneToOne;
 
 import lombok.Data;
 
-//@Entity
-//@Data
+@Entity
+@Data
 public class Entry {
 
 	@Id
@@ -20,18 +20,16 @@ public class Entry {
 	@OneToOne
 	private Asset asset;
 	
-	private EntryType entryType;
-	
 	private EntryGroup entryGroup;
 	
 	private long amount;
 	
-	private Date date;
+	private Date createdDate;
 	
-	private String log;
+	private String memo;
 	
 	/*
-	 * 이체인 경우 표시
+	 * 이체인 경우 표시하기 위한 속성
 	 */
 	private boolean isDoubleEntry;
 }
