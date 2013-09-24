@@ -20,6 +20,7 @@ public class Entry {
 	@OneToOne
 	private Asset asset;
 	
+	@OneToOne
 	private EntryGroup entryGroup;
 	
 	private long amount;

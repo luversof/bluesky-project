@@ -174,7 +174,7 @@ var entryGroup = {
 			data : {_method : "delete"},
 			success : function() {
 				entryGroupObj.showMessageModal("entryGroup changed").on("hidden.bs.modal", function() {
-					target.remove();
+					target.fadeOut();
 				});
 				
 				//마지막 열이 삭제된 경우 처리는?

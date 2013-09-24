@@ -184,7 +184,7 @@ var asset = {
 			data : {_method : "delete"},
 			success : function() {
 				assetObj.showMessageModal("asset changed").on("hidden.bs.modal", function() {
-					target.remove();
+					target.fadeOut();
 				});
 				
 				//마지막 열이 삭제된 경우 처리는?
