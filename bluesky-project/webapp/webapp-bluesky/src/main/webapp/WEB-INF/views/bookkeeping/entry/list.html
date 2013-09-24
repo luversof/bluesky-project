@@ -1,0 +1,108 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-spring3-3.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+	layout:decorator="/layout/defaultLayout">
+<head>
+	<script layout:fragment="serviceScript" th:src="@{/js/bluesky_bookkeeping_entry.js}"></script>
+</head>
+<body>
+<div layout:fragment="content">
+
+	<!-- 동적으로 데이터를 변경할 수 있는 기능 제공 -->
+	<script type="text/javascript" th:inline="text">
+		$(document).ready(function() {
+			entry.start("[[@{/}]]", [[${#authentication.principal.id}]]);
+			//이거 안해도 되게 안되나?
+			$("[data-toggle=tooltip]").tooltip();
+		});
+	</script>
+	<div class="page-header">
+		<h1>Entry <small th:text="#{entry.menu.list}">list</small></h1>
+	</div>
+
+	<table class="table table-hover">
+		<thead>
+			<tr>
+				<th class="col-lg-1" th:text="#{entry.text.asset.name}">asset.name</th>
+				<th class="col-lg-2" th:text="#{entry.text.entryGroup.name}">entryGroup.name</th>
+				<th th:text="#{entry.text.amount}">amount</th>
+				<th class="col-lg-1" th:text="#{entry.text.date}">date</th>
+				<th class="col-lg-1" th:text="#{entry.text.memo}">memo</th>
+				<th class="col-lg-1 entry-menu-add"><span class="glyphicon glyphicon-plus"></span> <span th:text="#{entry.menu.add}">add</span></th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr th:if="${!#lists.isEmpty(entryList)}" th:each="entry : ${entryList}">
+				<td th:text="${entry.asset.name}" contenteditable="true">asset.name</td>
+				<td th:text="${entry.entryGroup.name}">entryGroup.name</td>
+				<td th:text="${entry.amount}" contenteditable="true">amount</td>
+				<td th:text="${entry.date}" contenteditable="true">date</td>
+				<td th:text="${entry.memo}" contenteditable="true">memo</td>
+				<td></td>
+			</tr>
+			<tr th:if="${#lists.isEmpty(entryList)}" class="text-center">
+				<td colspan="6" th:text="#{entry.message.empty.content}">entry.message.empty.content</td>
+			</tr>
+		</tbody>
+		<tfoot>
+			<tr>
+				<td colspan="6" class="text-center">
+					<button sec:authorize="isAuthenticated()" class="btn btn-primary entry-menu-add" th:text="#{entry.menu.add}">add</button>
+				</td>
+			</tr>
+		</tfoot>
+	</table>
+	
+	<!-- (s) entry add modal -->
+	<div class="modal fade entry-add-modal">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" >&times;</button>
+					<h4 class="modal-title">Entry <small th:text="#{entry.menu.add}">add</small></h4>
+				</div>
+				<div class="modal-body">
+	
+	
+					<form class="form-horizontal" role="form">
+						<div class="form-group">
+							<label for="name" class="col-lg-2 control-label" th:text="#{entry.text.name}">name</label>
+							<div class="col-lg-10">
+								<input type="text" class="form-control" id="name" th:placeholder="#{entry.text.name}" />
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="amount" class="col-lg-2 control-label" th:text="#{entry.text.amount}">amount</label>
+							<div class="col-lg-10">
+								<input type="text" class="form-control" id="amount" th:placeholder="#{entry.text.amount}" />
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="entryGroup.id" class="col-lg-2 control-label" th:text="#{entry.text.entryGroup.name}">entryGroup.name</label>
+							<div class="col-lg-10">
+								<select class="form-control" id="entryGroup.id">
+									<option th:each="entryGroup : ${entryGroupList}" th:value="${entryGroup.id}" th:text="${entryGroup.name}">1</option>
+								</select>
+							</div>
+						</div>
+						<div class="form-group">
+							<div class="col-lg-offset-2 col-lg-10">
+								<div class="checkbox">
+									<label> <input type="checkbox" checked="checked" id="enable" th:text="#{entry.text.enable}" /> </label>
+								</div>
+							</div>
+						</div>
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal" th:text="#{close}">close</button>
+					<button type="button" class="btn btn-primary entry-add" th:text="#{entry.menu.add}">add</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- (e) entry add modal -->
+</div>
+</body>
+</html>

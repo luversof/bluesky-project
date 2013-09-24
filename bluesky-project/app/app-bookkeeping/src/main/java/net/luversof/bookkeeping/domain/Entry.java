@@ -25,7 +25,7 @@ public class Entry {
 	
 	private long amount;
 	
-	private Date createdDate;
+	private Date date;
 	
 	private String memo;
 	
