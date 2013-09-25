@@ -44,4 +44,4 @@ CREATE TABLE Entry (
 	INDEX FK_Entry_entryGroup_id (entryGroup_id),
 	CONSTRAINT FK_Entry_asset_id FOREIGN KEY (asset_id) REFERENCES Asset (id),
 	CONSTRAINT FK_Entry_entryGroup_id FOREIGN KEY (entryGroup_id) REFERENCES EntryGroup (id)
-)
+);

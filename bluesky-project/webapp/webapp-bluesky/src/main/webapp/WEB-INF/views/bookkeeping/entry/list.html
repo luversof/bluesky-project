@@ -12,9 +12,16 @@
 	<!-- 동적으로 데이터를 변경할 수 있는 기능 제공 -->
 	<script type="text/javascript" th:inline="text">
 		$(document).ready(function() {
-			entry.start("[[@{/}]]", [[${#authentication.principal.id}]]);
+			//entry.start("[[@{/}]]", [[${#authentication.principal.id}]]);
 			//이거 안해도 되게 안되나?
 			$("[data-toggle=tooltip]").tooltip();
+			var entry = new Entry({id : 3});
+			console.log("entry.url() : " + entry.url());
+			console.log("entry.get()" + entry.get());
+			//entry.fetch();
+			var entryList = new EntryList();
+			entryList.fetch();
+			var entryView = new EntryView();
 		});
 	</script>
 	<div class="page-header">
