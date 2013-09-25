@@ -2,9 +2,8 @@
 
 // List - Item
 // Data, Template
-console.log("1");
 
-var Entry = Backbone.Model.extend({
+window.Entry = Backbone.Model.extend({
 	urlRoot : "/user/1/bookkeeping/entry"
 });
 

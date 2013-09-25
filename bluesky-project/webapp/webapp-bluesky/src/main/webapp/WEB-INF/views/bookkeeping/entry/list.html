@@ -15,10 +15,18 @@
 			//entry.start("[[@{/}]]", [[${#authentication.principal.id}]]);
 			//이거 안해도 되게 안되나?
 			$("[data-toggle=tooltip]").tooltip();
-			var entry = new Entry({id : 3});
+			
+			/* (s) 저장 */
+			/* var entry = new Entry({asset : {id : 1}, entryGroup : { id : 1}, amount : 123, memo : "test"});
 			console.log("entry.url() : " + entry.url());
-			console.log("entry.get()" + entry.get());
-			//entry.fetch();
+			entry.save(); */
+			/* (e) 저장 */
+			
+			var entry = new Entry({id : 1});
+			entry.fetch();
+			
+			
+			console.log("get : " + entry.get("memo"));
 			var entryList = new EntryList();
 			entryList.fetch();
 			var entryView = new EntryView();

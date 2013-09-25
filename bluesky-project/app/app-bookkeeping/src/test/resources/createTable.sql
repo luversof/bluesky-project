@@ -45,3 +45,15 @@ CREATE TABLE Entry (
 	CONSTRAINT FK_Entry_asset_id FOREIGN KEY (asset_id) REFERENCES Asset (id),
 	CONSTRAINT FK_Entry_entryGroup_id FOREIGN KEY (entryGroup_id) REFERENCES EntryGroup (id)
 );
+
+CREATE TABLE EntryDoubleLog (
+	id BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '이체 일련번호',
+	entryDebit_id BIGINT(20),
+	entryCredit_id BIGINT(20),
+	amount BIGINT(20) NOT NULL DEFAULT 0 COMMENT '이체금액',
+	PRIMARY KEY (id),
+	INDEX FK_EntryDoubleLog_enrtyDebit_id (entryDebit_id),
+	INDEX FK_EntryDoubleLog_enrtyCredit_id (entryCredit_id),
+	CONSTRAINT FK_EntryDoubleLog_entryDebit_id FOREIGN KEY (entryDebit_id) REFERENCES Entry (id),
+	CONSTRAINT FK_EntryDoubleLog_entryCredit_id FOREIGN KEY (entryCredit_id) REFERENCES Entry (id)
+);
