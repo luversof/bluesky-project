@@ -127,6 +127,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 
 		List<View> defaultViews = new ArrayList<View>();
 		MappingJacksonJsonView mappingJacksonJsonView = new MappingJacksonJsonView();
+		mappingJacksonJsonView.setExtractValueFromSingleKeyModel(true);
 		defaultViews.add(mappingJacksonJsonView);
 
 		viewResolver.setDefaultViews(defaultViews);

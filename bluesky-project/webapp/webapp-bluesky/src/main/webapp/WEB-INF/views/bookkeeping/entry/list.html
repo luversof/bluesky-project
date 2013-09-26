@@ -22,14 +22,25 @@
 			entry.save(); */
 			/* (e) 저장 */
 			
-			var entry = new Entry({id : 1});
-			entry.fetch();
+			/* (s) 호출 */
+			/* var entry = new Entry({id : 1});
+			console.log("entry.url() : " + entry.url());
+			entry.fetch({
+				success : function(response, xhr) {
+					console.log("fetch success");
+					console.log(response);
+					console.log("ge1111t : " + entry.get("memo"));
+				}
+			}); */
+			/* (e) 호출 */
 			
-			
-			console.log("get : " + entry.get("memo"));
-			var entryList = new EntryList();
-			entryList.fetch();
-			var entryView = new EntryView();
+ 			var entryList = new EntryList();
+			var entryListView = new EntryListView({ el : ".table.table-hover tbody", collection : entryList });
+			entryList.fetch({
+				success : function() {
+					entryListView.initListView();
+				}
+			});
 		});
 	</script>
 	<div class="page-header">
@@ -48,6 +59,7 @@
 			</tr>
 		</thead>
 		<tbody>
+			<!-- 
 			<tr th:if="${!#lists.isEmpty(entryList)}" th:each="entry : ${entryList}">
 				<td th:text="${entry.asset.name}" contenteditable="true">asset.name</td>
 				<td th:text="${entry.entryGroup.name}">entryGroup.name</td>
@@ -56,6 +68,7 @@
 				<td th:text="${entry.memo}" contenteditable="true">memo</td>
 				<td></td>
 			</tr>
+			 -->
 			<tr th:if="${#lists.isEmpty(entryList)}" class="text-center">
 				<td colspan="6" th:text="#{entry.message.empty.content}">entry.message.empty.content</td>
 			</tr>
@@ -68,6 +81,17 @@
 			</tr>
 		</tfoot>
 	</table>
+	
+	<script type="text/template" id="entry-template">
+	<tr>
+		<td contenteditable="true">{{asset.name}}</td>
+		<td>{{entryGroup.name}}</td>
+		<td contenteditable="true">{{amount}}</td>
+		<td contenteditable="true">{{date}}</td>
+		<td contenteditable="true">{{memo}}</td>
+		<td></td>
+	</tr>
+	</script>
 	
 	<!-- (s) entry add modal -->
 	<div class="modal fade entry-add-modal">

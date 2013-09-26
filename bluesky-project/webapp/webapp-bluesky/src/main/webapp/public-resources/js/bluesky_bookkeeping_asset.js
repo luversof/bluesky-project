@@ -273,7 +273,7 @@ var asset = {
 			console.log("eventMenuAdd");
 			$(".asset-add-modal").modal();
 		});
-		$(this.config.uiPosition.menu.add.evnetTarget).on("click", function(){
+		$(this.config.uiPosition.menu.add.evnetTarget).on("click", function() {
 			assetObj.add();
 		});
 	},
