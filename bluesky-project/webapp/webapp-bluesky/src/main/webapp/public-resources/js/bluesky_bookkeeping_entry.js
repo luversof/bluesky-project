@@ -13,34 +13,59 @@ var EntryList = Backbone.Collection.extend({
 	model : Entry
 });
 
-var EntryListView = Backbone.View.extend({
+var EntryView = Backbone.View.extend({
+	tagName : "tr",
 	initialize : function() {
-		console.log("EntryView initialize");
-		this.template = $("#entry-template").text();
-		this.initListView();
-	},
-	
-	initListView : function() {
-		this.$el.empty();
-		for (var target in this.collection.toJSON()) {
-			this.$el.append(Mustache.render(this.template, { entryList : target }));
+		if (this.options.template == null) {
+			console.log("template argument is required");
 		}
-		return this;
 	},
-	
 	render : function() {
-		this.$el.html(Mustache.render(this.template, { entryList : this.model.toJSON() }));
+		this.$el.append(Mustache.render(this.options.template, this.model.toJSON()));
 		return this;
 	},
 	events : {
-		"mouseenter tr" : "menuShow"
+		"mouseenter" : "menuShow",
+		"mouseleave" : "menuHide",
+		"click span.glyphicon-edit" : "modify",
+		"keyup [contenteditable=true]" : "change"
 	},
 	menuShow : function(event) {
-		console.log("TEstsestetet");
-		var b = "";
-		for (var a in this.model) b+=a+"\n";
-		console.log("b : " + b);
-		console.log("model : " + this.model);
+		$(event.currentTarget).find("td:last").empty().append(
+				$("<span>").addClass("glyphicon glyphicon-edit").attr("title", "edit").css("cursor", "pointer").tooltip()
+			).append(" ").append(
+				$("<span>").addClass("glyphicon glyphicon-remove").attr("title", "remove").css("cursor", "pointer").tooltip()
+			).append(" ").append(
+				$("<span>").addClass("glyphicon glyphicon-refresh").attr("title", "reset").css("cursor", "pointer").tooltip().hide()
+			);
+	},
+	menuHide : function(event) {
+		$(event.currentTarget).find("td:last").empty();
+	},
+	modify : function(event) {
+		console.log(this.model);
+		if (this.model.hasChanged()) {
+			this.model.save();
+		}
+	},
+	change : function(event) {
+		this.model.set($(event.currentTarget).attr("data-key"), $(event.currentTarget).text());
+	}
+});
+
+var EntryListView = Backbone.View.extend({
+	initialize : function() {
+		if (this.options.template == null) {
+			console.log("template argument is required");
+		}
+	},
+	render: function() {
+		this.collection.each(this.addOne, this);
+		return this;
+	},
+	addOne : function(entry) {
+		var entryView = new EntryView({ model: entry, template : this.options.template });
+		this.$el.append(entryView.render().el);
 	}
 });
 

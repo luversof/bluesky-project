@@ -89,7 +89,7 @@ public class EntryController {
 	public void modify(@PathVariable long userId, @RequestBody Entry entry, Authentication authentication, ModelMap modelMap) {
 		Entry targetEntry = entryService.findOne(entry.getId());
 		
-		if (targetEntry.getAsset().getUsername() != authentication.getName()) {
+		if (!targetEntry.getAsset().getUsername().equals(authentication.getName())) {
 			throw new BlueskyException("username is not owner");
 		}
 		
