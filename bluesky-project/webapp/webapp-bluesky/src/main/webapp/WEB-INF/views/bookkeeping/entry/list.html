@@ -35,8 +35,7 @@
 			/* (e) 호출 */
 			
  			var entryList = new EntryList();
-			var entryListView = new EntryListView({ el : ".table.table-hover tbody", collection : entryList ,template : $("#entry-template").text() });
-			console.log("entryasdf : " + entryListView.options.c2c);
+			var entryListView = new EntryListView({ collection : entryList ,template : $("#entry-template").text() });
 			
 			entryList.fetch({
 				success : function() {

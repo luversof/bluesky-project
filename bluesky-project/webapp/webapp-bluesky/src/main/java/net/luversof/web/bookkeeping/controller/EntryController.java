@@ -39,7 +39,9 @@ public class EntryController {
 	@RequestMapping(method = RequestMethod.GET, value = "")
 	public String list(@PathVariable long userId, @RequestParam(defaultValue = "1") int page, Authentication authentication, ModelMap modelMap) {
 		log.debug("modelMap : {}", modelMap);
-		modelMap.addAttribute(entryService.findByAssetUsername(authentication.getName()));
+		modelMap.addAttribute("result", entryService.findByAssetUsername(authentication.getName()));
+		modelMap.addAttribute(assetService.findByUsername(authentication.getName()));
+		modelMap.addAttribute(entryGroupService.findByUsername(authentication.getName()));
 		return "/bookkeeping/entry/list";
 	}
 	

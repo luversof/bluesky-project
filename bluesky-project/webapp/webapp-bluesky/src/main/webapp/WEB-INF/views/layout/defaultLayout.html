@@ -25,7 +25,7 @@
 				</p>
 				<form class="navbar-form navbar-right" sec:authorize="!isAuthenticated()" th:action="@{/login}" method="post">
 					<div class="form-group">
-						<input type="text" name="username" th:placeholder="#{username}" class="form-control" />
+						<input type="text" name="username" th:placeholder="#{username}" class="form-control" autofocus="autofocus"/>
 					</div>
 					<div class="form-group">
 						<input type="password" name="password" th:placeholder="#{password}" class="form-control" />

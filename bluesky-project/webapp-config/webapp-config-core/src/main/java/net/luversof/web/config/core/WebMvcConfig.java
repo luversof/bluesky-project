@@ -38,6 +38,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 import org.springframework.web.servlet.view.ContentNegotiatingViewResolver;
+import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
 import org.springframework.web.servlet.view.json.MappingJacksonJsonView;
 import org.thymeleaf.extras.springsecurity3.dialect.SpringSecurityDialect;
 import org.thymeleaf.spring3.SpringTemplateEngine;
@@ -126,9 +127,10 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 
 
 		List<View> defaultViews = new ArrayList<View>();
-		MappingJacksonJsonView mappingJacksonJsonView = new MappingJacksonJsonView();
-		mappingJacksonJsonView.setExtractValueFromSingleKeyModel(true);
-		defaultViews.add(mappingJacksonJsonView);
+		MappingJackson2JsonView mappingJackson2JsonView = new MappingJackson2JsonView();
+		mappingJackson2JsonView.setExtractValueFromSingleKeyModel(true);
+		mappingJackson2JsonView.setModelKey("result");
+		defaultViews.add(mappingJackson2JsonView);
 
 		viewResolver.setDefaultViews(defaultViews);
 		return viewResolver;
