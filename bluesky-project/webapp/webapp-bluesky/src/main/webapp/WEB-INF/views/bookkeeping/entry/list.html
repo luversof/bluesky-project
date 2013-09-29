@@ -9,41 +9,6 @@
 <body>
 <div layout:fragment="content">
 
-	<!-- 동적으로 데이터를 변경할 수 있는 기능 제공 -->
-	<script type="text/javascript" th:inline="text">
-		$(document).ready(function() {
-			//entry.start("[[@{/}]]", [[${#authentication.principal.id}]]);
-			//이거 안해도 되게 안되나?
-			$("[data-toggle=tooltip]").tooltip();
-			
-			/* (s) 저장 */
-			/* var entry = new Entry({asset : {id : 1}, entryGroup : { id : 1}, amount : 123, memo : "test"});
-			console.log("entry.url() : " + entry.url());
-			entry.save(); */
-			/* (e) 저장 */
-			
-			/* (s) 호출 */
-			/* var entry = new Entry({id : 1});
-			console.log("entry.url() : " + entry.url());
-			entry.fetch({
-				success : function(response, xhr) {
-					console.log("fetch success");
-					console.log(response);
-					console.log("ge1111t : " + entry.get("memo"));
-				}
-			}); */
-			/* (e) 호출 */
-			
- 			var entryList = new EntryList();
-			var entryListView = new EntryListView({ collection : entryList ,template : $("#entry-template").text() });
-			
-			entryList.fetch({
-				success : function() {
-					entryListView.render();
-				}
-			});
-		});
-	</script>
 	<div class="page-header">
 		<h1>Entry <small th:text="#{entry.menu.list}">list</small></h1>
 	</div>
@@ -102,18 +67,13 @@
 				</div>
 				<div class="modal-body">
 	
-	
 					<form class="form-horizontal" role="form">
 						<div class="form-group">
-							<label for="name" class="col-lg-2 control-label" th:text="#{entry.text.name}">name</label>
+							<label for="entryGroup.id" class="col-lg-2 control-label" th:text="#{entry.text.asset.name}">asset.name</label>
 							<div class="col-lg-10">
-								<input type="text" class="form-control" id="name" th:placeholder="#{entry.text.name}" />
-							</div>
-						</div>
-						<div class="form-group">
-							<label for="amount" class="col-lg-2 control-label" th:text="#{entry.text.amount}">amount</label>
-							<div class="col-lg-10">
-								<input type="text" class="form-control" id="amount" th:placeholder="#{entry.text.amount}" />
+								<select class="form-control" id="asset.id">
+									<option th:each="asset: ${assetList}" th:value="${asset.id}" th:text="${asset.name}">asset.name</option>
+								</select>
 							</div>
 						</div>
 						<div class="form-group">
@@ -125,9 +85,21 @@
 							</div>
 						</div>
 						<div class="form-group">
+							<label for="amount" class="col-lg-2 control-label" th:text="#{entry.text.amount}">amount</label>
+							<div class="col-lg-10">
+								<input type="text" class="form-control" id="amount" th:placeholder="#{entry.text.amount}" />
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="date" class="col-lg-2 control-label" th:text="#{entry.text.date}">date</label>
+							<div class="col-lg-10">
+								<input type="text" class="form-control" id="date" th:placeholder="#{entry.text.date}" />
+							</div>
+						</div>
+						<div class="form-group">
 							<div class="col-lg-offset-2 col-lg-10">
 								<div class="checkbox">
-									<label> <input type="checkbox" checked="checked" id="enable" th:text="#{entry.text.enable}" /> </label>
+									<label> <input type="checkbox" checked="checked" id="isTransferEntry" th:text="#{entry.text.isTransferEntry}" /> </label>
 								</div>
 							</div>
 						</div>

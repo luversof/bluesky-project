@@ -69,14 +69,14 @@ public class EntryController {
 			throw new BlueskyException("not owner's entryGroup");
 		}
 		entry.setEntryGroup(entryGroup);
-		modelMap.addAttribute(entryService.save(entry));
+		modelMap.addAttribute("result", entryService.save(entry));
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
 	@RequestMapping(method = RequestMethod.GET, value = "/{entryId}")
 	public void findOne(@PathVariable long userId, @PathVariable long entryId, Authentication authentication, ModelMap modelMap) {
 		log.debug("modelMap : {}", modelMap);
-		modelMap.addAttribute(entryService.findOne(entryId));
+		modelMap.addAttribute("result", entryService.findOne(entryId));
 	}
 	
 	/**
@@ -113,7 +113,7 @@ public class EntryController {
 		}
 		targetEntry.setEntryGroup(entryGroup);
 		
-		if (targetEntry.isDoubleEntry()) {
+		if (targetEntry.isTransferEntry()) {
 			//금액 변경시 동일 이슈 처리, 삭제시도 동일 이슈 처리
 		}
 		
@@ -122,7 +122,7 @@ public class EntryController {
 		targetEntry.setDate(entry.getDate());
 		targetEntry.setMemo(entry.getMemo());
 		
-		modelMap.addAttribute(entryService.save(targetEntry));
+		modelMap.addAttribute("result", entryService.save(targetEntry));
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")

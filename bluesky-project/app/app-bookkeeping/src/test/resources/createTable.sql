@@ -38,7 +38,7 @@ CREATE TABLE Entry (
 	amount BIGINT(20) NOT NULL DEFAULT 0 COMMENT '총액',
 	date TIMESTAMP NOT NULL DEFAULT NOW() COMMENT '생성일',
 	memo VARCHAR(255) NULL DEFAULT NULL COMMENT '기록',
-	isDoubleEntry TINYINT NOT NULL DEFAULT 0 COMMENT '이체기록여부',
+	isTransferEntry TINYINT NOT NULL DEFAULT 0 COMMENT '이체기입여부',
 	PRIMARY KEY (id),
 	INDEX FK_Entry_asset_id (asset_id),
 	INDEX FK_Entry_entryGroup_id (entryGroup_id),
@@ -46,7 +46,7 @@ CREATE TABLE Entry (
 	CONSTRAINT FK_Entry_entryGroup_id FOREIGN KEY (entryGroup_id) REFERENCES EntryGroup (id)
 );
 
-CREATE TABLE EntryDoubleLog (
+CREATE TABLE EntryTransferLog (
 	id BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '이체 일련번호',
 	entryDebit_id BIGINT(20),
 	entryCredit_id BIGINT(20),

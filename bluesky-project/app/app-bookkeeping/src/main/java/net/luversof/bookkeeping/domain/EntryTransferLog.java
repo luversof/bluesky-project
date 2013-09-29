@@ -14,7 +14,7 @@ import lombok.Data;
  */
 @Entity
 @Data
-public class EntryDoubleLog {
+public class EntryTransferLog {
 	@Id
 	@GeneratedValue
 	private long id;

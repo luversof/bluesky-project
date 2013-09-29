@@ -91,7 +91,9 @@ var EntryView = Backbone.View.extend({
 	dataChangeListener : function(event) {
 		this.model.set($(event.currentTarget).attr("data-key"), $(event.currentTarget).text());
 		this.menuResetDisplayCheck($(event.currentTarget).parent(this.tagName).find(".glyphicon-refresh"));
-	}
+	},
+	
+
 });
 
 var EntryListView = Backbone.View.extend({
@@ -101,9 +103,10 @@ var EntryListView = Backbone.View.extend({
 			console.log("template argument is required");
 		}
 		console.log(this);
-		this.eventMenuAdd();
+		
 	},
 	render: function() {
+		this.$el.empty();
 		this.collection.each(this.addOne, this);
 		return this;
 	},
@@ -111,14 +114,65 @@ var EntryListView = Backbone.View.extend({
 		var entryView = new EntryView({ model: entry, template : this.options.template});
 		this.$el.append(entryView.render().el);
 	},
-	eventMenuAdd : function() {
-		$(".entry-menu-add").css("cursor", "pointer").on("click", function(event) {
-			console.log("eventMenuAdd");
-			$(".entry-add-modal").modal();
-		});
-		$("entry-add").on("click", function() {
-			entryListView.addEntry();
-		});
-	}
+
 });
 
+
+var entryPage = function() {
+	return {
+		initialize : function() {
+			this.eventShowMenuAdd();
+			this.eventActionMenuAdd();
+		},
+		eventShowMenuAdd : function() {
+			$(".entry-menu-add").css("cursor", "pointer").on("click", function(event) {
+				console.log("eventMenuAdd");
+				$(".entry-add-modal").modal();
+			});
+			$("entry-add").on("click", function() {
+				entryListView.addEntry();
+			});
+		},
+		eventActionMenuAdd : function() {
+			$(".entry-add").on("click",function() {
+				console.log("test");
+			});
+		}
+	}
+};
+
+
+
+$(document).ready(function() {
+	//entry.start("[[@{/}]]", [[${#authentication.principal.id}]]);
+	//이거 안해도 되게 안되나?
+	$("[data-toggle=tooltip]").tooltip();
+	
+	/* (s) 저장 */
+	/* var entry = new Entry({asset : {id : 1}, entryGroup : { id : 1}, amount : 123, memo : "test"});
+	console.log("entry.url() : " + entry.url());
+	entry.save(); */
+	/* (e) 저장 */
+	
+	/* (s) 호출 */
+	/* var entry = new Entry({id : 1});
+	console.log("entry.url() : " + entry.url());
+	entry.fetch({
+		success : function(response, xhr) {
+			console.log("fetch success");
+			console.log(response);
+			console.log("ge1111t : " + entry.get("memo"));
+		}
+	}); */
+	/* (e) 호출 */
+	
+		var entryList = new EntryList();
+	var entryListView = new EntryListView({ collection : entryList ,template : $("#entry-template").text() });
+	
+	entryList.fetch({
+		success : function() {
+			entryListView.render();
+		}
+	});
+	entryPage().initialize();
+});
