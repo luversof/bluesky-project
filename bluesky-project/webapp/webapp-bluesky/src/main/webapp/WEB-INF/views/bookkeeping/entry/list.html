@@ -69,7 +69,7 @@
 	
 					<form class="form-horizontal" role="form">
 						<div class="form-group">
-							<label for="entryGroup.id" class="col-lg-2 control-label" th:text="#{entry.text.asset.name}">asset.name</label>
+							<label for="asset.id" class="col-lg-2 control-label" th:text="#{entry.text.asset.name}">asset.name</label>
 							<div class="col-lg-10">
 								<select class="form-control" id="asset.id">
 									<option th:each="asset: ${assetList}" th:value="${asset.id}" th:text="${asset.name}">asset.name</option>
@@ -87,7 +87,7 @@
 						<div class="form-group">
 							<label for="amount" class="col-lg-2 control-label" th:text="#{entry.text.amount}">amount</label>
 							<div class="col-lg-10">
-								<input type="text" class="form-control" id="amount" th:placeholder="#{entry.text.amount}" />
+								<input type="number" class="form-control" id="amount" th:placeholder="#{entry.text.amount}"/>
 							</div>
 						</div>
 						<div class="form-group">
@@ -97,9 +97,15 @@
 							</div>
 						</div>
 						<div class="form-group">
+							<label for="memo" class="col-lg-2 control-label" th:text="#{entry.text.memo}">memo</label>
+							<div class="col-lg-10">
+								<input type="text" class="form-control" id="memo" th:placeholder="#{entry.text.memo}" />
+							</div>
+						</div>
+						<div class="form-group">
 							<div class="col-lg-offset-2 col-lg-10">
 								<div class="checkbox">
-									<label> <input type="checkbox" checked="checked" id="isTransferEntry" th:text="#{entry.text.isTransferEntry}" /> </label>
+									<label> <input type="checkbox" checked="checked" id="transferEntry" th:text="#{entry.text.isTransferEntry}" /> </label>
 								</div>
 							</div>
 						</div>

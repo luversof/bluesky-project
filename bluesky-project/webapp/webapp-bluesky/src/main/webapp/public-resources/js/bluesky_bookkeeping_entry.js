@@ -1,7 +1,5 @@
 // 템플릿에 아이템을 추가, 삭제, 보여주기
 
-// List - Item
-// Data, Template
 function showMessageModal(message) {
 	return $("<div>").addClass("modal fade").html(
 		$("<div>").addClass("modal-dialog").html(
@@ -27,7 +25,8 @@ var EntryView = Backbone.View.extend({
 		if (this.options.template == null) {
 			console.log("template argument is required");
 		}
-		//this.listenTo(this.model, "change", this.render);
+		//this.listenTo(this.model, "add", this.render);
+		this.listenTo(this.model, "sync", this.render);
 	},
 	render : function() {
 		console.log("render");
@@ -38,6 +37,7 @@ var EntryView = Backbone.View.extend({
 		"mouseenter" : "menuShow",
 		"mouseleave" : "menuHide",
 		"click span.glyphicon-edit" : "modify",
+		"click span.glyphicon-remove" : "removeEntry",
 		"click span.glyphicon-refresh" : "reset",
 		"keyup [contenteditable=true]" : "dataChangeListener"
 	},
@@ -50,11 +50,6 @@ var EntryView = Backbone.View.extend({
 				$("<span>").addClass("glyphicon glyphicon-refresh").attr("title", "reset").css("cursor", "pointer").tooltip().hide()
 			);
 		this.menuResetDisplayCheck($(event.currentTarget).find(".glyphicon-refresh"));
-//		if (this.model.changedAttributes()) {
-//			$(event.currentTarget).find(".glyphicon-refresh").fadeIn();
-//		} else {
-//			$(event.currentTarget).find(".glyphicon-refresh").hide();
-//		}
 	},
 	menuResetDisplayCheck : function(displayTarget) {
 		displayTarget.hide();
@@ -80,20 +75,26 @@ var EntryView = Backbone.View.extend({
 			});
 		}
 	},
+	removeEntry : function(event) {
+		this.remove();
+		this.model.destroy({
+			success : function() {
+				showMessageModal("asset removed");
+			}
+		});
+	},
 	reset : function(event) {
 		console.log("reset");
 		var target = this;
 		this.model.fetch({ success : function(response, xhr) { 
 			target.render();
-			target.model.changed = {};
+			target.model.changed = {};	//backbonejs 매뉴얼에 하지말라는 부분인데 다른 방법이 없나..
 		}});
 	},
 	dataChangeListener : function(event) {
 		this.model.set($(event.currentTarget).attr("data-key"), $(event.currentTarget).text());
 		this.menuResetDisplayCheck($(event.currentTarget).parent(this.tagName).find(".glyphicon-refresh"));
-	},
-	
-
+	}	
 });
 
 var EntryListView = Backbone.View.extend({
@@ -102,11 +103,14 @@ var EntryListView = Backbone.View.extend({
 		if (this.options.template == null) {
 			console.log("template argument is required");
 		}
+		this.$el.empty();
+		//this.listenTo(this.collection, "add", this.add);
+		//this.listenTo(this.collection, "add", this.addOne);
 		console.log(this);
-		
+		this.listenTo(this.collection, "sync", this.render);
 	},
 	render: function() {
-		this.$el.empty();
+		console.log("entryListView render");
 		this.collection.each(this.addOne, this);
 		return this;
 	},
@@ -114,11 +118,16 @@ var EntryListView = Backbone.View.extend({
 		var entryView = new EntryView({ model: entry, template : this.options.template});
 		this.$el.append(entryView.render().el);
 	},
-
+	add : function(entry) {
+		entry.save(null, { success : function() {
+			$(".entry-add-modal").modal("hide");
+		}});
+	}
 });
 
-
-var entryPage = function() {
+var entryPage = function(config) {
+	this.entryList = config.entryList;
+	this.entryListView = config.entryListView;
 	return {
 		initialize : function() {
 			this.eventShowMenuAdd();
@@ -129,13 +138,22 @@ var entryPage = function() {
 				console.log("eventMenuAdd");
 				$(".entry-add-modal").modal();
 			});
-			$("entry-add").on("click", function() {
-				entryListView.addEntry();
-			});
 		},
 		eventActionMenuAdd : function() {
 			$(".entry-add").on("click",function() {
-				console.log("test");
+				console.log("entry-add");
+				var entry = new Entry({
+					asset : { id : $("[id='asset.id']").val()},
+					entryGroup : {id : $("[id='entryGroup.id']").val()},
+					amount : $("#amount").val(),
+					date : $("#date").val(),
+					memo : $("#memo").val(),
+					transferEntry : $("#transferEntry").is(":checked")
+				});
+//				entryListView.collection.add(entry);
+				entry.save(null ,{success : function() {
+					console.log("ETstt");
+				}});
 			});
 		}
 	}
@@ -166,13 +184,10 @@ $(document).ready(function() {
 	}); */
 	/* (e) 호출 */
 	
-		var entryList = new EntryList();
+	var entryList = new EntryList();
 	var entryListView = new EntryListView({ collection : entryList ,template : $("#entry-template").text() });
 	
-	entryList.fetch({
-		success : function() {
-			entryListView.render();
-		}
-	});
-	entryPage().initialize();
+	entryList.fetch();
+	entryPage({entryList : entryList, entryListView : entryListView}).initialize();
+	setInterval("console.log(entryListView.collection.length);", 1000);
 });

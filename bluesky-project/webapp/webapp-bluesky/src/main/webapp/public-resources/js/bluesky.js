@@ -17,7 +17,7 @@ var navbar = {
 			return;
 		}
 		$(".navbar .navbar-nav li").each(function() {
-			console.log("pathname : %s", location.pathname);
+			console.log("navbar pathname : %s", location.pathname);
 			if (location.pathname.search($(this).text()) > 0) {
 				$(this).addClass("active");
 			} else {
@@ -30,7 +30,7 @@ var navbar = {
 /**
  * 상단 navbar scroll에 따른 hide 처리 
  */
-$(function() {
+$(document).ready(function() {
 	var $nav = $(".navbar"),
 	_hideShowOffset = 20,
 	_lastScroll = 0,
