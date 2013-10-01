@@ -1,5 +1,3 @@
-// 템플릿에 아이템을 추가, 삭제, 보여주기
-
 function showMessageModal(message) {
 	return $("<div>").addClass("modal fade").html(
 		$("<div>").addClass("modal-dialog").html(
@@ -25,8 +23,6 @@ var EntryView = Backbone.View.extend({
 		if (this.options.template == null) {
 			console.log("template argument is required");
 		}
-		//this.listenTo(this.model, "add", this.render);
-		this.listenTo(this.model, "sync", this.render);
 	},
 	render : function() {
 		console.log("render");
@@ -103,14 +99,10 @@ var EntryListView = Backbone.View.extend({
 		if (this.options.template == null) {
 			console.log("template argument is required");
 		}
-		this.$el.empty();
-		//this.listenTo(this.collection, "add", this.add);
-		//this.listenTo(this.collection, "add", this.addOne);
-		console.log(this);
-		this.listenTo(this.collection, "sync", this.render);
 	},
 	render: function() {
 		console.log("entryListView render");
+		this.$el.empty();
 		this.collection.each(this.addOne, this);
 		return this;
 	},
@@ -119,8 +111,11 @@ var EntryListView = Backbone.View.extend({
 		this.$el.append(entryView.render().el);
 	},
 	add : function(entry) {
+		var target = this;
 		entry.save(null, { success : function() {
 			$(".entry-add-modal").modal("hide");
+			target.collection.add(entry);
+			target.addOne(entry);
 		}});
 	}
 });
@@ -150,10 +145,7 @@ var entryPage = function(config) {
 					memo : $("#memo").val(),
 					transferEntry : $("#transferEntry").is(":checked")
 				});
-//				entryListView.collection.add(entry);
-				entry.save(null ,{success : function() {
-					console.log("ETstt");
-				}});
+				entryListView.add(entry);
 			});
 		}
 	}
@@ -187,7 +179,11 @@ $(document).ready(function() {
 	var entryList = new EntryList();
 	var entryListView = new EntryListView({ collection : entryList ,template : $("#entry-template").text() });
 	
-	entryList.fetch();
+	entryList.fetch({
+		success : function() {
+			entryListView.render();
+		}
+	});
 	entryPage({entryList : entryList, entryListView : entryListView}).initialize();
 	setInterval("console.log(entryListView.collection.length);", 1000);
 });
