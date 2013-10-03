@@ -155,8 +155,7 @@ var entryPage = function(config) {
 
 $(document).ready(function() {
 	//entry.start("[[@{/}]]", [[${#authentication.principal.id}]]);
-	//이거 안해도 되게 안되나?
-	$("[data-toggle=tooltip]").tooltip();
+	
 	
 	/* (s) 저장 */
 	/* var entry = new Entry({asset : {id : 1}, entryGroup : { id : 1}, amount : 123, memo : "test"});
@@ -176,14 +175,14 @@ $(document).ready(function() {
 	}); */
 	/* (e) 호출 */
 	
-	var entryList = new EntryList();
-	var entryListView = new EntryListView({ collection : entryList ,template : $("#entry-template").text() });
-	
-	entryList.fetch({
-		success : function() {
-			entryListView.render();
-		}
-	});
-	entryPage({entryList : entryList, entryListView : entryListView}).initialize();
-	setInterval("console.log(entryListView.collection.length);", 1000);
+//	var entryList = new EntryList();
+//	var entryListView = new EntryListView({ collection : entryList ,template : $("#entry-template").text() });
+//	
+//	entryList.fetch({
+//		success : function() {
+//			entryListView.render();
+//		}
+//	});
+	//entryPage({entryList : entryList, entryListView : entryListView}).initialize();
+	//setInterval("console.log(entryListView.collection.length);", 1000);
 });
