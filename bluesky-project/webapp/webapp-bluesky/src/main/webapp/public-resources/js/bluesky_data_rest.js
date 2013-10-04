@@ -35,7 +35,11 @@ var Controller = function(options) {
 		if (!this.id) {
 			throw new Error("id empty");
 		}
-	}; 
+		this.view.target.empty();
+		this.initialize2();
+	};
+
+	this.initialize();
 	
 
 	this.get = function(data) {
@@ -115,7 +119,17 @@ $(document).ready(function() {
 	 */
 	var view = new View({
 		template : $("#entry-template").text(),
-		target : $(".table.table-hover tbody")
+		target : $(".table.table-hover tbody"),
+		menuShow : function(event) {
+			$(event.currentTarget).find("td:last").empty().append(
+					$("<span>").addClass("glyphicon glyphicon-edit").attr("title", "edit").css("cursor", "pointer").tooltip()
+				).append(" ").append(
+					$("<span>").addClass("glyphicon glyphicon-remove").attr("title", "remove").css("cursor", "pointer").tooltip()
+				).append(" ").append(
+					$("<span>").addClass("glyphicon glyphicon-refresh").attr("title", "reset").css("cursor", "pointer").tooltip().hide()
+				);
+			this.menuResetDisplayCheck($(event.currentTarget).find(".glyphicon-refresh"));
+		}
 	});
 	
 	/**
@@ -125,11 +139,13 @@ $(document).ready(function() {
 		url : "/user/1/bookkeeping/entry",
 		id : "id",
 		dataKey : "model",
-		view : view
+		view : view,
+		initialize : function() {
+			console.log("우하하하하");
+		}
 	});
 	var model = new Model({controller : controller});
-	
-	//var data = new Model({}, {controller:controller});
-	var data = $.extend({id : 49}, model);
+alert(controller.initialize);	
+	var data = $.extend({id : 52}, model);
 	data.get();
 });
