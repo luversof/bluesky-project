@@ -1,188 +1,66 @@
-function showMessageModal(message) {
-	return $("<div>").addClass("modal fade").html(
-		$("<div>").addClass("modal-dialog").html(
-			$("<div>").addClass("modal-content").html(
-				$("<div>").addClass("modal-body").text(message)
-			)
-		)
-	).modal();
-};
-
-var Entry = Backbone.Model.extend({
-	urlRoot : "/user/1/bookkeeping/entry",
-});
-
-var EntryList = Backbone.Collection.extend({
-	url : "/user/1/bookkeeping/entry",
-	model : Entry
-});
-
-var EntryView = Backbone.View.extend({
-	tagName : "tr",
-	initialize : function() {
-		if (this.options.template == null) {
-			console.log("template argument is required");
-		}
-	},
-	render : function() {
-		console.log("render");
-		this.$el.empty().append(Mustache.render(this.options.template, this.model.toJSON()));
-		return this;
-	},
-	events : {
-		"mouseenter" : "menuShow",
-		"mouseleave" : "menuHide",
-		"click span.glyphicon-edit" : "modify",
-		"click span.glyphicon-remove" : "removeEntry",
-		"click span.glyphicon-refresh" : "reset",
-		"keyup [contenteditable=true]" : "dataChangeListener"
-	},
-	menuShow : function(event) {
-		$(event.currentTarget).find("td:last").empty().append(
-				$("<span>").addClass("glyphicon glyphicon-edit").attr("title", "edit").css("cursor", "pointer").tooltip()
-			).append(" ").append(
-				$("<span>").addClass("glyphicon glyphicon-remove").attr("title", "remove").css("cursor", "pointer").tooltip()
-			).append(" ").append(
-				$("<span>").addClass("glyphicon glyphicon-refresh").attr("title", "reset").css("cursor", "pointer").tooltip().hide()
-			);
-		this.menuResetDisplayCheck($(event.currentTarget).find(".glyphicon-refresh"));
-	},
-	menuResetDisplayCheck : function(displayTarget) {
-		displayTarget.hide();
-		if (!this.model.hasChanged()) {
-			return;
-		}
-		for (var key in this.model.changedAttributes()) {
-			if (this.model.get(key) != this.model.previous(key)) {
-				displayTarget.fadeIn();	
-			}
-		}
-	},
-	menuHide : function(event) {
-		$(event.currentTarget).find("td:last").empty();
-	},
-	modify : function(event) {
-		console.log(this.model);
-		if (this.model.hasChanged()) {
-			this.model.save(null, {
-				success : function() {
-					showMessageModal("asset changed");
-				}
-			});
-		}
-	},
-	removeEntry : function(event) {
-		this.remove();
-		this.model.destroy({
-			success : function() {
-				showMessageModal("asset removed");
-			}
-		});
-	},
-	reset : function(event) {
-		console.log("reset");
-		var target = this;
-		this.model.fetch({ success : function(response, xhr) { 
-			target.render();
-			target.model.changed = {};	//backbonejs 매뉴얼에 하지말라는 부분인데 다른 방법이 없나..
-		}});
-	},
-	dataChangeListener : function(event) {
-		this.model.set($(event.currentTarget).attr("data-key"), $(event.currentTarget).text());
-		this.menuResetDisplayCheck($(event.currentTarget).parent(this.tagName).find(".glyphicon-refresh"));
-	}	
-});
-
-var EntryListView = Backbone.View.extend({
-	el : ".table.table-hover tbody",
-	initialize : function() {
-		if (this.options.template == null) {
-			console.log("template argument is required");
-		}
-	},
-	render: function() {
-		console.log("entryListView render");
-		this.$el.empty();
-		this.collection.each(this.addOne, this);
-		return this;
-	},
-	addOne : function(entry) {
-		var entryView = new EntryView({ model: entry, template : this.options.template});
-		this.$el.append(entryView.render().el);
-	},
-	add : function(entry) {
-		var target = this;
-		entry.save(null, { success : function() {
-			$(".entry-add-modal").modal("hide");
-			target.collection.add(entry);
-			target.addOne(entry);
-		}});
-	}
-});
-
-var entryPage = function(config) {
-	this.entryList = config.entryList;
-	this.entryListView = config.entryListView;
-	return {
-		initialize : function() {
-			this.eventShowMenuAdd();
-			this.eventActionMenuAdd();
-		},
-		eventShowMenuAdd : function() {
-			$(".entry-menu-add").css("cursor", "pointer").on("click", function(event) {
-				console.log("eventMenuAdd");
-				$(".entry-add-modal").modal();
-			});
-		},
-		eventActionMenuAdd : function() {
-			$(".entry-add").on("click",function() {
-				console.log("entry-add");
-				var entry = new Entry({
-					asset : { id : $("[id='asset.id']").val()},
-					entryGroup : {id : $("[id='entryGroup.id']").val()},
-					amount : $("#amount").val(),
-					date : $("#date").val(),
-					memo : $("#memo").val(),
-					transferEntry : $("#transferEntry").is(":checked")
-				});
-				entryListView.add(entry);
-			});
-		}
-	}
-};
-
-
-
 $(document).ready(function() {
-	//entry.start("[[@{/}]]", [[${#authentication.principal.id}]]);
-	
-	
-	/* (s) 저장 */
-	/* var entry = new Entry({asset : {id : 1}, entryGroup : { id : 1}, amount : 123, memo : "test"});
-	console.log("entry.url() : " + entry.url());
-	entry.save(); */
-	/* (e) 저장 */
-	
-	/* (s) 호출 */
-	/* var entry = new Entry({id : 1});
-	console.log("entry.url() : " + entry.url());
-	entry.fetch({
-		success : function(response, xhr) {
-			console.log("fetch success");
-			console.log(response);
-			console.log("ge1111t : " + entry.get("memo"));
+	/**
+	 * 1. view 설정
+	 */
+	var view = new View({
+		template : $("#entry-template").text(),
+		target : $(".table.table-hover tbody"),
+		menuShow : function(event) {
+			$(event.currentTarget).find("td:last").empty().append(
+					$("<span>").addClass("glyphicon glyphicon-edit").attr("title", "edit").css("cursor", "pointer").tooltip()
+				).append(" ").append(
+					$("<span>").addClass("glyphicon glyphicon-remove").attr("title", "remove").css("cursor", "pointer").tooltip()
+				).append(" ").append(
+					$("<span>").addClass("glyphicon glyphicon-refresh").attr("title", "reset").css("cursor", "pointer").tooltip().hide()
+				);
+			this.menuResetDisplayCheck($(event.currentTarget).find(".glyphicon-refresh"));
 		}
-	}); */
-	/* (e) 호출 */
+	});
 	
-//	var entryList = new EntryList();
-//	var entryListView = new EntryListView({ collection : entryList ,template : $("#entry-template").text() });
-//	
-//	entryList.fetch({
-//		success : function() {
-//			entryListView.render();
-//		}
-//	});
-	//entryPage({entryList : entryList, entryListView : entryListView}).initialize();
-	//setInterval("console.log(entryListView.collection.length);", 1000);
+	/**
+	 * 2. controller 설정
+	 */
+	var controller = new Controller({
+		url : "/user/1/bookkeeping/entry",
+		id : "id",
+		dataKey : "model",
+		view : view,
+		initialize : function() {
+			console.log("우하하하하");
+		},
+		events : {
+			"tr" : {"mouseover" : "menuShow"}
+		},
+		menuShow : function(event) {
+			console.log("[controller] menuShow");
+			$(event.currentTarget).find("td:last").empty().append(
+					$("<span>").addClass("glyphicon glyphicon-edit").attr("title", "edit").css("cursor", "pointer").tooltip()
+				).append(" ").append(
+					$("<span>").addClass("glyphicon glyphicon-remove").attr("title", "remove").css("cursor", "pointer").tooltip()
+				).append(" ").append(
+					$("<span>").addClass("glyphicon glyphicon-refresh").attr("title", "reset").css("cursor", "pointer").tooltip().hide()
+				);
+			event.data.controller.menuResetDisplayCheck($(event.currentTarget).find(".glyphicon-refresh"));
+		},
+		menuResetDisplayCheck : function(displayTarget) {
+			console.log("[controller] menuResetDisplayCheck");
+			console.log(this);
+			console.log(displayTarget);
+//			displayTarget.hide();
+//			if (!this.model.hasChanged()) {
+//				return;
+//			}
+//			for (var key in this.model.changedAttributes()) {
+//				if (this.model.get(key) != this.model.previous(key)) {
+//					displayTarget.fadeIn();	
+//				}
+//			}
+		}
+ 	});
+	
+	var data = new Model({id : 52}, {controller : controller});
+	data.get();
+	
+	var data2 = new Model({asset : {id : 1}, entryGroup : { id : 1}, amount : 123, memo : "test"}, {controller : controller});
+	data2.save();
 });
