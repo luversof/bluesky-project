@@ -29,7 +29,10 @@ $(document).ready(function() {
 			console.log("우하하하하");
 		},
 		events : {
-			"tr" : {"mouseover" : "menuShow"}
+			"tr" : {
+				"mouseover" : "menuShow",
+				"mouseleave" : "menuHide"
+			}
 		},
 		menuShow : function(event) {
 			console.log("[controller] menuShow");
@@ -41,6 +44,9 @@ $(document).ready(function() {
 					$("<span>").addClass("glyphicon glyphicon-refresh").attr("title", "reset").css("cursor", "pointer").tooltip().hide()
 				);
 			event.data.controller.menuResetDisplayCheck($(event.currentTarget).find(".glyphicon-refresh"));
+		},
+		menuHide : function(event) {
+			$(event.currentTarget).find("td:last").empty();
 		},
 		menuResetDisplayCheck : function(displayTarget) {
 			console.log("[controller] menuResetDisplayCheck");
@@ -58,9 +64,10 @@ $(document).ready(function() {
 		}
  	});
 	
-	var data = new Model({id : 52}, {controller : controller});
-	data.get();
+	//var data = new Model({id : 52}, {controller : controller});
+	//data.get();
+	controller.getModelList();
 	
-	var data2 = new Model({asset : {id : 1}, entryGroup : { id : 1}, amount : 123, memo : "test"}, {controller : controller});
-	data2.save();
+//	var data2 = new Model({asset : {id : 1}, entryGroup : { id : 1}, amount : 123, memo : "test"}, {controller : controller});
+//	data2.save();
 });

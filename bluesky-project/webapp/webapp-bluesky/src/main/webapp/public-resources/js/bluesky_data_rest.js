@@ -20,6 +20,7 @@ var View = function(options) {
 	for (key in options) this[key] = options[key];
 	_initialize(this);
 };
+
 /**
  * action에 대해 선언한 클래스
  * 모든 액션은 Controller로 집중됨
@@ -30,10 +31,10 @@ var Controller = function(options) {
 	var _initialize = function(obj) {
 		console.log("[controller] _initialize...");
 		if (!obj.url) {
-			throw new Error("url empty");
+			throw new Error("[controller] _initialize error : url empty");
 		}
 		if (!obj.id) {
-			throw new Error("id empty");
+			throw new Error("[controller] _initialize error : id empty");
 		}
 		obj.view.target.empty();
 		obj.initialize();
@@ -49,10 +50,26 @@ var Controller = function(options) {
 			}
 		}
 	};
+	
+	this.getModelList = function() {
+		var obj = this;
+		console.log("[controller] get");
+		console.log("	url : " + this.getUrl());
+		return $.ajax({
+			url : this.url,
+			type : "get",
+			dataType : this.ajax.dataType,
+			success : function(data) {
+				for (key in data) {
+					obj.setModelData(new Model(data[key], {controller : obj}));
+				}
+			}
+		});
+	};
 
-	this.get = function(model) {
+	this.getModel = function(model) {
 		if (!model.getId()) {
-			throw new Error("id empty");
+			throw new Error("[controller] get error : id empty");
 		}
 		var obj = this;
 		console.log("[controller] get");
@@ -63,38 +80,13 @@ var Controller = function(options) {
 			dataType : this.ajax.dataType,
 			success : function(data) {
 				$.extend(model.data, data);
-				obj.setModel(model);
+				obj.setModelData(model);
 			}
 		});
 	};
 	
-	this.getModelList = function() {
-		var list = this.view.target.data(this.dataKey);
-		if (list == null) {
-			list = new Array();
-		}
-		return list;
-	};
-	this.setModel = function(model) {
-		console.log("[controller] setData");
-		var list = this.getModelList();
-		list.push(model);
-		this.view.target.data(this.dataKey, list);
-		this.view.render(model);
-		return list;
-	};
-	this.getModel = function(id) {
-		var list = this.getModelList();
-		for (key in list) {
-			if (list[key][this.id] == id) {
-				return list[key];
-			}
-		}
-	};
-	
-	this.save = function(model) {
+	this.saveModel = function(model) {
 		console.log("[controller] save");
-		console.log(model);
 		return $.ajax({
 			url : this.url,
 			type : "post",
@@ -103,7 +95,6 @@ var Controller = function(options) {
 			contentType : this.ajax.contentType,
 			success : function() {
 				console.log("asdg");
-				console.log();
 			}
 		});
 	};
@@ -114,6 +105,30 @@ var Controller = function(options) {
 	
 	this.remove = function() {
 		
+	};
+	
+	this.getModelListData = function() {
+		var list = this.view.target.data(this.dataKey);
+		if (list == null) {
+			list = new Array();
+		}
+		return list;
+	};
+	this.setModelData = function(model) {
+		console.log("[controller] setData");
+		var list = this.getModelListData();
+		list.push(model);
+		this.view.target.data(this.dataKey, list);
+		this.view.render(model);
+		return list;
+	};
+	this.getModelData = function(id) {
+		var list = this.getModelListData();
+		for (key in list) {
+			if (list[key][this.id] == id) {
+				return list[key];
+			}
+		}
 	};
 	
 	for (key in options) this[key] = options[key];
@@ -129,12 +144,12 @@ var Model = function(data, options) {
 		return this.data[this.controller.id];
 	};
 	this.get = function() {
-		console.log("[model] get -> controller.get(model)");
-		this.controller.get(this);
+		console.log("[model] get -> controller.getModel(model)");
+		this.controller.getModel(this);
 	};
 	this.save = function() {
-		console.log("[model] save -> controller.save(model)");
-		this.controller.save(this);
+		console.log("[model] save -> controller.saveModel(model)");
+		this.controller.saveModel(this);
 	};
 	var _initialize = function(obj) {
 		console.log("[model] _initialize...");
