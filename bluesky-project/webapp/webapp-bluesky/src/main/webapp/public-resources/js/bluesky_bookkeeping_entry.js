@@ -39,7 +39,6 @@ $(document).ready(function() {
 			".entry-menu-add" : { "click" : "meunAddDisplay" },
 			".entry-add-modal .entry-add" : { "click" : "add" }
 		},
-		
 		/** (s) event **/
 		menuShow : function(event) {
 			console.debug("[controller] menuShow");
@@ -82,7 +81,7 @@ $(document).ready(function() {
 			var dataIdKey = controller.view.dataIdKey;
 			var targetRoot = $(event.currentTarget).closest("[" + dataIdKey +"]");
 			var model = controller.getSavedModel(targetRoot.attr(controller.view.dataIdKey));
-			controller.view.render(model);
+			controller.view.addView(model);
 		},
 		modify : function(event) {
 			console.debug("[controller] modify");
@@ -95,18 +94,15 @@ $(document).ready(function() {
 			model.modify().success(function() {
 				showMessageModal("asset changed");
 			});
-			
 		},
 		remove : function(event) {
 			console.debug("[controller] remove");
 			var controller = event.data.controller;
-			var view = controller.view;
 			var dataIdKey = controller.view.dataIdKey;
 			var targetRoot = $(event.currentTarget).closest("[" + dataIdKey +"]");
 			var model = controller.getSavedModel(targetRoot.attr(dataIdKey));
 			model.remove().success(function() {
 				showMessageModal("asset removed");
-				view.target.find("[" + view.dataIdKey + "=" + model.getId() + "]").fadeOut();
 			});
 		},
 		/** (e) event **/
@@ -158,9 +154,9 @@ $(document).ready(function() {
 			var model = new Model(entry, {controller : event.data.controller});
 			model.add().success(function() {
 				$(".entry-add-modal").modal("hide");
-				var target = view.target.find("[" + view.dataIdKey + "=" + model.getId() + "]");
-				$("html, body").animate({scrollTop : target.offset().top});
-				target.hide().fadeIn(1500);
+				var targetView = view.getView(model.getId());
+				$("html, body").animate({scrollTop : targetView.offset().top});
+				targetView.hide().fadeIn(1500);
 			});
 		}
 		/** (e) externalEvent **/

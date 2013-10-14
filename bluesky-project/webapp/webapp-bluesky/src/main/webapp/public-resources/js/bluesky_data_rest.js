@@ -41,15 +41,25 @@ var Model = function(data, options) {
 var View = function(options) {
 	this.template,this.target;
 	this.dataIdKey = "data-id";
-	this.render = function(model) {
-		console.debug("[view] render...");
+	/**
+	 * model을 view 에 추가, 기존에 있는 경우 갱신 처리
+	 */
+	this.addView = function(model) {
+		console.debug("[view] addView...");
 		var renderedTemplate = $(Mustache.render(this.template, model.data)).attr(this.dataIdKey, model.getId());
-		var renderTarget = this.target.find("[" + this.dataIdKey + "=" + model.getId() + "]");
+		var renderTarget = this.getView(model.getId());
 		if (renderTarget.length == 0) {
 			this.target.append(renderedTemplate);
 		} else {
 			renderTarget.replaceWith(renderedTemplate);
 		}
+		return renderTarget;
+	};
+	this.getView = function(id) {
+		return this.target.find("[" + this.dataIdKey + "=" + id + "]");
+	};
+	this.removeView = function(id) {
+		this.getView(id).remove();
 	};
 	var _initialize = function(obj) {
 		console.debug("[view] _initialize...");
@@ -206,12 +216,12 @@ var Controller = function(options) {
 		var list = this.getSavedModelList();
 		list.push(model);
 		this.view.target.data(this.savedModelKey, list);
-		this.view.render(model);
+		this.view.addView(model);
 		return list;
 	};
 	this.getSavedModel = function(id) {
-		var list = this.getSavedModelList();
 		console.debug("[controller] getSavedModel");
+		var list = this.getSavedModelList();
 		for (key in list) {
 			if (list[key].data[this.id] == id) {
 				return list[key];
@@ -219,8 +229,9 @@ var Controller = function(options) {
 		}
 	},
 	this.removeSavedModel = function(id) {
+		console.debug("[controller] removeSavedModel");
+		this.view.removeView(id);
 		var list = this.getSavedModelList();
-		console.debug("[controller] getSavedModel");
 		for (key in list) {
 			if (list[key].data[this.id] == id) {
 				list.splice(key, 1);
