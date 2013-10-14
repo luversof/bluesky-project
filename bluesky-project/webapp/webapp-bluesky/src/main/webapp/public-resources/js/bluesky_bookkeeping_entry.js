@@ -16,24 +16,21 @@ $(document).ready(function() {
 		template : $("#entry-template").text(),
 		target : $(".table.table-hover tbody")
 	});
-	
 	/**
 	 * 2. controller 설정
 	 */
 	var controller = new Controller({
 		url : "/user/1/bookkeeping/entry",
-		id : "id",
-		dataKey : "model",
 		view : view,
 		initialize : function() {
 			$(".entry-menu-add").css("cursor", "pointer");
 		},
 		events : {
 			"tr" : {
-				"mouseover" : ["menuShow", "menuResetDisplayCheck"],
+				"mouseover" : ["menuShow", "menuModifyDisplayCheck"],
 				"mouseleave" : "menuHide"
 			},
-			"[contenteditable=true]" : { "keyup" : "menuResetDisplayCheck", "focusin" : "menuResetDisplayCheck"},
+			"[contenteditable=true]" : { "keyup" : "menuModifyDisplayCheck", "focusin" : "menuModifyDisplayCheck"},
 			"span.glyphicon-edit" : { "click" : "modify" },
 			"span.glyphicon-remove" : { "click" : "remove" },
 			"span.glyphicon-refresh" : { "click" : "reset" }
@@ -62,8 +59,8 @@ $(document).ready(function() {
 			console.debug("[controller] menuHide");
 			$(event.currentTarget).find("td:last").empty();
 		},
-		menuResetDisplayCheck : function(event) {
-			console.debug("[controller] menuResetDisplayCheck");
+		menuModifyDisplayCheck : function(event) {
+			console.debug("[controller] menuModifyDisplayCheck");
 			var controller = event.data.controller;
 			var dataIdKey = controller.view.dataIdKey;
 			var targetRoot = $(event.currentTarget).closest("[" + dataIdKey +"]");
@@ -71,8 +68,7 @@ $(document).ready(function() {
 			var model = controller.getSavedModel(targetRoot.attr(dataIdKey));
 			var resetArea = targetRoot.find(".glyphicon-refresh");
 			var editArea = targetRoot.find(".glyphicon-edit");
-			var isChanged = controller.isChanged(uiData, model.data);
-			if (isChanged) {
+			if (controller.isChanged(uiData, model.data)) {
 				resetArea.fadeIn();
 				editArea.fadeIn();
 			} else {
@@ -96,7 +92,7 @@ $(document).ready(function() {
 			var uiData = controller.getDataFromTemplate(targetRoot);
 			var model = controller.getSavedModel(targetRoot.attr(dataIdKey));
 			$.extend(true, model.data, uiData);
-			controller.modifyModel(model).success(function() {
+			model.modify().success(function() {
 				showMessageModal("asset changed");
 			});
 			
@@ -108,13 +104,12 @@ $(document).ready(function() {
 			var dataIdKey = controller.view.dataIdKey;
 			var targetRoot = $(event.currentTarget).closest("[" + dataIdKey +"]");
 			var model = controller.getSavedModel(targetRoot.attr(dataIdKey));
-			controller.removeModel(model).success(function() {
+			model.remove().success(function() {
 				showMessageModal("asset removed");
 				view.target.find("[" + view.dataIdKey + "=" + model.getId() + "]").fadeOut();
 			});
 		},
 		/** (e) event **/
-		
 		/**
 		 *  Template 에서 역으로 데이터를 추출하여 템플릿에 뿌려진 값을 json으로 원복한다.
 		 */
@@ -143,7 +138,6 @@ $(document).ready(function() {
 			}
 			return false;
 		},
-		
 		/** (s) externalEvent **/	
 		meunAddDisplay : function(event) {
 			console.debug("[controller] menuAddDisplay");
@@ -162,7 +156,7 @@ $(document).ready(function() {
 				transferEntry : $("#transferEntry").is(":checked")
 			};
 			var model = new Model(entry, {controller : event.data.controller});
-			controller.addModel(model).success(function() {
+			model.add().success(function() {
 				$(".entry-add-modal").modal("hide");
 				var target = view.target.find("[" + view.dataIdKey + "=" + model.getId() + "]");
 				$("html, body").animate({scrollTop : target.offset().top});

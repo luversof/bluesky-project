@@ -20,12 +20,20 @@ var Model = function(data, options) {
 		console.debug("[model] add -> controller.addModel(model)");
 		return this.controller.addModel(this);
 	};
+	this.modify = function() {
+		console.debug("[model] modify -> controller.modifyModel(model)");
+		return this.controller.modifyModel(this);
+	};
+	this.remove = function() {
+		console.debug("[model] remove -> controller.removeModel(model)");
+		return this.controller.removeModel(this);
+	};
 	var _initialize = function(obj) {
 		console.debug("[model] _initialize...");
 		obj.initialize();
 		if (!obj.data[obj.controller.id]) obj.data[obj.controller.id] = null;
 	};
-	this.initialize = function() {};
+	this.initialize = function() {;};
 	for (key in options) this[key] = options[key];
 	_initialize(this);
 };
@@ -57,7 +65,9 @@ var View = function(options) {
  * 모든 액션은 Controller로 집중됨
  */
 var Controller = function(options) {
-	this.url,this.id,this.dataKey,this.view;
+	this.url,this.view;
+	this.id = "id";
+	this.savedModelKey = "savedModel";
 	this.ajax = { dataType : "json", contentType : "application/json" };
 	var _initialize = function(obj) {
 		console.debug("[controller] _initialize...");
@@ -115,7 +125,7 @@ var Controller = function(options) {
 		var obj = this;
 		console.debug("[controller] getModelList url : %s", this.getUrl());
 		return $.ajax({
-			url : this.url,
+			url : this.getUrl(),
 			type : "get",
 			dataType : this.ajax.dataType,
 			success : function(data) {
@@ -132,7 +142,7 @@ var Controller = function(options) {
 		var obj = this;
 		console.debug("[controller] getModel url : %s/%s", this.getUrl(), model.getId());
 		return $.ajax({
-			url : this.url + "/" + model.getId(),
+			url : this.getUrl() + "/" + model.getId(),
 			type : "get",
 			dataType : this.ajax.dataType,
 			success : function(data) {
@@ -145,7 +155,7 @@ var Controller = function(options) {
 		console.debug("[controller] addModel");
 		var obj = this;
 		return $.ajax({
-			url : this.url,
+			url : this.getUrl(),
 			type : "post",
 			data : JSON.stringify(model.data),
 			dataType : this.ajax.dataType,
@@ -159,7 +169,7 @@ var Controller = function(options) {
 	this.modifyModel = function(model) {
 		console.debug("[controller] modifyModel");
 		return $.ajax({
-			url : this.url + "/" + model.getId(),
+			url : this.getUrl() + "/" + model.getId(),
 			type : "put",
 			data : JSON.stringify(model.data),
 			dataType : this.ajax.dataType,
@@ -173,7 +183,7 @@ var Controller = function(options) {
 		console.debug("[controller] removeModel");
 		var obj = this;
 		return $.ajax({
-			url : this.url + "/" + model.getId(),
+			url : this.getUrl() + "/" + model.getId(),
 			type : "delete",
 			dataType : this.ajax.dataType,
 			contentType : this.ajax.contentType,
@@ -185,7 +195,7 @@ var Controller = function(options) {
 	};
 	
 	this.getSavedModelList = function() {
-		var list = this.view.target.data(this.dataKey);
+		var list = this.view.target.data(this.savedModelKey);
 		if (list == null) {
 			list = new Array();
 		}
@@ -195,7 +205,7 @@ var Controller = function(options) {
 		console.debug("[controller] addSavedModel");
 		var list = this.getSavedModelList();
 		list.push(model);
-		this.view.target.data(this.dataKey, list);
+		this.view.target.data(this.savedModelKey, list);
 		this.view.render(model);
 		return list;
 	};
