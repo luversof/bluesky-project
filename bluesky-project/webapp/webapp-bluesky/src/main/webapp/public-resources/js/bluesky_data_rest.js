@@ -5,12 +5,38 @@ String.prototype.format = function() {
     });
 };
 
+var Model = function(data, options) {
+	this.data = data;
+	this.controller;
+	this.getId = function() {
+		console.debug("[model] getId");
+		return this.data[this.controller.id];
+	};
+	this.get = function() {
+		console.debug("[model] get -> controller.getModel(model)");
+		return this.controller.getModel(this);
+	};
+	this.add = function() {
+		console.debug("[model] add -> controller.addModel(model)");
+		return this.controller.addModel(this);
+	};
+	var _initialize = function(obj) {
+		console.debug("[model] _initialize...");
+		obj.initialize();
+		if (!obj.data[obj.controller.id]) obj.data[obj.controller.id] = null;
+	};
+	this.initialize = function() {};
+	for (key in options) this[key] = options[key];
+	_initialize(this);
+};
+
 var View = function(options) {
 	this.template,this.target;
+	this.dataIdKey = "data-id";
 	this.render = function(model) {
 		console.debug("[view] render...");
-		var renderedTemplate = $(Mustache.render(this.template, model.data)).attr("data-id", model.getId());
-		var renderTarget = this.target.find("[data-id=" + model.getId() + "]");
+		var renderedTemplate = $(Mustache.render(this.template, model.data)).attr(this.dataIdKey, model.getId());
+		var renderTarget = this.target.find("[" + this.dataIdKey + "=" + model.getId() + "]");
 		if (renderTarget.length == 0) {
 			this.target.append(renderedTemplate);
 		} else {
@@ -22,7 +48,6 @@ var View = function(options) {
 		obj.initialize();
 	};
 	this.initialize = function() {};
-	
 	for (key in options) this[key] = options[key];
 	_initialize(this);
 };
@@ -86,41 +111,39 @@ var Controller = function(options) {
 			}
 		}
 	};
-	
 	this.getModelList = function() {
 		var obj = this;
-		console.debug("[controller] get url : %s", this.getUrl());
+		console.debug("[controller] getModelList url : %s", this.getUrl());
 		return $.ajax({
 			url : this.url,
 			type : "get",
 			dataType : this.ajax.dataType,
 			success : function(data) {
 				for (key in data) {
-					obj.setSavedModel(new Model(data[key], {controller : obj}));
+					obj.addSavedModel(new Model(data[key], {controller : obj}));
 				}
 			}
 		});
 	};
-
 	this.getModel = function(model) {
 		if (!model.getId()) {
-			throw new Error("[controller] get error : id empty");
+			throw new Error("[controller] getModel error : id empty");
 		}
 		var obj = this;
-		console.debug("[controller] get url : %s/%s", this.getUrl(), model.getId());
+		console.debug("[controller] getModel url : %s/%s", this.getUrl(), model.getId());
 		return $.ajax({
 			url : this.url + "/" + model.getId(),
 			type : "get",
 			dataType : this.ajax.dataType,
 			success : function(data) {
 				$.extend(model.data, data);
-				obj.setSavedModel(model);
+				obj.addSavedModel(model);
 			}
 		});
 	};
-	
-	this.saveModel = function(model) {
-		console.debug("[controller] save");
+	this.addModel = function(model) {
+		console.debug("[controller] addModel");
+		var obj = this;
 		return $.ajax({
 			url : this.url,
 			type : "post",
@@ -129,13 +152,12 @@ var Controller = function(options) {
 			contentType : this.ajax.contentType,
 			success : function(data) {
 				$.extend(model.data, data);
-				obj.setSavedModel(model);
+				obj.addSavedModel(model);
 			}
 		});
 	};
-	
-	this.modify = function() {
-		console.debug("[controller] modify");
+	this.modifyModel = function(model) {
+		console.debug("[controller] modifyModel");
 		return $.ajax({
 			url : this.url + "/" + model.getId(),
 			type : "put",
@@ -144,13 +166,22 @@ var Controller = function(options) {
 			contentType : this.ajax.contentType,
 			success : function(data) {
 				$.extend(model.data, data);
-				obj.setSavedModel(model);
 			}
 		});
 	};
-	
-	this.remove = function() {
-		
+	this.removeModel = function(model) {
+		console.debug("[controller] removeModel");
+		var obj = this;
+		return $.ajax({
+			url : this.url + "/" + model.getId(),
+			type : "delete",
+			dataType : this.ajax.dataType,
+			contentType : this.ajax.contentType,
+			success : function(data) {
+				obj.removeSavedModel(model.getId());
+				console.log(obj.getSavedModelList());
+			}
+		});
 	};
 	
 	this.getSavedModelList = function() {
@@ -160,8 +191,8 @@ var Controller = function(options) {
 		}
 		return list;
 	};
-	this.setSavedModel = function(model) {
-		console.debug("[controller] setData");
+	this.addSavedModel = function(model) {
+		console.debug("[controller] addSavedModel");
 		var list = this.getSavedModelList();
 		list.push(model);
 		this.view.target.data(this.dataKey, list);
@@ -176,36 +207,20 @@ var Controller = function(options) {
 				return list[key];
 			}
 		}
+	},
+	this.removeSavedModel = function(id) {
+		var list = this.getSavedModelList();
+		console.debug("[controller] getSavedModel");
+		for (key in list) {
+			if (list[key].data[this.id] == id) {
+				list.splice(key, 1);
+				break;
+			}
+		}
 	};
-	
 	for (key in options) this[key] = options[key];
 	_initialize(this);
 	_initializeEvents(this);
 	_initializeExternalEvents(this);
 };
 
-var Model = function(data, options) {
-	this.data = data;
-	this.controller;
-	this.getId = function() {
-		console.debug("[model] getId");
-		return this.data[this.controller.id];
-	};
-	this.get = function() {
-		console.debug("[model] get -> controller.getModel(model)");
-		this.controller.getModel(this);
-	};
-	this.save = function() {
-		console.debug("[model] save -> controller.saveModel(model)");
-		this.controller.saveModel(this);
-	};
-	var _initialize = function(obj) {
-		console.debug("[model] _initialize...");
-		obj.initialize();
-		if (!obj.data[obj.controller.id]) obj.data[obj.controller.id] = null;
-	};
-	this.initialize = function() {};
-	
-	for (key in options) this[key] = options[key];
-	_initialize(this);
-};

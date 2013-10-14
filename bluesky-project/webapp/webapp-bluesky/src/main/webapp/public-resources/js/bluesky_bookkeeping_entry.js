@@ -1,20 +1,20 @@
+function showMessageModal(message) {
+	return $("<div>").addClass("modal fade").html(
+		$("<div>").addClass("modal-dialog").html(
+			$("<div>").addClass("modal-content").html(
+				$("<div>").addClass("modal-body").text(message)
+			)
+		)
+	).modal();
+};
+
 $(document).ready(function() {
 	/**
 	 * 1. view 설정
 	 */
 	var view = new View({
 		template : $("#entry-template").text(),
-		target : $(".table.table-hover tbody"),
-		menuShow : function(event) {
-			$(event.currentTarget).find("td:last").empty().append(
-					$("<span>").addClass("glyphicon glyphicon-edit").attr("title", "edit").css("cursor", "pointer").tooltip()
-				).append(" ").append(
-					$("<span>").addClass("glyphicon glyphicon-remove").attr("title", "remove").css("cursor", "pointer").tooltip()
-				).append(" ").append(
-					$("<span>").addClass("glyphicon glyphicon-refresh").attr("title", "reset").css("cursor", "pointer").tooltip().hide()
-				);
-			this.menuResetDisplayCheck($(event.currentTarget).find(".glyphicon-refresh"));
-		}
+		target : $(".table.table-hover tbody")
 	});
 	
 	/**
@@ -40,17 +40,20 @@ $(document).ready(function() {
 		},
 		externalEvents : {
 			".entry-menu-add" : { "click" : "meunAddDisplay" },
-			".entry-menu-add .entry-add" : { "click" : "add" }
+			".entry-add-modal .entry-add" : { "click" : "add" }
 		},
+		
+		/** (s) event **/
 		menuShow : function(event) {
 			console.debug("[controller] menuShow");
-			if (!$(event.currentTarget).closest("[data-id]").find("td:last").html() == "") {
+			var dataIdKey = event.data.controller.view.dataIdKey;
+			if (!$(event.currentTarget).closest("[" + dataIdKey + "]").find("td:last").html() == "") {
 				return;
 			}
-			$(event.currentTarget).closest("[data-id]").find("td:last").empty().append(
-				$("<span>").addClass("glyphicon glyphicon-edit").attr("title", "edit").css("cursor", "pointer").tooltip()
-			).append(" ").append(
+			$(event.currentTarget).closest("[" + dataIdKey + "]").find("td:last").empty().append(
 				$("<span>").addClass("glyphicon glyphicon-remove").attr("title", "remove").css("cursor", "pointer").tooltip()
+			).append(" ").append(
+				$("<span>").addClass("glyphicon glyphicon-edit").attr("title", "edit").css("cursor", "pointer").tooltip().hide()
 			).append(" ").append(
 				$("<span>").addClass("glyphicon glyphicon-refresh").attr("title", "reset").css("cursor", "pointer").tooltip().hide()
 			);
@@ -61,13 +64,57 @@ $(document).ready(function() {
 		},
 		menuResetDisplayCheck : function(event) {
 			console.debug("[controller] menuResetDisplayCheck");
-			var targetRoot = $(event.currentTarget).closest("[data-id]");
 			var controller = event.data.controller;
+			var dataIdKey = controller.view.dataIdKey;
+			var targetRoot = $(event.currentTarget).closest("[" + dataIdKey +"]");
 			var uiData = controller.getDataFromTemplate(targetRoot);
-			var model = controller.getSavedModel(targetRoot.attr("data-id"));
+			var model = controller.getSavedModel(targetRoot.attr(dataIdKey));
 			var resetArea = targetRoot.find(".glyphicon-refresh");
-			controller.isChanged(uiData, model.data) ? resetArea.fadeIn() : resetArea.fadeOut();
+			var editArea = targetRoot.find(".glyphicon-edit");
+			var isChanged = controller.isChanged(uiData, model.data);
+			if (isChanged) {
+				resetArea.fadeIn();
+				editArea.fadeIn();
+			} else {
+				resetArea.fadeOut();
+				editArea.fadeOut();
+			}
 		},
+		reset : function(event) {
+			console.debug("[controller] reset");
+			var controller = event.data.controller;
+			var dataIdKey = controller.view.dataIdKey;
+			var targetRoot = $(event.currentTarget).closest("[" + dataIdKey +"]");
+			var model = controller.getSavedModel(targetRoot.attr(controller.view.dataIdKey));
+			controller.view.render(model);
+		},
+		modify : function(event) {
+			console.debug("[controller] modify");
+			var controller = event.data.controller;
+			var dataIdKey = controller.view.dataIdKey;
+			var targetRoot = $(event.currentTarget).closest("[" + dataIdKey +"]");
+			var uiData = controller.getDataFromTemplate(targetRoot);
+			var model = controller.getSavedModel(targetRoot.attr(dataIdKey));
+			$.extend(true, model.data, uiData);
+			controller.modifyModel(model).success(function() {
+				showMessageModal("asset changed");
+			});
+			
+		},
+		remove : function(event) {
+			console.debug("[controller] remove");
+			var controller = event.data.controller;
+			var view = controller.view;
+			var dataIdKey = controller.view.dataIdKey;
+			var targetRoot = $(event.currentTarget).closest("[" + dataIdKey +"]");
+			var model = controller.getSavedModel(targetRoot.attr(dataIdKey));
+			controller.removeModel(model).success(function() {
+				showMessageModal("asset removed");
+				view.target.find("[" + view.dataIdKey + "=" + model.getId() + "]").fadeOut();
+			});
+		},
+		/** (e) event **/
+		
 		/**
 		 *  Template 에서 역으로 데이터를 추출하여 템플릿에 뿌려진 값을 json으로 원복한다.
 		 */
@@ -89,22 +136,12 @@ $(document).ready(function() {
 						return result;
 					}
 				} else {
-					if (uiData[key] != data[key]) {
+					if (uiData[key] != data[key] && !(uiData[key] == "" && data[key] == null)) {
 						return true;
 					}
 				}
 			}
 			return false;
-		},
-		reset : function(event) {
-			console.debug("[controller] reset");
-			var targetRoot = $(event.currentTarget).closest("[data-id]");
-			var controller = event.data.controller;
-			var model = controller.getSavedModel(targetRoot.attr("data-id"));
-			controller.view.render(model);
-		},
-		modify : function(event) {
-			
 		},
 		
 		/** (s) externalEvent **/	
@@ -114,16 +151,23 @@ $(document).ready(function() {
 		},
 		add : function(event) {
 			console.log("[controller] add");
-			var entry = new Entry({
+			var controller = event.data.controller;
+			var view = controller.view;
+			var entry = {
 				asset : { id : $("[id='asset.id']").val()},
 				entryGroup : {id : $("[id='entryGroup.id']").val()},
 				amount : $("#amount").val(),
 				date : $("#date").val(),
 				memo : $("#memo").val(),
 				transferEntry : $("#transferEntry").is(":checked")
-			});
+			};
 			var model = new Model(entry, {controller : event.data.controller});
-			event.data.controller.saveModel(model);
+			controller.addModel(model).success(function() {
+				$(".entry-add-modal").modal("hide");
+				var target = view.target.find("[" + view.dataIdKey + "=" + model.getId() + "]");
+				$("html, body").animate({scrollTop : target.offset().top});
+				target.hide().fadeIn(1500);
+			});
 		}
 		/** (e) externalEvent **/
  	});
@@ -133,5 +177,5 @@ $(document).ready(function() {
 	controller.getModelList();
 	
 //	var data2 = new Model({asset : {id : 1}, entryGroup : { id : 1}, amount : 123, memo : "test"}, {controller : controller});
-//	data2.save();
+//	data2.add();
 });
