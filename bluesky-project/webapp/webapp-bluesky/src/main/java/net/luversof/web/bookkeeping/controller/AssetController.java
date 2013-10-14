@@ -32,7 +32,7 @@ public class AssetController {
 	@RequestMapping(method = RequestMethod.GET, value = "")
 	public String list(@PathVariable long userId, @RequestParam(defaultValue = "1") int page, Authentication authentication, ModelMap modelMap) {
 		log.debug("modelMap : {}", modelMap);
-		modelMap.addAttribute(assetService.findByUsername(authentication.getName()));
+		modelMap.addAttribute("result", assetService.findByUsername(authentication.getName()));
 		modelMap.addAttribute(assetGroupService.findByUsername(authentication.getName()));
 		return "/bookkeeping/asset/list";
 	}
@@ -45,7 +45,7 @@ public class AssetController {
 		if (asset.getAssetGroup() != null && asset.getAssetGroup().getId() != 0) {
 			asset.setAssetGroup(assetGroupService.findOne(asset.getAssetGroup().getId()));
 		}
-		modelMap.addAttribute(assetService.save(asset));
+		modelMap.addAttribute("result", assetService.save(asset));
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
@@ -60,7 +60,7 @@ public class AssetController {
 		targetAsset.setAmount(asset.getAmount());
 		targetAsset.setEnable(asset.isEnable());
 		
-		modelMap.addAttribute(assetService.save(targetAsset));
+		modelMap.addAttribute("result", assetService.save(targetAsset));
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")

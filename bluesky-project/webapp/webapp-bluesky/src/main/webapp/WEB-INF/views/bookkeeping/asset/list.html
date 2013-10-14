@@ -12,9 +12,7 @@
 	<!-- 동적으로 데이터를 변경할 수 있는 기능 제공 -->
 	<script type="text/javascript" th:inline="text">
 		$(document).ready(function() {
-			asset.start("[[@{/}]]", [[${#authentication.principal.id}]]);
-			//이거 안해도 되게 안되나?
-			$("[data-toggle=tooltip]").tooltip();
+			//asset.start("[[@{/}]]", [[${#authentication.principal.id}]]);
 		});
 	</script>
 	<div class="page-header">
@@ -34,6 +32,7 @@
 			</tr>
 		</thead>
 		<tbody>
+			<!-- 
 			<tr th:if="${!#lists.isEmpty(assetList)}" th:each="asset : ${assetList}">
 				<td th:text="${asset.id}">id</td>
 				<td th:text="${asset.name}" contenteditable="true">name</td>
@@ -43,6 +42,7 @@
 				<td th:if="${asset.assetGroup != null}" th:text="${asset.assetGroup.name}">assetGroup.name</td>
 				<td></td>
 			</tr>
+			 -->
 			<tr th:if="${#lists.isEmpty(assetList)}" class="text-center">
 				<td colspan="7" th:text="#{asset.message.empty.content}">asset.message.empty.content</td>
 			</tr>
@@ -55,6 +55,19 @@
 			</tr>
 		</tfoot>
 	</table>
+	
+	<script type="text/template" id="asset-template">
+	<tr>
+		<td>{{id}}</td>
+		<td contenteditable="true">{{name}}</td>
+		<td>{{username}}</td>
+		<td contenteditable="true">{{amount}}</td>
+		<td contenteditable="true">{{enable}}</td>
+		<td contenteditable="true">{{assetGroup.name}}</td>
+		<td></td>
+	</tr>
+	</script>
+	
 	
 	<!-- (s) asset add modal -->
 	<div class="modal fade asset-add-modal">
