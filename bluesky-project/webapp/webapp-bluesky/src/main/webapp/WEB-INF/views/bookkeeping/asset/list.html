@@ -9,12 +9,6 @@
 <body>
 <div layout:fragment="content">
 
-	<!-- 동적으로 데이터를 변경할 수 있는 기능 제공 -->
-	<script type="text/javascript" th:inline="text">
-		$(document).ready(function() {
-			//asset.start("[[@{/}]]", [[${#authentication.principal.id}]]);
-		});
-	</script>
 	<div class="page-header">
 		<h1>Asset <small th:text="#{asset.menu.list}">list</small></h1>
 	</div>

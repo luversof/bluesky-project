@@ -9,14 +9,6 @@
 <body>
 <div layout:fragment="content">
 
-	<!-- 동적으로 데이터를 변경할 수 있는 기능 제공 -->
-	<script type="text/javascript" th:inline="text">
-		$(document).ready(function() {
-			assetGroup.start("[[@{/}]]", [[${#authentication.principal.id}]]);
-			//이거 안해도 되게 안되나?
-			$("[data-toggle=tooltip]").tooltip();
-		});
-	</script>
 	<div class="page-header">
 		<h1>AssetGroup <small th:text="#{assetGroup.menu.list}">list</small></h1>
 	</div>
@@ -24,14 +16,13 @@
 	<table class="table table-hover">
 		<thead>
 			<tr>
-				<th class="col-lg-1" th:text="#{assetGroup.text.id}">id</th>
 				<th class="col-lg-1" th:text="#{assetGroup.text.name}">name</th>
-				<th class="col-lg-1" th:text="#{assetGroup.text.username}">username</th>
 				<th class="col-lg-1" th:text="#{assetGroup.text.assetType}">assetType</th>
 				<th class="col-lg-1 assetGroup-menu-add"><span class="glyphicon glyphicon-plus"></span> <span th:text="#{assetGroup.menu.add}">add</span></th>
 			</tr>
 		</thead>
 		<tbody>
+			<!-- 
 			<tr th:if="${!#lists.isEmpty(assetGroupList)}" th:each="assetGroup : ${assetGroupList}">
 				<td th:text="${assetGroup.id}">id</td>
 				<td th:text="${assetGroup.name}" contenteditable="true">name</td>
@@ -39,18 +30,27 @@
 				<td th:text="${assetGroup.assetType}">assetType</td>
 				<td></td>
 			</tr>
+			 -->
 			<tr th:if="${#lists.isEmpty(assetGroupList)}" class="text-center">
-				<td colspan="5" th:text="#{assetGroup.message.empty.content}">assetGroup.message.empty.content</td>
+				<td colspan="3" th:text="#{assetGroup.message.empty.content}">assetGroup.message.empty.content</td>
 			</tr>
 		</tbody>
 		<tfoot>
 			<tr>
-				<td colspan="5" class="text-center">
+				<td colspan="3" class="text-center">
 					<button sec:authorize="isAuthenticated()" class="btn btn-primary assetGroup-menu-add" th:text="#{assetGroup.menu.add}">add</button>
 				</td>
 			</tr>
 		</tfoot>
 	</table>
+	
+	<script type="text/template" id="assetGroup-template">
+	<tr>
+		<td contenteditable="true">{{name}}</td>
+		<td contenteditable="true">{{assetType}}</td>
+		<td></td>
+	</tr>
+	</script>
 	
 	<!-- (s) assetGroup add modal -->
 	<div class="modal fade assetGroup-add-modal">
