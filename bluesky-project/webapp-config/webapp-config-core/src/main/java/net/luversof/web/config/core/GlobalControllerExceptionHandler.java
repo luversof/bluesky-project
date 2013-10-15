@@ -5,8 +5,10 @@ import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.ModelAndView;
 
 @Slf4j
@@ -14,6 +16,7 @@ import org.springframework.web.servlet.ModelAndView;
 public class GlobalControllerExceptionHandler {
 	
 	@ExceptionHandler
+	@ResponseStatus(value=HttpStatus.BAD_REQUEST)
 	public ModelAndView handleException(Exception exception) {
 		Map<String, Object> map = new HashMap<>();
 		map.put("exception", exception);
