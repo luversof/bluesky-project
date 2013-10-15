@@ -270,4 +270,3 @@ var Controller = function(options) {
 	_initializeEvents(this);
 	_initializeExternalEvents(this);
 };
-
