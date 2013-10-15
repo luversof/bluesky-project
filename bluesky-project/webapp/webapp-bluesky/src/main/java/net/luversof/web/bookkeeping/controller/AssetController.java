@@ -13,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -39,7 +40,7 @@ public class AssetController {
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
 	@RequestMapping(method = RequestMethod.POST)
-	public void save(@PathVariable long userId, Asset asset, Authentication authentication, ModelMap modelMap) {
+	public void save(@PathVariable long userId, @RequestBody Asset asset, Authentication authentication, ModelMap modelMap) {
 		asset.setUsername(authentication.getName());
 		log.debug("save asset : {}", asset);
 		if (asset.getAssetGroup() != null && asset.getAssetGroup().getId() != 0) {
@@ -50,9 +51,9 @@ public class AssetController {
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
 	@RequestMapping(value = "/{assetId}", method = RequestMethod.PUT)
-	public void modify(@PathVariable long userId, Asset asset, Authentication authentication, ModelMap modelMap) {
+	public void modify(@PathVariable long userId, @RequestBody Asset asset, Authentication authentication, ModelMap modelMap) {
 		Asset targetAsset = assetService.findOne(asset.getId());
-		
+		//TODO assetGroupNanem 변경도 적용해야함
 		if (!authentication.getName().equals(targetAsset.getUsername())) {
 			throw new BlueskyException("username is not owner");
 		}

@@ -22,9 +22,7 @@
 	<table class="table table-hover">
 		<thead>
 			<tr>
-				<th class="col-lg-1" th:text="#{asset.text.id}">id</th>
 				<th class="col-lg-1" th:text="#{asset.text.name}">name</th>
-				<th class="col-lg-1" th:text="#{asset.text.username}">username</th>
 				<th th:text="#{asset.text.amount}">amount</th>
 				<th class="col-lg-1" th:text="#{asset.text.enable}">enable</th>
 				<th class="col-lg-1" th:text="#{asset.text.assetGroup.name}">assetGroup.name</th>
@@ -34,9 +32,7 @@
 		<tbody>
 			<!-- 
 			<tr th:if="${!#lists.isEmpty(assetList)}" th:each="asset : ${assetList}">
-				<td th:text="${asset.id}">id</td>
 				<td th:text="${asset.name}" contenteditable="true">name</td>
-				<td th:text="${asset.username}">username</td>
 				<td th:text="${asset.amount}" contenteditable="true">amount</td>
 				<td th:text="${asset.enable}" contenteditable="true">enable</td>
 				<td th:if="${asset.assetGroup != null}" th:text="${asset.assetGroup.name}">assetGroup.name</td>
@@ -44,12 +40,12 @@
 			</tr>
 			 -->
 			<tr th:if="${#lists.isEmpty(assetList)}" class="text-center">
-				<td colspan="7" th:text="#{asset.message.empty.content}">asset.message.empty.content</td>
+				<td colspan="5" th:text="#{asset.message.empty.content}">asset.message.empty.content</td>
 			</tr>
 		</tbody>
 		<tfoot>
 			<tr>
-				<td colspan="7" class="text-center">
+				<td colspan="5" class="text-center">
 					<button sec:authorize="isAuthenticated()" class="btn btn-primary asset-menu-add" th:text="#{asset.menu.add}">add</button>
 				</td>
 			</tr>
@@ -58,12 +54,10 @@
 	
 	<script type="text/template" id="asset-template">
 	<tr>
-		<td>{{id}}</td>
 		<td contenteditable="true">{{name}}</td>
-		<td>{{username}}</td>
 		<td contenteditable="true">{{amount}}</td>
 		<td contenteditable="true">{{enable}}</td>
-		<td contenteditable="true">{{assetGroup.name}}</td>
+		<td>{{assetGroup.name}}</td>
 		<td></td>
 	</tr>
 	</script>

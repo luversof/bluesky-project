@@ -127,7 +127,7 @@ $(document).ready(function() {
 						return result;
 					}
 				} else {
-					if (uiData[key] != data[key] && !(uiData[key] == "" && data[key] == null)) {
+					if (uiData[key].isChanged(data[key])) {
 						return true;
 					}
 				}

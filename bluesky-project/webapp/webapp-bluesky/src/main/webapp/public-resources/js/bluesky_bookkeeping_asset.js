@@ -112,11 +112,10 @@ $(document).ready(function() {
 		getDataFromTemplate : function(target) {
 			console.debug("[controller] getDataFromTemplate");
 			return {
-				asset : { name : target.find("td:eq(0)").text() },
-				assetGroup : { name : target.find("td:eq(1)").text() },
-				amount : target.find("td:eq(2)").text(),
-				date : target.find("td:eq(3)").text(),
-				memo : target.find("td:eq(4)").text()
+				name : target.find("td:eq(0)").text(),
+				amount : target.find("td:eq(1)").text(),
+				enable : target.find("td:eq(2)").text(),
+				assetGroup : { name : target.find("td:eq(3)").text() }
 			};
 		},
 		isChanged : function(uiData, data) {
@@ -127,7 +126,7 @@ $(document).ready(function() {
 						return result;
 					}
 				} else {
-					if (uiData[key] != data[key] && !(uiData[key] == "" && data[key] == null)) {
+					if (uiData[key].isChanged(data[key])) {
 						return true;
 					}
 				}
@@ -144,12 +143,10 @@ $(document).ready(function() {
 			var controller = event.data.controller;
 			var view = controller.view;
 			var asset = {
-				asset : { id : $("[id='asset.id']").val()},
-				assetGroup : {id : $("[id='assetGroup.id']").val()},
+				name : $("#name").val(),
 				amount : $("#amount").val(),
-				date : $("#date").val(),
-				memo : $("#memo").val(),
-				transferAsset : $("#transferEntry").is(":checked")
+				enable : $("#enable").is(":checked"),
+				assetGroup : { id : $("[id='assetGroup.id']").val() }
 			};
 			var model = new Model(asset, {controller : event.data.controller});
 			model.add().success(function() {

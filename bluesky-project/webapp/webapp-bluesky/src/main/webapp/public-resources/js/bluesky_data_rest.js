@@ -1,8 +1,34 @@
+/**
+ * String format 적용<br />
+ * var ex = "Hello {0}!, This is {1}"<br />
+ * ex.format("World", "Test");<br />
+ * => Hello World!, This is Test
+ * @returns
+ */
 String.prototype.format = function() {
     var args = arguments;
     return this.replace(/\{(\d+)\}/g, function() {
         return args[arguments[1]];
     });
+};
+
+/**
+ * original data와 ui 추출 데이터 사이 변경 여부 확인
+ * @param original
+ * @returns {Boolean}
+ */
+String.prototype.isChanged = function(original) {
+	//console.log("====this : %s, original : %s, typeof this : %s, typeof original : %s", this.valueOf(), original, typeof this, typeof original);
+	if (typeof original == "string") {
+		//console.log("string diff : %s", this != original);
+		return this != original;
+	} else if (typeof original == "boolean") {
+		//console.log("boolean diff : %s, typeof (this) : %s", eval(this.valueOf()) != original, typeof new Boolean(this));
+		return eval(this.valueOf()) != original;
+	} else {
+		//console.log("else diff : %s, typeof (this) : %s", eval(this) != original, typeof eval(this));
+		return eval(this) != original;
+	}
 };
 
 var Model = function(data, options) {
