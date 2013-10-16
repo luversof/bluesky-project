@@ -12,6 +12,12 @@ String.prototype.format = function() {
     });
 };
 
+Array.prototype.sortTest = function(key, direction) {
+	this.sort(function(a, b) {
+		return a[key] > b[key] ? 1 : -1;
+	});
+};
+
 /**
  * original data와 ui 추출 데이터 사이 변경 여부 확인
  * @param original
@@ -248,9 +254,9 @@ var Controller = function(options) {
 	this.getSavedModel = function(id) {
 		console.debug("[controller] getSavedModel");
 		var list = this.getSavedModelList();
-		for (key in list) {
-			if (list[key].data[this.id] == id) {
-				return list[key];
+		for (var i = 0; i < list.length ; i++) {
+			if (list[i].data[this.id] == id) {
+				return list[i];
 			}
 		}
 	},
@@ -258,9 +264,9 @@ var Controller = function(options) {
 		console.debug("[controller] removeSavedModel");
 		this.view.removeView(id);
 		var list = this.getSavedModelList();
-		for (key in list) {
-			if (list[key].data[this.id] == id) {
-				list.splice(key, 1);
+		for (var i = 0; i < list.length ; i++) {
+			if (list[i].data[this.id] == id) {
+				list.splice(i, 1);
 				break;
 			}
 		}
