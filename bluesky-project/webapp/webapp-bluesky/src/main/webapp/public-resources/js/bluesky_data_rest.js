@@ -12,11 +12,18 @@ String.prototype.format = function() {
     });
 };
 
-Array.prototype.sortTest = function(key, direction) {
+Array.prototype.sortTest = function(key, isDescending) {
+	if (!isDescending) isDescending = false;
+	var i = isDescending ? -1 : 1;
 	this.sort(function(a, b) {
-		return a[key] > b[key] ? 1 : -1;
+		if (isDescending) return a[key] > b[key] ? -1 : 1;
+		else return a[key] > b[key] ? 1 : -1; 
 	});
 };
+
+var t = [{a : "1234"}, {a : "3234"}, {a : "2342"}];
+t.sortTest("a");
+console.log(t);
 
 /**
  * original data와 ui 추출 데이터 사이 변경 여부 확인
