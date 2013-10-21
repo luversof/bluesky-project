@@ -16,14 +16,33 @@ Array.prototype.sortTest = function(key, isDescending) {
 	if (!isDescending) isDescending = false;
 	var i = isDescending ? -1 : 1;
 	this.sort(function(a, b) {
-		if (isDescending) return a[key] > b[key] ? -1 : 1;
-		else return a[key] > b[key] ? 1 : -1; 
+		if (isDescending) return getValueFromObj(a, key) > getValueFromObj(b, key) ? -1 : 1;
+		else return getValueFromObj(a, key) > getValueFromObj(b, key) ? i * 1 : i * -1; 
 	});
 };
 
-var t = [{a : "1234"}, {a : "3234"}, {a : "2342"}];
-t.sortTest("a");
+/**
+ * object에서 key에 대한 value return<br />
+ * ex) obj = {a : { a1 : "a1val", ...}, b : {...}}<br />
+ * key = "a.a1"<br />
+ * getValueFromObj(obj, key) => "a1val" 
+ */
+function getValueFromObj(obj, key) {
+	var keyArray = key.split(".");
+	var retVal = obj;
+	for (var i = 0 ; i < keyArray.length ; i++) {
+		retVal = retVal[keyArray[i]];
+	}
+	return retVal;
+}
+
+var t = [
+	{a : "1234", b : { b1 : "sag", b2 : "v32"}},
+	{a : "3234", b : { b1 : "wehg", b2 : "v22"}},
+	{a : "2342", b : { b1 : "asd", b2 : "v12"}}];
+t.sortTest("b.b1");
 console.log(t);
+
 
 /**
  * original data와 ui 추출 데이터 사이 변경 여부 확인
@@ -80,6 +99,8 @@ var Model = function(data, options) {
 var View = function(options) {
 	this.template,this.target;
 	this.dataIdKey = "data-id";
+	this.sortKey = "id";
+	this.sortIsDescending = "false";
 	/**
 	 * model을 view 에 추가, 기존에 있는 경우 갱신 처리
 	 */
@@ -88,6 +109,7 @@ var View = function(options) {
 		var renderedTemplate = $(Mustache.render(this.template, model.data)).attr(this.dataIdKey, model.getId());
 		var renderTarget = this.getView(model.getId());
 		if (renderTarget.length == 0) {
+			// 순서에 따라 위치 변경 처리 필요
 			this.target.append(renderedTemplate);
 		} else {
 			renderTarget.replaceWith(renderedTemplate);
