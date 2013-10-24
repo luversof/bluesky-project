@@ -14,10 +14,9 @@ String.prototype.format = function() {
 
 Array.prototype.sortTest = function(key, isDescending) {
 	if (!isDescending) isDescending = false;
-	var i = isDescending ? -1 : 1;
+	var i = isDescending == true ? -1 : 1;
 	this.sort(function(a, b) {
-		if (isDescending) return getValueFromObj(a, key) > getValueFromObj(b, key) ? -1 : 1;
-		else return getValueFromObj(a, key) > getValueFromObj(b, key) ? i * 1 : i * -1; 
+		return getValueFromObj(a, key) > getValueFromObj(b, key) ? i * 1 : i * -1; 
 	});
 };
 
@@ -37,8 +36,8 @@ function getValueFromObj(obj, key) {
 }
 
 var t = [
-	{a : "1234", b : { b1 : "sag", b2 : "v32"}},
-	{a : "3234", b : { b1 : "wehg", b2 : "v22"}},
+	{a : "1234", b : { b1 : "bag", b2 : "v32"}},
+	{a : "3234", b : { b1 : "cehg", b2 : "v22"}},
 	{a : "2342", b : { b1 : "asd", b2 : "v12"}}];
 t.sortTest("b.b1");
 console.log(t);
