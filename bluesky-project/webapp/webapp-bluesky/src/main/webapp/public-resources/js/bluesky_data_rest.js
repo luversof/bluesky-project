@@ -158,14 +158,14 @@ var Controller = function(options) {
 	var _initializeEvents = function(obj) {
 		console.debug("[controller] _initializeEvents...");
 		var _addEvent = function(obj, target, event, eventMethod) {
-			console.debug("[controller] _addEvent target : %s, event : %s, eventMethod : %s", target, event, eventMethod);
+			//console.debug("[controller] _addEvent target : %s, event : %s, eventMethod : %s", target, event, eventMethod);
 			$(obj.view.target).on(event, target, { controller : obj }, eventMethod);
 		};
 		for (target in obj.events) {
 			for (event in obj.events[target]) {
 				if (typeof obj.events[target][event] == "object") {
-					for (eventListPart in obj.events[target][event]) {
-						_addEvent(obj, target, event, obj[obj.events[target][event][eventListPart]]);
+					for (var i = 0 ; i < obj.events[target][event].length ; i++) {
+						_addEvent(obj, target, event, obj[obj.events[target][event][i]]);
 					}
 				} else {
 					_addEvent(obj, target, event, obj[obj.events[target][event]]);
@@ -176,7 +176,7 @@ var Controller = function(options) {
 	var _initializeExternalEvents = function(obj) {
 		console.debug("[controller] _initializeExternalEvents...");
 		var _addEvent = function(obj, target, event, eventMethod) {
-			console.debug("[controller] _addEvent target : %s, event : %s, eventMethod : %s", target, event, eventMethod);
+			//console.debug("[controller] _addEvent target : %s, event : %s, eventMethod : %s", target, event, eventMethod);
 			$(target).on(event, null, { controller : obj }, eventMethod);
 		};
 		for (target in obj.externalEvents) {
@@ -199,8 +199,8 @@ var Controller = function(options) {
 			type : "get",
 			dataType : this.ajax.dataType,
 			success : function(data) {
-				for (key in data) {
-					obj.addSavedModel(new Model(data[key], {controller : obj}));
+				for (var i = 0 ; i < data.length ; i++) {
+					obj.addSavedModel(new Model(data[i], {controller : obj}));
 				}
 			}
 		});
