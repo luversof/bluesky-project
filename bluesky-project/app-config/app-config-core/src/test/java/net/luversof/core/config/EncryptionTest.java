@@ -13,8 +13,7 @@ public class EncryptionTest {
 	@Test
 	public void 암호화테스트() {
 		PropertyConfig config = new PropertyConfig();
-		StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
-		encryptor.setConfig(config.environmentStringPBEConfig());
+		StandardPBEStringEncryptor encryptor = config.standardPBEStringEncryptor();
 		String url = "";
 		String encUrl = encryptor.encrypt(url);
 		log.debug("test.url={}",encUrl);
