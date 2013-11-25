@@ -25,16 +25,6 @@
 			</tr>
 		</thead>
 		<tbody>
-			<!-- 
-			<tr th:if="${!#lists.isEmpty(entryList)}" th:each="entry : ${entryList}">
-				<td th:text="${entry.asset.name}" contenteditable="true">asset.name</td>
-				<td th:text="${entry.entryGroup.name}">entryGroup.name</td>
-				<td th:text="${entry.amount}" contenteditable="true">amount</td>
-				<td th:text="${entry.date}" contenteditable="true">date</td>
-				<td th:text="${entry.memo}" contenteditable="true">memo</td>
-				<td></td>
-			</tr>
-			 -->
 			<tr th:if="${#lists.isEmpty(entryList)}" class="text-center">
 				<td colspan="6" th:text="#{entry.message.empty.content}">entry.message.empty.content</td>
 			</tr>
