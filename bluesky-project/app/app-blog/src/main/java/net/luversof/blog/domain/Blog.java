@@ -38,5 +38,7 @@ public class Blog {
 
 	@OneToOne
 	private BlogCategory blogCategory;
-
+	
+	
+	public interface Save {};
 }

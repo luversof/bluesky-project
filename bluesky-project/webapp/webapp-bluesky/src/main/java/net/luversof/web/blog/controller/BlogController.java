@@ -41,7 +41,6 @@ public class BlogController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST)
 	public String save(Blog blog, Authentication authentication) {
-		blog.setUsername(authentication.getName());
 		log.debug("save blog : {}", blog);
 		if (blog.getBlogCategory() != null && blog.getBlogCategory().getId() != 0) {
 			blog.setBlogCategory(blogCategoryService.findOne(blog.getBlogCategory().getId()));

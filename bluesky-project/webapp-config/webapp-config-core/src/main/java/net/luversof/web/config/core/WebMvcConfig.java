@@ -39,7 +39,6 @@ import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 import org.springframework.web.servlet.view.ContentNegotiatingViewResolver;
 import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
-import org.springframework.web.servlet.view.json.MappingJacksonJsonView;
 import org.thymeleaf.extras.springsecurity3.dialect.SpringSecurityDialect;
 import org.thymeleaf.spring3.SpringTemplateEngine;
 import org.thymeleaf.spring3.view.ThymeleafViewResolver;
@@ -117,12 +116,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		viewResolver.setContentNegotiationManager(contentNegotiationManager);
 
 		List<ViewResolver> viewResolvers = new ArrayList<ViewResolver>();
-
-		ThymeleafViewResolver thymeleafViewResolver = new ThymeleafViewResolver();
-		thymeleafViewResolver.setTemplateEngine(templateEngine());
-		thymeleafViewResolver.setCharacterEncoding("UTF-8");
-
-		viewResolvers.add(thymeleafViewResolver);
+		viewResolvers.add(thymeleafViewResolver());
 		viewResolver.setViewResolvers(viewResolvers);
 
 
@@ -136,12 +130,14 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		return viewResolver;
 	}
 
+
 	@Bean
 	public ServletContextTemplateResolver templateResolver() {
 		ServletContextTemplateResolver templateResolver = new ServletContextTemplateResolver();
 		templateResolver.setPrefix("/WEB-INF/views/");
 		templateResolver.setSuffix(".html");
 		templateResolver.setTemplateMode("HTML5");
+		templateResolver.setCharacterEncoding("UTF-8");
 
 		if (ArrayUtils.contains(applicationContext.getEnvironment().getActiveProfiles(), "live")) {
 			templateResolver.setCacheable(true);
@@ -162,7 +158,15 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		springTemplateEngine.addDialect(new SpringSecurityDialect());
 		return springTemplateEngine;
 	}
-
+	
+	@Bean
+	public ThymeleafViewResolver thymeleafViewResolver() {
+		ThymeleafViewResolver thymeleafViewResolver = new ThymeleafViewResolver();
+		thymeleafViewResolver.setTemplateEngine(templateEngine());
+		thymeleafViewResolver.setCharacterEncoding("UTF-8");
+		return thymeleafViewResolver;
+	}
+	
 	@Bean
 	public MessageSource messageSource() {
 		log.debug("setting up message source");
