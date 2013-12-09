@@ -15,9 +15,9 @@ import org.springframework.aop.support.AopUtils;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Aspect
 @Component
-@Slf4j
 @Order(value=1)
 public class DataSourceAspect {
 
@@ -31,6 +31,7 @@ public class DataSourceAspect {
 	
 	@Before("classPointcut()")
 	public void beforeClassPointcut(JoinPoint joinPoint) {
+		log.debug("classPointcut activated");
 		Class<?> targetClass = AopUtils.getTargetClass(joinPoint.getThis());
 		DataSource dataSource = targetClass.getAnnotation(DataSource.class);
 		if (dataSource == null) {
@@ -42,6 +43,7 @@ public class DataSourceAspect {
 	
 	@Before("methodPointcut()")
 	public void beforeMethodPointcut(JoinPoint joinPoint) {
+		log.debug("methodPointcut activated");
 		Signature signature = joinPoint.getSignature();
 		if (!(signature instanceof MethodSignature)) {
 			return;

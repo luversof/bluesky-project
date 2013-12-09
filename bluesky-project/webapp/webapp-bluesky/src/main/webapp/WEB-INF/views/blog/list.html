@@ -33,7 +33,7 @@
 			<tr>
 				<td colspan="5" class="text-center">
 					<ul class="pagination" th:if="${pageImpl.totalPages} > 0">
-						<li th:each="i : ${#numbers.sequence(startPage, endPage)}" th:class="${i == currentPage} ? 'active'"><a th:href="@{/blog/list(page=${i})}" th:text="${i}">?</a></li>
+						<li th:each="i : ${#numbers.sequence(startPage, endPage)}" th:class="${i == currentPage} ? 'active'"><a th:href="@{/blog(page=${i})}" th:text="${i}">?</a></li>
 					</ul>
 					<br />
 					<a th:href="@{'/blog/write'}" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blog.menu.write}">write</a>

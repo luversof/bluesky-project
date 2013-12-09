@@ -48,11 +48,9 @@ $(document).ready(function() {
 			$nav.fadeIn();
 		}
 	}
-	
 	_lastScroll = t;
 	});
 });
-
 
 $(document).ready(function() {
 	$("[data-toggle=tooltip]").tooltip();

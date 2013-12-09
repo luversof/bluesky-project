@@ -10,6 +10,7 @@ import javax.persistence.OneToOne;
 
 import lombok.Data;
 
+import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
@@ -20,15 +21,15 @@ public class Blog {
 	@GeneratedValue
 	private long id;
 
+	@NotEmpty(groups = Save.class)
 	private String username;
 
+	@NotEmpty(groups = Save.class)
 	private String title;
 
+	@NotEmpty(groups = Save.class)
 	private String content;
 
-	// @Column(columnDefinition = "timestamp")
-	// @Temporal(TemporalType.TIMESTAMP)
-	// @DateTimeFormat(iso = ISO.DATE)
 	@CreatedDate
 	@Column(updatable=false)
 	private Date createdDate;
