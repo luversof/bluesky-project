@@ -33,5 +33,5 @@ public class Entry {
 	 * 이체인 경우 표시하기 위한 속성
 	 * 이체 대상을 저장해야 하는 이슈가 있음
 	 */
-	private boolean isTransferEntry;
+	private boolean transferEntry;
 }
