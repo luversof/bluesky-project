@@ -2,6 +2,7 @@ package net.luversof.web.blog.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.blog.domain.Blog;
+import net.luversof.blog.domain.Blog.Save;
 import net.luversof.blog.service.BlogCategoryService;
 import net.luversof.blog.service.BlogService;
 import net.luversof.core.exception.BlueskyException;
@@ -14,6 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -40,7 +42,7 @@ public class BlogController {
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST)
-	public String save(Blog blog, Authentication authentication) {
+	public String save(@Validated(Save.class) Blog blog, Authentication authentication) {
 		log.debug("save blog : {}", blog);
 		if (blog.getBlogCategory() != null && blog.getBlogCategory().getId() != 0) {
 			blog.setBlogCategory(blogCategoryService.findOne(blog.getBlogCategory().getId()));

@@ -1,5 +1,6 @@
 package net.luversof.web.config.core;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -137,7 +138,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		templateResolver.setPrefix("/WEB-INF/views/");
 		templateResolver.setSuffix(".html");
 		templateResolver.setTemplateMode("HTML5");
-		templateResolver.setCharacterEncoding("UTF-8");
+		templateResolver.setCharacterEncoding(StandardCharsets.UTF_8.name());
 
 		if (ArrayUtils.contains(applicationContext.getEnvironment().getActiveProfiles(), "live")) {
 			templateResolver.setCacheable(true);
@@ -163,7 +164,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 	public ThymeleafViewResolver thymeleafViewResolver() {
 		ThymeleafViewResolver thymeleafViewResolver = new ThymeleafViewResolver();
 		thymeleafViewResolver.setTemplateEngine(templateEngine());
-		thymeleafViewResolver.setCharacterEncoding("UTF-8");
+		thymeleafViewResolver.setCharacterEncoding(StandardCharsets.UTF_8.name());
 		return thymeleafViewResolver;
 	}
 	
@@ -173,7 +174,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
 		messageSource.setBasename("public-resources/message/message");
 		messageSource.setCacheSeconds(MESSAGE_SOURCE_CACHE_SECOND);
-		messageSource.setDefaultEncoding("UTF-8");
+		messageSource.setDefaultEncoding(StandardCharsets.UTF_8.name());
 		return messageSource;
 	}
 }

@@ -8,6 +8,7 @@ import net.luversof.core.exception.BlueskyException;
 import net.luversof.web.AuthorizeRole;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -39,7 +40,7 @@ public class AssetController {
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
-	@RequestMapping(method = RequestMethod.POST)
+	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	public void save(@PathVariable long userId, @RequestBody Asset asset, Authentication authentication, ModelMap modelMap) {
 		asset.setUsername(authentication.getName());
 		log.debug("save asset : {}", asset);
@@ -50,7 +51,7 @@ public class AssetController {
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
-	@RequestMapping(value = "/{assetId}", method = RequestMethod.PUT)
+	@RequestMapping(value = "/{assetId}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
 	public void modify(@PathVariable long userId, @RequestBody Asset asset, Authentication authentication, ModelMap modelMap) {
 		Asset targetAsset = assetService.findOne(asset.getId());
 		//TODO assetGroupNanem 변경도 적용해야함
@@ -65,7 +66,7 @@ public class AssetController {
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
-	@RequestMapping(value = "/{assetId}", method = RequestMethod.DELETE)
+	@RequestMapping(value = "/{assetId}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public void delete(@PathVariable long userId, @PathVariable long assetId, Authentication authentication, ModelMap modelMap) {
 		Asset targetAsset = assetService.findOne(assetId);
 		if (!authentication.getName().equals(targetAsset.getUsername())) {

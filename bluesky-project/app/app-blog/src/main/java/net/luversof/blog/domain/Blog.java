@@ -21,7 +21,6 @@ public class Blog {
 	@GeneratedValue
 	private long id;
 
-	@NotEmpty(groups = Save.class)
 	private String username;
 
 	@NotEmpty(groups = Save.class)

@@ -26,7 +26,7 @@ public class BlogAspect {
 	
 	@Before("classPointcut(blog, authentication)")
 	public void beforeClassPointcut(Blog blog, Authentication authentication) {
-		log.debug("blog object set username, username : {}", authentication.getName());
+		log.debug("[blog] object set username, username : {}", authentication.getName());
 		if (StringUtils.isEmpty(blog.getUsername())) {
 			blog.setUsername(authentication.getName());
 		}
