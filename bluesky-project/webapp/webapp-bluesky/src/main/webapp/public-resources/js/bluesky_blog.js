@@ -16,14 +16,35 @@ var blog = {
 			"type" : "hidden",
 			"name" : "_method"
 		}).val("delete")).submit();
-	},
+	}
 	/**
 	 * data-blog-content attribute가 선언된 태그의 안에 해당 content 삽입 처리
 	 */
-	displayContext : function() {
+	, displayContext : function() {
 		$("[data-blog-content]").each(function() {
 			console.log($(this).attr("data-blog-content"));
 			$(this).html($(this).attr("data-blog-content"));
 		});
 	}
+	, save : function() {
+		var form = $(".write.form-horizontal");
+		$.ajax({
+			type : form.attr("method")
+			, url : form.attr("url")
+			, dataType : "json"
+			, success : function(data) {
+				console.log(data);
+			}
+			, error : function(jqXHR, textStatus, errorThrown) {
+				
+			}
+		});
+	}
 };
+
+$(document).ready(function() {
+	console.log("Test");
+	$(".write.form-horizontal .submit").on("click", function() {
+		console.log("Dd");
+	});
+});

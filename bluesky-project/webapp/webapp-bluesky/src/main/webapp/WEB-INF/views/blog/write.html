@@ -3,6 +3,9 @@
 	xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="/layout/defaultLayout">
+<head>
+	<script th:src="@{/js/bluesky_blog.js}"></script>
+</head>
 <body>
 	<div layout:fragment="content">
 		<script type="text/javascript" th:src="@{/resources/wysihtml5/js/wysihtml5-0.3.0.js}"></script>
@@ -23,7 +26,7 @@
 		<div class="page-header">
 			<h1>Blog <small th:text="#{blog.menu.write}">write</small></h1>
 		</div>
-		<form class="form-horizontal" action="./" method="post">
+		<form class="form-horizontal write" th:action="@{./}" method="post">
 			<div class="form-group">
 				<label class="col-lg-2 control-label" for="title" th:text="#{blog.text.title}">title</label>
 				<div class="col-lg-6">
@@ -66,7 +69,7 @@
 					<textarea class="form-control" rows="13" name="content" id="content" th:placeholder="#{blog.text.content}"></textarea>
 					<br />
 					<div class="text-center">
-						<button class="btn btn-primary" type="submit" th:text="#{blog.menu.save}">save</button>
+						<button class="btn btn-primary submit" type="button" th:text="#{blog.menu.save}">save</button>
 						<button class="btn btn-default cancel" type="button" th:text="#{blog.menu.cancel}">cancel</button>
 					</div>
 				</div>

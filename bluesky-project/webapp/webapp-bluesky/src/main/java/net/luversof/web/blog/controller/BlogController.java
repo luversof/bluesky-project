@@ -10,6 +10,7 @@ import net.luversof.web.AuthorizeRole;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -25,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 @RequestMapping("/blog")
 public class BlogController {
-	
+
 	private static final int PAGE_BLOCK_SIZE = 10;
 
 	@Autowired
@@ -33,24 +34,6 @@ public class BlogController {
 
 	@Autowired
 	private BlogCategoryService blogCategoryService;
-
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = { "/write" })
-	public void writePage(Authentication authentication, ModelMap modelMap) {
-		modelMap.addAttribute(blogCategoryService.findByUsername(authentication.getName()));
-	}
-
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(method = RequestMethod.POST)
-	public String save(@Validated(Save.class) Blog blog, Authentication authentication) {
-		log.debug("save blog : {}", blog);
-		if (blog.getBlogCategory() != null && blog.getBlogCategory().getId() != 0) {
-			blog.setBlogCategory(blogCategoryService.findOne(blog.getBlogCategory().getId()));
-		}
-		blogService.save(blog);
-		return "redirect:/blog";
-	}
-
 	
 	@RequestMapping(value = { "" })
 	public String list(@RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
@@ -69,7 +52,21 @@ public class BlogController {
 		log.debug("modelMap : {}", modelMap);
 		return "/blog/list";
 	}
+	
+	@RequestMapping("/{id}")
+	public String view(@PathVariable long id, ModelMap modelMap) {
+		log.debug("id : {}", id);
+		modelMap.addAttribute(blogService.findOne(id));
+		log.debug("modelMap : {}", modelMap);
+		return "/blog/view";
+	}
 
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@RequestMapping(value = { "/write" })
+	public void writePage(Authentication authentication, ModelMap modelMap) {
+		modelMap.addAttribute(blogCategoryService.findByUsername(authentication.getName()));
+	}
+	
 	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[blog].username == authentication.name")
 	@RequestMapping("/{id}/modify")
 	public String modifyPage(@PathVariable long id, Authentication authentication, ModelMap modelMap) {
@@ -80,40 +77,38 @@ public class BlogController {
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
-	public String modify(Blog blog, Authentication authentication) {
-		Blog targetBlog = blogService.findOne(blog.getId());
+	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+	public void save(@Validated(Save.class) Blog blog, Authentication authentication) {
+		log.debug("save blog : {}", blog);
+		if (blog.getBlogCategory() != null && blog.getBlogCategory().getId() != 0) {
+			blog.setBlogCategory(blogCategoryService.findOne(blog.getBlogCategory().getId()));
+		}
+		blogService.save(blog);
+	}
 
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+	public void modify(Blog blog, Authentication authentication) {
+		Blog targetBlog = blogService.findOne(blog.getId());
 		if (!authentication.getName().equals(targetBlog.getUsername())) {
 			throw new BlueskyException("username is not owner");
 		}
-
 		targetBlog.setTitle(blog.getTitle());
 		targetBlog.setContent(blog.getContent());
 		if (blog.getBlogCategory() != null && blog.getBlogCategory().getId() != 0) {
 			targetBlog.setBlogCategory(blogCategoryService.findOne(blog.getBlogCategory().getId()));
 		}
 		blogService.save(targetBlog);
-		return "redirect:/blog/" + blog.getId();
-	}
-
-	@RequestMapping("/{id}")
-	public String view(@PathVariable long id, ModelMap modelMap) {
-		log.debug("id : {}", id);
-		modelMap.addAttribute(blogService.findOne(id));
-		log.debug("modelMap : {}", modelMap);
-		return "/blog/view";
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
-	public String delete(@PathVariable long id, Authentication authentication, ModelMap modelMap) {
+	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public void delete(@PathVariable long id, Authentication authentication, ModelMap modelMap) {
 		Blog targetBlog = blogService.findOne(id);
 		if (!authentication.getName().equals(targetBlog.getUsername())) {
 			throw new BlueskyException("username is not owner");
 		}
 		log.debug("id : {}", id);
 		blogService.delete(id);
-		return "redirect:/blog";
 	}
 }
