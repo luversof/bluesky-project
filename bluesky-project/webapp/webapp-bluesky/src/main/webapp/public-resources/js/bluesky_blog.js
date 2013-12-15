@@ -30,21 +30,18 @@ var blog = {
 		var form = $(".write.form-horizontal");
 		$.ajax({
 			type : form.attr("method")
-			, url : form.attr("url")
+			, url : form.attr("action")
 			, dataType : "json"
+			, data : form.serialize()
 			, success : function(data) {
-				console.log(data);
-			}
-			, error : function(jqXHR, textStatus, errorThrown) {
-				
+				location.href = "/blog/" + data;
 			}
 		});
 	}
 };
 
 $(document).ready(function() {
-	console.log("Test");
 	$(".write.form-horizontal .submit").on("click", function() {
-		console.log("Dd");
+		blog.save();
 	});
 });

@@ -7,8 +7,8 @@
 	<div layout:fragment="content">
 		<br />
 		<div class="panel panel-danger">
-			<div class="panel-heading" th:text="#{error}">Panel heading without title</div>
-			<div class="panel-body" th:text="${exception.message + ' ' + exception.class}">Panel content</div>
+			<div class="panel-heading" th:text="${result.get('message')}">Panel heading without title</div>
+			<div class="panel-body" th:text="${result.get('class')}">Panel content</div>
 		</div>
 	</div>
 </body>

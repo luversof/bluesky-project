@@ -48,17 +48,16 @@ import org.thymeleaf.templateresolver.ServletContextTemplateResolver;
 @Slf4j
 @Configuration
 @EnableWebMvc
-@ComponentScan(basePackages = "net.luversof",useDefaultFilters=false,includeFilters=@Filter(type=FilterType.ANNOTATION, value={ Controller.class, ControllerAdvice.class }))
-//@PropertySource(name="mvcProps", value="classpath:props/mvc.properties")
-@EnableAspectJAutoProxy(proxyTargetClass=true)
+@ComponentScan(basePackages = "net.luversof", useDefaultFilters = false, includeFilters = @Filter(type = FilterType.ANNOTATION, value = { Controller.class, ControllerAdvice.class }))
+// @PropertySource(name="mvcProps", value="classpath:props/mvc.properties")
+@EnableAspectJAutoProxy(proxyTargetClass = true)
 public class WebMvcConfig extends WebMvcConfigurerAdapter {
-	
-	private static final int RESOURCE_CACHE_PERIOD = 31556926; 
+
+	private static final int RESOURCE_CACHE_PERIOD = 31556926;
 	private static final int MESSAGE_SOURCE_CACHE_SECOND = 5;
 
 	@Autowired
 	private ApplicationContext applicationContext;
-	
 
 	@Override
 	public void addViewControllers(ViewControllerRegistry registry) {
@@ -83,7 +82,6 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 	@Override
 	public void addInterceptors(InterceptorRegistry registry) {
 		registry.addInterceptor(new LocaleChangeInterceptor());
-
 		super.addInterceptors(registry);
 	}
 
@@ -110,7 +108,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		ContentNegotiationStrategy pathExtensionContentNegotiationStrategy = new PathExtensionContentNegotiationStrategy(mediaTypes);
 
 		// 헤더값 기준 결정
-		ContentNegotiationStrategy  headerContentNegotiationStrategy = new HeaderContentNegotiationStrategy();
+		ContentNegotiationStrategy headerContentNegotiationStrategy = new HeaderContentNegotiationStrategy();
 
 		/* order에 따라 우선순위 결정되므로 순서 주의 */
 		ContentNegotiationManager contentNegotiationManager = new ContentNegotiationManager(pathExtensionContentNegotiationStrategy, headerContentNegotiationStrategy);
@@ -119,7 +117,6 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		List<ViewResolver> viewResolvers = new ArrayList<ViewResolver>();
 		viewResolvers.add(thymeleafViewResolver());
 		viewResolver.setViewResolvers(viewResolvers);
-
 
 		List<View> defaultViews = new ArrayList<View>();
 		MappingJackson2JsonView mappingJackson2JsonView = new MappingJackson2JsonView();
@@ -130,7 +127,6 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		viewResolver.setDefaultViews(defaultViews);
 		return viewResolver;
 	}
-
 
 	@Bean
 	public ServletContextTemplateResolver templateResolver() {
@@ -159,7 +155,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		springTemplateEngine.addDialect(new SpringSecurityDialect());
 		return springTemplateEngine;
 	}
-	
+
 	@Bean
 	public ThymeleafViewResolver thymeleafViewResolver() {
 		ThymeleafViewResolver thymeleafViewResolver = new ThymeleafViewResolver();
@@ -167,7 +163,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		thymeleafViewResolver.setCharacterEncoding(StandardCharsets.UTF_8.name());
 		return thymeleafViewResolver;
 	}
-	
+
 	@Bean
 	public MessageSource messageSource() {
 		log.debug("setting up message source");

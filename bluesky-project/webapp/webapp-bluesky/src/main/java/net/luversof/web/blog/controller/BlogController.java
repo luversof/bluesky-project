@@ -1,6 +1,5 @@
 package net.luversof.web.blog.controller;
 
-import lombok.extern.slf4j.Slf4j;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.domain.Blog.Save;
 import net.luversof.blog.service.BlogCategoryService;
@@ -22,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@Slf4j
 @Controller
 @RequestMapping("/blog")
 public class BlogController {
@@ -49,15 +47,12 @@ public class BlogController {
 		modelMap.addAttribute("currentPage", page);
 		modelMap.addAttribute("startPage", startPage);
 		modelMap.addAttribute("endPage", endPage);
-		log.debug("modelMap : {}", modelMap);
 		return "/blog/list";
 	}
 	
 	@RequestMapping("/{id}")
 	public String view(@PathVariable long id, ModelMap modelMap) {
-		log.debug("id : {}", id);
 		modelMap.addAttribute(blogService.findOne(id));
-		log.debug("modelMap : {}", modelMap);
 		return "/blog/view";
 	}
 
@@ -70,7 +65,6 @@ public class BlogController {
 	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[blog].username == authentication.name")
 	@RequestMapping("/{id}/modify")
 	public String modifyPage(@PathVariable long id, Authentication authentication, ModelMap modelMap) {
-		log.debug("id : {}", id);
 		modelMap.addAttribute(blogService.findOne(id));
 		modelMap.addAttribute(blogCategoryService.findByUsername(authentication.getName()));
 		return "/blog/modify";
@@ -78,12 +72,11 @@ public class BlogController {
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-	public void save(@Validated(Save.class) Blog blog, Authentication authentication) {
-		log.debug("save blog : {}", blog);
+	public void save(@Validated(Save.class) Blog blog, Authentication authentication, ModelMap modelMap) {
 		if (blog.getBlogCategory() != null && blog.getBlogCategory().getId() != 0) {
 			blog.setBlogCategory(blogCategoryService.findOne(blog.getBlogCategory().getId()));
 		}
-		blogService.save(blog);
+		modelMap.addAttribute("result", blogService.save(blog).getId());
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
@@ -108,7 +101,6 @@ public class BlogController {
 		if (!authentication.getName().equals(targetBlog.getUsername())) {
 			throw new BlueskyException("username is not owner");
 		}
-		log.debug("id : {}", id);
 		blogService.delete(id);
 	}
 }
