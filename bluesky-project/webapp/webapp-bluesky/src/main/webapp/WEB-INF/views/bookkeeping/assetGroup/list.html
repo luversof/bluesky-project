@@ -2,11 +2,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
 	xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+	xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3"
 	layout:decorator="/layout/defaultLayout">
 <head>
 	<script type="text/javascript" th:src="@{/js/bluesky_data_rest.js}"></script>
 	<script type="text/javascript" th:src="@{/js/mustache.js}"></script>
-	<script th:src="@{/js/bluesky_bookkeeping_assetGroup.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bluesky_bookkeeping_assetGroup.js}"></script>
 </head>
 <body>
 <div layout:fragment="content">

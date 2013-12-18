@@ -1,6 +1,7 @@
 <!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-spring3-3.dtd">
 <html xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+	xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3"
 	layout:decorator="/layout/defaultLayout">
 <head>
 	<script th:src="@{/js/bluesky_blog.js}"></script>
@@ -36,21 +37,22 @@
 			</div>
 		</article>
 		
-		<hr />
-		
-		<div id="fb-root"></div>
-		<script type="text/javascript">(function(d, s, id) {
-		  var js, fjs = d.getElementsByTagName(s)[0];
-		  if (d.getElementById(id)) return;
-		  js = d.createElement(s); js.id = id;
-		  js.src = "//connect.facebook.net/ko_KR/all.js#xfbml=1&amp;appId=124755777691522";
-		  fjs.parentNode.insertBefore(js, fjs);
-		}(document, 'script', 'facebook-jssdk'));</script>
-		<div class="panel panel-default text-center">
-			<div class="fb-comments panel-body" th:attr="data-href='http://luversof.cafe24.com/blog/' + ${blog.id}" ></div>
+		<div th:if="${#arrays.contains(#ctx.applicationContext.environment.activeProfiles, 'live')}">
+			<hr />
+			<div id="fb-root"></div>
+			<script type="text/javascript">(function(d, s, id) {
+			  var js, fjs = d.getElementsByTagName(s)[0];
+			  if (d.getElementById(id)) return;
+			  js = d.createElement(s); js.id = id;
+			  js.src = "//connect.facebook.net/ko_KR/all.js#xfbml=1&amp;appId=124755777691522";
+			  fjs.parentNode.insertBefore(js, fjs);
+			}(document, 'script', 'facebook-jssdk'));</script>
+			<div class="panel panel-default text-center">
+				<div class="fb-comments panel-body" th:attr="data-href='http://luversof.cafe24.com/blog/' + ${blog.id}" ></div>
+			</div>
+			<!-- facebook 댓글은 나중에 고민하자, width 가변 문제 해결 필요
+			 -->
 		</div>
-		<!-- facebook 댓글은 나중에 고민하자, width 가변 문제 해결 필요
-		 -->
 	</div>
 </body>
 </html>
