@@ -23,14 +23,14 @@ public class Blog {
 
 	private String username;
 
-	@NotEmpty(groups = Save.class)
+	@NotEmpty(groups = { Save.class, Modify.class })
 	private String title;
 
-	@NotEmpty(groups = Save.class)
+	@NotEmpty(groups = { Save.class, Modify.class })
 	private String content;
 
 	@CreatedDate
-	@Column(updatable=false)
+	@Column(updatable = false)
 	private Date createdDate;
 
 	@LastModifiedDate
@@ -38,7 +38,10 @@ public class Blog {
 
 	@OneToOne
 	private BlogCategory blogCategory;
-	
-	
-	public interface Save {};
+
+	public interface Save {
+	};
+
+	public interface Modify {
+	};
 }

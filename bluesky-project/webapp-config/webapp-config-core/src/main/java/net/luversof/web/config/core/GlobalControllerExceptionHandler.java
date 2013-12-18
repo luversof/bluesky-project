@@ -42,6 +42,7 @@ public class GlobalControllerExceptionHandler {
 			Map<String, String> errorMap = new HashMap<>();
 			errorMap.put("message", fieldError.getDefaultMessage());
 			errorMap.put("objectName", fieldError.getObjectName());
+			errorMap.put("field", fieldError.getField());
 			errorList.add(errorMap);
 		}
 		Map<String, List<Map<String, String>>> resultMap = new HashMap<>();

@@ -1,6 +1,7 @@
 package net.luversof.web.blog.controller;
 
 import net.luversof.blog.domain.Blog;
+import net.luversof.blog.domain.Blog.Modify;
 import net.luversof.blog.domain.Blog.Save;
 import net.luversof.blog.service.BlogCategoryService;
 import net.luversof.blog.service.BlogService;
@@ -32,8 +33,8 @@ public class BlogController {
 
 	@Autowired
 	private BlogCategoryService blogCategoryService;
-	
-	@RequestMapping(value = { "" })
+
+	@RequestMapping
 	public String list(@RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
 		Page<Blog> blogPage = blogService.findAll(page - 1);
 		if (blogPage.getTotalPages() > 0 && blogPage.getTotalPages() < page) {
@@ -49,7 +50,7 @@ public class BlogController {
 		modelMap.addAttribute("endPage", endPage);
 		return "/blog/list";
 	}
-	
+
 	@RequestMapping("/{id}")
 	public String view(@PathVariable long id, ModelMap modelMap) {
 		modelMap.addAttribute(blogService.findOne(id));
@@ -57,11 +58,12 @@ public class BlogController {
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = { "/write" })
+	@RequestMapping("/write")
 	public void writePage(Authentication authentication, ModelMap modelMap) {
 		modelMap.addAttribute(blogCategoryService.findByUsername(authentication.getName()));
 	}
-	
+
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[blog].username == authentication.name")
 	@RequestMapping("/{id}/modify")
 	public String modifyPage(@PathVariable long id, Authentication authentication, ModelMap modelMap) {
@@ -81,17 +83,8 @@ public class BlogController {
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-	public void modify(Blog blog, Authentication authentication) {
-		Blog targetBlog = blogService.findOne(blog.getId());
-		if (!authentication.getName().equals(targetBlog.getUsername())) {
-			throw new BlueskyException("username is not owner");
-		}
-		targetBlog.setTitle(blog.getTitle());
-		targetBlog.setContent(blog.getContent());
-		if (blog.getBlogCategory() != null && blog.getBlogCategory().getId() != 0) {
-			targetBlog.setBlogCategory(blogCategoryService.findOne(blog.getBlogCategory().getId()));
-		}
-		blogService.save(targetBlog);
+	public void modify(@Validated(Modify.class) Blog blog, Authentication authentication, ModelMap modelMap) {
+		modelMap.addAttribute("result", blogService.update(blog).getId());
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)

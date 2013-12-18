@@ -4,6 +4,7 @@ import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.BlogRepository;
 import net.luversof.core.datasource.DataSource;
 import net.luversof.core.datasource.DataSourceType;
+import net.luversof.core.exception.BlueskyException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -21,9 +22,25 @@ public class BlogService {
 
 	@Autowired
 	private BlogRepository blogRepository;
+	
+	@Autowired
+	private BlogCategoryService blogCategoryService;
 
 	public Blog save(Blog blog) {
 		return blogRepository.save(blog);
+	}
+	
+	public Blog update(Blog blog) {
+		Blog targetBlog = findOne(blog.getId());
+		if (!blog.getUsername().equals(targetBlog.getUsername())) {
+			throw new BlueskyException("username is not owner");
+		}
+		targetBlog.setTitle(blog.getTitle());
+		targetBlog.setContent(blog.getContent());
+		if (blog.getBlogCategory() != null && blog.getBlogCategory().getId() != 0) {
+			targetBlog.setBlogCategory(blogCategoryService.findOne(blog.getBlogCategory().getId()));
+		}
+		return blogRepository.save(targetBlog);
 	}
 
 	@Transactional(readOnly = true)

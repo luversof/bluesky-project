@@ -38,10 +38,26 @@ var blog = {
 			}
 		});
 	}
+	, modify : function() {
+		var form = $(".modify.form-horizontal");
+		$.ajax({
+			type : "put"
+			, url : form.attr("action")
+			, dataType : "json"
+			, data : form.serialize()
+			, success : function(data) {
+				location.href = "/blog/" + data;
+			}
+		});
+	}
 };
 
 $(document).ready(function() {
 	$(".write.form-horizontal .submit").on("click", function() {
 		blog.save();
+	});
+	$(".modify.form-horizontal .submit").on("click", function() {
+		console.log("Test");
+		blog.modify();
 	});
 });
