@@ -8,6 +8,7 @@ import net.luversof.blog.service.BlogService;
 import net.luversof.core.exception.BlueskyException;
 import net.luversof.web.AuthorizeRole;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
@@ -34,7 +35,7 @@ public class BlogController {
 	@Autowired
 	private BlogCategoryService blogCategoryService;
 
-	@RequestMapping
+	@RequestMapping(StringUtils.EMPTY)
 	public String list(@RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
 		Page<Blog> blogPage = blogService.findAll(page - 1);
 		if (blogPage.getTotalPages() > 0 && blogPage.getTotalPages() < page) {

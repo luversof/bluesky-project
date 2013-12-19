@@ -4,22 +4,12 @@
 	xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3"
 	layout:decorator="/layout/defaultLayout">
 <head>
-	<script th:src="@{/js/bluesky_blog.js}"></script>
 	<link th:href="@{/resources/wysihtml5/css/stylesheet.css}" rel="stylesheet" />
+	<script type="text/javascript" th:src="@{/js/bluesky_blog.js}"></script>
+	<script type="text/javascript" th:src="@{/js/gist-embed.min.js}" defer="defer"></script>
 </head>
 <body>
 	<div layout:fragment="content">
-		<script type="text/javascript" th:src="@{/js/gist-embed.min.js}" defer="defer"></script>
-		<script type="text/javascript" th:inline="text">
-			$(document).ready(function() {
-				var blogId = "[[${blog.id}]]";
-				$("article .btn.delete").on("click", function() {
-					console.log("button.btn.delete click");
-					blog.remove(blogId);
-				});
-				blog.displayContext();
-			});
-		</script>
 		<div class="page-header">
 			<h1>Blog <small th:text="#{blog.menu.view}">view</small></h1>
 		</div>
@@ -32,7 +22,7 @@
 			<div class="text-center">
 				<a href="write" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blog.menu.write}">write</a>
 				<a th:if="${#authentication.name == blog.username}" th:href="@{'/blog/' + ${blog.id} + '/modify'}" class="btn btn-primary" th:text="#{blog.menu.modify}">modify</a>
-				<a th:if="${#authentication.name == blog.username}" class="btn btn-warning delete" th:text="#{blog.menu.delete}">delete</a>
+				<a th:if="${#authentication.name == blog.username}" class="btn btn-warning delete" th:attr="data-blog-id=${blog.id}" th:text="#{blog.menu.delete}">delete</a>
 				<a th:href="@{'/blog'}" class="btn btn-default" th:text="#{blog.menu.list}">list</a>
 			</div>
 		</article>

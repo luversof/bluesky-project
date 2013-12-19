@@ -9,9 +9,6 @@
 	<script type="text/javascript" th:src="@{/js/bluesky_advanced.js}"></script>
 	<script type="text/javascript" th:inline="text">
 		$(document).ready(function() {
-			$("button.btn.cancel").on("click", function() {
-				history.back();
-			});
 			var editor = new wysihtml5.Editor("content", { // id of textarea element
 				toolbar : "wysihtml5-toolbar", // id of toolbar element
 				parserRules : wysihtml5ParserRules, // defined in parser rules set
