@@ -1,6 +1,7 @@
 package net.luversof.web.blog.controller;
 
 import net.luversof.blog.domain.Blog;
+import net.luversof.blog.domain.Blog.Get;
 import net.luversof.blog.domain.Blog.Modify;
 import net.luversof.blog.domain.Blog.Save;
 import net.luversof.blog.service.BlogCategoryService;
@@ -18,7 +19,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -53,8 +53,8 @@ public class BlogController {
 	}
 
 	@RequestMapping("/{id}")
-	public String view(@PathVariable long id, ModelMap modelMap) {
-		modelMap.addAttribute(blogService.findOne(id));
+	public String view(@Validated(Get.class) Blog blog, ModelMap modelMap) {
+		modelMap.addAttribute(blogService.findOne(blog.getId()));
 		return "/blog/view";
 	}
 
@@ -67,8 +67,8 @@ public class BlogController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[blog].username == authentication.name")
 	@RequestMapping("/{id}/modify")
-	public String modifyPage(@PathVariable long id, Authentication authentication, ModelMap modelMap) {
-		modelMap.addAttribute(blogService.findOne(id));
+	public String modifyPage(@Validated(Get.class) Blog blog, Authentication authentication, ModelMap modelMap) {
+		modelMap.addAttribute(blogService.findOne(blog.getId()));
 		modelMap.addAttribute(blogCategoryService.findByUsername(authentication.getName()));
 		return "/blog/modify";
 	}
@@ -90,11 +90,11 @@ public class BlogController {
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public void delete(@PathVariable long id, Authentication authentication, ModelMap modelMap) {
-		Blog targetBlog = blogService.findOne(id);
+	public void delete(@Validated(Get.class) Blog blog, Authentication authentication, ModelMap modelMap) {
+		Blog targetBlog = blogService.findOne(blog.getId());
 		if (!authentication.getName().equals(targetBlog.getUsername())) {
 			throw new BlueskyException("username is not owner");
 		}
-		blogService.delete(id);
+		blogService.delete(blog.getId());
 	}
 }

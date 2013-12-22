@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * blog.username을 spring-security의 authentication으로 부터 설정
+ * blog와 authentication 객체가 controller에 매개변수로 넘어오는 경우 authentication의 name 을 blog의 username으로 설정
  * @author bluesky
  *
  */

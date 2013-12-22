@@ -7,6 +7,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
+import javax.validation.constraints.NotNull;
 
 import lombok.Data;
 
@@ -19,6 +20,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 public class Blog {
 	@Id
 	@GeneratedValue
+	@NotNull(groups = { Get.class })
 	private long id;
 
 	private String username;
@@ -38,6 +40,9 @@ public class Blog {
 
 	@OneToOne
 	private BlogCategory blogCategory;
+
+	public interface Get {
+	};
 
 	public interface Save {
 	};
