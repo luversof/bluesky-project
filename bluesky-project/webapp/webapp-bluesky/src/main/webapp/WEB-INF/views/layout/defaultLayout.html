@@ -8,6 +8,9 @@
 	<meta name="description" content="" />
 	<meta name="author" content="bluesky" />
 	
+	<meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+	<meta name="_csrf" th:content="${_csrf.token}"/>
+	
 	<title>Bluesky Project</title>
 	
 	<!-- Bootstrap core CSS -->
@@ -50,6 +53,7 @@
 					<div class="form-group">
 						<input type="password" name="password" th:placeholder="#{password}" class="form-control" />
 					</div>
+					<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 					<button type="submit" class="btn btn-primary" th:text="#{login}">login</button>
 				</form>
 			</div>

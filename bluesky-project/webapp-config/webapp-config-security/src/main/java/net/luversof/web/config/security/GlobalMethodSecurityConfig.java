@@ -10,18 +10,19 @@ import org.springframework.security.config.annotation.method.configuration.Globa
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-@Configuration
-@EnableGlobalMethodSecurity(prePostEnabled = true)
-public class GlobalMethodSecurityConfig extends GlobalMethodSecurityConfiguration  {
-	@Autowired
-	private PasswordEncoder passwordEncoder;
-	
-	@Autowired
-	private UserDetailsService userDetailsService;
-
-	@Override
-	@SneakyThrows
-	protected void registerAuthentication(AuthenticationManagerBuilder auth) {
-		auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder);
-	}
-}
+//@Configuration
+//@EnableGlobalMethodSecurity(prePostEnabled = true)
+//public class GlobalMethodSecurityConfig extends GlobalMethodSecurityConfiguration  {
+//	@Autowired
+//	private PasswordEncoder passwordEncoder;
+//	
+//	@Autowired
+//	private UserDetailsService userDetailsService;
+//	
+//
+//	@Override
+//	@SneakyThrows
+//	protected void registerAuthentication(AuthenticationManagerBuilder auth) {
+//		auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder);
+//	}
+//}

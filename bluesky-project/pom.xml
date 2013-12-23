@@ -14,7 +14,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<spring.version>4.0.0.RELEASE</spring.version>
-		<spring.security.version>3.1.4.RELEASE</spring.security.version>
+		<spring.security.version>3.2.0.RELEASE</spring.security.version>
 		<querydsl.version>3.2.4</querydsl.version>
 	</properties>
 	<dependencyManagement>
@@ -204,8 +204,8 @@
 			</dependency>
 			<dependency>
 				<groupId>org.springframework.security</groupId>
-				<artifactId>spring-security-javaconfig</artifactId>
-				<version>1.0.0.CI-SNAPSHOT</version>
+				<artifactId>spring-security-config</artifactId>
+				<version>${spring.security.version}</version>
 			</dependency>
 
 			<dependency>
@@ -395,7 +395,7 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-	<repositories>
+	<!-- <repositories>
 		<repository>
 			<id>spring-libs-snapshot</id>
 			<name>Spring Snapshot Repository</name>
@@ -408,5 +408,5 @@
 				<enabled>true</enabled>
 			</snapshots>
 		</repository>
-	</repositories>
+	</repositories> -->
 </project>

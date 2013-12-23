@@ -54,18 +54,18 @@ $(document).ready(function() {
 
 $(document).ready(function() {
 	$("[data-toggle=tooltip]").tooltip();
+	
+	/* (s) csrf */
+	var token = $("meta[name='_csrf']").attr("content");
+	var header = $("meta[name='_csrf_header']").attr("content");
+	$(document).ajaxSend(function(e, xhr, options) {
+		xhr.setRequestHeader(header, token);
+	});
+	/* (s) csrf */
 });
 
-
-
-
 $(document).ajaxError(function(event, jqXHR, ajaxSettings, thrownError) {
-	console.log(event);
-	console.log(jqXHR);
-	console.log(ajaxSettings);
-	console.log(thrownError);
 	if (ajaxSettings.dataType == "json") {
-		console.log("dlflfh");
 		var b = "";
 		for (a in jqXHR) b+=a + "\n;";
 		console.log(b);
