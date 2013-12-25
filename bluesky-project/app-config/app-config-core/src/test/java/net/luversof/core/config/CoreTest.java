@@ -1,6 +1,7 @@
 package net.luversof.core.config;
 
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.core.Banner;
 
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 import org.junit.Test;
@@ -28,5 +29,6 @@ public class CoreTest extends GeneralTest {
 	@Test
 	public void 테스트() {
 		log.debug("properties : {}", properties);
+		Banner.write(System.out, "app-config-core");
 	}
 }
