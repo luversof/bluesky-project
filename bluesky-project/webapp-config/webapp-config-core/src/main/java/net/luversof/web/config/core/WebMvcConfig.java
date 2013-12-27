@@ -41,8 +41,8 @@ import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 import org.springframework.web.servlet.view.ContentNegotiatingViewResolver;
 import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
 import org.thymeleaf.extras.springsecurity3.dialect.SpringSecurityDialect;
-import org.thymeleaf.spring3.SpringTemplateEngine;
-import org.thymeleaf.spring3.view.ThymeleafViewResolver;
+import org.thymeleaf.spring4.SpringTemplateEngine;
+import org.thymeleaf.spring4.view.ThymeleafViewResolver;
 import org.thymeleaf.templateresolver.ServletContextTemplateResolver;
 
 @Slf4j
