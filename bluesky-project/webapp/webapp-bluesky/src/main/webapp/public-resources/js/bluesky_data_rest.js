@@ -12,7 +12,7 @@ String.prototype.format = function() {
     });
 };
 
-Array.prototype.sortTest = function(key, isDescending) {
+Array.prototype.sortData = function(key, isDescending) {
 	if (!isDescending) isDescending = false;
 	var i = isDescending == true ? -1 : 1;
 	this.sort(function(a, b) {
@@ -39,8 +39,8 @@ var t = [
 	{a : "1234", b : { b1 : "bag", b2 : "v32"}},
 	{a : "3234", b : { b1 : "cehg", b2 : "v22"}},
 	{a : "2342", b : { b1 : "asd", b2 : "v12"}}];
-t.sortTest("b.b1");
-console.log(t);
+//t.sortData("b.b1");
+//console.log(t);
 
 
 /**
@@ -62,6 +62,9 @@ String.prototype.isChanged = function(original) {
 	}
 };
 
+/**
+ * Object에 대한 관리 클래스
+ */
 var Model = function(data, options) {
 	this.data = data;
 	this.controller;
@@ -90,22 +93,27 @@ var Model = function(data, options) {
 		obj.initialize();
 		if (!obj.data[obj.controller.id]) obj.data[obj.controller.id] = null;
 	};
-	this.initialize = function() {;};
-	for (key in options) this[key] = options[key];
+	this.initialize = function() {};
+	for (key in options) {
+		this[key] = options[key];
+	}
 	_initialize(this);
 };
 
+/**
+ * display 관련 클래스
+ */
 var View = function(options) {
 	this.template,this.target;
 	this.dataIdKey = "data-id";
-	this.sortKey = "id";
-	this.sortIsDescending = "false";
+	
 	/**
 	 * model을 view 에 추가, 기존에 있는 경우 갱신 처리
 	 */
 	this.addView = function(model) {
 		console.debug("[view] addView...");
 		var renderedTemplate = $(Mustache.render(this.template, model.data)).attr(this.dataIdKey, model.getId());
+		// 추가 대상이 이미 view에 있는 경우 replace 처리
 		var renderTarget = this.getView(model.getId());
 		if (renderTarget.length == 0) {
 			// 순서에 따라 위치 변경 처리 필요
@@ -126,19 +134,28 @@ var View = function(options) {
 		obj.initialize();
 	};
 	this.initialize = function() {};
-	for (key in options) this[key] = options[key];
+	for (key in options) {
+		this[key] = options[key];
+	}
 	_initialize(this);
 };
 
 /**
- * action에 대해 선언한 클래스
- * 모든 액션은 Controller로 집중됨
+ * action에 대해 선언한 클래스 <br />
+ * ajax model 호출 관련 메소드
+ * 	 getModelList, getModel, addModel, modifyModel, removeModel
+ * 저장한 model 호출 관련 메소드
+ * model 관련 메소드 호출 시 view에 대한 관련 method도 같이 동작 수행하도록 처리
+ * getSavedModelList, getSavedModel, addSavedModel, removeSavedModel
  */
 var Controller = function(options) {
 	this.url,this.view;
 	this.id = "id";
 	this.savedModelKey = "savedModel";
-	this.ajax = { dataType : "json", contentType : "application/json" };
+	this.sortKey = "name";
+	this.sortIsDescending = false;
+	
+	this.ajaxConfig= { dataType : "json", contentType : "application/json" };
 	var _initialize = function(obj) {
 		console.debug("[controller] _initialize...");
 		if (!obj.url) {
@@ -197,7 +214,7 @@ var Controller = function(options) {
 		return $.ajax({
 			url : this.getUrl(),
 			type : "get",
-			dataType : this.ajax.dataType,
+			dataType : this.ajaxConfig.dataType,
 			success : function(data) {
 				for (var i = 0 ; i < data.length ; i++) {
 					obj.addSavedModel(new Model(data[i], {controller : obj}));
@@ -214,7 +231,7 @@ var Controller = function(options) {
 		return $.ajax({
 			url : this.getUrl() + "/" + model.getId(),
 			type : "get",
-			dataType : this.ajax.dataType,
+			dataType : this.ajaxConfig.dataType,
 			success : function(data) {
 				$.extend(model.data, data);
 				obj.addSavedModel(model);
@@ -228,8 +245,8 @@ var Controller = function(options) {
 			url : this.getUrl(),
 			type : "post",
 			data : JSON.stringify(model.data),
-			dataType : this.ajax.dataType,
-			contentType : this.ajax.contentType,
+			dataType : this.ajaxConfig.dataType,
+			contentType : this.ajaxConfig.contentType,
 			success : function(data) {
 				$.extend(model.data, data);
 				obj.addSavedModel(model);
@@ -242,8 +259,8 @@ var Controller = function(options) {
 			url : this.getUrl() + "/" + model.getId(),
 			type : "put",
 			data : JSON.stringify(model.data),
-			dataType : this.ajax.dataType,
-			contentType : this.ajax.contentType,
+			dataType : this.ajaxConfig.dataType,
+			contentType : this.ajaxConfig.contentType,
 			success : function(data) {
 				$.extend(model.data, data);
 			}
@@ -255,15 +272,15 @@ var Controller = function(options) {
 		return $.ajax({
 			url : this.getUrl() + "/" + model.getId(),
 			type : "delete",
-			dataType : this.ajax.dataType,
-			contentType : this.ajax.contentType,
+			dataType : this.ajaxConfig.dataType,
+			contentType : this.ajaxConfig.contentType,
 			success : function(data) {
 				obj.removeSavedModel(model.getId());
 				console.log(obj.getSavedModelList());
 			}
 		});
 	};
-	
+
 	this.getSavedModelList = function() {
 		var list = this.view.target.data(this.savedModelKey);
 		if (list == null) {
@@ -275,6 +292,7 @@ var Controller = function(options) {
 		console.debug("[controller] addSavedModel");
 		var list = this.getSavedModelList();
 		list.push(model);
+		list.sortData("data." + this.sortKey, this.sortIsDescending);
 		this.view.target.data(this.savedModelKey, list);
 		this.view.addView(model);
 		return list;
@@ -282,24 +300,25 @@ var Controller = function(options) {
 	this.getSavedModel = function(id) {
 		console.debug("[controller] getSavedModel");
 		var list = this.getSavedModelList();
-		for (var i = 0; i < list.length ; i++) {
+		for (var i = 0; i < list.length; i++) {
 			if (list[i].data[this.id] == id) {
 				return list[i];
 			}
 		}
-	},
-	this.removeSavedModel = function(id) {
+	}, this.removeSavedModel = function(id) {
 		console.debug("[controller] removeSavedModel");
 		this.view.removeView(id);
 		var list = this.getSavedModelList();
-		for (var i = 0; i < list.length ; i++) {
+		for (var i = 0; i < list.length; i++) {
 			if (list[i].data[this.id] == id) {
 				list.splice(i, 1);
 				break;
 			}
 		}
 	};
-	for (key in options) this[key] = options[key];
+	for (key in options) {
+		this[key] = options[key];
+	}
 	_initialize(this);
 	_initializeEvents(this);
 	_initializeExternalEvents(this);
