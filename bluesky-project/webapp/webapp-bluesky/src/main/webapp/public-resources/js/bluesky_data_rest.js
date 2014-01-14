@@ -1,3 +1,10 @@
+var orgConsole = console;
+var console = {
+	debug : function(message) {}
+	, log : function(message) {
+		orgConsole.log(message);
+	}
+};
 /**
  * String format 적용<br />
  * var ex = "Hello {0}!, This is {1}"<br />
@@ -13,7 +20,7 @@ String.prototype.format = function() {
 };
 
 Array.prototype.sortData = function(key, isDescending) {
-	if (!isDescending) isDescending = false;
+	if (isDescending == undefined) isDescending = false;
 	var i = isDescending == true ? -1 : 1;
 	this.sort(function(a, b) {
 		return getValueFromObj(a, key) > getValueFromObj(b, key) ? i * 1 : i * -1; 
@@ -40,7 +47,9 @@ var t = [
 	{a : "3234", b : { b1 : "cehg", b2 : "v22"}},
 	{a : "2342", b : { b1 : "asd", b2 : "v12"}}];
 //t.sortData("b.b1");
-//console.log(t);
+console.log("d2s");
+t.sortData("a", true);
+console.log(t);
 
 
 /**
@@ -107,30 +116,44 @@ var Model = function(data, options) {
 var View = function(options) {
 	var _self = this;
 	this.template;
-	this.target;
-	this.dataIdKey = "data-id";
+	this.target;	// 대상이 추가될 위치
+	this.dataIdKey = "data-bluesky-rest-js-view-id";
 	
 	/**
 	 * model을 view 에 추가, 기존에 있는 경우 갱신 처리
+	 * 
+	 * 템플릿을 해당 위치에 넣는다.
 	 */
-	this.addView = function(model) {
-		console.debug("[view] addView...");
+	this.add = function(model, prevModelId) {
+		console.debug("[view] add...");
 		var renderedTemplate = $(Mustache.render(this.template, model.data)).attr(this.dataIdKey, model.getId());
 		// 추가 대상이 이미 view에 있는 경우 replace 처리
-		var renderTarget = this.getView(model.getId());
+		var renderTarget = this.get(model.getId());
 		if (renderTarget.length == 0) {
 			// 순서에 따라 위치 변경 처리 필요
-			this.target.append(renderedTemplate);
+			if (prevModelId != undefined) {
+				//console.log("prevModelIDDDDDDDDDDDDDDDD : " + prevModelId);
+				//console.log("[{0}={1}]".format(this.dataIdKey, prevModelId));
+				//console.log(this.target.find("[{0}={1}]".format(this.dataIdKey, prevModelId)).html());
+				this.target.find("[{0}={1}]".format(this.dataIdKey, prevModelId)).after(renderedTemplate);
+			} else {
+				this.target.append(renderedTemplate);
+			}
 		} else {
 			renderTarget.replaceWith(renderedTemplate);
 		}
 		return renderTarget;
 	};
-	this.getView = function(id) {
-		return this.target.find("[" + this.dataIdKey + "=" + id + "]");
+//	this.isExist = function(id) {
+//		return this.get(id).length == 0;
+//	};
+	
+	
+	this.get = function(id) {
+		return this.target.find("[{0}={1}]".format(this.dataIdKey, id));
 	};
-	this.removeView = function(id) {
-		this.getView(id).remove();
+	this.remove = function(id) {
+		this.get(id).remove();
 	};
 	var _initialize = function() {
 		console.debug("[view] _initialize...");
@@ -158,7 +181,7 @@ var Controller = function(options) {
 	this.id = "id";
 	this.savedModelKey = "savedModel";
 	this.sortKey = "name";
-	this.sortIsDescending = false;
+	this.sortIsDescending = true;
 	
 	this.ajaxConfig= { dataType : "json", contentType : "application/json" };
 	var _initialize = function() {
@@ -281,21 +304,39 @@ var Controller = function(options) {
 			}
 		});
 	};
-
+	/**
+	 * target에 저장된 modelList 호출
+	 */
 	this.getSavedModelList = function() {
 		var list = this.view.target.data(this.savedModelKey);
 		if (list == null) {
 			list = new Array();
+			this.view.target.data(this.savedModelKey, list);
 		}
 		return list;
 	};
+	/**
+	 * savedModelList의 이전 model의 id추출
+	 */
+	this.getPrevModelId = function(id) {
+		var list = this.getSavedModelList();
+		for (var i = 0 ; i < list.length ; i++) {
+			if (list[i].getId() == id && i > 0) {
+				return list[i-1].getId();
+			}
+		}
+		return null;
+	};
+	/**
+	 * modelList에 추가 + sort + view에 추가
+	 */
 	this.addSavedModel = function(model) {
 		console.debug("[controller] addSavedModel");
 		var list = this.getSavedModelList();
 		list.push(model);
 		list.sortData("data." + this.sortKey, this.sortIsDescending);
-		this.view.target.data(this.savedModelKey, list);
-		this.view.addView(model);
+		var prevModelId = this.getPrevModelId(model.getId());
+		this.view.add(model, prevModelId);
 		return list;
 	};
 	this.getSavedModel = function(id) {
@@ -309,7 +350,7 @@ var Controller = function(options) {
 	};
 	this.removeSavedModel = function(id) {
 		console.debug("[controller] removeSavedModel");
-		this.view.removeView(id);
+		this.view.remove(id);
 		var list = this.getSavedModelList();
 		for (var i = 0; i < list.length; i++) {
 			if (list[i].data[this.id] == id) {

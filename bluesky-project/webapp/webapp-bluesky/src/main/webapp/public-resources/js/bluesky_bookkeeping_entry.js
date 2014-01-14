@@ -81,7 +81,7 @@ $(document).ready(function() {
 			var dataIdKey = controller.view.dataIdKey;
 			var targetRoot = $(event.currentTarget).closest("[" + dataIdKey +"]");
 			var model = controller.getSavedModel(targetRoot.attr(controller.view.dataIdKey));
-			controller.view.addView(model);
+			controller.view.add(model);
 		},
 		modify : function(event) {
 			console.debug("[controller] modify");
@@ -154,7 +154,7 @@ $(document).ready(function() {
 			var model = new Model(entry, {controller : event.data.controller});
 			model.add().success(function() {
 				$(".entry-add-modal").modal("hide");
-				var targetView = view.getView(model.getId());
+				var targetView = view.get(model.getId());
 				$("html, body").animate({scrollTop : targetView.offset().top});
 				targetView.hide().fadeIn(1500);
 			});
