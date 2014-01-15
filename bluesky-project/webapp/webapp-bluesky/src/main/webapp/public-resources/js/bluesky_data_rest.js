@@ -1,8 +1,8 @@
 var orgConsole = console;
-var console = {
+var console2 = {
 	debug : function(message) {}
-	, log : function(message) {
-		orgConsole.log(message);
+	, log : function(message, argument, argument2) {
+		orgConsole.log(message, argument, argument2);
 	}
 };
 /**
@@ -37,17 +37,22 @@ function getValueFromObj(obj, key) {
 	var keyArray = key.split(".");
 	var retVal = obj;
 	for (var i = 0 ; i < keyArray.length ; i++) {
-		retVal = retVal[keyArray[i]];
+		if (retVal[keyArray[i]] != undefined) {
+			retVal = retVal[keyArray[i]];
+		} else {
+			console.debug("[getValueFromObj] invalid key");
+			return null;
+		}
 	}
 	return retVal;
 }
 
 var t = [
-	{a : "1234", b : { b1 : "bag", b2 : "v32"}},
-	{a : "3234", b : { b1 : "cehg", b2 : "v22"}},
-	{a : "2342", b : { b1 : "asd", b2 : "v12"}}];
+	{a : "23", b : { b1 : "bag", b2 : "v32"}},
+	{a : "21", b : { b1 : "cehg", b2 : "v22"}},
+	{a : "24", b : { b1 : "asd", b2 : "v12"}}];
 //t.sortData("b.b1");
-console.log("d2s");
+//console.log("d2s");
 t.sortData("a", true);
 console.log(t);
 
@@ -124,18 +129,17 @@ var View = function(options) {
 	 * 
 	 * 템플릿을 해당 위치에 넣는다.
 	 */
-	this.add = function(model, prevModelId) {
+	this.add = function(model, prevModelId, nextModelId) {
 		console.debug("[view] add...");
 		var renderedTemplate = $(Mustache.render(this.template, model.data)).attr(this.dataIdKey, model.getId());
 		// 추가 대상이 이미 view에 있는 경우 replace 처리
 		var renderTarget = this.get(model.getId());
 		if (renderTarget.length == 0) {
-			// 순서에 따라 위치 변경 처리 필요
+			// 순서에 따라 위치 변경 처리
 			if (prevModelId != undefined) {
-				//console.log("prevModelIDDDDDDDDDDDDDDDD : " + prevModelId);
-				//console.log("[{0}={1}]".format(this.dataIdKey, prevModelId));
-				//console.log(this.target.find("[{0}={1}]".format(this.dataIdKey, prevModelId)).html());
 				this.target.find("[{0}={1}]".format(this.dataIdKey, prevModelId)).after(renderedTemplate);
+			} else if (nextModelId != undefined) {
+				this.target.find("[{0}={1}]".format(this.dataIdKey, nextModelId)).before(renderedTemplate);
 			} else {
 				this.target.append(renderedTemplate);
 			}
@@ -144,10 +148,6 @@ var View = function(options) {
 		}
 		return renderTarget;
 	};
-//	this.isExist = function(id) {
-//		return this.get(id).length == 0;
-//	};
-	
 	
 	this.get = function(id) {
 		return this.target.find("[{0}={1}]".format(this.dataIdKey, id));
@@ -180,7 +180,7 @@ var Controller = function(options) {
 	this.view;
 	this.id = "id";
 	this.savedModelKey = "savedModel";
-	this.sortKey = "name";
+	this.sortKey = "id";
 	this.sortIsDescending = true;
 	
 	this.ajaxConfig= { dataType : "json", contentType : "application/json" };
@@ -320,9 +320,19 @@ var Controller = function(options) {
 	 */
 	this.getPrevModelId = function(id) {
 		var list = this.getSavedModelList();
+		console.log(list);
 		for (var i = 0 ; i < list.length ; i++) {
 			if (list[i].getId() == id && i > 0) {
 				return list[i-1].getId();
+			}
+		}
+		return null;
+	};
+	this.getNextModelId = function(id) {
+		var list = this.getSavedModelList();
+		for (var i = 0 ; i < list.length ; i++) {
+			if (list[i].getId() == id && i != list.length-1) {
+				return list[i+1].getId();
 			}
 		}
 		return null;
@@ -335,8 +345,10 @@ var Controller = function(options) {
 		var list = this.getSavedModelList();
 		list.push(model);
 		list.sortData("data." + this.sortKey, this.sortIsDescending);
+		// sort 방향에 따라 view를 앞에 넣거나 뒤에 넣음 처리 해야함
 		var prevModelId = this.getPrevModelId(model.getId());
-		this.view.add(model, prevModelId);
+		var nextModelId = this.getNextModelId(model.getId());
+		this.view.add(model, prevModelId, nextModelId);
 		return list;
 	};
 	this.getSavedModel = function(id) {
