@@ -23,7 +23,15 @@ Array.prototype.sortData = function(key, isDescending) {
 	if (isDescending == undefined) isDescending = false;
 	var i = isDescending == true ? -1 : 1;
 	this.sort(function(a, b) {
-		return getValueFromObj(a, key) > getValueFromObj(b, key) ? i * 1 : i * -1; 
+		var aValue = getValueFromObj(a, key);
+		var bValue = getValueFromObj(b, key);
+		if (aValue > bValue) {
+			return i * 1;
+		}
+		if (aValue < bValue) {
+			return i * -1;
+		}
+		return 0;
 	});
 };
 
@@ -53,8 +61,8 @@ var t = [
 	{a : "24", b : { b1 : "asd", b2 : "v12"}}];
 //t.sortData("b.b1");
 //console.log("d2s");
-t.sortData("a", true);
-console.log(t);
+//t.sortData("a", true);
+//console.log(t);
 
 
 /**
@@ -131,6 +139,12 @@ var View = function(options) {
 	 */
 	this.add = function(model, prevModelId, nextModelId) {
 		console.debug("[view] add...");
+		model.data.dateformat = function() {
+			return function(date, render) {
+				return moment(new Date(parseFloat(render(date)))).format("YYYY-MM-DD");
+			};
+		};
+		
 		var renderedTemplate = $(Mustache.render(this.template, model.data)).attr(this.dataIdKey, model.getId());
 		// 추가 대상이 이미 view에 있는 경우 replace 처리
 		var renderTarget = this.get(model.getId());
@@ -180,7 +194,7 @@ var Controller = function(options) {
 	this.view;
 	this.id = "id";
 	this.savedModelKey = "savedModel";
-	this.sortKey = "id";
+	this.sortKey = "date";
 	this.sortIsDescending = true;
 	
 	this.ajaxConfig= { dataType : "json", contentType : "application/json" };
@@ -300,7 +314,6 @@ var Controller = function(options) {
 			contentType : this.ajaxConfig.contentType,
 			success : function(data) {
 				_self.removeSavedModel(model.getId());
-				console.log(_self.getSavedModelList());
 			}
 		});
 	};
@@ -320,7 +333,6 @@ var Controller = function(options) {
 	 */
 	this.getPrevModelId = function(id) {
 		var list = this.getSavedModelList();
-		console.log(list);
 		for (var i = 0 ; i < list.length ; i++) {
 			if (list[i].getId() == id && i > 0) {
 				return list[i-1].getId();

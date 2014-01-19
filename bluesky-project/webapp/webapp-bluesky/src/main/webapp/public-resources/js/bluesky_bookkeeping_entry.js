@@ -22,6 +22,7 @@ $(document).ready(function() {
 	var controller = new Controller({
 		url : "/user/1/bookkeeping/entry",
 		view : view,
+		sortKey : "date",
 		initialize : function() {
 			$(".entry-menu-add").css("cursor", "pointer");
 		},
