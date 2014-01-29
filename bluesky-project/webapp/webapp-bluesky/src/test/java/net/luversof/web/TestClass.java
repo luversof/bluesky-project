@@ -1,7 +1,7 @@
 package net.luversof.web;
 
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.core.config.AppConfig;
+import net.luversof.data.jpa.config.JpaConfig;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -15,7 +15,7 @@ import org.springframework.test.context.web.WebAppConfiguration;
 @Slf4j
 @WebAppConfiguration
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes={AppConfig.class})
+@ContextConfiguration(classes={JpaConfig.class})
 public class TestClass {
 	
 	@Autowired

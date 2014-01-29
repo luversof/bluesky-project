@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.service.AssetGroupService;
 import net.luversof.bookkeeping.service.AssetService;
-import net.luversof.core.exception.BlueskyException;
+import net.luversof.data.jpa.exception.BlueskyException;
 import net.luversof.web.AuthorizeRole;
 
 import org.springframework.beans.factory.annotation.Autowired;

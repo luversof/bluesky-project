@@ -9,7 +9,6 @@
   <packaging>pom</packaging>
   <modules>
   	<module>app-blog</module>
-  	<module>app-security</module>
   	<module>app-bookkeeping</module>
   </modules>
 </project>

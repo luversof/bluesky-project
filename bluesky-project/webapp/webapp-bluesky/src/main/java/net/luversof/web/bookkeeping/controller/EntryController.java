@@ -7,7 +7,7 @@ import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.service.AssetService;
 import net.luversof.bookkeeping.service.EntryGroupService;
 import net.luversof.bookkeeping.service.EntryService;
-import net.luversof.core.exception.BlueskyException;
+import net.luversof.data.jpa.exception.BlueskyException;
 import net.luversof.web.AuthorizeRole;
 
 import org.springframework.beans.factory.annotation.Autowired;

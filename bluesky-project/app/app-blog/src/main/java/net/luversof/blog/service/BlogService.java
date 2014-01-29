@@ -2,9 +2,9 @@ package net.luversof.blog.service;
 
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.BlogRepository;
-import net.luversof.core.datasource.DataSource;
-import net.luversof.core.datasource.DataSourceType;
-import net.luversof.core.exception.BlueskyException;
+import net.luversof.data.jpa.datasource.DataSource;
+import net.luversof.data.jpa.datasource.DataSourceType;
+import net.luversof.data.jpa.exception.BlueskyException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;

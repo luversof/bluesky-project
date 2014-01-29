@@ -10,7 +10,6 @@ import net.luversof.blog.domain.QBlog;
 import net.luversof.blog.repository.BlogRepository;
 import net.luversof.blog.service.BlogCategoryService;
 import net.luversof.blog.service.BlogService;
-import net.luversof.core.config.GeneralTest;
 
 import org.junit.Ignore;
 import org.junit.Test;

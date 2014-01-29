@@ -12,7 +12,7 @@ import net.luversof.bookkeeping.domain.AssetGroup;
 import net.luversof.bookkeeping.domain.AssetType;
 import net.luversof.bookkeeping.service.AssetGroupService;
 import net.luversof.bookkeeping.service.AssetService;
-import net.luversof.core.config.GeneralTest;
+import net.luversof.data.jpa.config.GeneralTest;
 
 @Slf4j
 public class AssetTest extends GeneralTest {

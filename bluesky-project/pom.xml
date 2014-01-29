@@ -7,13 +7,13 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>app</module>
-		<module>app-config</module>
 		<module>webapp</module>
-		<module>webapp-config</module>
+		<module>bluesky-data-jpa</module>
+		<module>bluesky-security</module>
 	</modules>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<spring.version>4.0.0.RELEASE</spring.version>
+		<spring.version>4.0.1.RELEASE</spring.version>
 		<spring.security.version>3.2.0.RELEASE</spring.security.version>
 		<querydsl.version>3.3.0</querydsl.version>
 	</properties>

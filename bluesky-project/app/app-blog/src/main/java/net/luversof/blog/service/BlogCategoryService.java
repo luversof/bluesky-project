@@ -6,8 +6,8 @@ import net.luversof.blog.domain.BlogCategory;
 import net.luversof.blog.repository.BlogCategoryRepository;
 
 
-import net.luversof.core.datasource.DataSource;
-import net.luversof.core.datasource.DataSourceType;
+import net.luversof.data.jpa.datasource.DataSource;
+import net.luversof.data.jpa.datasource.DataSourceType;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

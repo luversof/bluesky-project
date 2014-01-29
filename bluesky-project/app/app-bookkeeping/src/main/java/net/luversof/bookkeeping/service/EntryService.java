@@ -4,8 +4,8 @@ import java.util.List;
 
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.repository.EntryRepository;
-import net.luversof.core.datasource.DataSource;
-import net.luversof.core.datasource.DataSourceType;
+import net.luversof.data.jpa.datasource.DataSource;
+import net.luversof.data.jpa.datasource.DataSourceType;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
