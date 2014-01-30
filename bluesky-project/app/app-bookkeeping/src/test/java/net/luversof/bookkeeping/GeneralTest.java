@@ -1,4 +1,4 @@
-package net.luversof.core.config;
+package net.luversof.bookkeeping;
 
 import net.luversof.data.jpa.JpaConfig;
 
