@@ -1,10 +1,9 @@
-package net.luversof.bookkeeping.config;
+package net.luversof.blog;
 
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ComponentScan("net.luversof.bookkeeping")
-public class BookkeepingConfig {
-
+@ComponentScan
+public class BlogConfig {
 }

@@ -1,4 +1,4 @@
-package net.luversof.security.config;
+package net.luversof.security;
 
 import net.luversof.security.service.UserService;
 
@@ -12,7 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
-@ComponentScan("net.luversof.security")
+@ComponentScan
 public class SecurityConfig {
 
 	@Autowired

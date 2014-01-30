@@ -1,7 +1,7 @@
 package net.luversof.web;
 
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.data.jpa.config.JpaConfig;
+import net.luversof.data.jpa.JpaConfig;
 
 import org.junit.Ignore;
 import org.junit.Test;

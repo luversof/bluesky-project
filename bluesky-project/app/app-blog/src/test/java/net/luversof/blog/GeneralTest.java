@@ -1,7 +1,6 @@
 package net.luversof.blog;
 
-import net.luversof.blog.config.BlogConfig;
-import net.luversof.data.jpa.config.JpaConfig;
+import net.luversof.data.jpa.JpaConfig;
 
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;

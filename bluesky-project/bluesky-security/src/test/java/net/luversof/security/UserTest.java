@@ -1,7 +1,7 @@
 package net.luversof.security;
 
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.data.jpa.config.JpaConfig;
+import net.luversof.data.jpa.JpaConfig;
 import net.luversof.security.domain.User;
 import net.luversof.security.service.UserService;
 

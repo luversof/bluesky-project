@@ -1,13 +1,13 @@
-package net.luversof.web.config;
+package net.luversof.web;
 
 import java.nio.charset.StandardCharsets;
 
 import javax.servlet.Filter;
 
-import net.luversof.blog.config.BlogConfig;
-import net.luversof.bookkeeping.config.BookkeepingConfig;
-import net.luversof.data.jpa.config.JpaConfig;
-import net.luversof.security.config.SecurityConfig;
+import net.luversof.blog.BlogConfig;
+import net.luversof.bookkeeping.BookkeepingConfig;
+import net.luversof.data.jpa.JpaConfig;
+import net.luversof.security.SecurityConfig;
 
 import org.springframework.orm.jpa.support.OpenEntityManagerInViewFilter;
 import org.springframework.web.filter.CharacterEncodingFilter;

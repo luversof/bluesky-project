@@ -1,4 +1,4 @@
-package net.luversof.web.config;
+package net.luversof.web;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -16,18 +16,14 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.accept.ContentNegotiationManager;
 import org.springframework.web.accept.ContentNegotiationStrategy;
 import org.springframework.web.accept.HeaderContentNegotiationStrategy;
 import org.springframework.web.accept.PathExtensionContentNegotiationStrategy;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.DefaultServletHandlerConfigurer;
@@ -48,7 +44,7 @@ import org.thymeleaf.templateresolver.ServletContextTemplateResolver;
 @Slf4j
 @Configuration
 @EnableWebMvc
-@ComponentScan(basePackages = "net.luversof", useDefaultFilters = false, includeFilters = @Filter(type = FilterType.ANNOTATION, value = { Controller.class, ControllerAdvice.class }))
+@ComponentScan
 // @PropertySource(name="mvcProps", value="classpath:props/mvc.properties")
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 public class WebMvcConfig extends WebMvcConfigurerAdapter {
