@@ -8,6 +8,9 @@
 
 	<logger name="net.luversof" level="debug" />
 	<logger name="org.springframework" level="info" />
+	<logger name="org.hibernate" level="info" />
+	<logger name="org.hibernate.SQL" level="debug" />
+	<logger name="org.hibernate.type" level="trace" />
 
 	<root level="info">
 		<appender-ref ref="console" />

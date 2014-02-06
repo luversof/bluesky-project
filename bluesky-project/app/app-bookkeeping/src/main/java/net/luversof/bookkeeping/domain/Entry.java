@@ -1,13 +1,13 @@
 package net.luversof.bookkeeping.domain;
 
-import java.util.Date;
-
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
 
 import lombok.Data;
+
+import org.joda.time.DateTime;
 
 @Entity
 @Data
@@ -25,7 +25,7 @@ public class Entry {
 	
 	private long amount;
 	
-	private Date date;
+	private DateTime date;
 	
 	private String memo;
 	

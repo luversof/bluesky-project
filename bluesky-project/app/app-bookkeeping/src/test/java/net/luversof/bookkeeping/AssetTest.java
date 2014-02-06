@@ -1,7 +1,21 @@
 package net.luversof.bookkeeping;
 
+import java.util.Date;
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
+import net.luversof.bookkeeping.domain.Asset;
+import net.luversof.bookkeeping.domain.AssetGroup;
+import net.luversof.bookkeeping.domain.AssetType;
+import net.luversof.bookkeeping.domain.Entry;
+import net.luversof.bookkeeping.domain.QEntry;
+import net.luversof.bookkeeping.repository.EntryRepository;
+import net.luversof.bookkeeping.service.AssetGroupService;
+import net.luversof.bookkeeping.service.AssetService;
+import net.luversof.data.jpa.datasource.DataSourceContextHolder;
+import net.luversof.data.jpa.datasource.DataSourceType;
+
+import org.joda.time.DateTime;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,22 +24,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.mysema.query.types.Predicate;
-
-import lombok.extern.slf4j.Slf4j;
-import net.luversof.bookkeeping.domain.Asset;
-import net.luversof.bookkeeping.domain.AssetGroup;
-import net.luversof.bookkeeping.domain.AssetType;
-import net.luversof.bookkeeping.domain.Entry;
-import net.luversof.bookkeeping.domain.QAsset;
-import net.luversof.bookkeeping.domain.QEntry;
-import net.luversof.bookkeeping.repository.EntryRepository;
-import net.luversof.bookkeeping.service.AssetGroupService;
-import net.luversof.bookkeeping.service.AssetService;
-import net.luversof.data.jpa.datasource.DataSourceContextHolder;
-import net.luversof.data.jpa.datasource.DataSourceType;
 
 @Slf4j
 public class AssetTest extends GeneralTest {
@@ -102,11 +102,17 @@ public class AssetTest extends GeneralTest {
 		log.debug("list : {}", entryPage);
 	}
 	
-	
 	/**
 	 * 일정 기간으로 구간 검색하기
 	 */
 	@Test
 	public void test5() {
+		DataSourceContextHolder.setDataSourceType(DataSourceType.BOOKKEEPING);
+		Date startDate = new Date(2013-1900, 9, 4);
+		Date endDate = new Date(2013-1900, 9, 20);
+		DateTime startDate2 = new DateTime(1913, 10, 4, 0, 0);
+		DateTime endDate2 = new DateTime(2013, 10, 20, 0, 0);
+		List<Entry> entryList = entryRepository.findByDateBetween(startDate2, endDate2);
+		log.debug("list : {}", entryList);
 	}
 }
