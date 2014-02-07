@@ -13,5 +13,5 @@ import org.springframework.data.querydsl.QueryDslPredicateExecutor;
 public interface EntryRepository extends JpaRepository<Entry, Long>, QueryDslPredicateExecutor<Entry> {
 	List<Entry> findByAssetUsername(String username);
 	Page<Entry> findByAssetUsername(String username, Pageable pageable);
-	List<Entry> findByDateBetween(DateTime startDate, DateTime endDate);
+	List<Entry> findByAssetUsernameAndDateBetween(String username, DateTime startDate, DateTime endDate);
 }

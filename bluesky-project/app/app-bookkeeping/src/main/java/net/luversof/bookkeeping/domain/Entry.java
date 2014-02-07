@@ -1,5 +1,7 @@
 package net.luversof.bookkeeping.domain;
 
+import java.io.Serializable;
+
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -7,11 +9,13 @@ import javax.persistence.OneToOne;
 
 import lombok.Data;
 
+import org.hibernate.annotations.Type;
 import org.joda.time.DateTime;
 
 @Entity
 @Data
-public class Entry {
+public class Entry implements Serializable {
+	private static final long serialVersionUID = -5106564257765676653L;
 
 	@Id
 	@GeneratedValue
@@ -25,6 +29,8 @@ public class Entry {
 	
 	private long amount;
 	
+	
+	@Type(type="org.jadira.usertype.dateandtime.joda.PersistentDateTime")
 	private DateTime date;
 	
 	private String memo;

@@ -41,6 +41,8 @@ import org.thymeleaf.spring4.SpringTemplateEngine;
 import org.thymeleaf.spring4.view.ThymeleafViewResolver;
 import org.thymeleaf.templateresolver.ServletContextTemplateResolver;
 
+import com.fasterxml.jackson.datatype.joda.JodaModule;
+
 @Slf4j
 @Configuration
 @EnableWebMvc
@@ -118,6 +120,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		MappingJackson2JsonView mappingJackson2JsonView = new MappingJackson2JsonView();
 		mappingJackson2JsonView.setExtractValueFromSingleKeyModel(true);
 		mappingJackson2JsonView.setModelKey("result");
+		mappingJackson2JsonView.getObjectMapper().registerModule(new JodaModule());
 		defaultViews.add(mappingJackson2JsonView);
 
 		viewResolver.setDefaultViews(defaultViews);

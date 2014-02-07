@@ -112,7 +112,7 @@ public class AssetTest extends GeneralTest {
 		Date endDate = new Date(2013-1900, 9, 20);
 		DateTime startDate2 = new DateTime(1913, 10, 4, 0, 0);
 		DateTime endDate2 = new DateTime(2013, 10, 20, 0, 0);
-		List<Entry> entryList = entryRepository.findByDateBetween(startDate2, endDate2);
+		List<Entry> entryList = entryRepository.findByAssetUsernameAndDateBetween("bluesky", startDate2, endDate2);
 		log.debug("list : {}", entryList);
 	}
 }
