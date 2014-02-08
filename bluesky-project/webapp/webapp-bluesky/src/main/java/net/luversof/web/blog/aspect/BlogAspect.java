@@ -3,12 +3,13 @@ package net.luversof.web.blog.aspect;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.blog.domain.Blog;
 
-import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+
+import com.google.common.base.Strings;
 
 /**
  * blog.username을 spring-security의 authentication으로 부터 설정
@@ -28,7 +29,7 @@ public class BlogAspect {
 	@Before("classPointcut(blog, authentication)")
 	public void beforeClassPointcut(Blog blog, Authentication authentication) {
 		log.debug("[blog] object set username, username : {}", authentication.getName());
-		if (StringUtils.isEmpty(blog.getUsername())) {
+		if (Strings.isNullOrEmpty(blog.getUsername())) {
 			blog.setUsername(authentication.getName());
 		}
 	}
