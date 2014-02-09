@@ -91,11 +91,6 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 	}
 
 	@Bean
-	public LocaleChangeInterceptor localeChangeInterceptor() {
-		return new LocaleChangeInterceptor();
-	}
-
-	@Bean
 	public ContentNegotiatingViewResolver contentNegotiatingViewResolver() {
 		ContentNegotiatingViewResolver viewResolver = new ContentNegotiatingViewResolver();
 
