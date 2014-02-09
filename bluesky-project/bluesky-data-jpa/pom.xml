@@ -68,5 +68,10 @@
 			<artifactId>querydsl-apt</artifactId>
 		</dependency>
 		<!-- (e) db -->
+		<dependency>
+			<groupId>net.luversof</groupId>
+			<artifactId>app-core</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 </project>

@@ -6,7 +6,6 @@ import javax.servlet.Filter;
 
 import net.luversof.blog.BlogConfig;
 import net.luversof.bookkeeping.BookkeepingConfig;
-import net.luversof.data.jpa.JpaConfig;
 import net.luversof.security.SecurityConfig;
 
 import org.springframework.orm.jpa.support.OpenEntityManagerInViewFilter;
@@ -19,7 +18,7 @@ public class DispatcherServletInitializer extends AbstractAnnotationConfigDispat
 
 	@Override
 	protected Class<?>[] getRootConfigClasses() {
-		return new Class[] { JpaConfig.class, BlogConfig.class, BookkeepingConfig.class, SecurityConfig.class};
+		return new Class[] { BlogConfig.class, BookkeepingConfig.class, SecurityConfig.class};
 	}
 
 	@Override

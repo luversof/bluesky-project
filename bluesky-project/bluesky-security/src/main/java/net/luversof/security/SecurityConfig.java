@@ -1,7 +1,7 @@
 package net.luversof.security;
 
 
-import net.luversof.data.jpa.JpaConfig;
+import net.luversof.core.Banner;
 import net.luversof.user.UserConfig;
 import net.luversof.user.service.UserService;
 
@@ -16,9 +16,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
-@Import({JpaConfig.class, UserConfig.class})
+@Import(value=UserConfig.class)
 @ComponentScan
 public class SecurityConfig {
+	
+	public SecurityConfig() {
+		super();
+		Banner.write(System.out, "bluesky-security");
+	}
 
 	@Autowired
 	private UserService userService;

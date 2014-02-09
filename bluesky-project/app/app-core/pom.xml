@@ -2,15 +2,8 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>net.luversof</groupId>
-    <artifactId>bluesky-project</artifactId>
+    <artifactId>app</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <artifactId>app</artifactId>
-  <packaging>pom</packaging>
-  <modules>
-  	<module>app-blog</module>
-  	<module>app-bookkeeping</module>
-  	<module>app-user</module>
-  	<module>app-core</module>
-  </modules>
+  <artifactId>app-core</artifactId>
 </project>

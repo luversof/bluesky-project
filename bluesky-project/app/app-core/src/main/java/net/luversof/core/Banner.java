@@ -1,4 +1,4 @@
-package net.luversof.data.jpa;
+package net.luversof.core;
 
 import java.io.PrintStream;
 

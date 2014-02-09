@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.core.Banner;
 import nz.net.ultraq.thymeleaf.LayoutDialect;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -50,6 +51,11 @@ import com.fasterxml.jackson.datatype.joda.JodaModule;
 // @PropertySource(name="mvcProps", value="classpath:props/mvc.properties")
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 public class WebMvcConfig extends WebMvcConfigurerAdapter {
+		
+	public WebMvcConfig() {
+		super();
+		Banner.write(System.out, "webapp-bluesky");
+	}
 
 	private static final int RESOURCE_CACHE_PERIOD = 31556926;
 	private static final int MESSAGE_SOURCE_CACHE_SECOND = 5;
