@@ -1,4 +1,4 @@
-package net.luversof.security.domain;
+package net.luversof.user.domain;
 
 import java.util.List;
 

@@ -10,5 +10,6 @@
   <modules>
   	<module>app-blog</module>
   	<module>app-bookkeeping</module>
+  	<module>app-user</module>
   </modules>
 </project>

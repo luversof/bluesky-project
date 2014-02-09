@@ -31,16 +31,8 @@
 
 		<dependency>
 			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-data-jpa</artifactId>
+			<artifactId>app-user</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>com.mysema.maven</groupId>
-				<artifactId>apt-maven-plugin</artifactId>
-			</plugin>
-		</plugins>
-	</build>
 </project>

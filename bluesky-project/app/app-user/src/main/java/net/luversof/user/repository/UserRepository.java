@@ -1,6 +1,6 @@
-package net.luversof.security.repository;
+package net.luversof.user.repository;
 
-import net.luversof.security.domain.User;
+import net.luversof.user.domain.User;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.querydsl.QueryDslPredicateExecutor;

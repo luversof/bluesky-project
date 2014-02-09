@@ -4,9 +4,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import net.luversof.security.domain.User;
-import net.luversof.security.domain.UserAuthority;
-import net.luversof.security.service.UserService;
+import net.luversof.user.domain.UserAuthority;
+import net.luversof.user.service.UserService;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -21,7 +20,7 @@ public class LuversofUserDetailsService implements UserDetailsService {
 
 	@Override
 	public UserDetails loadUserByUsername(String username) {
-		User user = userService.findByUsername(username);
+		net.luversof.user.domain.User user = userService.findByUsername(username);
 		
 		List<UserAuthority> userAuthorityList = user.getUserAuthorityList();
 		
