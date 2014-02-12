@@ -24,7 +24,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @Configuration
-@EnableTransactionManagement
+@EnableTransactionManagement(proxyTargetClass=true)
 @EnableJpaRepositories(basePackages="net.luversof")
 @ImportResource("classpath:net/luversof/data/jpa/config/repository/RepositoryContext.xml")
 public class RepositoryConfig {

@@ -88,7 +88,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		registry.addInterceptor(new LocaleChangeInterceptor());
 		super.addInterceptors(registry);
 	}
-
+	
 	@Bean
 	public SessionLocaleResolver localeResolver() {
 		SessionLocaleResolver sessionLocaleResolver = new SessionLocaleResolver();

@@ -64,5 +64,4 @@ public class PropertyConfig {
 		configurer.setLocations(locations);
 		return configurer;
 	}
-
 }

@@ -22,6 +22,7 @@
 	</appender>
 
 	<logger name="org.springframework" level="info"/>
+	<logger name="org.springframework.aop.interceptor" level="trace" />
 
 	<if condition='"${spring.profiles.active}" == "dev" || "${spring.profiles.active}" == "localdev" || "${spring.profiles.active}" == "live"'>
 		<then>
