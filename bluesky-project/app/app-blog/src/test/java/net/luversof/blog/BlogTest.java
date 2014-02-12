@@ -31,14 +31,14 @@ public class BlogTest extends GeneralTest {
 
 	@Test
 	@Ignore
-	public void 셀렉트테스트() {
+	public void selectTest() {
 		Blog blog = blogService.findOne(28);
 		log.debug("result : {}", blog);
 	}
 
 	@Test
-	@Ignore
-	public void save테스트() {
+	//@Ignore
+	public void saveTest() {
 		Blog blog = new Blog();
 		blog.setUsername("test");
 		blog.setTitle("한글제목");
@@ -48,6 +48,7 @@ public class BlogTest extends GeneralTest {
 		blog.setBlogCategory(blogCategory);
 
 		Blog savedBlog = blogService.save(blog);
+		log.debug("blog : {}", blog);
 		log.debug("savedBlog : {}", savedBlog);
 		log.debug("savedBlog : {}", savedBlog.getId());
 	}
@@ -56,7 +57,7 @@ public class BlogTest extends GeneralTest {
 //	@Ignore
 	public void 대량save테스트() {
 		for (int i = 0 ; i < 11 ; i++) {
-			save테스트();
+			saveTest();
 		}
 	}
 

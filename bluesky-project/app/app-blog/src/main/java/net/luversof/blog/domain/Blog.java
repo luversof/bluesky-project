@@ -11,7 +11,9 @@ import javax.validation.constraints.NotNull;
 
 import lombok.Data;
 
+import org.hibernate.annotations.Type;
 import org.hibernate.validator.constraints.NotEmpty;
+import org.joda.time.DateTime;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
@@ -31,9 +33,10 @@ public class Blog {
 	@NotEmpty(groups = { Save.class, Modify.class })
 	private String content;
 
+	@Type(type="org.jadira.usertype.dateandtime.joda.PersistentDateTime")
 	@CreatedDate
 	@Column(updatable = false)
-	private Date createdDate;
+	private DateTime createdDate;
 
 	@LastModifiedDate
 	private Date lastModifiedDate;

@@ -41,9 +41,6 @@ public class RepositoryConfig {
 	@Value("${entityManagerFactoryBean.packagesToScan}")
 	private String packagesToScan;
 	
-	@Value("${entityManagerFactoryBean.mappingResources}")
-	private String mappingResources;
-	
 	@Resource(name = "defaultDataSource")
 	private DataSource defaultDataSource;
 	
@@ -86,7 +83,6 @@ public class RepositoryConfig {
 		entityManagerFactoryBean.setJpaVendorAdapter(jpaVendorAdapter);
 		entityManagerFactoryBean.setJpaProperties(jpaProperties);
 		entityManagerFactoryBean.setPackagesToScan(packagesToScan);
-		entityManagerFactoryBean.setMappingResources(mappingResources);
 		entityManagerFactoryBean.afterPropertiesSet();
 		return entityManagerFactoryBean;
 	}
