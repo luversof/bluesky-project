@@ -14,7 +14,7 @@ public class BlogConfig {
 
 	public BlogConfig() {
 		super();
-		Banner.write(System.out, "app-blog");
+		Banner.write(System.out, this.getClass().getPackage().getName());
 	}
 	
 }

@@ -5,11 +5,5 @@
     <artifactId>bluesky-project</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <artifactId>app</artifactId>
-  <packaging>pom</packaging>
-  <modules>
-  	<module>app-blog</module>
-  	<module>app-bookkeeping</module>
-  	<module>app-user</module>
-  </modules>
+  <artifactId>bluesky-core</artifactId>
 </project>

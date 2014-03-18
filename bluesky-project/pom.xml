@@ -8,8 +8,8 @@
 	<modules>
 		<module>app</module>
 		<module>webapp</module>
-		<module>bluesky-data-jpa</module>
-		<module>bluesky-security</module>
+		<module>bluesky-core</module>
+		<module>bluesky-opensource</module>
 	</modules>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

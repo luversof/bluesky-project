@@ -1,20 +1,17 @@
-package net.luversof.bookkeeping;
+package net.luversof.data.jpa;
 
 import net.luversof.core.Banner;
-import net.luversof.data.jpa.JpaConfig;
 
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
 @Configuration
-@Import(JpaConfig.class)
+@EnableAspectJAutoProxy(proxyTargetClass=true)
 @ComponentScan
-public class BookkeepingConfig {
-
-	public BookkeepingConfig() {
+public class JpaConfig {
+	public JpaConfig() {
 		super();
 		Banner.write(System.out, this.getClass().getPackage().getName());
 	}
-
 }
