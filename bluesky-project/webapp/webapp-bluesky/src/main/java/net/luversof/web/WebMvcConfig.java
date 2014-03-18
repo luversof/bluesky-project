@@ -54,7 +54,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		
 	public WebMvcConfig() {
 		super();
-		Banner.write(System.out, "webapp-bluesky");
+		Banner.write(System.out, this.getClass().getPackage().getName());
 	}
 
 	private static final int RESOURCE_CACHE_PERIOD = 31556926;
