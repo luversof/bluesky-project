@@ -1,6 +1,7 @@
 package net.luversof.user;
 
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.core.BlueskyApplicationContextInitializer;
 import net.luversof.data.jpa.JpaConfig;
 import net.luversof.user.domain.User;
 import net.luversof.user.service.UserService;
@@ -14,7 +15,7 @@ import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
 @Slf4j
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = { JpaConfig.class, UserConfig.class /* , MvcConfig.class */}, loader = AnnotationConfigContextLoader.class)
+@ContextConfiguration(classes = { JpaConfig.class, UserConfig.class /* , MvcConfig.class */}, loader = AnnotationConfigContextLoader.class, initializers = BlueskyApplicationContextInitializer.class)
 public class UserTest {
 
 	@Autowired

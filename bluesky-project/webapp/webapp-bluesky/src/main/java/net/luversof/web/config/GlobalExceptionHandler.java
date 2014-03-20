@@ -17,7 +17,7 @@ import org.springframework.web.servlet.ModelAndView;
 
 @Slf4j
 @ControllerAdvice
-public class GlobalControllerExceptionHandler {
+public class GlobalExceptionHandler {
 	
 	@ExceptionHandler
 	@ResponseStatus(value=HttpStatus.BAD_REQUEST)

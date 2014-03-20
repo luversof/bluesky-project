@@ -1,12 +1,15 @@
-package net.luversof.web;
+package net.luversof.web.config;
 
 import java.nio.charset.StandardCharsets;
 
 import javax.servlet.Filter;
+import javax.servlet.ServletContext;
 
 import net.luversof.blog.BlogConfig;
 import net.luversof.bookkeeping.BookkeepingConfig;
+import net.luversof.core.BlueskyApplicationContextInitializer;
 import net.luversof.security.SecurityConfig;
+import net.luversof.web.BlueskyWebConfig;
 
 import org.springframework.orm.jpa.support.OpenEntityManagerInViewFilter;
 import org.springframework.web.filter.CharacterEncodingFilter;
@@ -18,24 +21,30 @@ public class DispatcherServletInitializer extends AbstractAnnotationConfigDispat
 
 	@Override
 	protected Class<?>[] getRootConfigClasses() {
-		return new Class[] { BlogConfig.class, BookkeepingConfig.class, SecurityConfig.class};
+		return new Class[] { BlogConfig.class, BookkeepingConfig.class, SecurityConfig.class };
+	}
+
+	@Override
+	protected void registerDispatcherServlet(ServletContext servletContext) {
+		servletContext.setInitParameter("contextInitializerClasses", BlueskyApplicationContextInitializer.class.getName());
+		super.registerDispatcherServlet(servletContext);
 	}
 
 	@Override
 	protected Class<?>[] getServletConfigClasses() {
-		return new Class[] { WebMvcConfig.class };
+		return new Class[] { BlueskyWebConfig.class };
 	}
 
 	@Override
 	protected String[] getServletMappings() {
 		return new String[] { "/" };
 	}
-	
+
 	@Override
 	protected Filter[] getServletFilters() {
 		CharacterEncodingFilter characterEncodingFilter = new CharacterEncodingFilter();
 		characterEncodingFilter.setEncoding(StandardCharsets.UTF_8.name());
 		characterEncodingFilter.setForceEncoding(true);
-		return new Filter[] { characterEncodingFilter, new HiddenHttpMethodFilter(), new HttpPutFormContentFilter(), new OpenEntityManagerInViewFilter()};
+		return new Filter[] { characterEncodingFilter, new HiddenHttpMethodFilter(), new HttpPutFormContentFilter(), new OpenEntityManagerInViewFilter() };
 	}
 }

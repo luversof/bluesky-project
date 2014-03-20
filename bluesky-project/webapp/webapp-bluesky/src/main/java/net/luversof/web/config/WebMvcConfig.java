@@ -1,4 +1,4 @@
-package net.luversof.web;
+package net.luversof.web.config;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -16,9 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.http.MediaType;
 import org.springframework.web.accept.ContentNegotiationManager;
@@ -47,9 +45,7 @@ import com.fasterxml.jackson.datatype.joda.JodaModule;
 @Slf4j
 @Configuration
 @EnableWebMvc
-@ComponentScan
 // @PropertySource(name="mvcProps", value="classpath:props/mvc.properties")
-@EnableAspectJAutoProxy(proxyTargetClass = true)
 public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		
 	public WebMvcConfig() {
