@@ -33,7 +33,7 @@ public class AssetService {
 	}
 	
 	@Transactional(readOnly = true)
-	public List<Asset> findByUsername(String username) {
-		return assetRepository.findByUsername(username);
+	public List<Asset> findByUsername(int id) {
+		return assetRepository.findByUserId(id);
 	}
 }

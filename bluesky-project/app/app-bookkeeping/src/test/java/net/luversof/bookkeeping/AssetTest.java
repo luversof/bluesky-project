@@ -65,7 +65,7 @@ public class AssetTest extends GeneralTest {
 	
 	@Test
 	public void test2() {
-		List<Asset> assetList = assetService.findByUsername("bluesky");
+		List<Asset> assetList = assetService.findByUsername(1);
 		log.debug("assetList : {}", assetList);
 	}
 	

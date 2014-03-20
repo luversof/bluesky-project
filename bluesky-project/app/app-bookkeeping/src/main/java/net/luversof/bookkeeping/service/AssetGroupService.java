@@ -33,7 +33,7 @@ public class AssetGroupService {
 	}
 	
 	@Transactional(readOnly = true)
-	public List<AssetGroup> findByUsername(String username) {
-		return assetGroupRepository.findByUsername(username);
+	public List<AssetGroup> findByUserId(int id) {
+		return assetGroupRepository.findByUserId(id);
 	}
 }

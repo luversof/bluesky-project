@@ -32,7 +32,7 @@ public class EntryService {
 	}
 	
 	@Transactional(readOnly = true)
-	public List<Entry> findByAssetUsername(String username) {
-		return entryRepository.findByAssetUsername(username);
+	public List<Entry> findByAssetUsername(int id) {
+		return entryRepository.findByAssetUserId(id);
 	}
 }
