@@ -10,5 +10,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AssetGroupRepository extends JpaRepository<AssetGroup, Long>, QueryDslPredicateExecutor<AssetGroup> {
-	List<AssetGroup> findByUsername(String username);
+	List<AssetGroup> findByUserId(int id);
 }

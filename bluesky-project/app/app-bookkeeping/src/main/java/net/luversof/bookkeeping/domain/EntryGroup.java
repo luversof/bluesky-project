@@ -5,6 +5,7 @@ import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.OneToOne;
 
 import lombok.Data;
 
@@ -17,8 +18,9 @@ public class EntryGroup {
 	
 	private String name;
 	
-	private String username;
-	
-	@Enumerated(EnumType.ORDINAL)
+	@Enumerated(EnumType.STRING)
 	private EntryType entryType;
+	
+	@OneToOne
+	private User user;
 }

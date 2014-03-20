@@ -22,11 +22,10 @@ public class Asset {
 	
 	private String name;
 	
-	private String username;
-	
 	private long amount;
 	
-	private boolean enable;
+	@OneToOne
+	private User user;
 	
 	@OneToOne
 	private AssetGroup assetGroup;

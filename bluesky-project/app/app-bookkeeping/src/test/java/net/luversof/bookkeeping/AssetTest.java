@@ -43,7 +43,6 @@ public class AssetTest extends GeneralTest {
 		AssetGroup assetGroup = new AssetGroup();
 		assetGroup.setAssetType(AssetType.CARD);
 		assetGroup.setName("test");
-		assetGroup.setUsername("bluesky");
 		AssetGroup resultAssetGroup = assetGroupService.save(assetGroup);
 		log.debug("resultAssetGroup : {}", resultAssetGroup);
 	}
@@ -57,10 +56,8 @@ public class AssetTest extends GeneralTest {
 			
 			Asset asset = new Asset();
 			asset.setName("test" + i);
-			asset.setUsername("bluesky");
 			asset.setAmount(100);
 			asset.setAssetGroup(assetGroup);
-			asset.setEnable(true);
 			Asset resultAsset = assetService.save(asset);
 			log.debug("result : {}", resultAsset);
 		}
@@ -98,7 +95,7 @@ public class AssetTest extends GeneralTest {
 	public void spring_data_jpa를_이용한_페이징() {
 		DataSourceContextHolder.setDataSourceType(DataSourceType.BOOKKEEPING);
 		Pageable pageable = new PageRequest(0, 10, new Sort(Direction.DESC, QEntry.entry.date.getMetadata().getName()));
-		Page<Entry> entryPage = entryRepository.findByAssetUsername("bluesky", pageable);
+		Page<Entry> entryPage = entryRepository.findByAssetUserId(1, pageable);
 		log.debug("list : {}", entryPage);
 	}
 	
@@ -112,7 +109,7 @@ public class AssetTest extends GeneralTest {
 		Date endDate = new Date(2013-1900, 9, 20);
 		DateTime startDate2 = new DateTime(1913, 10, 4, 0, 0);
 		DateTime endDate2 = new DateTime(2013, 10, 20, 0, 0);
-		List<Entry> entryList = entryRepository.findByAssetUsernameAndDateBetween("bluesky", startDate2, endDate2);
+		List<Entry> entryList = entryRepository.findByAssetUserIdAndDateBetween(1, startDate2, endDate2);
 		log.debug("list : {}", entryList);
 	}
 }
