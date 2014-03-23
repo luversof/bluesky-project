@@ -24,35 +24,35 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @Configuration
-@EnableTransactionManagement(proxyTargetClass=true)
-@EnableJpaRepositories(basePackages="net.luversof")
-@ImportResource("classpath:net/luversof/data/jpa/config/repository/RepositoryContext.xml")
+@EnableTransactionManagement(proxyTargetClass = true)
+@EnableJpaRepositories(basePackages = "net.luversof")
+@ImportResource("classpath:spring/RepositoryContext.xml")
 public class RepositoryConfig {
 
 	@Value("${jpaVendorAdapter.showSql}")
 	private boolean showSql;
-	
+
 	@Value("${jpaVendorAdapter.generateDdl}")
 	private boolean generateDdl;
-	
+
 	@Value("${jpaVendorAdapter.databasePlatform}")
 	private String databasePlatform;
-	
+
 	@Value("${entityManagerFactoryBean.packagesToScan}")
 	private String packagesToScan;
-	
+
 	@Resource(name = "defaultDataSource")
 	private DataSource defaultDataSource;
-	
+
 	@Resource(name = "securityDataSource")
 	private DataSource securityDataSource;
-	
+
 	@Resource(name = "blogDataSource")
 	private DataSource blogDataSource;
-	
+
 	@Resource(name = "bookkeepingDataSource")
 	private DataSource bookkeepingDataSource;
-	
+
 	@Bean
 	public RoutingDataSource dataSource() {
 		RoutingDataSource routingDataSource = new RoutingDataSource();
@@ -73,7 +73,7 @@ public class RepositoryConfig {
 		jpaVendorAdapter.setGenerateDdl(generateDdl);
 		jpaVendorAdapter.setShowSql(showSql);
 		jpaVendorAdapter.setDatabasePlatform(databasePlatform);
-		
+
 		Properties jpaProperties = new Properties();
 		jpaProperties.setProperty("hibernate.enable_lazy_load_no_trans", "true");
 		jpaProperties.setProperty("hibernate.auto_close_session", "true");

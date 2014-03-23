@@ -9,9 +9,11 @@ import net.luversof.bookkeeping.domain.AssetGroup;
 import net.luversof.bookkeeping.domain.AssetType;
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.QEntry;
+import net.luversof.bookkeeping.domain.User;
 import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.bookkeeping.service.AssetGroupService;
 import net.luversof.bookkeeping.service.AssetService;
+import net.luversof.bookkeeping.service.UserService;
 import net.luversof.data.jpa.datasource.DataSourceContextHolder;
 import net.luversof.data.jpa.datasource.DataSourceType;
 
@@ -35,6 +37,16 @@ public class AssetTest extends GeneralTest {
 
 	@Autowired
 	private AssetGroupService assetGroupService;
+	
+	@Autowired
+	private UserService userService;
+	
+	@Test
+	public void assetUser생성() {
+		User user = new User();
+		user.setId(1);
+		userService.save(user);
+	}
 	
 	@Test
 	@Ignore

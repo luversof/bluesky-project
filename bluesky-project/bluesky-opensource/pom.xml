@@ -11,5 +11,6 @@
 	<modules>
 		<module>bluesky-data-jpa</module>
 		<module>bluesky-security</module>
+		<module>bluesky-jdbc</module>
 	</modules>
 </project>
