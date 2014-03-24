@@ -1,15 +1,10 @@
 package net.luversof.data.jpa.config;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 
-import javax.annotation.Resource;
-import javax.sql.DataSource;
+import net.luversof.jdbc.datasource.RoutingDataSource;
 
-import net.luversof.data.jpa.datasource.DataSourceType;
-import net.luversof.data.jpa.datasource.RoutingDataSource;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,31 +35,9 @@ public class RepositoryConfig {
 
 	@Value("${entityManagerFactoryBean.packagesToScan}")
 	private String packagesToScan;
-
-	@Resource(name = "defaultDataSource")
-	private DataSource defaultDataSource;
-
-	@Resource(name = "securityDataSource")
-	private DataSource securityDataSource;
-
-	@Resource(name = "blogDataSource")
-	private DataSource blogDataSource;
-
-	@Resource(name = "bookkeepingDataSource")
-	private DataSource bookkeepingDataSource;
-
-	@Bean
-	public RoutingDataSource dataSource() {
-		RoutingDataSource routingDataSource = new RoutingDataSource();
-		Map<Object, Object> targetDataSources = new HashMap<>();
-		targetDataSources.put(DataSourceType.DEFAULT, defaultDataSource);
-		targetDataSources.put(DataSourceType.SECURITY, securityDataSource);
-		targetDataSources.put(DataSourceType.BLOG, blogDataSource);
-		targetDataSources.put(DataSourceType.BOOKKEEPING, bookkeepingDataSource);
-		routingDataSource.setTargetDataSources(targetDataSources);
-		routingDataSource.setDefaultTargetDataSource(defaultDataSource);
-		return routingDataSource;
-	}
+	
+	@Autowired
+	private RoutingDataSource routingDataSource;
 
 	@Bean
 	public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
@@ -79,7 +52,7 @@ public class RepositoryConfig {
 		jpaProperties.setProperty("hibernate.auto_close_session", "true");
 
 		LocalContainerEntityManagerFactoryBean entityManagerFactoryBean = new LocalContainerEntityManagerFactoryBean();
-		entityManagerFactoryBean.setDataSource(dataSource());
+		entityManagerFactoryBean.setDataSource(routingDataSource);
 		entityManagerFactoryBean.setJpaVendorAdapter(jpaVendorAdapter);
 		entityManagerFactoryBean.setJpaProperties(jpaProperties);
 		entityManagerFactoryBean.setPackagesToScan(packagesToScan);

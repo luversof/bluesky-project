@@ -13,7 +13,6 @@ import org.springframework.context.annotation.PropertySources;
 @Configuration
 @ComponentScan
 @Import(BlueskyCoreConfig.class)
-@EnableAspectJAutoProxy(proxyTargetClass=true)
 @PropertySources(value =  @PropertySource(name = "jpaProp", value = "classpath:config/repository-${spring.profiles.active}.properties"))
 public class JpaConfig {
 	public JpaConfig() {

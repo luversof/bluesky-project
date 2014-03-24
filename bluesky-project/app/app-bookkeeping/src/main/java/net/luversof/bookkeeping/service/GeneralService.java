@@ -2,7 +2,9 @@ package net.luversof.bookkeeping.service;
 
 import java.io.Serializable;
 
-import net.luversof.data.jpa.datasource.DataSource;
+
+
+import net.luversof.jdbc.datasource.DataSource;
 
 import org.springframework.data.repository.CrudRepository;
 

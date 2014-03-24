@@ -1,7 +1,7 @@
 package net.luversof.user.service;
 
-import net.luversof.data.jpa.datasource.DataSource;
-import net.luversof.data.jpa.datasource.DataSourceType;
+import net.luversof.jdbc.datasource.DataSource;
+import net.luversof.jdbc.datasource.DataSourceType;
 import net.luversof.user.domain.User;
 import net.luversof.user.repository.UserRepository;
 

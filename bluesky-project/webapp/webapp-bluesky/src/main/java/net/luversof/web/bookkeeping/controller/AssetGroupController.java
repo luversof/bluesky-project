@@ -25,42 +25,42 @@ public class AssetGroupController {
 	@Autowired
 	private AssetGroupService assetGroupService;
 
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
-	@RequestMapping(method = RequestMethod.GET, value = "")
-	public String list(@PathVariable long userId, @RequestParam(defaultValue = "1") int page, Authentication authentication, ModelMap modelMap) {
-		log.debug("modelMap : {}", modelMap);
-		modelMap.addAttribute("result", assetGroupService.findByUsername(authentication.getName()));
-		return "/bookkeeping/assetGroup/list";
-	}
-
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
-	@RequestMapping(method = RequestMethod.POST)
-	public void save(@PathVariable long userId, @RequestBody AssetGroup assetGroup, Authentication authentication, ModelMap modelMap) {
-		assetGroup.setUsername(authentication.getName());
-		log.debug("save assetGroup : {}", assetGroup);
-		modelMap.addAttribute("result", assetGroupService.save(assetGroup));
-	}
-
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
-	@RequestMapping(value = "/{assetGroupId}", method = RequestMethod.PUT)
-	public void modify(@PathVariable long userId, @RequestBody AssetGroup assetGroup, Authentication authentication, ModelMap modelMap) {
-		AssetGroup targetAssetGroup = assetGroupService.findOne(assetGroup.getId());
-		if (!authentication.getName().equals(targetAssetGroup.getUsername())) {
-			throw new BlueskyException("username is not owner");
-		}
-		targetAssetGroup.setName(assetGroup.getName());
-		modelMap.addAttribute("result", assetGroupService.save(targetAssetGroup));
-	}
-
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
-	@RequestMapping(value = "/{assetGroupId}", method = RequestMethod.DELETE)
-	public void delete(@PathVariable long userId, @PathVariable long assetGroupId, Authentication authentication, ModelMap modelMap) {
-		AssetGroup targetAssetGroup = assetGroupService.findOne(assetGroupId);
-		if (!authentication.getName().equals(targetAssetGroup.getUsername())) {
-			throw new BlueskyException("username is not owner");
-		}
-		log.debug("id : {}", assetGroupId);
-		assetGroupService.delete(assetGroupId);
-	}
+//	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
+//	@RequestMapping(method = RequestMethod.GET, value = "")
+//	public String list(@PathVariable long userId, @RequestParam(defaultValue = "1") int page, Authentication authentication, ModelMap modelMap) {
+//		log.debug("modelMap : {}", modelMap);
+//		modelMap.addAttribute("result", assetGroupService.findByUsername(authentication.getName()));
+//		return "/bookkeeping/assetGroup/list";
+//	}
+//
+//	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
+//	@RequestMapping(method = RequestMethod.POST)
+//	public void save(@PathVariable long userId, @RequestBody AssetGroup assetGroup, Authentication authentication, ModelMap modelMap) {
+//		assetGroup.setUsername(authentication.getName());
+//		log.debug("save assetGroup : {}", assetGroup);
+//		modelMap.addAttribute("result", assetGroupService.save(assetGroup));
+//	}
+//
+//	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
+//	@RequestMapping(value = "/{assetGroupId}", method = RequestMethod.PUT)
+//	public void modify(@PathVariable long userId, @RequestBody AssetGroup assetGroup, Authentication authentication, ModelMap modelMap) {
+//		AssetGroup targetAssetGroup = assetGroupService.findOne(assetGroup.getId());
+//		if (!authentication.getName().equals(targetAssetGroup.getUsername())) {
+//			throw new BlueskyException("username is not owner");
+//		}
+//		targetAssetGroup.setName(assetGroup.getName());
+//		modelMap.addAttribute("result", assetGroupService.save(targetAssetGroup));
+//	}
+//
+//	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE + " && #userId == authentication.principal.id")
+//	@RequestMapping(value = "/{assetGroupId}", method = RequestMethod.DELETE)
+//	public void delete(@PathVariable long userId, @PathVariable long assetGroupId, Authentication authentication, ModelMap modelMap) {
+//		AssetGroup targetAssetGroup = assetGroupService.findOne(assetGroupId);
+//		if (!authentication.getName().equals(targetAssetGroup.getUsername())) {
+//			throw new BlueskyException("username is not owner");
+//		}
+//		log.debug("id : {}", assetGroupId);
+//		assetGroupService.delete(assetGroupId);
+//	}
 
 }

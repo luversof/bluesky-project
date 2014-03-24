@@ -14,8 +14,8 @@ import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.bookkeeping.service.AssetGroupService;
 import net.luversof.bookkeeping.service.AssetService;
 import net.luversof.bookkeeping.service.UserService;
-import net.luversof.data.jpa.datasource.DataSourceContextHolder;
-import net.luversof.data.jpa.datasource.DataSourceType;
+import net.luversof.jdbc.datasource.DataSourceContextHolder;
+import net.luversof.jdbc.datasource.DataSourceType;
 
 import org.joda.time.DateTime;
 import org.junit.Ignore;
