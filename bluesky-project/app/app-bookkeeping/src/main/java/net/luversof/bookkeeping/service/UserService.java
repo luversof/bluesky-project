@@ -3,6 +3,7 @@ package net.luversof.bookkeeping.service;
 import lombok.Getter;
 import net.luversof.bookkeeping.domain.User;
 import net.luversof.bookkeeping.repository.UserRepository;
+import net.luversof.data.jpa.service.GeneralService;
 import net.luversof.jdbc.datasource.DataSource;
 import net.luversof.jdbc.datasource.DataSourceType;
 
