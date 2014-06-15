@@ -2,12 +2,14 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>net.luversof</groupId>
-    <artifactId>bluesky-project</artifactId>
+    <artifactId>bluesky-parent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <artifactId>webapp</artifactId>
+  <artifactId>bluesky-app</artifactId>
   <packaging>pom</packaging>
   <modules>
-  	<module>webapp-bluesky</module>
+  	<module>bluesky-app-blog</module>
+  	<module>bluesky-app-bookkeeping</module>
+  	<module>bluesky-app-user</module>
   </modules>
 </project>

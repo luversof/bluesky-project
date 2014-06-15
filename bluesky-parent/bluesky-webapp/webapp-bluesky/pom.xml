@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>net.luversof</groupId>
-		<artifactId>webapp</artifactId>
+		<artifactId>bluesky-webapp</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>webapp-bluesky</artifactId>
@@ -17,12 +17,12 @@
 		<!-- (e) provided -->
 		<dependency>
 			<groupId>net.luversof</groupId>
-			<artifactId>app-blog</artifactId>
+			<artifactId>bluesky-app-blog</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>net.luversof</groupId>
-			<artifactId>app-bookkeeping</artifactId>
+			<artifactId>bluesky-app-bookkeeping</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>

@@ -3,10 +3,10 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>net.luversof</groupId>
-		<artifactId>app</artifactId>
+		<artifactId>bluesky-app</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>app-user</artifactId>
+	<artifactId>bluesky-app-blog</artifactId>
 	<dependencies>
 		<dependency>
 			<groupId>net.luversof</groupId>

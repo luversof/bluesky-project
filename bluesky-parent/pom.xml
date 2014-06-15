@@ -2,12 +2,12 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>net.luversof</groupId>
-	<artifactId>bluesky-project</artifactId>
+	<artifactId>bluesky-parent</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<modules>
-		<module>app</module>
-		<module>webapp</module>
+		<module>bluesky-app</module>
+		<module>bluesky-webapp</module>
 		<module>bluesky-core</module>
 		<module>bluesky-opensource</module>
 	</modules>
