@@ -52,14 +52,6 @@
 
 		<!-- (s) db -->
 		<dependency>
-			<groupId>org.apache.tomcat</groupId>
-			<artifactId>dbcp</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>mysql</groupId>
-			<artifactId>mysql-connector-java</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>com.mysema.querydsl</groupId>
 			<artifactId>querydsl-jpa</artifactId>
 		</dependency>

@@ -2,7 +2,7 @@ package net.luversof.blog.service;
 
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.BlogRepository;
-import net.luversof.data.jpa.exception.BlueskyException;
+import net.luversof.core.BlueskyException;
 import net.luversof.jdbc.datasource.DataSource;
 import net.luversof.jdbc.datasource.DataSourceType;
 

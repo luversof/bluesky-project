@@ -1,4 +1,4 @@
-package net.luversof.data.jpa.exception;
+package net.luversof.core;
 
 import lombok.NoArgsConstructor;
 

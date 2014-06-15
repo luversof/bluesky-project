@@ -3,7 +3,6 @@ package net.luversof.web.bookkeeping.controller;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.bookkeeping.domain.AssetGroup;
 import net.luversof.bookkeeping.service.AssetGroupService;
-import net.luversof.data.jpa.exception.BlueskyException;
 import net.luversof.web.AuthorizeRole;
 
 import org.springframework.beans.factory.annotation.Autowired;

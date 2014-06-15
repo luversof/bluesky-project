@@ -24,8 +24,7 @@ public class Asset {
 	
 	private long amount;
 	
-	@OneToOne
-	private User user;
+	private long userId;
 	
 	@OneToOne
 	private AssetGroup assetGroup;

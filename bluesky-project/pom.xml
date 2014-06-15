@@ -273,9 +273,9 @@
 
 			<!-- (s) db -->
 			<dependency>
-				<groupId>org.apache.tomcat</groupId>
-				<artifactId>dbcp</artifactId>
-				<version>6.0.39</version>
+				<groupId>com.zaxxer</groupId>
+				<artifactId>HikariCP</artifactId>
+				<version>1.4.0</version>
 			</dependency>
 			<dependency>
 				<groupId>mysql</groupId>

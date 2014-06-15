@@ -16,9 +16,6 @@ import org.springframework.context.annotation.Configuration;
 public class RoutingDataSourceConfig {
 	
 	@Resource
-	private DataSource defaultDataSource;
-
-	@Resource
 	private DataSource securityDataSource;
 
 	@Resource
@@ -31,12 +28,11 @@ public class RoutingDataSourceConfig {
 	public RoutingDataSource routingDataSource() {
 		RoutingDataSource routingDataSource = new RoutingDataSource();
 		Map<Object, Object> targetDataSources = new HashMap<>();
-		targetDataSources.put(DataSourceType.DEFAULT, defaultDataSource);
 		targetDataSources.put(DataSourceType.SECURITY, securityDataSource);
 		targetDataSources.put(DataSourceType.BLOG, blogDataSource);
 		targetDataSources.put(DataSourceType.BOOKKEEPING, bookkeepingDataSource);
 		routingDataSource.setTargetDataSources(targetDataSources);
-		routingDataSource.setDefaultTargetDataSource(defaultDataSource);
+		routingDataSource.setDefaultTargetDataSource(blogDataSource);
 		return routingDataSource;
 	}
 }

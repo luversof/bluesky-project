@@ -6,7 +6,7 @@ import net.luversof.blog.domain.Blog.Modify;
 import net.luversof.blog.domain.Blog.Save;
 import net.luversof.blog.service.BlogCategoryService;
 import net.luversof.blog.service.BlogService;
-import net.luversof.data.jpa.exception.BlueskyException;
+import net.luversof.core.BlueskyException;
 import net.luversof.web.AuthorizeRole;
 
 import org.springframework.beans.factory.annotation.Autowired;
