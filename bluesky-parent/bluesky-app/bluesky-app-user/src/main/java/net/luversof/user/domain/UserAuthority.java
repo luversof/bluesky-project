@@ -10,14 +10,14 @@ import lombok.ToString;
 
 @Entity
 @Data
-@ToString(exclude="user")
+@ToString(exclude = "user")
 public class UserAuthority {
-	
+
 	@Id
 	private long id;
-	
+
 	@ManyToOne
-	@JoinColumn(name="user_id")
+	@JoinColumn(name = "user_id")
 	private User user;
 
 	private String authority;

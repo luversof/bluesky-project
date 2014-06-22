@@ -8,7 +8,7 @@ import javax.persistence.OneToOne;
 import lombok.Data;
 
 /**
- * 자산 정보
+ * 자산
  * @author bluesky
  *
  */

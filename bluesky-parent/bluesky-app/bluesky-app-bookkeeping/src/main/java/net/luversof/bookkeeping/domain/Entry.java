@@ -22,7 +22,10 @@ public class Entry implements Serializable {
 	private long id;
 	
 	@OneToOne
-	private Asset asset;
+	private Asset debitAsset;
+	
+	@OneToOne
+	private Asset creditAsset;
 	
 	@OneToOne
 	private EntryGroup entryGroup;
@@ -31,7 +34,7 @@ public class Entry implements Serializable {
 	
 	
 	@Type(type="org.jadira.usertype.dateandtime.joda.PersistentDateTime")
-	private DateTime date;
+	private DateTime entryDate;
 	
 	private String memo;
 	

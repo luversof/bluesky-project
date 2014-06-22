@@ -16,15 +16,15 @@ import lombok.Data;
 public class User {
 	@Id
 	private long id;
-	
-	@Column(unique=true,nullable=false)
+
+	@Column(unique = true, nullable = false)
 	private String username;
-	
+
 	private String password;
-	
+
 	private boolean enable;
-	
-	@OneToMany(fetch=FetchType.EAGER)
-	@JoinColumn(name="user_id", referencedColumnName="id")
-	private List<UserAuthority> userAuthorityList; 
+
+	@OneToMany(fetch = FetchType.EAGER)
+	@JoinColumn(name = "user_id", referencedColumnName = "id")
+	private List<UserAuthority> userAuthorityList;
 }
