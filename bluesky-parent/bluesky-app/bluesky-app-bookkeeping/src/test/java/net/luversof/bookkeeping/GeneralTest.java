@@ -13,5 +13,5 @@ import org.springframework.test.context.support.AnnotationConfigContextLoader;
 //@IfProfileValue(name="spring.profiles.active", value="dev")
 //@ActiveProfiles("dev")
 public abstract class GeneralTest {
-
+	static final int TEST_USER_ID = 1;
 }

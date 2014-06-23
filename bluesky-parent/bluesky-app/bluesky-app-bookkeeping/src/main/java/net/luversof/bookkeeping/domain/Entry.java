@@ -1,6 +1,7 @@
 package net.luversof.bookkeeping.domain;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -10,7 +11,6 @@ import javax.persistence.OneToOne;
 import lombok.Data;
 
 import org.hibernate.annotations.Type;
-import org.joda.time.DateTime;
 
 @Entity
 @Data
@@ -34,7 +34,7 @@ public class Entry implements Serializable {
 	
 	
 	@Type(type="org.jadira.usertype.dateandtime.joda.PersistentDateTime")
-	private DateTime entryDate;
+	private LocalDate entryDate;
 	
 	private String memo;
 	

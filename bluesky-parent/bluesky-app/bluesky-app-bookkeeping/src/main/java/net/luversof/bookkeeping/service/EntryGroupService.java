@@ -32,7 +32,7 @@ public class EntryGroupService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<EntryGroup> findByUsername(int id) {
-		return entryGroupRepository.findByUserId(id);
+	public List<EntryGroup> findByUsername(int userId) {
+		return entryGroupRepository.findByUserId(userId);
 	}
 }

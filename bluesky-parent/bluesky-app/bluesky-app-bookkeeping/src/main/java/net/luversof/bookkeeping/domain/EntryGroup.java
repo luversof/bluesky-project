@@ -1,5 +1,6 @@
 package net.luversof.bookkeeping.domain;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -20,5 +21,6 @@ public class EntryGroup {
 	@Enumerated(EnumType.STRING)
 	private EntryType entryType;
 	
+	@Column(name = "user_id")
 	private long userId;
 }

@@ -1,67 +1,26 @@
 package net.luversof.bookkeeping;
 
-import java.util.Date;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.bookkeeping.domain.Asset;
-import net.luversof.bookkeeping.domain.AssetGroup;
-import net.luversof.bookkeeping.domain.AssetType;
-import net.luversof.bookkeeping.domain.Entry;
-import net.luversof.bookkeeping.domain.QEntry;
 import net.luversof.bookkeeping.repository.EntryRepository;
-import net.luversof.bookkeeping.service.AssetGroupService;
 import net.luversof.bookkeeping.service.AssetService;
-import net.luversof.jdbc.datasource.DataSourceContextHolder;
-import net.luversof.jdbc.datasource.DataSourceType;
 
-import org.joda.time.DateTime;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Direction;
-
-import com.mysema.query.types.Predicate;
 
 @Slf4j
 public class AssetTest extends GeneralTest {
 	
 	@Autowired
 	private AssetService assetService;
+	
 
-	@Autowired
-	private AssetGroupService assetGroupService;
-	
-	
 	@Test
-	@Ignore
-	public void assetGroup추가() {
-		
-		AssetGroup assetGroup = new AssetGroup();
-		assetGroup.setAssetType(AssetType.CARD);
-		assetGroup.setName("test");
-		AssetGroup resultAssetGroup = assetGroupService.save(assetGroup);
-		log.debug("resultAssetGroup : {}", resultAssetGroup);
-	}
-	@Test
-	@Ignore
-	public void test() {
-		
-		AssetGroup assetGroup = assetGroupService.findOne(1);
-		
-		for (int i = 1 ; i < 100; i++) {
-			
-			Asset asset = new Asset();
-			asset.setName("test" + i);
-			asset.setAmount(100);
-			asset.setAssetGroup(assetGroup);
-			Asset resultAsset = assetService.save(asset);
-			log.debug("result : {}", resultAsset);
-		}
+	public void defaultAsset() {
+		List<Asset> result = assetService.defaultSave(TEST_USER_ID);
+		log.debug("defaultAsset : {}", result);
 	}
 	
 	@Test

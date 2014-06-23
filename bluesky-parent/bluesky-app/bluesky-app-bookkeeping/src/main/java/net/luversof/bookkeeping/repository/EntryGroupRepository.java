@@ -8,5 +8,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.querydsl.QueryDslPredicateExecutor;
 
 public interface EntryGroupRepository extends JpaRepository<EntryGroup, Long>, QueryDslPredicateExecutor<EntryGroup> {
-	List<EntryGroup> findByUserId(int id);
+	List<EntryGroup> findByUserId(int userId);
 }
