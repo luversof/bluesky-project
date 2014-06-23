@@ -100,17 +100,17 @@ public class AssetTest extends GeneralTest {
 //		log.debug("list : {}", entryPage);
 //	}
 	
-	/**
-	 * 일정 기간으로 구간 검색하기
-	 */
-	@Test
-	public void test5() {
-		DataSourceContextHolder.setDataSourceType(DataSourceType.BOOKKEEPING);
-		Date startDate = new Date(2013-1900, 9, 4);
-		Date endDate = new Date(2013-1900, 9, 20);
-		DateTime startDate2 = new DateTime(1913, 10, 4, 0, 0);
-		DateTime endDate2 = new DateTime(2013, 10, 20, 0, 0);
-		List<Entry> entryList = entryRepository.findByAssetUserIdAndDateBetween(1, startDate2, endDate2);
-		log.debug("list : {}", entryList);
-	}
+//	/**
+//	 * 일정 기간으로 구간 검색하기
+//	 */
+//	@Test
+//	public void test5() {
+//		DataSourceContextHolder.setDataSourceType(DataSourceType.BOOKKEEPING);
+//		Date startDate = new Date(2013-1900, 9, 4);
+//		Date endDate = new Date(2013-1900, 9, 20);
+//		DateTime startDate2 = new DateTime(1913, 10, 4, 0, 0);
+//		DateTime endDate2 = new DateTime(2013, 10, 20, 0, 0);
+//		List<Entry> entryList = entryRepository.findByAssetUserIdAndDateBetween(1, startDate2, endDate2);
+//		log.debug("list : {}", entryList);
+//	}
 }

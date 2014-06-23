@@ -31,8 +31,8 @@ public class EntryService {
 		entryRepository.delete(id);
 	}
 	
-	@Transactional(readOnly = true)
-	public List<Entry> findByAssetUsername(int id) {
-		return entryRepository.findByAssetUserId(id);
-	}
+//	@Transactional(readOnly = true)
+//	public List<Entry> findByAssetUsername(int id) {
+//		return entryRepository.findByAssetUserId(id);
+//	}
 }

@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.querydsl.QueryDslPredicateExecutor;
 
 public interface EntryRepository extends JpaRepository<Entry, Long>, QueryDslPredicateExecutor<Entry> {
-	List<Entry> findByAssetUserId(int id);
-	Page<Entry> findByAssetUserId(int id, Pageable pageable);
-	List<Entry> findByAssetUserIdAndDateBetween(int id, DateTime startDate, DateTime endDate);
+//	List<Entry> findByAssetUserId(int id);
+//	Page<Entry> findByAssetUserId(int id, Pageable pageable);
+//	List<Entry> findByAssetUserIdAndDateBetween(int id, DateTime startDate, DateTime endDate);
 }
