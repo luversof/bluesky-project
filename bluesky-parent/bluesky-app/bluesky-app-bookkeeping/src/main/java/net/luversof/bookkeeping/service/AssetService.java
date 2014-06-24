@@ -6,6 +6,7 @@ import java.util.Set;
 
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.domain.AssetType;
+import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.repository.AssetRepository;
 import net.luversof.jdbc.datasource.DataSource;
 import net.luversof.jdbc.datasource.DataSourceType;
@@ -22,10 +23,15 @@ public class AssetService {
 	@Autowired
 	private AssetRepository assetRepository;
 	
-	public List<Asset> defaultSave(int userId) {
+	/**
+	 * 초기 데이터 insert
+	 * @param bookkeeping
+	 * @return
+	 */
+	public List<Asset> initialDataSave(Bookkeeping bookkeeping) {
 		Set<Asset> assetSet = new HashSet<>();
 		Asset asset = new Asset();
-		asset.setUserId(userId);
+		asset.setBookkeeping(bookkeeping);
 		asset.setAmount(0);
 		asset.setAssetType(AssetType.WALLET);
 		asset.setName("지갑");
@@ -44,10 +50,5 @@ public class AssetService {
 	
 	public void delete(long id) {
 		assetRepository.delete(id);
-	}
-	
-	@Transactional(readOnly = true)
-	public List<Asset> findByUsername(int userId) {
-		return assetRepository.findByUserId(userId);
 	}
 }

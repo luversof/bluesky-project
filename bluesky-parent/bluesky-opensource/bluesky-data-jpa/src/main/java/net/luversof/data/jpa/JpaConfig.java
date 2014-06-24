@@ -8,12 +8,11 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.context.annotation.PropertySources;
 
 @Configuration
 @ComponentScan
 @Import({BlueskyCoreConfig.class, JdbcConfig.class})
-@PropertySources(value =  @PropertySource(name = "jpaProp", value = "classpath:config/data-jpa-${spring.profiles.active}.properties"))
+@PropertySource(name = "jpaProp", value = "classpath:config/data-jpa-${spring.profiles.active}.properties")
 public class JpaConfig {
 	public JpaConfig() {
 		Banner.write(System.out, this.getClass().getPackage().getName());

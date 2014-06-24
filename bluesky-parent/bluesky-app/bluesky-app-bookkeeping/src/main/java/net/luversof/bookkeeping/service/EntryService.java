@@ -1,7 +1,5 @@
 package net.luversof.bookkeeping.service;
 
-import java.util.List;
-
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.jdbc.datasource.DataSource;

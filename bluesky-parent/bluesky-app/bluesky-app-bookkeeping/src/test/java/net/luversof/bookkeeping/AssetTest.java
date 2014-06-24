@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.bookkeeping.service.AssetService;
+import net.luversof.bookkeeping.service.BookkeepingService;
 
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,18 +17,17 @@ public class AssetTest extends GeneralTest {
 	@Autowired
 	private AssetService assetService;
 	
+	@Autowired
+	private BookkeepingService bookkeepingService;
+	
 
 	@Test
-	public void defaultAsset() {
-		List<Asset> result = assetService.defaultSave(TEST_USER_ID);
+	public void initialDataSave() {
+		bookkeepingService.findOne(2);
+		List<Asset> result = assetService.initialDataSave(bookkeepingService.findByUserId(TEST_USER_ID).get(0));
 		log.debug("defaultAsset : {}", result);
 	}
 	
-	@Test
-	public void test2() {
-		List<Asset> assetList = assetService.findByUsername(1);
-		log.debug("assetList : {}", assetList);
-	}
 	
 	@Autowired
 	private EntryRepository entryRepository;

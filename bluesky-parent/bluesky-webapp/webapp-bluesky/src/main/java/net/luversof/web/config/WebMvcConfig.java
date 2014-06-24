@@ -47,7 +47,7 @@ import com.fasterxml.jackson.datatype.joda.JodaModule;
 @EnableWebMvc
 // @PropertySource(name="mvcProps", value="classpath:props/mvc.properties")
 public class WebMvcConfig extends WebMvcConfigurerAdapter {
-		
+
 	public WebMvcConfig() {
 		super();
 		Banner.write(System.out, this.getClass().getPackage().getName());
@@ -84,7 +84,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		registry.addInterceptor(new LocaleChangeInterceptor());
 		super.addInterceptors(registry);
 	}
-	
+
 	@Bean
 	public SessionLocaleResolver localeResolver() {
 		SessionLocaleResolver sessionLocaleResolver = new SessionLocaleResolver();

@@ -1,7 +1,11 @@
 package net.luversof.bookkeeping.service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import net.luversof.bookkeeping.domain.Bookkeeping;
+import net.luversof.bookkeeping.domain.EntryGroupInitialData;
 import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.repository.EntryGroupRepository;
 import net.luversof.jdbc.datasource.DataSource;
@@ -17,7 +21,25 @@ import org.springframework.transaction.annotation.Transactional;
 public class EntryGroupService {
 	@Autowired
 	private EntryGroupRepository entryGroupRepository;
-
+	
+	/**
+	 * 초기 데이터 insert
+	 * @param bookkeeping
+	 * @return
+	 */
+	public List<EntryGroup> initialDataSave(Bookkeeping bookkeeping) {
+		Set<EntryGroup> entryGroupSet = new HashSet<>();
+		for (EntryGroupInitialData entryGroupInitialData : EntryGroupInitialData.values()) {
+			for (String defaultEntryGroupName : entryGroupInitialData.getDefaltEntryGroupNames()){
+				EntryGroup entryGroup = new EntryGroup();
+				entryGroup.setEntryType(entryGroupInitialData.getEntryType());
+				entryGroup.setName(defaultEntryGroupName);
+				entryGroup.setBookkeeping(bookkeeping);
+				entryGroupSet.add(entryGroup);
+			}
+		}
+		return entryGroupRepository.save(entryGroupSet);
+	}
 	public EntryGroup save(EntryGroup entryGroup) {
 		return entryGroupRepository.save(entryGroup);
 	}
@@ -29,10 +51,5 @@ public class EntryGroupService {
 
 	public void delete(long id) {
 		entryGroupRepository.delete(id);
-	}
-
-	@Transactional(readOnly = true)
-	public List<EntryGroup> findByUsername(int userId) {
-		return entryGroupRepository.findByUserId(userId);
 	}
 }
