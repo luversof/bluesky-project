@@ -10,7 +10,7 @@ import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 public class BlueskyCoreConfig {
 
 	public BlueskyCoreConfig() {
-		Banner.write(System.out, this.getClass().getPackage().getName());
+		Banner.write(this);
 	}
 
 	@Bean

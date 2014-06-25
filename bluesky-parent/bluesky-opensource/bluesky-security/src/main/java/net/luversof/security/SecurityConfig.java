@@ -22,7 +22,7 @@ public class SecurityConfig {
 	
 	public SecurityConfig() {
 		super();
-		Banner.write(System.out, this.getClass().getPackage().getName());
+		Banner.write(this);
 	}
 
 	@Autowired

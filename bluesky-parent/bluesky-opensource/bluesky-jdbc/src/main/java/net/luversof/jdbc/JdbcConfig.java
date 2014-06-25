@@ -12,7 +12,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.context.annotation.PropertySources;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -21,13 +20,12 @@ import com.zaxxer.hikari.HikariDataSource;
 @Configuration
 @Import(BlueskyCoreConfig.class)
 @EnableAspectJAutoProxy(proxyTargetClass = true)
-@PropertySources(value = { 
-	@PropertySource(name = "jdbcProp", value = "classpath:config/jdbc.properties"),
-	@PropertySource(name = "jdbcActiveProp", value = "classpath:config/jdbc-${spring.profiles.active}.properties")
-})
+@PropertySource(name = "jdbcProp", value = "classpath:config/jdbc.properties")
+@PropertySource(name = "jdbcActiveProp", value = "classpath:config/jdbc-${spring.profiles.active}.properties")
 public class JdbcConfig {
+	
 	public JdbcConfig() {
-		Banner.write(System.out, this.getClass().getPackage().getName());
+		Banner.write(this);
 	}
 	
 	@Value("${dataSource.mysql.driverClassName}")

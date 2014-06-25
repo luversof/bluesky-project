@@ -14,6 +14,6 @@ import org.springframework.context.annotation.Import;
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 public class BlueskyWebConfig {
 	public BlueskyWebConfig() {
-		Banner.write(System.out, this.getClass().getPackage().getName());
+		Banner.write(this);
 	}
 }

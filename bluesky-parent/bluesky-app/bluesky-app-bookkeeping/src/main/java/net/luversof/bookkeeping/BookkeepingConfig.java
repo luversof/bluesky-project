@@ -14,8 +14,7 @@ import org.springframework.context.annotation.Import;
 public class BookkeepingConfig {
 
 	public BookkeepingConfig() {
-		super();
-		Banner.write(System.out, this.getClass().getPackage().getName());
+		Banner.write(this);
 	}
 
 }

@@ -7,9 +7,8 @@ public class BlueskyApplicationContextInitializer implements ApplicationContextI
 
 	@Override
 	public void initialize(ConfigurableApplicationContext applicationContext) {
-		Banner.write(System.out, "BlueskyApplicationContextInitializer");
+		Banner.write(this);
 		applicationContext.getEnvironment().getConversionService().addConverter(new EncryptStringConverter());
-		
 	}
 
 }

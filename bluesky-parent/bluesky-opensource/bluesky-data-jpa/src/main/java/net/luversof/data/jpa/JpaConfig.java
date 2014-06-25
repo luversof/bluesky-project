@@ -15,6 +15,6 @@ import org.springframework.context.annotation.PropertySource;
 @PropertySource(name = "jpaProp", value = "classpath:config/data-jpa-${spring.profiles.active}.properties")
 public class JpaConfig {
 	public JpaConfig() {
-		Banner.write(System.out, this.getClass().getPackage().getName());
+		Banner.write(this);
 	}
 }

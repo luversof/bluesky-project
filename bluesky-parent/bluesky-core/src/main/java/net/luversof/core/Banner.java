@@ -1,6 +1,5 @@
 package net.luversof.core;
 
-import java.io.PrintStream;
 
 public class Banner {
 
@@ -22,17 +21,18 @@ public class Banner {
 	 * @param printStream
 	 *            the output print stream
 	 */
-	public static void write(PrintStream printStream, String module) {
+	public static void write(Object object) {
+		String name = object.getClass().getPackage().getName();
 		for (String line : BANNER) {
-			printStream.println(line);
+			System.out.println(line);
 		}
 		String version = Banner.class.getPackage().getImplementationVersion();
 		version = (version == null ? "" : " (v" + version + ")");
 		String padding = "";
-		while (padding.length() < STRAP_LINE_SIZE - (version.length() + module.length())) {
+		while (padding.length() < STRAP_LINE_SIZE - (version.length() + name.length())) {
 			padding += " ";
 		}
-		printStream.println(new StringBuilder().append(":: ").append(module).append(" ::").append(padding).append(version).toString());
-		printStream.println();
+		System.out.println(new StringBuilder().append(":: ").append(name).append(" ::").append(padding).append(version).toString());
+		System.out.println();
 	}
 }
