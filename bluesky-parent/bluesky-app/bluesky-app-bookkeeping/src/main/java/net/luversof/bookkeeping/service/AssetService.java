@@ -48,6 +48,11 @@ public class AssetService {
 		return assetRepository.findOne(id);
 	}
 	
+	@Transactional(readOnly = true)
+	public List<Asset> findByBookkeepingId(long bookkeeping_id) {
+		return assetRepository.findByBookkeepingId(bookkeeping_id);
+	}
+	
 	public void delete(long id) {
 		assetRepository.delete(id);
 	}

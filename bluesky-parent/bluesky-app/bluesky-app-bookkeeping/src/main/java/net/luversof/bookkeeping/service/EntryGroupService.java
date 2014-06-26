@@ -48,6 +48,11 @@ public class EntryGroupService {
 	public EntryGroup findOne(long id) {
 		return entryGroupRepository.findOne(id);
 	}
+	
+	@Transactional(readOnly = true)
+	public List<EntryGroup> findByBookkeepingId(long bookkeeping_id) {
+		return entryGroupRepository.findByBookkeepingId(bookkeeping_id);
+	}
 
 	public void delete(long id) {
 		entryGroupRepository.delete(id);

@@ -3,10 +3,12 @@ package net.luversof.bookkeeping;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.bookkeeping.service.EntryGroupService;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -19,10 +21,23 @@ public class EntryGroupTest extends GeneralTest {
 	@Autowired
 	private BookkeepingService bookkeepingService;
 	
+	private Bookkeeping bookkeeping;
+	
+	@Before
+	public void before() {
+		bookkeeping = bookkeepingService.findByUserId(TEST_USER_ID).get(0);
+	}
+	
 	@Test
 	public void initialDataSave() {
-		List<EntryGroup> result = entryGroupService.initialDataSave(bookkeepingService.findByUserId(TEST_USER_ID).get(0));
+		List<EntryGroup> result = entryGroupService.initialDataSave(bookkeeping);
 		log.debug("defaultSave : {}", result);
+	}
+	
+	@Test
+	public void findEntryGroupList() {
+		List<EntryGroup> entryGroupList = entryGroupService.findByBookkeepingId(bookkeeping.getId());
+		log.debug("entryGroupList : {}", entryGroupList);
 	}
 
 }
