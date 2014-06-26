@@ -1,5 +1,6 @@
 package net.luversof.blog.domain;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 import javax.persistence.Column;
@@ -13,7 +14,6 @@ import lombok.Data;
 
 import org.hibernate.annotations.Type;
 import org.hibernate.validator.constraints.NotEmpty;
-import org.joda.time.DateTime;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
@@ -33,10 +33,10 @@ public class Blog {
 	@NotEmpty(groups = { Save.class, Modify.class })
 	private String content;
 
-	@Type(type="org.jadira.usertype.dateandtime.joda.PersistentDateTime")
 	@CreatedDate
 	@Column(updatable = false)
-	private DateTime createdDate;
+	@Type(type="org.jadira.usertype.dateandtime.threeten.PersistentLocalDateTime")
+	private LocalDateTime createdDate;
 
 	@LastModifiedDate
 	private Date lastModifiedDate;

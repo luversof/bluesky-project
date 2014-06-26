@@ -4,6 +4,7 @@ import net.luversof.user.UserConfig;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
@@ -22,5 +23,12 @@ public class UserTest {
 //		User user = userService.findByUsername("bluesky");
 //		log.debug("user : {}", user);
 		log.debug("Test");
+	}
+	
+	@Test
+	public void 비밀번호암호화() {
+//		BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
+//		System.out.println(bCryptPasswordEncoder.encode("bluesky"));
+		System.out.println("test");
 	}
 }

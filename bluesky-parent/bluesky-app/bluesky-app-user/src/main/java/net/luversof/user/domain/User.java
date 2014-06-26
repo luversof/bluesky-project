@@ -1,5 +1,6 @@
 package net.luversof.user.domain;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import javax.persistence.Column;
@@ -11,6 +12,11 @@ import javax.persistence.OneToMany;
 
 import lombok.Data;
 
+import org.hibernate.annotations.Type;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
+
 @Entity
 @Data
 public class User {
@@ -21,6 +27,11 @@ public class User {
 	private String username;
 
 	private String password;
+	
+	@CreatedDate
+	@Type(type="org.jadira.usertype.dateandtime.threeten.PersistentLocalDateTime")
+	@DateTimeFormat(iso = ISO.DATE_TIME)
+	private LocalDateTime createdDate;
 
 	private boolean enable;
 

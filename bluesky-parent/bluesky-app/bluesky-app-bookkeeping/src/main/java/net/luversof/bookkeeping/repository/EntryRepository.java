@@ -4,7 +4,6 @@ import java.util.List;
 
 import net.luversof.bookkeeping.domain.Entry;
 
-import org.joda.time.DateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

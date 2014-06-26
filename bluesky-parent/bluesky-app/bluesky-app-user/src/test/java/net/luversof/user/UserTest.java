@@ -1,9 +1,13 @@
 package net.luversof.user;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.core.BlueskyApplicationContextInitializer;
 import net.luversof.data.jpa.JpaConfig;
 import net.luversof.user.domain.User;
+import net.luversof.user.domain.UserAuthority;
 import net.luversof.user.service.UserService;
 
 import org.junit.Test;
@@ -25,4 +29,20 @@ public class UserTest {
 		User user = userService.findByUsername("bluesky");
 		log.debug("user : {}", user);
 	}
+	
+	
+	@Test
+	public void 회원가입() {
+		User user = new User();
+		user.setUsername("bluesky");
+		user.setPassword("vkfksgksmf");
+		
+//		List<UserAuthority> userAuthorityList = new ArrayList<>();
+//		UserAuthority userAuthority = new UserAuthority();
+//		userAuthority.setAuthority("user");
+//		userAuthorityList.add(userAuthority);
+//		user.setUserAuthorityList(userAuthorityList);
+		userService.save(user);
+	}
+		
 }

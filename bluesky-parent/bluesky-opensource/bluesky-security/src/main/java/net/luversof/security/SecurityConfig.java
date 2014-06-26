@@ -1,6 +1,5 @@
 package net.luversof.security;
 
-
 import net.luversof.core.Banner;
 import net.luversof.user.UserConfig;
 import net.luversof.user.service.UserService;
@@ -15,24 +14,23 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-@Configuration
-@Import(value=UserConfig.class)
 @ComponentScan
+@Configuration
+@Import(UserConfig.class)
 public class SecurityConfig {
-	
+
 	public SecurityConfig() {
-		super();
 		Banner.write(this);
 	}
 
 	@Autowired
 	private UserService userService;
-	
+
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
-	
+
 	@Bean
 	public UserDetailsService userDetailsService() {
 		return new LuversofUserDetailsService(userService);

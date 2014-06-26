@@ -2,12 +2,32 @@
 <html xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="/layout/defaultLayout">
+<head>
+<script type="text/javascript" th:src="@{/js/bluesky_bookkeeping.js}"></script>
+</head>
 <body>
 	<div layout:fragment="content">
 		<br />
-		<div class="well">	
-			웰컴gga
+		<div th:if="${bookkeeping != null}">
+			<div class="panel panel-info">
+				<div class="panel-heading">
+					<h3 class="panel-title">이용중인 가계부가 없습니다.</h3>
+				</div>
+				<div class="panel-body">
+					
+					<div class="col-lg-4"> 
+						<p class="lead">가계부를 생성하시겠습니까?</p>
+						<div class="input-group">
+							<input type="text" class="form-control" />
+							<span class="input-group-btn">
+								<button class="btn btn-default add-bookkeeping" type="button">Go!</button>
+							</span>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
+		<div th:if="${bookkeeping != null}" class="well" th:text="${bookkeeping}"></div>
 	</div>
 </body>
 </html>

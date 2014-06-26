@@ -33,7 +33,7 @@ public class Entry implements Serializable {
 	private long amount;
 	
 	
-	@Type(type="org.jadira.usertype.dateandtime.joda.PersistentDateTime")
+	@Type(type="org.jadira.usertype.dateandtime.threeten.PersistentLocalDateTime")
 	private LocalDate entryDate;
 	
 	private String memo;
