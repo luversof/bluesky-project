@@ -50,9 +50,11 @@
 					<li><a th:href="@{/blog}">blog</a></li>
 					<li><a href="#contact">Contact</a></li>
 				</ul>
-				<p class="navbar-form navbar-right" sec:authorize="isAuthenticated()">
-					Logged in as <a href="#" class="navbar-link" sec:authentication="name">Username</a> <a class="btn btn-primary" th:href="@{/logout}" th:text="#{logout}">logout</a>
-				</p>
+				<form class="navbar-form navbar-right" sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post">
+					<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+					Logged in as <a href="#" class="navbar-link" sec:authentication="name">Username</a>
+					<input type="submit" class="btn btn-primary" th:value="#{logout}" />
+				</form>
 				<form class="navbar-form navbar-right" sec:authorize="!isAuthenticated()" th:action="@{/login}" method="post">
 					<div class="form-group">
 						<input type="text" name="username" th:placeholder="#{username}" class="form-control" autofocus="autofocus"/>
@@ -61,7 +63,7 @@
 						<input type="password" name="password" th:placeholder="#{password}" class="form-control" />
 					</div>
 					<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-					<button type="submit" class="btn btn-primary" th:text="#{login}">login</button>
+					<input type="submit" class="btn btn-primary" th:value="#{login}" />
 				</form>
 			</div>
 		</div>

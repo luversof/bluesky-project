@@ -2,18 +2,18 @@ $(document).ready(function() {
 	
 	function addBookkeeping() {
 		var parameter = {
-				
+			name : $(".add-bookkeeping input[name=name]").val()
 		};
 		
 		$.ajax({
-			url : "/bookkeeping",
+			url : "/bookkeeping.json",
 			type : "post",
 			data : parameter,
-			success : function() {
-				
+			success : function(data) {
+				console.log(data);
 			}
 		});
 	}
 	
-	$(".add-bookkeeping").on("click", addBookkeeping);
+	$(".add-bookkeeping button").on("click", addBookkeeping);
 });

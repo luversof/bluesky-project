@@ -1,23 +1,19 @@
 package net.luversof.security;
 
-import net.luversof.user.UserConfig;
+import lombok.extern.slf4j.Slf4j;
+import net.luversof.user.domain.User;
+import net.luversof.user.service.UserService;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.support.AnnotationConfigContextLoader;
-
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = { UserConfig.class, /* MvcConfig.class */}, loader = AnnotationConfigContextLoader.class)
-public class UserTest {
+public class UserTest extends GeneralTest {
 
-//	@Autowired
-//	private UserService userService;
+	@Autowired
+	private UserService userService;
+	
 	@Test
 	public void 테스트() {
 //		User user = userService.findByUsername("bluesky");
@@ -26,9 +22,15 @@ public class UserTest {
 	}
 	
 	@Test
-	public void 비밀번호암호화() {
-//		BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
-//		System.out.println(bCryptPasswordEncoder.encode("bluesky"));
-		System.out.println("test");
+	public void 비밀번호암호화테스트() {
+		BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
+		System.out.println(bCryptPasswordEncoder.encode("bluesky"));
+	}
+	
+	@Test
+	public void 회원가입() {
+		BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
+		User user = userService.addUser("bluesky", bCryptPasswordEncoder.encode("bluesky"));
+		log.debug("user : {}", user);
 	}
 }

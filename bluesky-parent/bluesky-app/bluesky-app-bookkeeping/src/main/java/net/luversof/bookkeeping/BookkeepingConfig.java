@@ -2,14 +2,14 @@ package net.luversof.bookkeeping;
 
 import net.luversof.core.Banner;
 import net.luversof.core.BlueskyCoreConfig;
-import net.luversof.data.jpa.JpaConfig;
+import net.luversof.data.jpa.DataJpaConfig;
 
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration
-@Import({ BlueskyCoreConfig.class, JpaConfig.class })
+@Import({ BlueskyCoreConfig.class, DataJpaConfig.class })
 @ComponentScan
 public class BookkeepingConfig {
 

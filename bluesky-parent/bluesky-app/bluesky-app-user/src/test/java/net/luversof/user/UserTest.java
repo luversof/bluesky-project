@@ -1,48 +1,37 @@
 package net.luversof.user;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.core.BlueskyApplicationContextInitializer;
-import net.luversof.data.jpa.JpaConfig;
 import net.luversof.user.domain.User;
-import net.luversof.user.domain.UserAuthority;
 import net.luversof.user.service.UserService;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
 @Slf4j
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = { JpaConfig.class, UserConfig.class /* , MvcConfig.class */}, loader = AnnotationConfigContextLoader.class, initializers = BlueskyApplicationContextInitializer.class)
-public class UserTest {
+public class UserTest extends GeneralTest {
+	
+	private static final String USERNAME = "bluesky";
 
 	@Autowired
 	private UserService userService;
+	
 	@Test
 	public void 테스트() {
-		User user = userService.findByUsername("bluesky");
+		User user = userService.findByUsername(USERNAME);
+		log.debug("user : {}", user);
+	}
+	
+	@Test
+	public void 회원삭제() {
+		User user = userService.findByUsername(USERNAME);
+		userService.remove(user);
 		log.debug("user : {}", user);
 	}
 	
 	
 	@Test
 	public void 회원가입() {
-		User user = new User();
-		user.setUsername("bluesky");
-		user.setPassword("vkfksgksmf");
-		
-//		List<UserAuthority> userAuthorityList = new ArrayList<>();
-//		UserAuthority userAuthority = new UserAuthority();
-//		userAuthority.setAuthority("user");
-//		userAuthorityList.add(userAuthority);
-//		user.setUserAuthorityList(userAuthorityList);
-		userService.save(user);
+		User user = userService.addUser(USERNAME, "$2a$10$F5q9vfYTrF0ZM/ZOUIlPvu2KWrOBcCtP9eM8mnGdbiRoSKRJ7VPwW");
+		log.debug("user : {}", user);
 	}
-		
 }

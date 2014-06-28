@@ -3,9 +3,11 @@ package net.luversof.user.domain;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
@@ -21,6 +23,7 @@ import org.springframework.format.annotation.DateTimeFormat.ISO;
 @Data
 public class User {
 	@Id
+	@GeneratedValue
 	private long id;
 
 	@Column(unique = true, nullable = false)
@@ -35,7 +38,7 @@ public class User {
 
 	private boolean enable;
 
-	@OneToMany(fetch = FetchType.EAGER)
+	@OneToMany(fetch = FetchType.EAGER,cascade=CascadeType.ALL)
 	@JoinColumn(name = "user_id", referencedColumnName = "id")
 	private List<UserAuthority> userAuthorityList;
 }

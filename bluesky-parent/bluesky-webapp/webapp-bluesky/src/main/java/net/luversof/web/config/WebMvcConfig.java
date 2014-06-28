@@ -39,7 +39,7 @@ import org.thymeleaf.spring4.SpringTemplateEngine;
 import org.thymeleaf.spring4.view.ThymeleafViewResolver;
 import org.thymeleaf.templateresolver.ServletContextTemplateResolver;
 
-import com.fasterxml.jackson.datatype.jsr310.JSR310Module;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
 
 @Slf4j
@@ -56,8 +56,8 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 
 	@Override
 	public void addViewControllers(ViewControllerRegistry registry) {
-		registry.addViewController("/").setViewName("index");
-		registry.addViewController("/loginPage").setViewName("/loginPage");
+		registry.addViewController("/").setViewName("/index");
+		registry.addViewController("/login").setViewName("/login");
 	}
 
 	@Override
@@ -112,7 +112,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		MappingJackson2JsonView mappingJackson2JsonView = new MappingJackson2JsonView();
 		mappingJackson2JsonView.setExtractValueFromSingleKeyModel(true);
 		mappingJackson2JsonView.setModelKey("result");
-//		mappingJackson2JsonView.getObjectMapper().registerModule(new JSR310Module());
+		mappingJackson2JsonView.getObjectMapper().registerModule(new ParameterNamesModule());
 		defaultViews.add(mappingJackson2JsonView);
 
 		viewResolver.setDefaultViews(defaultViews);
