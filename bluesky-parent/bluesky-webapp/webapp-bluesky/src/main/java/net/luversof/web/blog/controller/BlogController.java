@@ -1,11 +1,11 @@
 package net.luversof.web.blog.controller;
 
-import net.luversof.blog.domain.Blog;
-import net.luversof.blog.domain.Blog.Get;
-import net.luversof.blog.domain.Blog.Modify;
-import net.luversof.blog.domain.Blog.Save;
-import net.luversof.blog.service.BlogCategoryService;
-import net.luversof.blog.service.BlogService;
+import net.luversof.blog.domain.Article;
+import net.luversof.blog.domain.Article.Get;
+import net.luversof.blog.domain.Article.Modify;
+import net.luversof.blog.domain.Article.Save;
+import net.luversof.blog.service.ArticleCategoryService;
+import net.luversof.blog.service.ArticleService;
 import net.luversof.core.BlueskyException;
 import net.luversof.web.AuthorizeRole;
 
@@ -29,14 +29,14 @@ public class BlogController {
 	private static final int PAGE_BLOCK_SIZE = 10;
 
 	@Autowired
-	private BlogService blogService;
+	private ArticleService blogService;
 
 	@Autowired
-	private BlogCategoryService blogCategoryService;
+	private ArticleCategoryService blogCategoryService;
 
 	@RequestMapping("")
 	public String list(@RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
-		Page<Blog> blogPage = blogService.findAll(page - 1);
+		Page<Article> blogPage = blogService.findAll(page - 1);
 		if (blogPage.getTotalPages() > 0 && blogPage.getTotalPages() < page) {
 			throw new BlueskyException("invalid page");
 		}
@@ -52,7 +52,7 @@ public class BlogController {
 	}
 
 	@RequestMapping("/{id}")
-	public String view(@Validated(Get.class) Blog blog, ModelMap modelMap) {
+	public String view(@Validated(Get.class) Article blog, ModelMap modelMap) {
 		modelMap.addAttribute(blogService.findOne(blog.getId()));
 		return "/blog/view";
 	}
@@ -60,21 +60,21 @@ public class BlogController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping("/write")
 	public void writePage(Authentication authentication, ModelMap modelMap) {
-		modelMap.addAttribute(blogCategoryService.findByUsername(authentication.getName()));
+		modelMap.addAttribute(blogCategoryService.findByBlog(authentication.getName()));
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[blog].username == authentication.name")
 	@RequestMapping("/{id}/modify")
-	public String modifyPage(@Validated(Get.class) Blog blog, Authentication authentication, ModelMap modelMap) {
+	public String modifyPage(@Validated(Get.class) Article blog, Authentication authentication, ModelMap modelMap) {
 		modelMap.addAttribute(blogService.findOne(blog.getId()));
-		modelMap.addAttribute(blogCategoryService.findByUsername(authentication.getName()));
+		modelMap.addAttribute(blogCategoryService.findByBlog(authentication.getName()));
 		return "/blog/modify";
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-	public void save(@Validated(Save.class) Blog blog, Authentication authentication, ModelMap modelMap) {
+	public void save(@Validated(Save.class) Article blog, Authentication authentication, ModelMap modelMap) {
 		if (blog.getBlogCategory() != null && blog.getBlogCategory().getId() != 0) {
 			blog.setBlogCategory(blogCategoryService.findOne(blog.getBlogCategory().getId()));
 		}
@@ -83,14 +83,14 @@ public class BlogController {
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-	public void modify(@Validated(Modify.class) Blog blog, Authentication authentication, ModelMap modelMap) {
+	public void modify(@Validated(Modify.class) Article blog, Authentication authentication, ModelMap modelMap) {
 		modelMap.addAttribute("result", blogService.update(blog).getId());
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public void delete(@Validated(Get.class) Blog blog, Authentication authentication, ModelMap modelMap) {
-		Blog targetBlog = blogService.findOne(blog.getId());
+	public void delete(@Validated(Get.class) Article blog, Authentication authentication, ModelMap modelMap) {
+		Article targetBlog = blogService.findOne(blog.getId());
 		if (!authentication.getName().equals(targetBlog.getUsername())) {
 			throw new BlueskyException("username is not owner");
 		}

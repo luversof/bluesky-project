@@ -10,24 +10,26 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 
 import lombok.Data;
 
 @Entity
 @Data
-public class BlogCategory {
+public class ArticleCategory {
 	@Id
 	@GeneratedValue
 	private long id;
 
-	private String username;
+	@OneToOne
+	private Blog blog;
 
 	private String name;
 
 	@ManyToOne(cascade = { CascadeType.ALL })
 	@JoinColumn(name = "upperMenu_id")
-	private BlogCategory upperCategory;
+	private ArticleCategory upperCategory;
 
 	@OneToMany(mappedBy = "upperCategory", fetch = FetchType.EAGER)
-	private List<BlogCategory> lowerCategories;
+	private List<ArticleCategory> lowerCategories;
 }

@@ -4,12 +4,12 @@ package net.luversof.blog;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.blog.domain.Blog;
-import net.luversof.blog.domain.BlogCategory;
+import net.luversof.blog.domain.Article;
+import net.luversof.blog.domain.ArticleCategory;
 import net.luversof.blog.domain.QBlog;
-import net.luversof.blog.repository.BlogRepository;
-import net.luversof.blog.service.BlogCategoryService;
-import net.luversof.blog.service.BlogService;
+import net.luversof.blog.repository.ArticleRepository;
+import net.luversof.blog.service.ArticleCategoryService;
+import net.luversof.blog.service.ArticleService;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -20,35 +20,35 @@ import org.springframework.data.domain.Page;
 public class BlogTest extends GeneralTest {
 
 	@Autowired
-	private BlogRepository blogRepository;
+	private ArticleRepository articleRepository;
 	
 	@Autowired
-	private BlogService blogService;
+	private ArticleService articleService;
 	
 	@Autowired
-	private BlogCategoryService blogCategoryService;
+	private ArticleCategoryService blogCategoryService;
 	
 
 	@Test
 	@Ignore
 	public void selectTest() {
-		Blog blog = blogService.findOne(28);
+		Article blog = articleService.findOne(28);
 		log.debug("result : {}", blog);
 	}
 
 	@Test
 	//@Ignore
 	public void saveTest() {
-		Blog blog = new Blog();
-		blog.setUsername("test");
-		blog.setTitle("한글제목");
-		blog.setContent("한글내용");
+		Article article = new Article();
+		article.setBlog(null);
+		article.setTitle("한글제목");
+		article.setContent("한글내용");
 		
-		BlogCategory blogCategory = blogCategoryService.findOne(1);
-		blog.setBlogCategory(blogCategory);
+		ArticleCategory articleCategory = blogCategoryService.findOne(1);
+		article.setArticleCategory(articleCategory);
 
-		Blog savedBlog = blogService.save(blog);
-		log.debug("blog : {}", blog);
+		Article savedBlog = articleService.save(article);
+		log.debug("blog : {}", article);
 		log.debug("savedBlog : {}", savedBlog);
 		log.debug("savedBlog : {}", savedBlog.getId());
 	}
@@ -64,7 +64,7 @@ public class BlogTest extends GeneralTest {
 	@Test
 //	@Ignore
 	public void selectPaging테스트() {
-		Page<Blog> blogList = blogService.findAll(0);
+		Page<Article> blogList = articleService.findAll(0);
 		log.debug("blogList : {}", blogList);
 		log.debug("blogList : {}", blogList.getContent());
 	}
@@ -73,13 +73,13 @@ public class BlogTest extends GeneralTest {
 	@Ignore
 	public void 테스트() {
 		QBlog blog = QBlog.blog;
-		Iterable<Blog> list = blogRepository.findAll(blog.content.startsWith("c"));
+		Iterable<Article> list = articleRepository.findAll(blog.content.startsWith("c"));
 		log.debug("list : {}", list);
 	}
 	
 	@Test
 	public void 블로그카테고리테스트() {
-		List<BlogCategory> list = blogCategoryService.findByUsername("bluesky");
+		List<ArticleCategory> list = blogCategoryService.findByBlog(null);
 		
 		
 		log.debug("list : {}", list);

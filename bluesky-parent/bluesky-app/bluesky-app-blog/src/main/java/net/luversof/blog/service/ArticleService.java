@@ -1,7 +1,7 @@
 package net.luversof.blog.service;
 
-import net.luversof.blog.domain.Blog;
-import net.luversof.blog.repository.BlogRepository;
+import net.luversof.blog.domain.Article;
+import net.luversof.blog.repository.ArticleRepository;
 import net.luversof.core.BlueskyException;
 import net.luversof.jdbc.datasource.DataSource;
 import net.luversof.jdbc.datasource.DataSourceType;
@@ -16,46 +16,46 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 @DataSource(DataSourceType.BLOG)
-public class BlogService {
+public class ArticleService {
 
 	private static final int PAGE_SIZE = 10;
 
 	@Autowired
-	private BlogRepository blogRepository;
+	private ArticleRepository articleRepository;
 	
 	@Autowired
-	private BlogCategoryService blogCategoryService;
+	private ArticleCategoryService blogCategoryService;
 
-	public Blog save(Blog blog) {
-		return blogRepository.save(blog);
+	public Article save(Article blog) {
+		return articleRepository.save(blog);
 	}
 	
-	public Blog update(Blog blog) {
-		Blog targetBlog = findOne(blog.getId());
-		if (!blog.getUsername().equals(targetBlog.getUsername())) {
-			throw new BlueskyException("username is not owner");
+	public Article update(Article blog) {
+		Article targetBlog = findOne(blog.getId());
+		if (!blog.getBlog().equals(targetBlog.getBlog())) {
+			throw new BlueskyException("userId is not owner");
 		}
 		targetBlog.setTitle(blog.getTitle());
 		targetBlog.setContent(blog.getContent());
-		if (blog.getBlogCategory() != null && blog.getBlogCategory().getId() != 0) {
-			targetBlog.setBlogCategory(blogCategoryService.findOne(blog.getBlogCategory().getId()));
+		if (blog.getArticleCategory() != null && blog.getArticleCategory().getId() != 0) {
+			targetBlog.setArticleCategory(blogCategoryService.findOne(blog.getArticleCategory().getId()));
 		}
-		return blogRepository.save(targetBlog);
+		return articleRepository.save(targetBlog);
 	}
 
 	@Transactional(readOnly = true)
-	public Blog findOne(long id) {
-		return blogRepository.findOne(id);
+	public Article findOne(long id) {
+		return articleRepository.findOne(id);
 	}
 
 	@Transactional(readOnly = true)
-	public Page<Blog> findAll(int page) {
+	public Page<Article> findAll(int page) {
 		Sort sort = new Sort(Sort.Direction.DESC, "id");
 		PageRequest pageRequest = new PageRequest(page, PAGE_SIZE, sort);
-		return blogRepository.findAll(pageRequest);
+		return articleRepository.findAll(pageRequest);
 	}
 
 	public void delete(long id) {
-		blogRepository.delete(id);
+		articleRepository.delete(id);
 	}
 }

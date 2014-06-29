@@ -2,8 +2,9 @@ package net.luversof.blog.service;
 
 import java.util.List;
 
-import net.luversof.blog.domain.BlogCategory;
-import net.luversof.blog.repository.BlogCategoryRepository;
+import net.luversof.blog.domain.ArticleCategory;
+import net.luversof.blog.domain.Blog;
+import net.luversof.blog.repository.ArticleCategoryRepository;
 
 
 
@@ -17,22 +18,22 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 @DataSource(DataSourceType.BLOG)
-public class BlogCategoryService {
+public class ArticleCategoryService {
 	@Autowired
-	private BlogCategoryRepository blogCategoryRepository;
+	private ArticleCategoryRepository blogCategoryRepository;
 
-	public BlogCategory save(BlogCategory blogCategory) {
+	public ArticleCategory save(ArticleCategory blogCategory) {
 		return blogCategoryRepository.save(blogCategory);
 	}
 
 	@Transactional(readOnly = true)
-	public BlogCategory findOne(long id) {
+	public ArticleCategory findOne(long id) {
 		return blogCategoryRepository.findOne(id);
 	}
 	
 	@Transactional(readOnly = true)
-	public List<BlogCategory> findByUsername(String username) {
-		return blogCategoryRepository.findByUsername(username);
+	public List<ArticleCategory> findByBlog(Blog blog) {
+		return blogCategoryRepository.findByBlog(blog);
 	}
 
 	@Transactional
