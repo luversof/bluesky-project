@@ -20,24 +20,24 @@ import org.springframework.transaction.annotation.Transactional;
 @DataSource(DataSourceType.BLOG)
 public class ArticleCategoryService {
 	@Autowired
-	private ArticleCategoryRepository blogCategoryRepository;
+	private ArticleCategoryRepository articleCategoryRepository;
 
-	public ArticleCategory save(ArticleCategory blogCategory) {
-		return blogCategoryRepository.save(blogCategory);
+	public ArticleCategory save(ArticleCategory articleCategory) {
+		return articleCategoryRepository.save(articleCategory);
 	}
 
 	@Transactional(readOnly = true)
 	public ArticleCategory findOne(long id) {
-		return blogCategoryRepository.findOne(id);
+		return articleCategoryRepository.findOne(id);
 	}
 	
 	@Transactional(readOnly = true)
 	public List<ArticleCategory> findByBlog(Blog blog) {
-		return blogCategoryRepository.findByBlog(blog);
+		return articleCategoryRepository.findByBlog(blog);
 	}
 
 	@Transactional
 	public void delete(long id) {
-		blogCategoryRepository.delete(id);
+		articleCategoryRepository.delete(id);
 	}
 }

@@ -1,15 +1,19 @@
 package net.luversof.web.blog.aspect;
 
+import java.util.List;
+
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.blog.domain.Article;
+import net.luversof.blog.domain.Blog;
+import net.luversof.blog.service.BlogService;
 
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.LuversofUser;
 import org.springframework.stereotype.Component;
-
-import com.google.common.base.Strings;
 
 /**
  * blog.username을 spring-security의 authentication으로 부터 설정
@@ -21,16 +25,20 @@ import com.google.common.base.Strings;
 @Aspect
 @Component
 public class BlogAspect {
+	
+	@Autowired
+	private BlogService blogService;
 
 	@Pointcut("@annotation(org.springframework.web.bind.annotation.RequestMapping) && execution(* net.luversof.web.blog.controller..*(..)) && args(article,authentication,..)")
 	public void classPointcut(Article article, Authentication authentication) {
 	}
 	
-	@Before("classPointcut(blog, authentication)")
+	@Before("classPointcut(article, authentication)")
 	public void beforeClassPointcut(Article article, Authentication authentication) {
-		log.debug("[blog] object set username, username : {}", authentication.getName());
+		log.debug("[blog] object set userId, userId : {}", ((LuversofUser) authentication.getPrincipal()).getId());
 		if (article.getBlog() == null) {
-			article.setBlog(blog);
+			List<Blog> blogList = blogService.findByUserId(((LuversofUser) authentication.getPrincipal()).getId());
+			article.setBlog(blogList.get(0));
 		}
 	}
 }

@@ -12,14 +12,21 @@ import lombok.Data;
 @Entity
 @Data
 public class Bookkeeping {
-	
+
 	@Id
 	@GeneratedValue
+	@NotEmpty(groups = Modify.class)
 	private long id;
-	
-	@NotEmpty
+
+	@NotEmpty(groups = { Add.class, Modify.class })
 	private String name;
-	
+
 	@Column(name = "user_id")
 	private long userId;
+
+	public interface Add {
+	};
+	
+	public interface Modify {
+	};
 }

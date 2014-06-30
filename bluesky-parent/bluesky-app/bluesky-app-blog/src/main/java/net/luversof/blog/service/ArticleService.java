@@ -24,23 +24,23 @@ public class ArticleService {
 	private ArticleRepository articleRepository;
 	
 	@Autowired
-	private ArticleCategoryService blogCategoryService;
+	private ArticleCategoryService articleCategoryService;
 
-	public Article save(Article blog) {
-		return articleRepository.save(blog);
+	public Article save(Article article) {
+		return articleRepository.save(article);
 	}
 	
-	public Article update(Article blog) {
-		Article targetBlog = findOne(blog.getId());
-		if (!blog.getBlog().equals(targetBlog.getBlog())) {
+	public Article update(Article article) {
+		Article targetArticle = findOne(article.getId());
+		if (!article.getBlog().equals(targetArticle.getBlog())) {
 			throw new BlueskyException("userId is not owner");
 		}
-		targetBlog.setTitle(blog.getTitle());
-		targetBlog.setContent(blog.getContent());
-		if (blog.getArticleCategory() != null && blog.getArticleCategory().getId() != 0) {
-			targetBlog.setArticleCategory(blogCategoryService.findOne(blog.getArticleCategory().getId()));
+		targetArticle.setTitle(article.getTitle());
+		targetArticle.setContent(article.getContent());
+		if (article.getArticleCategory() != null && article.getArticleCategory().getId() != 0) {
+			targetArticle.setArticleCategory(articleCategoryService.findOne(article.getArticleCategory().getId()));
 		}
-		return articleRepository.save(targetBlog);
+		return articleRepository.save(targetArticle);
 	}
 
 	@Transactional(readOnly = true)

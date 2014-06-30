@@ -1,6 +1,9 @@
 package net.luversof.web.bookkeeping.controller;
 
+import static net.luversof.core.Constants.JSON_MODEL_KEY;
 import net.luversof.bookkeeping.domain.Bookkeeping;
+import net.luversof.bookkeeping.domain.Bookkeeping.Add;
+import net.luversof.bookkeeping.domain.Bookkeeping.Modify;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.web.AuthorizeRole;
 
@@ -26,14 +29,22 @@ public class BookkeepingController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = { "", "/index" })
 	public String index(Authentication authentication, ModelMap modelMap) {
-		modelMap.addAttribute("bookkeeping", bookkeepingService.findByUserId(((LuversofUser) authentication.getPrincipal()).getId()));
+		modelMap.addAttribute(JSON_MODEL_KEY, bookkeepingService.findByUserId(((LuversofUser) authentication.getPrincipal()).getId()));
 		return "/bookkeeping/index";
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseBody
-	public Bookkeeping addBookkeeping(Authentication authentication, @Validated Bookkeeping bookkeeping) {
+	public Bookkeeping addBookkeeping(Authentication authentication, @Validated(Add.class) Bookkeeping bookkeeping) {
+		bookkeeping.setUserId(((LuversofUser) authentication.getPrincipal()).getId());
+		return bookkeepingService.save(bookkeeping);
+	}
+
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@RequestMapping(value = "", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+	@ResponseBody
+	public Bookkeeping modifyBookkeeping(Authentication authentication, @Validated(Modify.class) Bookkeeping bookkeeping) {
 		bookkeeping.setUserId(((LuversofUser) authentication.getPrincipal()).getId());
 		return bookkeepingService.save(bookkeeping);
 	}
@@ -42,4 +53,5 @@ public class BookkeepingController {
 	public void test(Authentication authentication) {
 		System.out.println(authentication);
 	}
+
 }
