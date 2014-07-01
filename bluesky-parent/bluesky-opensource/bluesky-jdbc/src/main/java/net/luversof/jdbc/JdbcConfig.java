@@ -31,11 +31,21 @@ public class JdbcConfig {
 	@Value("${dataSource.mysql.driverClassName}")
 	private String mysqlDriverClassName;
 	
+	private HikariConfig defaultConfig() {
+		HikariConfig hikariConfig = new HikariConfig();
+		hikariConfig.setMaximumPoolSize(3);
+		hikariConfig.setMaxLifetime(1000);
+		hikariConfig.setIdleTimeout(1000);
+		hikariConfig.setConnectionTimeout(1000);
+		hikariConfig.setInitializationFailFast(true);
+		hikariConfig.setDataSourceClassName(mysqlDriverClassName);
+		hikariConfig.setConnectionTestQuery("SELECT 1");
+		return hikariConfig;
+	}
+	
 	@Bean
 	public DataSource blogDataSource(@Value("${dataSource.blog.serverName}") String serverName, @Value("${dataSource.blog.port}") int port, @Value("${dataSource.blog.databaseName}") String databaseName, @Value("${dataSource.blog.user}") String user, @Value("${dataSource.blog.password}") String password) {
-		HikariConfig hikariConfig = new HikariConfig();
-		hikariConfig.setMaximumPoolSize(100);
-		hikariConfig.setDataSourceClassName(mysqlDriverClassName);
+		HikariConfig hikariConfig = defaultConfig();
 		hikariConfig.addDataSourceProperty("serverName", serverName);
 		hikariConfig.addDataSourceProperty("port", port);
 		hikariConfig.addDataSourceProperty("databaseName", databaseName);
@@ -46,8 +56,7 @@ public class JdbcConfig {
 
 	@Bean
 	public DataSource securityDataSource(@Value("${dataSource.security.serverName}") String serverName, @Value("${dataSource.security.port}") int port, @Value("${dataSource.security.databaseName}") String databaseName, @Value("${dataSource.security.user}") String user, @Value("${dataSource.security.password}") String password) {
-		HikariConfig hikariConfig = new HikariConfig();
-		hikariConfig.setMaximumPoolSize(100);
+		HikariConfig hikariConfig = defaultConfig();
 		hikariConfig.setDataSourceClassName(mysqlDriverClassName);
 		hikariConfig.addDataSourceProperty("serverName", serverName);
 		hikariConfig.addDataSourceProperty("port", port);
@@ -59,8 +68,7 @@ public class JdbcConfig {
 
 	@Bean
 	public DataSource bookkeepingDataSource(@Value("${dataSource.bookkeeping.serverName}") String serverName, @Value("${dataSource.bookkeeping.port}") int port, @Value("${dataSource.bookkeeping.databaseName}") String databaseName, @Value("${dataSource.bookkeeping.user}") String user, @Value("${dataSource.bookkeeping.password}") String password) {
-		HikariConfig hikariConfig = new HikariConfig();
-		hikariConfig.setMaximumPoolSize(100);
+		HikariConfig hikariConfig = defaultConfig();
 		hikariConfig.setDataSourceClassName(mysqlDriverClassName);
 		hikariConfig.addDataSourceProperty("serverName", serverName);
 		hikariConfig.addDataSourceProperty("port", port);

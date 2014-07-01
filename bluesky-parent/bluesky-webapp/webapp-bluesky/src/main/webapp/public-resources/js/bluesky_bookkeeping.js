@@ -1,25 +1,30 @@
 $(document).ready(function() {
 	$.bookkeeping = function() {
-		var _config = {
-			colHeaders : [ "id", "name" ],
-			data : null
-		};
 		var _displayArea = $(".test");
 		return {
-			init : function() {
+			getArea : function() {
+				return _displayArea;
+			},
+			init : function(data) {
 				if (_displayArea.data("handsontable") != null) {
 					return _displayArea.data("handsontable");
 				}
 				_displayArea.handsontable({
 					colHeaders : [ "id", "name" ],
-					data : null,
+					columns: [
+						{data: 0},
+						{data: 1}
+					],
+					data : data,
+					contextMenu: true,
 					afterChange : this.afterChange()
 				});
 				return _displayArea.data("handsontable");
 			},
-			add : function(event) {
+			add : function() {
+				var obj = this;
 				var parameter = {
-					name : $(".add-bookkeeping input[name=name]").val()
+					name : $("input[name=name]").val()
 				};
 
 				$.ajax({
@@ -27,16 +32,17 @@ $(document).ready(function() {
 					type : "post",
 					data : parameter,
 					success : function(data) {
-						console.log(data);
+						obj.getArea().handsontable({data : $.extend(true, {}, data)});
 					}
 				});
 			},
-			load : function(event) {
+			load : function() {
+				var obj = this;
 				$.ajax({
 					url : "/bookkeeping.json",
 					type : "get",
 					success : function(data) {
-						event.data.init().loadData(data);
+						obj.init(data);
 					}
 				});
 			},
@@ -48,6 +54,6 @@ $(document).ready(function() {
 		};
 	}();
 
-	$(".add-bookkeeping").on("click", $.bookkeeping, $.bookkeeping.add);
-	$(".load-bookkeeping").on("click", $.bookkeeping, $.bookkeeping.load);
+	$(".add-bookkeeping").on("click", function() {$.bookkeeping.add();});
+	$(".load-bookkeeping").on("click", function() {$.bookkeeping.load();});
 });

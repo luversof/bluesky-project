@@ -6,7 +6,6 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.blog.domain.Article;
 import net.luversof.blog.domain.ArticleCategory;
-import net.luversof.blog.domain.QBlog;
 import net.luversof.blog.repository.ArticleRepository;
 import net.luversof.blog.service.ArticleCategoryService;
 import net.luversof.blog.service.ArticleService;
@@ -30,7 +29,7 @@ public class BlogTest extends GeneralTest {
 	
 
 	@Test
-	@Ignore
+//	@Ignore
 	public void selectTest() {
 		Article blog = articleService.findOne(28);
 		log.debug("result : {}", blog);
@@ -69,13 +68,13 @@ public class BlogTest extends GeneralTest {
 		log.debug("blogList : {}", blogList.getContent());
 	}
 	
-	@Test
-	@Ignore
-	public void 테스트() {
-		QBlog blog = QBlog.blog;
-		Iterable<Article> list = articleRepository.findAll(blog.content.startsWith("c"));
-		log.debug("list : {}", list);
-	}
+//	@Test
+//	@Ignore
+//	public void 테스트() {
+//		QBlog blog = QBlog.blog;
+//		Iterable<Article> list = articleRepository.findAll(blog.content.startsWith("c"));
+//		log.debug("list : {}", list);
+//	}
 	
 	@Test
 	public void 블로그카테고리테스트() {

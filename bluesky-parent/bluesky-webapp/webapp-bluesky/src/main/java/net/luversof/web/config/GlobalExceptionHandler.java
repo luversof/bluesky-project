@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.ModelAndView;
 
+import static net.luversof.core.Constants.JSON_MODEL_KEY;
+
 @Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -46,7 +48,7 @@ public class GlobalExceptionHandler {
 			errorList.add(errorMap);
 		}
 		Map<String, List<Map<String, String>>> resultMap = new HashMap<>();
-		resultMap.put("result", errorList);
+		resultMap.put(JSON_MODEL_KEY, errorList);
 		return new ModelAndView("/error", resultMap);
 	}
 }
