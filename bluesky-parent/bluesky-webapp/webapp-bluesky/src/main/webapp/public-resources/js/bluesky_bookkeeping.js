@@ -1,6 +1,6 @@
 $(document).ready(function() {
 	$.bookkeeping = function() {
-		var _displayArea = $(".test");
+		var _displayArea = $(".bookkeeping-list");
 		return {
 			getArea : function() {
 				return _displayArea;
@@ -85,6 +85,10 @@ $(document).ready(function() {
 		};
 	}();
 
-	$(".create-bookkeeping").on("click", function() {$.bookkeeping.create();});
-	$(".load-bookkeeping").on("click", function() {$.bookkeeping.load();});
+	$(".bookkeeping-create").on("click", function() {$.bookkeeping.create();});
+	$(".bookkeeping-load").on("click", function() {
+		$.bookkeeping.load();
+		$(this).hide();
+	});
+	$(".bookkeeping-load").trigger("click");
 });
