@@ -49,10 +49,12 @@ public class BookkeepingController {
 		bookkeeping.setUserId(((LuversofUser) authentication.getPrincipal()).getId());
 		return bookkeepingService.save(bookkeeping);
 	}
-
-	@RequestMapping("/test")
-	public void test(Authentication authentication) {
-		System.out.println(authentication);
+	
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@RequestMapping(value = "", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public void removeBookkeeping(Authentication authentication, @Validated(Modify.class) Bookkeeping bookkeeping) {
+		//본인 bookkeeping여부 확인 절차가 있어야 함
+		bookkeeping.setUserId(((LuversofUser) authentication.getPrincipal()).getId());
+		bookkeepingService.delete(bookkeeping);
 	}
-
 }

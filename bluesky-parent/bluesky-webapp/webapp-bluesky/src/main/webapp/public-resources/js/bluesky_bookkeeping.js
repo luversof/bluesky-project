@@ -14,19 +14,19 @@ $(document).ready(function() {
 				}
 				_displayArea.handsontable({
 					rowHeaders: true,
+					contextMenu: [ 'remove_row' , "undo", "redo"],
 					dataSchema: {id: null, name: null, userId: null},
 					colHeaders : [ "name" ],
 					colWidths: [300],
+					columnSorting: true,
 					columns: [
-						{data: "name"},
+						{ data: "name" },
 					],
 					minSpareRows: 1,
-					afterChange : this.afterChange
+					afterChange : this.afterChange,
+					beforeRemoveRow : this.beforeRemoveRow
 				});
 				return this.handsontable();
-			},
-			load : function() {
-				
 			},
 			/**
 			 * 최초 생성시엔 리스트 보여주기가 아닌 해당 가계부로 이동처리 하는게 더 좋지 않을까나?
@@ -40,6 +40,7 @@ $(document).ready(function() {
 
 				$.ajax({
 					url : "/bookkeeping.json",
+					dataType: "json",
 					type : "post",
 					data : parameter,
 					success : function(data) {
@@ -54,6 +55,7 @@ $(document).ready(function() {
 				var obj = this;
 				$.ajax({
 					url : "/bookkeeping.json",
+					dataType: "json",
 					type : "get",
 					success : function(data) {
 						obj.init();
@@ -61,7 +63,10 @@ $(document).ready(function() {
 					}
 				});
 			},
-			afterChange : function(change, source, cc) {
+			afterChange : function(change, source) {
+				console.log(source);
+				
+				
 				if (source === 'loadData') {
 					return; // don't save this change
 				}
@@ -70,7 +75,7 @@ $(document).ready(function() {
 				//change[0][2] : changed data orginal value
 				//change[0][3] : changed data changed value
 				//this.getData()[change[0][0]] : changed data
-				targetData = this.getData()[change[0][0]];
+				var targetData = this.getData()[change[0][0]];
 				
 				$.ajax({
 					url: "/bookkeeping.json",
@@ -78,7 +83,21 @@ $(document).ready(function() {
 					type: targetData.id == null ? "post" : "put",
 					data: targetData, //contains changed cells' data
 					success: function (data) {
-						console.log('Autosaved (' + change.length + ' ' + 'cell' + (change.length > 1 ? 's' : '') + ')');
+					}
+				});
+			},
+			beforeRemoveRow : function(index, amount) {
+				var targetData = this.getData()[index];
+				if (targetData.id == undefined) {
+					return;
+				};
+				
+				$.ajax({
+					url: "/bookkeeping.json",
+					dataType: "json",
+					type: "delete",
+					data: targetData, //contains changed cells' data
+					success: function (data) {
 					}
 				});
 			}

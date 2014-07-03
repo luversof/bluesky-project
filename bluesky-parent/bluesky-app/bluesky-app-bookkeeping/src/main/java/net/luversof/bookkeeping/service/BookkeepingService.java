@@ -32,4 +32,8 @@ public class BookkeepingService {
 	public List<Bookkeeping> findByUserId(long userId) {
 		return bookkeepingRepository.findByUserId(userId);
 	}
+	
+	public void delete(Bookkeeping bookkeeping) {
+		bookkeepingRepository.delete(bookkeeping);
+	}
 }
