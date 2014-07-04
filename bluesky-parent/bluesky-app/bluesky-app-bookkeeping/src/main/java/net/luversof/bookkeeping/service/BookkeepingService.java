@@ -19,8 +19,27 @@ public class BookkeepingService {
 	@Autowired
 	private BookkeepingRepository bookkeepingRepository;
 	
+	@Autowired
+	private EntryGroupService entryGroupService;
+	
+	@Autowired
+	private AssetService assetService;
+	
+	/**
+	 * 가계부 생성시 아래 default 데이터 생성
+	 * 기본 자산 (asset)
+	 * 기본 기록 그룹 (entryGroup)
+	 * @param bookkeeping
+	 * @return
+	 */
 	public Bookkeeping save(Bookkeeping bookkeeping) {
-		return bookkeepingRepository.save(bookkeeping);
+		boolean isSave = bookkeeping.getId() == null;
+		bookkeepingRepository.save(bookkeeping);
+		if (isSave) {
+			assetService.initialDataSave(bookkeeping);
+			entryGroupService.initialDataSave(bookkeeping);
+		}
+		return bookkeeping;
 	}
 	
 	@Transactional(readOnly = true)
@@ -33,6 +52,10 @@ public class BookkeepingService {
 		return bookkeepingRepository.findByUserId(userId);
 	}
 	
+	/**
+	 * 삭제의 경우 관련한 데이터를 모두 삭제 처리를 해야할까?
+	 * @param bookkeeping
+	 */
 	public void delete(Bookkeeping bookkeeping) {
 		bookkeepingRepository.delete(bookkeeping);
 	}

@@ -14,7 +14,7 @@ $(document).ready(function() {
 				}
 				_displayArea.handsontable({
 					rowHeaders: true,
-					contextMenu: [ 'remove_row' , "undo", "redo"],
+					contextMenu: [ "remove_row" ],
 					dataSchema: {id: null, name: null, userId: null},
 					colHeaders : [ "name" ],
 					colWidths: [300],
@@ -91,11 +91,12 @@ $(document).ready(function() {
 				if (targetData.id == undefined) {
 					return;
 				};
+				targetData._method = "delete"
 				
 				$.ajax({
 					url: "/bookkeeping.json",
 					dataType: "json",
-					type: "delete",
+					type: "post",
 					data: targetData, //contains changed cells' data
 					success: function (data) {
 					}
