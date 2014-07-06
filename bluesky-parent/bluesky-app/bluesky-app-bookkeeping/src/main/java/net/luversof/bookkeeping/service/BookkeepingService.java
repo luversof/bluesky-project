@@ -57,6 +57,8 @@ public class BookkeepingService {
 	 * @param bookkeeping
 	 */
 	public void delete(Bookkeeping bookkeeping) {
+		entryGroupService.deleteBybookkeepingId(bookkeeping.getId());
+		assetService.deleteBybookkeepingId(bookkeeping.getId());
 		bookkeepingRepository.delete(bookkeeping);
 	}
 }

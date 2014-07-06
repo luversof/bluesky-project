@@ -27,14 +27,14 @@ public class BookkeepingController {
 	private BookkeepingService bookkeepingService;
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = { "", "/index" })
-	public String index(Authentication authentication, ModelMap modelMap) {
+	@RequestMapping
+	public String getBookkeeping(Authentication authentication, ModelMap modelMap) {
 		modelMap.addAttribute(JSON_MODEL_KEY, bookkeepingService.findByUserId(((LuversofUser) authentication.getPrincipal()).getId()));
-		return "/bookkeeping/index";
+		return "/bookkeeping/bookkeeping";
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseBody
 	public Bookkeeping addBookkeeping(Authentication authentication, @Validated(Add.class) Bookkeeping bookkeeping) {
 		bookkeeping.setUserId(((LuversofUser) authentication.getPrincipal()).getId());
@@ -42,18 +42,18 @@ public class BookkeepingController {
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseBody
 	public Bookkeeping modifyBookkeeping(Authentication authentication, @Validated(Modify.class) Bookkeeping bookkeeping) {
-		//본인 bookkeeping여부 확인 절차가 있어야 함
+		//TODO 본인 bookkeeping 확인 절차가 있어야 함
 		bookkeeping.setUserId(((LuversofUser) authentication.getPrincipal()).getId());
 		return bookkeepingService.save(bookkeeping);
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public void removeBookkeeping(Authentication authentication, @Validated(Modify.class) Bookkeeping bookkeeping) {
-		//본인 bookkeeping여부 확인 절차가 있어야 함
+		//TODO 본인 bookkeeping 확인 절차가 있어야 함
 		bookkeeping.setUserId(((LuversofUser) authentication.getPrincipal()).getId());
 		bookkeepingService.delete(bookkeeping);
 	}

@@ -19,8 +19,7 @@
 
 	<!-- (s) bootstrap -->	
 	<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.2.0/css/bootstrap.min.css" />
-	<!-- <link rel="stylesheet" href="//bootswatch.com/cyborg/bootstrap.css" /> -->
-	
+	<link rel="stylesheet" href="//bootswatch.com/cosmo/bootstrap.css" />
 	<script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.2.0/js/bootstrap.min.js"></script>
 	<!-- (e) bootstrap -->
 	
@@ -48,6 +47,7 @@
 				<ul class="nav navbar-nav">
 					<li class="active"><a th:href="@{/}">Home</a></li>
 					<li><a th:href="@{/blog}">blog</a></li>
+					<li><a th:href="@{/bookkeeping}">bookkeeping</a></li>
 					<li><a href="#contact">Contact</a></li>
 				</ul>
 				<form class="navbar-form navbar-right" sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post">

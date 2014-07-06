@@ -11,23 +11,23 @@
 	<table class="table">
 		<thead>
 			<tr>
-				<th class="col-md-1" th:text="#{blog.text.id}">id</th>
-				<th th:text="#{blog.text.category}">category</th>
-				<th th:text="#{blog.text.title}">title</th>
-				<th class="col-md-2" th:text="#{blog.text.username}">username</th>
-				<th class="col-md-2" th:text="#{blog.text.createdDate}">createdDate</th>
+				<th class="col-md-1" th:text="#{article.text.id}">id</th>
+				<th th:text="#{article.text.category}">category</th>
+				<th th:text="#{article.text.title}">title</th>
+				<th class="col-md-2" th:text="#{article.text.username}">username</th>
+				<th class="col-md-2" th:text="#{article.text.createdDate}">createdDate</th>
 			</tr>
 		</thead>
 		<tbody>
-			<tr th:if="${pageImpl.hasContent()}" th:each="blog : ${pageImpl.getContent()}">
-				<td th:text="${blog.id}">id</td>
-				<td th:text="${blog.blogCategory} ? ${blog.blogCategory.name}">category</td>
-				<td><a th:href="@{'/blog/' + ${blog.id}}" th:text="${blog.title}">title</a></td>
-				<td th:text="${blog.username}">username</td>
-				<td th:text="${#dates.format(blog.createdDate, 'yyyy-MM-dd')}">createdDate</td>
+			<tr th:if="${pageImpl.hasContent()}" th:each="article : ${pageImpl.getContent()}">
+				<td th:text="${article.id}">id</td>
+				<td th:text="${article.articleCategory} ? ${article.articleCategory.name}">category</td>
+				<td><a th:href="@{'/blog/' + ${article.id}}" th:text="${article.title}">title</a></td>
+				<td th:text="${article.blog}">username</td>
+				<td th:text="${#dates.format(article.createdDate, 'yyyy-MM-dd')}">createdDate</td>
 			</tr>
 			<tr th:if="${!pageImpl.hasContent()}" class="text-center">
-				<td colspan="5" th:text="#{blog.message.empty.content}">blog.message.empty.content</td>
+				<td colspan="5" th:text="#{article.message.empty.content}">blog.message.empty.content</td>
 			</tr>
 		</tbody>
 		<tfoot>
@@ -37,7 +37,7 @@
 						<li th:each="i : ${#numbers.sequence(startPage, endPage)}" th:class="${i == currentPage} ? 'active'"><a th:href="@{/blog(page=${i})}" th:text="${i}">?</a></li>
 					</ul>
 					<br />
-					<a th:href="@{'/blog/write'}" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blog.menu.write}">write</a>
+					<a th:href="@{'/blog/write'}" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{article.menu.write}">write</a>
 				</td>
 			</tr>
 		</tfoot>

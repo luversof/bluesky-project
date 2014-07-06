@@ -54,7 +54,12 @@ public class EntryGroupService {
 		return entryGroupRepository.findByBookkeepingId(bookkeeping_id);
 	}
 
-	public void delete(long id) {
-		entryGroupRepository.delete(id);
+	public void delete(EntryGroup entryGroup) {
+		entryGroupRepository.delete(entryGroup);
+	}
+	
+	public void deleteBybookkeepingId(long bookkeeping_id) {
+		List<EntryGroup> entryGroupList = findByBookkeepingId(bookkeeping_id);
+		entryGroupRepository.delete(entryGroupList);
 	}
 }

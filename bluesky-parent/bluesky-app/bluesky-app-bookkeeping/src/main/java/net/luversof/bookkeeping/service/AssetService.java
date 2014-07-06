@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Set;
 
 import net.luversof.bookkeeping.domain.Asset;
-import net.luversof.bookkeeping.domain.AssetType;
+import net.luversof.bookkeeping.domain.AssetInitialData;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.repository.AssetRepository;
 import net.luversof.jdbc.datasource.DataSource;
@@ -30,12 +30,16 @@ public class AssetService {
 	 */
 	public List<Asset> initialDataSave(Bookkeeping bookkeeping) {
 		Set<Asset> assetSet = new HashSet<>();
-		Asset asset = new Asset();
-		asset.setBookkeeping(bookkeeping);
-		asset.setAmount(0);
-		asset.setAssetType(AssetType.WALLET);
-		asset.setName("지갑");
-		assetSet.add(asset);
+		for (AssetInitialData assetInitialData : AssetInitialData.values()) {
+			for (String defaltAssetName : assetInitialData.getDefaltAssetNames()) {
+				Asset asset = new Asset();
+				asset.setBookkeeping(bookkeeping);
+				asset.setAmount((long) 0);
+				asset.setAssetType(assetInitialData.getAssetType());
+				asset.setName(defaltAssetName);
+				assetSet.add(asset);
+			}
+		}
 		return assetRepository.save(assetSet);
 	}
 	
@@ -53,7 +57,12 @@ public class AssetService {
 		return assetRepository.findByBookkeepingId(bookkeeping_id);
 	}
 	
-	public void delete(long id) {
-		assetRepository.delete(id);
+	public void delete(Asset asset) {
+		assetRepository.delete(asset);
+	}
+	
+	public void deleteBybookkeepingId(long bookkeeping_id) {
+		List<Asset> assetList = findByBookkeepingId(bookkeeping_id);
+		assetRepository.delete(assetList);
 	}
 }
