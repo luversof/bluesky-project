@@ -1,0 +1,36 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-spring4-4.dtd">
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+	layout:decorator="/bookkeeping/bookkeepingLayout">
+<head>
+	<!-- (s) jqueryui -->
+	<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+	<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/jquery-ui.min.css" />
+	<!-- (e) jqueryui -->
+	
+	<style type="text/css" ></style>
+	<script type="text/javascript" th:inline="javascript">
+	/*<![CDATA[*/
+	var assetTypeInfo = [[${T(net.luversof.bookkeeping.domain.AssetType).values()}]];
+	var assetTypeList = [];
+	for (i = 0 ; i < assetTypeInfo.length ; i++) {
+		assetTypeList.push(assetTypeInfo[i]["$name"]);
+	}
+	/*]]>*/
+	</script>
+	<script type="text/javascript" th:src="@{/js/bluesky_bookkeeping_entry.js}"></script>
+</head>
+<body>
+	<div layout:fragment="content-bookkeeping">
+		<div th:if="${T(net.luversof.core.Constants).JSON_MODEL_KEY != null}" class="panel panel-primary">
+			<div class="panel-heading">
+				<h3 class="panel-title">분류 관리 <span class="glyphicon glyphicon-refresh bookkeeping-entry-load"></span></h3>
+			</div>
+			<div class="panel-body">
+				<div th:text="${bookkeeping}"></div>
+				<div class="bookkeeping-entry-list"></div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

@@ -1,5 +1,7 @@
 package net.luversof.bookkeeping.service;
 
+import java.util.List;
+
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.jdbc.datasource.DataSource;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @DataSource(DataSourceType.BOOKKEEPING)
 public class EntryService {
+	
 	@Autowired
 	private EntryRepository entryRepository;
 
@@ -33,4 +36,9 @@ public class EntryService {
 //	public List<Entry> findByAssetUsername(int id) {
 //		return entryRepository.findByAssetUserId(id);
 //	}
+	
+	@Transactional(readOnly = true)
+	public List<Entry> findByBookkeepingId(Long bookkeeping_id) {
+		return entryRepository.findByBookkeepingId(bookkeeping_id);
+	}
 }

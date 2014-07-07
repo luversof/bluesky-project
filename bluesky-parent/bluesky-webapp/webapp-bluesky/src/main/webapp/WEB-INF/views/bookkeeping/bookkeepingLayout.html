@@ -19,7 +19,7 @@
 							menu = ${#strings.startsWith(path, '/bookkeeping/asset') ? 'asset' : menu}"
 					>
 						<li th:text="${menu}"></li>
-						<li><a href="#">가계부 작성</a></li>
+						<li th:class="${menu} == 'entry' ? active"><a th:href="@{/bookkeeping/entry}">가계부 작성</a></li>
 						<li th:class="${menu} == 'asset' ? active"><a th:href="@{/bookkeeping/asset}">자산 관리</a></li>
 						<li th:class="${menu} == 'entryGroup' ? active"><a th:href="@{/bookkeeping/entryGroup}">분류 관리</a></li>
 						<li th:class="${menu} == 'bookkeeping' ? active"><a th:href="@{/bookkeeping}">가계부 관리</a></li>

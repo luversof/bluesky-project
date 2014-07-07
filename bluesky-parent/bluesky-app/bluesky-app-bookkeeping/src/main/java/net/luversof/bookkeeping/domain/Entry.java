@@ -1,16 +1,19 @@
 package net.luversof.bookkeeping.domain;
 
 import java.io.Serializable;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
 
 import lombok.Data;
 
 import org.hibernate.annotations.Type;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
 
 @Entity
 @Data
@@ -22,9 +25,14 @@ public class Entry implements Serializable {
 	private long id;
 	
 	@OneToOne
+	private Bookkeeping bookkeeping;
+	
+	@OneToOne
+	@JoinColumn(name = "debit_asset_id")
 	private Asset debitAsset;
 	
 	@OneToOne
+	@JoinColumn(name = "credit_asset_id")
 	private Asset creditAsset;
 	
 	@OneToOne
@@ -32,15 +40,9 @@ public class Entry implements Serializable {
 	
 	private long amount;
 	
-	
+//	@DateTimeFormat(iso = ISO.DATE_TIME)
 	@Type(type="org.jadira.usertype.dateandtime.threeten.PersistentLocalDateTime")
-	private LocalDate entryDate;
+	private LocalDateTime entryDate;
 	
 	private String memo;
-	
-	/*
-	 * 이체인 경우 표시하기 위한 속성
-	 * 이체 대상을 저장해야 하는 이슈가 있음
-	 */
-	private boolean transferEntry;
 }

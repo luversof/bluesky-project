@@ -39,8 +39,7 @@ import org.thymeleaf.spring4.SpringTemplateEngine;
 import org.thymeleaf.spring4.view.ThymeleafViewResolver;
 import org.thymeleaf.templateresolver.ServletContextTemplateResolver;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import com.fasterxml.jackson.datatype.jsr310.JSR310Module;
 
 import static net.luversof.core.Constants.JSON_MODEL_KEY;
 
@@ -115,7 +114,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		MappingJackson2JsonView mappingJackson2JsonView = new MappingJackson2JsonView();
 		mappingJackson2JsonView.setExtractValueFromSingleKeyModel(true);
 		mappingJackson2JsonView.setModelKey(JSON_MODEL_KEY);
-		mappingJackson2JsonView.getObjectMapper().registerModule(new ParameterNamesModule());
+		mappingJackson2JsonView.getObjectMapper().registerModule(new JSR310Module());
 		defaultViews.add(mappingJackson2JsonView);
 
 		viewResolver.setDefaultViews(defaultViews);
