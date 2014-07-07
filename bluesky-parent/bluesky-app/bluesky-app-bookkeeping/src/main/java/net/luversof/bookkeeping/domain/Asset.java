@@ -1,6 +1,5 @@
 package net.luversof.bookkeeping.domain;
 
-import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -9,11 +8,11 @@ import javax.persistence.Id;
 import javax.persistence.OneToOne;
 import javax.validation.constraints.NotNull;
 
+import lombok.Data;
+
 import org.hibernate.validator.constraints.NotEmpty;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import lombok.Data;
 
 /**
  * 자산
@@ -32,7 +31,7 @@ public class Asset {
 	@NotEmpty(groups = { Add.class, Modify.class })
 	private String name;
 	
-	@Column(columnDefinition="int default 0")
+	@NotNull(groups = { Add.class, Modify.class })
 	private Long amount;
 	
 	@JsonIgnore

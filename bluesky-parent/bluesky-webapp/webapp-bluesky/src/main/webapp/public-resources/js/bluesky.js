@@ -17,7 +17,6 @@ var navbar = {
 			return;
 		}
 		$(".navbar .navbar-nav li").each(function() {
-			console.log("navbar pathname : %s", location.pathname);
 			if (location.pathname.search($(this).text()) > 0) {
 				$(this).addClass("active");
 			} else {

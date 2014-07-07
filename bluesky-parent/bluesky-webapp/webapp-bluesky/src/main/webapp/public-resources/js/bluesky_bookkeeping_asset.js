@@ -12,7 +12,7 @@ $(document).ready(function() {
 				columns: [
 					{ data: "assetType", type: 'dropdown', source : assetTypeList },
 					{ data: "name" },
-					{ data: "amount", readOnly : true }
+					{ data: "amount", readOnly : true, type : "numeric" }
 				],
 				minSpareRows: 1,
 		}
