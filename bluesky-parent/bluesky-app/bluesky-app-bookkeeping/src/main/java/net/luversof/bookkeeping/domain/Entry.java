@@ -8,12 +8,12 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
+import javax.validation.constraints.NotNull;
 
 import lombok.Data;
 
 import org.hibernate.annotations.Type;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.format.annotation.DateTimeFormat.ISO;
 
 @Entity
 @Data
@@ -22,7 +22,8 @@ public class Entry implements Serializable {
 
 	@Id
 	@GeneratedValue
-	private long id;
+	@NotNull(groups = Modify.class)
+	private Long id;
 	
 	@OneToOne
 	private Bookkeeping bookkeeping;
@@ -38,11 +39,20 @@ public class Entry implements Serializable {
 	@OneToOne
 	private EntryGroup entryGroup;
 	
-	private long amount;
+	@NotNull(groups = { Add.class, Modify.class })
+	private Long amount;
 	
 //	@DateTimeFormat(iso = ISO.DATE_TIME)
+	@DateTimeFormat(pattern="yyyy-MM-dd")
 	@Type(type="org.jadira.usertype.dateandtime.threeten.PersistentLocalDateTime")
+	@NotNull(groups = { Add.class, Modify.class })
 	private LocalDateTime entryDate;
 	
 	private String memo;
+	
+	public interface Add {
+	};
+	
+	public interface Modify {
+	};
 }

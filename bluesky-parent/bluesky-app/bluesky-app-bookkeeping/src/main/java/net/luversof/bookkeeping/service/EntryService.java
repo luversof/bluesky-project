@@ -28,8 +28,8 @@ public class EntryService {
 		return entryRepository.findOne(id);
 	}
 
-	public void delete(long id) {
-		entryRepository.delete(id);
+	public void delete(Entry entry) {
+		entryRepository.delete(entry);
 	}
 	
 //	@Transactional(readOnly = true)

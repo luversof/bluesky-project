@@ -1,5 +1,7 @@
 package net.luversof.web.config;
 
+import static net.luversof.core.Constants.JSON_MODEL_KEY;
+
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,8 +42,6 @@ import org.thymeleaf.spring4.view.ThymeleafViewResolver;
 import org.thymeleaf.templateresolver.ServletContextTemplateResolver;
 
 import com.fasterxml.jackson.datatype.jsr310.JSR310Module;
-
-import static net.luversof.core.Constants.JSON_MODEL_KEY;
 
 
 @Slf4j
@@ -88,7 +88,8 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		sessionLocaleResolver.setDefaultLocale(Locale.KOREA);
 		return sessionLocaleResolver;
 	}
-
+	
+	
 	@Bean
 	public ContentNegotiatingViewResolver contentNegotiatingViewResolver() {
 		ContentNegotiatingViewResolver viewResolver = new ContentNegotiatingViewResolver();
