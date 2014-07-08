@@ -20,7 +20,7 @@ $(document).ready(function() {
 				var obj = this;
 				$.ajax({
 					url : config.url,
-					dataType: "json",
+					dataType : "json",
 					type : "get",
 					success : function(data) {
 						obj.init();
@@ -39,11 +39,11 @@ $(document).ready(function() {
 				//this.getData()[change[0][0]] : changed data
 				var targetData = this.getData()[change[0][0]];
 				$.ajax({
-					url: config.url,
-					dataType: "json",
-					type: targetData.id == null ? "post" : "put",
-					data: targetData, //contains changed cells' data
-					success: function (data) {
+					url : config.url,
+					dataType : "json",
+					type : targetData.id == null ? "post" : "put",
+					data : targetData, //contains changed cells' data
+					success : function (data) {
 					}
 				});
 			},
@@ -54,11 +54,11 @@ $(document).ready(function() {
 				};
 				targetData._method = "delete";
 				$.ajax({
-					url: config.url,
-					dataType: "json",
-					type: "post",
-					data: targetData, //contains changed cells' data
-					success: function (data) {
+					url : config.url,
+					dataType : "json",
+					type : "post",
+					data : targetData, //contains changed cells' data
+					success : function (data) {
 					}
 				});
 			}

@@ -3,13 +3,13 @@ $(document).ready(function() {
 		url : "/bookkeeping/entry.json",
 		displayArea : $(".bookkeeping-entry-list"),
 		handsontableConfig : {
-				rowHeaders: true,
-				contextMenu: [ "remove_row" ],
+				rowHeaders : true,
+				contextMenu : [ "remove_row" ],
 //				dataSchema: {id: null, name: null, userId: null},
 				colHeaders : [ "entryDate", "amount" ],
-				colWidths: [300, 180],
-				columnSorting: true,
-				columns: [
+				colWidths : [300, 180],
+				columnSorting : true,
+				columns : [
 					{ data : "entryDate",  type : "date", format : "yyyy/mm/dd"},
 					{ data : "amount" }
 				],

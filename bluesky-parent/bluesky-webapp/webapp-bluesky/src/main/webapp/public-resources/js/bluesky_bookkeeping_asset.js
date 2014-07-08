@@ -3,18 +3,18 @@ $(document).ready(function() {
 		url : "/bookkeeping/asset.json",
 		displayArea : $(".bookkeeping-asset-list"),
 		handsontableConfig : {
-				rowHeaders: true,
-				contextMenu: [ "remove_row" ],
-				dataSchema: { "id" : null, "name" : null, "amount" : null, "assetType" : null},
+				rowHeaders : true,
+				contextMenu : [ "remove_row" ],
+				dataSchema : { "id" : null, "name" : null, "amount" : null, "assetType" : null},
 				colHeaders : [ "assetType", "name", "amount" ],
-				colWidths: [100, 200, 80],
-				columnSorting: true,
-				columns: [
+				colWidths : [100, 200, 80],
+				columnSorting : true,
+				columns : [
 					{ data : "assetType", type : 'dropdown', source : assetTypeList },
 					{ data : "name" },
 					{ data : "amount", readOnly : true, type : "numeric" }
 				],
-				minSpareRows: 1,
+				minSpareRows : 1,
 		}
 	});
 

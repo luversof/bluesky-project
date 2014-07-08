@@ -3,16 +3,16 @@ $(document).ready(function() {
 		url : "/bookkeeping.json",
 		displayArea : $(".bookkeeping-list"),
 		handsontableConfig : {
-				rowHeaders: true,
-				contextMenu: [ "remove_row" ],
-				dataSchema: {id: null, name: null, userId: null},
+				rowHeaders : true,
+				contextMenu : [ "remove_row" ],
+				dataSchema : {id: null, name: null, userId: null},
 				colHeaders : [ "name" ],
-				colWidths: [300],
-				columnSorting: true,
-				columns: [
-					{ data: "name" }
+				colWidths : [300],
+				columnSorting : true,
+				columns : [
+					{ data : "name" }
 				],
-				minSpareRows: 1,
+				minSpareRows : 1,
 		}
 	});
 
