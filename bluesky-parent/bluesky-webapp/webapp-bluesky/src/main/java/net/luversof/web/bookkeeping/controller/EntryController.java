@@ -4,6 +4,7 @@ import static net.luversof.core.Constants.JSON_MODEL_KEY;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
+import net.luversof.bookkeeping.domain.Entry.Add;
 import net.luversof.bookkeeping.domain.Entry.Modify;
 import net.luversof.bookkeeping.service.AssetService;
 import net.luversof.bookkeeping.service.BookkeepingService;
@@ -19,7 +20,6 @@ import org.springframework.security.core.userdetails.LuversofUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -78,7 +78,7 @@ public class EntryController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseBody
-	public Entry add(Authentication authentication, @RequestBody Entry entry) {
+	public Entry add(Authentication authentication, @RequestBody @Validated(Add.class) Entry entry) {
 		entry.setBookkeeping(getBookkeeping(authentication));
 		return entryService.save(entry);
 	}
@@ -86,7 +86,7 @@ public class EntryController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseBody
-	public Entry modify(Authentication authentication, @RequestBody /*@Validated(Modify.class)*/ Entry entry, ModelMap modelMap) {
+	public Entry modify(Authentication authentication, @RequestBody @Validated(Modify.class) Entry entry, ModelMap modelMap) {
 		//TODO 본인 entryGroup 확인 절차가 있어야 함
 		entry.setBookkeeping(getBookkeeping(authentication));
 		return entryService.save(entry);
@@ -94,7 +94,7 @@ public class EntryController {
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public void delete(Authentication authentication, @RequestBody Entry entry, ModelMap modelMap) {
+	public void delete(Authentication authentication, @RequestBody @Validated(Modify.class) Entry entry, ModelMap modelMap) {
 		//TODO 본인 entryGroup 확인 절차가 있어야 함
 		entry.setBookkeeping(getBookkeeping(authentication));
 		entryService.delete(entry);

@@ -1,7 +1,7 @@
 package net.luversof.bookkeeping.domain;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -11,12 +11,9 @@ import javax.persistence.OneToOne;
 import javax.validation.constraints.NotNull;
 
 import lombok.Data;
-import net.luversof.core.LocalDateTimeDeserializer;
-
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.format.annotation.DateTimeFormat.ISO;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
 
 @Entity
 @Data
@@ -45,10 +42,9 @@ public class Entry implements Serializable {
 	@NotNull(groups = { Add.class, Modify.class })
 	private Long amount;
 	
-	@DateTimeFormat(pattern="yyyy-MM-dd",iso = ISO.DATE)
-	@JsonDeserialize(using = LocalDateTimeDeserializer.class)
+	@JsonDeserialize(using = LocalDateDeserializer.class)
 	@NotNull(groups = { Add.class, Modify.class })
-	private LocalDateTime entryDate;
+	private LocalDate entryDate;
 	
 	private String memo;
 	

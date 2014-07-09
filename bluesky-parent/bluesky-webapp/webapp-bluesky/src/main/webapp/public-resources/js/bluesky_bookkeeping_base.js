@@ -12,8 +12,8 @@ $(document).ready(function() {
 				if (this.handsontable() != null) {
 					return this.handsontable();
 				}
-				config.displayArea.handsontable($.extend(config.handsontableConfig, {afterChange : this.afterChange,
-					beforeRemoveRow : this.beforeRemoveRow}));
+				config.displayArea.handsontable($.extend(config.handsontableConfig, { afterChange : this.afterChange,
+					beforeRemoveRow : this.beforeRemoveRow }));
 				return this.handsontable();
 			},
 			load : function() {

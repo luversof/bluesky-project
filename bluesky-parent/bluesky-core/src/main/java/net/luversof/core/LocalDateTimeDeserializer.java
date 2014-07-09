@@ -9,6 +9,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
+/**
+ * LocalDateTime 형태로 저장하면서 LocalDate 형태로 표현하려고 만들었음.
+ * 포맷을 맞추는게 맞는 방향.
+ * 현재 사용하지 않음
+ * @author choiyong-rak
+ *
+ */
 public class LocalDateTimeDeserializer extends JsonDeserializer<LocalDateTime> {
 
 	@Override

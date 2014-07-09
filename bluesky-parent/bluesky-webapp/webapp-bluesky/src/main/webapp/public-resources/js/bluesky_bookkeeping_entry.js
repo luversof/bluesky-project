@@ -6,12 +6,14 @@ $(document).ready(function() {
 				rowHeaders : true,
 				contextMenu : [ "remove_row" ],
 //				dataSchema: {id: null, name: null, userId: null},
-				colHeaders : [ "entryDate", "amount" ],
-				colWidths : [300, 180],
+				colHeaders : [ "entryDate", "amount", "debitAsset", "creditAsset", "entryGroup", "memo" ],
+				colWidths : [120, 180],
 				columnSorting : true,
 				columns : [
 					{ data : "entryDate",  type : "date", format : "yyyy/mm/dd"},
-					{ data : "amount" }
+					{ data : "amount", type : "numeric", format : "0,0" },
+					{ data : "debitAsset.name" },
+					{ data : "creditAsset.name" }
 				],
 				minSpareRows: 1,
 		}
