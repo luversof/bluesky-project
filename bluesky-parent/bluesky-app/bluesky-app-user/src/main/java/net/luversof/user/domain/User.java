@@ -14,7 +14,6 @@ import javax.persistence.OneToMany;
 
 import lombok.Data;
 
-import org.hibernate.annotations.Type;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.format.annotation.DateTimeFormat.ISO;
@@ -32,7 +31,6 @@ public class User {
 	private String password;
 	
 	@CreatedDate
-	@Type(type="org.jadira.usertype.dateandtime.threeten.PersistentLocalDateTime")
 	@DateTimeFormat(iso = ISO.DATE_TIME)
 	private LocalDateTime createdDate;
 

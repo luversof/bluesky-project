@@ -36,13 +36,11 @@ public class Article {
 	private String content;
 
 	@Column(updatable = false)
-	@Type(type="org.jadira.usertype.dateandtime.threeten.PersistentLocalDateTime")
 	@DateTimeFormat(iso = ISO.DATE_TIME)
 	@CreatedDate
 	private LocalDateTime createdDate;
 
 	@Column(updatable = false)
-	@Type(type="org.jadira.usertype.dateandtime.threeten.PersistentLocalDateTime")
 	@DateTimeFormat(iso = ISO.DATE_TIME)
 	@LastModifiedDate
 	private LocalDateTime lastModifiedDate;

@@ -17,6 +17,7 @@ import org.springframework.security.core.userdetails.LuversofUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -51,7 +52,7 @@ public class EntryGroupController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseBody
-	public EntryGroup addEntryGroup(Authentication authentication, @Validated(Add.class) EntryGroup entryGroup) {
+	public EntryGroup addEntryGroup(Authentication authentication, @RequestBody @Validated(Add.class) EntryGroup entryGroup) {
 		entryGroup.setBookkeeping(getBookkeeping(authentication));
 		return entryGroupService.save(entryGroup);
 	}
@@ -59,7 +60,7 @@ public class EntryGroupController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseBody
-	public EntryGroup modifyEntryGroup(Authentication authentication, @Validated(Modify.class) EntryGroup entryGroup) {
+	public EntryGroup modifyEntryGroup(Authentication authentication, @RequestBody @Validated(Modify.class) EntryGroup entryGroup) {
 		//TODO 본인 entryGroup 확인 절차가 있어야 함
 		entryGroup.setBookkeeping(getBookkeeping(authentication));
 		return entryGroupService.save(entryGroup);
@@ -67,7 +68,7 @@ public class EntryGroupController {
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public void delete(Authentication authentication, @Validated(Modify.class) EntryGroup entryGroup) {
+	public void delete(Authentication authentication, @RequestBody @Validated(Modify.class) EntryGroup entryGroup) {
 		//TODO 본인 entryGroup 확인 절차가 있어야 함
 		entryGroup.setBookkeeping(getBookkeeping(authentication));
 		entryGroupService.delete(entryGroup);

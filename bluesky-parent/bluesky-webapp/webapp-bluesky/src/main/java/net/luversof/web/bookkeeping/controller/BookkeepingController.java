@@ -15,6 +15,7 @@ import org.springframework.security.core.userdetails.LuversofUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -36,7 +37,7 @@ public class BookkeepingController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseBody
-	public Bookkeeping addBookkeeping(Authentication authentication, @Validated(Add.class) Bookkeeping bookkeeping) {
+	public Bookkeeping addBookkeeping(Authentication authentication, @RequestBody @Validated(Add.class) Bookkeeping bookkeeping) {
 		bookkeeping.setUserId(((LuversofUser) authentication.getPrincipal()).getId());
 		return bookkeepingService.save(bookkeeping);
 	}
@@ -44,7 +45,7 @@ public class BookkeepingController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseBody
-	public Bookkeeping modifyBookkeeping(Authentication authentication, @Validated(Modify.class) Bookkeeping bookkeeping) {
+	public Bookkeeping modifyBookkeeping(Authentication authentication, @RequestBody @Validated(Modify.class) Bookkeeping bookkeeping) {
 		//TODO 본인 bookkeeping 확인 절차가 있어야 함
 		bookkeeping.setUserId(((LuversofUser) authentication.getPrincipal()).getId());
 		return bookkeepingService.save(bookkeeping);
@@ -52,7 +53,7 @@ public class BookkeepingController {
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public void removeBookkeeping(Authentication authentication, @Validated(Modify.class) Bookkeeping bookkeeping) {
+	public void removeBookkeeping(Authentication authentication, @RequestBody @Validated(Modify.class) Bookkeeping bookkeeping) {
 		//TODO 본인 bookkeeping 확인 절차가 있어야 함
 		bookkeeping.setUserId(((LuversofUser) authentication.getPrincipal()).getId());
 		bookkeepingService.delete(bookkeeping);

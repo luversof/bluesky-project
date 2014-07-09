@@ -44,6 +44,7 @@ public class RepositoryConfig {
 		Properties jpaProperties = new Properties();
 		jpaProperties.setProperty("hibernate.enable_lazy_load_no_trans", "true");
 		jpaProperties.setProperty("hibernate.auto_close_session", "true");
+		jpaProperties.setProperty("jadira.usertype.autoRegisterUserTypes", "true");
 
 		LocalContainerEntityManagerFactoryBean entityManagerFactoryBean = new LocalContainerEntityManagerFactoryBean();
 		entityManagerFactoryBean.setDataSource(routingDataSource);

@@ -11,9 +11,12 @@ import javax.persistence.OneToOne;
 import javax.validation.constraints.NotNull;
 
 import lombok.Data;
+import net.luversof.core.LocalDateTimeDeserializer;
 
-import org.hibernate.annotations.Type;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @Entity
 @Data
@@ -42,9 +45,8 @@ public class Entry implements Serializable {
 	@NotNull(groups = { Add.class, Modify.class })
 	private Long amount;
 	
-//	@DateTimeFormat(iso = ISO.DATE_TIME)
-	@DateTimeFormat(pattern="yyyy-MM-dd")
-	@Type(type="org.jadira.usertype.dateandtime.threeten.PersistentLocalDateTime")
+	@DateTimeFormat(pattern="yyyy-MM-dd",iso = ISO.DATE)
+	@JsonDeserialize(using = LocalDateTimeDeserializer.class)
 	@NotNull(groups = { Add.class, Modify.class })
 	private LocalDateTime entryDate;
 	

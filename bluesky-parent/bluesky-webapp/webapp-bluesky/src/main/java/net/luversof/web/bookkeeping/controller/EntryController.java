@@ -78,7 +78,7 @@ public class EntryController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseBody
-	public Entry add(Authentication authentication, Entry entry) {
+	public Entry add(Authentication authentication, @RequestBody Entry entry) {
 		entry.setBookkeeping(getBookkeeping(authentication));
 		return entryService.save(entry);
 	}
@@ -86,7 +86,7 @@ public class EntryController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseBody
-	public Entry modify(Authentication authentication, /*@Validated(Modify.class)*/ Entry entry, ModelMap modelMap) {
+	public Entry modify(Authentication authentication, @RequestBody /*@Validated(Modify.class)*/ Entry entry, ModelMap modelMap) {
 		//TODO 본인 entryGroup 확인 절차가 있어야 함
 		entry.setBookkeeping(getBookkeeping(authentication));
 		return entryService.save(entry);
@@ -94,7 +94,7 @@ public class EntryController {
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public void delete(Authentication authentication, Entry entry, ModelMap modelMap) {
+	public void delete(Authentication authentication, @RequestBody Entry entry, ModelMap modelMap) {
 		//TODO 본인 entryGroup 확인 절차가 있어야 함
 		entry.setBookkeeping(getBookkeeping(authentication));
 		entryService.delete(entry);

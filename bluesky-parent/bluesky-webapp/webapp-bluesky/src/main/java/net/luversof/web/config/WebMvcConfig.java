@@ -3,6 +3,7 @@ package net.luversof.web.config;
 import static net.luversof.core.Constants.JSON_MODEL_KEY;
 
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +42,7 @@ import org.thymeleaf.spring4.SpringTemplateEngine;
 import org.thymeleaf.spring4.view.ThymeleafViewResolver;
 import org.thymeleaf.templateresolver.ServletContextTemplateResolver;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JSR310Module;
 
 
@@ -115,7 +117,9 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		MappingJackson2JsonView mappingJackson2JsonView = new MappingJackson2JsonView();
 		mappingJackson2JsonView.setExtractValueFromSingleKeyModel(true);
 		mappingJackson2JsonView.setModelKey(JSON_MODEL_KEY);
-		mappingJackson2JsonView.getObjectMapper().registerModule(new JSR310Module());
+		ObjectMapper objectMapper = mappingJackson2JsonView.getObjectMapper();
+		objectMapper.registerModule(new JSR310Module());
+		objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
 		defaultViews.add(mappingJackson2JsonView);
 
 		viewResolver.setDefaultViews(defaultViews);

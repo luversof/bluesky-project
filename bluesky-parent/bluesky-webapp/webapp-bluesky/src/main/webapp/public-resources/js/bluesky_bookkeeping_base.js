@@ -41,8 +41,9 @@ $(document).ready(function() {
 				$.ajax({
 					url : config.url,
 					dataType : "json",
+					contentType : "application/json",
 					type : targetData.id == null ? "post" : "put",
-					data : targetData, //contains changed cells' data
+					data : JSON.stringify(targetData), //contains changed cells' data
 					success : function (data) {
 					}
 				});
@@ -56,8 +57,9 @@ $(document).ready(function() {
 				$.ajax({
 					url : config.url,
 					dataType : "json",
+					contentType : "application/json",
 					type : "post",
-					data : targetData, //contains changed cells' data
+					data : JSON.stringify(targetData), //contains changed cells' data
 					success : function (data) {
 					}
 				});
