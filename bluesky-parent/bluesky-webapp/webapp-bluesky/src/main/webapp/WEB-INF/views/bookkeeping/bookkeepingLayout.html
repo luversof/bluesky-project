@@ -15,9 +15,12 @@
 					<ul class="nav nav-pills nav-stacked" layout:fragment="nav-bookkeeping"
 						th:with="path = ${#httpServletRequest.servletPath},
 							menu = ${#strings.startsWith(path, '/bookkeeping/entry') ? 'entry' : 'bookkeeping'},
+							menu = ${#strings.startsWith(path, '/bookkeeping/entryForm') ? 'entryForm' : menu},
 							menu = ${#strings.startsWith(path, '/bookkeeping/entryGroup') ? 'entryGroup' : menu},
 							menu = ${#strings.startsWith(path, '/bookkeeping/asset') ? 'asset' : menu}">
-						<li th:class="${menu} == 'entry' ? active"><a th:href="@{/bookkeeping/entry}">가계부 작성</a></li>
+						<li th:class="${menu} == 'entryForm' ? active"><a th:href="@{/bookkeeping/entryForm}">가계부 입력</a></li>
+						<li th:class="${menu} == 'entry' ? active"><a th:href="@{/bookkeeping/entry}">가계부 보기</a></li>
+						<li th:class="${menu} == 'status' ? active"><a href="">통계 보기</a></li>
 						<li th:class="${menu} == 'asset' ? active"><a th:href="@{/bookkeeping/asset}">자산 관리</a></li>
 						<li th:class="${menu} == 'entryGroup' ? active"><a th:href="@{/bookkeeping/entryGroup}">분류 관리</a></li>
 						<li th:class="${menu} == 'bookkeeping' ? active"><a th:href="@{/bookkeeping}">가계부 관리</a></li>

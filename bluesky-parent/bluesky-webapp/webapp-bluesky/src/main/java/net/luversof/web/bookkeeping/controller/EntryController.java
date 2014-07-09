@@ -1,14 +1,11 @@
 package net.luversof.web.bookkeeping.controller;
 
 import static net.luversof.core.Constants.JSON_MODEL_KEY;
-import lombok.extern.slf4j.Slf4j;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.Entry.Add;
 import net.luversof.bookkeeping.domain.Entry.Modify;
-import net.luversof.bookkeeping.service.AssetService;
 import net.luversof.bookkeeping.service.BookkeepingService;
-import net.luversof.bookkeeping.service.EntryGroupService;
 import net.luversof.bookkeeping.service.EntryService;
 import net.luversof.web.AuthorizeRole;
 
@@ -25,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-@Slf4j
 @Controller
 @RequestMapping("/bookkeeping/entry")
 public class EntryController {
@@ -35,12 +31,6 @@ public class EntryController {
 	
 	@Autowired
 	private EntryService entryService;
-	
-	@Autowired
-	private AssetService assetService;
-	
-	@Autowired
-	private EntryGroupService entryGroupService;
 	
 	/**
 	 * 가계부가 1개만 존재한다는 전제조건으로 설정
@@ -68,11 +58,7 @@ public class EntryController {
 	public void get(Authentication authentication, ModelMap modelMap) {
 		
 		Bookkeeping bookkeeping = getBookkeeping(authentication);
-		log.debug("modelMap : {}", modelMap);
 		modelMap.addAttribute(JSON_MODEL_KEY, entryService.findByBookkeepingId(bookkeeping.getId()));
-//		modelMap.addAttribute("result", entryService.findByAssetUsername(authentication.getName()));
-//		modelMap.addAttribute(assetService.findByUsername(authentication.getName()));
-//		modelMap.addAttribute(entryGroupService.findByUsername(authentication.getName()));
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)

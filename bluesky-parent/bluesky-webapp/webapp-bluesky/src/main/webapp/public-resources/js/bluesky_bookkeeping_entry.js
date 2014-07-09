@@ -6,16 +6,15 @@ $(document).ready(function() {
 				rowHeaders : true,
 				contextMenu : [ "remove_row" ],
 //				dataSchema: {id: null, name: null, userId: null},
-				colHeaders : [ "entryDate", "amount", "debitAsset", "creditAsset", "entryGroup", "memo" ],
-				colWidths : [120, 180],
+				colHeaders : [ "날짜", "금액", "분류", "메모" ],
+				colWidths : [ 120, 120, 80, 180 ],
 				columnSorting : true,
 				columns : [
-					{ data : "entryDate",  type : "date", format : "yyyy/mm/dd"},
-					{ data : "amount", type : "numeric", format : "0,0" },
-					{ data : "debitAsset.name" },
-					{ data : "creditAsset.name" }
+					{ data : "entryDate", readOnly : true },
+					{ data : "amount", readOnly : true , type : "numeric", format : "0,0" },
+					{ data : "entryGroup.name", readOnly : true },
+					{ data : "memo", readOnly : true }
 				],
-				minSpareRows: 1,
 		}
 	});
 
