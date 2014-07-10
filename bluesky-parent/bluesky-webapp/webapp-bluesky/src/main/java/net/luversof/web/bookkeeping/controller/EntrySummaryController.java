@@ -1,9 +1,9 @@
 package net.luversof.web.bookkeeping.controller;
 
+import static net.luversof.core.Constants.JSON_MODEL_KEY;
 import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.service.AssetService;
 import net.luversof.bookkeeping.service.BookkeepingService;
-import net.luversof.bookkeeping.service.EntryGroupService;
+import net.luversof.bookkeeping.service.EntryService;
 import net.luversof.web.AuthorizeRole;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,17 +16,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 @Controller
-@RequestMapping("/bookkeeping/entryForm")
-public class EntryFormController {
+@RequestMapping("/bookkeeping/entrySummary")
+public class EntrySummaryController {
 	
 	@Autowired
 	private BookkeepingService bookkeepingService;
 	
 	@Autowired
-	private AssetService assetService;
-	
-	@Autowired
-	private EntryGroupService entryGroupService;
+	private EntryService entryService;
 	
 	/**
 	 * 가계부가 1개만 존재한다는 전제조건으로 설정
@@ -41,7 +38,6 @@ public class EntryFormController {
 	@RequestMapping(method = RequestMethod.GET)
 	public void get(Authentication authentication, ModelMap modelMap) {
 		Bookkeeping bookkeeping = getBookkeeping(authentication);
-		modelMap.addAttribute(assetService.findByBookkeepingId(bookkeeping.getId()));
-		modelMap.addAttribute(entryGroupService.findByBookkeepingId(bookkeeping.getId()));
+		modelMap.addAttribute(JSON_MODEL_KEY, entryService.findByBookkeepingId(bookkeeping.getId()));
 	}
 }

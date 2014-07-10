@@ -10,11 +10,16 @@ $(document).ready(function() {
 				colWidths : [ 120, 120, 80, 180 ],
 				columnSorting : true,
 				columns : [
-					{ data : "entryDate", readOnly : true },
-					{ data : "amount", readOnly : true , type : "numeric", format : "0,0" },
-					{ data : "entryGroup.name", readOnly : true },
-					{ data : "memo", readOnly : true }
+					{ data : "entryDate" },
+					{ data : "amount" , type : "numeric", format : "0,0" },
+					{ data : "entryGroup.name", type : 'dropdown', source : this.te },
+					{ data : "memo" }
 				],
+				te : ["1","2", "3"],
+				test : function() {
+					console.log("TTTTEST");
+					return [ "1", "2", "3"]
+				}
 		}
 	});
 

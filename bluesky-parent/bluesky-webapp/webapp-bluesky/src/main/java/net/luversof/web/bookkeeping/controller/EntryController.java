@@ -56,7 +56,6 @@ public class EntryController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.GET)
 	public void get(Authentication authentication, ModelMap modelMap) {
-		
 		Bookkeeping bookkeeping = getBookkeeping(authentication);
 		modelMap.addAttribute(JSON_MODEL_KEY, entryService.findByBookkeepingId(bookkeeping.getId()));
 	}

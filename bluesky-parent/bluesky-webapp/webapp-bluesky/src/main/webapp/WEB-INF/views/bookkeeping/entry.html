@@ -3,23 +3,29 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="/bookkeeping/bookkeepingLayout">
 <head>
-	<!-- (s) jqueryui -->
-	<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
-	<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/jquery-ui.min.css" />
-	<!-- (e) jqueryui -->
-	<script type="text/javascript" th:src="@{/js/bluesky_bookkeeping_entry.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bluesky_bookkeeping_entryForm.js}"></script>
 </head>
 <body>
 	<div layout:fragment="content-bookkeeping">
 		<div th:if="${T(net.luversof.core.Constants).JSON_MODEL_KEY != null}" class="panel panel-primary">
 			<div class="panel-heading">
-				<h3 class="panel-title">가계부 보기 <span class="glyphicon glyphicon-refresh bookkeeping-entry-load"></span></h3>
+				<h3 class="panel-title">가계부 입력 </h3>
 			</div>
 			<div class="panel-body">
-				<p>
-					<a href="entryForm" class="btn btn-primary">가계부 입력</a> 
-				</p>
-				<div class="bookkeeping-entry-list"></div>
+				<div class="btn-group btn-group-justified">
+					<div class="btn-group">
+						<button type="button" class="btn btn-primary">수입</button>
+					</div>
+					<div class="btn-group">
+						<button type="button" class="btn btn-primary">지출</button>
+					</div>
+					<div class="btn-group">
+						<button type="button" class="btn btn-primary">이체</button>
+					</div>
+				</div>
+				<div>
+					
+				</div>
 			</div>
 		</div>
 	</div>

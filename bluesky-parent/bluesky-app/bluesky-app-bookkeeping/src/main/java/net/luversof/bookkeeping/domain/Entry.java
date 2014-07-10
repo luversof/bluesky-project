@@ -12,9 +12,6 @@ import javax.validation.constraints.NotNull;
 
 import lombok.Data;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
-
 @Entity
 @Data
 public class Entry implements Serializable {
@@ -42,7 +39,6 @@ public class Entry implements Serializable {
 	@NotNull(groups = { Add.class, Modify.class })
 	private Long amount;
 	
-	@JsonDeserialize(using = LocalDateDeserializer.class)
 	@NotNull(groups = { Add.class, Modify.class })
 	private LocalDate entryDate;
 	

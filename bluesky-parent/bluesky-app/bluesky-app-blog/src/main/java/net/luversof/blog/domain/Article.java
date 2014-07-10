@@ -11,12 +11,9 @@ import javax.validation.constraints.NotNull;
 
 import lombok.Data;
 
-import org.hibernate.annotations.Type;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.format.annotation.DateTimeFormat.ISO;
 
 @Entity
 @Data
@@ -36,12 +33,10 @@ public class Article {
 	private String content;
 
 	@Column(updatable = false)
-	@DateTimeFormat(iso = ISO.DATE_TIME)
 	@CreatedDate
 	private LocalDateTime createdDate;
 
 	@Column(updatable = false)
-	@DateTimeFormat(iso = ISO.DATE_TIME)
 	@LastModifiedDate
 	private LocalDateTime lastModifiedDate;
 
