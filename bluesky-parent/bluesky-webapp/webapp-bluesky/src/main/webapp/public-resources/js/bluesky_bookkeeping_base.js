@@ -1,7 +1,6 @@
 $(document).ready(function() {
 	$.Bookkeeping = function(config) {
 		// config : {url, displayArea, handsontableConfig}
-		var _entryGroupList = null;
 		return {
 			getArea : function() {
 				return config.displayArea;
@@ -19,12 +18,18 @@ $(document).ready(function() {
 			},
 			load : function() {
 				var obj = this;
+				console.log(111);
+				obj.init();
+				if (config.initLoad != undefined && config.initLoad == true) {
+					console.log(2);
+					obj.handsontable().loadData([{}]);
+					return;
+				}
 				$.ajax({
 					url : config.url,
 					dataType : "json",
 					type : "get",
 					success : function(data) {
-						obj.init();
 						obj.handsontable().loadData(data);
 					}
 				});
@@ -65,25 +70,25 @@ $(document).ready(function() {
 					}
 				});
 			},
-			/**
-			 * entryGroupList를 호출하여 source 형태로 전달? 아니면 변수로 보관?
-			 */
-			getEntryGroup : function() {
-				var entryGroupList = _entryGroupList;
-				if (entryGroupList != null) {
-					return entryGroupList;
-				}
-				$.ajax({
-					url : "/bookkeeping/entryGroup.json",
-					dataType : "json",
-					type : "get",
-					async : false,
-					success : function(data) {
-						entryGroupList = data;
-					}
-				});
-				return entryGroupList;
-			}
 		};
+	};
+	/**
+	 * entryGroupList를 호출하여 source 형태로 전달? 아니면 변수로 보관?
+	 */
+	var entryGroupList = null;
+	$.getEntryGroup = function() {
+		if (entryGroupList != null) {
+			return entryGroupList;
+		}
+		$.ajax({
+			url : "/bookkeeping/entryGroup.json",
+			dataType : "json",
+			type : "get",
+			async : false,
+			success : function(data) {
+				entryGroupList = data;
+			}
+		});
+		return entryGroupList;
 	};
 });

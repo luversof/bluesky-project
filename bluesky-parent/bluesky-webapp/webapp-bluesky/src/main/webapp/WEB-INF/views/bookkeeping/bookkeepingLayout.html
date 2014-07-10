@@ -15,7 +15,7 @@
 					<ul class="nav nav-pills nav-stacked" layout:fragment="nav-bookkeeping"
 						th:with="path = ${#httpServletRequest.servletPath},
 							menu = ${#strings.startsWith(path, '/bookkeeping/entry') ? 'entry' : 'bookkeeping'},
-							menu = ${#strings.startsWith(path, '/bookkeeping/entrySummary') ? 'entryForm' : menu},
+							menu = ${#strings.startsWith(path, '/bookkeeping/entrySummary') ? 'entrySummary' : menu},
 							menu = ${#strings.startsWith(path, '/bookkeeping/entryGroup') ? 'entryGroup' : menu},
 							menu = ${#strings.startsWith(path, '/bookkeeping/asset') ? 'asset' : menu}">
 						<li th:class="${menu} == 'entry' ? active"><a th:href="@{/bookkeeping/entry}">가계부 입력</a></li>

@@ -12,14 +12,9 @@ $(document).ready(function() {
 				columns : [
 					{ data : "entryDate" },
 					{ data : "amount" , type : "numeric", format : "0,0" },
-					{ data : "entryGroup.name", type : 'dropdown', source : this.te },
+					{ data : "entryGroup.name", readOnly : true },
 					{ data : "memo" }
-				],
-				te : ["1","2", "3"],
-				test : function() {
-					console.log("TTTTEST");
-					return [ "1", "2", "3"]
-				}
+				]
 		}
 	});
 
