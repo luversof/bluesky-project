@@ -14,7 +14,7 @@ $(document).ready(function() {
 				colWidths : [100, 300],
 				columnSorting : true,
 				columns : [
-				    { data : "entryType", readOnly : true, type : 'dropdown', source : entryTypeList },
+				    { data : "entryType", readOnly : true, type : "dropdown", source : entryTypeList },
 					{ data : "name" }
 				],
 				cells : function (row, col, prop) {

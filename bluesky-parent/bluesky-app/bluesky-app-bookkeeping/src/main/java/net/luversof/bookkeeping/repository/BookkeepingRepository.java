@@ -7,5 +7,5 @@ import net.luversof.bookkeeping.domain.Bookkeeping;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface BookkeepingRepository extends JpaRepository<Bookkeeping, Long>{
-	List<Bookkeeping> findByUserId(Long userId);
+	List<Bookkeeping> findByUserId(long userId);
 }

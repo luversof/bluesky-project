@@ -33,7 +33,7 @@ public class BookkeepingService {
 	 * @return
 	 */
 	public Bookkeeping save(Bookkeeping bookkeeping) {
-		boolean isSave = bookkeeping.getId() == null;
+		boolean isSave = bookkeeping.getId() == 0;
 		bookkeepingRepository.save(bookkeeping);
 		if (isSave) {
 			assetService.initialDataSave(bookkeeping);

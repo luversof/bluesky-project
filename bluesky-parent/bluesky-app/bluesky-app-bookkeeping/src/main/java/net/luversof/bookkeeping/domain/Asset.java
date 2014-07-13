@@ -26,13 +26,13 @@ public class Asset {
 	@Id
 	@GeneratedValue
 	@NotNull(groups = Modify.class)
-	private Long id;
+	private long id;
 	
 	@NotEmpty(groups = { Add.class, Modify.class })
 	private String name;
 	
 	@NotNull(groups = { Add.class, Modify.class })
-	private Long amount;
+	private long amount;
 	
 	@JsonIgnore
 	@OneToOne

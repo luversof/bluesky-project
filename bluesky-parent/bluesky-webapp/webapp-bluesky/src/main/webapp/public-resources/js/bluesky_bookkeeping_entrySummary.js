@@ -5,12 +5,12 @@ $(document).ready(function() {
 		handsontableConfig : {
 				rowHeaders : true,
 				contextMenu : [ "remove_row" ],
-//				dataSchema: {id: null, name: null, userId: null},
+//				dataSchema : {id: null, name: null, userId: null},
 				colHeaders : [ "날짜", "금액", "분류", "메모" ],
 				colWidths : [ 120, 120, 80, 180 ],
 				columnSorting : true,
 				columns : [
-					{ data : "entryDate" },
+					{ data : "entryDate", type : "date" },
 					{ data : "amount" , type : "numeric", format : "0,0" },
 					{ data : "entryGroup.name", readOnly : true },
 					{ data : "memo" }

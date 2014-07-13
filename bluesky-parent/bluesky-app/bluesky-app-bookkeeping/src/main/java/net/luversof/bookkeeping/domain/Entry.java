@@ -10,6 +10,9 @@ import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
 import javax.validation.constraints.NotNull;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
+
 import lombok.Data;
 
 @Entity
@@ -20,7 +23,7 @@ public class Entry implements Serializable {
 	@Id
 	@GeneratedValue
 	@NotNull(groups = Modify.class)
-	private Long id;
+	private long id;
 	
 	@OneToOne
 	private Bookkeeping bookkeeping;
@@ -37,9 +40,10 @@ public class Entry implements Serializable {
 	private EntryGroup entryGroup;
 	
 	@NotNull(groups = { Add.class, Modify.class })
-	private Long amount;
+	private long amount;
 	
 	@NotNull(groups = { Add.class, Modify.class })
+	@JsonDeserialize(using = LocalDateDeserializer.class)
 	private LocalDate entryDate;
 	
 	private String memo;

@@ -133,12 +133,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		templateResolver.setSuffix(".html");
 		templateResolver.setTemplateMode("HTML5");
 		templateResolver.setCharacterEncoding(StandardCharsets.UTF_8.name());
-
-		if (ArrayUtils.contains(applicationContext.getEnvironment().getActiveProfiles(), "live")) {
-			templateResolver.setCacheable(true);
-		} else {
-			templateResolver.setCacheable(false);
-		}
+		templateResolver.setCacheable(ArrayUtils.contains(applicationContext.getEnvironment().getActiveProfiles(), "live"));
 		return templateResolver;
 	}
 

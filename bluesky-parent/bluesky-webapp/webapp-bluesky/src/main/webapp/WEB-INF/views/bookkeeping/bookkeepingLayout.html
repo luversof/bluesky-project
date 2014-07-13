@@ -3,8 +3,8 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="/layout/defaultLayout">
 <head>
-	<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery-handsontable/0.10.2/jquery.handsontable.full.min.js"></script>
-	<link rel="stylesheet" media="screen" href="//cdnjs.cloudflare.com/ajax/libs/jquery-handsontable/0.10.2/jquery.handsontable.full.css" />
+	<script type="text/javascript" th:src="${@environment.getProperty('url.handsontable.js')}"></script>
+	<link rel="stylesheet" media="screen" th:href="${@environment.getProperty('url.handsontable.css')}" />
 	<script type="text/javascript" th:src="@{/js/bluesky_bookkeeping_base.js}"></script>
 </head>
 <body>

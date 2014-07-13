@@ -4,8 +4,8 @@
 	layout:decorator="/bookkeeping/bookkeepingLayout">
 <head>
 	<!-- (s) jqueryui -->
-	<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
-	<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/jquery-ui.min.css" />
+	<script type="text/javascript" th:src="${@environment.getProperty('url.jquery-ui.js')}"></script>
+	<link rel="stylesheet" th:href="${@environment.getProperty('url.jquery-ui.css')}" />
 	<!-- (e) jqueryui -->
 	<script type="text/javascript" th:src="@{/js/bluesky_bookkeeping_entrySummary.js}"></script>
 </head>

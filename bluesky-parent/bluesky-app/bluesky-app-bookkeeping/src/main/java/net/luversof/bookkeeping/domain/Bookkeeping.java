@@ -17,13 +17,13 @@ public class Bookkeeping {
 	@Id
 	@GeneratedValue
 	@NotNull(groups = Modify.class)
-	private Long id;
+	private long id;
 
 	@NotEmpty(groups = { Add.class, Modify.class })
 	private String name;
 
 	@Column(name = "user_id")
-	private Long userId;
+	private long userId;
 
 	public interface Add {
 	};
