@@ -6,7 +6,7 @@
 	layout:decorator="/layout/defaultLayout">
 <div layout:fragment="content">
 	<div class="page-header">
-		<h1>Blog <small th:text="#{blog.menu.list}">list</small></h1>
+		<h1>Blog <small th:text="#{article.menu.list}">list</small></h1>
 	</div>
 	<table class="table">
 		<thead>
@@ -24,10 +24,11 @@
 				<td th:text="${article.articleCategory} ? ${article.articleCategory.name}">category</td>
 				<td><a th:href="@{'/blog/' + ${article.id}}" th:text="${article.title}">title</a></td>
 				<td th:text="${article.blog}">username</td>
-				<td th:text="${#dates.format(article.createdDate, 'yyyy-MM-dd')}">createdDate</td>
+				<!-- <td th:text="${#dates.format(article.createdDate, 'yyyy-MM-dd')}">createdDate</td> -->
+				<td th:text="${article.createdDate}">createdDate</td>
 			</tr>
 			<tr th:if="${!pageImpl.hasContent()}" class="text-center">
-				<td colspan="5" th:text="#{article.message.empty.content}">blog.message.empty.content</td>
+				<td colspan="5" th:text="#{article.message.empty.content}">article.message.empty.content</td>
 			</tr>
 		</tbody>
 		<tfoot>

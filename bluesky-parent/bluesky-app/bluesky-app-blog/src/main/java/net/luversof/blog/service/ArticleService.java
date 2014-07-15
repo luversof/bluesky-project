@@ -1,6 +1,7 @@
 package net.luversof.blog.service;
 
 import net.luversof.blog.domain.Article;
+import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.ArticleRepository;
 import net.luversof.core.BlueskyException;
 import net.luversof.jdbc.datasource.DataSource;
@@ -49,10 +50,10 @@ public class ArticleService {
 	}
 
 	@Transactional(readOnly = true)
-	public Page<Article> findAll(int page) {
+	public Page<Article> findByBlog(Blog blog, int page) {
 		Sort sort = new Sort(Sort.Direction.DESC, "id");
 		PageRequest pageRequest = new PageRequest(page, PAGE_SIZE, sort);
-		return articleRepository.findAll(pageRequest);
+		return articleRepository.findByBlog(blog, pageRequest);
 	}
 
 	public void delete(long id) {

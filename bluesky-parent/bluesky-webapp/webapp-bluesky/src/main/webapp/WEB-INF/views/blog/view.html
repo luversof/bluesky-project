@@ -11,19 +11,20 @@
 <body>
 	<div layout:fragment="content">
 		<div class="page-header">
-			<h1>Blog <small th:text="#{blog.menu.view}">view</small></h1>
+			<h1>Blog <small th:text="#{article.menu.view}">view</small></h1>
 		</div>
 		<article>
-			<h2 th:text="${blog.blogCategory} ? #{blog.message.title(${blog.title}, ${blog.blogCategory.name})} : ${blog.title}">title</h2>
-			<p><time pubdate="pubdate" th:text="${#dates.format(blog.createdDate, 'yyyy-MM-dd HH:mm:ss')}">createdDate</time></p>
+			<h2 th:text="${article.articleCategory} ? #{article.message.title(${article.title}, ${article.articleCategory.name})} : ${article.title}">title</h2>
+			<!-- <p><time pubdate="pubdate" th:text="${#dates.format(article.createdDate, 'yyyy-MM-dd HH:mm:ss')}">createdDate</time></p> -->
+			<p><time pubdate="pubdate" th:text="${article.createdDate}">createdDate</time></p>
 			<div class="panel panel-default">
-				<div class="panel-body" th:attr="data-blog-content=${blog.content}">content</div>
+				<div class="panel-body" th:attr="data-article-content=${article.content}">content</div>
 			</div>
 			<div class="text-center">
-				<a href="write" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blog.menu.write}">write</a>
-				<a th:if="${#authentication.name == blog.username}" th:href="@{'/blog/' + ${blog.id} + '/modify'}" class="btn btn-primary" th:text="#{blog.menu.modify}">modify</a>
-				<a th:if="${#authentication.name == blog.username}" class="btn btn-warning delete" th:attr="data-blog-id=${blog.id}" th:text="#{blog.menu.delete}">delete</a>
-				<a th:href="@{'/blog'}" class="btn btn-default" th:text="#{blog.menu.list}">list</a>
+				<a href="write" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{article.menu.write}">write</a>
+				<!-- <a th:if="${#authentication.name == article.username}" th:href="@{'/blog/' + ${article.id} + '/modify'}" class="btn btn-primary" th:text="#{article.menu.modify}">modify</a>
+				<a th:if="${#authentication.name == article.username}" class="btn btn-warning delete" th:attr="data-article-id=${article.id}" th:text="#{article.menu.delete}">delete</a> -->
+				<a th:href="@{'/blog'}" class="btn btn-default" th:text="#{article.menu.list}">list</a>
 			</div>
 		</article>
 		
@@ -38,7 +39,7 @@
 			  fjs.parentNode.insertBefore(js, fjs);
 			}(document, 'script', 'facebook-jssdk'));</script>
 			<div class="panel panel-default text-center">
-				<div class="fb-comments panel-body" th:attr="data-href='http://luversof.cafe24.com/blog/' + ${blog.id}" ></div>
+				<div class="fb-comments panel-body" th:attr="data-href='http://luversof.cafe24.com/blog/' + ${article.id}" ></div>
 			</div>
 			<!-- facebook 댓글은 나중에 고민하자, width 가변 문제 해결 필요  -->
 		</div>

@@ -46,10 +46,10 @@ public class BlogTest extends GeneralTest {
 		ArticleCategory articleCategory = blogCategoryService.findOne(1);
 		article.setArticleCategory(articleCategory);
 
-		Article savedBlog = articleService.save(article);
-		log.debug("blog : {}", article);
-		log.debug("savedBlog : {}", savedBlog);
-		log.debug("savedBlog : {}", savedBlog.getId());
+		Article savedArticle = articleService.save(article);
+		log.debug("article : {}", article);
+		log.debug("savedBlog : {}", savedArticle);
+		log.debug("savedBlog : {}", savedArticle.getId());
 	}
 	
 	@Test
@@ -63,9 +63,9 @@ public class BlogTest extends GeneralTest {
 	@Test
 //	@Ignore
 	public void selectPaging테스트() {
-		Page<Article> blogList = articleService.findAll(0);
-		log.debug("blogList : {}", blogList);
-		log.debug("blogList : {}", blogList.getContent());
+//		Page<Article> blogList = articleService.findAll(0);
+//		log.debug("blogList : {}", blogList);
+//		log.debug("blogList : {}", blogList.getContent());
 	}
 	
 //	@Test
