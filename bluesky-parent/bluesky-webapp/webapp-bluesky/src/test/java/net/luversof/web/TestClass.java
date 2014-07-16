@@ -1,29 +1,33 @@
 package net.luversof.web;
 
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.data.jpa.DataJpaConfig;
+import net.luversof.blog.repository.BlogRepository;
+import net.luversof.jdbc.datasource.DataSourceContextHolder;
+import net.luversof.jdbc.datasource.DataSourceType;
+import net.luversof.user.repository.UserRepository;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
-@WebAppConfiguration
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes={DataJpaConfig.class})
-public class TestClass {
+public class TestClass extends GeneralTest {
 	
 	@Autowired
-	private ApplicationContext ctx;
+	private BlogRepository blogRepository;
+	
+	@Autowired
+	private UserRepository userRepository;
 
 	@Test
-	@Ignore
+	@Transactional
 	public void test(){
-		log.debug("ctx : {}", ctx);
+		DataSourceContextHolder.setDataSourceType(DataSourceType.SECURITY);
+		log.debug("datasource : {}", DataSourceContextHolder.getDataSourceType());
+		userRepository.findByUsername("bluesky");
+		
+		log.debug("user : {}", userRepository.findByUsername("bluesky"));
 	}
 }

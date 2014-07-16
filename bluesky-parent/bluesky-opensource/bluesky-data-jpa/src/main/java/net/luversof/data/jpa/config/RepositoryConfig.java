@@ -51,7 +51,6 @@ public class RepositoryConfig {
 		entityManagerFactoryBean.setJpaVendorAdapter(jpaVendorAdapter);
 		entityManagerFactoryBean.setJpaProperties(jpaProperties);
 		entityManagerFactoryBean.setPackagesToScan(packagesToScan);
-		entityManagerFactoryBean.afterPropertiesSet();
 		return entityManagerFactoryBean;
 	}
 

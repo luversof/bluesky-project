@@ -22,12 +22,12 @@ public class JdbcTest extends GeneralTest {
 
 	@Test
 	public void test() {
-		DataSourceContextHolder.setDataSourceType(DataSourceType.BOOKKEEPING);
 		DataSourceContextHolder.setDataSourceType(DataSourceType.BLOG);
+		DataSourceContextHolder.setDataSourceType(DataSourceType.BOOKKEEPING);
 		Connection connection;
 		try {
 			connection = routingDataSource.getConnection();
-			PreparedStatement pstmt = connection.prepareStatement("SELECT * FROM Blog");
+			PreparedStatement pstmt = connection.prepareStatement("SELECT * FROM bookkeeping");
 			ResultSet resultSet = pstmt.executeQuery();
 			log.debug("resultSet : {}", resultSet);
 			resultSet.next();

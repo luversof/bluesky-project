@@ -61,11 +61,13 @@ public class DataSourceAspect {
 	
 	@After("classPointcut()")
 	public void afterClassPointcut(JoinPoint joinPoint) {
+		log.debug("classPointcut clear");
 		DataSourceContextHolder.clearDataSourceType();
 	}
 	
 	@After("methodPointcut()")
 	public void afterMethodPointcut(JoinPoint joinPoint) {
+		log.debug("methodPointcut clear");
 		DataSourceContextHolder.clearDataSourceType();
 	}
 }

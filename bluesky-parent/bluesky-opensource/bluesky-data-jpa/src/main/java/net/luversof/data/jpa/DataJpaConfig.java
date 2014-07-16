@@ -12,11 +12,11 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-@Configuration
 @ComponentScan
+@Configuration
 @Import({ BlueskyCoreConfig.class, JdbcConfig.class })
 @EnableJpaRepositories(basePackages = "net.luversof")
-@EnableTransactionManagement(proxyTargetClass = true)
+@EnableTransactionManagement
 @EnableJpaAuditing
 @PropertySource(name = "jpaProp", value = "classpath:config/data-jpa-${spring.profiles.active}.properties")
 public class DataJpaConfig {
