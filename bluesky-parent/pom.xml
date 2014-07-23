@@ -67,7 +67,7 @@
 			<dependency>
 				<groupId>org.codehaus.janino</groupId>
 				<artifactId>janino</artifactId>
-				<version>2.7.4</version>
+				<version>2.7.5</version>
 			</dependency>
 			<!-- (e) log -->
 
@@ -112,12 +112,12 @@
 			<dependency>
 				<groupId>org.hibernate</groupId>
 				<artifactId>hibernate-core</artifactId>
-				<version>4.3.5.Final</version>
+				<version>4.3.6.Final</version>
 			</dependency>
 			<dependency>
 				<groupId>org.hibernate</groupId>
 				<artifactId>hibernate-entitymanager</artifactId>
-				<version>4.3.5.Final</version>
+				<version>4.3.6.Final</version>
 			</dependency>
 			<dependency>
 				<groupId>org.hibernate</groupId>

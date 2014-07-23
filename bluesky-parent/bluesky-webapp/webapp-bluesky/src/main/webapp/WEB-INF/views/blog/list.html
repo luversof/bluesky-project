@@ -6,7 +6,7 @@
 	layout:decorator="/layout/defaultLayout">
 <div layout:fragment="content">
 	<div class="page-header">
-		<h1>Blog <small th:text="#{article.menu.list}">list</small></h1>
+		<h1>Blog <small th:text="#{blog.menu.list}">list</small></h1>
 	</div>
 	<table class="table">
 		<thead>
@@ -38,7 +38,7 @@
 						<li th:each="i : ${#numbers.sequence(startPage, endPage)}" th:class="${i == currentPage} ? 'active'"><a th:href="@{/blog(page=${i})}" th:text="${i}">?</a></li>
 					</ul>
 					<br />
-					<a th:href="@{'/blog/write'}" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{article.menu.write}">write</a>
+					<a th:href="@{'/blog/write'}" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blog.menu.write}">write</a>
 				</td>
 			</tr>
 		</tfoot>

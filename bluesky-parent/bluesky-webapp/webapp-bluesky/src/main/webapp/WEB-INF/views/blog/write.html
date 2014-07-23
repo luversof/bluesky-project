@@ -25,13 +25,13 @@
 		</div>
 		<form class="form-horizontal write" th:action="@{./}" method="post">
 			<div class="form-group">
-				<label class="col-lg-2 control-label" for="title" th:text="#{blog.text.title}">title</label>
+				<label class="col-lg-2 control-label" for="title" th:text="#{article.text.title}">title</label>
 				<div class="col-lg-6">
-					<input class="form-control" type="text" name="title" id="title" th:placeholder="#{blog.text.title}" />
+					<input class="form-control" type="text" name="title" id="title" th:placeholder="#{article.text.title}" />
 				</div>
 			</div>
 			<div class="form-group" th:if="${blogCategoryList}">
-				<label class="col-lg-2 control-label" for="blogCategory.id" th:text="#{blog.text.category}">category</label>
+				<label class="col-lg-2 control-label" for="blogCategory.id" th:text="#{article.text.category}">category</label>
 				<div class="col-lg-6">
 					<select id="blogCategory.id" name="blogCategory.id" class="form-control">
 						<option th:each="blogCategory : ${blogCategoryList}" th:value="${blogCategory.id}" th:text="${blogCategory.name}">category</option>
@@ -39,7 +39,7 @@
 				</div>
 			</div>
 			<div class="form-group">
-				<label class="col-lg-2 control-label" for="content" th:text="#{blog.text.content}">content</label>
+				<label class="col-lg-2 control-label" for="content" th:text="#{article.text.content}">content</label>
 				<div class="col-lg-6">
 					<div id="wysihtml5-toolbar" style="display: none;">
 						<a data-wysihtml5-command="bold">bold</a>
@@ -61,7 +61,7 @@
 						<a data-wysihtml5-action="change_view" title="Show HTML" class="action">show html</a>
 					</div>
 
-					<textarea class="form-control" rows="13" name="content" id="content" th:placeholder="#{blog.text.content}"></textarea>
+					<textarea class="form-control" rows="13" name="content" id="content" th:placeholder="#{article.text.content}"></textarea>
 					<br />
 					<div class="text-center">
 						<button class="btn btn-primary submit" type="button" th:text="#{blog.menu.save}">save</button>
