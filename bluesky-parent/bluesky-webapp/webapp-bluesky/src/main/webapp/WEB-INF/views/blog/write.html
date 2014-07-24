@@ -30,11 +30,11 @@
 					<input class="form-control" type="text" name="title" id="title" th:placeholder="#{article.text.title}" />
 				</div>
 			</div>
-			<div class="form-group" th:if="${blogCategoryList}">
-				<label class="col-lg-2 control-label" for="blogCategory.id" th:text="#{article.text.category}">category</label>
+			<div class="form-group" th:if="${articleCategoryList}">
+				<label class="col-lg-2 control-label" for="articleCategory.id" th:text="#{article.text.category}">category</label>
 				<div class="col-lg-6">
-					<select id="blogCategory.id" name="blogCategory.id" class="form-control">
-						<option th:each="blogCategory : ${blogCategoryList}" th:value="${blogCategory.id}" th:text="${blogCategory.name}">category</option>
+					<select id="articleCategory.id" name="articleCategory.id" class="form-control">
+						<option th:each="articleCategory : ${articleCategoryList}" th:value="${articleCategory.id}" th:text="${articleCategory.name}">category</option>
 					</select>
 				</div>
 			</div>

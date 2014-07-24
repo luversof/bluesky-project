@@ -25,6 +25,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
  * 소유한 Blog가 1개라는 가정으로 처리
@@ -89,7 +90,7 @@ public class ArticleController {
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[blog].username == authentication.name")
+	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[article].blog.userId == authentication.principal.id")
 	@RequestMapping("/{id}/modify")
 	public String modifyPage(Authentication authentication, @Validated(Get.class) Article article, ModelMap modelMap) {
 		modelMap.addAttribute(articleService.findOne(article.getId()));
@@ -99,19 +100,21 @@ public class ArticleController {
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-	public void save(Authentication authentication, @Validated(Save.class) Article article, ModelMap modelMap) {
+	@ResponseBody
+	public long save(Authentication authentication, @Validated(Save.class) Article article, ModelMap modelMap) {
 		if (article.getArticleCategory() != null && article.getArticleCategory().getId() != 0) {
 			article.setArticleCategory(articleCategoryService.findOne(article.getArticleCategory().getId()));
 		}
 		article.setBlog(getBlog(authentication));
-		modelMap.addAttribute("result", articleService.save(article).getId());
+		return articleService.save(article).getId();
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-	public void modify(Authentication authentication, @Validated(Modify.class) Article article, ModelMap modelMap) {
+	@ResponseBody
+	public long modify(Authentication authentication, @Validated(Modify.class) Article article, ModelMap modelMap) {
 		article.setBlog(getBlog(authentication));
-		modelMap.addAttribute("result", articleService.update(article).getId());
+		return articleService.update(article).getId();
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)

@@ -28,7 +28,7 @@ $(document).ready(function() {
 			, remove : function() {
 				$.ajax({
 					type : "delete"
-					, url : "/blog/" + $("[data-blog-id]").attr("data-blog-id")
+					, url : "/blog/" + $("[data-article-id]").attr("data-article-id")
 					, dataType : "json"
 					, success : function(data) {
 						location.href = "/blog/";
@@ -50,8 +50,8 @@ $(document).ready(function() {
 	/**
 	 * data-blog-content attribute가 선언된 태그의 안에 해당 content 삽입 처리
 	 */
-	$("[data-blog-content]").each(function() {
-		$(this).html($(this).attr("data-blog-content"));
+	$("[data-article-content]").each(function() {
+		$(this).html($(this).attr("data-article-content"));
 	});
 	
 	$("button.btn.cancel").on("click", function() {
