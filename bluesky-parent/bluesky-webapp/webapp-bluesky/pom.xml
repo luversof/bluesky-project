@@ -15,6 +15,8 @@
 			<artifactId>javax.servlet-api</artifactId>
 		</dependency>
 		<!-- (e) provided -->
+		
+		<!-- (s) bluesky -->
 		<dependency>
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-app-blog</artifactId>
@@ -30,39 +32,30 @@
 			<artifactId>bluesky-security</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
+		<!-- (e) bluesky -->
 
-		<dependency>
-			<groupId>com.fasterxml.jackson.datatype</groupId>
-			<artifactId>jackson-datatype-jsr310</artifactId>
-		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 		</dependency>
-		<!-- <dependency> <groupId>org.codehaus.jackson</groupId> <artifactId>jackson-mapper-asl</artifactId> 
-			</dependency> -->
-
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-webmvc</artifactId>
-		</dependency>
-		<!-- <dependency> <groupId>org.springframework.data</groupId> <artifactId>spring-data-rest-webmvc</artifactId> 
-			</dependency> -->
 
 		<!-- (s) template engine -->
-		<dependency>
-			<groupId>org.thymeleaf</groupId>
-			<artifactId>thymeleaf-spring4</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>nz.net.ultraq.thymeleaf</groupId>
-			<artifactId>thymeleaf-layout-dialect</artifactId>
-		</dependency>
 		<dependency>
 			<groupId>org.thymeleaf.extras</groupId>
 			<artifactId>thymeleaf-extras-springsecurity3</artifactId>
 		</dependency>
 		<!-- (s) template engine -->
+
+		<!-- (s) spring-boot -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+		</dependency>
+		<!-- (e) spring-boot -->
 
 	</dependencies>
 </project>

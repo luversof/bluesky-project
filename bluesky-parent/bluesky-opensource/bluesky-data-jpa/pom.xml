@@ -31,8 +31,6 @@
 			<groupId>org.springframework.data</groupId>
 			<artifactId>spring-data-jpa</artifactId>
 		</dependency>
-		<!-- <dependency> <groupId>org.springframework.data</groupId> <artifactId>spring-data-rest-repository</artifactId> 
-			</dependency> -->
 		<!-- (e) springframework -->
 
 		<!-- (s) encryption -->

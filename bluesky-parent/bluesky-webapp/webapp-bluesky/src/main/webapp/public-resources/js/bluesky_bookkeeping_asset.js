@@ -10,7 +10,7 @@ $(document).ready(function() {
 				colWidths : [100, 200, 80],
 				columnSorting : true,
 				columns : [
-					{ data : "assetType", type : 'dropdown', source : assetTypeList },
+					{ data : "assetType", type : "dropdown", source : assetTypeList },
 					{ data : "name" },
 					{ data : "amount", readOnly : true, type : "numeric" }
 				],
