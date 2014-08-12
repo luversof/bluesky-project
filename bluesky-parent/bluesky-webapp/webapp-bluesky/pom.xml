@@ -15,7 +15,7 @@
 			<artifactId>javax.servlet-api</artifactId>
 		</dependency>
 		<!-- (e) provided -->
-		
+
 		<!-- (s) bluesky -->
 		<dependency>
 			<groupId>net.luversof</groupId>
@@ -58,4 +58,17 @@
 		<!-- (e) spring-boot -->
 
 	</dependencies>
+	
+	<properties>
+		<start-class>net.luversof.web.config.Application</start-class>
+	</properties>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
 </project>
