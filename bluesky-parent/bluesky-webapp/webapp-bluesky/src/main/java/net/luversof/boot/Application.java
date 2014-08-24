@@ -1,13 +1,13 @@
-package net.luversof.web.config;
+package net.luversof.boot;
 
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
+@Configuration
 @EnableAutoConfiguration
-//@Configuration
-//@ComponentScan
+@ComponentScan
 public class Application {
 
     public static void main(String[] args) throws Throwable {

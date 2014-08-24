@@ -14,7 +14,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<spring.version>4.0.6.RELEASE</spring.version>
-		<spring.security.version>3.2.4.RELEASE</spring.security.version>
+		<spring.security.version>3.2.5.RELEASE</spring.security.version>
 		<querydsl.version>3.4.2</querydsl.version>
 	</properties>
 	<dependencyManagement>

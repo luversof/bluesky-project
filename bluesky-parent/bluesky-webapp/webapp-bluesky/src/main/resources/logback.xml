@@ -21,7 +21,7 @@
 		</encoder>
 	</appender>
 
-	<logger name="org.springframework" level="debug"/>
+	<logger name="org.springframework" level="info"/>
 	<logger name="org.springframework.aop.interceptor" level="warn" />
 	<logger name="org.springframework.security" level="warn" />
 	<logger name="org.springframework.ldap" level="warn" />
