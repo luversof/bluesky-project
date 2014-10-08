@@ -31,6 +31,8 @@ public class JdbcConfig {
 	@Value("${dataSource.mysql.driverClassName}")
 	private String mysqlDriverClassName;
 	
+	@Value("${dataSource.bookkeeping.password}") String passwordtest;
+	
 	private HikariConfig defaultConfig() {
 		HikariConfig hikariConfig = new HikariConfig();
 		hikariConfig.setMaximumPoolSize(15);

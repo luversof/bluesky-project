@@ -32,6 +32,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
+import org.springframework.web.servlet.config.annotation.ViewResolverRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
@@ -91,39 +92,54 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 	}
 	
 	
-	@Bean
-	public ContentNegotiatingViewResolver contentNegotiatingViewResolver() {
-		ContentNegotiatingViewResolver viewResolver = new ContentNegotiatingViewResolver();
-
-		// 확장자 기준 결정
-		Map<String, MediaType> mediaTypes = new HashMap<String, MediaType>();
-		mediaTypes.put("html", MediaType.TEXT_HTML);
-		mediaTypes.put("json", MediaType.APPLICATION_JSON);
-		ContentNegotiationStrategy pathExtensionContentNegotiationStrategy = new PathExtensionContentNegotiationStrategy(mediaTypes);
-
-		// 헤더값 기준 결정
-		ContentNegotiationStrategy headerContentNegotiationStrategy = new HeaderContentNegotiationStrategy();
-
-		/* order에 따라 우선순위 결정되므로 순서 주의 */
-		ContentNegotiationManager contentNegotiationManager = new ContentNegotiationManager(pathExtensionContentNegotiationStrategy, headerContentNegotiationStrategy);
-		viewResolver.setContentNegotiationManager(contentNegotiationManager);
-
-		List<ViewResolver> viewResolvers = new ArrayList<ViewResolver>();
-		viewResolvers.add(thymeleafViewResolver());
-		viewResolver.setViewResolvers(viewResolvers);
-
-		List<View> defaultViews = new ArrayList<View>();
+	@Override
+	public void configureViewResolvers(ViewResolverRegistry registry) {
+		registry.viewResolver(thymeleafViewResolver());
+		
 		MappingJackson2JsonView mappingJackson2JsonView = new MappingJackson2JsonView();
 		mappingJackson2JsonView.setExtractValueFromSingleKeyModel(true);
 		mappingJackson2JsonView.setModelKey(JSON_MODEL_KEY);
 		ObjectMapper objectMapper = mappingJackson2JsonView.getObjectMapper();
 		objectMapper.registerModule(new JSR310Module());
 		objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
-		defaultViews.add(mappingJackson2JsonView);
-
-		viewResolver.setDefaultViews(defaultViews);
-		return viewResolver;
+		registry.enableContentNegotiation(mappingJackson2JsonView);
+		
+		super.configureViewResolvers(registry);
 	}
+
+//	@Bean
+//	public ContentNegotiatingViewResolver contentNegotiatingViewResolver() {
+//		ContentNegotiatingViewResolver viewResolver = new ContentNegotiatingViewResolver();
+//
+//		// 확장자 기준 결정
+//		Map<String, MediaType> mediaTypes = new HashMap<String, MediaType>();
+//		mediaTypes.put("html", MediaType.TEXT_HTML);
+//		mediaTypes.put("json", MediaType.APPLICATION_JSON);
+//		ContentNegotiationStrategy pathExtensionContentNegotiationStrategy = new PathExtensionContentNegotiationStrategy(mediaTypes);
+//
+//		// 헤더값 기준 결정
+//		ContentNegotiationStrategy headerContentNegotiationStrategy = new HeaderContentNegotiationStrategy();
+//
+//		/* order에 따라 우선순위 결정되므로 순서 주의 */
+//		ContentNegotiationManager contentNegotiationManager = new ContentNegotiationManager(pathExtensionContentNegotiationStrategy, headerContentNegotiationStrategy);
+//		viewResolver.setContentNegotiationManager(contentNegotiationManager);
+//
+//		List<ViewResolver> viewResolvers = new ArrayList<ViewResolver>();
+//		viewResolvers.add(thymeleafViewResolver());
+//		viewResolver.setViewResolvers(viewResolvers);
+//
+//		List<View> defaultViews = new ArrayList<View>();
+//		MappingJackson2JsonView mappingJackson2JsonView = new MappingJackson2JsonView();
+//		mappingJackson2JsonView.setExtractValueFromSingleKeyModel(true);
+//		mappingJackson2JsonView.setModelKey(JSON_MODEL_KEY);
+//		ObjectMapper objectMapper = mappingJackson2JsonView.getObjectMapper();
+//		objectMapper.registerModule(new JSR310Module());
+//		objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
+//		defaultViews.add(mappingJackson2JsonView);
+//
+//		viewResolver.setDefaultViews(defaultViews);
+//		return viewResolver;
+//	}
 
 	@Bean
 	public ServletContextTemplateResolver templateResolver() {
