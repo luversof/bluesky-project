@@ -28,7 +28,12 @@
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 		<!-- (e) spring-boot -->
-		
+
+		<dependency>
+			<groupId>org.springframework.security.oauth</groupId>
+			<artifactId>spring-security-oauth2</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-app-user</artifactId>

@@ -100,7 +100,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		mappingJackson2JsonView.setExtractValueFromSingleKeyModel(true);
 		mappingJackson2JsonView.setModelKey(JSON_MODEL_KEY);
 		ObjectMapper objectMapper = mappingJackson2JsonView.getObjectMapper();
-		objectMapper.registerModule(new JSR310Module());
+		//objectMapper.registerModule(new JSR310Module());
 		objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
 		registry.enableContentNegotiation(mappingJackson2JsonView);
 		
