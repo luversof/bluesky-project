@@ -8,6 +8,28 @@
 		<br />
 		<div class="well">	
 			웰컴
+			<script type="text/javascript">
+			/* $.ajax({
+				url : "https://github.com/login/oauth/access_token",
+				header : ""
+				data : {
+					client_id : "5ce0e9ac811fd9c04543",
+					client_secret : "b280853a74e6ae138ac23805092ddca670624ac9",
+					code : "7abb7dc69b2ea0cbb10c"
+				},
+				success : function(data, textStatus, jqXHR) {
+					console.log(data);
+					console.log(textStatus);
+					console.log(jqXHR);
+				}
+			}); */
+			</script>
+			<form action="https://github.com/login/oauth/access_token" method="post">
+				<input type="text" name="client_id" value="5ce0e9ac811fd9c04543" />
+				<input type="text" name="client_secret" value="b280853a74e6ae138ac23805092ddca670624ac9" />
+				<input type="text" name="code" value="7abb7dc69b2ea0cbb10c" />
+				<input type="submit" />
+			</form>
 		</div>
 	</div>
 </body>

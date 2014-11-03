@@ -9,6 +9,7 @@ import net.luversof.blog.BlogConfig;
 import net.luversof.bookkeeping.BookkeepingConfig;
 import net.luversof.core.BlueskyApplicationContextInitializer;
 import net.luversof.security.SecurityConfig;
+import net.luversof.security.filter.CorsFilter;
 import net.luversof.web.BlueskyWebConfig;
 
 import org.springframework.orm.jpa.support.OpenEntityManagerInViewFilter;
@@ -45,6 +46,6 @@ public class DispatcherServletInitializer extends AbstractAnnotationConfigDispat
 		CharacterEncodingFilter characterEncodingFilter = new CharacterEncodingFilter();
 		characterEncodingFilter.setEncoding(StandardCharsets.UTF_8.name());
 		characterEncodingFilter.setForceEncoding(true);
-		return new Filter[] { characterEncodingFilter, new HiddenHttpMethodFilter(), new HttpPutFormContentFilter()/*, new OpenEntityManagerInViewFilter()*/ };
+		return new Filter[] { characterEncodingFilter, new HiddenHttpMethodFilter(), new HttpPutFormContentFilter()/*, new OpenEntityManagerInViewFilter()*/, new CorsFilter() };
 	}
 }
