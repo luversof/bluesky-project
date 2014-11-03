@@ -16,6 +16,7 @@ import org.springframework.security.oauth2.provider.authentication.OAuth2Authent
 import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.web.filter.RequestContextFilter;
 
@@ -28,8 +29,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	@Autowired
 	private UserDetailsService userDetailsService;
 	
-//	@Autowired
-//	private OAuth2ClientAuthenticationProcessingFilter oAuth2ClientAuthenticationProcessingFilter;
+	@Autowired
+	private OAuth2ClientAuthenticationProcessingFilter oAuth2ClientAuthenticationProcessingFilter;
 	
 	@Autowired
 	private OAuth2ClientContextFilter oAuth2ClientContextFilter;
@@ -59,8 +60,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 			.and()
 //			.addFilterBefore(new OAuth2ClientContextFilter(), UsernamePasswordAuthenticationFilter.class)
 			.addFilterBefore(new RequestContextFilter(), SecurityContextPersistenceFilter.class)
-			.addFilterAfter(oAuth2ClientContextFilter, ExceptionTranslationFilter.class)
-//			.addFilterAfter(oAuth2ClientAuthenticationProcessingFilter, ExceptionTranslationFilter.class)
+			.addFilterAfter(oAuth2ClientContextFilter, BasicAuthenticationFilter.class)
+			.addFilterAfter(oAuth2ClientAuthenticationProcessingFilter, BasicAuthenticationFilter.class)
 //			.addFilterAfter(oAuth2AuthenticationProcessingFilter, ExceptionTranslationFilter.class)
 			.logout().logoutSuccessHandler(logoutSuccessHandler).and()
 			.formLogin().loginPage("/login").and()

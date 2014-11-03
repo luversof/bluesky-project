@@ -45,8 +45,9 @@ public class OAuth2ClientConfig {
 		details.setClientSecret("b280853a74e6ae138ac23805092ddca670624ac9");
 		details.setAccessTokenUri("https://github.com/login/oauth/access_token");
 		details.setUserAuthorizationUri("https://github.com/login/oauth/authorize");
+		details.setPreEstablishedRedirectUri("http://localhost:8081/oauth/authorizeResult");
 		details.setScope(Arrays.asList("read"));
-		details.setAuthenticationScheme(AuthenticationScheme.query);
+		details.setAuthenticationScheme(AuthenticationScheme.form);
 		details.setTokenName("access_token");
 		details.setGrantType("authorization_code");
 		details.setClientAuthenticationScheme(AuthenticationScheme.form);
@@ -60,11 +61,11 @@ public class OAuth2ClientConfig {
 //		return new OAuth2RestTemplate(oAuth2ProtectedResourceDetails(), new DefaultOAuth2ClientContext(accessTokenRequest));
 	}
 	
-//	@Bean
+	@Bean
 	public OAuth2ClientAuthenticationProcessingFilter oAuth2ClientAuthenticationProcessingFilter() {
 		OAuth2ClientAuthenticationProcessingFilter oAuth2ClientAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauthLogin");
 		oAuth2ClientAuthenticationProcessingFilter.setRestTemplate(oAuth2RestTemplate());
-		oAuth2ClientAuthenticationProcessingFilter.setRequiresAuthenticationRequestMatcher(new AntPathRequestMatcher("/oauth/authorize"));
+		oAuth2ClientAuthenticationProcessingFilter.setRequiresAuthenticationRequestMatcher(new AntPathRequestMatcher("/oauth/authorizeResult"));
 		return oAuth2ClientAuthenticationProcessingFilter;
 	}
 	
