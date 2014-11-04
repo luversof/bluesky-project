@@ -4,12 +4,12 @@ import static net.luversof.core.Constants.JSON_MODEL_KEY;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.bookkeeping.service.EntryService;
+import net.luversof.security.core.userdetails.LuversofUser;
 import net.luversof.web.AuthorizeRole;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.LuversofUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;

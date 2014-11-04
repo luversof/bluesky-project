@@ -39,6 +39,7 @@ public class JdbcConfig {
 		hikariConfig.setConnectionTimeout(1000);
 		hikariConfig.setInitializationFailFast(true);
 		hikariConfig.setConnectionTestQuery("SELECT 1");
+		hikariConfig.setInitializationFailFast(false);
 		return hikariConfig;
 	}
 	
@@ -51,6 +52,7 @@ public class JdbcConfig {
 		hikariConfig.setPassword(password);
 		hikariConfig.addDataSourceProperty("serverName", serverName);
 		hikariConfig.addDataSourceProperty("port", port);
+		hikariConfig.setInitializationFailFast(false);
 		return new HikariDataSource(hikariConfig);
 	}
 
@@ -63,6 +65,7 @@ public class JdbcConfig {
 		hikariConfig.setPassword(password);
 		hikariConfig.addDataSourceProperty("serverName", serverName);
 		hikariConfig.addDataSourceProperty("port", port);
+		hikariConfig.setInitializationFailFast(false);
 		return new HikariDataSource(hikariConfig);
 	}
 
@@ -75,6 +78,7 @@ public class JdbcConfig {
 		hikariConfig.setPassword(password);
 		hikariConfig.addDataSourceProperty("serverName", serverName);
 		hikariConfig.addDataSourceProperty("port", port);
+		hikariConfig.setInitializationFailFast(false);
 		return new HikariDataSource(hikariConfig);
 	}
 

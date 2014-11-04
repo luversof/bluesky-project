@@ -1,4 +1,4 @@
-package net.luversof.security.config;
+package net.luversof.security.oauth2.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;

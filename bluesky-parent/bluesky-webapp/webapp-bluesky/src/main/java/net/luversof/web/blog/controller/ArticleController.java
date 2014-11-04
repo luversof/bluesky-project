@@ -9,6 +9,7 @@ import net.luversof.blog.service.ArticleCategoryService;
 import net.luversof.blog.service.ArticleService;
 import net.luversof.blog.service.BlogService;
 import net.luversof.core.BlueskyException;
+import net.luversof.security.core.userdetails.LuversofUser;
 import net.luversof.user.service.UserService;
 import net.luversof.web.AuthorizeRole;
 
@@ -18,7 +19,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.LuversofUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.annotation.Validated;

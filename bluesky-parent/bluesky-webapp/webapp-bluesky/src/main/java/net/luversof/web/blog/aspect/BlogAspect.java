@@ -6,13 +6,13 @@ import lombok.extern.slf4j.Slf4j;
 import net.luversof.blog.domain.Article;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.service.BlogService;
+import net.luversof.security.core.userdetails.LuversofUser;
 
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.LuversofUser;
 import org.springframework.stereotype.Component;
 
 /**

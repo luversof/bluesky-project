@@ -1,8 +1,10 @@
-package net.luversof.security.config;
+package net.luversof.security.oauth2.config;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Map;
+
+import net.luversof.security.oauth2.provider.token.GithubAccessTokenConverter;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -53,7 +55,7 @@ public class OAuth2ClientConfig {
 //	private AccessTokenRequest accessTokenRequest;
 	
 	@Bean
-	public OAuth2ProtectedResourceDetails oAuth2ProtectedResourceDetails() {
+	public OAuth2ProtectedResourceDetails githubResourceDetails() {
 		AuthorizationCodeResourceDetails details = new AuthorizationCodeResourceDetails();
 		details.setId("github");
 		details.setClientId("5ce0e9ac811fd9c04543");
@@ -70,15 +72,15 @@ public class OAuth2ClientConfig {
 	
 	@Bean
 //	@Scope(value = "session", proxyMode = ScopedProxyMode.INTERFACES)
-	public OAuth2RestTemplate oAuth2RestTemplate() {
-		return new OAuth2RestTemplate(oAuth2ProtectedResourceDetails(), oAuth2ClientContext);
+	public OAuth2RestTemplate githubRestTemplate() {
+		return new OAuth2RestTemplate(githubResourceDetails(), oAuth2ClientContext);
 //		return new OAuth2RestTemplate(oAuth2ProtectedResourceDetails(), new DefaultOAuth2ClientContext(accessTokenRequest));
 	}
 	
 	@Bean
 	public OAuth2ClientAuthenticationProcessingFilter oAuth2ClientAuthenticationProcessingFilter() {
 		OAuth2ClientAuthenticationProcessingFilter oAuth2ClientAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/authorizeResult");
-		oAuth2ClientAuthenticationProcessingFilter.setRestTemplate(oAuth2RestTemplate());
+		oAuth2ClientAuthenticationProcessingFilter.setRestTemplate(githubRestTemplate());
 		oAuth2ClientAuthenticationProcessingFilter.setTokenServices(remoteTokenServices());
 		return oAuth2ClientAuthenticationProcessingFilter;
 	}
@@ -94,9 +96,10 @@ public class OAuth2ClientConfig {
 	
 	@Bean
 	public RemoteTokenServices remoteTokenServices() {
-		AccessTokenConverter tokenConverter = new DefaultAccessTokenConverter();
+		AccessTokenConverter accessTokenConverter = new GithubAccessTokenConverter();
 		String clientId = "5ce0e9ac811fd9c04543";
 		String clientSecret = "b280853a74e6ae138ac23805092ddca670624ac9";
+		String checkTokenEndpointUrl = "https://api.github.com/applications/{clientId}/tokens/{accessToken}";
 		
 		RemoteTokenServices remoteTokenServices = new RemoteTokenServices() {
 
@@ -115,8 +118,8 @@ public class OAuth2ClientConfig {
 				if (headers.getContentType() == null) {
 					headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 				}
-				@SuppressWarnings("rawtypes")
-				Map map = oAuth2RestTemplate().exchange("https://api.github.com/applications/{clientId}/tokens/{accessToken}", HttpMethod.POST,
+				@SuppressWarnings("unchecked")
+				Map<String, Object> map = githubRestTemplate().exchange(checkTokenEndpointUrl, HttpMethod.GET,
 						new HttpEntity<MultiValueMap<String, String>>(formData, headers), Map.class, clientId, accessToken).getBody();
 				
 				if (map.containsKey("error")) {
@@ -125,14 +128,15 @@ public class OAuth2ClientConfig {
 				}
 
 				//Assert.state(map.containsKey("client_id"), "Client id must be present in response from auth server");
-				return tokenConverter.extractAuthentication(map);
+				return accessTokenConverter.extractAuthentication(map);
 			}
 			
 		};
-		remoteTokenServices.setRestTemplate(oAuth2RestTemplate());
-		remoteTokenServices.setClientId("5ce0e9ac811fd9c04543");
-		remoteTokenServices.setClientSecret("b280853a74e6ae138ac23805092ddca670624ac9");
-		remoteTokenServices.setCheckTokenEndpointUrl("https://api.github.com/authorizations/{clientId}/tokens/{accessToken}");
+		remoteTokenServices.setRestTemplate(githubRestTemplate());
+		remoteTokenServices.setClientId(clientId);
+		remoteTokenServices.setClientSecret(clientSecret);
+		remoteTokenServices.setCheckTokenEndpointUrl(checkTokenEndpointUrl);
+		remoteTokenServices.setAccessTokenConverter(accessTokenConverter);
 		return remoteTokenServices;
 	}
 	

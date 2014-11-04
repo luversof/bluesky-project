@@ -1,4 +1,4 @@
-package org.springframework.security.core.userdetails;
+package net.luversof.security.core.userdetails;
 
 import java.util.Set;
 
@@ -7,6 +7,7 @@ import lombok.Data;
 
 import org.springframework.security.core.CredentialsContainer;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @Data
 @AllArgsConstructor
