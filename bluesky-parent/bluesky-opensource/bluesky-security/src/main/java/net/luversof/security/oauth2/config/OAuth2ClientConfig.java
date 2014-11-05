@@ -38,6 +38,7 @@ import org.springframework.security.oauth2.provider.token.AccessTokenConverter;
 import org.springframework.security.oauth2.provider.token.DefaultAccessTokenConverter;
 import org.springframework.security.oauth2.provider.token.DefaultTokenServices;
 import org.springframework.security.oauth2.provider.token.RemoteTokenServices;
+import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
 import org.springframework.security.oauth2.provider.token.store.InMemoryTokenStore;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.util.Assert;
@@ -65,7 +66,7 @@ public class OAuth2ClientConfig {
 		details.setPreEstablishedRedirectUri("http://localhost:8081/oauth/authorizeResult");
 		details.setScope(Arrays.asList("user"));
 		details.setTokenName("access_token");
-		details.setAuthenticationScheme(AuthenticationScheme.form);
+//		details.setAuthenticationScheme(AuthenticationScheme.form);
 		details.setClientAuthenticationScheme(AuthenticationScheme.form);
 		return details;
 	}
@@ -81,7 +82,7 @@ public class OAuth2ClientConfig {
 	public OAuth2ClientAuthenticationProcessingFilter oAuth2ClientAuthenticationProcessingFilter() {
 		OAuth2ClientAuthenticationProcessingFilter oAuth2ClientAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/authorizeResult");
 		oAuth2ClientAuthenticationProcessingFilter.setRestTemplate(githubRestTemplate());
-		oAuth2ClientAuthenticationProcessingFilter.setTokenServices(remoteTokenServices());
+		oAuth2ClientAuthenticationProcessingFilter.setTokenServices(githubTokenServices());
 		return oAuth2ClientAuthenticationProcessingFilter;
 	}
 	
@@ -95,13 +96,13 @@ public class OAuth2ClientConfig {
 //	}
 	
 	@Bean
-	public RemoteTokenServices remoteTokenServices() {
+	public ResourceServerTokenServices githubTokenServices() {
 		AccessTokenConverter accessTokenConverter = new GithubAccessTokenConverter();
 		String clientId = "5ce0e9ac811fd9c04543";
 		String clientSecret = "b280853a74e6ae138ac23805092ddca670624ac9";
 		String checkTokenEndpointUrl = "https://api.github.com/applications/{clientId}/tokens/{accessToken}";
 		
-		RemoteTokenServices remoteTokenServices = new RemoteTokenServices() {
+		RemoteTokenServices githubTokenServices = new RemoteTokenServices() {
 
 			@Override
 			public OAuth2Authentication loadAuthentication(String accessToken) throws AuthenticationException, InvalidTokenException {
@@ -132,18 +133,18 @@ public class OAuth2ClientConfig {
 			}
 			
 		};
-		remoteTokenServices.setRestTemplate(githubRestTemplate());
-		remoteTokenServices.setClientId(clientId);
-		remoteTokenServices.setClientSecret(clientSecret);
-		remoteTokenServices.setCheckTokenEndpointUrl(checkTokenEndpointUrl);
-		remoteTokenServices.setAccessTokenConverter(accessTokenConverter);
-		return remoteTokenServices;
+		githubTokenServices.setRestTemplate(githubRestTemplate());
+		githubTokenServices.setClientId(clientId);
+		githubTokenServices.setClientSecret(clientSecret);
+		githubTokenServices.setCheckTokenEndpointUrl(checkTokenEndpointUrl);
+		githubTokenServices.setAccessTokenConverter(accessTokenConverter);
+		return githubTokenServices;
 	}
 	
 //	@Bean
 	public OAuth2AuthenticationManager OAuth2AuthenticationManager() {
 		OAuth2AuthenticationManager oAuth2AuthenticationManager = new OAuth2AuthenticationManager();
-		oAuth2AuthenticationManager.setTokenServices(remoteTokenServices());
+		oAuth2AuthenticationManager.setTokenServices(githubTokenServices());
 		return oAuth2AuthenticationManager;
 	}
 	
