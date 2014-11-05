@@ -86,7 +86,7 @@ public class GithubAccessTokenConverter implements AccessTokenConverter {
 		parameters.put(CLIENT_ID, clientId);
 		@SuppressWarnings("unchecked")
 		Set<String> resourceIds = new LinkedHashSet<String>(map.containsKey(AUD) ? (Collection<String>) map.get(AUD) : Collections.<String>emptySet());
-		OAuth2Request request = new OAuth2Request(parameters, clientId, null, true, scope, resourceIds, null, null,	null);
+		OAuth2Request request = new OAuth2Request(parameters, clientId, null, true, scope, resourceIds, null, null, null);
 		return new OAuth2Authentication(request, user);
 	}
 

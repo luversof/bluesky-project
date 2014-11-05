@@ -5,7 +5,7 @@ import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Bookkeeping.Add;
 import net.luversof.bookkeeping.domain.Bookkeeping.Modify;
 import net.luversof.bookkeeping.service.BookkeepingService;
-import net.luversof.security.core.userdetails.LuversofUser;
+import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.AuthorizeRole;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +30,7 @@ public class BookkeepingController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping
 	public String getBookkeeping(Authentication authentication, ModelMap modelMap) {
-		modelMap.addAttribute(JSON_MODEL_KEY, bookkeepingService.findByUserId(((LuversofUser) authentication.getPrincipal()).getId()));
+		modelMap.addAttribute(JSON_MODEL_KEY, bookkeepingService.findByUserId(((BlueskyUser) authentication.getPrincipal()).getId()));
 		return "/bookkeeping/bookkeeping";
 	}
 
@@ -38,7 +38,7 @@ public class BookkeepingController {
 	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseBody
 	public Bookkeeping addBookkeeping(Authentication authentication, @RequestBody @Validated(Add.class) Bookkeeping bookkeeping) {
-		bookkeeping.setUserId(((LuversofUser) authentication.getPrincipal()).getId());
+		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		return bookkeepingService.save(bookkeeping);
 	}
 
@@ -47,7 +47,7 @@ public class BookkeepingController {
 	@ResponseBody
 	public Bookkeeping modifyBookkeeping(Authentication authentication, @RequestBody @Validated(Modify.class) Bookkeeping bookkeeping) {
 		//TODO 본인 bookkeeping 확인 절차가 있어야 함
-		bookkeeping.setUserId(((LuversofUser) authentication.getPrincipal()).getId());
+		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		return bookkeepingService.save(bookkeeping);
 	}
 	
@@ -55,7 +55,7 @@ public class BookkeepingController {
 	@RequestMapping(method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public void removeBookkeeping(Authentication authentication, @RequestBody @Validated(Modify.class) Bookkeeping bookkeeping) {
 		//TODO 본인 bookkeeping 확인 절차가 있어야 함
-		bookkeeping.setUserId(((LuversofUser) authentication.getPrincipal()).getId());
+		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		bookkeepingService.delete(bookkeeping);
 	}
 }

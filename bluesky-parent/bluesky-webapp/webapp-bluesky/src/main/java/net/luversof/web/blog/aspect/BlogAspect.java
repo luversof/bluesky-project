@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.luversof.blog.domain.Article;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.service.BlogService;
-import net.luversof.security.core.userdetails.LuversofUser;
+import net.luversof.security.core.userdetails.BlueskyUser;
 
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
@@ -35,9 +35,10 @@ public class BlogAspect {
 	
 	@Before("classPointcut(article, authentication)")
 	public void beforeClassPointcut(Article article, Authentication authentication) {
-		log.debug("[blog] object set userId, userId : {}", ((LuversofUser) authentication.getPrincipal()).getId());
+		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
+		log.debug("[blog] object set userId, userId : {}", blueskyUser.getId());
 		if (article.getBlog() == null) {
-			List<Blog> blogList = blogService.findByUserId(((LuversofUser) authentication.getPrincipal()).getId());
+			List<Blog> blogList = blogService.findByUser(blueskyUser.getId(), blueskyUser.getUserType().name());
 			article.setBlog(blogList.get(0));
 		}
 	}

@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import net.luversof.user.domain.User;
 import net.luversof.user.domain.UserAuthority;
 import net.luversof.user.service.UserService;
 
@@ -22,7 +23,7 @@ public class LuversofUserDetailsService implements UserDetailsService {
 
 	@Override
 	public UserDetails loadUserByUsername(String username) {
-		net.luversof.user.domain.User user = userService.findByUsername(username);
+		User user = userService.findByUsername(username);
 		
 		List<UserAuthority> userAuthorityList = user.getUserAuthorityList();
 		
@@ -30,7 +31,7 @@ public class LuversofUserDetailsService implements UserDetailsService {
 		for (UserAuthority userAuthority : userAuthorityList) {
 			authoritySet.add(new SimpleGrantedAuthority(userAuthority.getAuthority()));
 		}
-		return new LuversofUser(user.getId(), user.getUsername(), user.getPassword(), authoritySet, true, true, true, user.isEnable());
+		return new BlueskyUser(user.getId(), user.getUsername(), user.getPassword(), authoritySet, true, true, true, user.isEnable(), UserType.LOCAL);
 	}
 
 }

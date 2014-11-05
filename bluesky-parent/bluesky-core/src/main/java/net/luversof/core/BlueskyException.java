@@ -1,24 +1,15 @@
 package net.luversof.core;
 
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
-@NoArgsConstructor
 public class BlueskyException extends RuntimeException {
 	private static final long serialVersionUID = -2499198692880482249L;
 
-	public BlueskyException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-		super(message, cause, enableSuppression, writableStackTrace);
+	@Getter
+	private final String errorCode;
+
+	public BlueskyException(String errorCode) {
+		this.errorCode = errorCode;
 	}
 
-	public BlueskyException(String message, Throwable cause) {
-		super(message, cause);
-	}
-
-	public BlueskyException(String message) {
-		super(message);
-	}
-
-	public BlueskyException(Throwable cause) {
-		super(cause);
-	}
 }

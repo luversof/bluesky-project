@@ -7,7 +7,7 @@ import net.luversof.bookkeeping.domain.Asset.Modify;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.service.AssetService;
 import net.luversof.bookkeeping.service.BookkeepingService;
-import net.luversof.security.core.userdetails.LuversofUser;
+import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.AuthorizeRole;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +38,7 @@ public class AssetController {
 	 *
 	 */
 	private Bookkeeping getBookkeeping(Authentication authentication) {
-		return bookkeepingService.findByUserId(((LuversofUser) authentication.getPrincipal()).getId()).get(0);
+		return bookkeepingService.findByUserId(((BlueskyUser) authentication.getPrincipal()).getId()).get(0);
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)

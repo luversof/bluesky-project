@@ -7,7 +7,7 @@ import net.luversof.bookkeeping.domain.Entry.Add;
 import net.luversof.bookkeeping.domain.Entry.Modify;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.bookkeeping.service.EntryService;
-import net.luversof.security.core.userdetails.LuversofUser;
+import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.AuthorizeRole;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +38,7 @@ public class EntryController {
 	 *
 	 */
 	private Bookkeeping getBookkeeping(Authentication authentication) {
-		return bookkeepingService.findByUserId(((LuversofUser) authentication.getPrincipal()).getId()).get(0);
+		return bookkeepingService.findByUserId(((BlueskyUser) authentication.getPrincipal()).getId()).get(0);
 	}
 	
 	/*

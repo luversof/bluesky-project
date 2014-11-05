@@ -9,7 +9,7 @@ import net.luversof.blog.service.ArticleCategoryService;
 import net.luversof.blog.service.ArticleService;
 import net.luversof.blog.service.BlogService;
 import net.luversof.core.BlueskyException;
-import net.luversof.security.core.userdetails.LuversofUser;
+import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.user.service.UserService;
 import net.luversof.web.AuthorizeRole;
 
@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
- * 소유한 Blog가 1개라는 가정으로 처리
  * @author bluesky
  *
  */
@@ -52,17 +51,13 @@ public class ArticleController {
 	private ArticleCategoryService articleCategoryService;
 	
 	private Blog getBlog(Authentication authentication) {
-		return blogService.findByUserId(((LuversofUser) authentication.getPrincipal()).getId()).get(0);
+		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
+		return blogService.findByUser(blueskyUser.getId(), blueskyUser.getUserType().name()).get(0);
 	}
 	
-	private Blog getBlog() {
-		return blogService.findByUserId(userService.findByUsername("bluesky").getId()).get(0);
-	}
-	
-
-	@RequestMapping
+	@RequestMapping(value ={"", "{blogId}"})
 	public String list(@RequestParam(defaultValue = "1") int page, Authentication authentication, ModelMap modelMap) {
-		Page<Article> articlePage = articleService.findByBlog(getBlog(), page - 1);
+		Page<Article> articlePage = articleService.findByBlog(getBlog(authentication), page - 1);
 		if (articlePage.getTotalPages() > 0 && articlePage.getTotalPages() < page) {
 			throw new BlueskyException("invalid page");
 		}
@@ -75,6 +70,10 @@ public class ArticleController {
 		modelMap.addAttribute("startPage", startPage);
 		modelMap.addAttribute("endPage", endPage);
 		return "/blog/list";
+	}
+	
+	@RequestMapping("/create")
+	public void createForm() {
 	}
 
 	@RequestMapping("/{id}")
@@ -121,7 +120,7 @@ public class ArticleController {
 	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public void delete(Authentication authentication, @Validated(Get.class) Article article, ModelMap modelMap) {
 		Article targetArticle = articleService.findOne(article.getId());
-		if (((LuversofUser) authentication.getPrincipal()).getId() != targetArticle.getBlog().getUserId()) {
+		if (((BlueskyUser) authentication.getPrincipal()).getId() != targetArticle.getBlog().getUserId()) {
 			throw new BlueskyException("username is not owner");
 		}
 		articleService.delete(article.getId());

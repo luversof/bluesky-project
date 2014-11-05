@@ -4,6 +4,9 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import net.luversof.security.core.userdetails.BlueskyUser;
+import net.luversof.security.core.userdetails.UserType;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -13,11 +16,10 @@ import org.springframework.util.StringUtils;
 
 public class GithubUserAuthenticationConverter implements UserAuthenticationConverter {
 	
-	private Collection<? extends GrantedAuthority> defaultAuthorities = AuthorityUtils.commaSeparatedStringToAuthorityList(StringUtils.arrayToCommaDelimitedString(new String[]{"ROLE_USER", "ROLE_GITHUBUSER"}));
+	private Collection<? extends GrantedAuthority> defaultAuthorities = AuthorityUtils.commaSeparatedStringToAuthorityList(StringUtils.arrayToCommaDelimitedString(new String[]{ "ROLE_USER", "ROLE_GITHUBUSER" }));
 	
 	public void setDefaultAuthorities(String[] defaultAuthorities) {
-		this.defaultAuthorities = AuthorityUtils.commaSeparatedStringToAuthorityList(StringUtils
-				.arrayToCommaDelimitedString(defaultAuthorities));
+		this.defaultAuthorities = AuthorityUtils.commaSeparatedStringToAuthorityList(StringUtils.arrayToCommaDelimitedString(defaultAuthorities));
 	}
 
 	@Override
@@ -34,7 +36,8 @@ public class GithubUserAuthenticationConverter implements UserAuthenticationConv
 	@Override
 	public Authentication extractAuthentication(Map<String, ?> map) {
 		if (map.containsKey("user") && ((Map<String, Object>) map.get("user")).containsKey("login")) {
-			return new UsernamePasswordAuthenticationToken(((Map<String, Object>) map.get("user")).get("login"), "N/A", getAuthorities(map));
+			BlueskyUser luversofUser = new BlueskyUser(((Map<String, Integer>) map.get("user")).get("id"), ((Map<String, String>) map.get("user")).get("login"), "N/A", getAuthorities(map), true, true, true, true, UserType.GITHUB);
+			return new UsernamePasswordAuthenticationToken(luversofUser, "N/A", getAuthorities(map));
 		}
 		return null;
 	}

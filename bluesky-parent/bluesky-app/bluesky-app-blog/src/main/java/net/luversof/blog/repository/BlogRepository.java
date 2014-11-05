@@ -7,5 +7,5 @@ import net.luversof.blog.domain.Blog;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface BlogRepository extends JpaRepository<Blog, Long> {
-	List<Blog> findByUserId(long userId); 
+	List<Blog> findByUserIdAndUserType(long userId, String userType); 
 }

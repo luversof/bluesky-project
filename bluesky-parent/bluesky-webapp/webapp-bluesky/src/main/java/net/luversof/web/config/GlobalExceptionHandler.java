@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.core.BlueskyException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindException;
@@ -35,6 +36,14 @@ public class GlobalExceptionHandler {
 //		resultMap.put("result", map);
 //		return new ModelAndView("/error", resultMap);
 //	}
+	
+	@ExceptionHandler
+	public ModelAndView handleException(BlueskyException exception) {
+		if (exception.getErrorCode() == "blog.notExist") {
+			return new ModelAndView("/blog/create");
+		}
+		return null;
+	}
 	
 	@ExceptionHandler
 	@ResponseStatus(value=HttpStatus.BAD_REQUEST)
