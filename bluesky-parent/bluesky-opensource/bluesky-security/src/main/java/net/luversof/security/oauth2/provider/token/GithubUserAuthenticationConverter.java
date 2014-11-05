@@ -13,7 +13,7 @@ import org.springframework.util.StringUtils;
 
 public class GithubUserAuthenticationConverter implements UserAuthenticationConverter {
 	
-	private Collection<? extends GrantedAuthority> defaultAuthorities = AuthorityUtils.commaSeparatedStringToAuthorityList(StringUtils.arrayToCommaDelimitedString(new String[]{"user"}));
+	private Collection<? extends GrantedAuthority> defaultAuthorities = AuthorityUtils.commaSeparatedStringToAuthorityList(StringUtils.arrayToCommaDelimitedString(new String[]{"ROLE_USER", "ROLE_GITHUBUSER"}));
 	
 	public void setDefaultAuthorities(String[] defaultAuthorities) {
 		this.defaultAuthorities = AuthorityUtils.commaSeparatedStringToAuthorityList(StringUtils

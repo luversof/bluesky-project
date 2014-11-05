@@ -1,6 +1,7 @@
-package net.luversof.web.oauth.controller;
+package net.luversof.web.oauth2.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -17,8 +18,8 @@ public class AuthorizeController {
 //	@Autowired
 //	private AuthorizationCodeServices authorizationCodeServices;
 	
-	@RequestMapping("/oauth/authorizeResult")
-	public void test(String code) {
+	@RequestMapping("/test")
+	public void test(Authentication authentiation) {
 		System.out.println("테스트 :!!!!!!");
 		
 		OAuth2AccessToken a = oAuth2RestTemplate.getAccessToken();

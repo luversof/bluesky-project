@@ -61,7 +61,7 @@ public class ArticleController {
 	
 
 	@RequestMapping
-	public String list(@RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
+	public String list(@RequestParam(defaultValue = "1") int page, Authentication authentication, ModelMap modelMap) {
 		Page<Article> articlePage = articleService.findByBlog(getBlog(), page - 1);
 		if (articlePage.getTotalPages() > 0 && articlePage.getTotalPages() < page) {
 			throw new BlueskyException("invalid page");
