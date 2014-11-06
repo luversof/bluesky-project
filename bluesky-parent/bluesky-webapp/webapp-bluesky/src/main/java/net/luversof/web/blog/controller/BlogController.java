@@ -1,6 +1,5 @@
 package net.luversof.web.blog.controller;
 
-import net.luversof.blog.domain.Blog;
 import net.luversof.blog.service.BlogService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.AuthorizeRole;
@@ -24,7 +23,7 @@ public class BlogController {
 	@RequestMapping(method=RequestMethod.POST)
 	public String create(Authentication authentication) {
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
-		Blog blog = blogService.save(blueskyUser.getId(), blueskyUser.getUserType().name());
-		return "redirect:/blog/" + blog.getId(); 
+		blogService.save(blueskyUser.getId(), blueskyUser.getUserType().name());
+		return "redirect:/blog/article"; 
 	}
 }

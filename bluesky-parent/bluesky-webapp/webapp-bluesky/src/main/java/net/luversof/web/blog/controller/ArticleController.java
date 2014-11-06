@@ -32,8 +32,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
  *
  */
 @Controller
-//@RequestMapping("/blog/article")	// bluesky만 쓴다고 가정
-@RequestMapping("/blog")
+@RequestMapping("/blog/article")	// blogId는 생략해도 내부에서 조회하여 처리
+//@RequestMapping("/blog")
 public class ArticleController {
 
 	private static final int PAGE_BLOCK_SIZE = 10;
@@ -55,7 +55,7 @@ public class ArticleController {
 		return blogService.findByUser(blueskyUser.getId(), blueskyUser.getUserType().name()).get(0);
 	}
 	
-	@RequestMapping(value ={"", "{blogId}"})
+	@RequestMapping
 	public String list(@RequestParam(defaultValue = "1") int page, Authentication authentication, ModelMap modelMap) {
 		Page<Article> articlePage = articleService.findByBlog(getBlog(authentication), page - 1);
 		if (articlePage.getTotalPages() > 0 && articlePage.getTotalPages() < page) {
@@ -69,7 +69,7 @@ public class ArticleController {
 		modelMap.addAttribute("currentPage", page);
 		modelMap.addAttribute("startPage", startPage);
 		modelMap.addAttribute("endPage", endPage);
-		return "/blog/list";
+		return "/blog/article/list";
 	}
 	
 	@RequestMapping("/create")
@@ -79,7 +79,7 @@ public class ArticleController {
 	@RequestMapping("/{id}")
 	public String view(@Validated(Get.class) Article article, ModelMap modelMap) {
 		modelMap.addAttribute(articleService.findOne(article.getId()));
-		return "/blog/view";
+		return "/blog/article/view";
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
@@ -94,7 +94,7 @@ public class ArticleController {
 	public String modifyPage(Authentication authentication, @Validated(Get.class) Article article, ModelMap modelMap) {
 		modelMap.addAttribute(articleService.findOne(article.getId()));
 		modelMap.addAttribute(articleCategoryService.findByBlog(blogService.findOne(article.getId())));
-		return "/blog/modify";
+		return "/blog/article/modify";
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)

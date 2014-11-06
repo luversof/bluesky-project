@@ -22,9 +22,9 @@
 			</div>
 			<div class="text-center">
 				<a href="write" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blog.menu.write}">write</a>
-				<a sec:authorize="isAuthenticated()" th:if="${#authentication.principal.id == article.blog.userId}" th:href="@{'/blog/' + ${article.id} + '/modify'}" class="btn btn-primary" th:text="#{blog.menu.modify}">modify</a>
+				<a sec:authorize="isAuthenticated()" th:if="${#authentication.principal.id == article.blog.userId}" th:href="@{'/blog/article/' + ${article.id} + '/modify'}" class="btn btn-primary" th:text="#{blog.menu.modify}">modify</a>
 				<a sec:authorize="isAuthenticated()" th:if="${#authentication.principal.id == article.blog.userId}" class="btn btn-warning delete" th:attr="data-article-id=${article.id}" th:text="#{blog.menu.delete}">delete</a>
-				<a th:href="@{'/blog'}" class="btn btn-default" th:text="#{blog.menu.list}">list</a>
+				<a th:href="@{'/blog/article'}" class="btn btn-default" th:text="#{blog.menu.list}">list</a>
 			</div>
 		</article>
 		

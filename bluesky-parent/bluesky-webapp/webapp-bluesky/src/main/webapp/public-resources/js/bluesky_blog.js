@@ -9,7 +9,7 @@ $(document).ready(function() {
 					, dataType : "json"
 					, data : form.serialize()
 					, success : function(data) {
-						location.href = "/blog/" + data;
+						location.href = "/blog/article/" + data;
 					}
 				});
 			}
@@ -21,17 +21,17 @@ $(document).ready(function() {
 					, dataType : "json"
 					, data : form.serialize()
 					, success : function(data) {
-						location.href = "/blog/" + data;
+						location.href = "/blog/article/" + data;
 					}
 				});
 			}
 			, remove : function() {
 				$.ajax({
 					type : "delete"
-					, url : "/blog/" + $("[data-article-id]").attr("data-article-id")
+					, url : "/blog/article/" + $("[data-article-id]").attr("data-article-id")
 					, dataType : "json"
 					, success : function(data) {
-						location.href = "/blog/";
+						location.href = "/blog/article/";
 					}
 				});
 			}
