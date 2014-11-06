@@ -5,13 +5,11 @@
 	layout:decorator="/layout/defaultLayout">
 <head>
 	<script type="text/javascript" th:src="@{/js/bluesky_blog.js}"></script>
-	<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/tinymce/4.1.6/tinymce.jquery.min.js"></script>
+	<script type="text/javascript" th:src="${@environment.getProperty('url.tinymce-jquery.js')}"></script>
 	<script type="text/javascript">
 		tinyMCE.init({
 			selector : "#content",
-			//theme : "modern",
-			//skin : "lightgray",
-			//language : "ko",
+			plugins : "code",
 			setup : function(editor) {
 				editor.on("change" , function() {
 					tinyMCE.triggerSave();
