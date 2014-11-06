@@ -7,6 +7,7 @@ import java.util.Map;
 import net.luversof.security.oauth2.provider.token.GithubAccessTokenConverter;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
@@ -26,8 +27,10 @@ import org.springframework.security.oauth2.common.exceptions.InvalidTokenExcepti
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableOAuth2Client;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.token.AccessTokenConverter;
+import org.springframework.security.oauth2.provider.token.DefaultAccessTokenConverter;
 import org.springframework.security.oauth2.provider.token.RemoteTokenServices;
 import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
+import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
@@ -36,6 +39,36 @@ import org.springframework.util.MultiValueMap;
 @PropertySource(name = "oauth2ClientProp", value = "classpath:config/oauth2-client.properties")
 public class OAuth2ClientConfig {
 	
+	@Value("${oauth2.client.github.clientId}")
+	private String githubClientId;
+	
+	@Value("${oauth2.client.github.clientSecret}")
+	private String githubClientSecret;
+	
+	@Value("${oauth2.client.github.userAuthorizationUri}")
+	private String githubUserAuthorizationUri;
+	
+	@Value("${oauth2.client.github.accessTokenUri}")
+	private String githubAccessTokenUri;
+	
+	@Value("${oauth2.client.github.checkTokenEndpointUrl}")
+	private String githubCheckTokenEndpointUrl;
+	
+	@Value("${oauth2.client.facebook.clientId}")
+	private String facebookClientId;
+	
+	@Value("${oauth2.client.facebook.clientSecret}")
+	private String facebookClientSecret;
+	
+	@Value("${oauth2.client.facebook.userAuthorizationUri}")
+	private String facebookUserAuthorizationUri;
+	
+	@Value("${oauth2.client.facebook.accessTokenUri}")
+	private String facebookAccessTokenUri;
+	
+	@Value("${oauth2.client.facebook.checkTokenEndpointUrl}")
+	private String facebookCheckTokenEndpointUrl;
+	
 	@Autowired
 	private OAuth2ClientContext oAuth2ClientContext;
 	
@@ -43,12 +76,12 @@ public class OAuth2ClientConfig {
 	public OAuth2ProtectedResourceDetails githubResourceDetails() {
 		AuthorizationCodeResourceDetails details = new AuthorizationCodeResourceDetails();
 		details.setId("github");
-		details.setClientId("5ce0e9ac811fd9c04543");
-		details.setClientSecret("b280853a74e6ae138ac23805092ddca670624ac9");
-		details.setUserAuthorizationUri("https://github.com/login/oauth/authorize");
-		details.setAccessTokenUri("https://github.com/login/oauth/access_token");
+		details.setClientId(githubClientId);
+		details.setClientSecret(githubClientSecret);
+		details.setUserAuthorizationUri(githubUserAuthorizationUri);
+		details.setAccessTokenUri(githubAccessTokenUri);
 		details.setScope(Arrays.asList("user"));
-//		details.setAuthenticationScheme(AuthenticationScheme.form);
+		details.setAuthenticationScheme(AuthenticationScheme.form);
 		details.setClientAuthenticationScheme(AuthenticationScheme.form);
 		return details;
 	}
@@ -57,13 +90,12 @@ public class OAuth2ClientConfig {
 	public OAuth2ProtectedResourceDetails facebookResourceDetails() {
 		AuthorizationCodeResourceDetails details = new AuthorizationCodeResourceDetails();
 		details.setId("facebook");
-		details.setClientId("124755777691522");
-		details.setClientSecret("3e543ae36e0185e44b1504ec1ec717c9");
-		details.setUserAuthorizationUri("https://www.facebook.com/dialog/oauth");
-		details.setAccessTokenUri("https://graph.facebook.com/oauth/access_token");
-		details.setPreEstablishedRedirectUri("http://localhost:8081/oauth/authorizeResult");
+		details.setClientId(facebookClientId);
+		details.setClientSecret(facebookClientSecret);
+		details.setUserAuthorizationUri(facebookUserAuthorizationUri);
+		details.setAccessTokenUri(facebookAccessTokenUri);
 		details.setScope(Arrays.asList("email"));
-//		details.setAuthenticationScheme(AuthenticationScheme.form);
+		details.setAuthenticationScheme(AuthenticationScheme.form);
 		details.setClientAuthenticationScheme(AuthenticationScheme.form);
 		return details;
 	}
@@ -77,42 +109,24 @@ public class OAuth2ClientConfig {
 	public OAuth2RestTemplate facebookRestTemplate() {
 		return new OAuth2RestTemplate(facebookResourceDetails(), oAuth2ClientContext);
 	}
-	
-	@Bean
-	public OAuth2ClientAuthenticationProcessingFilter githubAuthenticationProcessingFilter() {
-		OAuth2ClientAuthenticationProcessingFilter githubAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/githubAuthorizeResult");
-		githubAuthenticationProcessingFilter.setRestTemplate(githubRestTemplate());
-		githubAuthenticationProcessingFilter.setTokenServices(githubTokenServices());
-		return githubAuthenticationProcessingFilter;
-	}
-	
+
 	@Bean
 	public ResourceServerTokenServices githubTokenServices() {
 		AccessTokenConverter accessTokenConverter = new GithubAccessTokenConverter();
-		String clientId = "5ce0e9ac811fd9c04543";
-		String clientSecret = "b280853a74e6ae138ac23805092ddca670624ac9";
-		String checkTokenEndpointUrl = "https://api.github.com/applications/{clientId}/tokens/{accessToken}";
-		
 		RemoteTokenServices githubTokenServices = new RemoteTokenServices() {
 
 			@Override
 			public OAuth2Authentication loadAuthentication(String accessToken) throws AuthenticationException, InvalidTokenException {
 				MultiValueMap<String, String> formData = new LinkedMultiValueMap<String, String>();
-				formData.add("token", accessToken);
+				formData.add("access_token", accessToken);
 				HttpHeaders headers = new HttpHeaders();
-				String creds = String.format("%s:%s", clientId, clientSecret);
-				try {
-					headers.set("Authorization", "Basic " + new String(Base64.encode(creds.getBytes("UTF-8"))));
-				}
-				catch (UnsupportedEncodingException e) {
-					throw new IllegalStateException("Could not convert String");
-				}
+				headers.set("Authorization", getAuthorizationHeader(githubClientId, githubClientSecret));
 				if (headers.getContentType() == null) {
 					headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 				}
 				@SuppressWarnings("unchecked")
-				Map<String, Object> map = githubRestTemplate().exchange(checkTokenEndpointUrl, HttpMethod.GET,
-						new HttpEntity<MultiValueMap<String, String>>(formData, headers), Map.class, clientId, accessToken).getBody();
+				Map<String, Object> map = githubRestTemplate().exchange(githubCheckTokenEndpointUrl, HttpMethod.GET,
+						new HttpEntity<MultiValueMap<String, String>>(formData, headers), Map.class, githubClientId, accessToken).getBody();
 				
 				if (map.containsKey("error")) {
 					logger.debug("check_token returned error: " + map.get("error"));
@@ -125,10 +139,73 @@ public class OAuth2ClientConfig {
 			
 		};
 		githubTokenServices.setRestTemplate(githubRestTemplate());
-		githubTokenServices.setClientId(clientId);
-		githubTokenServices.setClientSecret(clientSecret);
-		githubTokenServices.setCheckTokenEndpointUrl(checkTokenEndpointUrl);
+		githubTokenServices.setClientId(githubClientId);
+		githubTokenServices.setClientSecret(githubClientSecret);
+		githubTokenServices.setCheckTokenEndpointUrl(githubCheckTokenEndpointUrl);
 		githubTokenServices.setAccessTokenConverter(accessTokenConverter);
 		return githubTokenServices;
 	}
+	
+	@Bean
+	public ResourceServerTokenServices facebookTokenServices() {
+		AccessTokenConverter accessTokenConverter = new DefaultAccessTokenConverter();
+		RemoteTokenServices facebookTokenServices = new RemoteTokenServices() {
+
+			@Override
+			public OAuth2Authentication loadAuthentication(String accessToken) throws AuthenticationException, InvalidTokenException {
+				MultiValueMap<String, String> formData = new LinkedMultiValueMap<String, String>();
+				formData.add("access_token", accessToken);
+				HttpHeaders headers = new HttpHeaders();
+				headers.set("Authorization", getAuthorizationHeader(facebookClientId, facebookClientSecret));
+				if (headers.getContentType() == null) {
+					headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+				}
+				@SuppressWarnings("unchecked")
+				Map<String, Object> map = facebookRestTemplate().exchange(facebookCheckTokenEndpointUrl, HttpMethod.GET,
+						new HttpEntity<MultiValueMap<String, String>>(formData, headers), Map.class, accessToken).getBody();
+
+				if (map.containsKey("error")) {
+					logger.debug("check_token returned error: " + map.get("error"));
+					throw new InvalidTokenException(accessToken);
+				}
+
+//				Assert.state(map.containsKey("client_id"), "Client id must be present in response from auth server");
+				return accessTokenConverter.extractAuthentication(map);
+			}
+			
+		};
+		facebookTokenServices.setRestTemplate(facebookRestTemplate());
+		facebookTokenServices.setClientId(facebookClientId);
+		facebookTokenServices.setClientSecret(facebookClientSecret);
+		facebookTokenServices.setCheckTokenEndpointUrl(facebookCheckTokenEndpointUrl);
+		return facebookTokenServices;
+	}
+	
+	private String getAuthorizationHeader(String clientId, String clientSecret) {
+		String creds = String.format("%s:%s", clientId, clientSecret);
+		try {
+			return "Basic " + new String(Base64.encode(creds.getBytes("UTF-8")));
+		}
+		catch (UnsupportedEncodingException e) {
+			throw new IllegalStateException("Could not convert String");
+		}
+	}
+	
+	
+	@Bean
+	public OAuth2ClientAuthenticationProcessingFilter githubAuthenticationProcessingFilter() {
+		OAuth2ClientAuthenticationProcessingFilter githubAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/githubAuthorizeResult");
+		githubAuthenticationProcessingFilter.setRestTemplate(githubRestTemplate());
+		githubAuthenticationProcessingFilter.setTokenServices(githubTokenServices());
+		return githubAuthenticationProcessingFilter;
+	}
+	
+	@Bean
+	public OAuth2ClientAuthenticationProcessingFilter facebookAuthenticationProcessingFilter() {
+		OAuth2ClientAuthenticationProcessingFilter facebookAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/facebookAuthorizeResult");
+		facebookAuthenticationProcessingFilter.setRestTemplate(facebookRestTemplate());
+		facebookAuthenticationProcessingFilter.setTokenServices(facebookTokenServices());
+		return facebookAuthenticationProcessingFilter;
+	}
+	
 }
