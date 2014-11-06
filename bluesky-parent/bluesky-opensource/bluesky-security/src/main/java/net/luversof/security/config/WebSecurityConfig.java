@@ -30,7 +30,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	private UserDetailsService userDetailsService;
 	
 	@Autowired
-	private OAuth2ClientAuthenticationProcessingFilter oAuth2ClientAuthenticationProcessingFilter;
+	private OAuth2ClientAuthenticationProcessingFilter githubAuthenticationProcessingFilter;
 	
 	@Autowired
 	private OAuth2ClientContextFilter oAuth2ClientContextFilter;
@@ -61,7 +61,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 //			.addFilterBefore(new OAuth2ClientContextFilter(), UsernamePasswordAuthenticationFilter.class)
 			.addFilterBefore(new RequestContextFilter(), SecurityContextPersistenceFilter.class)
 			.addFilterAfter(oAuth2ClientContextFilter, BasicAuthenticationFilter.class)
-			.addFilterAfter(oAuth2ClientAuthenticationProcessingFilter, BasicAuthenticationFilter.class)
+			.addFilterAfter(githubAuthenticationProcessingFilter, BasicAuthenticationFilter.class)
 //			.addFilterAfter(oAuth2AuthenticationProcessingFilter, ExceptionTranslationFilter.class)
 			.logout().logoutSuccessHandler(logoutSuccessHandler).and()
 			.formLogin().loginPage("/login").and()

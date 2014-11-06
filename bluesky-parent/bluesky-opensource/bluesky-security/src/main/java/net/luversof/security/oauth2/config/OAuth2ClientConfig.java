@@ -9,6 +9,7 @@ import net.luversof.security.oauth2.provider.token.GithubAccessTokenConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -32,13 +33,11 @@ import org.springframework.util.MultiValueMap;
 
 @Configuration
 @EnableOAuth2Client
+@PropertySource(name = "oauth2ClientProp", value = "classpath:config/oauth2-client.properties")
 public class OAuth2ClientConfig {
 	
 	@Autowired
 	private OAuth2ClientContext oAuth2ClientContext;
-	
-//	@Autowired
-//	private AccessTokenRequest accessTokenRequest;
 	
 	@Bean
 	public OAuth2ProtectedResourceDetails githubResourceDetails() {
@@ -46,39 +45,46 @@ public class OAuth2ClientConfig {
 		details.setId("github");
 		details.setClientId("5ce0e9ac811fd9c04543");
 		details.setClientSecret("b280853a74e6ae138ac23805092ddca670624ac9");
-		details.setAccessTokenUri("https://github.com/login/oauth/access_token");
 		details.setUserAuthorizationUri("https://github.com/login/oauth/authorize");
-		details.setPreEstablishedRedirectUri("http://localhost:8081/oauth/authorizeResult");
+		details.setAccessTokenUri("https://github.com/login/oauth/access_token");
 		details.setScope(Arrays.asList("user"));
-		details.setTokenName("access_token");
 //		details.setAuthenticationScheme(AuthenticationScheme.form);
 		details.setClientAuthenticationScheme(AuthenticationScheme.form);
 		return details;
 	}
 	
 	@Bean
-//	@Scope(value = "session", proxyMode = ScopedProxyMode.INTERFACES)
-	public OAuth2RestTemplate githubRestTemplate() {
-		return new OAuth2RestTemplate(githubResourceDetails(), oAuth2ClientContext);
-//		return new OAuth2RestTemplate(oAuth2ProtectedResourceDetails(), new DefaultOAuth2ClientContext(accessTokenRequest));
+	public OAuth2ProtectedResourceDetails facebookResourceDetails() {
+		AuthorizationCodeResourceDetails details = new AuthorizationCodeResourceDetails();
+		details.setId("facebook");
+		details.setClientId("124755777691522");
+		details.setClientSecret("3e543ae36e0185e44b1504ec1ec717c9");
+		details.setUserAuthorizationUri("https://www.facebook.com/dialog/oauth");
+		details.setAccessTokenUri("https://graph.facebook.com/oauth/access_token");
+		details.setPreEstablishedRedirectUri("http://localhost:8081/oauth/authorizeResult");
+		details.setScope(Arrays.asList("email"));
+//		details.setAuthenticationScheme(AuthenticationScheme.form);
+		details.setClientAuthenticationScheme(AuthenticationScheme.form);
+		return details;
 	}
 	
 	@Bean
-	public OAuth2ClientAuthenticationProcessingFilter oAuth2ClientAuthenticationProcessingFilter() {
-		OAuth2ClientAuthenticationProcessingFilter oAuth2ClientAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/authorizeResult");
-		oAuth2ClientAuthenticationProcessingFilter.setRestTemplate(githubRestTemplate());
-		oAuth2ClientAuthenticationProcessingFilter.setTokenServices(githubTokenServices());
-		return oAuth2ClientAuthenticationProcessingFilter;
+	public OAuth2RestTemplate githubRestTemplate() {
+		return new OAuth2RestTemplate(githubResourceDetails(), oAuth2ClientContext);
 	}
 	
+	@Bean
+	public OAuth2RestTemplate facebookRestTemplate() {
+		return new OAuth2RestTemplate(facebookResourceDetails(), oAuth2ClientContext);
+	}
 	
-//	@Bean
-//	public DefaultTokenServices defaultTokenServices() {
-//		DefaultTokenServices defaultTokenServices = new DefaultTokenServices();
-//		defaultTokenServices.setTokenStore(new InMemoryTokenStore());
-//		defaultTokenServices.setSupportRefreshToken(true);
-//		return defaultTokenServices;
-//	}
+	@Bean
+	public OAuth2ClientAuthenticationProcessingFilter githubAuthenticationProcessingFilter() {
+		OAuth2ClientAuthenticationProcessingFilter githubAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/githubAuthorizeResult");
+		githubAuthenticationProcessingFilter.setRestTemplate(githubRestTemplate());
+		githubAuthenticationProcessingFilter.setTokenServices(githubTokenServices());
+		return githubAuthenticationProcessingFilter;
+	}
 	
 	@Bean
 	public ResourceServerTokenServices githubTokenServices() {

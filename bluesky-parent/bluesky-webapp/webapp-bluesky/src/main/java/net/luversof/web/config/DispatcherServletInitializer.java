@@ -12,7 +12,6 @@ import net.luversof.security.SecurityConfig;
 import net.luversof.security.filter.CorsFilter;
 import net.luversof.web.BlueskyWebConfig;
 
-import org.springframework.orm.jpa.support.OpenEntityManagerInViewFilter;
 import org.springframework.web.filter.CharacterEncodingFilter;
 import org.springframework.web.filter.HiddenHttpMethodFilter;
 import org.springframework.web.filter.HttpPutFormContentFilter;

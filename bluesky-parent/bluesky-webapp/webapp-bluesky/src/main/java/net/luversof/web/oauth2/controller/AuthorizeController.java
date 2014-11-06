@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class AuthorizeController {
 
 	@Autowired
-	private OAuth2RestTemplate oAuth2RestTemplate;
+	private OAuth2RestTemplate facebookRestTemplate;
 	
 //	@Autowired
 //	private AuthorizationCodeServices authorizationCodeServices;
@@ -22,7 +22,7 @@ public class AuthorizeController {
 	public void test(Authentication authentiation) {
 		System.out.println("테스트 :!!!!!!");
 		
-		OAuth2AccessToken a = oAuth2RestTemplate.getAccessToken();
+		OAuth2AccessToken a = facebookRestTemplate.getAccessToken();
 		
 		System.out.println(a);
 	}
