@@ -18,7 +18,7 @@ import org.springframework.security.oauth2.provider.token.AccessTokenConverter;
 import org.springframework.security.oauth2.provider.token.UserAuthenticationConverter;
 
 public class GithubAccessTokenConverter implements AccessTokenConverter {
-	
+
 	private UserAuthenticationConverter userTokenConverter = new GithubUserAuthenticationConverter();
 
 	@Override
@@ -30,7 +30,7 @@ public class GithubAccessTokenConverter implements AccessTokenConverter {
 			response.putAll(userTokenConverter.convertUserAuthentication(authentication.getUserAuthentication()));
 		}
 
-		if (token.getScope()!=null) {
+		if (token.getScope() != null) {
 			response.put(SCOPE, token.getScope());
 		}
 		if (token.getAdditionalInformation().containsKey(JTI)) {
@@ -75,18 +75,21 @@ public class GithubAccessTokenConverter implements AccessTokenConverter {
 
 	@Override
 	public OAuth2Authentication extractAuthentication(Map<String, ?> map) {
-		Map<String, String> parameters = new HashMap<String, String>();
-		
-		@SuppressWarnings("unchecked")
-		Set<String> scope = new LinkedHashSet<String>(map.containsKey("scopes") ? (Collection<String>) map.get("scopes") : Collections.<String>emptySet());
-		Authentication user = userTokenConverter.extractAuthentication(map);
-		@SuppressWarnings("rawtypes")
-		String clientId = (String) ((Map)map.get("app")).get("client_id");
 
-		parameters.put(CLIENT_ID, clientId);
 		@SuppressWarnings("unchecked")
-		Set<String> resourceIds = new LinkedHashSet<String>(map.containsKey(AUD) ? (Collection<String>) map.get(AUD) : Collections.<String>emptySet());
+		Set<String> scope = new LinkedHashSet<String>(map.containsKey("scopes") ? (Collection<String>) map.get("scopes") : Collections.<String> emptySet());
+		
+		@SuppressWarnings("rawtypes")
+		String clientId = (String) ((Map) map.get("app")).get("client_id");
+
+		Map<String, String> parameters = new HashMap<String, String>();
+		parameters.put(CLIENT_ID, clientId);
+
+		@SuppressWarnings("unchecked")
+		Set<String> resourceIds = new LinkedHashSet<String>(map.containsKey(AUD) ? (Collection<String>) map.get(AUD) : Collections.<String> emptySet());
 		OAuth2Request request = new OAuth2Request(parameters, clientId, null, true, scope, resourceIds, null, null, null);
+		
+		Authentication user = userTokenConverter.extractAuthentication(map);
 		return new OAuth2Authentication(request, user);
 	}
 

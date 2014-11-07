@@ -22,6 +22,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -32,7 +33,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
  *
  */
 @Controller
-@RequestMapping("/blog/article")	// blogId는 생략해도 내부에서 조회하여 처리
+@RequestMapping("/blog")
 //@RequestMapping("/blog")
 public class ArticleController {
 
@@ -55,9 +56,13 @@ public class ArticleController {
 		return blogService.findByUser(blueskyUser.getId(), blueskyUser.getUserType().name()).get(0);
 	}
 	
-	@RequestMapping
-	public String list(@RequestParam(defaultValue = "1") int page, Authentication authentication, ModelMap modelMap) {
-		Page<Article> articlePage = articleService.findByBlog(getBlog(authentication), page - 1);
+	private Blog getBlog(long blogId) {
+		return blogService.findOne(blogId);
+	}
+	
+	@RequestMapping(value = {"/{blogId}/article"})
+	public String list(@PathVariable long blogId, @RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
+		Page<Article> articlePage = articleService.findByBlog(getBlog(blogId), page - 1);
 		if (articlePage.getTotalPages() > 0 && articlePage.getTotalPages() < page) {
 			throw new BlueskyException("invalid page");
 		}
@@ -72,25 +77,27 @@ public class ArticleController {
 		return "/blog/article/list";
 	}
 	
-	@RequestMapping("/create")
-	public void createForm() {
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@RequestMapping(value = "/$!/article")
+	public String ownerList(Blog blog, @RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
+		return list(blog.getId(), page, modelMap);
 	}
-
-	@RequestMapping("/{id}")
+	
+	@RequestMapping("/{blogId}/article/{id}")
 	public String view(@Validated(Get.class) Article article, ModelMap modelMap) {
 		modelMap.addAttribute(articleService.findOne(article.getId()));
 		return "/blog/article/view";
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping("/write")
+	@RequestMapping("/{blogId}/article/write")
 	public void writePage(Authentication authentication, ModelMap modelMap) {
 		modelMap.addAttribute(articleCategoryService.findByBlog(getBlog(authentication)));
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[article].blog.userId == authentication.principal.id")
-	@RequestMapping("/{id}/modify")
+	@RequestMapping("/{blogId}/article/{id}/modify")
 	public String modifyPage(Authentication authentication, @Validated(Get.class) Article article, ModelMap modelMap) {
 		modelMap.addAttribute(articleService.findOne(article.getId()));
 		modelMap.addAttribute(articleCategoryService.findByBlog(blogService.findOne(article.getId())));
@@ -109,7 +116,7 @@ public class ArticleController {
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(value = "/{blogId}/article/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseBody
 	public long modify(Authentication authentication, @Validated(Modify.class) Article article, ModelMap modelMap) {
 		article.setBlog(getBlog(authentication));
@@ -117,7 +124,7 @@ public class ArticleController {
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(value = "/{blogId}/article/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public void delete(Authentication authentication, @Validated(Get.class) Article article, ModelMap modelMap) {
 		Article targetArticle = articleService.findOne(article.getId());
 		if (((BlueskyUser) authentication.getPrincipal()).getId() != targetArticle.getBlog().getUserId()) {

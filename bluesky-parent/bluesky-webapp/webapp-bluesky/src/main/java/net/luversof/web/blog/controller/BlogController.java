@@ -20,10 +20,14 @@ public class BlogController {
 
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(method=RequestMethod.POST)
+	@RequestMapping(value = "/$!", method=RequestMethod.POST)
 	public String create(Authentication authentication) {
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
 		blogService.save(blueskyUser.getId(), blueskyUser.getUserType().name());
-		return "redirect:/blog/article"; 
+		return "redirect:/blog/$!/article"; 
+	}
+	
+	@RequestMapping("/create")
+	public void createForm() {
 	}
 }

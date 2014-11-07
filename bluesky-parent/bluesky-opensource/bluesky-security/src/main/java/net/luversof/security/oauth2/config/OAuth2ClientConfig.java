@@ -4,6 +4,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Map;
 
+import net.luversof.security.oauth2.provider.token.FacebookAccessTokenConverter;
 import net.luversof.security.oauth2.provider.token.GithubAccessTokenConverter;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -148,7 +149,7 @@ public class OAuth2ClientConfig {
 	
 	@Bean
 	public ResourceServerTokenServices facebookTokenServices() {
-		AccessTokenConverter accessTokenConverter = new DefaultAccessTokenConverter();
+		AccessTokenConverter accessTokenConverter = new FacebookAccessTokenConverter();
 		RemoteTokenServices facebookTokenServices = new RemoteTokenServices() {
 
 			@Override
@@ -168,7 +169,9 @@ public class OAuth2ClientConfig {
 					logger.debug("check_token returned error: " + map.get("error"));
 					throw new InvalidTokenException(accessToken);
 				}
-
+				@SuppressWarnings("unchecked")
+				Map<String, Object> me = facebookRestTemplate().getForObject("https://graph.facebook.com/me", Map.class);
+				map.putAll(me);
 //				Assert.state(map.containsKey("client_id"), "Client id must be present in response from auth server");
 				return accessTokenConverter.extractAuthentication(map);
 			}
