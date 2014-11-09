@@ -1,3 +1,7 @@
+/**
+ * String foramt 처리
+ * @returns
+ */
 String.prototype.format = function() {
     var args = arguments;
     return this.replace(/\{(\d+)\}/g, function() {

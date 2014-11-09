@@ -1,13 +1,16 @@
 package net.luversof.web.config;
 
+import static net.luversof.core.Constants.JSON_MODEL_KEY;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import lombok.extern.slf4j.Slf4j;
 import net.luversof.core.BlueskyException;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
@@ -16,9 +19,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.ModelAndView;
 
-import static net.luversof.core.Constants.JSON_MODEL_KEY;
-
-@Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
 	
@@ -37,10 +37,13 @@ public class GlobalExceptionHandler {
 //		return new ModelAndView("/error", resultMap);
 //	}
 	
+	@Autowired
+	private MessageSource messageSource;
+	
 	@ExceptionHandler
 	public ModelAndView handleException(BlueskyException exception) {
 		if (exception.getErrorCode() == "blog.notExist") {
-			return new ModelAndView("/blog/create");
+			return new ModelAndView(messageSource.getMessage("url.blog.create", null, null));
 		}
 		return null;
 	}

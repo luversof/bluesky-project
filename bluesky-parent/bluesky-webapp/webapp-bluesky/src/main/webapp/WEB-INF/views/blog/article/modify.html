@@ -5,7 +5,7 @@
 	layout:decorator="/layout/defaultLayout">
 <head>
 	<script type="text/javascript" th:src="@{/js/bluesky_blog.js}"></script>
-	<script type="text/javascript" th:src="${@environment.getProperty('url.tinymce-jquery.js')}"></script>
+	<script type="text/javascript" th:src="#{url.tinymce-jquery.js}"></script>
 	<script type="text/javascript">
 		tinyMCE.init({
 			selector : "#content",

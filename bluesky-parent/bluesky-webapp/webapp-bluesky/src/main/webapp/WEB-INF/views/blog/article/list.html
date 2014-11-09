@@ -22,7 +22,7 @@
 			<tr th:if="${pageImpl.hasContent()}" th:each="article : ${pageImpl.getContent()}">
 				<td th:text="${article.id}">id</td>
 				<td th:text="${article.articleCategory} ? ${article.articleCategory.name}">category</td>
-				<td><a th:href="@{'/blog/article/' + ${article.id}}" th:text="${article.title}">title</a></td>
+				<td><a th:href="#{url.blog.view(${article.blog.id}, ${article.id})}" th:text="${article.title}">title</a></td>
 				<td th:text="${article.blog}">username</td>
 				<!-- <td th:text="${#dates.format(article.createdDate, 'yyyy-MM-dd')}">createdDate</td> -->
 				<td th:text="${article.createdDate}">createdDate</td>
@@ -37,8 +37,9 @@
 					<ul class="pagination" th:if="${pageImpl.totalPages} > 0">
 						<li th:each="i : ${#numbers.sequence(startPage, endPage)}" th:class="${i == currentPage} ? 'active'"><a th:href="@{/blog/article(page=${i})}" th:text="${i}">?</a></li>
 					</ul>
-					<br />
-					<a th:href="@{/blog/article/write}" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blog.menu.write}">write</a>
+					<div>
+						<a th:href="#{url.blog.write}" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blog.menu.write}">write</a>
+					</div>
 				</td>
 			</tr>
 		</tfoot>
