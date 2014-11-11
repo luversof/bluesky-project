@@ -114,9 +114,8 @@ public class ArticleController {
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{blog.blogId}/article", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-	@CheckBlogAndAddToArticle
 	@ResponseBody
-	public Article save(@Validated(Save.class) Article article) {
+	public Article save(@CheckBlogAndAddToArticle @Validated(Save.class) Article article) {
 		if (article.getArticleCategory() != null && article.getArticleCategory().getArticleCategoryId() != 0) {
 			article.setArticleCategory(articleCategoryService.findOne(article.getArticleCategory().getArticleCategoryId()));
 		}
@@ -126,9 +125,8 @@ public class ArticleController {
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{blog.blogId}/article/{articleId}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-	@CheckBlogAndAddToArticle
 	@ResponseBody
-	public Article modify(@Validated(Modify.class) Article article, @PathVariable long articleId) {
+	public Article modify(@CheckBlogAndAddToArticle @Validated(Modify.class) Article article, @PathVariable long articleId) {
 		return articleService.update(article);
 	}
 
