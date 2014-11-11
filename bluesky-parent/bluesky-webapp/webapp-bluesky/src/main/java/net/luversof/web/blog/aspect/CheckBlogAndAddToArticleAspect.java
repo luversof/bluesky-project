@@ -29,7 +29,8 @@ public class CheckBlogAndAddToArticleAspect {
 	@Autowired
 	private ArticleService articleService;
 	
-	@Before("@annotation(org.springframework.security.access.prepost.PreAuthorize) && @args(net.luversof.web.blog.annotation.CheckBlogAndAddToArticle) && args(article, ..)")
+//	@Before("@annotation(org.springframework.security.access.prepost.PreAuthorize) && execution( * *(@net.luversof.web.blog.annotation.CheckBlogAndAddToArticle (*), ..)) && args(article, ..)")
+	@Before("@annotation(org.springframework.security.access.prepost.PreAuthorize) && @annotation(net.luversof.web.blog.annotation.CheckBlogAndAddToArticle) && args(article, ..)")
 	public void beforeArticlePost(Article article) {
 		Blog targetBlog = blogService.findOne(article.getBlog().getBlogId());
 		

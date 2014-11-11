@@ -90,14 +90,14 @@ public class ArticleController {
 	 * @param modelMap
 	 * @return
 	 */
-	@RequestMapping(value = "/{blogId}/article/{articleId}", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	@RequestMapping(value = "/{blog.blogId}/article/{articleId}", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
 	public String view(@Validated(Get.class) Article article, ModelMap modelMap) {
 		modelMap.addAttribute(articleService.findOne(article.getArticleId()));
 		return "/blog/article/view";
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{blogId}/article/write", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	@RequestMapping(value = "/{blog.blogId}/article/write", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
 	public String writePage(Authentication authentication, ModelMap modelMap) {
 		modelMap.addAttribute(articleCategoryService.findByBlog(getBlog(authentication)));
 		return "/blog/article/write";
@@ -105,7 +105,7 @@ public class ArticleController {
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[article].blog.userId == authentication.principal.id")
-	@RequestMapping(value = "/{blogId}/article/{articleId}/modify", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	@RequestMapping(value = "/{blog.blogId}/article/{articleId}/modify", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
 	public String modifyPage(Authentication authentication, @Validated(Get.class) Article article, ModelMap modelMap) {
 		modelMap.addAttribute(articleService.findOne(article.getArticleId()));
 		modelMap.addAttribute(articleCategoryService.findByBlog(blogService.findOne(article.getArticleId())));
@@ -113,9 +113,10 @@ public class ArticleController {
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{blogId}/article", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(value = "/{blog.blogId}/article", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+	@CheckBlogAndAddToArticle
 	@ResponseBody
-	public Article save(@CheckBlogAndAddToArticle @Validated(Save.class) Article article) {
+	public Article save(@Validated(Save.class) Article article) {
 		if (article.getArticleCategory() != null && article.getArticleCategory().getArticleCategoryId() != 0) {
 			article.setArticleCategory(articleCategoryService.findOne(article.getArticleCategory().getArticleCategoryId()));
 		}
@@ -124,14 +125,15 @@ public class ArticleController {
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{blogId}/article/{articleId}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(value = "/{blog.blogId}/article/{articleId}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+	@CheckBlogAndAddToArticle
 	@ResponseBody
-	public Article modify(@CheckBlogAndAddToArticle @Validated(Modify.class) Article article, @PathVariable long articleId) {
+	public Article modify(@Validated(Modify.class) Article article, @PathVariable long articleId) {
 		return articleService.update(article);
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{blogId}/article/{articleId}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(value = "/{blog.blogId}/article/{articleId}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public void delete(Authentication authentication, @Validated(Get.class) Article article, ModelMap modelMap) {
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
 		articleService.delete(article.getArticleId(), blueskyUser.getId(), blueskyUser.getUserType().name());
