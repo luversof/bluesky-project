@@ -6,10 +6,8 @@ import net.luversof.jdbc.datasource.DataSourceContextHolder;
 import net.luversof.jdbc.datasource.DataSourceType;
 import net.luversof.user.repository.UserRepository;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j

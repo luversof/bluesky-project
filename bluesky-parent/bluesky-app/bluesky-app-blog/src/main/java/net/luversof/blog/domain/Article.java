@@ -12,7 +12,6 @@ import javax.validation.constraints.NotNull;
 
 import lombok.Data;
 
-import org.hibernate.annotations.Columns;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;

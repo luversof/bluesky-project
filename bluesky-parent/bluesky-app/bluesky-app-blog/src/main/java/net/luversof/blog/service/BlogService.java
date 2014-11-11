@@ -29,8 +29,8 @@ public class BlogService {
 	}
 	
 	@Transactional(readOnly = true)
-	public Blog findOne(long id) {
-		return blogRepository.findOne(id);
+	public Blog findOne(long blogId) {
+		return blogRepository.findOne(blogId);
 	}
 
 	@Transactional(readOnly = true)

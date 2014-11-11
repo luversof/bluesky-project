@@ -51,7 +51,7 @@ public class ArticleService {
 
 	@Transactional(readOnly = true)
 	public Page<Article> findByBlog(Blog blog, int page) {
-		Sort sort = new Sort(Sort.Direction.DESC, "id");
+		Sort sort = new Sort(Sort.Direction.DESC, "articleId");
 		PageRequest pageRequest = new PageRequest(page, PAGE_SIZE, sort);
 		return articleRepository.findByBlog(blog, pageRequest);
 	}

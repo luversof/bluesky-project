@@ -9,7 +9,6 @@ import net.luversof.blog.BlogConfig;
 import net.luversof.bookkeeping.BookkeepingConfig;
 import net.luversof.core.BlueskyApplicationContextInitializer;
 import net.luversof.security.SecurityConfig;
-import net.luversof.security.filter.CorsFilter;
 import net.luversof.web.BlueskyWebConfig;
 
 import org.springframework.web.filter.CharacterEncodingFilter;

@@ -6,14 +6,14 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.blog.domain.Article;
 import net.luversof.blog.domain.ArticleCategory;
+import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.ArticleRepository;
 import net.luversof.blog.service.ArticleCategoryService;
 import net.luversof.blog.service.ArticleService;
+import net.luversof.blog.service.BlogService;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 
 @Slf4j
 public class ArticleTest extends GeneralTest {
@@ -26,6 +26,9 @@ public class ArticleTest extends GeneralTest {
 	
 	@Autowired
 	private ArticleCategoryService blogCategoryService;
+	
+	@Autowired
+	private BlogService blogService;
 	
 
 	@Test
@@ -82,5 +85,16 @@ public class ArticleTest extends GeneralTest {
 		
 		
 		log.debug("list : {}", list);
+	}
+	
+	@Test
+	public void 블로그객체비교테스트() {
+		Blog blog = blogService.findOne(1);
+		Article article = articleService.findOne(1);
+		
+		System.out.println(blog);
+		System.out.println(article.getBlog());
+		System.out.println(blog.equals(article.getBlog()));
+		
 	}
 }
