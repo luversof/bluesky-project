@@ -16,10 +16,10 @@ public class UserAuthority {
 
 	@Id
 	@GeneratedValue
-	private long id;
+	private long userAuthorityId;
 
 	@ManyToOne
-	@JoinColumn(name = "user_id")
+	@JoinColumn(name = "userId")
 	private User user;
 
 	private String authority;

@@ -31,7 +31,7 @@ public class LuversofUserDetailsService implements UserDetailsService {
 		for (UserAuthority userAuthority : userAuthorityList) {
 			authoritySet.add(new SimpleGrantedAuthority(userAuthority.getAuthority()));
 		}
-		return new BlueskyUser(user.getId(), user.getUsername(), user.getPassword(), authoritySet, true, true, true, user.isEnable(), UserType.LOCAL);
+		return new BlueskyUser(user.getUserId(), user.getUsername(), user.getPassword(), authoritySet, true, true, true, user.isEnable(), UserType.LOCAL);
 	}
 
 }

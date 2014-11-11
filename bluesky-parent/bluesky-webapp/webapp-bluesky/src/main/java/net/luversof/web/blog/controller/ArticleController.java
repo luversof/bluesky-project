@@ -12,6 +12,7 @@ import net.luversof.core.BlueskyException;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.user.service.UserService;
 import net.luversof.web.AuthorizeRole;
+import net.luversof.web.blog.annotation.AddBlogToArticle;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -34,7 +35,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
  */
 @Controller
 @RequestMapping("/blog")
-// @RequestMapping("/blog")
 public class ArticleController {
 
 	private static final int PAGE_BLOCK_SIZE = 10;
@@ -92,7 +92,7 @@ public class ArticleController {
 	 */
 	@RequestMapping(value = "/{blogId}/article/{id}", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
 	public String view(@Validated(Get.class) Article article, ModelMap modelMap) {
-		modelMap.addAttribute(articleService.findOne(article.getId()));
+		modelMap.addAttribute(articleService.findOne(article.getArticleId()));
 		return "/blog/article/view";
 	}
 
@@ -107,37 +107,35 @@ public class ArticleController {
 	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[article].blog.userId == authentication.principal.id")
 	@RequestMapping(value = "/{blogId}/article/{id}/modify", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
 	public String modifyPage(Authentication authentication, @Validated(Get.class) Article article, ModelMap modelMap) {
-		modelMap.addAttribute(articleService.findOne(article.getId()));
-		modelMap.addAttribute(articleCategoryService.findByBlog(blogService.findOne(article.getId())));
+		modelMap.addAttribute(articleService.findOne(article.getArticleId()));
+		modelMap.addAttribute(articleCategoryService.findByBlog(blogService.findOne(article.getArticleId())));
 		return "/blog/article/modify";
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/$!/article", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(value = "/{blogId}/article", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+	@AddBlogToArticle
 	@ResponseBody
-	public Article save(Authentication authentication, @Validated(Save.class) Article article, ModelMap modelMap) {
-		if (article.getArticleCategory() != null && article.getArticleCategory().getId() != 0) {
-			article.setArticleCategory(articleCategoryService.findOne(article.getArticleCategory().getId()));
+	public Article save(@PathVariable long blogId, @Validated(Save.class) Article article) {
+		if (article.getArticleCategory() != null && article.getArticleCategory().getArticleCategoryId() != 0) {
+			article.setArticleCategory(articleCategoryService.findOne(article.getArticleCategory().getArticleCategoryId()));
 		}
-		article.setBlog(getBlog(authentication));
+		//article.setBlog(getBlog(authentication));
 		return articleService.save(article);
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{blogId}/article/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+	@AddBlogToArticle
 	@ResponseBody
-	public Article modify(Authentication authentication, @Validated(Modify.class) Article article, ModelMap modelMap) {
-		article.setBlog(getBlog(authentication));
+	public Article modify(@PathVariable long blogId, @Validated(Modify.class) Article article, @PathVariable long articleId) {
 		return articleService.update(article);
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/$!/article/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(value = "/{blogId}/article/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public void delete(Authentication authentication, @Validated(Get.class) Article article, ModelMap modelMap) {
-		Article targetArticle = articleService.findOne(article.getId());
-		if (((BlueskyUser) authentication.getPrincipal()).getId() != targetArticle.getBlog().getUserId()) {
-			throw new BlueskyException("username is not owner");
-		}
-		articleService.delete(article.getId());
+		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
+		articleService.delete(article.getArticleId(), blueskyUser.getId(), blueskyUser.getUserType().name());
 	}
 }

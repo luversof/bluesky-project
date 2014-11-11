@@ -6,11 +6,13 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
 import javax.validation.constraints.NotNull;
 
 import lombok.Data;
 
+import org.hibernate.annotations.Columns;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -24,9 +26,10 @@ public class Article {
 	@Id
 	@GeneratedValue
 	@NotNull(groups = { Get.class })
-	private long id;
+	private long articleId;
 	
 	@OneToOne
+	@JoinColumn(name = "blogId")
 	private Blog blog;
 
 	@NotEmpty(groups = { Save.class, Modify.class })
@@ -46,6 +49,7 @@ public class Article {
 	private LocalDateTime lastModifiedDate;
 
 	@OneToOne
+	@JoinColumn(name = "articleCategoryId")
 	private ArticleCategory articleCategory;
 
 	public interface Get {

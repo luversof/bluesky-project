@@ -20,7 +20,7 @@
 				<div class="panel-body" th:attr="data-article-content=${article.content}">content</div>
 			</div>
 			<div class="text-center">
-				<a href="write" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blog.menu.write}">write</a>
+				<a th:href="#{url.blog.write(${article.blog.id})}" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blog.menu.write}">write</a>
 				<a sec:authorize="isAuthenticated()" th:if="${#authentication.principal.id == article.blog.userId}" th:href="#{url.blog.modify(${article.blog.id}, ${article.id})}" class="btn btn-primary" th:text="#{blog.menu.modify}">modify</a>
 				<a sec:authorize="isAuthenticated()" th:if="${#authentication.principal.id == article.blog.userId}" class="btn btn-warning delete" th:attr="data-article-id=${article.id}" th:text="#{blog.menu.delete}">delete</a>
 				<a th:href="#{url.blog.list(${article.blog.id})}" class="btn btn-default" th:text="#{blog.menu.list}">list</a>

@@ -44,16 +44,6 @@
 		</dependency>
 		<!-- (e) encryption -->
 
-		<!-- (s) db -->
-		<dependency>
-			<groupId>com.mysema.querydsl</groupId>
-			<artifactId>querydsl-jpa</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.mysema.querydsl</groupId>
-			<artifactId>querydsl-apt</artifactId>
-		</dependency>
-		<!-- (e) db -->
 		<dependency>
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-core</artifactId>
