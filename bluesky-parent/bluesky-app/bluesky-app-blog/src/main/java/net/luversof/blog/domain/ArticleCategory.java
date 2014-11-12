@@ -13,10 +13,10 @@ import lombok.Data;
 public class ArticleCategory {
 	@Id
 	@GeneratedValue
-	private long articleCategoryId;
+	private long id;
 
 	@OneToOne
-	@JoinColumn(name = "blogId")
+//	@JoinColumn(name = "blogId")
 	private Blog blog;
 
 	private String name;

@@ -52,7 +52,7 @@ public class ArticleTest extends GeneralTest {
 		Article savedArticle = articleService.save(article);
 		log.debug("article : {}", article);
 		log.debug("savedBlog : {}", savedArticle);
-		log.debug("savedBlog : {}", savedArticle.getArticleId());
+		log.debug("savedBlog : {}", savedArticle.getId());
 	}
 	
 	@Test

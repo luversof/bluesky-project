@@ -9,9 +9,9 @@ import net.luversof.blog.service.ArticleCategoryService;
 import net.luversof.blog.service.ArticleService;
 import net.luversof.blog.service.BlogService;
 import net.luversof.core.BlueskyException;
-import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.user.service.UserService;
 import net.luversof.web.AuthorizeRole;
+import net.luversof.web.blog.annotation.CheckBlog;
 import net.luversof.web.blog.annotation.CheckBlogAndAddToArticle;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,25 +51,18 @@ public class ArticleController {
 	@Autowired
 	private ArticleCategoryService articleCategoryService;
 
-	private Blog getBlog(Authentication authentication) {
-		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
-		return blogService.findByUser(blueskyUser.getId(), blueskyUser.getUserType().name()).get(0);
-	}
-
-	private Blog getBlog(long blogId) {
-		return blogService.findOne(blogId);
-	}
-
 	/**
 	 * 글목록
+	 * 
 	 * @param blogId
 	 * @param page
 	 * @param modelMap
 	 * @return
 	 */
-	@RequestMapping(value = "/{blogId}/article", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	@RequestMapping(value = "/{blogId}/article", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
 	public String list(@PathVariable long blogId, @RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
-		Page<Article> articlePage = articleService.findByBlog(getBlog(blogId), page - 1);
+		Blog blog = blogService.findOne(blogId);
+		Page<Article> articlePage = articleService.findByBlog(blog, page - 1);
 		if (articlePage.getTotalPages() > 0 && articlePage.getTotalPages() < page) {
 			throw new BlueskyException("invalid page");
 		}
@@ -86,54 +79,53 @@ public class ArticleController {
 
 	/**
 	 * 글보기
+	 * 
 	 * @param article
 	 * @param modelMap
 	 * @return
 	 */
-	@RequestMapping(value = "/{blog.blogId}/article/{articleId}", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	@RequestMapping(value = "/{blog.id}/article/{id}", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
 	public String view(@Validated(Get.class) Article article, ModelMap modelMap) {
-		modelMap.addAttribute(articleService.findOne(article.getArticleId()));
+		modelMap.addAttribute(articleService.findOne(article.getId()));
 		return "/blog/article/view";
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{blog.blogId}/article/write", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
-	public String writePage(Authentication authentication, ModelMap modelMap) {
-		modelMap.addAttribute(articleCategoryService.findByBlog(getBlog(authentication)));
+	@RequestMapping(value = "/{id}/article/write", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	public String writePage(@CheckBlog Blog blog, ModelMap modelMap) {
+		modelMap.addAttribute(articleCategoryService.findByBlog(blog));
 		return "/blog/article/write";
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[article].blog.userId == authentication.principal.id")
-	@RequestMapping(value = "/{blog.blogId}/article/{articleId}/modify", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
-	public String modifyPage(Authentication authentication, @Validated(Get.class) Article article, ModelMap modelMap) {
-		modelMap.addAttribute(articleService.findOne(article.getArticleId()));
-		modelMap.addAttribute(articleCategoryService.findByBlog(blogService.findOne(article.getArticleId())));
+	@RequestMapping(value = "/{blog.id}/article/{id}/modify", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	public String modifyPage(@CheckBlogAndAddToArticle @Validated(Get.class) Article article, ModelMap modelMap) {
+		modelMap.addAttribute(articleService.findOne(article.getId()));
+		modelMap.addAttribute(articleCategoryService.findByBlog(blogService.findOne(article.getId())));
 		return "/blog/article/modify";
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{blog.blogId}/article", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(value = "/{blog.id}/article", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseBody
 	public Article save(@CheckBlogAndAddToArticle @Validated(Save.class) Article article) {
-		if (article.getArticleCategory() != null && article.getArticleCategory().getArticleCategoryId() != 0) {
-			article.setArticleCategory(articleCategoryService.findOne(article.getArticleCategory().getArticleCategoryId()));
+		if (article.getArticleCategory() != null && article.getArticleCategory().getId() != 0) {
+			article.setArticleCategory(articleCategoryService.findOne(article.getArticleCategory().getId()));
 		}
-		//article.setBlog(getBlog(authentication));
 		return articleService.save(article);
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{blog.blogId}/article/{articleId}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(value = "/{blog.id}/article/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseBody
-	public Article modify(@CheckBlogAndAddToArticle @Validated(Modify.class) Article article, @PathVariable long articleId) {
+	public Article modify(@CheckBlogAndAddToArticle @Validated(Modify.class) Article article) {
 		return articleService.update(article);
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{blog.blogId}/article/{articleId}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public void delete(Authentication authentication, @Validated(Get.class) Article article, ModelMap modelMap) {
-		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
-		articleService.delete(article.getArticleId(), blueskyUser.getId(), blueskyUser.getUserType().name());
+	@RequestMapping(value = "/{blog.id}/article/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public void delete(@CheckBlogAndAddToArticle @Validated(Get.class) Article article, ModelMap modelMap) {
+		articleService.delete(article.getId());
 	}
 }

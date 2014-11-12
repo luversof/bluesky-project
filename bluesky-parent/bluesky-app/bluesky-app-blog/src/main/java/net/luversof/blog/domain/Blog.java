@@ -11,7 +11,7 @@ import lombok.Data;
 public class Blog {
 	@Id
 	@GeneratedValue
-	private long blogId;
+	private long id;
 	
 	private long userId;
 	

@@ -9,7 +9,7 @@ $(document).ready(function() {
 					, dataType : "json"
 					, data : form.serialize()
 					, success : function(data) {
-						location.href = "/blog/{0}/article/{1}".format(data.blog.blogId, data.articleId);
+						location.href = "/blog/{0}/article/{1}".format(data.blog.id, data.id);
 					}
 				});
 			}
@@ -21,17 +21,18 @@ $(document).ready(function() {
 					, dataType : "json"
 					, data : form.serialize()
 					, success : function(data) {
-						location.href = "/blog/{0}/article/{1}".format(data.blog.blogId, data.articleId);
+						location.href = "/blog/{0}/article/{1}".format(data.blog.id, data.id);
 					}
 				});
 			}
 			, remove : function() {
+				var form = $(".delete.form-horizontal");
 				$.ajax({
 					type : "delete"
-					, url : "/blog/$!/article/" + $("[data-article-id]").attr("data-article-id")
+					, url : form.attr("action")
 					, dataType : "json"
 					, success : function(data) {
-						location.href = "/blog/$!/article/";
+						location.href = form.attr("action") + "/../";
 					}
 				});
 			}

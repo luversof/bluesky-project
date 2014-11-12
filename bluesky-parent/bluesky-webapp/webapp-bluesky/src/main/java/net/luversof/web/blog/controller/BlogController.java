@@ -24,15 +24,15 @@ public class BlogController {
 	private BlogService blogService;
 
 	
-	@RequestMapping(value = "/{blogId}", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
-	public String forwardArticleList(@PathVariable long blogId) {
-		return MessageFormat.format("redirect:/blog/{0}/article", blogId);
+	@RequestMapping(value = "/{id}", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	public String forwardArticleList(@PathVariable long id) {
+		return MessageFormat.format("redirect:/blog/{0}/article", id);
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = { "/$!", "/$!/article" }, method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
 	public String create(Blog blog) {
-		return forwardArticleList(blog.getBlogId()); 
+		return forwardArticleList(blog.getId()); 
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
@@ -40,7 +40,7 @@ public class BlogController {
 	public String save(Authentication authentication) {
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
 		Blog blog = blogService.save(blueskyUser.getId(), blueskyUser.getUserType().name());
-		return forwardArticleList(blog.getBlogId());
+		return forwardArticleList(blog.getId());
 	}
 	
 	

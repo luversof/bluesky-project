@@ -23,7 +23,7 @@ import org.springframework.format.annotation.DateTimeFormat.ISO;
 public class User {
 	@Id
 	@GeneratedValue
-	private long userId;
+	private long id;
 
 	@Column(unique = true, nullable = false)
 	private String username;
@@ -37,6 +37,6 @@ public class User {
 	private boolean enable;
 
 	@OneToMany(fetch = FetchType.EAGER,cascade=CascadeType.ALL)
-	@JoinColumn(name = "userAuthorityId")
+//	@JoinColumn(name = "userAuthorityId")
 	private List<UserAuthority> userAuthorityList;
 }

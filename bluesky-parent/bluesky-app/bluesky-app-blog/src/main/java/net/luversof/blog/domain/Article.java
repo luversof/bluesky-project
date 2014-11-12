@@ -25,10 +25,10 @@ public class Article {
 	@Id
 	@GeneratedValue
 	@NotNull(groups = { Get.class })
-	private long articleId;
+	private long id;
 	
 	@OneToOne
-	@JoinColumn(name = "blogId")
+//	@JoinColumn(name = "blogId")
 	private Blog blog;
 
 	@NotEmpty(groups = { Save.class, Modify.class })
@@ -48,7 +48,7 @@ public class Article {
 	private LocalDateTime lastModifiedDate;
 
 	@OneToOne
-	@JoinColumn(name = "articleCategoryId")
+//	@JoinColumn(name = "articleCategoryId")
 	private ArticleCategory articleCategory;
 
 	public interface Get {

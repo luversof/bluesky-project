@@ -32,14 +32,14 @@ public class ArticleService {
 	}
 	
 	public Article update(Article article) {
-		Article targetArticle = findOne(article.getArticleId());
+		Article targetArticle = findOne(article.getId());
 		if (!article.getBlog().equals(targetArticle.getBlog())) {
 			throw new BlueskyException("blog.article.permissionDenied");
 		}
 		targetArticle.setTitle(article.getTitle());
 		targetArticle.setContent(article.getContent());
-		if (article.getArticleCategory() != null && article.getArticleCategory().getArticleCategoryId() != 0) {
-			targetArticle.setArticleCategory(articleCategoryService.findOne(article.getArticleCategory().getArticleCategoryId()));
+		if (article.getArticleCategory() != null && article.getArticleCategory().getId() != 0) {
+			targetArticle.setArticleCategory(articleCategoryService.findOne(article.getArticleCategory().getId()));
 		}
 		return articleRepository.save(targetArticle);
 	}
@@ -51,16 +51,12 @@ public class ArticleService {
 
 	@Transactional(readOnly = true)
 	public Page<Article> findByBlog(Blog blog, int page) {
-		Sort sort = new Sort(Sort.Direction.DESC, "articleId");
+		Sort sort = new Sort(Sort.Direction.DESC, "id");
 		PageRequest pageRequest = new PageRequest(page, PAGE_SIZE, sort);
 		return articleRepository.findByBlog(blog, pageRequest);
 	}
 
-	public void delete(long id, long userId, String userType) {
-		Article article = articleRepository.findOne(id);
-		if (article.getBlog().getUserId() != userId || !article.getBlog().getUserType().equals(userType)) {
-			throw new BlueskyException("blog.article.permissionDenied");
-		}
+	public void delete(long id) {
 		articleRepository.delete(id);
 	}
 }

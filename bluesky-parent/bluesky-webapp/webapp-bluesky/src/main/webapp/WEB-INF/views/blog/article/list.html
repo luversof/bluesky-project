@@ -20,9 +20,9 @@
 		</thead>
 		<tbody>
 			<tr th:if="${pageImpl.hasContent()}" th:each="article : ${pageImpl.getContent()}">
-				<td th:text="${article.articleId}">id</td>
+				<td th:text="${article.id}">id</td>
 				<td th:text="${article.articleCategory} ? ${article.articleCategory.name}">category</td>
-				<td><a th:href="#{url.blog.view(${article.blog.blogId}, ${article.articleId})}" th:text="${article.title}">title</a></td>
+				<td><a th:href="#{url.blog.view(${article.blog.id}, ${article.id})}" th:text="${article.title}">title</a></td>
 				<td th:text="${article.blog}">username</td>
 				<!-- <td th:text="${#dates.format(article.createdDate, 'yyyy-MM-dd')}">createdDate</td> -->
 				<td th:text="${article.createdDate}">createdDate</td>
