@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 public class CheckBlogAndAddToArticleAspect {
 
 	@Autowired 
-	private BlogService blogService;.
+	private BlogService blogService;
 	
 	@Autowired
 	private ArticleService articleService;
