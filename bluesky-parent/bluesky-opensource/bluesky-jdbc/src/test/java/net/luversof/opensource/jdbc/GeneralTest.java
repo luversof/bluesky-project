@@ -1,11 +1,10 @@
-package net.luversof.core;
-
+package net.luversof.opensource.jdbc;
 
 import net.luversof.TestApplication;
+import net.luversof.core.BlueskyApplicationContextInitializer;
 
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @RunWith(SpringJUnit4ClassRunner.class)

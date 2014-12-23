@@ -1,2 +1,1 @@
-spring.datasource:
-  driverClassName: com.mysql.jdbc.jdbc2.optional.MysqlDataSource
+#spring.datasource.driverClassName: com.mysql.jdbc.jdbc2.optional.MysqlDataSource

@@ -9,8 +9,8 @@
 	<artifactId>bluesky-opensource</artifactId>
 	<packaging>pom</packaging>
 	<modules>
-		<module>bluesky-data-jpa</module>
+		<module>bluesky-opensource-jdbc</module>
+		<module>bluesky-opensource-data-jpa</module>
 		<module>bluesky-security</module>
-		<module>bluesky-jdbc</module>
 	</modules>
 </project>

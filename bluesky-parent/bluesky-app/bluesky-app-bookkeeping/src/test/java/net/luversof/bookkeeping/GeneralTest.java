@@ -1,7 +1,7 @@
 package net.luversof.bookkeeping;
 
 import net.luversof.core.BlueskyApplicationContextInitializer;
-import net.luversof.data.jpa.DataJpaConfig;
+import net.luversof.data.jpa.config.DataJpaConfig;
 
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;

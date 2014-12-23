@@ -2,7 +2,7 @@ package net.luversof.bookkeeping;
 
 import net.luversof.core.Banner;
 import net.luversof.core.BlueskyCoreConfig;
-import net.luversof.data.jpa.DataJpaConfig;
+import net.luversof.data.jpa.config.DataJpaConfig;
 
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;

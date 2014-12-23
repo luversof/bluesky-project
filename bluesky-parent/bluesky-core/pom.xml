@@ -8,6 +8,17 @@
 	</parent>
 	<artifactId>bluesky-core</artifactId>
 	<dependencies>
+		<!-- (s) spring boot -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-aop</artifactId>
+		</dependency>
+		<!-- (e) spring boot -->
+
 		<!-- (s) encryption -->
 		<dependency>
 			<groupId>org.bouncycastle</groupId>
@@ -20,13 +31,21 @@
 		<!-- (e) encryption -->
 
 		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+		</dependency>
+
+		<dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-jsr310</artifactId>
 		</dependency>
 
+		<!-- (s) spring boot test -->
 		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-context</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
 		</dependency>
+		<!-- (e) spring boot test -->
 	</dependencies>
 </project>

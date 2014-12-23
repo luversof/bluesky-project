@@ -9,10 +9,6 @@ import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 @ComponentScan
 public class BlueskyCoreConfig {
 
-	public BlueskyCoreConfig() {
-		Banner.write(this);
-	}
-
 	@Bean
 	public static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
 		return new PropertySourcesPlaceholderConfigurer();
