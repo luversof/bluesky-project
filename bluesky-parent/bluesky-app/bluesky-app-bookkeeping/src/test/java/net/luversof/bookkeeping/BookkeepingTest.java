@@ -17,6 +17,7 @@ public class BookkeepingTest extends GeneralTest {
 	public void save() {
 		Bookkeeping bookkeeping = new Bookkeeping();
 		bookkeeping.setUserId(TEST_USER_ID);
+		bookkeeping.setName("test");
 		Bookkeeping result = bookkeepingService.save(bookkeeping);
 		log.debug("bookkeeping : {}", bookkeeping);
 		log.debug("result : {}", result);

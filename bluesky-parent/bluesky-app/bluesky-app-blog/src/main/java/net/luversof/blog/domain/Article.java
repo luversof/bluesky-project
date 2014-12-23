@@ -15,6 +15,8 @@ import lombok.Data;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
@@ -37,12 +39,12 @@ public class Article {
 	@NotEmpty(groups = { Save.class, Modify.class })
 	private String content;
 
-	@JsonDeserialize(using = LocalDateTimeDeserializer.class)
+//	@JsonDeserialize(using = LocalDateTimeDeserializer.class)
 	@Column(updatable = false)
 	@CreatedDate
 	private LocalDateTime createdDate;
 
-	@JsonDeserialize(using = LocalDateTimeDeserializer.class)
+//	@JsonDeserialize(using = LocalDateTimeDeserializer.class)
 	@Column(updatable = false)
 	@LastModifiedDate
 	private LocalDateTime lastModifiedDate;

@@ -8,8 +8,9 @@ import net.luversof.blog.repository.ArticleCategoryRepository;
 
 
 
-import net.luversof.jdbc.datasource.DataSource;
-import net.luversof.jdbc.datasource.DataSourceType;
+
+import net.luversof.opensource.jdbc.routing.DataSource;
+import net.luversof.opensource.jdbc.routing.DataSourceType;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

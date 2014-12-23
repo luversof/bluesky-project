@@ -22,6 +22,26 @@ public class SimpleTest extends GeneralTest {
 	
 	@Autowired
 	private UserService userService;
+	
+	
+	@Test
+	public void insertTest() {
+		User user = new User();
+		user.setEnable(true);
+		user.setPassword("Test");
+		user.setUsername("username4");
+		
+		User userResult = userService.save(user);
+		log.debug("user : {}", user);
+		log.debug("userResult : {}", userResult);
+		
+	}
+	
+	@Test
+	public void getTest() {
+		User user = userService.findOne(1);
+		log.debug("user : {}", user);
+	}
 
 	@Test
 	public void testDefaultSettings() throws Exception {

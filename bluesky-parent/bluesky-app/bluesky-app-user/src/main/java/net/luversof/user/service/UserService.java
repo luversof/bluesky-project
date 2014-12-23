@@ -3,8 +3,8 @@ package net.luversof.user.service;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.luversof.jdbc.datasource.DataSource;
-import net.luversof.jdbc.datasource.DataSourceType;
+import net.luversof.opensource.jdbc.routing.DataSource;
+import net.luversof.opensource.jdbc.routing.DataSourceType;
 import net.luversof.user.domain.User;
 import net.luversof.user.domain.UserAuthority;
 import net.luversof.user.repository.UserRepository;
@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
-@DataSource(DataSourceType.SECURITY)
+@DataSource(DataSourceType.MEMBER)
 public class UserService {
 
 	@Autowired

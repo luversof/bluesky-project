@@ -5,8 +5,8 @@ import java.util.List;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.BlogRepository;
 import net.luversof.core.BlueskyException;
-import net.luversof.jdbc.datasource.DataSource;
-import net.luversof.jdbc.datasource.DataSourceType;
+import net.luversof.opensource.jdbc.routing.DataSource;
+import net.luversof.opensource.jdbc.routing.DataSourceType;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

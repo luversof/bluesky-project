@@ -1,6 +1,7 @@
 package net.luversof.opensource.data.jpa.domain;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import javax.persistence.CascadeType;
@@ -30,8 +31,8 @@ public class User {
 	private String password;
 
 	@CreatedDate
-	@DateTimeFormat(iso = ISO.DATE_TIME)
-	private LocalDateTime createdDate;
+//	@DateTimeFormat(iso = ISO.DATE_TIME)
+	private ZonedDateTime createdDate;
 
 	private boolean enable;
 

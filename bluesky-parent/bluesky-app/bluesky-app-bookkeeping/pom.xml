@@ -10,12 +10,21 @@
 	<dependencies>
 		<dependency>
 			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-data-jpa</artifactId>
+			<artifactId>bluesky-opensource-data-jpa</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
-		<dependency>
+		
+		<!-- <dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-jsr310</artifactId>
+		</dependency> -->
+
+		<!-- (s) spring boot test -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
 		</dependency>
+		<!-- (e) spring boot test -->
 	</dependencies>
 </project>

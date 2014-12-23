@@ -3,7 +3,6 @@ package net.luversof.user.domain;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 
 import lombok.Data;
@@ -19,7 +18,6 @@ public class UserAuthority {
 	private long id;
 
 	@ManyToOne
-//	@JoinColumn(name = "userId")
 	private User user;
 
 	private String authority;
