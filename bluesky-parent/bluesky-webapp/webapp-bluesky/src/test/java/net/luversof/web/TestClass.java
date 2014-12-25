@@ -2,8 +2,8 @@ package net.luversof.web;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.blog.repository.BlogRepository;
-import net.luversof.jdbc.datasource.DataSourceContextHolder;
-import net.luversof.jdbc.datasource.DataSourceType;
+import net.luversof.opensource.jdbc.routing.DataSourceContextHolder;
+import net.luversof.opensource.jdbc.routing.DataSourceType;
 import net.luversof.user.repository.UserRepository;
 
 import org.junit.Test;
@@ -22,7 +22,7 @@ public class TestClass extends GeneralTest {
 	@Test
 	@Transactional
 	public void test(){
-		DataSourceContextHolder.setDataSourceType(DataSourceType.SECURITY);
+		DataSourceContextHolder.setDataSourceType(DataSourceType.MEMBER);
 		log.debug("datasource : {}", DataSourceContextHolder.getDataSourceType());
 		userRepository.findByUsername("bluesky");
 		

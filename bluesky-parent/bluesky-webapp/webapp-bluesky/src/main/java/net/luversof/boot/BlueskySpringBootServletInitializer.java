@@ -3,8 +3,6 @@ package net.luversof.boot;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
-import net.luversof.blog.BlogConfig;
-import net.luversof.bookkeeping.BookkeepingConfig;
 import net.luversof.security.SecurityConfig;
 import net.luversof.web.BlueskyWebConfig;
 
@@ -31,7 +29,7 @@ public class BlueskySpringBootServletInitializer extends SpringBootServletInitia
 	protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
 		// TODO Auto-generated method stub
 //		application.parent();
-		application.sources(BlueskyWebConfig.class, BlogConfig.class, BookkeepingConfig.class, SecurityConfig.class);
+//		application.sources(BlueskyWebConfig.class, BlogConfig.class, BookkeepingConfig.class, SecurityConfig.class);
 		return super.configure(application);
 	}
 	

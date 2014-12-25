@@ -9,12 +9,6 @@
 	<artifactId>webapp-bluesky</artifactId>
 	<packaging>war</packaging>
 	<dependencies>
-		<!-- (s) provided -->
-		<dependency>
-			<groupId>javax.servlet</groupId>
-			<artifactId>javax.servlet-api</artifactId>
-		</dependency>
-		<!-- (e) provided -->
 
 		<!-- (s) bluesky -->
 		<dependency>
@@ -34,18 +28,6 @@
 		</dependency>
 		<!-- (e) bluesky -->
 
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-lang3</artifactId>
-		</dependency>
-
-		<!-- (s) template engine -->
-		<dependency>
-			<groupId>org.thymeleaf.extras</groupId>
-			<artifactId>thymeleaf-extras-springsecurity3</artifactId>
-		</dependency>
-		<!-- (s) template engine -->
-
 		<!-- (s) spring-boot -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -56,7 +38,21 @@
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
 		</dependency>
 		<!-- (e) spring-boot -->
+		
+		<!-- (s) template engine -->
+		<dependency>
+			<groupId>org.thymeleaf.extras</groupId>
+			<artifactId>thymeleaf-extras-springsecurity3</artifactId>
+		</dependency>
+		<!-- (s) template engine -->
 
+		<!-- (s) spring boot test -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- (e) spring boot test -->
 	</dependencies>
 	
 	<properties>

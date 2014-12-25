@@ -10,7 +10,6 @@ import java.util.Locale;
 import net.luversof.web.blog.support.BlogHandlerMethodArgumentResolver;
 import nz.net.ultraq.thymeleaf.LayoutDialect;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
@@ -31,6 +30,7 @@ import org.thymeleaf.extras.springsecurity3.dialect.SpringSecurityDialect;
 import org.thymeleaf.spring4.SpringTemplateEngine;
 import org.thymeleaf.spring4.view.ThymeleafViewResolver;
 import org.thymeleaf.templateresolver.ServletContextTemplateResolver;
+import org.thymeleaf.util.ArrayUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
