@@ -63,4 +63,11 @@ public class GlobalExceptionHandler {
 		resultMap.put(JSON_MODEL_KEY, errorList);
 		return new ModelAndView("/error", resultMap);
 	}
+	
+	@ExceptionHandler
+	@ResponseStatus(value=HttpStatus.BAD_REQUEST)
+	public ModelAndView handleException(Exception exception) {
+		exception.printStackTrace();
+		return new ModelAndView("/error");
+	}
 }
