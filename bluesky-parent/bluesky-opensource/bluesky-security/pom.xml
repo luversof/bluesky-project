@@ -6,7 +6,7 @@
 		<artifactId>bluesky-opensource</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>bluesky-security</artifactId>
+	<artifactId>bluesky-opensource-security</artifactId>
 	<dependencies>
 
 		<!-- (s) provided -->

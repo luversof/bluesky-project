@@ -1,15 +1,13 @@
-package net.luversof.security;
+package net.luversof.security.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
-import org.springframework.security.config.annotation.web.servlet.configuration.EnableWebMvcSecurity;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
-@EnableWebMvcSecurity
-@EnableGlobalMethodSecurity(prePostEnabled = true)
+@PropertySource("security.properties")
 public class SecurityConfig {
 
 	@Bean

@@ -1,18 +1,6 @@
-<configuration debug="true">
-	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
-		<!-- encoders are by default assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder -->
-		<encoder>
-			<pattern>%date{yyyy-MM-dd HH:mm:ss} [%-5level] [%-60logger] - %msg %n</pattern>
-		</encoder>
-	</appender>
-
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<include resource="org/springframework/boot/logging/logback/base.xml"/>
 	<logger name="net.luversof" level="debug" />
-	<logger name="org.springframework" level="info" />
-	<logger name="org.hibernate" level="info" />
-	<logger name="org.hibernate.SQL" level="debug" />
-	<logger name="org.hibernate.type" level="trace" />
-
-	<root level="info">
-		<appender-ref ref="console" />
-	</root>
+	<!-- <logger name="org.springframework" level="debug" /> -->
 </configuration>

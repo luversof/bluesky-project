@@ -23,7 +23,7 @@
 		</dependency>
 		<dependency>
 			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-security</artifactId>
+			<artifactId>bluesky-opensource-security</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 		<!-- (e) bluesky -->

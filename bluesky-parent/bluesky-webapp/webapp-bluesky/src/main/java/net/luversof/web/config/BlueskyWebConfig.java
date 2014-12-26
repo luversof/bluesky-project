@@ -1,23 +1,21 @@
-package net.luversof.web;
+package net.luversof.web.config;
 
 import java.nio.charset.StandardCharsets;
 
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 
 @Configuration
-@ComponentScan
-@EnableAspectJAutoProxy(proxyTargetClass = true)
+@PropertySource("web.properties")
 public class BlueskyWebConfig {
 	
 	@Bean
 	public MessageSource messageSource() {
 		ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
-		messageSource.setBasenames("public-resources/message/message", "public-resources/message/url");
+		messageSource.setBasenames("classpath:static/message/message", "classpath:static/message/url");
 		messageSource.setCacheSeconds(5);
 		messageSource.setDefaultEncoding(StandardCharsets.UTF_8.name());
 		return messageSource;

@@ -1,47 +1,7 @@
-<configuration debug="true">
-	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
-		<!-- encoders are by default assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder -->
-		<withJansi>true</withJansi>
-		<encoder>
-			<pattern>%date{yyyy-MM-dd HH:mm:ss} [%-5level] [%-60logger] - %msg %n</pattern>
-		</encoder>
-	</appender>
-	<appender name="eclipseConsole" class="ch.qos.logback.core.ConsoleAppender">
-		<!-- encoders are by default assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder -->
-		<withJansi>true</withJansi>
-		<encoder>
-			<pattern>%highlight(%date{yyyy-MM-dd HH:mm:ss} [%-5level] [%-60logger] - %msg %n)</pattern>
-		</encoder>
-	</appender>
-	<appender name="luversof" class="ch.qos.logback.core.ConsoleAppender">
-		<!-- encoders are by default assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder -->
-		<withJansi>true</withJansi>
-		<encoder>
-			<pattern>%boldMagenta(%date{yyyy-MM-dd HH:mm:ss} [%-5level] [%-60logger] - %msg %n)</pattern>
-		</encoder>
-	</appender>
-
-	<logger name="org.springframework" level="debug"/>
-	<!-- <logger name="org.springframework.aop.interceptor" level="warn" /> -->
-	<!-- <logger name="org.springframework.security" level="warn" /> -->
-	<!-- <logger name="org.springframework.ldap" level="warn" /> -->
-	<logger name="org.hibernate" level="warn" />
-	<logger name="com.fasterxml" level="debug" />
-
-	<if condition='"${spring.profiles.active}" == "dev" || "${spring.profiles.active}" == "localdev" || "${spring.profiles.active}" == "live"'>
-		<then>
-			<logger name="net.luversof" level="debug" additivity="false">
-				<appender-ref ref="luversof" />
-			</logger>
-			<root level="warn">
-				<appender-ref ref="eclipseConsole" />
-			</root>
-		</then>
-		<else>
-			<logger name="net.luversof" level="debug" />
-			<root level="warn">
-				<appender-ref ref="console" />
-			</root>
-		</else>
-	</if>
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<include resource="org/springframework/boot/logging/logback/base.xml"/>
+	<logger name="net.luversof" level="debug" />
+	<!-- <logger name="org.springframework" level="debug" /> -->
+	<logger name="org.springframework.boot.autoconfigure" level="debug" />
 </configuration>

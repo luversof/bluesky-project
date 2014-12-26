@@ -1,1 +1,0 @@
-#hibernate.transaction.jta.platform: org.hibernate.dialect.MySQL5Dialect
