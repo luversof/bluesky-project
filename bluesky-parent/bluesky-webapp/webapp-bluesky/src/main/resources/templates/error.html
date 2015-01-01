@@ -6,7 +6,7 @@
 <body>
 	<div layout:fragment="content">
 		<br />
-		<div class="panel panel-danger">22
+		<div class="panel panel-danger" th:if="${result}">
 			<div class="panel-heading" th:text="${result.get('message')}">Panel heading without title</div>
 			<div class="panel-body" th:text="${result.get('class')}">Panel content</div>
 		</div>
