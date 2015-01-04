@@ -12,12 +12,12 @@ import org.springframework.context.support.ReloadableResourceBundleMessageSource
 @PropertySource("web.properties")
 public class BlueskyWebConfig {
 	
-	@Bean
-	public MessageSource messageSource() {
-		ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
-		messageSource.setBasenames("classpath:static/message/message", "classpath:static/message/url");
-		messageSource.setCacheSeconds(5);
-		messageSource.setDefaultEncoding(StandardCharsets.UTF_8.name());
-		return messageSource;
-	}
+//	@Bean
+//	public MessageSource messageSource() {
+//		ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
+//		messageSource.setBasenames("static/message/message", "static/message/url");
+//		messageSource.setCacheSeconds(5);
+//		messageSource.setDefaultEncoding(StandardCharsets.UTF_8.name());
+//		return messageSource;
+//	}
 }

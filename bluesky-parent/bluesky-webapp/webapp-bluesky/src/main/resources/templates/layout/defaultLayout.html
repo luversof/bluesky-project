@@ -57,6 +57,7 @@
 				</form>
 				<form class="navbar-form navbar-right" sec:authorize="!isAuthenticated()" th:action="@{/login}" method="post">
 					<!-- 
+					 -->
 					<div class="form-group">
 						<input type="text" name="username" th:placeholder="#{username}" class="form-control" autofocus="autofocus"/>
 					</div>
@@ -65,7 +66,6 @@
 					</div>
 					<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 					<input type="submit" class="btn btn-primary" th:value="#{login}" />
-					 -->
 					<a href="https://github.com/login/oauth/authorize?client_id=5ce0e9ac811fd9c04543" class="btn btn-primary">Github</a>
 					<a th:href="@{'https://www.facebook.com/dialog/oauth'(client_id='124755777691522',redirect_uri='http://localhost:8081/oauth/facebookAuthorizeResult')}" class="btn btn-primary">Facebook</a>
 				</form>
