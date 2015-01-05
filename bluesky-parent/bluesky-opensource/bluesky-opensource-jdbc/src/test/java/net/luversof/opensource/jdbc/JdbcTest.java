@@ -12,6 +12,7 @@ import net.luversof.opensource.jdbc.routing.RoutingDataSource;
 
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 
 @Slf4j
@@ -37,5 +38,13 @@ public class JdbcTest extends GeneralTest {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	
+	@Value("${datasource.blog.username}")
+	private String a;
+
+	@Test
+	public void test2() {
+		System.out.println(a);
 	}
 }
