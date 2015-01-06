@@ -1,0 +1,2 @@
+#PropertySource Loaders
+org.springframework.boot.env.PropertySourceLoader=net.luversof.core.EncryptedPropertySourceLoader
