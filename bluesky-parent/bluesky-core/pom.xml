@@ -7,6 +7,7 @@
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>bluesky-core</artifactId>
+	
 	<dependencies>
 		<!-- (s) spring boot -->
 		<dependency>

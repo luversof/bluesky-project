@@ -16,7 +16,7 @@ public class IndexController {
 	public String index() {
 		System.out.println("테스트!!!!!");
 		System.out.println("a : " + a);
-		return "/index";
+		return "index";
 	}
 
 	@RequestMapping("/index2")

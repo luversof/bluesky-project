@@ -8,6 +8,11 @@
 	</parent>
 	<artifactId>webapp-bluesky</artifactId>
 	<packaging>war</packaging>
+
+	<properties>
+		<start-class>net.luversof.Application</start-class>
+	</properties>
+
 	<dependencies>
 
 		<!-- (s) bluesky -->
@@ -38,7 +43,7 @@
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
 		</dependency>
 		<!-- (e) spring-boot -->
-		
+
 		<!-- (s) template engine -->
 		<dependency>
 			<groupId>org.thymeleaf.extras</groupId>
@@ -54,10 +59,6 @@
 		</dependency>
 		<!-- (e) spring boot test -->
 	</dependencies>
-	
-	<properties>
-		<start-class>net.luversof.web.config.Application</start-class>
-	</properties>
 
 	<build>
 		<plugins>
