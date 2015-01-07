@@ -43,7 +43,7 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler
 	public ModelAndView handleException(BlueskyException exception) {
 		if (exception.getErrorCode() == "blog.notExist") {
-			return new ModelAndView(messageSource.getMessage("url.blog.create", null, null));
+			return new ModelAndView("redirect:/blog/create");
 		}
 		return null;
 	}
