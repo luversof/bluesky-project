@@ -11,6 +11,7 @@ import net.luversof.opensource.jdbc.routing.RoutingDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 @Configuration
 public class RoutingConfig {
@@ -25,6 +26,7 @@ public class RoutingConfig {
 	private DataSource bookkeepingDataSource;
 	
 	@Bean
+	@Primary
 	public RoutingDataSource routingDataSource() {
 		RoutingDataSource routingDataSource = new RoutingDataSource();
 		Map<Object, Object> targetDataSources = new HashMap<>();

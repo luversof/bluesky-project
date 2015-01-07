@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.PropertySource;
 
 @Configuration
@@ -36,7 +35,6 @@ public class JdbcConfig {
 //	}
 	
 	@Bean
-	@Primary
 	public DataSource memberDataSource(
 			@Value("${datasource.member.driverClassName}") String driverClassName,
 			@Value("${datasource.member.url}") String url,
