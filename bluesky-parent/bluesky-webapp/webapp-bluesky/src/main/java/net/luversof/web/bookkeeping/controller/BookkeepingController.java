@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@RequestMapping("/bookkeeping")
+@RequestMapping("bookkeeping")
 public class BookkeepingController {
 
 	@Autowired
@@ -31,7 +31,7 @@ public class BookkeepingController {
 	@RequestMapping
 	public String getBookkeeping(Authentication authentication, ModelMap modelMap) {
 		modelMap.addAttribute(JSON_MODEL_KEY, bookkeepingService.findByUserId(((BlueskyUser) authentication.getPrincipal()).getId()));
-		return "/bookkeeping/bookkeeping";
+		return "bookkeeping/bookkeeping";
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)

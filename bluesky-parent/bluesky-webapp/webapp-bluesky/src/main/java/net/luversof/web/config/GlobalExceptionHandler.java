@@ -61,13 +61,13 @@ public class GlobalExceptionHandler {
 		}
 		Map<String, List<Map<String, String>>> resultMap = new HashMap<>();
 		resultMap.put(JSON_MODEL_KEY, errorList);
-		return new ModelAndView("/error", resultMap);
+		return new ModelAndView("error", resultMap);
 	}
 	
 	@ExceptionHandler
 	@ResponseStatus(value=HttpStatus.BAD_REQUEST)
 	public ModelAndView handleException(Exception exception) {
 		exception.printStackTrace();
-		return new ModelAndView("/error");
+		return new ModelAndView("error");
 	}
 }

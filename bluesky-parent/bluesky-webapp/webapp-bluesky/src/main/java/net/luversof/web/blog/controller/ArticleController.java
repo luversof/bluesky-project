@@ -19,7 +19,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.annotation.Validated;
@@ -34,7 +33,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
  *
  */
 @Controller
-@RequestMapping("/blog")
+@RequestMapping("blog")
 public class ArticleController {
 
 	private static final int PAGE_BLOCK_SIZE = 10;
@@ -74,7 +73,7 @@ public class ArticleController {
 		modelMap.addAttribute("currentPage", page);
 		modelMap.addAttribute("startPage", startPage);
 		modelMap.addAttribute("endPage", endPage);
-		return "/blog/article/list";
+		return "blog/article/list";
 	}
 
 	/**
@@ -87,14 +86,14 @@ public class ArticleController {
 	@RequestMapping(value = "/{blog.id}/article/{id}", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
 	public String view(@Validated(Get.class) Article article, ModelMap modelMap) {
 		modelMap.addAttribute(articleService.findOne(article.getId()));
-		return "/blog/article/view";
+		return "blog/article/view";
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{id}/article/write", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
 	public String writePage(@CheckBlog Blog blog, ModelMap modelMap) {
 		modelMap.addAttribute(articleCategoryService.findByBlog(blog));
-		return "/blog/article/write";
+		return "blog/article/write";
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
@@ -103,7 +102,7 @@ public class ArticleController {
 	public String modifyPage(@CheckBlogAndAddToArticle @Validated(Get.class) Article article, ModelMap modelMap) {
 		modelMap.addAttribute(articleService.findOne(article.getId()));
 		modelMap.addAttribute(articleCategoryService.findByBlog(blogService.findOne(article.getId())));
-		return "/blog/article/modify";
+		return "blog/article/modify";
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)

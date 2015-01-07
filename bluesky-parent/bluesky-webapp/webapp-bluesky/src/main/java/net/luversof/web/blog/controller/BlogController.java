@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 @Controller
-@RequestMapping("/blog")
+@RequestMapping("blog")
 public class BlogController {
 
 	@Autowired
@@ -26,7 +26,7 @@ public class BlogController {
 	
 	@RequestMapping(value = "/{id}", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
 	public String forwardArticleList(@PathVariable long id) {
-		return MessageFormat.format("redirect:/blog/{0}/article", id);
+		return MessageFormat.format("redirect:blog/{0}/article", id);
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)

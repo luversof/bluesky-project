@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@RequestMapping("/bookkeeping/entry")
+@RequestMapping("bookkeeping/entry")
 public class EntryController {
 	
 	@Autowired
