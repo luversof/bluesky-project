@@ -38,10 +38,10 @@ public class JdbcConfig {
 	@Bean
 	@Primary
 	public DataSource memberDataSource(
-		@Value("${datasource.member.driverClassName}") String driverClassName,
-		@Value("${datasource.member.url}") String url,
-		@Value("${datasource.member.username}") String username,
-		@Value("${datasource.member.password}") String password
+			@Value("${datasource.member.driverClassName}") String driverClassName,
+			@Value("${datasource.member.url}") String url,
+			@Value("${datasource.member.username}") String username,
+			@Value("${datasource.member.password}") String password
 			) {
 		DataSourceBuilder dataSourceBuilder = DataSourceBuilder.create();
 		dataSourceBuilder.driverClassName(driverClassName);
@@ -72,7 +72,7 @@ public class JdbcConfig {
 			@Value("${datasource.bookkeeping.url}") String url,
 			@Value("${datasource.bookkeeping.username}") String username,
 			@Value("${datasource.bookkeeping.password}") String password
-				) {
+			) {
 		DataSourceBuilder dataSourceBuilder = DataSourceBuilder.create();
 		dataSourceBuilder.driverClassName(driverClassName);
 		dataSourceBuilder.url(url);
