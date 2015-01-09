@@ -26,13 +26,25 @@ public class JdbcTest extends GeneralTest {
 	public void test() {
 		DataSourceContextHolder.setDataSourceType(DataSourceType.BOOKKEEPING);
 		DataSourceContextHolder.setDataSourceType(DataSourceType.BLOG);
-		Connection connection;
 		try {
-			connection = routingDataSource.getConnection();
+			Connection connection = routingDataSource.getConnection();
 			PreparedStatement pstmt = connection.prepareStatement("SELECT * FROM Blog");
 			ResultSet resultSet = pstmt.executeQuery();
 			printResultSet(resultSet);
-			log.debug("resultSet : {}", resultSet);
+			resultSet.next();
+			pstmt.close();
+			connection.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		DataSourceContextHolder.setDataSourceType(DataSourceType.MEMBER);
+		try {
+			Connection connection = routingDataSource.getConnection();
+			PreparedStatement pstmt = connection.prepareStatement("SELECT * FROM User");
+			ResultSet resultSet = pstmt.executeQuery();
+			printResultSet(resultSet);
 			resultSet.next();
 			pstmt.close();
 			connection.close();
