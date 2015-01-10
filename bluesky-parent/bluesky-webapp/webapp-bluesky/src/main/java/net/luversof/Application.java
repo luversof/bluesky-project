@@ -13,5 +13,5 @@ public class Application {
     	springApplication.addInitializers(new BlueskyApplicationContextInitializer());
     	springApplication.run(args);
     }
-// 마스터를 근데 수정함
+
 }
