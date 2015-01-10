@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 public class Application {
-// develop
+
     public static void main(String[] args) throws Throwable {
     	SpringApplication springApplication = new SpringApplication(Application.class);
     	springApplication.addInitializers(new BlueskyApplicationContextInitializer());
