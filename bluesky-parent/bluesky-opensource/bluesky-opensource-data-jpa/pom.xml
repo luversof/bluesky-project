@@ -22,14 +22,6 @@
 		</dependency>
 		<!-- (e) spring boot -->
 
-		<!-- (s) spring boot test -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<!-- (e) spring boot test -->
-
 		<dependency>
 			<groupId>org.hibernate</groupId>
 			<artifactId>hibernate-validator</artifactId>
