@@ -29,7 +29,7 @@
 			<scope>test</scope>
 		</dependency>
 		<!-- (e) spring boot test -->
-		
+
 		<dependency>
 			<groupId>org.hibernate</groupId>
 			<artifactId>hibernate-validator</artifactId>
@@ -40,7 +40,10 @@
 			<artifactId>javax.el</artifactId>
 		</dependency>
 
-		<dependency> <groupId>org.jadira.usertype</groupId> <artifactId>usertype.extended</artifactId> 
-			<version>3.2.0.GA</version> </dependency>
+		<dependency>
+			<groupId>org.jadira.usertype</groupId>
+			<artifactId>usertype.extended</artifactId>
+			<version>3.2.0.GA</version>
+		</dependency>
 	</dependencies>
 </project>
