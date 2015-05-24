@@ -3,10 +3,10 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>net.luversof</groupId>
-		<artifactId>bluesky-webapp</artifactId>
+		<artifactId>bluesky-web</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>webapp-bluesky</artifactId>
+	<artifactId>bluesky-web-default</artifactId>
 	<packaging>war</packaging>
 
 	<properties>
