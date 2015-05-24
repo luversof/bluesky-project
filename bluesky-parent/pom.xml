@@ -31,6 +31,11 @@
 			<scope>test</scope>
 		</dependency>
 		<!-- (e) spring boot test -->
+
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+		</dependency>
 	</dependencies>
 
 	<dependencyManagement>
@@ -53,12 +58,6 @@
 				<version>1.9.2</version>
 			</dependency>
 			<!-- (e) encryption -->
-
-			<dependency>
-				<groupId>com.googlecode.log4jdbc</groupId>
-				<artifactId>log4jdbc</artifactId>
-				<version>1.2</version>
-			</dependency>
 		</dependencies>
 	</dependencyManagement>
 </project>
