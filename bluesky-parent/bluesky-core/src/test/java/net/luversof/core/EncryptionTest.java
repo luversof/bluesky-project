@@ -1,5 +1,7 @@
 package net.luversof.core;
 
+import net.luversof.GeneralTest;
+
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Value;
 

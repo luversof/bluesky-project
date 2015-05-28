@@ -13,4 +13,10 @@
 		<module>bluesky-opensource-data-jpa</module>
 		<module>bluesky-opensource-security</module>
 	</modules>
+	<dependencies>
+		<dependency>
+			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-test</artifactId>
+		</dependency>
+	</dependencies>
 </project>
