@@ -7,4 +7,10 @@
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>bluesky-test</artifactId>
+	<dependencies>
+		<dependency>
+			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-core</artifactId>
+		</dependency>
+	</dependencies>
 </project>

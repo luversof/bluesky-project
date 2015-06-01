@@ -35,10 +35,5 @@
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-jsr310</artifactId>
 		</dependency>
-
-		<dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-test</artifactId>
-		</dependency>
 	</dependencies>
 </project>
