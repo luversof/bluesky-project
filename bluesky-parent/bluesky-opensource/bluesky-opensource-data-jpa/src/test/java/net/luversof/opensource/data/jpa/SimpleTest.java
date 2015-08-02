@@ -53,11 +53,6 @@ public class SimpleTest extends GeneralTest {
 		
 		User user = userService.findOne(1);
 		log.debug("user : {}", user);
-//		ResultSet resultSet = blogDataSource.getConnection().createStatement().executeQuery("SELECT * FROM Blog where id = 1");
-//		System.out.println(resultSet);
-//		
-//		ResultSet resultSet2 = memberDataSource.getConnection().createStatement().executeQuery("SELECT * FROM User where id = 1");
-//		System.out.println(resultSet2);
 	}
 	
 	

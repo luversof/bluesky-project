@@ -10,14 +10,12 @@ import net.luversof.opensource.jdbc.routing.RoutingDataSource;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.PropertySource;
 
 @Configuration
-//@PropertySource("jdbc.properties")
 @PropertySource("jdbc-${spring.profiles.active}.properties")
 public class JdbcConfig {
 	
@@ -25,8 +23,8 @@ public class JdbcConfig {
 //	
 //	@Bean
 //	@Primary
-//	@ConfigurationProperties(prefix = "datasource.member")
-//	public DataSource memberDataSource() {
+//	@ConfigurationProperties(prefix = "datasource.security")
+//	public DataSource securityDataSource() {
 //		return DataSourceBuilder.create().build();
 //	}
 //	
@@ -43,12 +41,11 @@ public class JdbcConfig {
 //	}
 	
 	@Bean
-	@ConfigurationProperties(prefix = "datasource.common")
-	public DataSource memberDataSource(
-			@Value("${datasource.member.driverClassName}") String driverClassName,
-			@Value("${datasource.member.url}") String url,
-			@Value("${datasource.member.username}") String username,
-			@Value("${datasource.member.password}") String password
+	public DataSource securityDataSource(
+			@Value("${datasource.security.driverClassName}") String driverClassName,
+			@Value("${datasource.security.url}") String url,
+			@Value("${datasource.security.username}") String username,
+			@Value("${datasource.security.password}") String password
 			) {
 		DataSourceBuilder dataSourceBuilder = DataSourceBuilder.create();
 		dataSourceBuilder.driverClassName(driverClassName);
@@ -91,13 +88,13 @@ public class JdbcConfig {
 	@Bean
 	@Primary
 	public RoutingDataSource routingDataSource(
-			DataSource memberDataSource,
+			DataSource securityDataSource,
 			DataSource blogDataSource,
 			DataSource bookkeepingDataSource
 			) {
 		RoutingDataSource routingDataSource = new RoutingDataSource();
 		Map<Object, Object> targetDataSources = new HashMap<>();
-		targetDataSources.put(DataSourceType.MEMBER, memberDataSource);
+		targetDataSources.put(DataSourceType.MEMBER, securityDataSource);
 		targetDataSources.put(DataSourceType.BLOG, blogDataSource);
 		targetDataSources.put(DataSourceType.BOOKKEEPING, bookkeepingDataSource);
 		routingDataSource.setTargetDataSources(targetDataSources);
