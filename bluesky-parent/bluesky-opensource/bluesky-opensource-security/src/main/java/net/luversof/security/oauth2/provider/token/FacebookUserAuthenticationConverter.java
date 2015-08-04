@@ -34,8 +34,8 @@ public class FacebookUserAuthenticationConverter implements UserAuthenticationCo
 
 	@Override
 	public Authentication extractAuthentication(Map<String, ?> map) {
-		if (map.containsKey("id") && map.containsKey("username")) {
-			BlueskyUser luversofUser = new BlueskyUser(Long.valueOf((String) map.get("id")), (String) map.get("username"), "N/A", getAuthorities(map), true, true, true, true, UserType.FACEBOOK);
+		if (map.containsKey("id") && map.containsKey("name")) {
+			BlueskyUser luversofUser = new BlueskyUser(Long.valueOf((String) map.get("id")), (String) map.get("name"), "N/A", getAuthorities(map), true, true, true, true, UserType.FACEBOOK);
 			return new UsernamePasswordAuthenticationToken(luversofUser, "N/A", getAuthorities(map));
 		}
 		return null;
