@@ -1,4 +1,4 @@
-package net.luversof.opensource.data.jpa.domain;
+package net.luversof.blog.domain;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;

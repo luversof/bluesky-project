@@ -2,19 +2,16 @@ package net.luversof.blog.service;
 
 import java.util.List;
 
-import net.luversof.blog.domain.Blog;
-import net.luversof.blog.repository.BlogRepository;
-import net.luversof.core.BlueskyException;
-import net.luversof.opensource.jdbc.routing.DataSource;
-import net.luversof.opensource.jdbc.routing.DataSourceType;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import net.luversof.blog.domain.Blog;
+import net.luversof.blog.repository.BlogRepository;
+import net.luversof.core.BlueskyException;
+
 @Service
-@Transactional
-@DataSource(DataSourceType.BLOG)
+@Transactional("blogTransactionManager")
 public class BlogService {
 
 	@Autowired
@@ -28,12 +25,12 @@ public class BlogService {
 		return blogRepository.save(blog);
 	}
 	
-	@Transactional(readOnly = true)
+	@Transactional(value = "blogTransactionManager", readOnly = true)
 	public Blog findOne(long blogId) {
 		return blogRepository.findOne(blogId);
 	}
 
-	@Transactional(readOnly = true)
+	@Transactional(value = "blogTransactionManager", readOnly = true)
 	public List<Blog> findByUser(long userId, String userType) {
 		List<Blog> blogList = blogRepository.findByUserIdAndUserType(userId, userType);
 		if (blogList.isEmpty()) {

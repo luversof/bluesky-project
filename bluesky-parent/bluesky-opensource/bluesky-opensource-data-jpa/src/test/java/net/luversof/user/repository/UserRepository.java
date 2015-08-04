@@ -1,10 +1,10 @@
-package net.luversof.opensource.data.jpa.repository;
+package net.luversof.user.repository;
 
 
-
-import net.luversof.opensource.data.jpa.domain.User;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import net.luversof.user.domain.User;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 	User findByUsername(String username);

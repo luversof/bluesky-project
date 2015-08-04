@@ -2,22 +2,15 @@ package net.luversof.opensource.data.jpa.config;
 
 
 
-import java.util.HashMap;
-import java.util.Map;
-
-import net.luversof.opensource.jdbc.routing.RoutingDataSource;
-
-import org.springframework.boot.autoconfigure.orm.jpa.EntityManagerFactoryBuilder;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
-import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 
 @Configuration
 @PropertySource("data-jpa.properties")
 @PropertySource("data-jpa-${spring.profiles.active}.properties")
 @EnableJpaAuditing
+//@EntityScan(basePackages = "net.luversof")
 public class DataJpaConfig {
 	
 //	@Bean

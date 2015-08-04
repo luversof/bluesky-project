@@ -2,18 +2,15 @@ package net.luversof.bookkeeping.service;
 
 import java.util.List;
 
-import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.repository.BookkeepingRepository;
-import net.luversof.opensource.jdbc.routing.DataSource;
-import net.luversof.opensource.jdbc.routing.DataSourceType;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import net.luversof.bookkeeping.domain.Bookkeeping;
+import net.luversof.bookkeeping.repository.BookkeepingRepository;
+
 @Service
-@Transactional
-@DataSource(DataSourceType.BOOKKEEPING)
+@Transactional("bookkeepingTransactionManager")
 public class BookkeepingService {
 
 	@Autowired
@@ -42,12 +39,12 @@ public class BookkeepingService {
 		return bookkeeping;
 	}
 	
-	@Transactional(readOnly = true)
+	@Transactional(value = "bookkeepingTransactionManager", readOnly = true)
 	public Bookkeeping findOne(long id) {
 		return bookkeepingRepository.findOne(id);
 	}
 	
-	@Transactional(readOnly = true)
+	@Transactional(value = "bookkeepingTransactionManager", readOnly = true)
 	public List<Bookkeeping> findByUserId(long userId) {
 		return bookkeepingRepository.findByUserId(userId);
 	}

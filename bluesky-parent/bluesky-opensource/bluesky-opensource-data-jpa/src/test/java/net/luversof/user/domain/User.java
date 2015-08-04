@@ -1,4 +1,4 @@
-package net.luversof.opensource.data.jpa.domain;
+package net.luversof.user.domain;
 
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;

@@ -1,13 +1,13 @@
-package net.luversof.opensource.data.jpa.service;
+package net.luversof.user.service;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import net.luversof.opensource.data.jpa.domain.User;
-import net.luversof.opensource.data.jpa.domain.UserAuthority;
-import net.luversof.opensource.data.jpa.repository.UserRepository;
 import net.luversof.opensource.jdbc.routing.DataSource;
 import net.luversof.opensource.jdbc.routing.DataSourceType;
+import net.luversof.user.domain.User;
+import net.luversof.user.domain.UserAuthority;
+import net.luversof.user.repository.UserRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,8 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 
 @Service
-@Transactional
-@DataSource(DataSourceType.MEMBER)
+@Transactional("securityTransactionManager")
 public class UserService {
 
 	@Autowired
@@ -47,12 +46,12 @@ public class UserService {
 		return userRepository.save(user);
 	}
 
-	@Transactional(readOnly = true)
+	@Transactional(value = "securityTransactionManager", readOnly = true)
 	public User findOne(long id) {
 		return userRepository.findOne(id);
 	}
 
-	@Transactional(readOnly = true)
+	@Transactional(value = "securityTransactionManager", readOnly = true)
 	public User findByUsername(String username) {
 		return userRepository.findByUsername(username);
 	}

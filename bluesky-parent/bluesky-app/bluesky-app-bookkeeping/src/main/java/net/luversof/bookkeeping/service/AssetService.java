@@ -4,20 +4,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import net.luversof.bookkeeping.domain.Asset;
-import net.luversof.bookkeeping.domain.AssetInitialData;
-import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.repository.AssetRepository;
-import net.luversof.opensource.jdbc.routing.DataSource;
-import net.luversof.opensource.jdbc.routing.DataSourceType;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import net.luversof.bookkeeping.domain.Asset;
+import net.luversof.bookkeeping.domain.AssetInitialData;
+import net.luversof.bookkeeping.domain.Bookkeeping;
+import net.luversof.bookkeeping.repository.AssetRepository;
+
 @Service
-@Transactional
-@DataSource(DataSourceType.BOOKKEEPING)
+@Transactional("bookkeepingTransactionManager")
 public class AssetService {
 
 	@Autowired
@@ -47,12 +44,12 @@ public class AssetService {
 		return assetRepository.save(asset);
 	}
 
-	@Transactional(readOnly = true)
+	@Transactional(value = "bookkeepingTransactionManager", readOnly = true)
 	public Asset findOne(long id) {
 		return assetRepository.findOne(id);
 	}
 	
-	@Transactional(readOnly = true)
+	@Transactional(value = "bookkeepingTransactionManager", readOnly = true)
 	public List<Asset> findByBookkeepingId(long bookkeeping_id) {
 		return assetRepository.findByBookkeepingId(bookkeeping_id);
 	}

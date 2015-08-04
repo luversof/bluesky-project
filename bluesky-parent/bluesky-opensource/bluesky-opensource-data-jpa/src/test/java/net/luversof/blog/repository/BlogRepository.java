@@ -1,10 +1,10 @@
-package net.luversof.opensource.data.jpa.repository;
+package net.luversof.blog.repository;
 
 import java.util.List;
 
-import net.luversof.opensource.data.jpa.domain.Blog;
-
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import net.luversof.blog.domain.Blog;
 
 public interface BlogRepository extends JpaRepository<Blog, Long> {
 	List<Blog> findByUserIdAndUserType(long userId, String userType); 

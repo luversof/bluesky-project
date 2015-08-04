@@ -1,10 +1,11 @@
 package net.luversof.opensource.data.jpa;
 
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.opensource.data.jpa.domain.Blog;
-import net.luversof.opensource.data.jpa.domain.User;
-import net.luversof.opensource.data.jpa.service.BlogService;
-import net.luversof.opensource.data.jpa.service.UserService;
+import net.luversof.blog.domain.Blog;
+import net.luversof.blog.repository.BlogRepository;
+import net.luversof.blog.service.BlogService;
+import net.luversof.user.domain.User;
+import net.luversof.user.service.UserService;
 
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +54,14 @@ public class SimpleTest extends GeneralTest {
 		
 		User user = userService.findOne(1);
 		log.debug("user : {}", user);
+	}
+	
+	@Autowired
+	private BlogRepository blogRepository;
+	
+	@Test
+	public void repositoryTest() {
+		log.debug("all : {}", blogRepository.findAll());
 	}
 	
 	

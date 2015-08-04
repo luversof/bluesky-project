@@ -4,20 +4,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.domain.EntryGroupInitialData;
-import net.luversof.bookkeeping.domain.EntryGroup;
-import net.luversof.bookkeeping.repository.EntryGroupRepository;
-import net.luversof.opensource.jdbc.routing.DataSource;
-import net.luversof.opensource.jdbc.routing.DataSourceType;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import net.luversof.bookkeeping.domain.Bookkeeping;
+import net.luversof.bookkeeping.domain.EntryGroup;
+import net.luversof.bookkeeping.domain.EntryGroupInitialData;
+import net.luversof.bookkeeping.repository.EntryGroupRepository;
+
 @Service
-@Transactional
-@DataSource(DataSourceType.BOOKKEEPING)
+@Transactional("bookkeepingTransactionManager")
 public class EntryGroupService {
 	@Autowired
 	private EntryGroupRepository entryGroupRepository;
@@ -44,12 +41,12 @@ public class EntryGroupService {
 		return entryGroupRepository.save(entryGroup);
 	}
 
-	@Transactional(readOnly = true)
+	@Transactional(value = "bookkeepingTransactionManager", readOnly = true)
 	public EntryGroup findOne(long id) {
 		return entryGroupRepository.findOne(id);
 	}
 	
-	@Transactional(readOnly = true)
+	@Transactional(value = "bookkeepingTransactionManager", readOnly = true)
 	public List<EntryGroup> findByBookkeepingId(long bookkeeping_id) {
 		return entryGroupRepository.findByBookkeepingId(bookkeeping_id);
 	}
