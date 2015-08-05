@@ -4,12 +4,12 @@ import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Map;
 
+import net.luversof.security.oauth2.provider.token.BattleNetAccessTokenConverter;
 import net.luversof.security.oauth2.provider.token.FacebookAccessTokenConverter;
 import net.luversof.security.oauth2.provider.token.GithubAccessTokenConverter;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
@@ -38,6 +38,11 @@ import org.springframework.util.MultiValueMap;
 @EnableOAuth2Client
 @PropertySource(name = "oauth2ClientProp", value = "classpath:config/oauth2-client.properties")
 public class OAuth2ClientConfig {
+
+	@Autowired
+	private OAuth2ClientContext oAuth2ClientContext;
+	
+	/* (s) github OAuth */
 	
 	@Value("${oauth2.client.github.clientId}")
 	private String githubClientId;
@@ -54,24 +59,6 @@ public class OAuth2ClientConfig {
 	@Value("${oauth2.client.github.checkTokenEndpointUrl}")
 	private String githubCheckTokenEndpointUrl;
 	
-	@Value("${oauth2.client.facebook.clientId}")
-	private String facebookClientId;
-	
-	@Value("${oauth2.client.facebook.clientSecret}")
-	private String facebookClientSecret;
-	
-	@Value("${oauth2.client.facebook.userAuthorizationUri}")
-	private String facebookUserAuthorizationUri;
-	
-	@Value("${oauth2.client.facebook.accessTokenUri}")
-	private String facebookAccessTokenUri;
-	
-	@Value("${oauth2.client.facebook.checkTokenEndpointUrl}")
-	private String facebookCheckTokenEndpointUrl;
-	
-	@Autowired
-	private OAuth2ClientContext oAuth2ClientContext;
-	
 	@Bean
 	public OAuth2ProtectedResourceDetails githubResourceDetails() {
 		AuthorizationCodeResourceDetails details = new AuthorizationCodeResourceDetails();
@@ -87,6 +74,76 @@ public class OAuth2ClientConfig {
 	}
 	
 	@Bean
+	public OAuth2RestTemplate githubRestTemplate() {
+		return new OAuth2RestTemplate(githubResourceDetails(), oAuth2ClientContext);
+	}
+	
+	@Bean
+	public ResourceServerTokenServices githubTokenServices() {
+		AccessTokenConverter accessTokenConverter = new GithubAccessTokenConverter();
+		OAuth2RestTemplate oAuth2RestTemplate = githubRestTemplate();
+		RemoteTokenServices remoteTokenServices = new RemoteTokenServices() {
+
+			@Override
+			public OAuth2Authentication loadAuthentication(String accessToken) throws AuthenticationException, InvalidTokenException {
+				MultiValueMap<String, String> formData = new LinkedMultiValueMap<String, String>();
+				formData.add("access_token", accessToken);
+				HttpHeaders headers = new HttpHeaders();
+				headers.set("Authorization", getAuthorizationHeader(githubClientId, githubClientSecret));
+				if (headers.getContentType() == null) {
+					headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+				}
+				@SuppressWarnings("unchecked")
+				Map<String, Object> map = oAuth2RestTemplate.exchange(githubCheckTokenEndpointUrl, HttpMethod.GET,
+						new HttpEntity<MultiValueMap<String, String>>(formData, headers), Map.class, githubClientId, accessToken).getBody();
+				
+				if (map.containsKey("error")) {
+					logger.debug("check_token returned error: " + map.get("error"));
+					throw new InvalidTokenException(accessToken);
+				}
+
+				//Assert.state(map.containsKey("client_id"), "Client id must be present in response from auth server");
+				return accessTokenConverter.extractAuthentication(map);
+			}
+			
+		};
+		remoteTokenServices.setRestTemplate(oAuth2RestTemplate);
+		remoteTokenServices.setClientId(githubClientId);
+		remoteTokenServices.setClientSecret(githubClientSecret);
+		remoteTokenServices.setCheckTokenEndpointUrl(githubCheckTokenEndpointUrl);
+		remoteTokenServices.setAccessTokenConverter(accessTokenConverter);
+		return remoteTokenServices;
+	}
+	
+	@Bean
+	public OAuth2ClientAuthenticationProcessingFilter githubAuthenticationProcessingFilter() {
+		OAuth2ClientAuthenticationProcessingFilter githubAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/githubAuthorizeResult");
+		githubAuthenticationProcessingFilter.setRestTemplate(githubRestTemplate());
+		githubAuthenticationProcessingFilter.setTokenServices(githubTokenServices());
+		return githubAuthenticationProcessingFilter;
+	}
+	
+	/* (e) github OAuth */
+	
+	/* (s) facebook OAuth */
+	
+	@Value("${oauth2.client.facebook.clientId}")
+	private String facebookClientId;
+	
+	@Value("${oauth2.client.facebook.clientSecret}")
+	private String facebookClientSecret;
+	
+	@Value("${oauth2.client.facebook.userAuthorizationUri}")
+	private String facebookUserAuthorizationUri;
+	
+	@Value("${oauth2.client.facebook.accessTokenUri}")
+	private String facebookAccessTokenUri;
+	
+	@Value("${oauth2.client.facebook.checkTokenEndpointUrl}")
+	private String facebookCheckTokenEndpointUrl;
+
+	
+	@Bean
 //	@ConfigurationProperties(prefix = "oauth2.client.facebook")
 	public OAuth2ProtectedResourceDetails facebookResourceDetails() {
 		AuthorizationCodeResourceDetails details = new AuthorizationCodeResourceDetails();
@@ -100,57 +157,17 @@ public class OAuth2ClientConfig {
 		details.setClientAuthenticationScheme(AuthenticationScheme.form);
 		return details;
 	}
-	
-	@Bean
-	public OAuth2RestTemplate githubRestTemplate() {
-		return new OAuth2RestTemplate(githubResourceDetails(), oAuth2ClientContext);
-	}
-	
+
 	@Bean
 	public OAuth2RestTemplate facebookRestTemplate() {
 		return new OAuth2RestTemplate(facebookResourceDetails(), oAuth2ClientContext);
-	}
-
-	@Bean
-	public ResourceServerTokenServices githubTokenServices() {
-		AccessTokenConverter accessTokenConverter = new GithubAccessTokenConverter();
-		RemoteTokenServices githubTokenServices = new RemoteTokenServices() {
-
-			@Override
-			public OAuth2Authentication loadAuthentication(String accessToken) throws AuthenticationException, InvalidTokenException {
-				MultiValueMap<String, String> formData = new LinkedMultiValueMap<String, String>();
-				formData.add("access_token", accessToken);
-				HttpHeaders headers = new HttpHeaders();
-				headers.set("Authorization", getAuthorizationHeader(githubClientId, githubClientSecret));
-				if (headers.getContentType() == null) {
-					headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-				}
-				@SuppressWarnings("unchecked")
-				Map<String, Object> map = githubRestTemplate().exchange(githubCheckTokenEndpointUrl, HttpMethod.GET,
-						new HttpEntity<MultiValueMap<String, String>>(formData, headers), Map.class, githubClientId, accessToken).getBody();
-				
-				if (map.containsKey("error")) {
-					logger.debug("check_token returned error: " + map.get("error"));
-					throw new InvalidTokenException(accessToken);
-				}
-
-				//Assert.state(map.containsKey("client_id"), "Client id must be present in response from auth server");
-				return accessTokenConverter.extractAuthentication(map);
-			}
-			
-		};
-		githubTokenServices.setRestTemplate(githubRestTemplate());
-		githubTokenServices.setClientId(githubClientId);
-		githubTokenServices.setClientSecret(githubClientSecret);
-		githubTokenServices.setCheckTokenEndpointUrl(githubCheckTokenEndpointUrl);
-		githubTokenServices.setAccessTokenConverter(accessTokenConverter);
-		return githubTokenServices;
 	}
 	
 	@Bean
 	public ResourceServerTokenServices facebookTokenServices() {
 		AccessTokenConverter accessTokenConverter = new FacebookAccessTokenConverter();
-		RemoteTokenServices facebookTokenServices = new RemoteTokenServices() {
+		OAuth2RestTemplate oAuth2RestTemplate = facebookRestTemplate();
+		RemoteTokenServices remoteTokenServices = new RemoteTokenServices() {
 
 			@Override
 			public OAuth2Authentication loadAuthentication(String accessToken) throws AuthenticationException, InvalidTokenException {
@@ -162,7 +179,7 @@ public class OAuth2ClientConfig {
 					headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 				}
 				@SuppressWarnings("unchecked")
-				Map<String, Object> map = facebookRestTemplate().exchange(facebookCheckTokenEndpointUrl, HttpMethod.GET,
+				Map<String, Object> map = oAuth2RestTemplate.exchange(facebookCheckTokenEndpointUrl, HttpMethod.GET,
 						new HttpEntity<MultiValueMap<String, String>>(formData, headers), Map.class, accessToken).getBody();
 
 				if (map.containsKey("error")) {
@@ -170,19 +187,115 @@ public class OAuth2ClientConfig {
 					throw new InvalidTokenException(accessToken);
 				}
 				@SuppressWarnings("unchecked")
-				Map<String, Object> me = facebookRestTemplate().getForObject("https://graph.facebook.com/me", Map.class);
+				Map<String, Object> me = oAuth2RestTemplate.getForObject("https://graph.facebook.com/me", Map.class);
 				map.putAll(me);
 //				Assert.state(map.containsKey("client_id"), "Client id must be present in response from auth server");
 				return accessTokenConverter.extractAuthentication(map);
 			}
 			
 		};
-		facebookTokenServices.setRestTemplate(facebookRestTemplate());
-		facebookTokenServices.setClientId(facebookClientId);
-		facebookTokenServices.setClientSecret(facebookClientSecret);
-		facebookTokenServices.setCheckTokenEndpointUrl(facebookCheckTokenEndpointUrl);
-		return facebookTokenServices;
+		remoteTokenServices.setRestTemplate(oAuth2RestTemplate);
+		remoteTokenServices.setClientId(facebookClientId);
+		remoteTokenServices.setClientSecret(facebookClientSecret);
+		remoteTokenServices.setCheckTokenEndpointUrl(facebookCheckTokenEndpointUrl);
+		return remoteTokenServices;
 	}
+	
+	
+	@Bean
+	public OAuth2ClientAuthenticationProcessingFilter facebookAuthenticationProcessingFilter() {
+		OAuth2ClientAuthenticationProcessingFilter facebookAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/facebookAuthorizeResult");
+		facebookAuthenticationProcessingFilter.setRestTemplate(facebookRestTemplate());
+		facebookAuthenticationProcessingFilter.setTokenServices(facebookTokenServices());
+		return facebookAuthenticationProcessingFilter;
+	}
+	
+	/* (e) facebook OAuth */
+	
+	/* (s) battleNet OAuth */
+	
+	@Value("${oauth2.client.battleNet.clientId}")
+	private String battleNetClientId;
+	
+	@Value("${oauth2.client.battleNet.clientSecret}")
+	private String battleNetClientSecret;
+	
+	@Value("${oauth2.client.battleNet.userAuthorizationUri}")
+	private String battleNetUserAuthorizationUri;
+	
+	@Value("${oauth2.client.battleNet.accessTokenUri}")
+	private String battleNetAccessTokenUri;
+	
+	@Value("${oauth2.client.battleNet.checkTokenEndpointUrl}")
+	private String battleNetCheckTokenEndpointUrl;
+	
+	
+	@Bean
+	public OAuth2ProtectedResourceDetails battleNetResourceDetails() {
+		AuthorizationCodeResourceDetails details = new AuthorizationCodeResourceDetails();
+		details.setId("battleNet");
+		details.setClientId(battleNetClientId);
+		details.setClientSecret(battleNetClientSecret);
+		details.setUserAuthorizationUri(battleNetUserAuthorizationUri);
+		details.setAccessTokenUri(battleNetAccessTokenUri);
+		details.setScope(Arrays.asList("email"));
+		details.setAuthenticationScheme(AuthenticationScheme.form);
+		details.setClientAuthenticationScheme(AuthenticationScheme.form);
+		return details;
+	}
+
+	@Bean
+	public OAuth2RestTemplate battleNetRestTemplate() {
+		return new OAuth2RestTemplate(battleNetResourceDetails(), oAuth2ClientContext);
+	}
+	
+	@Bean
+	public ResourceServerTokenServices battleNetTokenServices() {
+		AccessTokenConverter accessTokenConverter = new BattleNetAccessTokenConverter();
+		RemoteTokenServices remoteTokenServices = new RemoteTokenServices() {
+
+			@Override
+			public OAuth2Authentication loadAuthentication(String accessToken) throws AuthenticationException, InvalidTokenException {
+				MultiValueMap<String, String> formData = new LinkedMultiValueMap<String, String>();
+				formData.add("access_token", accessToken);
+				HttpHeaders headers = new HttpHeaders();
+				headers.set("Authorization", getAuthorizationHeader(battleNetClientId, battleNetClientSecret));
+				if (headers.getContentType() == null) {
+					headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+				}
+				@SuppressWarnings("unchecked")
+				Map<String, Object> map = battleNetRestTemplate().exchange(battleNetCheckTokenEndpointUrl, HttpMethod.GET,
+						new HttpEntity<MultiValueMap<String, String>>(formData, headers), Map.class, accessToken).getBody();
+
+				if (map.containsKey("error")) {
+					logger.debug("check_token returned error: " + map.get("error"));
+					throw new InvalidTokenException(accessToken);
+				}
+				@SuppressWarnings("unchecked")
+				Map<String, Object> me = battleNetRestTemplate().getForObject("https://graph.facebook.com/me", Map.class);
+				map.putAll(me);
+//				Assert.state(map.containsKey("client_id"), "Client id must be present in response from auth server");
+				return accessTokenConverter.extractAuthentication(map);
+			}
+			
+		};
+		remoteTokenServices.setRestTemplate(battleNetRestTemplate());
+		remoteTokenServices.setClientId(facebookClientId);
+		remoteTokenServices.setClientSecret(facebookClientSecret);
+		remoteTokenServices.setCheckTokenEndpointUrl(facebookCheckTokenEndpointUrl);
+		return remoteTokenServices;
+	}
+	
+	
+	@Bean
+	public OAuth2ClientAuthenticationProcessingFilter battleNetAuthenticationProcessingFilter() {
+		OAuth2ClientAuthenticationProcessingFilter facebookAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/battleNetAuthorizeResult");
+		facebookAuthenticationProcessingFilter.setRestTemplate(battleNetRestTemplate());
+		facebookAuthenticationProcessingFilter.setTokenServices(battleNetTokenServices());
+		return facebookAuthenticationProcessingFilter;
+	}
+	
+	/* (e) battleNet OAuth */
 	
 	private String getAuthorizationHeader(String clientId, String clientSecret) {
 		String creds = String.format("%s:%s", clientId, clientSecret);
@@ -194,21 +307,7 @@ public class OAuth2ClientConfig {
 		}
 	}
 	
-	
-	@Bean
-	public OAuth2ClientAuthenticationProcessingFilter githubAuthenticationProcessingFilter() {
-		OAuth2ClientAuthenticationProcessingFilter githubAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/githubAuthorizeResult");
-		githubAuthenticationProcessingFilter.setRestTemplate(githubRestTemplate());
-		githubAuthenticationProcessingFilter.setTokenServices(githubTokenServices());
-		return githubAuthenticationProcessingFilter;
-	}
-	
-	@Bean
-	public OAuth2ClientAuthenticationProcessingFilter facebookAuthenticationProcessingFilter() {
-		OAuth2ClientAuthenticationProcessingFilter facebookAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/facebookAuthorizeResult");
-		facebookAuthenticationProcessingFilter.setRestTemplate(facebookRestTemplate());
-		facebookAuthenticationProcessingFilter.setTokenServices(facebookTokenServices());
-		return facebookAuthenticationProcessingFilter;
-	}
+
+
 	
 }
