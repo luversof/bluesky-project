@@ -12,6 +12,7 @@
 		<module>bluesky-app-blog</module>
 		<module>bluesky-app-bookkeeping</module>
 		<module>bluesky-app-user</module>
+		<module>bluesky-app-api-battlenet</module>
 	</modules>
 	<dependencies>
 		<dependency>

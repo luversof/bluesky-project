@@ -12,7 +12,7 @@ import net.luversof.user.domain.UserAuthority;
 import net.luversof.user.repository.UserRepository;
 
 @Service
-@Transactional
+@Transactional("securityTransactionManager")
 public class UserService {
 
 	@Autowired
