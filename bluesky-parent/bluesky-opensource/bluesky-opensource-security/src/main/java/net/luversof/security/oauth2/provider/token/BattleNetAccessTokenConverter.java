@@ -77,9 +77,8 @@ public class BattleNetAccessTokenConverter implements AccessTokenConverter {
 	public OAuth2Authentication extractAuthentication(Map<String, ?> map) {
 
 		@SuppressWarnings("unchecked")
-		Set<String> scope = new LinkedHashSet<String>(map.containsKey("data") && ((Map<String, String[]>) map.get("data")).containsKey("scopes") ? (Collection<String>) ((Map<String, Object>) map.get("data")).get("scopes") : Collections.<String> emptySet());
-		@SuppressWarnings("rawtypes")
-		String clientId = String.valueOf(((Map) map.get("data")).get("app_id"));
+		Set<String> scope = new LinkedHashSet<String>(map.containsKey("client_id") && map.containsKey("scopes") ? (Collection<String>) map.get("scopes") : Collections.<String> emptySet());
+		String clientId = String.valueOf(map.get("client_id"));
 
 		Map<String, String> parameters = new HashMap<String, String>();
 		parameters.put(CLIENT_ID, clientId);

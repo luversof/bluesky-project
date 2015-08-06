@@ -7,10 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.luversof.core.BlueskyException;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
@@ -18,6 +14,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.ModelAndView;
+
+import net.luversof.core.BlueskyException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -36,9 +34,6 @@ public class GlobalExceptionHandler {
 //		resultMap.put("result", map);
 //		return new ModelAndView("/error", resultMap);
 //	}
-	
-	@Autowired
-	private MessageSource messageSource;
 	
 	@ExceptionHandler
 	public ModelAndView handleException(BlueskyException exception) {

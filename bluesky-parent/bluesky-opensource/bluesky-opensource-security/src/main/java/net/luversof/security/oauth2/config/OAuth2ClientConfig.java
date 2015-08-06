@@ -252,6 +252,7 @@ public class OAuth2ClientConfig {
 	@Bean
 	public ResourceServerTokenServices battleNetTokenServices() {
 		AccessTokenConverter accessTokenConverter = new BattleNetAccessTokenConverter();
+		OAuth2RestTemplate oAuth2RestTemplate = battleNetRestTemplate();
 		RemoteTokenServices remoteTokenServices = new RemoteTokenServices() {
 
 			@Override
@@ -264,17 +265,17 @@ public class OAuth2ClientConfig {
 					headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 				}
 				@SuppressWarnings("unchecked")
-				Map<String, Object> map = battleNetRestTemplate().exchange(battleNetCheckTokenEndpointUrl, HttpMethod.GET,
+				Map<String, Object> map = oAuth2RestTemplate.exchange(battleNetCheckTokenEndpointUrl, HttpMethod.GET,
 						new HttpEntity<MultiValueMap<String, String>>(formData, headers), Map.class, accessToken).getBody();
 
-				if (map.containsKey("error")) {
-					logger.debug("check_token returned error: " + map.get("error"));
+				if (map.containsKey("code")) {
+					logger.debug("check_token returned error: " + map.get("detail"));
 					throw new InvalidTokenException(accessToken);
 				}
+				
 				@SuppressWarnings("unchecked")
-				Map<String, Object> me = battleNetRestTemplate().getForObject("https://graph.facebook.com/me", Map.class);
+				Map<String, Object> me = oAuth2RestTemplate.getForObject("https://kr.api.battle.net/account/user?access_token={accessToken}", Map.class, accessToken);
 				map.putAll(me);
-//				Assert.state(map.containsKey("client_id"), "Client id must be present in response from auth server");
 				return accessTokenConverter.extractAuthentication(map);
 			}
 			
@@ -289,10 +290,10 @@ public class OAuth2ClientConfig {
 	
 	@Bean
 	public OAuth2ClientAuthenticationProcessingFilter battleNetAuthenticationProcessingFilter() {
-		OAuth2ClientAuthenticationProcessingFilter facebookAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/battleNetAuthorizeResult");
-		facebookAuthenticationProcessingFilter.setRestTemplate(battleNetRestTemplate());
-		facebookAuthenticationProcessingFilter.setTokenServices(battleNetTokenServices());
-		return facebookAuthenticationProcessingFilter;
+		OAuth2ClientAuthenticationProcessingFilter battleNetAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/battleNetAuthorizeResult");
+		battleNetAuthenticationProcessingFilter.setRestTemplate(battleNetRestTemplate());
+		battleNetAuthenticationProcessingFilter.setTokenServices(battleNetTokenServices());
+		return battleNetAuthenticationProcessingFilter;
 	}
 	
 	/* (e) battleNet OAuth */

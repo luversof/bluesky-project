@@ -34,8 +34,8 @@ public class BattleNetUserAuthenticationConverter implements UserAuthenticationC
 
 	@Override
 	public Authentication extractAuthentication(Map<String, ?> map) {
-		if (map.containsKey("id") && map.containsKey("name")) {
-			BlueskyUser luversofUser = new BlueskyUser(Long.valueOf((String) map.get("id")), (String) map.get("name"), "N/A", getAuthorities(map), true, true, true, true, UserType.BATTLENET);
+		if (map.containsKey("id") && map.containsKey("battletag")) {
+			BlueskyUser luversofUser = new BlueskyUser(Long.valueOf(String.valueOf(map.get("id"))), (String) map.get("battletag"), "N/A", getAuthorities(map), true, true, true, true, UserType.BATTLENET);
 			return new UsernamePasswordAuthenticationToken(luversofUser, "N/A", getAuthorities(map));
 		}
 		return null;

@@ -34,6 +34,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	@Autowired
 	private OAuth2ClientAuthenticationProcessingFilter facebookAuthenticationProcessingFilter;
 	
+	@Autowired
+	private OAuth2ClientAuthenticationProcessingFilter battleNetAuthenticationProcessingFilter;
+	
 //	@Autowired
 //	private OAuth2AuthenticationProcessingFilter oAuth2AuthenticationProcessingFilter;
 	
@@ -57,6 +60,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 			.addFilterAfter(oAuth2ClientContextFilter, BasicAuthenticationFilter.class)
 			.addFilterAfter(githubAuthenticationProcessingFilter, BasicAuthenticationFilter.class)
 			.addFilterAfter(facebookAuthenticationProcessingFilter, BasicAuthenticationFilter.class)
+			.addFilterAfter(battleNetAuthenticationProcessingFilter, BasicAuthenticationFilter.class)
 //			.addFilterAfter(oAuth2AuthenticationProcessingFilter, ExceptionTranslationFilter.class)
 			.logout().logoutSuccessHandler(logoutSuccessHandler).and()
 			.formLogin().loginPage("/login").and()
