@@ -4,3 +4,5 @@
 .springBeans
 .settings/
 target/
+.factorypath
+.apt_generated/
