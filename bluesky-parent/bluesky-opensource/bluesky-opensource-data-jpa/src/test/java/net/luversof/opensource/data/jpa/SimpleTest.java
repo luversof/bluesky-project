@@ -1,6 +1,7 @@
 package net.luversof.opensource.data.jpa;
 
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.GeneralTest;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.BlogRepository;
 import net.luversof.blog.service.BlogService;

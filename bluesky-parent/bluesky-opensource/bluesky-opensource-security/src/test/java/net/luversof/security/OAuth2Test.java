@@ -1,6 +1,7 @@
 package net.luversof.security;
 
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.GeneralTest;
 
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;

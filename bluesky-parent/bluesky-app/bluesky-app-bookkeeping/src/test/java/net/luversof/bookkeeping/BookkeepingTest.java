@@ -1,6 +1,7 @@
 package net.luversof.bookkeeping;
 
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.GeneralTest;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.service.BookkeepingService;
 
@@ -12,6 +13,8 @@ public class BookkeepingTest extends GeneralTest {
 
 	@Autowired
 	private BookkeepingService bookkeepingService;
+	
+	static final long TEST_USER_ID = 1;
 	
 	@Test
 	public void save() {

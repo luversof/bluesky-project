@@ -1,6 +1,7 @@
 package net.luversof.web;
 
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.GeneralTest;
 import net.luversof.blog.repository.BlogRepository;
 import net.luversof.opensource.jdbc.routing.DataSourceContextHolder;
 import net.luversof.opensource.jdbc.routing.DataSourceType;

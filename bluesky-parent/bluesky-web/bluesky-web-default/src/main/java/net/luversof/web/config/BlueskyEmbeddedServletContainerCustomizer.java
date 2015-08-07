@@ -37,12 +37,13 @@ public class BlueskyEmbeddedServletContainerCustomizer implements EmbeddedServle
 		    final Connector connector = new Connector("org.apache.coyote.http11.Http11NioProtocol");
 		    connector.setScheme("https");
 		    connector.setSecure(true);
-		    connector.setPort(443);
+		    connector.setPort(8443);
 		    connector.setRedirectPort(8081);
 		    
 		    Http11NioProtocol protocol = (Http11NioProtocol) connector.getProtocolHandler();
 	        protocol.setSSLEnabled(true);
-	        protocol.setKeystoreFile("C:/Users/luver/keystore.p12");
+	        //protocol.setKeystoreFile("C:/Users/luver/keystore.p12");
+	        protocol.setKeystoreFile("/Users/choiyong-rak/keystore.p12");
 	        protocol.setKeystorePass("password");
 	        protocol.setKeystoreType("PKCS12");
 	        protocol.setProperty("keystoreProvider", "SunJSSE");

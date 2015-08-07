@@ -1,6 +1,7 @@
 package net.luversof.security;
 
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.GeneralTest;
 import net.luversof.user.domain.User;
 import net.luversof.user.service.UserService;
 

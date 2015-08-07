@@ -3,6 +3,7 @@ package net.luversof.bookkeeping;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.GeneralTest;
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.bookkeeping.service.AssetService;
@@ -19,6 +20,8 @@ public class AssetTest extends GeneralTest {
 	
 	@Autowired
 	private BookkeepingService bookkeepingService;
+	
+	static final long TEST_USER_ID = 1;
 	
 
 	@Test

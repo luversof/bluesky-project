@@ -80,11 +80,10 @@ public class JdbcConfig {
 //	}
 //	
 //	@Bean
-//	@Primary
 //	public RoutingDataSource routingDataSource(
-//			DataSource securityDataSource,
-//			DataSource blogDataSource,
-//			DataSource bookkeepingDataSource
+//			@Qualifier("securityDataSource") DataSource securityDataSource,
+//			@Qualifier("blogDataSource") DataSource blogDataSource,
+//			@Qualifier("bookkeepingDataSource") DataSource bookkeepingDataSource
 //			) {
 //		RoutingDataSource routingDataSource = new RoutingDataSource();
 //		Map<Object, Object> targetDataSources = new HashMap<>();

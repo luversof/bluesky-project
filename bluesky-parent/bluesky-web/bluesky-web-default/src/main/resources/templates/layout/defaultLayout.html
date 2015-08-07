@@ -48,6 +48,7 @@
 					<li class="active"><a th:href="@{/}">Home</a></li>
 					<li><a th:href="@{#{url.blog.home}}">blog</a></li>
 					<li><a th:href="@{/bookkeeping}">bookkeeping</a></li>
+					<li><a th:href="@{/battleNet/index}">battleNet</a></li>
 					<li><a href="#contact">Contact</a></li>
 				</ul>
 				<form class="navbar-form navbar-right" sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post">
@@ -68,7 +69,7 @@
 					<input type="submit" class="btn btn-primary" th:value="#{login}" />
 					<a href="https://github.com/login/oauth/authorize?client_id=5ce0e9ac811fd9c04543" class="btn btn-primary">Github</a>
 					<a th:href="@{'https://www.facebook.com/dialog/oauth'(client_id='124755777691522',redirect_uri='http://localhost:8081/oauth/facebookAuthorizeResult')}" class="btn btn-primary">Facebook</a>
-					<a th:href="@{'https://kr.battle.net/oauth/authorize'(client_id='cntvyqjqspexfebzd42qte5faa4jgyaz',redirect_uri='https://localhost/oauth/battleNetAuthorizeResult',scope='wow.profile',response_type='code')}" class="btn btn-primary">BattleNet</a>
+					<a th:href="@{'https://kr.battle.net/oauth/authorize'(client_id='cntvyqjqspexfebzd42qte5faa4jgyaz',redirect_uri='https://localhost:8443/oauth/battleNetAuthorizeResult',scope='wow.profile',response_type='code')}" class="btn btn-primary">BattleNet</a>
 				</form>
 			</div>
 		</div>

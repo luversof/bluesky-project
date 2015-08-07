@@ -3,6 +3,7 @@ package net.luversof.bookkeeping;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.GeneralTest;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.service.BookkeepingService;
@@ -22,6 +23,8 @@ public class EntryGroupTest extends GeneralTest {
 	private BookkeepingService bookkeepingService;
 	
 	private Bookkeeping bookkeeping;
+	
+	static final long TEST_USER_ID = 1;
 	
 	@Before
 	public void before() {

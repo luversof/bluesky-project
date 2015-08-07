@@ -6,17 +6,16 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
-import lombok.extern.slf4j.Slf4j;
-import net.luversof.opensource.jdbc.routing.DataSourceContextHolder;
-import net.luversof.opensource.jdbc.routing.DataSourceType;
-import net.luversof.opensource.jdbc.routing.RoutingDataSource;
-
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
+import net.luversof.GeneralTest;
+import net.luversof.opensource.jdbc.routing.DataSourceContextHolder;
+import net.luversof.opensource.jdbc.routing.DataSourceType;
+import net.luversof.opensource.jdbc.routing.RoutingDataSource;
 
-@Slf4j
+
 public class JdbcTest extends GeneralTest {
 	
 	@Autowired
