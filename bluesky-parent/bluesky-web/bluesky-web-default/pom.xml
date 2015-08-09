@@ -18,18 +18,19 @@
 		<!-- (s) bluesky -->
 		<dependency>
 			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-app-api-battlenet</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-app-blog</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-app-bookkeeping</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-opensource-security</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 		<!-- (e) bluesky -->
 

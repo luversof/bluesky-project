@@ -77,14 +77,34 @@
 			</dependency>
 			<dependency>
 				<groupId>net.luversof</groupId>
-				<artifactId>bluesky-test</artifactId>
+				<artifactId>bluesky-app-api-battlenet</artifactId>
 				<version>${bluesky.version}</version>
-				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>net.luversof</groupId>
+				<artifactId>bluesky-app-blog</artifactId>
+				<version>${bluesky.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.luversof</groupId>
+				<artifactId>bluesky-app-bookkeeping</artifactId>
+				<version>${bluesky.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>net.luversof</groupId>
 				<artifactId>bluesky-opensource-jdbc</artifactId>
 				<version>${bluesky.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.luversof</groupId>
+				<artifactId>bluesky-opensource-security</artifactId>
+				<version>${bluesky.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.luversof</groupId>
+				<artifactId>bluesky-test</artifactId>
+				<version>${bluesky.version}</version>
+				<scope>test</scope>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
