@@ -6,7 +6,7 @@ import net.luversof.bookkeeping.domain.Bookkeeping.Add;
 import net.luversof.bookkeeping.domain.Bookkeeping.Modify;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.security.core.userdetails.BlueskyUser;
-import net.luversof.web.AuthorizeRole;
+import net.luversof.web.constant.AuthorizeRole;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;

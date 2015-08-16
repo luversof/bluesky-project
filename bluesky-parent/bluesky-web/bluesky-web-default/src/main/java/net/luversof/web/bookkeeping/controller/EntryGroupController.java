@@ -8,7 +8,7 @@ import net.luversof.bookkeeping.domain.EntryGroup.Modify;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.bookkeeping.service.EntryGroupService;
 import net.luversof.security.core.userdetails.BlueskyUser;
-import net.luversof.web.AuthorizeRole;
+import net.luversof.web.constant.AuthorizeRole;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;

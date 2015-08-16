@@ -32,4 +32,12 @@ public class SimpleTest {
 	public void test() {
 		System.out.println(MessageFormat.format("test : {0}", "ASDfdsf"));
 	}
+	
+	@Test
+	public void pathRegexTest() {
+		String path = "^/battleNet/d3/profile/[\\d]*$";
+		String testString = "/battleNet/d3/profile/123";
+		System.out.println(testString.matches(path)); 
+		
+	}
 }

@@ -10,9 +10,9 @@ import net.luversof.blog.service.ArticleService;
 import net.luversof.blog.service.BlogService;
 import net.luversof.core.BlueskyException;
 import net.luversof.user.service.UserService;
-import net.luversof.web.AuthorizeRole;
 import net.luversof.web.blog.annotation.CheckBlog;
 import net.luversof.web.blog.annotation.CheckBlogAndAddToArticle;
+import net.luversof.web.constant.AuthorizeRole;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;

@@ -3,11 +3,13 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="/battleNet/d3/battleNetLayout">
 <head>
-	<script type="text/javascript"></script>
+	<script type="text/javascript" th:inline="text">
+		var a = [[${careerProfile}]]
+	</script>
 </head>
 <body>
 	<div layout:fragment="content-battleNet">
-		asfsdfasdfsdf
+		
 	</div>
 </body>
 </html>

@@ -48,7 +48,7 @@
 					<li class="active"><a th:href="@{/}">Home</a></li>
 					<li><a th:href="@{#{url.blog.home}}">blog</a></li>
 					<li><a th:href="@{/bookkeeping}">bookkeeping</a></li>
-					<li><a th:href="@{/battleNet/index}">battleNet</a></li>
+					<li><a th:href="@{/battleNet/d3/index}">battleNet</a></li>
 					<li><a href="#contact">Contact</a></li>
 				</ul>
 				<form class="navbar-form navbar-right" sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post">

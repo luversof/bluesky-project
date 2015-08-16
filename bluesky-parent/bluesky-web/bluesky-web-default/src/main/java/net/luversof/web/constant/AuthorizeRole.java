@@ -1,4 +1,4 @@
-package net.luversof.web;
+package net.luversof.web.constant;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;

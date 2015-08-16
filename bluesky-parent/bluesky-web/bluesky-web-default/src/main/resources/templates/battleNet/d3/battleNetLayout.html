@@ -1,0 +1,29 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-spring4-4.dtd">
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+	layout:decorator="layout/defaultLayout">
+<head>
+	<script type="text/javascript" th:src="#{url.mustache.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bluesky_battleNet.js}"></script>
+</head>
+<body>
+	<div layout:fragment="content">
+		<div class="container-fluid">
+			<div class="row">
+		      	<div class="col-sm-2">
+					<ul class="nav nav-pills nav-stacked" layout:fragment="nav-bookkeeping" th:with="path = ${#httpServletRequest.servletPath}, menu = ${T(net.luversof.web.constant.MenuInfo).getName(path)}">
+						<li th:class="${menu} == 'home' ? active"><a th:href="@{/battleNet/d3/index}">홈</a></li>
+						<li th:class="${menu} == 'myProfile' ? active"><a th:href="@{/battleNet/d3/my/profile}">내 프로필</a></li>
+						<li th:class="${menu} == 'profile' ? active"><a href="">프로필</a></li>
+						<li th:class="${menu} == 'hero' ? active"><a th:href="@{/bookkeeping/asset}">자산 관리</a></li>
+						<li th:class="${menu} == 'item' ? active"><a th:href="@{/bookkeeping/entryGroup}">분류 관리</a></li>
+					</ul>
+				</div>
+				<div class="col-sm-10">
+					<div layout:fragment="content-battleNet" ></div>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
