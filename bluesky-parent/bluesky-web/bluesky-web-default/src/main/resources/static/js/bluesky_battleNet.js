@@ -10,9 +10,17 @@ $(document).ready(function() {
 			});
 		}
 		
+		var _getProfileTemplate = function() {
+			$.ajax({
+				url : "/html/battleNet/d3/profile.html",
+				async : false
+			})
+		}
+		
 		return { 
 			getMyProfile : function() {
 				_getMyProfile();
+				_getProfileTemplate();
 			}
 		}
 	};
