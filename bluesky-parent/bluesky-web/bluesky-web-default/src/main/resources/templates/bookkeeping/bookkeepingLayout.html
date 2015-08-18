@@ -12,7 +12,7 @@
 		<div class="container-fluid">
 			<div class="row">
 		      	<div class="col-sm-2">
-					<ul class="nav nav-pills nav-stacked" layout:fragment="nav-bookkeeping"
+					<ul class="nav nav-pills nav-stacked"
 						th:with="path = ${#httpServletRequest.servletPath},
 							menu = ${#strings.startsWith(path, '/bookkeeping/entry') ? 'entry' : 'bookkeeping'},
 							menu = ${#strings.startsWith(path, '/bookkeeping/entrySummary') ? 'entrySummary' : menu},

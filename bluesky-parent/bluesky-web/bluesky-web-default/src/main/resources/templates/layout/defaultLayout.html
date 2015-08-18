@@ -20,9 +20,14 @@
 	<!-- (s) bootstrap -->	
 	<script type="text/javascript" th:src="#{url.bootstrap.js}"></script>
 	<link rel="stylesheet" th:href="#{url.bootstrap.css}" />
-	<link rel="stylesheet" th:href="#{url.bootswatch.css}" />
+	<!-- <link rel="stylesheet" th:href="#{url.bootswatch.css}" /> -->
 	<!-- (e) bootstrap -->
 	
+	<script type="text/javascript" th:src="#{url.metisMenu.js}"></script>
+	<link rel="stylesheet" th:href="#{url.metisMenu.css}" />
+	<!-- <script type="text/javascript" th:src="#{url.sb-admin-2.js}"></script>
+	<link rel="stylesheet" th:href="#{url.sb-admin-2.css}" /> -->
+    <link rel="stylesheet" type="text/css" th:href="#{url.font-awesome.css}" />
 	
 	<link th:href="@{/css/bluesky.css}" rel="stylesheet" />
 	<script type="text/javascript" th:src="@{/js/bluesky.js}"></script>
@@ -33,7 +38,7 @@
 		});
 	</script>
 </head>
-<body>
+<body><span class="fa arrow"></span>
 	<!-- (s) top -->
 	<div class="navbar navbar-default navbar-fixed-top">
 		<div class="container-fluid">

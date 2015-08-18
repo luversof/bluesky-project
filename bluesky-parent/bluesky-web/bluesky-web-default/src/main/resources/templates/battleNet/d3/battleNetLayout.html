@@ -11,16 +11,58 @@
 		<div class="container-fluid">
 			<div class="row">
 		      	<div class="col-sm-2">
-					<ul class="nav nav-pills nav-stacked" layout:fragment="nav-bookkeeping" th:with="path = ${#httpServletRequest.servletPath}, menu = ${T(net.luversof.web.constant.MenuInfo).getName(path)}">
+					<ul class="nav metismenu" th:with="path = ${#httpServletRequest.servletPath}, menu = ${T(net.luversof.web.constant.MenuInfo).getName(path)}">
 						<li th:class="${menu} == 'home' ? active"><a th:href="@{/battleNet/d3/index}">홈</a></li>
 						<li th:class="${menu} == 'myProfile' ? active"><a th:href="@{/battleNet/d3/my/profile}">내 프로필</a></li>
 						<li th:class="${menu} == 'profile' ? active"><a href="">프로필</a></li>
 						<li th:class="${menu} == 'hero' ? active"><a th:href="@{/bookkeeping/asset}">자산 관리</a></li>
 						<li th:class="${menu} == 'item' ? active"><a th:href="@{/bookkeeping/entryGroup}">분류 관리</a></li>
+						 <li>
+                            <a href="#"><i class="fa fa-sitemap fa-fw"></i> Multi-Level Dropdown<span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level">
+                                <li>
+                                    <a href="#">Second Level Item</a>
+                                </li>
+                                <li>
+                                    <a href="#">Second Level Item</a>
+                                </li>
+                                <li>
+                                    <a href="#">Third Level <span class="fa arrow"></span></a>
+                                    <ul class="nav nav-third-level">
+                                        <li>
+                                            <a href="#">Third Level Item</a>
+                                        </li>
+                                        <li>
+                                            <a href="#">Third Level Item</a>
+                                        </li>
+                                        <li>
+                                            <a href="#">Third Level Item</a>
+                                        </li>
+                                        <li>
+                                            <a href="#">Third Level Item</a>
+                                        </li>
+                                    </ul>
+                                    <!-- /.nav-third-level -->
+                                </li>
+                            </ul>
+                            <!-- /.nav-second-level -->
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-files-o fa-fw"></i> Sample Pages<span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level">
+                                <li>
+                                    <a href="blank.html">Blank Page</a>
+                                </li>
+                                <li>
+                                    <a href="login.html">Login Page</a>
+                                </li>
+                            </ul>
+                            <!-- /.nav-second-level -->
+                        </li>
 					</ul>
 				</div>
 				<div class="col-sm-10">
-					<div layout:fragment="content-battleNet" ></div>
+					<div layout:fragment="content-battleNet" class="content-battleNet"></div>
 				</div>
 			</div>
 		</div>

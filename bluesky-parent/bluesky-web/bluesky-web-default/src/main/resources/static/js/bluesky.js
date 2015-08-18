@@ -75,3 +75,8 @@ $(document).ajaxError(function(event, jqXHR, ajaxSettings, thrownError) {
 		console.log(jqXHR.responseJSON);
 	}
 });
+
+
+$(document).ready(function() {
+	$(".metismenu").metisMenu();
+});
