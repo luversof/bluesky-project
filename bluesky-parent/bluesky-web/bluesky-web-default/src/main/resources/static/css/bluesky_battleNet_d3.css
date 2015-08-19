@@ -1,0 +1,10 @@
+.d3-color-hardcore {
+    color: #e60101 !important;
+}
+
+.small-seasonal-leaf {
+    display: inline-block;
+    width: 15px;
+    height: 21px;
+    background: url("http://kr.battle.net/d3/static/images/profile/seasonal-leaf.png") -24px -2px no-repeat;
+}

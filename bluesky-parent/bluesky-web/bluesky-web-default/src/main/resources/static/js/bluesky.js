@@ -76,7 +76,3 @@ $(document).ajaxError(function(event, jqXHR, ajaxSettings, thrownError) {
 	}
 });
 
-
-$(document).ready(function() {
-	$(".metismenu").metisMenu();
-});

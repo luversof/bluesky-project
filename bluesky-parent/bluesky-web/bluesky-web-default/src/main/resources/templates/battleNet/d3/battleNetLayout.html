@@ -3,62 +3,19 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="layout/defaultLayout">
 <head>
+	<link rel="stylesheet" type="text/css" th:href="@{/css/bluesky_battleNet_d3.css}" />
 	<script type="text/javascript" th:src="#{url.mustache.js}"></script>
-	<script type="text/javascript" th:src="@{/js/bluesky_battleNet.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bluesky_battleNet_d3.js}"></script>
 </head>
 <body>
 	<div layout:fragment="content">
 		<div class="container-fluid">
 			<div class="row">
 		      	<div class="col-sm-2">
-					<ul class="nav metismenu" th:with="path = ${#httpServletRequest.servletPath}, menu = ${T(net.luversof.web.constant.MenuInfo).getName(path)}">
-						<li th:class="${menu} == 'home' ? active"><a th:href="@{/battleNet/d3/index}">홈</a></li>
+					<ul class="nav nav-pills nav-stacked" th:with="path = ${#httpServletRequest.servletPath}, menu = ${T(net.luversof.web.constant.MenuInfo).getName(path)}">
+						<li th:class="${menu} == 'home' ? active"><a th:href="@{/battleNet/d3/index}">내 프로필</a></li>
 						<li th:class="${menu} == 'myProfile' ? active"><a th:href="@{/battleNet/d3/my/profile}">내 프로필</a></li>
-						<li th:class="${menu} == 'profile' ? active"><a href="">프로필</a></li>
-						<li th:class="${menu} == 'hero' ? active"><a th:href="@{/bookkeeping/asset}">자산 관리</a></li>
-						<li th:class="${menu} == 'item' ? active"><a th:href="@{/bookkeeping/entryGroup}">분류 관리</a></li>
-						 <li>
-                            <a href="#"><i class="fa fa-sitemap fa-fw"></i> Multi-Level Dropdown<span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level">
-                                <li>
-                                    <a href="#">Second Level Item</a>
-                                </li>
-                                <li>
-                                    <a href="#">Second Level Item</a>
-                                </li>
-                                <li>
-                                    <a href="#">Third Level <span class="fa arrow"></span></a>
-                                    <ul class="nav nav-third-level">
-                                        <li>
-                                            <a href="#">Third Level Item</a>
-                                        </li>
-                                        <li>
-                                            <a href="#">Third Level Item</a>
-                                        </li>
-                                        <li>
-                                            <a href="#">Third Level Item</a>
-                                        </li>
-                                        <li>
-                                            <a href="#">Third Level Item</a>
-                                        </li>
-                                    </ul>
-                                    <!-- /.nav-third-level -->
-                                </li>
-                            </ul>
-                            <!-- /.nav-second-level -->
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-files-o fa-fw"></i> Sample Pages<span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level">
-                                <li>
-                                    <a href="blank.html">Blank Page</a>
-                                </li>
-                                <li>
-                                    <a href="login.html">Login Page</a>
-                                </li>
-                            </ul>
-                            <!-- /.nav-second-level -->
-                        </li>
+						
 					</ul>
 				</div>
 				<div class="col-sm-10">
