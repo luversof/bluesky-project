@@ -27,13 +27,13 @@ public class BattleNetController {
 	}
 	
 	@RequestMapping("/profile/{profile}")
-	public Object getCareerProfile(@PathVariable String profile, @RequestParam(defaultValue = "ko_KR") String locale) {
-		return d3Service.getCareerProfile(profile, locale);
+	public Object getCareerProfile(@PathVariable String battleTag, @RequestParam(defaultValue = "ko_KR") String locale) {
+		return d3Service.getCareerProfile(battleTag, locale);
 	}
 	
-	@RequestMapping("/profile/{profile}/hero/{heroId}")
-	public Object getHeroProfile(@PathVariable String profile, @PathVariable int heroId, @RequestParam(defaultValue = "ko_KR") String locale) {
-		return d3Service.getHeroProfile(profile, heroId, locale);
+	@RequestMapping("/profile/{battleTag}/hero/{heroId}")
+	public Object getHeroProfile(@PathVariable String battleTag, @PathVariable int heroId, @RequestParam(defaultValue = "ko_KR") String locale) {
+		return d3Service.getHeroProfile(battleTag, heroId, locale);
 	}
 	
 	@RequestMapping("/data/item/{itemId}")

@@ -17,12 +17,12 @@ public class D3Service {
 	@Value("${api.battleNet.apiHost}")
 	private String battleNetApiHost;
 	
-	public Object getCareerProfile(String profile, String locale) {
-		return restTemplate.getForObject(battleNetApiHost + "/d3/profile/{profile}/?locale={locale}&apikey={apikey}", Object.class, profile, locale, apikey);
+	public Object getCareerProfile(String battleTag, String locale) {
+		return restTemplate.getForObject(battleNetApiHost + "/d3/profile/{battleTag}/?locale={locale}&apikey={apikey}", Object.class, battleTag, locale, apikey);
 	}
 	
-	public Object getHeroProfile(String profile, int heroId, String locale) {
-		return restTemplate.getForObject(battleNetApiHost + "/d3/profile/{profile}/hero/{heroId}?locale={locale}&apikey={apikey}", Object.class, profile, heroId, locale, apikey);
+	public Object getHeroProfile(String battleTag, int heroId, String locale) {
+		return restTemplate.getForObject(battleNetApiHost + "/d3/profile/{battleTag}/hero/{heroId}?locale={locale}&apikey={apikey}", Object.class, battleTag, heroId, locale, apikey);
 	}
 	
 	public Object getItemData(String itemId, String locale) {

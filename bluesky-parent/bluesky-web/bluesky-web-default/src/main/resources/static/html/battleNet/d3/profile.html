@@ -54,11 +54,11 @@
 			</table>
 			<div class="panel-group" id="characterList">
 				{{#heroes}}
-				<div class="panel panel-default">
+				<div class="panel panel-info">
 					<div class="panel-heading">
-						<img alt="Bootstrap Image Preview" src="{{getIconThumbnailUrl}}" class="img-thumbnail" />
+						<img alt="{{getClassName}}" src="{{getIconThumbnailUrl}}" class="img-thumbnail" />
 						{{#seasonal}}<span class="small-seasonal-leaf"></span>{{/seasonal}} 
-						<a class="panel-title collapsed {{#hardcore}}d3-color-hardcore{{/hardcore}}" data-toggle="collapse" data-parent="#characterList" href="#character-{{id}}">
+						<a class="panel-title collapsed {{#hardcore}}d3-color-hardcore{{/hardcore}}" data-toggle="collapse" data-parent="#characterList" href="#character-{{id}}" data-character-id="{{id}}" data-battleTag="{{battleTag}}">
 							{{name}} - {{getClassName}} Lv.{{level}}
 						</a>
 					</div>
