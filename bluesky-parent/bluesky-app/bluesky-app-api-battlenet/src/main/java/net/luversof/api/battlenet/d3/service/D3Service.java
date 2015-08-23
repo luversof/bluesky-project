@@ -25,8 +25,8 @@ public class D3Service {
 		return restTemplate.getForObject(battleNetApiHost + "/d3/profile/{battleTag}/hero/{heroId}?locale={locale}&apikey={apikey}", Object.class, battleTag, heroId, locale, apikey);
 	}
 	
-	public Object getItemData(String itemId, String locale) {
-		return restTemplate.getForObject(battleNetApiHost + "/d3/data/item/{itemId}?locale={locale}&apikey={apikey}", Object.class, itemId, locale, apikey);
+	public Object getItemData(String itemData, String locale) {
+		return restTemplate.getForObject(battleNetApiHost + "/d3/data/item/{itemData}?locale={locale}&apikey={apikey}", Object.class, itemData, locale, apikey);
 	}
 	
 	public Object getFollowerData(String locale) {

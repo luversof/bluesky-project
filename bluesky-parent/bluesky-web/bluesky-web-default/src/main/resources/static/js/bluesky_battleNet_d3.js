@@ -4,6 +4,7 @@ $(document).ready(function() {
 	var BattleNet = function() {
 		var _profile = {};
 		var _hero = {};
+		var _item = {};
 		
 		var _getMyProfile = function() {
 			var result = $.ajax({
@@ -19,7 +20,7 @@ $(document).ready(function() {
 				return _profile[battleTag];
 			} 
 			var result = $.ajax({
-				url : "/battleNet/d3/profile/" + encodeURIComponent(battleTag) + ".jaon",
+				url : "/battleNet/d3/profile/" + encodeURIComponent(battleTag) + ".json",
 				async : false
 			});
 			return result.responseJSON;
@@ -30,7 +31,7 @@ $(document).ready(function() {
 				return _hero[battleTag][heroId];
 			}
 			var result = $.ajax({
-				url : "/battleNet/d3/profile/" + encodeURIComponent(battleTag) + "/hero/" + heroId + ".jaon",
+				url : "/battleNet/d3/profile/" + encodeURIComponent(battleTag) + "/hero/" + heroId + ".json",
 				async : false
 			});
 			if (_hero[battleTag] == undefined) {
@@ -39,6 +40,20 @@ $(document).ready(function() {
 			_hero[battleTag][heroId] = result.responseJSON;
 			
 			return _hero[battleTag][heroId];
+		}
+		
+		var _getItem = function(itemData) {
+			if (_item[itemData] != undefined) {
+				return _item[itemData];
+			}
+			var result = $.ajax({
+				url : "/battleNet/d3/data/" + itemData + ".json"
+			});
+			if (_item[itemData] == undefined) {
+				_item[itemData] = {};
+			}
+			_item[itemData] = result.responseJSON;
+			return _item[itemData];
 		}
 		
 		var _profileTemplate = null;
@@ -67,6 +82,31 @@ $(document).ready(function() {
 			return _heroProfileTemplate;
 		}
 		
+		var _profileItemTemplate = null;
+		var _getProfileItemTemplate = function() {
+			if (_profileItemTemplate != null) {
+				return _profileItemTemplate;
+			}
+			var result = $.ajax({
+				url : "/html/battleNet/d3/profileItem.html",
+				async : false
+			})
+			_profileItemTemplate = result.responseText;
+			return _profileItemTemplate;
+		}
+		
+		var _itemTemplate = null;
+		var _getItemTemplate = function() {
+			if (_itemTemplate != null) {
+				return _itemTemplate;
+			}
+			var result = $.ajax({
+				url : "/html/battleNet/d3/item.html",
+				async : false
+			})
+			_itemTemplate = result.responseText;
+			return _itemTemplate;
+		}
 		return { 
 			getMyProfile : function() {
 				var data = _getMyProfile();
@@ -99,16 +139,23 @@ $(document).ready(function() {
 					return "http://media.blizzard.com/d3/icons/portraits/21/" + classPath + "_" + (this.gender == 0 ? "male" : "female") + ".png";
 				}
 				
-				//console.log("data : ", data);
-				//console.log("template : ", template);
-				
 				$(".content-battleNet").html(Mustache.render(template, data));
 			},
 			getHeroProfile : function(battleTag, characterId) {
 				var data = _getHeroProfile(battleTag, characterId);
 				var template = _getHeroProfileTemplate();
 				
-				$("#character-" + characterId + " .panel-body").html(Mustache.render(template, data));
+				var partials = {"profileItem" : _getProfileItemTemplate()}
+				
+				for (var key in data.items) {
+					data.items[key].getKey = key;
+				}
+				
+				$("#character-" + characterId + " .panel-body").html(Mustache.render(template, data, partials));
+			},
+			getItem : function(itemData) {
+				var data = _getItem(itemData);
+				
 			}
 		}
 	};
@@ -122,4 +169,10 @@ $(document).ready(function() {
 		var characterId = $(this).attr("data-character-id");
 		battleNet.getHeroProfile(battleTag, characterId);
 	});
+	
+	$(document).on("mouseover", "[data-d3tooltip]", function() {
+		console.log("mo");
+		var itemData = $(this).attr("data-d3tooltip");
+		battleNet.getItem(itemData);
+	})
 });

@@ -1,3 +1,17 @@
-테스트
-
-{{items.head.name}}
+<div>
+	<ul class="gear-slots">
+		{{#items.head}}{{>profileItem}}{{/items.head}}
+		{{#items.torso}}{{>profileItem}}{{/items.torso}}
+		{{#items.feet}}{{>profileItem}}{{/items.feet}}
+		{{#items.hands}}{{>profileItem}}{{/items.hands}}
+		{{#items.shoulders}}{{>profileItem}}{{/items.shoulders}}
+		{{#items.legs}}{{>profileItem}}{{/items.legs}}
+		{{#items.bracers}}{{>profileItem}}{{/items.bracers}}
+		{{#items.mainHand}}{{>profileItem}}{{/items.mainHand}}
+		{{#items.offHand}}{{>profileItem}}{{/items.offHand}}
+		{{#items.waist}}{{>profileItem}}{{/items.waist}}
+		{{#items.rightFinger}}{{>profileItem}}{{/items.rightFinger}}
+		{{#items.leftFinger}}{{>profileItem}}{{/items.leftFinger}}
+		{{#items.neck}}{{>profileItem}}{{/items.neck}}
+	</ul>
+</div>

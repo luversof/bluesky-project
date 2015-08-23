@@ -36,9 +36,9 @@ public class BattleNetController {
 		return d3Service.getHeroProfile(battleTag, heroId, locale);
 	}
 	
-	@RequestMapping("/data/item/{itemId}")
-	public Object getItemData(@PathVariable String itemId, @RequestParam(defaultValue = "ko_KR") String locale) {
-		return d3Service.getItemData(itemId, locale);
+	@RequestMapping("/data/item/{itemData}")
+	public Object getItemData(@PathVariable String itemData, @RequestParam(defaultValue = "ko_KR") String locale) {
+		return d3Service.getItemData(itemData, locale);
 	}
 
 }
