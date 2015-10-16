@@ -18,7 +18,7 @@ public class BlueskyEmbeddedServletContainerCustomizer implements EmbeddedServle
 
 	@Override
 	public void customize(ConfigurableEmbeddedServletContainer container) {
-		container.setPort(8081);
+		container.setPort(8082);
 		TomcatEmbeddedServletContainerFactory tomcatEmbeddedServletContainerFactory = (TomcatEmbeddedServletContainerFactory) container;
 		tomcatEmbeddedServletContainerFactory.addConnectorCustomizers(new TomcatConnectorCustomizer() {
 			@Override
@@ -38,11 +38,12 @@ public class BlueskyEmbeddedServletContainerCustomizer implements EmbeddedServle
 		    connector.setScheme("https");
 		    connector.setSecure(true);
 		    connector.setPort(8443);
-		    connector.setRedirectPort(8081);
+		    connector.setRedirectPort(8082);
 		    
 		    Http11NioProtocol protocol = (Http11NioProtocol) connector.getProtocolHandler();
 	        protocol.setSSLEnabled(true);
-	        protocol.setKeystoreFile("C:/Users/luver/keystore.p12");
+	        protocol.setKeystoreFile("C:/Users/bluesky/keystore.p12");
+	        //protocol.setKeystoreFile("C:/Users/luver/keystore.p12");
 	        //protocol.setKeystoreFile("/Users/choiyong-rak/keystore.p12");
 	        protocol.setKeystorePass("password");
 	        protocol.setKeystoreType("PKCS12");

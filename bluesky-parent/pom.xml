@@ -16,7 +16,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>1.2.5.RELEASE</version>
+		<version>1.2.6.RELEASE</version>
 	</parent>
 
 	<properties>
@@ -54,14 +54,14 @@
 			<dependency>
 				<groupId>org.projectlombok</groupId>
 				<artifactId>lombok</artifactId>
-				<version>1.16.4</version>
+				<version>1.16.6</version>
 			</dependency>
 
 			<!-- (s) encryption -->
 			<dependency>
 				<groupId>org.bouncycastle</groupId>
 				<artifactId>bcprov-jdk15on</artifactId>
-				<version>1.52</version>
+				<version>1.53</version>
 			</dependency>
 			<dependency>
 				<groupId>org.jasypt</groupId>
@@ -106,6 +106,39 @@
 				<version>${bluesky.version}</version>
 				<scope>test</scope>
 			</dependency>
+
+			<!-- (s) javascript libarary -->
+			<dependency>
+				<groupId>org.webjars</groupId>
+				<artifactId>jquery</artifactId>
+				<version>3.0.0-alpha1</version>
+			</dependency>
+			<dependency>
+				<groupId>org.webjars</groupId>
+				<artifactId>jquery-ui</artifactId>
+				<version>1.11.4</version>
+			</dependency>
+			<dependency>
+				<groupId>org.webjars</groupId>
+				<artifactId>bootstrap</artifactId>
+				<version>3.3.5</version>
+			</dependency>
+			<dependency>
+				<groupId>org.webjars</groupId>
+				<artifactId>bootswatch</artifactId>
+				<version>3.3.5</version>
+			</dependency>
+			<dependency>
+				<groupId>org.webjars</groupId>
+				<artifactId>font-awesome</artifactId>
+				<version>4.4.0</version>
+			</dependency>
+			<dependency>
+				<groupId>org.webjars</groupId>
+				<artifactId>handsontable</artifactId>
+				<version>0.17.0</version>
+			</dependency>
+			<!-- (e) javascript libarary -->
 		</dependencies>
 	</dependencyManagement>
 </project>
