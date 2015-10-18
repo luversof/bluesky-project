@@ -15,6 +15,14 @@ public class BlogTest extends GeneralTest {
 	
 	@Autowired
 	private BlogService blogService;
+	
+	@Test
+	public void saveTest() {
+		Blog blog = new Blog();
+		blog.setUserId(12345);
+		blog.setUserType("TEST");
+		blogService.save(blog);
+	}
 
 	@Test
 	public void test() {

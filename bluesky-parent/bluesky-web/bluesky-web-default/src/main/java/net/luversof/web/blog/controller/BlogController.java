@@ -22,7 +22,6 @@ public class BlogController {
 
 	@Autowired
 	private BlogService blogService;
-
 	
 	@RequestMapping(value = "/{id}", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
 	public String forwardArticleList(@PathVariable long id) {
@@ -39,7 +38,10 @@ public class BlogController {
 	@RequestMapping(value = "/$!", method=RequestMethod.POST)
 	public String save(Authentication authentication) {
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
-		Blog blog = blogService.save(blueskyUser.getId(), blueskyUser.getUserType().name());
+		Blog blog = new Blog();
+		blog.setUserId(blueskyUser.getId());
+		blog.setUserType(blueskyUser.getUserType().name());
+		blogService.save(blog);
 		return forwardArticleList(blog.getId());
 	}
 	

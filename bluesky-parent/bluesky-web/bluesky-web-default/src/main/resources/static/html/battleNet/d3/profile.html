@@ -4,51 +4,27 @@
 			<h3 class="text-primary">
 				<a href="http://kr.battle.net/d3/ko/profile/{{getLinkBattleTag}}/">{{battleTag}}</a>
 			</h3>
-			<dl>
-				<dt>
-					정복자 레벨
-				</dt>
-				<dd>
-					Lv.{{paragonLevel}}
-				</dd>
-				<dt>
-					하드코어 정복자 레벨
-				</dt>
-				<dd>
-					Lv.{{paragonLevelHardcore}}
-				</dd>
-				<dt>
-					시즌 정복자 레벨
-				</dt>
-				<dd>
-					Lv.{{paragonLevelSeason}}
-				</dd>
-				<dt>
-					시즌 하드코어 정복자 레벨
-				</dt>
-				<dd>
-					Lv.{{paragonLevelSeasonHardcore}}
-				</dd>
+			<dl class="dl-horizontal">
+				<dt>정복자</dt>
+				<dd>Lv.{{paragonLevel}}</dd>
+				<dt>하드코어 정복자</dt>
+				<dd>Lv.{{paragonLevelHardcore}}</dd>
+				<dt>시즌 정복자</dt>
+				<dd>Lv.{{paragonLevelSeason}}</dd>
+				<dt>시즌 하드코어 정복자</dt>
+				<dd>Lv.{{paragonLevelSeasonHardcore}}</dd>
 			</dl>
 			<table class="table">
 				<thead>
 					<tr>
-						<th>
-							Product
-						</th>
-						<th>
-							Payment Taken
-						</th>
+						<th>Product</th>
+						<th>Payment Taken</th>
 					</tr>
 				</thead>
 				<tbody>
 					<tr>
-						<td>
-							1
-						</td>
-						<td>
-							TB - Monthly
-						</td>
+						<td>1</td>
+						<td>TB - Monthly</td>
 					</tr>
 				</tbody>
 			</table>
@@ -59,7 +35,7 @@
 						<img alt="{{getClassName}}" src="{{getIconThumbnailUrl}}" class="img-thumbnail" />
 						{{#seasonal}}<span class="small-seasonal-leaf"></span>{{/seasonal}} 
 						<a class="panel-title collapsed {{#hardcore}}d3-color-hardcore{{/hardcore}}" data-toggle="collapse" data-parent="#characterList" href="#character-{{id}}" data-character-id="{{id}}" data-battleTag="{{battleTag}}">
-							{{level}}({{paragonLevel}}) {{getClassName}} - {{name}} 
+							Lv.{{level}}({{paragonLevel}}) {{getClassName}} - {{name}} 
 						</a>
 					</div>
 					<div id="character-{{id}}" class="panel-collapse collapse">

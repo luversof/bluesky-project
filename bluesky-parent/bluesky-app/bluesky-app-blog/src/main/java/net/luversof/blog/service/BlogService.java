@@ -18,10 +18,7 @@ public class BlogService {
 	private BlogRepository blogRepository;
 	
 	
-	public Blog save(long userId, String userType) {
-		Blog blog = new Blog();
-		blog.setUserId(userId);
-		blog.setUserType(userType);
+	public Blog save(Blog blog) {
 		return blogRepository.save(blog);
 	}
 	
