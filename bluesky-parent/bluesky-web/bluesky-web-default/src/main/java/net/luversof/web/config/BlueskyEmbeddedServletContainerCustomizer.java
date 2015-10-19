@@ -42,8 +42,8 @@ public class BlueskyEmbeddedServletContainerCustomizer implements EmbeddedServle
 		    
 		    Http11NioProtocol protocol = (Http11NioProtocol) connector.getProtocolHandler();
 	        protocol.setSSLEnabled(true);
-	        //protocol.setKeystoreFile("C:/Users/bluesky/keystore.p12");
-	        protocol.setKeystoreFile("C:/Users/luver/keystore.p12");
+	        protocol.setKeystoreFile("file:///C:/Users/bluesky/keystore.p12");
+	        //protocol.setKeystoreFile("file:///C:/Users/luver/keystore.p12");
 	        //protocol.setKeystoreFile("/Users/choiyong-rak/keystore.p12");
 	        protocol.setKeystorePass("password");
 	        protocol.setKeystoreType("PKCS12");

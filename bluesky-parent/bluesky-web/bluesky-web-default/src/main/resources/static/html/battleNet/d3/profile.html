@@ -1,6 +1,6 @@
 <div class="container-fluid">
-	<div class="row">
-		<div class="col-md-12">
+	<div class="row row-offcanvas row-offcanvas-right">
+		<div class="col-md-9">
 			<h3 class="text-primary">
 				<a href="http://kr.battle.net/d3/ko/profile/{{getLinkBattleTag}}/">{{battleTag}}</a>
 			</h3>
@@ -8,11 +8,11 @@
 				<dt>정복자</dt>
 				<dd>Lv.{{paragonLevel}}</dd>
 				<dt>하드코어 정복자</dt>
-				<dd>Lv.{{paragonLevelHardcore}}</dd>
+				<dd class="d3-color-hardcore">Lv.{{paragonLevelHardcore}}</dd>
 				<dt>시즌 정복자</dt>
-				<dd>Lv.{{paragonLevelSeason}}</dd>
-				<dt>시즌 하드코어 정복자</dt>
-				<dd>Lv.{{paragonLevelSeasonHardcore}}</dd>
+				<dd><span class="small-seasonal-leaf">&nbsp;</span> Lv.{{paragonLevelSeason}}</dd>
+				<dt> 시즌 하드코어 정복자</dt>
+				<dd class="d3-color-hardcore"><span class="small-seasonal-leaf">&nbsp;</span> Lv.{{paragonLevelSeasonHardcore}}</dd>
 			</dl>
 			<table class="table">
 				<thead>
@@ -31,14 +31,14 @@
 			<div class="panel-group" id="characterList">
 				{{#heroes}}
 				<div class="panel panel-info">
-					<div class="panel-heading">
-						<img alt="{{getClassName}}" src="{{getIconThumbnailUrl}}" class="img-thumbnail" />
-						{{#seasonal}}<span class="small-seasonal-leaf"></span>{{/seasonal}} 
-						<a class="panel-title collapsed {{#hardcore}}d3-color-hardcore{{/hardcore}}" data-toggle="collapse" data-parent="#characterList" href="#character-{{id}}" data-character-id="{{id}}" data-battleTag="{{battleTag}}">
-							Lv.{{level}}({{paragonLevel}}) {{getClassName}} - {{name}} 
-						</a>
+					<div class="panel-heading"  data-toggle="collapse" data-parent="#characterList" data-target="#hero-{{id}}" data-hero-id="{{id}}" data-battleTag="{{battleTag}}">
+						<p class="panel-title collapsed {{#hardcore}}d3-color-hardcore{{/hardcore}}">
+							<img alt="{{getClassName}}" src="{{getIconThumbnailUrl}}" class="img-thumbnail" title="{{getClassName}}" />
+							{{#seasonal}}<span class="small-seasonal-leaf">&nbsp;</span>{{/seasonal}} 
+							Lv.{{level}}({{paragonLevel}}) - {{name}} 
+						</p>
 					</div>
-					<div id="character-{{id}}" class="panel-collapse collapse">
+					<div id="hero-{{id}}" class="panel-collapse collapse">
 						<div class="panel-body">
 							Anim pariatur cliche...
 						</div>
@@ -47,5 +47,24 @@
 				{{/heroes}}
 			</div>
 		</div>
+		<div class="col-md-3">
+			<div class="col-md-2 sidebar-offcanvas" data-spy="affix" id="sidebar">
+				<div class="list-group">
+					<a href="#" class="list-group-item active">Link</a>
+					<a href="#" class="list-group-item">Link</a>
+					<a href="#" class="list-group-item">Link</a>
+					<a href="#" class="list-group-item">Link</a>
+					<a href="#" class="list-group-item">Link</a>
+					<a href="#" class="list-group-item">Link</a>
+					<a href="#" class="list-group-item">Link</a>
+					<a href="#" class="list-group-item">Link</a>
+					<a href="#" class="list-group-item">Link</a>
+					<a href="#" class="list-group-item">Link</a>
+				</div>
+			</div><!--/.sidebar-offcanvas-->
+		</div>
 	</div>
+	
+	
+	
 </div>

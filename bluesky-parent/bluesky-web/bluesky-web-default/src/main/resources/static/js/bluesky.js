@@ -76,3 +76,10 @@ $(document).ajaxError(function(event, jqXHR, ajaxSettings, thrownError) {
 	}
 });
 
+
+$(document).ready(function () {
+	$(document).on("click", "[data-toggle=offcanvas]", function () {
+		console.log("ㅅㄷㄴㅅ")
+		$('.row-offcanvas').toggleClass('active')
+	});
+});

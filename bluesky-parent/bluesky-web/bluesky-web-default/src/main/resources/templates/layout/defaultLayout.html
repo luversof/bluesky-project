@@ -16,11 +16,13 @@
 	
 	<!-- (s) jquery -->
 	<script type="text/javascript" th:src="#{url.jquery.js}"></script>
+	<!-- <script type="text/javascript" th:src="#{url.jquery-mobile.js}"></script> -->
 	<!-- (e) jquery -->
 
 	<!-- (s) bootstrap -->	
 	<script type="text/javascript" th:src="#{url.bootstrap.js}"></script>
 	<link rel="stylesheet" type="text/css" th:href="#{url.bootstrap.css}" />
+	<link rel="stylesheet" type="text/css" th:href="@{/css/offcanvas.css}" />
 	<!-- <link rel="stylesheet" th:href="#{url.bootswatch.css}" /> -->
 	<!-- (e) bootstrap -->
 	
@@ -62,16 +64,16 @@
 					<!-- 
 					 -->
 					<div class="form-group">
-						<input type="text" name="username" th:placeholder="#{username}" class="form-control" autofocus="autofocus"/>
+						<input type="text" name="username" th:placeholder="#{username}" class="form-control input-sm" autofocus="autofocus"/>
 					</div>
 					<div class="form-group">
-						<input type="password" name="password" th:placeholder="#{password}" class="form-control" />
+						<input type="password" name="password" th:placeholder="#{password}" class="form-control input-sm" />
 					</div>
 					<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-					<input type="submit" class="btn btn-primary" th:value="#{login}" />
-					<a th:href="@{'https://github.com/login/oauth/authorize'(client_id=${@environment.getProperty('oauth2.client.github.clientId')})}" class="btn btn-primary"><i class="fa fa-github-square fa-lg fa-2x" data-toggle="tooltip" data-placement="bottom" title="github 로그인"></i></a>
-					<a th:href="@{'https://www.facebook.com/dialog/oauth'(client_id=${@environment.getProperty('oauth2.client.facebook.clientId')},redirect_uri='http://localhost:8082/oauth/facebookAuthorizeResult')}" class="btn btn-primary"><i class="fa fa-facebook-square fa-lg fa-2x" data-toggle="tooltip" data-placement="bottom" title="facebook 로그인"></i></a>
-					<a th:href="@{'https://kr.battle.net/oauth/authorize'(client_id=${@environment.getProperty('oauth2.client.battleNet.clientId')},redirect_uri='https://localhost:8443/oauth/battleNetAuthorizeResult',scope='wow.profile',response_type='code')}" class="btn btn-primary">BattleNet</a>
+					<input type="submit" class="btn btn-primary btn-sm" th:value="#{login}" />
+					<a class="btn btn-primary btn-sm" th:href="@{'https://github.com/login/oauth/authorize'(client_id=${@environment.getProperty('oauth2.client.github.clientId')})}"><i class="fa fa-github-square fa-lg" data-toggle="tooltip" data-placement="bottom" title="github 로그인"></i></a>
+					<a class="btn btn-primary btn-sm" th:href="@{'https://www.facebook.com/dialog/oauth'(client_id=${@environment.getProperty('oauth2.client.facebook.clientId')},redirect_uri='http://localhost:8082/oauth/facebookAuthorizeResult')}"><i class="fa fa-facebook-square fa-lg" data-toggle="tooltip" data-placement="bottom" title="facebook 로그인"></i></a>
+					<a class="btn btn-primary btn-sm" th:href="@{'https://kr.battle.net/oauth/authorize'(client_id=${@environment.getProperty('oauth2.client.battleNet.clientId')},redirect_uri='https://localhost:8443/oauth/battleNetAuthorizeResult',scope='wow.profile',response_type='code')}">BattleNet</a>
 				</form>
 			</div>
 		</div>

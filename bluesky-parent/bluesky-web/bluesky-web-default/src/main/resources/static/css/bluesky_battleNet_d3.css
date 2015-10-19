@@ -13,3 +13,13 @@
 .d3-color-orange { color: #fba412 !important; }
 .d3-color-green { color: #a4df44 !important; }
 .d3-color-blue { color: #a0c3ff !important; }
+
+
+.d3-color-hardcore { color: #e60101 !important; }
+
+.small-seasonal-leaf {
+    display: inline-block;
+    width: 15px;
+    height: 21px;
+    background: url("/img/battleNet/d3/seasonal-leaf.png") -24px -2px no-repeat;
+}

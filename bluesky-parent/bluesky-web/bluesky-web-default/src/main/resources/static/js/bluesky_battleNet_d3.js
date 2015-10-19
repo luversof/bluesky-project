@@ -32,14 +32,61 @@ $(document).ready(function() {
 			}
 			var result = $.ajax({
 				url : "/battleNet/d3/profile/" + encodeURIComponent(battleTag) + "/hero/" + heroId + ".json",
-				async : false
+				beforeSend : function() {$("#hero-" + heroId + " .panel-body").html('<div class="text-center"><i class="fa fa-spinner fa-pulse"></i></div>');},
+				success : function(data) {
+					if (_hero[battleTag] == undefined) {
+						_hero[battleTag] = {};
+					}
+					_hero[battleTag][heroId] = result.responseJSON;
+					_displayHeroProfile(battleTag, heroId);
+				}
 			});
-			if (_hero[battleTag] == undefined) {
-				_hero[battleTag] = {};
-			}
-			_hero[battleTag][heroId] = result.responseJSON;
+		}
+		
+		var _displayHeroProfile = function(battleTag, heroId) {
+			var data = _getHeroProfile(battleTag, heroId);
+			var template = _getHeroProfileTemplate();
 			
-			return _hero[battleTag][heroId];
+			var partials = {"heroProfileItem" : _getHeroProfileItemTemplate()}
+			
+			for (var key in data.items) {
+				data.items[key].getKey = key;
+			}
+			data.getKeyName = function() {
+				switch (this.getKey) {
+				case "head":
+					return "머리";
+				case "shoulders":
+					return "어깨";
+				case "torso":
+					return "몸통";
+				case "waist":
+					return "허리";
+				case "bracers":
+					return "손목";
+				case "hands":
+					return "손";
+				case "legs":
+					return "다리";
+				case "feet":
+					return "발";
+				case "mainHand":
+					return "주 무기";
+				case "offHand":
+					return "보조 무기";
+				case "neck":
+					return "목";
+				case "rightFinger":
+					return "오른쪽 손가락";
+				case "leftFinger":
+					return "왼쪽 손가락";
+				default:
+					return "테스트";
+				}
+				return "";
+			};
+			
+			$("#hero-" + heroId + " .panel-body").html(Mustache.render(template, data, partials));
 		}
 		
 		var _getItem = function(itemData) {
@@ -82,17 +129,17 @@ $(document).ready(function() {
 			return _heroProfileTemplate;
 		}
 		
-		var _profileItemTemplate = null;
-		var _getProfileItemTemplate = function() {
-			if (_profileItemTemplate != null) {
-				return _profileItemTemplate;
+		var _heroProfileItemTemplate = null;
+		var _getHeroProfileItemTemplate = function() {
+			if (_heroProfileItemTemplate != null) {
+				return _heroProfileItemTemplate;
 			}
 			var result = $.ajax({
-				url : "/html/battleNet/d3/profileItem.html",
+				url : "/html/battleNet/d3/heroProfileItem.html",
 				async : false
 			})
-			_profileItemTemplate = result.responseText;
-			return _profileItemTemplate;
+			_heroProfileItemTemplate = result.responseText;
+			return _heroProfileItemTemplate;
 		}
 		
 		var _itemTemplate = null;
@@ -141,17 +188,8 @@ $(document).ready(function() {
 				
 				$(".content-battleNet").html(Mustache.render(template, data));
 			},
-			getHeroProfile : function(battleTag, characterId) {
-				var data = _getHeroProfile(battleTag, characterId);
-				var template = _getHeroProfileTemplate();
-				
-				var partials = {"profileItem" : _getProfileItemTemplate()}
-				
-				for (var key in data.items) {
-					data.items[key].getKey = key;
-				}
-				
-				$("#character-" + characterId + " .panel-body").html(Mustache.render(template, data, partials));
+			getHeroProfile : function(battleTag, heroId) {
+				_getHeroProfile(battleTag, heroId);
 			},
 			getItem : function(itemData) {
 				var data = _getItem(itemData);
@@ -164,10 +202,10 @@ $(document).ready(function() {
 	
 	battleNet.getMyProfile();
 	
-	$(document).on("click", "[data-character-id]", function() {
+	$(document).on("click", "[data-hero-id]", function() {
 		var battleTag = $(this).attr("data-battleTag");
-		var characterId = $(this).attr("data-character-id");
-		battleNet.getHeroProfile(battleTag, characterId);
+		var heroId = $(this).attr("data-hero-id");
+		battleNet.getHeroProfile(battleTag, heroId);
 	});
 	
 	$(document).on("mouseover", "[data-d3tooltip]", function() {
