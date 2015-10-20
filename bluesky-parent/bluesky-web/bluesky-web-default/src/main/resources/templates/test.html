@@ -1,0 +1,27 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-spring4-4.dtd">
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+	xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3"
+	lang="ko">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="/webjars/jquery-mobile/1.4.5/jquery.mobile.min.css" />
+<!-- (s) jquery -->
+<script type="text/javascript" th:src="#{url.jquery.js}"></script>
+<script type="text/javascript" th:src="#{url.jquery-mobile.js}"></script>
+<!-- (e) jquery -->
+</head>
+<body>
+	<div data-role="page">
+		<div data-role="header">
+			<h1>home</h1>
+		</div>
+		<div data-role="content">
+			<p>main content</p>
+		</div>
+		<div data-role="footer" data-position="fixed">
+			<h3>footer</h3>
+		</div>
+	</div>
+</body>
+</html>

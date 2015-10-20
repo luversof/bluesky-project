@@ -28,23 +28,24 @@ $(document).ready(function() {
 		
 		var _getHeroProfile = function(battleTag, heroId) {
 			if (_hero[battleTag] != undefined && _hero[battleTag][heroId] != undefined) {
-				return _hero[battleTag][heroId];
+				_displayHeroProfile(battleTag, heroId);
+				return ;
 			}
-			var result = $.ajax({
+			$.ajax({
 				url : "/battleNet/d3/profile/" + encodeURIComponent(battleTag) + "/hero/" + heroId + ".json",
 				beforeSend : function() {$("#hero-" + heroId + " .panel-body").html('<div class="text-center"><i class="fa fa-spinner fa-pulse"></i></div>');},
 				success : function(data) {
 					if (_hero[battleTag] == undefined) {
 						_hero[battleTag] = {};
 					}
-					_hero[battleTag][heroId] = result.responseJSON;
+					_hero[battleTag][heroId] = data;
 					_displayHeroProfile(battleTag, heroId);
 				}
 			});
 		}
 		
 		var _displayHeroProfile = function(battleTag, heroId) {
-			var data = _getHeroProfile(battleTag, heroId);
+			var data = _hero[battleTag][heroId];
 			var template = _getHeroProfileTemplate();
 			
 			var partials = {"heroProfileItem" : _getHeroProfileItemTemplate()}
@@ -89,18 +90,29 @@ $(document).ready(function() {
 			$("#hero-" + heroId + " .panel-body").html(Mustache.render(template, data, partials));
 		}
 		
-		var _getItem = function(itemData) {
-			if (_item[itemData] != undefined) {
-				return _item[itemData];
+		var _getItemData = function(tooltipParams) {
+			if (_item[tooltipParams] != undefined) {
+				_displayItemData(tooltipParams);
+				return;
 			}
-			var result = $.ajax({
-				url : "/battleNet/d3/data/" + itemData + ".json"
+			$.ajax({
+				url : "/battleNet/d3/data/" + tooltipParams + ".json",
+				beforeSend : function() {$("#d3-itemData").html('<div class="text-center"><i class="fa fa-spinner fa-pulse"></i></div>');},
+				success : function(data) {
+					if (_item[tooltipParams] == undefined) {
+						_item[tooltipParams] = {};
+					}
+					_item[tooltipParams] = data;
+					var template = _getItemDataTemplate();
+					_displayItemData(tooltipParams);
+				}
 			});
-			if (_item[itemData] == undefined) {
-				_item[itemData] = {};
-			}
-			_item[itemData] = result.responseJSON;
-			return _item[itemData];
+		}
+		
+		var _displayItemData = function(tooltipParams) {
+			var data = _item[tooltipParams];
+			var template = _getItemDataTemplate();
+			$("#d3-itemData").html(Mustache.render(template, data));
 		}
 		
 		var _profileTemplate = null;
@@ -142,17 +154,17 @@ $(document).ready(function() {
 			return _heroProfileItemTemplate;
 		}
 		
-		var _itemTemplate = null;
-		var _getItemTemplate = function() {
-			if (_itemTemplate != null) {
-				return _itemTemplate;
+		var _itemDataTemplate = null;
+		var _getItemDataTemplate = function() {
+			if (_itemDataTemplate != null) {
+				return _itemDataTemplate;
 			}
 			var result = $.ajax({
-				url : "/html/battleNet/d3/item.html",
+				url : "/html/battleNet/d3/itemData.html",
 				async : false
 			})
-			_itemTemplate = result.responseText;
-			return _itemTemplate;
+			_itemDataTemplate = result.responseText;
+			return _itemDataTemplate;
 		}
 		return { 
 			getMyProfile : function() {
@@ -191,8 +203,8 @@ $(document).ready(function() {
 			getHeroProfile : function(battleTag, heroId) {
 				_getHeroProfile(battleTag, heroId);
 			},
-			getItem : function(itemData) {
-				var data = _getItem(itemData);
+			getItemData : function(tooltipParams) {
+				var data = _getItemData(tooltipParams);
 				
 			}
 		}
@@ -208,9 +220,9 @@ $(document).ready(function() {
 		battleNet.getHeroProfile(battleTag, heroId);
 	});
 	
-	$(document).on("mouseover", "[data-d3tooltip]", function() {
+	$(document).on("click", "[data-d3-itemData]", function() {
 		console.log("mo");
-		var itemData = $(this).attr("data-d3tooltip");
-		battleNet.getItem(itemData);
+		var tooltipParams = $(this).attr("data-d3-itemData");
+		battleNet.getItemData(tooltipParams);
 	})
 });
