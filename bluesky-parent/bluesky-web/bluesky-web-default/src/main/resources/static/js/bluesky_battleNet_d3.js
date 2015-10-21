@@ -121,6 +121,12 @@ $(document).ready(function() {
 				}
 				return false;
 			}
+			data.isDisplayGemName = function() {
+				return this.attributes.passive.length > 0;
+			}
+			data.getGemNameColor = function() {
+				return this.attributes.passive[0].color;
+			}
 			
 			$("#d3-itemData").html(Mustache.render(template, data));
 		}
@@ -223,8 +229,22 @@ $(document).ready(function() {
 	});
 	
 	$(document).on("click", "[data-d3-itemData]", function() {
-		console.log("mo");
 		var tooltipParams = $(this).attr("data-d3-itemData");
 		battleNet.getItemData(tooltipParams);
-	})
+	});
+	
+	/**
+	 * mobile 에서 우측 사이드바 토글 처리
+	 */
+	$(document).on("click", "[data-toggle=offcanvas]", function () {
+		console.log("1 :" , $(document).scrollTop());
+		$('.row-offcanvas').toggleClass('active');
+		console.log("2 :" , $(document).scrollTop());
+		$(".sidebar-offcanvas").offset({top : $(document).scrollTop() + 100 });
+		console.log("3 :" , $(document).scrollTop());
+	});
+	
+	$(document).on("click", ".row-offcanvas.active", function() {
+		$('.row-offcanvas').toggleClass('active');
+	});
 });

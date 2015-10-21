@@ -2,16 +2,16 @@
  * Style tweaks
  * --------------------------------------------------
  */
-html,
+/* html,
 body {
-  overflow-x: hidden; /* Prevent scroll on narrow devices */
-}
-body {
+  overflow-x: hidden; Prevent scroll on narrow devices
+} */
+/* body {
   padding-top: 70px;
-}
-footer {
+} */
+/* footer {
   padding: 30px 0;
-}
+} */
 
 /*
  * Off Canvas
@@ -35,25 +35,24 @@ footer {
 
   .row-offcanvas-right
   .sidebar-offcanvas {
-    right: -90%; /* 6 columns */
+    right: -100%; /* 6 columns */
   }
 
   .row-offcanvas-left
   .sidebar-offcanvas {
-    left: -90%; /* 6 columns */
+    left: -100%; /* 6 columns */
   }
 
   .row-offcanvas-right.active {
-    right: 90%; /* 6 columns */
+    right: 110%; /* 6 columns */
   }
 
   .row-offcanvas-left.active {
-    left: 90%; /* 6 columns */
+    left: 110%; /* 6 columns */
   }
 
   .sidebar-offcanvas {
-    position: absolute;
-    top: -200px;
-    width: 90%; /* 6 columns */
+    /* position: absolute; */
+    /* width: 90%; 6 columns */
   }
 }

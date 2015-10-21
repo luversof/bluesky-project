@@ -79,17 +79,6 @@ $(document).ready(function() {
 	
 	
 	/**
-	 * mobile 에서 우측 사이드바 토글 처리
-	 */
-	$(document).on("click", "[data-toggle=offcanvas]", function () {
-		$('.row-offcanvas').toggleClass('active')
-	});
-	
-	$(document).on("click", ".row-offcanvas.active", function() {
-		$('.row-offcanvas').toggleClass('active')
-	});
-
-	/**
 	 * https로 접근한 경우 http로 재이동 처리
 	 */
 	if (location.protocol == "https:") {
