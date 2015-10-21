@@ -1,15 +1,4 @@
 /**
- * String foramt 처리
- * @returns
- */
-String.prototype.format = function() {
-    var args = arguments;
-    return this.replace(/\{(\d+)\}/g, function() {
-        return args[arguments[1]];
-    });
-};
-
-/**
  * 상단 메뉴 표시
  * contextPath에 대한 메뉴 url 변경 적용
  */
@@ -30,10 +19,24 @@ var navbar = {
 	}
 };
 
-/**
- * 상단 navbar scroll에 따른 hide 처리 
- */
 $(document).ready(function() {
+
+	/**
+	 * String foramt 처리
+	 * @returns
+	 */
+	String.prototype.format = function() {
+	    var args = arguments;
+	    return this.replace(/\{(\d+)\}/g, function() {
+	        return args[arguments[1]];
+	    });
+	};
+	
+
+	
+	/**
+	 * 상단 navbar scroll에 따른 hide 처리 
+	 */
 	var $nav = $(".navbar"),
 	_hideShowOffset = 20,
 	_lastScroll = 0,
@@ -52,10 +55,9 @@ $(document).ready(function() {
 		}
 	}
 	_lastScroll = t;
-	});
-});
-
-$(document).ready(function() {
+		});
+	
+	
 	$("[data-toggle=tooltip]").tooltip();
 	
 	/* (s) csrf */
@@ -65,19 +67,20 @@ $(document).ready(function() {
 		xhr.setRequestHeader(header, token);
 	});
 	/* (s) csrf */
-});
-
-$(document).ajaxError(function(event, jqXHR, ajaxSettings, thrownError) {
-	if (ajaxSettings.dataType == "json") {
-		var b = "";
-		for (a in jqXHR) b+=a + "\n;";
-		console.log(b);
-		console.log(jqXHR.responseJSON);
-	}
-});
-
-
-$(document).ready(function () {
+	
+	$(document).ajaxError(function(event, jqXHR, ajaxSettings, thrownError) {
+		if (ajaxSettings.dataType == "json") {
+			var b = "";
+			for (a in jqXHR) b+=a + "\n;";
+			console.log(b);
+			console.log(jqXHR.responseJSON);
+		}
+	});
+	
+	
+	/**
+	 * mobile 에서 우측 사이드바 토글 처리
+	 */
 	$(document).on("click", "[data-toggle=offcanvas]", function () {
 		$('.row-offcanvas').toggleClass('active')
 	});
@@ -85,4 +88,12 @@ $(document).ready(function () {
 	$(document).on("click", ".row-offcanvas.active", function() {
 		$('.row-offcanvas').toggleClass('active')
 	});
+
+	/**
+	 * https로 접근한 경우 http로 재이동 처리
+	 */
+	if (location.protocol == "https:") {
+		location.href = location.href.replace("https:", "http:").replace(":8443", ":8082");
+	}
+
 });

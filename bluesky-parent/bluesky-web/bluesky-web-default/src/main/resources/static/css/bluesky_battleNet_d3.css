@@ -8,11 +8,12 @@
 .d3-border-color-blue { border-color: #6ba9ba; }
 
 
-.d3-color-gray { color: #c1c1c1 !important; }
+.d3-color-gray { color: #909090 !important; }
+.d3-color-white { color: #ffffff !important; }
 .d3-color-yellow { color: #ffff00 !important; }
-.d3-color-orange { color: #fba412 !important; }
-.d3-color-green { color: #a4df44 !important; }
-.d3-color-blue { color: #a0c3ff !important; }
+.d3-color-orange { color: #bf642f !important; }
+.d3-color-green { color: #00ff00 !important; }
+.d3-color-blue { color: #6969ff !important; }
 
 
 .d3-color-hardcore { color: #e60101 !important; }
@@ -22,4 +23,54 @@
     width: 15px;
     height: 21px;
     background: url("/img/battleNet/d3/seasonal-leaf.png") -24px -2px no-repeat;
+}
+
+.d3-icon-item { border: 1px solid black; background: no-repeat 50% 100%; border-radius: 4px; display: inline-block;}
+
+/* gray */
+.d3-icon-item-gray { border-color: #513f2e; background-image: url("../images/item/icon-bgs/brown.png"); background-color: #2a2017; }
+a:hover .d3-icon-item-gray,
+.hover .d3-icon-item-gray,
+.icon-active .d3-icon-item-gray { border-color: #7a5f45; }
+
+/* white */
+.d3-icon-item-white { border-color: #513f2e; background-image: url("../images/item/icon-bgs/brown.png"); background-color: #2a2017; }
+a:hover .d3-icon-item-white,
+.hover .d3-icon-item-white,
+.icon-active .d3-icon-item-white { border-color: #7a5f45; }
+
+/* blue */
+.d3-icon-item-blue { border-color: #6091a6; background-image: url("../images/item/icon-bgs/blue.png"); background-color: #232227; }
+a:hover .d3-icon-item-blue,
+.hover .d3-icon-item-blue,
+.icon-active .d3-icon-item-blue { border-color: #90c8d3; }
+
+/* yellow */
+.d3-icon-item-yellow { border-color: #9b8e3c; background-image: url("../images/item/icon-bgs/yellow.png"); background-color: #322914; }
+a:hover .d3-icon-item-yellow,
+.hover .d3-icon-item-yellow,
+.icon-active .d3-icon-item-yellow { border-color: #cdc75a; }
+
+/* orange */
+.d3-icon-item-orange { border-color: #b07b38; background-image: url("../images/item/icon-bgs/orange.png"); background-color: #332314; }
+a:hover .d3-icon-item-orange,
+.hover .d3-icon-item-orange,
+.icon-active .d3-icon-item-orange { border-color: #d8b954; }
+
+/* green */
+.d3-icon-item-green { border-color: #748e3d; background-image: url("../images/item/icon-bgs/green.png"); background-color: #262f14; }
+a:hover .d3-icon-item-green,
+.hover .d3-icon-item-green,
+.icon-active .d3-icon-item-green { border-color: #aec75c; }
+
+
+.gem { float:left; width:17px; height:17px; margin-right:4px }
+
+#d3-itemData {
+	background-color: #1d180e;
+	padding: 12px;
+	border: 1px solid #322a20;
+	max-width: 355px;
+    border-radius: 2px;
+    box-shadow: 0 0 10px #000;
 }

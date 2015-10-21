@@ -32,9 +32,9 @@
 			<div class="panel panel-info">
 				<div class="panel-heading"  data-toggle="collapse" data-parent="#characterList" data-target="#hero-{{id}}" data-hero-id="{{id}}" data-battleTag="{{battleTag}}">
 					<p class="panel-title collapsed {{#hardcore}}d3-color-hardcore{{/hardcore}}">
-						<img alt="{{getClassName}}" src="{{getIconThumbnailUrl}}" class="img-thumbnail" title="{{getClassName}}" />
+						<img alt="{{getClassName}}" src="/img/battleNet/d3/{{class}}_{{gender}}.png" class="img-thumbnail" title="{{getClassName}}" />
 						{{#seasonal}}<span class="small-seasonal-leaf">&nbsp;</span>{{/seasonal}} 
-						Lv.{{level}}({{paragonLevel}}) - {{name}} 
+						Lv.{{level}}({{paragonLevel}}) - {{name}}
 					</p>
 				</div>
 				<div id="hero-{{id}}" class="panel-collapse collapse">
@@ -46,7 +46,7 @@
 			{{/heroes}}
 		</div>
 	</div>
-	<div class="col-sm-3 col-xs-6 sidebar-offcanvas">
+	<div class="col-sm-3 col-xs-5 sidebar-offcanvas">
 		<div data-spy="affix" id="d3-itemData">
 			아이템 정보 영역
 		</div>

@@ -97,7 +97,7 @@ $(document).ready(function() {
 			}
 			$.ajax({
 				url : "/battleNet/d3/data/" + tooltipParams + ".json",
-				beforeSend : function() {$("#d3-itemData").html('<div class="text-center"><i class="fa fa-spinner fa-pulse"></i></div>');},
+				beforeSend : function() {$("#d3-itemData").html('<div class="text-center"><i class="fa fa-spinner fa-pulse fa-2x"></i></div>');},
 				success : function(data) {
 					if (_item[tooltipParams] == undefined) {
 						_item[tooltipParams] = {};
@@ -112,6 +112,16 @@ $(document).ready(function() {
 		var _displayItemData = function(tooltipParams) {
 			var data = _item[tooltipParams];
 			var template = _getItemDataTemplate();
+			
+			data.isSetItemsEquipped = function() {
+				for (var key in data.setItemsEquipped) {
+					if (this.id == data.setItemsEquipped[key]) {
+						return true;
+					} 
+				}
+				return false;
+			}
+			
 			$("#d3-itemData").html(Mustache.render(template, data));
 		}
 		
@@ -190,13 +200,6 @@ $(document).ready(function() {
 						return "테스트";
 					}
 				}
-				data.getIconThumbnailUrl = function() {
-					var classPath = this["class"].replace("-", "");
-					if (this["class"] == "crusader") {
-						classPath = "x1_" + classPath;
-					}
-					return "http://media.blizzard.com/d3/icons/portraits/21/" + classPath + "_" + (this.gender == 0 ? "male" : "female") + ".png";
-				}
 				
 				$(".content-battleNet").html(Mustache.render(template, data));
 			},
@@ -204,8 +207,7 @@ $(document).ready(function() {
 				_getHeroProfile(battleTag, heroId);
 			},
 			getItemData : function(tooltipParams) {
-				var data = _getItemData(tooltipParams);
-				
+				_getItemData(tooltipParams);
 			}
 		}
 	};
