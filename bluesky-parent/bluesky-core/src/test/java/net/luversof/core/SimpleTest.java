@@ -1,5 +1,6 @@
 package net.luversof.core;
 
+import java.io.File;
 import java.text.MessageFormat;
 
 import lombok.extern.slf4j.Slf4j;
@@ -39,5 +40,12 @@ public class SimpleTest {
 		String testString = "/battleNet/d3/profile/123";
 		System.out.println(testString.matches(path)); 
 		
+	}
+	
+	
+	@Test
+	public void homeDirectoryTest() {
+		System.out.println(System.getProperty("user.home").replaceAll("\\\\", "/"));
+		System.out.println(File.separator);
 	}
 }
