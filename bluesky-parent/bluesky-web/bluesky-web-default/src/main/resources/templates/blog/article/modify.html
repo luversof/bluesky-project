@@ -5,7 +5,7 @@
 	layout:decorator="layout/defaultLayout">
 <head>
 	<script type="text/javascript" th:src="@{/js/bluesky_blog.js}"></script>
-	<script type="text/javascript" th:src="#{url.tinymce-jquery.js}"></script>
+	<script type="text/javascript" th:src="#{url.jquery-tinymce.js}"></script>
 	<script type="text/javascript">
 		tinyMCE.init({
 			selector : "#content",
@@ -23,7 +23,7 @@
 		<div class="page-header">
 			<h1>Blog <small th:text="#{blog.menu.modify}">modify</small></h1>
 		</div>
-		<form class="form-horizontal modify" th:action="@{.}" method="post">
+		<form class="form-horizontal modify" th:action="#{url.blog.view(${article.blog.id}, ${article.id})}" method="post">
 			<input type="hidden" name="_method" value="put" />
 			<div class="form-group">
 				<label class="col-lg-2 control-label" for="title" th:text="#{article.text.title}">title</label>

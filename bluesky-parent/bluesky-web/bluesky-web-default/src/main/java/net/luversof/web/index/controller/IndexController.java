@@ -18,6 +18,9 @@ public class IndexController {
 		System.out.println("a : " + a);
 		return "index";
 	}
+	
+	@RequestMapping("login")
+	public void login() {}
 
 	@RequestMapping("/index2")
 	public void index2() {

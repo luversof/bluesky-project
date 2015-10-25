@@ -61,9 +61,7 @@
 					Logged in as <a href="#" class="navbar-link" sec:authentication="name">Username</a>
 					<input type="submit" class="btn btn-primary" th:value="#{logout}" />
 				</form>
-				<form class="navbar-form navbar-right" sec:authorize="!isAuthenticated()" th:action="@{/login}" method="post">
-					<!-- 
-					 -->
+				<form class="navbar-form navbar-right" sec:authorize="!isAuthenticated()" th:action="@{/login}" method="post" th:fragment="loginArea">
 					<div class="form-group">
 						<input type="text" name="username" th:placeholder="#{username}" class="form-control input-sm" autofocus="autofocus"/>
 					</div>
@@ -81,7 +79,7 @@
 	</div>
 	<!-- (e) top -->
 	
-	<div th:substituteby="layout/breadcrumb :: breadcrumb" ></div>
+	<div th:substituteby="layout/breadcrumb :: breadcrumb"></div>
 	<div layout:fragment="content"></div>
 	<hr />
 

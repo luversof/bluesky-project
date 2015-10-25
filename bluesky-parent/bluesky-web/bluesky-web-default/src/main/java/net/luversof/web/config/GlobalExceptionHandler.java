@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedCredentialsNotFoundException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -64,5 +65,11 @@ public class GlobalExceptionHandler {
 	public ModelAndView handleException(Exception exception) {
 		exception.printStackTrace();
 		return new ModelAndView("error");
+	}
+	
+	@ExceptionHandler
+	@ResponseStatus(value=HttpStatus.UNAUTHORIZED)
+	public ModelAndView preAuthenticatedCredentialsNotFoundException(PreAuthenticatedCredentialsNotFoundException PreAuthenticatedCredentialsNotFoundException) {
+		return new ModelAndView("login");
 	}
 }
