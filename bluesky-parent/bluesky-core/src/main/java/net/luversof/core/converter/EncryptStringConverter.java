@@ -1,7 +1,9 @@
-package net.luversof.core;
+package net.luversof.core.converter;
 
 import org.jasypt.properties.PropertyValueEncryptionUtils;
 import org.springframework.core.convert.converter.Converter;
+
+import net.luversof.core.util.EncryptionUtil;
  
 public class EncryptStringConverter implements Converter<String, String> {
 

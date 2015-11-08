@@ -10,6 +10,8 @@ import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
 
+import net.luversof.core.util.EncryptionUtil;
+
 public class EncryptedPropertySourceLoader implements PropertySourceLoader {
 	
 	private final StandardPBEStringEncryptor encryptor = (StandardPBEStringEncryptor) EncryptionUtil.stringEncryptor();

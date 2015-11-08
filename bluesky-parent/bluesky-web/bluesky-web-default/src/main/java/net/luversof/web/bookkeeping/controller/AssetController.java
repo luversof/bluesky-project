@@ -1,6 +1,5 @@
 package net.luversof.web.bookkeeping.controller;
 
-import static net.luversof.core.Constants.JSON_MODEL_KEY;
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.domain.Asset.Add;
 import net.luversof.bookkeeping.domain.Asset.Modify;
@@ -41,12 +40,12 @@ public class AssetController {
 		return bookkeepingService.findByUserId(((BlueskyUser) authentication.getPrincipal()).getId()).get(0);
 	}
 	
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(method = RequestMethod.GET)
-	public void get(Authentication authentication, ModelMap modelMap) {
-		Bookkeeping bookkeeping = getBookkeeping(authentication);
-		modelMap.addAttribute(JSON_MODEL_KEY , assetService.findByBookkeepingId(bookkeeping.getId()));
-	}
+//	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+//	@RequestMapping(method = RequestMethod.GET)
+//	public void get(Authentication authentication, ModelMap modelMap) {
+//		Bookkeeping bookkeeping = getBookkeeping(authentication);
+//		modelMap.addAttribute(JSON_MODEL_KEY , assetService.findByBookkeepingId(bookkeeping.getId()));
+//	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)

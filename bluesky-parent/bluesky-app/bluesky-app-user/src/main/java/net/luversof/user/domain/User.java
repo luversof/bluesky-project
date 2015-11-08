@@ -11,11 +11,9 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 
-import lombok.Data;
-
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.format.annotation.DateTimeFormat.ISO;
+
+import lombok.Data;
 
 @Entity
 @Data
@@ -30,7 +28,7 @@ public class User {
 	private String password;
 
 	@CreatedDate
-	@DateTimeFormat(iso = ISO.DATE_TIME)
+//	@DateTimeFormat(iso = ISO.DATE_TIME)
 	private LocalDateTime createdDate;
 
 	private boolean enable;

@@ -1,4 +1,4 @@
-package net.luversof.core;
+package net.luversof.core.exception;
 
 import lombok.Getter;
 

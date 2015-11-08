@@ -1,9 +1,9 @@
 package net.luversof;
 
-import net.luversof.core.BlueskyApplicationContextInitializer;
-
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+import net.luversof.core.context.BlueskyApplicationContextInitializer;
 
 @SpringBootApplication
 public class Application {

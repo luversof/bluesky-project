@@ -4,6 +4,7 @@ import java.io.File;
 import java.text.MessageFormat;
 
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.core.util.EncryptionUtil;
 
 import org.junit.Test;
 

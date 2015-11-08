@@ -8,7 +8,7 @@ import net.luversof.blog.domain.Article.Get;
 import net.luversof.blog.service.ArticleCategoryService;
 import net.luversof.blog.service.ArticleService;
 import net.luversof.blog.service.BlogService;
-import net.luversof.core.BlueskyException;
+import net.luversof.core.exception.BlueskyException;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.blog.annotation.CheckBlog;
 import net.luversof.web.blog.annotation.CheckBlogAndAddToArticle;

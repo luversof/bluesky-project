@@ -51,7 +51,8 @@ public class ArticleController {
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{blog.id}/article/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public void delete(@CheckBlogAndAddToArticle @Validated(Get.class) Article article, ModelMap modelMap) {
+	public boolean delete(@CheckBlogAndAddToArticle @Validated(Get.class) Article article, ModelMap modelMap) {
 		articleService.delete(article.getId());
+		return true;
 	}
 }

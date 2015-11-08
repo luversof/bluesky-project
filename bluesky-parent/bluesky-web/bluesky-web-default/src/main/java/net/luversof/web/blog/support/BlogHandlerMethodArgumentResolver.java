@@ -2,7 +2,10 @@ package net.luversof.web.blog.support;
 
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.service.BlogService;
+import net.luversof.core.exception.BlueskyException;
 import net.luversof.security.core.userdetails.BlueskyUser;
+
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.MethodParameter;
@@ -33,7 +36,12 @@ public class BlogHandlerMethodArgumentResolver implements HandlerMethodArgumentR
 			throw new PreAuthenticatedCredentialsNotFoundException("BlogHandlerMethodArgumentResolver");
 		}
 		BlueskyUser user = (BlueskyUser) authentication.getPrincipal();
-		return blogService.findByUser(user.getId(), user.getUserType().name()).get(0);
+		
+		Blog blog = blogService.findByUser(user.getId(), user.getUserType().name());
+		if (blog == null) {
+			throw new BlueskyException("blog.notExist");
+		}
+		return blog;
 	}
 
 }

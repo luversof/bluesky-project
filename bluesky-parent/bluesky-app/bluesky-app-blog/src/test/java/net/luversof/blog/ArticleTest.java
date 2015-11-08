@@ -26,19 +26,67 @@ public class ArticleTest extends GeneralTest {
 	private ArticleService articleService;
 	
 	@Autowired
-	private ArticleCategoryService blogCategoryService;
+	private ArticleCategoryService articleCategoryService;
 	
 	@Autowired
 	private BlogService blogService;
+	
+	private long userId = 1657880612;
+	private String userType = "FACEBOOK";
 	
 
 	@Test
 //	@Ignore
 	public void selectTest() {
-		Article article = articleService.findOne(1);
+		Article article = articleService.findOne(18);
 		log.debug("result : {}", article);
 	}
+	
+	@Test
+	public void 카테고리추가글작성테스트() {
+		for (int i = 0 ; i < 1 ; i ++) {
+			
+			Blog blog = blogService.findByUser(userId, userType);
+			Article article = new Article();
+			article.setBlog(blog);
+			article.setTitle("한글제목" + i);
+			article.setContent("한글내용" + i);
+			
+//			ArticleCategory articleCategory = articleCategoryService.findOne(4);
+			ArticleCategory articleCategory = new ArticleCategory();
+			articleCategory.setBlog(blog);
+			articleCategory.setName("바꿨다" + i);
+			articleCategory.setId(4);
+			article.setArticleCategory(articleCategory);
+			
+			Article savedArticle = articleService.save(article);
+		}
+		
+	}
+	
 
+	@Test
+	public void 글삭제테스트() {
+		articleService.delete(11);
+	}
+	
+	
+	@Test
+	public void 수정전파테스트() {
+		Article article = articleService.findOne(11);
+		article.setContent("수정했음3");
+		
+//		ArticleCategory articleCategory = articleCategoryService.findOne(4);
+		ArticleCategory articleCategory = new ArticleCategory();
+		articleCategory.setBlog(article.getBlog());
+		articleCategory.setName("추가32331");
+		articleCategory.setId(5);
+		article.setArticleCategory(articleCategory);
+		
+//		article.getArticleCategory().setName("수정2");
+		articleService.save(article);
+	}
+	
 	@Test
 	//@Ignore
 	public void saveTest() {
@@ -47,7 +95,7 @@ public class ArticleTest extends GeneralTest {
 		article.setTitle("한글제목");
 		article.setContent("한글내용");
 		
-		ArticleCategory articleCategory = blogCategoryService.findOne(1);
+		ArticleCategory articleCategory = articleCategoryService.findOne(1);
 		article.setArticleCategory(articleCategory);
 
 		Article savedArticle = articleService.save(article);
@@ -82,7 +130,7 @@ public class ArticleTest extends GeneralTest {
 	
 	@Test
 	public void 블로그카테고리테스트() {
-		List<ArticleCategory> list = blogCategoryService.findByBlog(null);
+		List<ArticleCategory> list = articleCategoryService.findByBlog(null);
 		
 		
 		log.debug("list : {}", list);

@@ -16,7 +16,7 @@ $(document).ready(function() {
 			, modify : function() {
 				var form = $(".modify.form-horizontal");
 				$.ajax({
-					type : "put"
+					type : "post"
 					, url : form.attr("action")
 					, dataType : "json"
 					, data : form.serialize()
@@ -26,13 +26,25 @@ $(document).ready(function() {
 				});
 			}
 			, remove : function() {
+				alert("오긴오나?");
 				var form = $(".delete.form-horizontal");
 				$.ajax({
-					type : "delete"
+					type : "post"
 					, url : form.attr("action")
 					, dataType : "json"
+					, data : { _method : "delete" }
 					, success : function(data) {
+						alert(1);
 						location.href = form.attr("action") + "/../";
+					}
+					,error : function(jqXHR, textStatus, errorThrown) {
+						console.log("a : ", jqXHR);
+						console.log("b : ", textStatus);
+						console.log("c : ", errorThrown);
+					}
+					, complete : function(jqXHR, textStatus) {
+						console.log("a : ", jqXHR);
+						console.log("b : ", textStatus);
 					}
 				});
 			}

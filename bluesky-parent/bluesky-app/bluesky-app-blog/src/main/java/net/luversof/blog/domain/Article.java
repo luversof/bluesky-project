@@ -4,9 +4,11 @@ import java.time.LocalDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.ForeignKey;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.OneToOne;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.validation.constraints.NotNull;
 
 import org.hibernate.validator.constraints.NotEmpty;
@@ -24,8 +26,8 @@ public class Article {
 	@NotNull(groups = { Get.class })
 	private long id;
 	
-	@OneToOne
-//	@JoinColumn(name = "blogId")
+	@ManyToOne
+	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_article_blogId"))
 	private Blog blog;
 
 	@NotEmpty(groups = { Save.class, Modify.class })
@@ -42,8 +44,8 @@ public class Article {
 	@LastModifiedDate
 	private LocalDateTime lastModifiedDate;
 
-	@OneToOne
-//	@JoinColumn(name = "articleCategoryId")
+	@ManyToOne(/*cascade = {CascadeType.MERGE}*/)
+	@JoinColumn(name = "articleCategory_id", foreignKey = @ForeignKey(name = "FK_article_articleCategoryId"))
 	private ArticleCategory articleCategory;
 
 	public interface Get {

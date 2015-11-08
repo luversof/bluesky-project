@@ -1,7 +1,5 @@
 package net.luversof.web.config;
 
-import static net.luversof.core.Constants.JSON_MODEL_KEY;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -16,7 +14,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.ModelAndView;
 
-import net.luversof.core.BlueskyException;
+import net.luversof.core.exception.BlueskyException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -56,7 +54,7 @@ public class GlobalExceptionHandler {
 			errorList.add(errorMap);
 		}
 		Map<String, List<Map<String, String>>> resultMap = new HashMap<>();
-		resultMap.put(JSON_MODEL_KEY, errorList);
+		resultMap.put("ER", errorList);
 		return new ModelAndView("error", resultMap);
 	}
 	

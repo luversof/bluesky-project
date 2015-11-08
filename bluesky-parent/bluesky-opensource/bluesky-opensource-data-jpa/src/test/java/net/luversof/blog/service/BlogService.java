@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.BlogRepository;
-import net.luversof.core.BlueskyException;
+import net.luversof.core.exception.BlueskyException;
 
 @Service
 @Transactional("blogTransactionManager")

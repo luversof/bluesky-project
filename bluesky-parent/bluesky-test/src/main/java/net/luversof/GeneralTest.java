@@ -1,7 +1,7 @@
 package net.luversof;
 
 import net.luversof.TestApplication;
-import net.luversof.core.BlueskyApplicationContextInitializer;
+import net.luversof.core.context.BlueskyApplicationContextInitializer;
 
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;

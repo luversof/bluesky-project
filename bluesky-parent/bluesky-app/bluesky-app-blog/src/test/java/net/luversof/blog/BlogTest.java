@@ -26,7 +26,7 @@ public class BlogTest extends GeneralTest {
 
 	@Test
 	public void test() {
-		List<Blog> blogList = blogService.findByUser(22, "TEST");
-		log.debug("blogList : {}", blogList);
+		Blog blog = blogService.findByUser(1657880612, "FACEBOOK");
+		log.debug("blog : {}", blog);
 	}
 }

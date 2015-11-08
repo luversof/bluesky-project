@@ -4,7 +4,7 @@ import net.luversof.blog.domain.Article;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.service.ArticleService;
 import net.luversof.blog.service.BlogService;
-import net.luversof.core.BlueskyException;
+import net.luversof.core.exception.BlueskyException;
 import net.luversof.security.core.userdetails.BlueskyUser;
 
 import org.aspectj.lang.annotation.Aspect;

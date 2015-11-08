@@ -1,15 +1,5 @@
 package net.luversof.web.bookkeeping.controller;
 
-import static net.luversof.core.Constants.JSON_MODEL_KEY;
-import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.domain.Entry;
-import net.luversof.bookkeeping.domain.Entry.Add;
-import net.luversof.bookkeeping.domain.Entry.Modify;
-import net.luversof.bookkeeping.service.BookkeepingService;
-import net.luversof.bookkeeping.service.EntryService;
-import net.luversof.security.core.userdetails.BlueskyUser;
-import net.luversof.web.constant.AuthorizeRole;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,6 +11,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
+
+import net.luversof.bookkeeping.domain.Bookkeeping;
+import net.luversof.bookkeeping.domain.Entry;
+import net.luversof.bookkeeping.domain.Entry.Add;
+import net.luversof.bookkeeping.domain.Entry.Modify;
+import net.luversof.bookkeeping.service.BookkeepingService;
+import net.luversof.bookkeeping.service.EntryService;
+import net.luversof.security.core.userdetails.BlueskyUser;
+import net.luversof.web.constant.AuthorizeRole;
 
 @Controller
 @RequestMapping("bookkeeping/entry")
@@ -53,12 +52,12 @@ public class EntryController {
 	 * 페이지에서 사용할 데이터를 내려줘야할까?
 	 * 우선 검색 결과를 내려준 이후 처리 고민
 	 */
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(method = RequestMethod.GET)
-	public void get(Authentication authentication, ModelMap modelMap) {
-		Bookkeeping bookkeeping = getBookkeeping(authentication);
-		modelMap.addAttribute(JSON_MODEL_KEY, entryService.findByBookkeepingId(bookkeeping.getId()));
-	}
+//	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+//	@RequestMapping(method = RequestMethod.GET)
+//	public void get(Authentication authentication, ModelMap modelMap) {
+//		Bookkeeping bookkeeping = getBookkeeping(authentication);
+//		modelMap.addAttribute(JSON_MODEL_KEY, entryService.findByBookkeepingId(bookkeeping.getId()));
+//	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
