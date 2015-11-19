@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.blog.domain.Article;
 import net.luversof.blog.domain.Article.Get;
-import net.luversof.blog.domain.Article.Modify;
 import net.luversof.blog.domain.Article.Save;
 import net.luversof.blog.service.ArticleCategoryService;
 import net.luversof.blog.service.ArticleService;
