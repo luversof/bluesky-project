@@ -66,6 +66,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 			.formLogin().loginPage("/login").and()
 			.rememberMe().and()
             .httpBasic().and()
-            .csrf().and();
+            //.csrf().and();
+            ;
 	}
 }

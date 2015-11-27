@@ -4,6 +4,6 @@
 	<include resource="org/springframework/boot/logging/logback/base.xml"/>
 	<logger name="net.luversof" level="debug" />
 	<logger name="java.sql" level="debug" />
-	<logger name="org.springframework" level="debug" />
+	<logger name="org.springframework" level="info" />
 	<logger name="org.springframework.boot.autoconfigure" level="debug" />
 </configuration>

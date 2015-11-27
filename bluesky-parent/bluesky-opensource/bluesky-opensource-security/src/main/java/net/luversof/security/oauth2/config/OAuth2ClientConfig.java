@@ -31,6 +31,7 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.token.AccessTokenConverter;
 import org.springframework.security.oauth2.provider.token.RemoteTokenServices;
 import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
@@ -258,7 +259,7 @@ public class OAuth2ClientConfig {
 			@Override
 			public OAuth2Authentication loadAuthentication(String accessToken) throws AuthenticationException, InvalidTokenException {
 				MultiValueMap<String, String> formData = new LinkedMultiValueMap<String, String>();
-				formData.add("access_token", accessToken);
+				formData.add("token", accessToken);
 				HttpHeaders headers = new HttpHeaders();
 				headers.set("Authorization", getAuthorizationHeader(battleNetClientId, battleNetClientSecret));
 				if (headers.getContentType() == null) {
@@ -281,9 +282,9 @@ public class OAuth2ClientConfig {
 			
 		};
 		remoteTokenServices.setRestTemplate(battleNetRestTemplate());
-		remoteTokenServices.setClientId(facebookClientId);
-		remoteTokenServices.setClientSecret(facebookClientSecret);
-		remoteTokenServices.setCheckTokenEndpointUrl(facebookCheckTokenEndpointUrl);
+		remoteTokenServices.setClientId(battleNetClientId);
+		remoteTokenServices.setClientSecret(battleNetClientSecret);
+		remoteTokenServices.setCheckTokenEndpointUrl(battleNetCheckTokenEndpointUrl);
 		return remoteTokenServices;
 	}
 	
@@ -293,6 +294,8 @@ public class OAuth2ClientConfig {
 		OAuth2ClientAuthenticationProcessingFilter battleNetAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/battleNetAuthorizeResult");
 		battleNetAuthenticationProcessingFilter.setRestTemplate(battleNetRestTemplate());
 		battleNetAuthenticationProcessingFilter.setTokenServices(battleNetTokenServices());
+		SimpleUrlAuthenticationSuccessHandler simpleUrlAuthenticationSuccessHandler = new SimpleUrlAuthenticationSuccessHandler("/battleNet/d3/index");
+		battleNetAuthenticationProcessingFilter.setAuthenticationSuccessHandler(simpleUrlAuthenticationSuccessHandler);
 		return battleNetAuthenticationProcessingFilter;
 	}
 	
