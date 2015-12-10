@@ -2,6 +2,7 @@ package net.luversof.web.index.controller;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import net.luversof.core.exception.BlueskyException;
@@ -13,9 +14,10 @@ public class IndexController {
 	private String a;
 
 	@RequestMapping({ "/", "/index" })
-	public String index() {
+	public String index(@RequestHeader(value = "User-Agent") String userAgent) {
 		System.out.println("테스트!!!!!");
 		System.out.println("a : " + a);
+		System.out.println(userAgent);
 		return "index";
 	}
 	

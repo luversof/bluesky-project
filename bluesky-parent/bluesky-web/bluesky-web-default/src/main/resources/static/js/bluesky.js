@@ -82,7 +82,7 @@ $(document).ready(function() {
 	 * https로 접근한 경우 http로 재이동 처리
 	 */
 	if (location.protocol == "https:") {
-		//location.href = location.href.replace("https:", "http:").replace(":8443", ":8082");
+		location.href = location.href.replace("https:", "http:").replace(":8443", ":8082");
 	}
 
 });
