@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("battleNet/d3")
 public class BattleNetViewController {
 	
-	@PreAuthorize("hasRole('ROLE_BATTLENETUSER')")
+	//@PreAuthorize("hasRole('ROLE_BATTLENETUSER')")
 	@RequestMapping("/index")
 	public void index() {
 	}

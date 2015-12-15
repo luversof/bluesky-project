@@ -7,23 +7,66 @@ $(document).ready(function() {
 		var _item = {};
 		
 		var _getMyProfile = function() {
-			var result = $.ajax({
-				url : "/battleNet/d3/my/profile.json",
-				async : false
+			$.ajax({
+				url : "/battleNet/d3/my/profile.json"
+			}).success(function(data) {
+				_profile[data.battleTag] = data;
+				_addLambdaCareerProfile(data.battleTag);
+				$(".content-battleNet").html(Mustache.render(_getProfileTemplate(), data));
 			});
-			_profile[result.responseJSON.battleTag] = result.responseJSON;
-			return _profile[result.responseJSON.battleTag];
 		}
 		
-		var _getProfile = function(battleTag) {
+		var _addLambdaCareerProfile = function(battleTag) {
+			var data = _profile[battleTag];
+			data.getLinkBattleTag = function() {
+				return this.battleTag.replace("#", "-");
+			}
+			data.getClassName = function() {
+				if (this["class"] == "monk") {
+					return "수도사";
+				} else if (this["class"] == "demon-hunter") {
+					return "악마사냥꾼";
+				} else if (this["class"] == "barbarian") {
+					return "야만용사";
+				} else if (this["class"] == "wizard") {
+					return "마법사";
+				} else if (this["class"] == "witch-doctor") {
+					return "부두술사";
+				} else if (this["class"] == "crusader") {
+					return "성전사";
+				} else {
+					return "테스트";
+				}
+			}
+		}
+		
+		/**
+		 * careerProfile template
+		 */
+		var _profileTemplate = null;
+		var _getProfileTemplate = function() {
+			if (_profileTemplate != null) {
+				return _profileTemplate;
+			}
+			var result = $.ajax({
+				url : "/html/battleNet/d3/profile.html",
+				async : false
+			})
+			_profileTemplate = result.responseText;
+			return _profileTemplate;
+		}
+		
+		var _getCareerProfile = function(battleTag) {
 			if (_profile[battleTag] != undefined) {
 				return _profile[battleTag];
 			} 
-			var result = $.ajax({
-				url : "/battleNet/d3/profile/" + encodeURIComponent(battleTag) + ".json",
-				async : false
+			$.ajax({
+				url : "/battleNet/d3/profile/" + encodeURIComponent(battleTag) + ".json"
+			}).success(function(data) {
+				_profile[battleTag] = data;
+				_addLambdaCareerProfile(battleTag);
+				$(".content-battleNet").html(Mustache.render(_getProfileTemplate(), data));
 			});
-			return result.responseJSON;
 		}
 		
 		var _getHeroProfile = function(battleTag, heroId) {
@@ -131,18 +174,7 @@ $(document).ready(function() {
 			$("#d3-itemData").html(Mustache.render(template, data));
 		}
 		
-		var _profileTemplate = null;
-		var _getProfileTemplate = function() {
-			if (_profileTemplate != null) {
-				return _profileTemplate;
-			}
-			var result = $.ajax({
-				url : "/html/battleNet/d3/profile.html",
-				async : false
-			})
-			_profileTemplate = result.responseText;
-			return _profileTemplate;
-		}
+
 		
 		var _heroProfileTemplate = null;
 		var _getHeroProfileTemplate = function() {
@@ -184,30 +216,10 @@ $(document).ready(function() {
 		}
 		return { 
 			getMyProfile : function() {
-				var data = _getMyProfile();
-				var template = _getProfileTemplate();
-				data.getLinkBattleTag = function() {
-					return this.battleTag.replace("#", "-");
-				}
-				data.getClassName = function() {
-					if (this["class"] == "monk") {
-						return "수도사";
-					} else if (this["class"] == "demon-hunter") {
-						return "악마사냥꾼";
-					} else if (this["class"] == "barbarian") {
-						return "야만용사";
-					} else if (this["class"] == "wizard") {
-						return "마법사";
-					} else if (this["class"] == "witch-doctor") {
-						return "부두술사";
-					} else if (this["class"] == "crusader") {
-						return "성전사";
-					} else {
-						return "테스트";
-					}
-				}
-				
-				$(".content-battleNet").html(Mustache.render(template, data));
+				_getMyProfile();
+			},
+			getCareerProfile : function(battleTag) {
+				_getCareerProfile(battleTag);
 			},
 			getHeroProfile : function(battleTag, heroId) {
 				_getHeroProfile(battleTag, heroId);
@@ -220,7 +232,7 @@ $(document).ready(function() {
 	
 	var battleNet = BattleNet();
 	
-	battleNet.getMyProfile();
+	//battleNet.getMyProfile();
 	
 	$(document).on("click", "[data-hero-id]", function() {
 		var battleTag = $(this).attr("data-battleTag");
@@ -247,4 +259,16 @@ $(document).ready(function() {
 	$(document).on("click", ".row-offcanvas.active", function() {
 		$('.row-offcanvas').toggleClass('active');
 	});
+	
+	$(document).on("submit", "form[name=battleTagForm]", function() {
+		var battleTag = $(this).find("#battleTag").val(); 
+		if (battleTag == "") {
+			alert("")
+		};
+		battleNet.getCareerProfile(battleTag);
+		return false;
+	})
+	
+	$(".navbar").hide();
+	$(".breadcrumb").hide();
 });

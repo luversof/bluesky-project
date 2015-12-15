@@ -1,13 +1,19 @@
 <!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-spring4-4.dtd">
 <html xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
-	layout:decorator="/battleNet/d3/battleNetLayout">
+	layout:decorator="battleNet/d3/battleNetLayout">
 <head>
 	<script type="text/javascript"></script>
 </head>
 <body>
 	<div layout:fragment="content-battleNet">
-		asfsdfasdfsdf
+		<form name="battleTagForm" class="form-inline">
+			<div class="form-group">
+				<label for="battleTag">battleTag</label>
+				<input type="text" class="form-control" id="battleTag" placeholder="battleTag" value="파란하늘#3794" />
+			</div>
+			<button type="submit" class="btn btn-default">조회하기</button>
+		</form>
 	</div>
 </body>
 </html>

@@ -12,7 +12,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 
 
 @Configuration
-@PropertySource("web.properties")
+@PropertySource("classpath:web.properties")
+@PropertySource("classpath:web-${spring.profiles.active}.properties")
 public class WebMvcConfig extends WebMvcConfigurerAdapter {
 
 	@Autowired

@@ -18,7 +18,7 @@ public class BlueskyEmbeddedServletContainerCustomizer implements EmbeddedServle
 
 	@Override
 	public void customize(ConfigurableEmbeddedServletContainer container) {
-		container.setPort(8082);
+//		container.setPort(8082);
 		TomcatEmbeddedServletContainerFactory tomcatEmbeddedServletContainerFactory = (TomcatEmbeddedServletContainerFactory) container;
 		tomcatEmbeddedServletContainerFactory.addConnectorCustomizers(new TomcatConnectorCustomizer() {
 			@Override
@@ -33,23 +33,23 @@ public class BlueskyEmbeddedServletContainerCustomizer implements EmbeddedServle
 		});
 		
 		/* (s) https to http redirect */
-		{
-		    final Connector connector = new Connector("org.apache.coyote.http11.Http11NioProtocol");
-		    connector.setScheme("https");
-		    connector.setSecure(true);
-		    connector.setPort(8443);
-		    connector.setRedirectPort(8082);
-		    
-		    Http11NioProtocol protocol = (Http11NioProtocol) connector.getProtocolHandler();
-	        protocol.setSSLEnabled(true);
-	        protocol.setKeystoreFile("file:///" + System.getProperty("user.home").replaceAll("\\\\", "/") + "/keystore.p12");
-	        //protocol.setKeystoreFile("/Users/choiyong-rak/keystore.p12");
-	        protocol.setKeystorePass("password");
-	        protocol.setKeystoreType("PKCS12");
-	        protocol.setProperty("keystoreProvider", "SunJSSE");
-	        protocol.setKeyAlias("tomcat");
-			tomcatEmbeddedServletContainerFactory.addAdditionalTomcatConnectors(connector);
-		}
+//		{
+//		    final Connector connector = new Connector("org.apache.coyote.http11.Http11NioProtocol");
+//		    connector.setScheme("https");
+//		    connector.setSecure(true);
+//		    connector.setPort(8443);
+//		    connector.setRedirectPort(8082);
+//		    
+//		    Http11NioProtocol protocol = (Http11NioProtocol) connector.getProtocolHandler();
+//	        protocol.setSSLEnabled(true);
+//	        protocol.setKeystoreFile("file:///" + System.getProperty("user.home").replaceAll("\\\\", "/") + "/keystore.p12");
+//	        //protocol.setKeystoreFile("/Users/choiyong-rak/keystore.p12");
+//	        protocol.setKeystorePass("password");
+//	        protocol.setKeystoreType("PKCS12");
+//	        protocol.setProperty("keystoreProvider", "SunJSSE");
+//	        protocol.setKeyAlias("tomcat");
+//			tomcatEmbeddedServletContainerFactory.addAdditionalTomcatConnectors(connector);
+//		}
 		/* (e) https to http redirect */
 	}
 }

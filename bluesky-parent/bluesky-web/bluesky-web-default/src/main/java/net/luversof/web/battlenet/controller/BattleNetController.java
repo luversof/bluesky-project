@@ -26,7 +26,7 @@ public class BattleNetController {
 		return d3Service.getCareerProfile(blueskyUser.getUsername(), locale);
 	}
 	
-	@RequestMapping("/profile/{profile}")
+	@RequestMapping("/profile/{battleTag}")
 	public Object getCareerProfile(@PathVariable String battleTag, @RequestParam(defaultValue = "ko_KR") String locale) {
 		return d3Service.getCareerProfile(battleTag, locale);
 	}

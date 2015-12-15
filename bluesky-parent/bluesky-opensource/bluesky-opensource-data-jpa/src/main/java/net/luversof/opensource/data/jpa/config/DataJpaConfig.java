@@ -7,8 +7,8 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 @Configuration
-@PropertySource("data-jpa.properties")
-@PropertySource("data-jpa-${spring.profiles.active}.properties")
+@PropertySource("classpath:data-jpa.properties")
+@PropertySource("classpath:data-jpa-${spring.profiles.active}.properties")
 @EnableJpaAuditing
 //@EntityScan(basePackages = "net.luversof")
 public class DataJpaConfig {

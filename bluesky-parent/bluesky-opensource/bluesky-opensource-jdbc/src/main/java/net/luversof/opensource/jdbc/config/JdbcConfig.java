@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.PropertySource;
 
 @Configuration
-@PropertySource("jdbc-${spring.profiles.active}.properties")
+@PropertySource("classpath:jdbc-${spring.profiles.active}.properties")
 public class JdbcConfig {
 	
 //	@ConfigurationProperties 암복호화 처리 문제로 인해 아래 방식은 쓰지 못함
