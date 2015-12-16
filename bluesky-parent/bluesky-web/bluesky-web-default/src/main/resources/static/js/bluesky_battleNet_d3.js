@@ -61,7 +61,10 @@ $(document).ready(function() {
 				return _profile[battleTag];
 			} 
 			$.ajax({
-				url : "/battleNet/d3/profile/" + encodeURIComponent(battleTag) + ".json"
+				url : "/battleNet/d3/profile/" + encodeURIComponent(battleTag) + ".json",
+				beforeSend : function() {
+					$("form[name=battleTagForm]").append('<div class="text-center"><i class="fa fa-spinner fa-pulse"></i></div>');
+				}
 			}).success(function(data) {
 				_profile[battleTag] = data;
 				_addLambdaCareerProfile(battleTag);
@@ -76,7 +79,9 @@ $(document).ready(function() {
 			}
 			$.ajax({
 				url : "/battleNet/d3/profile/" + encodeURIComponent(battleTag) + "/hero/" + heroId + ".json",
-				beforeSend : function() {$("#hero-" + heroId + " .panel-body").html('<div class="text-center"><i class="fa fa-spinner fa-pulse"></i></div>');},
+				beforeSend : function() {
+					$("#hero-" + heroId + " .panel-body").html('<div class="text-center"><i class="fa fa-spinner fa-pulse"></i></div>');
+				},
 				success : function(data) {
 					if (_hero[battleTag] == undefined) {
 						_hero[battleTag] = {};
@@ -249,15 +254,16 @@ $(document).ready(function() {
 	 * mobile 에서 우측 사이드바 토글 처리
 	 */
 	$(document).on("click", "[data-toggle=offcanvas]", function () {
-		console.log("1 :" , $(document).scrollTop());
-		$('.row-offcanvas').toggleClass('active');
-		console.log("2 :" , $(document).scrollTop());
-		$(".sidebar-offcanvas").offset({top : $(document).scrollTop() + 100 });
-		console.log("3 :" , $(document).scrollTop());
+		//console.log("1 :" , $(document).scrollTop());
+		$('.row-offcanvas').toggleClass("active");
+		//console.log("2 :" , $(document).scrollTop());
+		//$(".sidebar-offcanvas").offset({top : $(document).scrollTop() + 10});
+		//$(".sidebar-offcanvas").affix({ offset: 15 })
+		//console.log("3 :" , $(document).scrollTop());
 	});
 	
 	$(document).on("click", ".row-offcanvas.active", function() {
-		$('.row-offcanvas').toggleClass('active');
+		$('.row-offcanvas').toggleClass("active");
 	});
 	
 	$(document).on("submit", "form[name=battleTagForm]", function() {
@@ -269,6 +275,11 @@ $(document).ready(function() {
 		return false;
 	})
 	
-	$(".navbar").hide();
+	$("body").css("padding-top", "0px");
+	$(".navbar").remove();
 	$(".breadcrumb").hide();
+	$("footer").hide();
+	$(document).on("scroll", function() {
+		$(".sidebar-offcanvas").offset({top : $(document).scrollTop() + 10});
+	});
 });
