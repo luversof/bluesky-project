@@ -64,6 +64,9 @@ $(document).ready(function() {
 				url : "/battleNet/d3/profile/" + encodeURIComponent(battleTag) + ".json",
 				beforeSend : function() {
 					$("form[name=battleTagForm]").append('<div class="text-center"><i class="fa fa-spinner fa-pulse"></i></div>');
+				},
+				complete : function() {
+					$("form[name=battleTagForm]").find(".fa-spinner").parent().remove();
 				}
 			}).success(function(data) {
 				_profile[battleTag] = data;
