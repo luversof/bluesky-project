@@ -250,22 +250,22 @@ $(document).ready(function() {
 		event.preventDefault();
 		var tooltipParams = $(this).attr("data-d3-itemData");
 		battleNet.getItemData(tooltipParams);
+		$(".sidebar-offcanvas").offset({top : $(document).scrollTop() + 10});
 	});
 	
 	/**
 	 * mobile 에서 우측 사이드바 토글 처리
 	 */
-	$(document).on("click", "[data-toggle=offcanvas]", function () {
-		//console.log("1 :" , $(document).scrollTop());
-		$('.row-offcanvas').toggleClass("active");
-		//console.log("2 :" , $(document).scrollTop());
-		//$(".sidebar-offcanvas").offset({top : $(document).scrollTop() + 10});
-		//$(".sidebar-offcanvas").affix({ offset: 15 })
-		//console.log("3 :" , $(document).scrollTop());
+	$(document).on("click", "[data-toggle-offcanvas=on]", function () {
+		$(".row-offcanvas").addClass("active");
+	});
+	
+	$(document).on("click", "[data-toggle-offcanvas=off]", function () {
+		$(".row-offcanvas").removeClass("active");
 	});
 	
 	$(document).on("click", ".row-offcanvas.active", function() {
-		$('.row-offcanvas').toggleClass("active");
+		$(".row-offcanvas").removeClass("active");
 	});
 	
 	$(document).on("submit", "form[name=battleTagForm]", function() {
