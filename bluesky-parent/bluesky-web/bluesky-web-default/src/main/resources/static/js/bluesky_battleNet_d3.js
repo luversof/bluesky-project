@@ -239,13 +239,15 @@ $(document).ready(function() {
 	
 	//battleNet.getMyProfile();
 	
-	$(document).on("click", "[data-hero-id]", function() {
+	$(document).on("click", "[data-hero-id]", function(event) {
+		event.preventDefault();
 		var battleTag = $(this).attr("data-battleTag");
 		var heroId = $(this).attr("data-hero-id");
 		battleNet.getHeroProfile(battleTag, heroId);
 	});
 	
 	$(document).on("click", "[data-d3-itemData]", function() {
+		event.preventDefault();
 		var tooltipParams = $(this).attr("data-d3-itemData");
 		battleNet.getItemData(tooltipParams);
 	});
