@@ -18,11 +18,13 @@
 				<div class="panel-group" id="characterList">
 					{{#heroes}}
 					<div class="panel panel-info">
-						<div class="panel-heading"  data-toggle="collapse" data-parent="#characterList" data-target="#hero-{{id}}" data-hero-id="{{id}}" data-battleTag="{{battleTag}}">
+						<div class="panel-heading"  data-toggle="collapse" data-parent="#characterList" data-target="#hero-{{id}}">
 							<p class="panel-title collapsed {{#hardcore}}d3-color-hardcore{{/hardcore}}">
 								<img alt="{{getClassName}}" src="/img/battleNet/d3/{{class}}_{{gender}}.png" class="img-thumbnail" title="{{getClassName}}" />
-								{{#seasonal}}<span class="small-seasonal-leaf">&nbsp;</span>{{/seasonal}} 
-								Lv.{{level}}({{paragonLevel}}) - {{name}}
+								<a data-hero-id="{{id}}" data-battleTag="{{battleTag}}">
+									{{#seasonal}}<span class="small-seasonal-leaf">&nbsp;</span>{{/seasonal}} 
+									Lv.{{level}}({{paragonLevel}}) - {{name}}
+								</a>
 							</p>
 						</div>
 						<div id="hero-{{id}}" class="panel-collapse collapse">
