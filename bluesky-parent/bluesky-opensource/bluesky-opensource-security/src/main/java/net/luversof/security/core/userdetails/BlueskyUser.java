@@ -4,6 +4,7 @@ import java.util.Collection;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import net.luversof.user.domain.UserType;
 
 import org.springframework.security.core.CredentialsContainer;
 import org.springframework.security.core.GrantedAuthority;
@@ -24,6 +25,7 @@ public class BlueskyUser implements UserDetails, CredentialsContainer {
     private final boolean credentialsNonExpired;
     private final boolean enabled;
     private final UserType userType;
+    private final String externalId;	// oauth 인증으로 넘어온 경우의 externalId 정보
     
 	@Override
 	public void eraseCredentials() {

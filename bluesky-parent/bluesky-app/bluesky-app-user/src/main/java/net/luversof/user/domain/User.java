@@ -35,4 +35,8 @@ public class User {
 
 	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, mappedBy = "user")
 	private List<UserAuthority> userAuthorityList;
+	
+	private UserType userType;
+	
+	private String externalId;
 }

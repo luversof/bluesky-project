@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.user.domain.User;
 import net.luversof.user.domain.UserAuthority;
+import net.luversof.user.domain.UserType;
 import net.luversof.user.repository.UserRepository;
 
 @Service
@@ -29,6 +30,7 @@ public class UserService {
 		user.setUsername(username);
 		user.setPassword(password);
 		user.setEnable(true);
+		user.setUserType(UserType.LOCAL);
 		List<UserAuthority> userAuthorityList = new ArrayList<>();
 		UserAuthority userAuthority = new UserAuthority();
 		userAuthority.setAuthority("ROLE_USER");
