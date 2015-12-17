@@ -58,7 +58,9 @@ $(document).ready(function() {
 		
 		var _getCareerProfile = function(battleTag) {
 			if (_profile[battleTag] != undefined) {
-				return _profile[battleTag];
+				_addLambdaCareerProfile(battleTag);
+				$(".content-battleNet").html(Mustache.render(_getProfileTemplate(), _profile[battleTag]));
+				return;
 			} 
 			$.ajax({
 				url : "/battleNet/d3/profile/" + encodeURIComponent(battleTag) + ".json",
@@ -273,6 +275,7 @@ $(document).ready(function() {
 	
 	$(document).on("submit", "form[name=battleTagForm]", function() {
 		var battleTag = $(this).find("#battleTag").val(); 
+		console.log("test ", battleTag);
 		if (battleTag == "") {
 			alert("")
 		};
