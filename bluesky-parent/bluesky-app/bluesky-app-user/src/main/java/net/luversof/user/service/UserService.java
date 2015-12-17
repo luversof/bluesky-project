@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.user.domain.User;
 import net.luversof.user.domain.UserAuthority;
+import net.luversof.user.domain.UserType;
 import net.luversof.user.repository.UserRepository;
 
 @Service
@@ -28,12 +29,47 @@ public class UserService {
 		User user = new User();
 		user.setUsername(username);
 		user.setPassword(password);
-		user.setEnable(true);
+		user.setAccountNonExpired(true);
+		user.setAccountNonLocked(true);
+		user.setCredentialsNonExpired(true);
+		user.setEnabled(true);
+		UserType userType = UserType.LOCAL;
+		user.setUserType(userType);
 		List<UserAuthority> userAuthorityList = new ArrayList<>();
-		UserAuthority userAuthority = new UserAuthority();
-		userAuthority.setAuthority("ROLE_USER");
-		userAuthority.setUser(user);
-		userAuthorityList.add(userAuthority);
+		for (String authority : userType.getAuthorities()) {
+			UserAuthority userAuthority = new UserAuthority();
+			userAuthority.setAuthority(authority);
+			userAuthority.setUser(user);
+			userAuthorityList.add(userAuthority);
+		}
+		user.setUserAuthorityList(userAuthorityList);
+		userRepository.save(user);
+		return user;
+	}
+	
+	/**
+	 * 외부인증을 통한 유저 추가의 경우
+	 * password는 없으며 enabled를 false로 처리하여 사이트 활성화 여부를 확인 받는다.
+	 * @param username
+	 * @param userType
+	 * @return
+	 */
+	public User addUser(String username, UserType userType, String externalId) {
+		User user = new User();
+		user.setUsername(username);
+		user.setAccountNonExpired(true);
+		user.setAccountNonLocked(true);
+		user.setCredentialsNonExpired(true);
+		user.setEnabled(false);
+		user.setUserType(userType);
+		user.setExternalId(externalId);
+		List<UserAuthority> userAuthorityList = new ArrayList<>();
+		for (String authority : userType.getAuthorities()) {
+			UserAuthority userAuthority = new UserAuthority();
+			userAuthority.setAuthority(authority);
+			userAuthority.setUser(user);
+			userAuthorityList.add(userAuthority);
+		}
 		user.setUserAuthorityList(userAuthorityList);
 		userRepository.save(user);
 		return user;
@@ -51,6 +87,11 @@ public class UserService {
 	@Transactional(value = "securityTransactionManager", readOnly = true)
 	public User findByUsername(String username) {
 		return userRepository.findByUsername(username);
+	}
+	
+	@Transactional(value = "securityTransactionManager", readOnly = true)
+	public User findByExternalIdAndUserType(String externalId, UserType userType) {
+		return userRepository.findByExternalIdAndUserType(externalId, userType);
 	}
 
 	public void remove(User user) {

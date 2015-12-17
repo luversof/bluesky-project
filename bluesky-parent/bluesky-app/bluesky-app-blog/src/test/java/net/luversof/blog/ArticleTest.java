@@ -46,7 +46,7 @@ public class ArticleTest extends GeneralTest {
 	public void 카테고리추가글작성테스트() {
 		for (int i = 0 ; i < 1 ; i ++) {
 			
-			Blog blog = blogService.findByUser(userId, userType);
+			Blog blog = blogService.findByUser(userId);
 			Article article = new Article();
 			article.setBlog(blog);
 			article.setTitle("한글제목" + i);

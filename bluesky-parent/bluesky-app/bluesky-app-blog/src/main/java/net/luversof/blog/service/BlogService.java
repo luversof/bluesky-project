@@ -25,7 +25,7 @@ public class BlogService {
 	}
 
 	@Transactional(value = "blogTransactionManager", readOnly = true)
-	public Blog findByUser(long userId, String userType) {
-		return blogRepository.findByUserIdAndUserType(userId, userType);
+	public Blog findByUser(long userId) {
+		return blogRepository.findByUserId(userId);
 	}
 }

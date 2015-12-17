@@ -61,7 +61,6 @@ public class BlogViewController {
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
 		Blog blog = new Blog();
 		blog.setUserId(blueskyUser.getId());
-		blog.setUserType(blueskyUser.getUserType().name());
 		blogService.save(blog);
 		return forwardArticleList(blog.getId());
 	}
