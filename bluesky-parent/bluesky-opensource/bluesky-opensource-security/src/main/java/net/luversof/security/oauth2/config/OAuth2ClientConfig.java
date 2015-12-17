@@ -28,7 +28,6 @@ import org.springframework.security.oauth2.common.AuthenticationScheme;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableOAuth2Client;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.security.oauth2.provider.token.AccessTokenConverter;
 import org.springframework.security.oauth2.provider.token.RemoteTokenServices;
 import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -79,9 +78,11 @@ public class OAuth2ClientConfig {
 		return new OAuth2RestTemplate(githubResourceDetails(), oAuth2ClientContext);
 	}
 	
+	@Autowired
+	private GithubAccessTokenConverter githubAccessTokenConverter;
+	
 	@Bean
 	public ResourceServerTokenServices githubTokenServices() {
-		AccessTokenConverter accessTokenConverter = new GithubAccessTokenConverter();
 		OAuth2RestTemplate oAuth2RestTemplate = githubRestTemplate();
 		RemoteTokenServices remoteTokenServices = new RemoteTokenServices() {
 
@@ -104,7 +105,7 @@ public class OAuth2ClientConfig {
 				}
 
 				//Assert.state(map.containsKey("client_id"), "Client id must be present in response from auth server");
-				return accessTokenConverter.extractAuthentication(map);
+				return githubAccessTokenConverter.extractAuthentication(map);
 			}
 			
 		};
@@ -112,7 +113,7 @@ public class OAuth2ClientConfig {
 		remoteTokenServices.setClientId(githubClientId);
 		remoteTokenServices.setClientSecret(githubClientSecret);
 		remoteTokenServices.setCheckTokenEndpointUrl(githubCheckTokenEndpointUrl);
-		remoteTokenServices.setAccessTokenConverter(accessTokenConverter);
+		remoteTokenServices.setAccessTokenConverter(githubAccessTokenConverter);
 		return remoteTokenServices;
 	}
 	
@@ -164,9 +165,11 @@ public class OAuth2ClientConfig {
 		return new OAuth2RestTemplate(facebookResourceDetails(), oAuth2ClientContext);
 	}
 	
+	@Autowired
+	private FacebookAccessTokenConverter facebookAccessTokenConverter;
+	
 	@Bean
 	public ResourceServerTokenServices facebookTokenServices() {
-		AccessTokenConverter accessTokenConverter = new FacebookAccessTokenConverter();
 		OAuth2RestTemplate oAuth2RestTemplate = facebookRestTemplate();
 		RemoteTokenServices remoteTokenServices = new RemoteTokenServices() {
 
@@ -191,7 +194,7 @@ public class OAuth2ClientConfig {
 				Map<String, Object> me = oAuth2RestTemplate.getForObject("https://graph.facebook.com/me", Map.class);
 				map.putAll(me);
 //				Assert.state(map.containsKey("client_id"), "Client id must be present in response from auth server");
-				return accessTokenConverter.extractAuthentication(map);
+				return facebookAccessTokenConverter.extractAuthentication(map);
 			}
 			
 		};
@@ -250,9 +253,12 @@ public class OAuth2ClientConfig {
 		return new OAuth2RestTemplate(battleNetResourceDetails(), oAuth2ClientContext);
 	}
 	
+	
+	@Autowired
+	BattleNetAccessTokenConverter battleNetAccessTokenConverter;
+	
 	@Bean
 	public ResourceServerTokenServices battleNetTokenServices() {
-		AccessTokenConverter accessTokenConverter = new BattleNetAccessTokenConverter();
 		OAuth2RestTemplate oAuth2RestTemplate = battleNetRestTemplate();
 		RemoteTokenServices remoteTokenServices = new RemoteTokenServices() {
 
@@ -277,7 +283,7 @@ public class OAuth2ClientConfig {
 				@SuppressWarnings("unchecked")
 				Map<String, Object> me = oAuth2RestTemplate.getForObject("https://kr.api.battle.net/account/user?access_token={accessToken}", Map.class, accessToken);
 				map.putAll(me);
-				return accessTokenConverter.extractAuthentication(map);
+				return battleNetAccessTokenConverter.extractAuthentication(map);
 			}
 			
 		};

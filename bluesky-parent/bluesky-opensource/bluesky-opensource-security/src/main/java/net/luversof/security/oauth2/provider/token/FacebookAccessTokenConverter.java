@@ -9,17 +9,20 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.token.AccessTokenConverter;
-import org.springframework.security.oauth2.provider.token.UserAuthenticationConverter;
+import org.springframework.stereotype.Component;
 
+@Component
 public class FacebookAccessTokenConverter implements AccessTokenConverter {
-
-	private UserAuthenticationConverter userTokenConverter = new FacebookUserAuthenticationConverter();
+	
+	@Autowired
+	private FacebookUserAuthenticationConverter facebookUserAuthenticationConverter;
 
 	@Override
 	public Map<String, ?> convertAccessToken(OAuth2AccessToken token, OAuth2Authentication authentication) {
@@ -27,7 +30,7 @@ public class FacebookAccessTokenConverter implements AccessTokenConverter {
 		OAuth2Request clientToken = authentication.getOAuth2Request();
 
 		if (!authentication.isClientOnly()) {
-			response.putAll(userTokenConverter.convertUserAuthentication(authentication.getUserAuthentication()));
+			response.putAll(facebookUserAuthenticationConverter.convertUserAuthentication(authentication.getUserAuthentication()));
 		}
 
 		if (token.getScope() != null) {
@@ -88,7 +91,7 @@ public class FacebookAccessTokenConverter implements AccessTokenConverter {
 		Set<String> resourceIds = new LinkedHashSet<String>(map.containsKey(AUD) ? (Collection<String>) map.get(AUD) : Collections.<String> emptySet());
 		OAuth2Request request = new OAuth2Request(parameters, clientId, null, true, scope, resourceIds, null, null, null);
 		
-		Authentication user = userTokenConverter.extractAuthentication(map);
+		Authentication user = facebookUserAuthenticationConverter.extractAuthentication(map);
 		return new OAuth2Authentication(request, user);
 	}
 

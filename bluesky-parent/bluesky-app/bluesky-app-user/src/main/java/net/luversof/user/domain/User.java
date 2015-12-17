@@ -22,7 +22,7 @@ public class User {
 	@GeneratedValue
 	private long id;
 
-	@Column(unique = true, nullable = false)
+	@Column(nullable = false)
 	private String username;
 
 	private String password;
@@ -31,8 +31,15 @@ public class User {
 //	@DateTimeFormat(iso = ISO.DATE_TIME)
 	private LocalDateTime createdDate;
 
-	private boolean enable;
+	private boolean accountNonExpired;
+    private boolean accountNonLocked;
+    private boolean credentialsNonExpired;
+    private boolean enabled;
 
 	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, mappedBy = "user")
 	private List<UserAuthority> userAuthorityList;
+	
+	private UserType userType;
+	
+	private String externalId;
 }

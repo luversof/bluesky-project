@@ -35,7 +35,7 @@ public class BlogHandlerMethodArgumentResolver implements HandlerMethodArgumentR
 		}
 		BlueskyUser user = (BlueskyUser) authentication.getPrincipal();
 		
-		Blog blog = blogService.findByUser(user.getId(), user.getUserType().name());
+		Blog blog = blogService.findByUser(user.getId());
 		if (blog == null) {
 			throw new BlueskyException("blog.notExist");
 		}

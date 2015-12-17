@@ -12,4 +12,7 @@ public class BlueskyException extends RuntimeException {
 		this.errorCode = errorCode;
 	}
 
+	public BlueskyException(ErrorCode errorCode) {
+		this.errorCode = errorCode.name();
+	}
 }
