@@ -3,6 +3,10 @@ package net.luversof.blog;
 
 import java.util.List;
 
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.blog.domain.Article;
@@ -12,9 +16,6 @@ import net.luversof.blog.repository.ArticleRepository;
 import net.luversof.blog.service.ArticleCategoryService;
 import net.luversof.blog.service.ArticleService;
 import net.luversof.blog.service.BlogService;
-
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @Slf4j
 public class ArticleTest extends GeneralTest {
@@ -31,8 +32,7 @@ public class ArticleTest extends GeneralTest {
 	@Autowired
 	private BlogService blogService;
 	
-	private long userId = 1657880612;
-	private String userType = "FACEBOOK";
+	private long userId = 1;
 	
 
 	@Test
@@ -44,9 +44,9 @@ public class ArticleTest extends GeneralTest {
 	
 	@Test
 	public void 카테고리추가글작성테스트() {
-		for (int i = 0 ; i < 1 ; i ++) {
+		Blog blog = blogService.findByUser(userId);
+		for (int i = 0 ; i < 20 ; i ++) {
 			
-			Blog blog = blogService.findByUser(userId);
 			Article article = new Article();
 			article.setBlog(blog);
 			article.setTitle("한글제목" + i);
@@ -57,7 +57,7 @@ public class ArticleTest extends GeneralTest {
 			articleCategory.setBlog(blog);
 			articleCategory.setName("바꿨다" + i);
 			articleCategory.setId(4);
-			article.setArticleCategory(articleCategory);
+			//article.setArticleCategory(articleCategory);
 			
 			Article savedArticle = articleService.save(article);
 		}
@@ -115,9 +115,15 @@ public class ArticleTest extends GeneralTest {
 	@Test
 //	@Ignore
 	public void selectPaging테스트() {
-//		Page<Article> blogList = articleService.findAll(0);
-//		log.debug("blogList : {}", blogList);
-//		log.debug("blogList : {}", blogList.getContent());
+		Blog blog = blogService.findByUser(userId);
+		
+		int page = 1;
+		
+		
+		Page<Article> blogList = articleService.findByBlog(blog, page);
+		log.debug("blogList : {}", blogList);
+		log.debug("blogList : {}", blogList.getContent());
+		
 	}
 	
 //	@Test
