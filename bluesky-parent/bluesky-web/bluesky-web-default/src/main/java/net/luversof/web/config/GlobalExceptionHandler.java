@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.view.RedirectView;
 
 import net.luversof.core.exception.BlueskyException;
 
@@ -50,7 +49,7 @@ public class GlobalExceptionHandler {
 	}
 	
 	@ExceptionHandler
-	@ResponseStatus(value=HttpStatus.BAD_REQUEST)
+	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
 	public ModelAndView handleException(BindException exception) {
 		List<Map<String, String>> errorList = new ArrayList<>();
 		for (FieldError fieldError : exception.getFieldErrors()) {
@@ -66,23 +65,23 @@ public class GlobalExceptionHandler {
 	}
 	
 	@ExceptionHandler
-	@ResponseStatus(value=HttpStatus.BAD_REQUEST)
+	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
 	public ModelAndView handleException(Exception exception) {
 		exception.printStackTrace();
 		return new ModelAndView("error");
 	}
-	
+
 	@ExceptionHandler
-	@ResponseStatus(value=HttpStatus.UNAUTHORIZED)
+	@ResponseStatus(value = HttpStatus.UNAUTHORIZED)
 	public ModelAndView preAuthenticatedCredentialsNotFoundException(PreAuthenticatedCredentialsNotFoundException PreAuthenticatedCredentialsNotFoundException) {
 		return new ModelAndView("login");
 	}
-	
+
 	@Value("${oauth2.client.battleNet.clientId}")
 	private String battleNetClientId;
 	
 	@ExceptionHandler
-	@ResponseStatus(value=HttpStatus.UNAUTHORIZED)
+	@ResponseStatus(value = HttpStatus.UNAUTHORIZED)
 	public void accessDeniedException(HttpServletRequest request, HttpServletResponse response, AccessDeniedException exception) throws IOException {
 		if (request.getRequestURI().equals("/battleNet/d3/index")) {
 			response.sendRedirect("https://kr.battle.net/oauth/authorize?client_id=" + battleNetClientId + "&redirect_uri=https://localhost:8443/oauth/battleNetAuthorizeResult&scope=wow.profile&response_type=code");

@@ -19,7 +19,7 @@ public class BattleNetController {
 	@Autowired
 	private D3Service d3Service;
 	
-	@PreAuthorize("hasRole('ROLE_BATTLENETUSER')")
+	@PreAuthorize("hasRole('ROLE_USER_BATTLENET')")
 	@RequestMapping("/my/profile")
 	public Object myProfile (Authentication authentication, @RequestParam(defaultValue = "ko_KR") String locale, ModelMap modelMap) {
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();

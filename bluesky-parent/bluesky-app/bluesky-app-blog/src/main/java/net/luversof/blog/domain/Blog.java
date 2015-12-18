@@ -19,5 +19,4 @@ public class Blog {
 
 	private long userId;
 
-	private String userType;
 }

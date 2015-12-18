@@ -35,7 +35,7 @@ public class CheckBlogAndAddToArticleAspect {
 		Blog targetBlog = blogService.findOne(article.getBlog().getId());
 		
 		BlueskyUser blueskyUser = (BlueskyUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-		if (targetBlog.getUserId() != blueskyUser.getId() || !targetBlog.getUserType().equals(blueskyUser.getUserType().name())) {
+		if (targetBlog.getUserId() != blueskyUser.getId()) {
 			throw new BlueskyException("blog.invalidAccess");
 		}
 		
