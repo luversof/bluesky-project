@@ -26,7 +26,6 @@ $(document).ready(function() {
 				});
 			}
 			, remove : function() {
-				alert("오긴오나?");
 				var form = $(".delete.form-horizontal");
 				$.ajax({
 					type : "post"
@@ -34,7 +33,6 @@ $(document).ready(function() {
 					, dataType : "json"
 					, data : { _method : "delete" }
 					, success : function(data) {
-						alert(1);
 						location.href = form.attr("action") + "/../";
 					}
 					,error : function(jqXHR, textStatus, errorThrown) {

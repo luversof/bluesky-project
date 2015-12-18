@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.blog.domain.Article;
 import net.luversof.blog.domain.Article.Get;
+import net.luversof.blog.domain.Article.Modify;
 import net.luversof.blog.domain.Article.Save;
 import net.luversof.blog.service.ArticleCategoryService;
 import net.luversof.blog.service.ArticleService;
@@ -44,7 +45,7 @@ public class ArticleController {
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{blog.id}/article/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-	public Article modify(/*@CheckBlogAndAddToArticle @Validated(Modify.class)*/ Article article) {
+	public Article modify(@CheckBlogAndAddToArticle @Validated(Modify.class) Article article) {
 		return articleService.update(article);
 	}
 
