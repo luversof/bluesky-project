@@ -6,7 +6,8 @@
 	
 	<logger name="net.luversof" level="debug" />
 	<logger name="java.sql" level="debug" />
-	<logger name="org.hibernate.type" level="trace" />
+	<!-- <logger name="org.hibernate.type" level="trace" /> -->
+	<logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="trace" />
 	<logger name="org.springframework" level="info" />
 	<logger name="org.springframework.boot.autoconfigure" level="debug" />
 </included>
