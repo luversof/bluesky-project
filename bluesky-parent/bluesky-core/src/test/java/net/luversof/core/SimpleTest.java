@@ -43,6 +43,11 @@ public class SimpleTest {
 		
 	}
 	
+	@Test
+	public void test3() {
+		System.out.println("file:///" + System.getProperty("user.home").replaceAll("\\\\", "/") + "/keystore.p12");
+	}
+	
 	
 	@Test
 	public void homeDirectoryTest() {
