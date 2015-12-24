@@ -45,7 +45,7 @@ public class ArticleTest extends GeneralTest {
 	@Test
 	public void 카테고리추가글작성테스트() {
 		Blog blog = blogService.findByUser(userId);
-		for (int i = 0 ; i < 20 ; i ++) {
+		for (int i = 0 ; i < 1 ; i ++) {
 			
 			Article article = new Article();
 			article.setBlog(blog);

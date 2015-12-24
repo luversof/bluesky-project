@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.blog.domain.Article;
+import net.luversof.blog.domain.ArticleStatistics;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.ArticleRepository;
 import net.luversof.core.exception.BlueskyException;
@@ -25,6 +26,12 @@ public class ArticleService {
 	private ArticleCategoryService articleCategoryService;
 
 	public Article save(Article article) {
+		if (article.getArticleCategory() != null && article.getArticleCategory().getId() > 0) {
+			article.setArticleCategory(articleCategoryService.findOne(article.getArticleCategory().getId()));
+		}
+		ArticleStatistics articleStatistics = new ArticleStatistics();
+		articleStatistics.setArticle(article);
+		article.setArticleStatistics(articleStatistics);
 		return articleRepository.save(article);
 	}
 	

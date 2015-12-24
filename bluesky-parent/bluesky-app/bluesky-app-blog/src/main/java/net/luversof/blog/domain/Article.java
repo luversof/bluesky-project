@@ -2,6 +2,7 @@ package net.luversof.blog.domain;
 
 import java.time.LocalDateTime;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.ForeignKey;
@@ -9,11 +10,14 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 import javax.validation.constraints.NotNull;
 
 import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import lombok.Data;
 
@@ -27,7 +31,7 @@ public class Article {
 	private long id;
 	
 	@ManyToOne
-	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_article_blogId"))
+	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_article_blogId") )
 	private Blog blog;
 
 	@NotEmpty(groups = { Save.class, Modify.class })
@@ -44,16 +48,17 @@ public class Article {
 	@LastModifiedDate
 	private LocalDateTime lastModifiedDate;
 
-	@ManyToOne(/*cascade = {CascadeType.MERGE}*/)
-	@JoinColumn(name = "articleCategory_id", foreignKey = @ForeignKey(name = "FK_article_articleCategoryId"))
+	@ManyToOne(/* cascade = {CascadeType.MERGE} */)
+	@JoinColumn(name = "articleCategory_id", foreignKey = @ForeignKey(name = "FK_article_articleCategoryId") )
 	private ArticleCategory articleCategory;
 
-	public interface Get {
-	};
+	@OneToOne(cascade = CascadeType.ALL)
+	@JsonManagedReference
+	private ArticleStatistics articleStatistics;
 
-	public interface Save {
-	};
+	public interface Get {};
 
-	public interface Modify {
-	};
+	public interface Save {};
+
+	public interface Modify {};
 }

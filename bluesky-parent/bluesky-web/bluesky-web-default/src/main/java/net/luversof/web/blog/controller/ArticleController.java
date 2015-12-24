@@ -13,7 +13,6 @@ import net.luversof.blog.domain.Article;
 import net.luversof.blog.domain.Article.Get;
 import net.luversof.blog.domain.Article.Modify;
 import net.luversof.blog.domain.Article.Save;
-import net.luversof.blog.service.ArticleCategoryService;
 import net.luversof.blog.service.ArticleService;
 import net.luversof.web.blog.annotation.CheckBlogAndAddToArticle;
 import net.luversof.web.constant.AuthorizeRole;
@@ -26,10 +25,6 @@ import net.luversof.web.constant.AuthorizeRole;
 @RequestMapping("blog")
 public class ArticleController {
 
-
-	@Autowired
-	private ArticleCategoryService articleCategoryService;
-
 	@Autowired
 	private ArticleService articleService;
 
@@ -37,9 +32,6 @@ public class ArticleController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{blog.id}/article", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	public Article save(@CheckBlogAndAddToArticle @Validated(Save.class) Article article) {
-		if (article.getArticleCategory() != null && article.getArticleCategory().getId() != 0) {
-			article.setArticleCategory(articleCategoryService.findOne(article.getArticleCategory().getId()));
-		}
 		return articleService.save(article);
 	}
 
