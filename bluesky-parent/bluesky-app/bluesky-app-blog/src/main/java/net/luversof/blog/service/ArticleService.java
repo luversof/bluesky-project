@@ -48,9 +48,11 @@ public class ArticleService {
 		return articleRepository.save(targetArticle);
 	}
 
-	@Transactional(value = "blogTransactionManager", readOnly = true)
 	public Article findOne(long id) {
-		return articleRepository.findOne(id);
+		Article article = articleRepository.findOne(id);
+		article.getArticleStatistics().setViewCount(article.getArticleStatistics().getViewCount() + 1);
+		articleRepository.save(article);
+		return article;
 	}
 
 	@Transactional(value = "blogTransactionManager", readOnly = true)

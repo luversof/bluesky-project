@@ -52,6 +52,13 @@
 		</dependency>
 		<!-- (s) template engine -->
 
+		<!-- (s) thymeleaf extras -->
+		<dependency>
+			<groupId>org.thymeleaf.extras</groupId>
+			<artifactId>thymeleaf-extras-java8time</artifactId>
+		</dependency>
+		<!-- (e) thymeleaf extras -->
+
 		<!-- (s) javascript libarary -->
 		<dependency>
 			<groupId>org.webjars</groupId>

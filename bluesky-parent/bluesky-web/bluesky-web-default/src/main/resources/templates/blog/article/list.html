@@ -16,6 +16,7 @@
 				<th th:text="#{article.text.title}">title</th>
 				<th class="col-md-2" th:text="#{article.text.username}">username</th>
 				<th class="col-md-2" th:text="#{article.text.createdDate}">createdDate</th>
+				<th class="col-md-1" th:text="#{article.text.viewCount}">viewCount</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -24,16 +25,20 @@
 				<td th:text="${article.articleCategory} ? ${article.articleCategory.name}">category</td>
 				<td><a th:href="#{url.blog.view(${article.blog.id}, ${article.id})}" th:text="${article.title}">title</a></td>
 				<td th:text="${article.blog}">username</td>
-				<!-- <td th:text="${#dates.format(article.createdDate, 'yyyy-MM-dd')}">createdDate</td> -->
-				<td th:text="${article.createdDate}">createdDate</td>
+				<td th:text="${#temporals.format(article.createdDate, 'yyyy-MM-dd')}">createdDate</td>
+				<!-- <td th:text="${article.createdDate}">createdDate</td> -->
+				<td>
+					<span th:if="${article.articleStatistics eq null}">-</span>
+					<span th:if="${article.articleStatistics ne null}" th:text="${article.articleStatistics.viewCount}">-</span>
+				</td>
 			</tr>
 			<tr th:if="${!pageImpl.hasContent()}" class="text-center">
-				<td colspan="5" th:text="#{article.message.empty.content}">article.message.empty.content</td>
+				<td colspan="6" th:text="#{article.message.empty.content}">article.message.empty.content</td>
 			</tr>
 		</tbody>
 		<tfoot>
 			<tr>
-				<td colspan="5" class="text-center">
+				<td colspan="6" class="text-center">
 					<ul class="pagination" th:if="${pageImpl.totalPages} > 0">
 						<li th:each="i : ${#numbers.sequence(startPage, endPage)}" th:class="${i == currentPage} ? 'active'"><a th:href="@{'/blog/' + ${blogId} + '/article'(page=${i})}" th:text="${i}">?</a></li>
 					</ul>

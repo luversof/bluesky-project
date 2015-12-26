@@ -12,7 +12,6 @@ import net.luversof.GeneralTest;
 import net.luversof.blog.domain.Article;
 import net.luversof.blog.domain.ArticleCategory;
 import net.luversof.blog.domain.Blog;
-import net.luversof.blog.repository.ArticleRepository;
 import net.luversof.blog.service.ArticleCategoryService;
 import net.luversof.blog.service.ArticleService;
 import net.luversof.blog.service.BlogService;
@@ -20,9 +19,6 @@ import net.luversof.blog.service.BlogService;
 @Slf4j
 public class ArticleTest extends GeneralTest {
 
-	@Autowired
-	private ArticleRepository articleRepository;
-	
 	@Autowired
 	private ArticleService articleService;
 	
@@ -60,6 +56,7 @@ public class ArticleTest extends GeneralTest {
 			//article.setArticleCategory(articleCategory);
 			
 			Article savedArticle = articleService.save(article);
+			log.debug("savedArticle : {}", savedArticle);
 		}
 		
 	}
