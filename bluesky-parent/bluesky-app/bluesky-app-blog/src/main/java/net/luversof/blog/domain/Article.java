@@ -55,7 +55,7 @@ public class Article {
 	@OneToOne(cascade = CascadeType.ALL)
 	@JsonManagedReference
 	private ArticleStatistics articleStatistics;
-
+	
 	public interface Get {};
 
 	public interface Save {};

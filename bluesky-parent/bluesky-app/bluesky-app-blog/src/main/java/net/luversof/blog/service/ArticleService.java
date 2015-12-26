@@ -48,11 +48,22 @@ public class ArticleService {
 		return articleRepository.save(targetArticle);
 	}
 
+	@Transactional(value = "blogTransactionManager", readOnly = true)
 	public Article findOne(long id) {
-		Article article = articleRepository.findOne(id);
-		article.getArticleStatistics().setViewCount(article.getArticleStatistics().getViewCount() + 1);
+		return articleRepository.findOne(id);
+	}
+	
+	public void incraseViewCount(Article article) {
+		ArticleStatistics articleStatistics = article.getArticleStatistics();
+		if (articleStatistics == null) {
+			articleStatistics = new ArticleStatistics();
+			articleStatistics.setArticle(article);
+			articleStatistics.setViewCount(1);
+			article.setArticleStatistics(articleStatistics);
+		} else {
+			article.getArticleStatistics().setViewCount(article.getArticleStatistics().getViewCount() + 1);
+		}
 		articleRepository.save(article);
-		return article;
 	}
 
 	@Transactional(value = "blogTransactionManager", readOnly = true)

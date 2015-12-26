@@ -104,7 +104,9 @@ public class BlogViewController {
 	 */
 	@RequestMapping(value = "/{blog.id}/article/{id}", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
 	public String view(@Validated(Get.class) Article article, ModelMap modelMap) {
-		modelMap.addAttribute(articleService.findOne(article.getId()));
+		Article viewArticle = articleService.findOne(article.getId());
+		articleService.incraseViewCount(viewArticle);
+		modelMap.addAttribute("article", viewArticle);
 		return "blog/article/view";
 	}
 	
