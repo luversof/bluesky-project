@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.ModelAndView;
 
 import net.luversof.core.exception.BlueskyException;
+import net.luversof.core.exception.ErrorCode;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -42,8 +43,11 @@ public class GlobalExceptionHandler {
 	
 	@ExceptionHandler
 	public ModelAndView handleException(BlueskyException exception) {
-		if (exception.getErrorCode() == "blog.notExist") {
+		if (exception.getErrorCode() == ErrorCode.NOT_EXIST_BLOG.name()) {
 			return new ModelAndView("redirect:/blog/create");
+		}
+		if (exception.getErrorCode() == ErrorCode.NOT_EXIST_BOOKKEEPING.name()) {
+			return new ModelAndView("redirect:/bookkeeping/create");
 		}
 		return null;
 	}

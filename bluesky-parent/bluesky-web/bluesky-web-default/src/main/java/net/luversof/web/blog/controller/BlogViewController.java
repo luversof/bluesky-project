@@ -32,17 +32,28 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping("blog")
 public class BlogViewController {
 
+	private static final int PAGE_BLOCK_SIZE = 10;
+	
 	@Autowired
 	private BlogService blogService;
 	
 	@Autowired
 	private ArticleService articleService;
-	
 
 	@Autowired
 	private ArticleCategoryService articleCategoryService;
-
-	private static final int PAGE_BLOCK_SIZE = 10;
+	
+	/**
+	 * 진입 페이지
+	 * blog 정보가 없는 경우 생성 페이지로 이동 
+	 * @param blog
+	 * @return
+	 */
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@RequestMapping(value = { "/$!", "/$!/article" }, method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	public String home(Blog blog) {
+		return redirectArticleList(blog.getId()); 
+	}
 	
 	@RequestMapping(value = "/{id}", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
 	public String redirectArticleList(@PathVariable long id) {
@@ -50,13 +61,7 @@ public class BlogViewController {
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = { "/$!", "/$!/article" }, method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
-	public String create(Blog blog) {
-		return redirectArticleList(blog.getId()); 
-	}
-	
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/$!", method=RequestMethod.POST)
+	@RequestMapping(value = "", method=RequestMethod.POST)
 	public String save(Authentication authentication) {
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
 		Blog blog = new Blog();
@@ -70,7 +75,7 @@ public class BlogViewController {
 	public void createForm() {}
 	
 	/**
-	 * 글목록
+	 * 글 목록
 	 * 
 	 * @param blogId
 	 * @param page
@@ -96,7 +101,7 @@ public class BlogViewController {
 	}
 	
 	/**
-	 * 글보기
+	 * 글 보기
 	 * 
 	 * @param article
 	 * @param modelMap
@@ -111,6 +116,12 @@ public class BlogViewController {
 	}
 	
 
+	/**
+	 * 글 쓰기
+	 * @param blog
+	 * @param modelMap
+	 * @return
+	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{id}/article/write", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
 	public String writePage(@CheckBlog Blog blog, ModelMap modelMap) {
@@ -119,7 +130,12 @@ public class BlogViewController {
 	}
 	
 
-
+	/**
+	 * 글 수정
+	 * @param article
+	 * @param modelMap
+	 * @return
+	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[article].blog.userId == authentication.principal.id")
 	@RequestMapping(value = "/{blog.id}/article/{id}/modify", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)

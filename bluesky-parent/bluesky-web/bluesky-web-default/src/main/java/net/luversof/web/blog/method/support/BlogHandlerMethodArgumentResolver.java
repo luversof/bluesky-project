@@ -1,4 +1,4 @@
-package net.luversof.web.blog.support;
+package net.luversof.web.blog.method.support;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.MethodParameter;
@@ -14,6 +14,7 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.service.BlogService;
 import net.luversof.core.exception.BlueskyException;
+import net.luversof.core.exception.ErrorCode;
 import net.luversof.security.core.userdetails.BlueskyUser;
 
 @Component
@@ -37,7 +38,7 @@ public class BlogHandlerMethodArgumentResolver implements HandlerMethodArgumentR
 		
 		Blog blog = blogService.findByUser(user.getId());
 		if (blog == null) {
-			throw new BlueskyException("blog.notExist");
+			throw new BlueskyException(ErrorCode.NOT_EXIST_BLOG);
 		}
 		return blog;
 	}

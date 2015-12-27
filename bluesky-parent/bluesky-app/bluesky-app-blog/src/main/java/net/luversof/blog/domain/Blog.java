@@ -1,5 +1,6 @@
 package net.luversof.blog.domain;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -10,13 +11,14 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(indexes = @Index(name = "IDX_BLOG_userId", columnList = "userId") )
+@Table(indexes = @Index(name = "IDX_Blog_userId", columnList = "user_id") )
 public class Blog {
 
 	@Id
 	@GeneratedValue
 	private long id;
 
+	@Column(name = "user_id")
 	private long userId;
 
 }

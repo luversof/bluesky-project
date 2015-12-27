@@ -24,12 +24,12 @@ import lombok.Data;
 @Entity
 @Data
 public class Article {
-	
+
 	@Id
 	@GeneratedValue
 	@NotNull(groups = { Get.class })
 	private long id;
-	
+
 	@ManyToOne
 	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_article_blogId") )
 	private Blog blog;
@@ -55,10 +55,13 @@ public class Article {
 	@OneToOne(cascade = CascadeType.ALL)
 	@JsonManagedReference
 	private ArticleStatistics articleStatistics;
-	
-	public interface Get {};
 
-	public interface Save {};
+	public interface Get {
+	};
 
-	public interface Modify {};
+	public interface Save {
+	};
+
+	public interface Modify {
+	};
 }

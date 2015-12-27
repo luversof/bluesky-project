@@ -28,7 +28,6 @@ public class ArticleController {
 	@Autowired
 	private ArticleService articleService;
 
-
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{blog.id}/article", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	public Article save(@CheckBlogAndAddToArticle @Validated(Save.class) Article article) {

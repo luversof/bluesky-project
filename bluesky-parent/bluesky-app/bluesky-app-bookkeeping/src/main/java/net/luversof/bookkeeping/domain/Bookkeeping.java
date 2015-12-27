@@ -4,14 +4,17 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Index;
+import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 
 import org.hibernate.validator.constraints.NotEmpty;
 
 import lombok.Data;
 
-@Entity
 @Data
+@Entity
+@Table(indexes = @Index(name = "IDX_Bookkeeping_userId", columnList = "user_id") )
 public class Bookkeeping {
 
 	@Id
