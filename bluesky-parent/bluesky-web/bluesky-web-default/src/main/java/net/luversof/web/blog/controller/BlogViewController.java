@@ -33,47 +33,58 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class BlogViewController {
 
 	private static final int PAGE_BLOCK_SIZE = 10;
-	
+
 	@Autowired
 	private BlogService blogService;
-	
+
 	@Autowired
 	private ArticleService articleService;
 
 	@Autowired
 	private ArticleCategoryService articleCategoryService;
-	
+
 	/**
-	 * 진입 페이지
-	 * blog 정보가 없는 경우 생성 페이지로 이동 
+	 * 진입 페이지 blog 정보가 없는 경우 생성 페이지로 이동
+	 * 
 	 * @param blog
 	 * @return
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = { "/$!", "/$!/article" }, method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	@RequestMapping(value = { "/$!", "/$!/article" }, method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
 	public String home(Blog blog) {
-		return redirectArticleList(blog.getId()); 
+		return redirectArticleList(blog.getId());
 	}
-	
-	@RequestMapping(value = "/{id}", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+
+	@RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
 	public String redirectArticleList(@PathVariable long id) {
 		return MessageFormat.format("redirect:/blog/{0}/article", id);
 	}
-	
+
+	@RequestMapping(value = "/create", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	public void createForm() {
+	}
+
+	/**
+	 * 생성 후 해당 페이지 이동
+	 * 
+	 * @param authentication
+	 * @return
+	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "", method=RequestMethod.POST)
-	public String save(Authentication authentication) {
+	@RequestMapping(value = "", method = RequestMethod.POST)
+	public String create(Authentication authentication) {
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
+		Blog savedBlog = blogService.findByUser(blueskyUser.getId());
+		if (savedBlog != null) {
+			return redirectArticleList(savedBlog.getId());
+		}
+		;
 		Blog blog = new Blog();
 		blog.setUserId(blueskyUser.getId());
 		blogService.save(blog);
 		return redirectArticleList(blog.getId());
 	}
-	
-	
-	@RequestMapping(value = "/create", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
-	public void createForm() {}
-	
+
 	/**
 	 * 글 목록
 	 * 
@@ -99,7 +110,7 @@ public class BlogViewController {
 		modelMap.addAttribute("endPage", endPage);
 		return "blog/article/list";
 	}
-	
+
 	/**
 	 * 글 보기
 	 * 
@@ -114,10 +125,10 @@ public class BlogViewController {
 		modelMap.addAttribute("article", viewArticle);
 		return "blog/article/view";
 	}
-	
 
 	/**
 	 * 글 쓰기
+	 * 
 	 * @param blog
 	 * @param modelMap
 	 * @return
@@ -128,10 +139,10 @@ public class BlogViewController {
 		modelMap.addAttribute(articleCategoryService.findByBlog(blog));
 		return "blog/article/write";
 	}
-	
 
 	/**
 	 * 글 수정
+	 * 
 	 * @param article
 	 * @param modelMap
 	 * @return

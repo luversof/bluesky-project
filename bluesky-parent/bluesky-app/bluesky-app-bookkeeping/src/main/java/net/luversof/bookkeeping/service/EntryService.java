@@ -35,7 +35,7 @@ public class EntryService {
 //	}
 	
 	@Transactional(value = "bookkeepingTransactionManager", readOnly = true)
-	public List<Entry> findByBookkeepingId(long bookkeeping_id) {
-		return entryRepository.findByBookkeepingId(bookkeeping_id);
+	public List<Entry> findByBookkeepingId(long bookkeepingId) {
+		return entryRepository.findByBookkeepingId(bookkeepingId);
 	}
 }
