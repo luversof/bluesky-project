@@ -4,10 +4,9 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="layout/defaultLayout">
 <body>
-	
 	<div layout:fragment="content">
-		<div class="panel panel-danger" th:if="${result ne empty}">
-			로그인이 필요합니다.
+		<div class="col-md-12">
+			<h2>로그인이 필요합니다.</h2>
 		</div>
 	</div>
 </body>

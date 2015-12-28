@@ -90,6 +90,8 @@ public class GlobalExceptionHandler {
 		if (request.getRequestURI().equals("/battleNet/d3/index")) {
 			response.sendRedirect("https://kr.battle.net/oauth/authorize?client_id=" + battleNetClientId + "&redirect_uri=https://localhost:8443/oauth/battleNetAuthorizeResult&scope=wow.profile&response_type=code");
 			return;
+		} else {
+			response.sendRedirect("/login");
 		}
 	}
 }

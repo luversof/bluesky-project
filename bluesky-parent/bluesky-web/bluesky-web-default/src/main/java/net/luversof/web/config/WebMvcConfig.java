@@ -1,14 +1,26 @@
 package net.luversof.web.config;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.http.MediaType;
+import org.springframework.web.accept.ContentNegotiationManager;
+import org.springframework.web.accept.ContentNegotiationStrategy;
+import org.springframework.web.accept.PathExtensionContentNegotiationStrategy;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.servlet.View;
+import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import org.springframework.web.servlet.view.ContentNegotiatingViewResolver;
+import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
 import org.thymeleaf.extras.java8time.dialect.Java8TimeDialect;
+import org.thymeleaf.spring4.view.ThymeleafViewResolver;
 
 import net.luversof.web.blog.method.support.BlogHandlerMethodArgumentResolver;
 import net.luversof.web.bookkeeping.method.support.BookkeepingHandlerMethodArgumentResolver;
@@ -24,6 +36,9 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 	
 	@Autowired
 	private BookkeepingHandlerMethodArgumentResolver bookkeepingHandlerMethodArgumentResolver;
+	
+	@Autowired
+	private ThymeleafViewResolver thymeleafViewResolver;
 
 	@Override
 	public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
@@ -35,5 +50,29 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 	@Bean
 	public Java8TimeDialect java8TimeDialect() {
 		return new Java8TimeDialect();
+	}
+
+	
+	@Bean
+	public ContentNegotiatingViewResolver contentNegotiationgViewResolver() {
+		ContentNegotiatingViewResolver viewResolver = new ContentNegotiatingViewResolver();
+		
+		Map<String, MediaType> mediaTypes = new HashMap<>();
+		mediaTypes.put("html", MediaType.TEXT_HTML);
+		mediaTypes.put("json", MediaType.APPLICATION_JSON);
+		ContentNegotiationStrategy contentNegotiationStrategy = new PathExtensionContentNegotiationStrategy(mediaTypes);
+		
+		viewResolver.setContentNegotiationManager(new ContentNegotiationManager(contentNegotiationStrategy));
+
+		List<ViewResolver> viewResolvers = new ArrayList<>();
+		viewResolvers.add(thymeleafViewResolver);
+		viewResolver.setViewResolvers(viewResolvers);
+
+		List<View> defaultViews = new ArrayList<>();
+		MappingJackson2JsonView mappingJackson2JsonView = new MappingJackson2JsonView();
+		defaultViews.add(mappingJackson2JsonView);
+
+		viewResolver.setDefaultViews(defaultViews);
+		return viewResolver;
 	}
 }

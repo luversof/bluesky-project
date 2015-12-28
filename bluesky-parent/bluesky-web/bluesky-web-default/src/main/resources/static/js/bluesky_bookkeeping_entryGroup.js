@@ -1,6 +1,6 @@
 $(document).ready(function() {
 	var bookkeeping = $.Bookkeeping({
-		url : "/bookkeeping/entryGroup.json",
+		url : "/bookkeeping/" + bookkeepingId + "/entryGroup.json",
 		displayArea : $(".bookkeeping-entryGroup-list"),
 		handsontableConfig : {
 				rowHeaders : true,

@@ -22,7 +22,7 @@ import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
 
 @Controller
-@RequestMapping("bookkeeping")
+@RequestMapping(value = "bookkeeping", produces = MediaType.TEXT_HTML_VALUE)
 public class BookkeepingViewController {
 	
 	@Autowired
@@ -38,13 +38,13 @@ public class BookkeepingViewController {
 	}
 	
 	
-	@RequestMapping(value = "/{id}", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
-	public String redirectEntryList(@PathVariable long id) {
-		return MessageFormat.format("redirect:/bookkeeping/{0}/entry", id);
+	@RequestMapping(value = "/{bookkeeping.id}", method=RequestMethod.GET)
+	public String redirectEntryList(@PathVariable("bookkeeping.id") long bookkeepingId) {
+		return MessageFormat.format("redirect:/bookkeeping/{0}/entry", bookkeepingId);
 	}
 	
 	
-	@RequestMapping(value = "/create", method=RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	@RequestMapping(value = "/create", method=RequestMethod.GET)
 	public void createForm() {}
 	
 	@RequestMapping(value = "", method=RequestMethod.POST)
@@ -62,14 +62,20 @@ public class BookkeepingViewController {
 	
 	
 	
-	@RequestMapping(value = "/{bookkeepingId}/entry", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
-	public String list(@PathVariable long bookkeepingId, @RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
+	@RequestMapping(value = "/{bookkeeping.id}/entry", method = RequestMethod.GET)
+	public String list(@PathVariable("bookkeeping.id") long bookkeepingId, @RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
 		// 기본은 달 기준으로 요청을 처리해야할 듯한데..
 		// 요청 월이 없으면 현재달 기준으로 검색 해야함.
 		// 설정한 일자 기준으로 날짜 검색해야함
 		// TODO 우선 그냥 전체 모두 호출하는 식으로 처리해보자
 		// 이건 그냥 json response로 통합하는게 나을거 같은데..
-		List<Entry> a = entryService.findByBookkeepingId(bookkeepingId);
 		return "bookkeeping/entry";
+	}
+	
+	
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@RequestMapping(value = "/{bookkeeping.id}/entryGroup", method = RequestMethod.GET)
+	public String entryGroupList(@PathVariable("bookkeeping.id") long bookkeepingId) {
+		return "bookkeeping/entryGroup";
 	}
 }

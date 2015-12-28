@@ -5,6 +5,7 @@
 <head>
 	<script type="text/javascript" th:inline="javascript">
 	/*<![CDATA[*/
+	var bookkeepingId = [[${#ctx.getVariables().get('bookkeeping.id')}]];
 	var entryTypeInfo = [[${T(net.luversof.bookkeeping.domain.EntryType).values()}]];
 	var entryTypeList = [];
 	for (i = 0 ; i < entryTypeInfo.length ; i++) {
@@ -16,7 +17,7 @@
 </head>
 <body>
 	<div layout:fragment="content-bookkeeping">
-		<div th:if="${T(net.luversof.core.Constants).JSON_MODEL_KEY != null}" class="panel panel-primary">
+		<div class="panel panel-primary">
 			<div class="panel-heading">
 				<h3 class="panel-title">분류 관리 <span class="glyphicon glyphicon-refresh bookkeeping-entryGroup-load"></span></h3>
 			</div>

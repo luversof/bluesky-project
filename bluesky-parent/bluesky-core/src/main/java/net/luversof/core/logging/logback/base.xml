@@ -6,7 +6,7 @@
 	
 		<!-- (s) 기본 로그 레벨 값 설정 -->
 	<property name="loggerLevelBluesky" value="DEBUG" />
-	<property name="loggerLevel" value="INFO" />
+	<property name="loggerLevel" value="DEBUG" />
 	<if condition='p("spring.profiles.active").equals("live")'>
 		<then>
 			<property name="loggerLevelBluesky" value="INFO" />

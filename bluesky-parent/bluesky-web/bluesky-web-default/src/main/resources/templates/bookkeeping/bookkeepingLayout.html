@@ -3,28 +3,61 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="layout/defaultLayout">
 <head>
-	<script type="text/javascript" th:src="#{url.handsontable.js}"></script>
-	<link rel="stylesheet" type="text/css" media="screen" th:href="#{url.handsontable.css}" />
+	<script type="text/javascript" th:src="@{#{url.handsontable.js}}"></script>
+	<link rel="stylesheet" type="text/css" media="screen" th:href="@{#{url.handsontable.css}}" />
 	<script type="text/javascript" th:src="@{/js/bluesky_bookkeeping_base.js}"></script>
+	
+	<script type="text/javascript" th:src="@{#{url.metisMenu.js}}"></script>
+	<link rel="stylesheet" type="text/css" media="screen" th:href="@{#{url.metisMenu.css}}" />
+	<script type="text/javascript">
+	$(document).ready(function() {
+		$("#menu").metisMenu();
+	});
+	</script>
 </head>
 <body>
 	<div layout:fragment="content">
 		<div class="container-fluid">
-			<div class="row">
+			<!-- <div class="row">
 		      	<div class="col-sm-2">
 					<ul class="nav nav-pills nav-stacked"
 						th:with="path = ${#httpServletRequest.servletPath},
-							menu = ${#strings.startsWith(path, '/bookkeeping/entry') ? 'entry' : 'bookkeeping'},
-							menu = ${#strings.startsWith(path, '/bookkeeping/entrySummary') ? 'entrySummary' : menu},
-							menu = ${#strings.startsWith(path, '/bookkeeping/entryGroup') ? 'entryGroup' : menu},
-							menu = ${#strings.startsWith(path, '/bookkeeping/asset') ? 'asset' : menu}">
+							menu = ${#strings.contains(path, '/entry') ? 'entry' : 'bookkeeping'},
+							menu = ${#strings.contains(path, '/entryGroup') ? 'entryGroup' : menu},
+							menu = ${#strings.contains(path, '/asset') ? 'asset' : menu}">
 						<li th:class="${menu} == 'entry' ? active"><a th:href="@{/bookkeeping/entry}">가계부 입력</a></li>
-						<li th:class="${menu} == 'entrySummary' ? active"><a th:href="@{/bookkeeping/entrySummary}">가계부 보기</a></li>
 						<li th:class="${menu} == 'status' ? active"><a href="">통계 보기</a></li>
 						<li th:class="${menu} == 'asset' ? active"><a th:href="@{/bookkeeping/asset}">자산 관리</a></li>
 						<li th:class="${menu} == 'entryGroup' ? active"><a th:href="@{/bookkeeping/entryGroup}">분류 관리</a></li>
 						<li th:class="${menu} == 'bookkeeping' ? active"><a th:href="@{/bookkeeping}">가계부 관리</a></li>
 					</ul>
+				</div>
+				<div class="col-sm-10">
+					<div layout:fragment="content-bookkeeping" ></div>
+				</div>
+			</div> -->
+			
+			
+			<div class="row">
+				<div class="col-sm-2">
+					<ul class="nav nav-pills nav-stacked" id="menu"
+						th:with="path = ${#httpServletRequest.servletPath},
+							menu = ${#strings.contains(path, '/entry') ? 'entry' : 'bookkeeping'},
+							menu = ${#strings.contains(path, '/statistics') ? 'statistics' : menu},
+							menu = ${#strings.contains(path, '/asset') ? 'asset' : menu},
+							menu = ${#strings.contains(path, '/entryGroup') ? 'entryGroup' : menu},
+							isSettingMenu = ${#strings.contains(path, '/entryGroup')}">
+						<li th:class="${menu} == 'entry' ? active"><a th:href="@{/bookkeeping/entry}">가계부 입력</a></li>
+						<li th:class="${menu} == 'statistics' ? active"><a href="">통계 보기</a></li>
+						<li th:class="${isSettingMenu} ? active">
+							<a href="#">설정</a>
+							<ul class="nav nav-pills nav-stacked" th:attr="aria-expanded=${isSettingMenu}">
+								<li th:class="${menu} == 'asset' ? active"><a th:href="@{/bookkeeping/asset}">자산 관리</a></li>
+								<li th:class="${menu} == 'entryGroup' ? active"><a th:href="@{/bookkeeping/entryGroup}">분류 관리</a></li>
+								<li th:class="${menu} == 'bookkeeping' ? active"><a th:href="@{/bookkeeping}">가계부 관리</a></li>
+							</ul>
+						</li>
+  					</ul>
 				</div>
 				<div class="col-sm-10">
 					<div layout:fragment="content-bookkeeping" ></div>

@@ -55,9 +55,9 @@ public class BlogViewController {
 		return redirectArticleList(blog.getId());
 	}
 
-	@RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
-	public String redirectArticleList(@PathVariable long id) {
-		return MessageFormat.format("redirect:/blog/{0}/article", id);
+	@RequestMapping(value = "/{blog.id}", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	public String redirectArticleList(@PathVariable("blog.id") long blogId) {
+		return MessageFormat.format("redirect:/blog/{0}/article", blogId);
 	}
 
 	@RequestMapping(value = "/create", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
@@ -93,8 +93,8 @@ public class BlogViewController {
 	 * @param modelMap
 	 * @return
 	 */
-	@RequestMapping(value = "/{blogId}/article", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
-	public String list(@PathVariable long blogId, @RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
+	@RequestMapping(value = "/{blog.id}/article", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	public String list(@PathVariable("blog.id") long blogId, @RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
 		Blog blog = blogService.findOne(blogId);
 		Page<Article> articlePage = articleService.findByBlog(blog, page - 1);
 		if (articlePage.getTotalPages() > 0 && articlePage.getTotalPages() < page) {
@@ -134,7 +134,7 @@ public class BlogViewController {
 	 * @return
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{id}/article/write", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	@RequestMapping(value = "/{blog.id}/article/write", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
 	public String writePage(@CheckBlog Blog blog, ModelMap modelMap) {
 		modelMap.addAttribute(articleCategoryService.findByBlog(blog));
 		return "blog/article/write";
