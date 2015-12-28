@@ -46,9 +46,10 @@
 							menu = ${#strings.contains(path, '/statistics') ? 'statistics' : menu},
 							menu = ${#strings.contains(path, '/asset') ? 'asset' : menu},
 							menu = ${#strings.contains(path, '/entryGroup') ? 'entryGroup' : menu},
-							isSettingMenu = ${#strings.contains(path, '/entryGroup')}">
-						<li th:class="${menu} == 'entry' ? active"><a th:href="@{/bookkeeping/entry}">가계부 입력</a></li>
-						<li th:class="${menu} == 'statistics' ? active"><a href="">통계 보기</a></li>
+							isSettingMenu = ${#strings.contains(path, '/settings')},
+							bookkeepingId = ${#ctx.getVariables().get('bookkeeping.id')}">
+						<li th:class="${menu} == 'entry' ? active"><a th:href="#{url.bookkeeping.entry(bookkeepingId)}">가계부 입력</a></li>
+						<li th:class="${menu} == 'statistics' ? active"><a th:href="#{url.bookkeeping.statistics(bookkeepingId)}">통계 보기</a></li>
 						<li th:class="${isSettingMenu} ? active">
 							<a href="#">설정</a>
 							<ul class="nav nav-pills nav-stacked" th:attr="aria-expanded=${isSettingMenu}">
