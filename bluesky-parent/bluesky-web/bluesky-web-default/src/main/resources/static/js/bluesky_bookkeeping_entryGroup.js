@@ -1,25 +1,27 @@
 $(document).ready(function() {
+	var displayArea = $(".bookkeeping-entryGroup-list");
 	var bookkeeping = $.Bookkeeping({
-		url : "/bookkeeping/" + bookkeepingId + "/entryGroup.json",
-		displayArea : $(".bookkeeping-entryGroup-list"),
+		url : "/bookkeeping/" + bookkeepingId + "/entryGroup",
+		displayArea : displayArea,
 		handsontableConfig : {
-				rowHeaders : true,
+				//rowHeaders : true,
 				contextMenu : [ "remove_row" ],
 				dataSchema : {
 					"id": null,
-					"name": null,
-					"entryType": null
+					"entryType": null,
+					"name": null
 				},
-				colHeaders : [ "entryType", "name" ],
-				colWidths : [100, 300],
+				colHeaders : [ "id", "entryType", "name" ],
+				colWidths : [30, 100, 300],
 				columnSorting : true,
 				columns : [
-				    { data : "entryType", readOnly : true, type : "dropdown", source : entryTypeList },
+				    { data : "id", readOnly : true },
+				    { data : "entryType", readOnly : true, editor : "select", selectOptions : entryTypeList },
 					{ data : "name" }
 				],
 				cells : function (row, col, prop) {
 				      var cellProperties = {};
-				      if ($(".bookkeeping-entryGroup-list").handsontable('getData')[row][prop] == null && col == 0) {
+				      if (displayArea.handsontable('getData')[row][col] == null && col == 1) {
 				    	  cellProperties.readOnly = false;  
 				      }
 				      return cellProperties;

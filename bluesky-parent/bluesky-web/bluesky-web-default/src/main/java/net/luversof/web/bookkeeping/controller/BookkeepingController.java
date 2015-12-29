@@ -24,7 +24,7 @@ public class BookkeepingController {
 	private BookkeepingService bookkeepingService;
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value="/{bookkeeping.id}", method = RequestMethod.PUT)
+	@RequestMapping(value="/{id}", method = RequestMethod.PUT)
 	public Bookkeeping modifyBookkeeping(Authentication authentication, @RequestBody @Validated(Modify.class) Bookkeeping bookkeeping) {
 		//TODO 본인 bookkeeping 확인 절차가 있어야 함
 		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
@@ -32,7 +32,7 @@ public class BookkeepingController {
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value="/{bookkeeping.id}", method = RequestMethod.DELETE)
+	@RequestMapping(value="/{id}", method = RequestMethod.DELETE)
 	public void removeBookkeeping(Authentication authentication, @RequestBody @Validated(Modify.class) Bookkeeping bookkeeping) {
 		//TODO 본인 bookkeeping 확인 절차가 있어야 함
 		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId());

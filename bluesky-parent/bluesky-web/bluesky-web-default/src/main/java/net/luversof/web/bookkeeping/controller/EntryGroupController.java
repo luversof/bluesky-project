@@ -56,15 +56,15 @@ public class EntryGroupController {
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{entryGroup.id}", method = RequestMethod.PUT)
-	public EntryGroup modifyEntryGroup(Authentication authentication, @RequestBody @Validated(Modify.class) EntryGroup entryGroup) {
+	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
+	public EntryGroup modifyEntryGroup(Authentication authentication, @RequestBody /*@Validated(Modify.class)*/ EntryGroup entryGroup) {
 		//TODO 본인 entryGroup 확인 절차가 있어야 함
 		entryGroup.setBookkeeping(getBookkeeping(authentication));
 		return entryGroupService.save(entryGroup);
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{entryGroup.id}", method = RequestMethod.DELETE)
+	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
 	public void delete(Authentication authentication, @RequestBody @Validated(Modify.class) EntryGroup entryGroup) {
 		//TODO 본인 entryGroup 확인 절차가 있어야 함
 		entryGroup.setBookkeeping(getBookkeeping(authentication));

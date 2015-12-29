@@ -46,22 +46,21 @@
 							menu = ${#strings.contains(path, '/statistics') ? 'statistics' : menu},
 							menu = ${#strings.contains(path, '/asset') ? 'asset' : menu},
 							menu = ${#strings.contains(path, '/entryGroup') ? 'entryGroup' : menu},
-							isSettingMenu = ${#strings.contains(path, '/settings')},
-							bookkeepingId = ${#ctx.getVariables().get('bookkeeping.id')}">
-						<li th:class="${menu} == 'entry' ? active"><a th:href="#{url.bookkeeping.entry(bookkeepingId)}">가계부 입력</a></li>
-						<li th:class="${menu} == 'statistics' ? active"><a th:href="#{url.bookkeeping.statistics(bookkeepingId)}">통계 보기</a></li>
+							isSettingMenu = ${#strings.contains(path, '/settings')}">
+						<li th:class="${menu} == 'entry' ? active"><a th:href="@{#{url.bookkeeping.entry(${bookkeepingId})}}">가계부 입력</a></li>
+						<li th:class="${menu} == 'statistics' ? active"><a th:href="@{#{url.bookkeeping.statistics(${bookkeepingId})}}">통계 보기</a></li>
 						<li th:class="${isSettingMenu} ? active">
 							<a href="#">설정</a>
 							<ul class="nav nav-pills nav-stacked" th:attr="aria-expanded=${isSettingMenu}">
-								<li th:class="${menu} == 'asset' ? active"><a th:href="@{/bookkeeping/asset}">자산 관리</a></li>
-								<li th:class="${menu} == 'entryGroup' ? active"><a th:href="@{/bookkeeping/entryGroup}">분류 관리</a></li>
+								<li th:class="${menu} == 'asset' ? active"><a th:href="@{#{url.bookkeeping.asset(${bookkeepingId})}}">자산 관리</a></li>
+								<li th:class="${menu} == 'entryGroup' ? active"><a th:href="@{#{url.bookkeeping.entryGroup(${bookkeepingId})}}">분류 관리</a></li>
 								<li th:class="${menu} == 'bookkeeping' ? active"><a th:href="@{/bookkeeping}">가계부 관리</a></li>
 							</ul>
 						</li>
   					</ul>
 				</div>
 				<div class="col-sm-10">
-					<div layout:fragment="content-bookkeeping" ></div>
+					<div layout:fragment="content-bookkeeping"></div>
 				</div>
 			</div>
 		</div>

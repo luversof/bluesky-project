@@ -38,8 +38,8 @@ public class BookkeepingViewController {
 	}
 	
 	
-	@RequestMapping(value = "/{bookkeeping.id}", method=RequestMethod.GET)
-	public String redirectEntryList(@PathVariable("bookkeeping.id") long bookkeepingId) {
+	@RequestMapping(value = "/{bookkeepingId}", method=RequestMethod.GET)
+	public String redirectEntryList(@PathVariable long bookkeepingId) {
 		return MessageFormat.format("redirect:/bookkeeping/{0}/view/entry", bookkeepingId);
 	}
 	
@@ -62,8 +62,8 @@ public class BookkeepingViewController {
 	
 	
 	
-	@RequestMapping(value = "/{bookkeeping.id}/view/entry", method = RequestMethod.GET)
-	public String list(@PathVariable("bookkeeping.id") long bookkeepingId, @RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
+	@RequestMapping(value = "/{bookkeepingId}/view/entry", method = RequestMethod.GET)
+	public String list(@PathVariable long bookkeepingId, @RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
 		// 기본은 달 기준으로 요청을 처리해야할 듯한데..
 		// 요청 월이 없으면 현재달 기준으로 검색 해야함.
 		// 설정한 일자 기준으로 날짜 검색해야함
@@ -74,8 +74,14 @@ public class BookkeepingViewController {
 	
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{bookkeeping.id}/settings/entryGroup", method = RequestMethod.GET)
-	public String entryGroupList(@PathVariable("bookkeeping.id") long bookkeepingId) {
+	@RequestMapping(value = "/{bookkeepingId}/settings/entryGroup", method = RequestMethod.GET)
+	public String entryGroupList(@PathVariable long bookkeepingId) {
 		return "bookkeeping/entryGroup";
+	}
+	
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@RequestMapping(value = "/{bookkeepingId}/settings/asset", method = RequestMethod.GET)
+	public String assetList(@PathVariable long bookkeepingId) {
+		return "bookkeeping/asset";
 	}
 }
