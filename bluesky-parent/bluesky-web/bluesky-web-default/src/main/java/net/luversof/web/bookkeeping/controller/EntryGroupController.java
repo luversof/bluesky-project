@@ -3,7 +3,6 @@ package net.luversof.web.bookkeeping.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
@@ -22,7 +21,8 @@ import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
-@RequestMapping(value = "bookkeeping/{bookkeeping.id}/entryGroup", produces = MediaType.APPLICATION_JSON_VALUE)
+@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+@RequestMapping(value = "bookkeeping/{bookkeeping.id}/entryGroup")
 public class EntryGroupController {
 
 	@Autowired
@@ -41,21 +41,18 @@ public class EntryGroupController {
 		return bookkeepingService.findByUserId(((BlueskyUser) authentication.getPrincipal()).getId()).get(0);
 	}
 
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "", method = RequestMethod.GET)
+	@RequestMapping(method = RequestMethod.GET)
 	public List<EntryGroup> getEntryGroupList(Authentication authentication) {
 		Bookkeeping bookkeeping = getBookkeeping(authentication);
 		return entryGroupService.findByBookkeepingId(bookkeeping.getId());
 	}
 
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST)
 	public EntryGroup addEntryGroup(Authentication authentication, @RequestBody @Validated(Add.class) EntryGroup entryGroup) {
 		entryGroup.setBookkeeping(getBookkeeping(authentication));
 		return entryGroupService.save(entryGroup);
 	}
 
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
 	public EntryGroup modifyEntryGroup(Authentication authentication, @RequestBody /*@Validated(Modify.class)*/ EntryGroup entryGroup) {
 		//TODO 본인 entryGroup 확인 절차가 있어야 함
@@ -63,7 +60,6 @@ public class EntryGroupController {
 		return entryGroupService.save(entryGroup);
 	}
 
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
 	public void delete(Authentication authentication, @RequestBody @Validated(Modify.class) EntryGroup entryGroup) {
 		//TODO 본인 entryGroup 확인 절차가 있어야 함

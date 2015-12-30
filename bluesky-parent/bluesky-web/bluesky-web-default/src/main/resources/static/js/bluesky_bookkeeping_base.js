@@ -71,7 +71,8 @@ $(document).ready(function() {
 				
 				// 신규 추가의 경우 마지막에서 -1의 data가 해당 데이터임
 				if (targetData.id == null) {
-					targetData = dataList[dataList.length -2];
+					targetData = dataList[change[0][0]];
+					console.log("dataList[dataList.length -2] :", dataList[dataList.length -2]);
 				}
 				
 				console.log("targetData : ", targetData);

@@ -31,7 +31,6 @@ public class Asset {
 	@NotEmpty(groups = { Add.class, Modify.class })
 	private String name;
 	
-	@NotNull(groups = { Add.class, Modify.class })
 	private long amount;
 	
 	@JsonIgnore

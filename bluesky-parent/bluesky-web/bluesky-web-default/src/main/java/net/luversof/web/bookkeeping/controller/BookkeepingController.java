@@ -1,7 +1,6 @@
 package net.luversof.web.bookkeeping.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
@@ -17,13 +16,18 @@ import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
-@RequestMapping(value = "bookkeeping", produces = MediaType.APPLICATION_JSON_VALUE)
+@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+@RequestMapping(value = "bookkeeping")
 public class BookkeepingController {
 
 	@Autowired
 	private BookkeepingService bookkeepingService;
-
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	
+	@RequestMapping(value = "/{id}", method = RequestMethod.GET)
+	public Bookkeeping getBookkeeping(Authentication authentication) {
+		return bookkeepingService.findByUserId(((BlueskyUser) authentication.getPrincipal()).getId()).get(0);
+	}
+	
 	@RequestMapping(value="/{id}", method = RequestMethod.PUT)
 	public Bookkeeping modifyBookkeeping(Authentication authentication, @RequestBody @Validated(Modify.class) Bookkeeping bookkeeping) {
 		//TODO 본인 bookkeeping 확인 절차가 있어야 함
@@ -31,7 +35,6 @@ public class BookkeepingController {
 		return bookkeepingService.save(bookkeeping);
 	}
 	
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value="/{id}", method = RequestMethod.DELETE)
 	public void removeBookkeeping(Authentication authentication, @RequestBody @Validated(Modify.class) Bookkeeping bookkeeping) {
 		//TODO 본인 bookkeeping 확인 절차가 있어야 함

@@ -1,4 +1,4 @@
-package net.luversof.web.config;
+package net.luversof.web.exception;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -55,16 +55,16 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler
 	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
 	public ModelAndView handleException(BindException exception) {
-		List<Map<String, String>> errorList = new ArrayList<>();
+		List<ErrorMessage> errorList = new ArrayList<>();
 		for (FieldError fieldError : exception.getFieldErrors()) {
-			Map<String, String> errorMap = new HashMap<>();
-			errorMap.put("message", fieldError.getDefaultMessage());
-			errorMap.put("objectName", fieldError.getObjectName());
-			errorMap.put("field", fieldError.getField());
-			errorList.add(errorMap);
+			ErrorMessage errorMessage = new ErrorMessage();
+			errorMessage.setMessage(fieldError.getDefaultMessage());
+			errorMessage.setObjectName(fieldError.getObjectName());
+			errorMessage.setField(fieldError.getField());
+			errorList.add(errorMessage);
 		}
-		Map<String, List<Map<String, String>>> resultMap = new HashMap<>();
-		resultMap.put("ER", errorList);
+		Map<String, List<ErrorMessage>> resultMap = new HashMap<>();
+		resultMap.put("errorList", errorList);
 		return new ModelAndView("error", resultMap);
 	}
 	
@@ -72,7 +72,13 @@ public class GlobalExceptionHandler {
 	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
 	public ModelAndView handleException(Exception exception) {
 		exception.printStackTrace();
-		return new ModelAndView("error");
+		
+		ErrorMessage errorMessage = new ErrorMessage();
+		errorMessage.setObjectName(exception.getClass().getSimpleName());
+		errorMessage.setMessage(exception.getLocalizedMessage());
+		Map<String, ErrorMessage> resultMap = new HashMap<>();
+		resultMap.put("errorMessage", errorMessage);
+		return new ModelAndView("error", resultMap);
 	}
 
 	@ExceptionHandler

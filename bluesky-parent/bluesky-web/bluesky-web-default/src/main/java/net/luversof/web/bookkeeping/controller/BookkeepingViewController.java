@@ -15,9 +15,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.service.BookkeepingService;
-import net.luversof.bookkeeping.service.EntryService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
 
@@ -27,9 +25,6 @@ public class BookkeepingViewController {
 	
 	@Autowired
 	private BookkeepingService bookkeepingService;
-	
-	@Autowired
-	private EntryService entryService;
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping("/$!")
@@ -37,16 +32,18 @@ public class BookkeepingViewController {
 		return redirectEntryList(bookkeeping.getId());
 	}
 	
-	
-	@RequestMapping(value = "/{bookkeepingId}", method=RequestMethod.GET)
-	public String redirectEntryList(@PathVariable long bookkeepingId) {
+	private String redirectEntryList(@PathVariable long bookkeepingId) {
 		return MessageFormat.format("redirect:/bookkeeping/{0}/view/entry", bookkeepingId);
 	}
-	
 	
 	@RequestMapping(value = "/create", method=RequestMethod.GET)
 	public void createForm() {}
 	
+	/**
+	 * 가계부 생성의 경우 json 요청이 아닌 form submit 결과 반환이기 떄문에 viewController에서 처리함
+	 * @param authentication
+	 * @return
+	 */
 	@RequestMapping(value = "", method=RequestMethod.POST)
 	public String create(Authentication authentication) {
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
@@ -83,5 +80,11 @@ public class BookkeepingViewController {
 	@RequestMapping(value = "/{bookkeepingId}/settings/asset", method = RequestMethod.GET)
 	public String assetList(@PathVariable long bookkeepingId) {
 		return "bookkeeping/asset";
+	}
+	
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@RequestMapping(value = "/{bookkeepingId}/settings/bookkeeping", method = RequestMethod.GET)
+	public String bookkeeping(@PathVariable long bookkeepingId) {
+		return "bookkeeping/bookkeeping";
 	}
 }

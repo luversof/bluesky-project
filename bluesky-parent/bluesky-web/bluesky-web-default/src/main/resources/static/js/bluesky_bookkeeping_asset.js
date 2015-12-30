@@ -1,16 +1,17 @@
 $(document).ready(function() {
+	var displayArea = $(".bookkeeping-asset-list");
 	var bookkeeping = $.Bookkeeping({
-		url : "/bookkeeping/asset.json",
-		displayArea : $(".bookkeeping-asset-list"),
+		url : "/bookkeeping/" + bookkeepingId + "/asset",
+		displayArea : displayArea,
 		handsontableConfig : {
-				rowHeaders : true,
 				contextMenu : [ "remove_row" ],
-				dataSchema : { "id" : null, "name" : null, "amount" : null, "assetType" : null},
-				colHeaders : [ "assetType", "name", "amount" ],
-				colWidths : [100, 200, 80],
+				dataSchema : { "id" : null, "assetType" : null, "name" : null, "amount" : 0 },
+				colHeaders : [ "id", "assetType", "name", "amount" ],
+				colWidths : [30, 100, 200, 80],
 				columnSorting : true,
 				columns : [
-					{ data : "assetType", type : "dropdown", source : assetTypeList },
+					{ data : "id", readOnly : true },
+					{ data : "assetType", editor : "select", selectOptions : assetTypeList },
 					{ data : "name" },
 					{ data : "amount", readOnly : true, type : "numeric" }
 				],

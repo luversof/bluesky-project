@@ -9,10 +9,11 @@
 	
 	<script type="text/javascript" th:src="@{#{url.metisMenu.js}}"></script>
 	<link rel="stylesheet" type="text/css" media="screen" th:href="@{#{url.metisMenu.css}}" />
-	<script type="text/javascript">
+	<script type="text/javascript" th:inline="javascript">
 	$(document).ready(function() {
 		$("#menu").metisMenu();
 	});
+	var bookkeepingId = [[${bookkeepingId}]];
 	</script>
 </head>
 <body>
@@ -54,7 +55,7 @@
 							<ul class="nav nav-pills nav-stacked" th:attr="aria-expanded=${isSettingMenu}">
 								<li th:class="${menu} == 'asset' ? active"><a th:href="@{#{url.bookkeeping.asset(${bookkeepingId})}}">자산 관리</a></li>
 								<li th:class="${menu} == 'entryGroup' ? active"><a th:href="@{#{url.bookkeeping.entryGroup(${bookkeepingId})}}">분류 관리</a></li>
-								<li th:class="${menu} == 'bookkeeping' ? active"><a th:href="@{/bookkeeping}">가계부 관리</a></li>
+								<li th:class="${menu} == 'bookkeeping' ? active"><a th:href="@{#{url.bookkeeping.bookkeeping(${bookkeepingId})}}">가계부 관리</a></li>
 							</ul>
 						</li>
   					</ul>
