@@ -49,12 +49,12 @@ $(document).ready(function() {
 				columnSorting : true,
 				columns : [
 					{ data : "id", readOnly : true },
-					{ data : "entryDate", type : "date" },
+					{ data : "entryDate", type : "date", dateFormat: 'YYYY-MM-DD' },
 					{ data : "entryGroup",
 						type : "handsontable",
 						handsontable : {
 							data : $.entryGroup.getEntryGroupList(),
-							colHeaders : [ "id", "name" ],
+							//colHeaders : [ "id", "name" ],
 							colWidths : [ 30, 100 ],
 							columns : [
 								{ data : "id" },

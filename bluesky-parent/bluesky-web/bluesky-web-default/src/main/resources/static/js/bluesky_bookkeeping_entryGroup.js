@@ -6,7 +6,7 @@ $(document).ready(function() {
 		putUrl : "/bookkeeping/{0}/entryGroup/{1}",
 		displayArea : displayArea,
 		handsontableConfig : {
-				//rowHeaders : true,
+				rowHeaders : true,
 				contextMenu : [ "remove_row" ],
 				dataSchema : {
 					"id": null,
@@ -14,7 +14,7 @@ $(document).ready(function() {
 					"name": null
 				},
 				colHeaders : [ "id", "entryType", "name" ],
-				colWidths : [30, 100, 300],
+				colWidths : [0.1, 100, 300],
 				columnSorting : true,
 				columns : [
 				    { data : "id", readOnly : true },

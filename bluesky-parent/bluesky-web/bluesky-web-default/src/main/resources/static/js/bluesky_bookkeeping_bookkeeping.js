@@ -6,7 +6,7 @@ $(document).ready(function() {
 		displayArea : $(".bookkeeping-list"),
 		handsontableConfig : {
 				allowInsertRow : false,
-				contextMenu : [ "remove_row" ],
+				//contextMenu : [ "remove_row" ],
 				dataSchema : {id: null, name: null, userId: null},
 				colHeaders : [ "id", "name" ],
 				colWidths : [50, 300],
