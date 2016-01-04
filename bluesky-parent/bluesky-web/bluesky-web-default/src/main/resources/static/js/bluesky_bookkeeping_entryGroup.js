@@ -1,7 +1,9 @@
 $(document).ready(function() {
 	var displayArea = $(".bookkeeping-entryGroup-list");
 	var bookkeeping = $.Bookkeeping({
-		url : "/bookkeeping/" + bookkeepingId + "/entryGroup",
+		bookkeepingId : bookkeepingId,
+		postUrl : "/bookkeeping/{0}/entryGroup",
+		putUrl : "/bookkeeping/{0}/entryGroup/{1}",
 		displayArea : displayArea,
 		handsontableConfig : {
 				//rowHeaders : true,

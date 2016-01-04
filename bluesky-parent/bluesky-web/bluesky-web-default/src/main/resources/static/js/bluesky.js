@@ -1,6 +1,17 @@
 /**
- * 상단 메뉴 표시
- * contextPath에 대한 메뉴 url 변경 적용
+ * String foramt 처리
+ * 
+ * @returns
+ */
+String.prototype.format = function() {
+	var args = arguments;
+	return this.replace(/\{(\d+)\}/g, function() {
+		return args[arguments[1]];
+	});
+};
+	
+/**
+ * 상단 메뉴 표시 contextPath에 대한 메뉴 url 변경 적용
  */
 var navbar = {
 	contextPath : "/",
@@ -21,16 +32,7 @@ var navbar = {
 
 $(document).ready(function() {
 
-	/**
-	 * String foramt 처리
-	 * @returns
-	 */
-	String.prototype.format = function() {
-	    var args = arguments;
-	    return this.replace(/\{(\d+)\}/g, function() {
-	        return args[arguments[1]];
-	    });
-	};
+
 	
 
 	

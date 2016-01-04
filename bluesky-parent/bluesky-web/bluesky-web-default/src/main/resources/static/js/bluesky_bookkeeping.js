@@ -1,15 +1,18 @@
 $(document).ready(function() {
 	var bookkeeping = $.Bookkeeping({
-		url : "/bookkeeping/" + bookkeepingId + "/bookkeeping",
+		bookkeepingId : bookkeepingId,
+		postUrl : "/bookkeeping/{0}",
+		putUrl : "/bookkeeping/{1}",
 		displayArea : $(".bookkeeping-list"),
 		handsontableConfig : {
-				rowHeaders : true,
+				allowInsertRow : false,
 				contextMenu : [ "remove_row" ],
 				dataSchema : {id: null, name: null, userId: null},
-				colHeaders : [ "name" ],
-				colWidths : [300],
+				colHeaders : [ "id", "name" ],
+				colWidths : [50, 300],
 				columnSorting : true,
 				columns : [
+					{ data : "id", readOnly : true },
 					{ data : "name" }
 				],
 				minSpareRows : 1,

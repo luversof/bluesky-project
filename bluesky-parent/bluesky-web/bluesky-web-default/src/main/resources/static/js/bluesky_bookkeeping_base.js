@@ -20,12 +20,12 @@ $(document).ready(function() {
 					return;
 				}
 				$.ajax({
-					url : _config.url,
+					url : _config.postUrl.format(_config.bookkeepingId),
 					dataType : "json",
 					type : "get"
 				}).success(function(data) {
 					_handsontable().loadData(data);
-					_config.displayArea.data("dataList", data);
+					_config.displayArea.data("dataObj", data);
 				});
 			},
 			afterChange : function(change, source) {
@@ -55,45 +55,55 @@ $(document).ready(function() {
 					}
 				}
 				
-				var dataList = _config.displayArea.data("dataList");
-				console.log("dataList : ", dataList);
+				var dataObj = _config.displayArea.data("dataObj");
+				console.log("dataObj : ", dataObj);
 				
+				console.log("a : ", $.isArray(dataObj));
 				
 				var targetData;
-				var targetIndex;
-				for (var i = 0 ; i < dataList.length ; i++) {
-					if (dataList[i].id == targetCellData[0]) {
-						targetData = dataList[i];
-						targetIndex = i;
-						break;
+				var targetIndex = -1;
+				
+				if ($.isArray(dataObj)) {
+					for (var i = 0 ; i < dataObj.length ; i++) {
+						if (dataObj[i].id == targetCellData[0]) {
+							targetData = dataObj[i];
+							targetIndex = i;
+							break;
+						}
 					}
+					console.log("targetData : ", targetData);
+					
+					// 신규 추가의 경우 마지막에서 -1의 data가 해당 데이터임
+					if (targetData.id == null) {
+						targetData = dataObj[change[0][0]];
+						console.log("dataObj[change[0][0]] :", dataObj[dataObj.length -2]);
+					}
+				} else {// 단일 object인 경우는 수정만 가능한 경우
+					targetData = dataObj;
 				}
 				
-				// 신규 추가의 경우 마지막에서 -1의 data가 해당 데이터임
-				if (targetData.id == null) {
-					targetData = dataList[change[0][0]];
-					console.log("dataList[dataList.length -2] :", dataList[dataList.length -2]);
-				}
+				targetData[change[0][1]] = change[0][3];
 				
-				console.log("targetData : ", targetData);
 				//targetData[change[0][1]] = change[0][3];
-				console.log("targetData : ", targetData);
-				
 				console.log("targetData : ", targetData);
 				console.log("test : ", this);
 				
 				
 				$.ajax({
-					url : targetData.id == null ? _config.url : _config.url + "/" + targetData.id,
+					url : targetData.id == null ? _config.postUrl.format(_config.bookkeepingId) : _config.putUrl.format(_config.bookkeepingId, targetData.id),
 					dataType : "json",
 					contentType : "application/json",
 					type : targetData.id == null ? "post" : "put",
 					data : JSON.stringify(targetData)
 				}).success(function (data) {
 					console.log(targetData);
-					dataList[targetIndex] = data;
-					console.log("dataList : ", dataList);
-					_handsontable().loadData(dataList);
+					if (targetIndex == -1) {
+						dataObj = data;
+					} else {
+						dataObj[targetIndex] = data;
+					}
+					console.log("dataObj : ", dataObj);
+					_handsontable().loadData(dataObj);
 				});
 			},
 			beforeRemoveRow : function(index, amount) {
@@ -102,17 +112,17 @@ $(document).ready(function() {
 					return;
 				};
 				
-				var dataList = _config.displayArea.data("dataList");
+				var dataObj = _config.displayArea.data("dataObj");
 				
 				var targetData;
-				for (var i = 0 ; i < dataList.length ; i++) {
-					if (dataList[i].id == targetCellData[0]) {
-						targetData = dataList[i];
+				for (var i = 0 ; i < dataObj.length ; i++) {
+					if (dataObj[i].id == targetCellData[0]) {
+						targetData = dataObj[i];
 					}
 				}
 				
 				$.ajax({
-					url : _config.url + "/" + targetData.id,
+					url : _config.putUrl.format(_config.bookkeepingId, targetData.id),
 					dataType : "json",
 					contentType : "application/json",
 					type : "delete",

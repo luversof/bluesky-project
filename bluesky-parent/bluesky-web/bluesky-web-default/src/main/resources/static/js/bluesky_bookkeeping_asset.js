@@ -1,7 +1,9 @@
 $(document).ready(function() {
 	var displayArea = $(".bookkeeping-asset-list");
 	var bookkeeping = $.Bookkeeping({
-		url : "/bookkeeping/" + bookkeepingId + "/asset",
+		bookkeepingId : bookkeepingId,
+		postUrl : "/bookkeeping/{0}/asset",
+		putUrl : "/bookkeeping/{0}/asset/{1}",
 		displayArea : displayArea,
 		handsontableConfig : {
 				contextMenu : [ "remove_row" ],

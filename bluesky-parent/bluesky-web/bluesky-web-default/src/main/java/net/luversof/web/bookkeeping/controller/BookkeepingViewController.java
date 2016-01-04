@@ -53,6 +53,7 @@ public class BookkeepingViewController {
 		}
 		Bookkeeping bookkeeping = new Bookkeeping();
 		bookkeeping.setUserId(blueskyUser.getId());
+		bookkeeping.setName("가계부");
 		bookkeepingService.save(bookkeeping);
 		return redirectEntryList(bookkeeping.getId());
 	}

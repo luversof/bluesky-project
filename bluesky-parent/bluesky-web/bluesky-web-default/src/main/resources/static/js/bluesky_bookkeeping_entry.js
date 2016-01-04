@@ -10,7 +10,7 @@ $(document).ready(function() {
 					return _entryGroupList;
 				}
 				$.ajax({
-					url : "/bookkeeping/entryGroup.json",
+					url : "/bookkeeping/{0}/entryGroup".format(bookkeepingId),
 					dataType : "json",
 					type : "get",
 					async : false,
@@ -33,28 +33,33 @@ $(document).ready(function() {
 	}();
 	
 	var bookkeepingDebit = $.Bookkeeping({
-		url : "/bookkeeping/entry.json",
+		postUrl : "/bookkeeping/{0}/entry",
+		putUrl : "/bookkeeping/{0}/entry/{1}",
 		displayArea : $(".bookkeeping-entry-debit-form"),
 		initLoad : true,
 		handsontableConfig : {
-				rowHeaders : true,
 				contextMenu : [ "remove_row" ],
 				dataSchema : {
 					id : null
 					, entryGroup : { name : null }
 					, amount : null, memo : null
 				},
-				colHeaders : [ "날짜", "분류", "자산", "금액", "메모" ],
-				colWidths : [ 120, 120, 80, 180 ],
+				colHeaders : [ "id", "날짜", "분류", "자산", "금액", "메모" ],
+				colWidths : [ 30, 120, 120, 80, 180 ],
 				columnSorting : true,
 				columns : [
+					{ data : "id", readOnly : true },
 					{ data : "entryDate", type : "date" },
 					{ data : "entryGroup",
 						type : "handsontable",
 						handsontable : {
 							data : $.entryGroup.getEntryGroupList(),
-							colHeaders : [ "name" ],
-							columns : [{ data : "name" }]
+							colHeaders : [ "id", "name" ],
+							colWidths : [ 30, 100 ],
+							columns : [
+								{ data : "id" },
+								{ data : "name" },
+							]
 						} 
 					},
 					{ data : "debitAsset.name" },
