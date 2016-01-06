@@ -3,21 +3,18 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>net.luversof</groupId>
-		<artifactId>bluesky-parent</artifactId>
+		<artifactId>bluesky-opensource</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>bluesky-opensource</artifactId>
-	<packaging>pom</packaging>
-	<modules>
-		<module>bluesky-opensource-jdbc</module>
-		<module>bluesky-opensource-data-jpa</module>
-		<module>bluesky-opensource-security</module>
-		<module>bluesky-opensource-data-mongodb</module>
-	</modules>
+	<artifactId>bluesky-opensource-data-mongodb</artifactId>
+
 	<dependencies>
+	
+		<!-- (s) spring boot -->
 		<dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-test</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-mongodb</artifactId>
 		</dependency>
+		<!-- (e) spring boot -->
 	</dependencies>
 </project>
