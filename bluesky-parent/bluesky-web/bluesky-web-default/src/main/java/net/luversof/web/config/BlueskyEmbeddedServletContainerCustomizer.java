@@ -37,7 +37,7 @@ public class BlueskyEmbeddedServletContainerCustomizer implements EmbeddedServle
 		});
 		
 		/* (s) https to http redirect */
-		if (!profile.equals("live")) {
+		if (profile.equals("live22")) {
 		    final Connector connector = new Connector("org.apache.coyote.http11.Http11NioProtocol");
 		    connector.setScheme("https");
 		    connector.setSecure(true);

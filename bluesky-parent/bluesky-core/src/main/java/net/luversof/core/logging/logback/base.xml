@@ -6,7 +6,7 @@
 	
 		<!-- (s) 기본 로그 레벨 값 설정 -->
 	<property name="loggerLevelBluesky" value="DEBUG" />
-	<property name="loggerLevel" value="DEBUG" />
+	<property name="loggerLevel" value="INFO" />
 	<if condition='p("spring.profiles.active").equals("live")'>
 		<then>
 			<property name="loggerLevelBluesky" value="INFO" />
@@ -15,7 +15,7 @@
 	</if>
 	<!-- (e) 기본 로그 레벨 값 설정 -->
 	
-	<logger name="net.luversof" level="loggerLevelBluesky" />
+	<logger name="net.luversof" level="${loggerLevelBluesky}" />
 	<logger name="java.sql" level="${loggerLevel}" />
 	<!-- <logger name="org.hibernate.type" level="trace" /> -->
 	<logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="trace" />
