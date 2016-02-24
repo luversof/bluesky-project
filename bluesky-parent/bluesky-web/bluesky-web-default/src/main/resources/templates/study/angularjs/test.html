@@ -1,0 +1,231 @@
+<html>
+<head>
+<!-- 
+<script>
+// 예제 코드 출처 : http://www.slideshare.net/dmitrysoshnikov/falsyvalues-dmitry-soshnikov-ecmascript-6
+/*
+var handlers = [];
+
+
+for (var k = 0 ; k < 3 ; k++) {
+	handlers[k] = function() {
+		alert(k);
+	}
+}
+//결과는?
+handlers[0]();
+handlers[1]();
+handlers[2]();
+*/
+</script>
+<script>
+// block scope
+/*
+var handlers = [];
+
+for (var k = 0 ; k < 3 ; k++) {
+	(function(x) {
+		handlers[x] = function() {
+			alert(x);
+		}
+	})(k);
+}
+//결과는?
+handlers[0]();
+handlers[1]();
+handlers[2]();
+*/
+</script>
+<script>
+// let:block scope
+/*
+"use strict";
+let handlers = [];
+
+for (let k = 0 ; k < 3 ; k++) {
+	handlers[k] = function() {
+		alert(k);
+	}
+}
+
+handlers[0]();
+handlers[1]();
+handlers[2]();
+*/
+</script>
+<script>
+// let:definition, statement, expression
+/*
+"use strict";
+let x = 10;	// let-definition
+let y = 20;
+
+//요거 안되네?
+//let (x = x*2, y = 30) {
+//	console.log(x + y);//50	//let-statement
+//}
+
+console.log(x + y);
+
+//요것도..
+//console.log(let (x = 100) x); //100	//let-expression
+console.log(x); // 10
+*/
+</script>
+<script>
+// const:constants
+/*
+"use strict";
+const MAX_SIZE = 100;
+
+console.log(MAX_SIZE);
+
+// cannot be redeclared (let, var, etc.)
+let MAX_SIZE = 100; // error
+*/
+</script>
+<script>
+//const:constant functions
+/*
+"use strict";
+const registerUser() {
+	// implementation
+}
+
+// redeclaration error
+function registerUser() {
+}
+*/
+</script>
+<script>
+// Function parameter - default values
+/*
+function handleRequest(data, method) {
+	method = method || "GET";
+	console.log(method);
+}
+
+handleRequest("test");
+handleRequest("test", "POST");
+*/
+</script>
+<script>
+// Function parameter - default values
+// 이거 안되네
+/*
+"use strict";
+function handleRequest(data, method = "GET") {
+	console.log(method);
+}
+
+handleRequest("test");
+handleRequest("test", "POST");
+*/
+</script>
+<script>
+// Destructuring: arrays
+/*
+// 이것도 안됨
+"use strict";
+// for arrays
+let [x,y] = [10, 20, 30];
+console.log(x, y);
+*/
+</script>
+<script>
+// Destructuring: object
+// 이것도 안됨
+/*
+"use strict";
+// for objects
+let user = {name : "Ann", location : {x : 10, y : 20}};
+//let {name: n, location:{x : x, y : y}} = user;
+
+console.log(n, x, y); // "Ann", 10, 20
+*/
+</script>
+<script>
+// 예제 참고 : http://qnimate.com/post-series/ecmascript-6-complete-tutorial/
+// let Keyword
+/*
+"use strict";
+if (true) 
+{
+	let x = 12;
+	alert(x);	// alert's 12
+}
+alert(x);	// x is undefined here
+*/
+</script>
+<script>
+// const Keyword
+/*
+"use strict";
+const x = 12;
+
+//an constant 'x' is already available in this scope therefore the below line throws an error when you are try to create a new x variable.
+//const x = 13;
+
+if(true)
+{
+    //an constant 'x' is available in this scope but not defined in this scope therefore the below line will not throw error instead define a new "x" inside this scope.
+    const x = 13;
+	
+	console.log("x : ", x);
+    
+    //here 'y' is available inside this scope not outside this scope
+    const y = 11;
+	console.log("y : ", y);
+}
+console.log("x : ", x);
+
+//here creating a new 'y' will not throw an error because no other 'y' is available in this scope(i.e., global scope)
+const y = 12;
+console.log("y : ", y);
+*/
+</script>
+<script>
+// 안되는데?
+/*
+"use strict";
+function function_name()
+{
+    return [1, 6, 7, 4, 8, 0]; //here we are storing variables in an array and returning the array
+}
+
+var q, w, e, r, t, y;
+
+//Here we are using ES6's array destructuring feature to assign the returned values to variables.
+//Here we are ignoring 2 and 4 array indexes
+console.log(function_name());
+//[q, w, , r, , y] = function_name();
+
+alert(y);//y is 0
+*/
+</script>
+<script>
+/*
+"use strict";
+var odds = evens.map(v => v + 1);  
+var nums = evens.map((v, i) => v + i);  
+var pairs = evens.map(v => ({even: v, odd: v + 1}));
+*/
+</script>
+ -->
+<!-- IE required polyfills (from CDN), in this exact order -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/es6-shim/0.33.3/es6-shim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/systemjs/0.19.16/system-polyfills.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/2.0.0-beta.7/angular2-polyfills.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/2.0.0-beta.7/Rx.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/2.0.0-beta.7/angular2-all.umd.min.js"></script>
+
+<!-- 2. Load our 'modules' -->
+<script src='/js/study/angularjs/app/app.component.js'></script>
+<script src='/js/study/angularjs/app/main.js'></script>
+
+</head>
+<body>
+	<my-app>Loading...</my-app>
+</body>
+</html>

@@ -1,6 +1,7 @@
 package net.luversof.web.index.controller;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -34,4 +35,9 @@ public class IndexController {
 	public void test(ModelMap modelMap) {
 		modelMap.addAttribute("test!!");
 	}
+	
+	@Profile({"opdev", "rc", "stage"})
+	@RequestMapping("/study/**/*")
+	public void study() {}
+	
 }
