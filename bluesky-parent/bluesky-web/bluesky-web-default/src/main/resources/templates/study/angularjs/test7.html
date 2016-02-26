@@ -1,15 +1,15 @@
 <!doctype html>
 <html lang="en" ng-app="phonecatApp">
 <head>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/css/bootstrap.css" />
+<link rel="stylesheet" th:href="#{url.bootstrap.css}" />
 <link rel="stylesheet" href="/css/study/angularjs/test7/app.css" />
 <link rel="stylesheet" href="/css/study/angularjs/test7/animations.css" />
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.1/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.0/angular.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.0/angular-route.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.0/angular-resource.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.0/angular-animate.min.js"></script>
+<script th:src="#{url.jquery.js}"></script>
+<script th:src="#{url.angular.js}"></script>
+<script th:src="#{url.angular-route.js}"></script>
+<script th:src="#{url.angular-resource.js}"></script>
+<script th:src="#{url.angular-animate.js}"></script>
 
 <script src="/js/study/angularjs/test7/app.js"></script>
 <script src="/js/study/angularjs/test7/controllers.js"></script>
