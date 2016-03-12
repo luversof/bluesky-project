@@ -16,10 +16,10 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
 @EnableJpaRepositories(basePackages = "net.luversof.blog", entityManagerFactoryRef = "blogEntityManagerFactory", transactionManagerRef = "blogTransactionManager")
-public class BlogDataJpaConfig {
+public class DataJpaBlogConfig {
 	
 	@Bean(name = "blogEntityManagerFactory")
-	@Primary
+//	@Primary
 	public LocalContainerEntityManagerFactoryBean blogEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("blogDataSource") DataSource blogDataSource) {
 		return builder.dataSource(blogDataSource).packages("net.luversof.blog").build();
 	}

@@ -13,7 +13,7 @@ import net.luversof.user.domain.UserType;
 import net.luversof.user.repository.UserRepository;
 
 @Service
-@Transactional("securityTransactionManager")
+@Transactional("userTransactionManager")
 public class UserService {
 
 	@Autowired
@@ -79,17 +79,17 @@ public class UserService {
 		return userRepository.save(user);
 	}
 
-	@Transactional(value = "securityTransactionManager", readOnly = true)
+	@Transactional(value = "userTransactionManager", readOnly = true)
 	public User findOne(long id) {
 		return userRepository.findOne(id);
 	}
 
-	@Transactional(value = "securityTransactionManager", readOnly = true)
+	@Transactional(value = "userTransactionManager", readOnly = true)
 	public User findByUsername(String username) {
 		return userRepository.findByUsername(username);
 	}
 	
-	@Transactional(value = "securityTransactionManager", readOnly = true)
+	@Transactional(value = "userTransactionManager", readOnly = true)
 	public User findByExternalIdAndUserType(String externalId, UserType userType) {
 		return userRepository.findByExternalIdAndUserType(externalId, userType);
 	}

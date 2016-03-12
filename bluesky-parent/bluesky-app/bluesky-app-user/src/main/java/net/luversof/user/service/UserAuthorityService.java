@@ -8,7 +8,7 @@ import net.luversof.user.domain.UserAuthority;
 import net.luversof.user.repository.UserAuthorityRepository;
 
 @Service
-@Transactional("securityTransactionManager")
+@Transactional("userTransactionManager")
 public class UserAuthorityService {
 
 	@Autowired
@@ -19,7 +19,7 @@ public class UserAuthorityService {
 		return userAuthorityRepository.save(userAuthority);
 	}
 	
-	@Transactional(value = "securityTransactionManager", readOnly = true)
+	@Transactional(value = "userTransactionManager", readOnly = true)
 	public UserAuthority findOne(long id) {
 		return userAuthorityRepository.findOne(id);
 	}
