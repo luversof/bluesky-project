@@ -16,7 +16,7 @@ public class JdbcUserConfig {
 	@Bean
 	@Primary
 	@ConfigurationProperties(prefix = "datasource.user")
-	public DataSource securityDataSource() {
+	public DataSource userDataSource() {
 		return DataSourceBuilder.create().build();
 	}
 }
