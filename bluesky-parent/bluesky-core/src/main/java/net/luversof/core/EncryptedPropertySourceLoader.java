@@ -12,6 +12,7 @@ import org.springframework.core.io.support.PropertiesLoaderUtils;
 
 import net.luversof.core.util.EncryptionUtil;
 
+@Deprecated
 public class EncryptedPropertySourceLoader implements PropertySourceLoader {
 	
 	private final StandardPBEStringEncryptor encryptor = (StandardPBEStringEncryptor) EncryptionUtil.stringEncryptor();
