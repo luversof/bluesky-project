@@ -23,7 +23,13 @@ import org.springframework.security.oauth2.client.OAuth2ClientContext;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.filter.OAuth2ClientAuthenticationProcessingFilter;
 import org.springframework.security.oauth2.client.resource.OAuth2ProtectedResourceDetails;
+import org.springframework.security.oauth2.client.token.AccessTokenProvider;
+import org.springframework.security.oauth2.client.token.AccessTokenProviderChain;
+import org.springframework.security.oauth2.client.token.grant.client.ClientCredentialsAccessTokenProvider;
+import org.springframework.security.oauth2.client.token.grant.code.AuthorizationCodeAccessTokenProvider;
 import org.springframework.security.oauth2.client.token.grant.code.AuthorizationCodeResourceDetails;
+import org.springframework.security.oauth2.client.token.grant.implicit.ImplicitAccessTokenProvider;
+import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordAccessTokenProvider;
 import org.springframework.security.oauth2.common.AuthenticationScheme;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableOAuth2Client;
@@ -75,15 +81,16 @@ public class OAuth2ClientConfig {
 	
 	@Bean
 	public OAuth2RestTemplate githubRestTemplate() {
-		return new OAuth2RestTemplate(githubResourceDetails(), oAuth2ClientContext);
+		OAuth2RestTemplate oAuth2RestTemplate = new OAuth2RestTemplate(githubResourceDetails(), oAuth2ClientContext);
+		oAuth2RestTemplate.setAccessTokenProvider(getAccessTokenProvider());
+		return oAuth2RestTemplate;
 	}
 	
 	@Autowired
 	private GithubAccessTokenConverter githubAccessTokenConverter;
 	
 	@Bean
-	public ResourceServerTokenServices githubTokenServices() {
-		OAuth2RestTemplate oAuth2RestTemplate = githubRestTemplate();
+	public ResourceServerTokenServices githubTokenServices(final OAuth2RestTemplate githubRestTemplate) {
 		RemoteTokenServices remoteTokenServices = new RemoteTokenServices() {
 
 			@Override
@@ -96,7 +103,7 @@ public class OAuth2ClientConfig {
 					headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 				}
 				@SuppressWarnings("unchecked")
-				Map<String, Object> map = oAuth2RestTemplate.exchange(githubCheckTokenEndpointUrl, HttpMethod.GET,
+				Map<String, Object> map = githubRestTemplate.exchange(githubCheckTokenEndpointUrl, HttpMethod.GET,
 						new HttpEntity<MultiValueMap<String, String>>(formData, headers), Map.class, githubClientId, accessToken).getBody();
 				
 				if (map.containsKey("error")) {
@@ -109,7 +116,7 @@ public class OAuth2ClientConfig {
 			}
 			
 		};
-		remoteTokenServices.setRestTemplate(oAuth2RestTemplate);
+		remoteTokenServices.setRestTemplate(githubRestTemplate);
 		remoteTokenServices.setClientId(githubClientId);
 		remoteTokenServices.setClientSecret(githubClientSecret);
 		remoteTokenServices.setCheckTokenEndpointUrl(githubCheckTokenEndpointUrl);
@@ -118,10 +125,10 @@ public class OAuth2ClientConfig {
 	}
 	
 	@Bean
-	public OAuth2ClientAuthenticationProcessingFilter githubAuthenticationProcessingFilter() {
+	public OAuth2ClientAuthenticationProcessingFilter githubAuthenticationProcessingFilter(ResourceServerTokenServices githubTokenServices) {
 		OAuth2ClientAuthenticationProcessingFilter githubAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/githubAuthorizeResult");
 		githubAuthenticationProcessingFilter.setRestTemplate(githubRestTemplate());
-		githubAuthenticationProcessingFilter.setTokenServices(githubTokenServices());
+		githubAuthenticationProcessingFilter.setTokenServices(githubTokenServices);
 		return githubAuthenticationProcessingFilter;
 	}
 	
@@ -162,15 +169,16 @@ public class OAuth2ClientConfig {
 
 	@Bean
 	public OAuth2RestTemplate facebookRestTemplate() {
-		return new OAuth2RestTemplate(facebookResourceDetails(), oAuth2ClientContext);
+		OAuth2RestTemplate oAuth2RestTemplate = new OAuth2RestTemplate(facebookResourceDetails(), oAuth2ClientContext);
+		oAuth2RestTemplate.setAccessTokenProvider(getAccessTokenProvider());
+		return oAuth2RestTemplate;
 	}
 	
 	@Autowired
 	private FacebookAccessTokenConverter facebookAccessTokenConverter;
 	
 	@Bean
-	public ResourceServerTokenServices facebookTokenServices() {
-		OAuth2RestTemplate oAuth2RestTemplate = facebookRestTemplate();
+	public ResourceServerTokenServices facebookTokenServices(final OAuth2RestTemplate facebookRestTemplate) {
 		RemoteTokenServices remoteTokenServices = new RemoteTokenServices() {
 
 			@Override
@@ -183,7 +191,7 @@ public class OAuth2ClientConfig {
 					headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 				}
 				@SuppressWarnings("unchecked")
-				Map<String, Object> map = oAuth2RestTemplate.exchange(facebookCheckTokenEndpointUrl, HttpMethod.GET,
+				Map<String, Object> map = facebookRestTemplate.exchange(facebookCheckTokenEndpointUrl, HttpMethod.GET,
 						new HttpEntity<MultiValueMap<String, String>>(formData, headers), Map.class, accessToken).getBody();
 
 				if (map.containsKey("error")) {
@@ -191,14 +199,14 @@ public class OAuth2ClientConfig {
 					throw new InvalidTokenException(accessToken);
 				}
 				@SuppressWarnings("unchecked")
-				Map<String, Object> me = oAuth2RestTemplate.getForObject("https://graph.facebook.com/me", Map.class);
+				Map<String, Object> me = facebookRestTemplate.getForObject("https://graph.facebook.com/me", Map.class);
 				map.putAll(me);
 //				Assert.state(map.containsKey("client_id"), "Client id must be present in response from auth server");
 				return facebookAccessTokenConverter.extractAuthentication(map);
 			}
 			
 		};
-		remoteTokenServices.setRestTemplate(oAuth2RestTemplate);
+		remoteTokenServices.setRestTemplate(facebookRestTemplate);
 		remoteTokenServices.setClientId(facebookClientId);
 		remoteTokenServices.setClientSecret(facebookClientSecret);
 		remoteTokenServices.setCheckTokenEndpointUrl(facebookCheckTokenEndpointUrl);
@@ -207,10 +215,10 @@ public class OAuth2ClientConfig {
 	
 	
 	@Bean
-	public OAuth2ClientAuthenticationProcessingFilter facebookAuthenticationProcessingFilter() {
+	public OAuth2ClientAuthenticationProcessingFilter facebookAuthenticationProcessingFilter(ResourceServerTokenServices facebookTokenServices) {
 		OAuth2ClientAuthenticationProcessingFilter facebookAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/facebookAuthorizeResult");
 		facebookAuthenticationProcessingFilter.setRestTemplate(facebookRestTemplate());
-		facebookAuthenticationProcessingFilter.setTokenServices(facebookTokenServices());
+		facebookAuthenticationProcessingFilter.setTokenServices(facebookTokenServices);
 		return facebookAuthenticationProcessingFilter;
 	}
 	
@@ -250,7 +258,9 @@ public class OAuth2ClientConfig {
 
 	@Bean
 	public OAuth2RestTemplate battleNetRestTemplate() {
-		return new OAuth2RestTemplate(battleNetResourceDetails(), oAuth2ClientContext);
+		OAuth2RestTemplate oAuth2RestTemplate = new OAuth2RestTemplate(battleNetResourceDetails(), oAuth2ClientContext);
+		oAuth2RestTemplate.setAccessTokenProvider(getAccessTokenProvider());
+		return oAuth2RestTemplate;
 	}
 	
 	
@@ -258,8 +268,7 @@ public class OAuth2ClientConfig {
 	BattleNetAccessTokenConverter battleNetAccessTokenConverter;
 	
 	@Bean
-	public ResourceServerTokenServices battleNetTokenServices() {
-		OAuth2RestTemplate oAuth2RestTemplate = battleNetRestTemplate();
+	public ResourceServerTokenServices battleNetTokenServices(OAuth2RestTemplate battleNetRestTemplate) {
 		RemoteTokenServices remoteTokenServices = new RemoteTokenServices() {
 
 			@Override
@@ -272,7 +281,7 @@ public class OAuth2ClientConfig {
 					headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 				}
 				@SuppressWarnings("unchecked")
-				Map<String, Object> map = oAuth2RestTemplate.exchange(battleNetCheckTokenEndpointUrl, HttpMethod.GET,
+				Map<String, Object> map = battleNetRestTemplate.exchange(battleNetCheckTokenEndpointUrl, HttpMethod.GET,
 						new HttpEntity<MultiValueMap<String, String>>(formData, headers), Map.class, accessToken).getBody();
 
 				if (map.containsKey("code")) {
@@ -281,7 +290,7 @@ public class OAuth2ClientConfig {
 				}
 				
 				@SuppressWarnings("unchecked")
-				Map<String, Object> me = oAuth2RestTemplate.getForObject("https://kr.api.battle.net/account/user?access_token={accessToken}", Map.class, accessToken);
+				Map<String, Object> me = battleNetRestTemplate.getForObject("https://kr.api.battle.net/account/user?access_token={accessToken}", Map.class, accessToken);
 				map.putAll(me);
 				return battleNetAccessTokenConverter.extractAuthentication(map);
 			}
@@ -296,10 +305,10 @@ public class OAuth2ClientConfig {
 	
 	
 	@Bean
-	public OAuth2ClientAuthenticationProcessingFilter battleNetAuthenticationProcessingFilter() {
+	public OAuth2ClientAuthenticationProcessingFilter battleNetAuthenticationProcessingFilter(ResourceServerTokenServices battleNetTokenServices) {
 		OAuth2ClientAuthenticationProcessingFilter battleNetAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/battleNetAuthorizeResult");
 		battleNetAuthenticationProcessingFilter.setRestTemplate(battleNetRestTemplate());
-		battleNetAuthenticationProcessingFilter.setTokenServices(battleNetTokenServices());
+		battleNetAuthenticationProcessingFilter.setTokenServices(battleNetTokenServices);
 		SimpleUrlAuthenticationSuccessHandler simpleUrlAuthenticationSuccessHandler = new SimpleUrlAuthenticationSuccessHandler("/battleNet/d3/index");
 		battleNetAuthenticationProcessingFilter.setAuthenticationSuccessHandler(simpleUrlAuthenticationSuccessHandler);
 		return battleNetAuthenticationProcessingFilter;
@@ -318,6 +327,16 @@ public class OAuth2ClientConfig {
 	}
 	
 
-
+	/**
+	 * 2.0.8 이후  AuthorizationCodeAccessTokenProvider stateMandatory false 설정이 필요함. 
+	 * @return
+	 */
+	private AccessTokenProvider getAccessTokenProvider() {
+		AuthorizationCodeAccessTokenProvider authorizationCodeAccessTokenProvider = new AuthorizationCodeAccessTokenProvider();
+		authorizationCodeAccessTokenProvider.setStateMandatory(false);
+		return new AccessTokenProviderChain(Arrays.<AccessTokenProvider> asList(
+				authorizationCodeAccessTokenProvider, new ImplicitAccessTokenProvider(),
+				new ResourceOwnerPasswordAccessTokenProvider(), new ClientCredentialsAccessTokenProvider()));		
+	}
 	
 }

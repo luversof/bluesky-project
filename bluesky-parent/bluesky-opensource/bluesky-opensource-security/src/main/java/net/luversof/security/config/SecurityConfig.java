@@ -9,7 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
 @EnableGlobalMethodSecurity(prePostEnabled = true)
-@PropertySource("security.properties")
+@PropertySource("classpath:security.properties")
 public class SecurityConfig {
 
 	@Bean

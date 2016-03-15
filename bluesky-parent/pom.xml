@@ -59,11 +59,11 @@
 
 			<!-- (s) 2.0.8에서 AuthorizationCodeAccessTokenProvider mastateMandatory 
 				설정 문제로 인해 이전 버전 처리 -->
-			<dependency>
+			<!-- <dependency>
 				<groupId>org.springframework.security.oauth</groupId>
 				<artifactId>spring-security-oauth2</artifactId>
 				<version>2.0.7.RELEASE</version>
-			</dependency>
+			</dependency> -->
 			<!-- (e) 2.0.8에서 AuthorizationCodeAccessTokenProvider mastateMandatory 
 				설정 문제로 인해 이전 버전 처리 -->
 
