@@ -49,10 +49,10 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		super.addArgumentResolvers(argumentResolvers);
 	}
 	
-	@Bean
-	public Java8TimeDialect java8TimeDialect() {
-		return new Java8TimeDialect();
-	}
+//	@Bean
+//	public Java8TimeDialect java8TimeDialect() {
+//		return new Java8TimeDialect();
+//	}
 
 	@Override
 	public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {

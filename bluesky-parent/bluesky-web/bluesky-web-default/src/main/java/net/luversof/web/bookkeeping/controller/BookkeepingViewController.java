@@ -23,6 +23,11 @@ import net.luversof.web.constant.AuthorizeRole;
 @RequestMapping(value = "bookkeeping", produces = MediaType.TEXT_HTML_VALUE)
 public class BookkeepingViewController {
 	
+	
+	@RequestMapping(value = "/index", method = RequestMethod.GET)
+	public void index() {
+	}
+	
 	@Autowired
 	private BookkeepingService bookkeepingService;
 
