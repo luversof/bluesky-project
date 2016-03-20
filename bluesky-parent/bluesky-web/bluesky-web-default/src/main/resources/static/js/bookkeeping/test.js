@@ -1,8 +1,8 @@
 $(document).ready(function() {
 	var Bookkeeping = function() {
-		
+
 		var _getMyBookkeeping = function() {
-			
+
 			$.ajax({
 				url : "/bookkeeping.json",
 				dataType : "json"
@@ -10,15 +10,15 @@ $(document).ready(function() {
 				console.log("data : ", data);
 			});
 		}
-		
+
 		return {
 			getMyBookkeeping : function() {
 				_getMyBookkeeping();
 			}
 		}
 	};
-	
-	
-	var bookkeeping = Bookkeeping();
-	bookkeeping.getMyBookkeeping();
+
+	// var bookkeeping = Bookkeeping();
+	// bookkeeping.getMyBookkeeping();
+
 });
