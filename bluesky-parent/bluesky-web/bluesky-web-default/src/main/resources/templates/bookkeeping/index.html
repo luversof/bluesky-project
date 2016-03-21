@@ -5,6 +5,8 @@
 	layout:decorator="layout/defaultLayout">
 <head>
 	<script type="text/javascript" th:src="@{#{url.mustache.js}}"></script>
+	<script type="text/javascript" th:src="@{#{url.underscore.js}}"></script>
+	<script type="text/javascript" th:src="@{#{url.backbone.js}}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/test.js}"></script>
 </head>
 <body>
@@ -15,6 +17,14 @@
 			
 			<div class="page">page area</div>
 		</div>
+		
+		<div id="bookkeepingArea"></div>
+		<input type="text" class="edit">수정버튼</input>
+		
+		<script type="text/template" id="item-template">
+			test template
+			
+		</script>
 	</div>
 </body>
 </html>

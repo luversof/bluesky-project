@@ -92,12 +92,12 @@ public class GlobalExceptionHandler {
 	
 	@ExceptionHandler
 	@ResponseStatus(value = HttpStatus.UNAUTHORIZED)
-	public void accessDeniedException(HttpServletRequest request, HttpServletResponse response, AccessDeniedException exception) throws IOException {
+	public ModelAndView accessDeniedException(HttpServletRequest request, HttpServletResponse response, AccessDeniedException exception) throws IOException {
 		if (request.getRequestURI().equals("/battleNet/d3/index")) {
 			response.sendRedirect("https://kr.battle.net/oauth/authorize?client_id=" + battleNetClientId + "&redirect_uri=https://localhost:8443/oauth/battleNetAuthorizeResult&scope=wow.profile&response_type=code");
-			return;
+			return new ModelAndView("redirect:https://kr.battle.net/oauth/authorize?client_id=" + battleNetClientId + "&redirect_uri=https://localhost:8443/oauth/battleNetAuthorizeResult&scope=wow.profile&response_type=code");
 		} else {
-			response.sendRedirect("/login");
 		}
+		return new ModelAndView("login");
 	}
 }
