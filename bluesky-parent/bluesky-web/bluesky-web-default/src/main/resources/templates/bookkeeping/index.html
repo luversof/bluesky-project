@@ -19,11 +19,34 @@
 		</div>
 		
 		<div id="bookkeepingArea"></div>
-		<input type="text" class="edit">수정버튼</input>
 		
 		<script type="text/template" id="item-template">
 			test template
+			<label>라벨</label>
 			
+			<input type="text" class="edit" />수정버튼
+		</script>
+		
+		<script type="text/template" id="template-bookkeeping-view">
+			<tr>
+				<td><label>라벨</label>{{name}}</td>
+			</tr>
+		</script>
+		<script type="text/template" id="template-bookkeeping-list">
+			<table>
+				<tr><td>이름</td></tr>
+				<tbody>
+				{{#.}}
+					{{> bookkeeping-view}}
+				{{/.}}
+				</tbody>
+			</table>
+
+			<form>
+				<input type="text" name="name" />이름
+
+				<input type="submit" value="추가" />
+			</form>
 		</script>
 	</div>
 </body>
