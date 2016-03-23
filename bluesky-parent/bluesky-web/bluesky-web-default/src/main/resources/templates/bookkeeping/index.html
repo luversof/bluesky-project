@@ -17,36 +17,36 @@
 			
 			<div class="page">page area</div>
 		</div>
-		
 		<div id="bookkeepingArea"></div>
 		
-		<script type="text/template" id="item-template">
-			test template
-			<label>라벨</label>
-			
-			<input type="text" class="edit" />수정버튼
-		</script>
 		
 		<script type="text/template" id="template-bookkeeping-view">
-			<tr>
-				<td><label>라벨</label>{{name}}</td>
-			</tr>
+			<td contenteditable="true">{{name}}</td>
+			<td>
+				<span class="glyphicon glyphicon-edit">수정</span>
+				<span class="glyphicon glyphicon-remove">삭제</span>
+			</td>
 		</script>
 		<script type="text/template" id="template-bookkeeping-list">
-			<table>
-				<tr><td>이름</td></tr>
+			<div class="col-md-5">
+			<table class="table">
+				<thead>
+					<tr>
+						<th>이름</th><th></th>
+					</tr>
+				</thead>
 				<tbody>
 				{{#.}}
+					<tr>
 					{{> bookkeeping-view}}
+					</tr>
 				{{/.}}
 				</tbody>
 			</table>
 
-			<form>
-				<input type="text" name="name" />이름
-
-				<input type="submit" value="추가" />
-			</form>
+			<input type="text" name="addBookkeepingName" />이름
+			<span class="glyphicon glyphicon-plus addBookkeeping">추가</span>
+			</div>
 		</script>
 	</div>
 </body>

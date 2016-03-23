@@ -13,13 +13,13 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.Bookkeeping;
+import net.luversof.bookkeeping.domain.Bookkeeping.Add;
 import net.luversof.bookkeeping.domain.Bookkeeping.Modify;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
-
 @RequestMapping(value = "bookkeeping")
 public class BookkeepingController {
 
@@ -34,6 +34,14 @@ public class BookkeepingController {
 	@RequestMapping(value = "/{id}", method = RequestMethod.GET)
 	public Bookkeeping getBookkeeping(@PathVariable long id) {
 		return bookkeepingService.findOne(id);
+	}
+	
+	
+	@RequestMapping(value = "", method = RequestMethod.POST)
+	public Bookkeeping post(@Validated(Add.class) Bookkeeping bookkeeping, Authentication authentication) {
+		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
+		bookkeeping.setUserId(blueskyUser.getId());
+		return bookkeepingService.save(bookkeeping);
 	}
 	
 	@RequestMapping(value="/{id}", method = RequestMethod.PUT)

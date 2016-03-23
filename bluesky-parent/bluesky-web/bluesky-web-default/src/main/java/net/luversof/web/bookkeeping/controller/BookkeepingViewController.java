@@ -9,12 +9,14 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import net.luversof.bookkeeping.domain.Bookkeeping;
+import net.luversof.bookkeeping.domain.Bookkeeping.Add;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
@@ -43,27 +45,6 @@ public class BookkeepingViewController {
 	
 	@RequestMapping(value = "/create", method=RequestMethod.GET)
 	public void createForm() {}
-	
-	/**
-	 * 가계부 생성의 경우 json 요청이 아닌 form submit 결과 반환이기 떄문에 viewController에서 처리함
-	 * @param authentication
-	 * @return
-	 */
-	@RequestMapping(value = "", method=RequestMethod.POST)
-	public String create(Authentication authentication) {
-		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
-		List<Bookkeeping> bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId());
-		if (!bookkeepingList.isEmpty()) {
-			return redirectEntryList(bookkeepingList.get(0).getId());
-		}
-		Bookkeeping bookkeeping = new Bookkeeping();
-		bookkeeping.setUserId(blueskyUser.getId());
-		bookkeeping.setName("가계부");
-		bookkeepingService.save(bookkeeping);
-		return redirectEntryList(bookkeeping.getId());
-	}
-	
-	
 	
 	@RequestMapping(value = "/{bookkeepingId}/view/entry", method = RequestMethod.GET)
 	public String list(@PathVariable long bookkeepingId, @RequestParam(defaultValue = "1") int page, ModelMap modelMap) {

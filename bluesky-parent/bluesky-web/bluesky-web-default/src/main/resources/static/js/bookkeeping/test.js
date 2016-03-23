@@ -46,6 +46,7 @@ $(document).ready(function() {
 			}
 		}
 	});
+
 	/*var bookkeeping = new Bookkeeping({name : "test"});
 	console.log("bookkeeping : ", bookkeeping);
 	bookkeeping.set({name : "test22"}, {validate : true});
@@ -77,24 +78,18 @@ $(document).ready(function() {
 	//$.bookkeepingCollection.fetch();
 	
 	$.BookkeepingView = Backbone.View.extend({
-		el : "#bookkeepingArea",	//기본은 div
+		el : "<tr>",	//기본은 div
 		//className : "testt",
 		bookkeepingTemplate : $("#template-bookkeeping-view").html(),
 		events : {
-			"dblclick label" : "edit",
-			"keypress .edit" : "updateOnEnter",
-			"focus .edit" : "updateOnEnter",
-			"blur .edit" : "close"
+			"click .glyphicon-edit" : "updateOnEnter",
+			"click .glyphicon-remove" : "close"
 		},
 		initialize : function() {
 			console.log("This view has been initialized.");
-			//this.listenTo(this.model, "change", this.render);
-			//this.model.on({"change" : this.render})
-			this.render();
-			
 		},
 		render : function() {
-			console.log("BookkeepingView render");
+			console.log("BookkeepingView render", this.model, this.$el);
 			this.$el.html( Mustache.render(this.bookkeepingTemplate, this.model.toJSON()));
 			return this;
 		},
@@ -116,19 +111,13 @@ $(document).ready(function() {
 //	var bookkeepingView = new BookkeepingView();
 //	bookkeepingView.render();
 	
-	/* 이건 잘못된 호출
-	for (var i = 0 ; i < bookkeepingCollection.length ; i++) {
-		console.log("bookkeepingCollection[i] : ", bookkeepingCollection[i]);
-		var bookkeepingView = new BookkeepingView(bookkeepingCollection[i]);
-		bookkeepingView.render();
-	}*/
+	
 	
 	$.BookkeepingCollectionView = Backbone.View.extend({
-		el : "#bookkeepingArea",
+		el : "#bookkeepingArea table tbody",
 		bookkeepingCollectionTemplate : $("#template-bookkeeping-list").html(),
 		events : {
-			"click" : "test",
-			"click #add" : "addBookkeeping"
+			//"click .addBookkeeping" : "addBookkeeping"
 		},
 		initialize : function() {
 			console.log("This collection view has been initialized.");
@@ -143,43 +132,60 @@ $(document).ready(function() {
 		},
 		render : function() {
 			console.log("BookkeepingCollectionView render, model : ", this.collection.toJSON());
-			this.$el.html(Mustache.render(this.bookkeepingCollectionTemplate, this.collection.toJSON(), {"bookkeeping-view" : $.BookkeepingView.prototype.bookkeepingTemplate}))
+			
+			this.collection.each(function(bookkeeping) {
+				var bookkeepingView = new $.BookkeepingView({model : bookkeeping});
+				console.log("bookkeepingView : ", bookkeepingView);
+				this.$el.append(bookkeepingView.render().el);
+			}, this);
+			
+			//this.$el.html(Mustache.render(this.bookkeepingCollectionTemplate, this.collection.toJSON(), {"bookkeeping-view" : $.BookkeepingView.prototype.bookkeepingTemplate}))
+			//return this;
 		},
 		renderBookkeeping : function(bookkeeping) {
-			var bookkeepingView = $.BookkeepingView({model : bookkeeping});
-			this.$el.find("tbody").append(bookkeepingView.render().el);
-		},
-		test : function() {
-			console.log("테스트");
-		},
-		addBookkeeping : function(e) {
-			e.preventDefault();
-			var formData = {}
-			var bookkeepingView = $.BookkeepingView({model : bookkeeping});
+			var bookkeepingView = new $.BookkeepingView({model : bookkeeping});
 			this.$el.append(bookkeepingView.render().el);
+		},
+		addBookkeeping : function() {
+			console.log("addBookkeeping");
+//			var formData = {}
+//			var bookkeeping = new $.Bookkeeping({ name : $("input[name=addBookkeepingName]").val()});
+//			var bookkeepingView = new $.BookkeepingView({model : bookkeeping});
+//			alert(1);
+			this.collection.create({ name : $("input[name=addBookkeepingName]").val() });
+			//this.$el.find("table tbody").append(bookkeepingView.render().el);
+//			alert(2);
 		}
 	});
 	
+	$("#bookkeepingArea").html(Mustache.render($("#template-bookkeeping-list").html()));
+	
 	$.bookkeepingCollectionView = new $.BookkeepingCollectionView();
+	
+	
+	$(document).on("click", ".addBookkeeping", function(event) {
+		event.preventDefault();
+		$.bookkeepingCollectionView.addBookkeeping();
+	})
 	//bookkeepingCollectionView.render();
 	//console.log(bookkeepingCollectionView.el);
 	
 	
 	
-	$.BookkeepingRouter = Backbone.Router.extend({
-		routes : {
-			"/bookkeeping/index" : "bookkeepingList",
-			"*other" : "defaultRoute"
-		},
-		bookkeepingList : function() {
-			console.log("route bookkeepingList");
-		},
-		defaultRoute : function(other) {
-			console.log("Invalid. You attempted to reach : ", other);
-		}
-	});	
-	var bookkeepingRouter = new $.BookkeepingRouter();
-	Backbone.history.start();
+//	$.BookkeepingRouter = Backbone.Router.extend({
+//		routes : {
+//			"/bookkeeping/index" : "bookkeepingList",
+//			"*other" : "defaultRoute"
+//		},
+//		bookkeepingList : function() {
+//			console.log("route bookkeepingList");
+//		},
+//		defaultRoute : function(other) {
+//			console.log("Invalid. You attempted to reach : ", other);
+//		}
+//	});	
+	//var bookkeepingRouter = new $.BookkeepingRouter();
+	//Backbone.history.start();
 	// 우선 잘되는지 테스트
 	/*var bookkeepingList = [];
 	for (var i = 0 ; i < 10 ; i++) {
