@@ -6,7 +6,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.Table;
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Min;
 
 import org.hibernate.validator.constraints.NotEmpty;
 
@@ -14,23 +14,24 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(indexes = @Index(name = "IDX_Bookkeeping_userId", columnList = "user_id") )
+@Table(indexes = @Index(name = "IDX_Bookkeeping_userId", columnList = "user_id"))
 public class Bookkeeping {
 
 	@Id
 	@GeneratedValue
-	@NotNull(groups = Modify.class)
+	@Min(value = 1, groups = {Update.class, Delete.class})
 	private long id;
 
-	@NotEmpty(groups = { Add.class, Modify.class })
+	@NotEmpty(groups = { Create.class, Update.class })
 	private String name;
 
-	@Column(name = "user_id")
+	@Column(name = "user_id", updatable = false)
+	@Min(value = 1, groups = Update.class)
 	private long userId;
 
-	public interface Add {
-	};
+	public interface Create {};
 
-	public interface Modify {
-	};
+	public interface Update {};
+	
+	public interface Delete {}
 }

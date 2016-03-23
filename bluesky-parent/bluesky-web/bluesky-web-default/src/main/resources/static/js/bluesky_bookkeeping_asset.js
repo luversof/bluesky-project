@@ -17,7 +17,7 @@ $(document).ready(function() {
 					{ data : "name" },
 					{ data : "amount", readOnly : true, type : "numeric" }
 				],
-				minSpareRows : 1,
+				minSpareRows : 1
 		}
 	});
 

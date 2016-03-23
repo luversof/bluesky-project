@@ -7,7 +7,9 @@
 	<script type="text/javascript" th:src="@{#{url.mustache.js}}"></script>
 	<script type="text/javascript" th:src="@{#{url.underscore.js}}"></script>
 	<script type="text/javascript" th:src="@{#{url.backbone.js}}"></script>
-	<script type="text/javascript" th:src="@{/js/bookkeeping/test.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bookkeeping/bookkeeping/model.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bookkeeping/bookkeeping/collection.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bookkeeping/bookkeeping/view.js}"></script>
 </head>
 <body>
 	<div layout:fragment="content">
@@ -21,29 +23,26 @@
 		
 		
 		<script type="text/template" id="template-bookkeeping-view">
-			<td contenteditable="true">{{name}}</td>
+			<td contenteditable="true" data-key="name" class="test">{{name}}</td>
 			<td>
 				<span class="glyphicon glyphicon-edit">수정</span>
 				<span class="glyphicon glyphicon-remove">삭제</span>
 			</td>
 		</script>
 		<script type="text/template" id="template-bookkeeping-list">
-			<div class="col-md-5">
+			<div class="col-md-4">
 			<table class="table">
 				<thead>
 					<tr>
-						<th>이름</th><th></th>
+						<th class="col-md-6">이름</th>
+						<th class="col-md-4"></th>
 					</tr>
 				</thead>
 				<tbody>
-				{{#.}}
-					<tr>
-					{{> bookkeeping-view}}
-					</tr>
-				{{/.}}
 				</tbody>
 			</table>
 
+			가계부 추가
 			<input type="text" name="addBookkeepingName" />이름
 			<span class="glyphicon glyphicon-plus addBookkeeping">추가</span>
 			</div>

@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.repository.BookkeepingRepository;
+import net.luversof.core.exception.BlueskyException;
 
 @Service
 @Transactional("bookkeepingTransactionManager")
@@ -30,13 +31,19 @@ public class BookkeepingService {
 	 * @return
 	 */
 	public Bookkeeping save(Bookkeeping bookkeeping) {
-		boolean isSave = bookkeeping.getId() == 0;
 		bookkeepingRepository.save(bookkeeping);
-		if (isSave) {
-			assetService.initialDataSave(bookkeeping);
-			entryGroupService.initialDataSave(bookkeeping);
-		}
+		assetService.initialDataSave(bookkeeping);
+		entryGroupService.initialDataSave(bookkeeping);
 		return bookkeeping;
+	}
+	
+	public Bookkeeping update(Bookkeeping bookkeeping) {
+		Bookkeeping targetBookkeeping = findOne(bookkeeping.getId());
+		if (targetBookkeeping.getUserId() != bookkeeping.getUserId()) {
+			throw new BlueskyException("NOT_OWNER_BOOKKEEPING");
+		}
+		
+		return bookkeepingRepository.save(bookkeeping);
 	}
 	
 	@Transactional(value = "bookkeepingTransactionManager", readOnly = true)
@@ -54,6 +61,11 @@ public class BookkeepingService {
 	 * @param bookkeeping
 	 */
 	public void delete(Bookkeeping bookkeeping) {
+		Bookkeeping targetBookkeeping = findOne(bookkeeping.getId());
+		if (targetBookkeeping.getUserId() != bookkeeping.getUserId()) {
+			throw new BlueskyException("NOT_OWNER_BOOKKEEPING");
+		}
+		
 		entryGroupService.deleteBybookkeepingId(bookkeeping.getId());
 		assetService.deleteBybookkeepingId(bookkeeping.getId());
 		bookkeepingRepository.delete(bookkeeping);

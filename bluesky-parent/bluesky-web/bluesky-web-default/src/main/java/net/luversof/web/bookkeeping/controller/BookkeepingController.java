@@ -13,8 +13,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.domain.Bookkeeping.Add;
-import net.luversof.bookkeeping.domain.Bookkeeping.Modify;
+import net.luversof.bookkeeping.domain.Bookkeeping.Create;
+import net.luversof.bookkeeping.domain.Bookkeeping.Delete;
+import net.luversof.bookkeeping.domain.Bookkeeping.Update;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
@@ -25,6 +26,7 @@ public class BookkeepingController {
 
 	@Autowired
 	private BookkeepingService bookkeepingService;
+	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)	
 	@RequestMapping(value= "", method = RequestMethod.GET)
 	public List<Bookkeeping> getMyBookkeeping(Authentication authentication) {
@@ -38,23 +40,24 @@ public class BookkeepingController {
 	
 	
 	@RequestMapping(value = "", method = RequestMethod.POST)
-	public Bookkeeping post(@Validated(Add.class) Bookkeeping bookkeeping, Authentication authentication) {
+	public Bookkeeping post(@RequestBody @Validated(Create.class) Bookkeeping bookkeeping, Authentication authentication) {
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
 		bookkeeping.setUserId(blueskyUser.getId());
 		return bookkeepingService.save(bookkeeping);
 	}
 	
 	@RequestMapping(value="/{id}", method = RequestMethod.PUT)
-	public Bookkeeping modifyBookkeeping(Authentication authentication, @RequestBody @Validated(Modify.class) Bookkeeping bookkeeping) {
-		//TODO 본인 bookkeeping 확인 절차가 있어야 함
-		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
-		return bookkeepingService.save(bookkeeping);
+	@PreAuthorize("hasRole('ROLE_USER') and authentication.principal.id == #bookkeeping.userId")
+	public Bookkeeping modifyBookkeeping(Authentication authentication, @RequestBody @Validated(Update.class) Bookkeeping bookkeeping) {
+		return bookkeepingService.update(bookkeeping);
 	}
 	
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)	
 	@RequestMapping(value="/{id}", method = RequestMethod.DELETE)
-	public void removeBookkeeping(Authentication authentication, @RequestBody @Validated(Modify.class) Bookkeeping bookkeeping) {
+	public Bookkeeping removeBookkeeping(Authentication authentication, @Validated(Delete.class) Bookkeeping bookkeeping) {
 		//TODO 본인 bookkeeping 확인 절차가 있어야 함
 		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		bookkeepingService.delete(bookkeeping);
+		return bookkeeping;
 	}
 }

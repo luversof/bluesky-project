@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.domain.Bookkeeping.Add;
+import net.luversof.bookkeeping.domain.Bookkeeping.Create;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;

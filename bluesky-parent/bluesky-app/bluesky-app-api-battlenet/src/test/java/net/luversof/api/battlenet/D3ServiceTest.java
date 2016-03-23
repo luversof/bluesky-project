@@ -18,16 +18,16 @@ public class D3ServiceTest extends GeneralTest {
 	
 	@Test
 	public void getCareerProfileTest() {
-		log.debug("result : {}", d3Service.getCareerProfile("파란하늘#3794", "ko_KR"));
+		log.debug("getCareerProfileTest result : {}", d3Service.getCareerProfile("파란하늘#3794", "ko_KR"));
 	}
 	
 	@Test
 	public void getHeroProfileTest() {
-		log.debug("result : {}", d3Service.getHeroProfile(profile, 40533, locale));
+		log.debug("getHeroProfileTest result : {}", d3Service.getHeroProfile(profile, 40533, locale));
 	}
 	
 	@Test
 	public void getItemDataTest() {
-		log.debug("result : {}", d3Service.getItemData("Unique_Helm_002_p1", locale));
+		log.debug("getItemDataTest result : {}", d3Service.getItemData("Unique_Helm_002_p1", locale));
 	}
 }

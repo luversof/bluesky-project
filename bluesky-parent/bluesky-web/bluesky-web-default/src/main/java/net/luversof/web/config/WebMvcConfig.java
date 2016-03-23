@@ -45,7 +45,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 	@Override
 	public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
 		argumentResolvers.add(blogHandlerMethodArgumentResolver);
-		argumentResolvers.add(bookkeepingHandlerMethodArgumentResolver);
+		//argumentResolvers.add(bookkeepingHandlerMethodArgumentResolver);
 		super.addArgumentResolvers(argumentResolvers);
 	}
 	
