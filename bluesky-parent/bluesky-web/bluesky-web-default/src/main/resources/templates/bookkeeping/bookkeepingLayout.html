@@ -22,18 +22,18 @@
 							menu = ${#strings.contains(path, '/entry') ? 'entry' : 'bookkeeping'},
 							menu = ${#strings.contains(path, '/statistics') ? 'statistics' : menu},
 							menu = ${#strings.contains(path, '/asset') ? 'asset' : menu},
-							menu = ${#strings.contains(path, '/bookkeeping/setting') ? 'settingBookkeeping' : menu},
-							menu = ${#strings.contains(path, '/setting/asset') ? 'settingAsset' : menu},
-							menu = ${#strings.contains(path, '/setting/entryGroup') ? 'settingEntryGroup' : menu},
+							menu = ${#strings.contains(path, '/bookkeeping/setting') ? 'bookkeepingSetting' : menu},
+							menu = ${#strings.contains(path, '/asset/setting') ? 'assetSetting' : menu},
+							menu = ${#strings.contains(path, '/entryGroup/setting') ? 'entryGroupSetting' : menu},
 							isSettingMenu = ${#strings.contains(path, '/setting')}">
 						<li th:class="${menu} == 'entry' ? active"><a th:href="@{#{url.bookkeeping.entry(${bookkeepingId})}}"><i class="fa fa-pencil"></i> 가계부 입력</a></li>
 						<li th:class="${menu} == 'statistics' ? active"><a th:href="@{#{url.bookkeeping.statistics(${bookkeepingId})}}"><i class="fa fa-bar-chart"></i> 통계 보기</a></li>
 						<li th:class="${isSettingMenu} ? active">
 							<a href="#"><i class="fa fa-cogs"></i> 설정</a>
 							<ul class="nav nav-pills nav-stacked" th:attr="aria-expanded=${isSettingMenu}">
-								<li th:class="${menu} == 'settingBookkeeping' ? active"><a th:href="@{#{url.bookkeeping.settings.bookkeeping}}"><i th:class="${menu} == 'settingBookkeeping' ? 'fa fa-cog fa-spin' : 'fa fa-cog'"></i>  가계부 관리</a></li>
-								<li th:class="${menu} == 'settingAsset' ? active"><a th:href="@{#{url.bookkeeping.settings.asset(${bookkeepingId})}}"><i th:class="${menu} == 'settingAsset' ? 'fa fa-cog fa-spin' : 'fa fa-cog'"></i>  자산 관리</a></li>
-								<li th:class="${menu} == 'settingEntryGroup' ? active"><a th:href="@{#{url.bookkeeping.settings.entryGroup(${bookkeepingId})}}"><i th:class="${menu} == 'settingEntryGroup' ? 'fa fa-cog fa-spin' : 'fa fa-cog'"></i>  분류 관리</a></li>
+								<li th:class="${menu} == 'bookkeepingSetting' ? active"><a th:href="@{#{url.bookkeeping.setting.bookkeeping}}"><i th:class="${menu} == 'bookkeepingSetting' ? 'fa fa-cog fa-spin' : 'fa fa-cog'"></i>  가계부 관리</a></li>
+								<li th:class="${menu} == 'assetSetting' ? active"><a th:href="@{#{url.bookkeeping.setting.asset(${bookkeepingId})}}"><i th:class="${menu} == 'assetSetting' ? 'fa fa-cog fa-spin' : 'fa fa-cog'"></i>  자산 관리</a></li>
+								<li th:class="${menu} == 'entryGroupSetting' ? active"><a th:href="@{#{url.bookkeeping.setting.entryGroup(${bookkeepingId})}}"><i th:class="${menu} == 'entryGroupSetting' ? 'fa fa-cog fa-spin' : 'fa fa-cog'"></i>  분류 관리</a></li>
 							</ul>
 						</li>
   					</ul>

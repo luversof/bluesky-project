@@ -14,6 +14,7 @@ import lombok.Data;
 import org.hibernate.validator.constraints.NotEmpty;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * 자산
@@ -34,7 +35,7 @@ public class Asset {
 	
 	private long amount;
 	
-	@JsonIgnore
+//	@JsonIgnore
 	@OneToOne
 	@Valid
 	private Bookkeeping bookkeeping;

@@ -85,6 +85,7 @@ $(document).ready(function() {
 		addAsset : function() {
 			
 			console.log("addAsset", this.collection);
+			//this.collection.create({ name : $("input[name=addAssetName]").val(), assetType : $("select[name=addAssetType] option:selected").val(), bookkeeping : {id : 7} });
 			this.collection.create({ name : $("input[name=addAssetName]").val(), assetType : $("select[name=addAssetType] option:selected").val() });
 		}
 	});

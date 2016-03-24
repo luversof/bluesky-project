@@ -62,13 +62,13 @@ public class BookkeepingViewController {
 	
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{bookkeepingId}/setting/entryGroup", method = RequestMethod.GET)
+	@RequestMapping(value = "/{bookkeepingId}/entryGroup/setting", method = RequestMethod.GET)
 	public String entryGroupList(@PathVariable long bookkeepingId) {
 		return "bookkeeping/entryGroup/setting";
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{bookkeepingId}/setting/asset", method = RequestMethod.GET)
+	@RequestMapping(value = "/{bookkeepingId}/asset/setting", method = RequestMethod.GET)
 	public String assetList(@PathVariable long bookkeepingId) {
 		return "bookkeeping/asset/setting";
 	}
