@@ -1,7 +1,8 @@
-$.Bookkeeping = Backbone.Model.extend({
+$.Asset = Backbone.Model.extend({
 	defaults : {
 		name : null,
-		userId : 0
+		amount : 0,
+		assetType : null
 	},
 	initialize : function() {
 		//console.log("This model has been initialized.");
@@ -13,12 +14,16 @@ $.Bookkeeping = Backbone.Model.extend({
 		});
 		this.on("invalid", function(model, error) {
 			//console.log("invalid : ", model, error);
+			alert(error);
 		})
 	},
 	validate : function(attrs, options) {
-		//console.log("validate : ", attrs, options);
+		console.log("validate : ", attrs, options);
 		if (attrs.name == "") {
-			return "Remember to set a name for your bookkeeping";
+			return "추가할 자산의 이름을 입력하세요.";
+		}
+		if (attrs.assetType == null) {
+			return "test";
 		}
 	}
 });

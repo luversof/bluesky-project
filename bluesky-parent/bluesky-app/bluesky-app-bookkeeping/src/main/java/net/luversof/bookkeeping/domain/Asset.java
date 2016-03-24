@@ -6,6 +6,7 @@ import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
+import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 import lombok.Data;
@@ -25,25 +26,26 @@ public class Asset {
 
 	@Id
 	@GeneratedValue
-	@NotNull(groups = Modify.class)
+	@NotNull(groups = AssetUpdate.class)
 	private long id;
 	
-	@NotEmpty(groups = { Add.class, Modify.class })
+	@NotEmpty(groups = { AssetCreate.class, AssetUpdate.class })
 	private String name;
 	
 	private long amount;
 	
 	@JsonIgnore
 	@OneToOne
+	@Valid
 	private Bookkeeping bookkeeping;
 	
-	@NotNull(groups = { Add.class, Modify.class })
+	@NotNull(groups = { AssetCreate.class, AssetUpdate.class })
 	@Enumerated(EnumType.STRING)
 	private AssetType assetType;
 	
-	public interface Add {
+	public interface AssetCreate {
 	};
 	
-	public interface Modify {
+	public interface AssetUpdate {
 	};
 }

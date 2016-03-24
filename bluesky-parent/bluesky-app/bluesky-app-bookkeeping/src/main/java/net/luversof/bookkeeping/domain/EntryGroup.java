@@ -14,6 +14,11 @@ import org.hibernate.validator.constraints.NotEmpty;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+/**
+ * 분류 항목 
+ * @author bluesky
+ *
+ */
 @Entity
 @Data
 public class EntryGroup {

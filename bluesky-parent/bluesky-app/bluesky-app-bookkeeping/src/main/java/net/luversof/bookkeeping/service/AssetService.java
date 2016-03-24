@@ -12,6 +12,7 @@ import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.domain.AssetInitialData;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.repository.AssetRepository;
+import net.luversof.core.exception.BlueskyException;
 
 @Service
 @Transactional("bookkeepingTransactionManager")
@@ -19,6 +20,10 @@ public class AssetService {
 
 	@Autowired
 	private AssetRepository assetRepository;
+	
+
+	@Autowired
+	private BookkeepingService bookkeepingService;
 	
 	/**
 	 * 초기 데이터 insert
@@ -41,6 +46,18 @@ public class AssetService {
 	}
 	
 	public Asset save(Asset asset) {
+		Bookkeeping targetBookkeeping = bookkeepingService.findOne(asset.getBookkeeping().getId());
+		if (targetBookkeeping.getUserId() != asset.getBookkeeping().getUserId()) {
+			throw new BlueskyException("NOT_OWNER_BOOKKEEPING");
+		}
+		return assetRepository.save(asset);
+	}
+	
+	public Asset update(Asset asset) {
+		Bookkeeping targetBookkeeping = bookkeepingService.findOne(asset.getBookkeeping().getId());
+		if (targetBookkeeping.getUserId() != asset.getBookkeeping().getUserId()) {
+			throw new BlueskyException("NOT_OWNER_BOOKKEEPING");
+		}
 		return assetRepository.save(asset);
 	}
 
@@ -50,16 +67,20 @@ public class AssetService {
 	}
 	
 	@Transactional(value = "bookkeepingTransactionManager", readOnly = true)
-	public List<Asset> findByBookkeepingId(long bookkeeping_id) {
-		return assetRepository.findByBookkeepingId(bookkeeping_id);
+	public List<Asset> findByBookkeepingId(long bookkeepingId) {
+		return assetRepository.findByBookkeepingId(bookkeepingId);
 	}
 	
 	public void delete(Asset asset) {
+		Bookkeeping targetBookkeeping = bookkeepingService.findOne(asset.getBookkeeping().getId());
+		if (targetBookkeeping.getUserId() != asset.getBookkeeping().getUserId()) {
+			throw new BlueskyException("NOT_OWNER_BOOKKEEPING");
+		}
 		assetRepository.delete(asset);
 	}
 	
-	public void deleteBybookkeepingId(long bookkeeping_id) {
-		List<Asset> assetList = findByBookkeepingId(bookkeeping_id);
+	public void deleteBybookkeepingId(long bookkeepingId) {
+		List<Asset> assetList = findByBookkeepingId(bookkeepingId);
 		assetRepository.delete(assetList);
 	}
 }

@@ -7,5 +7,5 @@ import net.luversof.bookkeeping.domain.Asset;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AssetRepository extends JpaRepository<Asset, Long> {
-	List<Asset> findByBookkeepingId(long bookkeeping_id);
+	List<Asset> findByBookkeepingId(long bookkeepingId);
 }

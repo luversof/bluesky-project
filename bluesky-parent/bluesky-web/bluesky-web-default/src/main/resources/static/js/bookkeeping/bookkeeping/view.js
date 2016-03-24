@@ -2,7 +2,6 @@ $(document).ready(function() {
 	
 	$.BookkeepingView = Backbone.View.extend({
 		el : "<tr>",	//기본은 div
-		//className : "testt",
 		template : $("#template-bookkeeping-view").html(),
 		events : {
 			"click .glyphicon-edit" : "updateBookkeeping",
@@ -11,18 +10,14 @@ $(document).ready(function() {
 			"keypress [data-key=name]" : "changeNameKeyPress"
 		},
 		initialize : function() {
-			console.log("This view has been initialized.");
+			//console.log("This view has been initialized.");
 			this.listenTo(this.model, 'change', this.render);
 			this.listenTo(this.model, 'destroy', this.remove);
 		},
 		render : function() {
-			//console.log("BookkeepingView render", this.model, this.$el);
 			this.$el.html(Mustache.render(this.template, this.model.toJSON()));
 			this.$el.find(".glyphicon-edit").hide();
 			return this;
-		},
-		edit : function() {
-			console.log("edit");
 		},
 		updateBookkeeping : function() {
 			this.model.save({name : this.$el.find("[data-key=name]").text()});
@@ -31,20 +26,19 @@ $(document).ready(function() {
 		removeBookkeeping : function() {
 			this.model.destroy();
 		},
-		changeNameKeyUP : function(e) {
-			//console.log("data : ", this.$el.find("[data-key=name]").text());
+		changeNameKeyUP : function(event) {
 			if (this.$el.find("[data-key=name]").text() != this.model.get("name")) {
 				this.$el.find(".glyphicon-edit").show(100);
 			} else {
 				this.$el.find(".glyphicon-edit").hide(100);
 			}
-			if (e.keyCode == 13) {
+			if (event.keyCode == 13) {
 				this.updateBookkeeping();
 			}
 		},
 		// enter 입력 처리 방지
-		changeNameKeyPress : function(e) {
-			return e.keyCode != 13;
+		changeNameKeyPress : function(event) {
+			return event.keyCode != 13;
 		}
 	});
 	
@@ -56,7 +50,7 @@ $(document).ready(function() {
 			//"click .addBookkeeping" : "addBookkeeping"
 		},
 		initialize : function() {
-			console.log("This collection view has been initialized.");
+			//console.log("This collection view has been initialized.");
 			
 			this.collection = new $.BookkeepingCollection();
 			this.collection.fetch({reset : true});
@@ -65,7 +59,7 @@ $(document).ready(function() {
 			this.listenTo(this.collection, "add", this.renderBookkeeping);
 		},
 		render : function() {
-			console.log("BookkeepingCollectionView render, model : ", this.collection.toJSON());
+			//console.log("BookkeepingCollectionView render, model : ", this.collection.toJSON());
 			
 			this.collection.each(function(bookkeeping) {
 				var bookkeepingView = new $.BookkeepingView({model : bookkeeping});
@@ -81,20 +75,12 @@ $(document).ready(function() {
 			this.$el.append(bookkeepingView.render().el);
 		},
 		addBookkeeping : function() {
-			
-			console.log("addBookkeeping", this.collection);
-	//		var formData = {}
-	//		var bookkeeping = new $.Bookkeeping({ name : $("input[name=addBookkeepingName]").val()});
-	//		var bookkeepingView = new $.BookkeepingView({model : bookkeeping});
-	//		alert(1);
+			//console.log("addBookkeeping", this.collection);
 			this.collection.create({ name : $("input[name=addBookkeepingName]").val() });
-			//this.$el.find("table tbody").append(bookkeepingView.render().el);
-	//		alert(2);
 		}
 	});
 
 	$("#bookkeepingArea").html(Mustache.render($("#template-bookkeeping-list").html()));
-	
 	$.bookkeepingCollectionView = new $.BookkeepingCollectionView();
 	
 	

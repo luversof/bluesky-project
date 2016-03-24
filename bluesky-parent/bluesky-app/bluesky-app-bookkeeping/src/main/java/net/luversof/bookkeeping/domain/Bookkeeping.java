@@ -11,6 +11,7 @@ import javax.validation.constraints.Min;
 import org.hibernate.validator.constraints.NotEmpty;
 
 import lombok.Data;
+import net.luversof.bookkeeping.domain.Asset.AssetCreate;
 
 @Data
 @Entity
@@ -19,19 +20,19 @@ public class Bookkeeping {
 
 	@Id
 	@GeneratedValue
-	@Min(value = 1, groups = {Update.class, Delete.class})
+	@Min(value = 1, groups = {BookkeepingUpdate.class, BookkeepingDelete.class, AssetCreate.class})
 	private long id;
 
-	@NotEmpty(groups = { Create.class, Update.class })
+	@NotEmpty(groups = { BookkeepingCreate.class, BookkeepingUpdate.class })
 	private String name;
 
 	@Column(name = "user_id", updatable = false)
-	@Min(value = 1, groups = Update.class)
+	@Min(value = 1, groups = BookkeepingUpdate.class)
 	private long userId;
 
-	public interface Create {};
+	public interface BookkeepingCreate {};
 
-	public interface Update {};
+	public interface BookkeepingUpdate {};
 	
-	public interface Delete {}
+	public interface BookkeepingDelete {}
 }

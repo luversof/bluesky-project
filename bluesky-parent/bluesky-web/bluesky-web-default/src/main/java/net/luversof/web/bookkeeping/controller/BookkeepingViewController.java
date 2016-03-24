@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.domain.Bookkeeping.Create;
+import net.luversof.bookkeeping.domain.Bookkeeping.BookkeepingCreate;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
@@ -25,13 +25,17 @@ import net.luversof.web.constant.AuthorizeRole;
 @RequestMapping(value = "bookkeeping", produces = MediaType.TEXT_HTML_VALUE)
 public class BookkeepingViewController {
 	
+	@Autowired
+	private BookkeepingService bookkeepingService;
 	
 	@RequestMapping(value = "/index", method = RequestMethod.GET)
 	public void index() {
 	}
 	
-	@Autowired
-	private BookkeepingService bookkeepingService;
+	@RequestMapping(value = "/setting", method = RequestMethod.GET)
+	public void setting() {
+	}
+	
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping("/$!")
@@ -58,20 +62,15 @@ public class BookkeepingViewController {
 	
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{bookkeepingId}/settings/entryGroup", method = RequestMethod.GET)
+	@RequestMapping(value = "/{bookkeepingId}/setting/entryGroup", method = RequestMethod.GET)
 	public String entryGroupList(@PathVariable long bookkeepingId) {
-		return "bookkeeping/entryGroup";
+		return "bookkeeping/entryGroup/setting";
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{bookkeepingId}/settings/asset", method = RequestMethod.GET)
+	@RequestMapping(value = "/{bookkeepingId}/setting/asset", method = RequestMethod.GET)
 	public String assetList(@PathVariable long bookkeepingId) {
-		return "bookkeeping/asset";
+		return "bookkeeping/asset/setting";
 	}
 	
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{bookkeepingId}/settings/bookkeeping", method = RequestMethod.GET)
-	public String bookkeeping(@PathVariable long bookkeepingId) {
-		return "bookkeeping/bookkeeping";
-	}
 }
