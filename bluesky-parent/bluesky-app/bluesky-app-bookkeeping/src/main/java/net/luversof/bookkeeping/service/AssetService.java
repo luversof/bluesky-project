@@ -45,7 +45,7 @@ public class AssetService {
 		return assetRepository.save(assetSet);
 	}
 	
-	public Asset save(Asset asset) {
+	public Asset create(Asset asset) {
 		Bookkeeping targetBookkeeping = bookkeepingService.findOne(asset.getBookkeeping().getId());
 		if (targetBookkeeping.getUserId() != asset.getBookkeeping().getUserId()) {
 			throw new BlueskyException("NOT_OWNER_BOOKKEEPING");
@@ -57,6 +57,10 @@ public class AssetService {
 		Bookkeeping targetBookkeeping = bookkeepingService.findOne(asset.getBookkeeping().getId());
 		if (targetBookkeeping.getUserId() != asset.getBookkeeping().getUserId()) {
 			throw new BlueskyException("NOT_OWNER_BOOKKEEPING");
+		}
+		Asset targetAsset = findOne(asset.getId());
+		if (targetAsset.getBookkeeping().getUserId() != asset.getBookkeeping().getUserId()) {
+			throw new BlueskyException("NOT_OWER_ASSET");
 		}
 		return assetRepository.save(asset);
 	}
@@ -75,6 +79,10 @@ public class AssetService {
 		Bookkeeping targetBookkeeping = bookkeepingService.findOne(asset.getBookkeeping().getId());
 		if (targetBookkeeping.getUserId() != asset.getBookkeeping().getUserId()) {
 			throw new BlueskyException("NOT_OWNER_BOOKKEEPING");
+		}
+		Asset targetAsset = findOne(asset.getId());
+		if (targetAsset.getBookkeeping().getUserId() != asset.getBookkeeping().getUserId()) {
+			throw new BlueskyException("NOT_OWER_ASSET");
 		}
 		assetRepository.delete(asset);
 	}

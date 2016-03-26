@@ -7,11 +7,20 @@ body {
 }
 
 .navbar {
-	opacity : 0.95;
+	opacity: 0.95;
 }
 
 code[data-gist-id] {
 	background-color: #ffffff;
 }
 
-.fb-comments, .fb-comments * {width:100% !important;}
+.fb-comments, .fb-comments * {
+	width: 100% !important;
+}
+
+[contenteditable=true]:empty:not(:focus):before {
+	content: attr(placeholder);
+	display: block; /* For Firefox */
+	font-size: 0.8em;
+	opacity: .65;
+}

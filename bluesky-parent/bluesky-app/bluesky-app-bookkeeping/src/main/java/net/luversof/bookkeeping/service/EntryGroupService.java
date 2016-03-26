@@ -12,12 +12,16 @@ import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.domain.EntryGroupInitialData;
 import net.luversof.bookkeeping.repository.EntryGroupRepository;
+import net.luversof.core.exception.BlueskyException;
 
 @Service
 @Transactional("bookkeepingTransactionManager")
 public class EntryGroupService {
 	@Autowired
 	private EntryGroupRepository entryGroupRepository;
+	
+	@Autowired
+	private BookkeepingService bookkeepingService;
 	
 	/**
 	 * 초기 데이터 insert
@@ -37,7 +41,24 @@ public class EntryGroupService {
 		}
 		return entryGroupRepository.save(entryGroupSet);
 	}
-	public EntryGroup save(EntryGroup entryGroup) {
+	
+	public EntryGroup create(EntryGroup entryGroup) {
+		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entryGroup.getBookkeeping().getId());
+		if (targetBookkeeping.getUserId() != entryGroup.getBookkeeping().getUserId()) {
+			throw new BlueskyException("NOT_OWNER_BOOKKEEPING");
+		}
+		return entryGroupRepository.save(entryGroup);
+	}
+	
+	public EntryGroup update(EntryGroup entryGroup) {
+		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entryGroup.getBookkeeping().getId());
+		if (targetBookkeeping.getUserId() != entryGroup.getBookkeeping().getUserId()) {
+			throw new BlueskyException("NOT_OWNER_BOOKKEEPING");
+		}
+		EntryGroup targetEntryGroup = findOne(entryGroup.getId());
+		if (targetEntryGroup.getBookkeeping().getUserId() != entryGroup.getBookkeeping().getUserId()) {
+			throw new BlueskyException("NOT_OWER_ENTRYGROUP");
+		}
 		return entryGroupRepository.save(entryGroup);
 	}
 
@@ -52,6 +73,14 @@ public class EntryGroupService {
 	}
 
 	public void delete(EntryGroup entryGroup) {
+		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entryGroup.getBookkeeping().getId());
+		if (targetBookkeeping.getUserId() != entryGroup.getBookkeeping().getUserId()) {
+			throw new BlueskyException("NOT_OWNER_BOOKKEEPING");
+		}
+		EntryGroup targetEntryGroup = findOne(entryGroup.getId());
+		if (targetEntryGroup.getBookkeeping().getUserId() != entryGroup.getBookkeeping().getUserId()) {
+			throw new BlueskyException("NOT_OWER_ENTRYGROUP");
+		}
 		entryGroupRepository.delete(entryGroup);
 	}
 	

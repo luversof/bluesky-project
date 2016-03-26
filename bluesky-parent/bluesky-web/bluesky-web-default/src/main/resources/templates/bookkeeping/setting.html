@@ -18,28 +18,34 @@
 		
 		
 		<script type="text/template" id="template-bookkeeping-view">
-			<td contenteditable="true" data-key="name" class="test">{{name}}</td>
+			<td contenteditable="true" data-key="name">{{name}}</td>
 			<td>
 				<span class="glyphicon glyphicon-edit">수정</span>
 				<span class="glyphicon glyphicon-remove">삭제</span>
 			</td>
 		</script>
 		<script type="text/template" id="template-bookkeeping-list">
-			<div class="col-md-4">
+			<div class="col-md-3">
 			<table class="table">
+				<colgroup>
+					<col class="col-md-9"></col>
+					<col class="col-md-3"></col>
+				</colgroup>
 				<thead>
 					<tr>
-						<th class="col-md-6">이름</th>
-						<th class="col-md-4"></th>
+						<th>이름</th>
+						<th></th>
 					</tr>
 				</thead>
 				<tbody>
 				</tbody>
+				<tfoot>
+					<tr>
+						<td contenteditable="true" data-key-name="createBookkeepingName" placeholder="추가할 가계부의 이름을 입력하세요"></td>
+						<td><span class="glyphicon glyphicon-plus" data-menu="createBookkeeping">추가</span></td>
+					</tr>
+				</tfoot>
 			</table>
-
-			가계부 추가
-			<input type="text" name="addBookkeepingName" />이름
-			<span class="glyphicon glyphicon-plus addBookkeeping">추가</span>
 			</div>
 		</script>
 	</div>

@@ -6,16 +6,17 @@ import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
+import javax.validation.Valid;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
-
-import lombok.Data;
 
 import org.hibernate.validator.constraints.NotEmpty;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Data;
 
 /**
- * 분류 항목 
+ * 분류 항목
+ * 
  * @author bluesky
  *
  */
@@ -24,23 +25,27 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public class EntryGroup {
 	@Id
 	@GeneratedValue
-	@NotNull(groups = Modify.class)
+	@NotNull(groups = EntryGroupUpdate.class)
+	@Min(value = 1, groups = { EntryGroupUpdate.class, EntryGroupDelete.class })
 	private long id;
 
-	@NotEmpty(groups = { Add.class, Modify.class })
+	@NotEmpty(groups = { EntryGroupCreate.class, EntryGroupUpdate.class })
 	private String name;
 
-	@NotNull(groups = { Add.class, Modify.class })
+	@NotNull(groups = { EntryGroupCreate.class, EntryGroupUpdate.class })
 	@Enumerated(EnumType.STRING)
 	private EntryType entryType;
 
-	@JsonIgnore
 	@OneToOne
+	@Valid
 	private Bookkeeping bookkeeping;
-	
-	public interface Add {
-	};
-	
-	public interface Modify {
-	};
+
+	public interface EntryGroupCreate {
+	}
+
+	public interface EntryGroupUpdate {
+	}
+
+	public interface EntryGroupDelete {
+	}
 }

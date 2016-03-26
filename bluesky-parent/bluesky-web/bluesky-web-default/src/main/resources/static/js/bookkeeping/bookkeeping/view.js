@@ -27,10 +27,10 @@ $(document).ready(function() {
 			this.model.destroy();
 		},
 		changeNameKeyUP : function(event) {
-			if (this.$el.find("[data-key=name]").text() != this.model.get("name")) {
-				this.$el.find(".glyphicon-edit").show(100);
-			} else {
+			if (this.$el.find("[data-key=name]").text() == this.model.get("name")) {
 				this.$el.find(".glyphicon-edit").hide(100);
+			} else {
+				this.$el.find(".glyphicon-edit").show(100);
 			}
 			if (event.keyCode == 13) {
 				this.updateBookkeeping();
@@ -47,7 +47,6 @@ $(document).ready(function() {
 		el : "#bookkeepingArea table tbody",
 		template : $("#template-bookkeeping-list").html(),
 		events : {
-			//"click .addBookkeeping" : "addBookkeeping"
 		},
 		initialize : function() {
 			//console.log("This collection view has been initialized.");
@@ -74,9 +73,9 @@ $(document).ready(function() {
 			var bookkeepingView = new $.BookkeepingView({model : bookkeeping});
 			this.$el.append(bookkeepingView.render().el);
 		},
-		addBookkeeping : function() {
-			//console.log("addBookkeeping", this.collection);
-			this.collection.create({ name : $("input[name=addBookkeepingName]").val() });
+		createBookkeeping : function() {
+			//console.log("createBookkeeping", this.collection);
+			this.collection.create({ name : $("[data-key-name=createBookkeepingName]").text() });
 		}
 	});
 
@@ -84,8 +83,9 @@ $(document).ready(function() {
 	$.bookkeepingCollectionView = new $.BookkeepingCollectionView();
 	
 	
-	$(document).on("click", ".addBookkeeping", function(event) {
+	$(document).on("click", "[data-menu=createBookkeeping]", function(event) {
 		event.preventDefault();
-		$.bookkeepingCollectionView.addBookkeeping();
+		$.bookkeepingCollectionView.createBookkeeping();
+		$(this).closest("tr").find("[contenteditable=true]").text("");
 	});
 });

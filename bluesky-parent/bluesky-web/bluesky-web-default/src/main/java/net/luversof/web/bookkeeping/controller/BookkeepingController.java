@@ -38,6 +38,7 @@ public class BookkeepingController {
 		return bookkeepingService.findByUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 	}
 	
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)	
 	@RequestMapping(value = "/{id}", method = RequestMethod.GET)
 	public Bookkeeping getBookkeeping(@PathVariable long id) {
 		return bookkeepingService.findOne(id);
@@ -45,21 +46,21 @@ public class BookkeepingController {
 	
 	
 	@RequestMapping(value = "", method = RequestMethod.POST)
-	public Bookkeeping post(@RequestBody @Validated(BookkeepingCreate.class) Bookkeeping bookkeeping, Authentication authentication) {
+	public Bookkeeping createBookkeeping(@RequestBody @Validated(BookkeepingCreate.class) Bookkeeping bookkeeping, Authentication authentication) {
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
 		bookkeeping.setUserId(blueskyUser.getId());
-		return bookkeepingService.save(bookkeeping);
+		return bookkeepingService.create(bookkeeping);
 	}
 	
 	@RequestMapping(value="/{id}", method = RequestMethod.PUT)
 	@PreAuthorize("hasRole('ROLE_USER') and authentication.principal.id == #bookkeeping.userId")
-	public Bookkeeping modifyBookkeeping(Authentication authentication, @RequestBody @Validated(BookkeepingUpdate.class) Bookkeeping bookkeeping) {
+	public Bookkeeping updateBookkeeping(Authentication authentication, @RequestBody @Validated(BookkeepingUpdate.class) Bookkeeping bookkeeping) {
 		return bookkeepingService.update(bookkeeping);
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)	
 	@RequestMapping(value="/{id}", method = RequestMethod.DELETE)
-	public Bookkeeping removeBookkeeping(Authentication authentication, @Validated(BookkeepingDelete.class) Bookkeeping bookkeeping) {
+	public Bookkeeping deleteBookkeeping(Authentication authentication, @Validated(BookkeepingDelete.class) Bookkeeping bookkeeping) {
 		//TODO 본인 bookkeeping 확인 절차가 있어야 함
 		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		bookkeepingService.delete(bookkeeping);

@@ -30,7 +30,7 @@ public class BookkeepingService {
 	 * @param bookkeeping
 	 * @return
 	 */
-	public Bookkeeping save(Bookkeeping bookkeeping) {
+	public Bookkeeping create(Bookkeeping bookkeeping) {
 		bookkeepingRepository.save(bookkeeping);
 		assetService.initialDataSave(bookkeeping);
 		entryGroupService.initialDataSave(bookkeeping);

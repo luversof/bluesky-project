@@ -5,10 +5,11 @@ $(document).ready(function() {
 		//className : "testt",
 		template : $("#template-asset-view").html(),
 		events : {
-			"click .glyphicon-edit" : "updateAsset",
-			"click .glyphicon-remove" : "removeAsset",
+			"click [data-menu=updateAsset]" : "updateAsset",
+			"click [data-menu=deleteAsset]" : "deleteAsset",
 			"keyup [data-key=name]" : "changeNameKeyUP",
-			"keypress [data-key=name]" : "changeNameKeyPress"
+			"keypress [data-key=name]" : "changeNameKeyPress",
+			"change select[name=assetType]" : "changeAssetType"
 		},
 		initialize : function() {
 			console.log("This view has been initialized.");
@@ -19,26 +20,23 @@ $(document).ready(function() {
 			//console.log("AssetView render", this.model, this.$el);
 			var data = this.model.toJSON();
 			this.$el.html(Mustache.render(this.template, this.model.toJSON()));
-			this.$el.find("select[name=assetType] > option[value=" + this.model.assetType + "]").attr("selected", "selected");
-			this.$el.find(".glyphicon-edit").hide();
+			this.$el.find("select[name=assetType] > option[value=" + this.model.get("assetType") + "]").attr("selected", "selected");
+			this.$el.find("[data-menu=updateAsset]").hide();
 			return this;
 		},
-		edit : function() {
-			console.log("edit");
-		},
 		updateAsset : function() {
-			this.model.save({name : this.$el.find("[data-key=name]").text()});
-			this.$el.find(".glyphicon-edit").hide(100);
+			this.model.save({name : this.$el.find("[data-key=name]").text(), assetType : this.$el.find("select[name=assetType] option:selected").val()});
+			this.$el.find("[data-menu=updateAsset]").hide(100);
 		},
-		removeAsset : function() {
+		deleteAsset : function() {
 			this.model.destroy();
 		},
 		changeNameKeyUP : function(e) {
 			//console.log("data : ", this.$el.find("[data-key=name]").text());
-			if (this.$el.find("[data-key=name]").text() != this.model.get("name")) {
-				this.$el.find(".glyphicon-edit").show(100);
+			if (this.$el.find("[data-key=name]").text() == this.model.get("name")) {
+				this.$el.find("[data-menu=updateAsset]").hide(100);
 			} else {
-				this.$el.find(".glyphicon-edit").hide(100);
+				this.$el.find("[data-menu=updateAsset]").show(100);
 			}
 			if (e.keyCode == 13) {
 				this.updateAsset();
@@ -47,6 +45,13 @@ $(document).ready(function() {
 		// enter 입력 처리 방지
 		changeNameKeyPress : function(e) {
 			return e.keyCode != 13;
+		},
+		changeAssetType : function() {
+			if (this.$el.find("select[name=assetType] option:selected").val() == this.model.get("assetType")) {
+				this.$el.find("[data-menu=updateAsset]").hide(100);
+			} else {
+				this.$el.find("[data-menu=updateAsset]").show(100);
+			}
 		}
 	});
 	
@@ -55,7 +60,6 @@ $(document).ready(function() {
 		el : "#assetArea table tbody",
 		template : $("#template-asset-list").html(),
 		events : {
-			//"click .addAsset" : "addAsset"
 		},
 		initialize : function() {
 			console.log("This collection view has been initialized.");
@@ -82,11 +86,11 @@ $(document).ready(function() {
 			var assetView = new $.AssetView({model : asset});
 			this.$el.append(assetView.render().el);
 		},
-		addAsset : function() {
+		createAsset : function() {
 			
-			console.log("addAsset", this.collection);
-			//this.collection.create({ name : $("input[name=addAssetName]").val(), assetType : $("select[name=addAssetType] option:selected").val(), bookkeeping : {id : 7} });
-			this.collection.create({ name : $("input[name=addAssetName]").val(), assetType : $("select[name=addAssetType] option:selected").val() });
+			console.log("createAsset", this.collection);
+			this.collection.create({ name : $("[data-key-name=createAssetName]").text(), assetType : $("select[name=createAssetType] option:selected").val() });
+			//this.collection.create({ name : $("[data-key-name=createAssetName]").text(), assetType : $("select[name=createAssetType] option:selected").val() });
 		}
 	});
 
@@ -95,8 +99,11 @@ $(document).ready(function() {
 	$.assetCollectionView = new $.AssetCollectionView();
 	
 	
-	$(document).on("click", ".addAsset", function(event) {
+	$(document).on("click", "[data-menu=createAsset]", function(event) {
 		event.preventDefault();
-		$.assetCollectionView.addAsset();
+		$.assetCollectionView.createAsset();
+		$(this).closest("tr")
+			.find("[contenteditable=true]").text("").end()
+			.find("select option:eq(0)").attr("selected", "selected")
 	});
 });

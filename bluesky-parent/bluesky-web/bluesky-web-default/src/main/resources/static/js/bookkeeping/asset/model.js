@@ -6,12 +6,12 @@ $.Asset = Backbone.Model.extend({
 	},
 	initialize : function() {
 		//console.log("This model has been initialized.");
-		this.on("change", function() {
-			//console.log("this model has changed.");
-		});
-		this.on("change:name", function() {
-			//console.log("name value for this model has changed.");
-		});
+//		this.on("change", function() {
+//			//console.log("this model has changed.");
+//		});
+//		this.on("change:name", function() {
+//			//console.log("name value for this model has changed.");
+//		});
 		this.on("invalid", function(model, error) {
 			//console.log("invalid : ", model, error);
 			alert(error);
