@@ -31,20 +31,20 @@ $(document).ready(function() {
 		deleteAsset : function() {
 			this.model.destroy();
 		},
-		changeNameKeyUP : function(e) {
+		changeNameKeyUP : function(event) {
 			//console.log("data : ", this.$el.find("[data-key=name]").text());
 			if (this.$el.find("[data-key=name]").text() == this.model.get("name")) {
 				this.$el.find("[data-menu=updateAsset]").hide(100);
 			} else {
 				this.$el.find("[data-menu=updateAsset]").show(100);
 			}
-			if (e.keyCode == 13) {
+			if (event.keyCode == 13) {
 				this.updateAsset();
 			}
 		},
 		// enter 입력 처리 방지
-		changeNameKeyPress : function(e) {
-			return e.keyCode != 13;
+		changeNameKeyPress : function(event) {
+			return event.keyCode != 13;
 		},
 		changeAssetType : function() {
 			if (this.$el.find("select[name=assetType] option:selected").val() == this.model.get("assetType")) {
@@ -105,5 +105,9 @@ $(document).ready(function() {
 		$(this).closest("tr")
 			.find("[contenteditable=true]").text("").end()
 			.find("select option:eq(0)").attr("selected", "selected")
+	});
+	
+	$(document).on("keypress", "[data-key-name=createAssetName]", function(e) {
+		return e.keyCode != 13;	
 	});
 });

@@ -21,8 +21,7 @@ public class Bookkeeping {
 
 	@Id
 	@GeneratedValue
-	@Min(value = 1, groups = { BookkeepingUpdate.class, BookkeepingDelete.class, AssetDelete.class,
-			EntryGroupDelete.class })
+	@Min(value = 1, groups = { BookkeepingUpdate.class, BookkeepingDelete.class, AssetDelete.class, EntryGroupDelete.class })
 	private long id;
 
 	@NotEmpty(groups = { BookkeepingCreate.class, BookkeepingUpdate.class })

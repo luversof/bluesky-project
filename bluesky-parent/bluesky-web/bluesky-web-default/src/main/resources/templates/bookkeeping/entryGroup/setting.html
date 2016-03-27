@@ -1,0 +1,67 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-spring4-4.dtd">
+<html
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+	layout:decorator="/bookkeeping/bookkeepingLayout">
+<head>
+	<script type="text/javascript" th:src="@{#{url.mustache.js}}"></script>
+	<script type="text/javascript" th:src="@{#{url.underscore.js}}"></script>
+	<script type="text/javascript" th:src="@{#{url.backbone.js}}"></script>
+	<script type="text/javascript" th:src="@{/js/bookkeeping/entryGroup/model.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bookkeeping/entryGroup/collection.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bookkeeping/entryGroup/view.js}"></script>
+</head>
+<body>
+	<div layout:fragment="content-bookkeeping">
+		<br />
+		<div id="entryGroupArea"></div>
+		
+		
+		<script type="text/template" id="template-entryGroup-view">
+			<td contenteditable="true" data-key="name">{{name}}</td>
+			<td>
+				<select class="form-control" name="entryType">
+					<option th:each="entryType : ${T(net.luversof.bookkeeping.domain.EntryType).values()}" th:value="${entryType}" th:text="#{entryType.text.__${entryType}__}">entryType</option>
+				</select>
+			</td>
+			<td class="text-right">{{amount}}</td>
+			<td>
+				<button class="btn btn-default" data-menu="updateEntryGroup"><span class="glyphicon glyphicon-edit">수정</span></button>
+				<button class="btn btn-default" data-menu="deleteEntryGroup"><span class="glyphicon glyphicon-remove">삭제</span></button>
+			</td>
+		</script>
+		<script type="text/template" id="template-entryGroup-list">
+			<div class="col-md-8">
+			<table class="table">
+				<colgroup>
+					<col class="col-md-6"></col>
+					<col class="col-md-3"></col>
+					<col class="col-md-3"></col>
+				</colgroup>
+				<thead>
+					<tr>
+						<th>이름</th>
+						<th>타입</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+				</tbody>
+				<tfoot>
+					<tr class="active">
+						<td contenteditable="true" data-key-name="createEntryGroupName" placeholder="추가할 기입그룹 의 이름을 입력하세요"></td>
+						<td>
+							<select class="form-control" name="createEntryType">
+								<option th:each="entryType : ${T(net.luversof.bookkeeping.domain.EntryType).values()}" th:value="${entryType}" th:text="#{entryType.text.__${entryType}__}">entryType</option>
+							</select>
+						</td>
+						<td></td>
+						<td><button class="btn btn-default" data-menu="createEntryGroup"><span class="glyphicon glyphicon-plus">추가</span></button></td>
+					</tr>
+				</tfoot>
+			</table>
+			</div>
+		</script>
+	</div>
+</body>
+</html>
