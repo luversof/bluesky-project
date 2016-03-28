@@ -18,24 +18,24 @@
 		
 		
 		<script type="text/template" id="template-entryGroup-view">
-			<td contenteditable="true" data-key="name">{{name}}</td>
 			<td>
 				<select class="form-control" name="entryType">
 					<option th:each="entryType : ${T(net.luversof.bookkeeping.domain.EntryType).values()}" th:value="${entryType}" th:text="#{entryType.text.__${entryType}__}">entryType</option>
 				</select>
 			</td>
+			<td contenteditable="true" data-key="name">{{name}}</td>
 			<td class="text-right">{{amount}}</td>
 			<td>
-				<button class="btn btn-default" data-menu="updateEntryGroup"><span class="glyphicon glyphicon-edit">수정</span></button>
-				<button class="btn btn-default" data-menu="deleteEntryGroup"><span class="glyphicon glyphicon-remove">삭제</span></button>
+				<button class="btn btn-default btn-sm" data-menu="updateEntryGroup"><span class="glyphicon glyphicon-edit">수정</span></button>
+				<button class="btn btn-default btn-sm" data-menu="deleteEntryGroup"><span class="glyphicon glyphicon-remove">삭제</span></button>
 			</td>
 		</script>
 		<script type="text/template" id="template-entryGroup-list">
 			<div class="col-md-8">
 			<table class="table">
 				<colgroup>
-					<col class="col-md-6"></col>
 					<col class="col-md-3"></col>
+					<col class="col-md-6"></col>
 					<col class="col-md-3"></col>
 				</colgroup>
 				<thead>
@@ -49,14 +49,14 @@
 				</tbody>
 				<tfoot>
 					<tr class="active">
-						<td contenteditable="true" data-key-name="createEntryGroupName" placeholder="추가할 기입그룹 의 이름을 입력하세요"></td>
 						<td>
 							<select class="form-control" name="createEntryType">
 								<option th:each="entryType : ${T(net.luversof.bookkeeping.domain.EntryType).values()}" th:value="${entryType}" th:text="#{entryType.text.__${entryType}__}">entryType</option>
 							</select>
 						</td>
+						<td contenteditable="true" data-key-name="createEntryGroupName" placeholder="추가할 기입그룹 의 이름을 입력하세요"></td>
 						<td></td>
-						<td><button class="btn btn-default" data-menu="createEntryGroup"><span class="glyphicon glyphicon-plus">추가</span></button></td>
+						<td><button class="btn btn-default btn-sm" data-menu="createEntryGroup"><span class="glyphicon glyphicon-plus">추가</span></button></td>
 					</tr>
 				</tfoot>
 			</table>

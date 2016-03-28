@@ -57,12 +57,16 @@ $(document).ready(function() {
 	
 	
 	$.EntryGroupCollectionView = Backbone.View.extend({
-		el : "#entryGroupArea table tbody",
+		el : "#entryGroupArea",
 		template : $("#template-entryGroup-list").html(),
 		events : {
+			"click [data-menu=createEntryGroup]" : "createEntryGroup",
+			"keyup [data-key-name=createEntryGroupName]" : "createNameKeyUp",
+			"keypress [data-key-name=createEntryGroupName]" : "createNameKeyPress"
 		},
 		initialize : function() {
-			console.log("This collection view has been initialized.");
+			//console.log("This collection view has been initialized.");
+			this.$el.html(Mustache.render(this.template));
 			
 			this.collection = new $.EntryGroupCollection();
 			this.collection.fetch({reset : true});
@@ -71,43 +75,33 @@ $(document).ready(function() {
 			this.listenTo(this.collection, "add", this.renderEntryGroup);
 		},
 		render : function() {
-			console.log("EntryGroupCollectionView render, model : ", this.collection.toJSON());
-			
 			this.collection.each(function(entryGroup) {
 				var entryGroupView = new $.EntryGroupView({model : entryGroup});
-				this.$el.append(entryGroupView.render().el);
+				this.$el.find("table tbody").append(entryGroupView.render().el);
 			}, this);
-			
-			//Mustache의 하위 참조 방식을 사용하지 않음.
-			//this.$el.html(Mustache.render(this.entryGroupCollectionTemplate, this.collection.toJSON(), {"entryGroup-view" : $.EntryGroupView.prototype.template}))
-			//return this;
 		},
 		renderEntryGroup : function(entryGroup) {
 			var entryGroupView = new $.EntryGroupView({model : entryGroup});
-			this.$el.append(entryGroupView.render().el);
+			this.$el.find("table tbody").append(entryGroupView.render().el);
 		},
-		createEntryGroup : function() {
-			
-			console.log("createEntryGroup", this.collection);
+		createEntryGroup : function(event) {
+			event.preventDefault();
 			this.collection.create({ name : $("[data-key-name=createEntryGroupName]").text(), entryType : $("select[name=createEntryType] option:selected").val() });
+			$(event.target).closest("tr")
+				.find("[contenteditable=true]").text("").end()
+				.find("select option:eq(0)").attr("selected", "selected");
 			//this.collection.create({ name : $("[data-key-name=createEntryGroupName]").text(), entryType : $("select[name=createEntryType] option:selected").val() });
+		},
+		createNameKeyUp : function(event) {
+			if (event.keyCode == 13) {
+				this.createEntryGroup(event);
+			}
+		},
+		createNameKeyPress : function(event) {
+			return event.keyCode != 13;
 		}
 	});
 
-	$("#entryGroupArea").html(Mustache.render($("#template-entryGroup-list").html()));
 	
 	$.entryGroupCollectionView = new $.EntryGroupCollectionView();
-	
-	
-	$(document).on("click", "[data-menu=createEntryGroup]", function(event) {
-		event.preventDefault();
-		$.entryGroupCollectionView.createEntryGroup();
-		$(this).closest("tr")
-			.find("[contenteditable=true]").text("").end()
-			.find("select option:eq(0)").attr("selected", "selected")
-	});
-	
-	$(document).on("keypress", "[data-key-name=createEntryGroupName]", function(e) {
-		return e.keyCode != 13;	
-	});
 });

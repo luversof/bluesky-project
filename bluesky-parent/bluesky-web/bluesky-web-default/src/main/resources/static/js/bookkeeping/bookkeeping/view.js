@@ -4,33 +4,32 @@ $(document).ready(function() {
 		el : "<tr>",	//기본은 div
 		template : $("#template-bookkeeping-view").html(),
 		events : {
-			"click .glyphicon-edit" : "updateBookkeeping",
-			"click .glyphicon-remove" : "removeBookkeeping",
-			"keyup [data-key=name]" : "changeNameKeyUP",
+			"click [data-menu=updateBookkeeping]" : "updateBookkeeping",
+			"click [data-menu=deleteBookkeeping]" : "removeBookkeeping",
+			"keyup [data-key=name]" : "changeNameKeyUp",
 			"keypress [data-key=name]" : "changeNameKeyPress"
 		},
 		initialize : function() {
-			//console.log("This view has been initialized.");
 			this.listenTo(this.model, 'change', this.render);
 			this.listenTo(this.model, 'destroy', this.remove);
 		},
 		render : function() {
 			this.$el.html(Mustache.render(this.template, this.model.toJSON()));
-			this.$el.find(".glyphicon-edit").hide();
+			this.$el.find("[data-menu=updateBookkeeping]").hide();
 			return this;
 		},
 		updateBookkeeping : function() {
 			this.model.save({name : this.$el.find("[data-key=name]").text()});
-			this.$el.find(".glyphicon-edit").hide(100);
+			this.$el.find("[data-menu=updateBookkeeping]").hide(100);
 		},
 		removeBookkeeping : function() {
 			this.model.destroy();
 		},
-		changeNameKeyUP : function(event) {
+		changeNameKeyUp : function(event) {
 			if (this.$el.find("[data-key=name]").text() == this.model.get("name")) {
-				this.$el.find(".glyphicon-edit").hide(100);
+				this.$el.find("[data-menu=updateBookkeeping]").hide(100);
 			} else {
-				this.$el.find(".glyphicon-edit").show(100);
+				this.$el.find("[data-menu=updateBookkeeping]").show(100);
 			}
 			if (event.keyCode == 13) {
 				this.updateBookkeeping();
@@ -44,12 +43,16 @@ $(document).ready(function() {
 	
 	
 	$.BookkeepingCollectionView = Backbone.View.extend({
-		el : "#bookkeepingArea table tbody",
+		el : "#bookkeepingArea",
 		template : $("#template-bookkeeping-list").html(),
 		events : {
+			"click [data-menu=createBookkeeping]" : "createBookkeeping",
+			"keyup [data-key-name=createBookkeepingName]" : "createNameKeyUp",
+			"keypress [data-key-name=createBookkeepingName]" : "createNameKeyPress"
 		},
 		initialize : function() {
 			//console.log("This collection view has been initialized.");
+			this.$el.html(Mustache.render(this.template));
 			
 			this.collection = new $.BookkeepingCollection();
 			this.collection.fetch({reset : true});
@@ -58,34 +61,31 @@ $(document).ready(function() {
 			this.listenTo(this.collection, "add", this.renderBookkeeping);
 		},
 		render : function() {
-			//console.log("BookkeepingCollectionView render, model : ", this.collection.toJSON());
-			
 			this.collection.each(function(bookkeeping) {
 				var bookkeepingView = new $.BookkeepingView({model : bookkeeping});
-				this.$el.append(bookkeepingView.render().el);
+				this.$el.find("table tbody").append(bookkeepingView.render().el);
 			}, this);
-			
-			//Mustache의 하위 참조 방식을 사용하지 않음.
-			//this.$el.html(Mustache.render(this.bookkeepingCollectionTemplate, this.collection.toJSON(), {"bookkeeping-view" : $.BookkeepingView.prototype.bookkeepingTemplate}))
-			//return this;
 		},
 		renderBookkeeping : function(bookkeeping) {
 			var bookkeepingView = new $.BookkeepingView({model : bookkeeping});
-			this.$el.append(bookkeepingView.render().el);
+			this.$el.find("table tbody").append(bookkeepingView.render().el);
 		},
-		createBookkeeping : function() {
-			//console.log("createBookkeeping", this.collection);
-			this.collection.create({ name : $("[data-key-name=createBookkeepingName]").text() });
+		createBookkeeping : function(event) {
+			event.preventDefault();
+			this.collection.create({name : $("[data-key-name=createBookkeepingName]").text()});
+			$(event.target).closest("tr")
+			.find("[contenteditable=true]").text("");
+		},
+		createNameKeyUp : function(event) {
+			if (event.keyCode == 13) {
+				this.createBookkeeping(event);
+			}
+		},
+		createNameKeyPress : function(event) {
+			return event.keyCode != 13;
 		}
 	});
 
-	$("#bookkeepingArea").html(Mustache.render($("#template-bookkeeping-list").html()));
+	
 	$.bookkeepingCollectionView = new $.BookkeepingCollectionView();
-	
-	
-	$(document).on("click", "[data-menu=createBookkeeping]", function(event) {
-		event.preventDefault();
-		$.bookkeepingCollectionView.createBookkeeping();
-		$(this).closest("tr").find("[contenteditable=true]").text("");
-	});
 });

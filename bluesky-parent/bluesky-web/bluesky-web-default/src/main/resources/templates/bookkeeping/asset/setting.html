@@ -18,31 +18,31 @@
 		
 		
 		<script type="text/template" id="template-asset-view">
-			<td contenteditable="true" data-key="name">{{name}}</td>
 			<td>
 				<select class="form-control" name="assetType">
 					<option th:each="assetType : ${T(net.luversof.bookkeeping.domain.AssetType).values()}" th:value="${assetType}" th:text="#{assetType.text.__${assetType}__}">assetType</option>
 				</select>
 			</td>
+			<td contenteditable="true" data-key="name">{{name}}</td>
 			<td class="text-right">{{amount}}</td>
 			<td>
-				<button class="btn btn-default" data-menu="updateAsset"><span class="glyphicon glyphicon-edit">수정</span></button>
-				<button class="btn btn-default" data-menu="deleteAsset"><span class="glyphicon glyphicon-remove">삭제</span></button>
+				<button class="btn btn-default btn-sm" data-menu="updateAsset"><span class="glyphicon glyphicon-edit">수정</span></button>
+				<button class="btn btn-default btn-sm" data-menu="deleteAsset"><span class="glyphicon glyphicon-remove">삭제</span></button>
 			</td>
 		</script>
 		<script type="text/template" id="template-asset-list">
 			<div class="col-md-8">
 			<table class="table">
 				<colgroup>
+					<col class="col-md-2"></col>
 					<col class="col-md-4"></col>
-					<col class="col-md-3"></col>
 					<col class="col-md-2"></col>
 					<col class="col-md-3"></col>
 				</colgroup>
 				<thead>
 					<tr>
-						<th>이름</th>
 						<th>타입</th>
+						<th>이름</th>
 						<th>금액</th>
 						<th></th>
 					</tr>
@@ -51,14 +51,14 @@
 				</tbody>
 				<tfoot>
 					<tr class="active">
-						<td contenteditable="true" data-key-name="createAssetName" placeholder="추가할 자산의 이름을 입력하세요"></td>
 						<td>
 							<select class="form-control" name="createAssetType">
 								<option th:each="assetType : ${T(net.luversof.bookkeeping.domain.AssetType).values()}" th:value="${assetType}" th:text="#{assetType.text.__${assetType}__}">assetType</option>
 							</select>
 						</td>
+						<td contenteditable="true" data-key-name="createAssetName" placeholder="추가할 자산의 이름을 입력하세요"></td>
 						<td></td>
-						<td><button class="btn btn-default" data-menu="createAsset"><span class="glyphicon glyphicon-plus">추가</span></button></td>
+						<td><button class="btn btn-default btn-sm" data-menu="createAsset"><span class="glyphicon glyphicon-plus">추가</span></button></td>
 					</tr>
 				</tfoot>
 			</table>
