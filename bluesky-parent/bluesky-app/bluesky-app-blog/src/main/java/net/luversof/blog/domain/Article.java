@@ -48,7 +48,7 @@ public class Article {
 	@LastModifiedDate
 	private LocalDateTime lastModifiedDate;
 
-	@ManyToOne(/* cascade = {CascadeType.MERGE} */)
+	@ManyToOne
 	@JoinColumn(name = "articleCategory_id", foreignKey = @ForeignKey(name = "FK_article_articleCategoryId") )
 	private ArticleCategory articleCategory;
 

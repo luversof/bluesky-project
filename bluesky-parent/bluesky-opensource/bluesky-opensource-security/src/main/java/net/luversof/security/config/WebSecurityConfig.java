@@ -37,9 +37,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	@Autowired
 	private OAuth2ClientAuthenticationProcessingFilter battleNetAuthenticationProcessingFilter;
 	
-//	@Autowired
-//	private OAuth2AuthenticationProcessingFilter oAuth2AuthenticationProcessingFilter;
-	
 	@Autowired
 	public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
 		auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder);
@@ -65,8 +62,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 			.logout().logoutSuccessHandler(logoutSuccessHandler).and()
 			.formLogin().loginPage("/login").and()
 			.rememberMe().and()
+			//.csrf().and();
             .httpBasic().and()
-            //.csrf().and();
             ;
 	}
 }

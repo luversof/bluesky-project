@@ -1,12 +1,7 @@
 package net.luversof.security.oauth2.config;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Map;
-
-import net.luversof.security.oauth2.provider.token.BattleNetAccessTokenConverter;
-import net.luversof.security.oauth2.provider.token.FacebookAccessTokenConverter;
-import net.luversof.security.oauth2.provider.token.GithubAccessTokenConverter;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +36,9 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import lombok.SneakyThrows;
+import net.luversof.security.oauth2.provider.token.BattleNetAccessTokenConverter;
+import net.luversof.security.oauth2.provider.token.FacebookAccessTokenConverter;
+import net.luversof.security.oauth2.provider.token.GithubAccessTokenConverter;
 
 @Configuration
 @EnableOAuth2Client

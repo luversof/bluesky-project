@@ -32,6 +32,7 @@ public class AssetTest extends GeneralTest {
 	}
 	
 	
+	@SuppressWarnings("unused")
 	@Autowired
 	private EntryRepository entryRepository;
 

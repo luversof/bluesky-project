@@ -23,10 +23,12 @@ public class DataSourceAspect {
 
 	@Pointcut("@within(net.luversof.opensource.jdbc.routing.DataSource)")
 	public void classPointcut() {
+		//routingDataSource 사용 선언 - 클래스 
 	}
 	
 	@Pointcut("@annotation(net.luversof.opensource.jdbc.routing.DataSource)")
 	public void methodPointcut() {
+		//routingDataSource 사용 선언 - 메소드
 	}
 	
 	@Before("classPointcut()")
@@ -60,13 +62,13 @@ public class DataSourceAspect {
 	}
 	
 	@After("classPointcut()")
-	public void afterClassPointcut(JoinPoint joinPoint) {
+	public void afterClassPointcut() {
 		log.debug("classPointcut clear");
 		DataSourceContextHolder.clearDataSourceType();
 	}
 	
 	@After("methodPointcut()")
-	public void afterMethodPointcut(JoinPoint joinPoint) {
+	public void afterMethodPointcut() {
 		log.debug("methodPointcut clear");
 		DataSourceContextHolder.clearDataSourceType();
 	}

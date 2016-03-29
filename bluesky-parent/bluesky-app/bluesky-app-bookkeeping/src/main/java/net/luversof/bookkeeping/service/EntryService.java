@@ -29,11 +29,6 @@ public class EntryService {
 		entryRepository.delete(entry);
 	}
 	
-//	@Transactional(readOnly = true)
-//	public List<Entry> findByAssetUsername(int id) {
-//		return entryRepository.findByAssetUserId(id);
-//	}
-	
 	@Transactional(value = "bookkeepingTransactionManager", readOnly = true)
 	public List<Entry> findByBookkeepingId(long bookkeepingId) {
 		return entryRepository.findByBookkeepingId(bookkeepingId);

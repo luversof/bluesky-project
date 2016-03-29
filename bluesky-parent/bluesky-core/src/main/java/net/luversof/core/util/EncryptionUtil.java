@@ -11,17 +11,17 @@ import org.jasypt.encryption.pbe.config.EnvironmentPBEConfig;
 @NoArgsConstructor(access=AccessLevel.PRIVATE)
 public class EncryptionUtil {
 
-	private static StandardPBEStringEncryptor STRING_ENCRYPTOR = new StandardPBEStringEncryptor();
+	private static StandardPBEStringEncryptor StringEncryptor = new StandardPBEStringEncryptor();
 	
 	static {
-		EnvironmentPBEConfig PBE_CONFIG = new EnvironmentPBEConfig();
-		PBE_CONFIG.setProvider(new BouncyCastleProvider());
-		PBE_CONFIG.setAlgorithm("PBEWITHSHA256AND128BITAES-CBC-BC");
-		PBE_CONFIG.setPassword("bluesky");
-		STRING_ENCRYPTOR.setConfig(PBE_CONFIG);
+		EnvironmentPBEConfig config = new EnvironmentPBEConfig();
+		config.setProvider(new BouncyCastleProvider());
+		config.setAlgorithm("PBEWITHSHA256AND128BITAES-CBC-BC");
+		config.setPassword("bluesky");
+		StringEncryptor.setConfig(config);
 	}
 	
 	public static StringEncryptor stringEncryptor() {
-		return STRING_ENCRYPTOR;
+		return StringEncryptor;
 	}
 }
