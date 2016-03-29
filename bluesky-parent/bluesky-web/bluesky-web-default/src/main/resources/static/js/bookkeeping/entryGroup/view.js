@@ -1,5 +1,5 @@
 $(document).ready(function() {
-	
+
 	$.EntryGroupView = Backbone.View.extend({
 		el : "<tr>",	//기본은 div
 		//className : "testt",
@@ -54,8 +54,8 @@ $(document).ready(function() {
 			}
 		}
 	});
-	
-	
+
+
 	$.EntryGroupCollectionView = Backbone.View.extend({
 		el : "#entryGroupArea",
 		template : $("#template-entryGroup-list").html(),
@@ -93,15 +93,14 @@ $(document).ready(function() {
 			//this.collection.create({ name : $("[data-key-name=createEntryGroupName]").text(), entryType : $("select[name=createEntryType] option:selected").val() });
 		},
 		createNameKeyUp : function(event) {
-			if (event.keyCode == 13) {
+			if (event.keyCode === 13) {
 				this.createEntryGroup(event);
 			}
 		},
 		createNameKeyPress : function(event) {
-			return event.keyCode != 13;
+			return event.keyCode !== 13;
 		}
 	});
 
-	
 	$.entryGroupCollectionView = new $.EntryGroupCollectionView();
 });

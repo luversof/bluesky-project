@@ -40,6 +40,8 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import lombok.SneakyThrows;
+
 @Configuration
 @EnableOAuth2Client
 @PropertySource(name = "oauth2ClientProp", value = "classpath:config/oauth2-client.properties")
@@ -315,15 +317,10 @@ public class OAuth2ClientConfig {
 	}
 	
 	/* (e) battleNet OAuth */
-	
+	@SneakyThrows
 	private String getAuthorizationHeader(String clientId, String clientSecret) {
 		String creds = String.format("%s:%s", clientId, clientSecret);
-		try {
-			return "Basic " + new String(Base64.encode(creds.getBytes("UTF-8")));
-		}
-		catch (UnsupportedEncodingException e) {
-			throw new IllegalStateException("Could not convert String");
-		}
+		return "Basic " + new String(Base64.encode(creds.getBytes("UTF-8")));
 	}
 	
 

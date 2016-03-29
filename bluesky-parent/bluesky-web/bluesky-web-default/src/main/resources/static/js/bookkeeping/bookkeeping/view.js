@@ -1,5 +1,5 @@
 $(document).ready(function() {
-	
+
 	$.BookkeepingView = Backbone.View.extend({
 		el : "<tr>",	//기본은 div
 		template : $("#template-bookkeeping-view").html(),
@@ -40,8 +40,8 @@ $(document).ready(function() {
 			return event.keyCode != 13;
 		}
 	});
-	
-	
+
+
 	$.BookkeepingCollectionView = Backbone.View.extend({
 		el : "#bookkeepingArea",
 		template : $("#template-bookkeeping-list").html(),
@@ -77,15 +77,14 @@ $(document).ready(function() {
 			.find("[contenteditable=true]").text("");
 		},
 		createNameKeyUp : function(event) {
-			if (event.keyCode == 13) {
+			if (event.keyCode === 13) {
 				this.createBookkeeping(event);
 			}
 		},
 		createNameKeyPress : function(event) {
-			return event.keyCode != 13;
+			return event.keyCode !== 13;
 		}
 	});
 
-	
 	$.bookkeepingCollectionView = new $.BookkeepingCollectionView();
 });

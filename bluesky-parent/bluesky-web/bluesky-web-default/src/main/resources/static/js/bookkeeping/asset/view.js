@@ -1,5 +1,5 @@
 $(document).ready(function() {
-	
+
 	$.AssetView = Backbone.View.extend({
 		el : "<tr>",	//기본은 div
 		//className : "testt",
@@ -52,8 +52,8 @@ $(document).ready(function() {
 			}
 		}
 	});
-	
-	
+
+
 	$.AssetCollectionView = Backbone.View.extend({
 		el : "#assetArea",
 		template : $("#template-asset-list").html(),
@@ -83,19 +83,19 @@ $(document).ready(function() {
 			this.$el.find("table tbody").append(assetView.render().el);
 		},
 		createAsset : function(event) {
-			event.preventDefault();	
+			event.preventDefault();
 			this.collection.create({name : $("[data-key-name=createAssetName]").text(), assetType : $("select[name=createAssetType] option:selected").val()});
 			$(event.target).closest("tr")
 				.find("[contenteditable=true]").text("").end()
 				.find("select option:eq(0)").attr("selected", "selected");
 		},
 		createNameKeyUp : function(event) {
-			if (event.keyCode == 13) {
+			if (event.keyCode === 13) {
 				this.createAsset(event);
 			}
 		},
 		createNameKeyPress : function(event) {
-			return event.keyCode != 13;
+			return event.keyCode !== 13;
 		}
 	});
 

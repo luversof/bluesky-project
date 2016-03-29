@@ -20,9 +20,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.ModelAndView;
 
+import lombok.extern.slf4j.Slf4j;
 import net.luversof.core.exception.BlueskyException;
 import net.luversof.core.exception.ErrorCode;
 
+@Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
 	
@@ -71,7 +73,7 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler
 	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
 	public ModelAndView handleException(Exception exception) {
-		exception.printStackTrace();
+		log.error("exception", exception);
 		
 		ErrorMessage errorMessage = new ErrorMessage();
 		errorMessage.setObjectName(exception.getClass().getSimpleName());
