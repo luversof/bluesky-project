@@ -68,8 +68,8 @@ public class EntryGroupService {
 	}
 	
 	@Transactional(value = "bookkeepingTransactionManager", readOnly = true)
-	public List<EntryGroup> findByBookkeepingId(long bookkeeping_id) {
-		return entryGroupRepository.findByBookkeepingId(bookkeeping_id);
+	public List<EntryGroup> findByBookkeepingId(long bookkeepingId) {
+		return entryGroupRepository.findByBookkeepingId(bookkeepingId);
 	}
 
 	public void delete(EntryGroup entryGroup) {
@@ -84,8 +84,8 @@ public class EntryGroupService {
 		entryGroupRepository.delete(entryGroup);
 	}
 	
-	public void deleteBybookkeepingId(long bookkeeping_id) {
-		List<EntryGroup> entryGroupList = findByBookkeepingId(bookkeeping_id);
+	public void deleteBybookkeepingId(long bookkeepingId) {
+		List<EntryGroup> entryGroupList = findByBookkeepingId(bookkeepingId);
 		entryGroupRepository.delete(entryGroupList);
 	}
 }
