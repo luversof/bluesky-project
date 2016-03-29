@@ -15,7 +15,7 @@ $(document).ready(function() {
 					{ data : "id", readOnly : true },
 					{ data : "name" }
 				],
-				minSpareRows : 1,
+				minSpareRows : 1
 		}
 	});
 
