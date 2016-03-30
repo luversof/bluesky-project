@@ -4,41 +4,30 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
-import net.luversof.bookkeeping.domain.Entry.Add;
-import net.luversof.bookkeeping.domain.Entry.Modify;
-import net.luversof.bookkeeping.service.BookkeepingService;
+import net.luversof.bookkeeping.domain.Entry.EntryCreate;
+import net.luversof.bookkeeping.domain.Entry.EntryDelete;
+import net.luversof.bookkeeping.domain.Entry.EntryUpdate;
 import net.luversof.bookkeeping.service.EntryService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
 
-@Controller
-@RequestMapping("bookkeeping/entry")
+@RestController
+@RequestMapping("bookkeeping/{bookkeeping.id}/entry")
 public class EntryController {
 	
 	@Autowired
-	private BookkeepingService bookkeepingService;
-	
-	@Autowired
 	private EntryService entryService;
-	
-	/**
-	 * 가계부가 1개만 존재한다는 전제조건으로 설정
-	 * @author bluesky
-	 *
-	 */
-	private Bookkeeping getBookkeeping(Authentication authentication) {
-		return bookkeepingService.findByUserId(((BlueskyUser) authentication.getPrincipal()).getId()).get(0);
-	}
+
 	
 	/*
 	 * 검색 조건은 어떤 것이 있을까?
@@ -61,26 +50,26 @@ public class EntryController {
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-	@ResponseBody
-	public Entry add(Authentication authentication, @RequestBody @Validated(Add.class) Entry entry) {
-		entry.setBookkeeping(getBookkeeping(authentication));
-		return entryService.save(entry);
+	public Entry createEntry(@RequestBody @Validated(EntryCreate.class) Entry entry, @PathVariable("bookkeeping.id") long bookkeepingId, Authentication authentication) {
+		Bookkeeping bookkeeping = new Bookkeeping();
+		bookkeeping.setId(bookkeepingId);
+		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
+		bookkeeping.setUserId(blueskyUser.getId());
+		entry.setBookkeeping(bookkeeping);
+		return entryService.create(entry);
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-	@ResponseBody
-	public Entry modify(Authentication authentication, @RequestBody @Validated(Modify.class) Entry entry, ModelMap modelMap) {
-		//TODO 본인 entryGroup 확인 절차가 있어야 함
-		entry.setBookkeeping(getBookkeeping(authentication));
-		return entryService.save(entry);
+	public Entry modify(@RequestBody @Validated(EntryUpdate.class) Entry entry, Authentication authentication) {
+		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+		return entryService.create(entry);
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public void delete(Authentication authentication, @RequestBody @Validated(Modify.class) Entry entry, ModelMap modelMap) {
-		//TODO 본인 entryGroup 확인 절차가 있어야 함
-		entry.setBookkeeping(getBookkeeping(authentication));
+	public void delete(@Validated(EntryDelete.class) Entry entry, Authentication authentication) {
+		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		entryService.delete(entry);
 	}
 }

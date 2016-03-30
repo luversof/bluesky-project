@@ -8,6 +8,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -22,7 +23,8 @@ public class Entry implements Serializable {
 
 	@Id
 	@GeneratedValue
-	@NotNull(groups = Modify.class)
+	@NotNull(groups = {EntryUpdate.class, EntryDelete.class})
+	@Min(value = 1, groups = {EntryUpdate.class, EntryDelete.class})
 	private long id;
 	
 	@OneToOne
@@ -39,18 +41,21 @@ public class Entry implements Serializable {
 	@OneToOne
 	private EntryGroup entryGroup;
 	
-	@NotNull(groups = { Add.class, Modify.class })
+	@NotNull(groups = { EntryCreate.class, EntryUpdate.class })
 	private long amount;
 	
-	@NotNull(groups = { Add.class, Modify.class })
+	@NotNull(groups = { EntryCreate.class, EntryUpdate.class })
 	@JsonDeserialize(using = LocalDateDeserializer.class)
 	private LocalDate entryDate;
 	
 	private String memo;
 	
-	public interface Add {
+	public interface EntryCreate {
 	};
 	
-	public interface Modify {
+	public interface EntryUpdate {
 	};
+	
+	public interface EntryDelete {
+	}
 }
