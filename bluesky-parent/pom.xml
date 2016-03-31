@@ -266,6 +266,10 @@
 				</repository>
 			</repositories>
 			<distributionManagement>
+				<repository>
+					<id>bluesky-releases-develop</id>
+					<url>http://192.168.99.100:8081/content/repositories/bluesky-releases-develop</url>
+				</repository>
 				<snapshotRepository>
 					<id>bluesky-snapshots-develop</id>
 					<url>http://192.168.99.100:8081/content/repositories/bluesky-snapshots-develop</url>
