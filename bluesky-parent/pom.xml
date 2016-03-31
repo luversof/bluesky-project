@@ -22,7 +22,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>1.8</java.version>
-		<bluesky.version>0.0.1-SNAPSHOT</bluesky.version>
+		<project.version>0.0.1-SNAPSHOT</project.version>
 	</properties>
 
 	<build>
@@ -122,37 +122,37 @@
 			<dependency>
 				<groupId>net.luversof</groupId>
 				<artifactId>bluesky-core</artifactId>
-				<version>${bluesky.version}</version>
+				<version>${project.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>net.luversof</groupId>
 				<artifactId>bluesky-app-api-battlenet</artifactId>
-				<version>${bluesky.version}</version>
+				<version>${project.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>net.luversof</groupId>
 				<artifactId>bluesky-app-blog</artifactId>
-				<version>${bluesky.version}</version>
+				<version>${project.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>net.luversof</groupId>
 				<artifactId>bluesky-app-bookkeeping</artifactId>
-				<version>${bluesky.version}</version>
+				<version>${project.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>net.luversof</groupId>
 				<artifactId>bluesky-opensource-jdbc</artifactId>
-				<version>${bluesky.version}</version>
+				<version>${project.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>net.luversof</groupId>
 				<artifactId>bluesky-opensource-security</artifactId>
-				<version>${bluesky.version}</version>
+				<version>${project.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>net.luversof</groupId>
 				<artifactId>bluesky-test</artifactId>
-				<version>${bluesky.version}</version>
+				<version>${project.version}</version>
 				<scope>test</scope>
 			</dependency>
 
