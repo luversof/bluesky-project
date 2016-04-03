@@ -1,7 +1,10 @@
 package net.luversof.web.bookkeeping.controller;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.ui.ModelMap;
@@ -27,7 +30,6 @@ public class EntryController {
 	
 	@Autowired
 	private EntryService entryService;
-
 	
 	/*
 	 * 검색 조건은 어떤 것이 있을까?
@@ -41,12 +43,12 @@ public class EntryController {
 	 * 페이지에서 사용할 데이터를 내려줘야할까?
 	 * 우선 검색 결과를 내려준 이후 처리 고민
 	 */
-//	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-//	@RequestMapping(method = RequestMethod.GET)
-//	public void get(Authentication authentication, ModelMap modelMap) {
-//		Bookkeeping bookkeeping = getBookkeeping(authentication);
-//		modelMap.addAttribute(JSON_MODEL_KEY, entryService.findByBookkeepingId(bookkeeping.getId()));
-//	}
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@PostAuthorize("(returnObject == null or returnObject.size() == 0) or returnObject.get(0).bookkeeping.userId == authentication.principal.id")
+	@RequestMapping(method = RequestMethod.GET)
+	public List<Entry> getEntryList(@PathVariable("bookkeeping.id") long bookkeepingId, Authentication authentication) {
+		return entryService.findByBookkeepingId(bookkeepingId);
+	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)

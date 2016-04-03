@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.domain.EntryGroup.EntryGroupCreate;
+import net.luversof.bookkeeping.domain.EntryGroup.EntryGroupDelete;
 import net.luversof.bookkeeping.domain.EntryGroup.EntryGroupUpdate;
 import net.luversof.bookkeeping.service.EntryGroupService;
 import net.luversof.security.core.userdetails.BlueskyUser;
@@ -52,7 +53,7 @@ public class EntryGroupController {
 	}
 
 	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
-	public void deleteEntryGroup(@Validated(EntryGroupUpdate.class) EntryGroup entryGroup, Authentication authentication) {
+	public void deleteEntryGroup(@Validated(EntryGroupDelete.class) EntryGroup entryGroup, Authentication authentication) {
 		entryGroup.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		entryGroupService.delete(entryGroup);
 	}

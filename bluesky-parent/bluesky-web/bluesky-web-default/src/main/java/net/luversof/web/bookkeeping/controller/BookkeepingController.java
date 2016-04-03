@@ -34,7 +34,7 @@ public class BookkeepingController {
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)	
 	@RequestMapping(value= "", method = RequestMethod.GET)
-	public List<Bookkeeping> getMyBookkeeping(Authentication authentication) {
+	public List<Bookkeeping> getBookkeepingList(Authentication authentication) {
 		return bookkeepingService.findByUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 	}
 	

@@ -7,6 +7,9 @@
 	<script type="text/javascript" th:src="@{#{url.mustache.js}}"></script>
 	<script type="text/javascript" th:src="@{#{url.underscore.js}}"></script>
 	<script type="text/javascript" th:src="@{#{url.backbone.js}}"></script>
+	<script type="text/javascript" th:inline="javascript">
+		$.bookkeepingId = [[${bookkeepingId}]];
+	</script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/asset/model.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/asset/collection.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/asset/view.js}"></script>

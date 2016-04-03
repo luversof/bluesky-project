@@ -1,6 +1,7 @@
 $.EntryGroupCollection = Backbone.Collection.extend({
 	model : $.EntryGroup,
-	url : location.pathname.replace("/entryGroup/setting", "") + "/entryGroup",
+	bookkeepingId : 0,
+	url : "/bookkeeping/" + $.bookkeepingId + "/entryGroup",
 	initialize : function() {
 		//console.log("AssetCollection initialized.");
 	}

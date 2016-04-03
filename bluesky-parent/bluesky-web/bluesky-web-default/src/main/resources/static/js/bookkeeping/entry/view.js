@@ -66,15 +66,26 @@ $(document).ready(function() {
 		},
 		initialize : function() {
 			//console.log("This collection view has been initialized.");
-			this.$el.html(Mustache.render(this.template));
-			
 			this.collection = new $.EntryCollection();
-			this.collection.fetch({reset : true});
+			this.entryGroupCollection = new $.EntryGroupCollection();
+			this.assetCollection = new $.AssetCollection();
 			
+			this.listenTo(this.entryGroupCollection, "reset", this.render);
+			this.listenTo(this.assetCollection, "reset", this.render);
 			this.listenTo(this.collection, "reset", this.render);
 			this.listenTo(this.collection, "add", this.renderEntry);
+			
+			this.entryGroupCollection.fetch({reset : true});
+			this.assetCollection.fetch({reset : true});
+			this.collection.fetch({reset : true});
 		},
 		render : function() {
+			console.log("Test : ", this.assetCollection.toJSON());
+			var data = {
+				assetList : this.assetCollection.toJSON(),
+				entryGroupList : this.entryGroupCollection.toJSON()
+			};
+			this.$el.html(Mustache.render(this.template, data));
 			this.collection.each(function(entry) {
 				var entryView = new $.EntryView({model : entry});
 				this.$el.find("table tbody").append(entryView.render().el);

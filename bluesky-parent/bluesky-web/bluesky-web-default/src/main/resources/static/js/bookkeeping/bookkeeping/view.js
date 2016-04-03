@@ -52,15 +52,15 @@ $(document).ready(function() {
 		},
 		initialize : function() {
 			//console.log("This collection view has been initialized.");
-			this.$el.html(Mustache.render(this.template));
-			
 			this.collection = new $.BookkeepingCollection();
-			this.collection.fetch({reset : true});
 			
 			this.listenTo(this.collection, "reset", this.render);
 			this.listenTo(this.collection, "add", this.renderBookkeeping);
+			
+			this.collection.fetch({reset : true});
 		},
 		render : function() {
+			this.$el.html(Mustache.render(this.template));
 			this.collection.each(function(bookkeeping) {
 				var bookkeepingView = new $.BookkeepingView({model : bookkeeping});
 				this.$el.find("table tbody").append(bookkeepingView.render().el);

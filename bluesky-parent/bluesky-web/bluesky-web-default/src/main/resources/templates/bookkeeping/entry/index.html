@@ -7,6 +7,13 @@
 	<script type="text/javascript" th:src="@{#{url.mustache.js}}"></script>
 	<script type="text/javascript" th:src="@{#{url.underscore.js}}"></script>
 	<script type="text/javascript" th:src="@{#{url.backbone.js}}"></script>
+	<script type="text/javascript" th:inline="javascript">
+		$.bookkeepingId = [[${bookkeepingId}]];
+	</script>
+	<script type="text/javascript" th:src="@{/js/bookkeeping/entryGroup/model.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bookkeeping/entryGroup/collection.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bookkeeping/asset/model.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bookkeeping/asset/collection.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/entry/model.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/entry/collection.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/entry/view.js}"></script>
@@ -33,15 +40,21 @@
 			<div class="col-md-4">
 			<table class="table">
 				<colgroup>
-					<col class="col-md-3"></col>
-					<col class="col-md-6"></col>
-					<col class="col-md-3"></col>
+					<col class="col-md-2"></col>
+					<col class="col-md-2"></col>
+					<col class="col-md-2"></col>
+					<col class="col-md-2"></col>
+					<col class="col-md-2"></col>
+					<col class="col-md-2"></col>
 				</colgroup>
 				<thead>
 					<tr>
-						<th>타입</th>
-						<th>이름</th>
-						<th></th>
+						<th>분류</th>
+						<th>지출자산</th>
+						<th>수입자산</th>
+						<th>금액</th>
+						<th>내용</th>
+						<th>추가메모</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -49,12 +62,28 @@
 				<tfoot>
 					<tr class="active">
 						<td>
-							<select class="form-control" name="createEntryType">
-								<option th:each="entryType : ${T(net.luversof.bookkeeping.domain.EntryType).values()}" th:value="${entryType}" th:text="#{entryType.text.__${entryType}__}">entryType</option>
+							<select class="form-control" name="createEntryGroup">
+								{{#entryGroupList}}
+									<option value="{{id}}">{{name}}</option>
+								{{/entryGroupList}}
 							</select>
 						</td>
-						<td contenteditable="true" data-key-name="createEntryName" placeholder="추가할 기입그룹 의 이름을 입력하세요"></td>
-						<td></td>
+						<td>
+							<select class="form-control" name="createDebitAsset">
+								{{#assetList}}
+									<option value="{{id}}">{{name}}</option>
+								{{/assetList}}
+							</select>
+						</td>
+						<td>
+							<select class="form-control" name="createCreaditAsset">
+								{{#assetList}}
+									<option value="{{id}}">{{name}}</option>
+								{{/assetList}}
+							</select>
+						</td>
+						<td contenteditable="true" data-key-name="createEntryAsset" placeholder="내용"></td>
+						<td contenteditable="true" data-key-name="createEntryName" placeholder="내용을 입력하세요"></td>
 						<td><button class="btn btn-default btn-sm" data-menu="createEntry"><span class="glyphicon glyphicon-plus">추가</span></button></td>
 					</tr>
 				</tfoot>

@@ -66,15 +66,15 @@ $(document).ready(function() {
 		},
 		initialize : function() {
 			//console.log("This collection view has been initialized.");
-			this.$el.html(Mustache.render(this.template));
-			
 			this.collection = new $.EntryGroupCollection();
-			this.collection.fetch({reset : true});
 			
 			this.listenTo(this.collection, "reset", this.render);
 			this.listenTo(this.collection, "add", this.renderEntryGroup);
+			
+			this.collection.fetch({reset : true});
 		},
 		render : function() {
+			this.$el.html(Mustache.render(this.template));
 			this.collection.each(function(entryGroup) {
 				var entryGroupView = new $.EntryGroupView({model : entryGroup});
 				this.$el.find("table tbody").append(entryGroupView.render().el);
