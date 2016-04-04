@@ -7,7 +7,7 @@ $(document).ready(function() {
 		events : {
 			"click [data-menu=updateAsset]" : "updateAsset",
 			"click [data-menu=deleteAsset]" : "deleteAsset",
-			"keyup [data-key=name]" : "changeNameKeyUP",
+			"keyup [data-key=name]" : "changeNameKeyUp",
 			"keypress [data-key=name]" : "changeNameKeyPress",
 			"change select[name=assetType]" : "changeAssetType"
 		},
@@ -30,7 +30,7 @@ $(document).ready(function() {
 		deleteAsset : function() {
 			this.model.destroy();
 		},
-		changeNameKeyUP : function(event) {
+		changeNameKeyUp : function(event) {
 			if (this.$el.find("[data-key=name]").text() == this.model.get("name")) {
 				this.$el.find("[data-menu=updateAsset]").hide(100);
 			} else {
@@ -84,7 +84,11 @@ $(document).ready(function() {
 		},
 		createAsset : function(event) {
 			event.preventDefault();
-			this.collection.create({name : $("[data-key-name=createAssetName]").text(), assetType : $("select[name=createAssetType] option:selected").val()});
+			var asset = new $.Asset({name : $("[data-key-name=createAssetName]").text(), assetType : $("select[name=createAssetType] option:selected").val()});
+			if (!asset.isValid()) {
+				return;
+			}
+			this.collection.create(asset);
 			$(event.target).closest("tr")
 				.find("[contenteditable=true]").text("").end()
 				.find("select option:eq(0)").attr("selected", "selected");

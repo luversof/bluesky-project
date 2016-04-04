@@ -7,7 +7,7 @@ $(document).ready(function() {
 		events : {
 			"click [data-menu=updateEntryGroup]" : "updateEntryGroup",
 			"click [data-menu=deleteEntryGroup]" : "deleteEntryGroup",
-			"keyup [data-key=name]" : "changeNameKeyUP",
+			"keyup [data-key=name]" : "changeNameKeyUp",
 			"keypress [data-key=name]" : "changeNameKeyPress",
 			"change select[name=entryType]" : "changeEntryType"
 		},
@@ -31,7 +31,7 @@ $(document).ready(function() {
 		deleteEntryGroup : function() {
 			this.model.destroy();
 		},
-		changeNameKeyUP : function(event) {
+		changeNameKeyUp : function(event) {
 			//console.log("data : ", this.$el.find("[data-key=name]").text());
 			if (this.$el.find("[data-key=name]").text() == this.model.get("name")) {
 				this.$el.find("[data-menu=updateEntryGroup]").hide(100);
@@ -86,7 +86,11 @@ $(document).ready(function() {
 		},
 		createEntryGroup : function(event) {
 			event.preventDefault();
-			this.collection.create({ name : $("[data-key-name=createEntryGroupName]").text(), entryType : $("select[name=createEntryType] option:selected").val() });
+			var entryGroup = new $.EntryGroup({ name : $("[data-key-name=createEntryGroupName]").text(), entryType : $("select[name=createEntryType] option:selected").val() });
+			if (!entryGroup.isValid()) {
+				return;
+			}
+			this.collection.create(entryGroup);
 			$(event.target).closest("tr")
 				.find("[contenteditable=true]").text("").end()
 				.find("select option:eq(0)").attr("selected", "selected");

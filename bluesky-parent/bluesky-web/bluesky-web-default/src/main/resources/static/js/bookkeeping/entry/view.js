@@ -61,8 +61,10 @@ $(document).ready(function() {
 		template : $("#template-entry-list").html(),
 		events : {
 			"click [data-menu=createEntry]" : "createEntry",
-			"keyup [data-key-name=createEntryName]" : "createNameKeyUp",
-			"keypress [data-key-name=createEntryName]" : "createNameKeyPress"
+			"keyup [data-key-name=createMemo]" : "createMemoKeyUp",
+			"keypress [data-key-name=createMemo]" : "createMemoKeyPress",
+			"keyup [data-key-name=createAmount]" : "createAmountKeyUp",
+			"keypress [data-key-name=createAmount]" : "createAmountKeyPress"
 		},
 		initialize : function() {
 			//console.log("This collection view has been initialized.");
@@ -97,18 +99,36 @@ $(document).ready(function() {
 		},
 		createEntry : function(event) {
 			event.preventDefault();
-			this.collection.create({ name : $("[data-key-name=createEntryName]").text(), entryType : $("select[name=createEntryType] option:selected").val() });
+			var entry = new $.Entry({
+				entryGroup : { id : $("select[name=createEntryGroup] option:selected").val() },
+				debitAsset : { id : $("select[name=createEntryGroup] option:selected").val() },
+				creaditAsset : { id : $("select[name=createEntryGroup] option:selected").val() },
+				amount : $("[data-key-name=createAmount]").text(),
+				memo : $("[data-key-name=createMemo]").text()
+			});
+			if (!entry.isValid()) {
+				return;
+			}
+			this.collection.create(entry);
 			$(event.target).closest("tr")
 				.find("[contenteditable=true]").text("").end()
 				.find("select option:eq(0)").attr("selected", "selected");
-			//this.collection.create({ name : $("[data-key-name=createEntryName]").text(), entryType : $("select[name=createEntryType] option:selected").val() });
+			//this.collection.create({ name : $("[data-key-name=createMemo]").text(), entryType : $("select[name=createEntryType] option:selected").val() });
 		},
-		createNameKeyUp : function(event) {
+		createAmountKeyUp : function(event) {
 			if (event.keyCode === 13) {
 				this.createEntry(event);
 			}
 		},
-		createNameKeyPress : function(event) {
+		createAmountKeyPress : function(event) {
+			return event.keyCode !== 13;
+		},
+		createMemoKeyUp : function(event) {
+			if (event.keyCode === 13) {
+				this.createEntry(event);
+			}
+		},
+		createMemoKeyPress : function(event) {
 			return event.keyCode !== 13;
 		}
 	});

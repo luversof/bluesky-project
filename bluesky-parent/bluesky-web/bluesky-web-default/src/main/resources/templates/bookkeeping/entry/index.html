@@ -26,11 +26,29 @@
 		
 		<script type="text/template" id="template-entry-view">
 			<td>
-				<select class="form-control" name="entryType">
-					<option th:each="entryType : ${T(net.luversof.bookkeeping.domain.EntryType).values()}" th:value="${entryType}" th:text="#{entryType.text.__${entryType}__}">entryType</option>
+				<select class="form-control" name="entryGroup">
+					{{#entryGroupList}}
+						<option value="{{id}}">{{name}}</option>
+					{{/entryGroupList}}
 				</select>
 			</td>
-			<td contenteditable="true" data-key="name">{{name}}</td>
+			<td>
+				<select class="form-control" name="debitAsset">
+					{{#assetList}}
+						<option value="{{id}}">{{name}}</option>
+					{{/assetList}}
+				</select>
+			</td>
+			<td>
+				<select class="form-control" name="creditAsset">
+					{{#assetList}}
+						<option value="{{id}}">{{name}}</option>
+					{{/assetList}}
+				</select>
+			</td>
+			<td contenteditable="true" data-key="amount">{{amount}}</td>
+			<td contenteditable="true" data-key="memo">{{memo}}</td>
+			<td>{{entryDate}}</td>
 			<td>
 				<button class="btn btn-default btn-sm" data-menu="updateEntry"><span class="glyphicon glyphicon-edit">수정</span></button>
 				<button class="btn btn-default btn-sm" data-menu="deleteEntry"><span class="glyphicon glyphicon-remove">삭제</span></button>
@@ -46,6 +64,7 @@
 					<col class="col-md-2"></col>
 					<col class="col-md-2"></col>
 					<col class="col-md-2"></col>
+					<col class="col-md-2"></col>
 				</colgroup>
 				<thead>
 					<tr>
@@ -53,8 +72,9 @@
 						<th>지출자산</th>
 						<th>수입자산</th>
 						<th>금액</th>
-						<th>내용</th>
-						<th>추가메모</th>
+						<th>메모</th>
+						<th>날짜</th>
+						<th></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -76,14 +96,15 @@
 							</select>
 						</td>
 						<td>
-							<select class="form-control" name="createCreaditAsset">
+							<select class="form-control" name="createCreditAsset">
 								{{#assetList}}
 									<option value="{{id}}">{{name}}</option>
 								{{/assetList}}
 							</select>
 						</td>
-						<td contenteditable="true" data-key-name="createEntryAsset" placeholder="내용"></td>
-						<td contenteditable="true" data-key-name="createEntryName" placeholder="내용을 입력하세요"></td>
+						<td contenteditable="true" data-key-name="createAmount" placeholder="금액을  입력하세요"></td>
+						<td contenteditable="true" data-key-name="createMemo" placeholder="내용을 입력하세요"></td>
+						<td data-key-name="createEntryDate"></td>
 						<td><button class="btn btn-default btn-sm" data-menu="createEntry"><span class="glyphicon glyphicon-plus">추가</span></button></td>
 					</tr>
 				</tfoot>
