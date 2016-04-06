@@ -1,5 +1,6 @@
 $.Entry = Backbone.Model.extend({
 	defaults : {
+		entryType : null,	// 입력 유형 선택을 위한 변수
 		entryGroup : null,
 		debitAsset : null,
 		creaditAsset : null,
@@ -28,6 +29,9 @@ $.Entry = Backbone.Model.extend({
 		// 이건 필수가 아니어도 될거 같음
 		if (attrs.memo == null || attrs.memo == "") {
 			return "내용을 입력하세요.";
+		}
+		if (attrs.entryDate == null || attrs.entryDate == "") {
+			return "날짜를 입력하세요.";
 		}
 	}
 });

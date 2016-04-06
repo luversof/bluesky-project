@@ -103,22 +103,30 @@
 			<groupId>org.webjars.bower</groupId>
 			<artifactId>mustache</artifactId>
 		</dependency>
-		<!-- (s) 사용 안함 -->
-		<dependency>
-			<groupId>org.webjars.bower</groupId>
-			<artifactId>handsontable</artifactId>
-		</dependency>
 		<dependency>
 			<groupId>org.webjars.bower</groupId>
 			<artifactId>metisMenu</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>angularjs</artifactId>
+			<groupId>org.webjars.bower</groupId>
+			<artifactId>backbone</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>bootstrap-datepicker</artifactId>
+		</dependency>
+		<!-- (s) 사용 안함 -->
+		<dependency>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>moment</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.webjars.bower</groupId>
-			<artifactId>backbone</artifactId>
+			<artifactId>handsontable</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>angularjs</artifactId>
 		</dependency>
 		<!-- (e) 사용 안함 -->
 		<!-- (e) javascript libarary -->

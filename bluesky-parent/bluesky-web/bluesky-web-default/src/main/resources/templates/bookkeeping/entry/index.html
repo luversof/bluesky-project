@@ -4,12 +4,9 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="/bookkeeping/bookkeepingLayout">
 <head>
-	<script type="text/javascript" th:src="@{#{url.mustache.js}}"></script>
-	<script type="text/javascript" th:src="@{#{url.underscore.js}}"></script>
-	<script type="text/javascript" th:src="@{#{url.backbone.js}}"></script>
-	<script type="text/javascript" th:inline="javascript">
-		$.bookkeepingId = [[${bookkeepingId}]];
-	</script>
+	<script type="text/javascript" th:src="@{#{url.bootstrap-datepicker.js}}"></script>
+	<script type="text/javascript" th:src="@{#{url.bootstrap-datepicker.locale.ko.js}}"></script>
+	<link rel="stylesheet" type="text/css" media="screen" th:href="@{#{url.bootstrap-datepicker.css}}" />
 	<script type="text/javascript" th:src="@{/js/bookkeeping/entryGroup/model.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/entryGroup/collection.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/asset/model.js}"></script>
@@ -55,7 +52,7 @@
 			</td>
 		</script>
 		<script type="text/template" id="template-entry-list">
-			<div class="col-md-4">
+			<div class="col-md-7">
 			<table class="table">
 				<colgroup>
 					<col class="col-md-2"></col>
@@ -104,7 +101,10 @@
 						</td>
 						<td contenteditable="true" data-key-name="createAmount" placeholder="금액을  입력하세요"></td>
 						<td contenteditable="true" data-key-name="createMemo" placeholder="내용을 입력하세요"></td>
-						<td data-key-name="createEntryDate"></td>
+						<!--<td contenteditable="true" data-key-name="createEntryDate" placeholder="날짜를 입력하세요"></td>-->
+						<td>
+							<input type="text" class="form-control" name="createEntryDate" />
+						</td>
 						<td><button class="btn btn-default btn-sm" data-menu="createEntry"><span class="glyphicon glyphicon-plus">추가</span></button></td>
 					</tr>
 				</tfoot>

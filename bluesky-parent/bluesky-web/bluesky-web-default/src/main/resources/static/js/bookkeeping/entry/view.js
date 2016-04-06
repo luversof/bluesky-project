@@ -80,6 +80,7 @@ $(document).ready(function() {
 			this.entryGroupCollection.fetch({reset : true});
 			this.assetCollection.fetch({reset : true});
 			this.collection.fetch({reset : true});
+			
 		},
 		render : function() {
 			console.log("Test : ", this.assetCollection.toJSON());
@@ -92,6 +93,9 @@ $(document).ready(function() {
 				var entryView = new $.EntryView({model : entry});
 				this.$el.find("table tbody").append(entryView.render().el);
 			}, this);
+			
+			//외부 모듈 이벤트 핸들링 추가
+			this.$el.find("input[name=createEntryDate]").datepicker();
 		},
 		renderEntry : function(entry) {
 			var entryView = new $.EntryView({model : entry});
@@ -101,10 +105,11 @@ $(document).ready(function() {
 			event.preventDefault();
 			var entry = new $.Entry({
 				entryGroup : { id : $("select[name=createEntryGroup] option:selected").val() },
-				debitAsset : { id : $("select[name=createEntryGroup] option:selected").val() },
-				creaditAsset : { id : $("select[name=createEntryGroup] option:selected").val() },
+				debitAsset : { id : $("select[name=createDebitAsset] option:selected").val() },
+				creditAsset : { id : $("select[name=createCreditAsset] option:selected").val() },
 				amount : $("[data-key-name=createAmount]").text(),
-				memo : $("[data-key-name=createMemo]").text()
+				memo : $("[data-key-name=createMemo]").text(),
+				entryDate : $("[data-key-name=createEntryDate").text()
 			});
 			if (!entry.isValid()) {
 				return;
