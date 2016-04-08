@@ -4,6 +4,7 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="/bookkeeping/bookkeepingLayout">
 <head>
+	<script type="text/javascript" th:src="@{#{url.moment.js}}"></script>
 	<script type="text/javascript" th:src="@{#{url.bootstrap-datepicker.js}}"></script>
 	<script type="text/javascript" th:src="@{#{url.bootstrap-datepicker.locale.ko.js}}"></script>
 	<link rel="stylesheet" type="text/css" media="screen" th:href="@{#{url.bootstrap-datepicker.css}}" />
@@ -32,20 +33,20 @@
 			<td>
 				<select class="form-control" name="debitAsset">
 					{{#assetList}}
-						<option value="{{id}}">{{name}}</option>
+						<option value="{{id}}" >{{name}}</option>
 					{{/assetList}}
 				</select>
 			</td>
 			<td>
 				<select class="form-control" name="creditAsset">
 					{{#assetList}}
-						<option value="{{id}}">{{name}}</option>
+						<option value="{{id}}" >{{name}}</option>
 					{{/assetList}}
 				</select>
 			</td>
-			<td contenteditable="true" data-key="amount">{{amount}}</td>
-			<td contenteditable="true" data-key="memo">{{memo}}</td>
-			<td>{{entryDate}}</td>
+			<td contenteditable="true" data-key="amount">{{entry.amount}}</td>
+			<td contenteditable="true" data-key="memo">{{entry.memo}}</td>
+			<td><input type="text" class="form-control" name="entryDate" value="{{entry.entryDate}}" /></td>
 			<td>
 				<button class="btn btn-default btn-sm" data-menu="updateEntry"><span class="glyphicon glyphicon-edit">수정</span></button>
 				<button class="btn btn-default btn-sm" data-menu="deleteEntry"><span class="glyphicon glyphicon-remove">삭제</span></button>
@@ -102,9 +103,7 @@
 						<td contenteditable="true" data-key-name="createAmount" placeholder="금액을  입력하세요"></td>
 						<td contenteditable="true" data-key-name="createMemo" placeholder="내용을 입력하세요"></td>
 						<!--<td contenteditable="true" data-key-name="createEntryDate" placeholder="날짜를 입력하세요"></td>-->
-						<td>
-							<input type="text" class="form-control" name="createEntryDate" />
-						</td>
+						<td><input type="text" class="form-control" name="createEntryDate" /></td>
 						<td><button class="btn btn-default btn-sm" data-menu="createEntry"><span class="glyphicon glyphicon-plus">추가</span></button></td>
 					</tr>
 				</tfoot>

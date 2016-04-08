@@ -1,4 +1,10 @@
 $(document).ready(function() {
+	// 추가로 필요한 데이터 호출
+	var entryGroupCollection = new $.EntryGroupCollection();
+	var assetCollection = new $.AssetCollection();
+	
+	entryGroupCollection.fetch();
+	assetCollection.fetch();
 
 	$.EntryView = Backbone.View.extend({
 		el : "<tr>",	//기본은 div
@@ -17,10 +23,17 @@ $(document).ready(function() {
 			this.listenTo(this.model, 'destroy', this.remove);
 		},
 		render : function() {
-			//console.log("EntryView render", this.model, this.$el);
-			var data = this.model.toJSON();
-			this.$el.html(Mustache.render(this.template, this.model.toJSON()));
-			this.$el.find("select[name=entryType] > option[value=" + this.model.get("entryType") + "]").attr("selected", "selected");
+			console.log("EntryView render", this.model, this.model.collection);
+			var data = {
+				entry :	this.model.toJSON(),
+				assetList : assetCollection.toJSON(),
+				entryGroupList : entryGroupCollection.toJSON()
+			}
+			
+			this.$el.html(Mustache.render(this.template, data));
+			this.$el.find("select[name=entryGroup] > option[value=" + this.model.get("entryGroup").id + "]").attr("selected", "selected");
+			this.$el.find("select[name=debitAsset] > option[value=" + this.model.get("debitAsset").id + "]").attr("selected", "selected");
+			this.$el.find("select[name=creditAsset] > option[value=" + this.model.get("creditAsset").id + "]").attr("selected", "selected");
 			this.$el.find("[data-menu=updateEntry]").hide();
 			return this;
 		},
@@ -67,38 +80,40 @@ $(document).ready(function() {
 			"keypress [data-key-name=createAmount]" : "createAmountKeyPress"
 		},
 		initialize : function() {
+			this.test = "테스트";
 			//console.log("This collection view has been initialized.");
 			this.collection = new $.EntryCollection();
-			this.entryGroupCollection = new $.EntryGroupCollection();
-			this.assetCollection = new $.AssetCollection();
+			//this.entryGroupCollection = new $.EntryGroupCollection();
+			//this.assetCollection = new $.AssetCollection();
 			
-			this.listenTo(this.entryGroupCollection, "reset", this.render);
-			this.listenTo(this.assetCollection, "reset", this.render);
+			//this.listenTo(this.entryGroupCollection, "reset", this.render);
+			//this.listenTo(this.assetCollection, "reset", this.render);
 			this.listenTo(this.collection, "reset", this.render);
 			this.listenTo(this.collection, "add", this.renderEntry);
 			
-			this.entryGroupCollection.fetch({reset : true});
-			this.assetCollection.fetch({reset : true});
+			//this.entryGroupCollection.fetch({reset : true});
+			//this.assetCollection.fetch({reset : true});
 			this.collection.fetch({reset : true});
 			
 		},
 		render : function() {
-			console.log("Test : ", this.assetCollection.toJSON());
 			var data = {
-				assetList : this.assetCollection.toJSON(),
-				entryGroupList : this.entryGroupCollection.toJSON()
+				assetList : assetCollection.toJSON(),
+				entryGroupList : entryGroupCollection.toJSON()
 			};
 			this.$el.html(Mustache.render(this.template, data));
 			this.collection.each(function(entry) {
 				var entryView = new $.EntryView({model : entry});
+//				entryView.assetList = data.assetList;
+//				entryView.entryGroupList = data.entryGroupList;
 				this.$el.find("table tbody").append(entryView.render().el);
 			}, this);
 			
 			//외부 모듈 이벤트 핸들링 추가
-			this.$el.find("input[name=createEntryDate]").datepicker();
+			this.$el.find("input[name=createEntryDate]").datepicker({ language: 'ko' });
 		},
 		renderEntry : function(entry) {
-			var entryView = new $.EntryView({model : entry});
+			var entryView = new $.EntryView({ model : entry });
 			this.$el.find("table tbody").append(entryView.render().el);
 		},
 		createEntry : function(event) {
@@ -109,7 +124,7 @@ $(document).ready(function() {
 				creditAsset : { id : $("select[name=createCreditAsset] option:selected").val() },
 				amount : $("[data-key-name=createAmount]").text(),
 				memo : $("[data-key-name=createMemo]").text(),
-				entryDate : $("[data-key-name=createEntryDate").text()
+				entryDate : moment.utc(new Date($("input[name=createEntryDate").val())).format("YYYY-MM-DDTHH:mm:ss")
 			});
 			if (!entry.isValid()) {
 				return;
