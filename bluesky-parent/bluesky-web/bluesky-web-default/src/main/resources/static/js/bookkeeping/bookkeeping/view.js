@@ -72,7 +72,11 @@ $(document).ready(function() {
 		},
 		createBookkeeping : function(event) {
 			event.preventDefault();
-			this.collection.create({name : $("[data-key-name=createBookkeepingName]").text()});
+			var bookkeeping = new $.Bookkeeping({name : $("[data-key-name=createBookkeepingName]").text()});
+			if (!bookkeeping.isValid()) {
+				return;
+			}
+			this.collection.create(bookkeeping);
 			$(event.target).closest("tr")
 			.find("[contenteditable=true]").text("");
 		},

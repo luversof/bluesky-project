@@ -12,13 +12,13 @@ $.Bookkeeping = Backbone.Model.extend({
 			//console.log("name value for this model has changed.");
 		});
 		this.on("invalid", function(model, error) {
-			//console.log("invalid : ", model, error);
-		})
+			alert(error);
+		});
 	},
 	validate : function(attrs, options) {
 		//console.log("validate : ", attrs, options);
 		if (attrs.name == "") {
-			return "Remember to set a name for your bookkeeping";
+			return "가계부의 이름을 입력하세요";
 		}
 	}
 });

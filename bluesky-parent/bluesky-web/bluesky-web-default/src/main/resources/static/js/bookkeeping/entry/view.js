@@ -13,8 +13,13 @@ $(document).ready(function() {
 		events : {
 			"click [data-menu=updateEntry]" : "updateEntry",
 			"click [data-menu=deleteEntry]" : "deleteEntry",
-			"keyup [data-key=name]" : "changeNameKeyUP",
-			"keypress [data-key=name]" : "changeNameKeyPress",
+			"keyup [data-key=amount]" : "changeAmountKeyUp",
+			"keypress [data-key=amount]" : "changeAmountKeyPress",
+			"keyup [data-key=memo]" : "changeMemoKeyUp",
+			"keypress [data-key=memo]" : "changeMemoKeyPress",
+			"change select[name=entryGroup]" : "changeEntryGroup",
+			"change select[name=debitAsset]" : "changeDebitAsset",
+			"change select[name=creditAsset]" : "changeCreditAsset",
 			"change select[name=entryType]" : "changeEntryType"
 		},
 		initialize : function() {
@@ -29,24 +34,36 @@ $(document).ready(function() {
 				assetList : assetCollection.toJSON(),
 				entryGroupList : entryGroupCollection.toJSON()
 			}
+			data.getEntryDate = function() {
+				return moment(new Date(data.entry.entryDate)).format("YYYY-MM-DD")
+			}
 			
 			this.$el.html(Mustache.render(this.template, data));
 			this.$el.find("select[name=entryGroup] > option[value=" + this.model.get("entryGroup").id + "]").attr("selected", "selected");
 			this.$el.find("select[name=debitAsset] > option[value=" + this.model.get("debitAsset").id + "]").attr("selected", "selected");
 			this.$el.find("select[name=creditAsset] > option[value=" + this.model.get("creditAsset").id + "]").attr("selected", "selected");
 			this.$el.find("[data-menu=updateEntry]").hide();
+			
+			//외부 모듈 이벤트 핸들링 추가
+			this.$el.find("input[name=entryDate]").datepicker({ language: 'ko' });
 			return this;
 		},
 		updateEntry : function() {
-			this.model.save({name : this.$el.find("[data-key=name]").text(), entryType : this.$el.find("select[name=entryType] option:selected").val()});
+			this.model.save({
+				entryGroup : { id : this.$el.find("select[name=entryGroup] option:selected").val() },
+				debitAsset : { id : this.$el.find("select[name=debitAsset] option:selected").val() },
+				creditAsset : { id : this.$el.find("select[name=creditAsset] option:selected").val() },
+				amount : this.$el.find("[data-key=amount]").text(),
+				memo : this.$el.find("[data-key=memo]").text(),
+				entryDate : moment.utc(new Date(this.$el.find("input[name=entryDate]").val())).format("YYYY-MM-DDTHH:mm:ss")
+			});
 			this.$el.find("[data-menu=updateEntry]").hide(100);
 		},
 		deleteEntry : function() {
 			this.model.destroy();
 		},
-		changeNameKeyUP : function(event) {
-			//console.log("data : ", this.$el.find("[data-key=name]").text());
-			if (this.$el.find("[data-key=name]").text() == this.model.get("name")) {
+		changeAmountKeyUp : function(event) {
+			if (this.$el.find("[data-key=amount]").text() == this.model.get("amount")) {
 				this.$el.find("[data-menu=updateEntry]").hide(100);
 			} else {
 				this.$el.find("[data-menu=updateEntry]").show(100);
@@ -56,15 +73,53 @@ $(document).ready(function() {
 			}
 		},
 		// enter 입력 처리 방지
-		changeNameKeyPress : function(event) {
+		changeAmountKeyPress : function(event) {
 			return event.keyCode != 13;
 		},
-		changeEntryType : function() {
-			if (this.$el.find("select[name=entryType] option:selected").val() == this.model.get("entryType")) {
+		changeMemoKeyUp : function(event) {
+			if (this.$el.find("[data-key=memo]").text() == this.model.get("memo")) {
 				this.$el.find("[data-menu=updateEntry]").hide(100);
 			} else {
 				this.$el.find("[data-menu=updateEntry]").show(100);
 			}
+			if (event.keyCode == 13) {
+				this.updateEntry();
+			}
+		},
+		// enter 입력 처리 방지
+		changeAmountKeyPress : function(event) {
+			return event.keyCode != 13;
+		},
+		changeEntryGroup : function() {
+			console.log("Test : ", this.$el.find("select[name=entryGroup] option:selected").val() , this.model.get("entryGroup").id);
+			if (this.$el.find("select[name=entryGroup] option:selected").val() == this.model.get("entryGroup").id) {
+				this.$el.find("[data-menu=updateEntry]").hide(100);
+			} else {
+				this.$el.find("[data-menu=updateEntry]").show(100);
+			}
+		},
+		changeDebitAsset : function() {
+			if (this.$el.find("select[name=debitAsset] option:selected").val() == this.model.get("debitAsset").id) {
+				this.$el.find("[data-menu=updateEntry]").hide(100);
+			} else {
+				this.$el.find("[data-menu=updateEntry]").show(100);
+			}
+		},
+		changeCreditAsset : function() {
+			if (this.$el.find("select[name=creditAsset] option:selected").val() == this.model.get("creditAsset").id) {
+				this.$el.find("[data-menu=updateEntry]").hide(100);
+			} else {
+				this.$el.find("[data-menu=updateEntry]").show(100);
+			}
+		},
+		
+		// 기입 유형 선택 관련
+		changeEntryType : function() {
+//			if (this.$el.find("select[name=entryType] option:selected").val() == this.model.get("entryType")) {
+//				this.$el.find("[data-menu=updateEntry]").hide(100);
+//			} else {
+//				this.$el.find("[data-menu=updateEntry]").show(100);
+//			}
 		}
 	});
 
@@ -80,7 +135,6 @@ $(document).ready(function() {
 			"keypress [data-key-name=createAmount]" : "createAmountKeyPress"
 		},
 		initialize : function() {
-			this.test = "테스트";
 			//console.log("This collection view has been initialized.");
 			this.collection = new $.EntryCollection();
 			//this.entryGroupCollection = new $.EntryGroupCollection();

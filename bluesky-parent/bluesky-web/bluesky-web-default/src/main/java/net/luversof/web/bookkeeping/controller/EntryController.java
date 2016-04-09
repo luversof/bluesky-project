@@ -62,14 +62,14 @@ public class EntryController {
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
 	public Entry modify(@RequestBody @Validated(EntryUpdate.class) Entry entry, Authentication authentication) {
 		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
-		return entryService.create(entry);
+		return entryService.update(entry);
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public void delete(@Validated(EntryDelete.class) Entry entry, Authentication authentication) {
 		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		entryService.delete(entry);
