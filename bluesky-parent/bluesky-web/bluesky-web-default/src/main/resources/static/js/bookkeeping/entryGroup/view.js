@@ -2,14 +2,13 @@ $(document).ready(function() {
 
 	$.EntryGroupView = Backbone.View.extend({
 		el : "<tr>",	//기본은 div
-		//className : "testt",
 		template : $("#template-entryGroup-view").html(),
 		events : {
 			"click [data-menu=updateEntryGroup]" : "updateEntryGroup",
 			"click [data-menu=deleteEntryGroup]" : "deleteEntryGroup",
 			"keyup [data-key=name]" : "changeNameKeyUp",
 			"keypress [data-key=name]" : "changeNameKeyPress",
-			"change select[name=entryType]" : "changeEntryType"
+			"change select[name=entryType]" : "isChange"
 		},
 		initialize : function() {
 			console.log("This view has been initialized.");
@@ -31,13 +30,16 @@ $(document).ready(function() {
 		deleteEntryGroup : function() {
 			this.model.destroy();
 		},
-		changeNameKeyUp : function(event) {
-			//console.log("data : ", this.$el.find("[data-key=name]").text());
-			if (this.$el.find("[data-key=name]").text() == this.model.get("name")) {
+		isChange : function() {
+			if (this.$el.find("[data-key=name]").text() == this.model.get("name")
+					&& this.$el.find("select[name=entryType] option:selected").val() == this.model.get("entryType")) {
 				this.$el.find("[data-menu=updateEntryGroup]").hide(100);
 			} else {
 				this.$el.find("[data-menu=updateEntryGroup]").show(100);
 			}
+		},
+		changeNameKeyUp : function(event) {
+			this.isChange();
 			if (event.keyCode == 13) {
 				this.updateEntryGroup();
 			}
@@ -45,13 +47,6 @@ $(document).ready(function() {
 		// enter 입력 처리 방지
 		changeNameKeyPress : function(event) {
 			return event.keyCode != 13;
-		},
-		changeEntryType : function() {
-			if (this.$el.find("select[name=entryType] option:selected").val() == this.model.get("entryType")) {
-				this.$el.find("[data-menu=updateEntryGroup]").hide(100);
-			} else {
-				this.$el.find("[data-menu=updateEntryGroup]").show(100);
-			}
 		}
 	});
 

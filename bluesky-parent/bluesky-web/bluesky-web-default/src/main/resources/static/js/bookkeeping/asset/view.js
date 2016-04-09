@@ -2,14 +2,13 @@ $(document).ready(function() {
 
 	$.AssetView = Backbone.View.extend({
 		el : "<tr>",	//기본은 div
-		//className : "testt",
 		template : $("#template-asset-view").html(),
 		events : {
 			"click [data-menu=updateAsset]" : "updateAsset",
 			"click [data-menu=deleteAsset]" : "deleteAsset",
 			"keyup [data-key=name]" : "changeNameKeyUp",
 			"keypress [data-key=name]" : "changeNameKeyPress",
-			"change select[name=assetType]" : "changeAssetType"
+			"change select[name=assetType]" : "isChange"
 		},
 		initialize : function() {
 			console.log("This view has been initialized.");
@@ -30,12 +29,16 @@ $(document).ready(function() {
 		deleteAsset : function() {
 			this.model.destroy();
 		},
-		changeNameKeyUp : function(event) {
-			if (this.$el.find("[data-key=name]").text() == this.model.get("name")) {
+		isChange : function() {
+			if (this.$el.find("[data-key=name]").text() == this.model.get("name")
+					&& this.$el.find("select[name=assetType] option:selected").val() == this.model.get("assetType")) {
 				this.$el.find("[data-menu=updateAsset]").hide(100);
 			} else {
 				this.$el.find("[data-menu=updateAsset]").show(100);
 			}
+		},
+		changeNameKeyUp : function(event) {
+			this.isChange();
 			if (event.keyCode == 13) {
 				this.updateAsset();
 			}
@@ -43,13 +46,6 @@ $(document).ready(function() {
 		// enter 입력 처리 방지
 		changeNameKeyPress : function(event) {
 			return event.keyCode != 13;
-		},
-		changeAssetType : function() {
-			if (this.$el.find("select[name=assetType] option:selected").val() == this.model.get("assetType")) {
-				this.$el.find("[data-menu=updateAsset]").hide(100);
-			} else {
-				this.$el.find("[data-menu=updateAsset]").show(100);
-			}
 		}
 	});
 

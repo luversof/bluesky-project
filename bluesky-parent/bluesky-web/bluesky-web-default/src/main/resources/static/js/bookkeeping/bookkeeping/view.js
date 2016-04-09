@@ -5,7 +5,7 @@ $(document).ready(function() {
 		template : $("#template-bookkeeping-view").html(),
 		events : {
 			"click [data-menu=updateBookkeeping]" : "updateBookkeeping",
-			"click [data-menu=deleteBookkeeping]" : "removeBookkeeping",
+			"click [data-menu=deleteBookkeeping]" : "deleteBookkeeping",
 			"keyup [data-key=name]" : "changeNameKeyUp",
 			"keypress [data-key=name]" : "changeNameKeyPress"
 		},
@@ -22,15 +22,18 @@ $(document).ready(function() {
 			this.model.save({name : this.$el.find("[data-key=name]").text()});
 			this.$el.find("[data-menu=updateBookkeeping]").hide(100);
 		},
-		removeBookkeeping : function() {
+		deleteBookkeeping : function() {
 			this.model.destroy();
 		},
-		changeNameKeyUp : function(event) {
+		isChange : function() {
 			if (this.$el.find("[data-key=name]").text() == this.model.get("name")) {
 				this.$el.find("[data-menu=updateBookkeeping]").hide(100);
 			} else {
 				this.$el.find("[data-menu=updateBookkeeping]").show(100);
 			}
+		},
+		changeNameKeyUp : function(event) {
+			this.isChange();
 			if (event.keyCode == 13) {
 				this.updateBookkeeping();
 			}

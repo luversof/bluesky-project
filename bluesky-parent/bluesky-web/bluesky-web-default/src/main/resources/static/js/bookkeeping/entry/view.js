@@ -8,7 +8,6 @@ $(document).ready(function() {
 
 	$.EntryView = Backbone.View.extend({
 		el : "<tr>",	//기본은 div
-		//className : "testt",
 		template : $("#template-entry-view").html(),
 		events : {
 			"click [data-menu=updateEntry]" : "updateEntry",
@@ -17,9 +16,9 @@ $(document).ready(function() {
 			"keypress [data-key=amount]" : "changeAmountKeyPress",
 			"keyup [data-key=memo]" : "changeMemoKeyUp",
 			"keypress [data-key=memo]" : "changeMemoKeyPress",
-			"change select[name=entryGroup]" : "changeEntryGroup",
-			"change select[name=debitAsset]" : "changeDebitAsset",
-			"change select[name=creditAsset]" : "changeCreditAsset",
+			"change select[name=entryGroup]" : "isChange",
+			"change select[name=debitAsset]" : "isChange",
+			"change select[name=creditAsset]" : "isChange",
 			"change select[name=entryType]" : "changeEntryType"
 		},
 		initialize : function() {
@@ -62,12 +61,20 @@ $(document).ready(function() {
 		deleteEntry : function() {
 			this.model.destroy();
 		},
-		changeAmountKeyUp : function(event) {
-			if (this.$el.find("[data-key=amount]").text() == this.model.get("amount")) {
+		// 변경된 내용이 있는지 여부 확인
+		isChange : function() {
+			if (this.$el.find("[data-key=amount]").text() == this.model.get("amount") 
+					&& this.$el.find("[data-key=memo]").text() == this.model.get("memo")
+					&& this.$el.find("select[name=entryGroup] option:selected").val() == this.model.get("entryGroup").id
+					&& this.$el.find("select[name=debitAsset] option:selected").val() == this.model.get("debitAsset").id
+					&& this.$el.find("select[name=creditAsset] option:selected").val() == this.model.get("creditAsset").id) {
 				this.$el.find("[data-menu=updateEntry]").hide(100);
 			} else {
 				this.$el.find("[data-menu=updateEntry]").show(100);
 			}
+		},
+		changeAmountKeyUp : function(event) {
+			this.isChange();
 			if (event.keyCode == 13) {
 				this.updateEntry();
 			}
@@ -77,11 +84,7 @@ $(document).ready(function() {
 			return event.keyCode != 13;
 		},
 		changeMemoKeyUp : function(event) {
-			if (this.$el.find("[data-key=memo]").text() == this.model.get("memo")) {
-				this.$el.find("[data-menu=updateEntry]").hide(100);
-			} else {
-				this.$el.find("[data-menu=updateEntry]").show(100);
-			}
+			this.isChange();
 			if (event.keyCode == 13) {
 				this.updateEntry();
 			}
@@ -89,28 +92,6 @@ $(document).ready(function() {
 		// enter 입력 처리 방지
 		changeAmountKeyPress : function(event) {
 			return event.keyCode != 13;
-		},
-		changeEntryGroup : function() {
-			console.log("Test : ", this.$el.find("select[name=entryGroup] option:selected").val() , this.model.get("entryGroup").id);
-			if (this.$el.find("select[name=entryGroup] option:selected").val() == this.model.get("entryGroup").id) {
-				this.$el.find("[data-menu=updateEntry]").hide(100);
-			} else {
-				this.$el.find("[data-menu=updateEntry]").show(100);
-			}
-		},
-		changeDebitAsset : function() {
-			if (this.$el.find("select[name=debitAsset] option:selected").val() == this.model.get("debitAsset").id) {
-				this.$el.find("[data-menu=updateEntry]").hide(100);
-			} else {
-				this.$el.find("[data-menu=updateEntry]").show(100);
-			}
-		},
-		changeCreditAsset : function() {
-			if (this.$el.find("select[name=creditAsset] option:selected").val() == this.model.get("creditAsset").id) {
-				this.$el.find("[data-menu=updateEntry]").hide(100);
-			} else {
-				this.$el.find("[data-menu=updateEntry]").show(100);
-			}
 		},
 		
 		// 기입 유형 선택 관련
