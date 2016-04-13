@@ -18,16 +18,15 @@ $(document).ready(function() {
 			"keypress [data-key=memo]" : "changeMemoKeyPress",
 			"change select[name=entryGroup]" : "isChange",
 			"change select[name=debitAsset]" : "isChange",
-			"change select[name=creditAsset]" : "isChange",
-			"change select[name=entryType]" : "changeEntryType"
+			"change select[name=creditAsset]" : "isChange"
 		},
 		initialize : function() {
-			console.log("This view has been initialized.");
+//			console.log("This view has been initialized.");
 			this.listenTo(this.model, 'change', this.render);
 			this.listenTo(this.model, 'destroy', this.remove);
 		},
 		render : function() {
-			console.log("EntryView render", this.model, this.model.collection);
+//			console.log("EntryView render", this.model, this.model.collection);
 			var data = {
 				entry :	this.model.toJSON(),
 				assetList : assetCollection.toJSON(),
@@ -92,15 +91,6 @@ $(document).ready(function() {
 		// enter 입력 처리 방지
 		changeAmountKeyPress : function(event) {
 			return event.keyCode != 13;
-		},
-		
-		// 기입 유형 선택 관련
-		changeEntryType : function() {
-//			if (this.$el.find("select[name=entryType] option:selected").val() == this.model.get("entryType")) {
-//				this.$el.find("[data-menu=updateEntry]").hide(100);
-//			} else {
-//				this.$el.find("[data-menu=updateEntry]").show(100);
-//			}
 		}
 	});
 
@@ -113,7 +103,8 @@ $(document).ready(function() {
 			"keyup [data-key-name=createMemo]" : "createMemoKeyUp",
 			"keypress [data-key-name=createMemo]" : "createMemoKeyPress",
 			"keyup [data-key-name=createAmount]" : "createAmountKeyUp",
-			"keypress [data-key-name=createAmount]" : "createAmountKeyPress"
+			"keypress [data-key-name=createAmount]" : "createAmountKeyPress",
+			"click [data-menu=selectCreateEntryType]" : "selectCreateEntryType"
 		},
 		initialize : function() {
 			//console.log("This collection view has been initialized.");
@@ -128,7 +119,7 @@ $(document).ready(function() {
 			
 			//this.entryGroupCollection.fetch({reset : true});
 			//this.assetCollection.fetch({reset : true});
-			this.collection.fetch({reset : true});
+			this.collection.fetch({reset : true, data : $.param({page : 12})});
 			
 		},
 		render : function() {
@@ -185,6 +176,31 @@ $(document).ready(function() {
 		},
 		createMemoKeyPress : function(event) {
 			return event.keyCode !== 13;
+		},
+		// 기입 유형 선택 관련
+		selectCreateEntryType : function(event) {
+			console.log("Test : ", event, event.target, $(event.target).val());
+			// 버튼 활성화 처리
+			$("[data-menu=selectCreateEntryType]").removeClass("active")
+			$(event.target).addClass("active");
+			
+			var entryType = $(event.target).val();
+			
+			//선택한 entryType에 따라 입력 형태 변경 처리
+			if (entryType == "credit") {
+				
+			} else if (entryType == "debit") {
+				
+			} else if (entryType == "transfer") {
+				
+			}
+			
+			
+//			if (this.$el.find("select[name=entryType] option:selected").val() == this.model.get("entryType")) {
+//				this.$el.find("[data-menu=updateEntry]").hide(100);
+//			} else {
+//				this.$el.find("[data-menu=updateEntry]").show(100);
+//			}
 		}
 	});
 

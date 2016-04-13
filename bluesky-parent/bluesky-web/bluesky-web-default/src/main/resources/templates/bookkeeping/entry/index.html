@@ -79,6 +79,23 @@
 				</tbody>
 				<tfoot>
 					<tr class="active">
+						<td colspan="7">
+							<div class="col-md-4">
+								<div class="btn-group btn-group-justified"  role="group" aria-label="...">
+									<div class="btn-group" role="group">
+										<button type="button" class="btn btn-default" role="button" data-menu="selectCreateEntryType" value="credit">수입</button>
+									</div>
+									<div class="btn-group" role="group">
+										<button type="button" class="btn btn-default" role="button" data-menu="selectCreateEntryType" value="debit">지출</button>
+									</div>
+									<div class="btn-group" role="group">
+										<button type="button" class="btn btn-default" role="button" data-menu="selectCreateEntryType" value="transfer">이체</button>
+									</div>
+								</div>
+							</div>
+						</td>
+					</tr>
+					<tr class="active">
 						<td>
 							<select class="form-control" name="createEntryGroup">
 								{{#entryGroupList}}
