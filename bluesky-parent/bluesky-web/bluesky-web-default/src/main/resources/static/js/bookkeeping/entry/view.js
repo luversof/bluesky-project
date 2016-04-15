@@ -35,6 +35,9 @@ $(document).ready(function() {
 			data.getEntryDate = function() {
 				return moment(new Date(data.entry.entryDate)).format("YYYY-MM-DD")
 			}
+			data.isEntryGroup = function() {
+				
+			}
 			
 			this.$el.html(Mustache.render(this.template, data));
 			this.$el.find("select[name=entryGroup] > option[value=" + this.model.get("entryGroup").id + "]").attr("selected", "selected");
@@ -181,18 +184,22 @@ $(document).ready(function() {
 		selectCreateEntryType : function(event) {
 			console.log("Test : ", event, event.target, $(event.target).val());
 			// 버튼 활성화 처리
-			$("[data-menu=selectCreateEntryType]").removeClass("active")
+			$("[data-menu=selectCreateEntryType]").removeClass("active");
 			$(event.target).addClass("active");
 			
 			var entryType = $(event.target).val();
 			
 			//선택한 entryType에 따라 입력 형태 변경 처리
+			//입력 형태에 따른 entryGroup 처리 추가
 			if (entryType == "credit") {
-				
+				$("[name=createDebitAsset]").attr("disabled", true).hide();
+				$("[name=createCreditAsset]").removeAttr("disabled").show();
 			} else if (entryType == "debit") {
-				
+				$("[name=createDebitAsset]").removeAttr("disabled").show();
+				$("[name=createCreditAsset]").attr("disabled", true).hide();
 			} else if (entryType == "transfer") {
-				
+				$("[name=createDebitAsset]").removeAttr("disabled").show();
+				$("[name=createCreditAsset]").removeAttr("disabled").show();
 			}
 			
 			
