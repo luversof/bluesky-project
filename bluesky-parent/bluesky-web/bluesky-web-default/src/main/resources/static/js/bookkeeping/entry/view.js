@@ -35,14 +35,20 @@ $(document).ready(function() {
 			data.getEntryDate = function() {
 				return moment(new Date(data.entry.entryDate)).format("YYYY-MM-DD")
 			}
-			data.isEntryGroup = function() {
+			
+			//entryType을 먼저 확인
+			var entryType = null;
+			
+			data.isTargetEntryGroup = function() {
 				
+				console.log("this : ", this);
+				return true;
 			}
 			
 			this.$el.html(Mustache.render(this.template, data));
-			this.$el.find("select[name=entryGroup] > option[value=" + this.model.get("entryGroup").id + "]").attr("selected", "selected");
-			this.$el.find("select[name=debitAsset] > option[value=" + this.model.get("debitAsset").id + "]").attr("selected", "selected");
-			this.$el.find("select[name=creditAsset] > option[value=" + this.model.get("creditAsset").id + "]").attr("selected", "selected");
+			if (this.model.get("entryGroup") != null) { this.$el.find("select[name=entryGroup] > option[value=" + this.model.get("entryGroup").id + "]").attr("selected", "selected") };
+			if (this.model.get("debitAsset") != null) { this.$el.find("select[name=debitAsset] > option[value=" + this.model.get("debitAsset").id + "]").attr("selected", "selected") };
+			if (this.model.get("creditAsset") != null) { this.$el.find("select[name=creditAsset] > option[value=" + this.model.get("creditAsset").id + "]").attr("selected", "selected") };
 			this.$el.find("[data-menu=updateEntry]").hide();
 			
 			//외부 모듈 이벤트 핸들링 추가

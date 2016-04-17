@@ -16,7 +16,6 @@ $(document).ready(function() {
 			this.listenTo(this.model, 'destroy', this.remove);
 		},
 		render : function() {
-			var data = this.model.toJSON();
 			this.$el.html(Mustache.render(this.template, this.model.toJSON()));
 			this.$el.find("select[name=assetType] > option[value=" + this.model.get("assetType") + "]").attr("selected", "selected");
 			this.$el.find("[data-menu=updateAsset]").hide();

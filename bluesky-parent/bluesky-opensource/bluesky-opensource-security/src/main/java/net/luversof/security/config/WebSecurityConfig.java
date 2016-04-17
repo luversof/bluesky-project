@@ -62,7 +62,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 			.logout().logoutSuccessHandler(logoutSuccessHandler).and()
 			.formLogin().loginPage("/login").and()
 			.rememberMe().and()
-			//.csrf().and();
+//			.csrf().and()
             .httpBasic().and()
             ;
 	}
