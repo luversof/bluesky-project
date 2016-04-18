@@ -72,8 +72,9 @@ public class EntryService {
 		if (startDate == null || endDate == null) {
 			Bookkeeping targetBookkeeping = bookkeepingService.findOne(bookkeepingId);
 			if (targetBookkeeping == null) {
-				
+				throw new BlueskyException("NOT_EXIST_BOOKKEEPING");
 			}
+			
 		}
 		
 		return entryRepository.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startDate, endDate);
