@@ -29,12 +29,10 @@ public class EntryTest extends GeneralTest {
 	
 	@Test
 	public void test () {
-		log.debug("result : {}", entryService.findByBookkeepingId(1));
+		log.debug("result : {}", entryService.findByBookkeepingIdAndEntryDateBetween(1, null, null));
 	}
 	
 	// 세이브 테스트
-	
-	
 	@Test
 	public void test2() {
 		Bookkeeping bookkeeping = bookkeepingService.findOne(1);
@@ -49,5 +47,12 @@ public class EntryTest extends GeneralTest {
 		entryService.create(entry);
 		
 		log.debug("Test : {}", entry);
+	}
+	
+	
+	@Test
+	public void test3() {
+		
+		log.debug("result : {}", entryService.findByBookkeepingIdAndEntryDateBetween(1, null, null));
 	}
 }

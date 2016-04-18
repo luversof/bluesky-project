@@ -79,7 +79,10 @@ $(document).ready(function() {
 		},
 		createAsset : function(event) {
 			event.preventDefault();
-			var asset = new $.Asset({name : $("[data-key-name=createAssetName]").text(), assetType : $("select[name=createAssetType] option:selected").val()});
+			var asset = new $.Asset({
+				name : this.$el.find("[data-key-name=createAssetName]").text(),
+				assetType : this.$el.find("select[name=createAssetType] option:selected").val()
+			});
 			if (!asset.isValid()) {
 				return;
 			}

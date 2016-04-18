@@ -1,5 +1,6 @@
 package net.luversof.bookkeeping.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,8 +59,23 @@ public class EntryService {
 		entryRepository.delete(entry);
 	}
 	
+	/**
+	 * 넘어온 startDate, endDate 사이의 entryList를 반환.
+	 * 두 매개변수중 하나라도 null인 경우 bookkeeping의 기준일에 해당하는 현재 월의 데이터를 반환함
+	 * @param bookkeepingId
+	 * @param startDate
+	 * @param endDate
+	 * @return
+	 */
 	@Transactional(value = "bookkeepingTransactionManager", readOnly = true)
-	public List<Entry> findByBookkeepingId(long bookkeepingId) {
-		return entryRepository.findByBookkeepingId(bookkeepingId);
+	public List<Entry> findByBookkeepingIdAndEntryDateBetween(long bookkeepingId, LocalDateTime startDate, LocalDateTime endDate) {
+		if (startDate == null || endDate == null) {
+			Bookkeeping targetBookkeeping = bookkeepingService.findOne(bookkeepingId);
+			if (targetBookkeeping == null) {
+				
+			}
+		}
+		
+		return entryRepository.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startDate, endDate);
 	}
 }

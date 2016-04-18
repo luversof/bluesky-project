@@ -1,7 +1,8 @@
 $.Bookkeeping = Backbone.Model.extend({
 	defaults : {
 		name : null,
-		userId : 0
+		userId : 0,
+		baseDate : 1
 	},
 	initialize : function() {
 		//console.log("This model has been initialized.");
@@ -19,6 +20,9 @@ $.Bookkeeping = Backbone.Model.extend({
 		//console.log("validate : ", attrs, options);
 		if (attrs.name == "") {
 			return "가계부의 이름을 입력하세요";
+		}
+		if (attrs.baseDate <= 0) {
+			return "기준일을 입력하세요";
 		}
 	}
 });

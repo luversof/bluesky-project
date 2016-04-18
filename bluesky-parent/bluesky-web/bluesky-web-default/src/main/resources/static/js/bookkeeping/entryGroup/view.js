@@ -81,7 +81,10 @@ $(document).ready(function() {
 		},
 		createEntryGroup : function(event) {
 			event.preventDefault();
-			var entryGroup = new $.EntryGroup({ name : $("[data-key-name=createEntryGroupName]").text(), entryType : $("select[name=createEntryType] option:selected").val() });
+			var entryGroup = new $.EntryGroup({
+				name : this.$el.find("[data-key-name=createEntryGroupName]").text(),
+				entryType : this.$el.find("select[name=createEntryType] option:selected").val()
+			});
 			if (!entryGroup.isValid()) {
 				return;
 			}
@@ -89,7 +92,6 @@ $(document).ready(function() {
 			$(event.target).closest("tr")
 				.find("[contenteditable=true]").text("").end()
 				.find("select option:eq(0)").attr("selected", "selected");
-			//this.collection.create({ name : $("[data-key-name=createEntryGroupName]").text(), entryType : $("select[name=createEntryType] option:selected").val() });
 		},
 		createNameKeyUp : function(event) {
 			if (event.keyCode === 13) {

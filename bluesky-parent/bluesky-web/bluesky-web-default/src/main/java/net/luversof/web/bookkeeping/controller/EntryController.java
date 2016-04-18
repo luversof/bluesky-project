@@ -1,5 +1,6 @@
 package net.luversof.web.bookkeeping.controller;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.Bookkeeping;
@@ -46,8 +48,8 @@ public class EntryController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("(returnObject == null or returnObject.size() == 0) or returnObject.get(0).bookkeeping.userId == authentication.principal.id")
 	@RequestMapping(method = RequestMethod.GET)
-	public List<Entry> getEntryList(@PathVariable("bookkeeping.id") long bookkeepingId, Authentication authentication) {
-		return entryService.findByBookkeepingId(bookkeepingId);
+	public List<Entry> getEntryList(@PathVariable("bookkeeping.id") long bookkeepingId, @RequestParam(required = false) LocalDateTime startDate, @RequestParam(required = false) LocalDateTime endDate, Authentication authentication) {
+		return entryService.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startDate, endDate);
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)

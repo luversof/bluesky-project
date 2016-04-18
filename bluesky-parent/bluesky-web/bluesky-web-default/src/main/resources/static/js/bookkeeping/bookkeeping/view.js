@@ -7,7 +7,8 @@ $(document).ready(function() {
 			"click [data-menu=updateBookkeeping]" : "updateBookkeeping",
 			"click [data-menu=deleteBookkeeping]" : "deleteBookkeeping",
 			"keyup [data-key=name]" : "changeNameKeyUp",
-			"keypress [data-key=name]" : "changeNameKeyPress"
+			"keypress [data-key=name]" : "changeNameKeyPress",
+			"change select[name=baseDate]" : "isChange",
 		},
 		initialize : function() {
 			this.listenTo(this.model, 'change', this.render);
@@ -16,17 +17,23 @@ $(document).ready(function() {
 		render : function() {
 			this.$el.html(Mustache.render(this.template, this.model.toJSON()));
 			this.$el.find("[data-menu=updateBookkeeping]").hide();
+			this.$el.find("select[name=baseDate] > option[value=" + this.model.get("baseDate") + "]").attr("selected", "selected");
 			return this;
 		},
 		updateBookkeeping : function() {
-			this.model.save({name : this.$el.find("[data-key=name]").text()});
+			this.model.save({
+				name : this.$el.find("[data-key=name]").text(),
+				baseDate : this.$el.find("select[name=baseDate] option:selected").val()
+			});
 			this.$el.find("[data-menu=updateBookkeeping]").hide(100);
 		},
 		deleteBookkeeping : function() {
 			this.model.destroy();
 		},
+		// 변경된 내용이 있는지 여부 확인
 		isChange : function() {
-			if (this.$el.find("[data-key=name]").text() == this.model.get("name")) {
+			if (this.$el.find("[data-key=name]").text() == this.model.get("name") 
+					&& this.$el.find("select[name=baseDate] option:selected").val() == this.model.get("baseDate")) {
 				this.$el.find("[data-menu=updateBookkeeping]").hide(100);
 			} else {
 				this.$el.find("[data-menu=updateBookkeeping]").show(100);
@@ -75,7 +82,10 @@ $(document).ready(function() {
 		},
 		createBookkeeping : function(event) {
 			event.preventDefault();
-			var bookkeeping = new $.Bookkeeping({name : $("[data-key-name=createBookkeepingName]").text()});
+			var bookkeeping = new $.Bookkeeping({
+				name : this.$el.find("[data-key-name=createBookkeepingName]").text(),
+				baseDate : this.$el.find("select[name=createBookkeepingBaseDate] option:selected").val()
+			});
 			if (!bookkeeping.isValid()) {
 				return;
 			}

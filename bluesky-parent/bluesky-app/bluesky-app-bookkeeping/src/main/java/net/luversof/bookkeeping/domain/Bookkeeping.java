@@ -9,6 +9,7 @@ import javax.persistence.Table;
 import javax.validation.constraints.Min;
 
 import org.hibernate.validator.constraints.NotEmpty;
+import org.hibernate.validator.constraints.Range;
 
 import lombok.Data;
 import net.luversof.bookkeeping.domain.Asset.AssetDelete;
@@ -30,6 +31,9 @@ public class Bookkeeping {
 	@Column(name = "user_id", updatable = false)
 	@Min(value = 1, groups = BookkeepingUpdate.class)
 	private long userId;
+
+	@Range(min = 1, max = 28, groups = { BookkeepingCreate.class, BookkeepingUpdate.class })
+	private int baseDate;
 
 	public interface BookkeepingCreate {
 	};

@@ -5,7 +5,7 @@ $(document).ready(function() {
 	
 	entryGroupCollection.fetch();
 	assetCollection.fetch();
-
+	
 	$.EntryView = Backbone.View.extend({
 		el : "<tr>",	//기본은 div
 		template : $("#template-entry-view").html(),
@@ -39,10 +39,19 @@ $(document).ready(function() {
 			//entryType을 먼저 확인
 			var entryType = null;
 			
+			if (this.model.get("debitAsset") == null && this.model.get("creditAsset") != null) {
+				entryType = "CREDIT";
+			} else if (this.model.get("debitAsset") != null && this.model.get("creditAsset") == null) {
+				entryType = "DEBIT";
+			} else if (this.model.get("debitAsset") != null && this.model.get("creditAsset") != null) {
+				entryType = "TRANSFER";
+			} else {
+				console.log("entryType is not setted.", this.model);
+			}
+			
 			data.isTargetEntryGroup = function() {
-				
 				console.log("this : ", this);
-				return true;
+				return this.entryType == entryType;
 			}
 			
 			this.$el.html(Mustache.render(this.template, data));
@@ -145,7 +154,9 @@ $(document).ready(function() {
 			}, this);
 			
 			//외부 모듈 이벤트 핸들링 추가
-			this.$el.find("input[name=createEntryDate]").datepicker({ language: 'ko' });
+			this.$el
+				.find("input[name=createEntryDate]").datepicker({ language: 'ko' }).end()
+				.find("[data-menu=selectCreateEntryType]:eq(0)").trigger("click")
 		},
 		renderEntry : function(entry) {
 			var entryView = new $.EntryView({ model : entry });
@@ -154,12 +165,12 @@ $(document).ready(function() {
 		createEntry : function(event) {
 			event.preventDefault();
 			var entry = new $.Entry({
-				entryGroup : { id : $("select[name=createEntryGroup] option:selected").val() },
-				debitAsset : { id : $("select[name=createDebitAsset] option:selected").val() },
-				creditAsset : { id : $("select[name=createCreditAsset] option:selected").val() },
-				amount : $("[data-key-name=createAmount]").text(),
-				memo : $("[data-key-name=createMemo]").text(),
-				entryDate : moment.utc(new Date($("input[name=createEntryDate").val())).format("YYYY-MM-DDTHH:mm:ss")
+				entryGroup : { id : this.$el.find("select[name=createEntryGroup] option:selected").val() },
+				debitAsset : { id : this.$el.find("select[name=createDebitAsset] option:selected").val() },
+				creditAsset : { id : this.$el.find("select[name=createCreditAsset] option:selected").val() },
+				amount : this.$el.find("[data-key-name=createAmount]").text(),
+				memo : this.$el.find("[data-key-name=createMemo]").text(),
+				entryDate : moment.utc(new Date(this.$el.find("input[name=createEntryDate").val())).format("YYYY-MM-DDTHH:mm:ss")
 			});
 			if (!entry.isValid()) {
 				return;
@@ -168,7 +179,6 @@ $(document).ready(function() {
 			$(event.target).closest("tr")
 				.find("[contenteditable=true]").text("").end()
 				.find("select option:eq(0)").attr("selected", "selected");
-			//this.collection.create({ name : $("[data-key-name=createMemo]").text(), entryType : $("select[name=createEntryType] option:selected").val() });
 		},
 		createAmountKeyUp : function(event) {
 			if (event.keyCode === 13) {
@@ -190,24 +200,33 @@ $(document).ready(function() {
 		selectCreateEntryType : function(event) {
 			console.log("Test : ", event, event.target, $(event.target).val());
 			// 버튼 활성화 처리
-			$("[data-menu=selectCreateEntryType]").removeClass("active");
+			this.$el.find("[data-menu=selectCreateEntryType]").removeClass("active");
 			$(event.target).addClass("active");
 			
 			var entryType = $(event.target).val();
 			
 			//선택한 entryType에 따라 입력 형태 변경 처리
 			//입력 형태에 따른 entryGroup 처리 추가
-			if (entryType == "credit") {
-				$("[name=createDebitAsset]").attr("disabled", true).hide();
-				$("[name=createCreditAsset]").removeAttr("disabled").show();
-			} else if (entryType == "debit") {
-				$("[name=createDebitAsset]").removeAttr("disabled").show();
-				$("[name=createCreditAsset]").attr("disabled", true).hide();
-			} else if (entryType == "transfer") {
-				$("[name=createDebitAsset]").removeAttr("disabled").show();
-				$("[name=createCreditAsset]").removeAttr("disabled").show();
+			if (entryType == "CREDIT") {
+				this.$el.find("[name=createDebitAsset]").attr("disabled", true).hide();
+				this.$el.find("[name=createCreditAsset]").removeAttr("disabled").show();
+			} else if (entryType == "DEBIT") {
+				this.$el.find("[name=createDebitAsset]").removeAttr("disabled").show();
+				this.$el.find("[name=createCreditAsset]").attr("disabled", true).hide();
+			} else if (entryType == "TRANSFER") {
+				this.$el.find("[name=createDebitAsset]").removeAttr("disabled").show();
+				this.$el.find("[name=createCreditAsset]").removeAttr("disabled").show();
 			}
 			
+			this.$el.find("[name=createEntryGroup]")
+				.find("option").removeAttr("selected").each(function() {
+					if (entryGroupCollection.get($(this).val()).get("entryType") == entryType){
+						$(this).show().removeAttr("disabled");
+					} else {
+						$(this).hide().attr("disabled", true);
+					}
+				}).end()
+				.find("option:not(:disabled):eq(0)").attr("selected", true);
 			
 //			if (this.$el.find("select[name=entryType] option:selected").val() == this.model.get("entryType")) {
 //				this.$el.find("[data-menu=updateEntry]").hide(100);
