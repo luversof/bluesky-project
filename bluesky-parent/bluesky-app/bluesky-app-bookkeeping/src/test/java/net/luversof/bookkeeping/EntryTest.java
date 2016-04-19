@@ -12,10 +12,11 @@ import net.luversof.GeneralTest;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.EntryGroup;
+import net.luversof.bookkeeping.domain.EntrySearchInfo;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.bookkeeping.service.EntryGroupService;
 import net.luversof.bookkeeping.service.EntryService;
-import net.luversof.bookkeeping.util.BookkeepingUtil;
+import net.luversof.bookkeeping.util.BookkeepingUtils;
 
 @Slf4j
 public class EntryTest extends GeneralTest {
@@ -32,7 +33,8 @@ public class EntryTest extends GeneralTest {
 	
 	@Test
 	public void test () {
-		log.debug("result : {}", entryService.findByBookkeepingIdAndEntryDateBetween(1, null, null));
+		EntrySearchInfo entryInfo = entryService.getEntrySearchInfo(1, null, null);
+		log.debug("result : {}", entryService.findByBookkeepingIdAndEntryDateBetween(entryInfo));
 	}
 	
 	// 세이브 테스트
@@ -83,6 +85,17 @@ public class EntryTest extends GeneralTest {
 	
 	@Test
 	public void test4() {
-		log.debug("startLocalDateTime : {}", BookkeepingUtil.getStartDate(1));
+		log.debug("startLocalDateTime : {}", BookkeepingUtils.getStartDateTime(1));
+		log.debug("startLocalDateTime : {}", BookkeepingUtils.getStartDateTime(18));
+		log.debug("startLocalDateTime : {}", BookkeepingUtils.getStartDateTime(19));
+		log.debug("startLocalDateTime : {}", BookkeepingUtils.getStartDateTime(20));
+		log.debug("startLocalDateTime : {}", BookkeepingUtils.getStartDateTime(28));
+		
+		log.debug("getEndDate : {}", BookkeepingUtils.getEndDateTime(1));
+		log.debug("getEndDate : {}", BookkeepingUtils.getEndDateTime(18));
+		log.debug("getEndDate : {}", BookkeepingUtils.getEndDateTime(19));
+		log.debug("getEndDate : {}", BookkeepingUtils.getEndDateTime(20));
+		log.debug("getEndDate : {}", BookkeepingUtils.getEndDateTime(28));
+		
 	}
 }

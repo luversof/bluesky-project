@@ -9,7 +9,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
+import net.luversof.bookkeeping.domain.EntrySearchInfo;
 import net.luversof.bookkeeping.repository.EntryRepository;
+import net.luversof.bookkeeping.util.BookkeepingUtils;
 import net.luversof.core.exception.BlueskyException;
 
 @Service
@@ -62,21 +64,28 @@ public class EntryService {
 	/**
 	 * 넘어온 startDate, endDate 사이의 entryList를 반환.
 	 * 두 매개변수중 하나라도 null인 경우 bookkeeping의 기준일에 해당하는 현재 월의 데이터를 반환함
-	 * @param bookkeepingId
-	 * @param startDate
-	 * @param endDate
+	 * @param entrySearchInfo
 	 * @return
 	 */
 	@Transactional(value = "bookkeepingTransactionManager", readOnly = true)
-	public List<Entry> findByBookkeepingIdAndEntryDateBetween(long bookkeepingId, LocalDateTime startDate, LocalDateTime endDate) {
-		if (startDate == null || endDate == null) {
-			Bookkeeping targetBookkeeping = bookkeepingService.findOne(bookkeepingId);
-			if (targetBookkeeping == null) {
-				throw new BlueskyException("NOT_EXIST_BOOKKEEPING");
-			}
-			
+	public List<Entry> findByBookkeepingIdAndEntryDateBetween(EntrySearchInfo entrySearchInfo) {
+		return entryRepository.findByBookkeepingIdAndEntryDateBetween(entrySearchInfo.getBookkeepingId(), entrySearchInfo.getStartDateTime(), entrySearchInfo.getEndDateTime());
+	}
+	
+	public EntrySearchInfo getEntrySearchInfo(long bookkeepingId, LocalDateTime startDateTime, LocalDateTime endDateTime) {
+		EntrySearchInfo entrySearchInfo = new EntrySearchInfo();
+		Bookkeeping targetBookkeeping = bookkeepingService.findOne(bookkeepingId);
+		if (targetBookkeeping == null) {
+			throw new BlueskyException("NOT_EXIST_BOOKKEEPING");
 		}
-		
-		return entryRepository.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startDate, endDate);
+		entrySearchInfo.setBookkeepingId(targetBookkeeping.getId());
+		if (startDateTime == null || endDateTime == null) {
+			entrySearchInfo.setStartDateTime(BookkeepingUtils.getStartDateTime(targetBookkeeping.getBaseDate()));
+			entrySearchInfo.setEndDateTime(BookkeepingUtils.getEndDateTime(targetBookkeeping.getBaseDate()));
+		} else {
+			entrySearchInfo.setStartDateTime(startDateTime);
+			entrySearchInfo.setEndDateTime(endDateTime);
+		}
+		return entrySearchInfo;
 	}
 }

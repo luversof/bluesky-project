@@ -8,7 +8,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.ui.ModelMap;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,6 +21,7 @@ import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.Entry.EntryCreate;
 import net.luversof.bookkeeping.domain.Entry.EntryDelete;
 import net.luversof.bookkeeping.domain.Entry.EntryUpdate;
+import net.luversof.bookkeeping.domain.EntrySearchInfo;
 import net.luversof.bookkeeping.service.EntryService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
@@ -48,8 +48,8 @@ public class EntryController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("(returnObject == null or returnObject.size() == 0) or returnObject.get(0).bookkeeping.userId == authentication.principal.id")
 	@RequestMapping(method = RequestMethod.GET)
-	public List<Entry> getEntryList(@PathVariable("bookkeeping.id") long bookkeepingId, @RequestParam(required = false) LocalDateTime startDate, @RequestParam(required = false) LocalDateTime endDate, Authentication authentication) {
-		return entryService.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startDate, endDate);
+	public List<Entry> getEntryList(@PathVariable("bookkeeping.id") long bookkeepingId, EntrySearchInfo entrySearchInfo, Authentication authentication) {
+		return entryService.findByBookkeepingIdAndEntryDateBetween(entrySearchInfo);
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)

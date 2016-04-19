@@ -6,14 +6,22 @@
 <body>
 	<div layout:fragment="content">
 		<br />
-		<div class="panel panel-danger" th:if="${result}">
-			<div class="panel-heading" th:text="${result.get('message')}">Panel heading without title</div>
-			<div class="panel-body" th:text="${result.get('class')}">Panel content</div>
+		<div th:if="${#bools.arrayIsTrue(result)}" th:each="err : ${result}">
+			<div class="panel panel-danger" th:if="${err}">
+				<div class="panel-heading" th:text="${err.message}">Panel heading without title</div>
+				<div class="panel-heading" th:text="${err.class}">Panel heading without title</div>
+			</div>
 		</div>
-		<div class="panel panel-danger" th:if="${result ne empty}">
-			알 수 없는 에러가 발생하였습니다.
+		<div th:if="${!#bools.arrayIsTrue(result)}">
+			<div class="panel panel-danger" th:if="${result}">
+				<div class="panel-heading" th:text="${result.message}">Panel heading without title</div>
+				<div class="panel-body" th:text="${result.class}">Panel content</div>
+			</div>
+			<div class="panel panel-danger" th:if="${result ne empty}">
+				알 수 없는 에러가 발생하였습니다.
+			</div>
+			&nbsp;
 		</div>
-		&nbsp;
 	</div>
 </body>
 </html>

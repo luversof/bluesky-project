@@ -2,9 +2,12 @@ $(document).ready(function() {
 	// 추가로 필요한 데이터 호출
 	var entryGroupCollection = new $.EntryGroupCollection();
 	var assetCollection = new $.AssetCollection();
+	var entrySearchInfo = new $.EntrySearchInfo();
 	
-	entryGroupCollection.fetch();
-	assetCollection.fetch();
+	entryGroupCollection.fetch({ async : false });
+	assetCollection.fetch({ async : false });
+	entrySearchInfo.fetch({ async : false });
+	
 	
 	$.EntryView = Backbone.View.extend({
 		el : "<tr>",	//기본은 div
@@ -50,7 +53,6 @@ $(document).ready(function() {
 			}
 			
 			data.isTargetEntryGroup = function() {
-				console.log("this : ", this);
 				return this.entryType == entryType;
 			}
 			
@@ -137,7 +139,11 @@ $(document).ready(function() {
 			
 			//this.entryGroupCollection.fetch({reset : true});
 			//this.assetCollection.fetch({reset : true});
-			this.collection.fetch({reset : true, data : $.param({page : 12})});
+			console.log("test : ",entrySearchInfo.toJSON());
+			this.collection.fetch({reset : true, data : $.param({
+				startDateTime : entrySearchInfo.get("startDateTime"),
+				endDateTime : entrySearchInfo.get("endDateTime")
+			})});
 			
 		},
 		render : function() {
@@ -198,7 +204,6 @@ $(document).ready(function() {
 		},
 		// 기입 유형 선택 관련
 		selectCreateEntryType : function(event) {
-			console.log("Test : ", event, event.target, $(event.target).val());
 			// 버튼 활성화 처리
 			this.$el.find("[data-menu=selectCreateEntryType]").removeClass("active");
 			$(event.target).addClass("active");
