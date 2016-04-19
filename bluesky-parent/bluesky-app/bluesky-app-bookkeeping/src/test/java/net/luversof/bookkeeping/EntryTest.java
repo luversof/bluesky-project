@@ -98,4 +98,10 @@ public class EntryTest extends GeneralTest {
 		log.debug("getEndDate : {}", BookkeepingUtils.getEndDateTime(28));
 		
 	}
+	@Test
+	public void test5() {
+		log.debug("test : :{}", LocalDateTime.parse("2007-12-03T10:15"));
+		
+		
+	}
 }

@@ -26,4 +26,10 @@ public class EntrySearchInfoController {
 	public EntrySearchInfo getEntryInfo(@PathVariable("bookkeeping.id") long bookkeepingId, @RequestParam(required = false) LocalDateTime startDateTime, @RequestParam(required = false) LocalDateTime endDateTime) {
 		return entryService.getEntrySearchInfo(bookkeepingId, startDateTime, endDateTime);
 	}
+	
+	@RequestMapping("/test")
+	public LocalDateTime test(@RequestParam(required = false) LocalDateTime test) {
+		System.out.println(test);
+		return test;
+	}
 }

@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.format.FormatterRegistry;
+import org.springframework.format.datetime.standard.DateTimeFormatterRegistrar;
 import org.springframework.http.MediaType;
 import org.springframework.web.accept.ContentNegotiationManager;
 import org.springframework.web.accept.ContentNegotiationStrategy;
@@ -41,6 +43,9 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 	
 	@Autowired
 	private ThymeleafViewResolver thymeleafViewResolver;
+	
+//	@Autowired
+//	private MappingJackson2JsonView mappingJackson2JsonView;
 
 	@Override
 	public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
@@ -53,6 +58,15 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 	public Java8TimeDialect java8TimeDialect() {
 		return new Java8TimeDialect();
 	}
+	
+	
+	@Override
+	public void addFormatters(FormatterRegistry registry) {
+		DateTimeFormatterRegistrar registrar = new DateTimeFormatterRegistrar();
+        registrar.setUseIsoFormat(true);
+        registrar.registerFormatters(registry);
+		super.addFormatters(registry);
+	}
 
 	@Override
 	public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
@@ -62,11 +76,11 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 			.mediaType("json", MediaType.APPLICATION_JSON);
 	}
 	
-	@Override
-	public void configureViewResolvers(ViewResolverRegistry registry) {
-		registry.viewResolver(thymeleafViewResolver);
-		registry.enableContentNegotiation(new MappingJackson2JsonView());
-	}
+//	@Override
+//	public void configureViewResolvers(ViewResolverRegistry registry) {
+//		registry.viewResolver(thymeleafViewResolver);
+//		registry.enableContentNegotiation(new MappingJackson2JsonView());
+//	}
 	
 	
 	

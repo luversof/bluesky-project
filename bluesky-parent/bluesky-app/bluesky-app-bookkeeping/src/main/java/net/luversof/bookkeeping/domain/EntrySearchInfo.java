@@ -2,6 +2,9 @@ package net.luversof.bookkeeping.domain;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+
 import lombok.Data;
 
 /**
@@ -12,6 +15,8 @@ import lombok.Data;
 @Data
 public class EntrySearchInfo {
 	private long bookkeepingId;
+	@JsonDeserialize(using=LocalDateTimeDeserializer.class)
 	private LocalDateTime startDateTime;
+	@JsonDeserialize(using=LocalDateTimeDeserializer.class)
 	private LocalDateTime endDateTime;
 }
