@@ -2,8 +2,8 @@ package net.luversof.bookkeeping.domain;
 
 import java.time.LocalDateTime;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 
 import lombok.Data;
 
@@ -14,9 +14,15 @@ import lombok.Data;
  */
 @Data
 public class EntrySearchInfo {
+	@NotNull(groups = EntrySearchInfoSelect.class)
+	@Min(value = 1, groups = EntrySearchInfoSelect.class)
 	private long bookkeepingId;
-	@JsonDeserialize(using=LocalDateTimeDeserializer.class)
+	
+	@NotNull(groups = EntrySearchInfoSelect.class)
 	private LocalDateTime startDateTime;
-	@JsonDeserialize(using=LocalDateTimeDeserializer.class)
+	
+	@NotNull(groups = EntrySearchInfoSelect.class)
 	private LocalDateTime endDateTime;
+	
+	public interface EntrySearchInfoSelect {}
 }

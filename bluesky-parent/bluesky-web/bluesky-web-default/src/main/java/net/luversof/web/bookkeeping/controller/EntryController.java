@@ -1,6 +1,5 @@
 package net.luversof.web.bookkeeping.controller;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +12,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.Bookkeeping;
@@ -22,12 +20,13 @@ import net.luversof.bookkeeping.domain.Entry.EntryCreate;
 import net.luversof.bookkeeping.domain.Entry.EntryDelete;
 import net.luversof.bookkeeping.domain.Entry.EntryUpdate;
 import net.luversof.bookkeeping.domain.EntrySearchInfo;
+import net.luversof.bookkeeping.domain.EntrySearchInfo.EntrySearchInfoSelect;
 import net.luversof.bookkeeping.service.EntryService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
-@RequestMapping("bookkeeping/{bookkeeping.id}/entry")
+@RequestMapping("bookkeeping/{bookkeepingId}/entry")
 public class EntryController {
 	
 	@Autowired
@@ -48,13 +47,13 @@ public class EntryController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("(returnObject == null or returnObject.size() == 0) or returnObject.get(0).bookkeeping.userId == authentication.principal.id")
 	@RequestMapping(method = RequestMethod.GET)
-	public List<Entry> getEntryList(@PathVariable("bookkeeping.id") long bookkeepingId, EntrySearchInfo entrySearchInfo, Authentication authentication) {
+	public List<Entry> getEntryList(@Validated(EntrySearchInfoSelect.class) EntrySearchInfo entrySearchInfo, Authentication authentication) {
 		return entryService.findByBookkeepingIdAndEntryDateBetween(entrySearchInfo);
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-	public Entry createEntry(@RequestBody @Validated(EntryCreate.class) Entry entry, @PathVariable("bookkeeping.id") long bookkeepingId, Authentication authentication) {
+	public Entry createEntry(@RequestBody @Validated(EntryCreate.class) Entry entry, @PathVariable long bookkeepingId, Authentication authentication) {
 		Bookkeeping bookkeeping = new Bookkeeping();
 		bookkeeping.setId(bookkeepingId);
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();

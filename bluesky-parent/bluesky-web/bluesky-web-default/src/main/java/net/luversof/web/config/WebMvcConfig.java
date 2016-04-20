@@ -1,9 +1,6 @@
 package net.luversof.web.config;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -12,16 +9,10 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.format.datetime.standard.DateTimeFormatterRegistrar;
 import org.springframework.http.MediaType;
-import org.springframework.web.accept.ContentNegotiationManager;
-import org.springframework.web.accept.ContentNegotiationStrategy;
-import org.springframework.web.accept.PathExtensionContentNegotiationStrategy;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
-import org.springframework.web.servlet.View;
-import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
 import org.springframework.web.servlet.config.annotation.ViewResolverRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
-import org.springframework.web.servlet.view.ContentNegotiatingViewResolver;
 import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
 import org.thymeleaf.extras.java8time.dialect.Java8TimeDialect;
 import org.thymeleaf.spring4.view.ThymeleafViewResolver;
@@ -65,22 +56,21 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		DateTimeFormatterRegistrar registrar = new DateTimeFormatterRegistrar();
         registrar.setUseIsoFormat(true);
         registrar.registerFormatters(registry);
-		super.addFormatters(registry);
 	}
 
-	@Override
-	public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
-		configurer.favorPathExtension(true)
-			.defaultContentType(MediaType.APPLICATION_JSON)
-			.mediaType("html", MediaType.TEXT_HTML)
-			.mediaType("json", MediaType.APPLICATION_JSON);
-	}
-	
 //	@Override
-//	public void configureViewResolvers(ViewResolverRegistry registry) {
-//		registry.viewResolver(thymeleafViewResolver);
-//		registry.enableContentNegotiation(new MappingJackson2JsonView());
+//	public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
+//		configurer
+//			.defaultContentType(MediaType.APPLICATION_JSON)
+//			.mediaType("html", MediaType.TEXT_HTML)
+//			.mediaType("json", MediaType.APPLICATION_JSON);
 //	}
+	
+	@Override
+	public void configureViewResolvers(ViewResolverRegistry registry) {
+		registry.viewResolver(thymeleafViewResolver);
+		registry.enableContentNegotiation(new MappingJackson2JsonView());
+	}
 	
 	
 	

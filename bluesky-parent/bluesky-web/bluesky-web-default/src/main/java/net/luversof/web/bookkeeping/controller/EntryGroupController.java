@@ -23,7 +23,7 @@ import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
 @PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-@RequestMapping(value = "bookkeeping/{bookkeeping.id}/entryGroup")
+@RequestMapping(value = "bookkeeping/{bookkeepingId}/entryGroup")
 public class EntryGroupController {
 
 	@Autowired
@@ -32,12 +32,12 @@ public class EntryGroupController {
 
 
 	@RequestMapping(method = RequestMethod.GET)
-	public List<EntryGroup> getEntryGroupList(@PathVariable("bookkeeping.id") long bookkeepingId, Authentication authentication) {
+	public List<EntryGroup> getEntryGroupList(@PathVariable long bookkeepingId, Authentication authentication) {
 		return entryGroupService.findByBookkeepingId(bookkeepingId);
 	}
 
 	@RequestMapping(method = RequestMethod.POST)
-	public EntryGroup createEntryGroup(@RequestBody @Validated(EntryGroupCreate.class) EntryGroup entryGroup, @PathVariable("bookkeeping.id") long bookkeepingId, Authentication authentication) {
+	public EntryGroup createEntryGroup(@RequestBody @Validated(EntryGroupCreate.class) EntryGroup entryGroup, @PathVariable long bookkeepingId, Authentication authentication) {
 		Bookkeeping bookkeeping = new Bookkeeping();
 		bookkeeping.setId(bookkeepingId);
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();

@@ -77,11 +77,7 @@
 						<th>날짜</th>
 						<th></th>
 					</tr>
-				</thead>
-				<tbody>
-				</tbody>
-				<tfoot>
-					<tr class="active">
+					<tr class="info">
 						<td colspan="7">
 							<div class="col-md-4">
 								<div class="btn-group btn-group-justified"  role="group">
@@ -98,7 +94,7 @@
 							</div>
 						</td>
 					</tr>
-					<tr class="active">
+					<tr class="info">
 						<td>
 							<select class="form-control" name="createEntryGroup">
 								{{#entryGroupList}}
@@ -122,10 +118,13 @@
 						</td>
 						<td contenteditable="true" data-key-name="createAmount" placeholder="금액을  입력하세요"></td>
 						<td contenteditable="true" data-key-name="createMemo" placeholder="내용을 입력하세요"></td>
-						<!--<td contenteditable="true" data-key-name="createEntryDate" placeholder="날짜를 입력하세요"></td>-->
 						<td><input type="text" class="form-control" name="createEntryDate" /></td>
 						<td><button class="btn btn-default btn-sm" data-menu="createEntry"><span class="glyphicon glyphicon-plus">추가</span></button></td>
 					</tr>
+				</thead>
+				<tbody>
+				</tbody>
+				<tfoot>
 				</tfoot>
 			</table>
 			</div>

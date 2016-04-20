@@ -1,7 +1,6 @@
 package net.luversof.bookkeeping.domain;
 
 import java.io.Serializable;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import javax.persistence.Entity;
@@ -11,9 +10,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
-
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
 
 import lombok.Data;
 
@@ -46,7 +42,6 @@ public class Entry implements Serializable {
 	private long amount;
 	
 	@NotNull(groups = { EntryCreate.class, EntryUpdate.class })
-	//@JsonDeserialize(using = LocalDateDeserializer.class)
 	private LocalDateTime entryDate;
 	
 	private String memo;

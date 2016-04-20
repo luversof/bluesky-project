@@ -15,7 +15,7 @@ import net.luversof.bookkeeping.service.EntryService;
 import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
-@RequestMapping("bookkeeping/{bookkeeping.id}/entrySearchInfo")
+@RequestMapping("bookkeeping/{bookkeepingId}/entrySearchInfo")
 public class EntrySearchInfoController {
 	
 	@Autowired
@@ -23,7 +23,7 @@ public class EntrySearchInfoController {
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.GET)
-	public EntrySearchInfo getEntryInfo(@PathVariable("bookkeeping.id") long bookkeepingId, @RequestParam(required = false) LocalDateTime startDateTime, @RequestParam(required = false) LocalDateTime endDateTime) {
+	public EntrySearchInfo getEntryInfo(@PathVariable long bookkeepingId, @RequestParam(required = false) LocalDateTime startDateTime, @RequestParam(required = false) LocalDateTime endDateTime) {
 		return entryService.getEntrySearchInfo(bookkeepingId, startDateTime, endDateTime);
 	}
 	

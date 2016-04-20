@@ -23,7 +23,7 @@ import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
-@RequestMapping(value = "bookkeeping/{bookkeeping.id}/asset")
+@RequestMapping(value = "bookkeeping/{bookkeepingId}/asset")
 public class AssetController {
 
 	@Autowired
@@ -39,7 +39,7 @@ public class AssetController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("(returnObject == null or returnObject.size() == 0) or returnObject.get(0).bookkeeping.userId == authentication.principal.id")
 	@RequestMapping(method = RequestMethod.GET)
-	public List<Asset> getAssetList(@PathVariable("bookkeeping.id") long bookkeepingId, Authentication authentication) {
+	public List<Asset> getAssetList(@PathVariable long bookkeepingId, Authentication authentication) {
 		return assetService.findByBookkeepingId(bookkeepingId);
 	}
 
@@ -52,7 +52,7 @@ public class AssetController {
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST)
-	public Asset createAsset(@RequestBody @Validated(AssetCreate.class) Asset asset, @PathVariable("bookkeeping.id") long bookkeepingId, Authentication authentication) {
+	public Asset createAsset(@RequestBody @Validated(AssetCreate.class) Asset asset, @PathVariable long bookkeepingId, Authentication authentication) {
 		Bookkeeping bookkeeping = new Bookkeeping();
 		bookkeeping.setId(bookkeepingId);
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();

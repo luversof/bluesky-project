@@ -140,16 +140,20 @@ $(document).ready(function() {
 			//this.entryGroupCollection.fetch({reset : true});
 			//this.assetCollection.fetch({reset : true});
 			console.log("test : ",entrySearchInfo.toJSON());
-			this.collection.fetch({reset : true, data : $.param({
-				startDateTime : entrySearchInfo.get("startDateTime"),
-				endDateTime : entrySearchInfo.get("endDateTime")
-			})});
+			this.collection.fetch({
+				reset : true,
+				data : $.param({
+					startDateTime : entrySearchInfo.get("startDateTime"),
+					endDateTime : entrySearchInfo.get("endDateTime")
+				})
+			});
 			
 		},
 		render : function() {
 			var data = {
 				assetList : assetCollection.toJSON(),
-				entryGroupList : entryGroupCollection.toJSON()
+				entryGroupList : entryGroupCollection.toJSON(),
+				entrySearchInfo : entrySearchInfo.toJSON()
 			};
 			this.$el.html(Mustache.render(this.template, data));
 			this.collection.each(function(entry) {
@@ -176,7 +180,7 @@ $(document).ready(function() {
 				creditAsset : { id : this.$el.find("select[name=createCreditAsset] option:selected").val() },
 				amount : this.$el.find("[data-key-name=createAmount]").text(),
 				memo : this.$el.find("[data-key-name=createMemo]").text(),
-				entryDate : moment.utc(new Date(this.$el.find("input[name=createEntryDate").val())).format("YYYY-MM-DDTHH:mm:ss")
+				entryDate : moment.utc(new Date(this.$el.find("input[name=createEntryDate]").val())).format("YYYY-MM-DDTHH:mm:ss")
 			});
 			if (!entry.isValid()) {
 				return;
