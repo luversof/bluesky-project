@@ -28,33 +28,33 @@
 		</script>
 		<script type="text/template" id="template-bookkeeping-list">
 			<div class="col-md-4">
-			<table class="table">
-				<colgroup>
-					<col class="col-md-6"></col>
-					<col class="col-md-3"></col>
-					<col class="col-md-3"></col>
-				</colgroup>
-				<thead>
-					<tr>
-						<th>이름</th>
-						<th>기준일</th>
-						<th></th>
-					</tr>
-					<tr class="info">
-						<td contenteditable="true" data-key-name="createBookkeepingName" placeholder="추가할 가계부의 이름을 입력하세요"></td>
-						<td>
-							<select class="form-control" name="createBookkeepingBaseDate">
-								<option th:each="i : ${#numbers.sequence(1, 28)}" th:value="${i}" th:text="${i}">baseDate</option>
-							</select>
-						</td>
-						<td><button class="btn btn-default btn-sm" data-menu="createBookkeeping"><span class="glyphicon glyphicon-plus">추가</span></button></td>
-					</tr>
-				</thead>
-				<tbody>
-				</tbody>
-				<tfoot>
-				</tfoot>
-			</table>
+				<table class="table">
+					<colgroup>
+						<col class="col-md-6"></col>
+						<col class="col-md-3"></col>
+						<col class="col-md-3"></col>
+					</colgroup>
+					<thead>
+						<tr>
+							<th>이름</th>
+							<th>기준일</th>
+							<th></th>
+						</tr>
+						<tr class="info">
+							<td contenteditable="true" data-key-name="createBookkeepingName" placeholder="추가할 가계부의 이름을 입력하세요"></td>
+							<td>
+								<select class="form-control" name="createBookkeepingBaseDate">
+									<option th:each="i : ${#numbers.sequence(1, 28)}" th:value="${i}" th:text="${i}">baseDate</option>
+								</select>
+							</td>
+							<td><button class="btn btn-default btn-sm" data-menu="createBookkeeping"><span class="glyphicon glyphicon-plus">추가</span></button></td>
+						</tr>
+					</thead>
+					<tbody>
+					</tbody>
+					<tfoot>
+					</tfoot>
+				</table>
 			</div>
 		</script>
 	</div>

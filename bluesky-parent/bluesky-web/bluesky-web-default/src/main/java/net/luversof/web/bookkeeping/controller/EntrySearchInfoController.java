@@ -1,5 +1,6 @@
 package net.luversof.web.bookkeeping.controller;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,8 +24,9 @@ public class EntrySearchInfoController {
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.GET)
-	public EntrySearchInfo getEntryInfo(@PathVariable long bookkeepingId, @RequestParam(required = false) LocalDateTime startDateTime, @RequestParam(required = false) LocalDateTime endDateTime) {
-		return entryService.getEntrySearchInfo(bookkeepingId, startDateTime, endDateTime);
+	public EntrySearchInfo getEntryInfo(@PathVariable long bookkeepingId, @RequestParam(required = false) LocalDate targetDate) {
+//		return entryService.getEntrySearchInfo(bookkeepingId, startDateTime, endDateTime);
+		return null;
 	}
 	
 	@RequestMapping("/test")

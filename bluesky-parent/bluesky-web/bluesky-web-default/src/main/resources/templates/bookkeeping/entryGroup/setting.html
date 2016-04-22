@@ -28,33 +28,33 @@
 		</script>
 		<script type="text/template" id="template-entryGroup-list">
 			<div class="col-md-4">
-			<table class="table">
-				<colgroup>
-					<col class="col-md-3"></col>
-					<col class="col-md-6"></col>
-					<col class="col-md-3"></col>
-				</colgroup>
-				<thead>
-					<tr>
-						<th>타입</th>
-						<th>이름</th>
-						<th></th>
-					</tr>
-					<tr class="info">
-						<td>
-							<select class="form-control" name="createEntryType">
-								<option th:each="entryType : ${T(net.luversof.bookkeeping.domain.EntryType).values()}" th:value="${entryType}" th:text="#{entryType.text.__${entryType}__}">entryType</option>
-							</select>
-						</td>
-						<td contenteditable="true" data-key-name="createEntryGroupName" placeholder="추가할 기입그룹의 이름을 입력하세요"></td>
-						<td><button class="btn btn-default btn-sm" data-menu="createEntryGroup"><span class="glyphicon glyphicon-plus">추가</span></button></td>
-					</tr>
-				</thead>
-				<tbody>
-				</tbody>
-				<tfoot>
-				</tfoot>
-			</table>
+				<table class="table">
+					<colgroup>
+						<col class="col-md-3"></col>
+						<col class="col-md-6"></col>
+						<col class="col-md-3"></col>
+					</colgroup>
+					<thead>
+						<tr>
+							<th>타입</th>
+							<th>이름</th>
+							<th></th>
+						</tr>
+						<tr class="info">
+							<td>
+								<select class="form-control" name="createEntryType">
+									<option th:each="entryType : ${T(net.luversof.bookkeeping.domain.EntryType).values()}" th:value="${entryType}" th:text="#{entryType.text.__${entryType}__}">entryType</option>
+								</select>
+							</td>
+							<td contenteditable="true" data-key-name="createEntryGroupName" placeholder="추가할 기입그룹의 이름을 입력하세요"></td>
+							<td><button class="btn btn-default btn-sm" data-menu="createEntryGroup"><span class="glyphicon glyphicon-plus">추가</span></button></td>
+						</tr>
+					</thead>
+					<tbody>
+					</tbody>
+					<tfoot>
+					</tfoot>
+				</table>
 			</div>
 		</script>
 	</div>

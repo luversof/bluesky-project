@@ -29,36 +29,36 @@
 		</script>
 		<script type="text/template" id="template-asset-list">
 			<div class="col-md-4">
-			<table class="table">
-				<colgroup>
-					<col class="col-md-2"></col>
-					<col class="col-md-5"></col>
-					<col class="col-md-2"></col>
-					<col class="col-md-3"></col>
-				</colgroup>
-				<thead>
-					<tr>
-						<th>타입</th>
-						<th>이름</th>
-						<th>금액</th>
-						<th></th>
-					</tr>
-					<tr class="info">
-						<td>
-							<select class="form-control" name="createAssetType">
-								<option th:each="assetType : ${T(net.luversof.bookkeeping.domain.AssetType).values()}" th:value="${assetType}" th:text="#{assetType.text.__${assetType}__}">assetType</option>
-							</select>
-						</td>
-						<td contenteditable="true" data-key-name="createAssetName" placeholder="추가할 자산의 이름을 입력하세요"></td>
-						<td></td>
-						<td><button class="btn btn-default btn-sm" data-menu="createAsset"><span class="glyphicon glyphicon-plus">추가</span></button></td>
-					</tr>
-				</thead>
-				<tbody>
-				</tbody>
-				<tfoot>
-				</tfoot>
-			</table>
+				<table class="table">
+					<colgroup>
+						<col class="col-md-2"></col>
+						<col class="col-md-5"></col>
+						<col class="col-md-2"></col>
+						<col class="col-md-3"></col>
+					</colgroup>
+					<thead>
+						<tr>
+							<th>타입</th>
+							<th>이름</th>
+							<th>금액</th>
+							<th></th>
+						</tr>
+						<tr class="info">
+							<td>
+								<select class="form-control" name="createAssetType">
+									<option th:each="assetType : ${T(net.luversof.bookkeeping.domain.AssetType).values()}" th:value="${assetType}" th:text="#{assetType.text.__${assetType}__}">assetType</option>
+								</select>
+							</td>
+							<td contenteditable="true" data-key-name="createAssetName" placeholder="추가할 자산의 이름을 입력하세요"></td>
+							<td></td>
+							<td><button class="btn btn-default btn-sm" data-menu="createAsset"><span class="glyphicon glyphicon-plus">추가</span></button></td>
+						</tr>
+					</thead>
+					<tbody>
+					</tbody>
+					<tfoot>
+					</tfoot>
+				</table>
 			</div>
 		</script>
 	</div>

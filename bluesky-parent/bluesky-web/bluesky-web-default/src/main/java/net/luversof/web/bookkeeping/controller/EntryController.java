@@ -48,7 +48,7 @@ public class EntryController {
 	@PostAuthorize("(returnObject == null or returnObject.size() == 0) or returnObject.get(0).bookkeeping.userId == authentication.principal.id")
 	@RequestMapping(method = RequestMethod.GET)
 	public List<Entry> getEntryList(@Validated(EntrySearchInfoSelect.class) EntrySearchInfo entrySearchInfo, Authentication authentication) {
-		return entryService.findByBookkeepingIdAndEntryDateBetween(entrySearchInfo);
+		return entryService.findByEntrySearchInfo(entrySearchInfo);
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)

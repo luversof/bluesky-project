@@ -1,5 +1,7 @@
 package net.luversof.bookkeeping.service;
 
+import static net.luversof.bookkeeping.BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -8,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import net.luversof.bookkeeping.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.domain.EntryGroupInitialData;
@@ -15,7 +18,7 @@ import net.luversof.bookkeeping.repository.EntryGroupRepository;
 import net.luversof.core.exception.BlueskyException;
 
 @Service
-@Transactional("bookkeepingTransactionManager")
+@Transactional(BOOKKEEPING_TRANSACTIONMANAGER)
 public class EntryGroupService {
 	@Autowired
 	private EntryGroupRepository entryGroupRepository;
@@ -45,7 +48,7 @@ public class EntryGroupService {
 	public EntryGroup create(EntryGroup entryGroup) {
 		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entryGroup.getBookkeeping().getId());
 		if (targetBookkeeping.getUserId() != entryGroup.getBookkeeping().getUserId()) {
-			throw new BlueskyException("NOT_OWNER_BOOKKEEPING");
+			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
 		return entryGroupRepository.save(entryGroup);
 	}
@@ -53,21 +56,21 @@ public class EntryGroupService {
 	public EntryGroup update(EntryGroup entryGroup) {
 		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entryGroup.getBookkeeping().getId());
 		if (targetBookkeeping.getUserId() != entryGroup.getBookkeeping().getUserId()) {
-			throw new BlueskyException("NOT_OWNER_BOOKKEEPING");
+			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
 		EntryGroup targetEntryGroup = findOne(entryGroup.getId());
 		if (targetEntryGroup.getBookkeeping().getUserId() != entryGroup.getBookkeeping().getUserId()) {
-			throw new BlueskyException("NOT_OWER_ENTRYGROUP");
+			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRYGROUP);
 		}
 		return entryGroupRepository.save(entryGroup);
 	}
 
-	@Transactional(value = "bookkeepingTransactionManager", readOnly = true)
+	@Transactional(value = BOOKKEEPING_TRANSACTIONMANAGER, readOnly = true)
 	public EntryGroup findOne(long id) {
 		return entryGroupRepository.findOne(id);
 	}
 	
-	@Transactional(value = "bookkeepingTransactionManager", readOnly = true)
+	@Transactional(value = BOOKKEEPING_TRANSACTIONMANAGER, readOnly = true)
 	public List<EntryGroup> findByBookkeepingId(long bookkeepingId) {
 		return entryGroupRepository.findByBookkeepingId(bookkeepingId);
 	}
@@ -75,11 +78,11 @@ public class EntryGroupService {
 	public void delete(EntryGroup entryGroup) {
 		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entryGroup.getBookkeeping().getId());
 		if (targetBookkeeping.getUserId() != entryGroup.getBookkeeping().getUserId()) {
-			throw new BlueskyException("NOT_OWNER_BOOKKEEPING");
+			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
 		EntryGroup targetEntryGroup = findOne(entryGroup.getId());
 		if (targetEntryGroup.getBookkeeping().getUserId() != entryGroup.getBookkeeping().getUserId()) {
-			throw new BlueskyException("NOT_OWER_ENTRYGROUP");
+			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRYGROUP);
 		}
 		entryGroupRepository.delete(entryGroup);
 	}
