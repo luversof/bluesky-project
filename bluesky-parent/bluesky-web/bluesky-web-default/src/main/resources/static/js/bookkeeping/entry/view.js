@@ -143,8 +143,7 @@ $(document).ready(function() {
 			this.collection.fetch({
 				reset : true,
 				data : $.param({
-					startDateTime : entrySearchInfo.get("startDateTime"),
-					endDateTime : entrySearchInfo.get("endDateTime")
+					targetLocalDate : entrySearchInfo.get("targetLocalDate")
 				})
 			});
 			

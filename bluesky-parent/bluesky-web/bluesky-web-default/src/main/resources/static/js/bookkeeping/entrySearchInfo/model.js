@@ -2,8 +2,7 @@ $.EntrySearchInfo = Backbone.Model.extend({
 	url : "/bookkeeping/" + $.bookkeepingId + "/entrySearchInfo",
 	defaults : {
 		bookkeepingId : $.bookkeepingId,
-		startDateTime : null,
-		endDateTime : null
+		targetLocalDate : null,
 	},
 	initialize : function() {
 		//console.log("This model has been initialized.");

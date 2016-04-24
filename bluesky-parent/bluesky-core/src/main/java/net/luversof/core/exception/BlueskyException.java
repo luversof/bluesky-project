@@ -11,8 +11,8 @@ public class BlueskyException extends RuntimeException {
 	public BlueskyException(String errorCode) {
 		this.errorCode = errorCode;
 	}
-
-	public BlueskyException(ErrorCode errorCode) {
+	
+	public BlueskyException(Enum<?> errorCode) {
 		this.errorCode = errorCode.name();
 	}
 }

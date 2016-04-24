@@ -65,8 +65,6 @@ public class EntryService {
 	}
 	
 	/**
-	 * 넘어온 startDate, endDate 사이의 entryList를 반환.
-	 * 두 매개변수중 하나라도 null인 경우 bookkeeping의 기준일에 해당하는 현재 월의 데이터를 반환함
 	 * @param entrySearchInfo
 	 * @return
 	 */
@@ -74,8 +72,7 @@ public class EntryService {
 	public List<Entry> findByEntrySearchInfo(EntrySearchInfo entrySearchInfo) {
 		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entrySearchInfo.getBookkeepingId());
 		int baseDate = targetBookkeeping.getBaseDate();
-		LocalDateTime startDateTime = BookkeepingUtils.getStartDateTime(entrySearchInfo.getTargetDate(), baseDate);
-		LocalDateTime endDateTime = BookkeepingUtils.getEndDateTime(entrySearchInfo.getTargetDate(), baseDate);
-		return entryRepository.findByBookkeepingIdAndEntryDateBetween(entrySearchInfo.getBookkeepingId(), startDateTime, endDateTime);
+		entrySearchInfo.setBaseDate(baseDate);
+		return entryRepository.findByBookkeepingIdAndEntryDateBetween(entrySearchInfo.getBookkeepingId(), entrySearchInfo.getStartDateTime(), entrySearchInfo.getEndDateTime());
 	}
 }

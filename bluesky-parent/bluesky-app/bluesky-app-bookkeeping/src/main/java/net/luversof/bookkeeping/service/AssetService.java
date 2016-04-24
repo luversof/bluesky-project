@@ -1,5 +1,7 @@
 package net.luversof.bookkeeping.service;
 
+import static net.luversof.bookkeeping.BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -14,8 +16,6 @@ import net.luversof.bookkeeping.domain.AssetInitialData;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.repository.AssetRepository;
 import net.luversof.core.exception.BlueskyException;
-
-import static net.luversof.bookkeeping.BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER;
 
 @Service
 @Transactional(BOOKKEEPING_TRANSACTIONMANAGER)

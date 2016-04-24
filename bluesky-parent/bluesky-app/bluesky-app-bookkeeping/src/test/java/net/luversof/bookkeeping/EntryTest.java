@@ -78,17 +78,17 @@ public class EntryTest extends GeneralTest {
 	
 	@Test
 	public void test4() {
-		log.debug("startLocalDateTime : {}", BookkeepingUtils.getCurrentStartDateTime(1));
-		log.debug("startLocalDateTime : {}", BookkeepingUtils.getCurrentStartDateTime(18));
-		log.debug("startLocalDateTime : {}", BookkeepingUtils.getCurrentStartDateTime(19));
-		log.debug("startLocalDateTime : {}", BookkeepingUtils.getCurrentStartDateTime(20));
-		log.debug("startLocalDateTime : {}", BookkeepingUtils.getCurrentStartDateTime(28));
+		log.debug("startLocalDateTime : {}", BookkeepingUtils.getNowStartDateTime(1));
+		log.debug("startLocalDateTime : {}", BookkeepingUtils.getNowStartDateTime(18));
+		log.debug("startLocalDateTime : {}", BookkeepingUtils.getNowStartDateTime(19));
+		log.debug("startLocalDateTime : {}", BookkeepingUtils.getNowStartDateTime(20));
+		log.debug("startLocalDateTime : {}", BookkeepingUtils.getNowStartDateTime(28));
 		
-		log.debug("getEndDate : {}", BookkeepingUtils.getCurrentEndDateTime(1));
-		log.debug("getEndDate : {}", BookkeepingUtils.getCurrentEndDateTime(18));
-		log.debug("getEndDate : {}", BookkeepingUtils.getCurrentEndDateTime(19));
-		log.debug("getEndDate : {}", BookkeepingUtils.getCurrentEndDateTime(20));
-		log.debug("getEndDate : {}", BookkeepingUtils.getCurrentEndDateTime(28));
+		log.debug("getEndDate : {}", BookkeepingUtils.getNowEndDateTime(1));
+		log.debug("getEndDate : {}", BookkeepingUtils.getNowEndDateTime(18));
+		log.debug("getEndDate : {}", BookkeepingUtils.getNowEndDateTime(19));
+		log.debug("getEndDate : {}", BookkeepingUtils.getNowEndDateTime(20));
+		log.debug("getEndDate : {}", BookkeepingUtils.getNowEndDateTime(28));
 		
 	}
 	@Test

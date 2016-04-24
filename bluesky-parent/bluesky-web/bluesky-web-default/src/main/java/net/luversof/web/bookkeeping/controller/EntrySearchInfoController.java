@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.EntrySearchInfo;
-import net.luversof.bookkeeping.service.EntryService;
+import net.luversof.bookkeeping.service.EntrySearchInfoService;
 import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
@@ -20,13 +20,12 @@ import net.luversof.web.constant.AuthorizeRole;
 public class EntrySearchInfoController {
 	
 	@Autowired
-	private EntryService entryService;
+	private EntrySearchInfoService entrySearchInfoService;
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.GET)
-	public EntrySearchInfo getEntryInfo(@PathVariable long bookkeepingId, @RequestParam(required = false) LocalDate targetDate) {
-//		return entryService.getEntrySearchInfo(bookkeepingId, startDateTime, endDateTime);
-		return null;
+	public EntrySearchInfo getEntryInfo(@PathVariable long bookkeepingId, @RequestParam(required = false) LocalDate targetLocalDate) {
+		return entrySearchInfoService.getEntrySearchInfo(bookkeepingId, targetLocalDate);
 	}
 	
 	@RequestMapping("/test")
