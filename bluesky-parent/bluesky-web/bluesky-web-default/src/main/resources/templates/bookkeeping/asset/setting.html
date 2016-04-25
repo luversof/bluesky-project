@@ -43,7 +43,7 @@
 							<th>금액</th>
 							<th></th>
 						</tr>
-						<tr class="info">
+						<tr class="success">
 							<td>
 								<select class="form-control" name="createAssetType">
 									<option th:each="assetType : ${T(net.luversof.bookkeeping.domain.AssetType).values()}" th:value="${assetType}" th:text="#{assetType.text.__${assetType}__}">assetType</option>

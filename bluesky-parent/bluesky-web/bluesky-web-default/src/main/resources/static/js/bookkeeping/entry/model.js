@@ -29,7 +29,7 @@ $.Entry = Backbone.Model.extend({
 		if (attrs.memo == null || attrs.memo == "") {
 			return "내용을 입력하세요.";
 		}
-		if (attrs.entryDate == null || attrs.entryDate == "") {
+		if (attrs.entryDate == null || attrs.entryDate == "" || attrs.entryDate == "Invalid date") {
 			return "날짜를 입력하세요.";
 		}
 	}

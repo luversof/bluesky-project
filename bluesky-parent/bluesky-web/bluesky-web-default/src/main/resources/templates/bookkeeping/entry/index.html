@@ -24,6 +24,7 @@
 		
 		
 		<script type="text/template" id="template-entry-view">
+			{{^isTransfer}}
 			<td>
 				<select class="form-control" name="entryGroup">
 					{{#entryGroupList}}
@@ -33,6 +34,8 @@
 					{{/entryGroupList}}
 				</select>
 			</td>
+			{{/isTransfer}}
+			{{#entry.debitAsset}}
 			<td>
 				<select class="form-control" name="debitAsset">
 					{{#assetList}}
@@ -40,6 +43,8 @@
 					{{/assetList}}
 				</select>
 			</td>
+			{{/entry.debitAsset}}
+			{{#entry.creditAsset}}
 			<td>
 				<select class="form-control" name="creditAsset">
 					{{#assetList}}
@@ -47,6 +52,7 @@
 					{{/assetList}}
 				</select>
 			</td>
+			{{/entry.creditAsset}}
 			<td contenteditable="true" data-key="amount">{{entry.amount}}</td>
 			<td contenteditable="true" data-key="memo">{{entry.memo}}</td>
 			<td><input type="text" class="form-control" name="entryDate" value="{{getEntryDate}}" /></td>
@@ -68,20 +74,18 @@
 						<col class="col-md-2"></col>
 						<col class="col-md-2"></col>
 						<col class="col-md-2"></col>
-						<col class="col-md-2"></col>
 					</colgroup>
 					<thead>
 						<tr>
-							<th>분류</th>
-							<th>지출자산</th>
-							<th>수입자산</th>
+							<th></th>
+							<th></th>
 							<th>금액</th>
 							<th>메모</th>
 							<th>날짜</th>
 							<th></th>
 						</tr>
-						<tr class="info">
-							<td colspan="7">
+						<tr class="success">
+							<td colspan="6">
 								<div class="col-md-4">
 									<div class="btn-group btn-group-justified"  role="group">
 										<div class="btn-group" role="group">
@@ -97,7 +101,7 @@
 								</div>
 							</td>
 						</tr>
-						<tr class="info">
+						<tr class="success">
 							<td>
 								<select class="form-control" name="createEntryGroup">
 									{{#entryGroupList}}

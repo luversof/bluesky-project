@@ -40,7 +40,7 @@
 							<th>이름</th>
 							<th></th>
 						</tr>
-						<tr class="info">
+						<tr class="success">
 							<td>
 								<select class="form-control" name="createEntryType">
 									<option th:each="entryType : ${T(net.luversof.bookkeeping.domain.EntryType).values()}" th:value="${entryType}" th:text="#{entryType.text.__${entryType}__}">entryType</option>

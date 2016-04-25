@@ -24,7 +24,7 @@ public class EntrySearchInfo {
 	private long bookkeepingId;
 	
 	@NotNull(groups = EntrySearchInfoSelect.class)
-	@DateTimeFormat
+//	@DateTimeFormat
 	private LocalDate targetLocalDate;
 	
 	private int baseDate;

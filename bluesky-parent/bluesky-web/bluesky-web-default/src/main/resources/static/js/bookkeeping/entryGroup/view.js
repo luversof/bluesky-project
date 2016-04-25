@@ -74,6 +74,7 @@ $(document).ready(function() {
 				var entryGroupView = new $.EntryGroupView({model : entryGroup});
 				this.$el.find("table tbody").append(entryGroupView.render().el);
 			}, this);
+			this.$el.find("option[value=TRANSFER]").hide();
 		},
 		renderEntryGroup : function(entryGroup) {
 			var entryGroupView = new $.EntryGroupView({model : entryGroup});
