@@ -15,6 +15,9 @@ public class EntrySearchInfoService {
 	private BookkeepingService bookkeepingService;
 	
 	public EntrySearchInfo getEntrySearchInfo(long bookkeepingId, LocalDate targetLocalDate) {
+		if (targetLocalDate == null) {
+			targetLocalDate = LocalDate.now();
+		}
 		EntrySearchInfo entrySearchInfo = new EntrySearchInfo();
 		Bookkeeping targetBookkeeping = bookkeepingService.findOne(bookkeepingId);
 		entrySearchInfo.setTargetLocalDate(targetLocalDate);
