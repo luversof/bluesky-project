@@ -98,9 +98,9 @@ $(document).ready(function() {
 		isChange : function() {
 			if (this.$el.find("[data-key=amount]").text() == this.model.get("amount") 
 					&& this.$el.find("[data-key=memo]").text() == this.model.get("memo")
-					&& this.$el.find("select[name=entryGroup] option:selected").val() == this.model.get("entryGroup").id
-					&& this.$el.find("select[name=debitAsset] option:selected").val() == this.model.get("debitAsset").id
-					&& this.$el.find("select[name=creditAsset] option:selected").val() == this.model.get("creditAsset").id) {
+					&& (this.model.get("entryGroup") == null || this.$el.find("select[name=entryGroup] option:selected").val() == this.model.get("entryGroup").id)
+					&& (this.model.get("debitAsset") == null || this.$el.find("select[name=debitAsset] option:selected").val() == this.model.get("debitAsset").id)
+					&& (this.model.get("creditAsset") == null || this.$el.find("select[name=creditAsset] option:selected").val() == this.model.get("creditAsset").id)) {
 				this.$el.find("[data-menu=updateEntry]").hide(100);
 			} else {
 				this.$el.find("[data-menu=updateEntry]").show(100);
