@@ -87,4 +87,9 @@ $(document).ready(function() {
 		location.href = location.href.replace("https:", "http:").replace(":8443", ":8082");
 	}
 
+	
+	if(window.console != undefined) {
+		setTimeout(console.log.bind(console, "%cBluesky","font: 8em Arial; color: #6799FF; font-weight:bold"),0);
+		setTimeout(console.log.bind(console, "%c - bluesky 프로젝트","font: 2em sans-serif; color: #333;"),0);
+	}
 });
