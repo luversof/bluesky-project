@@ -64,7 +64,7 @@ $(document).ready(function() {
 			this.collection = new $.EntryGroupCollection();
 			
 			this.listenTo(this.collection, "reset", this.render);
-			this.listenTo(this.collection, "add", this.renderEntryGroup);
+			this.listenTo(this.collection, "add", this.render);
 			
 			this.collection.fetch({reset : true});
 		},
@@ -76,10 +76,10 @@ $(document).ready(function() {
 			}, this);
 			this.$el.find("option[value=TRANSFER]").hide();
 		},
-		renderEntryGroup : function(entryGroup) {
-			var entryGroupView = new $.EntryGroupView({model : entryGroup});
-			this.$el.find("table tbody").append(entryGroupView.render().el);
-		},
+//		renderEntryGroup : function(entryGroup) {
+//			var entryGroupView = new $.EntryGroupView({model : entryGroup});
+//			this.$el.find("table tbody").append(entryGroupView.render().el);
+//		},
 		createEntryGroup : function(event) {
 			event.preventDefault();
 			var entryGroup = new $.EntryGroup({

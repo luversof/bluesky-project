@@ -65,7 +65,7 @@ $(document).ready(function() {
 			this.collection = new $.BookkeepingCollection();
 			
 			this.listenTo(this.collection, "reset", this.render);
-			this.listenTo(this.collection, "add", this.renderBookkeeping);
+			this.listenTo(this.collection, "add", this.render);
 			
 			this.collection.fetch({reset : true});
 		},
@@ -76,10 +76,10 @@ $(document).ready(function() {
 				this.$el.find("table tbody").append(bookkeepingView.render().el);
 			}, this);
 		},
-		renderBookkeeping : function(bookkeeping) {
-			var bookkeepingView = new $.BookkeepingView({model : bookkeeping});
-			this.$el.find("table tbody").append(bookkeepingView.render().el);
-		},
+//		renderBookkeeping : function(bookkeeping) {
+//			var bookkeepingView = new $.BookkeepingView({model : bookkeeping});
+//			this.$el.find("table tbody").append(bookkeepingView.render().el);
+//		},
 		createBookkeeping : function(event) {
 			event.preventDefault();
 			var bookkeeping = new $.Bookkeeping({

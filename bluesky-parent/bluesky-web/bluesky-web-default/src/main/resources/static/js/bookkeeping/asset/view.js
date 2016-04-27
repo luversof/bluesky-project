@@ -62,7 +62,7 @@ $(document).ready(function() {
 			this.collection = new $.AssetCollection();
 			
 			this.listenTo(this.collection, "reset", this.render);
-			this.listenTo(this.collection, "add", this.renderAsset);
+			this.listenTo(this.collection, "add", this.render);
 			
 			this.collection.fetch({reset : true});
 		},
@@ -73,10 +73,10 @@ $(document).ready(function() {
 				this.$el.find("table tbody").append(assetView.render().el);
 			}, this);
 		},
-		renderAsset : function(asset) {
-			var assetView = new $.AssetView({model : asset});
-			this.$el.find("table tbody").append(assetView.render().el);
-		},
+//		renderAsset : function(asset) {
+//			var assetView = new $.AssetView({model : asset});
+//			this.$el.find("table tbody").append(assetView.render().el);
+//		},
 		createAsset : function(event) {
 			event.preventDefault();
 			var asset = new $.Asset({

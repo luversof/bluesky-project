@@ -149,7 +149,8 @@ $(document).ready(function() {
 			//this.listenTo(this.entryGroupCollection, "reset", this.render);
 			//this.listenTo(this.assetCollection, "reset", this.render);
 			this.listenTo(this.collection, "reset", this.render);
-			this.listenTo(this.collection, "add", this.renderEntry);
+			this.listenTo(this.collection, "add", this.render);
+			this.listenTo(this.collection, "sort", this.render);
 			
 			//this.entryGroupCollection.fetch({reset : true});
 			//this.assetCollection.fetch({reset : true});
@@ -181,10 +182,10 @@ $(document).ready(function() {
 				.find("input[name=createEntryDate]").datepicker({ language: 'ko' }).end()
 				.find("[data-menu=selectCreateEntryType]:eq(0)").trigger("click")
 		},
-		renderEntry : function(entry) {
-			var entryView = new $.EntryView({ model : entry });
-			this.$el.find("table tbody").append(entryView.render().el);
-		},
+//		renderEntry : function(entry) {
+//			var entryView = new $.EntryView({ model : entry });
+//			this.$el.find("table tbody").append(entryView.render().el);
+//		},
 		createEntry : function(event) {
 			event.preventDefault();
 			var entryType = this.$el.find("[data-menu=selectCreateEntryType].active").val();
