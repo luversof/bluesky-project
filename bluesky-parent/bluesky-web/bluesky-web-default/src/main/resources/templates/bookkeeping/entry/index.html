@@ -79,9 +79,23 @@
 						<tr>
 							<th></th>
 							<th></th>
-							<th>금액</th>
+							<th>
+								<button type="button" class="btn btn-default {{#isSortColumnAmount}}btn-info{{/isSortColumnAmount}}" data-menu-sortColumn="amount" data-menu-sortDirection="{{#isSortColumnAmount}}{{sortDirection}}{{/isSortColumnAmount}}">
+									금액
+									{{#isSortColumnAmount}}
+										<i class="fa fa-sort-amount-{{sortDirection}}" aria-hidden="true"></i>
+									{{/isSortColumnAmount}}
+								</button>
+							</th>
 							<th>메모</th>
-							<th>날짜</th>
+							<th>
+								<button type="button" class="btn btn-default {{#isSortColumnEntryDate}}btn-info{{/isSortColumnEntryDate}}" data-menu-sortColumn="entryDate" data-menu-sortDirection="{{#isSortColumnEntryDate}}{{sortDirection}}{{/isSortColumnEntryDate}}">
+									날짜
+									{{#isSortColumnEntryDate}}
+										<i class="fa fa-sort-{{sortDirection}}" aria-hidden="true"></i>
+									{{/isSortColumnEntryDate}}
+								</button>
+							</th>
 							<th></th>
 						</tr>
 						<tr class="success">

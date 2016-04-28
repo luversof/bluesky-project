@@ -138,7 +138,9 @@ $(document).ready(function() {
 			"keypress [data-key-name=createMemo]" : "createMemoKeyPress",
 			"keyup [data-key-name=createAmount]" : "createAmountKeyUp",
 			"keypress [data-key-name=createAmount]" : "createAmountKeyPress",
-			"click [data-menu=selectCreateEntryType]" : "selectCreateEntryType"
+			"click [data-menu=selectCreateEntryType]" : "selectCreateEntryType",
+			"click [data-menu-sortColumn][data-menu-sortDirection]" : "renderBySortColumn"
+			
 		},
 		initialize : function() {
 			//console.log("This collection view has been initialized.");
@@ -154,7 +156,8 @@ $(document).ready(function() {
 			
 			//this.entryGroupCollection.fetch({reset : true});
 			//this.assetCollection.fetch({reset : true});
-			console.log("test : ",entrySearchInfo.toJSON());
+			this.collection.sortColumn = "entryDate";
+			this.collection.sortDirection = "asc";
 			this.collection.fetch({
 				reset : true,
 				data : $.param({
@@ -167,8 +170,19 @@ $(document).ready(function() {
 			var data = {
 				assetList : assetCollection.toJSON(),
 				entryGroupList : entryGroupCollection.toJSON(),
-				entrySearchInfo : entrySearchInfo.toJSON()
+				entrySearchInfo : entrySearchInfo.toJSON(),
+				sortColumn : this.collection.sortColumn,
+				sortDirection : this.collection.sortDirection
 			};
+			
+			data.isSortColumnEntryDate = function() {
+				return this.sortColumn == "entryDate";
+			}
+			data.isSortColumnAmount = function() {
+				return this.sortColumn == "amount";
+			}
+			
+			console.log("test :", this.collection);
 			this.$el.html(Mustache.render(this.template, data));
 			this.collection.each(function(entry) {
 				var entryView = new $.EntryView({model : entry});
@@ -225,8 +239,8 @@ $(document).ready(function() {
 		// 기입 유형 선택 관련
 		selectCreateEntryType : function(event) {
 			// 버튼 활성화 처리
-			this.$el.find("[data-menu=selectCreateEntryType]").removeClass("active");
-			$(event.target).addClass("active");
+			this.$el.find("[data-menu=selectCreateEntryType]").removeClass("active btn-info");
+			$(event.target).addClass("active btn-info");
 			
 			var entryType = $(event.target).val();
 			
@@ -257,12 +271,12 @@ $(document).ready(function() {
 				}).end()
 				.find("option:not(:disabled):eq(0)").attr("selected", true);
 			}
-			
-//			if (this.$el.find("select[name=entryType] option:selected").val() == this.model.get("entryType")) {
-//				this.$el.find("[data-menu=updateEntry]").hide(100);
-//			} else {
-//				this.$el.find("[data-menu=updateEntry]").show(100);
-//			}
+		},
+		renderBySortColumn : function(event) {
+			console.log("test : ", $(event.target), $(event.target).attr("data-menu-sortColumn"));
+			this.collection.sortColumn = $(event.target).attr("data-menu-sortColumn");
+			this.collection.sortDirection = $(event.target).attr("data-menu-sortDirection") == "desc" ? "asc" : "desc";
+			this.collection.sort();
 		}
 	});
 
