@@ -6,8 +6,8 @@ $(document).ready(function() {
 		events : {
 			"click [data-menu=updateEntryGroup]" : "updateEntryGroup",
 			"click [data-menu=deleteEntryGroup]" : "deleteEntryGroup",
-			"keyup [data-key=name]" : "changeNameKeyUp",
-			"keypress [data-key=name]" : "changeNameKeyPress",
+			"keyup [data-key-name=name]" : "changeNameKeyUp",
+			"keypress [data-key-name=name]" : "changeNameKeyPress",
 			"change select[name=entryType]" : "isChange"
 		},
 		initialize : function() {
@@ -24,14 +24,14 @@ $(document).ready(function() {
 			return this;
 		},
 		updateEntryGroup : function() {
-			this.model.save({name : this.$el.find("[data-key=name]").text(), entryType : this.$el.find("select[name=entryType] option:selected").val()});
+			this.model.save({name : this.$el.find("[data-key-name=name]").text(), entryType : this.$el.find("select[name=entryType] option:selected").val()});
 			this.$el.find("[data-menu=updateEntryGroup]").hide(100);
 		},
 		deleteEntryGroup : function() {
 			this.model.destroy();
 		},
 		isChange : function() {
-			if (this.$el.find("[data-key=name]").text() == this.model.get("name")
+			if (this.$el.find("[data-key-name=name]").text() == this.model.get("name")
 					&& this.$el.find("select[name=entryType] option:selected").val() == this.model.get("entryType")) {
 				this.$el.find("[data-menu=updateEntryGroup]").hide(100);
 			} else {
@@ -53,7 +53,7 @@ $(document).ready(function() {
 
 	$.EntryGroupCollectionView = Backbone.View.extend({
 		el : "#entryGroupArea",
-		template : $("#template-entryGroup-list").html(),
+		template : $("#template-entryGroup-collection-view").html(),
 		events : {
 			"click [data-menu=createEntryGroup]" : "createEntryGroup",
 			"keyup [data-key-name=createEntryGroupName]" : "createNameKeyUp",

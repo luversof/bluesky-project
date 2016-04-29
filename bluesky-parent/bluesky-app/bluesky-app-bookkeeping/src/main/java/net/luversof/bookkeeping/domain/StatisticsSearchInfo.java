@@ -6,8 +6,6 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 import lombok.Data;
-import net.luversof.bookkeeping.util.BookkeepingUtils;
-import net.luversof.core.exception.BlueskyException;
 
 /**
  * 통계보기 검색 관련 객체

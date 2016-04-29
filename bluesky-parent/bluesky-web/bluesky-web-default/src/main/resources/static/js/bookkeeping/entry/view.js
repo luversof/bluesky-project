@@ -15,10 +15,10 @@ $(document).ready(function() {
 		events : {
 			"click [data-menu=updateEntry]" : "updateEntry",
 			"click [data-menu=deleteEntry]" : "deleteEntry",
-			"keyup [data-key=amount]" : "changeAmountKeyUp",
-			"keypress [data-key=amount]" : "changeAmountKeyPress",
-			"keyup [data-key=memo]" : "changeMemoKeyUp",
-			"keypress [data-key=memo]" : "changeMemoKeyPress",
+			"keyup [data-key-name=amount]" : "changeAmountKeyUp",
+			"keypress [data-key-name=amount]" : "changeAmountKeyPress",
+			"keyup [data-key-name=memo]" : "changeMemoKeyUp",
+			"keypress [data-key-name=memo]" : "changeMemoKeyPress",
 			"change select[name=entryGroup]" : "isChange",
 			"change select[name=debitAsset]" : "isChange",
 			"change select[name=creditAsset]" : "isChange"
@@ -85,8 +85,8 @@ $(document).ready(function() {
 				entryGroup : this.model.get("entryType") == "TRANSFER" ? null : { id : this.$el.find("select[name=entryGroup] option:selected").val() },
 				debitAsset : this.model.get("entryType") == "CREDIT" ? null : { id : this.$el.find("select[name=debitAsset] option:selected").val() },
 				creditAsset : this.model.get("entryType") == "DEBIT" ? null : { id : this.$el.find("select[name=creditAsset] option:selected").val() },
-				amount : this.$el.find("[data-key=amount]").text(),
-				memo : this.$el.find("[data-key=memo]").text(),
+				amount : this.$el.find("[data-key-name=amount]").text(),
+				memo : this.$el.find("[data-key-name=memo]").text(),
 				entryDate : moment.utc(new Date(this.$el.find("input[name=entryDate]").val())).format("YYYY-MM-DDTHH:mm:ss")
 			});
 			this.$el.find("[data-menu=updateEntry]").hide(100);
@@ -96,8 +96,8 @@ $(document).ready(function() {
 		},
 		// 변경된 내용이 있는지 여부 확인
 		isChange : function() {
-			if (this.$el.find("[data-key=amount]").text() == this.model.get("amount") 
-					&& this.$el.find("[data-key=memo]").text() == this.model.get("memo")
+			if (this.$el.find("[data-key-name=amount]").text() == this.model.get("amount") 
+					&& this.$el.find("[data-key-name=memo]").text() == this.model.get("memo")
 					&& (this.model.get("entryGroup") == null || this.$el.find("select[name=entryGroup] option:selected").val() == this.model.get("entryGroup").id)
 					&& (this.model.get("debitAsset") == null || this.$el.find("select[name=debitAsset] option:selected").val() == this.model.get("debitAsset").id)
 					&& (this.model.get("creditAsset") == null || this.$el.find("select[name=creditAsset] option:selected").val() == this.model.get("creditAsset").id)) {
@@ -131,7 +131,7 @@ $(document).ready(function() {
 
 	$.EntryCollectionView = Backbone.View.extend({
 		el : "#entryArea",
-		template : $("#template-entry-list").html(),
+		template : $("#template-entry-collection-view").html(),
 		events : {
 			"click [data-menu=createEntry]" : "createEntry",
 			"keyup [data-key-name=createMemo]" : "createMemoKeyUp",

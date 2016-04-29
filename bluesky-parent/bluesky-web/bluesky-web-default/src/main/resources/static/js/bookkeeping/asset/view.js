@@ -6,8 +6,8 @@ $(document).ready(function() {
 		events : {
 			"click [data-menu=updateAsset]" : "updateAsset",
 			"click [data-menu=deleteAsset]" : "deleteAsset",
-			"keyup [data-key=name]" : "changeNameKeyUp",
-			"keypress [data-key=name]" : "changeNameKeyPress",
+			"keyup [data-key-name=name]" : "changeNameKeyUp",
+			"keypress [data-key-name=name]" : "changeNameKeyPress",
 			"change select[name=assetType]" : "isChange"
 		},
 		initialize : function() {
@@ -22,14 +22,14 @@ $(document).ready(function() {
 			return this;
 		},
 		updateAsset : function() {
-			this.model.save({name : this.$el.find("[data-key=name]").text(), assetType : this.$el.find("select[name=assetType] option:selected").val()});
+			this.model.save({name : this.$el.find("[data-key-name=name]").text(), assetType : this.$el.find("select[name=assetType] option:selected").val()});
 			this.$el.find("[data-menu=updateAsset]").hide(100);
 		},
 		deleteAsset : function() {
 			this.model.destroy();
 		},
 		isChange : function() {
-			if (this.$el.find("[data-key=name]").text() == this.model.get("name")
+			if (this.$el.find("[data-key-name=name]").text() == this.model.get("name")
 					&& this.$el.find("select[name=assetType] option:selected").val() == this.model.get("assetType")) {
 				this.$el.find("[data-menu=updateAsset]").hide(100);
 			} else {
@@ -51,7 +51,7 @@ $(document).ready(function() {
 
 	$.AssetCollectionView = Backbone.View.extend({
 		el : "#assetArea",
-		template : $("#template-asset-list").html(),
+		template : $("#template-asset-collection-view").html(),
 		events : {
 			"click [data-menu=createAsset]" : "createAsset",
 			"keyup [data-key-name=createAssetName]" : "createNameKeyUp",

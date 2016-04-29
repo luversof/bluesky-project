@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
-import org.springframework.format.annotation.DateTimeFormat;
 
 import lombok.Data;
 import net.luversof.bookkeeping.util.BookkeepingUtils;

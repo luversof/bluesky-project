@@ -6,8 +6,8 @@ $(document).ready(function() {
 		events : {
 			"click [data-menu=updateBookkeeping]" : "updateBookkeeping",
 			"click [data-menu=deleteBookkeeping]" : "deleteBookkeeping",
-			"keyup [data-key=name]" : "changeNameKeyUp",
-			"keypress [data-key=name]" : "changeNameKeyPress",
+			"keyup [data-key-name=name]" : "changeNameKeyUp",
+			"keypress [data-key-name=name]" : "changeNameKeyPress",
 			"change select[name=baseDate]" : "isChange",
 		},
 		initialize : function() {
@@ -22,7 +22,7 @@ $(document).ready(function() {
 		},
 		updateBookkeeping : function() {
 			this.model.save({
-				name : this.$el.find("[data-key=name]").text(),
+				name : this.$el.find("[data-key-name=name]").text(),
 				baseDate : this.$el.find("select[name=baseDate] option:selected").val()
 			});
 			this.$el.find("[data-menu=updateBookkeeping]").hide(100);
@@ -32,7 +32,7 @@ $(document).ready(function() {
 		},
 		// 변경된 내용이 있는지 여부 확인
 		isChange : function() {
-			if (this.$el.find("[data-key=name]").text() == this.model.get("name") 
+			if (this.$el.find("[data-key-name=name]").text() == this.model.get("name") 
 					&& this.$el.find("select[name=baseDate] option:selected").val() == this.model.get("baseDate")) {
 				this.$el.find("[data-menu=updateBookkeeping]").hide(100);
 			} else {
@@ -54,7 +54,7 @@ $(document).ready(function() {
 
 	$.BookkeepingCollectionView = Backbone.View.extend({
 		el : "#bookkeepingArea",
-		template : $("#template-bookkeeping-list").html(),
+		template : $("#template-bookkeeping-collection-view").html(),
 		events : {
 			"click [data-menu=createBookkeeping]" : "createBookkeeping",
 			"keyup [data-key-name=createBookkeepingName]" : "createNameKeyUp",

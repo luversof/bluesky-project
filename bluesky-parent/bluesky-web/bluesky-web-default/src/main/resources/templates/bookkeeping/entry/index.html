@@ -53,17 +53,17 @@
 				</select>
 			</td>
 			{{/entry.creditAsset}}
-			<td contenteditable="true" data-key="amount">{{entry.amount}}</td>
-			<td contenteditable="true" data-key="memo">{{entry.memo}}</td>
+			<td contenteditable="true" data-key-name="amount">{{entry.amount}}</td>
+			<td contenteditable="true" data-key-name="memo">{{entry.memo}}</td>
 			<td><input type="text" class="form-control" name="entryDate" value="{{getEntryDate}}" /></td>
 			<td>
 				<button class="btn btn-default btn-sm" data-menu="updateEntry"><span class="glyphicon glyphicon-edit">수정</span></button>
 				<button class="btn btn-default btn-sm" data-menu="deleteEntry"><span class="glyphicon glyphicon-remove">삭제</span></button>
 			</td>
 		</script>
-		<script type="text/template" id="template-entry-list">
+		<script type="text/template" id="template-entry-collection-view">
 			<div class="col-md-10">
-				<div class="col-md-10">
+				<div data-menu-area="entrysearchInfo">
 					2016-01-01
 				</div>
 				<table class="table">
@@ -149,6 +149,9 @@
 					</tfoot>
 				</table>
 			</div>
+		</script>
+		<script type="text/template" id="template-entrySearchInfo-view">
+			<   날짜    >
 		</script>
 	</div>
 </body>
