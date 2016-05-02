@@ -3,6 +3,7 @@ $(document).ready(function() {
 	var entryGroupCollection = new $.EntryGroupCollection();
 	var assetCollection = new $.AssetCollection();
 	var entrySearchInfo = new $.EntrySearchInfo();
+	var entrySearchInfoView = new $.EntrySearchInfoView({ model : entrySearchInfo });
 	
 	entryGroupCollection.fetch({ async : false });
 	assetCollection.fetch({ async : false });
@@ -153,6 +154,7 @@ $(document).ready(function() {
 			this.listenTo(this.collection, "reset", this.render);
 			this.listenTo(this.collection, "add", this.render);
 			this.listenTo(this.collection, "sort", this.render);
+			//this.listenTo(this, "render", entrySearchInfoView.render); 이건 안되네?
 			
 			//this.entryGroupCollection.fetch({reset : true});
 			//this.assetCollection.fetch({reset : true});
@@ -167,6 +169,7 @@ $(document).ready(function() {
 			
 		},
 		render : function() {
+			console.log("entryView render");
 			var data = {
 				assetList : assetCollection.toJSON(),
 				entryGroupList : entryGroupCollection.toJSON(),
@@ -185,7 +188,7 @@ $(document).ready(function() {
 			console.log("test :", this.collection);
 			this.$el.html(Mustache.render(this.template, data));
 			this.collection.each(function(entry) {
-				var entryView = new $.EntryView({model : entry});
+				var entryView = new $.EntryView({ model : entry });
 //				entryView.assetList = data.assetList;
 //				entryView.entryGroupList = data.entryGroupList;
 				this.$el.find("table tbody").append(entryView.render().el);
@@ -195,6 +198,8 @@ $(document).ready(function() {
 			this.$el
 				.find("input[name=createEntryDate]").datepicker({ language: 'ko' }).end()
 				.find("[data-menu=selectCreateEntryType]:eq(0)").trigger("click")
+				
+			entrySearchInfoView.render();
 		},
 //		renderEntry : function(entry) {
 //			var entryView = new $.EntryView({ model : entry });

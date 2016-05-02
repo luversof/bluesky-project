@@ -69,7 +69,7 @@ $(document).ready(function() {
 		render : function() {
 			this.$el.html(Mustache.render(this.template));
 			this.collection.each(function(asset) {
-				var assetView = new $.AssetView({model : asset});
+				var assetView = new $.AssetView({ model : asset });
 				this.$el.find("table tbody").append(assetView.render().el);
 			}, this);
 		},

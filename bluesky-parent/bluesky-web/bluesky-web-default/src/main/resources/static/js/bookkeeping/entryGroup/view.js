@@ -71,7 +71,7 @@ $(document).ready(function() {
 		render : function() {
 			this.$el.html(Mustache.render(this.template));
 			this.collection.each(function(entryGroup) {
-				var entryGroupView = new $.EntryGroupView({model : entryGroup});
+				var entryGroupView = new $.EntryGroupView({ model : entryGroup });
 				this.$el.find("table tbody").append(entryGroupView.render().el);
 			}, this);
 			this.$el.find("option[value=TRANSFER]").hide();

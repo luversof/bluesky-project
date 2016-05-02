@@ -72,7 +72,7 @@ $(document).ready(function() {
 		render : function() {
 			this.$el.html(Mustache.render(this.template));
 			this.collection.each(function(bookkeeping) {
-				var bookkeepingView = new $.BookkeepingView({model : bookkeeping});
+				var bookkeepingView = new $.BookkeepingView({ model : bookkeeping });
 				this.$el.find("table tbody").append(bookkeepingView.render().el);
 			}, this);
 		},
