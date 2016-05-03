@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
-
 import lombok.Data;
 import net.luversof.bookkeeping.util.BookkeepingUtils;
 
@@ -23,7 +22,6 @@ public class EntrySearchInfo {
 	private long bookkeepingId;
 	
 	@NotNull(groups = EntrySearchInfoSelect.class)
-//	@DateTimeFormat
 	private LocalDate targetLocalDate;
 	
 	private int baseDate;

@@ -2,16 +2,16 @@ $(document).ready(function() {
 	// 추가로 필요한 데이터 호출
 	var entryGroupCollection = new $.EntryGroupCollection();
 	var assetCollection = new $.AssetCollection();
-	var entrySearchInfo = new $.EntrySearchInfo();
-	var entrySearchInfoView = new $.EntrySearchInfoView({ model : entrySearchInfo });
+	
 	
 	entryGroupCollection.fetch({ async : false });
 	assetCollection.fetch({ async : false });
-	entrySearchInfo.fetch({ async : false });
+	
 	
 	
 	$.EntryView = Backbone.View.extend({
 		el : "<tr>",	//기본은 div
+		className : "warning",
 		template : $("#template-entry-view").html(),
 		events : {
 			"click [data-menu=updateEntry]" : "updateEntry",
@@ -22,14 +22,14 @@ $(document).ready(function() {
 			"keypress [data-key-name=memo]" : "changeMemoKeyPress",
 			"change select[name=entryGroup]" : "isChange",
 			"change select[name=debitAsset]" : "isChange",
-			"change select[name=creditAsset]" : "isChange"
+			"change select[name=creditAsset]" : "isChange",
+			"change input[name=entryDate]" : "isChange"
 		},
 		initialize : function() {
 //			console.log("This view has been initialized.");
-			this.listenTo(this.model, 'change', this.render);
-			this.listenTo(this.model, 'destroy', this.remove);
+			this.listenTo(this.model, "change", this.render);
+			this.listenTo(this.model, "destroy", this.remove);
 		},
-		className : "warning",
 		render : function() {
 //			console.log("EntryView render", this.model, this.model.collection);
 			var data = {
@@ -78,7 +78,7 @@ $(document).ready(function() {
 			this.$el.find("[data-menu=updateEntry]").hide();
 			
 			//외부 모듈 이벤트 핸들링 추가
-			this.$el.find("input[name=entryDate]").datepicker({ language: 'ko' });
+			this.$el.find("input[name=entryDate]").datepicker({ language: "ko" });
 			return this;
 		},
 		updateEntry : function() {
@@ -101,7 +101,8 @@ $(document).ready(function() {
 					&& this.$el.find("[data-key-name=memo]").text() == this.model.get("memo")
 					&& (this.model.get("entryGroup") == null || this.$el.find("select[name=entryGroup] option:selected").val() == this.model.get("entryGroup").id)
 					&& (this.model.get("debitAsset") == null || this.$el.find("select[name=debitAsset] option:selected").val() == this.model.get("debitAsset").id)
-					&& (this.model.get("creditAsset") == null || this.$el.find("select[name=creditAsset] option:selected").val() == this.model.get("creditAsset").id)) {
+					&& (this.model.get("creditAsset") == null || this.$el.find("select[name=creditAsset] option:selected").val() == this.model.get("creditAsset").id)
+					&& moment(this.$el.find("input[name=entryDate]").val()).format() == moment(this.model.get("entryDate")).format()) {
 				this.$el.find("[data-menu=updateEntry]").hide(100);
 			} else {
 				this.$el.find("[data-menu=updateEntry]").show(100);
@@ -146,6 +147,10 @@ $(document).ready(function() {
 		initialize : function() {
 			//console.log("This collection view has been initialized.");
 			this.collection = new $.EntryCollection();
+
+			var entrySearchInfo = new $.EntrySearchInfo();
+			this.entrySearchInfoView = new $.EntrySearchInfoView({ model : entrySearchInfo });
+			entrySearchInfo.fetch();
 			//this.entryGroupCollection = new $.EntryGroupCollection();
 			//this.assetCollection = new $.AssetCollection();
 			
@@ -154,26 +159,19 @@ $(document).ready(function() {
 			this.listenTo(this.collection, "reset", this.render);
 			this.listenTo(this.collection, "add", this.render);
 			this.listenTo(this.collection, "sort", this.render);
-			//this.listenTo(this, "render", entrySearchInfoView.render); 이건 안되네?
+			this.listenTo(this.entrySearchInfoView.model, "change", this.changeEntrySearchInfo);
+			console.log("this.entrySearchInfoView : ", this.entrySearchInfoView);
 			
 			//this.entryGroupCollection.fetch({reset : true});
 			//this.assetCollection.fetch({reset : true});
-			this.collection.sortColumn = "entryDate";
-			this.collection.sortDirection = "asc";
-			this.collection.fetch({
-				reset : true,
-				data : $.param({
-					targetLocalDate : entrySearchInfo.get("targetLocalDate")
-				})
-			});
+			
 			
 		},
 		render : function() {
-			console.log("entryView render");
 			var data = {
 				assetList : assetCollection.toJSON(),
 				entryGroupList : entryGroupCollection.toJSON(),
-				entrySearchInfo : entrySearchInfo.toJSON(),
+				entrySearchInfo : this.entrySearchInfoView.model.toJSON(),
 				sortColumn : this.collection.sortColumn,
 				sortDirection : this.collection.sortDirection
 			};
@@ -185,7 +183,6 @@ $(document).ready(function() {
 				return this.sortColumn == "amount";
 			}
 			
-			console.log("test :", this.collection);
 			this.$el.html(Mustache.render(this.template, data));
 			this.collection.each(function(entry) {
 				var entryView = new $.EntryView({ model : entry });
@@ -196,10 +193,9 @@ $(document).ready(function() {
 			
 			//외부 모듈 이벤트 핸들링 추가
 			this.$el
-				.find("input[name=createEntryDate]").datepicker({ language: 'ko' }).end()
-				.find("[data-menu=selectCreateEntryType]:eq(0)").trigger("click")
-				
-			entrySearchInfoView.render();
+				.find("input[name=createEntryDate]").datepicker({ language: "ko" }).end()
+				.find("[data-menu=selectCreateEntryType]:eq(0)").trigger("click").end()
+				.find("[data-menu-area=entrysearchInfo]").html(this.entrySearchInfoView.el)
 		},
 //		renderEntry : function(entry) {
 //			var entryView = new $.EntryView({ model : entry });
@@ -278,10 +274,20 @@ $(document).ready(function() {
 			}
 		},
 		renderBySortColumn : function(event) {
-			console.log("test : ", $(event.target), $(event.target).attr("data-menu-sortColumn"));
 			this.collection.sortColumn = $(event.target).attr("data-menu-sortColumn");
 			this.collection.sortDirection = $(event.target).attr("data-menu-sortDirection") == "desc" ? "asc" : "desc";
 			this.collection.sort();
+		},
+		changeEntrySearchInfo : function() {
+			console.log("changeEntrySearchInfo ");
+			this.collection.sortColumn = "entryDate";
+			this.collection.sortDirection = "asc";
+			this.collection.fetch({
+				reset : true,
+				data : $.param({
+					targetLocalDate : this.entrySearchInfoView.model.get("targetLocalDate")
+				})
+			});
 		}
 	});
 
