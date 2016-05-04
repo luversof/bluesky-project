@@ -78,7 +78,7 @@ $(document).ready(function() {
 			this.$el.find("[data-menu=updateEntry]").hide();
 			
 			//외부 모듈 이벤트 핸들링 추가
-			this.$el.find("input[name=entryDate]").datepicker({ language: "ko" });
+			this.$el.find("input[name=entryDate]").datepicker({ language: "ko", autoclose : true });
 			return this;
 		},
 		updateEntry : function() {
@@ -148,9 +148,9 @@ $(document).ready(function() {
 			//console.log("This collection view has been initialized.");
 			this.collection = new $.EntryCollection();
 
-			var entrySearchInfo = new $.EntrySearchInfo();
-			this.entrySearchInfoView = new $.EntrySearchInfoView({ model : entrySearchInfo });
-			entrySearchInfo.fetch();
+			this.entrySearchInfo = new $.EntrySearchInfo();
+			var entrySearchInfoView = new $.EntrySearchInfoView({ model : this.entrySearchInfo });
+			this.entrySearchInfo.fetch();
 			//this.entryGroupCollection = new $.EntryGroupCollection();
 			//this.assetCollection = new $.AssetCollection();
 			
@@ -159,8 +159,7 @@ $(document).ready(function() {
 			this.listenTo(this.collection, "reset", this.render);
 			this.listenTo(this.collection, "add", this.render);
 			this.listenTo(this.collection, "sort", this.render);
-			this.listenTo(this.entrySearchInfoView.model, "change", this.changeEntrySearchInfo);
-			console.log("this.entrySearchInfoView : ", this.entrySearchInfoView);
+			this.listenTo(this.entrySearchInfo, "change", this.changeEntrySearchInfo);
 			
 			//this.entryGroupCollection.fetch({reset : true});
 			//this.assetCollection.fetch({reset : true});
@@ -168,10 +167,11 @@ $(document).ready(function() {
 			
 		},
 		render : function() {
+//			console.log("EntryCollectionView render");
 			var data = {
 				assetList : assetCollection.toJSON(),
 				entryGroupList : entryGroupCollection.toJSON(),
-				entrySearchInfo : this.entrySearchInfoView.model.toJSON(),
+				entrySearchInfo : this.entrySearchInfo.toJSON(),
 				sortColumn : this.collection.sortColumn,
 				sortDirection : this.collection.sortDirection
 			};
@@ -193,9 +193,8 @@ $(document).ready(function() {
 			
 			//외부 모듈 이벤트 핸들링 추가
 			this.$el
-				.find("input[name=createEntryDate]").datepicker({ language: "ko" }).end()
-				.find("[data-menu=selectCreateEntryType]:eq(0)").trigger("click").end()
-				.find("[data-menu-area=entrysearchInfo]").html(this.entrySearchInfoView.el)
+				.find("input[name=createEntryDate]").datepicker({ language: "ko", autoclose : true }).end()
+				.find("[data-menu=selectCreateEntryType]:eq(0)").trigger("click").end();
 		},
 //		renderEntry : function(entry) {
 //			var entryView = new $.EntryView({ model : entry });
@@ -279,13 +278,13 @@ $(document).ready(function() {
 			this.collection.sort();
 		},
 		changeEntrySearchInfo : function() {
-			console.log("changeEntrySearchInfo ");
+//			console.log("changeEntrySearchInfo ");
 			this.collection.sortColumn = "entryDate";
 			this.collection.sortDirection = "asc";
 			this.collection.fetch({
 				reset : true,
 				data : $.param({
-					targetLocalDate : this.entrySearchInfoView.model.get("targetLocalDate")
+					targetLocalDate : this.entrySearchInfo.get("targetLocalDate")
 				})
 			});
 		}

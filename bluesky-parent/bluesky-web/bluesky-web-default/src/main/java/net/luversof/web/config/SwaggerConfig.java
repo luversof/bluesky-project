@@ -1,7 +1,5 @@
 package net.luversof.web.config;
 
-import static springfox.documentation.builders.PathSelectors.regex;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -30,7 +28,6 @@ public class SwaggerConfig {
 				.title("bluesky-web-default")
 				.description("호출 api 리스트")
 				.termsOfServiceUrl("")
-				.contact("")
 				.license("파란하늘")
 				.licenseUrl("")
 				.version("2.0")

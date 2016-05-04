@@ -12,7 +12,6 @@ import net.luversof.GeneralTest;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.EntryGroup;
-import net.luversof.bookkeeping.domain.EntrySearchInfo;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.bookkeeping.service.EntryGroupService;
 import net.luversof.bookkeeping.service.EntryService;

@@ -2,7 +2,6 @@ package net.luversof.bookkeeping.service;
 
 import static net.luversof.bookkeeping.BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +13,6 @@ import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.EntrySearchInfo;
 import net.luversof.bookkeeping.repository.EntryRepository;
-import net.luversof.bookkeeping.util.BookkeepingUtils;
 import net.luversof.core.exception.BlueskyException;
 
 @Service

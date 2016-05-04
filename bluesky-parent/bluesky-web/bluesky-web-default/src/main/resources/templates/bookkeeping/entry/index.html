@@ -21,6 +21,7 @@
 <body>
 	<div layout:fragment="content-bookkeeping">
 		<br />
+		<div data-menu-area="entrysearchInfo"></div>
 		<div id="entryArea"></div>
 		
 		
@@ -73,9 +74,6 @@
 		</script>
 		<script type="text/template" id="template-entry-collection-view">
 			<div class="col-md-10">
-				<div data-menu-area="entrysearchInfo">
-					2016-01-01
-				</div>
 				<table class="table">
 					<colgroup>
 						<col class="col-md-2"></col>
@@ -170,16 +168,19 @@
 			</div>
 		</script>
 		<script type="text/template" id="template-entrySearchInfo-view">
-<div class="input-group">
-	<div class="input-group-btn">
-			<button class="btn btn-default">&lt;</button>
-	</div>
-			<input type="text" class="form-control" name="entrySearchInfoTargetMonth" value="{{getTargetMonth}}" />
-	<div class="input-group-btn">
-			<button class="btn btn-default">&gt;</button>
-	</div>
-
-</div>
+			<form class="form-inline">
+				<div class="form-group">
+					<div class="input-group col-md-7">
+						<div class="input-group-btn">
+							<button class="btn btn-default" data-menu-entrySearchInfo="prevMonth">&lt;</button>
+						</div>
+						<input type="text" class="form-control" name="entrySearchInfoTargetMonth" value="{{getTargetMonth}}" />
+						<div class="input-group-btn">
+							<button class="btn btn-default" data-menu-entrySearchInfo="nextMonth">&gt;</button>
+						</div>
+					</div>
+				</div>
+			</form>
 		</script>
 	</div>
 </body>

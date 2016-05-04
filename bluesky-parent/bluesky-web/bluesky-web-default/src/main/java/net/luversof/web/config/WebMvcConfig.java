@@ -8,9 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.format.datetime.standard.DateTimeFormatterRegistrar;
-import org.springframework.http.MediaType;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
-import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
 import org.springframework.web.servlet.config.annotation.ViewResolverRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
@@ -18,7 +16,6 @@ import org.thymeleaf.extras.java8time.dialect.Java8TimeDialect;
 import org.thymeleaf.spring4.view.ThymeleafViewResolver;
 
 import net.luversof.web.blog.method.support.BlogHandlerMethodArgumentResolver;
-import net.luversof.web.bookkeeping.method.support.BookkeepingHandlerMethodArgumentResolver;
 
 
 @Configuration
@@ -29,8 +26,8 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 	@Autowired
 	private BlogHandlerMethodArgumentResolver blogHandlerMethodArgumentResolver;
 	
-	@Autowired
-	private BookkeepingHandlerMethodArgumentResolver bookkeepingHandlerMethodArgumentResolver;
+//	@Autowired
+//	private BookkeepingHandlerMethodArgumentResolver bookkeepingHandlerMethodArgumentResolver;
 	
 	@Autowired
 	private ThymeleafViewResolver thymeleafViewResolver;
