@@ -3,7 +3,6 @@ $(document).ready(function() {
 	var entryGroupCollection = new $.EntryGroupCollection();
 	var assetCollection = new $.AssetCollection();
 	
-	
 	entryGroupCollection.fetch({ async : false });
 	assetCollection.fetch({ async : false });
 	
