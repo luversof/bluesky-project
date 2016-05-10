@@ -7,8 +7,6 @@ $(document).ready(function() {
 	entryGroupCollection.fetch({ async : false });
 	assetCollection.fetch({ async : false });
 	
-	
-	
 	$.EntryView = Backbone.View.extend({
 		el : "<tr>",	//기본은 div
 		className : "warning",
@@ -42,36 +40,22 @@ $(document).ready(function() {
 			}
 			
 			//entryType을 먼저 확인
-			var entryType = null;
-			
-			if (this.model.get("debitAsset") == null && this.model.get("creditAsset") != null) {
-				entryType = "CREDIT";
-			} else if (this.model.get("debitAsset") != null && this.model.get("creditAsset") == null) {
-				entryType = "DEBIT";
-			} else if (this.model.get("debitAsset") != null && this.model.get("creditAsset") != null) {
-				entryType = "TRANSFER";
-			} else {
-				console.log("entryType is not setted.", this.model);
-			}
-			this.model.set("entryType", entryType);
+			var entryType = this.model.get("entryType");
 			
 			data.isTargetEntryGroup = function() {
 				return this.entryType == entryType;
+			}
+			data.isCredit = function() {
+				return entryType == "CREDIT";
+			}
+			data.isDebit = function() {
+				return entryType == "DEBIT";
 			}
 			data.isTransfer = function() {
 				return entryType == "TRANSFER";
 			}
 			
-			var viewClass = "";
-			if (entryType == "CREDIT") {
-				viewClass = "info";
-			} else if (entryType == "DEBIT") {
-				viewClass = "danger";
-			} else if (entryType == "TRANSFER") {
-				viewClass = "active";
-			}
-			
-			this.$el.addClass(viewClass).html(Mustache.render(this.template, data));
+			this.$el.html(Mustache.render(this.template, data));
 			if (this.model.get("entryGroup") != null) { this.$el.find("select[name=entryGroup] > option[value=" + this.model.get("entryGroup").id + "]").attr("selected", "selected") };
 			if (this.model.get("debitAsset") != null) { this.$el.find("select[name=debitAsset] > option[value=" + this.model.get("debitAsset").id + "]").attr("selected", "selected") };
 			if (this.model.get("creditAsset") != null) { this.$el.find("select[name=creditAsset] > option[value=" + this.model.get("creditAsset").id + "]").attr("selected", "selected") };

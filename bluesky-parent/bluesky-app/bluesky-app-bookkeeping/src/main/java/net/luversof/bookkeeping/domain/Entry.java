@@ -54,4 +54,15 @@ public class Entry implements Serializable {
 	
 	public interface EntryDelete {
 	}
+	
+	public EntryType getEntryType() {
+		if (this.debitAsset == null && this.creditAsset != null) {
+			return EntryType.CREDIT;
+		} else if (this.debitAsset != null && this.creditAsset == null) {
+			return EntryType.DEBIT;
+		} else if (this.debitAsset != null && this.creditAsset != null) {
+			return EntryType.TRANSFER;
+		}
+		return null;
+	}
 }

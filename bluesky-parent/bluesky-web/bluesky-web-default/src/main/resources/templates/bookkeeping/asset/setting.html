@@ -13,23 +13,9 @@
 		<br />
 		<div id="assetArea"></div>
 		
-		
-		<script type="text/template" id="template-asset-view">
-			<td>
-				<select class="form-control" name="assetType">
-					<option th:each="assetType : ${T(net.luversof.bookkeeping.domain.AssetType).values()}" th:value="${assetType}" th:text="#{assetType.text.__${assetType}__}">assetType</option>
-				</select>
-			</td>
-			<td contenteditable="true" data-key-name="name">{{name}}</td>
-			<td class="text-right">{{amount}}</td>
-			<td>
-				<button class="btn btn-default btn-sm" data-menu="updateAsset"><span class="glyphicon glyphicon-edit">수정</span></button>
-				<button class="btn btn-default btn-sm" data-menu="deleteAsset"><span class="glyphicon glyphicon-remove">삭제</span></button>
-			</td>
-		</script>
 		<script type="text/template" id="template-asset-collection-view">
 			<div class="col-md-6">
-				<table class="table">
+				<table class="table table-hover">
 					<colgroup>
 						<col class="col-md-3"></col>
 						<col class="col-md-4"></col>
@@ -43,7 +29,7 @@
 							<th>금액</th>
 							<th></th>
 						</tr>
-						<tr class="success">
+						<tr class="active">
 							<td>
 								<select class="form-control" name="createAssetType">
 									<option th:each="assetType : ${T(net.luversof.bookkeeping.domain.AssetType).values()}" th:value="${assetType}" th:text="#{assetType.text.__${assetType}__}">assetType</option>
@@ -60,6 +46,19 @@
 					</tfoot>
 				</table>
 			</div>
+		</script>
+		<script type="text/template" id="template-asset-view">
+			<td>
+				<select class="form-control" name="assetType">
+					<option th:each="assetType : ${T(net.luversof.bookkeeping.domain.AssetType).values()}" th:value="${assetType}" th:text="#{assetType.text.__${assetType}__}">assetType</option>
+				</select>
+			</td>
+			<td contenteditable="true" data-key-name="name">{{name}}</td>
+			<td class="text-right">{{amount}}</td>
+			<td>
+				<button class="btn btn-default btn-sm" data-menu="updateAsset"><span class="glyphicon glyphicon-edit">수정</span></button>
+				<button class="btn btn-default btn-sm" data-menu="deleteAsset"><span class="glyphicon glyphicon-remove">삭제</span></button>
+			</td>
 		</script>
 	</div>
 </body>
