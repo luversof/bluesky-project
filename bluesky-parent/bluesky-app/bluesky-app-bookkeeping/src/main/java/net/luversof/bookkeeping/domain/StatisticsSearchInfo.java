@@ -1,6 +1,7 @@
 package net.luversof.bookkeeping.domain;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
@@ -9,20 +10,26 @@ import lombok.Data;
 
 /**
  * 통계보기 검색 관련 객체
+ * - 년/월 단위 검색 가능
+ * - 특정 기간 동안 검색 가능
  * @author bluesky
  *
  */
 @Data
 public class StatisticsSearchInfo {
 	
-	@NotNull(groups = StatisticsSearchInfoSelect.class)
-	@Min(value = 1, groups = StatisticsSearchInfoSelect.class)
+//	@NotNull(groups = StatisticsSearchInfoSelect.class)
+//	@Min(value = 1, groups = StatisticsSearchInfoSelect.class)
 	private long bookkeepingId;
 	
-	@NotNull(groups = StatisticsSearchInfoSelect.class)
+	private int baseDate;
+	
+	private ChronoUnit chronoUnit;
+	
+//	@NotNull(groups = StatisticsSearchInfoSelect.class)
 	private LocalDateTime startDateTime;
 	
-	@NotNull(groups = StatisticsSearchInfoSelect.class)
+//	@NotNull(groups = StatisticsSearchInfoSelect.class)
 	private LocalDateTime endDateTime;
 	
 	public interface StatisticsSearchInfoSelect {}

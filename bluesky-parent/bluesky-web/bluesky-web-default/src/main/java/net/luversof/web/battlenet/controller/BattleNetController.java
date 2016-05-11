@@ -13,7 +13,7 @@ import net.luversof.api.battlenet.d3.service.D3Service;
 import net.luversof.security.core.userdetails.BlueskyUser;
 
 @RestController
-@RequestMapping("battleNet/d3")
+@RequestMapping("/battleNet/d3")
 public class BattleNetController {
 	
 	@Autowired

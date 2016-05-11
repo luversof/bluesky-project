@@ -2,6 +2,7 @@ package net.luversof.bookkeeping.service;
 
 import static net.luversof.bookkeeping.BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,6 +72,18 @@ public class EntryService {
 		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entrySearchInfo.getBookkeepingId());
 		int baseDate = targetBookkeeping.getBaseDate();
 		entrySearchInfo.setBaseDate(baseDate);
-		return entryRepository.findByBookkeepingIdAndEntryDateBetween(entrySearchInfo.getBookkeepingId(), entrySearchInfo.getStartDateTime(), entrySearchInfo.getEndDateTime());
+		return entryRepository.findByBookkeepingIdAndEntryDateBetween(entrySearchInfo.getBookkeepingId(), entrySearchInfo.getStartLocalDateTime(), entrySearchInfo.getEndLocalDateTime());
+	}
+	
+	/**
+	 * test용 메소드
+	 * @param bookkeepingId
+	 * @param startLocalDateTime
+	 * @param endLocalDateTime
+	 * @return
+	 */
+	@Transactional(value = BOOKKEEPING_TRANSACTIONMANAGER, readOnly = true)
+	public List<Entry> findByBookkeepingIdAndEntryDateBetween(long bookkeepingId, LocalDateTime startLocalDateTime, LocalDateTime endLocalDateTime) {
+		return entryRepository.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startLocalDateTime, endLocalDateTime);
 	}
 }

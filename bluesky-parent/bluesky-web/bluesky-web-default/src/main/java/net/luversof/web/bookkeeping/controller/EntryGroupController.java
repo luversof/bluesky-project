@@ -23,7 +23,7 @@ import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
 @PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-@RequestMapping(value = "bookkeeping/{bookkeepingId}/entryGroup")
+@RequestMapping(value = "/bookkeeping/{bookkeepingId}/entryGroup")
 public class EntryGroupController {
 
 	@Autowired

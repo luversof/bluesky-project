@@ -32,6 +32,9 @@ public class Bookkeeping {
 	@Min(value = 1, groups = BookkeepingUpdate.class)
 	private long userId;
 
+	/**
+	 * 시작일. startDay라고 해야하나?
+	 */
 	@Range(min = 1, max = 28, groups = { BookkeepingCreate.class, BookkeepingUpdate.class })
 	private int baseDate;
 

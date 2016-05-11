@@ -16,7 +16,7 @@ import net.luversof.bookkeeping.service.EntrySearchInfoService;
 import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
-@RequestMapping("bookkeeping/{bookkeepingId}/entrySearchInfo")
+@RequestMapping("/bookkeeping/{bookkeepingId}/entrySearchInfo")
 public class EntrySearchInfoController {
 	
 	@Autowired

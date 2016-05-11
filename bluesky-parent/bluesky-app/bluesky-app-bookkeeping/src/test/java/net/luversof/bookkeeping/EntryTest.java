@@ -15,7 +15,6 @@ import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.bookkeeping.service.EntryGroupService;
 import net.luversof.bookkeeping.service.EntryService;
-import net.luversof.bookkeeping.util.BookkeepingUtils;
 
 @Slf4j
 public class EntryTest extends GeneralTest {
@@ -74,26 +73,15 @@ public class EntryTest extends GeneralTest {
 		//log.debug("result : {}", entryService.findByBookkeepingIdAndEntryDateBetween(1, null, null));
 	}
 	
-	
-	@Test
-	public void test4() {
-		log.debug("startLocalDateTime : {}", BookkeepingUtils.getNowStartDateTime(1));
-		log.debug("startLocalDateTime : {}", BookkeepingUtils.getNowStartDateTime(18));
-		log.debug("startLocalDateTime : {}", BookkeepingUtils.getNowStartDateTime(19));
-		log.debug("startLocalDateTime : {}", BookkeepingUtils.getNowStartDateTime(20));
-		log.debug("startLocalDateTime : {}", BookkeepingUtils.getNowStartDateTime(28));
-		
-		log.debug("getEndDate : {}", BookkeepingUtils.getNowEndDateTime(1));
-		log.debug("getEndDate : {}", BookkeepingUtils.getNowEndDateTime(18));
-		log.debug("getEndDate : {}", BookkeepingUtils.getNowEndDateTime(19));
-		log.debug("getEndDate : {}", BookkeepingUtils.getNowEndDateTime(20));
-		log.debug("getEndDate : {}", BookkeepingUtils.getNowEndDateTime(28));
-		
-	}
+	/**
+	 * 특정 일자 데이트 호출 확인
+	 */
 	@Test
 	public void test5() {
-		log.debug("test : :{}", LocalDateTime.parse("2007-12-03T10:15"));
+		LocalDate startDate = LocalDate.parse("2016-05-02"); 
+		LocalDate endDate = LocalDate.parse("2016-05-03");
 		
-		
+		List<Entry> entryList = entryService.findByBookkeepingIdAndEntryDateBetween(1, startDate.atStartOfDay(), endDate.atStartOfDay());
+		log.debug("entryList : {}", entryList);
 	}
 }

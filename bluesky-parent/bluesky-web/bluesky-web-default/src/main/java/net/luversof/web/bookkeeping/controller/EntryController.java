@@ -26,7 +26,7 @@ import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
-@RequestMapping("bookkeeping/{bookkeepingId}/entry")
+@RequestMapping("/bookkeeping/{bookkeepingId}/entry")
 public class EntryController {
 	
 	@Autowired
