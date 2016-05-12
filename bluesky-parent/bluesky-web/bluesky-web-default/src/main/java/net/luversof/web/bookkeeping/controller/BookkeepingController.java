@@ -33,7 +33,7 @@ public class BookkeepingController {
 	 * @return
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)	
-	@RequestMapping(value= "", method = RequestMethod.GET)
+	@RequestMapping(method = RequestMethod.GET)
 	public List<Bookkeeping> getBookkeepingList(Authentication authentication) {
 		return bookkeepingService.findByUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 	}
@@ -45,7 +45,7 @@ public class BookkeepingController {
 	}
 	
 	
-	@RequestMapping(value = "", method = RequestMethod.POST)
+	@RequestMapping(method = RequestMethod.POST)
 	public Bookkeeping createBookkeeping(@RequestBody @Validated(BookkeepingCreate.class) Bookkeeping bookkeeping, Authentication authentication) {
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
 		bookkeeping.setUserId(blueskyUser.getId());

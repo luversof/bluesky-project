@@ -3,7 +3,6 @@ package net.luversof.web.bookkeeping.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -52,7 +51,7 @@ public class EntryController {
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(method = RequestMethod.POST)
 	public Entry createEntry(@RequestBody @Validated(EntryCreate.class) Entry entry, @PathVariable long bookkeepingId, Authentication authentication) {
 		Bookkeeping bookkeeping = new Bookkeeping();
 		bookkeeping.setId(bookkeepingId);
@@ -63,14 +62,14 @@ public class EntryController {
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
 	public Entry modify(@RequestBody @Validated(EntryUpdate.class) Entry entry, Authentication authentication) {
 		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		return entryService.update(entry);
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
 	public void delete(@Validated(EntryDelete.class) Entry entry, Authentication authentication) {
 		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		entryService.delete(entry);

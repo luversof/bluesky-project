@@ -13,6 +13,7 @@ import net.luversof.bookkeeping.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.EntrySearchInfo;
+import net.luversof.bookkeeping.domain.StatisticsSearchInfo;
 import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.core.exception.BlueskyException;
 
@@ -73,6 +74,18 @@ public class EntryService {
 		int baseDate = targetBookkeeping.getBaseDate();
 		entrySearchInfo.setBaseDate(baseDate);
 		return entryRepository.findByBookkeepingIdAndEntryDateBetween(entrySearchInfo.getBookkeepingId(), entrySearchInfo.getStartLocalDateTime(), entrySearchInfo.getEndLocalDateTime());
+	}
+	
+	/**
+	 * @param entrySearchInfo
+	 * @return
+	 */
+	@Transactional(value = BOOKKEEPING_TRANSACTIONMANAGER, readOnly = true)
+	public List<Entry> findByStatisticsSearchInfo(StatisticsSearchInfo statisticsSearchInfo) {
+		Bookkeeping targetBookkeeping = bookkeepingService.findOne(statisticsSearchInfo.getBookkeepingId());
+		int baseDate = targetBookkeeping.getBaseDate();
+		statisticsSearchInfo.setBaseDate(baseDate);
+		return entryRepository.findByBookkeepingIdAndEntryDateBetween(statisticsSearchInfo.getBookkeepingId(), statisticsSearchInfo.getStartLocalDateTime(), statisticsSearchInfo.getEndLocalDateTime());
 	}
 	
 	/**

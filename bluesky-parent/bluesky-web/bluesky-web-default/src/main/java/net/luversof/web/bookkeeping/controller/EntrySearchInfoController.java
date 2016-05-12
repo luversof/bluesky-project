@@ -24,11 +24,11 @@ public class EntrySearchInfoController {
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.GET)
-	public EntrySearchInfo getEntryInfo(@PathVariable long bookkeepingId, @RequestParam(required = false) LocalDate targetLocalDate) {
+	public EntrySearchInfo getEntrySearchInfo(@PathVariable long bookkeepingId, @RequestParam(required = false) LocalDate targetLocalDate) {
 		return entrySearchInfoService.getEntrySearchInfo(bookkeepingId, targetLocalDate);
 	}
 	
-	@RequestMapping("/test")
+	@RequestMapping(value = "/test", method = RequestMethod.GET)
 	public LocalDateTime test(@RequestParam(required = false) LocalDateTime test) {
 		System.out.println(test);
 		return test;
