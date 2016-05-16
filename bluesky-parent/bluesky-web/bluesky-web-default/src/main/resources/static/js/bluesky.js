@@ -31,10 +31,6 @@ var navbar = {
 };
 
 $(document).ready(function() {
-
-
-	
-
 	
 	/**
 	 * 상단 navbar scroll에 따른 hide 처리 
@@ -60,7 +56,7 @@ $(document).ready(function() {
 		});
 	
 	
-	$("[data-toggle=tooltip]").tooltip();
+	$("body").tooltip({ selector : "[data-toggle=tooltip]" });
 	
 	/* (s) csrf */
 	var token = $("meta[name='_csrf']").attr("content");
@@ -88,8 +84,8 @@ $(document).ready(function() {
 	}
 
 	
-	if(window.console != undefined) {
-		setTimeout(console.log.bind(console, "%cBluesky","font: 8em Arial; color: #6799FF; font-weight:bold"),0);
-		setTimeout(console.log.bind(console, "%c - bluesky 프로젝트","font: 2em sans-serif; color: #333;"),0);
+	if (window.console != undefined) {
+		setTimeout(console.log.bind(console, "%cBluesky","font: 8em Arial; color: #6799FF; font-weight:bold"), 0);
+		setTimeout(console.log.bind(console, "%c - bluesky 프로젝트","font: 2em sans-serif; color: #333;"), 0);
 	}
 });

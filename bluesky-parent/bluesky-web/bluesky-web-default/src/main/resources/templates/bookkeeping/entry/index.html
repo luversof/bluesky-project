@@ -131,9 +131,9 @@
 		</script>
 		<script type="text/template" id="template-entry-view">
 			<td>
-				{{#isCredit}}<button type="button" class="btn btn-info"><i class="fa fa-plus" aria-hidden="true"></i></button>{{/isCredit}}
-				{{#isDebit}}<button type="button" class="btn btn-danger"><i class="fa fa-minus" aria-hidden="true"></i></button>{{/isDebit}}
-				{{#isTransfer}}<button type="button" class="btn btn-default"><i class="fa fa-exchange" aria-hidden="true"></i></button>{{/isTransfer}}
+				{{#isCredit}}<button type="button" class="btn btn-info" data-toggle="tooltip" data-placement="right" title="수입"><i class="fa fa-plus" aria-hidden="true"></i></button>{{/isCredit}}
+				{{#isDebit}}<button type="button" class="btn btn-danger" data-toggle="tooltip" data-placement="right" title="지출"><i class="fa fa-minus" aria-hidden="true"></i></button>{{/isDebit}}
+				{{#isTransfer}}<button type="button" class="btn btn-default" data-toggle="tooltip" data-placement="right" title="이체"><i class="fa fa-exchange" aria-hidden="true"></i></button>{{/isTransfer}}
 			</td>
 			{{^isTransfer}}
 			<td>
