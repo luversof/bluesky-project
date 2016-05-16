@@ -41,7 +41,7 @@ $(document).ready(function() {
 		},
 		selectMenu : function(event) {
 			event.preventDefault();
-			var menu = $(event.target).attr("data-menu-entrySearchInfo");
+			var menu = $(event.currentTarget).attr("data-menu-entrySearchInfo");
 			var targetMonth = this.$el.find("input[name=entrySearchInfoTargetMonth]").val();
 			var targetLocalDateMoment = moment(targetMonth).add(this.model.get("baseDate") - 1, "days");
 			if (menu == "prevMonth") {

@@ -87,7 +87,7 @@ $(document).ready(function() {
 				return;
 			}
 			this.collection.create(asset);
-			$(event.target).closest("tr")
+			$(event.currentTarget).closest("tr")
 				.find("[contenteditable=true]").text("").end()
 				.find("select option:eq(0)").attr("selected", "selected");
 		},

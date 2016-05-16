@@ -90,7 +90,7 @@ $(document).ready(function() {
 				return;
 			}
 			this.collection.create(bookkeeping);
-			$(event.target).closest("tr")
+			$(event.currentTarget).closest("tr")
 			.find("[contenteditable=true]").text("");
 		},
 		createNameKeyUp : function(event) {

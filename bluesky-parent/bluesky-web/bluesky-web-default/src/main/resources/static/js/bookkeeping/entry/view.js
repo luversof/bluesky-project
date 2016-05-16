@@ -199,7 +199,7 @@ $(document).ready(function() {
 				return;
 			}
 			this.collection.create(entry);
-			$(event.target).closest("tr")
+			$(event.currentTarget).closest("tr")
 				.find("[contenteditable=true]").text("").end()
 				.find("select option:eq(0)").attr("selected", "selected");
 		},
@@ -223,9 +223,10 @@ $(document).ready(function() {
 		selectCreateEntryType : function(event) {
 			// 버튼 활성화 처리
 			this.$el.find("[data-menu=selectCreateEntryType]").removeClass("active btn-info");
-			$(event.target).addClass("active btn-info");
+			$(event.currentTarget).addClass("active btn-info");
 			
-			var entryType = $(event.target).val();
+			var entryType = $(event.currentTarget).val();
+			console.log("entryType : ", entryType, event);
 			
 			//선택한 entryType에 따라 입력 형태 변경 처리
 			//입력 형태에 따른 entryGroup 처리 추가
@@ -256,8 +257,8 @@ $(document).ready(function() {
 			}
 		},
 		renderBySortColumn : function(event) {
-			this.collection.sortColumn = $(event.target).attr("data-menu-sortColumn");
-			this.collection.sortDirection = $(event.target).attr("data-menu-sortDirection") == "desc" ? "asc" : "desc";
+			this.collection.sortColumn = $(event.currentTarget).attr("data-menu-sortColumn");
+			this.collection.sortDirection = $(event.currentTarget).attr("data-menu-sortDirection") == "desc" ? "asc" : "desc";
 			this.collection.sort();
 		},
 		changeEntrySearchInfo : function() {
