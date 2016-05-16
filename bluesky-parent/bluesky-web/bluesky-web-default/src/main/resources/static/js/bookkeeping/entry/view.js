@@ -226,7 +226,6 @@ $(document).ready(function() {
 			$(event.currentTarget).addClass("active btn-info");
 			
 			var entryType = $(event.currentTarget).val();
-			console.log("entryType : ", entryType, event);
 			
 			//선택한 entryType에 따라 입력 형태 변경 처리
 			//입력 형태에 따른 entryGroup 처리 추가
