@@ -150,7 +150,7 @@ $(document).ready(function() {
 			
 		},
 		render : function() {
-//			console.log("EntryCollectionView render");
+			//console.log("EntryCollectionView render");
 			var data = {
 				assetList : assetCollection.toJSON(),
 				entryGroupList : entryGroupCollection.toJSON(),

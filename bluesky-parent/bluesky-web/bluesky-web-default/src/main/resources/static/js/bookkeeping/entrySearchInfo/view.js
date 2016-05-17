@@ -8,15 +8,15 @@ $(document).ready(function() {
 			"click [data-menu-entrySearchInfo]" : "selectMenu"
 		},
 		initialize : function() {
-//			console.log("This view has been initialized.");
+			//console.log("This view has been initialized.");
 			this.listenTo(this.model, "change", this.render);
 			this.listenTo(this.model, "reset", this.render);
 		},
 		render : function() {
-//			console.log("EntrySearchInfoView render")
+			//console.log("EntrySearchInfoView render")
 			var data = this.model.toJSON();
 			data.getTargetMonth = function() {
-				return moment(data.startDateTime).format("YYYY-MM");
+				return moment(data.startLocalDateTime).format("YYYY-MM");
 			}
 			this.$el
 				.html(Mustache.render(this.template, data))
@@ -25,15 +25,16 @@ $(document).ready(function() {
 		},
 		selectEntrySearchInfo : function(targetLocalDate) {
 			this.model.fetch({
+				reset : true,
 				data : $.param({
 					targetLocalDate : targetLocalDate
 				})
 			});
 		},
 		isChange : function() {
-//			console.log("EntrySearchInfoView isChange");
+			//console.log("EntrySearchInfoView isChange");
 			var targetMonth = this.$el.find("input[name=entrySearchInfoTargetMonth]").val();
-			if (targetMonth != moment(this.model.get("startDateTime")).format("YYYY-MM")) {
+			if (targetMonth != moment(this.model.get("startLocalDateTime")).format("YYYY-MM")) {
 				// 변경처리
 				var targetLocalDate = moment(targetMonth).add(this.model.get("baseDate") - 1, "days").format("YYYY-MM-DD");
 				this.selectEntrySearchInfo(targetLocalDate);
