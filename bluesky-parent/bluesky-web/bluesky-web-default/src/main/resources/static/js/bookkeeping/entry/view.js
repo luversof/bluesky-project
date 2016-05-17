@@ -158,7 +158,21 @@ $(document).ready(function() {
 				sortColumn : this.collection.sortColumn,
 				sortDirection : this.collection.sortDirection
 			};
+			var entryList = this.collection.toJSON();
 			
+			data.getTotalCreditAmount = function() {
+				return _.reduce(entryList, function(amount, entry) {
+					return amount + (entry.entryType == "CREDIT" ? entry.amount : 0);
+				}, 0);
+			}
+			data.getTotalDebitAmount = function() {
+				return _.reduce(entryList, function(amount, entry) {
+					return amount + (entry.entryType == "DEBIT" ? entry.amount : 0);
+				}, 0);
+			}
+			data.getTotalAmount = function() {
+				return data.getTotalCreditAmount() - data.getTotalDebitAmount();
+			}
 			data.isSortEntryType = function() {
 				return this.sortColumn == "entryType";
 			}
