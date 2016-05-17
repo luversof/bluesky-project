@@ -96,7 +96,7 @@
 				<version>1.9.2</version>
 			</dependency>
 			<!-- (e) encryption -->
-
+			
 			<!-- (s) thymeleaf extras -->
 			<dependency>
 				<groupId>org.thymeleaf.extras</groupId>

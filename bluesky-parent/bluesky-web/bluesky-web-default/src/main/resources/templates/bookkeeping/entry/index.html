@@ -39,11 +39,11 @@
 					<thead>
 						<tr>
 							<th>
-								<button type="button" class="btn btn-default {{#isSortColumnAmount}}btn-info{{/isSortColumnAmount}}" data-menu-sortColumn="amount" data-menu-sortDirection="{{#isSortColumnAmount}}{{sortDirection}}{{/isSortColumnAmount}}">
-									금액
-									{{#isSortColumnAmount}}
-										<i class="fa fa-sort-amount-{{sortDirection}}" aria-hidden="true"></i>
-									{{/isSortColumnAmount}}
+								<button type="button" class="btn btn-default {{#isSortEntryType}}btn-info{{/isSortEntryType}}" data-menu-sortColumn="entryType" data-menu-sortDirection="{{#isSortEntryType}}{{sortDirection}}{{/isSortEntryType}}">
+									지출 유형
+									{{#isSortEntryType}}
+										<i class="fa fa-sort-{{sortDirection}}" aria-hidden="true"></i>
+									{{/isSortEntryType}}
 								</button>
 							</th>
 							<th></th>

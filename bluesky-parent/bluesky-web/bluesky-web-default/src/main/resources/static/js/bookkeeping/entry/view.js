@@ -159,6 +159,9 @@ $(document).ready(function() {
 				sortDirection : this.collection.sortDirection
 			};
 			
+			data.isSortEntryType = function() {
+				return this.sortColumn == "entryType";
+			}
 			data.isSortColumnEntryDate = function() {
 				return this.sortColumn == "entryDate";
 			}

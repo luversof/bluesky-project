@@ -1,6 +1,6 @@
 /**
- * String foramt 처리
- * 
+ * String format 처리
+ * 문자열에 "{0}.."와 같이 대치 예약어가 있는 경우 넘겨받은 argument로 치환 처리함 
  * @returns
  */
 String.prototype.format = function() {
@@ -41,20 +41,19 @@ $(document).ready(function() {
 	_detachPoint = 50;
 	
 	$(window).scroll(function() {
-	var t = $(window).scrollTop(),
-		e = t > _lastScroll ? "down" : "up",
-		i = Math.abs(t - _lastScroll);
-	
-	if (t >= _detachPoint || 0 >= t || t > -1) {
-		if ("down" === e && i >= _hideShowOffset) {
-			$nav.fadeOut();
-		} else if("up" === e && i >= _hideShowOffset) {
-			$nav.fadeIn();
+		var t = $(window).scrollTop(),
+			e = t > _lastScroll ? "down" : "up",
+			i = Math.abs(t - _lastScroll);
+		
+		if (t >= _detachPoint || 0 >= t || t > -1) {
+			if ("down" === e && i >= _hideShowOffset) {
+				$nav.fadeOut();
+			} else if("up" === e && i >= _hideShowOffset) {
+				$nav.fadeIn();
+			}
 		}
-	}
-	_lastScroll = t;
-		});
-	
+		_lastScroll = t;
+	});
 	
 	$("body").tooltip({ selector : "[data-toggle=tooltip]" });
 	
