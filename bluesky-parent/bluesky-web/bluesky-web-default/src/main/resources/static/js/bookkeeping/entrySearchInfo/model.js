@@ -1,7 +1,7 @@
 $.EntrySearchInfo = Backbone.Model.extend({
 	url : "/bookkeeping/" + $.bookkeepingId + "/entrySearchInfo",
 	defaults : {
-		bookkeepingId : $.bookkeepingId,
+		bookkeeping : { id : $.bookkeepingId },
 		targetLocalDate : null,
 	},
 	initialize : function() {
@@ -18,7 +18,7 @@ $.EntrySearchInfo = Backbone.Model.extend({
 	},
 	validate : function(attrs, options) {
 		//console.log("validate : ", attrs, options);
-		if (attrs.bookkeepingId == 0) {
+		if (attrs.bookkeeping.id == 0) {
 			return "가계부의 Id를 입력하세요";
 		}
 	}

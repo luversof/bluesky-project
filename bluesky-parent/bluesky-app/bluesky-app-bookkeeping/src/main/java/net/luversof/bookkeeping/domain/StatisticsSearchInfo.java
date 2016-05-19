@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
+import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
@@ -20,9 +21,8 @@ import net.luversof.bookkeeping.util.BookkeepingUtils;
 @Data
 public class StatisticsSearchInfo {
 	
-	@NotNull(groups = StatisticsSearchInfoSelect.class)
-	@Min(value = 1, groups = StatisticsSearchInfoSelect.class)
-	private long bookkeepingId;
+	@Valid
+	private Bookkeeping bookkeeping;
 	
 	private int baseDate;
 	

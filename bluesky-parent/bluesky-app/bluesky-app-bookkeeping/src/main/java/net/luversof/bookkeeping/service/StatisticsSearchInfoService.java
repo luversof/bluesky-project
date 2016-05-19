@@ -26,7 +26,7 @@ public class StatisticsSearchInfoService {
 		StatisticsSearchInfo statisticsSearchInfo = new StatisticsSearchInfo();
 		Bookkeeping targetBookkeeping = bookkeepingService.findOne(bookkeepingId);
 		statisticsSearchInfo.setTargetLocalDate(targetLocalDate);
-		statisticsSearchInfo.setBookkeepingId(targetBookkeeping.getId());
+		statisticsSearchInfo.setBookkeeping(targetBookkeeping);
 		statisticsSearchInfo.setBaseDate(targetBookkeeping.getBaseDate());
 		statisticsSearchInfo.setChronoUnit(chronoUnit);
 		return statisticsSearchInfo;

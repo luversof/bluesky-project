@@ -21,7 +21,7 @@ public class EntrySearchInfoService {
 		EntrySearchInfo entrySearchInfo = new EntrySearchInfo();
 		Bookkeeping targetBookkeeping = bookkeepingService.findOne(bookkeepingId);
 		entrySearchInfo.setTargetLocalDate(targetLocalDate);
-		entrySearchInfo.setBookkeepingId(targetBookkeeping.getId());
+		entrySearchInfo.setBookkeeping(targetBookkeeping);
 		entrySearchInfo.setBaseDate(targetBookkeeping.getBaseDate());
 		return entrySearchInfo;
 	}

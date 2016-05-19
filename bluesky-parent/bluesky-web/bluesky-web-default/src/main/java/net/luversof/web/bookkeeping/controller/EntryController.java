@@ -25,7 +25,7 @@ import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
-@RequestMapping("/bookkeeping/{bookkeepingId}/entry")
+@RequestMapping("/bookkeeping/{bookkeeping.id}/entry")
 public class EntryController {
 	
 	@Autowired
@@ -52,7 +52,7 @@ public class EntryController {
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST)
-	public Entry createEntry(@RequestBody @Validated(EntryCreate.class) Entry entry, @PathVariable long bookkeepingId, Authentication authentication) {
+	public Entry createEntry(@RequestBody @Validated(EntryCreate.class) Entry entry, @PathVariable("bookkeeping.id") long bookkeepingId, Authentication authentication) {
 		Bookkeeping bookkeeping = new Bookkeeping();
 		bookkeeping.setId(bookkeepingId);
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();

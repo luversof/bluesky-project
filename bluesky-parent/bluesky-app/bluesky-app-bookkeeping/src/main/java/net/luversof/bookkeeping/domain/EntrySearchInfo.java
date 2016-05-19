@@ -3,6 +3,7 @@ package net.luversof.bookkeeping.domain;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
@@ -21,9 +22,8 @@ public class EntrySearchInfo {
 	/**
 	 * user의 bookkeeping table id 값
 	 */
-	@NotNull(groups = EntrySearchInfoSelect.class)
-	@Min(value = 1, groups = EntrySearchInfoSelect.class)
-	private long bookkeepingId;
+	@Valid
+	private Bookkeeping bookkeeping;
 	
 	/**
 	 * user의 bookkeeping table baseDate 값

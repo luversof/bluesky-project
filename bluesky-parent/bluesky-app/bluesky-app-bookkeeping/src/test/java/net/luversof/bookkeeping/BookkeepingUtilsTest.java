@@ -1,7 +1,6 @@
 package net.luversof.bookkeeping;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 import org.junit.Test;
 

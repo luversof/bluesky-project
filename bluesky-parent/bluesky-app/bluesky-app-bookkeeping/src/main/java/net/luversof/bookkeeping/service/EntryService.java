@@ -70,10 +70,10 @@ public class EntryService {
 	 */
 	@Transactional(value = BOOKKEEPING_TRANSACTIONMANAGER, readOnly = true)
 	public List<Entry> findByEntrySearchInfo(EntrySearchInfo entrySearchInfo) {
-		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entrySearchInfo.getBookkeepingId());
+		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entrySearchInfo.getBookkeeping().getId());
 		int baseDate = targetBookkeeping.getBaseDate();
 		entrySearchInfo.setBaseDate(baseDate);
-		return entryRepository.findByBookkeepingIdAndEntryDateBetween(entrySearchInfo.getBookkeepingId(), entrySearchInfo.getStartLocalDateTime(), entrySearchInfo.getEndLocalDateTime());
+		return entryRepository.findByBookkeepingIdAndEntryDateBetween(entrySearchInfo.getBookkeeping().getId(), entrySearchInfo.getStartLocalDateTime(), entrySearchInfo.getEndLocalDateTime());
 	}
 	
 	/**
@@ -82,10 +82,10 @@ public class EntryService {
 	 */
 	@Transactional(value = BOOKKEEPING_TRANSACTIONMANAGER, readOnly = true)
 	public List<Entry> findByStatisticsSearchInfo(StatisticsSearchInfo statisticsSearchInfo) {
-		Bookkeeping targetBookkeeping = bookkeepingService.findOne(statisticsSearchInfo.getBookkeepingId());
+		Bookkeeping targetBookkeeping = bookkeepingService.findOne(statisticsSearchInfo.getBookkeeping().getId());
 		int baseDate = targetBookkeeping.getBaseDate();
 		statisticsSearchInfo.setBaseDate(baseDate);
-		return entryRepository.findByBookkeepingIdAndEntryDateBetween(statisticsSearchInfo.getBookkeepingId(), statisticsSearchInfo.getStartLocalDateTime(), statisticsSearchInfo.getEndLocalDateTime());
+		return entryRepository.findByBookkeepingIdAndEntryDateBetween(statisticsSearchInfo.getBookkeeping().getId(), statisticsSearchInfo.getStartLocalDateTime(), statisticsSearchInfo.getEndLocalDateTime());
 	}
 	
 	/**
