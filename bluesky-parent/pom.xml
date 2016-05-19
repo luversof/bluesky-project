@@ -96,7 +96,7 @@
 				<version>1.9.2</version>
 			</dependency>
 			<!-- (e) encryption -->
-			
+
 			<!-- (s) thymeleaf extras -->
 			<dependency>
 				<groupId>org.thymeleaf.extras</groupId>
@@ -215,6 +215,11 @@
 				<groupId>org.webjars.npm</groupId>
 				<artifactId>moment</artifactId>
 				<version>2.13.0</version>
+			</dependency>
+			<dependency>
+				<groupId>org.webjars.bower</groupId>
+				<artifactId>numeral</artifactId>
+				<version>1.5.3</version>
 			</dependency>
 			<!-- (s) 사용 안함 -->
 			<dependency>

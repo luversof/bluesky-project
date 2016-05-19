@@ -13,14 +13,16 @@ $(document).ready(function() {
 		events : {
 			"click [data-menu=updateEntry]" : "updateEntry",
 			"click [data-menu=deleteEntry]" : "deleteEntry",
-			"keyup [data-key-name=amount]" : "changeAmountKeyUp",
-			"keypress [data-key-name=amount]" : "changeAmountKeyPress",
+			"keyup [data-key-name=amount]" : "amountKeyUp",
+			"keypress [data-key-name=amount]" : "amountKeyPress",
 			"keyup [data-key-name=memo]" : "changeMemoKeyUp",
 			"keypress [data-key-name=memo]" : "changeMemoKeyPress",
 			"change select[name=entryGroup]" : "isChange",
 			"change select[name=debitAsset]" : "isChange",
 			"change select[name=creditAsset]" : "isChange",
-			"change input[name=entryDate]" : "isChange"
+			"change input[name=entryDate]" : "isChange",
+			"focusin [data-key-name=amount]" : "amountFocusIn",
+			"focusout [data-key-name=amount]" : "amountFocusOut",
 		},
 		initialize : function() {
 //			console.log("This view has been initialized.");
@@ -53,6 +55,9 @@ $(document).ready(function() {
 			data.isTransfer = function() {
 				return entryType == "TRANSFER";
 			}
+			data.entryAmountFormat = function() {
+				return numeral(this.entry.amount).format();
+			}
 			
 			this.$el.html(Mustache.render(this.template, data));
 			if (this.model.get("entryGroup") != null) { this.$el.find("select[name=entryGroup] > option[value=" + this.model.get("entryGroup").id + "]").attr("selected", "selected") };
@@ -80,7 +85,7 @@ $(document).ready(function() {
 		},
 		// 변경된 내용이 있는지 여부 확인
 		isChange : function() {
-			if (this.$el.find("[data-key-name=amount]").text() == this.model.get("amount") 
+			if (numeral().unformat(this.$el.find("[data-key-name=amount]").text()) == this.model.get("amount") 
 					&& this.$el.find("[data-key-name=memo]").text() == this.model.get("memo")
 					&& (this.model.get("entryGroup") == null || this.$el.find("select[name=entryGroup] option:selected").val() == this.model.get("entryGroup").id)
 					&& (this.model.get("debitAsset") == null || this.$el.find("select[name=debitAsset] option:selected").val() == this.model.get("debitAsset").id)
@@ -91,14 +96,14 @@ $(document).ready(function() {
 				this.$el.find("[data-menu=updateEntry]").show(100);
 			}
 		},
-		changeAmountKeyUp : function(event) {
+		amountKeyUp : function(event) {
 			this.isChange();
 			if (event.keyCode == 13) {
 				this.updateEntry();
 			}
 		},
 		// enter 입력 처리 방지
-		changeAmountKeyPress : function(event) {
+		amountKeyPress : function(event) {
 			return event.keyCode != 13;
 		},
 		changeMemoKeyUp : function(event) {
@@ -107,9 +112,11 @@ $(document).ready(function() {
 				this.updateEntry();
 			}
 		},
-		// enter 입력 처리 방지
-		changeAmountKeyPress : function(event) {
-			return event.keyCode != 13;
+		amountFocusIn : function(event) {
+			$(event.currentTarget).text(numeral().unformat($(event.currentTarget).text()));
+		},
+		amountFocusOut : function(event) {
+			$(event.currentTarget).text(numeral($(event.currentTarget).text()).format());
 		}
 	});
 
@@ -141,6 +148,7 @@ $(document).ready(function() {
 			//this.listenTo(this.assetCollection, "reset", this.render);
 			this.listenTo(this.collection, "reset", this.render);
 			this.listenTo(this.collection, "add", this.render);
+			this.listenTo(this.collection, "change", this.render);
 			this.listenTo(this.collection, "sort", this.render);
 			this.listenTo(this.entrySearchInfo, "change", this.changeEntrySearchInfo);
 			
@@ -159,19 +167,22 @@ $(document).ready(function() {
 				sortDirection : this.collection.sortDirection
 			};
 			var entryList = this.collection.toJSON();
+			var format = "0,0[.]00$";
+			
+			//numeral(1000).format("0,0[.]00 $")
 			
 			data.getTotalCreditAmount = function() {
 				return _.reduce(entryList, function(amount, entry) {
-					return amount + (entry.entryType == "CREDIT" ? entry.amount : 0);
+					return numeral(numeral().unformat(amount) + (entry.entryType == "CREDIT" ? entry.amount : 0)).format(format);
 				}, 0);
 			}
 			data.getTotalDebitAmount = function() {
 				return _.reduce(entryList, function(amount, entry) {
-					return amount + (entry.entryType == "DEBIT" ? entry.amount : 0);
+					return numeral(numeral().unformat(amount) + (entry.entryType == "DEBIT" ? entry.amount : 0)).format(format);
 				}, 0);
 			}
 			data.getTotalAmount = function() {
-				return data.getTotalCreditAmount() - data.getTotalDebitAmount();
+				return numeral(numeral().unformat(data.getTotalCreditAmount()) - numeral().unformat(data.getTotalDebitAmount())).format(format);
 			}
 			data.isSortEntryType = function() {
 				return this.sortColumn == "entryType";
