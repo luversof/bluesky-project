@@ -6,8 +6,8 @@ $(document).ready(function() {
 		events : {
 			"click [data-menu=updateBookkeeping]" : "updateBookkeeping",
 			"click [data-menu=deleteBookkeeping]" : "deleteBookkeeping",
-			"keyup [data-key-name=name]" : "changeNameKeyUp",
-			"keypress [data-key-name=name]" : "changeNameKeyPress",
+			"keyup [data-key-name=name]" : "nameKeyUp",
+			"keypress [data-key-name=name]" : "nameKeyPress",
 			"change select[name=baseDate]" : "isChange",
 		},
 		initialize : function() {
@@ -39,14 +39,14 @@ $(document).ready(function() {
 				this.$el.find("[data-menu=updateBookkeeping]").show(100);
 			}
 		},
-		changeNameKeyUp : function(event) {
+		nameKeyUp : function(event) {
 			this.isChange();
 			if (event.keyCode == 13) {
 				this.updateBookkeeping();
 			}
 		},
 		// enter 입력 처리 방지
-		changeNameKeyPress : function(event) {
+		nameKeyPress : function(event) {
 			return event.keyCode != 13;
 		}
 	});
@@ -57,8 +57,8 @@ $(document).ready(function() {
 		template : $("#template-bookkeeping-collection-view").html(),
 		events : {
 			"click [data-menu=createBookkeeping]" : "createBookkeeping",
-			"keyup [data-key-name=createBookkeepingName]" : "createNameKeyUp",
-			"keypress [data-key-name=createBookkeepingName]" : "createNameKeyPress"
+			"keyup [data-key-name=createBookkeepingName]" : "createBookkeepingNameKeyUp",
+			"keypress [data-key-name=createBookkeepingName]" : "createBookkeepingNameKeyPress"
 		},
 		initialize : function() {
 			//console.log("This collection view has been initialized.");
@@ -93,12 +93,12 @@ $(document).ready(function() {
 			$(event.currentTarget).closest("tr")
 			.find("[contenteditable=true]").text("");
 		},
-		createNameKeyUp : function(event) {
+		createBookkeepingNameKeyUp : function(event) {
 			if (event.keyCode === 13) {
 				this.createBookkeeping(event);
 			}
 		},
-		createNameKeyPress : function(event) {
+		createBookkeepingNameKeyPress : function(event) {
 			return event.keyCode !== 13;
 		}
 	});

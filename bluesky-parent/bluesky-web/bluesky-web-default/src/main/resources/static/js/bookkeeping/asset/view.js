@@ -6,8 +6,8 @@ $(document).ready(function() {
 		events : {
 			"click [data-menu=updateAsset]" : "updateAsset",
 			"click [data-menu=deleteAsset]" : "deleteAsset",
-			"keyup [data-key-name=name]" : "changeNameKeyUp",
-			"keypress [data-key-name=name]" : "changeNameKeyPress",
+			"keyup [data-key-name=name]" : "nameKeyUp",
+			"keypress [data-key-name=name]" : "nameKeyPress",
 			"change select[name=assetType]" : "isChange"
 		},
 		initialize : function() {
@@ -36,14 +36,14 @@ $(document).ready(function() {
 				this.$el.find("[data-menu=updateAsset]").show(100);
 			}
 		},
-		changeNameKeyUp : function(event) {
+		nameKeyUp : function(event) {
 			this.isChange();
 			if (event.keyCode == 13) {
 				this.updateAsset();
 			}
 		},
 		// enter 입력 처리 방지
-		changeNameKeyPress : function(event) {
+		nameKeyPress : function(event) {
 			return event.keyCode != 13;
 		}
 	});
@@ -54,8 +54,8 @@ $(document).ready(function() {
 		template : $("#template-asset-collection-view").html(),
 		events : {
 			"click [data-menu=createAsset]" : "createAsset",
-			"keyup [data-key-name=createAssetName]" : "createNameKeyUp",
-			"keypress [data-key-name=createAssetName]" : "createNameKeyPress"
+			"keyup [data-key-name=createAssetName]" : "createAssetNameKeyUp",
+			"keypress [data-key-name=createAssetName]" : "createAssetNameKeyPress"
 		},
 		initialize : function() {
 			//console.log("This collection view has been initialized.");
@@ -91,12 +91,12 @@ $(document).ready(function() {
 				.find("[contenteditable=true]").text("").end()
 				.find("select option:eq(0)").attr("selected", "selected");
 		},
-		createNameKeyUp : function(event) {
+		createAssetNameKeyUp : function(event) {
 			if (event.keyCode === 13) {
 				this.createAsset(event);
 			}
 		},
-		createNameKeyPress : function(event) {
+		createAssetNameKeyPress : function(event) {
 			return event.keyCode !== 13;
 		}
 	});

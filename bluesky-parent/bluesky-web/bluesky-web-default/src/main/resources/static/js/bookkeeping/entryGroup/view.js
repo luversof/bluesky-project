@@ -6,8 +6,8 @@ $(document).ready(function() {
 		events : {
 			"click [data-menu=updateEntryGroup]" : "updateEntryGroup",
 			"click [data-menu=deleteEntryGroup]" : "deleteEntryGroup",
-			"keyup [data-key-name=name]" : "changeNameKeyUp",
-			"keypress [data-key-name=name]" : "changeNameKeyPress",
+			"keyup [data-key-name=name]" : "nameKeyUp",
+			"keypress [data-key-name=name]" : "nameKeyPress",
 			"change select[name=entryType]" : "isChange"
 		},
 		initialize : function() {
@@ -38,14 +38,14 @@ $(document).ready(function() {
 				this.$el.find("[data-menu=updateEntryGroup]").show(100);
 			}
 		},
-		changeNameKeyUp : function(event) {
+		nameKeyUp : function(event) {
 			this.isChange();
 			if (event.keyCode == 13) {
 				this.updateEntryGroup();
 			}
 		},
 		// enter 입력 처리 방지
-		changeNameKeyPress : function(event) {
+		nameKeyPress : function(event) {
 			return event.keyCode != 13;
 		}
 	});
@@ -56,8 +56,8 @@ $(document).ready(function() {
 		template : $("#template-entryGroup-collection-view").html(),
 		events : {
 			"click [data-menu=createEntryGroup]" : "createEntryGroup",
-			"keyup [data-key-name=createEntryGroupName]" : "createNameKeyUp",
-			"keypress [data-key-name=createEntryGroupName]" : "createNameKeyPress"
+			"keyup [data-key-name=createEntryGroupName]" : "createEntryGroupNameKeyUp",
+			"keypress [data-key-name=createEntryGroupName]" : "createEntryGroupNameKeyPress"
 		},
 		initialize : function() {
 			//console.log("This collection view has been initialized.");
@@ -94,12 +94,12 @@ $(document).ready(function() {
 				.find("[contenteditable=true]").text("").end()
 				.find("select option:eq(0)").attr("selected", "selected");
 		},
-		createNameKeyUp : function(event) {
+		createEntryGroupNameKeyUp : function(event) {
 			if (event.keyCode === 13) {
 				this.createEntryGroup(event);
 			}
 		},
-		createNameKeyPress : function(event) {
+		createEntryGroupNameKeyPress : function(event) {
 			return event.keyCode !== 13;
 		}
 	});
