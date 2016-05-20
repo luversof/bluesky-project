@@ -14,13 +14,11 @@ public class EntrySearchInfoService {
 	@Autowired
 	private BookkeepingService bookkeepingService;
 	
-	public EntrySearchInfo getEntrySearchInfo(long bookkeepingId, LocalDate targetLocalDate) {
-		if (targetLocalDate == null) {
-			targetLocalDate = LocalDate.now();
+	public EntrySearchInfo getEntrySearchInfo(EntrySearchInfo entrySearchInfo) {
+		if (entrySearchInfo.getTargetLocalDate() == null) {
+			entrySearchInfo.setTargetLocalDate(LocalDate.now());
 		}
-		EntrySearchInfo entrySearchInfo = new EntrySearchInfo();
-		Bookkeeping targetBookkeeping = bookkeepingService.findOne(bookkeepingId);
-		entrySearchInfo.setTargetLocalDate(targetLocalDate);
+		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entrySearchInfo.getBookkeeping().getId());
 		entrySearchInfo.setBookkeeping(targetBookkeeping);
 		entrySearchInfo.setBaseDate(targetBookkeeping.getBaseDate());
 		return entrySearchInfo;

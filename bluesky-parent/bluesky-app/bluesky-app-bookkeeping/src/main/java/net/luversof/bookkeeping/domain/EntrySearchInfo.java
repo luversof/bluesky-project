@@ -4,7 +4,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import javax.validation.Valid;
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 import lombok.Data;
@@ -34,11 +33,12 @@ public class EntrySearchInfo {
 	 * 검색할 월이 있는 대상 날짜
 	 * 검색 시 넘어오는 파라메터 값
 	 */
-	@NotNull(groups = EntrySearchInfoSelect.class)
+	@NotNull(groups = EntrySearchInfoSelectEntryList.class)
 	private LocalDate targetLocalDate;
 	
 	
 	public interface EntrySearchInfoSelect {}
+	public interface EntrySearchInfoSelectEntryList {}
 	
 	public LocalDateTime getStartLocalDateTime() {
 		return BookkeepingUtils.getMonthStartLocalDate(targetLocalDate, baseDate).atStartOfDay();

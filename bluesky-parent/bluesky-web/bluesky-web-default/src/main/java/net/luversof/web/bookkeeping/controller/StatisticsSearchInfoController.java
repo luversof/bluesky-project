@@ -1,17 +1,14 @@
 package net.luversof.web.bookkeeping.controller;
 
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.StatisticsSearchInfo;
+import net.luversof.bookkeeping.domain.StatisticsSearchInfo.StatisticsSearchInfoSelect;
 import net.luversof.bookkeeping.service.StatisticsSearchInfoService;
 import net.luversof.web.constant.AuthorizeRole;
 
@@ -27,7 +24,7 @@ public class StatisticsSearchInfoController {
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.GET)
-	public StatisticsSearchInfo getStatisticsSearchInfo(@PathVariable long bookkeepingId, @RequestParam(required = false) LocalDate targetLocalDate, @RequestParam ChronoUnit chronoUnit) {
-		return statisticsSearchInfoService.getStatisticsSearchInfo(bookkeepingId, targetLocalDate, chronoUnit);
+	public StatisticsSearchInfo getStatisticsSearchInfo(@Validated(StatisticsSearchInfoSelect.class) StatisticsSearchInfo statisticsSearchInfo) {
+		return statisticsSearchInfoService.getStatisticsSearchInfo(statisticsSearchInfo);
 	}
 }

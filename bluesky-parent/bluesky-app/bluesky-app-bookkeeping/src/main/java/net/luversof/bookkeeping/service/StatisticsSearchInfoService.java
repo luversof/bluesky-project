@@ -3,7 +3,6 @@ package net.luversof.bookkeeping.service;
 import static net.luversof.bookkeeping.BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER;
 
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,16 +18,13 @@ public class StatisticsSearchInfoService {
 	@Autowired
 	private BookkeepingService bookkeepingService;
 	
-	public StatisticsSearchInfo getStatisticsSearchInfo(long bookkeepingId, LocalDate targetLocalDate, ChronoUnit chronoUnit) {
-		if (targetLocalDate == null) {
-			targetLocalDate = LocalDate.now();
+	public StatisticsSearchInfo getStatisticsSearchInfo(StatisticsSearchInfo statisticsSearchInfo) {
+		if (statisticsSearchInfo.getTargetLocalDate() == null) {
+			statisticsSearchInfo.setTargetLocalDate(LocalDate.now());
 		}
-		StatisticsSearchInfo statisticsSearchInfo = new StatisticsSearchInfo();
-		Bookkeeping targetBookkeeping = bookkeepingService.findOne(bookkeepingId);
-		statisticsSearchInfo.setTargetLocalDate(targetLocalDate);
+		Bookkeeping targetBookkeeping = bookkeepingService.findOne(statisticsSearchInfo.getBookkeeping().getId());
 		statisticsSearchInfo.setBookkeeping(targetBookkeeping);
 		statisticsSearchInfo.setBaseDate(targetBookkeeping.getBaseDate());
-		statisticsSearchInfo.setChronoUnit(chronoUnit);
 		return statisticsSearchInfo;
 	}
 }

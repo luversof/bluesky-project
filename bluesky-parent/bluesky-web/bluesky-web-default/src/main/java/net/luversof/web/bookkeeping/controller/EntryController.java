@@ -19,7 +19,7 @@ import net.luversof.bookkeeping.domain.Entry.EntryCreate;
 import net.luversof.bookkeeping.domain.Entry.EntryDelete;
 import net.luversof.bookkeeping.domain.Entry.EntryUpdate;
 import net.luversof.bookkeeping.domain.EntrySearchInfo;
-import net.luversof.bookkeeping.domain.EntrySearchInfo.EntrySearchInfoSelect;
+import net.luversof.bookkeeping.domain.EntrySearchInfo.EntrySearchInfoSelectEntryList;
 import net.luversof.bookkeeping.service.EntryService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
@@ -46,7 +46,7 @@ public class EntryController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("(returnObject == null or returnObject.size() == 0) or returnObject.get(0).bookkeeping.userId == authentication.principal.id")
 	@RequestMapping(method = RequestMethod.GET)
-	public List<Entry> getEntryList(@Validated(EntrySearchInfoSelect.class) EntrySearchInfo entrySearchInfo, Authentication authentication) {
+	public List<Entry> getEntryList(@Validated(EntrySearchInfoSelectEntryList.class) EntrySearchInfo entrySearchInfo, Authentication authentication) {
 		return entryService.findByEntrySearchInfo(entrySearchInfo);
 	}
 	
