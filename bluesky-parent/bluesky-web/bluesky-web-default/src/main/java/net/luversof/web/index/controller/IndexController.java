@@ -40,4 +40,10 @@ public class IndexController {
 	@RequestMapping("/study/**/*")
 	public void study() {}
 	
+	/**
+	 * 에러 처리를 위한 컨트롤러 (지우면 안됨)
+	 */
+	@RequestMapping("/error/**/*")
+	public void error() {}
+	
 }

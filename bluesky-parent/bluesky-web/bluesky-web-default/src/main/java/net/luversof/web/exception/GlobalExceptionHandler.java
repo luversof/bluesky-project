@@ -119,6 +119,33 @@ public class GlobalExceptionHandler {
 		return new ModelAndView(PAGE_ERROR, resultMap);
 	}
 	
+//	@ExceptionHandler
+//	public @ResponseBody List<ErrorMessage> handleException2(BindException exception) {
+//		List<ErrorMessage> errorMessageList = new ArrayList<>();
+//		exception.getBindingResult().getAllErrors().get(0);
+//		for (FieldError fieldError : exception.getFieldErrors()) {
+//			ErrorMessage errorMessage = new ErrorMessage();
+//			errorMessage.setMessage(messageSourceAccessor.getMessage(fieldError));
+//			errorMessage.setField(fieldError.getField());
+//			errorMessage.setObject(fieldError.getObjectName());
+//			errorMessage.setDisplayableMessage(true);
+//			errorMessageList.add(errorMessage);
+//			log.debug("[bindException error message] code : {}, arguments : {}", Arrays.deepToString(fieldError.getCodes()), Arrays.deepToString(fieldError.getArguments()));
+//		}
+//		if (exception.getFieldErrors().isEmpty()) {
+//			for (ObjectError objectError : exception.getBindingResult().getAllErrors()) {
+//				ErrorMessage errorMessage = new ErrorMessage();
+//				errorMessage.setMessage(messageSourceAccessor.getMessage(objectError));
+//				errorMessage.setObject(objectError.getObjectName());
+//				errorMessage.setDisplayableMessage(true);
+//				errorMessageList.add(errorMessage);
+//				log.debug("[bindException error message] code : {}, arguments : {}", Arrays.deepToString(objectError.getCodes()), Arrays.deepToString(objectError.getArguments()));
+//			}
+//		}
+//		return errorMessageList;
+//	}
+//	
+
 	@ExceptionHandler
 	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
 	public ModelAndView handleException(Exception exception) {
