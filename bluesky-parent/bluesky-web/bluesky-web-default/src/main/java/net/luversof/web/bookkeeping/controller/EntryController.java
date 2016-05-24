@@ -15,11 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
-import net.luversof.bookkeeping.domain.Entry.EntryCreate;
-import net.luversof.bookkeeping.domain.Entry.EntryDelete;
-import net.luversof.bookkeeping.domain.Entry.EntryUpdate;
 import net.luversof.bookkeeping.domain.EntrySearchInfo;
-import net.luversof.bookkeeping.domain.EntrySearchInfo.EntrySearchInfoSelectEntryList;
+import net.luversof.bookkeeping.domain.EntrySearchInfo.SelectEntryList;
 import net.luversof.bookkeeping.service.EntryService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
@@ -46,13 +43,13 @@ public class EntryController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("(returnObject == null or returnObject.size() == 0) or returnObject.get(0).bookkeeping.userId == authentication.principal.id")
 	@RequestMapping(method = RequestMethod.GET)
-	public List<Entry> getEntryList(@Validated(EntrySearchInfoSelectEntryList.class) EntrySearchInfo entrySearchInfo, Authentication authentication) {
+	public List<Entry> getEntryList(@Validated(SelectEntryList.class) EntrySearchInfo entrySearchInfo, Authentication authentication) {
 		return entryService.findByEntrySearchInfo(entrySearchInfo);
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST)
-	public Entry createEntry(@RequestBody @Validated(EntryCreate.class) Entry entry, @PathVariable("bookkeeping.id") long bookkeepingId, Authentication authentication) {
+	public Entry createEntry(@RequestBody @Validated(Entry.Create.class) Entry entry, @PathVariable("bookkeeping.id") long bookkeepingId, Authentication authentication) {
 		Bookkeeping bookkeeping = new Bookkeeping();
 		bookkeeping.setId(bookkeepingId);
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
@@ -63,14 +60,14 @@ public class EntryController {
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
-	public Entry modify(@RequestBody @Validated(EntryUpdate.class) Entry entry, Authentication authentication) {
+	public Entry modify(@RequestBody @Validated(Entry.Update.class) Entry entry, Authentication authentication) {
 		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		return entryService.update(entry);
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
-	public void delete(@Validated(EntryDelete.class) Entry entry, Authentication authentication) {
+	public void delete(@Validated(Entry.Delete.class) Entry entry, Authentication authentication) {
 		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		entryService.delete(entry);
 	}

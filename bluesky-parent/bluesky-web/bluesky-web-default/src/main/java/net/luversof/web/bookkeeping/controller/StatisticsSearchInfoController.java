@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.StatisticsSearchInfo;
-import net.luversof.bookkeeping.domain.StatisticsSearchInfo.StatisticsSearchInfoSelect;
 import net.luversof.bookkeeping.service.StatisticsSearchInfoService;
 import net.luversof.web.constant.AuthorizeRole;
 
@@ -24,7 +23,7 @@ public class StatisticsSearchInfoController {
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.GET)
-	public StatisticsSearchInfo getStatisticsSearchInfo(@Validated(StatisticsSearchInfoSelect.class) StatisticsSearchInfo statisticsSearchInfo) {
+	public StatisticsSearchInfo getStatisticsSearchInfo(@Validated(StatisticsSearchInfo.Select.class) StatisticsSearchInfo statisticsSearchInfo) {
 		return statisticsSearchInfoService.getStatisticsSearchInfo(statisticsSearchInfo);
 	}
 }

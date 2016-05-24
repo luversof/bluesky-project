@@ -8,6 +8,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
+import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
@@ -20,11 +21,12 @@ public class Entry implements Serializable {
 
 	@Id
 	@GeneratedValue
-	@NotNull(groups = {EntryUpdate.class, EntryDelete.class})
-	@Min(value = 1, groups = {EntryUpdate.class, EntryDelete.class})
+	@NotNull(groups = {Update.class, Delete.class})
+	@Min(value = 1, groups = {Update.class, Delete.class})
 	private long id;
 	
 	@OneToOne
+	@Valid
 	private Bookkeeping bookkeeping;
 	
 	@OneToOne
@@ -38,21 +40,21 @@ public class Entry implements Serializable {
 	@OneToOne
 	private EntryGroup entryGroup;
 	
-	@NotNull(groups = { EntryCreate.class, EntryUpdate.class })
+	@NotNull(groups = { Create.class, Update.class })
 	private long amount;
 	
-	@NotNull(groups = { EntryCreate.class, EntryUpdate.class })
+	@NotNull(groups = { Create.class, Update.class })
 	private LocalDateTime entryDate;
 	
 	private String memo;
 	
-	public interface EntryCreate {
+	public interface Create {
 	};
 	
-	public interface EntryUpdate {
+	public interface Update {
 	};
 	
-	public interface EntryDelete {
+	public interface Delete {
 	}
 	
 	public EntryType getEntryType() {

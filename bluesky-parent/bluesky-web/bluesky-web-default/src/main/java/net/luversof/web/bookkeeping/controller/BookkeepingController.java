@@ -13,9 +13,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.domain.Bookkeeping.BookkeepingCreate;
-import net.luversof.bookkeeping.domain.Bookkeeping.BookkeepingDelete;
-import net.luversof.bookkeeping.domain.Bookkeeping.BookkeepingUpdate;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
@@ -46,7 +43,7 @@ public class BookkeepingController {
 	
 	
 	@RequestMapping(method = RequestMethod.POST)
-	public Bookkeeping createBookkeeping(@RequestBody @Validated(BookkeepingCreate.class) Bookkeeping bookkeeping, Authentication authentication) {
+	public Bookkeeping createBookkeeping(@RequestBody @Validated(Bookkeeping.Create.class) Bookkeeping bookkeeping, Authentication authentication) {
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
 		bookkeeping.setUserId(blueskyUser.getId());
 		return bookkeepingService.create(bookkeeping);
@@ -54,13 +51,13 @@ public class BookkeepingController {
 	
 	@RequestMapping(value="/{id}", method = RequestMethod.PUT)
 	@PreAuthorize("hasRole('ROLE_USER') and authentication.principal.id == #bookkeeping.userId")
-	public Bookkeeping updateBookkeeping(Authentication authentication, @RequestBody @Validated(BookkeepingUpdate.class) Bookkeeping bookkeeping) {
+	public Bookkeeping updateBookkeeping(Authentication authentication, @RequestBody @Validated(Bookkeeping.Update.class) Bookkeeping bookkeeping) {
 		return bookkeepingService.update(bookkeeping);
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)	
 	@RequestMapping(value="/{id}", method = RequestMethod.DELETE)
-	public Bookkeeping deleteBookkeeping(Authentication authentication, @Validated(BookkeepingDelete.class) Bookkeeping bookkeeping) {
+	public Bookkeeping deleteBookkeeping(Authentication authentication, @Validated(Bookkeeping.Delete.class) Bookkeeping bookkeeping) {
 		//TODO 본인 bookkeeping 확인 절차가 있어야 함
 		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		bookkeepingService.delete(bookkeeping);

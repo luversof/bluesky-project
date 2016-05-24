@@ -33,12 +33,12 @@ public class EntrySearchInfo {
 	 * 검색할 월이 있는 대상 날짜
 	 * 검색 시 넘어오는 파라메터 값
 	 */
-	@NotNull(groups = EntrySearchInfoSelectEntryList.class)
+	@NotNull(groups = SelectEntryList.class)
 	private LocalDate targetLocalDate;
 	
 	
-	public interface EntrySearchInfoSelect {}
-	public interface EntrySearchInfoSelectEntryList {}
+	public interface Select {}
+	public interface SelectEntryList {}
 	
 	public LocalDateTime getStartLocalDateTime() {
 		return BookkeepingUtils.getMonthStartLocalDate(targetLocalDate, baseDate).atStartOfDay();

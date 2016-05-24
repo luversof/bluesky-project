@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.EntrySearchInfo;
-import net.luversof.bookkeeping.domain.EntrySearchInfo.EntrySearchInfoSelect;
+import net.luversof.bookkeeping.domain.EntrySearchInfo.Select;
 import net.luversof.bookkeeping.service.EntrySearchInfoService;
 import net.luversof.web.constant.AuthorizeRole;
 
@@ -24,7 +24,7 @@ public class EntrySearchInfoController {
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.GET)
-	public EntrySearchInfo getEntrySearchInfo(@Validated(EntrySearchInfoSelect.class) EntrySearchInfo entrySearchInfo) {
+	public EntrySearchInfo getEntrySearchInfo(@Validated(Select.class) EntrySearchInfo entrySearchInfo) {
 		return entrySearchInfoService.getEntrySearchInfo(entrySearchInfo);
 	}
 	

@@ -30,10 +30,10 @@ public class StatisticsSearchInfo {
 	/**
 	 * 년/월 단위 통계 보기를 위해 필요한 파라메터
 	 */
-	@NotNull(groups = { StatisticsSearchInfoSelect.class, StatisticsSearchInfoSelectEntryList.class })
+	@NotNull(groups = { Select.class, SelectEntryList.class })
 	private ChronoUnit chronoUnit;
 
-	@NotNull(groups = StatisticsSearchInfoSelectEntryList.class)
+	@NotNull(groups = SelectEntryList.class)
 	private LocalDate targetLocalDate;
 
 	private LocalDateTime startLocalDateTime;
@@ -62,10 +62,10 @@ public class StatisticsSearchInfo {
 		return null;
 	}
 
-	public interface StatisticsSearchInfoSelect {
+	public interface Select {
 	}
 
-	public interface StatisticsSearchInfoSelectEntryList {
+	public interface SelectEntryList {
 	}
 
 }
