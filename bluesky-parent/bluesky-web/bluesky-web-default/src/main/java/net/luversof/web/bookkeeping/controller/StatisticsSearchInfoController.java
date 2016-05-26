@@ -12,7 +12,7 @@ import net.luversof.bookkeeping.service.StatisticsSearchInfoService;
 import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
-@RequestMapping("/bookkeeping/{bookkeepingId}/statisticsSearchInfo")
+@RequestMapping("/bookkeeping/{bookkeeping.id}/statisticsSearchInfo")
 public class StatisticsSearchInfoController {
 	
 	@Autowired
