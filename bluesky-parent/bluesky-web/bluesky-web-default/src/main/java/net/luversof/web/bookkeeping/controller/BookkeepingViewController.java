@@ -54,7 +54,7 @@ public class BookkeepingViewController {
 	public void createForm() {}
 	
 	@RequestMapping(value = "/{bookkeepingId}/entry/index", method = RequestMethod.GET)
-	public String list(@PathVariable long bookkeepingId, @RequestParam(defaultValue = "1") int page) {
+	public String entryList(@PathVariable long bookkeepingId, @RequestParam(defaultValue = "1") int page) {
 		// 기본은 달 기준으로 요청을 처리해야할 듯한데..
 		// 요청 월이 없으면 현재달 기준으로 검색 해야함.
 		// 설정한 일자 기준으로 날짜 검색해야함
@@ -76,4 +76,9 @@ public class BookkeepingViewController {
 		return "bookkeeping/asset/setting";
 	}
 	
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@RequestMapping(value = "/{bookkeepingId}/statistics/index", method = RequestMethod.GET)
+	public String statisticsList(@PathVariable long bookkeepingId) {
+		return "bookkeeping/statistics/index";
+	}
 }
