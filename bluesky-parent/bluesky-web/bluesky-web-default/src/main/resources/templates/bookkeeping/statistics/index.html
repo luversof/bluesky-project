@@ -12,8 +12,8 @@
 	<script type="text/javascript" th:src="@{/js/bookkeeping/entryGroup/collection.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/asset/model.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/asset/collection.js}"></script>
-	<script type="text/javascript" th:src="@{/js/bookkeeping/entrySearchInfo/model.js}"></script>
-	<script type="text/javascript" th:src="@{/js/bookkeeping/entrySearchInfo/view.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bookkeeping/statisticsSearchInfo/model.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bookkeeping/statisticsSearchInfo/view.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/entry/model.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/entry/collection.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/entry/view.js}"></script>
@@ -21,7 +21,7 @@
 <body>
 	<div layout:fragment="content-bookkeeping">
 		<br />
-		<div data-menu-area="entrysearchInfo"></div>
+		<div data-menu-area="statisticsSearchInfo"></div>
 		<div id="entryArea"></div>
 
 		<script type="text/template" id="template-entry-collection-view">
@@ -181,16 +181,16 @@
 				<button class="btn btn-default btn-sm" data-menu="deleteEntry"><span class="glyphicon glyphicon-remove">삭제</span></button>
 			</td>
 		</script>
-		<script type="text/template" id="template-entrySearchInfo-view">
+		<script type="text/template" id="template-statisticsSearchInfo-view">
 			<form class="form-inline">
 				<div class="form-group">
 					<div class="input-group col-md-7">
 						<div class="input-group-btn">
-							<button class="btn btn-default" data-menu-entrySearchInfo="prevMonth">&lt;</button>
+							<button class="btn btn-default" data-menu-statisticsSearchInfo="prevMonth">&lt;</button>
 						</div>
-						<input type="text" class="form-control" name="entrySearchInfoTargetMonth" value="{{getTargetMonth}}" />
+						<input type="text" class="form-control" name="statisticsSearchInfoTargetMonth" value="{{getTargetMonth}}" />
 						<div class="input-group-btn">
-							<button class="btn btn-default" data-menu-entrySearchInfo="nextMonth">&gt;</button>
+							<button class="btn btn-default" data-menu-statisticsSearchInfo="nextMonth">&gt;</button>
 						</div>
 					</div>
 				</div>
