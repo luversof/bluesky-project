@@ -8,7 +8,9 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 import lombok.Data;
+import net.luversof.bookkeeping.BookkeepingErrorCode;
 import net.luversof.bookkeeping.util.BookkeepingUtils;
+import net.luversof.core.exception.BlueskyException;
 
 /**
  * 통계보기 검색 관련 객체 - 년/월 단위 검색 가능 - 특정 기간 동안 검색 가능
@@ -48,7 +50,7 @@ public class StatisticsSearchInfo {
 		} else if (chronoUnit == ChronoUnit.MONTHS) {
 			return BookkeepingUtils.getMonthStartLocalDate(targetLocalDate, baseDate).atStartOfDay();
 		}
-		return null;
+		throw new BlueskyException(BookkeepingErrorCode.NOT_SUPPORT_CHRONOUNIT);
 	}
 
 	public LocalDateTime getEndLocalDateTime() {
@@ -59,7 +61,7 @@ public class StatisticsSearchInfo {
 		} else if (chronoUnit == ChronoUnit.MONTHS) {
 			return BookkeepingUtils.getMonthEndLocalDate(targetLocalDate, baseDate).atStartOfDay();
 		}
-		return null;
+		throw new BlueskyException(BookkeepingErrorCode.NOT_SUPPORT_CHRONOUNIT);
 	}
 
 	public interface Select {

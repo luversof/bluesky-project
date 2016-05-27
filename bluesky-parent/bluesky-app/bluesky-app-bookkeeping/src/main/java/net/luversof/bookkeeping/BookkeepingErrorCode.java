@@ -10,4 +10,7 @@ public enum BookkeepingErrorCode {
 	NOT_OWNER_ASSET,
 	NOT_OWNER_ENTRYGROUP,
 	NOT_OWNER_ENTRY,
+	
+	NOT_SUPPORT_CHRONOUNIT,
+	;
 }

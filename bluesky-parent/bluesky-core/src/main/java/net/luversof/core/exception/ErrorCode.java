@@ -8,6 +8,5 @@ public enum ErrorCode {
 	NOT_EXIST_USER_BATTLENET,
 	
 	NOT_EXIST_BLOG,
-	
-	NOT_EXIST_BOOKKEEPING
+	;
 }
