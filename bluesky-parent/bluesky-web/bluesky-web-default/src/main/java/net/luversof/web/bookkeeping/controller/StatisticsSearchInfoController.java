@@ -1,6 +1,7 @@
 package net.luversof.web.bookkeeping.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,7 +23,7 @@ public class StatisticsSearchInfoController {
 	//월간, 년간 통계보기를 기본으로 삼자.
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(method = RequestMethod.GET)
+	@RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public StatisticsSearchInfo getStatisticsSearchInfo(@Validated(StatisticsSearchInfo.Select.class) StatisticsSearchInfo statisticsSearchInfo) {
 		return statisticsSearchInfoService.getStatisticsSearchInfo(statisticsSearchInfo);
 	}

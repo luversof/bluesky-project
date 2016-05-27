@@ -3,6 +3,7 @@ package net.luversof.web.bookkeeping.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -25,7 +26,7 @@ public class StatisticsController {
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("(returnObject == null or returnObject.size() == 0) or returnObject.get(0).bookkeeping.userId == authentication.principal.id")
-	@RequestMapping(method = RequestMethod.GET)
+	@RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public List<Entry> getEntryList(@Validated(StatisticsSearchInfo.SelectEntryList.class) StatisticsSearchInfo statisticsSearchInfo, Authentication authentication) {
 		return entryService.findByStatisticsSearchInfo(statisticsSearchInfo);
 	}

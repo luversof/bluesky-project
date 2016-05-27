@@ -3,6 +3,7 @@ package net.luversof.web.bookkeeping.controller;
 import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,12 +24,12 @@ public class EntrySearchInfoController {
 	private EntrySearchInfoService entrySearchInfoService;
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(method = RequestMethod.GET)
+	@RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public EntrySearchInfo getEntrySearchInfo(@Validated(Select.class) EntrySearchInfo entrySearchInfo) {
 		return entrySearchInfoService.getEntrySearchInfo(entrySearchInfo);
 	}
 	
-	@RequestMapping(value = "/test", method = RequestMethod.GET)
+	@RequestMapping(value = "/test", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public LocalDateTime test(@RequestParam(required = false) LocalDateTime test) {
 		System.out.println(test);
 		return test;
