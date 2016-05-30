@@ -1,5 +1,6 @@
 package net.luversof.bookkeeping;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 
 import org.junit.Test;
@@ -9,6 +10,7 @@ import org.springframework.validation.DefaultMessageCodesResolver;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.bookkeeping.util.BookkeepingUtils;
 import net.luversof.core.exception.BlueskyException;
 
 @Slf4j
@@ -44,5 +46,12 @@ public class SimpleTest {
 		String a = "공 백";
 		log.debug("result : {}", StringUtils.containsWhitespace(a));
 		log.debug("result : {}", a.contains(" "));
+	}
+	
+	
+	@Test
+	public void test2() {
+		log.debug("result : {}", BookkeepingUtils.getMonthStartLocalDate(LocalDate.now(), 1));
+		log.debug("result : {}", BookkeepingUtils.getMonthEndLocalDate(LocalDate.now(), 1));
 	}
 }

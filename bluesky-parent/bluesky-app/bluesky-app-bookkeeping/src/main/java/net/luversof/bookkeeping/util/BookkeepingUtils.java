@@ -14,7 +14,11 @@ public class BookkeepingUtils {
 	 */
 	public static LocalDate getMonthStartLocalDate(LocalDate targetLocalDate, int baseDate) {
 		LocalDate startLocalDate = targetLocalDate.withDayOfMonth(baseDate);
-		return getStartLocalDate(targetLocalDate, startLocalDate, baseDate, ChronoUnit.MONTHS);
+		if (startLocalDate.isAfter(targetLocalDate)) {
+			startLocalDate = startLocalDate.minus(1, ChronoUnit.MONTHS);
+		}
+		
+		return startLocalDate;
 	}
 	
 	/**
@@ -25,8 +29,13 @@ public class BookkeepingUtils {
 	 * @return
 	 */
 	public static LocalDate getMonthEndLocalDate(LocalDate targetLocalDate, int baseDate) {
-		LocalDate endLocalDate = targetLocalDate.withDayOfMonth(baseDate).minusDays(1);
-		return getEndLocalDate(targetLocalDate, endLocalDate, baseDate, ChronoUnit.MONTHS);
+		LocalDate endLocalDate = targetLocalDate.withDayOfMonth(baseDate);
+		if (endLocalDate.isAfter(targetLocalDate)) {
+			endLocalDate = endLocalDate.minusDays(1);
+		} else {
+			endLocalDate = endLocalDate.plus(1, ChronoUnit.MONTHS).minusDays(1);
+		}
+		return endLocalDate;
 	}
 	
 	/**
@@ -38,7 +47,10 @@ public class BookkeepingUtils {
 	 */
 	public static LocalDate getYearStartLocalDate(LocalDate targetLocalDate, int baseDate) {
 		LocalDate startLocalDate = targetLocalDate.withMonth(1).withDayOfMonth(baseDate);
-		return getStartLocalDate(targetLocalDate, startLocalDate, baseDate, ChronoUnit.YEARS);
+		if (startLocalDate.isAfter(targetLocalDate)) {
+			startLocalDate = startLocalDate.minus(1, ChronoUnit.YEARS);
+		}
+		return startLocalDate;
 	}
 	
 	/**
@@ -50,33 +62,11 @@ public class BookkeepingUtils {
 	 */
 	public static LocalDate getYearEndLocalDate(LocalDate targetLocalDate, int baseDate) {
 		LocalDate endLocalDate = targetLocalDate.withMonth(1).withDayOfMonth(baseDate).minusDays(1);
-		return getEndLocalDate(targetLocalDate, endLocalDate, baseDate, ChronoUnit.YEARS);
-	}
-	
-	private static LocalDate getStartLocalDate(LocalDate targetLocalDate, LocalDate startLocalDate, int baseDate, ChronoUnit chronoUnit)	{
-		if (targetLocalDate.getMonth() == startLocalDate.getMonth() && targetLocalDate.getDayOfMonth() < baseDate) {
-			startLocalDate = startLocalDate.minus(1, chronoUnit);
-		}
-		return startLocalDate;
-	}
-	
-	/**
-	 * 이거 분기 처리 이상한데? 뭔가 다른 방식으로 처리를 해야하려나?
-	 * @param targetLocalDate
-	 * @param endLocalDate
-	 * @param baseDate
-	 * @param chronoUnit
-	 * @return
-	 */
-	private static LocalDate getEndLocalDate(LocalDate targetLocalDate, LocalDate endLocalDate, int baseDate, ChronoUnit chronoUnit) {
-		if (chronoUnit == ChronoUnit.MONTHS && targetLocalDate.getMonth() == endLocalDate.getMonth() && targetLocalDate.getDayOfMonth() >= baseDate) {
-			endLocalDate = endLocalDate.plus(1, chronoUnit);
-		}
-		
-		if (chronoUnit == ChronoUnit.YEARS && !(targetLocalDate.getMonth() == endLocalDate.getMonth() && targetLocalDate.getDayOfMonth() < baseDate)) {
-			endLocalDate = endLocalDate.plus(1, chronoUnit);
+		if (endLocalDate.isAfter(targetLocalDate)) {
+			endLocalDate = endLocalDate.minusDays(1);
+		} else {
+			endLocalDate = endLocalDate.plus(1, ChronoUnit.YEARS).minusDays(1);
 		}
 		return endLocalDate;
 	}
-	
 }
