@@ -127,6 +127,7 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler
 	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
 	public ModelAndView handleException(Exception exception) {
+		log.debug("error : {}", exception);
 		Map<String, ErrorMessage> resultMap = new HashMap<>();
 		resultMap.put(RESULT, getErrorMessage(exception));
 		return new ModelAndView(PAGE_ERROR, resultMap);

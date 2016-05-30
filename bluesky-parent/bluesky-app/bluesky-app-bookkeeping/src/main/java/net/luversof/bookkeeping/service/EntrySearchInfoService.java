@@ -1,7 +1,5 @@
 package net.luversof.bookkeeping.service;
 
-import java.time.LocalDate;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,9 +13,6 @@ public class EntrySearchInfoService {
 	private BookkeepingService bookkeepingService;
 	
 	public EntrySearchInfo getEntrySearchInfo(EntrySearchInfo entrySearchInfo) {
-		if (entrySearchInfo.getTargetLocalDate() == null) {
-			entrySearchInfo.setTargetLocalDate(LocalDate.now());
-		}
 		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entrySearchInfo.getBookkeeping().getId());
 		entrySearchInfo.setBookkeeping(targetBookkeeping);
 		entrySearchInfo.setBaseDate(targetBookkeeping.getBaseDate());

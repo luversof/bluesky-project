@@ -27,7 +27,7 @@ public class StatisticsSearchInfo {
 	@Valid
 	private Bookkeeping bookkeeping;
 
-	private int baseDate;
+	private int baseDate = 1;
 
 	/**
 	 * 년/월 단위 통계 보기를 위해 필요한 파라메터
@@ -36,7 +36,7 @@ public class StatisticsSearchInfo {
 	private ChronoUnit chronoUnit;
 
 	@NotNull(groups = SelectEntryList.class)
-	private LocalDate targetLocalDate;
+	private LocalDate targetLocalDate = LocalDate.now();
 
 	private LocalDateTime startLocalDateTime;
 

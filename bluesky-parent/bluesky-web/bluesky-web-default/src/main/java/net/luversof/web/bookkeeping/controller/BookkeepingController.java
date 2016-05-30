@@ -45,21 +45,19 @@ public class BookkeepingController {
 	
 	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	public Bookkeeping createBookkeeping(@RequestBody @Validated(Bookkeeping.Create.class) Bookkeeping bookkeeping, Authentication authentication) {
-		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
-		bookkeeping.setUserId(blueskyUser.getId());
+		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		return bookkeepingService.create(bookkeeping);
 	}
 	
 	@RequestMapping(value="/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
 	@PreAuthorize("hasRole('ROLE_USER') and authentication.principal.id == #bookkeeping.userId")
-	public Bookkeeping updateBookkeeping(Authentication authentication, @RequestBody @Validated(Bookkeeping.Update.class) Bookkeeping bookkeeping) {
+	public Bookkeeping updateBookkeeping(@RequestBody @Validated(Bookkeeping.Update.class) Bookkeeping bookkeeping) {
 		return bookkeepingService.update(bookkeeping);
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)	
 	@RequestMapping(value="/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public Bookkeeping deleteBookkeeping(Authentication authentication, @Validated(Bookkeeping.Delete.class) Bookkeeping bookkeeping) {
-		//TODO 본인 bookkeeping 확인 절차가 있어야 함
+	public Bookkeeping deleteBookkeeping(@Validated(Bookkeeping.Delete.class) Bookkeeping bookkeeping, Authentication authentication) {
 		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		bookkeepingService.delete(bookkeeping);
 		return bookkeeping;

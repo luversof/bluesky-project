@@ -15,16 +15,16 @@
 	<script type="text/javascript" th:src="@{/js/bookkeeping/statisticsSearchInfo/model.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/statisticsSearchInfo/view.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/entry/model.js}"></script>
-	<script type="text/javascript" th:src="@{/js/bookkeeping/entry/collection.js}"></script>
-	<script type="text/javascript" th:src="@{/js/bookkeeping/entry/view.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bookkeeping/statistics/collection.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bookkeeping/statistics/view.js}"></script>
 </head>
 <body>
 	<div layout:fragment="content-bookkeeping">
 		<br />
 		<div data-menu-area="statisticsSearchInfo"></div>
-		<div id="entryArea"></div>
+		<div id="statisticsArea"></div>
 
-		<script type="text/template" id="template-entry-collection-view">
+		<script type="text/template" id="template-statistics-collection-view">
 			<div class="col-md-10">
 				<table class="table table-hover">
 					<colgroup>
@@ -129,7 +129,7 @@
 				</table>
 			</div>
 		</script>
-		<script type="text/template" id="template-entry-view">
+		<script type="text/template" id="template-statistics-view">
 			<td>
 				{{#isCredit}}<i class="fa fa-plus" aria-hidden="true"></i>{{/isCredit}}
 				{{#isDebit}}<i class="fa fa-minus" aria-hidden="true"></i>{{/isDebit}}

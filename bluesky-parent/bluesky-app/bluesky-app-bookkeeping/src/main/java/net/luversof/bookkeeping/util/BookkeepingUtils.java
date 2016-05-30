@@ -60,8 +60,20 @@ public class BookkeepingUtils {
 		return startLocalDate;
 	}
 	
+	/**
+	 * 이거 분기 처리 이상한데? 뭔가 다른 방식으로 처리를 해야하려나?
+	 * @param targetLocalDate
+	 * @param endLocalDate
+	 * @param baseDate
+	 * @param chronoUnit
+	 * @return
+	 */
 	private static LocalDate getEndLocalDate(LocalDate targetLocalDate, LocalDate endLocalDate, int baseDate, ChronoUnit chronoUnit) {
-		if (targetLocalDate.getMonth() == endLocalDate.getMonth() && targetLocalDate.getDayOfMonth() >= baseDate) {
+		if (chronoUnit == ChronoUnit.MONTHS && targetLocalDate.getMonth() == endLocalDate.getMonth() && targetLocalDate.getDayOfMonth() >= baseDate) {
+			endLocalDate = endLocalDate.plus(1, chronoUnit);
+		}
+		
+		if (chronoUnit == ChronoUnit.YEARS && !(targetLocalDate.getMonth() == endLocalDate.getMonth() && targetLocalDate.getDayOfMonth() < baseDate)) {
 			endLocalDate = endLocalDate.plus(1, chronoUnit);
 		}
 		return endLocalDate;

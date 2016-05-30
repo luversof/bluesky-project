@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.service.EntryGroupService;
 import net.luversof.security.core.userdetails.BlueskyUser;
@@ -35,12 +34,8 @@ public class EntryGroupController {
 	}
 
 	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-	public EntryGroup createEntryGroup(@RequestBody @Validated(EntryGroup.Create.class) EntryGroup entryGroup, @PathVariable("bookkeeping.id") long bookkeepingId, Authentication authentication) {
-		Bookkeeping bookkeeping = new Bookkeeping();
-		bookkeeping.setId(bookkeepingId);
-		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
-		bookkeeping.setUserId(blueskyUser.getId());
-		entryGroup.setBookkeeping(bookkeeping);
+	public EntryGroup createEntryGroup(@RequestBody @Validated(EntryGroup.Create.class) EntryGroup entryGroup, Authentication authentication) {
+		entryGroup.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		return entryGroupService.create(entryGroup);
 	}
 

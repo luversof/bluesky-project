@@ -8,13 +8,11 @@ import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.EntrySearchInfo;
 import net.luversof.bookkeeping.domain.EntrySearchInfo.SelectEntryList;
@@ -44,18 +42,14 @@ public class EntryController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("(returnObject == null or returnObject.size() == 0) or returnObject.get(0).bookkeeping.userId == authentication.principal.id")
 	@RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-	public List<Entry> getEntryList(@Validated(SelectEntryList.class) EntrySearchInfo entrySearchInfo, Authentication authentication) {
+	public List<Entry> getEntryList(@Validated(SelectEntryList.class) EntrySearchInfo entrySearchInfo) {
 		return entryService.findByEntrySearchInfo(entrySearchInfo);
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-	public Entry createEntry(@RequestBody @Validated(Entry.Create.class) Entry entry, @PathVariable("bookkeeping.id") long bookkeepingId, Authentication authentication) {
-		Bookkeeping bookkeeping = new Bookkeeping();
-		bookkeeping.setId(bookkeepingId);
-		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
-		bookkeeping.setUserId(blueskyUser.getId());
-		entry.setBookkeeping(bookkeeping);
+	public Entry createEntry(@RequestBody @Validated(Entry.Create.class) Entry entry, Authentication authentication) {
+		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		return entryService.create(entry);
 	}
 

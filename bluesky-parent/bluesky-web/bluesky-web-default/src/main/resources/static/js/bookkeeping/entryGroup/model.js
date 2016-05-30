@@ -1,5 +1,6 @@
 $.EntryGroup = Backbone.Model.extend({
 	defaults : {
+		bookkeeping : { id : $.bookkeepingId },
 		name : null,
 		entryType : null
 	},

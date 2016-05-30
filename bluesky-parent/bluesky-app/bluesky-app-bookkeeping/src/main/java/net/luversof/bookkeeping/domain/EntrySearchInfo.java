@@ -17,7 +17,7 @@ import net.luversof.bookkeeping.util.BookkeepingUtils;
  */
 @Data
 public class EntrySearchInfo {
-	
+
 	/**
 	 * user의 bookkeeping table id 값
 	 */
@@ -27,14 +27,14 @@ public class EntrySearchInfo {
 	/**
 	 * user의 bookkeeping table baseDate 값
 	 */
-	private int baseDate;
+	private int baseDate = 1;
 	
 	/**
 	 * 검색할 월이 있는 대상 날짜
 	 * 검색 시 넘어오는 파라메터 값
 	 */
 	@NotNull(groups = SelectEntryList.class)
-	private LocalDate targetLocalDate;
+	private LocalDate targetLocalDate = LocalDate.now();
 	
 	
 	public interface Select {}

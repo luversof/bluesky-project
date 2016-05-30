@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.Asset;
-import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.service.AssetService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
@@ -50,12 +49,8 @@ public class AssetController {
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-	public Asset createAsset(@RequestBody @Validated(Asset.Create.class) Asset asset, @PathVariable("bookkeeping.id") long bookkeepingId, Authentication authentication) {
-		Bookkeeping bookkeeping = new Bookkeeping();
-		bookkeeping.setId(bookkeepingId);
-		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
-		bookkeeping.setUserId(blueskyUser.getId());
-		asset.setBookkeeping(bookkeeping);
+	public Asset createAsset(@RequestBody @Validated(Asset.Create.class) Asset asset, Authentication authentication) {
+		asset.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		return assetService.create(asset);
 	}
 

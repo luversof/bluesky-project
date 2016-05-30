@@ -23,10 +23,11 @@ $(document).ready(function() {
 				.find("input[name=statisticsSearchInfoTargetMonth]").datepicker({ format : "yyyy-mm", language: "ko", minViewMode : 1, autoclose : true })
 			return this;
 		},
-		selectStatisticsSearchInfo : function(targetLocalDate) {
+		selectStatisticsSearchInfo : function(chronoUnit, targetLocalDate) {
 			this.model.fetch({
 				reset : true,
 				data : $.param({
+					chronoUnit : chronoUnit,
 					targetLocalDate : targetLocalDate
 				})
 			});
@@ -36,8 +37,9 @@ $(document).ready(function() {
 			var targetMonth = this.$el.find("input[name=statisticsSearchInfoTargetMonth]").val();
 			if (targetMonth != moment(this.model.get("startLocalDateTime")).format("YYYY-MM")) {
 				// 변경처리
+				var chronoUnit = "YEARS";
 				var targetLocalDate = moment(targetMonth).add(this.model.get("baseDate") - 1, "days").format("YYYY-MM-DD");
-				this.selectStatisticsSearchInfo(targetLocalDate);
+				this.selectStatisticsSearchInfo(chronoUnit, targetLocalDate);
 			}
 		},
 		selectMenu : function(event) {

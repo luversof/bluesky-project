@@ -1,5 +1,8 @@
 package net.luversof.web.bookkeeping.controller;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,5 +29,18 @@ public class StatisticsSearchInfoController {
 	@RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public StatisticsSearchInfo getStatisticsSearchInfo(@Validated(StatisticsSearchInfo.Select.class) StatisticsSearchInfo statisticsSearchInfo) {
 		return statisticsSearchInfoService.getStatisticsSearchInfo(statisticsSearchInfo);
+	}
+	
+	@RequestMapping(value = "/test", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ChronoUnit test(ChronoUnit chronoUnit) {
+		System.out.println(chronoUnit);
+		return chronoUnit;
+	}
+	
+	@RequestMapping(value = "/test2", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	public StatisticsSearchInfo test(StatisticsSearchInfo statisticsSearchInfo) {
+		statisticsSearchInfoService.getStatisticsSearchInfo(statisticsSearchInfo);
+		System.out.println(statisticsSearchInfo);
+		return statisticsSearchInfo;
 	}
 }

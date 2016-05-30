@@ -1,5 +1,6 @@
 $.Entry = Backbone.Model.extend({
 	defaults : {
+		bookkeeping : { id : $.bookkeepingId },
 		entryType : null,	// 입력 유형 선택을 위한 변수
 		entryGroup : null,
 		debitAsset : null,

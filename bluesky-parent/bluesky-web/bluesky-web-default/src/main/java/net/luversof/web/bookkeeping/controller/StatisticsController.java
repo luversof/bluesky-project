@@ -17,8 +17,15 @@ import net.luversof.bookkeeping.domain.StatisticsSearchInfo;
 import net.luversof.bookkeeping.service.EntryService;
 import net.luversof.web.constant.AuthorizeRole;
 
+/**
+ * 통계의 경우
+ * StatisticsSearchInfo에 따른 데이터 호출 부분을 표현함.
+ * 전체 자산 현황은 자산 정보 설정 부분에서 확인 가능
+ * @author bluesky
+ *
+ */
 @RestController
-@RequestMapping("/bookkeeping/{bookkeepingId}/statistics")
+@RequestMapping("/bookkeeping/{bookkeeping.id}/statistics")
 public class StatisticsController {
 	
 	@Autowired

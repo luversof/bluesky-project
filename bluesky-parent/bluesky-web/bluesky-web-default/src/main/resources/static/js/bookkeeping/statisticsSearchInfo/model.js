@@ -2,7 +2,8 @@ $.StatisticsSearchInfo = Backbone.Model.extend({
 	url : "/bookkeeping/" + $.bookkeepingId + "/statisticsSearchInfo",
 	defaults : {
 		bookkeeping : { id : $.bookkeepingId },
-		targetLocalDate : null,
+		chronoUnit : "YEARS",
+		targetLocalDate : null
 	},
 	initialize : function() {
 		//console.log("This model has been initialized.");

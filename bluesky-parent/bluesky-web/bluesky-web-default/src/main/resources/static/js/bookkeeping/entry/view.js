@@ -1,5 +1,5 @@
 $(document).ready(function() {
-	// 추가로 필요한 데이터 호출
+	// entry 호출 전 필요한 데이터 호출
 	var entryGroupCollection = new $.EntryGroupCollection();
 	var assetCollection = new $.AssetCollection();
 	
@@ -8,7 +8,7 @@ $(document).ready(function() {
 	
 	$.EntryView = Backbone.View.extend({
 		el : "<tr>",	//기본은 div
-		className : "warning",
+		//className : "warning",
 		template : $("#template-entry-view").html(),
 		events : {
 			"click [data-menu=updateEntry]" : "updateEntry",
@@ -74,7 +74,7 @@ $(document).ready(function() {
 				entryGroup : this.model.get("entryType") == "TRANSFER" ? null : { id : this.$el.find("select[name=entryGroup] option:selected").val() },
 				debitAsset : this.model.get("entryType") == "CREDIT" ? null : { id : this.$el.find("select[name=debitAsset] option:selected").val() },
 				creditAsset : this.model.get("entryType") == "DEBIT" ? null : { id : this.$el.find("select[name=creditAsset] option:selected").val() },
-				amount : this.$el.find("[data-key-name=amount]").text(),
+				amount : numeral().unformat(this.$el.find("[data-key-name=amount]").text()),
 				memo : this.$el.find("[data-key-name=memo]").text(),
 				entryDate : moment.utc(new Date(this.$el.find("input[name=entryDate]").val())).format("YYYY-MM-DDTHH:mm:ss")
 			});

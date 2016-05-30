@@ -20,9 +20,13 @@ public class Bookkeeping {
 
 	@Id
 	@GeneratedValue
-	@Min(value = 1, groups = { Bookkeeping.Update.class, Bookkeeping.Delete.class, Asset.Delete.class,
-			EntryGroup.Delete.class, EntrySearchInfo.Select.class, EntrySearchInfo.SelectEntryList.class,
-			StatisticsSearchInfo.Select.class, StatisticsSearchInfo.SelectEntryList.class })
+	@Min(value = 1, groups = { Bookkeeping.Update.class, Bookkeeping.Delete.class, 
+			Asset.Create.class, Asset.Update.class, Asset.Delete.class, 
+			EntryGroup.Create.class, EntryGroup.Update.class, EntryGroup.Delete.class,
+			Entry.Create.class, Entry.Update.class, Entry.Delete.class,
+			EntrySearchInfo.Select.class, EntrySearchInfo.SelectEntryList.class, 
+			StatisticsSearchInfo.Select.class, StatisticsSearchInfo.SelectEntryList.class 
+			})
 	private long id;
 
 	@NotEmpty(groups = { Create.class, Update.class })

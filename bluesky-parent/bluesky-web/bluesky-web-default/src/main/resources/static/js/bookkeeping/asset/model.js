@@ -1,5 +1,6 @@
 $.Asset = Backbone.Model.extend({
 	defaults : {
+		bookkeeping : { id : $.bookkeepingId },
 		name : null,
 		amount : 0,
 		assetType : null
