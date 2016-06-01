@@ -26,6 +26,7 @@ $(document).ready(function() {
 			}
 			
 			this.$el.html(Mustache.render(this.template, data));
+			return this;
 		}
 	});
 	
@@ -48,12 +49,11 @@ $(document).ready(function() {
 		},
 		render : function() {
 			var data = {
-				assetList : assetCollection.toJSON(),
+				//assetList : assetCollection.toJSON(),
 				entryGroupList : entryGroupCollection.toJSON(),
 				statisticsSearchInfo : this.statisticsSearchInfo.toJSON()
 			};
 			var statisticsList = this.collection.toJSON();
-			console.log("렌더한다");
 			this.$el.html(Mustache.render(this.template, data));
 			this.collection.each(function(entry) {
 				var statisticsView = new $.StatisticsView({ model : entry });
