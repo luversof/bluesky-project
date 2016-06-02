@@ -9,10 +9,9 @@ import javax.persistence.Table;
 import javax.validation.constraints.Min;
 
 import org.hibernate.validator.constraints.NotEmpty;
+import org.hibernate.validator.constraints.Range;
 
 import lombok.Data;
-import net.luversof.bookkeeping.domain.Asset.AssetDelete;
-import net.luversof.bookkeeping.domain.EntryGroup.EntryGroupDelete;
 
 @Data
 @Entity
@@ -21,22 +20,30 @@ public class Bookkeeping {
 
 	@Id
 	@GeneratedValue
-	@Min(value = 1, groups = { BookkeepingUpdate.class, BookkeepingDelete.class, AssetDelete.class, EntryGroupDelete.class })
+	@Min(value = 1, groups = { Bookkeeping.Update.class, Bookkeeping.Delete.class, Asset.Delete.class,
+			EntryGroup.Delete.class, EntrySearchInfo.Select.class, EntrySearchInfo.SelectEntryList.class,
+			StatisticsSearchInfo.Select.class, StatisticsSearchInfo.SelectEntryList.class })
 	private long id;
 
-	@NotEmpty(groups = { BookkeepingCreate.class, BookkeepingUpdate.class })
+	@NotEmpty(groups = { Create.class, Update.class })
 	private String name;
 
 	@Column(name = "user_id", updatable = false)
-	@Min(value = 1, groups = BookkeepingUpdate.class)
+	@Min(value = 1, groups = Update.class)
 	private long userId;
 
-	public interface BookkeepingCreate {
+	/**
+	 * 시작일. startDay라고 해야하나?
+	 */
+	@Range(min = 1, max = 28, groups = { Create.class, Update.class })
+	private int baseDate;
+
+	public interface Create {
 	};
 
-	public interface BookkeepingUpdate {
+	public interface Update {
 	};
 
-	public interface BookkeepingDelete {
+	public interface Delete {
 	}
 }

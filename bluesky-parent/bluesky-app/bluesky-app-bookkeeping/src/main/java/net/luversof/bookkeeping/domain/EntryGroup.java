@@ -25,14 +25,14 @@ import lombok.Data;
 public class EntryGroup {
 	@Id
 	@GeneratedValue
-	@NotNull(groups = EntryGroupUpdate.class)
-	@Min(value = 1, groups = { EntryGroupUpdate.class, EntryGroupDelete.class })
+	@NotNull(groups = Update.class)
+	@Min(value = 1, groups = { Update.class, Delete.class })
 	private long id;
 
-	@NotEmpty(groups = { EntryGroupCreate.class, EntryGroupUpdate.class })
+	@NotEmpty(groups = { Create.class, Update.class })
 	private String name;
 
-	@NotNull(groups = { EntryGroupCreate.class, EntryGroupUpdate.class })
+	@NotNull(groups = { Create.class, Update.class })
 	@Enumerated(EnumType.STRING)
 	private EntryType entryType;
 
@@ -40,12 +40,12 @@ public class EntryGroup {
 	@Valid
 	private Bookkeeping bookkeeping;
 
-	public interface EntryGroupCreate {
+	public interface Create {
 	}
 
-	public interface EntryGroupUpdate {
+	public interface Update {
 	}
 
-	public interface EntryGroupDelete {
+	public interface Delete {
 	}
 }

@@ -1,28 +1,42 @@
 package net.luversof.web.bookkeeping.controller;
 
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import net.luversof.bookkeeping.domain.Bookkeeping;
+import net.luversof.bookkeeping.service.BookkeepingService;
+import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
 
 @Controller
-@RequestMapping(value = "bookkeeping", produces = MediaType.TEXT_HTML_VALUE)
+@RequestMapping(value = "/bookkeeping", produces = MediaType.TEXT_HTML_VALUE)
 public class BookkeepingViewController {
 	
-//	@Autowired
-//	private BookkeepingService bookkeepingService;
+	@Autowired
+	private BookkeepingService bookkeepingService;
 	
 //	@RequestMapping(value = "/index", method = RequestMethod.GET)
 //	public void index() {
 //	}
 	
 	@RequestMapping(value = "/setting", method = RequestMethod.GET)
-	public void setting() {
+	public void setting(ModelMap modelMap, Authentication authentication) {
+		// 기본 설정한 bookkeeping Id를 반환하자.
+		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
+		List<Bookkeeping> bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId());
+		if (!bookkeepingList.isEmpty()) {
+			modelMap.addAttribute("bookkeepingId", bookkeepingList.get(0).getId());
+		}
 	}
 	
 

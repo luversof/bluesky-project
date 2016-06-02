@@ -22,7 +22,7 @@ import net.luversof.web.constant.AuthorizeRole;
  *
  */
 @RestController
-@RequestMapping("blog")
+@RequestMapping("/blog")
 public class ArticleController {
 
 	@Autowired

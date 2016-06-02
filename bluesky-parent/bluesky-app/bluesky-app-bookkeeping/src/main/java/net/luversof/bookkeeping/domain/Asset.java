@@ -26,11 +26,11 @@ public class Asset {
 
 	@Id
 	@GeneratedValue
-	@NotNull(groups = { AssetUpdate.class, AssetDelete.class })
-	@Min(value = 1, groups = { AssetUpdate.class, AssetDelete.class })
+	@NotNull(groups = { Update.class, Delete.class })
+	@Min(value = 1, groups = { Update.class, Delete.class })
 	private long id;
 
-	@NotEmpty(groups = { AssetCreate.class, AssetUpdate.class })
+	@NotEmpty(groups = { Create.class, Update.class })
 	private String name;
 
 	private long amount;
@@ -40,16 +40,16 @@ public class Asset {
 	@Valid
 	private Bookkeeping bookkeeping;
 
-	@NotNull(groups = { AssetCreate.class, AssetUpdate.class })
+	@NotNull(groups = { Create.class, Update.class })
 	@Enumerated(EnumType.STRING)
 	private AssetType assetType;
 
-	public interface AssetCreate {
+	public interface Create {
 	}
 
-	public interface AssetUpdate {
+	public interface Update {
 	}
 
-	public interface AssetDelete {
+	public interface Delete {
 	}
 }

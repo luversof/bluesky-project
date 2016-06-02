@@ -1,5 +1,7 @@
 package net.luversof.bookkeeping.service;
 
+import static net.luversof.bookkeeping.BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -8,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import net.luversof.bookkeeping.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.domain.AssetInitialData;
 import net.luversof.bookkeeping.domain.Bookkeeping;
@@ -15,7 +18,7 @@ import net.luversof.bookkeeping.repository.AssetRepository;
 import net.luversof.core.exception.BlueskyException;
 
 @Service
-@Transactional("bookkeepingTransactionManager")
+@Transactional(BOOKKEEPING_TRANSACTIONMANAGER)
 public class AssetService {
 
 	@Autowired
@@ -48,7 +51,7 @@ public class AssetService {
 	public Asset create(Asset asset) {
 		Bookkeeping targetBookkeeping = bookkeepingService.findOne(asset.getBookkeeping().getId());
 		if (targetBookkeeping.getUserId() != asset.getBookkeeping().getUserId()) {
-			throw new BlueskyException("NOT_OWNER_BOOKKEEPING");
+			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
 		return assetRepository.save(asset);
 	}
@@ -56,21 +59,21 @@ public class AssetService {
 	public Asset update(Asset asset) {
 		Bookkeeping targetBookkeeping = bookkeepingService.findOne(asset.getBookkeeping().getId());
 		if (targetBookkeeping.getUserId() != asset.getBookkeeping().getUserId()) {
-			throw new BlueskyException("NOT_OWNER_BOOKKEEPING");
+			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
 		Asset targetAsset = findOne(asset.getId());
 		if (targetAsset.getBookkeeping().getUserId() != asset.getBookkeeping().getUserId()) {
-			throw new BlueskyException("NOT_OWER_ASSET");
+			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ASSET);
 		}
 		return assetRepository.save(asset);
 	}
 
-	@Transactional(value = "bookkeepingTransactionManager", readOnly = true)
+	@Transactional(value = BOOKKEEPING_TRANSACTIONMANAGER, readOnly = true)
 	public Asset findOne(long id) {
 		return assetRepository.findOne(id);
 	}
 	
-	@Transactional(value = "bookkeepingTransactionManager", readOnly = true)
+	@Transactional(value = BOOKKEEPING_TRANSACTIONMANAGER, readOnly = true)
 	public List<Asset> findByBookkeepingId(long bookkeepingId) {
 		return assetRepository.findByBookkeepingId(bookkeepingId);
 	}
@@ -78,11 +81,11 @@ public class AssetService {
 	public void delete(Asset asset) {
 		Bookkeeping targetBookkeeping = bookkeepingService.findOne(asset.getBookkeeping().getId());
 		if (targetBookkeeping.getUserId() != asset.getBookkeeping().getUserId()) {
-			throw new BlueskyException("NOT_OWNER_BOOKKEEPING");
+			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
 		Asset targetAsset = findOne(asset.getId());
 		if (targetAsset.getBookkeeping().getUserId() != asset.getBookkeeping().getUserId()) {
-			throw new BlueskyException("NOT_OWER_ASSET");
+			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ASSET);
 		}
 		assetRepository.delete(asset);
 	}

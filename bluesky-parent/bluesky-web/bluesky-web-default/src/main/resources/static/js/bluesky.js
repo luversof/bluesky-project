@@ -1,6 +1,6 @@
 /**
- * String foramt 처리
- * 
+ * String format 처리
+ * 문자열에 "{0}.."와 같이 대치 예약어가 있는 경우 넘겨받은 argument로 치환 처리함 
  * @returns
  */
 String.prototype.format = function() {
@@ -31,10 +31,6 @@ var navbar = {
 };
 
 $(document).ready(function() {
-
-
-	
-
 	
 	/**
 	 * 상단 navbar scroll에 따른 hide 처리 
@@ -45,22 +41,21 @@ $(document).ready(function() {
 	_detachPoint = 50;
 	
 	$(window).scroll(function() {
-	var t = $(window).scrollTop(),
-		e = t > _lastScroll ? "down" : "up",
-		i = Math.abs(t - _lastScroll);
-	
-	if (t >= _detachPoint || 0 >= t || t > -1) {
-		if ("down" === e && i >= _hideShowOffset) {
-			$nav.fadeOut();
-		} else if("up" === e && i >= _hideShowOffset) {
-			$nav.fadeIn();
+		var t = $(window).scrollTop(),
+			e = t > _lastScroll ? "down" : "up",
+			i = Math.abs(t - _lastScroll);
+		
+		if (t >= _detachPoint || 0 >= t || t > -1) {
+			if ("down" === e && i >= _hideShowOffset) {
+				$nav.fadeOut();
+			} else if("up" === e && i >= _hideShowOffset) {
+				$nav.fadeIn();
+			}
 		}
-	}
-	_lastScroll = t;
-		});
+		_lastScroll = t;
+	});
 	
-	
-	$("[data-toggle=tooltip]").tooltip();
+	$("body").tooltip({ selector : "[data-toggle=tooltip]" });
 	
 	/* (s) csrf */
 	var token = $("meta[name='_csrf']").attr("content");
@@ -87,4 +82,9 @@ $(document).ready(function() {
 		location.href = location.href.replace("https:", "http:").replace(":8443", ":8082");
 	}
 
+	
+	if (window.console != undefined) {
+		setTimeout(console.log.bind(console, "%cBluesky","font: 8em Arial; color: #6799FF; font-weight:bold"), 0);
+		setTimeout(console.log.bind(console, "%c - bluesky 프로젝트","font: 2em HY견고딕,sans-serif; color: #333;"), 0);
+	}
 });

@@ -1,18 +1,16 @@
 package net.luversof.bookkeeping.domain;
 
 import java.io.Serializable;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
+import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
-
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
 
 import lombok.Data;
 
@@ -23,11 +21,12 @@ public class Entry implements Serializable {
 
 	@Id
 	@GeneratedValue
-	@NotNull(groups = {EntryUpdate.class, EntryDelete.class})
-	@Min(value = 1, groups = {EntryUpdate.class, EntryDelete.class})
+	@NotNull(groups = {Update.class, Delete.class})
+	@Min(value = 1, groups = {Update.class, Delete.class})
 	private long id;
 	
 	@OneToOne
+	@Valid
 	private Bookkeeping bookkeeping;
 	
 	@OneToOne
@@ -41,21 +40,31 @@ public class Entry implements Serializable {
 	@OneToOne
 	private EntryGroup entryGroup;
 	
-	@NotNull(groups = { EntryCreate.class, EntryUpdate.class })
+	@NotNull(groups = { Create.class, Update.class })
 	private long amount;
 	
-	@NotNull(groups = { EntryCreate.class, EntryUpdate.class })
-	@JsonDeserialize(using = LocalDateDeserializer.class)
-	private LocalDate entryDate;
+	@NotNull(groups = { Create.class, Update.class })
+	private LocalDateTime entryDate;
 	
 	private String memo;
 	
-	public interface EntryCreate {
+	public interface Create {
 	};
 	
-	public interface EntryUpdate {
+	public interface Update {
 	};
 	
-	public interface EntryDelete {
+	public interface Delete {
+	}
+	
+	public EntryType getEntryType() {
+		if (this.debitAsset == null && this.creditAsset != null) {
+			return EntryType.CREDIT;
+		} else if (this.debitAsset != null && this.creditAsset == null) {
+			return EntryType.DEBIT;
+		} else if (this.debitAsset != null && this.creditAsset != null) {
+			return EntryType.TRANSFER;
+		}
+		return null;
 	}
 }
