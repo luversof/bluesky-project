@@ -2,14 +2,13 @@ $(document).ready(function() {
 
 	$.AssetView = Backbone.View.extend({
 		el : "<tr>",	//기본은 div
-		//className : "testt",
 		template : $("#template-asset-view").html(),
 		events : {
 			"click [data-menu=updateAsset]" : "updateAsset",
 			"click [data-menu=deleteAsset]" : "deleteAsset",
-			"keyup [data-key=name]" : "changeNameKeyUP",
-			"keypress [data-key=name]" : "changeNameKeyPress",
-			"change select[name=assetType]" : "changeAssetType"
+			"keyup [data-key-name=name]" : "nameKeyUp",
+			"keypress [data-key-name=name]" : "nameKeyPress",
+			"change select[name=assetType]" : "isChange"
 		},
 		initialize : function() {
 			console.log("This view has been initialized.");
@@ -17,84 +16,87 @@ $(document).ready(function() {
 			this.listenTo(this.model, 'destroy', this.remove);
 		},
 		render : function() {
-			var data = this.model.toJSON();
 			this.$el.html(Mustache.render(this.template, this.model.toJSON()));
 			this.$el.find("select[name=assetType] > option[value=" + this.model.get("assetType") + "]").attr("selected", "selected");
 			this.$el.find("[data-menu=updateAsset]").hide();
 			return this;
 		},
 		updateAsset : function() {
-			this.model.save({name : this.$el.find("[data-key=name]").text(), assetType : this.$el.find("select[name=assetType] option:selected").val()});
+			this.model.save({name : this.$el.find("[data-key-name=name]").text(), assetType : this.$el.find("select[name=assetType] option:selected").val()});
 			this.$el.find("[data-menu=updateAsset]").hide(100);
 		},
 		deleteAsset : function() {
 			this.model.destroy();
 		},
-		changeNameKeyUP : function(event) {
-			if (this.$el.find("[data-key=name]").text() == this.model.get("name")) {
+		isChange : function() {
+			if (this.$el.find("[data-key-name=name]").text() == this.model.get("name")
+					&& this.$el.find("select[name=assetType] option:selected").val() == this.model.get("assetType")) {
 				this.$el.find("[data-menu=updateAsset]").hide(100);
 			} else {
 				this.$el.find("[data-menu=updateAsset]").show(100);
 			}
+		},
+		nameKeyUp : function(event) {
+			this.isChange();
 			if (event.keyCode == 13) {
 				this.updateAsset();
 			}
 		},
 		// enter 입력 처리 방지
-		changeNameKeyPress : function(event) {
+		nameKeyPress : function(event) {
 			return event.keyCode != 13;
-		},
-		changeAssetType : function() {
-			if (this.$el.find("select[name=assetType] option:selected").val() == this.model.get("assetType")) {
-				this.$el.find("[data-menu=updateAsset]").hide(100);
-			} else {
-				this.$el.find("[data-menu=updateAsset]").show(100);
-			}
 		}
 	});
 
 
 	$.AssetCollectionView = Backbone.View.extend({
 		el : "#assetArea",
-		template : $("#template-asset-list").html(),
+		template : $("#template-asset-collection-view").html(),
 		events : {
 			"click [data-menu=createAsset]" : "createAsset",
-			"keyup [data-key-name=createAssetName]" : "createNameKeyUp",
-			"keypress [data-key-name=createAssetName]" : "createNameKeyPress"
+			"keyup [data-key-name=createAssetName]" : "createAssetNameKeyUp",
+			"keypress [data-key-name=createAssetName]" : "createAssetNameKeyPress"
 		},
 		initialize : function() {
 			//console.log("This collection view has been initialized.");
 			this.collection = new $.AssetCollection();
 			
 			this.listenTo(this.collection, "reset", this.render);
-			this.listenTo(this.collection, "add", this.renderAsset);
+			this.listenTo(this.collection, "add", this.render);
 			
 			this.collection.fetch({reset : true});
 		},
 		render : function() {
 			this.$el.html(Mustache.render(this.template));
 			this.collection.each(function(asset) {
-				var assetView = new $.AssetView({model : asset});
+				var assetView = new $.AssetView({ model : asset });
 				this.$el.find("table tbody").append(assetView.render().el);
 			}, this);
 		},
-		renderAsset : function(asset) {
-			var assetView = new $.AssetView({model : asset});
-			this.$el.find("table tbody").append(assetView.render().el);
-		},
+//		renderAsset : function(asset) {
+//			var assetView = new $.AssetView({model : asset});
+//			this.$el.find("table tbody").append(assetView.render().el);
+//		},
 		createAsset : function(event) {
 			event.preventDefault();
-			this.collection.create({name : $("[data-key-name=createAssetName]").text(), assetType : $("select[name=createAssetType] option:selected").val()});
-			$(event.target).closest("tr")
+			var asset = new $.Asset({
+				name : this.$el.find("[data-key-name=createAssetName]").text(),
+				assetType : this.$el.find("select[name=createAssetType] option:selected").val()
+			});
+			if (!asset.isValid()) {
+				return;
+			}
+			this.collection.create(asset);
+			$(event.currentTarget).closest("tr")
 				.find("[contenteditable=true]").text("").end()
 				.find("select option:eq(0)").attr("selected", "selected");
 		},
-		createNameKeyUp : function(event) {
+		createAssetNameKeyUp : function(event) {
 			if (event.keyCode === 13) {
 				this.createAsset(event);
 			}
 		},
-		createNameKeyPress : function(event) {
+		createAssetNameKeyPress : function(event) {
 			return event.keyCode !== 13;
 		}
 	});

@@ -12,9 +12,8 @@ $.EntryGroup = Backbone.Model.extend({
 //			//console.log("name value for this model has changed.");
 //		});
 		this.on("invalid", function(model, error) {
-			//console.log("invalid : ", model, error);
 			alert(error);
-		})
+		});
 	},
 	validate : function(attrs, options) {
 		console.log("validate : ", attrs, options);

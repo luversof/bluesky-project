@@ -1,17 +1,20 @@
 package net.luversof.bookkeeping.service;
 
+import static net.luversof.bookkeeping.BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER;
+
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import net.luversof.bookkeeping.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.repository.BookkeepingRepository;
 import net.luversof.core.exception.BlueskyException;
 
 @Service
-@Transactional("bookkeepingTransactionManager")
+@Transactional(BOOKKEEPING_TRANSACTIONMANAGER)
 public class BookkeepingService {
 
 	@Autowired
@@ -40,18 +43,18 @@ public class BookkeepingService {
 	public Bookkeeping update(Bookkeeping bookkeeping) {
 		Bookkeeping targetBookkeeping = findOne(bookkeeping.getId());
 		if (targetBookkeeping.getUserId() != bookkeeping.getUserId()) {
-			throw new BlueskyException("NOT_OWNER_BOOKKEEPING");
+			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
 		
 		return bookkeepingRepository.save(bookkeeping);
 	}
 	
-	@Transactional(value = "bookkeepingTransactionManager", readOnly = true)
+	@Transactional(value = BOOKKEEPING_TRANSACTIONMANAGER, readOnly = true)
 	public Bookkeeping findOne(long id) {
 		return bookkeepingRepository.findOne(id);
 	}
 	
-	@Transactional(value = "bookkeepingTransactionManager", readOnly = true)
+	@Transactional(value = BOOKKEEPING_TRANSACTIONMANAGER, readOnly = true)
 	public List<Bookkeeping> findByUserId(long userId) {
 		return bookkeepingRepository.findByUserId(userId);
 	}
@@ -63,7 +66,7 @@ public class BookkeepingService {
 	public void delete(Bookkeeping bookkeeping) {
 		Bookkeeping targetBookkeeping = findOne(bookkeeping.getId());
 		if (targetBookkeeping.getUserId() != bookkeeping.getUserId()) {
-			throw new BlueskyException("NOT_OWNER_BOOKKEEPING");
+			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
 		
 		entryGroupService.deleteBybookkeepingId(bookkeeping.getId());

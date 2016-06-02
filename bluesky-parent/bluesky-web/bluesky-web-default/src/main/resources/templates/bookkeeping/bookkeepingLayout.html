@@ -3,13 +3,20 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="layout/defaultLayout">
 <head>
+	<script type="text/javascript" th:src="@{#{url.mustache.js}}"></script>
+	<script type="text/javascript" th:src="@{#{url.underscore.js}}"></script>
+	<script type="text/javascript" th:src="@{#{url.backbone.js}}"></script>
+	<script type="text/javascript" th:src="@{/js/bookkeeping/base.js}"></script>
 	<script type="text/javascript" th:src="@{#{url.metisMenu.js}}"></script>
 	<link rel="stylesheet" type="text/css" media="screen" th:href="@{#{url.metisMenu.css}}" />
+	<script type="text/javascript" th:src="@{#{url.numeral.js}}"></script>
+	<script type="text/javascript" th:src="@{#{url.numeral.locale.ko.js}}"></script>
 	<script type="text/javascript" th:inline="javascript">
+	numeral.language('ko');
 	$(document).ready(function() {
 		$("#menu").metisMenu();
 	});
-	var bookkeepingId = [[${bookkeepingId}]];
+	$.bookkeepingId = [[${bookkeepingId}]];	// bookkeeping setting에선 사용하지 않는 변수
 	</script>
 </head>
 <body>
