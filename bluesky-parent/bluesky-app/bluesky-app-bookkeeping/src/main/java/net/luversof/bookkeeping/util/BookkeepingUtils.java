@@ -61,7 +61,7 @@ public class BookkeepingUtils {
 	 * @return
 	 */
 	public static LocalDate getYearEndLocalDate(LocalDate targetLocalDate, int baseDate) {
-		LocalDate endLocalDate = targetLocalDate.withMonth(1).withDayOfMonth(baseDate).minusDays(1);
+		LocalDate endLocalDate = targetLocalDate.withMonth(1).withDayOfMonth(baseDate);
 		if (endLocalDate.isAfter(targetLocalDate)) {
 			endLocalDate = endLocalDate.minusDays(1);
 		} else {
