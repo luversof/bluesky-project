@@ -21,42 +21,42 @@ public class Entry implements Serializable {
 
 	@Id
 	@GeneratedValue
-	@NotNull(groups = {Update.class, Delete.class})
-	@Min(value = 1, groups = {Update.class, Delete.class})
+	@NotNull(groups = { Update.class, Delete.class })
+	@Min(value = 1, groups = { Update.class, Delete.class })
 	private long id;
-	
+
 	@OneToOne
 	@Valid
 	private Bookkeeping bookkeeping;
-	
+
 	@OneToOne
 	@JoinColumn(name = "debit_asset_id")
 	private Asset debitAsset;
-	
+
 	@OneToOne
 	@JoinColumn(name = "credit_asset_id")
 	private Asset creditAsset;
-	
+
 	@OneToOne
 	private EntryGroup entryGroup;
-	
+
 	@NotNull(groups = { Create.class, Update.class })
 	private long amount;
-	
+
 	@NotNull(groups = { Create.class, Update.class })
 	private LocalDateTime entryDate;
-	
+
 	private String memo;
-	
+
 	public interface Create {
 	};
-	
+
 	public interface Update {
 	};
-	
+
 	public interface Delete {
 	}
-	
+
 	public EntryType getEntryType() {
 		if (this.debitAsset == null && this.creditAsset != null) {
 			return EntryType.CREDIT;

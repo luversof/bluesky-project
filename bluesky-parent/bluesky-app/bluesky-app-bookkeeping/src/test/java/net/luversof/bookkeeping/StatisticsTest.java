@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
+import net.luversof.bookkeeping.domain.Statistics;
 import net.luversof.bookkeeping.domain.StatisticsSearchInfo;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.bookkeeping.service.EntryService;
@@ -54,7 +55,8 @@ public class StatisticsTest extends GeneralTest {
 	
 	@Test
 	public void test2() {
-		log.debug("result : {}", entryService.test());
+		List<Statistics> statisticsList = entryService.test();
+		log.debug("result!! : {}", statisticsList);
 	}
 	
 }

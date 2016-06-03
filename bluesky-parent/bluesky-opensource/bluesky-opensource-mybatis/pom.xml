@@ -3,14 +3,25 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>net.luversof</groupId>
-		<artifactId>bluesky-app</artifactId>
+		<artifactId>bluesky-opensource</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>bluesky-app-blog</artifactId>
+	<artifactId>bluesky-opensource-mybatis</artifactId>
 	<dependencies>
 		<dependency>
 			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-opensource-data-jpa</artifactId>
+			<artifactId>bluesky-opensource-jdbc</artifactId>
 		</dependency>
+
+		<!-- (s) mybatis -->
+		<dependency>
+			<groupId>org.mybatis</groupId>
+			<artifactId>mybatis</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mybatis</groupId>
+			<artifactId>mybatis-spring</artifactId>
+		</dependency>
+		<!-- (e) mybatis -->
 	</dependencies>
 </project>

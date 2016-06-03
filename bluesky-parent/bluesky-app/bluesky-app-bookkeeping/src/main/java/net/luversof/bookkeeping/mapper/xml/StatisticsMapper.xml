@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.apache.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper	namespace="net.luversof.bookkeeping.mapper.StatisticsMapper">
+	<select id="selectStatistics" resultType="net.luversof.bookkeeping.domain.Statistics">
+		SELECT SUM(amount) AS amount 
+		FROM Entry 
+		WHERE bookkeeping_id = 1 AND entryGroup_id IS NOT NULL GROUP BY entryGroup_id
+	</select>
+</mapper>

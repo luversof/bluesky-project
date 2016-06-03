@@ -4,7 +4,6 @@ import static net.luversof.bookkeeping.BookkeepingConstants.BOOKKEEPING_TRANSACT
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,7 +13,9 @@ import net.luversof.bookkeeping.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.EntrySearchInfo;
+import net.luversof.bookkeeping.domain.Statistics;
 import net.luversof.bookkeeping.domain.StatisticsSearchInfo;
+import net.luversof.bookkeeping.mapper.StatisticsMapper;
 import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.core.exception.BlueskyException;
 
@@ -27,6 +28,9 @@ public class EntryService {
 	
 	@Autowired
 	private BookkeepingService bookkeepingService;
+	
+	@Autowired
+	private StatisticsMapper statisticsMapper;
 
 	public Entry create(Entry entry) {
 		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entry.getBookkeeping().getId());
@@ -106,8 +110,8 @@ public class EntryService {
 	 * @return
 	 */
 	@Transactional(value = BOOKKEEPING_TRANSACTIONMANAGER, readOnly = true)
-	public List<Map> test() {
-		return entryRepository.test();
+	public List<Statistics> test() {
+		return statisticsMapper.selectStatistics();
 	}
 	
 	

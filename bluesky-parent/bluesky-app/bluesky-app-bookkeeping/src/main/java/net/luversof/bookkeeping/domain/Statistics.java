@@ -1,6 +1,8 @@
 package net.luversof.bookkeeping.domain;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * 통계 정보 반환을 위한 객체
@@ -9,12 +11,12 @@ import lombok.Data;
  *
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Statistics {
 	
 	private EntryGroup entryGroup;
 
 	private long amount;
-	
-	private EntryType entryType;
 	
 }
