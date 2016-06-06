@@ -18,12 +18,29 @@ $(document).ready(function() {
 			this.listenTo(this.model, "destroy", this.remove);
 		},
 		render : function() {
-//			console.log("EntryView render", this.model, this.model.collection);
+//			console.log("StatisticsView render", this.model, this.model.collection);
 			var data = {
-				entry :	this.model.toJSON(),
+				statistics : this.model.toJSON(),
 				//assetList : assetCollection.toJSON(),
 				entryGroupList : entryGroupCollection.toJSON()
 			}
+			
+			//entryType을 먼저 확인
+			var entryType = this.model.get("entryGroup").entryType;
+		
+			console.log("entryType :", entryType);
+			
+			data.isTargetEntryGroup = function() {
+				return this.entryType == entryType;
+			}
+			data.isCredit = function() {
+				return entryType == "CREDIT";
+			}
+			data.isDebit = function() {
+				return entryType == "DEBIT";
+			}
+			
+			console.log("data : ", data);
 			
 			this.$el.html(Mustache.render(this.template, data));
 			return this;
@@ -55,8 +72,8 @@ $(document).ready(function() {
 			};
 			var statisticsList = this.collection.toJSON();
 			this.$el.html(Mustache.render(this.template, data));
-			this.collection.each(function(entry) {
-				var statisticsView = new $.StatisticsView({ model : entry });
+			this.collection.each(function(statistics) {
+				var statisticsView = new $.StatisticsView({ model : statistics });
 //				entryView.assetList = data.assetList;
 //				entryView.entryGroupList = data.entryGroupList;
 				this.$el.find("table tbody").append(statisticsView.render().el);

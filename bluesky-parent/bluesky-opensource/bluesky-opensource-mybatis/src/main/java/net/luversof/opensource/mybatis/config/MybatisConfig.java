@@ -14,6 +14,7 @@ public abstract class MybatisConfig {
 		// TypeHandler<?>[] typeHandlers = typeHandlerlist.toArray(new
 		// TypeHandler[typeHandlerlist.size()]);
 		// sqlSessionFactoryBean.setTypeHandlers(typeHandlers);
+		sqlSessionFactoryBean.setTypeHandlersPackage("net.luversof.opensource.mybatis.type");
 		return sqlSessionFactoryBean;
 	}
 }

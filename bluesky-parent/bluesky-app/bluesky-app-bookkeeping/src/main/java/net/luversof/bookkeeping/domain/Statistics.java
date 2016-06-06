@@ -15,8 +15,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Statistics {
 	
-	private EntryGroup entryGroup;
-
 	private long amount;
+	
+	private EntryGroup entryGroup;
 	
 }

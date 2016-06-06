@@ -8,9 +8,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 import lombok.Data;
-import net.luversof.bookkeeping.BookkeepingErrorCode;
 import net.luversof.bookkeeping.util.BookkeepingUtils;
-import net.luversof.core.exception.BlueskyException;
 
 /**
  * 통계보기 검색 관련 객체 - 년/월 단위 검색 가능 - 특정 기간 동안 검색 가능
@@ -38,30 +36,12 @@ public class StatisticsSearchInfo {
 	@NotNull(groups = SelectEntryList.class)
 	private LocalDate targetLocalDate = LocalDate.now();
 
-	private LocalDateTime startLocalDateTime;
-
-	private LocalDateTime endLocalDateTime;
-
 	public LocalDateTime getStartLocalDateTime() {
-		if (chronoUnit == null) {
-			return startLocalDateTime;
-		} else if (chronoUnit == ChronoUnit.YEARS) {
-			return BookkeepingUtils.getYearStartLocalDate(targetLocalDate, baseDate).atStartOfDay();
-		} else if (chronoUnit == ChronoUnit.MONTHS) {
-			return BookkeepingUtils.getMonthStartLocalDate(targetLocalDate, baseDate).atStartOfDay();
-		}
-		throw new BlueskyException(BookkeepingErrorCode.NOT_SUPPORT_CHRONOUNIT);
+		return BookkeepingUtils.getStartLocalDate(targetLocalDate, baseDate, chronoUnit).atStartOfDay();
 	}
 
 	public LocalDateTime getEndLocalDateTime() {
-		if (chronoUnit == null) {
-			return endLocalDateTime;
-		} else if (chronoUnit == ChronoUnit.YEARS) {
-			return BookkeepingUtils.getYearEndLocalDate(targetLocalDate, baseDate).atStartOfDay();
-		} else if (chronoUnit == ChronoUnit.MONTHS) {
-			return BookkeepingUtils.getMonthEndLocalDate(targetLocalDate, baseDate).atStartOfDay();
-		}
-		throw new BlueskyException(BookkeepingErrorCode.NOT_SUPPORT_CHRONOUNIT);
+		return BookkeepingUtils.getEndLocalDate(targetLocalDate, baseDate, chronoUnit).atStartOfDay();
 	}
 
 	public interface Select {

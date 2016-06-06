@@ -32,7 +32,7 @@ $(document).ready(function() {
 		render : function() {
 //			console.log("EntryView render", this.model, this.model.collection);
 			var data = {
-				entry :	this.model.toJSON(),
+				entry : this.model.toJSON(),
 				assetList : assetCollection.toJSON(),
 				entryGroupList : entryGroupCollection.toJSON()
 			}

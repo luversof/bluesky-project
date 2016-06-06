@@ -3,7 +3,29 @@ package net.luversof.bookkeeping.util;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
+import net.luversof.bookkeeping.BookkeepingErrorCode;
+import net.luversof.core.exception.BlueskyException;
+
 public class BookkeepingUtils {
+	
+	
+	public static LocalDate getStartLocalDate(LocalDate targetLocalDate, int baseDate, ChronoUnit chronoUnit) {
+		if (ChronoUnit.MONTHS == chronoUnit) {
+			return getMonthStartLocalDate(targetLocalDate, baseDate);
+		} else if (ChronoUnit.YEARS == chronoUnit) {
+			return getYearStartLocalDate(targetLocalDate, baseDate);
+		} 
+		throw new BlueskyException(BookkeepingErrorCode.NOT_SUPPORT_CHRONOUNIT);
+	}
+	
+	public static LocalDate getEndLocalDate(LocalDate targetLocalDate, int baseDate, ChronoUnit chronoUnit) {
+		if (ChronoUnit.MONTHS == chronoUnit) {
+			return getMonthEndLocalDate(targetLocalDate, baseDate);
+		} else if (ChronoUnit.YEARS == chronoUnit) {
+			return getYearEndLocalDate(targetLocalDate, baseDate);
+		} 
+		throw new BlueskyException(BookkeepingErrorCode.NOT_SUPPORT_CHRONOUNIT);
+	}
 
 	/**
 	 * targetLocalDate 날짜를 기준으로 월 시작일 계산

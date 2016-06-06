@@ -9,12 +9,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.Statistics;
 import net.luversof.bookkeeping.domain.StatisticsSearchInfo;
 import net.luversof.bookkeeping.service.BookkeepingService;
-import net.luversof.bookkeeping.service.EntryService;
 import net.luversof.bookkeeping.service.StatisticsSearchInfoService;
+import net.luversof.bookkeeping.service.StatisticsService;
 
 @Slf4j
 public class StatisticsTest extends GeneralTest {
@@ -24,9 +23,9 @@ public class StatisticsTest extends GeneralTest {
 	
 	@Autowired
 	private BookkeepingService bookkeepingService;
-
+	
 	@Autowired
-	private EntryService entryService;
+	private StatisticsService statisticsService;
 
 	/**
 	 * 통계를 위해 entryList 추출 -> statisticsList로 전환
@@ -47,16 +46,13 @@ public class StatisticsTest extends GeneralTest {
 		log.debug("statisticsSearchInfo : {}", statisticsSearchInfo);
 		
 		//3. entryList 획득
-		List<Entry> entryList = entryService.findByStatisticsSearchInfo(statisticsSearchInfo);
+		// List<Entry> entryList = entryService.findByStatisticsSearchInfo(statisticsSearchInfo);
+		// log.debug("entryList : {}", entryList);
+		
+		
+		//3. entryList 획득
+		List<Statistics> entryList = statisticsService.selectStatistics(statisticsSearchInfo);
 		log.debug("entryList : {}", entryList);
 		
-		
 	}
-	
-	@Test
-	public void test2() {
-		List<Statistics> statisticsList = entryService.test();
-		log.debug("result!! : {}", statisticsList);
-	}
-	
 }

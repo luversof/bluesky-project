@@ -25,8 +25,6 @@ public class EntryGroupController {
 
 	@Autowired
 	private EntryGroupService entryGroupService;
-	
-
 
 	@RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public List<EntryGroup> getEntryGroupList(@PathVariable("bookkeeping.id") long bookkeepingId, Authentication authentication) {

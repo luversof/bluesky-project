@@ -13,9 +13,7 @@ import net.luversof.bookkeeping.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.EntrySearchInfo;
-import net.luversof.bookkeeping.domain.Statistics;
 import net.luversof.bookkeeping.domain.StatisticsSearchInfo;
-import net.luversof.bookkeeping.mapper.StatisticsMapper;
 import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.core.exception.BlueskyException;
 
@@ -28,9 +26,6 @@ public class EntryService {
 	
 	@Autowired
 	private BookkeepingService bookkeepingService;
-	
-	@Autowired
-	private StatisticsMapper statisticsMapper;
 
 	public Entry create(Entry entry) {
 		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entry.getBookkeeping().getId());
@@ -80,19 +75,7 @@ public class EntryService {
 		entrySearchInfo.setBaseDate(baseDate);
 		return entryRepository.findByBookkeepingIdAndEntryDateBetween(entrySearchInfo.getBookkeeping().getId(), entrySearchInfo.getStartLocalDateTime(), entrySearchInfo.getEndLocalDateTime());
 	}
-	
-	/**
-	 * @param entrySearchInfo
-	 * @return
-	 */
-	@Transactional(value = BOOKKEEPING_TRANSACTIONMANAGER, readOnly = true)
-	public List<Entry> findByStatisticsSearchInfo(StatisticsSearchInfo statisticsSearchInfo) {
-		Bookkeeping targetBookkeeping = bookkeepingService.findOne(statisticsSearchInfo.getBookkeeping().getId());
-		int baseDate = targetBookkeeping.getBaseDate();
-		statisticsSearchInfo.setBaseDate(baseDate);
-		return entryRepository.findByBookkeepingIdAndEntryDateBetween(statisticsSearchInfo.getBookkeeping().getId(), statisticsSearchInfo.getStartLocalDateTime(), statisticsSearchInfo.getEndLocalDateTime());
-	}
-	
+
 	/**
 	 * test용 메소드
 	 * @param bookkeepingId
@@ -104,15 +87,5 @@ public class EntryService {
 	public List<Entry> findByBookkeepingIdAndEntryDateBetween(long bookkeepingId, LocalDateTime startLocalDateTime, LocalDateTime endLocalDateTime) {
 		return entryRepository.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startLocalDateTime, endLocalDateTime);
 	}
-	
-	/**
-	 * test용 메소드
-	 * @return
-	 */
-	@Transactional(value = BOOKKEEPING_TRANSACTIONMANAGER, readOnly = true)
-	public List<Statistics> test() {
-		return statisticsMapper.selectStatistics();
-	}
-	
 	
 }

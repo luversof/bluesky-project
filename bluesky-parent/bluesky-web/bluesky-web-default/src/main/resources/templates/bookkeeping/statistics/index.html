@@ -14,7 +14,7 @@
 	<script type="text/javascript" th:src="@{/js/bookkeeping/asset/collection.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/statisticsSearchInfo/model.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/statisticsSearchInfo/view.js}"></script>
-	<script type="text/javascript" th:src="@{/js/bookkeeping/entry/model.js}"></script>
+	<script type="text/javascript" th:src="@{/js/bookkeeping/statistics/model.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/statistics/collection.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/statistics/view.js}"></script>
 </head>
@@ -29,11 +29,6 @@
 				<table class="table table-hover">
 					<colgroup>
 						<col></col>
-						<col class="col-md-2"></col>
-						<col class="col-md-2"></col>
-						<col class="col-md-2"></col>
-						<col></col>
-						<col class="col-md-2"></col>
 						<col></col>
 					</colgroup>
 					<thead>
@@ -67,60 +62,6 @@
 							</th>
 							<th></th>
 						</tr>
-						<tr class="active">
-							<td colspan="7">
-								<div class="col-md-4">
-									<div class="btn-group btn-group-justified" role="group">
-										<div class="btn-group" role="group">
-											<button type="button" class="btn btn-default" role="button" data-menu="selectCreateEntryType" value="CREDIT"><i class="fa fa-plus" aria-hidden="true"></i> 수입</button>
-										</div>
-										<div class="btn-group" role="group">
-											<button type="button" class="btn btn-default" role="button" data-menu="selectCreateEntryType" value="DEBIT"><i class="fa fa-minus" aria-hidden="true"></i> 지출</button>
-										</div>
-										<div class="btn-group" role="group">
-											<button type="button" class="btn btn-default" role="button" data-menu="selectCreateEntryType" value="TRANSFER"><i class="fa fa-exchange" aria-hidden="true"></i> 이체</button>
-										</div>
-									</div>
-								</div>
-							</td>
-						</tr>
-						<tr class="active">
-							<td></td>
-							<td>
-								<div class="input-group">
-	  								<span class="input-group-addon"><i class="fa fa-bars" aria-hidden="true"></i></span>
-  									<select class="form-control" name="createEntryGroup">
-										{{#entryGroupList}}
-											<option value="{{id}}">{{name}}</option>
-										{{/entryGroupList}}
-									</select>
-								</div>
-							</td>
-							<td>
-								<div class="input-group">
-  									<span class="input-group-addon"><i class="fa fa-minus" aria-hidden="true"></i></span>
-									<select class="form-control" name="createDebitAsset">
-										{{#assetList}}
-											<option value="{{id}}">{{name}}</option>
-										{{/assetList}}
-									</select>
-								</div>
-							</td>
-							<td>
-								<div class="input-group">
-  									<span class="input-group-addon"><i class="fa fa-plus" aria-hidden="true"></i></span>
-									<select class="form-control" name="createCreditAsset">
-										{{#assetList}}
-											<option value="{{id}}">{{name}}</option>
-										{{/assetList}}
-									</select>
-								</div>
-							</td>
-							<td contenteditable="true" data-key-name="createAmount" placeholder="금액을  입력하세요"></td>
-							<td contenteditable="true" data-key-name="createMemo" placeholder="내용을 입력하세요"></td>
-							<td><input type="text" class="form-control" name="createEntryDate" /></td>
-							<td><button class="btn btn-default btn-sm" data-menu="createEntry"><span class="glyphicon glyphicon-plus">추가</span></button></td>
-						</tr>
 					</thead>
 					<tbody>
 					</tbody>
@@ -133,53 +74,14 @@
 			<td>
 				{{#isCredit}}<i class="fa fa-plus" aria-hidden="true"></i>{{/isCredit}}
 				{{#isDebit}}<i class="fa fa-minus" aria-hidden="true"></i>{{/isDebit}}
-				{{#isTransfer}}<i class="fa fa-exchange" aria-hidden="true"></i>{{/isTransfer}}
 			</td>
-			{{^isTransfer}}
 			<td>
 				<div class="input-group">
-	  				<span class="input-group-addon"><i class="fa fa-bars" aria-hidden="true"></i></span>
-					<select class="form-control" name="entryGroup">
-						{{#entryGroupList}}
-							{{#isTargetEntryGroup}}
-								<option value="{{id}}">{{name}}</option>
-							{{/isTargetEntryGroup}}
-						{{/entryGroupList}}
-					</select>
+					{{statistics.entryGroup.name}}
+					{{statistics.amount}}
 				</div>
 			</td>
-			{{/isTransfer}}
-			{{#entry.debitAsset}}
-			<td>
-				<div class="input-group">
-					<span class="input-group-addon"><i class="fa fa-minus" aria-hidden="true"></i></span>
-					<select class="form-control" name="debitAsset">
-						{{#assetList}}
-							<option value="{{id}}" >{{name}}</option>
-						{{/assetList}}
-					</select>
-				</div>
-			</td>
-			{{/entry.debitAsset}}
-			{{#entry.creditAsset}}
-			<td>
-				<div class="input-group">
-					<span class="input-group-addon"><i class="fa fa-plus" aria-hidden="true"></i></span>
-					<select class="form-control" name="creditAsset">
-						{{#assetList}}
-							<option value="{{id}}" >{{name}}</option>
-						{{/assetList}}
-					</select>
-				</div>
-			</td>
-			{{/entry.creditAsset}}
 			<td contenteditable="true" data-key-name="amount">{{entry.amount}}</td>
-			<td contenteditable="true" data-key-name="memo">{{entry.memo}}</td>
-			<td><input type="text" class="form-control" name="entryDate" value="{{getEntryDate}}" /></td>
-			<td>
-				<button class="btn btn-default btn-sm" data-menu="updateEntry"><span class="glyphicon glyphicon-edit">수정</span></button>
-				<button class="btn btn-default btn-sm" data-menu="deleteEntry"><span class="glyphicon glyphicon-remove">삭제</span></button>
-			</td>
 		</script>
 		<script type="text/template" id="template-statisticsSearchInfo-view">
 			<form class="form-inline">

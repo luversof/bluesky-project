@@ -15,6 +15,7 @@ import net.luversof.bookkeeping.service.StatisticsSearchInfoService;
 import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
+@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 @RequestMapping("/bookkeeping/{bookkeeping.id}/statisticsSearchInfo")
 public class StatisticsSearchInfoController {
 	
@@ -24,7 +25,6 @@ public class StatisticsSearchInfoController {
 	//기간별 통계 보기
 	//월간, 년간 통계보기를 기본으로 삼자.
 	
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public StatisticsSearchInfo getStatisticsSearchInfo(@Validated(StatisticsSearchInfo.Select.class) StatisticsSearchInfo statisticsSearchInfo) {
 		return statisticsSearchInfoService.getStatisticsSearchInfo(statisticsSearchInfo);

@@ -17,13 +17,13 @@ import net.luversof.bookkeeping.service.EntrySearchInfoService;
 import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
+@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 @RequestMapping("/bookkeeping/{bookkeeping.id}/entrySearchInfo")
 public class EntrySearchInfoController {
 	
 	@Autowired
 	private EntrySearchInfoService entrySearchInfoService;
-
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	
 	@RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public EntrySearchInfo getEntrySearchInfo(@Validated(Select.class) EntrySearchInfo entrySearchInfo) {
 		return entrySearchInfoService.getEntrySearchInfo(entrySearchInfo);
