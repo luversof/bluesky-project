@@ -28,8 +28,6 @@ $(document).ready(function() {
 			//entryType을 먼저 확인
 			var entryType = this.model.get("entryGroup").entryType;
 		
-			console.log("entryType :", entryType);
-			
 			data.isTargetEntryGroup = function() {
 				return this.entryType == entryType;
 			}
@@ -39,8 +37,6 @@ $(document).ready(function() {
 			data.isDebit = function() {
 				return entryType == "DEBIT";
 			}
-			
-			console.log("data : ", data);
 			
 			this.$el.html(Mustache.render(this.template, data));
 			return this;

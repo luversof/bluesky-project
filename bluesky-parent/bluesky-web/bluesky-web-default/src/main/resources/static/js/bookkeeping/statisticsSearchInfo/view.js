@@ -4,7 +4,7 @@ $(document).ready(function() {
 		el : "[data-menu-area=statisticsSearchInfo]",
 		template : $("#template-statisticsSearchInfo-view").html(),
 		events : {
-			"change input[name=statisticsSearchInfoTargetMonth]" : "isChange",
+			"change input[name=statisticsSearchInfoTargetDate]" : "isChange",
 			"click [data-menu-statisticsSearchInfo]" : "selectMenu"
 		},
 		initialize : function() {
@@ -15,12 +15,12 @@ $(document).ready(function() {
 		render : function() {
 			//console.log("statisticsSearchInfoView render")
 			var data = this.model.toJSON();
-			data.getTargetMonth = function() {
-				return moment(data.startLocalDateTime).format("YYYY-MM");
+			data.getTargetDate = function() {
+				return moment(data.startLocalDateTime).format(data.getMomentDateFormat());
 			}
 			this.$el
 				.html(Mustache.render(this.template, data))
-				.find("input[name=statisticsSearchInfoTargetMonth]").datepicker({ format : "yyyy-mm", language: "ko", minViewMode : 1, autoclose : true })
+				.find("input[name=statisticsSearchInfoTargetDate]").datepicker({ format : data.getDatepickerDateFormat(), language: "ko", minViewMode : 1, autoclose : true })
 			return this;
 		},
 		selectStatisticsSearchInfo : function(chronoUnit, targetLocalDate) {
@@ -34,25 +34,28 @@ $(document).ready(function() {
 		},
 		isChange : function() {
 			//console.log("statisticsSearchInfoView isChange");
-			var targetMonth = this.$el.find("input[name=statisticsSearchInfoTargetMonth]").val();
-			if (targetMonth != moment(this.model.get("startLocalDateTime")).format("YYYY-MM")) {
+			var targetDate = this.$el.find("input[name=statisticsSearchInfoTargetDate]").val();
+			var data = this.model.toJSON();
+			if (targetDate != moment(this.model.get("startLocalDateTime")).format(data.getMomentDateFormat())) {
 				// 변경처리
 				var chronoUnit = "YEARS";
-				var targetLocalDate = moment(targetMonth).add(this.model.get("baseDate") - 1, "days").format("YYYY-MM-DD");
+				chronoUnit = data.chronoUnit;
+				var targetLocalDate = moment(targetDate).add(this.model.get("baseDate") - 1, "days").format("YYYY-MM-DD");
 				this.selectStatisticsSearchInfo(chronoUnit, targetLocalDate);
 			}
 		},
 		selectMenu : function(event) {
 			event.preventDefault();
 			var menu = $(event.currentTarget).attr("data-menu-statisticsSearchInfo");
-			var targetMonth = this.$el.find("input[name=statisticsSearchInfoTargetMonth]").val();
-			var targetLocalDateMoment = moment(targetMonth).add(this.model.get("baseDate") - 1, "days");
-			if (menu == "prevMonth") {
-				targetLocalDateMoment.subtract(1, "months");
-			} else if (menu == "nextMonth") {
-				targetLocalDateMoment.add(1, "months");
+			var targetDate = this.$el.find("input[name=statisticsSearchInfoTargetDate]").val();
+			var data = this.model.toJSON();
+			var targetLocalDateMoment = moment(targetDate).add(this.model.get("baseDate") - 1, "days");
+			if (menu == "prevDate") {
+				targetLocalDateMoment.subtract(1, data.getMomentManipulateKey());
+			} else if (menu == "nextDate") {
+				targetLocalDateMoment.add(1, data.getMomentManipulateKey());
 			}
-			this.selectStatisticsSearchInfo(targetLocalDateMoment.format("YYYY-MM-DD"));
+			this.selectStatisticsSearchInfo(data.chronoUnit, targetLocalDateMoment.format("YYYY-MM-DD"));
 		}
 	});
 });

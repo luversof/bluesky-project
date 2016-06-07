@@ -3,15 +3,17 @@ $.EntrySearchInfo = Backbone.Model.extend({
 	defaults : {
 		bookkeeping : { id : $.bookkeepingId },
 		targetLocalDate : null,
+		getMomentDateFormat : function() {
+			return "YYYY-MM";
+		},
+		getMomentManipulateKey : function() {
+			return "months";
+		},
+		getDatepickerDateFormat : function() {
+			return this.getMomentDateFormat().toLowerCase();
+		}
 	},
 	initialize : function() {
-		//console.log("This model has been initialized.");
-		this.on("change", function() {
-			//console.log("this model has changed.");
-		});
-		this.on("change:name", function() {
-			//console.log("name value for this model has changed.");
-		});
 		this.on("invalid", function(model, error) {
 			alert(error);
 		});
