@@ -34,6 +34,11 @@
 					</colgroup>
 					<thead>
 						<tr>
+							<th colspan="3">
+								수입 : {{getTotalCreditAmount}}, 지출 : {{getTotalDebitAmount}}, 총액 : {{getTotalAmount}}
+							</th>
+						</tr>
+						<tr>
 							<th>
 								<button type="button" class="btn btn-default {{#isSortEntryType}}btn-info{{/isSortEntryType}}" data-menu-sortColumn="entryType" data-menu-sortDirection="{{#isSortEntryType}}{{sortDirection}}{{/isSortEntryType}}">
 									지출 유형

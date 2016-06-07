@@ -67,6 +67,28 @@ $(document).ready(function() {
 				statisticsSearchInfo : this.statisticsSearchInfo.toJSON()
 			};
 			var statisticsList = this.collection.toJSON();
+			var format = "0,0[.]00$";
+			
+			data.getTotalCreditAmount = function() {
+				return _.reduce(statisticsList, function(amount, statistics) {
+					return numeral(numeral().unformat(amount) + (statistics.entryGroup.entryType == "CREDIT" ? statistics.amount : 0)).format(format);
+				}, 0);
+			}
+			data.getTotalDebitAmount = function() {
+				return _.reduce(statisticsList, function(amount, statistics) {
+					return numeral(numeral().unformat(amount) + (statistics.entryGroup.entryType == "DEBIT" ? statistics.amount : 0)).format(format);
+				}, 0);
+			}
+			data.getTotalAmount = function() {
+				return numeral(numeral().unformat(data.getTotalCreditAmount()) - numeral().unformat(data.getTotalDebitAmount())).format(format);
+			}
+			data.isSortEntryGroup = function() {
+				return this.sortColumn == "entryGroup";
+			}
+			data.isSortColumnAmount = function() {
+				return this.sortColumn == "amount";
+			}
+			
 			this.$el.html(Mustache.render(this.template, data));
 			this.collection.each(function(statistics) {
 				var statisticsView = new $.StatisticsView({ model : statistics });
