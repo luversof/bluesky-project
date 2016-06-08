@@ -5,7 +5,8 @@ $(document).ready(function() {
 		template : $("#template-statisticsSearchInfo-view").html(),
 		events : {
 			"change input[name=statisticsSearchInfoTargetDate]" : "isChange",
-			"click [data-menu-statisticsSearchInfo]" : "selectMenu"
+			"click [data-menu-statisticsSearchInfo]" : "selectMenu",
+			"click [data-menu=selectStatisticsSearchInfoChronoUnit]" : "selectStatisticsSearchInfoChronoUnit"
 		},
 		initialize : function() {
 			//console.log("This view has been initialized.");
@@ -20,10 +21,12 @@ $(document).ready(function() {
 			}
 			this.$el
 				.html(Mustache.render(this.template, data))
-				.find("input[name=statisticsSearchInfoTargetDate]").datepicker({ format : data.getDatepickerDateFormat(), language: "ko", minViewMode : 1, autoclose : true })
+				.find("input[name=statisticsSearchInfoTargetDate]").datepicker({ format : data.getDatepickerDateFormat(), language: "ko", minViewMode : 1, autoclose : true }).end()
+				.find("[data-menu=selectStatisticsSearchInfoChronoUnit]:eq(0)").trigger("click").end();
 			return this;
 		},
 		selectStatisticsSearchInfo : function(chronoUnit, targetLocalDate) {
+			console.log("StatisticsSearchInfoView selectStatisticsSearchInfo");
 			this.model.fetch({
 				reset : true,
 				data : $.param({
@@ -33,18 +36,21 @@ $(document).ready(function() {
 			});
 		},
 		isChange : function() {
-			//console.log("statisticsSearchInfoView isChange");
+			console.log("statisticsSearchInfoView isChange");
 			var targetDate = this.$el.find("input[name=statisticsSearchInfoTargetDate]").val();
+			var targetChronoUnit = this.$el.find("[data-menu=selectStatisticsSearchInfoChronoUnit].active").val();
 			var data = this.model.toJSON();
-			if (targetDate != moment(this.model.get("startLocalDateTime")).format(data.getMomentDateFormat())) {
+			
+			console.log("Test : ", data.chronoUnit, targetChronoUnit);
+			
+			if (targetDate != moment(this.model.get("startLocalDateTime")).format(data.getMomentDateFormat()) || data.chronoUnit != targetChronoUnit) {
 				// 변경처리
-				var chronoUnit = "YEARS";
-				chronoUnit = data.chronoUnit;
 				var targetLocalDate = moment(targetDate).add(this.model.get("baseDate") - 1, "days").format("YYYY-MM-DD");
-				this.selectStatisticsSearchInfo(chronoUnit, targetLocalDate);
+				this.selectStatisticsSearchInfo(targetChronoUnit, targetLocalDate);
 			}
 		},
 		selectMenu : function(event) {
+			console.log("StatisticsSearchInfoView selectMenu");
 			event.preventDefault();
 			var menu = $(event.currentTarget).attr("data-menu-statisticsSearchInfo");
 			var targetDate = this.$el.find("input[name=statisticsSearchInfoTargetDate]").val();
@@ -55,7 +61,13 @@ $(document).ready(function() {
 			} else if (menu == "nextDate") {
 				targetLocalDateMoment.add(1, data.getMomentManipulateKey());
 			}
+			console.log("test : ", data.chronoUnit, targetLocalDateMoment.format("YYYY-MM-DD"));
 			this.selectStatisticsSearchInfo(data.chronoUnit, targetLocalDateMoment.format("YYYY-MM-DD"));
+		},
+		selectStatisticsSearchInfoChronoUnit : function(event) {
+			// 버튼 활성화 처리
+			this.$el.find("[data-menu=selectStatisticsSearchInfoChronoUnit]").removeClass("active btn-info");
+			$(event.currentTarget).addClass("active btn-info");
 		}
 	});
 });

@@ -58,7 +58,7 @@ $(document).ready(function() {
 
 			this.statisticsSearchInfo = new $.StatisticsSearchInfo();
 			var statisticsSearchInfoView = new $.StatisticsSearchInfoView({ model : this.statisticsSearchInfo });
-			this.statisticsSearchInfo.fetch({ data : { chronoUnit : "MONTHS" }});
+			this.statisticsSearchInfo.fetch({ data : { chronoUnit : "YEARS" }});
 			
 			this.listenTo(this.collection, "reset", this.render);
 			this.listenTo(this.collection, "sort", this.render);
