@@ -37,6 +37,9 @@ $(document).ready(function() {
 			data.isDebit = function() {
 				return entryType == "DEBIT";
 			}
+			data.statisticsAmountFormat = function() {
+				return numeral(this.statistics.amount).format();
+			}
 			
 			this.$el.html(Mustache.render(this.template, data));
 			return this;
@@ -47,7 +50,7 @@ $(document).ready(function() {
 		el : "#statisticsArea",
 		template : $("#template-statistics-collection-view").html(),
 		events : {
-			
+			"click [data-menu-sortColumn][data-menu-sortDirection]" : "renderBySortColumn"
 		},
 		initialize : function() {
 			//console.log("This collection view has been initialized.");
@@ -55,16 +58,19 @@ $(document).ready(function() {
 
 			this.statisticsSearchInfo = new $.StatisticsSearchInfo();
 			var statisticsSearchInfoView = new $.StatisticsSearchInfoView({ model : this.statisticsSearchInfo });
-			this.statisticsSearchInfo.fetch({ data : { chronoUnit : "YEARS" }});
+			this.statisticsSearchInfo.fetch({ data : { chronoUnit : "MONTHS" }});
 			
 			this.listenTo(this.collection, "reset", this.render);
+			this.listenTo(this.collection, "sort", this.render);
 			this.listenTo(this.statisticsSearchInfo, "change", this.changeStatisticsSearchInfo);
 		},
 		render : function() {
 			var data = {
 				//assetList : assetCollection.toJSON(),
 				entryGroupList : entryGroupCollection.toJSON(),
-				statisticsSearchInfo : this.statisticsSearchInfo.toJSON()
+				statisticsSearchInfo : this.statisticsSearchInfo.toJSON(),
+				sortColumn : this.collection.sortColumn,
+				sortDirection : this.collection.sortDirection
 			};
 			var statisticsList = this.collection.toJSON();
 			var format = "0,0[.]00$";
@@ -82,8 +88,8 @@ $(document).ready(function() {
 			data.getTotalAmount = function() {
 				return numeral(numeral().unformat(data.getTotalCreditAmount()) - numeral().unformat(data.getTotalDebitAmount())).format(format);
 			}
-			data.isSortEntryGroup = function() {
-				return this.sortColumn == "entryGroup";
+			data.isSortEntryType = function() {
+				return this.sortColumn == "entryType";
 			}
 			data.isSortColumnAmount = function() {
 				return this.sortColumn == "amount";
@@ -97,9 +103,14 @@ $(document).ready(function() {
 				this.$el.find("table tbody").append(statisticsView.render().el);
 			}, this);
 		},
+		renderBySortColumn : function(event) {
+			this.collection.sortColumn = $(event.currentTarget).attr("data-menu-sortColumn");
+			this.collection.sortDirection = $(event.currentTarget).attr("data-menu-sortDirection") == "desc" ? "asc" : "desc";
+			this.collection.sort();
+		},
 		changeStatisticsSearchInfo : function() {
 //			console.log("changeEntrySearchInfo ");
-			this.collection.sortColumn = "entryDate";
+			this.collection.sortColumn = "entryType";
 			this.collection.sortDirection = "asc";
 			this.collection.fetch({
 				reset : true,

@@ -19,4 +19,14 @@ public class Statistics {
 	
 	private EntryGroup entryGroup;
 	
+	/**
+	 * client 의 sort 처리를 위해 entryGroup.entryType alias 처리
+	 * @return
+	 */
+	public EntryType getEntryType() {
+		if (entryGroup == null) {
+			return null;
+		}
+		return entryGroup.getEntryType();
+	}
 }
