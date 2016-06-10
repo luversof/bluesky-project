@@ -72,16 +72,8 @@
 
 		<!-- (s) javascript libarary -->
 		<dependency>
-			<groupId>org.webjars</groupId>
+			<groupId>org.webjars.npm</groupId>
 			<artifactId>jquery</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>jquery-ui</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>jquery-mobile</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.webjars</groupId>
@@ -104,8 +96,8 @@
 			<artifactId>mustache</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.webjars.bower</groupId>
-			<artifactId>metisMenu</artifactId>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>metismenu</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.webjars.bower</groupId>
