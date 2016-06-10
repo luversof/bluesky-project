@@ -290,8 +290,6 @@ $(document).ready(function() {
 		},
 		changeEntrySearchInfo : function() {
 //			console.log("changeEntrySearchInfo ");
-			this.collection.sortColumn = "entryDate";
-			this.collection.sortDirection = "asc";
 			this.collection.fetch({
 				reset : true,
 				data : $.param({

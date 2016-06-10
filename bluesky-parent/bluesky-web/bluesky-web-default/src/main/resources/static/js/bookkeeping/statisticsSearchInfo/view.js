@@ -19,14 +19,19 @@ $(document).ready(function() {
 			data.getTargetDate = function() {
 				return moment(data.startLocalDateTime).format(data.getMomentDateFormat());
 			}
+			data.isChronoUnitYears = function() {
+				return data.chronoUnit == "YEARS";
+			}
+			data.isChronoUnitMonths = function() {
+				return data.chronoUnit == "MONTHS";
+			}
 			this.$el
 				.html(Mustache.render(this.template, data))
-				.find("input[name=statisticsSearchInfoTargetDate]").datepicker({ format : data.getDatepickerDateFormat(), language: "ko", minViewMode : 1, autoclose : true }).end()
-				.find("[data-menu=selectStatisticsSearchInfoChronoUnit]:eq(0)").trigger("click").end();
+				.find("input[name=statisticsSearchInfoTargetDate]").datepicker({ format : data.getDatepickerDateFormat(), language: "ko", minViewMode : data.getMomentManipulateKey(), autoclose : true }).end();
 			return this;
 		},
 		selectStatisticsSearchInfo : function(chronoUnit, targetLocalDate) {
-			console.log("StatisticsSearchInfoView selectStatisticsSearchInfo");
+			//console.log("StatisticsSearchInfoView selectStatisticsSearchInfo", chronoUnit, targetLocalDate);
 			this.model.fetch({
 				reset : true,
 				data : $.param({
@@ -36,12 +41,10 @@ $(document).ready(function() {
 			});
 		},
 		isChange : function() {
-			console.log("statisticsSearchInfoView isChange");
+			//console.log("statisticsSearchInfoView isChange");
 			var targetDate = this.$el.find("input[name=statisticsSearchInfoTargetDate]").val();
 			var targetChronoUnit = this.$el.find("[data-menu=selectStatisticsSearchInfoChronoUnit].active").val();
 			var data = this.model.toJSON();
-			
-			console.log("Test : ", data.chronoUnit, targetChronoUnit);
 			
 			if (targetDate != moment(this.model.get("startLocalDateTime")).format(data.getMomentDateFormat()) || data.chronoUnit != targetChronoUnit) {
 				// 변경처리
@@ -50,7 +53,7 @@ $(document).ready(function() {
 			}
 		},
 		selectMenu : function(event) {
-			console.log("StatisticsSearchInfoView selectMenu");
+			//console.log("StatisticsSearchInfoView selectMenu");
 			event.preventDefault();
 			var menu = $(event.currentTarget).attr("data-menu-statisticsSearchInfo");
 			var targetDate = this.$el.find("input[name=statisticsSearchInfoTargetDate]").val();
@@ -61,13 +64,13 @@ $(document).ready(function() {
 			} else if (menu == "nextDate") {
 				targetLocalDateMoment.add(1, data.getMomentManipulateKey());
 			}
-			console.log("test : ", data.chronoUnit, targetLocalDateMoment.format("YYYY-MM-DD"));
 			this.selectStatisticsSearchInfo(data.chronoUnit, targetLocalDateMoment.format("YYYY-MM-DD"));
 		},
 		selectStatisticsSearchInfoChronoUnit : function(event) {
 			// 버튼 활성화 처리
 			this.$el.find("[data-menu=selectStatisticsSearchInfoChronoUnit]").removeClass("active btn-info");
 			$(event.currentTarget).addClass("active btn-info");
+			this.isChange();
 		}
 	});
 });

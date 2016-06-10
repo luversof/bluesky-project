@@ -110,8 +110,6 @@ $(document).ready(function() {
 		},
 		changeStatisticsSearchInfo : function() {
 //			console.log("changeEntrySearchInfo ");
-			this.collection.sortColumn = "entryType";
-			this.collection.sortDirection = "asc";
 			this.collection.fetch({
 				reset : true,
 				data : $.param({

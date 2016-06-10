@@ -81,10 +81,10 @@
 			<form class="form-inline">
 				<div class="btn-group" role="group">
 					<div class="btn-group" role="group">
-						<button type="button" class="btn btn-default" role="button" data-menu="selectStatisticsSearchInfoChronoUnit" value="MONTHS">월간</button>
+						<button type="button" class="btn btn-default {{#isChronoUnitMonths}}active btn-info{{/isChronoUnitMonths}}" role="button" data-menu="selectStatisticsSearchInfoChronoUnit" value="MONTHS">월간</button>
 					</div>
 					<div class="btn-group" role="group">
-						<button type="button" class="btn btn-default" role="button" data-menu="selectStatisticsSearchInfoChronoUnit" value="YEARS">연간</button>
+						<button type="button" class="btn btn-default {{#isChronoUnitYears}}active btn-info{{/isChronoUnitYears}}" role="button" data-menu="selectStatisticsSearchInfoChronoUnit" value="YEARS">연간</button>
 					</div>
 				</div>
 				<div class="form-group">
