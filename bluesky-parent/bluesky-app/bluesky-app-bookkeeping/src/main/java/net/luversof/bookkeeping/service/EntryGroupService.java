@@ -1,6 +1,5 @@
 package net.luversof.bookkeeping.service;
 
-import static net.luversof.bookkeeping.BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER;
 
 import java.util.HashSet;
 import java.util.List;
@@ -8,7 +7,6 @@ import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.bookkeeping.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Bookkeeping;
@@ -18,7 +16,6 @@ import net.luversof.bookkeeping.repository.EntryGroupRepository;
 import net.luversof.core.exception.BlueskyException;
 
 @Service
-@Transactional(BOOKKEEPING_TRANSACTIONMANAGER)
 public class EntryGroupService {
 	@Autowired
 	private EntryGroupRepository entryGroupRepository;
@@ -65,12 +62,10 @@ public class EntryGroupService {
 		return entryGroupRepository.save(entryGroup);
 	}
 
-	@Transactional(value = BOOKKEEPING_TRANSACTIONMANAGER, readOnly = true)
 	public EntryGroup findOne(long id) {
 		return entryGroupRepository.findOne(id);
 	}
 	
-	@Transactional(value = BOOKKEEPING_TRANSACTIONMANAGER, readOnly = true)
 	public List<EntryGroup> findByBookkeepingId(long bookkeepingId) {
 		return entryGroupRepository.findByBookkeepingId(bookkeepingId);
 	}

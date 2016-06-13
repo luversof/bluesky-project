@@ -1,8 +1,10 @@
-<!DOCTYPE html>
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-spring4-4.dtd">
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
 <meta charset="utf-8" />
 <style>
 
-body {
+#testArea {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   width: 960px;
   height: 500px;
@@ -24,8 +26,15 @@ polyline{
 }
 
 </style>
-<body>
-<button class="randomize">randomize</button> 
+<!-- (s) jquery -->
+<script type="text/javascript" th:src="#{url.jquery.js}"></script>
+<!-- (e) jquery -->
 <script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
 <script type="text/javascript" th:src="@{/js/study/d3/test2.js}"></script>
+
+</head>
+<body>
+<button class="randomize">randomize</button> 
+<div id="testArea"></div>
 </body>
+</html>

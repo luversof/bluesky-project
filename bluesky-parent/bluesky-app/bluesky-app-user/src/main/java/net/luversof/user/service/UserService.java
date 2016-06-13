@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.user.domain.User;
 import net.luversof.user.domain.UserAuthority;
@@ -13,7 +12,6 @@ import net.luversof.user.domain.UserType;
 import net.luversof.user.repository.UserRepository;
 
 @Service
-@Transactional("userTransactionManager")
 public class UserService {
 
 	@Autowired
@@ -79,17 +77,14 @@ public class UserService {
 		return userRepository.save(user);
 	}
 
-	@Transactional(value = "userTransactionManager", readOnly = true)
 	public User findOne(long id) {
 		return userRepository.findOne(id);
 	}
 
-	@Transactional(value = "userTransactionManager", readOnly = true)
 	public User findByUsername(String username) {
 		return userRepository.findByUsername(username);
 	}
 	
-	@Transactional(value = "userTransactionManager", readOnly = true)
 	public User findByExternalIdAndUserType(String externalId, UserType userType) {
 		return userRepository.findByExternalIdAndUserType(externalId, userType);
 	}

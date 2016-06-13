@@ -1,13 +1,11 @@
 package net.luversof.bookkeeping.service;
 
-import static net.luversof.bookkeeping.BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.bookkeeping.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Bookkeeping;
@@ -17,7 +15,6 @@ import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.core.exception.BlueskyException;
 
 @Service
-@Transactional(BOOKKEEPING_TRANSACTIONMANAGER)
 public class EntryService {
 	
 	@Autowired
@@ -46,7 +43,6 @@ public class EntryService {
 		return entryRepository.save(entry);
 	}
 
-	@Transactional(value = BOOKKEEPING_TRANSACTIONMANAGER, readOnly = true)
 	public Entry findOne(long id) {
 		return entryRepository.findOne(id);
 	}
@@ -67,7 +63,6 @@ public class EntryService {
 	 * @param entrySearchInfo
 	 * @return
 	 */
-	@Transactional(value = BOOKKEEPING_TRANSACTIONMANAGER, readOnly = true)
 	public List<Entry> findByEntrySearchInfo(EntrySearchInfo entrySearchInfo) {
 		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entrySearchInfo.getBookkeeping().getId());
 		int baseDate = targetBookkeeping.getBaseDate();
@@ -82,7 +77,6 @@ public class EntryService {
 	 * @param endLocalDateTime
 	 * @return
 	 */
-	@Transactional(value = BOOKKEEPING_TRANSACTIONMANAGER, readOnly = true)
 	public List<Entry> findByBookkeepingIdAndEntryDateBetween(long bookkeepingId, LocalDateTime startLocalDateTime, LocalDateTime endLocalDateTime) {
 		return entryRepository.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startLocalDateTime, endLocalDateTime);
 	}
