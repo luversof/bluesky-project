@@ -41,6 +41,10 @@ $(document).ready(function() {
 				return numeral(this.statistics.amount).format();
 			}
 			
+			data.statisticsAmountPercent = function() {
+				return "??%";
+			}
+			
 			this.$el.html(Mustache.render(this.template, data));
 			return this;
 		}
