@@ -7,7 +7,9 @@ import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import net.luversof.bookkeeping.BookkeepingConstants;
 import net.luversof.bookkeeping.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.EntryGroup;
@@ -28,6 +30,7 @@ public class EntryGroupService {
 	 * @param bookkeeping
 	 * @return
 	 */
+	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
 	public List<EntryGroup> initialDataSave(Bookkeeping bookkeeping) {
 		Set<EntryGroup> entryGroupSet = new HashSet<>();
 		for (EntryGroupInitialData entryGroupInitialData : EntryGroupInitialData.values()) {

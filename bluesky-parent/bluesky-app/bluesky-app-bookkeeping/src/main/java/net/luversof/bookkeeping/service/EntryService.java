@@ -81,4 +81,9 @@ public class EntryService {
 		return entryRepository.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startLocalDateTime, endLocalDateTime);
 	}
 	
+	
+	public void test(long id) {
+		entryRepository.deleteById(id);
+	}
+	
 }

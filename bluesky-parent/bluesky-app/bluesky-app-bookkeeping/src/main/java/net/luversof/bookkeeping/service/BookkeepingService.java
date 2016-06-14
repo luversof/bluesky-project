@@ -5,7 +5,9 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import net.luversof.bookkeeping.BookkeepingConstants;
 import net.luversof.bookkeeping.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.repository.BookkeepingRepository;
@@ -30,6 +32,7 @@ public class BookkeepingService {
 	 * @param bookkeeping
 	 * @return
 	 */
+	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
 	public Bookkeeping create(Bookkeeping bookkeeping) {
 		bookkeepingRepository.save(bookkeeping);
 		assetService.initialDataSave(bookkeeping);
@@ -58,6 +61,7 @@ public class BookkeepingService {
 	 * 삭제의 경우 관련한 데이터를 모두 삭제 처리를 해야할까?
 	 * @param bookkeeping
 	 */
+	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
 	public void delete(Bookkeeping bookkeeping) {
 		Bookkeeping targetBookkeeping = findOne(bookkeeping.getId());
 		if (targetBookkeeping.getUserId() != bookkeeping.getUserId()) {

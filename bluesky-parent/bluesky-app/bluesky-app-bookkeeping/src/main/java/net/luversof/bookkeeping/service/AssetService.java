@@ -6,7 +6,9 @@ import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import net.luversof.bookkeeping.BookkeepingConstants;
 import net.luversof.bookkeeping.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.domain.AssetInitialData;
@@ -29,6 +31,7 @@ public class AssetService {
 	 * @param bookkeeping
 	 * @return
 	 */
+	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
 	public List<Asset> initialDataSave(Bookkeeping bookkeeping) {
 		Set<Asset> assetSet = new HashSet<>();
 		for (AssetInitialData assetInitialData : AssetInitialData.values()) {

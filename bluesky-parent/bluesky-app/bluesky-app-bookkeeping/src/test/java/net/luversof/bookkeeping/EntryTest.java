@@ -84,4 +84,10 @@ public class EntryTest extends GeneralTest {
 		List<Entry> entryList = entryService.findByBookkeepingIdAndEntryDateBetween(1, startDate.atStartOfDay(), endDate.atStartOfDay());
 		log.debug("entryList : {}", entryList);
 	}
+	
+	
+	@Test
+	public void test6() {
+		entryService.test(12);
+	}
 }
