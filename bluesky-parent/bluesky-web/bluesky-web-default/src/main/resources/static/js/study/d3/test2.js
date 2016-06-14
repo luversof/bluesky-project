@@ -1,7 +1,7 @@
 $(document).ready(function() {
 	
 	//var svg = d3.select("body")
-	var svg = d3.select("#statisticsChartArea")
+	var svg = d3.select("#testArea")
 		.append("svg")
 		.append("g")
 	
@@ -14,14 +14,14 @@ $(document).ready(function() {
 	radius = Math.min(width, height) / 2;
 	
 	var pie = d3.layout.pie()
-		.sort(null)
-		.value(function(d) {
-			return d.value;
-		});
+	.sort(null)
+	.value(function(d) {
+		return d.value;
+	});
 	
 	var arc = d3.svg.arc()
-		.outerRadius(radius * 0.8)
-			.innerRadius(radius * 0.4);
+	.outerRadius(radius * 0.8)
+	.innerRadius(radius * 0.4);
 	
 	var outerArc = d3.svg.arc()
 	.innerRadius(radius * 0.9)
@@ -31,11 +31,12 @@ $(document).ready(function() {
 	
 	var key = function(d){ return d.data.label; };
 	
-	function displayChart(statisticsArray) {
+	{
 	
 		var entryType = "CREDIT";
 		
 		//0. 대상 원본 데이터
+		var statisticsArray = [{"amount":11212467,"entryGroup":{"id":2,"name":"이자","entryType":"CREDIT","bookkeeping":{"id":1,"name":"이자","userId":1,"baseDate":4}},"entryType":"CREDIT"},{"amount":123,"entryGroup":{"id":4,"name":"사회생활","entryType":"DEBIT","bookkeeping":{"id":1,"name":"사회생활","userId":1,"baseDate":4}},"entryType":"DEBIT"},{"amount":123524,"entryGroup":{"id":5,"name":"문화","entryType":"DEBIT","bookkeeping":{"id":1,"name":"문화","userId":1,"baseDate":4}},"entryType":"DEBIT"},{"amount":124357,"entryGroup":{"id":6,"name":"기타","entryType":"CREDIT","bookkeeping":{"id":1,"name":"기타","userId":1,"baseDate":4}},"entryType":"CREDIT"},{"amount":1312312,"entryGroup":{"id":7,"name":"상여금","entryType":"CREDIT","bookkeeping":{"id":1,"name":"상여금","userId":1,"baseDate":4}},"entryType":"CREDIT"},{"amount":123232,"entryGroup":{"id":8,"name":"교통비","entryType":"DEBIT","bookkeeping":{"id":1,"name":"교통비","userId":1,"baseDate":4}},"entryType":"DEBIT"},{"amount":12325435,"entryGroup":{"id":9,"name":"월급","entryType":"CREDIT","bookkeeping":{"id":1,"name":"월급","userId":1,"baseDate":4}},"entryType":"CREDIT"}];
 		console.log("statisticsArray : ", statisticsArray);
 		
 		//1. 수입의 경우만 테스트를 해보자
@@ -61,18 +62,13 @@ $(document).ready(function() {
 			var percent = ((statistics.amount * 100) / statisticsAmountSum).toFixed(2);
 			return { label : statistics.entryGroup.name + " " + percent + "%", value : statistics.amount }
 		});
-		console.log("targetStatistics :", targetStatistics);
 		
 		
-		
-		change(targetStatistics, color);
+		d3.select(".randomize")
+		.on("click", function(){
+			change(targetStatistics, color);
+		});
 	}
-	
-	d3.select(".randomize")
-	.on("click", function(){
-		var statisticsArray = [{"amount":11212467,"entryGroup":{"id":2,"name":"이자","entryType":"CREDIT","bookkeeping":{"id":1,"name":"이자","userId":1,"baseDate":4}},"entryType":"CREDIT"},{"amount":123,"entryGroup":{"id":4,"name":"사회생활","entryType":"DEBIT","bookkeeping":{"id":1,"name":"사회생활","userId":1,"baseDate":4}},"entryType":"DEBIT"},{"amount":123524,"entryGroup":{"id":5,"name":"문화","entryType":"DEBIT","bookkeeping":{"id":1,"name":"문화","userId":1,"baseDate":4}},"entryType":"DEBIT"},{"amount":124357,"entryGroup":{"id":6,"name":"기타","entryType":"CREDIT","bookkeeping":{"id":1,"name":"기타","userId":1,"baseDate":4}},"entryType":"CREDIT"},{"amount":1312312,"entryGroup":{"id":7,"name":"상여금","entryType":"CREDIT","bookkeeping":{"id":1,"name":"상여금","userId":1,"baseDate":4}},"entryType":"CREDIT"},{"amount":123232,"entryGroup":{"id":8,"name":"교통비","entryType":"DEBIT","bookkeeping":{"id":1,"name":"교통비","userId":1,"baseDate":4}},"entryType":"DEBIT"},{"amount":12325435,"entryGroup":{"id":9,"name":"월급","entryType":"CREDIT","bookkeeping":{"id":1,"name":"월급","userId":1,"baseDate":4}},"entryType":"CREDIT"}];
-		displayChart(statisticsArray);
-	});
 	
 	function mergeWithFirstEqualZero(first, second){
 		var secondSet = d3.set(); second.forEach(function(d) { secondSet.add(d.label); });

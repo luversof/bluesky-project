@@ -9,8 +9,8 @@ $(document).ready(function() {
 	svg.append("g").attr("class", "labels");
 	svg.append("g").attr("class", "lines");
 	
-	var width = 960,
-	height = 450,
+	var width = 660,
+	height = 300,
 	radius = Math.min(width, height) / 2;
 	
 	var pie = d3.layout.pie()
@@ -31,7 +31,7 @@ $(document).ready(function() {
 	
 	var key = function(d){ return d.data.label; };
 	
-	function displayChart(statisticsArray) {
+	$.displayChart = function(statisticsArray) {
 	
 		var entryType = "CREDIT";
 		
@@ -63,16 +63,8 @@ $(document).ready(function() {
 		});
 		console.log("targetStatistics :", targetStatistics);
 		
-		
-		
 		change(targetStatistics, color);
 	}
-	
-	d3.select(".randomize")
-	.on("click", function(){
-		var statisticsArray = [{"amount":11212467,"entryGroup":{"id":2,"name":"이자","entryType":"CREDIT","bookkeeping":{"id":1,"name":"이자","userId":1,"baseDate":4}},"entryType":"CREDIT"},{"amount":123,"entryGroup":{"id":4,"name":"사회생활","entryType":"DEBIT","bookkeeping":{"id":1,"name":"사회생활","userId":1,"baseDate":4}},"entryType":"DEBIT"},{"amount":123524,"entryGroup":{"id":5,"name":"문화","entryType":"DEBIT","bookkeeping":{"id":1,"name":"문화","userId":1,"baseDate":4}},"entryType":"DEBIT"},{"amount":124357,"entryGroup":{"id":6,"name":"기타","entryType":"CREDIT","bookkeeping":{"id":1,"name":"기타","userId":1,"baseDate":4}},"entryType":"CREDIT"},{"amount":1312312,"entryGroup":{"id":7,"name":"상여금","entryType":"CREDIT","bookkeeping":{"id":1,"name":"상여금","userId":1,"baseDate":4}},"entryType":"CREDIT"},{"amount":123232,"entryGroup":{"id":8,"name":"교통비","entryType":"DEBIT","bookkeeping":{"id":1,"name":"교통비","userId":1,"baseDate":4}},"entryType":"DEBIT"},{"amount":12325435,"entryGroup":{"id":9,"name":"월급","entryType":"CREDIT","bookkeeping":{"id":1,"name":"월급","userId":1,"baseDate":4}},"entryType":"CREDIT"}];
-		displayChart(statisticsArray);
-	});
 	
 	function mergeWithFirstEqualZero(first, second){
 		var secondSet = d3.set(); second.forEach(function(d) { secondSet.add(d.label); });

@@ -106,6 +106,9 @@ $(document).ready(function() {
 //				entryView.entryGroupList = data.entryGroupList;
 				this.$el.find("table tbody").append(statisticsView.render().el);
 			}, this);
+			
+			// 차트 표시
+			$.displayChart(this.collection.toJSON());
 		},
 		renderBySortColumn : function(event) {
 			this.collection.sortColumn = $(event.currentTarget).attr("data-menu-sortColumn");
