@@ -111,10 +111,10 @@
 			<form class="form-inline">
 				<div class="btn-group" role="group">
 					<div class="btn-group" role="group">
-						<button type="button" class="btn btn-default {{#isChronoUnitMonths}}active btn-info{{/isChronoUnitMonths}}" role="button" data-menu="selectStatisticsSearchInfoChronoUnit" value="MONTHS">월간</button>
+						<button type="button" class="btn btn-default {{#isChronoUnitMonths}}active btn-info{{/isChronoUnitMonths}}" role="button" data-menu-selectStatisticsSearchInfoChronoUnit="MONTHS">월간</button>
 					</div>
 					<div class="btn-group" role="group">
-						<button type="button" class="btn btn-default {{#isChronoUnitYears}}active btn-info{{/isChronoUnitYears}}" role="button" data-menu="selectStatisticsSearchInfoChronoUnit" value="YEARS">연간</button>
+						<button type="button" class="btn btn-default {{#isChronoUnitYears}}active btn-info{{/isChronoUnitYears}}" role="button" data-menu-selectStatisticsSearchInfoChronoUnit="YEARS">연간</button>
 					</div>
 				</div>
 				<div class="form-group">
@@ -126,6 +126,17 @@
 						<div class="input-group-btn">
 							<button class="btn btn-default" data-menu-statisticsSearchInfo="nextDate">&gt;</button>
 						</div>
+					</div>
+				</div>
+				<div class="btn-group" role="group">
+					<div class="btn-group" role="group">
+						<button type="button" class="btn btn-default {{#isDisplayTotal}}active btn-info{{/isDisplayTotal}}" role="button" data-menu-selectStatisticsDisplay="total" value="MONTHS">전체</button>
+					</div>
+					<div class="btn-group" role="group">
+						<button type="button" class="btn btn-default {{#isDisplayCredit}}active btn-info{{/isDisplayCredit}}" role="button" data-menu-selectStatisticsDisplay="credit" value="YEARS">수입</button>
+					</div>
+					<div class="btn-group" role="group">
+						<button type="button" class="btn btn-default {{#isDisplayDebit}}active btn-info{{/isDisplayDebit}}" role="button" data-menu-selectStatisticsDisplay="debit" value="YEARS">지출</button>
 					</div>
 				</div>
 			</form>
