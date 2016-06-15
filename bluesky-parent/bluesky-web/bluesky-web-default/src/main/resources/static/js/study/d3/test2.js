@@ -1,7 +1,7 @@
 $(document).ready(function() {
 	
 	//var svg = d3.select("body")
-	var svg = d3.select("#testArea")
+	var svg = d3.select("#statisticsChartArea")
 		.append("svg")
 		.append("g")
 	

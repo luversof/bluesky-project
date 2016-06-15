@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.PropertySource;
 
 @Configuration
-@PropertySource(value = "classpath:jdbc-user-${spring.profiles.active}.properties", ignoreResourceNotFound = true)
+@PropertySource(value = "classpath:jdbc-user.properties", ignoreResourceNotFound = true)
 public class JdbcUserConfig {
 	
 	@Bean
