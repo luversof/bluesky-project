@@ -54,8 +54,10 @@ $(document).ready(function() {
 		el : "#statisticsArea",
 		template : $("#template-statistics-collection-view").html(),
 		events : {
-			"click [data-menu-sortColumn][data-menu-sortDirection]" : "renderBySortColumn"
+			"click [data-menu-sortColumn][data-menu-sortDirection]" : "renderBySortColumn",
+			"click [data-menu-selectStatisticsDisplay]" : "selectStatisticsDisplay"
 		},
+		displayEntryType : "TOTAL", 
 		initialize : function() {
 			//console.log("This collection view has been initialized.");
 			this.collection = new $.StatisticsCollection();
@@ -78,6 +80,7 @@ $(document).ready(function() {
 			};
 			var statisticsList = this.collection.toJSON();
 			var format = "0,0[.]00$";
+			var displayEntryType = this.displayEntryType;
 			
 			data.getTotalCreditAmount = function() {
 				return _.reduce(statisticsList, function(amount, statistics) {
@@ -98,9 +101,21 @@ $(document).ready(function() {
 			data.isSortColumnAmount = function() {
 				return this.sortColumn == "amount";
 			}
+			data.isDisplayEntryTypeTotal = function() {
+				return displayEntryType == "TOTAL";
+			}
+			data.isDisplayEntryTypeCredit = function() {
+				return displayEntryType == "CREDIT";
+			}
+			data.isDisplayEntryTypeDebit = function() {
+				return displayEntryType == "DEBIT";
+			}
 			
 			this.$el.html(Mustache.render(this.template, data));
 			this.collection.each(function(statistics) {
+				if (this.displayEntryType != "TOTAL" && this.displayEntryType != statistics.get("entryType")) {
+					return;
+				}
 				var statisticsView = new $.StatisticsView({ model : statistics });
 //				entryView.assetList = data.assetList;
 //				entryView.entryGroupList = data.entryGroupList;
@@ -108,7 +123,7 @@ $(document).ready(function() {
 			}, this);
 			
 			// 차트 표시
-			$.displayChart(this.collection.toJSON());
+			$.displayChart(this.collection.toJSON(), this.displayEntryType);
 		},
 		renderBySortColumn : function(event) {
 			this.collection.sortColumn = $(event.currentTarget).attr("data-menu-sortColumn");
@@ -124,6 +139,10 @@ $(document).ready(function() {
 					targetLocalDate : this.statisticsSearchInfo.get("targetLocalDate")
 				})
 			});
+		},
+		selectStatisticsDisplay : function(event) {
+			this.displayEntryType = $(event.currentTarget).attr("data-menu-selectStatisticsDisplay");
+			this.render();
 		}
 	});
 	

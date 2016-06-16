@@ -31,37 +31,35 @@ $(document).ready(function() {
 	
 	var key = function(d){ return d.data.label; };
 	
-	$.displayChart = function(statisticsArray) {
+	$.displayChart = function(statisticsArray, displayEntryType) {
 	
-		var entryType = "CREDIT";
+		//var entryType = "CREDIT";
 		
 		//0. 대상 원본 데이터
-		console.log("statisticsArray : ", statisticsArray);
+		//console.log("statisticsArray : ", statisticsArray);
 		
 		//1. 수입의 경우만 테스트를 해보자
 		var filteredStatisticsArray = statisticsArray.filter(function(statistics) {
-			return statistics.entryGroup.entryType == entryType;
+			return displayEntryType == "TOTAL" ? true : statistics.entryGroup.entryType == displayEntryType;
 		})
-		console.log("filteredStatisticsArray : ", filteredStatisticsArray);
+		//console.log("filteredStatisticsArray : ", filteredStatisticsArray);
 		
 		//1-1. color 목록 계산 (이렇게 하는건 무슨 이유때문이지?)
 		var color = d3.scale.category20()
 			.domain(filteredStatisticsArray.map(function(statistics) {
 				return statistics.entryGroup.name;
 			}));
-		console.log("color : ", color);
-		console.log("color 테스트 : ", color("월급"));
 		
 		//1-2. 전체 총 합 계산
 		var statisticsAmountSum = d3.sum(filteredStatisticsArray, function(statistics) { return statistics.amount });
-		console.log("statisticsAmountSum : ", statisticsAmountSum);
+		//console.log("statisticsAmountSum : ", statisticsAmountSum);
 		
 		//1-3. 표시할 데이터 배열 생성
 		targetStatistics = filteredStatisticsArray.map(function(statistics) {
 			var percent = ((statistics.amount * 100) / statisticsAmountSum).toFixed(2);
 			return { label : statistics.entryGroup.name + " " + percent + "%", value : statistics.amount }
 		});
-		console.log("targetStatistics :", targetStatistics);
+		//console.log("targetStatistics :", targetStatistics);
 		
 		change(targetStatistics, color);
 	}

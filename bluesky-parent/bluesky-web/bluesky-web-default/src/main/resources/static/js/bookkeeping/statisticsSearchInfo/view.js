@@ -6,8 +6,7 @@ $(document).ready(function() {
 		events : {
 			"change input[name=statisticsSearchInfoTargetDate]" : "isChange",
 			"click [data-menu-statisticsSearchInfo]" : "selectMenu",
-			"click [data-menu-selectStatisticsSearchInfoChronoUnit]" : "selectStatisticsSearchInfoChronoUnit",
-			"click [data-menu-selectStatisticsDisplay]" : "selectStatisticsDisplay"
+			"click [data-menu-selectStatisticsSearchInfoChronoUnit]" : "selectStatisticsSearchInfoChronoUnit"
 		},
 		initialize : function() {
 			//console.log("This view has been initialized.");
@@ -71,9 +70,6 @@ $(document).ready(function() {
 			this.$el.find("[data-menu-selectStatisticsSearchInfoChronoUnit]").removeClass("active btn-info");
 			$(event.currentTarget).addClass("active btn-info");
 			this.isChange();
-		},
-		selectStatisticsDisplay : function(event) {
-			
 		}
 	});
 });
