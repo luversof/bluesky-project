@@ -6,6 +6,6 @@ import org.springframework.security.oauth2.config.annotation.web.configuration.E
 
 @Configuration
 @EnableOAuth2Client
-@PropertySource(value = "classpath:oauth2-client-${spring.profiles.active}.properties")
+@PropertySource(value = "classpath:oauth2-client-${spring.profiles.active}.properties", ignoreResourceNotFound = true)
 public class OAuth2ClientConfig {
 }
