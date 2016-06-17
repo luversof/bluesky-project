@@ -27,9 +27,6 @@ public class StatisticsSearchInfo {
 
 	private int baseDate = 1;
 	
-	private LocalDateTime startLocalDateTime;
-	private LocalDateTime endLocalDateTime;
-
 	/**
 	 * 년/월 단위 통계 보기를 위해 필요한 파라메터
 	 */
