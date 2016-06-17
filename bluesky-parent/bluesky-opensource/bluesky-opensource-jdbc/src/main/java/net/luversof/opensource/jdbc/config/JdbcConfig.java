@@ -5,7 +5,7 @@ import org.springframework.context.annotation.PropertySource;
 
 @Configuration
 @PropertySource("classpath:jdbc.properties")
-@PropertySource("classpath:jdbc-${spring.profiles.active}.properties")
+@PropertySource(value = "classpath:jdbc-${spring.profiles.active}.properties", ignoreResourceNotFound = true)
 public class JdbcConfig {
 
 }
