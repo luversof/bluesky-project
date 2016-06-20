@@ -10,6 +10,7 @@ import org.springframework.context.annotation.PropertySource;
 
 @Configuration
 @PropertySource(value = "classpath:jdbc-blog.properties", ignoreResourceNotFound = true)
+@PropertySource(value = "classpath:jdbc-blog-${spring.profiles.active}.properties", ignoreResourceNotFound = true)
 public class JdbcBlogConfig {
 	
 	@Bean
