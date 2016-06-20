@@ -19,3 +19,4 @@ public class JdbcBookkeepingConfig {
 		return DataSourceBuilder.create().build();
 	}
 }
+
