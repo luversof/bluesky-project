@@ -125,11 +125,6 @@ $(document).ready(function() {
 			// 차트 표시
 			$.displayChart(this.collection.toJSON(), this.displayEntryType);
 		},
-		renderBySortColumn : function(event) {
-			this.collection.sortColumn = $(event.currentTarget).attr("data-menu-sortColumn");
-			this.collection.sortDirection = $(event.currentTarget).attr("data-menu-sortDirection") == "desc" ? "asc" : "desc";
-			this.collection.sort();
-		},
 		changeStatisticsSearchInfo : function() {
 //			console.log("changeEntrySearchInfo ");
 			this.collection.fetch({

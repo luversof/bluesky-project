@@ -184,7 +184,7 @@ $(document).ready(function() {
 			data.getTotalAmount = function() {
 				return numeral(numeral().unformat(data.getTotalCreditAmount()) - numeral().unformat(data.getTotalDebitAmount())).format(format);
 			}
-			data.isSortEntryType = function() {
+			data.isSortColumnEntryType = function() {
 				return this.sortColumn == "entryType";
 			}
 			data.isSortColumnEntryDate = function() {
@@ -282,11 +282,6 @@ $(document).ready(function() {
 				}).end()
 				.find("option:not(:disabled):eq(0)").attr("selected", true);
 			}
-		},
-		renderBySortColumn : function(event) {
-			this.collection.sortColumn = $(event.currentTarget).attr("data-menu-sortColumn");
-			this.collection.sortDirection = $(event.currentTarget).attr("data-menu-sortDirection") == "desc" ? "asc" : "desc";
-			this.collection.sort();
 		},
 		changeEntrySearchInfo : function() {
 //			console.log("changeEntrySearchInfo ");

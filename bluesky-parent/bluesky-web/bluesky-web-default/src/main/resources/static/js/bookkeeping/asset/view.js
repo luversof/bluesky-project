@@ -11,7 +11,7 @@ $(document).ready(function() {
 			"change select[name=assetType]" : "isChange"
 		},
 		initialize : function() {
-			console.log("This view has been initialized.");
+			// console.log("This view has been initialized.");
 			this.listenTo(this.model, 'change', this.render);
 			this.listenTo(this.model, 'destroy', this.remove);
 		},
@@ -55,7 +55,8 @@ $(document).ready(function() {
 		events : {
 			"click [data-menu=createAsset]" : "createAsset",
 			"keyup [data-key-name=createAssetName]" : "createAssetNameKeyUp",
-			"keypress [data-key-name=createAssetName]" : "createAssetNameKeyPress"
+			"keypress [data-key-name=createAssetName]" : "createAssetNameKeyPress",
+			"click [data-menu-sortColumn][data-menu-sortDirection]" : "renderBySortColumn"
 		},
 		initialize : function() {
 			//console.log("This collection view has been initialized.");
@@ -63,11 +64,25 @@ $(document).ready(function() {
 			
 			this.listenTo(this.collection, "reset", this.render);
 			this.listenTo(this.collection, "add", this.render);
+			this.listenTo(this.collection, "sort", this.render);
 			
 			this.collection.fetch({reset : true});
 		},
 		render : function() {
-			this.$el.html(Mustache.render(this.template));
+			var data = {
+				sortColumn : this.collection.sortColumn,
+				sortDirection : this.collection.sortDirection
+			};
+			data.isSortColumnAssetType = function() {
+				return this.sortColumn == "assetType";
+			}
+			data.isSortColumnName = function() {
+				return this.sortColumn == "name";
+			}
+			data.isSortColumnAmount = function() {
+				return this.sortColumn == "amount";
+			}
+			this.$el.html(Mustache.render(this.template, data));
 			this.collection.each(function(asset) {
 				var assetView = new $.AssetView({ model : asset });
 				this.$el.find("table tbody").append(assetView.render().el);

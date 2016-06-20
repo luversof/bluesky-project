@@ -11,7 +11,7 @@ $(document).ready(function() {
 			"change select[name=entryType]" : "isChange"
 		},
 		initialize : function() {
-			console.log("This view has been initialized.");
+			//console.log("This view has been initialized.");
 			this.listenTo(this.model, 'change', this.render);
 			this.listenTo(this.model, 'destroy', this.remove);
 		},
@@ -57,7 +57,8 @@ $(document).ready(function() {
 		events : {
 			"click [data-menu=createEntryGroup]" : "createEntryGroup",
 			"keyup [data-key-name=createEntryGroupName]" : "createEntryGroupNameKeyUp",
-			"keypress [data-key-name=createEntryGroupName]" : "createEntryGroupNameKeyPress"
+			"keypress [data-key-name=createEntryGroupName]" : "createEntryGroupNameKeyPress",
+			"click [data-menu-sortColumn][data-menu-sortDirection]" : "renderBySortColumn"
 		},
 		initialize : function() {
 			//console.log("This collection view has been initialized.");
@@ -65,11 +66,22 @@ $(document).ready(function() {
 			
 			this.listenTo(this.collection, "reset", this.render);
 			this.listenTo(this.collection, "add", this.render);
+			this.listenTo(this.collection, "sort", this.render);
 			
 			this.collection.fetch({reset : true});
 		},
 		render : function() {
-			this.$el.html(Mustache.render(this.template));
+			var data = {
+				sortColumn : this.collection.sortColumn,
+				sortDirection : this.collection.sortDirection
+			};
+			data.isSortColumnEntryType = function() {
+				return this.sortColumn == "entryType";
+			}
+			data.isSortColumnName = function() {
+				return this.sortColumn == "name";
+			}
+			this.$el.html(Mustache.render(this.template, data));
 			this.collection.each(function(entryGroup) {
 				var entryGroupView = new $.EntryGroupView({ model : entryGroup });
 				this.$el.find("table tbody").append(entryGroupView.render().el);

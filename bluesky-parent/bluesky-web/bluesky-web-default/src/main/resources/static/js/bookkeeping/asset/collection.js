@@ -1,7 +1,7 @@
 $.AssetCollection = Backbone.Collection.extend({
 	model : $.Asset,
 	url : "/bookkeeping/" + $.bookkeepingId + "/asset",
-//	comparator: "assetType",
+	sortColumn : "assetType",
 	initialize : function() {
 		//console.log("AssetCollection initialized.");
 	}
