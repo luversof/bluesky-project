@@ -18,7 +18,6 @@ import net.luversof.bookkeeping.domain.EntrySearchInfo;
 import net.luversof.bookkeeping.domain.EntrySearchInfo.SelectEntryList;
 import net.luversof.bookkeeping.service.EntryService;
 import net.luversof.security.core.userdetails.BlueskyUser;
-import net.luversof.web.bookkeeping.TransactionalTestService;
 import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
@@ -70,13 +69,4 @@ public class EntryController {
 	public void test(long id) {
 		entryService.test(id);
 	}
-	
-	@Autowired
-	private TransactionalTestService transactionalTestService;
-	
-	@RequestMapping(value = "/test2")
-	public void test2() {
-		transactionalTestService.test();
-	}
-	
 }
