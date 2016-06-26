@@ -70,6 +70,13 @@
 		</dependency>
 		<!-- (e) swagger -->
 
+		<!-- (s) test용 -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-xml</artifactId>
+		</dependency>
+		<!-- (e) test용 -->
+
 		<!-- (s) javascript libarary -->
 		<dependency>
 			<groupId>org.webjars.npm</groupId>

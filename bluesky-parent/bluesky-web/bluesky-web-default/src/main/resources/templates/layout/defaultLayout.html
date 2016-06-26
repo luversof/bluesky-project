@@ -2,7 +2,8 @@
 <html xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3"
-	lang="ko">
+	lang="ko"
+	th:with="menu = ${@menuService.getMenu()}">
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -36,6 +37,9 @@
 	</script>
 </head>
 <body>
+	<div th:text="${@menuService.load()}"></div>
+	<div th:text="${menu}"></div>
+	<div th:text="${menu.sm}"></div>
 	<!-- (s) top -->
 	<div class="navbar navbar-default navbar-fixed-top">
 		<div class="container">
