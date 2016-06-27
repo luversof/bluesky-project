@@ -1,6 +1,5 @@
 package net.luversof.opensource.mybatis.config;
 
-import org.apache.ibatis.type.MappedTypes;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.boot.autoconfigure.SpringBootVFS;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
