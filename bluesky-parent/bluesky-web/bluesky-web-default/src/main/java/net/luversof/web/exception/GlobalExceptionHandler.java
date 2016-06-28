@@ -11,10 +11,12 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedCredentialsNotFoundException;
 import org.springframework.validation.BindException;
@@ -23,9 +25,14 @@ import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.context.request.NativeWebRequest;
+import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.view.ContentNegotiatingViewResolver;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.bookkeeping.BookkeepingErrorCode;
 import net.luversof.core.exception.BlueskyException;
@@ -44,23 +51,20 @@ public class GlobalExceptionHandler {
 	
 	private DefaultMessageCodesResolver messageCodesResolver = new DefaultMessageCodesResolver();
 	
-//	@ExceptionHandler
-//	@ResponseStatus(value=HttpStatus.BAD_REQUEST)
-//	public ModelAndView handleException(Exception exception) {
-//		Map<String, String> map = new HashMap<>();
-//		map.put("class", exception.getClass().getName());
-//		// MappingJacksonJsonView의 경우  (entry.getValue() instanceof BindingResult) 조건 체크를 하여 exception은 리턴하지 않으므로 별도의 결과값을 주어야 함
-//		// Exception Message 규칙을 정할 필요가 있음
-//		map.put("message", exception.getLocalizedMessage());
-//		log.debug("GlobalControllerExceptionHandler called {}", exception);
-//		
-//		Map<String, Map<String, String>> resultMap = new HashMap<>();
-//		resultMap.put("result", map);
-//		return new ModelAndView("/error", resultMap);
-//	}
+	@Autowired
+	private ContentNegotiatingViewResolver contentNegotiatingViewResolver;
 	
 	@ExceptionHandler
-	public ModelAndView handleException(BlueskyException exception) {
+	@SneakyThrows
+	public ModelAndView handleException(BlueskyException exception, HandlerMethod  handlerMethod, NativeWebRequest request) {
+		if (contentNegotiatingViewResolver.getContentNegotiationManager().resolveMediaTypes(request).contains(MediaType.APPLICATION_JSON)) {
+			log.debug("json exception");
+		}
+		
+		if (Arrays.asList(handlerMethod.getMethodAnnotation(RequestMapping.class).produces()).contains(MediaType.APPLICATION_JSON_VALUE) ){
+			log.debug("json exception");
+		};
+		
 		if (exception.isTargetErrorCode(ErrorCode.NOT_EXIST_BLOG)) {
 			return new ModelAndView("redirect:/blog/create");
 		}
@@ -135,24 +139,33 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler
 	@ResponseStatus(value = HttpStatus.UNAUTHORIZED)
-	public ModelAndView preAuthenticatedCredentialsNotFoundException(PreAuthenticatedCredentialsNotFoundException PreAuthenticatedCredentialsNotFoundException) {
+	public ModelAndView preAuthenticatedCredentialsNotFoundException(PreAuthenticatedCredentialsNotFoundException exception) {
 		return new ModelAndView("login");
 	}
 
 	@Value("${oauth2.client.battleNet.clientId}")
 	private String battleNetClientId;
 	
+	@SneakyThrows
 	@ExceptionHandler
 	@ResponseStatus(value = HttpStatus.UNAUTHORIZED)
-	public ModelAndView accessDeniedException(HttpServletRequest request, HttpServletResponse response, AccessDeniedException exception) throws IOException {
-		if (request.getRequestURI().equals("/battleNet/d3/index")) {
+	public ModelAndView accessDeniedException(HttpServletResponse response, AccessDeniedException exception, HandlerMethod  handlerMethod, NativeWebRequest request) throws IOException {
+		
+		if (((HttpServletRequest) request.getNativeRequest()).getRequestURI().equals("/battleNet/d3/index")) {
 			response.sendRedirect("https://kr.battle.net/oauth/authorize?client_id=" + battleNetClientId + "&redirect_uri=https://localhost:8443/oauth/battleNetAuthorizeResult&scope=wow.profile&response_type=code");
 			return new ModelAndView("redirect:https://kr.battle.net/oauth/authorize?client_id=" + battleNetClientId + "&redirect_uri=https://localhost:8443/oauth/battleNetAuthorizeResult&scope=wow.profile&response_type=code");
 		} else {
 		}
-		Map<String, ErrorMessage> resultMap = new HashMap<>();
-		resultMap.put(RESULT, getErrorMessage(exception));
-		return new ModelAndView("login", resultMap);
+		
+		if (contentNegotiatingViewResolver.getContentNegotiationManager().resolveMediaTypes(request).contains(MediaType.APPLICATION_JSON)
+				|| Arrays.asList(handlerMethod.getMethodAnnotation(RequestMapping.class).produces()).contains(MediaType.APPLICATION_JSON_VALUE)) {
+			log.debug("json exception");
+			Map<String, ErrorMessage> resultMap = new HashMap<>();
+			resultMap.put(RESULT, getErrorMessage(exception));
+			return new ModelAndView(PAGE_ERROR, resultMap);
+		}
+		
+		throw exception;
 	}
 	
 	

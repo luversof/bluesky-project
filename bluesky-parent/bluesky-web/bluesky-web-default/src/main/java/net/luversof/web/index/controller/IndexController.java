@@ -2,6 +2,7 @@ package net.luversof.web.index.controller;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -31,9 +32,19 @@ public class IndexController {
 		throw new BlueskyException("blog.menu.modify");
 	}
 	
-	@RequestMapping("/test")
-	public void test(ModelMap modelMap) {
-		modelMap.addAttribute("test!!");
+	@RequestMapping(value = "/test1")
+	public void test1(ModelMap modelMap) {
+		throw new BlueskyException("test1");
+	}
+	
+	@RequestMapping(value = "/test2", produces = MediaType.APPLICATION_JSON_VALUE)
+	public void test2(ModelMap modelMap) {
+		throw new BlueskyException("test2");
+	}
+	
+	@RequestMapping(value = "/test3", produces = MediaType.APPLICATION_XML_VALUE)
+	public void test3(ModelMap modelMap) {
+		throw new BlueskyException("test3");
 	}
 	
 	@Profile({"opdev", "rc", "stage"})
