@@ -23,6 +23,7 @@ import org.springframework.validation.BindException;
 import org.springframework.validation.DefaultMessageCodesResolver;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -77,7 +78,6 @@ public class GlobalExceptionHandler {
 		return new ModelAndView(PAGE_ERROR, resultMap);
 	}
 	
-	
 	@ExceptionHandler
 	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
 	public ModelAndView handleException(BindException exception) {
@@ -101,33 +101,29 @@ public class GlobalExceptionHandler {
 		return new ModelAndView(PAGE_ERROR, resultMap);
 	}
 	
-//	@ExceptionHandler
-//	public @ResponseBody List<ErrorMessage> handleException2(BindException exception) {
-//		List<ErrorMessage> errorMessageList = new ArrayList<>();
-//		exception.getBindingResult().getAllErrors().get(0);
-//		for (FieldError fieldError : exception.getFieldErrors()) {
-//			ErrorMessage errorMessage = new ErrorMessage();
-//			errorMessage.setMessage(messageSourceAccessor.getMessage(fieldError));
-//			errorMessage.setField(fieldError.getField());
-//			errorMessage.setObject(fieldError.getObjectName());
-//			errorMessage.setDisplayableMessage(true);
-//			errorMessageList.add(errorMessage);
-//			log.debug("[bindException error message] code : {}, arguments : {}", Arrays.deepToString(fieldError.getCodes()), Arrays.deepToString(fieldError.getArguments()));
-//		}
-//		if (exception.getFieldErrors().isEmpty()) {
-//			for (ObjectError objectError : exception.getBindingResult().getAllErrors()) {
-//				ErrorMessage errorMessage = new ErrorMessage();
-//				errorMessage.setMessage(messageSourceAccessor.getMessage(objectError));
-//				errorMessage.setObject(objectError.getObjectName());
-//				errorMessage.setDisplayableMessage(true);
-//				errorMessageList.add(errorMessage);
-//				log.debug("[bindException error message] code : {}, arguments : {}", Arrays.deepToString(objectError.getCodes()), Arrays.deepToString(objectError.getArguments()));
-//			}
-//		}
-//		return errorMessageList;
-//	}
-//	
-
+	@ExceptionHandler
+	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
+	public ModelAndView handleException(MethodArgumentNotValidException exception) {
+		List<ErrorMessage> errorMessageList = new ArrayList<>();
+		List<? extends ObjectError> objectErrorList = exception.getBindingResult().getFieldErrors().isEmpty() ? exception.getBindingResult().getAllErrors() : exception.getBindingResult().getFieldErrors();
+		for (ObjectError objectError : objectErrorList) {
+			ErrorMessage errorMessage = new ErrorMessage();
+			errorMessage.setExceptionClassName(exception.getClass().getSimpleName());
+			errorMessage.setMessage(messageSourceAccessor.getMessage(objectError));
+			errorMessage.setObject(objectError.getObjectName());
+			errorMessage.setDisplayableMessage(true);
+			if (objectError instanceof FieldError) {
+				errorMessage.setField(((FieldError) objectError).getField());
+			}
+			errorMessageList.add(errorMessage);
+			log.debug("[bindException error message] code : {}, arguments : {}", Arrays.asList(objectError.getCodes()), Arrays.asList(objectError.getArguments()));
+		}
+		
+		Map<String, List<ErrorMessage>> resultMap = new HashMap<>();
+		resultMap.put(RESULT, errorMessageList);
+		return new ModelAndView(PAGE_ERROR, resultMap);
+	}
+	
 	@ExceptionHandler
 	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
 	public ModelAndView handleException(Exception exception) {
