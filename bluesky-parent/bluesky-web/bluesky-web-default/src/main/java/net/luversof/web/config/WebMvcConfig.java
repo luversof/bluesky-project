@@ -31,9 +31,6 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 	
 	@Autowired
 	private ThymeleafViewResolver thymeleafViewResolver;
-	
-//	@Autowired
-//	private MappingJackson2JsonView mappingJackson2JsonView;
 
 	@Override
 	public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
@@ -54,44 +51,10 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
         registrar.setUseIsoFormat(true);
         registrar.registerFormatters(registry);
 	}
-
-//	@Override
-//	public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
-//		configurer
-//			.defaultContentType(MediaType.APPLICATION_JSON)
-//			.mediaType("html", MediaType.TEXT_HTML)
-//			.mediaType("json", MediaType.APPLICATION_JSON);
-//	}
 	
 	@Override
 	public void configureViewResolvers(ViewResolverRegistry registry) {
 		registry.viewResolver(thymeleafViewResolver);
 		registry.enableContentNegotiation(new MappingJackson2JsonView());
 	}
-	
-	
-	
-
-//	@Bean
-//	public ContentNegotiatingViewResolver viewResolver() {
-//		ContentNegotiatingViewResolver viewResolver = new ContentNegotiatingViewResolver();
-//		
-//		Map<String, MediaType> mediaTypes = new HashMap<>();
-//		mediaTypes.put("html", MediaType.TEXT_HTML);
-//		mediaTypes.put("json", MediaType.APPLICATION_JSON);
-//		ContentNegotiationStrategy contentNegotiationStrategy = new PathExtensionContentNegotiationStrategy(mediaTypes);
-//		
-//		viewResolver.setContentNegotiationManager(new ContentNegotiationManager(contentNegotiationStrategy));
-//
-//		List<ViewResolver> viewResolvers = new ArrayList<>();
-//		viewResolvers.add(thymeleafViewResolver);
-//		viewResolver.setViewResolvers(viewResolvers);
-//
-//		List<View> defaultViews = new ArrayList<>();
-//		MappingJackson2JsonView mappingJackson2JsonView = new MappingJackson2JsonView();
-//		defaultViews.add(mappingJackson2JsonView);
-//
-//		viewResolver.setDefaultViews(defaultViews);
-//		return viewResolver;
-//	}
 }
