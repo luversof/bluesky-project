@@ -20,8 +20,8 @@ public class BbsService {
 	public Bbs findOne(long bbsId) {
 		return bbsRepository.findOne(bbsId);
 	}
-
-	public Bbs findByUser(long userId) {
-		return bbsRepository.findByUserId(userId);
+	
+	public Bbs findByAliasName(String aliasName) {
+		return bbsRepository.findByAliasName(aliasName);
 	}
 }

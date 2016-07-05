@@ -19,7 +19,7 @@ public class DataJpaBbsConfig {
 	
 	@Bean
 	public LocalContainerEntityManagerFactoryBean bbsEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("bbsDataSource") DataSource bbsDataSource) {
-		return builder.dataSource(bbsDataSource).packages("net.luversof.blog").build();
+		return builder.dataSource(bbsDataSource).packages("net.luversof.bbs").build();
 	}
 	
 	@Bean
