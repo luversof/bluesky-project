@@ -144,6 +144,11 @@
 			</dependency>
 			<dependency>
 				<groupId>net.luversof</groupId>
+				<artifactId>bluesky-app-bbs</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.luversof</groupId>
 				<artifactId>bluesky-app-blog</artifactId>
 				<version>${project.version}</version>
 			</dependency>

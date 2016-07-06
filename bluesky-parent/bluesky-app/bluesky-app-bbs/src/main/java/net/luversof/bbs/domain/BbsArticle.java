@@ -9,7 +9,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 
 import org.hibernate.validator.constraints.NotEmpty;
@@ -20,13 +19,15 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "BbsArticle")
-public class Article {
+public class BbsArticle {
 
 	@Id
 	@GeneratedValue
 	@NotNull(groups = { Get.class })
 	private long id;
+	
+	@Column(name = "user_id")
+	private long userId;
 
 	@ManyToOne
 	@JoinColumn(name = "bbs_id", foreignKey = @ForeignKey(name = "FK_article_bbsId") )

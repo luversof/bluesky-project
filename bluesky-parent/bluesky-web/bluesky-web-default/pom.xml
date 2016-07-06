@@ -22,6 +22,10 @@
 		</dependency>
 		<dependency>
 			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-app-bbs</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-app-blog</artifactId>
 		</dependency>
 		<dependency>

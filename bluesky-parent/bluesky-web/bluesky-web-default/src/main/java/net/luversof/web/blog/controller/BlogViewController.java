@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
-@RequestMapping("/blog")
+@RequestMapping("blog")
 public class BlogViewController {
 
 	private static final int PAGE_BLOCK_SIZE = 10;
