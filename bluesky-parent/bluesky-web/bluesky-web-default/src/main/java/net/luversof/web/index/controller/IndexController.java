@@ -5,9 +5,11 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.core.exception.BlueskyException;
 
 @Controller
@@ -45,6 +47,11 @@ public class IndexController {
 	@RequestMapping(value = "/test3", produces = MediaType.APPLICATION_XML_VALUE)
 	public void test3(ModelMap modelMap) {
 		throw new BlueskyException("test3");
+	}
+	
+	@RequestMapping(value = "/test4")
+	public void test4(@Validated(Asset.Create.class) Asset asset) {
+		
 	}
 	
 	@Profile({"opdev", "rc", "stage"})

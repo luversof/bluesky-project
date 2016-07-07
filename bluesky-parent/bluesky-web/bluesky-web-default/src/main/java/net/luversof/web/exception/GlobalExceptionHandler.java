@@ -81,6 +81,7 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler
 	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
 	public ModelAndView handleException(BindException exception) {
+		exception.printStackTrace();
 		List<ErrorMessage> errorMessageList = new ArrayList<>();
 		List<? extends ObjectError> objectErrorList = exception.getFieldErrors().isEmpty() ? exception.getBindingResult().getAllErrors() : exception.getFieldErrors();
 		for (ObjectError objectError : objectErrorList) {
