@@ -59,6 +59,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 			.addFilterAfter(facebookAuthenticationProcessingFilter, BasicAuthenticationFilter.class)
 			.addFilterAfter(battleNetAuthenticationProcessingFilter, BasicAuthenticationFilter.class)
 //			.addFilterAfter(oAuth2AuthenticationProcessingFilter, ExceptionTranslationFilter.class)
+			.exceptionHandling().accessDeniedPage("/error/accessDenied").and()
 			.logout().logoutSuccessHandler(logoutSuccessHandler).and()
 			.formLogin().loginPage("/login").and()
 			.rememberMe().and()
