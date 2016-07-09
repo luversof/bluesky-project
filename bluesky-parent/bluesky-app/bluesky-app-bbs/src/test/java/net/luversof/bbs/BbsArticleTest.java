@@ -7,6 +7,8 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
@@ -53,7 +55,7 @@ public class BbsArticleTest extends GeneralTest {
 	
 	@Test
 	public void 페이징테스트() {
-		Page<BbsArticle> bbsArticleList = bbsArticleRepository.findByBbsAliasName("free", new PageRequest(4000, 20));
+		Page<BbsArticle> bbsArticleList = bbsArticleRepository.findByBbsAliasName("free", new PageRequest(0, 20, new Sort(Direction.DESC, "id")));
 		log.debug("result : {}", bbsArticleList.getContent());
 		
 	}
