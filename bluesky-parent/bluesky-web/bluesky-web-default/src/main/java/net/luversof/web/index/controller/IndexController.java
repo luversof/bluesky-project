@@ -6,8 +6,11 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.core.exception.BlueskyException;
@@ -39,19 +42,19 @@ public class IndexController {
 		throw new BlueskyException("test1");
 	}
 	
-	@RequestMapping(value = "/test2", produces = MediaType.APPLICATION_JSON_VALUE)
-	public void test2(ModelMap modelMap) {
-		throw new BlueskyException("test2");
+	@RequestMapping(value = "/test2", method=RequestMethod.GET)
+	public Asset test2(@RequestBody @Validated(Asset.Create.class) Asset asset) {
+		return asset;
 	}
 	
-	@RequestMapping(value = "/test3", produces = MediaType.APPLICATION_XML_VALUE)
-	public void test3(ModelMap modelMap) {
-		throw new BlueskyException("test3");
+	@RequestMapping(value = "/test3", method=RequestMethod.GET)
+	public Asset test3(@Validated(Asset.Create.class) Asset asset) {
+		return asset;
 	}
 	
-	@RequestMapping(value = "/test4")
-	public void test4(@Validated(Asset.Create.class) Asset asset) {
-		
+	@RequestMapping(value = "/test4", method=RequestMethod.GET)
+	public Asset test4(@ModelAttribute @Validated(Asset.Create.class) Asset asset) {
+		return asset;
 	}
 	
 	@Profile({"opdev", "rc", "stage"})
