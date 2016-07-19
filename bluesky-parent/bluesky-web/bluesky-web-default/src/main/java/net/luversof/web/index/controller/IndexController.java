@@ -23,7 +23,7 @@ public class IndexController {
 
 	@RequestMapping({ "/", "/index" })
 	public String index(@RequestHeader(value = "User-Agent") String userAgent) {
-		System.out.println("테스트!!!!!");
+		System.out.println("테스트!!");
 		System.out.println("a : " + a);
 		System.out.println(userAgent);
 		return "index";
