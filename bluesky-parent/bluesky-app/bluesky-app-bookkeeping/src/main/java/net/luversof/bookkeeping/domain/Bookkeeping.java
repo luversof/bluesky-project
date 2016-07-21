@@ -3,6 +3,7 @@ package net.luversof.bookkeeping.domain;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.Table;
@@ -19,7 +20,7 @@ import lombok.Data;
 public class Bookkeeping {
 
 	@Id
-	@GeneratedValue
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Min(value = 1, groups = { Bookkeeping.Update.class, Bookkeeping.Delete.class, 
 			Asset.Create.class, Asset.Update.class, Asset.Delete.class, 
 			EntryGroup.Create.class, EntryGroup.Update.class, EntryGroup.Delete.class,

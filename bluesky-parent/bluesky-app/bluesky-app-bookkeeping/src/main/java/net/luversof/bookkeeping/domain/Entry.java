@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
@@ -20,7 +21,7 @@ public class Entry implements Serializable {
 	private static final long serialVersionUID = -5106564257765676653L;
 
 	@Id
-	@GeneratedValue
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@NotNull(groups = { Update.class, Delete.class })
 	@Min(value = 1, groups = { Update.class, Delete.class })
 	private long id;
