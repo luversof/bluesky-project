@@ -4,6 +4,7 @@ import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
 import javax.validation.Valid;
@@ -25,7 +26,7 @@ import lombok.Data;
 public class Asset {
 
 	@Id
-	@GeneratedValue
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@NotNull(groups = { Update.class, Delete.class })
 	@Min(value = 1, groups = { Update.class, Delete.class })
 	private long id;
