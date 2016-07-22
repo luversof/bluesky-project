@@ -1,6 +1,6 @@
 package net.luversof.bbs.domain;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -41,11 +41,11 @@ public class BbsArticle {
 
 	@Column(updatable = false)
 	@CreatedDate
-	private LocalDateTime createdDate;
+	private ZonedDateTime createdDate;
 
 	@Column(updatable = false)
 	@LastModifiedDate
-	private LocalDateTime lastModifiedDate;
+	private ZonedDateTime lastModifiedDate;
 
 	public interface Get {
 	};

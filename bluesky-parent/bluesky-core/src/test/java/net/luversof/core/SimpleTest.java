@@ -54,4 +54,9 @@ public class SimpleTest {
 		System.out.println(System.getProperty("user.home").replaceAll("\\\\", "/"));
 		System.out.println(File.separator);
 	}
+	
+	@Test
+	public void test4() {
+		
+	}
 }
