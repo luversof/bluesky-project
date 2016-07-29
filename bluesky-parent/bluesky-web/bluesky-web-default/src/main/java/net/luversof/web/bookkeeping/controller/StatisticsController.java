@@ -31,8 +31,8 @@ import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.Statistics;
@@ -49,14 +49,14 @@ import net.luversof.web.constant.AuthorizeRole;
  */
 @RestController
 @PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-@RequestMapping("/bookkeeping/{bookkeeping.id}/statistics")
+@RequestMapping(value = "/bookkeeping/{bookkeeping.id}/statistics", produces = MediaType.APPLICATION_JSON_VALUE)
 public class StatisticsController {
 	
 	@Autowired
 	private StatisticsService statisticsService;
 	
 	@PostAuthorize("(returnObject == null or returnObject.size() == 0) or returnObject.get(0).entryGroup.bookkeeping.userId == authentication.principal.id")
-	@RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	@GetMapping
 	public List<Statistics> getEntryList(@Validated(StatisticsSearchInfo.SelectEntryList.class) StatisticsSearchInfo statisticsSearchInfo, Authentication authentication) {
 		return statisticsService.selectStatistics(statisticsSearchInfo);
 	}

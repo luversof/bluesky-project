@@ -8,9 +8,12 @@ import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.Entry;
@@ -22,7 +25,7 @@ import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
 @PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-@RequestMapping("/bookkeeping/{bookkeeping.id}/entry")
+@RequestMapping(value = "/bookkeeping/{bookkeeping.id}/entry", produces = MediaType.APPLICATION_JSON_VALUE)
 public class EntryController {
 	
 	@Autowired
@@ -41,32 +44,26 @@ public class EntryController {
 	 * 우선 검색 결과를 내려준 이후 처리 고민
 	 */
 	@PostAuthorize("(returnObject == null or returnObject.size() == 0) or returnObject.get(0).bookkeeping.userId == authentication.principal.id")
-	@RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	@GetMapping
 	public List<Entry> getEntryList(@Validated(SelectEntryList.class) EntrySearchInfo entrySearchInfo) {
 		return entryService.findByEntrySearchInfo(entrySearchInfo);
 	}
 	
-	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+	@PostMapping
 	public Entry createEntry(@RequestBody @Validated(Entry.Create.class) Entry entry, Authentication authentication) {
 		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		return entryService.create(entry);
 	}
 
-	@RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+	@PutMapping(value = "/{id}")
 	public Entry modify(@RequestBody @Validated(Entry.Update.class) Entry entry, Authentication authentication) {
 		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		return entryService.update(entry);
 	}
 	
-	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
+	@DeleteMapping(value = "/{id}")
 	public void delete(@Validated(Entry.Delete.class) Entry entry, Authentication authentication) {
 		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		entryService.delete(entry);
-	}
-	
-	
-	@RequestMapping(value = "/test")
-	public void test(long id) {
-		entryService.test(id);
 	}
 }

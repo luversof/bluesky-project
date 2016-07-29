@@ -8,10 +8,13 @@ import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.Asset;
@@ -21,7 +24,7 @@ import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
 @PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-@RequestMapping(value = "/bookkeeping/{bookkeeping.id}/asset")
+@RequestMapping(value = "/bookkeeping/{bookkeeping.id}/asset", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AssetController {
 
 	@Autowired
@@ -35,7 +38,7 @@ public class AssetController {
 	 * @return
 	 */
 	@PostAuthorize("(returnObject == null or returnObject.size() == 0) or returnObject.get(0).bookkeeping.userId == authentication.principal.id")
-	@RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	@GetMapping
 	public List<Asset> getAssetList(@PathVariable("bookkeeping.id") long bookkeepingId) {
 		return assetService.findByBookkeepingId(bookkeepingId);
 	}
@@ -47,19 +50,19 @@ public class AssetController {
 	 * @param authentication
 	 * @return
 	 */
-	@RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+	@PostMapping
 	public Asset createAsset(@RequestBody @Validated(Asset.Create.class) Asset asset, Authentication authentication) {
 		asset.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		return assetService.create(asset);
 	}
 
-	@RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+	@PutMapping(value = "/{id}")
 	public Asset updateAsset(@RequestBody @Validated(Asset.Update.class) Asset asset, Authentication authentication) {
 		asset.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		return assetService.update(asset);
 	}
 
-	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
+	@DeleteMapping(value = "/{id}")
 	public void deleteAsset(@Validated(Asset.Delete.class) Asset asset, Authentication authentication) {
 		asset.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		assetService.delete(asset);
