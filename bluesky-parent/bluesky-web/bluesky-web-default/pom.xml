@@ -83,7 +83,7 @@
 
 		<!-- (s) javascript libarary -->
 		<dependency>
-			<groupId>org.webjars.npm</groupId>
+			<groupId>org.webjars</groupId>
 			<artifactId>jquery</artifactId>
 		</dependency>
 		<dependency>
@@ -103,32 +103,32 @@
 			<artifactId>tinymce-jquery</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.webjars.bower</groupId>
-			<artifactId>mustache</artifactId>
+			<groupId>org.webjars</groupId>
+			<artifactId>mustachejs</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.webjars.npm</groupId>
-			<artifactId>metismenu</artifactId>
+			<groupId>org.webjars</groupId>
+			<artifactId>metisMenu</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.webjars.bower</groupId>
-			<artifactId>backbone</artifactId>
+			<groupId>org.webjars</groupId>
+			<artifactId>backbonejs</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.webjars</groupId>
 			<artifactId>bootstrap-datepicker</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.webjars.npm</groupId>
-			<artifactId>moment</artifactId>
+			<groupId>org.webjars</groupId>
+			<artifactId>momentjs</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.webjars.bower</groupId>
-			<artifactId>numeral</artifactId>
+			<groupId>org.webjars</groupId>
+			<artifactId>numeral-js</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.webjars.bower</groupId>
-			<artifactId>d3</artifactId>
+			<groupId>org.webjars</groupId>
+			<artifactId>d3js</artifactId>
 		</dependency>
 		<!-- (s) 사용 안함 -->
 		<dependency>
