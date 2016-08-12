@@ -1,6 +1,6 @@
 package net.luversof.web.bookkeeping.controller;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -30,7 +30,7 @@ public class EntrySearchInfoController {
 	}
 	
 	@GetMapping(value = "/test")
-	public LocalDateTime test(@RequestParam(required = false) LocalDateTime test) {
+	public ZonedDateTime test(@RequestParam(required = false) ZonedDateTime test) {
 		System.out.println(test);
 		return test;
 	}

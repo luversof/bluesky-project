@@ -1,10 +1,13 @@
 package net.luversof.bookkeeping.domain;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+
+import org.springframework.context.i18n.LocaleContextHolder;
 
 import lombok.Data;
 import net.luversof.bookkeeping.util.BookkeepingUtils;
@@ -40,11 +43,11 @@ public class EntrySearchInfo {
 	public interface Select {}
 	public interface SelectEntryList {}
 	
-	public LocalDateTime getStartLocalDateTime() {
-		return BookkeepingUtils.getMonthStartLocalDate(targetLocalDate, baseDate).atStartOfDay();
+	public ZonedDateTime getStartZonedDateTime() {
+		return BookkeepingUtils.getMonthStartLocalDate(targetLocalDate, baseDate).atStartOfDay(ZoneId.of(LocaleContextHolder.getTimeZone().getID()));
 	}
 	
-	public LocalDateTime getEndLocalDateTime() {
-		return BookkeepingUtils.getMonthEndLocalDate(targetLocalDate, baseDate).atStartOfDay();
+	public ZonedDateTime getEndZonedDateTime() {
+		return BookkeepingUtils.getMonthEndLocalDate(targetLocalDate, baseDate).atStartOfDay(ZoneId.of(LocaleContextHolder.getTimeZone().getID()));
 	}
 }

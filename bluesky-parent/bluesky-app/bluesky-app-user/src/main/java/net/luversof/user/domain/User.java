@@ -1,6 +1,6 @@
 package net.luversof.user.domain;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import javax.persistence.CascadeType;
@@ -32,7 +32,7 @@ public class User {
 
 	@CreatedDate
 //	@DateTimeFormat(iso = ISO.DATE_TIME)
-	private LocalDateTime createdDate;
+	private ZonedDateTime createdDate;
 
 	private boolean accountNonExpired;
     private boolean accountNonLocked;

@@ -1,7 +1,7 @@
 package net.luversof.bookkeeping.domain;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -45,7 +45,7 @@ public class Entry implements Serializable {
 	private long amount;
 
 	@NotNull(groups = { Create.class, Update.class })
-	private LocalDateTime entryDate;
+	private ZonedDateTime entryDate;
 
 	private String memo;
 

@@ -1,11 +1,14 @@
 package net.luversof.bookkeeping;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.format.datetime.standard.DateTimeContextHolder;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
@@ -50,7 +53,7 @@ public class EntryTest extends GeneralTest {
 	 */
 	@Test
 	public void test3() {
-		log.debug("TEST : {}", LocalDateTime.now());
+		log.debug("TEST : {}", ZonedDateTime.now());
 		
 		int baseDate = 21;
 		LocalDate localDate = LocalDate.now();
@@ -68,8 +71,8 @@ public class EntryTest extends GeneralTest {
 			log.debug("endLocalDate : {}, {}", endLocalDate, endLocalDate.getDayOfMonth());
 		}
 		
-		LocalDateTime testLocalDateTime = localDate.atStartOfDay();
-		log.debug("testLocalDateTime : {}, {}", testLocalDateTime, testLocalDateTime.getDayOfMonth());
+		ZonedDateTime testZonedlDateTime = localDate.atStartOfDay(ZoneId.of(LocaleContextHolder.getTimeZone().getID()));
+		log.debug("testZonedlDateTime : {}, {}", testZonedlDateTime, testZonedlDateTime.getDayOfMonth());
 		//log.debug("result : {}", entryService.findByBookkeepingIdAndEntryDateBetween(1, null, null));
 	}
 	
@@ -80,8 +83,8 @@ public class EntryTest extends GeneralTest {
 	public void test5() {
 		LocalDate startDate = LocalDate.parse("2016-05-02"); 
 		LocalDate endDate = LocalDate.parse("2016-05-03");
-		
-		List<Entry> entryList = entryService.findByBookkeepingIdAndEntryDateBetween(1, startDate.atStartOfDay(), endDate.atStartOfDay());
+		ZoneId timeZone = ZoneId.of(LocaleContextHolder.getTimeZone().getID());
+		List<Entry> entryList = entryService.findByBookkeepingIdAndEntryDateBetween(1, startDate.atStartOfDay(timeZone), endDate.atStartOfDay(timeZone));
 		log.debug("entryList : {}", entryList);
 	}
 	
@@ -89,5 +92,16 @@ public class EntryTest extends GeneralTest {
 	@Test
 	public void test6() {
 		entryService.test(12);
+	}
+	
+	@Test
+	public void LocaleTest() {
+		
+	}
+	
+	@Test
+	public void zoneIdTest() {
+		ZoneId timeZone = DateTimeContextHolder.getDateTimeContext().getTimeZone();
+		log.debug("zoneId : {}", timeZone);
 	}
 }

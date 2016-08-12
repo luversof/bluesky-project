@@ -1,9 +1,13 @@
 package net.luversof.bookkeeping;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.TimeZone;
 
 import org.junit.Test;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.format.datetime.standard.DateTimeContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindException;
 import org.springframework.validation.DefaultMessageCodesResolver;
@@ -53,5 +57,19 @@ public class SimpleTest {
 	public void test2() {
 		log.debug("result : {}", BookkeepingUtils.getMonthStartLocalDate(LocalDate.now(), 1));
 		log.debug("result : {}", BookkeepingUtils.getMonthEndLocalDate(LocalDate.now(), 1));
+	}
+	
+	@Test
+	public void localeTest() {
+		TimeZone timeZone = LocaleContextHolder.getTimeZone();
+		log.debug("result : {}", timeZone.getID());
+		log.debug("result : {}", ZoneId.getAvailableZoneIds());
+		log.debug("result : {}", ZoneId.of(LocaleContextHolder.getTimeZone().getID()));
+	}
+	
+	@Test
+	public void zoneIdTest() {
+		ZoneId timeZone = DateTimeContextHolder.getDateTimeContext().getTimeZone();
+		log.debug("zoneId : {}", timeZone);
 	}
 }

@@ -1,6 +1,6 @@
 package net.luversof.blog.domain;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -45,11 +45,11 @@ public class Article {
 
 	@Column(updatable = false)
 	@CreatedDate
-	private LocalDateTime createdDate;
+	private ZonedDateTime createdDate;
 
 	@Column(updatable = false)
 	@LastModifiedDate
-	private LocalDateTime lastModifiedDate;
+	private ZonedDateTime lastModifiedDate;
 
 	@ManyToOne
 	@JoinColumn(name = "articleCategory_id", foreignKey = @ForeignKey(name = "FK_article_articleCategoryId") )

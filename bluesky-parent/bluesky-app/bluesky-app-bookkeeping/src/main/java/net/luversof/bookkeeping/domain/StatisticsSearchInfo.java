@@ -1,11 +1,14 @@
 package net.luversof.bookkeeping.domain;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+
+import org.springframework.context.i18n.LocaleContextHolder;
 
 import lombok.Data;
 import net.luversof.bookkeeping.util.BookkeepingUtils;
@@ -36,12 +39,12 @@ public class StatisticsSearchInfo {
 	@NotNull(groups = SelectEntryList.class)
 	private LocalDate targetLocalDate = LocalDate.now();
 
-	public LocalDateTime getStartLocalDateTime() {
-		return BookkeepingUtils.getStartLocalDate(targetLocalDate, baseDate, chronoUnit).atStartOfDay();
+	public ZonedDateTime getStartZonedDateTime() {
+		return BookkeepingUtils.getStartLocalDate(targetLocalDate, baseDate, chronoUnit).atStartOfDay(ZoneId.of(LocaleContextHolder.getTimeZone().getID()));
 	}
 
-	public LocalDateTime getEndLocalDateTime() {
-		return BookkeepingUtils.getEndLocalDate(targetLocalDate, baseDate, chronoUnit).atStartOfDay();
+	public ZonedDateTime getEndZonedDateTime() {
+		return BookkeepingUtils.getEndLocalDate(targetLocalDate, baseDate, chronoUnit).atStartOfDay(ZoneId.of(LocaleContextHolder.getTimeZone().getID()));
 	}
 
 	public interface Select {

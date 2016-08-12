@@ -1,7 +1,7 @@
 package net.luversof.bookkeeping.service;
 
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,18 +67,18 @@ public class EntryService {
 		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entrySearchInfo.getBookkeeping().getId());
 		int baseDate = targetBookkeeping.getBaseDate();
 		entrySearchInfo.setBaseDate(baseDate);
-		return entryRepository.findByBookkeepingIdAndEntryDateBetween(entrySearchInfo.getBookkeeping().getId(), entrySearchInfo.getStartLocalDateTime(), entrySearchInfo.getEndLocalDateTime());
+		return entryRepository.findByBookkeepingIdAndEntryDateBetween(entrySearchInfo.getBookkeeping().getId(), entrySearchInfo.getStartZonedDateTime(), entrySearchInfo.getEndZonedDateTime());
 	}
 
 	/**
 	 * test용 메소드
 	 * @param bookkeepingId
-	 * @param startLocalDateTime
-	 * @param endLocalDateTime
+	 * @param startZonedDateTime
+	 * @param endZonedDateTime
 	 * @return
 	 */
-	public List<Entry> findByBookkeepingIdAndEntryDateBetween(long bookkeepingId, LocalDateTime startLocalDateTime, LocalDateTime endLocalDateTime) {
-		return entryRepository.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startLocalDateTime, endLocalDateTime);
+	public List<Entry> findByBookkeepingIdAndEntryDateBetween(long bookkeepingId, ZonedDateTime startZonedDateTime, ZonedDateTime endZonedDateTime) {
+		return entryRepository.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startZonedDateTime, endZonedDateTime);
 	}
 	
 	
