@@ -69,8 +69,8 @@ $(document).ready(function() {
 		if (ajaxSettings.dataType === "json") {
 			var b = "";
 			for (a in jqXHR) b+=a + "\n;";
-			console.log(b);
-			console.log(jqXHR.responseJSON);
+			//console.log(b);
+			//console.log(jqXHR.responseJSON);
 		}
 	});
 	

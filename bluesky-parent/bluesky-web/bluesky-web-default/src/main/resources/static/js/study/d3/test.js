@@ -46,7 +46,7 @@ function randomData (){
 		return d3.ascending(a.label, b.label);
 	});
 }
-console.log("randomData : ", randomData());
+//console.log("randomData : ", randomData());
 
 change(randomData());
 

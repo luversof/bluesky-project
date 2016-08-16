@@ -6,7 +6,7 @@ var Timeline = function() {
 	var timlineArea = $(".timeline");
 	return {
 		makeTimelineArea : function () {
-			console.log("test");
+			//console.log("test");
 		},
 		init : function() {
 			this.makeTimelineArea();

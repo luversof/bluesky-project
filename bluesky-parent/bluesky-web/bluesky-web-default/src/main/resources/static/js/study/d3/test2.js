@@ -37,25 +37,25 @@ $(document).ready(function() {
 		
 		//0. 대상 원본 데이터
 		var statisticsArray = [{"amount":11212467,"entryGroup":{"id":2,"name":"이자","entryType":"CREDIT","bookkeeping":{"id":1,"name":"이자","userId":1,"baseDate":4}},"entryType":"CREDIT"},{"amount":123,"entryGroup":{"id":4,"name":"사회생활","entryType":"DEBIT","bookkeeping":{"id":1,"name":"사회생활","userId":1,"baseDate":4}},"entryType":"DEBIT"},{"amount":123524,"entryGroup":{"id":5,"name":"문화","entryType":"DEBIT","bookkeeping":{"id":1,"name":"문화","userId":1,"baseDate":4}},"entryType":"DEBIT"},{"amount":124357,"entryGroup":{"id":6,"name":"기타","entryType":"CREDIT","bookkeeping":{"id":1,"name":"기타","userId":1,"baseDate":4}},"entryType":"CREDIT"},{"amount":1312312,"entryGroup":{"id":7,"name":"상여금","entryType":"CREDIT","bookkeeping":{"id":1,"name":"상여금","userId":1,"baseDate":4}},"entryType":"CREDIT"},{"amount":123232,"entryGroup":{"id":8,"name":"교통비","entryType":"DEBIT","bookkeeping":{"id":1,"name":"교통비","userId":1,"baseDate":4}},"entryType":"DEBIT"},{"amount":12325435,"entryGroup":{"id":9,"name":"월급","entryType":"CREDIT","bookkeeping":{"id":1,"name":"월급","userId":1,"baseDate":4}},"entryType":"CREDIT"}];
-		console.log("statisticsArray : ", statisticsArray);
+		//console.log("statisticsArray : ", statisticsArray);
 		
 		//1. 수입의 경우만 테스트를 해보자
 		var filteredStatisticsArray = statisticsArray.filter(function(statistics) {
 			return statistics.entryGroup.entryType === entryType;
 		})
-		console.log("filteredStatisticsArray : ", filteredStatisticsArray);
+		//console.log("filteredStatisticsArray : ", filteredStatisticsArray);
 		
 		//1-1. color 목록 계산 (이렇게 하는건 무슨 이유때문이지?)
 		var color = d3.scale.category20()
 			.domain(filteredStatisticsArray.map(function(statistics) {
 				return statistics.entryGroup.name;
 			}));
-		console.log("color : ", color);
-		console.log("color 테스트 : ", color("월급"));
+		//console.log("color : ", color);
+		//console.log("color 테스트 : ", color("월급"));
 		
 		//1-2. 전체 총 합 계산
 		var statisticsAmountSum = d3.sum(filteredStatisticsArray, function(statistics) { return statistics.amount });
-		console.log("statisticsAmountSum : ", statisticsAmountSum);
+		//console.log("statisticsAmountSum : ", statisticsAmountSum);
 		
 		//1-3. 표시할 데이터 배열 생성
 		targetStatistics = filteredStatisticsArray.map(function(statistics) {

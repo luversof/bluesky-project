@@ -275,9 +275,9 @@ $(document).ready(function() {
 	
 	$(document).on("submit", "form[name=battleTagForm]", function() {
 		var battleTag = $(this).find("#battleTag").val(); 
-		console.log("test ", battleTag);
+		//console.log("test ", battleTag);
 		if (battleTag === "") {
-			alert("")
+			alert("배틀 태그를 입력해주세요.");
 		};
 		battleNet.getCareerProfile(battleTag);
 		return false;

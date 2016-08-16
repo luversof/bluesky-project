@@ -29,7 +29,7 @@ $(document).ready(function() {
 				});
 			},
 			afterChange : function(change, source) {
-				console.log("source : ", source);
+				//console.log("source : ", source);
 				if (source === 'loadData') {
 					return; // don't save this change
 				}
@@ -38,11 +38,11 @@ $(document).ready(function() {
 				//change[0][2] : changed data orginal value
 				//change[0][3] : changed data changed value
 				//this.getData()[change[0][0]] : changed data
-				console.log("this.getData() : ", this.getData());
-				console.log("change : ", change);
-				console.log("config : ", _config);
+				//console.log("this.getData() : ", this.getData());
+				//console.log("change : ", change);
+				//console.log("config : ", _config);
 				var targetCellData = this.getData()[change[0][0]];
-				console.log("targetCellData :", targetCellData);
+				//console.log("targetCellData :", targetCellData);
 				
 				if (targetCellData === undefined) {
 					return;
@@ -56,9 +56,9 @@ $(document).ready(function() {
 				}
 				
 				var dataObj = _config.displayArea.data("dataObj");
-				console.log("dataObj : ", dataObj);
+				//console.log("dataObj : ", dataObj);
 				
-				console.log("a : ", $.isArray(dataObj));
+				//console.log("a : ", $.isArray(dataObj));
 				
 				var targetData;
 				var targetIndex = -1;
@@ -71,12 +71,12 @@ $(document).ready(function() {
 							break;
 						}
 					}
-					console.log("targetData : ", targetData);
+					//console.log("targetData : ", targetData);
 					
 					// 신규 추가의 경우 마지막에서 -1의 data가 해당 데이터임
 					if (targetData.id === null) {
 						targetData = dataObj[change[0][0]];
-						console.log("dataObj[change[0][0]] :", dataObj[dataObj.length -2]);
+						//console.log("dataObj[change[0][0]] :", dataObj[dataObj.length -2]);
 					}
 				} else {// 단일 object인 경우는 수정만 가능한 경우
 					targetData = dataObj;
@@ -85,8 +85,8 @@ $(document).ready(function() {
 				targetData[change[0][1]] = change[0][3];
 				
 				//targetData[change[0][1]] = change[0][3];
-				console.log("targetData : ", targetData);
-				console.log("test : ", this);
+				//console.log("targetData : ", targetData);
+				//console.log("test : ", this);
 				
 				
 				$.ajax({
@@ -96,13 +96,13 @@ $(document).ready(function() {
 					type : targetData.id === null ? "post" : "put",
 					data : JSON.stringify(targetData)
 				}).success(function (data) {
-					console.log(targetData);
+					//console.log(targetData);
 					if (targetIndex === -1) {
 						dataObj = data;
 					} else {
 						dataObj[targetIndex] = data;
 					}
-					console.log("dataObj : ", dataObj);
+					//console.log("dataObj : ", dataObj);
 					_handsontable().loadData(dataObj);
 				});
 			},

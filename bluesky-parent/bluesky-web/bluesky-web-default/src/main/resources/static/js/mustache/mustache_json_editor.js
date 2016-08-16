@@ -301,13 +301,13 @@ $(document).ready(function() {
 							isEnableRemove : function() {
 								var index = _getIndexFromKeyGroup(mergedArrayKeyGroup[i]);
 								var dataKey = _getDataKeyFromKeyGroup(mergedArrayKeyGroup[i].replace(_patternKeyGroupIndex, ""));
-								var length = eval("data" + dataKey).length;
+								var length = data[dataKey].length;
 								return length > 1;
 							},
 							isLastIndex : function() {
 								var index = _getIndexFromKeyGroup(mergedArrayKeyGroup[i]);
 								var dataKey = _getDataKeyFromKeyGroup(mergedArrayKeyGroup[i].replace(_patternKeyGroupIndex, ""));
-								var lastIndex = eval("data" + dataKey).length - 1;
+								var lastIndex = data[dataKey].length - 1;
 								return index === lastIndex;
 							},
 							getLabel : function() {
@@ -407,7 +407,7 @@ $(document).ready(function() {
 				var data = _getJson();
 				var targetData = $.extend(true, {}, dataPart[0]);
 				$.mustacheJSONGenerator.initDataValue(targetData);
-				eval("data" + dataKey).push(targetData);
+				data[dataKey].push(targetData);
 				return data;
 			}, 
 			listGroupPartRemove : function(target) {
@@ -415,7 +415,7 @@ $(document).ready(function() {
 				var index = _getIndexFromKeyGroup(keyGroupPart);
 				var dataKey = _getDataKeyFromKeyGroup(keyGroupPart.replace(_patternKeyGroupIndex, ""));
 				var data = _getJson();
-				eval("data" + dataKey).splice(index, 1);
+				data[dataKey].splice(index, 1);
 				return data;
 			},
 			listGroupPartUp : function(target) {
@@ -423,7 +423,7 @@ $(document).ready(function() {
 				var index = _getIndexFromKeyGroup(keyGroupPart);
 				var dataKey = _getDataKeyFromKeyGroup(keyGroupPart.replace(_patternKeyGroupIndex, ""));
 				var data = _getJson();
-				var target = eval("data" + dataKey);
+				var target = data[dataKey];
 				target.splice(index - 1, 2, target[index], target[index - 1]);
 				return data;
 			},
@@ -432,7 +432,7 @@ $(document).ready(function() {
 				var index = _getIndexFromKeyGroup(keyGroupPart);
 				var dataKey = _getDataKeyFromKeyGroup(keyGroupPart.replace(_patternKeyGroupIndex, ""));
 				var data = _getJson();
-				var target = eval("data" + dataKey);
+				var target = data[dataKey];
 				target.splice(index, 2, target[index + 1], target[index]);
 				return data;
 			},
@@ -461,8 +461,8 @@ $(document).ready(function() {
 				var userInfoPart = bbsList.reserved1.split("-");	// serverId, characterId, characterRace, 
 				
 				
-				console.log("bbsList : ", bbsList, bbsList.reserved1, keyGroupPart);
-				console.log("대상 : ", "[id='{0}[캐릭터이름]']".format(keyGroupPart), $("[id='{0}[캐릭터이름]']".format(keyGroupPart)).size());
+				//console.log("bbsList : ", bbsList, bbsList.reserved1, keyGroupPart);
+				//console.log("대상 : ", "[id='{0}[캐릭터이름]']".format(keyGroupPart), $("[id='{0}[캐릭터이름]']".format(keyGroupPart)).size());
 				$("[id='{0}[캐릭터이름]']".format(keyGroupPart)).val(bbsList.writer);
 				$("[id='{0}[서버ID]']".format(keyGroupPart)).val(userInfoPart[0]);
 				$("[id='{0}[캐릭터ID]']".format(keyGroupPart)).val(userInfoPart[1]);
@@ -486,7 +486,7 @@ $(document).ready(function() {
 					async : false
 				}).responseJSON;
 				
-				console.log("sendResponse : ", sendResponse);
+				//console.log("sendResponse : ", sendResponse);
 				
 				if (!sendResponse) {
 					alert("해당 정보를 호출할 수 없습니다.");
