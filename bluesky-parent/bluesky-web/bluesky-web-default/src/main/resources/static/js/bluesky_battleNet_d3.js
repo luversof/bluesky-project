@@ -104,7 +104,9 @@ $(document).ready(function() {
 			var partials = {"heroProfileItem" : _getHeroProfileItemTemplate()}
 			
 			for (var key in data.items) {
-				data.items[key].getKey = key;
+				if (data.items.hasOwnProperty(key)) {
+					data.items[key].getKey = key;
+				}
 			}
 			data.getKeyName = function() {
 				switch (this.getKey) {
@@ -156,7 +158,6 @@ $(document).ready(function() {
 						_item[tooltipParams] = {};
 					}
 					_item[tooltipParams] = data;
-					var template = _getItemDataTemplate();
 					_displayItemData(tooltipParams);
 				}
 			});

@@ -67,8 +67,8 @@ $(document).ready(function() {
 	
 	$(document).ajaxError(function(event, jqXHR, ajaxSettings, thrownError) {
 		if (ajaxSettings.dataType === "json") {
-			var b = "";
-			for (a in jqXHR) b+=a + "\n;";
+			//var b = "";
+			//for (var a in jqXHR) b+=a + "\n;";
 			//console.log(b);
 			//console.log(jqXHR.responseJSON);
 		}
