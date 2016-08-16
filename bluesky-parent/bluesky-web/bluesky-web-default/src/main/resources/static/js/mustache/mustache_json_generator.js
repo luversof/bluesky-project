@@ -6,7 +6,7 @@ $(document).ready(function() {
 		var _config = config;
 		
 		var _getPreservedWord = function() {
-			if (_config["reservedWord"] != undefined) {
+			if (_config["reservedWord"] !== undefined) {
 				return _config["reservedWord"]
 			}
 			$.ajax({
@@ -20,7 +20,7 @@ $(document).ready(function() {
 		var _isReservedWord = function(word) {
 			var isReserved = false; 
 			for (var i = 0; i < _config.reservedWord.length; i++) {
-				if (_config.reservedWord[i] == word) {
+				if (_config.reservedWord[i] === word) {
 					isReserved = true;
 					break;
 				}
@@ -43,13 +43,13 @@ $(document).ready(function() {
 		 */
 		var _repositionReservedWordJson = function(json, root) {
 			for (var key in json) {
-				if (json[key].constructor == Array && _isReservedWord(key)){
+				if (json[key].constructor === Array && _isReservedWord(key)){
 					for (var key2 in json[key][0]) {
 						json[key2] = json[key][0][key2];
 					}
 					delete json[key];
 					root[key] = false;
-				} else if (json[key].constructor == Array) {
+				} else if (json[key].constructor === Array) {
 					for (var i = 0 ; i < json[key].length; i++) {
 						_repositionReservedWordJson(json[key][i], root);
 					}
@@ -58,11 +58,11 @@ $(document).ready(function() {
 		}
 		// 상위 리스트에서 사용하는 키와 동일한 이름이 하위리스트에 있는 경우 하위의 키는 제거함
 		var _removeRepeatWordJson = function(json, root, upperKeyList) {
-			var isRoot = json == root;
+			var isRoot = json === root;
 			
 			// 체크대상인지 확인 후 체크
 			for (var key in json) {
-				if (json[key].constructor != Array) {
+				if (json[key].constructor !== Array) {
 					if ($.inArray(key, upperKeyList) > 0) {
 						delete json[key];
 					}
@@ -75,14 +75,14 @@ $(document).ready(function() {
 				keyList.push(upperKeyList[i]);
 			}
 			for (var key in json) {
-				if (json[key].constructor != Array) {
+				if (json[key].constructor !== Array) {
 					keyList.push(key);
 				}
 			}
 			
 			// 하위 depth array에 대해 체크 요청
 			for (var key in json) {
-				if (json[key].constructor == Array){
+				if (json[key].constructor === Array){
 					for (var i = 0 ; i < json[key].length; i++) {
 						_removeRepeatWordJson(json[key][i], root, keyList);
 					}
@@ -97,7 +97,7 @@ $(document).ready(function() {
 		 */
 		var _initDataValue = function(data) {
 			for (var key in data) {
-				if (data[key].constructor == Array) {
+				if (data[key].constructor === Array) {
 					for (var i = 0 ; i < 1; i++) {
 						_initDataValue(data[key][i]);
 					}
@@ -117,24 +117,24 @@ $(document).ready(function() {
 		
 		// 기본 token은 length : 4 인 array의 집합
 		// 리스트 token인 경우 length : 6, index 4에 하위 tokne이 있음
-		// 규칙 1. token[0] == "name" 또는 "&" 인 경우 token[1]이 객체의 이름
-		// 규칙 2. token[0] == "text"인 경우는 패스
-		// 규칙 3. token[0] == "#" or "^" 인 경우는 boolean값, 그 안에 array가 있을거임
+		// 규칙 1. token[0] === "name" 또는 "&" 인 경우 token[1]이 객체의 이름
+		// 규칙 2. token[0] === "text"인 경우는 패스
+		// 규칙 3. token[0] === "#" or "^" 인 경우는 boolean값, 그 안에 array가 있을거임
 		
-		// 규칙 4. token[0] == "#" or "^" 인 경우 예약어리스트 인 경우 기본 생성 변수를 넣어줘야함  - {{#bbsListUserInfo-test}} 같은 경우 게시물 링크 입력 폼을 추가함 
+		// 규칙 4. token[0] === "#" or "^" 인 경우 예약어리스트 인 경우 기본 생성 변수를 넣어줘야함  - {{#bbsListUserInfo-test}} 같은 경우 게시물 링크 입력 폼을 추가함 
 		var _generatorInner = function(tokens, json) {
 			for (var i = 0 ; i < tokens.length ; i++) {
-				if (tokens[i].constructor == Array) {
+				if (tokens[i].constructor === Array) {
 					_generatorInner(tokens[i], json);
 				}
 				// text는 일반 html template이므로 넘어감
-				if (tokens[0] == "text") {
+				if (tokens[0] === "text") {
 					break;
 				}
 				// tokens[1]의 값이 #또는 ^인 경우 arrayList를 만들자.\
 				// #isLogin, ^isLogin처럼 같이 쓰는 경우가 있으므로 선행 결과가 있는지 체크하여 arrayList를 생성 
-				if (tokens[0] == "#" || tokens[0] == "^") {
-					if (json[tokens[1]] == undefined) {
+				if (tokens[0] === "#" || tokens[0] === "^") {
+					if (json[tokens[1]] === undefined) {
 						json[tokens[1]] = [];
 						json[tokens[1]][0] = {};
 						
@@ -152,7 +152,7 @@ $(document).ready(function() {
 				}
 				
 				// 기본 template 용법 사용의 경우 ( {{키}} 는 name, {{{키}}}는 & 가 0번 index에 위치함
-				if (tokens[0] == "name" || tokens[0] == "&") {
+				if (tokens[0] === "name" || tokens[0] === "&") {
 					json[tokens[1]] = tokens[1];
 					break;
 				}
@@ -187,7 +187,7 @@ $(document).ready(function() {
 				// 배열 형태인 경우 리스트에 대해 머지 처리를 해야함
 				// data쪽이 length가 더 많으면 해당 수 만큼 생성처리해야함
 				// 동일한 inner array 있더라도 각 array의 length는 다를 수 있음.
-				if (jsonResult[key].constructor == Array && data[key] && data[key].constructor == Array) {
+				if (jsonResult[key].constructor === Array && data[key] && data[key].constructor === Array) {
 					var length = data[key].length; // 이건 무조건 1임 (format은 list의 data 표본이 1개이므로)
 					if (length > 0) {
 						for (var i = 0; i < length ; i++) {

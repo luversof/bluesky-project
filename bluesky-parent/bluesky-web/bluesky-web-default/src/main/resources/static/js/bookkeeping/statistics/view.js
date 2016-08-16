@@ -63,7 +63,8 @@ $(document).ready(function() {
 			this.collection = new $.StatisticsCollection();
 
 			this.statisticsSearchInfo = new $.StatisticsSearchInfo();
-			var statisticsSearchInfoView = new $.StatisticsSearchInfoView({ model : this.statisticsSearchInfo });
+			//var statisticsSearchInfoView = new $.StatisticsSearchInfoView({ model : this.statisticsSearchInfo });
+			new $.StatisticsSearchInfoView({ model : this.statisticsSearchInfo });
 			this.statisticsSearchInfo.fetch({ data : { chronoUnit : "YEARS" }});
 			
 			this.listenTo(this.collection, "reset", this.render);
