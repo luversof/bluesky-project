@@ -8,7 +8,7 @@ $(document).ready(function() {
 		var _config = config;
 		
 		var _getPreservedWord = function() {
-			if (_config["reservedWord"] != undefined) {
+			if (_config["reservedWord"] !== undefined) {
 				return _config["reservedWord"]
 			}
 			$.ajax({
@@ -59,7 +59,7 @@ $(document).ready(function() {
 				isReserved = true; 
 			}
 			for (var i = 0; i < _config.reservedWord.length; i++) {
-				if (_config.reservedWord[i] == word) {
+				if (_config.reservedWord[i] === word) {
 					isReserved = true;
 					break;
 				}
@@ -76,7 +76,7 @@ $(document).ready(function() {
 			var renderData = {};
 			for (var key in data) {
 				for (var i = 0 ; i < _config.reservedWord.length; i++) {
-					if (key == _config.reservedWord[i] && data[key] != undefined) {
+					if (key === _config.reservedWord[i] && data[key] !== undefined) {
 						renderData[key + "Editor"] = true;
 						renderData.isReservedWord = true;
 					}
@@ -96,15 +96,15 @@ $(document).ready(function() {
 			// json key 순서중 array는 제일 뒤에 처리를 하기 위해 for 문을 2번으로 나누었음
 			for (var key in data) {
 				// 배열인 경우 리스트에 대한 폼을 만들어야 하겠지? 폼안에 그 대상을 넣어야 하는데..
-				if (data[key].constructor != Array) {
+				if (data[key].constructor !== Array) {
 					var name = "";
-					if (parentKey != undefined) {
+					if (parentKey !== undefined) {
 						name = parentKey;
 					}
-					if (index != undefined) {
+					if (index !== undefined) {
 						name += "[" + index + "]";
 					}
-					name = (name == "") ? key : name += "[" + key + "]"
+					name = (name === "") ? key : name += "[" + key + "]"
 					var renderData = {
 						key : key,		// template에서 지정한 키워드
 						name : name,		// 전체 이름 ex: contacts[0][first-name]
@@ -122,24 +122,24 @@ $(document).ready(function() {
 							}
 							return label;
 						},
-						isFileEditor : function() {
+						isFileEditor : function(key) {
 							return _isFileEditor(key);
 						},
-						isBbsListAionUserInfoLinkEditor : function() {
+						isBbsListAionUserInfoLinkEditor : function(key) {
 							return _isBbsListAionUserInfoLinkEditor(key);
 						},
 						/* (s) select관련 함수 */
-						isSelectEditor : function() {
+						isSelectEditor : function(key) {
 							return _isSelectEditor(key);
 						},
-						getSelectList : function() {
+						getSelectList : function(key) {
 							return _getSelectList(key)
 						},
-						isSelected : function() {
-							return this == data[key];
+						isSelected : function(key) {
+							return this === data[key];
 						},
 						/* (e) select관련 함수 */
-						isReservedWord : function() {
+						isReservedWord : function(key) {
 							return _isReservedWord(key);
 						}
 					}
@@ -148,10 +148,10 @@ $(document).ready(function() {
 			}
 			for (var key in data) {
 				// 배열인 경우 리스트에 대한 폼을 만들어야 하겠지? 폼안에 그 대상을 넣어야 하는데..
-				if (data[key].constructor == Array) {
+				if (data[key].constructor === Array) {
 					var length = data[key].length;
 					for (var i = 0 ; i < length; i++) {
-						var targetParentKey = parentKey == undefined ? key : parentKey + "[" + index + "][" + key + "]";
+						var targetParentKey = parentKey === undefined ? key : parentKey + "[" + index + "][" + key + "]";
 						_makeEditor(data[key][i], targetParentKey, i);
 					}
 				}
@@ -164,24 +164,24 @@ $(document).ready(function() {
 		var _getEditorKeyList = function(data, keyList, parentKey, index) {
 			for (var key in data) {
 				// 배열인 경우 리스트에 대한 폼을 만들어야 하겠지? 폼안에 그 대상을 넣어야 하는데..
-				if (data[key].constructor != Array) {
+				if (data[key].constructor !== Array) {
 					var id = "";
-					if (parentKey != undefined) {
+					if (parentKey !== undefined) {
 						id = parentKey;
 					}
-					if (index != undefined) {
+					if (index !== undefined) {
 						id += "[" + index + "]";
 					}
-					id = (id == "") ? key : id += "[" + key + "]"
+					id = (id === "") ? key : id += "[" + key + "]"
 					keyList.push(id);
 				}
 			}
 			for (var key in data) {
 				// 배열인 경우 리스트에 대한 폼을 만들어야 하겠지? 폼안에 그 대상을 넣어야 하는데..
-				if (data[key].constructor == Array) {
+				if (data[key].constructor === Array) {
 					var length = data[key].length;
 					for (var i = 0 ; i < length; i++) {
-						var targetParentKey = parentKey == undefined ? key : parentKey + "[" + index + "][" + key + "]";
+						var targetParentKey = parentKey === undefined ? key : parentKey + "[" + index + "][" + key + "]";
 						_getEditorKeyList(data[key][i], keyList, targetParentKey, i);
 					}
 				}
@@ -196,7 +196,7 @@ $(document).ready(function() {
 		var _patternKeyArray = /(.*?\[\d*\])/g;
 		var _getKeyArray = function(key, array) {
 			var matches = _patternKeyArray.exec(key);
-			if (matches == null) {
+			if (matches === null) {
 				return;
 			}
 			array.push(matches[0]);
@@ -232,7 +232,7 @@ $(document).ready(function() {
 				var hasPrevKey = false;
 				if (prevKeyArray) {
 					for (var j = 0 ; j < prevKeyArray.length ; j++) {
-						if (prevKeyArray[j] == uniqueKeyArray[i]) {
+						if (prevKeyArray[j] === uniqueKeyArray[i]) {
 							hasPrevKey = true;
 							break;
 						}
@@ -257,7 +257,7 @@ $(document).ready(function() {
 		var _patternKeyGroup = /(.*)(?=\[\d*\])/;
 		var _getKeyGroup = function(key) {
 			var matches = _patternKeyGroup.exec(key);
-			if (matches == null) {
+			if (matches === null) {
 				return null;
 			}
 			return matches[0];
@@ -277,7 +277,7 @@ $(document).ready(function() {
 					var keyGroup = _getKeyGroup(mergedArrayKeyGroup[i]);
 					// 그룹 검색 후 최초 위치 앞에 전체를 wrapping 하는 area를 만들고 해당 area에 집어넣는다.
 					targetEditorListGroupArea = _form.find("[data-editor-keyGroup='{0}']".format(keyGroup));
-					if (targetEditorListGroupArea.size() == 0) {
+					if (targetEditorListGroupArea.size() === 0) {
 						var renderData = {
 							keyGroup : keyGroup,
 							getLabel : function() {
@@ -292,11 +292,11 @@ $(document).ready(function() {
 						$(this).closest(".form-group").before(targetEditorListGroupArea);
 					}
 					
-					if (index == 0) {
+					if (index === 0) {
 						var renderData = {
 							keyGroupPart : mergedArrayKeyGroup[i],
 							isFirstIndex : function() {
-								return _getIndexFromKeyGroup(mergedArrayKeyGroup[i]) == 0;
+								return _getIndexFromKeyGroup(mergedArrayKeyGroup[i]) === 0;
 							},
 							isEnableRemove : function() {
 								var index = _getIndexFromKeyGroup(mergedArrayKeyGroup[i]);
@@ -308,7 +308,7 @@ $(document).ready(function() {
 								var index = _getIndexFromKeyGroup(mergedArrayKeyGroup[i]);
 								var dataKey = _getDataKeyFromKeyGroup(mergedArrayKeyGroup[i].replace(_patternKeyGroupIndex, ""));
 								var lastIndex = eval("data" + dataKey).length - 1;
-								return index == lastIndex;
+								return index === lastIndex;
 							},
 							getLabel : function() {
 								var label = mergedArrayKeyGroup[i];
@@ -370,7 +370,7 @@ $(document).ready(function() {
 		var _patternKeyGroupIndex = /\[\d*\]$/;
 		var _getIndexFromKeyGroup = function(keyGruop) {
 			var matches = _patternKeyGroupIndex.exec(keyGruop)
-			if (matches == null) {
+			if (matches === null) {
 				return null;
 			}
 			return Number(matches[0].replace("[", "").replace("]", ""));
@@ -441,7 +441,7 @@ $(document).ready(function() {
 			 */
 			getBbsListAionUserInfo : function(targetInput) {
 				var targetUrl = targetInput.val();
-				if (targetUrl == "") {
+				if (targetUrl === "") {
 					alert("추출할 게시물의 url을 입력해 주세요.");
 					return;
 				}
@@ -475,7 +475,7 @@ $(document).ready(function() {
 			 */
 			sendSnow2MainRegisterNotification : function(targetInput) {
 				var targetUrl = targetInput.val();
-				if (targetUrl == "") {
+				if (targetUrl === "") {
 					alert("추출할 게시물의 url을 입력해 주세요.");
 					return;
 				}
