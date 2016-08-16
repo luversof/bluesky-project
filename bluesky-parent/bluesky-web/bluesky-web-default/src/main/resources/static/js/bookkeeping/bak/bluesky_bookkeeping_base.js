@@ -7,7 +7,7 @@ $(document).ready(function() {
 		}
 		return {
 			init : function() {
-				if (_handsontable() != null) {
+				if (_handsontable() !== null) {
 					return _handsontable();
 				}
 				_config.displayArea.handsontable($.extend(_config.handsontableConfig, { afterChange : this.afterChange, beforeRemoveRow : this.beforeRemoveRow }));
@@ -15,7 +15,7 @@ $(document).ready(function() {
 			},
 			load : function() {
 				this.init();
-				if (_config.initLoad != undefined && _config.initLoad == true) {
+				if (_config.initLoad !== undefined && _config.initLoad === true) {
 					_handsontable().loadData([{}]);
 					return;
 				}
@@ -44,13 +44,13 @@ $(document).ready(function() {
 				var targetCellData = this.getData()[change[0][0]];
 				console.log("targetCellData :", targetCellData);
 				
-				if (targetCellData == undefined) {
+				if (targetCellData === undefined) {
 					return;
 				}
 				
 				// 신규 추가인 경우 모든 cell이 입력된 이후 추가 처리를 함 (TODO 이거 나중에 필수가 아닌 cell 입력에 대해서는 예외처리 추가 필요함)
 				for (var i = 1; i < targetCellData.length; i++) {
-					if (targetCellData[i] == null) {
+					if (targetCellData[i] === null) {
 						return;
 					}
 				}
@@ -65,7 +65,7 @@ $(document).ready(function() {
 				
 				if ($.isArray(dataObj)) {
 					for (var i = 0 ; i < dataObj.length ; i++) {
-						if (dataObj[i].id == targetCellData[0]) {
+						if (dataObj[i].id === targetCellData[0]) {
 							targetData = dataObj[i];
 							targetIndex = i;
 							break;
@@ -74,7 +74,7 @@ $(document).ready(function() {
 					console.log("targetData : ", targetData);
 					
 					// 신규 추가의 경우 마지막에서 -1의 data가 해당 데이터임
-					if (targetData.id == null) {
+					if (targetData.id === null) {
 						targetData = dataObj[change[0][0]];
 						console.log("dataObj[change[0][0]] :", dataObj[dataObj.length -2]);
 					}
@@ -90,14 +90,14 @@ $(document).ready(function() {
 				
 				
 				$.ajax({
-					url : targetData.id == null ? _config.postUrl.format(_config.bookkeepingId) : _config.putUrl.format(_config.bookkeepingId, targetData.id),
+					url : targetData.id === null ? _config.postUrl.format(_config.bookkeepingId) : _config.putUrl.format(_config.bookkeepingId, targetData.id),
 					dataType : "json",
 					contentType : "application/json",
-					type : targetData.id == null ? "post" : "put",
+					type : targetData.id === null ? "post" : "put",
 					data : JSON.stringify(targetData)
 				}).success(function (data) {
 					console.log(targetData);
-					if (targetIndex == -1) {
+					if (targetIndex === -1) {
 						dataObj = data;
 					} else {
 						dataObj[targetIndex] = data;
@@ -108,7 +108,7 @@ $(document).ready(function() {
 			},
 			beforeRemoveRow : function(index, amount) {
 				var targetCellData = this.getData()[index];
-				if (targetCellData[0] == undefined) {
+				if (targetCellData[0] === undefined) {
 					return;
 				};
 				
@@ -116,7 +116,7 @@ $(document).ready(function() {
 				
 				var targetData;
 				for (var i = 0 ; i < dataObj.length ; i++) {
-					if (dataObj[i].id == targetCellData[0]) {
+					if (dataObj[i].id === targetCellData[0]) {
 						targetData = dataObj[i];
 					}
 				}

@@ -17,13 +17,13 @@ $(document).ready(function() {
 			//console.log("statisticsSearchInfoView render")
 			var data = this.model.toJSON();
 			data.getTargetDate = function() {
-				return moment(data.startLocalDateTime).format(data.getMomentDateFormat());
+				return moment(data.startZonedDateTime).format(data.getMomentDateFormat());
 			}
 			data.isChronoUnitYears = function() {
-				return data.chronoUnit == "YEARS";
+				return data.chronoUnit === "YEARS";
 			}
 			data.isChronoUnitMonths = function() {
-				return data.chronoUnit == "MONTHS";
+				return data.chronoUnit === "MONTHS";
 			}
 			this.$el
 				.html(Mustache.render(this.template, data))
@@ -46,7 +46,7 @@ $(document).ready(function() {
 			var targetChronoUnit = this.$el.find("[data-menu-selectStatisticsSearchInfoChronoUnit].active").attr("data-menu-selectStatisticsSearchInfoChronoUnit");
 			var data = this.model.toJSON();
 			
-			if (targetDate != moment(this.model.get("startLocalDateTime")).format(data.getMomentDateFormat()) || data.chronoUnit != targetChronoUnit) {
+			if (targetDate !== moment(this.model.get("startZonedDateTime")).format(data.getMomentDateFormat()) || data.chronoUnit !== targetChronoUnit) {
 				// 변경처리
 				this.selectStatisticsSearchInfo(targetChronoUnit, data.targetLocalDate);
 			}
@@ -58,9 +58,9 @@ $(document).ready(function() {
 			var targetDate = this.$el.find("input[name=statisticsSearchInfoTargetDate]").val();
 			var data = this.model.toJSON();
 			var targetLocalDateMoment = moment(targetDate).add(this.model.get("baseDate") - 1, "days");
-			if (menu == "prevDate") {
+			if (menu === "prevDate") {
 				targetLocalDateMoment.subtract(1, data.getMomentManipulateKey());
-			} else if (menu == "nextDate") {
+			} else if (menu === "nextDate") {
 				targetLocalDateMoment.add(1, data.getMomentManipulateKey());
 			}
 			this.selectStatisticsSearchInfo(data.chronoUnit, targetLocalDateMoment.format("YYYY-MM-DD"));

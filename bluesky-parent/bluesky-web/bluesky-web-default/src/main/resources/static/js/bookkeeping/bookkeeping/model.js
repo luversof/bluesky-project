@@ -11,7 +11,7 @@ $.Bookkeeping = Backbone.Model.extend({
 	},
 	validate : function(attrs, options) {
 		//console.log("validate : ", attrs, options);
-		if (attrs.name == "") {
+		if (attrs.name === "") {
 			return "가계부의 이름을 입력하세요";
 		}
 		if (attrs.baseDate <= 0) {

@@ -71,7 +71,7 @@ function change(data) {
 	var duration = +document.getElementById("duration").value;
 	var data0 = svg.select(".slices").selectAll("path.slice")
 		.data().map(function(d) { return d.data });
-	if (data0.length == 0) data0 = data;
+	if (data0.length === 0) data0 = data;
 	var was = mergeWithFirstEqualZero(data, data0);
 	var is = mergeWithFirstEqualZero(data0, data);
 
@@ -134,7 +134,7 @@ function change(data) {
 
 	text.transition().duration(duration)
 		.style("opacity", function(d) {
-			return d.data.value == 0 ? 0 : 1;
+			return d.data.value === 0 ? 0 : 1;
 		})
 		.attrTween("transform", function(d) {
 			var interpolate = d3.interpolate(this._current, d);
@@ -179,7 +179,7 @@ function change(data) {
 	
 	polyline.transition().duration(duration)
 		.style("opacity", function(d) {
-			return d.data.value == 0 ? 0 : .5;
+			return d.data.value === 0 ? 0 : .5;
 		})
 		.attrTween("points", function(d){
 			this._current = this._current;

@@ -29,13 +29,13 @@ $(document).ready(function() {
 			var entryType = this.model.get("entryGroup").entryType;
 		
 			data.isTargetEntryGroup = function() {
-				return this.entryType == entryType;
+				return this.entryType === entryType;
 			}
 			data.isCredit = function() {
-				return entryType == "CREDIT";
+				return entryType === "CREDIT";
 			}
 			data.isDebit = function() {
-				return entryType == "DEBIT";
+				return entryType === "DEBIT";
 			}
 			data.statisticsAmountFormat = function() {
 				return numeral(this.statistics.amount).format();
@@ -84,36 +84,36 @@ $(document).ready(function() {
 			
 			data.getTotalCreditAmount = function() {
 				return _.reduce(statisticsList, function(amount, statistics) {
-					return numeral(numeral().unformat(amount) + (statistics.entryGroup.entryType == "CREDIT" ? statistics.amount : 0)).format(format);
+					return numeral(numeral().unformat(amount) + (statistics.entryGroup.entryType === "CREDIT" ? statistics.amount : 0)).format(format);
 				}, 0);
 			}
 			data.getTotalDebitAmount = function() {
 				return _.reduce(statisticsList, function(amount, statistics) {
-					return numeral(numeral().unformat(amount) + (statistics.entryGroup.entryType == "DEBIT" ? statistics.amount : 0)).format(format);
+					return numeral(numeral().unformat(amount) + (statistics.entryGroup.entryType === "DEBIT" ? statistics.amount : 0)).format(format);
 				}, 0);
 			}
 			data.getTotalAmount = function() {
 				return numeral(numeral().unformat(data.getTotalCreditAmount()) - numeral().unformat(data.getTotalDebitAmount())).format(format);
 			}
 			data.isSortEntryType = function() {
-				return this.sortColumn == "entryType";
+				return this.sortColumn === "entryType";
 			}
 			data.isSortColumnAmount = function() {
-				return this.sortColumn == "amount";
+				return this.sortColumn === "amount";
 			}
 			data.isDisplayEntryTypeTotal = function() {
-				return displayEntryType == "TOTAL";
+				return displayEntryType === "TOTAL";
 			}
 			data.isDisplayEntryTypeCredit = function() {
-				return displayEntryType == "CREDIT";
+				return displayEntryType === "CREDIT";
 			}
 			data.isDisplayEntryTypeDebit = function() {
-				return displayEntryType == "DEBIT";
+				return displayEntryType === "DEBIT";
 			}
 			
 			this.$el.html(Mustache.render(this.template, data));
 			this.collection.each(function(statistics) {
-				if (this.displayEntryType != "TOTAL" && this.displayEntryType != statistics.get("entryType")) {
+				if (this.displayEntryType !== "TOTAL" && this.displayEntryType !== statistics.get("entryType")) {
 					return;
 				}
 				var statisticsView = new $.StatisticsView({ model : statistics });

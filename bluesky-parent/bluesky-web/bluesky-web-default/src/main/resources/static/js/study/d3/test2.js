@@ -41,7 +41,7 @@ $(document).ready(function() {
 		
 		//1. 수입의 경우만 테스트를 해보자
 		var filteredStatisticsArray = statisticsArray.filter(function(statistics) {
-			return statistics.entryGroup.entryType == entryType;
+			return statistics.entryGroup.entryType === entryType;
 		})
 		console.log("filteredStatisticsArray : ", filteredStatisticsArray);
 		
@@ -86,7 +86,7 @@ $(document).ready(function() {
 		var duration = 150;
 		var data0 = svg.select(".slices").selectAll("path.slice")
 		.data().map(function(d) { return d.data });
-		if (data0.length == 0) data0 = data;
+		if (data0.length === 0) data0 = data;
 		var was = mergeWithFirstEqualZero(data, data0);
 		var is = mergeWithFirstEqualZero(data0, data);
 		
@@ -149,7 +149,7 @@ $(document).ready(function() {
 		
 		text.transition().duration(duration)
 		.style("opacity", function(d) {
-			return d.data.value == 0 ? 0 : 1;
+			return d.data.value === 0 ? 0 : 1;
 		})
 		.attrTween("transform", function(d) {
 			var interpolate = d3.interpolate(this._current, d);
@@ -194,7 +194,7 @@ $(document).ready(function() {
 		
 		polyline.transition().duration(duration)
 		.style("opacity", function(d) {
-			return d.data.value == 0 ? 0 : .5;
+			return d.data.value === 0 ? 0 : .5;
 		})
 		.attrTween("points", function(d){
 			this._current = this._current;

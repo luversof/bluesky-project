@@ -12,10 +12,10 @@ $.Asset = Backbone.Model.extend({
 	},
 	validate : function(attrs, options) {
 		console.log("validate : ", attrs, options);
-		if (attrs.name == "") {
+		if (attrs.name === "") {
 			return "추가할 자산의 이름을 입력하세요.";
 		}
-		if (attrs.assetType == null) {
+		if (attrs.assetType === null) {
 			return "test";
 		}
 	}

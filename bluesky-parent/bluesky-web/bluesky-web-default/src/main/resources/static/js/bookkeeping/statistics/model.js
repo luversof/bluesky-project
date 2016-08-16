@@ -10,7 +10,7 @@ $.Statistics = Backbone.Model.extend({
 	},
 	validate : function(attrs, options) {
 		console.log("validate : ", attrs, options);
-		if (attrs.amount == 0) {
+		if (attrs.amount === 0) {
 			return "금액을 입력하세요.";
 		}
 	}

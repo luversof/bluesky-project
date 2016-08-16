@@ -29,8 +29,8 @@ $(document).ready(function() {
 			this.model.destroy();
 		},
 		isChange : function() {
-			if (this.$el.find("[data-key-name=name]").text() == this.model.get("name")
-					&& this.$el.find("select[name=assetType] option:selected").val() == this.model.get("assetType")) {
+			if (this.$el.find("[data-key-name=name]").text() === this.model.get("name")
+					&& this.$el.find("select[name=assetType] option:selected").val() === this.model.get("assetType")) {
 				this.$el.find("[data-menu=updateAsset]").hide(100);
 			} else {
 				this.$el.find("[data-menu=updateAsset]").show(100);
@@ -38,13 +38,13 @@ $(document).ready(function() {
 		},
 		nameKeyUp : function(event) {
 			this.isChange();
-			if (event.keyCode == 13) {
+			if (event.keyCode === 13) {
 				this.updateAsset();
 			}
 		},
 		// enter 입력 처리 방지
 		nameKeyPress : function(event) {
-			return event.keyCode != 13;
+			return event.keyCode !== 13;
 		}
 	});
 
@@ -74,13 +74,13 @@ $(document).ready(function() {
 				sortDirection : this.collection.sortDirection
 			};
 			data.isSortColumnAssetType = function() {
-				return this.sortColumn == "assetType";
+				return this.sortColumn === "assetType";
 			}
 			data.isSortColumnName = function() {
-				return this.sortColumn == "name";
+				return this.sortColumn === "name";
 			}
 			data.isSortColumnAmount = function() {
-				return this.sortColumn == "amount";
+				return this.sortColumn === "amount";
 			}
 			this.$el.html(Mustache.render(this.template, data));
 			this.collection.each(function(asset) {

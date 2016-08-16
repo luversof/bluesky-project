@@ -20,7 +20,7 @@ $.EntrySearchInfo = Backbone.Model.extend({
 	},
 	validate : function(attrs, options) {
 		//console.log("validate : ", attrs, options);
-		if (attrs.bookkeeping.id == 0) {
+		if (attrs.bookkeeping.id === 0) {
 			return "가계부의 Id를 입력하세요";
 		}
 	}

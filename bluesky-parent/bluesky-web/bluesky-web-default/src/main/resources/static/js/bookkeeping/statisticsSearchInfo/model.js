@@ -5,9 +5,9 @@ $.StatisticsSearchInfo = Backbone.Model.extend({
 		chronoUnit : "YEARS",
 		targetLocalDate : null,
 		getMomentDateFormat : function() {
-			if (this.chronoUnit == "YEARS") {
+			if (this.chronoUnit === "YEARS") {
 				return "YYYY";
-			} else if (this.chronoUnit == "MONTHS") {
+			} else if (this.chronoUnit === "MONTHS") {
 				return "YYYY-MM";
 			}
 			return "";
@@ -26,7 +26,7 @@ $.StatisticsSearchInfo = Backbone.Model.extend({
 	},
 	validate : function(attrs, options) {
 		//console.log("validate : ", attrs, options);
-		if (attrs.bookkeeping.id == 0) {
+		if (attrs.bookkeeping.id === 0) {
 			return "가계부의 Id를 입력하세요";
 		}
 	}

@@ -22,17 +22,17 @@ $(document).ready(function() {
 				return this.battleTag.replace("#", "-");
 			}
 			data.getClassName = function() {
-				if (this["class"] == "monk") {
+				if (this["class"] === "monk") {
 					return "수도사";
-				} else if (this["class"] == "demon-hunter") {
+				} else if (this["class"] === "demon-hunter") {
 					return "악마사냥꾼";
-				} else if (this["class"] == "barbarian") {
+				} else if (this["class"] === "barbarian") {
 					return "야만용사";
-				} else if (this["class"] == "wizard") {
+				} else if (this["class"] === "wizard") {
 					return "마법사";
-				} else if (this["class"] == "witch-doctor") {
+				} else if (this["class"] === "witch-doctor") {
 					return "부두술사";
-				} else if (this["class"] == "crusader") {
+				} else if (this["class"] === "crusader") {
 					return "성전사";
 				} else {
 					return "테스트";
@@ -45,7 +45,7 @@ $(document).ready(function() {
 		 */
 		var _profileTemplate = null;
 		var _getProfileTemplate = function() {
-			if (_profileTemplate != null) {
+			if (_profileTemplate !== null) {
 				return _profileTemplate;
 			}
 			var result = $.ajax({
@@ -57,7 +57,7 @@ $(document).ready(function() {
 		}
 		
 		var _getCareerProfile = function(battleTag) {
-			if (_profile[battleTag] != undefined) {
+			if (_profile[battleTag] !== undefined) {
 				_addLambdaCareerProfile(battleTag);
 				$(".content-battleNet").html(Mustache.render(_getProfileTemplate(), _profile[battleTag]));
 				return;
@@ -78,7 +78,7 @@ $(document).ready(function() {
 		}
 		
 		var _getHeroProfile = function(battleTag, heroId) {
-			if (_hero[battleTag] != undefined && _hero[battleTag][heroId] != undefined) {
+			if (_hero[battleTag] !== undefined && _hero[battleTag][heroId] !== undefined) {
 				_displayHeroProfile(battleTag, heroId);
 				return ;
 			}
@@ -88,7 +88,7 @@ $(document).ready(function() {
 					$("#hero-" + heroId + " .panel-body").html('<div class="text-center"><i class="fa fa-spinner fa-pulse"></i></div>');
 				},
 				success : function(data) {
-					if (_hero[battleTag] == undefined) {
+					if (_hero[battleTag] === undefined) {
 						_hero[battleTag] = {};
 					}
 					_hero[battleTag][heroId] = data;
@@ -144,7 +144,7 @@ $(document).ready(function() {
 		}
 		
 		var _getItemData = function(tooltipParams) {
-			if (_item[tooltipParams] != undefined) {
+			if (_item[tooltipParams] !== undefined) {
 				_displayItemData(tooltipParams);
 				return;
 			}
@@ -152,7 +152,7 @@ $(document).ready(function() {
 				url : "/battleNet/d3/data/" + tooltipParams + ".json",
 				beforeSend : function() {$("#d3-itemData").html('<div class="text-center"><i class="fa fa-spinner fa-pulse fa-2x"></i></div>');},
 				success : function(data) {
-					if (_item[tooltipParams] == undefined) {
+					if (_item[tooltipParams] === undefined) {
 						_item[tooltipParams] = {};
 					}
 					_item[tooltipParams] = data;
@@ -168,7 +168,7 @@ $(document).ready(function() {
 			
 			data.isSetItemsEquipped = function() {
 				for (var key in data.setItemsEquipped) {
-					if (this.id == data.setItemsEquipped[key]) {
+					if (this.id === data.setItemsEquipped[key]) {
 						return true;
 					} 
 				}
@@ -188,7 +188,7 @@ $(document).ready(function() {
 		
 		var _heroProfileTemplate = null;
 		var _getHeroProfileTemplate = function() {
-			if (_heroProfileTemplate != null) {
+			if (_heroProfileTemplate !== null) {
 				return _heroProfileTemplate;
 			}
 			var result = $.ajax({
@@ -201,7 +201,7 @@ $(document).ready(function() {
 		
 		var _heroProfileItemTemplate = null;
 		var _getHeroProfileItemTemplate = function() {
-			if (_heroProfileItemTemplate != null) {
+			if (_heroProfileItemTemplate !== null) {
 				return _heroProfileItemTemplate;
 			}
 			var result = $.ajax({
@@ -214,7 +214,7 @@ $(document).ready(function() {
 		
 		var _itemDataTemplate = null;
 		var _getItemDataTemplate = function() {
-			if (_itemDataTemplate != null) {
+			if (_itemDataTemplate !== null) {
 				return _itemDataTemplate;
 			}
 			var result = $.ajax({
@@ -276,7 +276,7 @@ $(document).ready(function() {
 	$(document).on("submit", "form[name=battleTagForm]", function() {
 		var battleTag = $(this).find("#battleTag").val(); 
 		console.log("test ", battleTag);
-		if (battleTag == "") {
+		if (battleTag === "") {
 			alert("")
 		};
 		battleNet.getCareerProfile(battleTag);

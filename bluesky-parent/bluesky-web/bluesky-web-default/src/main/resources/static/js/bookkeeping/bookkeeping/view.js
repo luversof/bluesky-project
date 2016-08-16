@@ -32,8 +32,8 @@ $(document).ready(function() {
 		},
 		// 변경된 내용이 있는지 여부 확인
 		isChange : function() {
-			if (this.$el.find("[data-key-name=name]").text() == this.model.get("name") 
-					&& this.$el.find("select[name=baseDate] option:selected").val() == this.model.get("baseDate")) {
+			if (this.$el.find("[data-key-name=name]").text() === this.model.get("name") 
+					&& this.$el.find("select[name=baseDate] option:selected").val() === this.model.get("baseDate")) {
 				this.$el.find("[data-menu=updateBookkeeping]").hide(100);
 			} else {
 				this.$el.find("[data-menu=updateBookkeeping]").show(100);
@@ -41,13 +41,13 @@ $(document).ready(function() {
 		},
 		nameKeyUp : function(event) {
 			this.isChange();
-			if (event.keyCode == 13) {
+			if (event.keyCode === 13) {
 				this.updateBookkeeping();
 			}
 		},
 		// enter 입력 처리 방지
 		nameKeyPress : function(event) {
-			return event.keyCode != 13;
+			return event.keyCode !== 13;
 		}
 	});
 

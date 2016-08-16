@@ -12,4 +12,8 @@ public class BbsArticleViewController {
 	@GetMapping("/list")
 	public void list() {
 	}
+	
+	@GetMapping("/view")
+	public void view() {
+	}
 }
