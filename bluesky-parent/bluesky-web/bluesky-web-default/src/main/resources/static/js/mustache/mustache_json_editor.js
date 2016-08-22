@@ -228,8 +228,8 @@ $(document).ready(function() {
 			 */
 			var uniqueKeyArray = keyArray;
 			var prevKeyArray = [];
+			var hasPrevKey = false;
 			for (var i = 0 ; i < uniqueKeyArray.length ; i++) {
-				var hasPrevKey = false;
 				if (prevKeyArray) {
 					for (var j = 0 ; j < prevKeyArray.length ; j++) {
 						if (prevKeyArray[j] === uniqueKeyArray[i]) {
