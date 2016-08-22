@@ -20,7 +20,7 @@ import net.luversof.bbs.service.BbsService;
 
 @Slf4j
 @RestController
-@RequestMapping("/board/{boardAlias}")
+@RequestMapping(value = "/board/{boardAlias}", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BbsArticleController {
 	
 	@Autowired
@@ -30,7 +30,7 @@ public class BbsArticleController {
 	private BbsArticleService bbsArticleService;
 	
 	@PreBbsAuthorize(checkBbsActivated = true)
-	@GetMapping(value = "/article", produces = MediaType.APPLICATION_JSON_VALUE)
+	@GetMapping("/article")
 	public Page<BbsArticle> list(@PathVariable String boardAlias, @RequestParam(defaultValue = "1") int page) {
 		Page<BbsArticle> bbsArticleList = bbsArticleService.selectBbsArticleList(boardAlias, new PageRequest(page - 1, 20, new Sort(Direction.DESC, "id")));
 		log.debug("bbsArticleList : {}", bbsArticleList);

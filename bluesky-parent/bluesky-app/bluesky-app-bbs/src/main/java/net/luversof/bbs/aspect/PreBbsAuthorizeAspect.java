@@ -37,7 +37,7 @@ public class PreBbsAuthorizeAspect {
 			}
 		}
 		
-		Bbs bbs = bbsService.findByAlias(boardAlias).orElseThrow(() -> new BlueskyException("bbs.NOT_EXIST_BOARD"));
+		Bbs bbs = bbsService.findByAlias(boardAlias);
 		checkBbsActivated(preBbsAuthorize, bbs);
 		checkArticleActivated(preBbsAuthorize, bbs);
 		checkReplyActivated(preBbsAuthorize, bbs);

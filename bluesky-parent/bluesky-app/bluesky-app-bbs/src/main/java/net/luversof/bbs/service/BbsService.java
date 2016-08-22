@@ -1,12 +1,11 @@
 package net.luversof.bbs.service;
 
-import java.util.Optional;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import net.luversof.bbs.domain.Bbs;
 import net.luversof.bbs.repository.BbsRepository;
+import net.luversof.core.exception.BlueskyException;
 
 @Service
 public class BbsService {
@@ -23,7 +22,7 @@ public class BbsService {
 		return bbsRepository.findOne(bbsId);
 	}
 	
-	public Optional<Bbs> findByAlias(String alias) {
-		return bbsRepository.findByAlias(alias);
+	public Bbs findByAlias(String alias) {
+		return bbsRepository.findByAlias(alias).orElseThrow(() -> new BlueskyException("bbs.NOT_EXIST_BOARD"));
 	}
 }
