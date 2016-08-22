@@ -9,5 +9,5 @@ import net.luversof.bbs.domain.BbsArticle;
 
 @Transactional(readOnly = true)
 public interface BbsArticleRepository extends JpaRepository<BbsArticle, Long> {
-	Page<BbsArticle> findByBbsAliasName(String aliasName, Pageable pageable);
+	Page<BbsArticle> findByBbsAlias(String bbsAlias, Pageable pageable);
 }

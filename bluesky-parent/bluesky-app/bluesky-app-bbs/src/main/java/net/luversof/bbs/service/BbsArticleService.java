@@ -14,8 +14,8 @@ public class BbsArticleService {
 	@Autowired
 	private BbsArticleRepository bbsArticleRepository;
 	
-	public Page<BbsArticle> selectBbsArticleList(String aliasName, Pageable pageable) {
-		return bbsArticleRepository.findByBbsAliasName(aliasName, pageable);
+	public Page<BbsArticle> selectBbsArticleList(String bbsAlias, Pageable pageable) {
+		return bbsArticleRepository.findByBbsAlias(bbsAlias, pageable);
 	}
 	
 	public BbsArticle selectBbsArticle(long id) {

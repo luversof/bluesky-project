@@ -1,5 +1,7 @@
 package net.luversof.bbs.service;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +23,7 @@ public class BbsService {
 		return bbsRepository.findOne(bbsId);
 	}
 	
-	public Bbs findByAliasName(String aliasName) {
-		return bbsRepository.findByAliasName(aliasName);
+	public Optional<Bbs> findByAlias(String alias) {
+		return bbsRepository.findByAlias(alias);
 	}
 }

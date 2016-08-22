@@ -12,7 +12,7 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(indexes = @Index(name = "IDX_Bbs_aliasName", columnList = "aliasName") )
+@Table(indexes = @Index(name = "IDX_Bbs_alias", columnList = "alias", unique = true) )
 public class Bbs {
 
 	@Id
@@ -20,6 +20,14 @@ public class Bbs {
 	private long id;
 	
 	@Column(length = 15)
-	private String aliasName;
+	private String alias;
+	
+	private boolean isBbsActivated;
+	
+	private boolean isArticleActivated;
+	
+	private boolean isReplyActivated;
+	
+	private boolean isCommentActivated;
 	
 }

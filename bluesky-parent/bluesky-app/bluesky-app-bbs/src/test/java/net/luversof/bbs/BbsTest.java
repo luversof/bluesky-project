@@ -1,5 +1,7 @@
 package net.luversof.bbs;
 
+import java.util.Optional;
+
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -17,8 +19,16 @@ public class BbsTest extends GeneralTest {
 	@Test
 	public void test() {
 		Bbs bbs = new Bbs();
-		bbs.setAliasName("free");
+		bbs.setAlias("free");
 		bbsService.save(bbs);
 		log.debug("bbs : {}", bbs);
+	}
+	
+	@Test
+	public void test2() {
+		Optional<Bbs> bbs = bbsService.findByAlias("free");
+		log.debug("bbs : {}", bbs);
+		Optional<Bbs> bbs2 = bbsService.findByAlias("free2");
+		log.debug("bbs : {}", bbs2);
 	}
 }
