@@ -8,9 +8,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import net.luversof.bookkeeping.domain.Bookkeeping;
@@ -29,7 +29,7 @@ public class BookkeepingViewController {
 //	public void index() {
 //	}
 	
-	@RequestMapping(value = "/setting", method = RequestMethod.GET)
+	@GetMapping(value = "/setting")
 	public void setting(ModelMap modelMap, Authentication authentication) {
 		// 기본 설정한 bookkeeping Id를 반환하자.
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
@@ -50,11 +50,11 @@ public class BookkeepingViewController {
 //		return MessageFormat.format("redirect:/bookkeeping/{0}/view/entry", bookkeepingId);
 //	}
 	
-	@RequestMapping(value = "/create", method=RequestMethod.GET)
+	@GetMapping(value = "/create")
 	public void createForm() {}
 	
-	@RequestMapping(value = "/{bookkeepingId}/entry/index", method = RequestMethod.GET)
-	public String list(@PathVariable long bookkeepingId, @RequestParam(defaultValue = "1") int page) {
+	@GetMapping(value = "/{bookkeepingId}/entry/index")
+	public String entryList(@PathVariable long bookkeepingId, @RequestParam(defaultValue = "1") int page) {
 		// 기본은 달 기준으로 요청을 처리해야할 듯한데..
 		// 요청 월이 없으면 현재달 기준으로 검색 해야함.
 		// 설정한 일자 기준으로 날짜 검색해야함
@@ -65,15 +65,20 @@ public class BookkeepingViewController {
 	
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{bookkeepingId}/entryGroup/setting", method = RequestMethod.GET)
+	@GetMapping(value = "/{bookkeepingId}/entryGroup/setting")
 	public String entryGroupList(@PathVariable long bookkeepingId) {
 		return "bookkeeping/entryGroup/setting";
 	}
 	
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{bookkeepingId}/asset/setting", method = RequestMethod.GET)
+	@GetMapping(value = "/{bookkeepingId}/asset/setting")
 	public String assetList(@PathVariable long bookkeepingId) {
 		return "bookkeeping/asset/setting";
 	}
 	
+	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@GetMapping(value = "/{bookkeepingId}/statistics/index")
+	public String statisticsList(@PathVariable long bookkeepingId) {
+		return "bookkeeping/statistics/index";
+	}
 }

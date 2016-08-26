@@ -35,4 +35,12 @@ public class BookkeepingTest extends GeneralTest {
 	public void findByUserId() {
 		log.debug("bookkeeping : {}", bookkeepingService.findByUserId(TEST_USER_ID));
 	}
+	
+	@Test
+	public void delete() {
+		Bookkeeping bookkeeping = new Bookkeeping();
+		bookkeeping.setId(5);
+		bookkeeping.setUserId(2);
+		bookkeepingService.delete(bookkeeping);
+	}
 }

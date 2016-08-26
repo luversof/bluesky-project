@@ -3,7 +3,29 @@ package net.luversof.bookkeeping.util;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
+import net.luversof.bookkeeping.BookkeepingErrorCode;
+import net.luversof.core.exception.BlueskyException;
+
 public class BookkeepingUtils {
+	
+	
+	public static LocalDate getStartLocalDate(LocalDate targetLocalDate, int baseDate, ChronoUnit chronoUnit) {
+		if (ChronoUnit.MONTHS == chronoUnit) {
+			return getMonthStartLocalDate(targetLocalDate, baseDate);
+		} else if (ChronoUnit.YEARS == chronoUnit) {
+			return getYearStartLocalDate(targetLocalDate, baseDate);
+		} 
+		throw new BlueskyException(BookkeepingErrorCode.NOT_SUPPORT_CHRONOUNIT);
+	}
+	
+	public static LocalDate getEndLocalDate(LocalDate targetLocalDate, int baseDate, ChronoUnit chronoUnit) {
+		if (ChronoUnit.MONTHS == chronoUnit) {
+			return getMonthEndLocalDate(targetLocalDate, baseDate);
+		} else if (ChronoUnit.YEARS == chronoUnit) {
+			return getYearEndLocalDate(targetLocalDate, baseDate);
+		} 
+		throw new BlueskyException(BookkeepingErrorCode.NOT_SUPPORT_CHRONOUNIT);
+	}
 
 	/**
 	 * targetLocalDate 날짜를 기준으로 월 시작일 계산
@@ -14,7 +36,11 @@ public class BookkeepingUtils {
 	 */
 	public static LocalDate getMonthStartLocalDate(LocalDate targetLocalDate, int baseDate) {
 		LocalDate startLocalDate = targetLocalDate.withDayOfMonth(baseDate);
-		return getStartLocalDate(targetLocalDate, startLocalDate, baseDate, ChronoUnit.MONTHS);
+		if (startLocalDate.isAfter(targetLocalDate)) {
+			startLocalDate = startLocalDate.minus(1, ChronoUnit.MONTHS);
+		}
+		
+		return startLocalDate;
 	}
 	
 	/**
@@ -25,8 +51,13 @@ public class BookkeepingUtils {
 	 * @return
 	 */
 	public static LocalDate getMonthEndLocalDate(LocalDate targetLocalDate, int baseDate) {
-		LocalDate endLocalDate = targetLocalDate.withDayOfMonth(baseDate).minusDays(1);
-		return getEndLocalDate(targetLocalDate, endLocalDate, baseDate, ChronoUnit.MONTHS);
+		LocalDate endLocalDate = targetLocalDate.withDayOfMonth(baseDate);
+		if (endLocalDate.isAfter(targetLocalDate)) {
+			endLocalDate = endLocalDate.minusDays(1);
+		} else {
+			endLocalDate = endLocalDate.plus(1, ChronoUnit.MONTHS).minusDays(1);
+		}
+		return endLocalDate;
 	}
 	
 	/**
@@ -38,7 +69,10 @@ public class BookkeepingUtils {
 	 */
 	public static LocalDate getYearStartLocalDate(LocalDate targetLocalDate, int baseDate) {
 		LocalDate startLocalDate = targetLocalDate.withMonth(1).withDayOfMonth(baseDate);
-		return getStartLocalDate(targetLocalDate, startLocalDate, baseDate, ChronoUnit.YEARS);
+		if (startLocalDate.isAfter(targetLocalDate)) {
+			startLocalDate = startLocalDate.minus(1, ChronoUnit.YEARS);
+		}
+		return startLocalDate;
 	}
 	
 	/**
@@ -49,22 +83,12 @@ public class BookkeepingUtils {
 	 * @return
 	 */
 	public static LocalDate getYearEndLocalDate(LocalDate targetLocalDate, int baseDate) {
-		LocalDate endLocalDate = targetLocalDate.withMonth(1).withDayOfMonth(baseDate).minusDays(1);
-		return getEndLocalDate(targetLocalDate, endLocalDate, baseDate, ChronoUnit.YEARS);
-	}
-	
-	private static LocalDate getStartLocalDate(LocalDate targetLocalDate, LocalDate startLocalDate, int baseDate, ChronoUnit chronoUnit)	{
-		if (targetLocalDate.getMonth() == startLocalDate.getMonth() && targetLocalDate.getDayOfMonth() < baseDate) {
-			startLocalDate = startLocalDate.minus(1, chronoUnit);
-		}
-		return startLocalDate;
-	}
-	
-	private static LocalDate getEndLocalDate(LocalDate targetLocalDate, LocalDate endLocalDate, int baseDate, ChronoUnit chronoUnit) {
-		if (targetLocalDate.getMonth() == endLocalDate.getMonth() && targetLocalDate.getDayOfMonth() >= baseDate) {
-			endLocalDate = endLocalDate.plus(1, chronoUnit);
+		LocalDate endLocalDate = targetLocalDate.withMonth(1).withDayOfMonth(baseDate);
+		if (endLocalDate.isAfter(targetLocalDate)) {
+			endLocalDate = endLocalDate.minusDays(1);
+		} else {
+			endLocalDate = endLocalDate.plus(1, ChronoUnit.YEARS).minusDays(1);
 		}
 		return endLocalDate;
 	}
-	
 }

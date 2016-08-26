@@ -2,7 +2,7 @@
 <html
 	xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
-	layout:decorator="/bookkeeping/bookkeepingLayout">
+	layout:decorator="bookkeeping/bookkeepingLayout">
 <head>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/asset/model.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/asset/collection.js}"></script>
@@ -27,6 +27,33 @@
 							<th>타입</th>
 							<th>이름</th>
 							<th>금액</th>
+							<th></th>
+						</tr>
+						<tr>
+							<th>
+								<button type="button" class="btn btn-default {{#isSortColumnAssetType}}btn-info{{/isSortColumnAssetType}}" data-menu-sortColumn="assetType" data-menu-sortDirection="{{#isSortColumnAssetType}}{{sortDirection}}{{/isSortColumnAssetType}}">
+									타입
+									{{#isSortColumnAssetType}}
+										<i class="fa fa-sort-{{sortDirection}}" aria-hidden="true"></i>
+									{{/isSortColumnAssetType}}
+								</button>
+							</th>
+							<th>
+								<button type="button" class="btn btn-default {{#isSortColumnName}}btn-info{{/isSortColumnName}}" data-menu-sortColumn="name" data-menu-sortDirection="{{#isSortColumnName}}{{sortDirection}}{{/isSortColumnName}}">
+									이름
+									{{#isSortColumnName}}
+										<i class="fa fa-sort-{{sortDirection}}" aria-hidden="true"></i>
+									{{/isSortColumnName}}
+								</button>
+							</th>
+							<th>
+								<button type="button" class="btn btn-default {{#isSortColumnAmount}}btn-info{{/isSortColumnAmount}}" data-menu-sortColumn="amount" data-menu-sortDirection="{{#isSortColumnAmount}}{{sortDirection}}{{/isSortColumnAmount}}">
+									금액
+									{{#isSortColumnAmount}}
+										<i class="fa fa-sort-amount-{{sortDirection}}" aria-hidden="true"></i>
+									{{/isSortColumnAmount}}
+								</button>
+							</th>
 							<th></th>
 						</tr>
 						<tr class="active">

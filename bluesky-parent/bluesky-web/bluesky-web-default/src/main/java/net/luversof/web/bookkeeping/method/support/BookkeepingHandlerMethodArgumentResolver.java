@@ -13,10 +13,10 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
+import net.luversof.bookkeeping.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.core.exception.BlueskyException;
-import net.luversof.core.exception.ErrorCode;
 import net.luversof.security.core.userdetails.BlueskyUser;
 
 @Component
@@ -40,7 +40,7 @@ public class BookkeepingHandlerMethodArgumentResolver implements HandlerMethodAr
 		
 		List<Bookkeeping> bookkeepingList = bookkeepingService.findByUserId(user.getId());
 		if (bookkeepingList.isEmpty()) {
-			throw new BlueskyException(ErrorCode.NOT_EXIST_BOOKKEEPING);
+			throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING);
 		}
 		return bookkeepingList.get(0);
 	}

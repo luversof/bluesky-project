@@ -1,12 +1,13 @@
 package net.luversof.web.bookkeeping.controller;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -16,20 +17,20 @@ import net.luversof.bookkeeping.service.EntrySearchInfoService;
 import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
-@RequestMapping("/bookkeeping/{bookkeeping.id}/entrySearchInfo")
+@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+@RequestMapping(value = "/bookkeeping/{bookkeeping.id}/entrySearchInfo", produces = MediaType.APPLICATION_JSON_VALUE)
 public class EntrySearchInfoController {
 	
 	@Autowired
 	private EntrySearchInfoService entrySearchInfoService;
-
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(method = RequestMethod.GET)
+	
+	@GetMapping
 	public EntrySearchInfo getEntrySearchInfo(@Validated(Select.class) EntrySearchInfo entrySearchInfo) {
 		return entrySearchInfoService.getEntrySearchInfo(entrySearchInfo);
 	}
 	
-	@RequestMapping(value = "/test", method = RequestMethod.GET)
-	public LocalDateTime test(@RequestParam(required = false) LocalDateTime test) {
+	@GetMapping(value = "/test")
+	public ZonedDateTime test(@RequestParam(required = false) ZonedDateTime test) {
 		System.out.println(test);
 		return test;
 	}

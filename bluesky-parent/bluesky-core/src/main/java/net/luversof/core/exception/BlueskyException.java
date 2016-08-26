@@ -13,6 +13,19 @@ public class BlueskyException extends RuntimeException {
 	}
 	
 	public BlueskyException(Enum<?> errorCode) {
-		this.errorCode = errorCode.name();
+		this.errorCode = resolveErrorCode(errorCode);
+	}
+	
+	/**
+	 * enum 객체의 errorCode String 값 호출
+	 * @param errorCode
+	 * @return
+	 */
+	private String resolveErrorCode(Enum<?> errorCode) {
+		return String.join(".",  errorCode.getClass().getSimpleName(), errorCode.name());
+	}
+	
+	public boolean isTargetErrorCode(Enum<?> errorCode) {
+		return resolveErrorCode(errorCode).equals(this.errorCode);
 	}
 }

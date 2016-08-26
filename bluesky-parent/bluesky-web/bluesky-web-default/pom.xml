@@ -22,6 +22,10 @@
 		</dependency>
 		<dependency>
 			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-app-bbs</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-app-blog</artifactId>
 		</dependency>
 		<dependency>
@@ -70,18 +74,17 @@
 		</dependency>
 		<!-- (e) swagger -->
 
+		<!-- (s) test용 -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-xml</artifactId>
+		</dependency>
+		<!-- (e) test용 -->
+
 		<!-- (s) javascript libarary -->
 		<dependency>
 			<groupId>org.webjars</groupId>
 			<artifactId>jquery</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>jquery-ui</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>jquery-mobile</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.webjars</groupId>
@@ -100,28 +103,32 @@
 			<artifactId>tinymce-jquery</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.webjars.bower</groupId>
-			<artifactId>mustache</artifactId>
+			<groupId>org.webjars</groupId>
+			<artifactId>mustachejs</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.webjars.bower</groupId>
+			<groupId>org.webjars</groupId>
 			<artifactId>metisMenu</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.webjars.bower</groupId>
-			<artifactId>backbone</artifactId>
+			<groupId>org.webjars</groupId>
+			<artifactId>backbonejs</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.webjars.npm</groupId>
+			<groupId>org.webjars</groupId>
 			<artifactId>bootstrap-datepicker</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.webjars.npm</groupId>
-			<artifactId>moment</artifactId>
+			<groupId>org.webjars</groupId>
+			<artifactId>momentjs</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.webjars.bower</groupId>
-			<artifactId>numeral</artifactId>
+			<groupId>org.webjars</groupId>
+			<artifactId>numeral-js</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>d3js</artifactId>
 		</dependency>
 		<!-- (s) 사용 안함 -->
 		<dependency>

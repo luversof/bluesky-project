@@ -25,7 +25,7 @@ $(document).ready(function() {
 				var debitEntryGroupSource = null || [];
 				for (var i = 0 ; i < _entryGroupList.length ; i++) {
 					debitEntryGroupSource.push(_entryGroupList[i]["name"]);
-					console.log(_entryGroupList[i]);
+					//console.log(_entryGroupList[i]);
 				}
 				return debitEntryGroupSource;
 			}

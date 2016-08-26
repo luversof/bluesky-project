@@ -1,6 +1,6 @@
 package net.luversof.user.domain;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import javax.persistence.CascadeType;
@@ -10,6 +10,7 @@ import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 
@@ -21,7 +22,7 @@ import lombok.Data;
 @Data
 public class User {
 	@Id
-	@GeneratedValue
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
 
 	@Column(nullable = false)
@@ -31,7 +32,7 @@ public class User {
 
 	@CreatedDate
 //	@DateTimeFormat(iso = ISO.DATE_TIME)
-	private LocalDateTime createdDate;
+	private ZonedDateTime createdDate;
 
 	private boolean accountNonExpired;
     private boolean accountNonLocked;

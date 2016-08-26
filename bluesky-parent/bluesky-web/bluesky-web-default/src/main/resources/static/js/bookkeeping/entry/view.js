@@ -1,5 +1,5 @@
 $(document).ready(function() {
-	// 추가로 필요한 데이터 호출
+	// entry 호출 전 필요한 데이터 호출
 	var entryGroupCollection = new $.EntryGroupCollection();
 	var assetCollection = new $.AssetCollection();
 	
@@ -8,7 +8,7 @@ $(document).ready(function() {
 	
 	$.EntryView = Backbone.View.extend({
 		el : "<tr>",	//기본은 div
-		className : "warning",
+		//className : "warning",
 		template : $("#template-entry-view").html(),
 		events : {
 			"click [data-menu=updateEntry]" : "updateEntry",
@@ -32,7 +32,7 @@ $(document).ready(function() {
 		render : function() {
 //			console.log("EntryView render", this.model, this.model.collection);
 			var data = {
-				entry :	this.model.toJSON(),
+				entry : this.model.toJSON(),
 				assetList : assetCollection.toJSON(),
 				entryGroupList : entryGroupCollection.toJSON()
 			}
@@ -44,25 +44,25 @@ $(document).ready(function() {
 			var entryType = this.model.get("entryType");
 			
 			data.isTargetEntryGroup = function() {
-				return this.entryType == entryType;
+				return this.entryType === entryType;
 			}
 			data.isCredit = function() {
-				return entryType == "CREDIT";
+				return entryType === "CREDIT";
 			}
 			data.isDebit = function() {
-				return entryType == "DEBIT";
+				return entryType === "DEBIT";
 			}
 			data.isTransfer = function() {
-				return entryType == "TRANSFER";
+				return entryType === "TRANSFER";
 			}
 			data.entryAmountFormat = function() {
 				return numeral(this.entry.amount).format();
 			}
 			
 			this.$el.html(Mustache.render(this.template, data));
-			if (this.model.get("entryGroup") != null) { this.$el.find("select[name=entryGroup] > option[value=" + this.model.get("entryGroup").id + "]").attr("selected", "selected") };
-			if (this.model.get("debitAsset") != null) { this.$el.find("select[name=debitAsset] > option[value=" + this.model.get("debitAsset").id + "]").attr("selected", "selected") };
-			if (this.model.get("creditAsset") != null) { this.$el.find("select[name=creditAsset] > option[value=" + this.model.get("creditAsset").id + "]").attr("selected", "selected") };
+			if (this.model.get("entryGroup") !== null) { this.$el.find("select[name=entryGroup] > option[value=" + this.model.get("entryGroup").id + "]").attr("selected", "selected") };
+			if (this.model.get("debitAsset") !== null) { this.$el.find("select[name=debitAsset] > option[value=" + this.model.get("debitAsset").id + "]").attr("selected", "selected") };
+			if (this.model.get("creditAsset") !== null) { this.$el.find("select[name=creditAsset] > option[value=" + this.model.get("creditAsset").id + "]").attr("selected", "selected") };
 			this.$el.find("[data-menu=updateEntry]").hide();
 			
 			//외부 모듈 이벤트 핸들링 추가
@@ -71,12 +71,12 @@ $(document).ready(function() {
 		},
 		updateEntry : function() {
 			this.model.save({
-				entryGroup : this.model.get("entryType") == "TRANSFER" ? null : { id : this.$el.find("select[name=entryGroup] option:selected").val() },
-				debitAsset : this.model.get("entryType") == "CREDIT" ? null : { id : this.$el.find("select[name=debitAsset] option:selected").val() },
-				creditAsset : this.model.get("entryType") == "DEBIT" ? null : { id : this.$el.find("select[name=creditAsset] option:selected").val() },
-				amount : this.$el.find("[data-key-name=amount]").text(),
+				entryGroup : this.model.get("entryType") === "TRANSFER" ? null : { id : this.$el.find("select[name=entryGroup] option:selected").val() },
+				debitAsset : this.model.get("entryType") === "CREDIT" ? null : { id : this.$el.find("select[name=debitAsset] option:selected").val() },
+				creditAsset : this.model.get("entryType") === "DEBIT" ? null : { id : this.$el.find("select[name=creditAsset] option:selected").val() },
+				amount : numeral().unformat(this.$el.find("[data-key-name=amount]").text()),
 				memo : this.$el.find("[data-key-name=memo]").text(),
-				entryDate : moment.utc(new Date(this.$el.find("input[name=entryDate]").val())).format("YYYY-MM-DDTHH:mm:ss")
+				entryDate : moment.utc(this.$el.find("input[name=entryDate]").val()).format()
 			});
 			this.$el.find("[data-menu=updateEntry]").hide(100);
 		},
@@ -85,12 +85,12 @@ $(document).ready(function() {
 		},
 		// 변경된 내용이 있는지 여부 확인
 		isChange : function() {
-			if (numeral().unformat(this.$el.find("[data-key-name=amount]").text()) == this.model.get("amount") 
-					&& this.$el.find("[data-key-name=memo]").text() == this.model.get("memo")
-					&& (this.model.get("entryGroup") == null || this.$el.find("select[name=entryGroup] option:selected").val() == this.model.get("entryGroup").id)
-					&& (this.model.get("debitAsset") == null || this.$el.find("select[name=debitAsset] option:selected").val() == this.model.get("debitAsset").id)
-					&& (this.model.get("creditAsset") == null || this.$el.find("select[name=creditAsset] option:selected").val() == this.model.get("creditAsset").id)
-					&& moment(this.$el.find("input[name=entryDate]").val()).format() == moment(this.model.get("entryDate")).format()) {
+			if (numeral().unformat(this.$el.find("[data-key-name=amount]").text()) === this.model.get("amount") 
+					&& this.$el.find("[data-key-name=memo]").text() === this.model.get("memo")
+					&& (this.model.get("entryGroup") === null || this.$el.find("select[name=entryGroup] option:selected").val() === this.model.get("entryGroup").id)
+					&& (this.model.get("debitAsset") === null || this.$el.find("select[name=debitAsset] option:selected").val() === this.model.get("debitAsset").id)
+					&& (this.model.get("creditAsset") === null || this.$el.find("select[name=creditAsset] option:selected").val() === this.model.get("creditAsset").id)
+					&& moment(this.$el.find("input[name=entryDate]").val()).format() === moment(this.model.get("entryDate")).format()) {
 				this.$el.find("[data-menu=updateEntry]").hide(100);
 			} else {
 				this.$el.find("[data-menu=updateEntry]").show(100);
@@ -98,17 +98,17 @@ $(document).ready(function() {
 		},
 		amountKeyUp : function(event) {
 			this.isChange();
-			if (event.keyCode == 13) {
+			if (event.keyCode === 13) {
 				this.updateEntry();
 			}
 		},
 		// enter 입력 처리 방지
 		amountKeyPress : function(event) {
-			return event.keyCode != 13;
+			return event.keyCode !== 13;
 		},
 		changeMemoKeyUp : function(event) {
 			this.isChange();
-			if (event.keyCode == 13) {
+			if (event.keyCode === 13) {
 				this.updateEntry();
 			}
 		},
@@ -173,25 +173,25 @@ $(document).ready(function() {
 			
 			data.getTotalCreditAmount = function() {
 				return _.reduce(entryList, function(amount, entry) {
-					return numeral(numeral().unformat(amount) + (entry.entryType == "CREDIT" ? entry.amount : 0)).format(format);
+					return numeral(numeral().unformat(amount) + (entry.entryType === "CREDIT" ? entry.amount : 0)).format(format);
 				}, 0);
 			}
 			data.getTotalDebitAmount = function() {
 				return _.reduce(entryList, function(amount, entry) {
-					return numeral(numeral().unformat(amount) + (entry.entryType == "DEBIT" ? entry.amount : 0)).format(format);
+					return numeral(numeral().unformat(amount) + (entry.entryType === "DEBIT" ? entry.amount : 0)).format(format);
 				}, 0);
 			}
 			data.getTotalAmount = function() {
 				return numeral(numeral().unformat(data.getTotalCreditAmount()) - numeral().unformat(data.getTotalDebitAmount())).format(format);
 			}
-			data.isSortEntryType = function() {
-				return this.sortColumn == "entryType";
+			data.isSortColumnEntryType = function() {
+				return this.sortColumn === "entryType";
 			}
 			data.isSortColumnEntryDate = function() {
-				return this.sortColumn == "entryDate";
+				return this.sortColumn === "entryDate";
 			}
 			data.isSortColumnAmount = function() {
-				return this.sortColumn == "amount";
+				return this.sortColumn === "amount";
 			}
 			
 			this.$el.html(Mustache.render(this.template, data));
@@ -215,12 +215,12 @@ $(document).ready(function() {
 			event.preventDefault();
 			var entryType = this.$el.find("[data-menu=selectCreateEntryType].active").val();
 			var entry = new $.Entry({
-				entryGroup : entryType == "TRANSFER" ? null : { id : this.$el.find("select[name=createEntryGroup] option:selected").val() },
-				debitAsset : entryType == "CREDIT" ? null : { id : this.$el.find("select[name=createDebitAsset] option:selected").val() },
-				creditAsset : entryType == "DEBIT" ? null :  { id : this.$el.find("select[name=createCreditAsset] option:selected").val() },
+				entryGroup : entryType === "TRANSFER" ? null : { id : this.$el.find("select[name=createEntryGroup] option:selected").val() },
+				debitAsset : entryType === "CREDIT" ? null : { id : this.$el.find("select[name=createDebitAsset] option:selected").val() },
+				creditAsset : entryType === "DEBIT" ? null :  { id : this.$el.find("select[name=createCreditAsset] option:selected").val() },
 				amount : this.$el.find("[data-key-name=createAmount]").text(),
 				memo : this.$el.find("[data-key-name=createMemo]").text(),
-				entryDate : moment.utc(new Date(this.$el.find("input[name=createEntryDate]").val())).format("YYYY-MM-DDTHH:mm:ss")
+				entryDate : moment(this.$el.find("input[name=createEntryDate]").val()).format()
 			});
 			
 			if (!entry.isValid()) {
@@ -257,24 +257,24 @@ $(document).ready(function() {
 			
 			//선택한 entryType에 따라 입력 형태 변경 처리
 			//입력 형태에 따른 entryGroup 처리 추가
-			if (entryType == "CREDIT") {
+			if (entryType === "CREDIT") {
 				this.$el.find("[name=createEntryGroup]").closest("td").show();
 				this.$el.find("[name=createDebitAsset]").attr("disabled", true).closest("td").hide();
 				this.$el.find("[name=createCreditAsset]").removeAttr("disabled").closest("td").show();
-			} else if (entryType == "DEBIT") {
+			} else if (entryType === "DEBIT") {
 				this.$el.find("[name=createEntryGroup]").closest("td").show();
 				this.$el.find("[name=createDebitAsset]").removeAttr("disabled").closest("td").show();
 				this.$el.find("[name=createCreditAsset]").attr("disabled", true).closest("td").hide();
-			} else if (entryType == "TRANSFER") {
+			} else if (entryType === "TRANSFER") {
 				this.$el.find("[name=createEntryGroup]").closest("td").hide();
 				this.$el.find("[name=createDebitAsset]").removeAttr("disabled").closest("td").show();
 				this.$el.find("[name=createCreditAsset]").removeAttr("disabled").closest("td").show();
 			}
 			
-			if (entryType != "TRANSFER") {
+			if (entryType !== "TRANSFER") {
 				this.$el.find("[name=createEntryGroup]")
 				.find("option").removeAttr("selected").each(function() {
-					if (entryGroupCollection.get($(this).val()).get("entryType") == entryType){
+					if (entryGroupCollection.get($(this).val()).get("entryType") === entryType){
 						$(this).show().removeAttr("disabled");
 					} else {
 						$(this).hide().attr("disabled", true);
@@ -283,15 +283,8 @@ $(document).ready(function() {
 				.find("option:not(:disabled):eq(0)").attr("selected", true);
 			}
 		},
-		renderBySortColumn : function(event) {
-			this.collection.sortColumn = $(event.currentTarget).attr("data-menu-sortColumn");
-			this.collection.sortDirection = $(event.currentTarget).attr("data-menu-sortDirection") == "desc" ? "asc" : "desc";
-			this.collection.sort();
-		},
 		changeEntrySearchInfo : function() {
 //			console.log("changeEntrySearchInfo ");
-			this.collection.sortColumn = "entryDate";
-			this.collection.sortDirection = "asc";
 			this.collection.fetch({
 				reset : true,
 				data : $.param({

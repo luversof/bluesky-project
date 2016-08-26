@@ -2,7 +2,7 @@
 <html
 	xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
-	layout:decorator="/bookkeeping/bookkeepingLayout">
+	layout:decorator="bookkeeping/bookkeepingLayout">
 <head>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/bookkeeping/model.js}"></script>
 	<script type="text/javascript" th:src="@{/js/bookkeeping/bookkeeping/collection.js}"></script>
@@ -14,7 +14,7 @@
 		<div id="bookkeepingArea"></div>
 
 		<script type="text/template" id="template-bookkeeping-collection-view">
-			<div class="col-md-4">
+			<div class="col-md-6">
 				<table class="table table-hover">
 					<colgroup>
 						<col class="col-md-6"></col>

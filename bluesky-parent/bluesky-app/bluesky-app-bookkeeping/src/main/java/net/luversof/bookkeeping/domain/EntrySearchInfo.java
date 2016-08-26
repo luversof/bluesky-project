@@ -1,10 +1,13 @@
 package net.luversof.bookkeeping.domain;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+
+import org.springframework.context.i18n.LocaleContextHolder;
 
 import lombok.Data;
 import net.luversof.bookkeeping.util.BookkeepingUtils;
@@ -17,7 +20,7 @@ import net.luversof.bookkeeping.util.BookkeepingUtils;
  */
 @Data
 public class EntrySearchInfo {
-	
+
 	/**
 	 * user의 bookkeeping table id 값
 	 */
@@ -27,24 +30,24 @@ public class EntrySearchInfo {
 	/**
 	 * user의 bookkeeping table baseDate 값
 	 */
-	private int baseDate;
+	private int baseDate = 1;
 	
 	/**
 	 * 검색할 월이 있는 대상 날짜
 	 * 검색 시 넘어오는 파라메터 값
 	 */
 	@NotNull(groups = SelectEntryList.class)
-	private LocalDate targetLocalDate;
+	private LocalDate targetLocalDate = LocalDate.now();
 	
 	
 	public interface Select {}
 	public interface SelectEntryList {}
 	
-	public LocalDateTime getStartLocalDateTime() {
-		return BookkeepingUtils.getMonthStartLocalDate(targetLocalDate, baseDate).atStartOfDay();
+	public ZonedDateTime getStartZonedDateTime() {
+		return BookkeepingUtils.getMonthStartLocalDate(targetLocalDate, baseDate).atStartOfDay(ZoneId.of(LocaleContextHolder.getTimeZone().getID()));
 	}
 	
-	public LocalDateTime getEndLocalDateTime() {
-		return BookkeepingUtils.getMonthEndLocalDate(targetLocalDate, baseDate).atStartOfDay();
+	public ZonedDateTime getEndZonedDateTime() {
+		return BookkeepingUtils.getMonthEndLocalDate(targetLocalDate, baseDate).atStartOfDay(ZoneId.of(LocaleContextHolder.getTimeZone().getID()));
 	}
 }

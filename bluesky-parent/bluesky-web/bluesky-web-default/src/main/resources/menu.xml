@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE menuList>
+<menuList>
+	<menu url="/">
+		<전체메뉴>하하하</전체메뉴>
+		<sm>123</sm>
+	</menu>
+	<menu url="/bookkeeping/setting" asdf="ㅁㄴㅇㅁㄴㅇㄹ">
+		<전체메뉴>하하하2</전체메뉴>
+		<sm>
+			<sm1>asdf</sm1>
+			<sm2>asdf</sm2>
+		</sm>
+	</menu>
+	<menu url="/a/b">
+		<test>aa1</test>
+		<test2>aasadf1</test2>
+		<test3>aasadf1</test3>
+	</menu>
+	<menu url="/a/b/c">
+		<test>aa2</test>
+		<test2>aasadf2</test2>
+		<test4>aasadf2</test4>
+	</menu>
+	<menu url="/a/b/c/d">
+		<key1>aa3</key1>
+		<key2>aasadf3</key2>
+	</menu>
+</menuList>

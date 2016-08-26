@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
 @Configuration
+@PropertySource(value = "classpath:jdbc-bookkeeping.properties", ignoreResourceNotFound = true)
 @PropertySource(value = "classpath:jdbc-bookkeeping-${spring.profiles.active}.properties", ignoreResourceNotFound = true)
 public class JdbcBookkeepingConfig {
 	
@@ -18,3 +19,4 @@ public class JdbcBookkeepingConfig {
 		return DataSourceBuilder.create().build();
 	}
 }
+

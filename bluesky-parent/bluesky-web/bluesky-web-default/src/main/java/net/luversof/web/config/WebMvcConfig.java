@@ -15,8 +15,9 @@ import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
 import org.thymeleaf.extras.java8time.dialect.Java8TimeDialect;
 import org.thymeleaf.spring4.view.ThymeleafViewResolver;
 
-import net.luversof.web.blog.method.support.BlogHandlerMethodArgumentResolver;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import net.luversof.web.blog.method.support.BlogHandlerMethodArgumentResolver;
 
 @Configuration
 @PropertySource("classpath:web.properties")
@@ -25,73 +26,40 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 
 	@Autowired
 	private BlogHandlerMethodArgumentResolver blogHandlerMethodArgumentResolver;
-	
-//	@Autowired
-//	private BookkeepingHandlerMethodArgumentResolver bookkeepingHandlerMethodArgumentResolver;
-	
+
+	// @Autowired
+	// private BookkeepingHandlerMethodArgumentResolver
+	// bookkeepingHandlerMethodArgumentResolver;
+
 	@Autowired
 	private ThymeleafViewResolver thymeleafViewResolver;
 	
-//	@Autowired
-//	private MappingJackson2JsonView mappingJackson2JsonView;
+	@Autowired
+	private ObjectMapper objectMapper;
 
 	@Override
 	public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
 		argumentResolvers.add(blogHandlerMethodArgumentResolver);
-		//argumentResolvers.add(bookkeepingHandlerMethodArgumentResolver);
+		// argumentResolvers.add(bookkeepingHandlerMethodArgumentResolver);
 		super.addArgumentResolvers(argumentResolvers);
 	}
-	
+
+	// request date conversion 처리
+	@Override
+	public void addFormatters(FormatterRegistry registry) {
+		DateTimeFormatterRegistrar registrar = new DateTimeFormatterRegistrar();
+		registrar.setUseIsoFormat(true);
+		registrar.registerFormatters(registry);
+	}
+
+	@Override
+	public void configureViewResolvers(ViewResolverRegistry registry) {
+		registry.viewResolver(thymeleafViewResolver);
+		registry.enableContentNegotiation(new MappingJackson2JsonView(objectMapper));
+	}
+
 	@Bean
 	public Java8TimeDialect java8TimeDialect() {
 		return new Java8TimeDialect();
 	}
-	
-	
-	@Override
-	public void addFormatters(FormatterRegistry registry) {
-		DateTimeFormatterRegistrar registrar = new DateTimeFormatterRegistrar();
-        registrar.setUseIsoFormat(true);
-        registrar.registerFormatters(registry);
-	}
-
-//	@Override
-//	public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
-//		configurer
-//			.defaultContentType(MediaType.APPLICATION_JSON)
-//			.mediaType("html", MediaType.TEXT_HTML)
-//			.mediaType("json", MediaType.APPLICATION_JSON);
-//	}
-	
-	@Override
-	public void configureViewResolvers(ViewResolverRegistry registry) {
-		registry.viewResolver(thymeleafViewResolver);
-		registry.enableContentNegotiation(new MappingJackson2JsonView());
-	}
-	
-	
-	
-
-//	@Bean
-//	public ContentNegotiatingViewResolver viewResolver() {
-//		ContentNegotiatingViewResolver viewResolver = new ContentNegotiatingViewResolver();
-//		
-//		Map<String, MediaType> mediaTypes = new HashMap<>();
-//		mediaTypes.put("html", MediaType.TEXT_HTML);
-//		mediaTypes.put("json", MediaType.APPLICATION_JSON);
-//		ContentNegotiationStrategy contentNegotiationStrategy = new PathExtensionContentNegotiationStrategy(mediaTypes);
-//		
-//		viewResolver.setContentNegotiationManager(new ContentNegotiationManager(contentNegotiationStrategy));
-//
-//		List<ViewResolver> viewResolvers = new ArrayList<>();
-//		viewResolvers.add(thymeleafViewResolver);
-//		viewResolver.setViewResolvers(viewResolvers);
-//
-//		List<View> defaultViews = new ArrayList<>();
-//		MappingJackson2JsonView mappingJackson2JsonView = new MappingJackson2JsonView();
-//		defaultViews.add(mappingJackson2JsonView);
-//
-//		viewResolver.setDefaultViews(defaultViews);
-//		return viewResolver;
-//	}
 }

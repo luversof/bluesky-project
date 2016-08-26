@@ -16,7 +16,7 @@ String.prototype.format = function() {
 var navbar = {
 	contextPath : "/",
 	display : function() {
-		if (location.pathname == this.contextPath) {
+		if (location.pathname === this.contextPath) {
 			$(".navbar .nav li:eq(0)").addClass("active");
 			return;
 		}
@@ -66,11 +66,11 @@ $(document).ready(function() {
 	/* (s) csrf */
 	
 	$(document).ajaxError(function(event, jqXHR, ajaxSettings, thrownError) {
-		if (ajaxSettings.dataType == "json") {
-			var b = "";
-			for (a in jqXHR) b+=a + "\n;";
-			console.log(b);
-			console.log(jqXHR.responseJSON);
+		if (ajaxSettings.dataType === "json") {
+			//var b = "";
+			//for (var a in jqXHR) b+=a + "\n;";
+			//console.log(b);
+			//console.log(jqXHR.responseJSON);
 		}
 	});
 	
@@ -78,12 +78,12 @@ $(document).ready(function() {
 	/**
 	 * https로 접근한 경우 http로 재이동 처리
 	 */
-	if (location.protocol == "https:") {
+	if (location.protocol === "https:") {
 		location.href = location.href.replace("https:", "http:").replace(":8443", ":8082");
 	}
 
 	
-	if (window.console != undefined) {
+	if (window.console !== undefined) {
 		setTimeout(console.log.bind(console, "%cBluesky","font: 8em Arial; color: #6799FF; font-weight:bold"), 0);
 		setTimeout(console.log.bind(console, "%c - bluesky 프로젝트","font: 2em HY견고딕,sans-serif; color: #333;"), 0);
 	}

@@ -1,11 +1,14 @@
 package net.luversof.bookkeeping.domain;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+
+import org.springframework.context.i18n.LocaleContextHolder;
 
 import lombok.Data;
 import net.luversof.bookkeeping.util.BookkeepingUtils;
@@ -25,8 +28,8 @@ public class StatisticsSearchInfo {
 	@Valid
 	private Bookkeeping bookkeeping;
 
-	private int baseDate;
-
+	private int baseDate = 1;
+	
 	/**
 	 * 년/월 단위 통계 보기를 위해 필요한 파라메터
 	 */
@@ -34,32 +37,14 @@ public class StatisticsSearchInfo {
 	private ChronoUnit chronoUnit;
 
 	@NotNull(groups = SelectEntryList.class)
-	private LocalDate targetLocalDate;
+	private LocalDate targetLocalDate = LocalDate.now();
 
-	private LocalDateTime startLocalDateTime;
-
-	private LocalDateTime endLocalDateTime;
-
-	public LocalDateTime getStartLocalDateTime() {
-		if (chronoUnit == null) {
-			return startLocalDateTime;
-		} else if (chronoUnit == ChronoUnit.YEARS) {
-			return BookkeepingUtils.getYearStartLocalDate(targetLocalDate, baseDate).atStartOfDay();
-		} else if (chronoUnit == ChronoUnit.MONTHS) {
-			return BookkeepingUtils.getMonthStartLocalDate(targetLocalDate, baseDate).atStartOfDay();
-		}
-		return null;
+	public ZonedDateTime getStartZonedDateTime() {
+		return BookkeepingUtils.getStartLocalDate(targetLocalDate, baseDate, chronoUnit).atStartOfDay(ZoneId.of(LocaleContextHolder.getTimeZone().getID()));
 	}
 
-	public LocalDateTime getEndLocalDateTime() {
-		if (chronoUnit == null) {
-			return endLocalDateTime;
-		} else if (chronoUnit == ChronoUnit.YEARS) {
-			return BookkeepingUtils.getYearEndLocalDate(targetLocalDate, baseDate).atStartOfDay();
-		} else if (chronoUnit == ChronoUnit.MONTHS) {
-			return BookkeepingUtils.getMonthEndLocalDate(targetLocalDate, baseDate).atStartOfDay();
-		}
-		return null;
+	public ZonedDateTime getEndZonedDateTime() {
+		return BookkeepingUtils.getEndLocalDate(targetLocalDate, baseDate, chronoUnit).atStartOfDay(ZoneId.of(LocaleContextHolder.getTimeZone().getID()));
 	}
 
 	public interface Select {

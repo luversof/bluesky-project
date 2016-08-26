@@ -37,10 +37,18 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	@Autowired
 	private OAuth2ClientAuthenticationProcessingFilter battleNetAuthenticationProcessingFilter;
 	
-	@Autowired
-	public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+//	@Autowired
+//	public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+//		auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder);
+//	}
+	
+	@Override
+	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 		auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder);
+		super.configure(auth);
 	}
+
+
 
 	@Override
 	@SneakyThrows
@@ -59,6 +67,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 			.addFilterAfter(facebookAuthenticationProcessingFilter, BasicAuthenticationFilter.class)
 			.addFilterAfter(battleNetAuthenticationProcessingFilter, BasicAuthenticationFilter.class)
 //			.addFilterAfter(oAuth2AuthenticationProcessingFilter, ExceptionTranslationFilter.class)
+			.exceptionHandling().accessDeniedPage("/error/accessDenied").and()
 			.logout().logoutSuccessHandler(logoutSuccessHandler).and()
 			.formLogin().loginPage("/login").and()
 			.rememberMe().and()

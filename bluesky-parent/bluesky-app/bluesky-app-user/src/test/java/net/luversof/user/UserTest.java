@@ -5,6 +5,10 @@ import net.luversof.GeneralTest;
 import net.luversof.user.domain.User;
 import net.luversof.user.service.UserService;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -34,5 +38,20 @@ public class UserTest extends GeneralTest {
 	public void 회원가입() {
 		User user = userService.addUser(USERNAME, "$2a$10$F5q9vfYTrF0ZM/ZOUIlPvu2KWrOBcCtP9eM8mnGdbiRoSKRJ7VPwW");
 		log.debug("user : {}", user);
+	}
+	
+	@Test
+	public void collect테스트() {
+		List<User> userList = new ArrayList<>();
+		for (int i = 0 ; i < 100 ; i ++) {
+			User user = new User();
+			user.setPassword("pas" + i);
+			user.setUsername("usr" + i);
+			userList.add(user);
+		}
+		
+		log.debug("result : {}", userList);
+		List<String> nameList = userList.stream().map(user -> user.getUsername()).collect(Collectors.toList());
+		log.debug("result : {}", nameList);
 	}
 }

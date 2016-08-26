@@ -23,13 +23,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
-@RequestMapping("/blog")
+@RequestMapping(value = "blog", produces = MediaType.TEXT_HTML_VALUE)
 public class BlogViewController {
 
 	private static final int PAGE_BLOCK_SIZE = 10;
@@ -50,17 +51,17 @@ public class BlogViewController {
 	 * @return
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = { "/$!", "/$!/article" }, method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	@GetMapping(value = { "/$!", "/$!/article" })
 	public String home(Blog blog) {
 		return redirectArticleList(blog.getId());
 	}
 
-	@RequestMapping(value = "/{blog.id}", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	@GetMapping(value = "/{blog.id}")
 	public String redirectArticleList(@PathVariable("blog.id") long blogId) {
 		return MessageFormat.format("redirect:/blog/{0}/article", blogId);
 	}
 
-	@RequestMapping(value = "/create", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	@GetMapping(value = "/create")
 	public void createForm() {
 	}
 
@@ -71,7 +72,7 @@ public class BlogViewController {
 	 * @return
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "", method = RequestMethod.POST)
+	@PostMapping(value = "")
 	public String create(Authentication authentication) {
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
 		Blog savedBlog = blogService.findByUser(blueskyUser.getId());
@@ -93,7 +94,7 @@ public class BlogViewController {
 	 * @param modelMap
 	 * @return
 	 */
-	@RequestMapping(value = "/{blog.id}/article", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	@GetMapping(value = "/{blog.id}/article")
 	public String list(@PathVariable("blog.id") long blogId, @RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
 		Blog blog = blogService.findOne(blogId);
 		Page<Article> articlePage = articleService.findByBlog(blog, page - 1);
@@ -118,7 +119,7 @@ public class BlogViewController {
 	 * @param modelMap
 	 * @return
 	 */
-	@RequestMapping(value = "/{blog.id}/article/{id}", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	@GetMapping(value = "/{blog.id}/article/{id}")
 	public String view(@Validated(Get.class) Article article, ModelMap modelMap) {
 		Article viewArticle = articleService.findOne(article.getId());
 		articleService.incraseViewCount(viewArticle);
@@ -134,7 +135,7 @@ public class BlogViewController {
 	 * @return
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@RequestMapping(value = "/{blog.id}/article/write", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	@GetMapping(value = "/{blog.id}/article/write")
 	public String writePage(@CheckBlog Blog blog, ModelMap modelMap) {
 		modelMap.addAttribute(articleCategoryService.findByBlog(blog));
 		return "blog/article/write";
@@ -149,7 +150,7 @@ public class BlogViewController {
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[article].blog.userId == authentication.principal.id")
-	@RequestMapping(value = "/{blog.id}/article/{id}/modify", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+	@GetMapping(value = "/{blog.id}/article/{id}/modify")
 	public String modifyPage(@CheckBlogAndAddToArticle @Validated(Get.class) Article article, ModelMap modelMap) {
 		modelMap.addAttribute(articleService.findOne(article.getId()));
 		modelMap.addAttribute(articleCategoryService.findByBlog(blogService.findOne(article.getId())));

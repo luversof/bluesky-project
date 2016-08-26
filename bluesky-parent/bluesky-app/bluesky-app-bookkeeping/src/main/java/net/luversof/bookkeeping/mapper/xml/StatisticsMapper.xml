@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.apache.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="net.luversof.bookkeeping.mapper.StatisticsMapper">
+	<resultMap id="statisticsResultMap" type="net.luversof.bookkeeping.domain.Statistics">
+		<result property="amount" column="amount" />
+		<association property="entryGroup" javaType="net.luversof.bookkeeping.domain.EntryGroup">
+			<id property="id" column="entryGroup_id" />
+			<result property="entryType" column="entryType" />
+			<result property="name" column="name" />
+			<association property="bookkeeping" javaType="net.luversof.bookkeeping.domain.Bookkeeping">
+				<id property="id" column="bookkeeping_id" />
+				<result property="baseDate" column="baseDate" />
+				<result property="name" column="name" />
+				<result property="userId" column="user_id" />
+			</association>
+		</association>
+
+	</resultMap>
+
+
+	<select id="selectStatistics" parameterType="net.luversof.bookkeeping.domain.StatisticsSearchInfo" resultMap="statisticsResultMap">
+		SELECT
+			SUM(A.amount) AS amount,
+			A.entryGroup_id,
+			B.*,
+			C.*
+		FROM Entry AS A
+		INNER JOIN Entry AS A1 ON A.id = A1.id AND A1.entryDate BETWEEN #{startLocalDateTime} AND #{endLocalDateTime}
+		INNER JOIN EntryGroup AS B ON A.entryGroup_id = B.id
+		INNER JOIN Bookkeeping AS C ON B.bookkeeping_id = C.id
+		WHERE A.bookkeeping_id = #{bookkeeping.id} AND A.entryGroup_id IS NOT NULL GROUP BY A.entryGroup_id
+	</select>
+</mapper>

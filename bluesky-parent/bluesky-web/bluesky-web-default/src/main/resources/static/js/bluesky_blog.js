@@ -36,13 +36,13 @@ $(document).ready(function() {
 						location.href = form.attr("action") + "/../";
 					}
 					,error : function(jqXHR, textStatus, errorThrown) {
-						console.log("a : ", jqXHR);
-						console.log("b : ", textStatus);
-						console.log("c : ", errorThrown);
+						//console.log("a : ", jqXHR);
+						//console.log("b : ", textStatus);
+						//console.log("c : ", errorThrown);
 					}
 					, complete : function(jqXHR, textStatus) {
-						console.log("a : ", jqXHR);
-						console.log("b : ", textStatus);
+						//console.log("a : ", jqXHR);
+						//console.log("b : ", textStatus);
 					}
 				});
 			}

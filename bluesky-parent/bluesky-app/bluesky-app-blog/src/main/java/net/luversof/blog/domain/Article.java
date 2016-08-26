@@ -1,16 +1,18 @@
 package net.luversof.blog.domain;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.ForeignKey;
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
+import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 
 import org.hibernate.validator.constraints.NotEmpty;
@@ -21,12 +23,13 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import lombok.Data;
 
-@Entity
 @Data
+@Entity
+@Table(name = "BlogArticle")
 public class Article {
 
 	@Id
-	@GeneratedValue
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@NotNull(groups = { Get.class })
 	private long id;
 
@@ -42,11 +45,11 @@ public class Article {
 
 	@Column(updatable = false)
 	@CreatedDate
-	private LocalDateTime createdDate;
+	private ZonedDateTime createdDate;
 
 	@Column(updatable = false)
 	@LastModifiedDate
-	private LocalDateTime lastModifiedDate;
+	private ZonedDateTime lastModifiedDate;
 
 	@ManyToOne
 	@JoinColumn(name = "articleCategory_id", foreignKey = @ForeignKey(name = "FK_article_articleCategoryId") )

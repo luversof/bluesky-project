@@ -2,7 +2,7 @@
 <html
 	xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
-	layout:decorator="/bookkeeping/bookkeepingLayout">
+	layout:decorator="bookkeeping/bookkeepingLayout">
 <head>
 	<script type="text/javascript" th:src="@{#{url.moment.js}}"></script>
 	<script type="text/javascript" th:src="@{#{url.bootstrap-datepicker.js}}"></script>
@@ -44,11 +44,11 @@
 						</tr>
 						<tr>
 							<th>
-								<button type="button" class="btn btn-default {{#isSortEntryType}}btn-info{{/isSortEntryType}}" data-menu-sortColumn="entryType" data-menu-sortDirection="{{#isSortEntryType}}{{sortDirection}}{{/isSortEntryType}}">
+								<button type="button" class="btn btn-default {{#isSortColumnEntryType}}btn-info{{/isSortColumnEntryType}}" data-menu-sortColumn="entryType" data-menu-sortDirection="{{#isSortColumnEntryType}}{{sortDirection}}{{/isSortColumnEntryType}}">
 									지출 유형
-									{{#isSortEntryType}}
+									{{#isSortColumnEntryType}}
 										<i class="fa fa-sort-{{sortDirection}}" aria-hidden="true"></i>
-									{{/isSortEntryType}}
+									{{/isSortColumnEntryType}}
 								</button>
 							</th>
 							<th></th>
@@ -74,17 +74,15 @@
 						</tr>
 						<tr class="active">
 							<td colspan="7">
-								<div class="col-md-4">
-									<div class="btn-group btn-group-justified" role="group">
-										<div class="btn-group" role="group">
-											<button type="button" class="btn btn-default" role="button" data-menu="selectCreateEntryType" value="CREDIT"><i class="fa fa-plus" aria-hidden="true"></i> 수입</button>
-										</div>
-										<div class="btn-group" role="group">
-											<button type="button" class="btn btn-default" role="button" data-menu="selectCreateEntryType" value="DEBIT"><i class="fa fa-minus" aria-hidden="true"></i> 지출</button>
-										</div>
-										<div class="btn-group" role="group">
-											<button type="button" class="btn btn-default" role="button" data-menu="selectCreateEntryType" value="TRANSFER"><i class="fa fa-exchange" aria-hidden="true"></i> 이체</button>
-										</div>
+								<div class="btn-group" role="group">
+									<div class="btn-group" role="group">
+										<button type="button" class="btn btn-default" role="button" data-menu="selectCreateEntryType" value="CREDIT"><i class="fa fa-plus" aria-hidden="true"></i> 수입</button>
+									</div>
+									<div class="btn-group" role="group">
+										<button type="button" class="btn btn-default" role="button" data-menu="selectCreateEntryType" value="DEBIT"><i class="fa fa-minus" aria-hidden="true"></i> 지출</button>
+									</div>
+									<div class="btn-group" role="group">
+										<button type="button" class="btn btn-default" role="button" data-menu="selectCreateEntryType" value="TRANSFER"><i class="fa fa-exchange" aria-hidden="true"></i> 이체</button>
 									</div>
 								</div>
 							</td>
@@ -191,11 +189,11 @@
 				<div class="form-group">
 					<div class="input-group col-md-7">
 						<div class="input-group-btn">
-							<button class="btn btn-default" data-menu-entrySearchInfo="prevMonth">&lt;</button>
+							<button class="btn btn-default" data-menu-entrySearchInfo="prevDate">&lt;</button>
 						</div>
-						<input type="text" class="form-control" name="entrySearchInfoTargetMonth" value="{{getTargetMonth}}" />
+						<input type="text" class="form-control" name="entrySearchInfoTargetDate" value="{{getTargetDate}}" />
 						<div class="input-group-btn">
-							<button class="btn btn-default" data-menu-entrySearchInfo="nextMonth">&gt;</button>
+							<button class="btn btn-default" data-menu-entrySearchInfo="nextDate">&gt;</button>
 						</div>
 					</div>
 				</div>

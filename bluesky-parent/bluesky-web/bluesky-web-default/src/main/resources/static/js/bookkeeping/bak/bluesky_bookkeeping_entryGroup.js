@@ -23,7 +23,7 @@ $(document).ready(function() {
 				],
 				cells : function (row, col, prop) {
 				      var cellProperties = {};
-				      if (displayArea.handsontable('getData')[row][col] == null && col == 1) {
+				      if (displayArea.handsontable('getData')[row][col] === null && col === 1) {
 				    	  cellProperties.readOnly = false;  
 				      }
 				      return cellProperties;

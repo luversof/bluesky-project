@@ -4,7 +4,7 @@
 	<include resource="org/springframework/boot/logging/logback/base.xml"/>
 	<property name="LOG_FILE" value="./logs/catalina.out" />
 	
-		<!-- (s) 기본 로그 레벨 값 설정 -->
+	<!-- (s) 기본 로그 레벨 값 설정 -->
 	<property name="loggerLevelBluesky" value="DEBUG" />
 	<property name="loggerLevel" value="INFO" />
 	<if condition='p("spring.profiles.active").equals("live")'>
@@ -18,9 +18,11 @@
 	<logger name="net.luversof" level="${loggerLevelBluesky}" />
 	<logger name="java.sql" level="${loggerLevel}" />
 	<!-- <logger name="org.hibernate.type" level="trace" /> -->
-	<logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="trace" />
+	<!-- <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="trace" /> -->
 	<logger name="org.springframework" level="${loggerLevel}" />
 	<logger name="org.springframework.boot.autoconfigure" level="${loggerLevelBluesky}" />
+	
+	<logger name="org.springframework.transaction" level="debug" />
 	
 	
 	<if condition='p("spring.profiles.active").equals("live")'>
@@ -30,7 +32,7 @@
 			</root>
 		</then>
 		<else>
-			<root level="WARN">
+			<root level="INFO">
 				<appender-ref ref="CONSOLE" />
 				<appender-ref ref="FILE" />
 			</root>

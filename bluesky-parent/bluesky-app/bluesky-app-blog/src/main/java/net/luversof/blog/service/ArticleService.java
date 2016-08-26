@@ -5,7 +5,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.blog.domain.Article;
 import net.luversof.blog.domain.ArticleStatistics;
@@ -14,7 +13,6 @@ import net.luversof.blog.repository.ArticleRepository;
 import net.luversof.core.exception.BlueskyException;
 
 @Service
-@Transactional("blogTransactionManager")
 public class ArticleService {
 
 	private static final int PAGE_SIZE = 10;
@@ -48,7 +46,6 @@ public class ArticleService {
 		return articleRepository.save(targetArticle);
 	}
 
-	@Transactional(value = "blogTransactionManager", readOnly = true)
 	public Article findOne(long id) {
 		return articleRepository.findOne(id);
 	}
@@ -66,7 +63,6 @@ public class ArticleService {
 		articleRepository.save(article);
 	}
 
-	@Transactional(value = "blogTransactionManager", readOnly = true)
 	public Page<Article> findByBlog(Blog blog, int page) {
 		Sort sort = new Sort(Sort.Direction.DESC, "id");
 		PageRequest pageRequest = new PageRequest(page, PAGE_SIZE, sort);
