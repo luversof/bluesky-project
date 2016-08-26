@@ -243,7 +243,7 @@
 			<repositories>
 				<repository>
 					<id>bluesky-local-nexus</id>
-					<url>http://192.168.99.100:8081/content/groups/public</url>
+					<url>http://localhost:8081/content/groups/public</url>
 					<releases>
 						<enabled>true</enabled>
 					</releases>
@@ -256,11 +256,11 @@
 			<distributionManagement>
 				<repository>
 					<id>bluesky-releases</id>
-					<url>http://192.168.99.100:8081/content/repositories/bluesky-releases</url>
+					<url>http://localhost:8081/content/repositories/bluesky-releases</url>
 				</repository>
 				<snapshotRepository>
 					<id>bluesky-snapshots</id>
-					<url>http://192.168.99.100:8081/content/repositories/bluesky-snapshots</url>
+					<url>http://localhost:8081/content/repositories/bluesky-snapshots</url>
 				</snapshotRepository>
 			</distributionManagement>
 		</profile>
@@ -269,7 +269,7 @@
 			<repositories>
 				<repository>
 					<id>bluesky-local-nexus</id>
-					<url>http://192.168.99.100:8081/content/groups/public</url>
+					<url>http://localhost:8081/content/groups/public</url>
 					<releases>
 						<enabled>true</enabled>
 					</releases>
@@ -282,11 +282,11 @@
 			<distributionManagement>
 				<repository>
 					<id>bluesky-releases-develop</id>
-					<url>http://192.168.99.100:8081/content/repositories/bluesky-releases-develop</url>
+					<url>http://localhost:8081/content/repositories/bluesky-releases-develop</url>
 				</repository>
 				<snapshotRepository>
 					<id>bluesky-snapshots-develop</id>
-					<url>http://192.168.99.100:8081/content/repositories/bluesky-snapshots-develop</url>
+					<url>http://localhost:8081/content/repositories/bluesky-snapshots-develop</url>
 				</snapshotRepository>
 			</distributionManagement>
 		</profile>
