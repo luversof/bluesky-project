@@ -3,7 +3,6 @@ package net.luversof.blog.domain;
 import java.time.ZonedDateTime;
 
 import javax.persistence.CascadeType;
-import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.ForeignKey;
 import javax.persistence.GeneratedValue;
@@ -43,11 +42,9 @@ public class Article {
 	@NotEmpty(groups = { Save.class, Modify.class })
 	private String content;
 
-	@Column(updatable = false)
 	@CreatedDate
 	private ZonedDateTime createdDate;
 
-	@Column(updatable = false)
 	@LastModifiedDate
 	private ZonedDateTime lastModifiedDate;
 

@@ -19,7 +19,7 @@ public class DataJpaBlogConfig {
 	
 	@Bean(name = "blogEntityManagerFactory")
 	public LocalContainerEntityManagerFactoryBean blogEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("blogDataSource") DataSource blogDataSource) {
-		return builder.dataSource(blogDataSource).packages("net.luversof.blog").build();
+		return builder.dataSource(blogDataSource).packages("net.luversof.blog", "org.springframework.data.jpa.convert.threeten").build();
 	}
 	
 	@Bean(name = "blogTransactionManager")
