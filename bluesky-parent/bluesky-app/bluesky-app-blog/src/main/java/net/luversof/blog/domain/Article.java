@@ -33,7 +33,7 @@ public class Article {
 	private long id;
 
 	@ManyToOne
-	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_article_blogId") )
+	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_article_blogId"))
 	private Blog blog;
 
 	@NotEmpty(groups = { Save.class, Modify.class })
@@ -49,7 +49,7 @@ public class Article {
 	private ZonedDateTime lastModifiedDate;
 
 	@ManyToOne
-	@JoinColumn(name = "articleCategory_id", foreignKey = @ForeignKey(name = "FK_article_articleCategoryId") )
+	@JoinColumn(name = "articleCategory_id", foreignKey = @ForeignKey(name = "FK_article_articleCategoryId"))
 	private ArticleCategory articleCategory;
 
 	@OneToOne(cascade = CascadeType.ALL)
