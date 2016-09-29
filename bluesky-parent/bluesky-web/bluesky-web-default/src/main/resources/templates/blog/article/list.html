@@ -25,7 +25,7 @@
 				<td th:text="${article.articleCategory} ? ${article.articleCategory.name}">category</td>
 				<td><a th:href="#{url.blog.view(${article.blog.id}, ${article.id})}" th:text="${article.title}">title</a></td>
 				<td th:text="${article.blog}">username</td>
-				<td th:text="${#temporals.format(article.createdDate, 'yyyy-MM-dd')}">createdDate</td>
+				<td th:text="${article.createdDate == null ?: #temporals.format(article.createdDate, 'yyyy-MM-dd')}">createdDate</td>
 				<!-- <td th:text="${article.createdDate}">createdDate</td> -->
 				<td>
 					<span th:if="${article.articleStatistics eq null}">-</span>
