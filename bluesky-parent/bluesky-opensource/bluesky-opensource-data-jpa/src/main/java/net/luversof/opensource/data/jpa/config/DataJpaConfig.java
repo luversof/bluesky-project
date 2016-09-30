@@ -24,11 +24,8 @@ public class DataJpaConfig {
 	 * @return
 	 */
 	@Bean
-	public EntityManagerFactoryBuilder entityManagerFactoryBuilder(JpaProperties properties,
-			JpaVendorAdapter jpaVendorAdapter, ObjectProvider<PersistenceUnitManager> persistenceUnitManagerProvider) {
-		EntityManagerFactoryBuilder builder = new EntityManagerFactoryBuilder(jpaVendorAdapter,
-				properties.getProperties(), persistenceUnitManagerProvider.getIfAvailable(), null);
-		return builder;
+	public EntityManagerFactoryBuilder entityManagerFactoryBuilder(JpaProperties properties, JpaVendorAdapter jpaVendorAdapter, ObjectProvider<PersistenceUnitManager> persistenceUnitManagerProvider) {
+		return new EntityManagerFactoryBuilder(jpaVendorAdapter, properties.getProperties(), persistenceUnitManagerProvider.getIfAvailable(), null);
 	}
 
 }
