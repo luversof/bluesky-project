@@ -18,6 +18,9 @@ public class SimpleTest {
 		log.debug(EncryptionUtil.stringEncryptor().encrypt("https://kr.battle.net/oauth/authorize"));
 		log.debug(EncryptionUtil.stringEncryptor().encrypt("https://kr.battle.net/oauth/token"));
 		log.debug(EncryptionUtil.stringEncryptor().encrypt("https://kr.battle.net/oauth/check_token?token={accessToken}"));
+		log.debug(EncryptionUtil.stringEncryptor().encrypt("1"));
+		log.debug(EncryptionUtil.stringEncryptor().encrypt("2"));
+		log.debug(EncryptionUtil.stringEncryptor().encrypt("3"));
 	}
 	
 	@Test
