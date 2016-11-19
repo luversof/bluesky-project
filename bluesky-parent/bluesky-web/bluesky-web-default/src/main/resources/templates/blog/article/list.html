@@ -2,7 +2,6 @@
 <html
 	xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
-	xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3"
 	layout:decorator="layout/defaultLayout">
 <div layout:fragment="content">
 	<div class="page-header">
@@ -39,12 +38,7 @@
 		<tfoot>
 			<tr>
 				<td colspan="6" class="text-center">
-					<ul class="pagination" th:if="${pageImpl.totalPages} > 0">
-						<li th:each="i : ${#numbers.sequence(startPage, endPage)}" th:class="${i == currentPage} ? 'active'"><a th:href="@{#{url.blog.write(${#ctx.getVariables().get('blog.id')})}(page=${i})}" th:text="${i}">?</a></li>
-					</ul>
-					<div>
-						<a th:href="#{url.blog.write(${#ctx.getVariables().get('blog.id')})}" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blog.menu.write}">write</a>
-					</div>
+					[[${#ctx}]]
 				</td>
 			</tr>
 		</tfoot>

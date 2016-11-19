@@ -19,7 +19,7 @@ public class DataJpaBookkeepingConfig {
 	
 	@Bean(name = "bookkeepingEntityManagerFactory")
 	public LocalContainerEntityManagerFactoryBean bookkeepingEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("bookkeepingDataSource") DataSource bookkeepingDataSource) {
-		return builder.dataSource(bookkeepingDataSource).packages("net.luversof.bookkeeping").build();
+		return builder.dataSource(bookkeepingDataSource).persistenceUnit("bookkeepingPersistenceUnit").packages("net.luversof.bookkeeping").build();
 	}
 	
 	@Bean(name = "bookkeepingTransactionManager")

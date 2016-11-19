@@ -38,7 +38,7 @@
 			<input type="hidden" name="id" th:value="${article.id}" />
 		</form>
 		
-		<div th:if="${#arrays.contains(#ctx.applicationContext.environment.activeProfiles, 'live')}">
+		<div th:if="${#arrays.contains(@environment.getActiveProfiles(), 'live')}">
 			<hr />
 			<div id="fb-root"></div>
 			<script type="text/javascript">(function(d, s, id) {
