@@ -1,17 +1,12 @@
-<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-spring4-4.dtd">
-<html xmlns:th="http://www.thymeleaf.org">
-<body>
-	<div th:fragment="breadcrumb" th:if="${#httpServletRequest.servletPath != '/'}">
-		<br />
-		<ol class="breadcrumb">
-			<li><a th:href="@{/}">Home</a></li>
-			<li th:each="pathPart : ${#strings.arraySplit(#httpServletRequest.servletPath, '/')}"><a th:href="@{${#strings.append(#strings.substringBefore(#httpServletRequest.servletPath, pathPart), pathPart)}}" th:text="${pathPart}">pathPart</a></li>
-		</ol>
-		<script type="text/javascript">
-		$(document).ready(function() {
-			$(".breadcrumb li:last").addClass("active").find("a").contents().unwrap();
-		})
-		</script>
-	</div>
-</body>
-</html>
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="breadcrumb" th:if="${#httpServletRequest.servletPath != '/'}">
+	<br />
+	<ol class="breadcrumb">
+		<li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+		<li class="breadcrumb-item" th:each="pathPart : ${#strings.arraySplit(#httpServletRequest.servletPath, '/')}"><a th:href="@{${#strings.append(#strings.substringBefore(#httpServletRequest.servletPath, pathPart), pathPart)}}" th:text="${pathPart}">pathPart</a></li>
+	</ol>
+	<script type="text/javascript">
+	$(document).ready(function() {
+		$(".breadcrumb li:last").addClass("active").find("a").contents().unwrap();
+	})
+	</script>
+</div>
