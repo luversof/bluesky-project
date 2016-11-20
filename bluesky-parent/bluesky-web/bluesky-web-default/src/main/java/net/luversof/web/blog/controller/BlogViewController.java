@@ -56,8 +56,8 @@ public class BlogViewController {
 		return redirectArticleList(blog.getId());
 	}
 
-	@GetMapping(value = "/{blog.id}")
-	public String redirectArticleList(@PathVariable("blog.id") long blogId) {
+	@GetMapping(value = "/{blogId}")
+	public String redirectArticleList(@PathVariable long blogId) {
 		return MessageFormat.format("redirect:/blog/{0}/article", blogId);
 	}
 
@@ -94,8 +94,8 @@ public class BlogViewController {
 	 * @param modelMap
 	 * @return
 	 */
-	@GetMapping(value = "/{blog.id}/article")
-	public String list(@PathVariable("blog.id") long blogId, @RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
+	@GetMapping(value = "/{blogId}/list")
+	public String list(@PathVariable long blogId, @RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
 		Blog blog = blogService.findOne(blogId);
 		Page<Article> articlePage = articleService.findByBlog(blog, page - 1);
 		if (articlePage.getTotalPages() > 0 && articlePage.getTotalPages() < page) {
@@ -119,7 +119,7 @@ public class BlogViewController {
 	 * @param modelMap
 	 * @return
 	 */
-	@GetMapping(value = "/{blog.id}/article/{id}")
+	@GetMapping(value = "/{blog.id}/view/{id}")
 	public String view(@Validated(Get.class) Article article, ModelMap modelMap) {
 		Article viewArticle = articleService.findOne(article.getId());
 		articleService.incraseViewCount(viewArticle);

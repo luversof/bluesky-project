@@ -25,7 +25,7 @@ import net.luversof.web.constant.AuthorizeRole;
  */
 @RestController
 @RequestMapping(value = "/blog", produces = MediaType.APPLICATION_JSON_VALUE)
-public class ArticleController {
+public class BlogArticleController {
 
 	@Autowired
 	private ArticleService articleService;
