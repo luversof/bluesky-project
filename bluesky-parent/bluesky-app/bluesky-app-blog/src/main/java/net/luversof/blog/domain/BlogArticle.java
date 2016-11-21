@@ -25,7 +25,7 @@ import lombok.Data;
 @Data
 @Entity
 @Table(name = "BlogArticle")
-public class Article {
+public class BlogArticle {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,11 +50,11 @@ public class Article {
 
 	@ManyToOne
 	@JoinColumn(name = "articleCategory_id", foreignKey = @ForeignKey(name = "FK_article_articleCategoryId"))
-	private ArticleCategory articleCategory;
+	private BlogArticleCategory articleCategory;
 
 	@OneToOne(cascade = CascadeType.ALL)
 	@JsonManagedReference
-	private ArticleStatistics articleStatistics;
+	private BlogArticleStatistics blogArticleStatistics;
 
 	public interface Get {
 	};

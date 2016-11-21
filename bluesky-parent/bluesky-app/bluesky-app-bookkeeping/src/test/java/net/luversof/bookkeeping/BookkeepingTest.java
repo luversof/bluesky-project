@@ -14,7 +14,7 @@ public class BookkeepingTest extends GeneralTest {
 	@Autowired
 	private BookkeepingService bookkeepingService;
 	
-	static final long TEST_USER_ID = 1;
+	static final String TEST_USER_ID = "1";
 	
 	@Test
 	public void save() {
@@ -40,7 +40,7 @@ public class BookkeepingTest extends GeneralTest {
 	public void delete() {
 		Bookkeeping bookkeeping = new Bookkeeping();
 		bookkeeping.setId(5);
-		bookkeeping.setUserId(2);
+		bookkeeping.setUserId("2");
 		bookkeepingService.delete(bookkeeping);
 	}
 }

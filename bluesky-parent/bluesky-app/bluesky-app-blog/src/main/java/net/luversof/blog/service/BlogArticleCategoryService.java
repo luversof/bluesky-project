@@ -5,25 +5,25 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import net.luversof.blog.domain.ArticleCategory;
+import net.luversof.blog.domain.BlogArticleCategory;
 import net.luversof.blog.domain.Blog;
-import net.luversof.blog.repository.ArticleCategoryRepository;
+import net.luversof.blog.repository.BlogArticleCategoryRepository;
 
 @Service
-public class ArticleCategoryService {
+public class BlogArticleCategoryService {
 
 	@Autowired
-	private ArticleCategoryRepository articleCategoryRepository;
+	private BlogArticleCategoryRepository articleCategoryRepository;
 
-	public ArticleCategory save(ArticleCategory articleCategory) {
+	public BlogArticleCategory save(BlogArticleCategory articleCategory) {
 		return articleCategoryRepository.save(articleCategory);
 	}
 
-	public ArticleCategory findOne(long id) {
+	public BlogArticleCategory findOne(long id) {
 		return articleCategoryRepository.findOne(id);
 	}
 
-	public List<ArticleCategory> findByBlog(Blog blog) {
+	public List<BlogArticleCategory> findByBlog(Blog blog) {
 		return articleCategoryRepository.findByBlog(blog);
 	}
 

@@ -11,11 +11,11 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import net.luversof.blog.domain.Article;
-import net.luversof.blog.domain.Article.Get;
-import net.luversof.blog.domain.Article.Modify;
-import net.luversof.blog.domain.Article.Save;
-import net.luversof.blog.service.ArticleService;
+import net.luversof.blog.domain.BlogArticle;
+import net.luversof.blog.domain.BlogArticle.Get;
+import net.luversof.blog.domain.BlogArticle.Modify;
+import net.luversof.blog.domain.BlogArticle.Save;
+import net.luversof.blog.service.BlogArticleService;
 import net.luversof.web.blog.annotation.CheckBlogAndAddToArticle;
 import net.luversof.web.constant.AuthorizeRole;
 
@@ -28,23 +28,23 @@ import net.luversof.web.constant.AuthorizeRole;
 public class BlogArticleController {
 
 	@Autowired
-	private ArticleService articleService;
+	private BlogArticleService articleService;
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostMapping(value = "/{blog.id}/article")
-	public Article save(@CheckBlogAndAddToArticle @Validated(Save.class) Article article) {
+	public BlogArticle save(@CheckBlogAndAddToArticle @Validated(Save.class) BlogArticle article) {
 		return articleService.save(article);
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PutMapping(value = "/{blog.id}/article/{id}")
-	public Article modify(@CheckBlogAndAddToArticle @Validated(Modify.class) Article article) {
+	public BlogArticle modify(@CheckBlogAndAddToArticle @Validated(Modify.class) BlogArticle article) {
 		return articleService.update(article);
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@DeleteMapping(value = "/{blog.id}/article/{id}")
-	public boolean delete(@CheckBlogAndAddToArticle @Validated(Get.class) Article article, ModelMap modelMap) {
+	public boolean delete(@CheckBlogAndAddToArticle @Validated(Get.class) BlogArticle article, ModelMap modelMap) {
 		articleService.delete(article.getId());
 		return true;
 	}

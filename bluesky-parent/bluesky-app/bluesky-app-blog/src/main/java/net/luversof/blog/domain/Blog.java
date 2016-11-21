@@ -19,7 +19,7 @@ public class Blog {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
 
-	@Column(name = "user_id")
-	private long userId;
+	@Column(name = "user_id", length = 36)
+	private String userId;
 
 }

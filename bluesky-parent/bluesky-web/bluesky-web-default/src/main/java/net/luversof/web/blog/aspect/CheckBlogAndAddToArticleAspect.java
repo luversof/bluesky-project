@@ -1,8 +1,8 @@
 package net.luversof.web.blog.aspect;
 
-import net.luversof.blog.domain.Article;
+import net.luversof.blog.domain.BlogArticle;
 import net.luversof.blog.domain.Blog;
-import net.luversof.blog.service.ArticleService;
+import net.luversof.blog.service.BlogArticleService;
 import net.luversof.blog.service.BlogService;
 import net.luversof.core.exception.BlueskyException;
 import net.luversof.security.core.userdetails.BlueskyUser;
@@ -27,21 +27,21 @@ public class CheckBlogAndAddToArticleAspect {
 	private BlogService blogService;
 	
 	@Autowired
-	private ArticleService articleService;
+	private BlogArticleService articleService;
 	
 	@Before("@annotation(org.springframework.security.access.prepost.PreAuthorize) && execution( * *(@net.luversof.web.blog.annotation.CheckBlogAndAddToArticle (*), ..)) && args(article, ..)")
 //	@Before("@annotation(org.springframework.security.access.prepost.PreAuthorize) && @annotation(net.luversof.web.blog.annotation.CheckBlogAndAddToArticle) && args(article, ..)")
-	public void before(Article article) {
+	public void before(BlogArticle article) {
 		Blog targetBlog = blogService.findOne(article.getBlog().getId());
 		
 		BlueskyUser blueskyUser = (BlueskyUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-		if (targetBlog.getUserId() != blueskyUser.getId()) {
+		if (!targetBlog.getUserId().equals(blueskyUser.getId())) {
 			throw new BlueskyException("blog.invalidAccess");
 		}
 		
 		// 수정 요청인 경우 저장된 글에서 blog 정보를 호출하여 한번 더 체크
 		if (article.getId() != 0) {
-			Article targetArticle = articleService.findOne(article.getId());
+			BlogArticle targetArticle = articleService.findOne(article.getId());
 			if (targetArticle.getBlog().getId() != article.getBlog().getId()) {
 				throw new BlueskyException("blog.article.invalidAccess");
 			}

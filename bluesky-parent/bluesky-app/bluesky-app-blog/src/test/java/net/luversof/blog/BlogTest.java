@@ -17,13 +17,13 @@ public class BlogTest extends GeneralTest {
 	@Test
 	public void saveTest() {
 		Blog blog = new Blog();
-		blog.setUserId(12345);
+		blog.setUserId("12345");
 		blogService.save(blog);
 	}
 
 	@Test
 	public void test() {
-		Blog blog = blogService.findByUser(1657880612);
+		Blog blog = blogService.findByUser("1657880612");
 		log.debug("blog : {}", blog);
 	}
 }

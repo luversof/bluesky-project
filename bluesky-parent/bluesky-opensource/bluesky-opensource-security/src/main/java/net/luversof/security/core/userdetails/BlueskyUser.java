@@ -21,7 +21,7 @@ public class BlueskyUser implements UserDetails, CredentialsContainer {
 	
 	private static final long serialVersionUID = -7218355940538132953L;
 	
-	private final long id;
+	private final String id;
 	private final String username;
 	private String password;
 	private final Collection<? extends GrantedAuthority> authorities;

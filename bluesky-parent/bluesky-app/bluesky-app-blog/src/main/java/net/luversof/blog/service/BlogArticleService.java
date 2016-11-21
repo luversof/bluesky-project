@@ -6,35 +6,35 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import net.luversof.blog.domain.Article;
-import net.luversof.blog.domain.ArticleStatistics;
+import net.luversof.blog.domain.BlogArticle;
+import net.luversof.blog.domain.BlogArticleStatistics;
 import net.luversof.blog.domain.Blog;
-import net.luversof.blog.repository.ArticleRepository;
+import net.luversof.blog.repository.BlogArticleRepository;
 import net.luversof.core.exception.BlueskyException;
 
 @Service
-public class ArticleService {
+public class BlogArticleService {
 
 	private static final int PAGE_SIZE = 10;
 
 	@Autowired
-	private ArticleRepository articleRepository;
+	private BlogArticleRepository articleRepository;
 	
 	@Autowired
-	private ArticleCategoryService articleCategoryService;
+	private BlogArticleCategoryService articleCategoryService;
 
-	public Article save(Article article) {
+	public BlogArticle save(BlogArticle article) {
 		if (article.getArticleCategory() != null && article.getArticleCategory().getId() > 0) {
 			article.setArticleCategory(articleCategoryService.findOne(article.getArticleCategory().getId()));
 		}
-		ArticleStatistics articleStatistics = new ArticleStatistics();
-		articleStatistics.setArticle(article);
-		article.setArticleStatistics(articleStatistics);
+		BlogArticleStatistics blogArticleStatistics = new BlogArticleStatistics();
+		blogArticleStatistics.setBlogArticle(article);
+		article.setBlogArticleStatistics(blogArticleStatistics);
 		return articleRepository.save(article);
 	}
 	
-	public Article update(Article article) {
-		Article targetArticle = findOne(article.getId());
+	public BlogArticle update(BlogArticle article) {
+		BlogArticle targetArticle = findOne(article.getId());
 		if (!article.getBlog().equals(targetArticle.getBlog())) {
 			throw new BlueskyException("blog.article.permissionDenied");
 		}
@@ -46,24 +46,24 @@ public class ArticleService {
 		return articleRepository.save(targetArticle);
 	}
 
-	public Article findOne(long id) {
+	public BlogArticle findOne(long id) {
 		return articleRepository.findOne(id);
 	}
 	
-	public void incraseViewCount(Article article) {
-		ArticleStatistics articleStatistics = article.getArticleStatistics();
+	public void incraseViewCount(BlogArticle article) {
+		BlogArticleStatistics articleStatistics = article.getBlogArticleStatistics();
 		if (articleStatistics == null) {
-			articleStatistics = new ArticleStatistics();
-			articleStatistics.setArticle(article);
+			articleStatistics = new BlogArticleStatistics();
+			articleStatistics.setBlogArticle(article);
 			articleStatistics.setViewCount(1);
-			article.setArticleStatistics(articleStatistics);
+			article.setBlogArticleStatistics(articleStatistics);
 		} else {
-			article.getArticleStatistics().setViewCount(article.getArticleStatistics().getViewCount() + 1);
+			article.getBlogArticleStatistics().setViewCount(article.getBlogArticleStatistics().getViewCount() + 1);
 		}
 		articleRepository.save(article);
 	}
 
-	public Page<Article> findByBlog(Blog blog, int page) {
+	public Page<BlogArticle> findByBlog(Blog blog, int page) {
 		Sort sort = new Sort(Sort.Direction.DESC, "id");
 		PageRequest pageRequest = new PageRequest(page, PAGE_SIZE, sort);
 		return articleRepository.findByBlog(blog, pageRequest);

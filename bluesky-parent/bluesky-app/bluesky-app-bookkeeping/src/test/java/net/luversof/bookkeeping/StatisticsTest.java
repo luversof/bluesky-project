@@ -33,7 +33,7 @@ public class StatisticsTest extends GeneralTest {
 	@Test
 	public void test () {
 		//1. 대상 bookkeeping 획득
-		List<Bookkeeping> bookkeepingList = bookkeepingService.findByUserId(1);
+		List<Bookkeeping> bookkeepingList = bookkeepingService.findByUserId("1");
 		Bookkeeping bookkeeping = bookkeepingList.get(0);
 		
 		//2 statisticsSearchInfo 획득

@@ -2,11 +2,11 @@ package net.luversof.web.blog.controller;
 
 import java.text.MessageFormat;
 
-import net.luversof.blog.domain.Article;
+import net.luversof.blog.domain.BlogArticle;
 import net.luversof.blog.domain.Blog;
-import net.luversof.blog.domain.Article.Get;
-import net.luversof.blog.service.ArticleCategoryService;
-import net.luversof.blog.service.ArticleService;
+import net.luversof.blog.domain.BlogArticle.Get;
+import net.luversof.blog.service.BlogArticleCategoryService;
+import net.luversof.blog.service.BlogArticleService;
 import net.luversof.blog.service.BlogService;
 import net.luversof.core.exception.BlueskyException;
 import net.luversof.security.core.userdetails.BlueskyUser;
@@ -39,10 +39,10 @@ public class BlogViewController {
 	private BlogService blogService;
 
 	@Autowired
-	private ArticleService articleService;
+	private BlogArticleService articleService;
 
 	@Autowired
-	private ArticleCategoryService articleCategoryService;
+	private BlogArticleCategoryService articleCategoryService;
 
 	/**
 	 * 진입 페이지 blog 정보가 없는 경우 생성 페이지로 이동
@@ -97,7 +97,7 @@ public class BlogViewController {
 	@GetMapping(value = "/{blogId}/list")
 	public String list(@PathVariable long blogId, @RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
 		Blog blog = blogService.findOne(blogId);
-		Page<Article> articlePage = articleService.findByBlog(blog, page - 1);
+		Page<BlogArticle> articlePage = articleService.findByBlog(blog, page - 1);
 		if (articlePage.getTotalPages() > 0 && articlePage.getTotalPages() < page) {
 			throw new BlueskyException("invalid page");
 		}
@@ -120,8 +120,8 @@ public class BlogViewController {
 	 * @return
 	 */
 	@GetMapping(value = "/{blog.id}/view/{id}")
-	public String view(@Validated(Get.class) Article article, ModelMap modelMap) {
-		Article viewArticle = articleService.findOne(article.getId());
+	public String view(@Validated(Get.class) BlogArticle article, ModelMap modelMap) {
+		BlogArticle viewArticle = articleService.findOne(article.getId());
 		articleService.incraseViewCount(viewArticle);
 		modelMap.addAttribute("article", viewArticle);
 		return "blog/article/view";
@@ -151,7 +151,7 @@ public class BlogViewController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[article].blog.userId == authentication.principal.id")
 	@GetMapping(value = "/{blog.id}/article/{id}/modify")
-	public String modifyPage(@CheckBlogAndAddToArticle @Validated(Get.class) Article article, ModelMap modelMap) {
+	public String modifyPage(@CheckBlogAndAddToArticle @Validated(Get.class) BlogArticle article, ModelMap modelMap) {
 		modelMap.addAttribute(articleService.findOne(article.getId()));
 		modelMap.addAttribute(articleCategoryService.findByBlog(blogService.findOne(article.getId())));
 		return "blog/article/modify";

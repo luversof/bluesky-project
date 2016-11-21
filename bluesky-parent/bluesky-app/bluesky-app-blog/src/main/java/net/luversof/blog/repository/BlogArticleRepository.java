@@ -5,11 +5,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
-import net.luversof.blog.domain.Article;
+import net.luversof.blog.domain.BlogArticle;
 import net.luversof.blog.domain.Blog;
 
 @Transactional(readOnly = true)
-public interface ArticleRepository extends JpaRepository<Article, Long> {
+public interface BlogArticleRepository extends JpaRepository<BlogArticle, Long> {
 	
-	Page<Article> findByBlog(Blog blog, Pageable pageable);
+	Page<BlogArticle> findByBlog(Blog blog, Pageable pageable);
 }

@@ -21,7 +21,7 @@ public class AssetTest extends GeneralTest {
 	@Autowired
 	private BookkeepingService bookkeepingService;
 	
-	static final long TEST_USER_ID = 1;
+	static final String TEST_USER_ID = "1";
 	
 
 	@Test

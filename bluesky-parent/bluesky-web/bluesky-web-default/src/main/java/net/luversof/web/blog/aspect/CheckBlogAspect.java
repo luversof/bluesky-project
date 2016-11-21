@@ -23,7 +23,7 @@ public class CheckBlogAspect {
 		Blog targetBlog = blogService.findOne(blog.getId());
 		
 		BlueskyUser blueskyUser = (BlueskyUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-		if (targetBlog.getUserId() != blueskyUser.getId()) {
+		if (!targetBlog.getUserId().equals(blueskyUser.getId())) {
 			throw new BlueskyException("blog.invalidAccess");
 		}
 		blog = targetBlog;

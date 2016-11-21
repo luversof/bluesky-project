@@ -10,5 +10,5 @@ import net.luversof.bookkeeping.domain.Bookkeeping;
 @Transactional(readOnly = true)
 public interface BookkeepingRepository extends JpaRepository<Bookkeeping, Long>{
 	
-	List<Bookkeeping> findByUserId(long userId);
+	List<Bookkeeping> findByUserId(String userId);
 }
