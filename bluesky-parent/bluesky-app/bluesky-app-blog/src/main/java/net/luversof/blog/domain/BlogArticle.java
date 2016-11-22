@@ -56,6 +56,7 @@ public class BlogArticle {
 
 	@OneToOne(cascade = CascadeType.ALL)
 	@JsonManagedReference
+	@JoinColumn(name = "blogArticleStatistics_id", foreignKey = @ForeignKey(name = "FK_blogArticle_blogArticleStatisticsId"))
 	private BlogArticleStatistics blogArticleStatistics;
 
 	public interface Get {

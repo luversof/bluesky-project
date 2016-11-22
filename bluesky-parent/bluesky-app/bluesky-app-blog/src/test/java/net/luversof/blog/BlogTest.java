@@ -19,7 +19,7 @@ public class BlogTest extends GeneralTest {
 	@Test
 	public void saveTest() {
 		Blog blog = new Blog();
-		blog.setUserId("12345");
+		blog.setUserId("1");
 		blogService.save(blog);
 	}
 
