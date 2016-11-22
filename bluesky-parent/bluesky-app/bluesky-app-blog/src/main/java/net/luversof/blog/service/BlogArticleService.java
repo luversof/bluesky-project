@@ -23,44 +23,44 @@ public class BlogArticleService {
 	@Autowired
 	private BlogArticleCategoryService articleCategoryService;
 
-	public BlogArticle save(BlogArticle article) {
-		if (article.getArticleCategory() != null && article.getArticleCategory().getId() > 0) {
-			article.setArticleCategory(articleCategoryService.findOne(article.getArticleCategory().getId()));
+	public BlogArticle save(BlogArticle blogArticle) {
+		if (blogArticle.getBlogArticleCategory() != null && blogArticle.getBlogArticleCategory().getId() > 0) {
+			blogArticle.setBlogArticleCategory(articleCategoryService.findOne(blogArticle.getBlogArticleCategory().getId()));
 		}
 		BlogArticleStatistics blogArticleStatistics = new BlogArticleStatistics();
-		blogArticleStatistics.setBlogArticle(article);
-		article.setBlogArticleStatistics(blogArticleStatistics);
-		return articleRepository.save(article);
+		blogArticleStatistics.setBlogArticle(blogArticle);
+		blogArticle.setBlogArticleStatistics(blogArticleStatistics);
+		return articleRepository.save(blogArticle);
 	}
 	
-	public BlogArticle update(BlogArticle article) {
-		BlogArticle targetArticle = findOne(article.getId());
-		if (!article.getBlog().equals(targetArticle.getBlog())) {
+	public BlogArticle update(BlogArticle blogArticle) {
+		BlogArticle targetBlogArticle = findOne(blogArticle.getId());
+		if (!blogArticle.getBlog().equals(targetBlogArticle.getBlog())) {
 			throw new BlueskyException("blog.article.permissionDenied");
 		}
-		targetArticle.setTitle(article.getTitle());
-		targetArticle.setContent(article.getContent());
-		if (article.getArticleCategory() != null && article.getArticleCategory().getId() != 0) {
-			targetArticle.setArticleCategory(articleCategoryService.findOne(article.getArticleCategory().getId()));
+		targetBlogArticle.setTitle(blogArticle.getTitle());
+		targetBlogArticle.setContent(blogArticle.getContent());
+		if (blogArticle.getBlogArticleCategory() != null && blogArticle.getBlogArticleCategory().getId() != 0) {
+			targetBlogArticle.setBlogArticleCategory(articleCategoryService.findOne(blogArticle.getBlogArticleCategory().getId()));
 		}
-		return articleRepository.save(targetArticle);
+		return articleRepository.save(targetBlogArticle);
 	}
 
 	public BlogArticle findOne(long id) {
 		return articleRepository.findOne(id);
 	}
 	
-	public void incraseViewCount(BlogArticle article) {
-		BlogArticleStatistics articleStatistics = article.getBlogArticleStatistics();
-		if (articleStatistics == null) {
-			articleStatistics = new BlogArticleStatistics();
-			articleStatistics.setBlogArticle(article);
-			articleStatistics.setViewCount(1);
-			article.setBlogArticleStatistics(articleStatistics);
+	public void incraseViewCount(BlogArticle blogArticle) {
+		BlogArticleStatistics blogArticleStatistics = blogArticle.getBlogArticleStatistics();
+		if (blogArticleStatistics == null) {
+			blogArticleStatistics = new BlogArticleStatistics();
+			blogArticleStatistics.setBlogArticle(blogArticle);
+			blogArticleStatistics.setViewCount(1);
+			blogArticle.setBlogArticleStatistics(blogArticleStatistics);
 		} else {
-			article.getBlogArticleStatistics().setViewCount(article.getBlogArticleStatistics().getViewCount() + 1);
+			blogArticle.getBlogArticleStatistics().setViewCount(blogArticle.getBlogArticleStatistics().getViewCount() + 1);
 		}
-		articleRepository.save(article);
+		articleRepository.save(blogArticle);
 	}
 
 	public Page<BlogArticle> findByBlog(Blog blog, int page) {

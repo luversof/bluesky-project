@@ -1,5 +1,7 @@
 package net.luversof.blog;
 
+import java.util.Optional;
+
 import org.springframework.stereotype.Service;
 
 import net.luversof.blog.service.BlogUserService;
@@ -8,8 +10,8 @@ import net.luversof.blog.service.BlogUserService;
 public class BlogUserServiceTestImpl implements BlogUserService {
 
 	@Override
-	public String getUserId() {
-		return "TEST";
+	public Optional<String> getUserId() {
+		return Optional.of("TEST");
 	}
 
 }

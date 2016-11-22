@@ -3,6 +3,7 @@ package net.luversof.blog.domain;
 import java.time.ZonedDateTime;
 
 import javax.persistence.CascadeType;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.ForeignKey;
 import javax.persistence.GeneratedValue;
@@ -33,13 +34,14 @@ public class BlogArticle {
 	private long id;
 
 	@ManyToOne
-	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_article_blogId"))
+	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_blogArticle_blogId"))
 	private Blog blog;
 
 	@NotEmpty(groups = { Save.class, Modify.class })
 	private String title;
 
 	@NotEmpty(groups = { Save.class, Modify.class })
+	@Column(columnDefinition="TEXT")
 	private String content;
 
 	@CreatedDate
@@ -49,8 +51,8 @@ public class BlogArticle {
 	private ZonedDateTime lastModifiedDate;
 
 	@ManyToOne
-	@JoinColumn(name = "articleCategory_id", foreignKey = @ForeignKey(name = "FK_article_articleCategoryId"))
-	private BlogArticleCategory articleCategory;
+	@JoinColumn(name = "blogArticleCategory_id", foreignKey = @ForeignKey(name = "FK_blogArticle_blogArticleCategoryId"))
+	private BlogArticleCategory blogArticleCategory;
 
 	@OneToOne(cascade = CascadeType.ALL)
 	@JsonManagedReference

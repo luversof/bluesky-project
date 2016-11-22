@@ -21,7 +21,7 @@ public class BlogArticleCategory {
 	private long id;
 
 	@ManyToOne
-	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_articleCategory_blogId"))
+	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_blogArticleCategory_blogId"))
 	private Blog blog;
 	
 	private String name;

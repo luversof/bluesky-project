@@ -29,6 +29,6 @@ public class BlogArticleStatistics {
 //	@ApiModelProperty(hidden = true)
 	private BlogArticle blogArticle;
 	
-	private int viewCount;
+	private long viewCount;
 //	private int commentCount;	// 이거 쓸일 없어보이네
 }

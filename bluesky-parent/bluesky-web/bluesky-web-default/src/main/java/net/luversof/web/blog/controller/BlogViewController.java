@@ -1,8 +1,10 @@
 package net.luversof.web.blog.controller;
 
 import java.text.MessageFormat;
+import java.util.List;
 
 import net.luversof.blog.domain.BlogArticle;
+import net.luversof.blog.annotation.UserBlog;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.domain.BlogArticle.Get;
 import net.luversof.blog.service.BlogArticleCategoryService;
@@ -52,7 +54,7 @@ public class BlogViewController {
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@GetMapping(value = { "/$!", "/$!/article" })
-	public String home(Blog blog) {
+	public String home(@RequestParam(required = false) String a, @UserBlog Blog blog) {
 		return redirectArticleList(blog.getId());
 	}
 
@@ -75,9 +77,9 @@ public class BlogViewController {
 	@PostMapping(value = "")
 	public String create(Authentication authentication) {
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
-		Blog savedBlog = blogService.findByUser(blueskyUser.getId());
-		if (savedBlog != null) {
-			return redirectArticleList(savedBlog.getId());
+		List<Blog> savedBlogList = blogService.findByUser(blueskyUser.getId());
+		if (!savedBlogList.isEmpty()) {
+			return redirectArticleList(savedBlogList.get(0).getId());
 		}
 		;
 		Blog blog = new Blog();

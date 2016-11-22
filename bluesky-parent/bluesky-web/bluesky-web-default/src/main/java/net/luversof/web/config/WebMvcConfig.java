@@ -14,13 +14,13 @@ import org.thymeleaf.spring4.view.ThymeleafViewResolver;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import net.luversof.web.blog.method.support.BlogHandlerMethodArgumentResolver;
+import net.luversof.blog.support.UserBlogHandlerMethodArgumentResolver;
 
 @Configuration
 public class WebMvcConfig extends WebMvcConfigurerAdapter {
 
-	@Autowired
-	private BlogHandlerMethodArgumentResolver blogHandlerMethodArgumentResolver;
+//	@Autowired
+//	private BlogHandlerMethodArgumentResolver blogHandlerMethodArgumentResolver;
 
 	// @Autowired
 	// private BookkeepingHandlerMethodArgumentResolver
@@ -34,8 +34,9 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 
 	@Override
 	public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
-		argumentResolvers.add(blogHandlerMethodArgumentResolver);
+//		argumentResolvers.add(blogHandlerMethodArgumentResolver);
 		// argumentResolvers.add(bookkeepingHandlerMethodArgumentResolver);
+		argumentResolvers.add(new UserBlogHandlerMethodArgumentResolver());
 		super.addArgumentResolvers(argumentResolvers);
 	}
 

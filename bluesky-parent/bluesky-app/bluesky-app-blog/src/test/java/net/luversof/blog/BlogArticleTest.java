@@ -9,21 +9,21 @@ import org.springframework.data.domain.Page;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
+import net.luversof.blog.domain.Blog;
 import net.luversof.blog.domain.BlogArticle;
 import net.luversof.blog.domain.BlogArticleCategory;
-import net.luversof.blog.domain.Blog;
 import net.luversof.blog.service.BlogArticleCategoryService;
 import net.luversof.blog.service.BlogArticleService;
 import net.luversof.blog.service.BlogService;
 
 @Slf4j
-public class ArticleTest extends GeneralTest {
+public class BlogArticleTest extends GeneralTest {
 
 	@Autowired
-	private BlogArticleService articleService;
+	private BlogArticleService blogArticleService;
 	
 	@Autowired
-	private BlogArticleCategoryService articleCategoryService;
+	private BlogArticleCategoryService blogArticleCategoryService;
 	
 	@Autowired
 	private BlogService blogService;
@@ -34,13 +34,13 @@ public class ArticleTest extends GeneralTest {
 	@Test
 //	@Ignore
 	public void selectTest() {
-		BlogArticle article = articleService.findOne(18);
+		BlogArticle article = blogArticleService.findOne(18);
 		log.debug("result : {}", article);
 	}
 	
 	@Test
 	public void 카테고리추가글작성테스트() {
-		Blog blog = blogService.findByUser(userId);
+		Blog blog = blogService.findByUser(userId).get(0);
 		for (int i = 0 ; i < 1 ; i ++) {
 			
 			BlogArticle article = new BlogArticle();
@@ -55,7 +55,7 @@ public class ArticleTest extends GeneralTest {
 			articleCategory.setId(4);
 			//article.setArticleCategory(articleCategory);
 			
-			BlogArticle savedArticle = articleService.save(article);
+			BlogArticle savedArticle = blogArticleService.save(article);
 			log.debug("savedArticle : {}", savedArticle);
 		}
 		
@@ -64,13 +64,13 @@ public class ArticleTest extends GeneralTest {
 
 	@Test
 	public void 글삭제테스트() {
-		articleService.delete(11);
+		blogArticleService.delete(11);
 	}
 	
 	
 	@Test
 	public void 수정전파테스트() {
-		BlogArticle article = articleService.findOne(11);
+		BlogArticle article = blogArticleService.findOne(11);
 		article.setContent("수정했음3");
 		
 //		ArticleCategory articleCategory = articleCategoryService.findOne(4);
@@ -78,10 +78,10 @@ public class ArticleTest extends GeneralTest {
 		articleCategory.setBlog(article.getBlog());
 		articleCategory.setName("추가32331");
 		articleCategory.setId(5);
-		article.setArticleCategory(articleCategory);
+		article.setBlogArticleCategory(articleCategory);
 		
 //		article.getArticleCategory().setName("수정2");
-		articleService.save(article);
+		blogArticleService.save(article);
 	}
 	
 	@Test
@@ -92,10 +92,10 @@ public class ArticleTest extends GeneralTest {
 		article.setTitle("한글제목");
 		article.setContent("한글내용");
 		
-		BlogArticleCategory articleCategory = articleCategoryService.findOne(1);
-		article.setArticleCategory(articleCategory);
+		BlogArticleCategory articleCategory = blogArticleCategoryService.findOne(1);
+		article.setBlogArticleCategory(articleCategory);
 
-		BlogArticle savedArticle = articleService.save(article);
+		BlogArticle savedArticle = blogArticleService.save(article);
 		log.debug("article : {}", article);
 		log.debug("savedBlog : {}", savedArticle);
 		log.debug("savedBlog : {}", savedArticle.getId());
@@ -112,12 +112,12 @@ public class ArticleTest extends GeneralTest {
 	@Test
 //	@Ignore
 	public void selectPaging테스트() {
-		Blog blog = blogService.findByUser(userId);
+		Blog blog = blogService.findByUser(userId).get(0);
 		
 		int page = 1;
 		
 		
-		Page<BlogArticle> blogList = articleService.findByBlog(blog, page);
+		Page<BlogArticle> blogList = blogArticleService.findByBlog(blog, page);
 		log.debug("blogList : {}", blogList);
 		log.debug("blogList : {}", blogList.getContent());
 		
@@ -133,7 +133,7 @@ public class ArticleTest extends GeneralTest {
 	
 	@Test
 	public void 블로그카테고리테스트() {
-		List<BlogArticleCategory> list = articleCategoryService.findByBlog(null);
+		List<BlogArticleCategory> list = blogArticleCategoryService.findByBlog(null);
 		
 		
 		log.debug("list : {}", list);
@@ -142,7 +142,7 @@ public class ArticleTest extends GeneralTest {
 	@Test
 	public void 블로그객체비교테스트() {
 		Blog blog = blogService.findOne(1);
-		BlogArticle article = articleService.findOne(1);
+		BlogArticle article = blogArticleService.findOne(1);
 		
 		System.out.println(blog);
 		System.out.println(article.getBlog());

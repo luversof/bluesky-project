@@ -19,8 +19,8 @@ import org.springframework.stereotype.Component;
  * @author luversof
  *
  */
-@Aspect
-@Component
+//@Aspect
+//@Component
 public class CheckBlogAndAddToArticleAspect {
 
 	@Autowired 
