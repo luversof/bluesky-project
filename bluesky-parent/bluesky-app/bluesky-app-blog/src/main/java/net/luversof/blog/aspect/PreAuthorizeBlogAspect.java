@@ -12,6 +12,7 @@ import org.springframework.util.TypeUtils;
 
 import net.luversof.blog.annotation.PreAuthorizeBlog;
 import net.luversof.blog.domain.Blog;
+import net.luversof.blog.exception.BlogErrorCode;
 import net.luversof.blog.util.BlogRequestAttributeUtil;
 import net.luversof.core.exception.BlueskyException;
 
@@ -38,7 +39,7 @@ public class PreAuthorizeBlogAspect {
 	public void checkBefore(JoinPoint joinPoint, PreAuthorizeBlog preAuthorizeBlog) {
 		MethodSignature signature = (MethodSignature) joinPoint.getSignature();
 		if (Arrays.stream(signature.getParameterTypes()).noneMatch(parameterType -> TypeUtils.isAssignable(Blog.class, parameterType))) {
-			throw new BlueskyException("snow3.NOT_EXIST_PARAMETER_BOARD_ALIAS");
+			throw new BlueskyException("blog.NOT_EXIST_PARAMETER_BOARD_ALIAS");
 		}
 		
 		Blog targetBlog = null;
@@ -65,7 +66,7 @@ public class PreAuthorizeBlogAspect {
 		
 		List<Blog> userBlog = BlogRequestAttributeUtil.getUserBlogList();
 		if (userBlog.isEmpty()) {
-			throw new BlueskyException("blog.NOT_EXIST_USER_BLOG");
+			throw new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG);
 		}
 		
 		if (userBlog.stream().noneMatch(blog -> blog.getId() == targetBlog.getId())) {

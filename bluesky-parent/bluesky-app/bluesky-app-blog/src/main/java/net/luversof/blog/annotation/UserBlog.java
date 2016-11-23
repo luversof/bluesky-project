@@ -18,4 +18,5 @@ import java.lang.annotation.Target;
 @Documented
 public @interface UserBlog {
 
+	public boolean checkParameterBlogId() default false;	// 외부 접근 파라메터에 대해 유저의 blog 인지 확인 여부
 }

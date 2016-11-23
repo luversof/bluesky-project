@@ -3,22 +3,8 @@ package net.luversof.web.blog.controller;
 import java.text.MessageFormat;
 import java.util.List;
 
-import net.luversof.blog.domain.BlogArticle;
-import net.luversof.blog.annotation.UserBlog;
-import net.luversof.blog.domain.Blog;
-import net.luversof.blog.domain.BlogArticle.Get;
-import net.luversof.blog.service.BlogArticleCategoryService;
-import net.luversof.blog.service.BlogArticleService;
-import net.luversof.blog.service.BlogService;
-import net.luversof.core.exception.BlueskyException;
-import net.luversof.security.core.userdetails.BlueskyUser;
-import net.luversof.web.blog.annotation.CheckBlog;
-import net.luversof.web.blog.annotation.CheckBlogAndAddToArticle;
-import net.luversof.web.constant.AuthorizeRole;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -30,6 +16,19 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import net.luversof.blog.annotation.UserBlog;
+import net.luversof.blog.domain.Blog;
+import net.luversof.blog.domain.BlogArticle;
+import net.luversof.blog.domain.BlogArticle.Get;
+import net.luversof.blog.exception.BlogErrorCode;
+import net.luversof.blog.service.BlogArticleCategoryService;
+import net.luversof.blog.service.BlogArticleService;
+import net.luversof.blog.service.BlogService;
+import net.luversof.core.exception.BlueskyException;
+import net.luversof.security.core.userdetails.BlueskyUser;
+import net.luversof.web.blog.annotation.CheckBlogAndAddToArticle;
+import net.luversof.web.constant.AuthorizeRole;
 
 @Controller
 @RequestMapping(value = "/blog"/*, produces = MediaType.TEXT_HTML_VALUE*/)
@@ -54,13 +53,16 @@ public class BlogViewController {
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@GetMapping(value = { "/$!", "/$!/article" })
-	public String home(@RequestParam(required = false) String a, @UserBlog Blog blog) {
+	public String home(@UserBlog Blog blog) {
+		if (blog.getId() == 0) {
+			throw new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG);
+		}
 		return redirectArticleList(blog.getId());
 	}
 
 	@GetMapping(value = "/{blogId}")
 	public String redirectArticleList(@PathVariable long blogId) {
-		return MessageFormat.format("redirect:/blog/{0}/article", blogId);
+		return MessageFormat.format("redirect:/blog/{0}/list", blogId);
 	}
 
 	@GetMapping(value = "/create")
@@ -111,7 +113,7 @@ public class BlogViewController {
 		modelMap.addAttribute("currentPage", page);
 		modelMap.addAttribute("startPage", startPage);
 		modelMap.addAttribute("endPage", endPage);
-		return "blog/article/list";
+		return "blog/list";
 	}
 
 	/**
@@ -126,7 +128,7 @@ public class BlogViewController {
 		BlogArticle viewArticle = articleService.findOne(article.getId());
 		articleService.incraseViewCount(viewArticle);
 		modelMap.addAttribute("article", viewArticle);
-		return "blog/article/view";
+		return "blog/view";
 	}
 
 	/**
@@ -138,9 +140,9 @@ public class BlogViewController {
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@GetMapping(value = "/{blog.id}/article/write")
-	public String writePage(@CheckBlog Blog blog, ModelMap modelMap) {
+	public String writePage(@UserBlog(checkParameterBlogId = true) Blog blog, ModelMap modelMap) {
 		modelMap.addAttribute(articleCategoryService.findByBlog(blog));
-		return "blog/article/write";
+		return "blog/write";
 	}
 
 	/**
@@ -156,6 +158,6 @@ public class BlogViewController {
 	public String modifyPage(@CheckBlogAndAddToArticle @Validated(Get.class) BlogArticle article, ModelMap modelMap) {
 		modelMap.addAttribute(articleService.findOne(article.getId()));
 		modelMap.addAttribute(articleCategoryService.findByBlog(blogService.findOne(article.getId())));
-		return "blog/article/modify";
+		return "blog/modify";
 	}
 }

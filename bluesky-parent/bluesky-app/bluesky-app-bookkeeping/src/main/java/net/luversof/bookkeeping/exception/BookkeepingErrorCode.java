@@ -1,4 +1,4 @@
-package net.luversof.bookkeeping;
+package net.luversof.bookkeeping.exception;
 
 public enum BookkeepingErrorCode {
 	NOT_EXIST_BOOKKEEPING,

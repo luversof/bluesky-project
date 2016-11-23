@@ -14,6 +14,7 @@ import org.springframework.validation.DefaultMessageCodesResolver;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.bookkeeping.exception.BookkeepingErrorCode;
 import net.luversof.bookkeeping.util.BookkeepingUtils;
 import net.luversof.core.exception.BlueskyException;
 
