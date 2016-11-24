@@ -14,6 +14,7 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 
 import net.luversof.blog.annotation.UserBlog;
 import net.luversof.blog.domain.Blog;
+import net.luversof.blog.exception.BlogErrorCode;
 import net.luversof.blog.util.BlogRequestAttributeUtil;
 import net.luversof.core.exception.BlueskyException;
 
@@ -37,14 +38,14 @@ public class UserBlogHandlerMethodArgumentResolver implements HandlerMethodArgum
 		Object attribute = (mavContainer.containsAttribute(name) ? mavContainer.getModel().get(name) : BeanUtils.instantiateClass(parameter.getParameterType()));
 		
 		UserBlog userBlog = (UserBlog) Arrays.asList(parameter.getParameterAnnotations()).stream().filter(annotation -> annotation.annotationType().isAssignableFrom(UserBlog.class)).findAny().get();
-		if (userBlog.checkParameter()) {
+		if (userBlog.checkBlog()) {
 			WebRequestDataBinder binder = new WebRequestDataBinder(attribute);
 			binder.bind(webRequest);
 			Blog targetBlog = (Blog) binder.getTarget();
 			if (targetBlog.getId() == 0) {
-				throw new BlueskyException("blog.NOT_EXIST_PARAMETER_BLOG_ID");
+				throw new BlueskyException(BlogErrorCode.NOT_EXIST_PARAMETER_BLOG_ID);
 			}
-			return userBlogList.stream().filter(blog -> blog.getId() == targetBlog.getId()).findAny().orElseThrow(() -> new BlueskyException("blog.INVALID_PARAMETER_USER_BLOG_ID"));	// 유저의 블로그가 아닌 접근인 경우 에러
+			return userBlogList.stream().filter(blog -> blog.getId() == targetBlog.getId()).findAny().orElseThrow(() -> new BlueskyException(BlogErrorCode.INVALID_PARAMETER_BLOG_ID));	// 유저의 블로그가 아닌 접근인 경우 에러
 		}
 		
 		return userBlogList.isEmpty() ? new Blog() : userBlogList.get(0);
