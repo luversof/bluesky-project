@@ -140,7 +140,7 @@ public class BlogViewController {
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@GetMapping(value = "/{blog.id}/article/write")
-	public String writePage(@UserBlog(checkParameterBlogId = true) Blog blog, ModelMap modelMap) {
+	public String writePage(@UserBlog(checkParameter = true) Blog blog, ModelMap modelMap) {
 		modelMap.addAttribute(articleCategoryService.findByBlog(blog));
 		return "blog/write";
 	}

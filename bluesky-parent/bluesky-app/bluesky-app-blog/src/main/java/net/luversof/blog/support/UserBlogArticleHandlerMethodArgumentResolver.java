@@ -13,7 +13,9 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
 import net.luversof.blog.annotation.UserBlog;
+import net.luversof.blog.annotation.UserBlogArticle;
 import net.luversof.blog.domain.Blog;
+import net.luversof.blog.domain.BlogArticle;
 import net.luversof.blog.util.BlogRequestAttributeUtil;
 import net.luversof.core.exception.BlueskyException;
 
@@ -23,11 +25,11 @@ import net.luversof.core.exception.BlueskyException;
  * @author bluesky
  *
  */
-public class UserBlogHandlerMethodArgumentResolver implements HandlerMethodArgumentResolver {
+public class UserBlogArticleHandlerMethodArgumentResolver implements HandlerMethodArgumentResolver {
 
 	@Override
 	public boolean supportsParameter(MethodParameter parameter) {
-		return Blog.class.isAssignableFrom(parameter.getParameterType()) && Arrays.asList(parameter.getParameterAnnotations()).stream().anyMatch(annotation -> annotation.annotationType().isAssignableFrom(UserBlog.class));
+		return BlogArticle.class.isAssignableFrom(parameter.getParameterType()) && Arrays.asList(parameter.getParameterAnnotations()).stream().anyMatch(annotation -> annotation.annotationType().isAssignableFrom(UserBlogArticle.class));
 	}
 
 	@Override
@@ -40,13 +42,13 @@ public class UserBlogHandlerMethodArgumentResolver implements HandlerMethodArgum
 		if (userBlog.checkParameter()) {
 			WebRequestDataBinder binder = new WebRequestDataBinder(attribute);
 			binder.bind(webRequest);
-			Blog targetBlog = (Blog) binder.getTarget();
+			BlogArticle targetBlog = (BlogArticle) binder.getTarget();
 			if (targetBlog.getId() == 0) {
 				throw new BlueskyException("blog.NOT_EXIST_PARAMETER_BLOG_ID");
 			}
 			return userBlogList.stream().filter(blog -> blog.getId() == targetBlog.getId()).findAny().orElseThrow(() -> new BlueskyException("blog.INVALID_PARAMETER_USER_BLOG_ID"));	// 유저의 블로그가 아닌 접근인 경우 에러
 		}
 		
-		return userBlogList.isEmpty() ? new Blog() : userBlogList.get(0);
+		return userBlogList.isEmpty() ? new BlogArticle() : userBlogList.get(0);
 	}
 }
