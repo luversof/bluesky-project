@@ -11,12 +11,12 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import net.luversof.blog.annotation.UserBlog;
 import net.luversof.blog.domain.BlogArticle;
 import net.luversof.blog.domain.BlogArticle.Get;
 import net.luversof.blog.domain.BlogArticle.Modify;
 import net.luversof.blog.domain.BlogArticle.Save;
 import net.luversof.blog.service.BlogArticleService;
-import net.luversof.web.blog.annotation.CheckBlogAndAddToArticle;
 import net.luversof.web.constant.AuthorizeRole;
 
 /**
@@ -32,19 +32,19 @@ public class BlogArticleController {
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostMapping(value = "/{blog.id}/article")
-	public BlogArticle save(@CheckBlogAndAddToArticle @Validated(Save.class) BlogArticle article) {
+	public BlogArticle save(@UserBlog(checkBlog = true) @Validated(Save.class) BlogArticle article) {
 		return articleService.save(article);
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PutMapping(value = "/{blog.id}/article/{id}")
-	public BlogArticle modify(@CheckBlogAndAddToArticle @Validated(Modify.class) BlogArticle article) {
+	public BlogArticle modify(@UserBlog(checkBlog = true) @Validated(Modify.class) BlogArticle article) {
 		return articleService.update(article);
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@DeleteMapping(value = "/{blog.id}/article/{id}")
-	public boolean delete(@CheckBlogAndAddToArticle @Validated(Get.class) BlogArticle article, ModelMap modelMap) {
+	public boolean delete(@UserBlog(checkBlog = true) @Validated(Get.class) BlogArticle article, ModelMap modelMap) {
 		articleService.delete(article.getId());
 		return true;
 	}

@@ -25,20 +25,23 @@
 				<td><a th:href="#{url.blog.view(${article.blog.id}, ${article.id})}" th:text="${article.title}">title</a></td>
 				<td th:text="${article.blog}">username</td>
 				<td th:text="${article.createdDate == null ?: #temporals.format(article.createdDate, 'yyyy-MM-dd')}">createdDate</td>
-				<!-- <td th:text="${article.createdDate}">createdDate</td> -->
 				<td>
-					<span th:if="${article.articleStatistics eq null}">-</span>
-					<span th:if="${article.articleStatistics ne null}" th:text="${article.articleStatistics.viewCount}">-</span>
+					<span th:if="${article.articleStatistics ne null}" th:text="${article.articleStatistics eq null ? '-' : article.articleStatistics.viewCount}">-</span>
 				</td>
 			</tr>
-			<tr th:if="${!pageImpl.hasContent()}" class="text-center">
+			<tr th:if="${!pageImpl.hasContent()}" class="text-xs-center">
 				<td colspan="6" th:text="#{article.message.empty.content}">article.message.empty.content</td>
 			</tr>
 		</tbody>
 		<tfoot>
 			<tr>
-				<td colspan="6" class="text-center">
-					test
+				<td colspan="6" class="text-xs-center">
+					<ul class="pagination" th:if="${pageImpl.totalPages} > 0">
+						<li th:each="i : ${#numbers.sequence(startPage, endPage)}" th:class="${i == currentPage} ? 'active'"><a th:href="@{#{url.blog.write(${blogId})}(page=${i})}" th:text="${i}">?</a></li>
+					</ul>
+					<div>
+						<a th:href="#{url.blog.write(${blogId})}" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blog.menu.write}">write</a>
+					</div>
 				</td>
 			</tr>
 		</tfoot>

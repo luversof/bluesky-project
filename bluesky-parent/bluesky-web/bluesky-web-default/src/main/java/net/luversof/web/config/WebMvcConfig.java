@@ -14,7 +14,8 @@ import org.thymeleaf.spring4.view.ThymeleafViewResolver;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import net.luversof.blog.support.UserBlogHandlerMethodArgumentResolver;
+import net.luversof.blog.web.method.support.UserBlogForBlogArticleHandlerMethodArgumentResolver;
+import net.luversof.blog.web.method.support.UserBlogHandlerMethodArgumentResolver;
 
 @Configuration
 public class WebMvcConfig extends WebMvcConfigurerAdapter {
@@ -37,6 +38,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 //		argumentResolvers.add(blogHandlerMethodArgumentResolver);
 		// argumentResolvers.add(bookkeepingHandlerMethodArgumentResolver);
 		argumentResolvers.add(new UserBlogHandlerMethodArgumentResolver());
+		argumentResolvers.add(new UserBlogForBlogArticleHandlerMethodArgumentResolver());
 		super.addArgumentResolvers(argumentResolvers);
 	}
 

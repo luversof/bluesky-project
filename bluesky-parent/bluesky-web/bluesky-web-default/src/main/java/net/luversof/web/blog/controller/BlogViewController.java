@@ -21,13 +21,11 @@ import net.luversof.blog.annotation.UserBlog;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.domain.BlogArticle;
 import net.luversof.blog.domain.BlogArticle.Get;
-import net.luversof.blog.exception.BlogErrorCode;
 import net.luversof.blog.service.BlogArticleCategoryService;
 import net.luversof.blog.service.BlogArticleService;
 import net.luversof.blog.service.BlogService;
 import net.luversof.core.exception.BlueskyException;
 import net.luversof.security.core.userdetails.BlueskyUser;
-import net.luversof.web.blog.annotation.CheckBlogAndAddToArticle;
 import net.luversof.web.constant.AuthorizeRole;
 
 @Controller
@@ -54,9 +52,6 @@ public class BlogViewController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@GetMapping(value = { "/$!", "/$!/article" })
 	public String home(@UserBlog Blog blog) {
-		if (blog.getId() == 0) {
-			throw new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG);
-		}
 		return redirectArticleList(blog.getId());
 	}
 
@@ -139,7 +134,7 @@ public class BlogViewController {
 	 * @return
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@GetMapping(value = "/{blog.id}/article/write")
+	@GetMapping(value = "/{id}/article/write")
 	public String writePage(@UserBlog(checkBlog = true) Blog blog, ModelMap modelMap) {
 		modelMap.addAttribute(articleCategoryService.findByBlog(blog));
 		return "blog/write";
@@ -155,7 +150,7 @@ public class BlogViewController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[article].blog.userId == authentication.principal.id")
 	@GetMapping(value = "/{blog.id}/article/{id}/modify")
-	public String modifyPage(@CheckBlogAndAddToArticle @Validated(Get.class) BlogArticle article, ModelMap modelMap) {
+	public String modifyPage(@UserBlog(checkBlog = true) @Validated(Get.class) BlogArticle article, ModelMap modelMap) {
 		modelMap.addAttribute(articleService.findOne(article.getId()));
 		modelMap.addAttribute(articleCategoryService.findByBlog(blogService.findOne(article.getId())));
 		return "blog/modify";

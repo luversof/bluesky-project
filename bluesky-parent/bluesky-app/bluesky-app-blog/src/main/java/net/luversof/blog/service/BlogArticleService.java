@@ -22,7 +22,7 @@ public class BlogArticleService {
 	
 	@Autowired
 	private BlogArticleCategoryService articleCategoryService;
-
+	
 	public BlogArticle save(BlogArticle blogArticle) {
 		if (blogArticle.getBlogArticleCategory() != null && blogArticle.getBlogArticleCategory().getId() > 0) {
 			blogArticle.setBlogArticleCategory(articleCategoryService.findOne(blogArticle.getBlogArticleCategory().getId()));
