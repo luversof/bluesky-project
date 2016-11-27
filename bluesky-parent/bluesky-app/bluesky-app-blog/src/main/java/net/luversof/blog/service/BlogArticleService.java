@@ -2,20 +2,17 @@ package net.luversof.blog.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import net.luversof.blog.domain.Blog;
 import net.luversof.blog.domain.BlogArticle;
 import net.luversof.blog.domain.BlogArticleStatistics;
-import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.BlogArticleRepository;
 import net.luversof.core.exception.BlueskyException;
 
 @Service
 public class BlogArticleService {
-
-	private static final int PAGE_SIZE = 10;
 
 	@Autowired
 	private BlogArticleRepository articleRepository;
@@ -63,10 +60,8 @@ public class BlogArticleService {
 		articleRepository.save(blogArticle);
 	}
 
-	public Page<BlogArticle> findByBlog(Blog blog, int page) {
-		Sort sort = new Sort(Sort.Direction.DESC, "id");
-		PageRequest pageRequest = new PageRequest(page, PAGE_SIZE, sort);
-		return articleRepository.findByBlog(blog, pageRequest);
+	public Page<BlogArticle> findByBlog(Blog blog, Pageable pageable) {
+		return articleRepository.findByBlog(blog, pageable);
 	}
 
 	public void delete(long id) {

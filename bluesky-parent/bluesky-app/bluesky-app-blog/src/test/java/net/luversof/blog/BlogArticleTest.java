@@ -6,6 +6,8 @@ import java.util.List;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
@@ -28,7 +30,7 @@ public class BlogArticleTest extends GeneralTest {
 	@Autowired
 	private BlogService blogService;
 	
-	private String userId = "1";
+	private String userId = "77a04682-3032-492c-9449-5ba986491eef";
 	
 
 	@Test
@@ -41,7 +43,7 @@ public class BlogArticleTest extends GeneralTest {
 	@Test
 	public void 카테고리추가글작성테스트() {
 		Blog blog = blogService.findByUser(userId).get(0);
-		for (int i = 0 ; i < 1 ; i ++) {
+		for (int i = 0 ; i < 1024 ; i ++) {
 			
 			BlogArticle article = new BlogArticle();
 			article.setBlog(blog);
@@ -114,9 +116,7 @@ public class BlogArticleTest extends GeneralTest {
 	public void selectPaging테스트() {
 		Blog blog = blogService.findByUser(userId).get(0);
 		
-		int page = 1;
-		
-		
+		Pageable page = new PageRequest(1, 10);
 		Page<BlogArticle> blogList = blogArticleService.findByBlog(blog, page);
 		log.debug("blogList : {}", blogList);
 		log.debug("blogList : {}", blogList.getContent());
