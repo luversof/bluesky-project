@@ -4,9 +4,9 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="layout/defaultLayout">
 <div layout:fragment="content">
-	<div class="page-header">
-		<h1>Blog <small th:text="#{blog.menu.list}">list</small></h1>
-	</div>
+	
+	<th:block th:insert="blog/_template/header :: boardHeader"></th:block>
+	
 	<table class="table">
 		<thead>
 			<tr>
