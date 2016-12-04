@@ -56,7 +56,7 @@ public class BlogViewController {
 
 	@GetMapping(value = "/{blogId}")
 	public String redirectBlogArticleList(@PathVariable long blogId) {
-		return MessageFormat.format("redirect:/blog/{0}/list", blogId);
+		return MessageFormat.format("redirect:/blog/{0,number,#}/list", blogId);
 	}
 
 	@GetMapping(value = "/create")
@@ -137,7 +137,7 @@ public class BlogViewController {
 	 * @return
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[article].blog.userId == authentication.principal.id")
+	@PostAuthorize("hasRole('ROLE_USER')")
 	@GetMapping(value = "/{blog.id}/modify/{id}")
 	public String modifyPage(@UserBlog(checkBlog = true) @Validated(Get.class) BlogArticle article, ModelMap modelMap) {
 		modelMap.addAttribute(blogArticleService.findOne(article.getId()));

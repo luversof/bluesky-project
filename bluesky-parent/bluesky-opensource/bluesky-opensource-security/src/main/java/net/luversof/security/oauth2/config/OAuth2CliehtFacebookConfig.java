@@ -29,6 +29,7 @@ import org.springframework.security.oauth2.common.exceptions.InvalidTokenExcepti
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.token.RemoteTokenServices;
 import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
@@ -126,6 +127,11 @@ public class OAuth2CliehtFacebookConfig {
 		OAuth2ClientAuthenticationProcessingFilter facebookAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/facebookAuthorizeResult");
 		facebookAuthenticationProcessingFilter.setRestTemplate(facebookRestTemplate());
 		facebookAuthenticationProcessingFilter.setTokenServices(facebookTokenServices);
+		{
+			SavedRequestAwareAuthenticationSuccessHandler savedRequestAwareAuthenticationSuccessHandler = new SavedRequestAwareAuthenticationSuccessHandler();
+			savedRequestAwareAuthenticationSuccessHandler.setUseReferer(true);
+			facebookAuthenticationProcessingFilter.setAuthenticationSuccessHandler(savedRequestAwareAuthenticationSuccessHandler);
+		}
 		return facebookAuthenticationProcessingFilter;
 	}
 	

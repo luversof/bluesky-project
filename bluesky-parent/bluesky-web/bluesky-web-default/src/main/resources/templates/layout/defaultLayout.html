@@ -18,13 +18,11 @@
 	
 	<!-- (s) jquery -->
 	<script type="text/javascript" th:src="#{url.jquery.js}"></script>
+	<script type="text/javascript" th:src="#{url.jquery-i18n-properties.js}"></script>
 	<!-- (e) jquery -->
 	
-	<!-- (s) tether -->
-	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.3.7/js/tether.min.js"></script>
-	<!-- (e) tether -->
-
 	<!-- (s) bootstrap -->	
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.3.7/js/tether.min.js"></script>
 	<script type="text/javascript" th:src="#{url.bootstrap.js}"></script>
 	<link rel="stylesheet" type="text/css" th:href="#{url.bootstrap.css}" />
 	<!-- (e) bootstrap -->
@@ -38,6 +36,16 @@
 			navbar.contextPath = "[[@{/}]]";
 			navbar.display();
 		});
+		jQuery.i18n.properties({
+		    name:'message', 
+		    path:'/message/', 
+		    mode:'map',
+		    language:'ko',
+		    checkAvailableLanguages: true,
+		    async: true,
+		    callback: function() {
+		    }
+		});
 	</script>
 </head>
 <body>
@@ -47,7 +55,7 @@
 		<a class="navbar-brand" th:href="@{/}">Bluesky</a>
 		<div id="navbar">
 			<nav class="nav navbar-nav float-xs-left">
-				<a class="nav-item nav-link" th:href="@{#{url.blog.home}}">Blog</a>
+				<a class="nav-item nav-link" th:href="@{#{url.blog.view.home}}">Blog</a>
 				<a class="nav-item nav-link" th:href="@{#{url.bbs.free.list}}">BBS</a>
 			</nav>
 			<form class="form-inline float-xs-right" sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post">
@@ -74,8 +82,8 @@
 	</nav>
 	<!-- (e) navibar -->
 	
-	<div th:include="layout/breadcrumb :: breadcrumb"></div>
-	<div layout:fragment="content"></div>
+	<th:block th:include="layout/breadcrumb :: breadcrumb"></th:block>
+	<th:block layout:fragment="content"></th:block>
 	
 	<hr />
 

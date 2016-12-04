@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.filter.OAuth2ClientAuthenticationProcessingFilter;
 import org.springframework.security.oauth2.client.filter.OAuth2ClientContextFilter;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
@@ -55,6 +56,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	protected void configure(HttpSecurity http) {
 		SimpleUrlLogoutSuccessHandler logoutSuccessHandler = new SimpleUrlLogoutSuccessHandler();
 		logoutSuccessHandler.setUseReferer(true);
+		
+		SimpleUrlAuthenticationSuccessHandler authenticationSuccessHandler = new SimpleUrlAuthenticationSuccessHandler();
+		authenticationSuccessHandler.setUseReferer(true);
+		
 		http
 			.authorizeRequests()
 				.antMatchers("/test/**").permitAll()
@@ -69,7 +74,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 //			.addFilterAfter(oAuth2AuthenticationProcessingFilter, ExceptionTranslationFilter.class)
 			.exceptionHandling().accessDeniedPage("/error/accessDenied").and()
 			.logout().logoutSuccessHandler(logoutSuccessHandler).and()
-			.formLogin().loginPage("/login").and()
+			.formLogin().loginPage("/login").successHandler(authenticationSuccessHandler).and()
 			.rememberMe().and()
 //			.csrf().and()
             .httpBasic().and()

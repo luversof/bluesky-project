@@ -1,56 +1,51 @@
 <!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-spring4-4.dtd">
-<html xmlns:th="http://www.thymeleaf.org"
+<html
+	xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
-	xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3"
-	layout:decorator="layout/defaultLayout">
+	layout:decorator="blog/_template/blogLayout">
 <head>
-	<script type="text/javascript" th:src="@{/js/bluesky_blog.js}"></script>
 	<script type="text/javascript" th:src="#{url.gist-embed.js}" defer="defer"></script>
 </head>
 <body>
-	<div layout:fragment="content">
-		<th:block th:insert="blog/_template/header :: boardHeader"></th:block>
-		<article>
-			<div class="row">
-				<div class="col-md-2">
-					<span th:text="#{blogArticle.text.createdDate} + ' : '"></span><time pubdate="pubdate" th:text="${#temporals.format(blogArticle.createdDate, 'yyyy-MM-dd mm:HH:ss')}">createdDate</time>
+	<th:block layout:fragment="content-blog">
+
+		<div class="blog-view">
+			<article>
+				<h2 th:text="${blogArticle.blogArticleCategory} ? #{blogArticle.message.title(${blogArticle.title}, ${blogArticle.blogArticleCategory.name})} : ${blogArticle.title}">title</h2>
+				<p><time pubdate="pubdate" th:text="${#temporals.format(blogArticle.createdDate, 'yyyy-MM-dd mm:HH:ss')}">createdDate</time></p>
+				<!-- <p th:if="${blogArticle.blogArticleStatistics ne null}" th:text="#{blogArticle.text.viewCount} + ' : ' + ${blogArticle.blogArticleStatistics.viewCount}"></p> -->
+				<div th:attr="data-blogArticle-content=${blogArticle.content}">content</div>
+			</article>
+			
+
+			<div class="text-xs-center">
+				<a th:href="#{url.blog.view.write(${blogArticle.blog.id})}" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blog.menu.write}">write</a>
+				<a sec:authorize="isAuthenticated()" th:if="${#authentication.principal.id == blogArticle.blog.userId}" th:href="#{url.blog.view.modify(${blogArticle.blog.id}, ${blogArticle.id})}" class="btn btn-primary" th:text="#{blog.menu.modify}">modify</a>
+				<button sec:authorize="isAuthenticated()" th:if="${#authentication.principal.id == blogArticle.blog.userId}" class="btn btn-danger" th:attr="data-blogArticle-delete-id=${blogArticle.id},data-blogArticle-delete-blogId=${blogArticle.blog.id}" th:text="#{blog.menu.delete}">delete</button>
+				<a th:href="#{url.blog.view.list(${blogArticle.blog.id})}" class="btn btn-secondary" th:text="#{blog.menu.list}">list</a>
+			</div>
+
+			<form sec:authorize="isAuthenticated()" th:if="${#authentication.principal.id == blogArticle.blog.userId}" class="form-horizontal delete" th:action="@{${blogArticle.id}}" method="post">
+				<input type="hidden" name="_method" value="delete" />
+				<input type="hidden" name="id" th:value="${blogArticle.id}" />
+				<input type="hidden" name="id" th:value="${blogArticle.id}" />
+			</form>
+			
+			<div th:if="${#arrays.contains(@environment.getActiveProfiles(), 'live')}">
+				<div id="fb-root"></div>
+				<script type="text/javascript">(function(d, s, id) {
+				  var js, fjs = d.getElementsByTagName(s)[0];
+				  if (d.getElementById(id)) return;
+				  js = d.createElement(s); js.id = id;
+				  js.src = "//connect.facebook.net/ko_KR/all.js#xfbml=1&amp;appId=124755777691522";
+				  fjs.parentNode.insertBefore(js, fjs);
+				}(document, 'script', 'facebook-jssdk'));</script>
+				<div class="panel panel-default text-center">
+					<div class="fb-comments panel-body" th:attr="data-href='http://luversof.cafe24.com/blog/' + ${blogArticle.id}" ></div>
 				</div>
-				<div class="col-md-1">
-					<p th:if="${blogArticle.blogArticleStatistics ne null}" th:text="#{blogArticle.text.viewCount} + ' : ' + ${blogArticle.blogArticleStatistics.viewCount}"></p>
-				</div>
+				<!-- facebook 댓글은 나중에 고민하자, width 가변 문제 해결 필요  -->
 			</div>
-			<h2 th:text="${blogArticle.blogArticleCategory} ? #{blogArticle.message.title(${blogArticle.title}, ${blogArticle.blogArticleCategory.name})} : ${blogArticle.title}">title</h2>
-			<!-- <p><time pubdate="pubdate" th:text="${#dates.format(blogArticle.createdDate, 'yyyy-MM-dd HH:mm:ss')}">createdDate</time></p> -->
-			<div class="panel panel-default">
-				<div class="panel-body" th:attr="data-blogArticle-content=${blogArticle.content}">content</div>
-			</div>
-			<div class="text-center">
-				<a th:href="#{url.blog.write(${blogArticle.blog.id})}" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blog.menu.write}">write</a>
-				<button sec:authorize="isAuthenticated()" th:if="${#authentication.principal.id == blogArticle.blog.userId}" th:href="#{url.blog.modify(${blogArticle.blog.id}, ${blogArticle.id})}" class="btn btn-primary" th:text="#{blog.menu.modify}">modify</button>
-				<button sec:authorize="isAuthenticated()" th:if="${#authentication.principal.id == blogArticle.blog.userId}" class="btn btn-danger delete" th:attr="data-blogArticle-id=${blogArticle.id}" th:text="#{blog.menu.delete}">delete</button>
-				<a th:href="#{url.blog.list(${blogArticle.blog.id})}" class="btn btn-secondary" th:text="#{blog.menu.list}">list</a>
-			</div>
-		</article>
-		<form class="form-horizontal delete" th:action="@{${blogArticle.id}}" method="post">
-			<input type="hidden" name="_method" value="delete" />
-			<input type="hidden" name="id" th:value="${blogArticle.id}" />
-		</form>
-		
-		<div th:if="${#arrays.contains(@environment.getActiveProfiles(), 'live')}">
-			<hr />
-			<div id="fb-root"></div>
-			<script type="text/javascript">(function(d, s, id) {
-			  var js, fjs = d.getElementsByTagName(s)[0];
-			  if (d.getElementById(id)) return;
-			  js = d.createElement(s); js.id = id;
-			  js.src = "//connect.facebook.net/ko_KR/all.js#xfbml=1&amp;appId=124755777691522";
-			  fjs.parentNode.insertBefore(js, fjs);
-			}(document, 'script', 'facebook-jssdk'));</script>
-			<div class="panel panel-default text-center">
-				<div class="fb-comments panel-body" th:attr="data-href='http://luversof.cafe24.com/blog/' + ${blogArticle.id}" ></div>
-			</div>
-			<!-- facebook 댓글은 나중에 고민하자, width 가변 문제 해결 필요  -->
 		</div>
-	</div>
+	</th:block>
 </body>
 </html>

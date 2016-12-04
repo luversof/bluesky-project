@@ -2,20 +2,16 @@
 <html
 	xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
-	layout:decorator="layout/defaultLayout">
-<div layout:fragment="content">
+	layout:decorator="blog/_template/blogLayout">
+<th:block layout:fragment="content-blog">
 
-	<th:block th:insert="blog/_template/header :: boardHeader"></th:block>
-	<div class="col-md-12">
-		<h2>블로그를 생성하세요.</h2>
-	
-		<form th:action="@{/blog}" method="post" class="form-inline">
-			<div class="form-group">
-				<input type="submit" class="btn btn-default" value="생성"/>
-			</div>
-		</form>
-		
-	</div>
-	&nbsp;
-</div>
+	<h2>블로그를 생성하세요.</h2>
+
+	<form th:action="@{/blog}" method="post" class="form-inline">
+		<div class="form-group">
+			<input type="submit" class="btn btn-default" value="생성"/>
+		</div>
+	</form>
+
+</th:block>
 </html>

@@ -2,9 +2,8 @@
 <html
 	xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
-	layout:decorator="layout/defaultLayout">
+	layout:decorator="blog/_template/blogLayout">
 <head>
-	<script type="text/javascript" th:src="@{/js/bluesky_blog.js}"></script>
 	<script type="text/javascript" th:src="#{url.jquery-tinymce.js}"></script>
 	<script type="text/javascript">
 		tinyMCE.init({
@@ -19,36 +18,27 @@
 	</script>
 </head>
 <body>
-	<div layout:fragment="content">
-		<th:block th:insert="blog/_template/header :: boardHeader"></th:block>
-		
-		<form class="form-horizontal write" th:action="@{.}" method="post">
+	<th:block layout:fragment="content-blog">
+		<form class="blog-write" th:action="@{#{url.blog.post.article(${blog.id})}}" method="post">
 			<div class="form-group">
-				<label class="col-lg-2 control-label" for="title" th:text="#{blogArticle.text.title}">title</label>
-				<div class="col-lg-6">
-					<input class="form-control" type="text" name="title" id="title" th:placeholder="#{blogArticle.text.title}" />
-				</div>
+				<label for="title" th:text="#{blogArticle.text.title}">title</label>
+				<input class="form-control" type="text" name="title" id="title" th:placeholder="#{blogArticle.text.title}" />
 			</div>
 			<div class="form-group" th:if="${blogArticleCategoryList}">
-				<label class="col-lg-2 control-label" for="blogArticleCategory.id" th:text="#{blogArticle.text.category}">category</label>
-				<div class="col-lg-6">
-					<select id="blogArticleCategory.id" name="blogArticleCategory.id" class="form-control">
-						<option th:each="blogArticleCategory : ${blogArticleCategoryList}" th:value="${blogArticleCategory.id}" th:text="${blogArticleCategory.name}">category</option>
-					</select>
-				</div>
+				<label for="blogArticleCategory.id" th:text="#{blogArticle.text.category}">category</label>
+				<select id="blogArticleCategory.id" name="blogArticleCategory.id" class="form-control">
+					<option th:each="blogArticleCategory : ${blogArticleCategoryList}" th:value="${blogArticleCategory.id}" th:text="${blogArticleCategory.name}">category</option>
+				</select>
 			</div>
 			<div class="form-group">
-				<label class="col-lg-2 control-label" for="content" th:text="#{blogArticle.text.content}">content</label>
-				<div class="col-lg-6">
-					<textarea class="form-control" rows="13" name="content" id="content" th:placeholder="#{blogArticle.text.content}"></textarea>
-					<br />
-					<div class="text-center">
-						<button class="btn btn-primary submit" type="button" th:text="#{blog.menu.save}">save</button>
-						<button class="btn btn-default cancel" type="button" th:text="#{blog.menu.cancel}">cancel</button>
-					</div>
-				</div>
+				<label for="content" th:text="#{blogArticle.text.content}">content</label>
+				<textarea class="form-control" rows="13" name="content" id="content" th:placeholder="#{blogArticle.text.content}"></textarea>
+			</div>
+			<div class="text-xs-center">
+				<button class="btn btn-primary submit" type="button" th:text="#{blog.menu.save}">save</button>
+				<button class="btn btn-default cancel" type="button" th:text="#{blog.menu.cancel}">cancel</button>
 			</div>
 		</form>
-	</div>
+	</th:block>
 </body>
 </html>
