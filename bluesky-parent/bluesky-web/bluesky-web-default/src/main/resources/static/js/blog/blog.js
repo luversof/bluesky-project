@@ -28,11 +28,11 @@ $(document).ready(function() {
 			, remove : function(blogId, blogArticleId) {
 				$.ajax({
 					type : "post",
-					url : form.attr("action"),
+					url : $.i18n.prop("url.blog.delete.article", blogId, blogArticleId),
 					dataType : "json",
 					data : { _method : "delete" },
 					success : function(data) {
-						location.href = $.i18n.prop("url.blog.view.list", data.blog.id, data.id);
+						location.href = $.i18n.prop("url.blog.view.list", blogId);
 					}
 				});
 			}
