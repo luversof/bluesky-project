@@ -3,7 +3,10 @@ package net.luversof.web.blog.controller;
 import java.text.MessageFormat;
 import java.util.List;
 
+import javax.annotation.Resource;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
@@ -32,6 +35,9 @@ import net.luversof.web.constant.AuthorizeRole;
 @Controller
 @RequestMapping(value = "/blog"/*, produces = MediaType.TEXT_HTML_VALUE*/)
 public class BlogViewController {
+	
+	@Resource(name = "messageSourceAccessor")
+	private MessageSourceAccessor messageSourceAccessor;
 
 	@Autowired
 	private BlogService blogService;
@@ -54,9 +60,9 @@ public class BlogViewController {
 		return redirectBlogArticleList(blog.getId());
 	}
 
-	@GetMapping(value = "/{blogId}")
+	@GetMapping(value = { "/{blogId}", "/{blogId}/view" })
 	public String redirectBlogArticleList(@PathVariable long blogId) {
-		return MessageFormat.format("redirect:/blog/{0,number,#}/list", blogId);
+		return String.join("", "redirect:", MessageFormat.format(messageSourceAccessor.getMessage("url.blog.view.list"), blogId));
 	}
 
 	@GetMapping(value = "/create")
