@@ -9,10 +9,6 @@
 	<artifactId>bluesky-web-default</artifactId>
 	<packaging>war</packaging>
 
-	<properties>
-		<start-class>net.luversof.Application</start-class>
-	</properties>
-
 	<dependencies>
 
 		<!-- (s) bluesky -->
