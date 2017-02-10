@@ -16,15 +16,11 @@ import lombok.extern.slf4j.Slf4j;
 import net.luversof.bbs.annotation.PreBbsAuthorize;
 import net.luversof.bbs.domain.BbsArticle;
 import net.luversof.bbs.service.BbsArticleService;
-import net.luversof.bbs.service.BbsService;
 
 @Slf4j
 @RestController
 @RequestMapping(value = "/board/{boardAlias}", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BbsArticleController {
-	
-	@Autowired
-	private BbsService bbsService;
 	
 	@Autowired
 	private BbsArticleService bbsArticleService;
