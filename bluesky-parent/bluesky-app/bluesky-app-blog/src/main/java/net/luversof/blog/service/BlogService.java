@@ -1,5 +1,7 @@
 package net.luversof.blog.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +23,7 @@ public class BlogService {
 		return blogRepository.findOne(blogId);
 	}
 
-	public Blog findByUser(long userId) {
+	public List<Blog> findByUser(String userId) {
 		return blogRepository.findByUserId(userId);
 	}
 }

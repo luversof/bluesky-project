@@ -8,14 +8,18 @@ import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 
 @Configuration
 @MapperScan(basePackages = "net.luversof.bookkeeping.mapper", sqlSessionFactoryRef = "bookkeepingSqlSessionFactory")
-public class MybatisBookkeepingConfig extends MybatisConfig {
+public class MybatisBookkeepingConfig {
 	@Bean
 	public SqlSessionFactory bookkeepingSqlSessionFactory(@Qualifier("bookkeepingDataSource") DataSource bookkeepingDataSource) throws Exception {
-		SqlSessionFactoryBean sqlSessionFactoryBean = getSqlSessionFactoryBean();
+		SqlSessionFactoryBean sqlSessionFactoryBean = new SqlSessionFactoryBean();
+		sqlSessionFactoryBean.setMapperLocations(
+				new PathMatchingResourcePatternResolver().getResources("classpath*:net/luversof/bookkeeping/mapper/xml/*Mapper.xml")
+			);
 		sqlSessionFactoryBean.setDataSource(bookkeepingDataSource);
 		sqlSessionFactoryBean.afterPropertiesSet();
 		return sqlSessionFactoryBean.getObject();

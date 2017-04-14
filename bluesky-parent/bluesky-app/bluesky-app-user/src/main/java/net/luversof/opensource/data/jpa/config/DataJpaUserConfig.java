@@ -20,7 +20,7 @@ public class DataJpaUserConfig {
 	@Bean(name = "userEntityManagerFactory")
 	@Primary
 	public LocalContainerEntityManagerFactoryBean userEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("userDataSource") DataSource userDataSource) {
-		return builder.dataSource(userDataSource).packages("net.luversof.user").build();
+		return builder.dataSource(userDataSource).persistenceUnit("userPersistenceUnit").packages("net.luversof.user").build();
 	}
 	
 	@Bean(name = "userTransactionManager")

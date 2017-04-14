@@ -6,7 +6,7 @@ body {
 	padding-top: 50px;
 }
 
-.navbar {
+/* .navbar {
 	opacity: 0.95;
 }
 
@@ -20,7 +20,21 @@ code[data-gist-id] {
 
 [contenteditable=true]:empty:not(:focus):before {
 	content: attr(placeholder);
-	display: block; /* For Firefox */
+	display: block; For Firefox
 	font-size: 0.8em;
 	opacity: .65;
+} */
+.blog-view article h2 {
+	margin-bottom: .25rem;
+	font-size: 2.5rem;
+}
+
+.blog-view article>p>time {
+	margin-bottom: 1.25rem;
+	color: #999;
+}
+
+.blog-view article>div {
+	margin-top: 0;
+	margin-bottom: 1rem;
 }

@@ -3,7 +3,7 @@ package net.luversof.bookkeeping.util;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
-import net.luversof.bookkeeping.BookkeepingErrorCode;
+import net.luversof.bookkeeping.exception.BookkeepingErrorCode;
 import net.luversof.core.exception.BlueskyException;
 
 public class BookkeepingUtils {

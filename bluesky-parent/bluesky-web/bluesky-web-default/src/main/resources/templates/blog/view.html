@@ -1,0 +1,51 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-spring4-4.dtd">
+<html
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+	layout:decorator="blog/_template/blogLayout">
+<head>
+	<script type="text/javascript" th:src="#{url.gist-embed.js}" defer="defer"></script>
+</head>
+<body>
+	<th:block layout:fragment="content-blog">
+
+		<div class="blog-view">
+			<article>
+				<h2 th:text="${blogArticle.blogArticleCategory} ? #{blogArticle.message.title(${blogArticle.title}, ${blogArticle.blogArticleCategory.name})} : ${blogArticle.title}">title</h2>
+				<p><time pubdate="pubdate" th:text="${#temporals.format(blogArticle.createdDate, 'yyyy-MM-dd mm:HH:ss')}">createdDate</time></p>
+				<!-- <p th:if="${blogArticle.blogArticleStatistics ne null}" th:text="#{blogArticle.text.viewCount} + ' : ' + ${blogArticle.blogArticleStatistics.viewCount}"></p> -->
+				<div th:attr="data-blogArticle-content=${blogArticle.content}">content</div>
+			</article>
+			
+
+			<div class="text-xs-center">
+				<a th:href="#{url.blog.view.write(${blogArticle.blog.id})}" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blog.menu.write}">write</a>
+				<a sec:authorize="isAuthenticated()" th:if="${#authentication.principal.id == blogArticle.blog.userId}" th:href="#{url.blog.view.modify(${blogArticle.blog.id}, ${blogArticle.id})}" class="btn btn-primary" th:text="#{blog.menu.modify}">modify</a>
+				<button sec:authorize="isAuthenticated()" th:if="${#authentication.principal.id == blogArticle.blog.userId}" class="btn btn-danger" th:attr="data-blogArticle-delete-id=${blogArticle.id},data-blogArticle-delete-blogId=${blogArticle.blog.id}" th:text="#{blog.menu.delete}">delete</button>
+				<a th:href="#{url.blog.view.list(${blogArticle.blog.id})}" class="btn btn-secondary" th:text="#{blog.menu.list}">list</a>
+			</div>
+
+			<form sec:authorize="isAuthenticated()" th:if="${#authentication.principal.id == blogArticle.blog.userId}" class="form-horizontal delete" th:action="@{${blogArticle.id}}" method="post">
+				<input type="hidden" name="_method" value="delete" />
+				<input type="hidden" name="id" th:value="${blogArticle.id}" />
+				<input type="hidden" name="id" th:value="${blogArticle.id}" />
+			</form>
+			
+			<div th:if="${#arrays.contains(@environment.getActiveProfiles(), 'live')}">
+				<div id="fb-root"></div>
+				<script type="text/javascript">(function(d, s, id) {
+				  var js, fjs = d.getElementsByTagName(s)[0];
+				  if (d.getElementById(id)) return;
+				  js = d.createElement(s); js.id = id;
+				  js.src = "//connect.facebook.net/ko_KR/all.js#xfbml=1&amp;appId=124755777691522";
+				  fjs.parentNode.insertBefore(js, fjs);
+				}(document, 'script', 'facebook-jssdk'));</script>
+				<div class="panel panel-default text-center">
+					<div class="fb-comments panel-body" th:attr="data-href='http://luversof.cafe24.com/blog/' + ${blogArticle.id}" ></div>
+				</div>
+				<!-- facebook 댓글은 나중에 고민하자, width 가변 문제 해결 필요  -->
+			</div>
+		</div>
+	</th:block>
+</body>
+</html>

@@ -31,7 +31,7 @@ public class BbsArticle {
 	private long userId;
 
 	@ManyToOne
-	@JoinColumn(name = "bbs_id", foreignKey = @ForeignKey(name = "FK_article_bbsId") )
+	@JoinColumn(name = "bbs_id", foreignKey = @ForeignKey(name = "FK_article_bbsId"))
 	private Bbs bbs;
 
 	@NotEmpty(groups = { Save.class, Modify.class })

@@ -16,7 +16,7 @@ public class UserAuthority {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private long id;
+	private long idx;
 
 	@ManyToOne
 	private User user;

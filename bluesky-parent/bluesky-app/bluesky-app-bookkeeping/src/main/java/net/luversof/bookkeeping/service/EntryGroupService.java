@@ -10,10 +10,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.bookkeeping.BookkeepingConstants;
-import net.luversof.bookkeeping.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.domain.EntryGroupInitialData;
+import net.luversof.bookkeeping.exception.BookkeepingErrorCode;
 import net.luversof.bookkeeping.repository.EntryGroupRepository;
 import net.luversof.core.exception.BlueskyException;
 

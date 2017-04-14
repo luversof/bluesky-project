@@ -8,8 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.bookkeeping.BookkeepingConstants;
-import net.luversof.bookkeeping.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Bookkeeping;
+import net.luversof.bookkeeping.exception.BookkeepingErrorCode;
 import net.luversof.bookkeeping.repository.BookkeepingRepository;
 import net.luversof.core.exception.BlueskyException;
 
@@ -53,7 +53,7 @@ public class BookkeepingService {
 		return bookkeepingRepository.findOne(id);
 	}
 	
-	public List<Bookkeeping> findByUserId(long userId) {
+	public List<Bookkeeping> findByUserId(String userId) {
 		return bookkeepingRepository.findByUserId(userId);
 	}
 	

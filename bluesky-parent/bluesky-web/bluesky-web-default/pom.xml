@@ -9,10 +9,6 @@
 	<artifactId>bluesky-web-default</artifactId>
 	<packaging>war</packaging>
 
-	<properties>
-		<start-class>net.luversof.Application</start-class>
-	</properties>
-
 	<dependencies>
 
 		<!-- (s) bluesky -->
@@ -88,11 +84,11 @@
 		</dependency>
 		<dependency>
 			<groupId>org.webjars</groupId>
-			<artifactId>bootstrap</artifactId>
+			<artifactId>jquery-i18n-properties</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.webjars</groupId>
-			<artifactId>bootswatch</artifactId>
+			<artifactId>bootstrap</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.webjars</groupId>
@@ -106,40 +102,6 @@
 			<groupId>org.webjars</groupId>
 			<artifactId>mustachejs</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>metisMenu</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>backbonejs</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>bootstrap-datepicker</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>momentjs</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>numeral-js</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>d3js</artifactId>
-		</dependency>
-		<!-- (s) 사용 안함 -->
-		<dependency>
-			<groupId>org.webjars.bower</groupId>
-			<artifactId>handsontable</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>angularjs</artifactId>
-		</dependency>
-		<!-- (e) 사용 안함 -->
 		<!-- (e) javascript libarary -->
 	</dependencies>
 

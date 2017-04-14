@@ -25,7 +25,7 @@
 			B.*,
 			C.*
 		FROM Entry AS A
-		INNER JOIN Entry AS A1 ON A.id = A1.id AND A1.entryDate BETWEEN #{startLocalDateTime} AND #{endLocalDateTime}
+		INNER JOIN Entry AS A1 ON A.id = A1.id AND A1.entryDate BETWEEN #{startZonedDateTime} AND #{endZonedDateTime}
 		INNER JOIN EntryGroup AS B ON A.entryGroup_id = B.id
 		INNER JOIN Bookkeeping AS C ON B.bookkeeping_id = C.id
 		WHERE A.bookkeeping_id = #{bookkeeping.id} AND A.entryGroup_id IS NOT NULL GROUP BY A.entryGroup_id

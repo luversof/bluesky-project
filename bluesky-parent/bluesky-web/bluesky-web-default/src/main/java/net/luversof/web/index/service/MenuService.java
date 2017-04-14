@@ -9,6 +9,8 @@ import javax.annotation.PostConstruct;
 
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.AntPathMatcher;
+import org.springframework.util.PathMatcher;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -20,8 +22,11 @@ import lombok.SneakyThrows;
 public class MenuService {
 
 	private List<Map<String, String>> menuList;
+	private Map<String, Map<String, String>> menuListUriMap = new HashMap<>();
 	private static final String MENU_PATH = "menu.xml";
 	private static final String MENU_KEY = "url";
+
+	PathMatcher pathMatcher = new AntPathMatcher();
 
 	@PostConstruct
 	public void postConstruct() {
@@ -30,10 +35,17 @@ public class MenuService {
 
 	public Map<String, String> getMenu() {
 		String requestURI = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest().getRequestURI();
-		 return menuList.stream()
-				.filter(menu -> requestURI.startsWith(menu.get(MENU_KEY)))
+		if (menuListUriMap.containsKey(requestURI)) {
+			return menuListUriMap.get(requestURI);
+		}
+		Map<String, String> collect = menuList.stream()
+				.filter(menu -> pathMatcher.match(menu.get(MENU_KEY) + "/**", requestURI))
 				.sorted((menu1, menu2) -> Integer.compare(menu1.get(MENU_KEY).length(), menu2.get(MENU_KEY).length()))
 				.collect(HashMap::new, Map::putAll, Map::putAll);
+		 if (!collect.isEmpty()) {
+			 menuListUriMap.put(requestURI, collect); 
+		 }
+		 return collect;
 	}
 	
 	@SneakyThrows
@@ -43,6 +55,12 @@ public class MenuService {
 		ClassPathResource classPathResource = new ClassPathResource(MENU_PATH);
 		InputStream inputStream = classPathResource.getInputStream();
 		menuList = xmlMapper.readValue(inputStream, List.class);
+	}
+	
+	
+	public void reload() {
+		load();
+		menuListUriMap.clear();
 	}
 
 }

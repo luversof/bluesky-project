@@ -2,11 +2,15 @@ package net.luversof.core;
 
 import java.io.File;
 import java.text.MessageFormat;
+import java.util.Comparator;
 
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.core.exception.ErrorCode;
 import net.luversof.core.util.EncryptionUtil;
 
 import org.junit.Test;
+import org.springframework.util.AntPathMatcher;
+import org.springframework.util.PathMatcher;
 
 @Slf4j
 public class SimpleTest {
@@ -18,6 +22,9 @@ public class SimpleTest {
 		log.debug(EncryptionUtil.stringEncryptor().encrypt("https://kr.battle.net/oauth/authorize"));
 		log.debug(EncryptionUtil.stringEncryptor().encrypt("https://kr.battle.net/oauth/token"));
 		log.debug(EncryptionUtil.stringEncryptor().encrypt("https://kr.battle.net/oauth/check_token?token={accessToken}"));
+		log.debug(EncryptionUtil.stringEncryptor().encrypt("1"));
+		log.debug(EncryptionUtil.stringEncryptor().encrypt("2"));
+		log.debug(EncryptionUtil.stringEncryptor().encrypt("3"));
 	}
 	
 	@Test
@@ -57,6 +64,20 @@ public class SimpleTest {
 	
 	@Test
 	public void test4() {
+		ErrorCode notExistUser = ErrorCode.NOT_EXIST_USER;
+		String join = String.join(".",  notExistUser.getClass().getSimpleName(), notExistUser.name());
+		log.debug("join : {}", join);
+	}
+	
+	@Test
+	public void test5() {
+		PathMatcher pathMatcher = new AntPathMatcher();
+		//log.debug("result : {}", pathMatcher.match("/board/{test}/list", "/board/tedfdf/list/test"));
+		log.debug("result : {}", pathMatcher.match("/board/{a}/article/{a}/**", "/board/tedfdf/article/123"));
+		log.debug("result : {}", pathMatcher.match("/board/{test}/article/{articleId}/**", "/board/tedfdf/article"));
+		Comparator<String> patternComparator = pathMatcher.getPatternComparator("/board/{test}/article/{articleId}/**");
 		
+		
+		log.debug("result : {}", patternComparator);
 	}
 }

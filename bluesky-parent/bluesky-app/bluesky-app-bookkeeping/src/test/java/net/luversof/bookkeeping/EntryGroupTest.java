@@ -24,7 +24,7 @@ public class EntryGroupTest extends GeneralTest {
 	
 	private Bookkeeping bookkeeping;
 	
-	static final long TEST_USER_ID = 1;
+	static final String TEST_USER_ID = "1";
 	
 	@Before
 	public void before() {

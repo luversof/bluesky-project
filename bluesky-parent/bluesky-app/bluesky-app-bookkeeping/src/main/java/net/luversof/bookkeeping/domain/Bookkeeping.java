@@ -33,9 +33,9 @@ public class Bookkeeping {
 	@NotEmpty(groups = { Create.class, Update.class })
 	private String name;
 
-	@Column(name = "user_id", updatable = false)
-	@Min(value = 1, groups = Update.class)
-	private long userId;
+	@Column(name = "user_id", updatable = false, length = 36)
+	@NotEmpty(groups = Update.class)
+	private String userId;
 
 	/**
 	 * 시작일. startDay라고 해야하나?

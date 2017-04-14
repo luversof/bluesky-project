@@ -9,5 +9,4 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @PropertySource("classpath:data-jpa.properties")
 @PropertySource("classpath:data-jpa-${spring.profiles.active}.properties")
 public class DataJpaConfig {
-
 }

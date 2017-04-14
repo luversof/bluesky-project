@@ -1,22 +1,16 @@
 package net.luversof.web.blog.controller;
 
 import java.text.MessageFormat;
+import java.util.List;
 
-import net.luversof.blog.domain.Article;
-import net.luversof.blog.domain.Blog;
-import net.luversof.blog.domain.Article.Get;
-import net.luversof.blog.service.ArticleCategoryService;
-import net.luversof.blog.service.ArticleService;
-import net.luversof.blog.service.BlogService;
-import net.luversof.core.exception.BlueskyException;
-import net.luversof.security.core.userdetails.BlueskyUser;
-import net.luversof.web.blog.annotation.CheckBlog;
-import net.luversof.web.blog.annotation.CheckBlogAndAddToArticle;
-import net.luversof.web.constant.AuthorizeRole;
+import javax.annotation.Resource;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Page;
-import org.springframework.http.MediaType;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -27,22 +21,32 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+
+import net.luversof.blog.annotation.UserBlog;
+import net.luversof.blog.domain.Blog;
+import net.luversof.blog.domain.BlogArticle;
+import net.luversof.blog.domain.BlogArticle.Get;
+import net.luversof.blog.service.BlogArticleCategoryService;
+import net.luversof.blog.service.BlogArticleService;
+import net.luversof.blog.service.BlogService;
+import net.luversof.security.core.userdetails.BlueskyUser;
+import net.luversof.web.constant.AuthorizeRole;
 
 @Controller
-@RequestMapping(value = "blog", produces = MediaType.TEXT_HTML_VALUE)
+@RequestMapping(value = "/blog"/*, produces = MediaType.TEXT_HTML_VALUE*/)
 public class BlogViewController {
-
-	private static final int PAGE_BLOCK_SIZE = 10;
+	
+	@Resource(name = "messageSourceAccessor")
+	private MessageSourceAccessor messageSourceAccessor;
 
 	@Autowired
 	private BlogService blogService;
 
 	@Autowired
-	private ArticleService articleService;
+	private BlogArticleService blogArticleService;
 
 	@Autowired
-	private ArticleCategoryService articleCategoryService;
+	private BlogArticleCategoryService blogArticleCategoryService;
 
 	/**
 	 * 진입 페이지 blog 정보가 없는 경우 생성 페이지로 이동
@@ -51,14 +55,14 @@ public class BlogViewController {
 	 * @return
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@GetMapping(value = { "/$!", "/$!/article" })
-	public String home(Blog blog) {
-		return redirectArticleList(blog.getId());
+	@GetMapping(value = "")
+	public String home(@UserBlog Blog blog) {
+		return redirectBlogArticleList(blog.getId());
 	}
 
-	@GetMapping(value = "/{blog.id}")
-	public String redirectArticleList(@PathVariable("blog.id") long blogId) {
-		return MessageFormat.format("redirect:/blog/{0}/article", blogId);
+	@GetMapping(value = { "/{blogId}", "/{blogId}/view" })
+	public String redirectBlogArticleList(@PathVariable long blogId) {
+		return String.join("", "redirect:", MessageFormat.format(messageSourceAccessor.getMessage("url.blog.view.list"), blogId));
 	}
 
 	@GetMapping(value = "/create")
@@ -75,15 +79,15 @@ public class BlogViewController {
 	@PostMapping(value = "")
 	public String create(Authentication authentication) {
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
-		Blog savedBlog = blogService.findByUser(blueskyUser.getId());
-		if (savedBlog != null) {
-			return redirectArticleList(savedBlog.getId());
+		List<Blog> savedBlogList = blogService.findByUser(blueskyUser.getId());
+		if (!savedBlogList.isEmpty()) {
+			return redirectBlogArticleList(savedBlogList.get(0).getId());
 		}
 		;
 		Blog blog = new Blog();
 		blog.setUserId(blueskyUser.getId());
 		blogService.save(blog);
-		return redirectArticleList(blog.getId());
+		return redirectBlogArticleList(blog.getId());
 	}
 
 	/**
@@ -94,37 +98,27 @@ public class BlogViewController {
 	 * @param modelMap
 	 * @return
 	 */
-	@GetMapping(value = "/{blog.id}/article")
-	public String list(@PathVariable("blog.id") long blogId, @RequestParam(defaultValue = "1") int page, ModelMap modelMap) {
+	@GetMapping(value = "/{blogId}/list")
+	public String list(@PathVariable long blogId, @PageableDefault(sort = { "id" }, direction = Direction.DESC) Pageable pageable, ModelMap modelMap) {
 		Blog blog = blogService.findOne(blogId);
-		Page<Article> articlePage = articleService.findByBlog(blog, page - 1);
-		if (articlePage.getTotalPages() > 0 && articlePage.getTotalPages() < page) {
-			throw new BlueskyException("invalid page");
-		}
-		// 요청받은 page가 blogPage.getTotalPages()보다 큰 경우 예외처리가 필요
-		int startPage = Math.max(1, page - (PAGE_BLOCK_SIZE / 2));
-		int endPage = Math.min(startPage + PAGE_BLOCK_SIZE - 1, articlePage.getTotalPages());
-
-		modelMap.addAttribute("pageImpl", articlePage);
-		modelMap.addAttribute("currentPage", page);
-		modelMap.addAttribute("startPage", startPage);
-		modelMap.addAttribute("endPage", endPage);
-		return "blog/article/list";
+		Page<BlogArticle> blogArticlePage = blogArticleService.findByBlog(blog, pageable);
+		modelMap.addAttribute("blogArticlePage", blogArticlePage);
+		return "blog/list";
 	}
 
 	/**
 	 * 글 보기
 	 * 
-	 * @param article
+	 * @param blogArticle
 	 * @param modelMap
 	 * @return
 	 */
-	@GetMapping(value = "/{blog.id}/article/{id}")
-	public String view(@Validated(Get.class) Article article, ModelMap modelMap) {
-		Article viewArticle = articleService.findOne(article.getId());
-		articleService.incraseViewCount(viewArticle);
-		modelMap.addAttribute("article", viewArticle);
-		return "blog/article/view";
+	@GetMapping(value = "/{blog.id}/view/{id}")
+	public String view(@Validated(Get.class) BlogArticle blogArticle, ModelMap modelMap) {
+		BlogArticle viewArticle = blogArticleService.findOne(blogArticle.getId());
+		blogArticleService.incraseViewCount(viewArticle);
+		modelMap.addAttribute("blogArticle", viewArticle);
+		return "blog/view";
 	}
 
 	/**
@@ -135,10 +129,10 @@ public class BlogViewController {
 	 * @return
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@GetMapping(value = "/{blog.id}/article/write")
-	public String writePage(@CheckBlog Blog blog, ModelMap modelMap) {
-		modelMap.addAttribute(articleCategoryService.findByBlog(blog));
-		return "blog/article/write";
+	@GetMapping(value = "/{id}/write")
+	public String writePage(@UserBlog(checkBlog = true) Blog blog, ModelMap modelMap) {
+		modelMap.addAttribute(blogArticleCategoryService.findByBlog(blog));
+		return "blog/write";
 	}
 
 	/**
@@ -149,11 +143,11 @@ public class BlogViewController {
 	 * @return
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@PostAuthorize("hasRole('ROLE_USER') && #modelMap[article].blog.userId == authentication.principal.id")
-	@GetMapping(value = "/{blog.id}/article/{id}/modify")
-	public String modifyPage(@CheckBlogAndAddToArticle @Validated(Get.class) Article article, ModelMap modelMap) {
-		modelMap.addAttribute(articleService.findOne(article.getId()));
-		modelMap.addAttribute(articleCategoryService.findByBlog(blogService.findOne(article.getId())));
-		return "blog/article/modify";
+	@PostAuthorize("hasRole('ROLE_USER')")
+	@GetMapping(value = "/{blog.id}/modify/{id}")
+	public String modifyPage(@UserBlog(checkBlog = true) @Validated(Get.class) BlogArticle article, ModelMap modelMap) {
+		modelMap.addAttribute(blogArticleService.findOne(article.getId()));
+		modelMap.addAttribute(blogArticleCategoryService.findByBlog(blogService.findOne(article.getId())));
+		return "blog/modify";
 	}
 }

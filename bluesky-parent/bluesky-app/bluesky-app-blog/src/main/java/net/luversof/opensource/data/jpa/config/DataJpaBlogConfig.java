@@ -19,7 +19,7 @@ public class DataJpaBlogConfig {
 	
 	@Bean(name = "blogEntityManagerFactory")
 	public LocalContainerEntityManagerFactoryBean blogEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("blogDataSource") DataSource blogDataSource) {
-		return builder.dataSource(blogDataSource).packages("net.luversof.blog").build();
+		return builder.dataSource(blogDataSource).persistenceUnit("blogPersistenceUnit").packages("net.luversof.blog").build();
 	}
 	
 	@Bean(name = "blogTransactionManager")

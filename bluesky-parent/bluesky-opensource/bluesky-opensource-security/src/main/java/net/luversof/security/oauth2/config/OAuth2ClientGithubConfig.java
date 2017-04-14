@@ -29,6 +29,7 @@ import org.springframework.security.oauth2.common.exceptions.InvalidTokenExcepti
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.token.RemoteTokenServices;
 import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
@@ -122,6 +123,11 @@ public class OAuth2ClientGithubConfig {
 		OAuth2ClientAuthenticationProcessingFilter githubAuthenticationProcessingFilter = new OAuth2ClientAuthenticationProcessingFilter("/oauth/githubAuthorizeResult");
 		githubAuthenticationProcessingFilter.setRestTemplate(githubRestTemplate());
 		githubAuthenticationProcessingFilter.setTokenServices(githubTokenServices);
+		{
+			SavedRequestAwareAuthenticationSuccessHandler savedRequestAwareAuthenticationSuccessHandler = new SavedRequestAwareAuthenticationSuccessHandler();
+			savedRequestAwareAuthenticationSuccessHandler.setUseReferer(true);
+			githubAuthenticationProcessingFilter.setAuthenticationSuccessHandler(savedRequestAwareAuthenticationSuccessHandler);
+		}
 		return githubAuthenticationProcessingFilter;
 	}
 	

@@ -35,9 +35,9 @@ import org.springframework.web.servlet.view.ContentNegotiatingViewResolver;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.bookkeeping.BookkeepingErrorCode;
+import net.luversof.blog.exception.BlogErrorCode;
+import net.luversof.bookkeeping.exception.BookkeepingErrorCode;
 import net.luversof.core.exception.BlueskyException;
-import net.luversof.core.exception.ErrorCode;
 
 @Slf4j
 @ControllerAdvice
@@ -66,7 +66,7 @@ public class GlobalExceptionHandler {
 			log.debug("json exception");
 		};
 		
-		if (exception.isTargetErrorCode(ErrorCode.NOT_EXIST_BLOG)) {
+		if (exception.isTargetErrorCode(BlogErrorCode.NOT_EXIST_BLOG)) {
 			return new ModelAndView("redirect:/blog/create");
 		}
 		if (exception.isTargetErrorCode(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING)) {

@@ -1,7 +1,6 @@
 package net.luversof.web.index.controller;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.annotation.Validated;
@@ -55,7 +54,6 @@ public class IndexController {
 		return asset;
 	}
 	
-	@Profile({"opdev", "rc", "stage"})
 	@GetMapping("/study/**/*")
 	public void study() {}
 	

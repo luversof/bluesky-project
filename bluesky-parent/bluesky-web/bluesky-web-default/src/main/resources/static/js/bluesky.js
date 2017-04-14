@@ -55,7 +55,8 @@ $(document).ready(function() {
 		_lastScroll = t;
 	});
 	
-	$("body").tooltip({ selector : "[data-toggle=tooltip]" });
+	//$("body").tooltip({ selector : "[data-toggle=tooltip]" });
+	 $('[data-toggle="tooltip"]').tooltip()
 	
 	/* (s) csrf */
 	var token = $("meta[name='_csrf']").attr("content");
