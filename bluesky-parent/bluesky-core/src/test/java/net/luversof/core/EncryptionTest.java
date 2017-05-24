@@ -1,12 +1,18 @@
 package net.luversof.core;
 
 import net.luversof.GeneralTest;
+import net.luversof.TestConfig.TestClass;
 
 import java.text.MessageFormat;
 
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -30,4 +36,21 @@ public class EncryptionTest extends GeneralTest {
 		
 		log.debug("result3 : {}", MessageFormat.format("jdbc:mysql://{0}:{1}/{2}?useSSL=false&useUnicode=true&autoReconnection=true", "127.0.0.1", "3306", "user"));
 	}
+	
+	
+	
+	@Autowired
+	private Environment environment;
+	
+	@Autowired
+	private TestClass testClass;
+	
+	@Test
+	public void test2() {
+		
+		log.debug("environment.getActiveProfiles() : {}", environment.getActiveProfiles());
+		log.debug("testClass : {}", testClass);
+	}
+	
+	
 }
