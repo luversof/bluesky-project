@@ -30,4 +30,12 @@ public class EncryptionTest extends GeneralTest {
 		
 		log.debug("result3 : {}", MessageFormat.format("jdbc:mysql://{0}:{1}/{2}?useSSL=false&useUnicode=true&autoReconnection=true", "127.0.0.1", "3306", "user"));
 	}
+	
+	@Value("${dataSource.blog.serverName}")
+	String test;
+	
+	@Test
+	public void test2() {
+		log.debug("test : {}", test);
+	}
 }
