@@ -1,5 +1,8 @@
 package net.luversof.web.index.controller;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
@@ -9,6 +12,9 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.core.exception.BlueskyException;
 
@@ -26,11 +32,37 @@ public class IndexController {
 		return "index";
 	}
 	
+	@GetMapping("/index2")
+	public void index2(ModelMap modelMap) {
+		List<String> testList = new ArrayList<>();
+		testList.add("StrA");
+		testList.add("StrB");
+		testList.add("StrC");
+		
+		
+		List<User> users = new ArrayList<>();
+		users.add(new User("user1", "type1"));
+		users.add(new User("user2", "type2"));
+		users.add(new User("user3", "type3"));
+		users.add(new User("user4", "type4"));
+	
+		modelMap.addAttribute("testList", testList);
+		modelMap.addAttribute("users", users);
+	}
+	
+	@Data
+	@NoArgsConstructor
+	@AllArgsConstructor
+	public static class User {
+		private String name;
+		private String type;
+	}
+	
 	@GetMapping("login")
 	public void login() {}
 
-	@GetMapping("/index2")
-	public void index2() {
+	@GetMapping("/index3")
+	public void index3() {
 		throw new BlueskyException("blog.menu.modify");
 	}
 	

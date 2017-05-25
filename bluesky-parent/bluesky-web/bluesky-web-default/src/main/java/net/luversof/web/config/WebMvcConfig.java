@@ -2,6 +2,8 @@ package net.luversof.web.config;
 
 import java.util.List;
 
+import javax.annotation.PostConstruct;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.format.FormatterRegistry;
@@ -10,6 +12,7 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.ViewResolverRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
+import org.thymeleaf.spring4.templateresolver.SpringResourceTemplateResolver;
 import org.thymeleaf.spring4.view.ThymeleafViewResolver;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,6 +29,14 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 	// @Autowired
 	// private BookkeepingHandlerMethodArgumentResolver
 	// bookkeepingHandlerMethodArgumentResolver;
+	
+	@Autowired
+	private SpringResourceTemplateResolver defaultTemplateResolver;
+	
+	@PostConstruct
+	public void postConstruct() {
+		defaultTemplateResolver.setUseDecoupledLogic(true);
+	}
 
 	@Autowired
 	private ThymeleafViewResolver thymeleafViewResolver;

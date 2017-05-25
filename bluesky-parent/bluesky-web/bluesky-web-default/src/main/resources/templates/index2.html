@@ -1,0 +1,55 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-spring4-4.dtd">
+<html
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+	layout:decorator="layout/defaultLayout">
+<body>
+	<div layout:fragment="content">
+		<br />
+		<div class="well">	
+			웰컴
+			<script type="text/javascript">
+			/* $.ajax({
+				url : "https://github.com/login/oauth/access_token",
+				header : ""
+				data : {
+					client_id : "5ce0e9ac811fd9c04543",
+					client_secret : "b280853a74e6ae138ac23805092ddca670624ac9",
+					code : "7abb7dc69b2ea0cbb10c"
+				},
+				success : function(data, textStatus, jqXHR) {
+					console.log(data);
+					console.log(textStatus);
+					console.log(jqXHR);
+				}
+			}); */
+			</script>
+			<form action="https://github.com/login/oauth/access_token" method="post">
+				<input type="text" name="client_id" value="5ce0e9ac811fd9c04543" />
+				<input type="text" name="client_secret" value="b280853a74e6ae138ac23805092ddca670624ac9" />
+				<input type="text" name="code" value="7abb7dc69b2ea0cbb10c" />
+				<input type="submit" />
+			</form>
+		</div>
+		여기서부터
+		<table id="usersTable" th:remove="all-but-first">
+			<tr>
+				<td class="username">Alice Watermelon</td>
+				<td class="usertype">Administrator</td>
+			</tr>
+		</table>
+		여기까지
+		<table id="usersTable2" th:remove="all-but-first">
+			<tr th:each="user : ${users}">
+				<td class="username2" th:text="${user.name}">Jeremy Grapefruit</td>
+				<td class="usertype2" th:text="#{|user.type.${user.type}|}">Normal
+					User</td>
+			</tr>
+			<tr>
+				<td class="username">Alice Watermelon</td>
+				<td class="usertype">Administrator</td>
+			</tr>
+		</table>
+	</div>
+</body>
+</html>
