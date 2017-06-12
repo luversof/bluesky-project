@@ -19,7 +19,7 @@ public class BbsService {
 	}
 	
 	public Bbs findOne(long bbsId) {
-		return bbsRepository.findOne(bbsId);
+		return bbsRepository.getOne(bbsId);
 	}
 	
 	public Bbs findByAlias(String alias) {

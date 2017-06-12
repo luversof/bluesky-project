@@ -44,7 +44,7 @@ public class AssetService {
 				assetSet.add(asset);
 			}
 		}
-		return assetRepository.save(assetSet);
+		return assetRepository.saveAll(assetSet);
 	}
 	
 	public Asset create(Asset asset) {
@@ -68,7 +68,7 @@ public class AssetService {
 	}
 
 	public Asset findOne(long id) {
-		return assetRepository.findOne(id);
+		return assetRepository.getOne(id);
 	}
 	
 	public List<Asset> findByBookkeepingId(long bookkeepingId) {
@@ -89,6 +89,6 @@ public class AssetService {
 	
 	public void deleteBybookkeepingId(long bookkeepingId) {
 		List<Asset> assetList = findByBookkeepingId(bookkeepingId);
-		assetRepository.delete(assetList);
+		assetRepository.deleteAll(assetList);
 	}
 }

@@ -18,6 +18,6 @@ public class UserAuthorityService {
 	}
 	
 	public UserAuthority findOne(long id) {
-		return userAuthorityRepository.findOne(id);
+		return userAuthorityRepository.getOne(id);
 	}
 }

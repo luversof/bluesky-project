@@ -10,10 +10,10 @@ import org.springframework.format.FormatterRegistry;
 import org.springframework.format.datetime.standard.DateTimeFormatterRegistrar;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.ViewResolverRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
-import org.thymeleaf.spring4.templateresolver.SpringResourceTemplateResolver;
-import org.thymeleaf.spring4.view.ThymeleafViewResolver;
+import org.thymeleaf.spring5.templateresolver.SpringResourceTemplateResolver;
+import org.thymeleaf.spring5.view.ThymeleafViewResolver;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -21,7 +21,7 @@ import net.luversof.blog.web.method.support.UserBlogForBlogArticleHandlerMethodA
 import net.luversof.blog.web.method.support.UserBlogHandlerMethodArgumentResolver;
 
 @Configuration
-public class WebMvcConfig extends WebMvcConfigurerAdapter {
+public class WebMvcConfig implements WebMvcConfigurer {
 
 //	@Autowired
 //	private BlogHandlerMethodArgumentResolver blogHandlerMethodArgumentResolver;
@@ -50,7 +50,6 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
 		// argumentResolvers.add(bookkeepingHandlerMethodArgumentResolver);
 		argumentResolvers.add(new UserBlogHandlerMethodArgumentResolver());
 		argumentResolvers.add(new UserBlogForBlogArticleHandlerMethodArgumentResolver());
-		super.addArgumentResolvers(argumentResolvers);
 	}
 
 	// request date conversion 처리

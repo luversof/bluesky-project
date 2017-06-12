@@ -42,7 +42,7 @@ public class EntryGroupService {
 				entryGroupSet.add(entryGroup);
 			}
 		}
-		return entryGroupRepository.save(entryGroupSet);
+		return entryGroupRepository.saveAll(entryGroupSet);
 	}
 	
 	public EntryGroup create(EntryGroup entryGroup) {
@@ -66,7 +66,7 @@ public class EntryGroupService {
 	}
 
 	public EntryGroup findOne(long id) {
-		return entryGroupRepository.findOne(id);
+		return entryGroupRepository.getOne(id);
 	}
 	
 	public List<EntryGroup> findByBookkeepingId(long bookkeepingId) {
@@ -87,6 +87,6 @@ public class EntryGroupService {
 	
 	public void deleteBybookkeepingId(long bookkeepingId) {
 		List<EntryGroup> entryGroupList = findByBookkeepingId(bookkeepingId);
-		entryGroupRepository.delete(entryGroupList);
+		entryGroupRepository.deleteAll(entryGroupList);
 	}
 }

@@ -33,7 +33,7 @@
 
 		<dependency>
 			<groupId>org.jadira.usertype</groupId>
-			<artifactId>usertype.extended</artifactId>
+			<artifactId>usertype.spi</artifactId>
 		</dependency>
 	</dependencies>
 </project>

@@ -20,7 +20,7 @@ public class BlogArticleCategoryService {
 	}
 
 	public BlogArticleCategory findOne(long id) {
-		return articleCategoryRepository.findOne(id);
+		return articleCategoryRepository.getOne(id);
 	}
 
 	public List<BlogArticleCategory> findByBlog(Blog blog) {
@@ -28,6 +28,6 @@ public class BlogArticleCategoryService {
 	}
 
 	public void delete(long id) {
-		articleCategoryRepository.delete(id);
+		articleCategoryRepository.deleteById(id);
 	}
 }

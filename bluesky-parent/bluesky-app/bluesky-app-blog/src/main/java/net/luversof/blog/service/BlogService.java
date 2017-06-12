@@ -20,7 +20,7 @@ public class BlogService {
 	}
 	
 	public Blog findOne(long blogId) {
-		return blogRepository.findOne(blogId);
+		return blogRepository.getOne(blogId);
 	}
 
 	public List<Blog> findByUser(String userId) {

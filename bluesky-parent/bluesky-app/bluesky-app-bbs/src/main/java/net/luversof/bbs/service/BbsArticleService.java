@@ -19,7 +19,7 @@ public class BbsArticleService {
 	}
 	
 	public BbsArticle selectBbsArticle(long id) {
-		return bbsArticleRepository.findOne(id);
+		return bbsArticleRepository.getOne(id);
 	}
 	
 }

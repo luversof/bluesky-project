@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Slf4j
 public class UserTest extends GeneralTest {
 	
-	private static final String USERNAME = "bluesky";
+	private static final String USERNAME = "luversof";
 
 	@Autowired
 	private UserService userService;

@@ -1,6 +1,7 @@
 package net.luversof.security.oauth2.config;
 
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.crypto.codec.Base64;
 import org.springframework.security.oauth2.client.OAuth2ClientContext;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.filter.OAuth2ClientAuthenticationProcessingFilter;
@@ -136,7 +136,7 @@ public class OAuth2ClientGithubConfig {
 	@SneakyThrows
 	private String getAuthorizationHeader(String clientId, String clientSecret) {
 		String creds = String.format("%s:%s", clientId, clientSecret);
-		return "Basic " + new String(Base64.encode(creds.getBytes("UTF-8")));
+		return "Basic " + new String(Base64.getEncoder().encodeToString(creds.getBytes("UTF-8")));
 	}
 	
 	/**

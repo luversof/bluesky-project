@@ -16,7 +16,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>1.5.4.RELEASE</version>
+		<version>2.0.0.M1</version>
 	</parent>
 
 	<properties>
@@ -90,8 +90,8 @@
 			</dependency>
 			<dependency>
 				<groupId>org.jadira.usertype</groupId>
-				<artifactId>usertype.extended</artifactId>
-				<version>5.0.0.GA</version>
+				<artifactId>usertype.spi</artifactId>
+				<version>6.0.1.GA</version>
 			</dependency>
 
 			<!-- (s) encryption -->
@@ -120,8 +120,8 @@
 			</dependency>
 			<!-- (e) mybatis -->
 
-			
-			
+
+
 			<!-- (s) javascript libarary -->
 			<dependency>
 				<groupId>org.webjars</groupId>
@@ -348,11 +348,27 @@
 			</distributionManagement>
 		</profile>
 	</profiles>
-	<!-- <repositories> <repository> <id>spring-snapshots</id> <url>http://repo.spring.io/snapshot</url> 
-		<snapshots> <enabled>true</enabled> </snapshots> </repository> <repository> 
-		<id>spring-milestones</id> <url>http://repo.spring.io/milestone</url> </repository> 
-		</repositories> <pluginRepositories> <pluginRepository> <id>spring-snapshots</id> 
-		<url>http://repo.spring.io/snapshot</url> </pluginRepository> <pluginRepository> 
-		<id>spring-milestones</id> <url>http://repo.spring.io/milestone</url> </pluginRepository> 
-		</pluginRepositories> -->
+	<repositories>
+		<repository>
+			<id>spring-snapshots</id>
+			<url>http://repo.spring.io/snapshot</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>spring-milestones</id>
+			<url>http://repo.spring.io/milestone</url>
+		</repository>
+	</repositories>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>spring-snapshots</id>
+			<url>http://repo.spring.io/snapshot</url>
+		</pluginRepository>
+		<pluginRepository>
+			<id>spring-milestones</id>
+			<url>http://repo.spring.io/milestone</url>
+		</pluginRepository>
+	</pluginRepositories>
 </project>

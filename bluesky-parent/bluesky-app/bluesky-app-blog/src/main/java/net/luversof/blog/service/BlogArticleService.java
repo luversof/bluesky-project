@@ -44,7 +44,7 @@ public class BlogArticleService {
 	}
 
 	public BlogArticle findOne(long id) {
-		return articleRepository.findOne(id);
+		return articleRepository.getOne(id);
 	}
 	
 	public void incraseViewCount(BlogArticle blogArticle) {
@@ -65,6 +65,6 @@ public class BlogArticleService {
 	}
 
 	public void delete(long id) {
-		articleRepository.delete(id);
+		articleRepository.deleteById(id);
 	}
 }

@@ -44,7 +44,7 @@ public class EntryService {
 	}
 
 	public Entry findOne(long id) {
-		return entryRepository.findOne(id);
+		return entryRepository.getOne(id);
 	}
 
 	public void delete(Entry entry) {

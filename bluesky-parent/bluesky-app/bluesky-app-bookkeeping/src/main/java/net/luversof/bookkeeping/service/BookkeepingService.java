@@ -50,7 +50,7 @@ public class BookkeepingService {
 	}
 	
 	public Bookkeeping findOne(long id) {
-		return bookkeepingRepository.findOne(id);
+		return bookkeepingRepository.getOne(id);
 	}
 	
 	public List<Bookkeeping> findByUserId(String userId) {

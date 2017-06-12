@@ -28,7 +28,7 @@ public class BbsArticleTest extends GeneralTest {
 	
 	@Test
 	public void 단건입력() {
-		Bbs bbs = bbsRepository.findOne((long) 1);
+		Bbs bbs = bbsRepository.getOne((long) 1);
 		BbsArticle bbsArticle = new BbsArticle();
 		bbsArticle.setBbs(bbs);
 		bbsArticle.setUserId(1);
@@ -39,7 +39,7 @@ public class BbsArticleTest extends GeneralTest {
 	
 	@Test
 	public void 다량입력() {
-		Bbs bbs = bbsRepository.findOne((long) 1);
+		Bbs bbs = bbsRepository.getOne((long) 1);
 
 		List<BbsArticle> bbsArticleList = new ArrayList<>();
 		for (int i = 0 ; i < 100000 ; i ++) {
@@ -50,7 +50,7 @@ public class BbsArticleTest extends GeneralTest {
 			bbsArticle.setContent("내용" + i);
 			bbsArticleList.add(bbsArticle);
 		}
-		bbsArticleRepository.save(bbsArticleList);
+		bbsArticleRepository.saveAll(bbsArticleList);
 	}
 	
 	@Test
