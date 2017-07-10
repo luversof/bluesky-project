@@ -116,7 +116,7 @@ public class BlogArticleTest extends GeneralTest {
 	public void selectPaging테스트() {
 		Blog blog = blogService.findByUser(userId).get(0);
 		
-		Pageable page = new PageRequest(1, 10);
+		Pageable page = PageRequest.of(1, 10);
 		Page<BlogArticle> blogList = blogArticleService.findByBlog(blog, page);
 		log.debug("blogList : {}", blogList);
 		log.debug("blogList : {}", blogList.getContent());

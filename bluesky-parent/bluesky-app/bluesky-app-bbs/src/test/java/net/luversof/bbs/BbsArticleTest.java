@@ -55,7 +55,7 @@ public class BbsArticleTest extends GeneralTest {
 	
 	@Test
 	public void 페이징테스트() {
-		Page<BbsArticle> bbsArticleList = bbsArticleRepository.findByBbsAlias("free", new PageRequest(0, 20, new Sort(Direction.DESC, "id")));
+		Page<BbsArticle> bbsArticleList = bbsArticleRepository.findByBbsAlias("free", PageRequest.of(0, 20, new Sort(Direction.DESC, "id")));
 		log.debug("result : {}", bbsArticleList.getContent());
 		
 	}

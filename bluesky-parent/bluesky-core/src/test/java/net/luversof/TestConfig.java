@@ -2,7 +2,6 @@ package net.luversof;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 
 import lombok.Data;
 

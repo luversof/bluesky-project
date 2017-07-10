@@ -28,7 +28,7 @@ public class BbsArticleController {
 	@PreBbsAuthorize(checkBbsActivated = true)
 	@GetMapping("/article")
 	public Page<BbsArticle> list(@PathVariable String boardAlias, @RequestParam(defaultValue = "1") int page) {
-		Page<BbsArticle> bbsArticleList = bbsArticleService.selectBbsArticleList(boardAlias, new PageRequest(page - 1, 20, new Sort(Direction.DESC, "id")));
+		Page<BbsArticle> bbsArticleList = bbsArticleService.selectBbsArticleList(boardAlias, PageRequest.of(page - 1, 20, new Sort(Direction.DESC, "id")));
 		log.debug("bbsArticleList : {}", bbsArticleList);
 		return bbsArticleList;
 	}

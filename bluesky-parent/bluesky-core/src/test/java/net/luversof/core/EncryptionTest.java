@@ -1,16 +1,14 @@
 package net.luversof.core;
 
-import net.luversof.GeneralTest;
-import net.luversof.TestConfig.TestClass;
-
 import java.text.MessageFormat;
 
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.GeneralTest;
+import net.luversof.TestConfig.TestClass;
 
 @Slf4j
 public class EncryptionTest extends GeneralTest {
@@ -42,17 +40,12 @@ public class EncryptionTest extends GeneralTest {
 		log.debug("test : {}", test);
 	}
 	
-	
-	@Autowired
-	private Environment environment;
-	
 	@Autowired
 	private TestClass testClass;
 	
 	@Test
 	public void test3() {
 		
-		log.debug("environment.getActiveProfiles() : {}", environment.getActiveProfiles());
 		log.debug("testClass : {}", testClass);
 	}
 	
