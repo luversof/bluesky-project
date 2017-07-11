@@ -1,5 +1,7 @@
 package net.luversof.blog.service;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,7 +33,7 @@ public class BlogArticleService {
 	}
 	
 	public BlogArticle update(BlogArticle blogArticle) {
-		BlogArticle targetBlogArticle = findOne(blogArticle.getId());
+		BlogArticle targetBlogArticle = findById(blogArticle.getId()).get();
 		if (!blogArticle.getBlog().equals(targetBlogArticle.getBlog())) {
 			throw new BlueskyException("blog.article.permissionDenied");
 		}
@@ -43,8 +45,8 @@ public class BlogArticleService {
 		return articleRepository.save(targetBlogArticle);
 	}
 
-	public BlogArticle findOne(long id) {
-		return articleRepository.getOne(id);
+	public Optional<BlogArticle> findById(long id) {
+		return articleRepository.findById(id);
 	}
 	
 	public void incraseViewCount(BlogArticle blogArticle) {

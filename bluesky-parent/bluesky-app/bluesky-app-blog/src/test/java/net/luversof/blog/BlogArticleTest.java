@@ -2,6 +2,7 @@ package net.luversof.blog;
 
 
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,8 +37,8 @@ public class BlogArticleTest extends GeneralTest {
 	@Test
 //	@Ignore
 	public void selectTest() {
-		BlogArticle article = blogArticleService.findOne(18);
-		log.debug("result : {}", article);
+		Optional<BlogArticle> blogArticleOptional = blogArticleService.findById(18);
+		log.debug("result : {}", blogArticleOptional.isPresent());
 	}
 	
 	@Test
@@ -72,7 +73,7 @@ public class BlogArticleTest extends GeneralTest {
 	
 	@Test
 	public void 수정전파테스트() {
-		BlogArticle article = blogArticleService.findOne(11);
+		BlogArticle article = blogArticleService.findById(11).get();
 		article.setContent("수정했음3");
 		
 //		ArticleCategory articleCategory = articleCategoryService.findOne(4);
@@ -142,7 +143,7 @@ public class BlogArticleTest extends GeneralTest {
 	@Test
 	public void 블로그객체비교테스트() {
 		Blog blog = blogService.findOne(1);
-		BlogArticle article = blogArticleService.findOne(1);
+		BlogArticle article = blogArticleService.findById(1).get();
 		
 		System.out.println(blog);
 		System.out.println(article.getBlog());

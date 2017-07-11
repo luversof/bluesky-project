@@ -115,7 +115,7 @@ public class BlogViewController {
 	 */
 	@GetMapping(value = "/{blog.id}/view/{id}")
 	public String view(@Validated(Get.class) BlogArticle blogArticle, ModelMap modelMap) {
-		BlogArticle viewArticle = blogArticleService.findOne(blogArticle.getId());
+		BlogArticle viewArticle = blogArticleService.findById(blogArticle.getId()).get();
 		blogArticleService.incraseViewCount(viewArticle);
 		modelMap.addAttribute("blogArticle", viewArticle);
 		return "blog/view";
@@ -146,7 +146,7 @@ public class BlogViewController {
 	@PostAuthorize("hasRole('ROLE_USER')")
 	@GetMapping(value = "/{blog.id}/modify/{id}")
 	public String modifyPage(@UserBlog(checkBlog = true) @Validated(Get.class) BlogArticle article, ModelMap modelMap) {
-		modelMap.addAttribute(blogArticleService.findOne(article.getId()));
+		modelMap.addAttribute(blogArticleService.findById(article.getId()));
 		modelMap.addAttribute(blogArticleCategoryService.findByBlog(blogService.findOne(article.getId())));
 		return "blog/modify";
 	}
