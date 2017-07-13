@@ -10,6 +10,11 @@ import javax.persistence.Table;
 
 import lombok.Data;
 
+/**
+ * blog 정보
+ * @author luver
+ *
+ */
 @Data
 @Entity
 @Table(indexes = @Index(name = "IDX_Blog_userId", columnList = "user_id") )

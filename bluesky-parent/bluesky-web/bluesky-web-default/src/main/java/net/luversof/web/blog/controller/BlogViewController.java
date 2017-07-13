@@ -24,10 +24,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import net.luversof.blog.annotation.UserBlog;
 import net.luversof.blog.domain.Blog;
-import net.luversof.blog.domain.BlogArticle;
-import net.luversof.blog.domain.BlogArticle.Get;
-import net.luversof.blog.service.BlogArticleCategoryService;
-import net.luversof.blog.service.BlogArticleService;
+import net.luversof.blog.domain.Article;
+import net.luversof.blog.domain.Article.Get;
+import net.luversof.blog.service.CategoryService;
+import net.luversof.blog.service.ArticleService;
 import net.luversof.blog.service.BlogService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
@@ -43,10 +43,10 @@ public class BlogViewController {
 	private BlogService blogService;
 
 	@Autowired
-	private BlogArticleService blogArticleService;
+	private ArticleService articleService;
 
 	@Autowired
-	private BlogArticleCategoryService blogArticleCategoryService;
+	private CategoryService categoryService;
 
 	/**
 	 * 진입 페이지 blog 정보가 없는 경우 생성 페이지로 이동
@@ -101,7 +101,7 @@ public class BlogViewController {
 	@GetMapping(value = "/{blogId}/list")
 	public String list(@PathVariable long blogId, @PageableDefault(sort = { "id" }, direction = Direction.DESC) Pageable pageable, ModelMap modelMap) {
 		Blog blog = blogService.findOne(blogId);
-		Page<BlogArticle> blogArticlePage = blogArticleService.findByBlog(blog, pageable);
+		Page<Article> blogArticlePage = articleService.findByBlog(blog, pageable);
 		modelMap.addAttribute("blogArticlePage", blogArticlePage);
 		return "blog/list";
 	}
@@ -114,9 +114,9 @@ public class BlogViewController {
 	 * @return
 	 */
 	@GetMapping(value = "/{blog.id}/view/{id}")
-	public String view(@Validated(Get.class) BlogArticle blogArticle, ModelMap modelMap) {
-		BlogArticle viewArticle = blogArticleService.findById(blogArticle.getId()).get();
-		blogArticleService.incraseViewCount(viewArticle);
+	public String view(@Validated(Get.class) Article blogArticle, ModelMap modelMap) {
+		Article viewArticle = articleService.findById(blogArticle.getId()).get();
+		articleService.incraseViewCount(viewArticle);
 		modelMap.addAttribute("blogArticle", viewArticle);
 		return "blog/view";
 	}
@@ -131,7 +131,7 @@ public class BlogViewController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@GetMapping(value = "/{id}/write")
 	public String writePage(@UserBlog(checkBlog = true) Blog blog, ModelMap modelMap) {
-		modelMap.addAttribute(blogArticleCategoryService.findByBlog(blog));
+		modelMap.addAttribute(categoryService.findByBlog(blog));
 		return "blog/write";
 	}
 
@@ -145,9 +145,9 @@ public class BlogViewController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("hasRole('ROLE_USER')")
 	@GetMapping(value = "/{blog.id}/modify/{id}")
-	public String modifyPage(@UserBlog(checkBlog = true) @Validated(Get.class) BlogArticle article, ModelMap modelMap) {
-		modelMap.addAttribute(blogArticleService.findById(article.getId()));
-		modelMap.addAttribute(blogArticleCategoryService.findByBlog(blogService.findOne(article.getId())));
+	public String modifyPage(@UserBlog(checkBlog = true) @Validated(Get.class) Article article, ModelMap modelMap) {
+		modelMap.addAttribute(articleService.findById(article.getId()));
+		modelMap.addAttribute(categoryService.findByBlog(blogService.findOne(article.getId())));
 		return "blog/modify";
 	}
 }

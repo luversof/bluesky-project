@@ -23,7 +23,8 @@ public class BlogConfig {
 	public void postConstruct() {
 		Assert.notNull(blogService, "blogService must not be null");
 		Assert.notNull(blogUserService, "blogUserService must not be null");
-		BlogRequestAttributeUtil.setBlogService(blogService, blogUserService);
+		BlogRequestAttributeUtil.setBlogService(blogService);
+		BlogRequestAttributeUtil.setBlogUserService(blogUserService);
 	}
 	
 

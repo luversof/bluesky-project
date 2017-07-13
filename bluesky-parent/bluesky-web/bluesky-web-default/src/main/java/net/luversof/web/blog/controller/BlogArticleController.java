@@ -12,11 +12,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.blog.annotation.UserBlog;
-import net.luversof.blog.domain.BlogArticle;
-import net.luversof.blog.domain.BlogArticle.Get;
-import net.luversof.blog.domain.BlogArticle.Modify;
-import net.luversof.blog.domain.BlogArticle.Save;
-import net.luversof.blog.service.BlogArticleService;
+import net.luversof.blog.domain.Article;
+import net.luversof.blog.domain.Article.Get;
+import net.luversof.blog.domain.Article.Modify;
+import net.luversof.blog.domain.Article.Save;
+import net.luversof.blog.service.ArticleService;
 import net.luversof.web.constant.AuthorizeRole;
 
 /**
@@ -28,23 +28,23 @@ import net.luversof.web.constant.AuthorizeRole;
 public class BlogArticleController {
 
 	@Autowired
-	private BlogArticleService articleService;
+	private ArticleService articleService;
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostMapping(value = "/{blog.id}/article")
-	public BlogArticle save(@UserBlog(checkBlog = true) @Validated(Save.class) BlogArticle article) {
+	public Article save(@UserBlog(checkBlog = true) @Validated(Save.class) Article article) {
 		return articleService.save(article);
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PutMapping(value = "/{blog.id}/article/{id}")
-	public BlogArticle modify(@UserBlog(checkBlog = true) @Validated(Modify.class) BlogArticle article) {
+	public Article modify(@UserBlog(checkBlog = true) @Validated(Modify.class) Article article) {
 		return articleService.update(article);
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@DeleteMapping(value = "/{blog.id}/article/{id}")
-	public boolean delete(@UserBlog(checkBlog = true) @Validated(Get.class) BlogArticle article, ModelMap modelMap) {
+	public boolean delete(@UserBlog(checkBlog = true) @Validated(Get.class) Article article, ModelMap modelMap) {
 		articleService.delete(article.getId());
 		return true;
 	}

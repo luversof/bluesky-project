@@ -17,9 +17,6 @@ import org.thymeleaf.spring5.view.ThymeleafViewResolver;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import net.luversof.blog.web.method.support.UserBlogForBlogArticleHandlerMethodArgumentResolver;
-import net.luversof.blog.web.method.support.UserBlogHandlerMethodArgumentResolver;
-
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
 
@@ -48,8 +45,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
 	public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
 //		argumentResolvers.add(blogHandlerMethodArgumentResolver);
 		// argumentResolvers.add(bookkeepingHandlerMethodArgumentResolver);
-		argumentResolvers.add(new UserBlogHandlerMethodArgumentResolver());
-		argumentResolvers.add(new UserBlogForBlogArticleHandlerMethodArgumentResolver());
 	}
 
 	// request date conversion 처리
