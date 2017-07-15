@@ -47,7 +47,7 @@ public class BlogRequestAttributeUtil extends AbstractRequestAttributeUtil {
 			return Collections.emptyList();
 		}
 		
-		blogList = blogService.findByUser(userIdOptional.get());
+		blogList = blogService.findByUserId(userIdOptional.get());
 		setRequestAttribute(USER_BLOG_LIST, blogList);
 		return blogList;
 	}

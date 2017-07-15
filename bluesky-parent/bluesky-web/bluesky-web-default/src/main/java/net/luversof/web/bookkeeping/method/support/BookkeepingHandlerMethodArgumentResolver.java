@@ -40,7 +40,7 @@ public class BookkeepingHandlerMethodArgumentResolver implements HandlerMethodAr
 		
 		List<Bookkeeping> bookkeepingList = bookkeepingService.findByUserId(user.getId());
 		if (bookkeepingList.isEmpty()) {
-			throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING);
+			throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING).errorPage("redirect:/bookkeeping/create");
 		}
 		return bookkeepingList.get(0);
 	}

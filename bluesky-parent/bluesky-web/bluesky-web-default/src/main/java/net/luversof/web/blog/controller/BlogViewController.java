@@ -2,6 +2,7 @@ package net.luversof.web.blog.controller;
 
 import java.text.MessageFormat;
 import java.util.List;
+import java.util.UUID;
 
 import javax.annotation.Resource;
 
@@ -11,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -22,18 +24,18 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import net.luversof.blog.annotation.UserBlog;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.domain.Article;
 import net.luversof.blog.domain.Article.Get;
 import net.luversof.blog.service.CategoryService;
+import net.luversof.core.exception.BlueskyException;
 import net.luversof.blog.service.ArticleService;
 import net.luversof.blog.service.BlogService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
 
 @Controller
-@RequestMapping(value = "/blog"/*, produces = MediaType.TEXT_HTML_VALUE*/)
+@RequestMapping(value = "/blog", produces = MediaType.TEXT_HTML_VALUE)
 public class BlogViewController {
 	
 	@Resource(name = "messageSourceAccessor")
@@ -55,13 +57,13 @@ public class BlogViewController {
 	 * @return
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@GetMapping(value = "")
-	public String home(@UserBlog Blog blog) {
-		return redirectBlogArticleList(blog.getId());
+	@GetMapping
+	public String home(Blog blog) {
+		return redirectArticleList(blog.getId());
 	}
 
 	@GetMapping(value = { "/{blogId}", "/{blogId}/view" })
-	public String redirectBlogArticleList(@PathVariable long blogId) {
+	public String redirectArticleList(@PathVariable UUID blogId) {
 		return String.join("", "redirect:", MessageFormat.format(messageSourceAccessor.getMessage("url.blog.view.list"), blogId));
 	}
 
@@ -76,18 +78,18 @@ public class BlogViewController {
 	 * @return
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@PostMapping(value = "")
+	@PostMapping
 	public String create(Authentication authentication) {
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
-		List<Blog> savedBlogList = blogService.findByUser(blueskyUser.getId());
+		List<Blog> savedBlogList = blogService.findByUserId(blueskyUser.getId());
 		if (!savedBlogList.isEmpty()) {
-			return redirectBlogArticleList(savedBlogList.get(0).getId());
+			return redirectArticleList(savedBlogList.get(0).getId());
 		}
-		;
+		
 		Blog blog = new Blog();
 		blog.setUserId(blueskyUser.getId());
 		blogService.save(blog);
-		return redirectBlogArticleList(blog.getId());
+		return redirectArticleList(blog.getId());
 	}
 
 	/**
@@ -99,8 +101,8 @@ public class BlogViewController {
 	 * @return
 	 */
 	@GetMapping(value = "/{blogId}/list")
-	public String list(@PathVariable long blogId, @PageableDefault(sort = { "id" }, direction = Direction.DESC) Pageable pageable, ModelMap modelMap) {
-		Blog blog = blogService.findOne(blogId);
+	public String list(@PathVariable UUID blogId, @PageableDefault(sort = { "id" }, direction = Direction.DESC) Pageable pageable, ModelMap modelMap) {
+		Blog blog = blogService.findById(blogId).orElseThrow(() -> new BlueskyException("blog.NOT_EXIST_BLOG"));
 		Page<Article> blogArticlePage = articleService.findByBlog(blog, pageable);
 		modelMap.addAttribute("blogArticlePage", blogArticlePage);
 		return "blog/list";
@@ -130,7 +132,7 @@ public class BlogViewController {
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@GetMapping(value = "/{id}/write")
-	public String writePage(@UserBlog(checkBlog = true) Blog blog, ModelMap modelMap) {
+	public String writePage(Blog blog, ModelMap modelMap) {
 		modelMap.addAttribute(categoryService.findByBlog(blog));
 		return "blog/write";
 	}
@@ -145,9 +147,9 @@ public class BlogViewController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@PostAuthorize("hasRole('ROLE_USER')")
 	@GetMapping(value = "/{blog.id}/modify/{id}")
-	public String modifyPage(@UserBlog(checkBlog = true) @Validated(Get.class) Article article, ModelMap modelMap) {
+	public String modifyPage(@Validated(Get.class) Article article, ModelMap modelMap) {
 		modelMap.addAttribute(articleService.findById(article.getId()));
-		modelMap.addAttribute(categoryService.findByBlog(blogService.findOne(article.getId())));
+		modelMap.addAttribute(categoryService.findByBlog(blogService.findById(article.getBlog().getId()).orElse(null)));
 		return "blog/modify";
 	}
 }

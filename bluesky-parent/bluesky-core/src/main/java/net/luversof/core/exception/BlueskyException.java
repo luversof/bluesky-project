@@ -7,9 +7,18 @@ public class BlueskyException extends RuntimeException {
 
 	@Getter
 	private final String errorCode;
+	
+	@Getter
+	private String errorPage = ErrorPage.DEFAULT;
+	
 
 	public BlueskyException(String errorCode) {
 		this.errorCode = errorCode;
+	}
+	
+	public BlueskyException errorPage(String errorPage) {
+		this.errorPage = errorPage;
+		return this;
 	}
 	
 	public BlueskyException(Enum<?> errorCode) {

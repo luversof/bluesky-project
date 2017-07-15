@@ -3,6 +3,7 @@ package net.luversof.blog;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +44,7 @@ public class ArticleTest extends GeneralTest {
 	
 	@Test
 	public void 카테고리추가글작성테스트() {
-		Blog blog = blogService.findByUser(userId).get(0);
+		Blog blog = blogService.findByUserId(userId).get(0);
 		for (int i = 0 ; i < 1024 ; i ++) {
 			
 			Article article = new Article();
@@ -115,7 +116,7 @@ public class ArticleTest extends GeneralTest {
 	@Test
 //	@Ignore
 	public void selectPaging테스트() {
-		Blog blog = blogService.findByUser(userId).get(0);
+		Blog blog = blogService.findByUserId(userId).get(0);
 		
 		Pageable page = PageRequest.of(1, 10);
 		Page<Article> blogList = blogArticleService.findByBlog(blog, page);
@@ -142,7 +143,7 @@ public class ArticleTest extends GeneralTest {
 	
 	@Test
 	public void 블로그객체비교테스트() {
-		Blog blog = blogService.findOne(1);
+		Blog blog = blogService.findById(UUID.randomUUID()).get();
 		Article article = blogArticleService.findById(1).get();
 		
 		System.out.println(blog);

@@ -1,12 +1,15 @@
 package net.luversof.blog.domain;
 
+import java.util.UUID;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.Table;
+
+import org.hibernate.annotations.GenericGenerator;
 
 import lombok.Data;
 
@@ -21,8 +24,12 @@ import lombok.Data;
 public class Blog {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private long id;
+//	@GeneratedValue(generator = "system-uuid")
+//	@GenericGenerator(name = "system-uuid", strategy = "uuid")
+	@GeneratedValue(generator = "uuid-gen")
+	@GenericGenerator(name = "uuid-gen", strategy = "uuid2")
+	@Column(length = 16)
+	private UUID id;
 
 	@Column(name = "user_id", length = 36)
 	private String userId;

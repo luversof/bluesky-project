@@ -35,21 +35,16 @@ import org.springframework.web.servlet.view.ContentNegotiatingViewResolver;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.blog.exception.BlogErrorCode;
-import net.luversof.bookkeeping.exception.BookkeepingErrorCode;
 import net.luversof.core.exception.BlueskyException;
+import net.luversof.core.exception.ErrorPage;
+import net.luversof.core.util.CoreUtil;
 
 @Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
 	
-	@Resource(name = "messageSourceAccessor")
-	private MessageSourceAccessor messageSourceAccessor;
-	
 	public static final String RESULT = "result";
 
-	public static final String PAGE_ERROR = "error/error";
-	
 	private DefaultMessageCodesResolver messageCodesResolver = new DefaultMessageCodesResolver();
 	
 	@Autowired
@@ -57,6 +52,7 @@ public class GlobalExceptionHandler {
 	
 	@ExceptionHandler
 	@SneakyThrows
+	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
 	public ModelAndView handleException(BlueskyException exception, HandlerMethod  handlerMethod, NativeWebRequest request) {
 		if (contentNegotiatingViewResolver.getContentNegotiationManager().resolveMediaTypes(request).contains(MediaType.APPLICATION_JSON)) {
 			log.debug("json exception");
@@ -65,17 +61,10 @@ public class GlobalExceptionHandler {
 		if (Arrays.asList(handlerMethod.getMethodAnnotation(RequestMapping.class).produces()).contains(MediaType.APPLICATION_JSON_VALUE) ){
 			log.debug("json exception");
 		};
-		
-		if (exception.isTargetErrorCode(BlogErrorCode.NOT_EXIST_BLOG)) {
-			return new ModelAndView("redirect:/blog/create");
-		}
-		if (exception.isTargetErrorCode(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING)) {
-			return new ModelAndView("redirect:/bookkeeping/create");
-		}
 
 		Map<String, ErrorMessage> resultMap = new HashMap<>();
 		resultMap.put(RESULT, getErrorMessage(exception));
-		return new ModelAndView(PAGE_ERROR, resultMap);
+		return new ModelAndView(exception.getErrorPage(), resultMap);
 	}
 	
 	@ExceptionHandler
@@ -87,7 +76,7 @@ public class GlobalExceptionHandler {
 		for (ObjectError objectError : objectErrorList) {
 			ErrorMessage errorMessage = new ErrorMessage();
 			errorMessage.setExceptionClassName(exception.getClass().getSimpleName());
-			errorMessage.setMessage(messageSourceAccessor.getMessage(objectError));
+			errorMessage.setMessage(CoreUtil.getMessage(objectError));
 			errorMessage.setObject(objectError.getObjectName());
 			errorMessage.setDisplayableMessage(true);
 			if (objectError instanceof FieldError) {
@@ -99,7 +88,7 @@ public class GlobalExceptionHandler {
 		
 		Map<String, List<ErrorMessage>> resultMap = new HashMap<>();
 		resultMap.put(RESULT, errorMessageList);
-		return new ModelAndView(PAGE_ERROR, resultMap);
+		return new ModelAndView(ErrorPage.DEFAULT, resultMap);
 	}
 	
 	@ExceptionHandler
@@ -110,7 +99,7 @@ public class GlobalExceptionHandler {
 		for (ObjectError objectError : objectErrorList) {
 			ErrorMessage errorMessage = new ErrorMessage();
 			errorMessage.setExceptionClassName(exception.getClass().getSimpleName());
-			errorMessage.setMessage(messageSourceAccessor.getMessage(objectError));
+			errorMessage.setMessage(CoreUtil.getMessage(objectError));
 			errorMessage.setObject(objectError.getObjectName());
 			errorMessage.setDisplayableMessage(true);
 			if (objectError instanceof FieldError) {
@@ -122,7 +111,7 @@ public class GlobalExceptionHandler {
 		
 		Map<String, List<ErrorMessage>> resultMap = new HashMap<>();
 		resultMap.put(RESULT, errorMessageList);
-		return new ModelAndView(PAGE_ERROR, resultMap);
+		return new ModelAndView(ErrorPage.DEFAULT, resultMap);
 	}
 	
 	@ExceptionHandler
@@ -131,7 +120,7 @@ public class GlobalExceptionHandler {
 		log.debug("error : {}", exception);
 		Map<String, ErrorMessage> resultMap = new HashMap<>();
 		resultMap.put(RESULT, getErrorMessage(exception));
-		return new ModelAndView(PAGE_ERROR, resultMap);
+		return new ModelAndView(ErrorPage.DEFAULT, resultMap);
 	}
 
 	@ExceptionHandler
@@ -159,7 +148,7 @@ public class GlobalExceptionHandler {
 			log.debug("json exception");
 			Map<String, ErrorMessage> resultMap = new HashMap<>();
 			resultMap.put(RESULT, getErrorMessage(exception));
-			return new ModelAndView(PAGE_ERROR, resultMap);
+			return new ModelAndView(ErrorPage.DEFAULT, resultMap);
 		}
 		
 		throw exception;
@@ -182,7 +171,7 @@ public class GlobalExceptionHandler {
 				String[] errorCodes = messageCodesResolver.resolveMessageCodes(exception.getClass().getSimpleName(), targetErrorCode);
 				log.debug("[Exception error message] code : {}", Arrays.asList(errorCodes));
 				DefaultMessageSourceResolvable defaultMessageSourceResolvable = new DefaultMessageSourceResolvable(errorCodes,  targetErrorCode);
-				String localizedMessage = messageSourceAccessor.getMessage(defaultMessageSourceResolvable);
+				String localizedMessage = CoreUtil.getMessage(defaultMessageSourceResolvable);
 				errorMessage.setMessage(localizedMessage);
 				errorMessage.setDisplayableMessage(true);
 			};

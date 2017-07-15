@@ -7,7 +7,7 @@
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>bluesky-web-default</artifactId>
-	<packaging>war</packaging>
+	<packaging>jar</packaging>
 
 	<dependencies>
 
@@ -41,6 +41,10 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
 		</dependency>
 		<!-- (e) spring-boot -->
@@ -63,12 +67,12 @@
 		</dependency>
 		<!-- (e) thymeleaf extras -->
 
-		<!-- (s) test용 -->
+		<!-- (s) meneService 관련 -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.dataformat</groupId>
 			<artifactId>jackson-dataformat-xml</artifactId>
 		</dependency>
-		<!-- (e) test용 -->
+		<!-- (e) meneService 관련 -->
 
 		<!-- (s) javascript libarary -->
 		<dependency>

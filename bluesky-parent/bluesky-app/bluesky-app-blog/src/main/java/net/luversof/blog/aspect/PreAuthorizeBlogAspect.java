@@ -66,7 +66,7 @@ public class PreAuthorizeBlogAspect {
 		
 		List<Blog> userBlog = BlogRequestAttributeUtil.getUserBlogList();
 		if (userBlog.isEmpty()) {
-			throw new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG);
+			throw new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG).errorPage("redirect:/blog/create");
 		}
 		
 		if (userBlog.stream().noneMatch(blog -> blog.getId() == targetBlog.getId())) {

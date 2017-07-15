@@ -1,6 +1,8 @@
 package net.luversof.blog.service;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,16 +16,15 @@ public class BlogService {
 	@Autowired
 	private BlogRepository blogRepository;
 	
-	
 	public Blog save(Blog blog) {
 		return blogRepository.save(blog);
 	}
 	
-	public Blog findOne(long blogId) {
-		return blogRepository.getOne(blogId);
+	public Optional<Blog> findById(UUID id) {
+		return blogRepository.findById(id);
 	}
 
-	public List<Blog> findByUser(String userId) {
+	public List<Blog> findByUserId(String userId) {
 		return blogRepository.findByUserId(userId);
 	}
 }

@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import net.luversof.blog.annotation.UserBlog;
 import net.luversof.blog.domain.Article;
 import net.luversof.blog.domain.Article.Get;
 import net.luversof.blog.domain.Article.Modify;
@@ -24,27 +23,27 @@ import net.luversof.web.constant.AuthorizeRole;
  *
  */
 @RestController
-@RequestMapping(value = "/blog", produces = MediaType.APPLICATION_JSON_VALUE)
-public class BlogArticleController {
+@RequestMapping(value = "/blog/{blog.id}", produces = MediaType.APPLICATION_JSON_VALUE)
+public class ArticleController {
 
 	@Autowired
 	private ArticleService articleService;
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@PostMapping(value = "/{blog.id}/article")
-	public Article save(@UserBlog(checkBlog = true) @Validated(Save.class) Article article) {
+	@PostMapping(value = "/article")
+	public Article save(@Validated(Save.class) Article article) {
 		return articleService.save(article);
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@PutMapping(value = "/{blog.id}/article/{id}")
-	public Article modify(@UserBlog(checkBlog = true) @Validated(Modify.class) Article article) {
+	@PutMapping(value = "/article/{id}")
+	public Article modify(@Validated(Modify.class) Article article) {
 		return articleService.update(article);
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@DeleteMapping(value = "/{blog.id}/article/{id}")
-	public boolean delete(@UserBlog(checkBlog = true) @Validated(Get.class) Article article, ModelMap modelMap) {
+	@DeleteMapping(value = "/article/{id}")
+	public boolean delete(@Validated(Get.class) Article article, ModelMap modelMap) {
 		articleService.delete(article.getId());
 		return true;
 	}
