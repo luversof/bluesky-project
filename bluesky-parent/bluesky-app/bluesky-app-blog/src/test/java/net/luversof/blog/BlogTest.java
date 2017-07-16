@@ -45,4 +45,11 @@ public class BlogTest extends GeneralTest {
 		Blog blog = blogService.findById(uuid).orElse(null);
 		log.debug("blog : {}", blog);
 	}
+	
+	@Test
+	public void save() {
+		Blog blog = new Blog();
+		blog.setUserId("77a04682-3032-492c-9449-5ba986491eef");
+		log.debug("save : {}", blogService.save(blog));
+	}
 }

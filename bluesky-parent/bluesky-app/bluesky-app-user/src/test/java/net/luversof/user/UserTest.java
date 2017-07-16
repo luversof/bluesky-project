@@ -3,6 +3,7 @@ package net.luversof.user;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.user.domain.User;
+import net.luversof.user.repository.UserRepository;
 import net.luversof.user.service.UserService;
 
 import java.util.ArrayList;
@@ -19,6 +20,9 @@ public class UserTest extends GeneralTest {
 
 	@Autowired
 	private UserService userService;
+	
+	@Autowired
+	private UserRepository userRepository;
 	
 	@Test
 	public void 테스트() {
@@ -53,5 +57,10 @@ public class UserTest extends GeneralTest {
 		log.debug("result : {}", userList);
 		List<String> nameList = userList.stream().map(user -> user.getUsername()).collect(Collectors.toList());
 		log.debug("result : {}", nameList);
+	}
+	
+	@Test
+	public void findAll() {
+		log.debug("result : {}", userRepository.findAll());
 	}
 }

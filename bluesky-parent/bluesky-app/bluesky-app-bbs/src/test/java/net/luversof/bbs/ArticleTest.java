@@ -18,7 +18,7 @@ import net.luversof.bbs.repository.BbsArticleRepository;
 import net.luversof.bbs.repository.BbsRepository;
 
 @Slf4j
-public class BbsArticleTest extends GeneralTest {
+public class ArticleTest extends GeneralTest {
 
 	@Autowired
 	private BbsArticleRepository bbsArticleRepository;
