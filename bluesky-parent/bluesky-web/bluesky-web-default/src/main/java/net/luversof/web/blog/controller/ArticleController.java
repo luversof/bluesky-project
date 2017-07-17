@@ -23,26 +23,26 @@ import net.luversof.web.constant.AuthorizeRole;
  *
  */
 @RestController
-@RequestMapping(value = "/blog/{blog.id}", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/blog/{blog.id}/article", produces = MediaType.APPLICATION_JSON_VALUE)
 public class ArticleController {
 
 	@Autowired
 	private ArticleService articleService;
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@PostMapping(value = "/article")
+	@PostMapping
 	public Article save(@Validated(Save.class) Article article) {
 		return articleService.save(article);
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@PutMapping(value = "/article/{id}")
+	@PutMapping(value = "/{id}")
 	public Article modify(@Validated(Modify.class) Article article) {
 		return articleService.update(article);
 	}
 
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@DeleteMapping(value = "/article/{id}")
+	@DeleteMapping(value = "/{id}")
 	public boolean delete(@Validated(Get.class) Article article, ModelMap modelMap) {
 		articleService.delete(article.getId());
 		return true;

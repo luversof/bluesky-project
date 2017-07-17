@@ -39,7 +39,7 @@ public class ArticleTest extends GeneralTest {
 //	@Ignore
 	public void selectTest() {
 		Optional<Article> blogArticleOptional = blogArticleService.findById(18);
-		log.debug("result : {}", blogArticleOptional.isPresent());
+		log.debug("result : {}", blogArticleOptional.get());
 	}
 	
 	@Test

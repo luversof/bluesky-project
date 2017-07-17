@@ -8,15 +8,31 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import net.luversof.blog.domain.Blog;
+import net.luversof.blog.exception.BlogErrorCode;
 import net.luversof.blog.repository.BlogRepository;
+import net.luversof.core.exception.BlueskyException;
 
+/**
+ * 블로그 관련 서비스
+ * @author luver
+ *
+ */
 @Service
 public class BlogService {
 
 	@Autowired
 	private BlogRepository blogRepository;
 	
-	public Blog save(Blog blog) {
+	@Autowired
+	private BlogUserService blogUserService;
+	
+	public Blog create() {
+		String userId = blogUserService.getUserId().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_USER_ID));
+		if (!findByUserId(userId).isEmpty()) {
+			throw new BlueskyException(BlogErrorCode.ALREADY_EXIST_BLOG);
+		};
+		Blog blog = new Blog();
+		blog.setUserId(userId);
 		return blogRepository.save(blog);
 	}
 	

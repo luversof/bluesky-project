@@ -11,7 +11,7 @@ public class BlogUserServiceTestImpl implements BlogUserService {
 
 	@Override
 	public Optional<String> getUserId() {
-		return Optional.of("TEST");
+		return Optional.of("77a04682-3032-492c-9449-5ba986491eef");
 	}
 
 }

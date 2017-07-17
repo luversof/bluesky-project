@@ -21,13 +21,9 @@ public class BlogTest extends GeneralTest {
 	@Autowired
 	private BlogRepository blogRepository;
 	
-	private String userId = "77a04682-3032-492c-9449-5ba986491eef";
-	
 	@Test
 	public void saveTest() {
-		Blog blog = new Blog();
-		blog.setUserId(userId);
-		blogService.save(blog);
+		Blog blog = blogService.create();
 		log.debug("blog : {}", blog);
 	}
 	
@@ -47,12 +43,5 @@ public class BlogTest extends GeneralTest {
 		UUID uuid = UUID.fromString("745B5D33-E9A1-4398-B997-BC3D6B83BF8B");
 		Blog blog = blogService.findById(uuid).orElse(null);
 		log.debug("blog : {}", blog);
-	}
-	
-	@Test
-	public void save() {
-		Blog blog = new Blog();
-		blog.setUserId("77a04682-3032-492c-9449-5ba986491eef");
-		log.debug("save : {}", blogService.save(blog));
 	}
 }

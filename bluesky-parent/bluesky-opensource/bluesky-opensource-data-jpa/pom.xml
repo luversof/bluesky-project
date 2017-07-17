@@ -21,9 +21,9 @@
 		</dependency>
 		<!-- (e) spring boot -->
 
-		<dependency>
+<!-- 		<dependency>
 			<groupId>org.jadira.usertype</groupId>
 			<artifactId>usertype.core</artifactId>
-		</dependency>
+		</dependency> -->
 	</dependencies>
 </project>

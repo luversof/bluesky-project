@@ -1,6 +1,6 @@
 package net.luversof.blog.domain;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -12,7 +12,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.validation.constraints.NotNull;
 
-import org.hibernate.annotations.Type;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -40,12 +39,10 @@ public class Article {
 	private String content;
 
 	@CreatedDate
-	@Type(type = "org.jadira.usertype.dateandtime.threeten.PersistentZonedDateTime")
-	private ZonedDateTime createdDate;
+	private LocalDateTime createdDate;
 
 	@LastModifiedDate
-	@Type(type = "org.jadira.usertype.dateandtime.threeten.PersistentZonedDateTime")
-	private ZonedDateTime lastModifiedDate;
+	private LocalDateTime lastModifiedDate;
 
 	private long viewCount;
 	

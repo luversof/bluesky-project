@@ -88,7 +88,7 @@ public class BlogViewController {
 		
 		Blog blog = new Blog();
 		blog.setUserId(blueskyUser.getId());
-		blogService.save(blog);
+		blogService.create();
 		return redirectArticleList(blog.getId());
 	}
 
