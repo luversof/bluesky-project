@@ -1,0 +1,1 @@
+org.springframework.context.ApplicationContextInitializer=net.luversof.core.context.BlueskyApplicationContextInitializer

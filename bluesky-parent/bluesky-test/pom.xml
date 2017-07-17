@@ -13,10 +13,5 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>compile</scope>
 		</dependency>
-		
-		<dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-core</artifactId>
-		</dependency>
 	</dependencies>
 </project>

@@ -3,12 +3,10 @@ package net.luversof.core;
 import java.text.MessageFormat;
 
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
-import net.luversof.TestConfig.TestClass;
 
 @Slf4j
 public class EncryptionTest extends GeneralTest {
@@ -32,21 +30,12 @@ public class EncryptionTest extends GeneralTest {
 		log.debug("result3 : {}", MessageFormat.format("jdbc:mysql://{0}:{1}/{2}?useSSL=false&useUnicode=true&autoReconnection=true", "127.0.0.1", "3306", "user"));
 	}
 	
-	@Value("${dataSource.blog.serverName}")
+	@Value("${dataSource.blog.password}")
+//	@Value("${spring.config.name}")
 	String test;
 	
 	@Test
 	public void test2() {
 		log.debug("test : {}", test);
 	}
-	
-	@Autowired
-	private TestClass testClass;
-	
-	@Test
-	public void test3() {
-		
-		log.debug("testClass : {}", testClass);
-	}
-	
 }

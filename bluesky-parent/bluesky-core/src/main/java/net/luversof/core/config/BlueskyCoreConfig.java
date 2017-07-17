@@ -5,6 +5,7 @@ import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.MessageSourceAccessor;
@@ -13,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
 import net.luversof.core.util.CoreUtil;
 
 @Configuration
+@ComponentScan("net.luversof.core")
 @PropertySource("classpath:core.properties")
 public class BlueskyCoreConfig {
 	
