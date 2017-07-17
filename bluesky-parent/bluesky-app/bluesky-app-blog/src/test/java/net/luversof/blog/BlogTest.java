@@ -21,9 +21,12 @@ public class BlogTest extends GeneralTest {
 	@Autowired
 	private BlogRepository blogRepository;
 	
+	private String userId = "77a04682-3032-492c-9449-5ba986491eef";
+	
 	@Test
 	public void saveTest() {
 		Blog blog = new Blog();
+		blog.setUserId(userId);
 		blogService.save(blog);
 		log.debug("blog : {}", blog);
 	}

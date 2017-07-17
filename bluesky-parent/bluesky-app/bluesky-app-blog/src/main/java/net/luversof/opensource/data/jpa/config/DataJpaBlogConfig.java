@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -18,8 +19,13 @@ import org.springframework.transaction.PlatformTransactionManager;
 public class DataJpaBlogConfig {
 	
 	@Bean(name = "blogEntityManagerFactory")
-	public LocalContainerEntityManagerFactoryBean blogEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("blogDataSource") DataSource blogDataSource) {
-		return builder.dataSource(blogDataSource).persistenceUnit("blogPersistenceUnit").packages("net.luversof.blog").build();
+	public LocalContainerEntityManagerFactoryBean blogEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("blogDataSource") DataSource blogDataSource, JpaVendorAdapter jpaVendorAdapter) {
+		LocalContainerEntityManagerFactoryBean localContainerEntityManagerFactoryBean = builder
+		.dataSource(blogDataSource)
+		.persistenceUnit("blogPersistenceUnit")
+		.packages("net.luversof.blog", "org.springframework.data.jpa.convert.threeten").build();
+		localContainerEntityManagerFactoryBean.setJpaVendorAdapter(jpaVendorAdapter);
+		return localContainerEntityManagerFactoryBean;
 	}
 	
 	@Bean(name = "blogTransactionManager")

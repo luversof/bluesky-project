@@ -88,11 +88,6 @@
 				<artifactId>lombok</artifactId>
 				<version>1.16.18</version>
 			</dependency>
-			<dependency>
-				<groupId>org.jadira.usertype</groupId>
-				<artifactId>usertype.spi</artifactId>
-				<version>6.0.1.GA</version>
-			</dependency>
 
 			<!-- (s) encryption -->
 			<dependency>
@@ -120,7 +115,13 @@
 			</dependency>
 			<!-- (e) mybatis -->
 
-
+			<!-- (s) data-jpa -->
+			<dependency>
+				<groupId>org.jadira.usertype</groupId>
+				<artifactId>usertype.core</artifactId>
+				<version>6.0.1.GA</version>
+			</dependency>
+			<!-- (e) data-jpa -->
 
 			<!-- (s) javascript libarary -->
 			<dependency>
