@@ -15,8 +15,13 @@
 		<module>bluesky-opensource-data-mongodb</module>
 		<module>bluesky-opensource-boot-autoconfigure</module>
 		<module>bluesky-opensource-mybatis</module>
+		<module>bluesky-opensource-integration</module>
 	</modules>
 	<dependencies>
+		<dependency>
+			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-core</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-test</artifactId>
