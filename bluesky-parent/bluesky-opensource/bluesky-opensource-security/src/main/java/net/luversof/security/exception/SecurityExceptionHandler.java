@@ -1,29 +1,21 @@
-package net.luversof.web.exception;
+package net.luversof.security.exception;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
-import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedCredentialsNotFoundException;
-import org.springframework.validation.BindException;
 import org.springframework.validation.DefaultMessageCodesResolver;
-import org.springframework.validation.FieldError;
-import org.springframework.validation.ObjectError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,12 +28,13 @@ import org.springframework.web.servlet.view.ContentNegotiatingViewResolver;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.core.exception.BlueskyException;
+import net.luversof.core.exception.ErrorMessage;
 import net.luversof.core.exception.ErrorPage;
 import net.luversof.core.util.CoreUtil;
 
 @Slf4j
 @ControllerAdvice
-public class GlobalExceptionHandler {
+public class SecurityExceptionHandler {
 	
 	public static final String RESULT = "result";
 
@@ -49,79 +42,6 @@ public class GlobalExceptionHandler {
 	
 	@Autowired
 	private ContentNegotiatingViewResolver contentNegotiatingViewResolver;
-	
-	@ExceptionHandler
-	@SneakyThrows
-	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
-	public ModelAndView handleException(BlueskyException exception, HandlerMethod  handlerMethod, NativeWebRequest request) {
-		if (contentNegotiatingViewResolver.getContentNegotiationManager().resolveMediaTypes(request).contains(MediaType.APPLICATION_JSON)) {
-			log.debug("json exception");
-		}
-		
-		if (Arrays.asList(handlerMethod.getMethodAnnotation(RequestMapping.class).produces()).contains(MediaType.APPLICATION_JSON_VALUE) ){
-			log.debug("json exception");
-		};
-
-		Map<String, ErrorMessage> resultMap = new HashMap<>();
-		resultMap.put(RESULT, getErrorMessage(exception));
-		return new ModelAndView(exception.getErrorPage(), resultMap);
-	}
-	
-	@ExceptionHandler
-	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
-	public ModelAndView handleException(BindException exception) {
-		exception.printStackTrace();
-		List<ErrorMessage> errorMessageList = new ArrayList<>();
-		List<? extends ObjectError> objectErrorList = exception.getFieldErrors().isEmpty() ? exception.getBindingResult().getAllErrors() : exception.getFieldErrors();
-		for (ObjectError objectError : objectErrorList) {
-			ErrorMessage errorMessage = new ErrorMessage();
-			errorMessage.setExceptionClassName(exception.getClass().getSimpleName());
-			errorMessage.setMessage(CoreUtil.getMessage(objectError));
-			errorMessage.setObject(objectError.getObjectName());
-			errorMessage.setDisplayableMessage(true);
-			if (objectError instanceof FieldError) {
-				errorMessage.setField(((FieldError) objectError).getField());
-			}
-			errorMessageList.add(errorMessage);
-			log.debug("[bindException error message] code : {}, arguments : {}", Arrays.asList(objectError.getCodes()), Arrays.asList(objectError.getArguments()));
-		}
-		
-		Map<String, List<ErrorMessage>> resultMap = new HashMap<>();
-		resultMap.put(RESULT, errorMessageList);
-		return new ModelAndView(ErrorPage.DEFAULT, resultMap);
-	}
-	
-	@ExceptionHandler
-	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
-	public ModelAndView handleException(MethodArgumentNotValidException exception) {
-		List<ErrorMessage> errorMessageList = new ArrayList<>();
-		List<? extends ObjectError> objectErrorList = exception.getBindingResult().getFieldErrors().isEmpty() ? exception.getBindingResult().getAllErrors() : exception.getBindingResult().getFieldErrors();
-		for (ObjectError objectError : objectErrorList) {
-			ErrorMessage errorMessage = new ErrorMessage();
-			errorMessage.setExceptionClassName(exception.getClass().getSimpleName());
-			errorMessage.setMessage(CoreUtil.getMessage(objectError));
-			errorMessage.setObject(objectError.getObjectName());
-			errorMessage.setDisplayableMessage(true);
-			if (objectError instanceof FieldError) {
-				errorMessage.setField(((FieldError) objectError).getField());
-			}
-			errorMessageList.add(errorMessage);
-			log.debug("[bindException error message] code : {}, arguments : {}", Arrays.asList(objectError.getCodes()), Arrays.asList(objectError.getArguments()));
-		}
-		
-		Map<String, List<ErrorMessage>> resultMap = new HashMap<>();
-		resultMap.put(RESULT, errorMessageList);
-		return new ModelAndView(ErrorPage.DEFAULT, resultMap);
-	}
-	
-	@ExceptionHandler
-	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
-	public ModelAndView handleException(Exception exception) {
-		log.debug("error : {}", exception);
-		Map<String, ErrorMessage> resultMap = new HashMap<>();
-		resultMap.put(RESULT, getErrorMessage(exception));
-		return new ModelAndView(ErrorPage.DEFAULT, resultMap);
-	}
 
 	@ExceptionHandler
 	@ResponseStatus(value = HttpStatus.UNAUTHORIZED)

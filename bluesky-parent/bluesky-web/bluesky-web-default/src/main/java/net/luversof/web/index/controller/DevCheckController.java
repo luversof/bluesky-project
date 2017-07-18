@@ -18,7 +18,7 @@ import net.luversof.web.index.service.MenuService;
 
 @RestController
 @RequestMapping("/_check/")
-public class CheckAdminController {
+public class DevCheckController {
 	
 	@Autowired
 	private MenuService menuService;

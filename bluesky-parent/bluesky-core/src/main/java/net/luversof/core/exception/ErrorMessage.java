@@ -1,4 +1,4 @@
-package net.luversof.web.exception;
+package net.luversof.core.exception;
 
 import lombok.Data;
 
