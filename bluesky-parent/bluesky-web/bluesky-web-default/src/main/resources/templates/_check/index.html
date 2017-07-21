@@ -1,5 +1,6 @@
 <html xmlns:th="http://www.thymeleaf.org" th:with="devCheckUtil = ${T(net.luversof.web.util.DevCheckUtil)}">
 <head>
+<link rel="stylesheet" type="text/css" th:href="#{url.font-awesome.css}" />
 <style>
 * { box-sizing: border-box; color: #494949;}
 body { margin: 0; padding: 0;}
@@ -40,7 +41,7 @@ body { margin: 0; padding: 0;}
             </span>
             <span class="url">
                 <a th:each="url : ${devCheckInfo.urlList}" th:href="${url}"><th:block th:each="url : ${devCheckInfo.urlList}" th:text="${url}" /></a>
-                <a class="link_blank" target="_blank" th:each="url : ${devCheckInfo.urlList}" th:href="${url}" title="새창으로"><img src="http://ui-static.korea.ncsoft.corp/test_cherryai/ic_blank.png"></a>
+                <a class="link_blank" target="_blank" th:each="url : ${devCheckInfo.urlList}" th:href="${url}" title="새창으로"><i class="fa fa-external-link" aria-hidden="true"></i></a>
             </span>
         </li>
     </ul>

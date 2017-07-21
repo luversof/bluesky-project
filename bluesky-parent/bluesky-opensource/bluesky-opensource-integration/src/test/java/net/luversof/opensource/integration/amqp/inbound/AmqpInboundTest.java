@@ -1,5 +1,7 @@
 package net.luversof.opensource.integration.amqp.inbound;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Test;
 
 import lombok.extern.slf4j.Slf4j;
@@ -9,7 +11,8 @@ import net.luversof.GeneralTest;
 public class AmqpInboundTest extends GeneralTest {
 
 	@Test
-	public void test() {
+	public void test() throws InterruptedException {
 		log.debug("inboundTest..");
+		TimeUnit.SECONDS.sleep(10);
 	}
 }
