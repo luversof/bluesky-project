@@ -14,4 +14,8 @@ public abstract class CoreUtil {
 		return messageSourceAccessor.getMessage(resolvable);
 	}
 	
+	public static String getMessage(String code, String defaultMessage) {
+		return messageSourceAccessor.getMessage(code, defaultMessage);
+	}
+	
 }

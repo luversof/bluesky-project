@@ -13,11 +13,11 @@ public class SimpleTest {
 		
 		Blog blog1 = new Blog();
 		blog1.setId(UUID.randomUUID());
-		blog1.setUserId("123");
+		blog1.setUserId(UUID.randomUUID());
 		
 		Blog blog2 = new Blog();
 		blog2.setId(UUID.randomUUID());
-		blog2.setUserId("123");
+		blog2.setUserId(UUID.randomUUID());
 		
 		System.out.println(blog1.equals(blog2));
 	}

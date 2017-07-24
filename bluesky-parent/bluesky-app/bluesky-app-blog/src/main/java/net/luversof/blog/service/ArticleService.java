@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import net.luversof.blog.domain.Blog;
+import net.luversof.blog.exception.BlogErrorCode;
 import net.luversof.blog.domain.Article;
 import net.luversof.blog.repository.ArticleRepository;
 import net.luversof.core.exception.BlueskyException;
@@ -31,7 +32,7 @@ public class ArticleService {
 	public Article update(Article blogArticle) {
 		Article targetBlogArticle = findById(blogArticle.getId()).get();
 		if (!blogArticle.getBlog().equals(targetBlogArticle.getBlog())) {
-			throw new BlueskyException("blog.article.permissionDenied");
+			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOG);
 		}
 		targetBlogArticle.setTitle(blogArticle.getTitle());
 		targetBlogArticle.setContent(blogArticle.getContent());

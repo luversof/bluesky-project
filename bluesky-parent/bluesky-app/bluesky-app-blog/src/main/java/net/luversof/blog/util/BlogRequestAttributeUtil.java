@@ -1,8 +1,7 @@
 package net.luversof.blog.util;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import lombok.Setter;
 import net.luversof.blog.domain.Blog;
@@ -18,7 +17,7 @@ import net.luversof.core.util.AbstractRequestAttributeUtil;
 public class BlogRequestAttributeUtil extends AbstractRequestAttributeUtil {
 	
 	private static final String USER_ID = "__user_id";
-	private static final String USER_BLOG_LIST = "__user_blog_list";
+	private static final String USER_BLOG = "__user_blog";
 	
 	@Setter
 	private static BlogService blogService;
@@ -26,30 +25,30 @@ public class BlogRequestAttributeUtil extends AbstractRequestAttributeUtil {
 	@Setter
 	private static BlogUserService blogUserService;
 	
-	public static Optional<String> getUserId() {
-		Optional<String> userIdOptional = getRequestAttribute(USER_ID);
+	public static UUID getUserId() {
+		Optional<UUID> userIdOptional = getRequestAttribute(USER_ID);
 		if (userIdOptional != null) {
-			return userIdOptional;
+			return userIdOptional.orElse(null);
 		}
 		
 		userIdOptional = blogUserService.getUserId();
 		setRequestAttribute(USER_ID, userIdOptional);
-		return userIdOptional;
+		return userIdOptional.orElse(null);
 	}
 	
-	public static List<Blog> getUserBlogList() {
-		List<Blog> blogList = getRequestAttribute(USER_BLOG_LIST);
-		if (blogList != null) {
-			return blogList;
+	public static Blog getUserBlog() {
+		Optional<Blog> userBlogOptional = getRequestAttribute(USER_BLOG);
+		if (userBlogOptional != null) {
+			return userBlogOptional.orElse(null);
 		}
-		Optional<String> userIdOptional = getUserId();
-		if (!userIdOptional.isPresent()) {
-			return Collections.emptyList();
+		UUID userId = getUserId();
+		if (userId == null) {
+			return null;
 		}
 		
-		blogList = blogService.findByUserId(userIdOptional.get());
-		setRequestAttribute(USER_BLOG_LIST, blogList);
-		return blogList;
+		userBlogOptional = blogService.findByUserId(userId);
+		setRequestAttribute(USER_BLOG, userBlogOptional);
+		return userBlogOptional.orElse(null);
 	}
 	
 	

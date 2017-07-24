@@ -1,7 +1,6 @@
 package net.luversof.web.blog.controller;
 
 import java.text.MessageFormat;
-import java.util.List;
 import java.util.UUID;
 
 import javax.annotation.Resource;
@@ -13,25 +12,23 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import net.luversof.blog.domain.Blog;
+import net.luversof.blog.exception.BlogErrorCode;
 import net.luversof.blog.domain.Article;
 import net.luversof.blog.domain.Article.Get;
 import net.luversof.blog.service.CategoryService;
+import net.luversof.blog.util.BlogRequestAttributeUtil;
 import net.luversof.core.exception.BlueskyException;
 import net.luversof.blog.service.ArticleService;
 import net.luversof.blog.service.BlogService;
-import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
 
 @Controller
@@ -58,8 +55,12 @@ public class BlogViewController {
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@GetMapping
-	public String home(Blog blog) {
-		return redirectArticleList(blog.getId());
+	public String home() {
+		Blog userBlog = BlogRequestAttributeUtil.getUserBlog();
+		if (userBlog == null) {
+			return "redirect:/blog/create";
+		}
+		return redirectArticleList(userBlog.getId());
 	}
 
 	@GetMapping(value = { "/{blogId}", "/{blogId}/view" })
@@ -72,27 +73,6 @@ public class BlogViewController {
 	}
 
 	/**
-	 * 생성 후 해당 페이지 이동
-	 * 
-	 * @param authentication
-	 * @return
-	 */
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@PostMapping
-	public String create(Authentication authentication) {
-		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
-		List<Blog> savedBlogList = blogService.findByUserId(blueskyUser.getId());
-		if (!savedBlogList.isEmpty()) {
-			return redirectArticleList(savedBlogList.get(0).getId());
-		}
-		
-		Blog blog = new Blog();
-		blog.setUserId(blueskyUser.getId());
-		blogService.create();
-		return redirectArticleList(blog.getId());
-	}
-
-	/**
 	 * 글 목록
 	 * 
 	 * @param blogId
@@ -102,7 +82,7 @@ public class BlogViewController {
 	 */
 	@GetMapping(value = "/{blogId}/list")
 	public String list(@PathVariable UUID blogId, @PageableDefault(sort = { "id" }, direction = Direction.DESC) Pageable pageable, ModelMap modelMap) {
-		Blog blog = blogService.findById(blogId).orElseThrow(() -> new BlueskyException("blog.NOT_EXIST_BLOG"));
+		Blog blog = blogService.findById(blogId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
 		Page<Article> blogArticlePage = articleService.findByBlog(blog, pageable);
 		modelMap.addAttribute("blogArticlePage", blogArticlePage);
 		return "blog/list";
@@ -145,7 +125,6 @@ public class BlogViewController {
 	 * @return
 	 */
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-	@PostAuthorize("hasRole('ROLE_USER')")
 	@GetMapping(value = "/{blog.id}/modify/{id}")
 	public String modifyPage(@Validated(Get.class) Article article, ModelMap modelMap) {
 		modelMap.addAttribute(articleService.findById(article.getId()));

@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.luversof.web.config.QueueTestConfig.TestGateway;
 import net.luversof.web.constant.AuthorizeRole;
 import net.luversof.web.index.service.MenuService;
 
@@ -26,9 +25,9 @@ public class DevCheckController {
 	@Autowired
 	private MenuService menuService;
 
-	@GetMapping("/menuLoad")
-	public void menuLoad() {
-		menuService.load();
+	@GetMapping("/menuReload")
+	public void menuReload() {
+		menuService.reload();
 	}
 	
 
@@ -49,14 +48,14 @@ public class DevCheckController {
 		modelMap.addAttribute(user);
 	}
 	
-	@Autowired
-	private TestGateway testGateway;
-	
-	@GetMapping("/addQueue")
-	public int addQueue(@RequestParam(defaultValue = "1") int count) {
-		for (int i = 0 ; i < count ; i++) {
-			testGateway.sendToRabbit("테스트호출 " + i);
-		}
-		return count;
-	}
+//	@Autowired
+//	private TestGateway testGateway;
+//	
+//	@GetMapping("/addQueue")
+//	public int addQueue(@RequestParam(defaultValue = "1") int count) {
+//		for (int i = 0 ; i < count ; i++) {
+//			testGateway.sendToRabbit("테스트호출 " + i);
+//		}
+//		return count;
+//	}
 }

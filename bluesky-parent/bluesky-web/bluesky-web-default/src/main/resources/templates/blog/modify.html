@@ -19,7 +19,7 @@
 </head>
 <body>
 	<th:block layout:fragment="content-blog">
-		<form class="blog-modify" th:action="#{url.blog.put.article(${blogArticle.blog.id}, ${blogArticle.id})}" method="post">
+		<form name="blog-modify" th:action="#{url.blog.put.article(${blogArticle.blog.id}, ${blogArticle.id})}" method="post">
 			<input type="hidden" name="_method" value="put" />
 			<div class="form-group">
 				<label for="title" th:text="#{blogArticle.text.title}">title</label>

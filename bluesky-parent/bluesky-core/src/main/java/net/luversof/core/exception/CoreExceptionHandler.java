@@ -9,6 +9,8 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.validation.BindException;
@@ -33,6 +35,7 @@ import net.luversof.core.util.CoreUtil;
 
 @Slf4j
 @ControllerAdvice
+@Order(Ordered.LOWEST_PRECEDENCE)
 public class CoreExceptionHandler {
 	
 	public static final String RESULT = "result";
@@ -118,25 +121,28 @@ public class CoreExceptionHandler {
 	private ErrorMessage getErrorMessage(Exception exception) {
 		ErrorMessage errorMessage = new ErrorMessage();
 		errorMessage.setExceptionClassName(exception.getClass().getSimpleName());
-		
-		if (exception instanceof BlueskyException) {
-			String targetErrorCode = ((BlueskyException) exception).getErrorCode();
-			//ERROR_CODE가 enum 값인 경우와 일반 String 인 경우를 구분지어야 함.
-			//두 경우의 구분은 어떻게 해야할까? -> 단순히 공백이 있고 없고로 판단하면 되지 않을까?
-			//공백이 있는 문자열의 경우 메세지로 판단
-			if (targetErrorCode == null || targetErrorCode.contains(" ")) {
-				errorMessage.setMessage(targetErrorCode);
-			} else {
-				String[] errorCodes = messageCodesResolver.resolveMessageCodes(exception.getClass().getSimpleName(), targetErrorCode);
-				log.debug("[Exception error message] code : {}", Arrays.asList(errorCodes));
-				DefaultMessageSourceResolvable defaultMessageSourceResolvable = new DefaultMessageSourceResolvable(errorCodes,  targetErrorCode);
-				String localizedMessage = CoreUtil.getMessage(defaultMessageSourceResolvable);
-				errorMessage.setMessage(localizedMessage);
-				errorMessage.setDisplayableMessage(true);
-			};
-		} else {
-			errorMessage.setMessage(exception.getLocalizedMessage());
+		if (!(exception instanceof BlueskyException)) {
+			errorMessage.setMessage(CoreUtil.getMessage(exception.getClass().getSimpleName(), exception.getLocalizedMessage()));
+			return errorMessage;
 		}
+		
+		String targetErrorCode = ((BlueskyException) exception).getErrorCode();
+		//ERROR_CODE가 enum 값인 경우와 일반 String 인 경우를 구분지어야 함.
+		//두 경우의 구분은 어떻게 해야할까? -> 단순히 공백이 있고 없고로 판단하면 되지 않을까?
+		//공백이 있는 문자열의 경우 메세지로 판단
+		if (targetErrorCode == null || targetErrorCode.contains(" ")) {
+			errorMessage.setMessage(targetErrorCode);
+			return errorMessage;
+		}
+		
+		String[] errorCodes = messageCodesResolver.resolveMessageCodes(exception.getClass().getSimpleName(), targetErrorCode);
+		log.debug("[Exception error message] code : {}", Arrays.asList(errorCodes));
+		DefaultMessageSourceResolvable defaultMessageSourceResolvable = new DefaultMessageSourceResolvable(errorCodes, ((BlueskyException) exception).getErrorMessageArgs(), targetErrorCode);
+		String localizedMessage = CoreUtil.getMessage(defaultMessageSourceResolvable);
+		errorMessage.setErrorCode(((BlueskyException) exception).getErrorCode());
+		errorMessage.setMessage(localizedMessage);
+		errorMessage.setDisplayableMessage(true);
+		
 		return errorMessage;
 	}
 }

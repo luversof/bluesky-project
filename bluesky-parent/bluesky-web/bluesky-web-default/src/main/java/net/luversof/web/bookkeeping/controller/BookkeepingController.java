@@ -39,7 +39,7 @@ public class BookkeepingController {
 	@PostAuthorize("(returnObject == null or returnObject.size() == 0) or returnObject.get(0).userId == authentication.principal.id")
 	@GetMapping
 	public List<Bookkeeping> getBookkeepingList(Authentication authentication) {
-		return bookkeepingService.findByUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+		return bookkeepingService.findByUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
 	}
 
 	@GetMapping(value = "/{id}")
@@ -50,7 +50,7 @@ public class BookkeepingController {
 	
 	@PostMapping
 	public Bookkeeping createBookkeeping(@RequestBody @Validated(Bookkeeping.Create.class) Bookkeeping bookkeeping, Authentication authentication) {
-		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
 		return bookkeepingService.create(bookkeeping);
 	}
 	
@@ -62,7 +62,7 @@ public class BookkeepingController {
 	
 	@DeleteMapping(value="/{id}")
 	public Bookkeeping deleteBookkeeping(@Validated(Bookkeeping.Delete.class) Bookkeeping bookkeeping, Authentication authentication) {
-		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
 		bookkeepingService.delete(bookkeeping);
 		return bookkeeping;
 	}

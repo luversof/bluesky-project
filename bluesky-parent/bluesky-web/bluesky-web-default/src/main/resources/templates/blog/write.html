@@ -19,7 +19,7 @@
 </head>
 <body>
 	<th:block layout:fragment="content-blog">
-		<form class="blog-write" th:action="@{#{url.blog.post.article(${blog.id})}}" method="post">
+		<form name="blog-write" th:action="@{#{url.blog.post.article(${blog.id})}}" method="post">
 			<div class="form-group">
 				<label for="title" th:text="#{blogArticle.text.title}">title</label>
 				<input class="form-control" type="text" name="title" id="title" th:placeholder="#{blogArticle.text.title}" />

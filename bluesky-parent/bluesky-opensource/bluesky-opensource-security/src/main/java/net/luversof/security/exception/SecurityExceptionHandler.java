@@ -11,6 +11,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
@@ -34,6 +36,7 @@ import net.luversof.core.util.CoreUtil;
 
 @Slf4j
 @ControllerAdvice
+@Order(Ordered.LOWEST_PRECEDENCE + 10)
 public class SecurityExceptionHandler {
 	
 	public static final String RESULT = "result";

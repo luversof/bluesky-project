@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class ErrorMessage {
+	String errorCode;
 	String exceptionClassName;
 	boolean isDisplayableMessage = false;	//에러 메세지 화면 표시 가능여부
 	private String message;

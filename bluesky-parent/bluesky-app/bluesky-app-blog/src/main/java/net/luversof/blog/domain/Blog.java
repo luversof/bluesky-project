@@ -20,7 +20,7 @@ import lombok.Data;
  */
 @Data
 @Entity
-@Table(indexes = @Index(name = "IDX_Blog_userId", columnList = "user_id") )
+@Table(indexes = @Index(name = "IDX_Blog_userId", columnList = "user_id", unique = true) )
 public class Blog {
 
 	@Id
@@ -31,7 +31,7 @@ public class Blog {
 	@Column(length = 16)
 	private UUID id;
 
-	@Column(name = "user_id", length = 36)
-	private String userId;
+	@Column(name = "user_id", length = 16)
+	private UUID userId;
 
 }

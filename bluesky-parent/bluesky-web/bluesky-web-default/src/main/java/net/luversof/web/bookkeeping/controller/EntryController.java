@@ -51,19 +51,19 @@ public class EntryController {
 	
 	@PostMapping
 	public Entry createEntry(@RequestBody @Validated(Entry.Create.class) Entry entry, Authentication authentication) {
-		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
 		return entryService.create(entry);
 	}
 
 	@PutMapping(value = "/{id}")
 	public Entry modify(@RequestBody @Validated(Entry.Update.class) Entry entry, Authentication authentication) {
-		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
 		return entryService.update(entry);
 	}
 	
 	@DeleteMapping(value = "/{id}")
 	public void delete(@Validated(Entry.Delete.class) Entry entry, Authentication authentication) {
-		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
 		entryService.delete(entry);
 	}
 }

@@ -3,6 +3,7 @@ package net.luversof.security.core.userdetails;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -21,7 +22,7 @@ public class BlueskyUser implements UserDetails, CredentialsContainer {
 	
 	private static final long serialVersionUID = -7218355940538132953L;
 	
-	private final String id;
+	private final UUID id;
 	private final String username;
 	private String password;
 	private final Collection<? extends GrantedAuthority> authorities;

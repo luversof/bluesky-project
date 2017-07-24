@@ -1,17 +1,21 @@
 package net.luversof.core.exception;
 
-import lombok.Getter;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
+@Data
+@EqualsAndHashCode(callSuper = false)
 public class BlueskyException extends RuntimeException {
 	private static final long serialVersionUID = -2499198692880482249L;
 
-	@Getter
 	private final String errorCode;
 	
-	@Getter
-	private String errorPage = ErrorPage.DEFAULT;
+	private String localizedMessage;
 	
+	private String errorPage = ErrorPage.DEFAULT;
 
+	private String[] errorMessageArgs;
+	
 	public BlueskyException(String errorCode) {
 		this.errorCode = errorCode;
 	}
@@ -23,6 +27,11 @@ public class BlueskyException extends RuntimeException {
 	
 	public BlueskyException(Enum<?> errorCode) {
 		this.errorCode = resolveErrorCode(errorCode);
+	}
+	
+	public BlueskyException setErrorMessageArgs(String... errorMessageArgs) {
+		this.errorMessageArgs = errorMessageArgs;
+		return this;
 	}
 	
 	/**

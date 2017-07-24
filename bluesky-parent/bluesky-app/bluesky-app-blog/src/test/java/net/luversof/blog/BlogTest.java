@@ -1,6 +1,6 @@
 package net.luversof.blog;
 
-import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.Test;
@@ -34,8 +34,8 @@ public class BlogTest extends GeneralTest {
 
 	@Test
 	public void findByUser() {
-		List<Blog> blogList = blogService.findByUserId("1657880612");
-		log.debug("blogList : {}", blogList);
+		Optional<Blog> blogOptional = blogService.findByUserId(UUID.fromString("77a04682-3032-492c-9449-5ba986491eef"));
+		log.debug("blogList : {}", blogOptional);
 	}
 	
 	@Test

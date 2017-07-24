@@ -36,19 +36,19 @@ public class EntryGroupController {
 
 	@PostMapping
 	public EntryGroup createEntryGroup(@RequestBody @Validated(EntryGroup.Create.class) EntryGroup entryGroup, Authentication authentication) {
-		entryGroup.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+		entryGroup.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
 		return entryGroupService.create(entryGroup);
 	}
 
 	@PutMapping(value = "/{id}")
 	public EntryGroup updateEntryGroup(@RequestBody @Validated(EntryGroup.Update.class) EntryGroup entryGroup, Authentication authentication) {
-		entryGroup.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+		entryGroup.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
 		return entryGroupService.update(entryGroup);
 	}
 
 	@DeleteMapping(value = "/{id}")
 	public void deleteEntryGroup(@Validated(EntryGroup.Delete.class) EntryGroup entryGroup, Authentication authentication) {
-		entryGroup.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+		entryGroup.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
 		entryGroupService.delete(entryGroup);
 	}
 

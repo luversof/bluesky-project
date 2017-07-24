@@ -32,7 +32,7 @@ public class ArticleTest extends GeneralTest {
 	@Autowired
 	private BlogService blogService;
 	
-	private String userId = "77a04682-3032-492c-9449-5ba986491eef";
+	private UUID userId = UUID.fromString("77a04682-3032-492c-9449-5ba986491eef");
 	
 
 	@Test
@@ -44,7 +44,7 @@ public class ArticleTest extends GeneralTest {
 	
 	@Test
 	public void 카테고리추가글작성테스트() {
-		Blog blog = blogService.findByUserId(userId).get(0);
+		Blog blog = blogService.findByUserId(userId).get();
 		for (int i = 0 ; i < 1024 ; i ++) {
 			
 			Article article = new Article();
@@ -116,7 +116,7 @@ public class ArticleTest extends GeneralTest {
 	@Test
 //	@Ignore
 	public void selectPaging테스트() {
-		Blog blog = blogService.findByUserId(userId).get(0);
+		Blog blog = blogService.findByUserId(userId).get();
 		
 		Pageable page = PageRequest.of(1, 10);
 		Page<Article> blogList = blogArticleService.findByBlog(blog, page);
