@@ -13,13 +13,13 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
-@EnableJpaRepositories(basePackages = "net.luversof.user", entityManagerFactoryRef = "userEntityManagerFactory", transactionManagerRef = "userTransactionManager")
+@EnableJpaRepositories(basePackages = "net.luversof.user.**.repository", entityManagerFactoryRef = "userEntityManagerFactory", transactionManagerRef = "userTransactionManager")
 public class DataJpaUserConfig {
 	
 	@Bean(name = "userEntityManagerFactory")
 	@Primary
 	public LocalContainerEntityManagerFactoryBean userEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("userDataSource") DataSource userDataSource) {
-		return builder.dataSource(userDataSource).persistenceUnit("userPersistenceUnit").packages("net.luversof.user").build();
+		return builder.dataSource(userDataSource).persistenceUnit("userPersistenceUnit").packages("net.luversof.user.**.domain").build();
 	}
 	
 	@Bean(name = "userTransactionManager")

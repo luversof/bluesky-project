@@ -4,44 +4,63 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="blog/_template/blogLayout">
 <th:block layout:fragment="content-blog">
-	<table class="table">
+	<!-- <table class="table" id="test">
 		<thead>
 			<tr>
-				<th th:text="#{blogArticle.text.id}">id</th>
-				<th th:text="#{blogArticle.text.category}">category</th>
-				<th th:text="#{blogArticle.text.title}">title</th>
-				<th th:text="#{blogArticle.text.createdDate}">createdDate</th>
-				<th th:text="#{blogArticle.text.viewCount}">viewCount</th>
+				<th th:text="#{blog.article.text.id}">id</th>
+				<th th:text="#{blog.article.text.category}">category</th>
+				<th th:text="#{blog.article.text.title}">title</th>
+				<th th:text="#{blog.article.text.createdDate}">createdDate</th>
+				<th th:text="#{blog.article.text.viewCount}">viewCount</th>
 			</tr>
 		</thead>
 		<tbody>
-			<tr th:if="${blogArticlePage.hasContent()}" th:each="blogArticle : ${blogArticlePage.getContent()}">
+			<tr>
+				<td>글번호</td>
+				<td>카테고리</td>
+				<td><a href="#none">제목</a></td>
+				<td>생성일</td>
+				<td>조회수</td>
+			</tr>
+		</tbody>
+	</table> -->
+	
+	<table class="table">
+		<thead>
+			<tr>
+				<th th:text="#{blog.article.text.id}">id</th>
+				<th th:text="#{blog.article.text.category}">category</th>
+				<th th:text="#{blog.article.text.title}">title</th>
+				<th th:text="#{blog.article.text.createdDate}">createdDate</th>
+				<th th:text="#{blog.article.text.viewCount}">viewCount</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr th:if="${articlePage.hasContent()}" th:each="blogArticle : ${articlePage.getContent()}">
 				<td th:text="${blogArticle.id}">id</td>
-				<td th:text="${blogArticle.blogArticleCategory} ? ${blogArticle.blogArticleCategory.name}">category</td>
+				<td th:text="${blogArticle.category} ? ${blogArticle.category.name}">category</td>
 				<td><a th:href="#{url.blog.view.view(${blogArticle.blog.id}, ${blogArticle.id})}" th:text="${blogArticle.title}">title</a></td>
 				<td th:text="${blogArticle.createdDate == null ? '' : #temporals.format(blogArticle.createdDate, 'yyyy-MM-dd')}">createdDate</td>
-				<td>
-					<span th:if="${blogArticle.blogArticleStatistics ne null}" th:text="${blogArticle.blogArticleStatistics eq null ? '-' : blogArticle.blogArticleStatistics.viewCount}">-</span>
-				</td>
+				<td th:text="${blogArticle.viewCount}"></td>
 			</tr>
-			<tr th:if="${!blogArticlePage.hasContent()}" class="text-xs-center">
-				<td colspan="5" th:text="#{blogArticle.message.empty.content}">article.message.empty.content</td>
+			<tr th:if="${!articlePage.hasContent()}" class="text-center">
+				<td colspan="5" th:text="#{blog.article.message.empty.content}">article.message.empty.content</td>
 			</tr>
 		</tbody>
 		<tfoot>
 			<tr>
-				<td colspan="5" class="text-xs-center">
+				<td colspan="5" class="text-center">
 					<nav aria-label="Page navigation">
-						<ul class="pagination" th:if="${blogArticlePage.totalPages} > 0">
-							<li class="page-item" th:if="${!blogArticlePage.first}">
-      							<a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}(page=${blogArticlePage.number - 1})}" aria-label="Previous">
+						<ul class="pagination justify-content-center" th:if="${articlePage.totalPages} > 0">
+							<li class="page-item" th:if="${!articlePage.first}">
+      							<a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}(page=${articlePage.number - 1})}" aria-label="Previous">
 									<span aria-hidden="true">&laquo;</span>
 									<span class="sr-only">Previous</span>
 								</a>
 							</li>
-							<!-- <li class="page-item" th:classappend="${i == currentPage} ? 'active'"><a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}}" th:text="${blogArticlePage.number + 1}">1</a></li> -->
-							<li class="page-item" th:if="${!blogArticlePage.last}">
-								<a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}(page=${blogArticlePage.number + 1})}" aria-label="Next">
+							<li class="page-item" th:classappend="${i == currentPage} ? 'active'"><a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}}" th:text="${articlePage.number + 1}">1</a></li>
+							<li class="page-item" th:if="${!articlePage.last}">
+								<a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}(page=${articlePage.number + 1})}" aria-label="Next">
 									<span aria-hidden="true">&raquo;</span>
 									<span class="sr-only">Next</span>
 								</a>
@@ -49,7 +68,7 @@
 						</ul>
 					</nav>
 					<div>
-						<a th:href="#{url.blog.view.write(${blogId})}" sec:authorize="isAuthenticated()" class="btn btn-primary" th:text="#{blog.menu.write}">write</a>
+						<a th:href="#{url.blog.view.write(${blogId})}" sec:authorize="isAuthenticated()" class="btn btn-outline-primary" th:text="#{blog.menu.write}">write</a>
 					</div>
 				</td>
 			</tr>

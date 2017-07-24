@@ -52,19 +52,19 @@ public class AssetController {
 	 */
 	@PostMapping
 	public Asset createAsset(@RequestBody @Validated(Asset.Create.class) Asset asset, Authentication authentication) {
-		asset.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+		asset.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
 		return assetService.create(asset);
 	}
 
 	@PutMapping(value = "/{id}")
 	public Asset updateAsset(@RequestBody @Validated(Asset.Update.class) Asset asset, Authentication authentication) {
-		asset.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+		asset.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
 		return assetService.update(asset);
 	}
 
 	@DeleteMapping(value = "/{id}")
 	public void deleteAsset(@Validated(Asset.Delete.class) Asset asset, Authentication authentication) {
-		asset.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+		asset.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
 		assetService.delete(asset);
 	}
 	 

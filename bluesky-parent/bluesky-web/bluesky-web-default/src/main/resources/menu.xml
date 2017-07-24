@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE menuList>
 <menuList>
-	<menu url="/">
+	<menu url="/" id="home">
 		<전체메뉴>하하하</전체메뉴>
 		<sm>123</sm>
 	</menu>
-	<menu url="/blog" test="블로그진입" />
+	<menu url="/blog" id="blog" />
 	<menu url="/blog/create" title="blog.menu.create" />
 	<menu url="/blog/{0}/list" title="blog.menu.list" />
 	<menu url="/blog/{0}/view" title="blog.menu.view" />
 	<menu url="/blog/{0}/write" title="blog.menu.write" />
 	<menu url="/blog/{0}/modify" title="blog.menu.modify" />
+	<menu url="/bookkeeping" id="bookkeeping" />
 	<menu url="/bookkeeping/setting" asdf="ㅁㄴㅇㅁㄴㅇㄹ">
 		<전체메뉴>하하하2</전체메뉴>
 		<sm>

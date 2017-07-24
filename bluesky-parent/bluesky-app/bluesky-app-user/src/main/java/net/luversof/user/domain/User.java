@@ -1,7 +1,8 @@
 package net.luversof.user.domain;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -23,10 +24,10 @@ import lombok.Data;
 public class User {
 	@Id
 	//@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@GeneratedValue(generator = "uuid2")
-    @GenericGenerator(name = "uuid2", strategy = "uuid2")
-	@Column(length = 36)
-	private String id;
+	@GeneratedValue(generator = "uuid-gen")
+	@GenericGenerator(name = "uuid-gen", strategy = "uuid2")
+	@Column(length = 16)
+	private UUID id;
 
 	@Column(nullable = false)
 	private String username;
@@ -35,7 +36,7 @@ public class User {
 
 	@CreatedDate
 //	@DateTimeFormat(iso = ISO.DATE_TIME)
-	private ZonedDateTime createdDate;
+	private LocalDateTime createdDate;
 
 	private boolean accountNonExpired;
     private boolean accountNonLocked;

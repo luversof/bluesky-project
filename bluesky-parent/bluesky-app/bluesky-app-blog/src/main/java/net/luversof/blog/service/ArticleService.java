@@ -1,6 +1,7 @@
 package net.luversof.blog.service;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -8,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import net.luversof.blog.domain.Blog;
+import net.luversof.blog.exception.BlogErrorCode;
 import net.luversof.blog.domain.Article;
 import net.luversof.blog.repository.ArticleRepository;
 import net.luversof.core.exception.BlueskyException;
@@ -19,24 +21,37 @@ public class ArticleService {
 	private ArticleRepository articleRepository;
 	
 	@Autowired
+	private BlogUserService blogUserService;
+	
+	@Autowired
+	private BlogService blogService;
+	
+	@Autowired
 	private CategoryService categoryService;
 	
-	public Article save(Article blogArticle) {
-		if (blogArticle.getCategory() != null && blogArticle.getCategory().getId() > 0) {
-			blogArticle.setCategory(categoryService.findOne(blogArticle.getCategory().getId()));
+	public Article save(Article article) {
+		if (article.getCategory() != null && article.getCategory().getId() > 0) {
+			article.setCategory(categoryService.findById(article.getCategory().getId()).orElse(null));
 		}
-		return articleRepository.save(blogArticle);
+		return articleRepository.save(article);
 	}
 	
-	public Article update(Article blogArticle) {
-		Article targetBlogArticle = findById(blogArticle.getId()).get();
-		if (!blogArticle.getBlog().equals(targetBlogArticle.getBlog())) {
-			throw new BlueskyException("blog.article.permissionDenied");
+	public Article update(Article article) {
+		UUID userId = blogUserService.getUserId().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_USER_ID));
+		Blog blog = blogService.findByUserId(userId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
+		
+		if (!blog.getId().equals(article.getBlog().getId())) {
+			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOG);
 		}
-		targetBlogArticle.setTitle(blogArticle.getTitle());
-		targetBlogArticle.setContent(blogArticle.getContent());
-		if (blogArticle.getCategory() != null && blogArticle.getCategory().getId() != 0) {
-			targetBlogArticle.setCategory(categoryService.findOne(blogArticle.getCategory().getId()));
+		
+		Article targetBlogArticle = findById(article.getId()).get();
+		if (!article.getBlog().getId().equals(targetBlogArticle.getBlog().getId())) {
+			throw new BlueskyException(BlogErrorCode.INVALID_PARAMETER_ARTICLE_ID);
+		}
+		targetBlogArticle.setTitle(article.getTitle());
+		targetBlogArticle.setContent(article.getContent());
+		if (article.getCategory() != null && article.getCategory().getId() != 0) {
+			targetBlogArticle.setCategory(categoryService.findById(article.getCategory().getId()).orElse(null));
 		}
 		return articleRepository.save(targetBlogArticle);
 	}
@@ -45,9 +60,9 @@ public class ArticleService {
 		return articleRepository.findById(id);
 	}
 	
-	public void incraseViewCount(Article blogArticle) {
-		blogArticle.setViewCount(blogArticle.getViewCount() + 1);
-		articleRepository.save(blogArticle);
+	public void incraseViewCount(Article article) {
+		article.setViewCount(article.getViewCount() + 1);
+		articleRepository.save(article);
 	}
 
 	public Page<Article> findByBlog(Blog blog, Pageable pageable) {

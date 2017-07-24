@@ -1,6 +1,6 @@
 package net.luversof.blog.repository;
 
-import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,5 +10,5 @@ import net.luversof.blog.domain.Blog;
 
 @Transactional(readOnly = true)
 public interface BlogRepository extends JpaRepository<Blog, UUID> {
-	List<Blog> findByUserId(String userId); 
+	Optional<Blog> findByUserId(UUID userId); 
 }

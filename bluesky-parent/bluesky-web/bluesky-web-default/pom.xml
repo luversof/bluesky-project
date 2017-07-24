@@ -32,10 +32,10 @@
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-opensource-security</artifactId>
 		</dependency>
-		<dependency>
+		<!-- <dependency>
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-opensource-integration</artifactId>
-		</dependency>
+		</dependency> -->
 		<!-- (e) bluesky -->
 
 		<!-- (s) spring-boot -->

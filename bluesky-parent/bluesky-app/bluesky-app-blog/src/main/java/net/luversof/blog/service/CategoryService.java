@@ -1,6 +1,8 @@
 package net.luversof.blog.service;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,12 +21,16 @@ public class CategoryService {
 		return categoryRepository.save(articleCategory);
 	}
 
-	public Category findOne(long id) {
-		return categoryRepository.getOne(id);
+	public Optional<Category> findById(long id) {
+		return categoryRepository.findById(id);
 	}
 
 	public List<Category> findByBlog(Blog blog) {
 		return categoryRepository.findByBlog(blog);
+	}
+	
+	public List<Category> findByBlogId(UUID id) {
+		return categoryRepository.findByBlogId(id);
 	}
 
 	public void delete(long id) {

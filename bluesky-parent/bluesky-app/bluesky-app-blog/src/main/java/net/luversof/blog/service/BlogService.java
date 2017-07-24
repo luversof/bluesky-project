@@ -1,6 +1,5 @@
 package net.luversof.blog.service;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -27,10 +26,11 @@ public class BlogService {
 	private BlogUserService blogUserService;
 	
 	public Blog create() {
-		String userId = blogUserService.getUserId().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_USER_ID));
-		if (!findByUserId(userId).isEmpty()) {
-			throw new BlueskyException(BlogErrorCode.ALREADY_EXIST_BLOG);
+		UUID userId = blogUserService.getUserId().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_USER_ID));
+		if (findByUserId(userId).isPresent()) {
+			throw new BlueskyException(BlogErrorCode.ALREADY_EXIST_USER_BLOG);
 		};
+		
 		Blog blog = new Blog();
 		blog.setUserId(userId);
 		return blogRepository.save(blog);
@@ -40,7 +40,7 @@ public class BlogService {
 		return blogRepository.findById(id);
 	}
 
-	public List<Blog> findByUserId(String userId) {
+	public Optional<Blog> findByUserId(UUID userId) {
 		return blogRepository.findByUserId(userId);
 	}
 }

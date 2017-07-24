@@ -11,7 +11,7 @@ String.prototype.format = function() {
 };
 	
 /**
- * 상단 메뉴 표시 contextPath에 대한 메뉴 url 변경 적용
+ * 상단 메뉴 표시 contextPath에 대한 메뉴 url 변경 적용 - 사용하지 않음
  */
 var navbar = {
 	contextPath : "/",
