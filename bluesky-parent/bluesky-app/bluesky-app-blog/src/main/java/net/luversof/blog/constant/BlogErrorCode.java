@@ -1,4 +1,4 @@
-package net.luversof.blog.exception;
+package net.luversof.blog.constant;
 
 public enum BlogErrorCode {
 	NOT_EXIST_USER_ID,

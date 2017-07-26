@@ -20,10 +20,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.Article;
 import net.luversof.blog.domain.Article.Get;
 import net.luversof.blog.domain.Blog;
-import net.luversof.blog.exception.BlogErrorCode;
 import net.luversof.blog.service.ArticleService;
 import net.luversof.blog.service.BlogService;
 import net.luversof.blog.service.CategoryService;

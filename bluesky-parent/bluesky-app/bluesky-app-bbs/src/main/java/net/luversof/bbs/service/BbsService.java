@@ -3,8 +3,8 @@ package net.luversof.bbs.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import net.luversof.bbs.constant.BbsErrorCode;
 import net.luversof.bbs.domain.Bbs;
-import net.luversof.bbs.exception.BbsErrorCode;
 import net.luversof.bbs.repository.BbsRepository;
 import net.luversof.core.exception.BlueskyException;
 

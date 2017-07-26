@@ -9,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import net.luversof.blog.domain.Blog;
-import net.luversof.blog.exception.BlogErrorCode;
+import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.Article;
 import net.luversof.blog.repository.ArticleRepository;
 import net.luversof.core.exception.BlueskyException;

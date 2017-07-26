@@ -3,6 +3,7 @@ package net.luversof.bookkeeping.domain;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import net.luversof.bookkeeping.constant.EntryType;
 
 /**
  * 통계 정보 반환을 위한 객체

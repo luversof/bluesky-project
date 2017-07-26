@@ -6,8 +6,8 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.Blog;
-import net.luversof.blog.exception.BlogErrorCode;
 import net.luversof.blog.repository.BlogRepository;
 import net.luversof.core.exception.BlueskyException;
 

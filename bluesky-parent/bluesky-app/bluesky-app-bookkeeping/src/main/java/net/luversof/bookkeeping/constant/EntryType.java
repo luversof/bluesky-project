@@ -1,4 +1,4 @@
-package net.luversof.bookkeeping.domain;
+package net.luversof.bookkeeping.constant;
 
 
 /**

@@ -8,10 +8,10 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.EntrySearchInfo;
-import net.luversof.bookkeeping.exception.BookkeepingErrorCode;
 import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.core.exception.BlueskyException;
 

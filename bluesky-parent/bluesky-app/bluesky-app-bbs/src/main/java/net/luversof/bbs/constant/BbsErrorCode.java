@@ -1,4 +1,4 @@
-package net.luversof.bbs.exception;
+package net.luversof.bbs.constant;
 
 public enum BbsErrorCode {
 

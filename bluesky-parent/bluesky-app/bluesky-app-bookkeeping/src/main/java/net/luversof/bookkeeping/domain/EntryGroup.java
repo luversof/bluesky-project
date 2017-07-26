@@ -14,6 +14,7 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.NotEmpty;
 
 import lombok.Data;
+import net.luversof.bookkeeping.constant.EntryType;
 
 /**
  * 분류 항목

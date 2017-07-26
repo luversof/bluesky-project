@@ -1,4 +1,4 @@
-package net.luversof.bookkeeping;
+package net.luversof.bookkeeping.constant;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
