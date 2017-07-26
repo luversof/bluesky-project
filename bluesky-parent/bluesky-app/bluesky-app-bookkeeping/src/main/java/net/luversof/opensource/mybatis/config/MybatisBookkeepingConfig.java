@@ -20,6 +20,7 @@ public class MybatisBookkeepingConfig {
 		sqlSessionFactoryBean.setMapperLocations(
 				new PathMatchingResourcePatternResolver().getResources("classpath*:net/luversof/bookkeeping/mapper/xml/*Mapper.xml")
 			);
+		sqlSessionFactoryBean.setTypeHandlersPackage("net.luversof.opensource.mybatis.type");
 		sqlSessionFactoryBean.setDataSource(bookkeepingDataSource);
 		sqlSessionFactoryBean.afterPropertiesSet();
 		return sqlSessionFactoryBean.getObject();

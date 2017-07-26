@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +35,7 @@ public class EntryTest extends GeneralTest {
 	// 세이브 테스트
 	@Test
 	public void test2() {
-		Bookkeeping bookkeeping = bookkeepingService.findOne(1);
+		Bookkeeping bookkeeping = bookkeepingService.findById(UUID.fromString("1"));
 		List<EntryGroup> entryGroupList = entryGroupService.findByBookkeepingId(bookkeeping.getId());
 		
 		Entry entry = new Entry();
@@ -84,7 +85,7 @@ public class EntryTest extends GeneralTest {
 		LocalDate startDate = LocalDate.parse("2016-05-02"); 
 		LocalDate endDate = LocalDate.parse("2016-05-03");
 		ZoneId timeZone = ZoneId.of(LocaleContextHolder.getTimeZone().getID());
-		List<Entry> entryList = entryService.findByBookkeepingIdAndEntryDateBetween(1, startDate.atStartOfDay(timeZone), endDate.atStartOfDay(timeZone));
+		List<Entry> entryList = entryService.findByBookkeepingIdAndEntryDateBetween(UUID.fromString("1"), startDate.atStartOfDay(timeZone), endDate.atStartOfDay(timeZone));
 		log.debug("entryList : {}", entryList);
 	}
 	

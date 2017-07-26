@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.TimeZone;
+import java.util.UUID;
 
 import org.junit.Test;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -72,5 +73,10 @@ public class SimpleTest {
 	public void zoneIdTest() {
 		ZoneId timeZone = DateTimeContextHolder.getDateTimeContext().getTimeZone();
 		log.debug("zoneId : {}", timeZone);
+	}
+	
+	@Test
+	public void UUIDTest() {
+		log.debug("result : {}", UUID.fromString("1"));
 	}
 }

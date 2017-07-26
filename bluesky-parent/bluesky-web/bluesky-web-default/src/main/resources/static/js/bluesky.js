@@ -1,4 +1,48 @@
 /**
+ * json list 의 정렬을 위해 제공되는 함수 (2차 정렬까지만 제공 - 다른 형태의 구현을 고민할 필요가 있음)
+ * @param a
+ * @param b
+ * @param targetKey
+ * @param targetArray
+ * @param target2ndKey
+ * @param target2ndArray
+ * @returns
+ */
+function sortFunc(a, b, targetKey, targetArray, target2ndKey, target2ndArray) {
+	var aCodeIndex = $.inArray(a[targetKey], targetArray);
+	var bCodeIndex = $.inArray(b[targetKey], targetArray);
+	var cCodeIndex = $.inArray(a[target2ndKey], target2ndArray);
+	var dCodeIndex = $.inArray(b[target2ndKey], target2ndArray);
+	if (aCodeIndex > -1 && bCodeIndex > -1) {
+		if (aCodeIndex > bCodeIndex) return 1;
+		else if (aCodeIndex < bCodeIndex) return -1;
+		else {
+			if (cCodeIndex > -1 && dCodeIndex > -1) {
+				if (cCodeIndex > dCodeIndex) return 1;
+				else if (cCodeIndex < dCodeIndex) return -1;
+				else return 0;
+			}
+			else if (cCodeIndex > -1) return -1;
+			else if (dCodeIndex > -1) return 1;
+
+			return 0;
+		}
+	}
+	else if (aCodeIndex > -1) return -1;
+	else if (bCodeIndex > -1) return 1;
+
+	return 0;
+}
+
+/**
+ * 에러 메세지 정렬을 하는 경우 아래 값을 추가하여 호출함
+ */
+$.sortKey = null;
+$.sortKeyOrder = [];
+$.sort2ndKey = null;
+$.sort2ndKeyOrder = [];
+
+/**
  * String format 처리
  * 문자열에 "{0}.."와 같이 대치 예약어가 있는 경우 넘겨받은 argument로 치환 처리함 
  * @returns
@@ -66,13 +110,27 @@ $(document).ready(function() {
 	});
 	/* (s) csrf */
 	
+	/**
+	 * ajax 전역 에러 처리
+	 */
 	$(document).ajaxError(function(event, jqXHR, ajaxSettings, thrownError) {
-		if (ajaxSettings.dataType === "json") {
-			//var b = "";
-			//for (var a in jqXHR) b+=a + "\n;";
-			//console.log(b);
-			//console.log(jqXHR.responseJSON);
+		var result = jqXHR.responseJSON.result;
+		var alertMessage = "에러가 발생하였습니다.";
+		if (result === undefined) {
+			alert(alertMessage);
+			return;
 		}
+		
+		if ($.isArray(result) && result[0].displayableMessage) {
+			function errorMessageSort(a, b) {
+				return sortFunc(a, b, $.sortKey, $.sortKeyOrder, $.sort2ndKey, $.sort2ndKeyOrder);
+			}
+			result.sort(errorMessageSort);
+			alertMessage = result[0].message;
+		} else if (result.displayableMessage) {
+			alertMessage = jqXHR.responseJSON.result.message;
+		}
+		alert(alertMessage);
 	});
 	
 	
@@ -84,8 +142,18 @@ $(document).ready(function() {
 	}
 
 	
+	/**
+	 * banner print
+	 */
 	if (window.console !== undefined) {
 		setTimeout(console.log.bind(console, "%cBluesky","font: 8em Arial; color: #6799FF; font-weight:bold"), 0);
 		setTimeout(console.log.bind(console, "%c - bluesky 프로젝트","font: 2em HY견고딕,sans-serif; color: #333;"), 0);
 	}
+	
+	/**
+	 * 취소 버튼 동작
+	 */
+	$("button.cancel").on("click", function() {
+		history.back();
+	});
 });

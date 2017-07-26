@@ -1,6 +1,7 @@
 package net.luversof.web.bookkeeping.controller;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -39,18 +40,18 @@ public class BookkeepingController {
 	@PostAuthorize("(returnObject == null or returnObject.size() == 0) or returnObject.get(0).userId == authentication.principal.id")
 	@GetMapping
 	public List<Bookkeeping> getBookkeepingList(Authentication authentication) {
-		return bookkeepingService.findByUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
+		return bookkeepingService.findByUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 	}
 
 	@GetMapping(value = "/{id}")
 	@PostAuthorize("returnObject == null or returnObject.userId == authentication.principal.id")
-	public Bookkeeping getBookkeeping(@PathVariable long id) {
-		return bookkeepingService.findOne(id);
+	public Bookkeeping getBookkeeping(@PathVariable UUID id) {
+		return bookkeepingService.findById(id);
 	}
 	
 	@PostMapping
 	public Bookkeeping createBookkeeping(@RequestBody @Validated(Bookkeeping.Create.class) Bookkeeping bookkeeping, Authentication authentication) {
-		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
+		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		return bookkeepingService.create(bookkeeping);
 	}
 	
@@ -62,7 +63,7 @@ public class BookkeepingController {
 	
 	@DeleteMapping(value="/{id}")
 	public Bookkeeping deleteBookkeeping(@Validated(Bookkeeping.Delete.class) Bookkeeping bookkeeping, Authentication authentication) {
-		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
+		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		bookkeepingService.delete(bookkeeping);
 		return bookkeeping;
 	}

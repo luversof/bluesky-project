@@ -14,14 +14,14 @@
 				<h2 th:text="${article.category} ? #{blog.article.message.title(${article.title}, ${article.category.name})} : ${article.title}">title</h2>
 				<p><time pubdate="pubdate" th:text="${#temporals.format(article.createdDate, 'yyyy-MM-dd mm:HH:ss')}">createdDate</time></p>
 				<p th:text="#{blog.article.text.viewCount} + ' : ' + ${article.viewCount}"></p>
-				<div th:attr="data-article-content=${article.content}">content</div>
+				<div th:utext="${article.content}">content</div>
 			</article>
 			
 
 			<div class="text-center">
 				<a sec:authorize="isAuthenticated()" class="btn btn-outline-primary" th:href="#{url.blog.view.write(${article.blog.id})}" th:text="#{blog.menu.write}">write</a>
 				<a sec:authorize="isAuthenticated()" class="btn btn-outline-primary" th:href="#{url.blog.view.modify(${article.blog.id}, ${article.id})}" th:if="${#authentication.principal.id == article.blog.userId}" th:text="#{blog.menu.modify}">modify</a>
-				<button sec:authorize="isAuthenticated()" class="btn btn-outline-danger" th:if="${#authentication.principal.id == article.blog.userId}" th:attr="data-article-delete-id=${article.id},data-article-delete-blogId=${article.blog.id}" th:text="#{blog.menu.delete}">delete</button>
+				<button sec:authorize="isAuthenticated()" class="btn btn-outline-danger" th:if="${#authentication.principal.id == article.blog.userId}" th:attr="data-delete-blog-article-articleId=${article.id},data-delete-blog-article-blogId=${article.blog.id}" th:text="#{blog.menu.delete}">delete</button>
 				<a class="btn btn-outline-secondary" th:href="#{url.blog.view.list(${article.blog.id})}" th:text="#{blog.menu.list}">list</a>
 			</div>
 

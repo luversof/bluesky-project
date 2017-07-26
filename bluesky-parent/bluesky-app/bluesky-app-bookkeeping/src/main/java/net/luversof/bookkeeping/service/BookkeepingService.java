@@ -2,6 +2,8 @@ package net.luversof.bookkeeping.service;
 
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -41,7 +43,7 @@ public class BookkeepingService {
 	}
 	
 	public Bookkeeping update(Bookkeeping bookkeeping) {
-		Bookkeeping targetBookkeeping = findOne(bookkeeping.getId());
+		Bookkeeping targetBookkeeping = findById(bookkeeping.getId());
 		if (targetBookkeeping.getUserId() != bookkeeping.getUserId()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
@@ -49,11 +51,11 @@ public class BookkeepingService {
 		return bookkeepingRepository.save(bookkeeping);
 	}
 	
-	public Bookkeeping findOne(long id) {
-		return bookkeepingRepository.getOne(id);
+	public Bookkeeping findById(UUID id) {
+		return bookkeepingRepository.findById(id).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 	}
 	
-	public List<Bookkeeping> findByUserId(String userId) {
+	public List<Bookkeeping> findByUserId(UUID userId) {
 		return bookkeepingRepository.findByUserId(userId);
 	}
 	
@@ -63,7 +65,7 @@ public class BookkeepingService {
 	 */
 	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
 	public void delete(Bookkeeping bookkeeping) {
-		Bookkeeping targetBookkeeping = findOne(bookkeeping.getId());
+		Bookkeeping targetBookkeeping = findById(bookkeeping.getId());
 		if (targetBookkeeping.getUserId() != bookkeeping.getUserId()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}

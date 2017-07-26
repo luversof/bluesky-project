@@ -3,6 +3,7 @@ package net.luversof.bookkeeping.service;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -48,7 +49,7 @@ public class AssetService {
 	}
 	
 	public Asset create(Asset asset) {
-		Bookkeeping targetBookkeeping = bookkeepingService.findOne(asset.getBookkeeping().getId());
+		Bookkeeping targetBookkeeping = bookkeepingService.findById(asset.getBookkeeping().getId());
 		if (targetBookkeeping.getUserId() != asset.getBookkeeping().getUserId()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
@@ -56,7 +57,7 @@ public class AssetService {
 	}
 	
 	public Asset update(Asset asset) {
-		Bookkeeping targetBookkeeping = bookkeepingService.findOne(asset.getBookkeeping().getId());
+		Bookkeeping targetBookkeeping = bookkeepingService.findById(asset.getBookkeeping().getId());
 		if (targetBookkeeping.getUserId() != asset.getBookkeeping().getUserId()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
@@ -71,12 +72,12 @@ public class AssetService {
 		return assetRepository.getOne(id);
 	}
 	
-	public List<Asset> findByBookkeepingId(long bookkeepingId) {
+	public List<Asset> findByBookkeepingId(UUID bookkeepingId) {
 		return assetRepository.findByBookkeepingId(bookkeepingId);
 	}
 	
 	public void delete(Asset asset) {
-		Bookkeeping targetBookkeeping = bookkeepingService.findOne(asset.getBookkeeping().getId());
+		Bookkeeping targetBookkeeping = bookkeepingService.findById(asset.getBookkeeping().getId());
 		if (targetBookkeeping.getUserId() != asset.getBookkeeping().getUserId()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
@@ -87,7 +88,7 @@ public class AssetService {
 		assetRepository.delete(asset);
 	}
 	
-	public void deleteBybookkeepingId(long bookkeepingId) {
+	public void deleteBybookkeepingId(UUID bookkeepingId) {
 		List<Asset> assetList = findByBookkeepingId(bookkeepingId);
 		assetRepository.deleteAll(assetList);
 	}

@@ -9,6 +9,5 @@ import net.luversof.bbs.domain.Bbs;
 
 @Transactional(readOnly = true)
 public interface BbsRepository extends JpaRepository<Bbs, Long> {
-	
 	Optional<Bbs> findByAlias(String alias);
 }

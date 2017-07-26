@@ -13,7 +13,7 @@ public class EntrySearchInfoService {
 	private BookkeepingService bookkeepingService;
 	
 	public EntrySearchInfo getEntrySearchInfo(EntrySearchInfo entrySearchInfo) {
-		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entrySearchInfo.getBookkeeping().getId());
+		Bookkeeping targetBookkeeping = bookkeepingService.findById(entrySearchInfo.getBookkeeping().getId());
 		entrySearchInfo.setBookkeeping(targetBookkeeping);
 		entrySearchInfo.setBaseDate(targetBookkeeping.getBaseDate());
 		return entrySearchInfo;

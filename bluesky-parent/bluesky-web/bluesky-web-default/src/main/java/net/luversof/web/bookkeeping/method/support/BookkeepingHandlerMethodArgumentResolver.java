@@ -38,7 +38,7 @@ public class BookkeepingHandlerMethodArgumentResolver implements HandlerMethodAr
 		}
 		BlueskyUser user = (BlueskyUser) authentication.getPrincipal();
 		
-		List<Bookkeeping> bookkeepingList = bookkeepingService.findByUserId(user.getId().toString());
+		List<Bookkeeping> bookkeepingList = bookkeepingService.findByUserId(user.getId());
 		if (bookkeepingList.isEmpty()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING).errorPage("redirect:/bookkeeping/create");
 		}

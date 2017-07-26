@@ -3,6 +3,7 @@ package net.luversof.bookkeeping.service;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,7 @@ public class EntryService {
 	private BookkeepingService bookkeepingService;
 
 	public Entry create(Entry entry) {
-		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entry.getBookkeeping().getId());
+		Bookkeeping targetBookkeeping = bookkeepingService.findById(entry.getBookkeeping().getId());
 		if (targetBookkeeping.getUserId() != entry.getBookkeeping().getUserId()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
@@ -32,7 +33,7 @@ public class EntryService {
 	}
 	
 	public Entry update(Entry entry) {
-		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entry.getBookkeeping().getId());
+		Bookkeeping targetBookkeeping = bookkeepingService.findById(entry.getBookkeeping().getId());
 		if (targetBookkeeping.getUserId() != entry.getBookkeeping().getUserId()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
@@ -48,7 +49,7 @@ public class EntryService {
 	}
 
 	public void delete(Entry entry) {
-		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entry.getBookkeeping().getId());
+		Bookkeeping targetBookkeeping = bookkeepingService.findById(entry.getBookkeeping().getId());
 		if (targetBookkeeping.getUserId() != entry.getBookkeeping().getUserId()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
@@ -64,7 +65,7 @@ public class EntryService {
 	 * @return
 	 */
 	public List<Entry> findByEntrySearchInfo(EntrySearchInfo entrySearchInfo) {
-		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entrySearchInfo.getBookkeeping().getId());
+		Bookkeeping targetBookkeeping = bookkeepingService.findById(entrySearchInfo.getBookkeeping().getId());
 		int baseDate = targetBookkeeping.getBaseDate();
 		entrySearchInfo.setBaseDate(baseDate);
 		return entryRepository.findByBookkeepingIdAndEntryDateBetween(entrySearchInfo.getBookkeeping().getId(), entrySearchInfo.getStartZonedDateTime(), entrySearchInfo.getEndZonedDateTime());
@@ -77,7 +78,7 @@ public class EntryService {
 	 * @param endZonedDateTime
 	 * @return
 	 */
-	public List<Entry> findByBookkeepingIdAndEntryDateBetween(long bookkeepingId, ZonedDateTime startZonedDateTime, ZonedDateTime endZonedDateTime) {
+	public List<Entry> findByBookkeepingIdAndEntryDateBetween(UUID bookkeepingId, ZonedDateTime startZonedDateTime, ZonedDateTime endZonedDateTime) {
 		return entryRepository.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startZonedDateTime, endZonedDateTime);
 	}
 	

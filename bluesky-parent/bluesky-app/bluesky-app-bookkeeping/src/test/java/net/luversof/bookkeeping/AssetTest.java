@@ -1,6 +1,7 @@
 package net.luversof.bookkeeping;
 
 import java.util.List;
+import java.util.UUID;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
@@ -21,12 +22,12 @@ public class AssetTest extends GeneralTest {
 	@Autowired
 	private BookkeepingService bookkeepingService;
 	
-	static final String TEST_USER_ID = "1";
+	static final UUID TEST_USER_ID = UUID.fromString("1");
 	
 
 	@Test
 	public void initialDataSave() {
-		bookkeepingService.findOne(2);
+		bookkeepingService.findById(UUID.fromString("2"));
 		List<Asset> result = assetService.initialDataSave(bookkeepingService.findByUserId(TEST_USER_ID).get(0));
 		log.debug("defaultAsset : {}", result);
 	}

@@ -24,8 +24,6 @@ import lombok.Data;
 public class Blog {
 
 	@Id
-//	@GeneratedValue(generator = "system-uuid")
-//	@GenericGenerator(name = "system-uuid", strategy = "uuid")
 	@GeneratedValue(generator = "uuid-gen")
 	@GenericGenerator(name = "uuid-gen", strategy = "uuid2")
 	@Column(length = 16)

@@ -5,20 +5,20 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import net.luversof.bbs.domain.BbsArticle;
-import net.luversof.bbs.repository.BbsArticleRepository;
+import net.luversof.bbs.domain.Article;
+import net.luversof.bbs.repository.ArticleRepository;
 
-@Service
-public class BbsArticleService {
+@Service("bbsArticleService")
+public class ArticleService {
 
 	@Autowired
-	private BbsArticleRepository bbsArticleRepository;
+	private ArticleRepository bbsArticleRepository;
 	
-	public Page<BbsArticle> selectBbsArticleList(String bbsAlias, Pageable pageable) {
+	public Page<Article> selectBbsArticleList(String bbsAlias, Pageable pageable) {
 		return bbsArticleRepository.findByBbsAlias(bbsAlias, pageable);
 	}
 	
-	public BbsArticle selectBbsArticle(long id) {
+	public Article selectBbsArticle(long id) {
 		return bbsArticleRepository.getOne(id);
 	}
 	

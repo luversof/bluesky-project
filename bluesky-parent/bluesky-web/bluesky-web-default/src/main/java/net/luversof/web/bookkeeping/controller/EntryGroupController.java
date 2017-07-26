@@ -1,6 +1,7 @@
 package net.luversof.web.bookkeeping.controller;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -30,25 +31,25 @@ public class EntryGroupController {
 	private EntryGroupService entryGroupService;
 
 	@GetMapping
-	public List<EntryGroup> getEntryGroupList(@PathVariable("bookkeeping.id") long bookkeepingId, Authentication authentication) {
+	public List<EntryGroup> getEntryGroupList(@PathVariable("bookkeeping.id") UUID bookkeepingId, Authentication authentication) {
 		return entryGroupService.findByBookkeepingId(bookkeepingId);
 	}
 
 	@PostMapping
 	public EntryGroup createEntryGroup(@RequestBody @Validated(EntryGroup.Create.class) EntryGroup entryGroup, Authentication authentication) {
-		entryGroup.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
+		entryGroup.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		return entryGroupService.create(entryGroup);
 	}
 
 	@PutMapping(value = "/{id}")
 	public EntryGroup updateEntryGroup(@RequestBody @Validated(EntryGroup.Update.class) EntryGroup entryGroup, Authentication authentication) {
-		entryGroup.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
+		entryGroup.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		return entryGroupService.update(entryGroup);
 	}
 
 	@DeleteMapping(value = "/{id}")
 	public void deleteEntryGroup(@Validated(EntryGroup.Delete.class) EntryGroup entryGroup, Authentication authentication) {
-		entryGroup.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
+		entryGroup.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		entryGroupService.delete(entryGroup);
 	}
 

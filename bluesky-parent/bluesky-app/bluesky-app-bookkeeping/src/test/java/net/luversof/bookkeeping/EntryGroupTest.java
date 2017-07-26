@@ -1,6 +1,7 @@
 package net.luversof.bookkeeping;
 
 import java.util.List;
+import java.util.UUID;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
@@ -24,7 +25,7 @@ public class EntryGroupTest extends GeneralTest {
 	
 	private Bookkeeping bookkeeping;
 	
-	static final String TEST_USER_ID = "1";
+	static final UUID TEST_USER_ID = UUID.fromString("1");
 	
 	@Before
 	public void before() {

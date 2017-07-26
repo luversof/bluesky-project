@@ -36,10 +36,10 @@ $(document).ready(function() {
 					}
 				});
 			}
-			, remove : function(blogId, blogArticleId) {
+			, remove : function(blogId, articleId) {
 				$.ajax({
 					type : "post",
-					url : $.i18n.prop("url.blog.delete.article", blogId, blogArticleId),
+					url : $.i18n.prop("url.blog.delete.article", blogId, articleId),
 					dataType : "json",
 					data : { _method : "delete" },
 					success : function(data) {
@@ -65,11 +65,7 @@ $(document).ready(function() {
 		blog.modify();
 	});
 	
-	$("[data-blogArticle-delete-id]").on("click", function() {
-		blog.remove($(this).attr("data-blogArticle-delete-blogId"), $(this).attr("data-blogArticle-delete-id"));
-	});
-	
-	$("button.btn.cancel").on("click", function() {
-		history.back();
+	$("[data-delete-blog-article-articleId]").on("click", function() {
+		blog.remove($(this).attr("data-delete-blog-article-blogId"), $(this).attr("data-delete-blog-article-articleId"));
 	});
 });

@@ -27,7 +27,7 @@
 						<input class="form-control" type="text" name="title" id="title" th:placeholder="#{blog.article.text.title}" />
 					</div>
 				</div>
-				<div class="form-group row" th:if="${categoryList}">
+				<div class="form-group row" th:if="${!categoryList.isEmpty()}">
 					<label class="col-form-label" for="blogArticleCategory.id" th:text="#{blog.article.text.category}">category</label>
 					<div class="col-10">
 						<select id="blogArticleCategory.id" name="blogArticleCategory.id" class="form-control">
@@ -43,7 +43,7 @@
 				</div>
 				<div class="text-center">
 					<button class="btn btn-outline-primary" type="submit" th:text="#{blog.menu.save}">save</button>
-					<button class="btn btn-outline-default" type="reset" th:text="#{blog.menu.cancel}">cancel</button>
+					<button class="btn btn-outline-default cancel" type="button" th:text="#{blog.menu.cancel}">cancel</button>
 				</div>
 			</form>
 		</div>

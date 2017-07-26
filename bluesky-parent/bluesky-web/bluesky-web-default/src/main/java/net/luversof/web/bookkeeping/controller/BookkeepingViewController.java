@@ -33,7 +33,7 @@ public class BookkeepingViewController {
 	public void setting(ModelMap modelMap, Authentication authentication) {
 		// 기본 설정한 bookkeeping Id를 반환하자.
 		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
-		List<Bookkeeping> bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId().toString());
+		List<Bookkeeping> bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId());
 		if (!bookkeepingList.isEmpty()) {
 			modelMap.addAttribute("bookkeepingId", bookkeepingList.get(0).getId());
 		}

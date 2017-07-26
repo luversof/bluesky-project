@@ -2,6 +2,7 @@ package net.luversof.bookkeeping.repository;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -14,9 +15,9 @@ import net.luversof.bookkeeping.domain.Entry;
 @Transactional(readOnly = true)
 public interface EntryRepository extends JpaRepository<Entry, Long> {
 	
-	List<Entry> findByBookkeepingId(long bookkeepingId);
+	List<Entry> findByBookkeepingId(UUID bookkeepingId);
 	
-	List<Entry> findByBookkeepingIdAndEntryDateBetween(long bookkeepingId, ZonedDateTime startDate, ZonedDateTime endDate);
+	List<Entry> findByBookkeepingIdAndEntryDateBetween(UUID bookkeepingId, ZonedDateTime startDate, ZonedDateTime endDate);
 	
 	/**
 	 * 테스트용

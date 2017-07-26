@@ -4,6 +4,7 @@ package net.luversof.bookkeeping.service;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -46,7 +47,7 @@ public class EntryGroupService {
 	}
 	
 	public EntryGroup create(EntryGroup entryGroup) {
-		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entryGroup.getBookkeeping().getId());
+		Bookkeeping targetBookkeeping = bookkeepingService.findById(entryGroup.getBookkeeping().getId());
 		if (targetBookkeeping.getUserId() != entryGroup.getBookkeeping().getUserId()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
@@ -54,7 +55,7 @@ public class EntryGroupService {
 	}
 	
 	public EntryGroup update(EntryGroup entryGroup) {
-		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entryGroup.getBookkeeping().getId());
+		Bookkeeping targetBookkeeping = bookkeepingService.findById(entryGroup.getBookkeeping().getId());
 		if (targetBookkeeping.getUserId() != entryGroup.getBookkeeping().getUserId()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
@@ -69,12 +70,12 @@ public class EntryGroupService {
 		return entryGroupRepository.getOne(id);
 	}
 	
-	public List<EntryGroup> findByBookkeepingId(long bookkeepingId) {
+	public List<EntryGroup> findByBookkeepingId(UUID bookkeepingId) {
 		return entryGroupRepository.findByBookkeepingId(bookkeepingId);
 	}
 
 	public void delete(EntryGroup entryGroup) {
-		Bookkeeping targetBookkeeping = bookkeepingService.findOne(entryGroup.getBookkeeping().getId());
+		Bookkeeping targetBookkeeping = bookkeepingService.findById(entryGroup.getBookkeeping().getId());
 		if (targetBookkeeping.getUserId() != entryGroup.getBookkeeping().getUserId()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
@@ -85,7 +86,7 @@ public class EntryGroupService {
 		entryGroupRepository.delete(entryGroup);
 	}
 	
-	public void deleteBybookkeepingId(long bookkeepingId) {
+	public void deleteBybookkeepingId(UUID bookkeepingId) {
 		List<EntryGroup> entryGroupList = findByBookkeepingId(bookkeepingId);
 		entryGroupRepository.deleteAll(entryGroupList);
 	}

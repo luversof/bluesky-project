@@ -14,7 +14,7 @@ public class StatisticsSearchInfoService {
 	private BookkeepingService bookkeepingService;
 	
 	public StatisticsSearchInfo getStatisticsSearchInfo(StatisticsSearchInfo statisticsSearchInfo) {
-		Bookkeeping targetBookkeeping = bookkeepingService.findOne(statisticsSearchInfo.getBookkeeping().getId());
+		Bookkeeping targetBookkeeping = bookkeepingService.findById(statisticsSearchInfo.getBookkeeping().getId());
 		statisticsSearchInfo.setBookkeeping(targetBookkeeping);
 		statisticsSearchInfo.setBaseDate(targetBookkeeping.getBaseDate());
 		return statisticsSearchInfo;

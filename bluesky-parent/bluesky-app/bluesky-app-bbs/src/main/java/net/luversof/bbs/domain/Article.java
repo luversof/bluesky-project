@@ -1,6 +1,6 @@
 package net.luversof.bbs.domain;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -20,7 +20,7 @@ import lombok.Data;
 
 @Data
 @Entity
-public class BbsArticle {
+public class Article {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,11 +42,11 @@ public class BbsArticle {
 
 	@Column(updatable = false)
 	@CreatedDate
-	private ZonedDateTime createdDate;
+	private LocalDateTime createdDate;
 
 	@Column(updatable = false)
 	@LastModifiedDate
-	private ZonedDateTime lastModifiedDate;
+	private LocalDateTime lastModifiedDate;
 
 	public interface Get {
 	};

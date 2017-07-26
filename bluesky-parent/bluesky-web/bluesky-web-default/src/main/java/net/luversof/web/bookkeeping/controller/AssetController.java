@@ -1,6 +1,7 @@
 package net.luversof.web.bookkeeping.controller;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -39,7 +40,7 @@ public class AssetController {
 	 */
 	@PostAuthorize("(returnObject == null or returnObject.size() == 0) or returnObject.get(0).bookkeeping.userId == authentication.principal.id")
 	@GetMapping
-	public List<Asset> getAssetList(@PathVariable("bookkeeping.id") long bookkeepingId) {
+	public List<Asset> getAssetList(@PathVariable("bookkeeping.id") UUID bookkeepingId) {
 		return assetService.findByBookkeepingId(bookkeepingId);
 	}
 
@@ -52,19 +53,19 @@ public class AssetController {
 	 */
 	@PostMapping
 	public Asset createAsset(@RequestBody @Validated(Asset.Create.class) Asset asset, Authentication authentication) {
-		asset.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
+		asset.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		return assetService.create(asset);
 	}
 
 	@PutMapping(value = "/{id}")
 	public Asset updateAsset(@RequestBody @Validated(Asset.Update.class) Asset asset, Authentication authentication) {
-		asset.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
+		asset.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		return assetService.update(asset);
 	}
 
 	@DeleteMapping(value = "/{id}")
 	public void deleteAsset(@Validated(Asset.Delete.class) Asset asset, Authentication authentication) {
-		asset.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId().toString());
+		asset.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
 		assetService.delete(asset);
 	}
 	 
