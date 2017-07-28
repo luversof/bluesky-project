@@ -13,7 +13,6 @@
 		<module>bluesky-opensource-data-jpa</module>
 		<module>bluesky-opensource-security</module>
 		<module>bluesky-opensource-data-mongodb</module>
-		<module>bluesky-opensource-boot-autoconfigure</module>
 		<module>bluesky-opensource-mybatis</module>
 		<module>bluesky-opensource-integration</module>
 	</modules>

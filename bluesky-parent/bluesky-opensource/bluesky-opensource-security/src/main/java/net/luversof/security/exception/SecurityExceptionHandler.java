@@ -29,10 +29,10 @@ import org.springframework.web.servlet.view.ContentNegotiatingViewResolver;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.boot.autoconfigure.context.MessageUtil;
 import net.luversof.core.exception.BlueskyException;
 import net.luversof.core.exception.ErrorMessage;
 import net.luversof.core.exception.ErrorPage;
-import net.luversof.core.util.CoreUtil;
 
 @Slf4j
 @ControllerAdvice
@@ -94,7 +94,7 @@ public class SecurityExceptionHandler {
 				String[] errorCodes = messageCodesResolver.resolveMessageCodes(exception.getClass().getSimpleName(), targetErrorCode);
 				log.debug("[Exception error message] code : {}", Arrays.asList(errorCodes));
 				DefaultMessageSourceResolvable defaultMessageSourceResolvable = new DefaultMessageSourceResolvable(errorCodes,  targetErrorCode);
-				String localizedMessage = CoreUtil.getMessage(defaultMessageSourceResolvable);
+				String localizedMessage = MessageUtil.getMessage(defaultMessageSourceResolvable);
 				errorMessage.setMessage(localizedMessage);
 				errorMessage.setDisplayableMessage(true);
 			};

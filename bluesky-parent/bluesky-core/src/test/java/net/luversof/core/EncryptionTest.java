@@ -3,7 +3,10 @@ package net.luversof.core;
 import java.text.MessageFormat;
 
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.i18n.LocaleContextHolder;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
@@ -37,5 +40,13 @@ public class EncryptionTest extends GeneralTest {
 	@Test
 	public void test2() {
 		log.debug("test : {}", test);
+	}
+	
+	@Autowired
+	private ApplicationContext applicationContext;
+	
+	@Test
+	public void test3() {
+		log.debug("test : {}", applicationContext.getMessage("HttpRequestMethodNotSupportedException", null, null));
 	}
 }

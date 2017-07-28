@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.core.Ordered;
@@ -29,9 +28,7 @@ import org.springframework.web.servlet.view.ContentNegotiatingViewResolver;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.core.exception.BlueskyException;
-import net.luversof.core.exception.ErrorPage;
-import net.luversof.core.util.CoreUtil;
+import net.luversof.boot.autoconfigure.context.MessageUtil;
 
 @Slf4j
 @ControllerAdvice
@@ -71,7 +68,7 @@ public class CoreExceptionHandler {
 		for (ObjectError objectError : objectErrorList) {
 			ErrorMessage errorMessage = new ErrorMessage();
 			errorMessage.setExceptionClassName(exception.getClass().getSimpleName());
-			errorMessage.setMessage(CoreUtil.getMessage(objectError));
+			errorMessage.setMessage(MessageUtil.getMessage(objectError));
 			errorMessage.setObject(objectError.getObjectName());
 			errorMessage.setDisplayableMessage(true);
 			if (objectError instanceof FieldError) {
@@ -94,7 +91,7 @@ public class CoreExceptionHandler {
 		for (ObjectError objectError : objectErrorList) {
 			ErrorMessage errorMessage = new ErrorMessage();
 			errorMessage.setExceptionClassName(exception.getClass().getSimpleName());
-			errorMessage.setMessage(CoreUtil.getMessage(objectError));
+			errorMessage.setMessage(MessageUtil.getMessage(objectError));
 			errorMessage.setObject(objectError.getObjectName());
 			errorMessage.setDisplayableMessage(true);
 			if (objectError instanceof FieldError) {
@@ -122,7 +119,7 @@ public class CoreExceptionHandler {
 		ErrorMessage errorMessage = new ErrorMessage();
 		errorMessage.setExceptionClassName(exception.getClass().getSimpleName());
 		if (!(exception instanceof BlueskyException)) {
-			errorMessage.setMessage(CoreUtil.getMessage(exception.getClass().getSimpleName(), exception.getLocalizedMessage()));
+			errorMessage.setMessage(MessageUtil.getMessage(exception.getClass().getSimpleName(), exception.getLocalizedMessage()));
 			return errorMessage;
 		}
 		
@@ -138,7 +135,7 @@ public class CoreExceptionHandler {
 		String[] errorCodes = messageCodesResolver.resolveMessageCodes(exception.getClass().getSimpleName(), targetErrorCode);
 		log.debug("[Exception error message] code : {}", Arrays.asList(errorCodes));
 		DefaultMessageSourceResolvable defaultMessageSourceResolvable = new DefaultMessageSourceResolvable(errorCodes, ((BlueskyException) exception).getErrorMessageArgs(), targetErrorCode);
-		String localizedMessage = CoreUtil.getMessage(defaultMessageSourceResolvable);
+		String localizedMessage = MessageUtil.getMessage(defaultMessageSourceResolvable);
 		errorMessage.setErrorCode(((BlueskyException) exception).getErrorCode());
 		errorMessage.setMessage(localizedMessage);
 		errorMessage.setDisplayableMessage(true);
