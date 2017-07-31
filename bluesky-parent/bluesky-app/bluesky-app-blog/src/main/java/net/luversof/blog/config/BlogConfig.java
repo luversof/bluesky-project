@@ -8,8 +8,8 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.util.Assert;
 
 import net.luversof.blog.service.BlogService;
-import net.luversof.blog.service.BlogUserService;
 import net.luversof.blog.util.BlogRequestAttributeUtil;
+import net.luversof.user.service.LoginUserService;
 
 @Configuration
 @PropertySource("classpath:blog.properties")
@@ -19,14 +19,14 @@ public class BlogConfig {
 	private BlogService blogService;
 	
 	@Autowired
-	private BlogUserService blogUserService;
+	private LoginUserService loginUserService;
 	
 	@PostConstruct
 	public void postConstruct() {
 		Assert.notNull(blogService, "blogService must not be null");
-		Assert.notNull(blogUserService, "blogUserService must not be null");
+		Assert.notNull(loginUserService, "loginUserService must not be null");
 		BlogRequestAttributeUtil.setBlogService(blogService);
-		BlogRequestAttributeUtil.setBlogUserService(blogUserService);
+		BlogRequestAttributeUtil.setLoginUserService(loginUserService);
 	}
 	
 

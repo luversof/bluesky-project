@@ -12,5 +12,9 @@
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-opensource-data-jpa</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-app-user</artifactId>
+		</dependency>
 	</dependencies>
 </project>

@@ -10,11 +10,15 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.ConfigurableWebEnvironment;
 import org.thymeleaf.spring5.templateresolver.SpringResourceTemplateResolver;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
 import net.luversof.web.constant.AuthorizeRole;
 import net.luversof.web.index.service.MenuService;
 
@@ -26,11 +30,21 @@ public class DevCheckController {
 	private MenuService menuService;
 	
 	@Autowired
+	private ConfigurableWebEnvironment environment;
+	
+	@Autowired
 	private SpringResourceTemplateResolver defaultTemplateResolver;
 
 	@GetMapping("/menuReload")
 	public void menuReload() {
 		menuService.reload();
+	}
+	
+	@GetMapping("/allProperties")
+	@SneakyThrows
+	public String allProperties() {
+		ObjectMapper objectMapper = new ObjectMapper();
+		return objectMapper.writeValueAsString(environment.getPropertySources());
 	}
 	
 	@GetMapping("/decoupledLogicToggle")

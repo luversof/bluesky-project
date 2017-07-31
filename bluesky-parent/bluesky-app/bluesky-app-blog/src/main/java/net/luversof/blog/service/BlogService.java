@@ -10,6 +10,7 @@ import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.BlogRepository;
 import net.luversof.core.exception.BlueskyException;
+import net.luversof.user.service.LoginUserService;
 
 /**
  * 블로그 관련 서비스
@@ -23,10 +24,10 @@ public class BlogService {
 	private BlogRepository blogRepository;
 	
 	@Autowired
-	private BlogUserService blogUserService;
+	private LoginUserService loginUserService;
 	
 	public Blog create() {
-		UUID userId = blogUserService.getUserId().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_USER_ID));
+		UUID userId = loginUserService.getUserId().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_USER_ID));
 		if (findByUserId(userId).isPresent()) {
 			throw new BlueskyException(BlogErrorCode.ALREADY_EXIST_USER_BLOG);
 		};

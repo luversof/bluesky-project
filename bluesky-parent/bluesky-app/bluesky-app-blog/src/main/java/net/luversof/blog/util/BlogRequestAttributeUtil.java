@@ -6,8 +6,8 @@ import java.util.UUID;
 import lombok.Setter;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.service.BlogService;
-import net.luversof.blog.service.BlogUserService;
 import net.luversof.core.util.AbstractRequestAttributeUtil;
+import net.luversof.user.service.LoginUserService;
 
 /**
  * 로그인한 유저의 정보 반환에 대해 반복 호출을 방지하는 유틸
@@ -23,7 +23,7 @@ public class BlogRequestAttributeUtil extends AbstractRequestAttributeUtil {
 	private static BlogService blogService;
 	
 	@Setter
-	private static BlogUserService blogUserService;
+	private static LoginUserService loginUserService;
 	
 	public static UUID getUserId() {
 		Optional<UUID> userIdOptional = getRequestAttribute(USER_ID);
@@ -31,7 +31,7 @@ public class BlogRequestAttributeUtil extends AbstractRequestAttributeUtil {
 			return userIdOptional.orElse(null);
 		}
 		
-		userIdOptional = blogUserService.getUserId();
+		userIdOptional = loginUserService.getUserId();
 		setRequestAttribute(USER_ID, userIdOptional);
 		return userIdOptional.orElse(null);
 	}

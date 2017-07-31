@@ -13,6 +13,7 @@ import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.Article;
 import net.luversof.blog.repository.ArticleRepository;
 import net.luversof.core.exception.BlueskyException;
+import net.luversof.user.service.LoginUserService;
 
 @Service
 public class ArticleService {
@@ -21,7 +22,7 @@ public class ArticleService {
 	private ArticleRepository articleRepository;
 	
 	@Autowired
-	private BlogUserService blogUserService;
+	private LoginUserService loginUserService;
 	
 	@Autowired
 	private BlogService blogService;
@@ -37,7 +38,7 @@ public class ArticleService {
 	}
 	
 	public Article update(Article article) {
-		UUID userId = blogUserService.getUserId().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_USER_ID));
+		UUID userId = loginUserService.getUserId().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_USER_ID));
 		Blog blog = blogService.findByUserId(userId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
 		
 		if (!blog.getId().equals(article.getBlog().getId())) {

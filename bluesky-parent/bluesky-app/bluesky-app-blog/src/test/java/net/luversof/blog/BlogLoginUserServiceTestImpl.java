@@ -5,10 +5,10 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import net.luversof.blog.service.BlogUserService;
+import net.luversof.user.service.LoginUserService;
 
 @Service
-public class BlogUserServiceTestImpl implements BlogUserService {
+public class BlogLoginUserServiceTestImpl implements LoginUserService {
 
 	@Override
 	public Optional<UUID> getUserId() {

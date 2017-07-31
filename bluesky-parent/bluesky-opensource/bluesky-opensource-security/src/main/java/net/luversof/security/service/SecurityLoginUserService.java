@@ -1,4 +1,4 @@
-package net.luversof.web.blog.service;
+package net.luversof.security.service;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -7,11 +7,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import net.luversof.blog.service.BlogUserService;
 import net.luversof.security.core.userdetails.BlueskyUser;
+import net.luversof.user.service.LoginUserService;
 
 @Service
-public class WebBlogUserService implements BlogUserService {
+public class SecurityLoginUserService implements LoginUserService {
 
 	@Override
 	public Optional<UUID> getUserId() {

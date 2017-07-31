@@ -177,6 +177,16 @@
 			</dependency>
 			<dependency>
 				<groupId>net.luversof</groupId>
+				<artifactId>bluesky-app-domain</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.luversof</groupId>
+				<artifactId>bluesky-app-user</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.luversof</groupId>
 				<artifactId>bluesky-opensource-integration</artifactId>
 				<version>${project.version}</version>
 			</dependency>

@@ -37,7 +37,6 @@
 		<dependency>
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-app-user</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 </project>
