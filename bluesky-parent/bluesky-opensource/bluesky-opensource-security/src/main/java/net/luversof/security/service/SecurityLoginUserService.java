@@ -8,6 +8,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import net.luversof.security.core.userdetails.BlueskyUser;
+import net.luversof.user.domain.User;
 import net.luversof.user.service.LoginUserService;
 
 @Service
@@ -20,6 +21,12 @@ public class SecurityLoginUserService implements LoginUserService {
 			return Optional.empty();
 		}
 		return Optional.of(((BlueskyUser) authentication.getPrincipal()).getId());
+	}
+
+	@Override
+	public Optional<User> getUser() {
+		// TODO Auto-generated method stub
+		return Optional.empty();
 	}
 
 }

@@ -13,6 +13,8 @@ import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.repository.BookkeepingRepository;
 import net.luversof.core.exception.BlueskyException;
+import net.luversof.core.exception.CoreErrorCode;
+import net.luversof.user.service.LoginUserService;
 
 @Service
 public class BookkeepingService {
@@ -26,6 +28,9 @@ public class BookkeepingService {
 	@Autowired
 	private AssetService assetService;
 	
+	@Autowired
+	private LoginUserService loginUserService;
+	
 	/**
 	 * 가계부 생성시 아래 default 데이터 생성
 	 * 기본 자산 (asset)
@@ -35,6 +40,7 @@ public class BookkeepingService {
 	 */
 	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
 	public Bookkeeping create(Bookkeeping bookkeeping) {
+		bookkeeping.setUserId(loginUserService.getUserId().orElseThrow(() -> new BlueskyException(CoreErrorCode.NOT_EXIST_USER_ID)));
 		bookkeepingRepository.save(bookkeeping);
 		assetService.initialDataSave(bookkeeping);
 		entryGroupService.initialDataSave(bookkeeping);

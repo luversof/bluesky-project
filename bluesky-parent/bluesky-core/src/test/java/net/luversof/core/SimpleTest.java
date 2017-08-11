@@ -5,7 +5,7 @@ import java.text.MessageFormat;
 import java.util.Comparator;
 
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.core.exception.ErrorCode;
+import net.luversof.core.exception.CoreErrorCode;
 import net.luversof.core.util.EncryptionUtil;
 
 import org.junit.Test;
@@ -64,7 +64,7 @@ public class SimpleTest {
 	
 	@Test
 	public void test4() {
-		ErrorCode notExistUser = ErrorCode.NOT_EXIST_USER;
+		CoreErrorCode notExistUser = CoreErrorCode.NOT_EXIST_USER;
 		String join = String.join(".",  notExistUser.getClass().getSimpleName(), notExistUser.name());
 		log.debug("join : {}", join);
 	}

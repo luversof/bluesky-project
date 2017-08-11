@@ -1,4 +1,4 @@
-package net.luversof.blog;
+package net.luversof.bookkeeping;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -9,7 +9,7 @@ import net.luversof.user.domain.User;
 import net.luversof.user.service.LoginUserService;
 
 @Service
-public class BlogLoginUserServiceTestImpl implements LoginUserService {
+public class BookkeepingUserServiceTestImpl implements LoginUserService {
 
 	@Override
 	public Optional<UUID> getUserId() {

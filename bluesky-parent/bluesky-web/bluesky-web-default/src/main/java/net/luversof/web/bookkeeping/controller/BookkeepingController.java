@@ -50,8 +50,7 @@ public class BookkeepingController {
 	}
 	
 	@PostMapping
-	public Bookkeeping createBookkeeping(@RequestBody @Validated(Bookkeeping.Create.class) Bookkeeping bookkeeping, Authentication authentication) {
-		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+	public Bookkeeping createBookkeeping(@RequestBody @Validated(Bookkeeping.Create.class) Bookkeeping bookkeeping) {
 		return bookkeepingService.create(bookkeeping);
 	}
 	

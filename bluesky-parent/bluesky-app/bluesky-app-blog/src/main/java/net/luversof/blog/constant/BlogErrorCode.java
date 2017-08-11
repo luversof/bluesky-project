@@ -1,8 +1,6 @@
 package net.luversof.blog.constant;
 
 public enum BlogErrorCode {
-	NOT_EXIST_USER_ID,
-	
 	NOT_EXIST_BLOG,
 	NOT_EXIST_ARTICLE,
 	
