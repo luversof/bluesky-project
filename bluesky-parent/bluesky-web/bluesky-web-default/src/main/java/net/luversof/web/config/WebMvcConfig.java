@@ -3,6 +3,7 @@ package net.luversof.web.config;
 import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.format.datetime.standard.DateTimeFormatterRegistrar;
@@ -15,6 +16,7 @@ import org.thymeleaf.spring5.view.ThymeleafViewResolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Configuration
+@EnableDiscoveryClient
 public class WebMvcConfig implements WebMvcConfigurer {
 
 	@Autowired
