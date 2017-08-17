@@ -1,6 +1,7 @@
 package net.luversof.core;
 
 import java.text.MessageFormat;
+import java.util.Properties;
 
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +34,7 @@ public class EncryptionTest extends GeneralTest {
 		log.debug("result3 : {}", MessageFormat.format("jdbc:mysql://{0}:{1}/{2}?useSSL=false&useUnicode=true&autoReconnection=true", "127.0.0.1", "3306", "user"));
 	}
 	
-	@Value("${dataSource.blog.password}")
+	@Value("${asdafsdf:}")
 //	@Value("${spring.config.name}")
 	String test;
 	
@@ -48,5 +49,14 @@ public class EncryptionTest extends GeneralTest {
 	@Test
 	public void test3() {
 		log.debug("test : {}", applicationContext.getMessage("HttpRequestMethodNotSupportedException", null, null));
+	}
+	
+	
+	@Autowired
+	private Properties properties;
+	
+	@Test
+	public void test4() {
+		log.debug("result : {}", properties);
 	}
 }

@@ -1,0 +1,6 @@
+spring:
+  profiles: opdev
+  cloud:
+    config:
+      name: bluesky-project
+      uri: http://localhost:8888
