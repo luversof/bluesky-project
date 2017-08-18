@@ -13,7 +13,7 @@ public class BookkeepingUserServiceTestImpl implements LoginUserService {
 
 	@Override
 	public Optional<UUID> getUserId() {
-		return Optional.of(UUID.fromString("77a04682-3032-492c-9449-5ba986491eef"));
+		return Optional.of(UUID.randomUUID());
 	}
 
 	@Override
