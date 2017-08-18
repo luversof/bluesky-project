@@ -10,6 +10,7 @@
 		<module>bluesky-core</module>
 		<module>bluesky-opensource</module>
 		<module>bluesky-test</module>
+		<module>bluesky-cloud</module>
 	</modules>
 
 	<parent>
@@ -37,7 +38,7 @@
 			</resource>
 			<resource>
 				<directory>src/main/resources</directory>
-				<filtering>true</filtering>
+				<filtering>false</filtering>
 			</resource>
 		</resources>
 	</build>

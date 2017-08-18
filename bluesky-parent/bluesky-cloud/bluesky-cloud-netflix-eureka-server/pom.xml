@@ -3,10 +3,10 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>net.luversof</groupId>
-		<artifactId>bluesky-web</artifactId>
+		<artifactId>bluesky-cloud</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>bluesky-web-eureka-server</artifactId>
+	<artifactId>bluesky-cloud-netflix-eureka-server</artifactId>
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>

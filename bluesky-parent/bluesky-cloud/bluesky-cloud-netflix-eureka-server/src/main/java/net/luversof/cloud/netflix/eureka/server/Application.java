@@ -1,4 +1,4 @@
-package net.luversof.web.eureka.server;
+package net.luversof.cloud.netflix.eureka.server;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

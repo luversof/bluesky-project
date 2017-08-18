@@ -10,9 +10,6 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>bluesky-web-default</module>
-		<module>bluesky-web-eureka-server</module>
-		<module>bluesky-web-admin-server</module>
-		<module>bluesky-web-config-server</module>
 	</modules>
 	<dependencies>
 		<dependency>
