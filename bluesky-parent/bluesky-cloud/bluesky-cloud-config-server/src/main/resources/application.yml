@@ -7,3 +7,6 @@ spring:
         git:
           uri: https://github.com/luversof/bluesky-config-repo
           default-label: develop
+    bus:
+      enabled: false
+management.security.enabled: false

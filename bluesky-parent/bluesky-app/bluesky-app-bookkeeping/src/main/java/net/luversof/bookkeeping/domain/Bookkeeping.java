@@ -11,6 +11,7 @@ import javax.persistence.Table;
 import javax.validation.constraints.Min;
 
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.envers.Audited;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.hibernate.validator.constraints.Range;
 
@@ -18,6 +19,7 @@ import lombok.Data;
 
 @Data
 @Entity
+@Audited
 @Table(indexes = @Index(name = "IDX_Bookkeeping_userId", columnList = "user_id", unique = true))
 public class Bookkeeping {
 
