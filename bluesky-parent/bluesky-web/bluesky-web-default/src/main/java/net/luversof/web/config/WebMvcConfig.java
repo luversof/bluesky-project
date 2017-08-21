@@ -16,7 +16,7 @@ import org.thymeleaf.spring5.view.ThymeleafViewResolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Configuration
-@EnableDiscoveryClient
+//@EnableDiscoveryClient
 public class WebMvcConfig implements WebMvcConfigurer {
 
 	@Autowired

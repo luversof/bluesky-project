@@ -19,21 +19,21 @@ import net.luversof.bbs.service.ArticleService;
 
 @Slf4j
 @RestController
-@RequestMapping(value = "/board/{boardAlias}", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/bbs/{boardAlias}/article", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BbsArticleController {
 	
 	@Autowired
 	private ArticleService bbsArticleService;
 	
 	@PreBbsAuthorize(checkBbsActivated = true)
-	@GetMapping("/article")
+	@GetMapping
 	public Page<Article> list(@PathVariable String boardAlias, @RequestParam(defaultValue = "1") int page) {
 		Page<Article> bbsArticleList = bbsArticleService.selectBbsArticleList(boardAlias, PageRequest.of(page - 1, 20, new Sort(Direction.DESC, "id")));
 		log.debug("bbsArticleList : {}", bbsArticleList);
 		return bbsArticleList;
 	}
 	
-	@GetMapping(value = "/article/{id}")
+	@GetMapping(value = "/{id}")
 	public Article view(@PathVariable String boardAlias, @PathVariable  long id) {
 		Article bbsArticle = bbsArticleService.selectBbsArticle(id);
 		log.debug("bbsArticleList : {}", bbsArticle);

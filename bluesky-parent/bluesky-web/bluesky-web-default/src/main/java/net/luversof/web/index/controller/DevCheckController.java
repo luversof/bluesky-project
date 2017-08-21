@@ -1,8 +1,13 @@
 package net.luversof.web.index.controller;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import javax.validation.constraints.NotNull;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.EnumerablePropertySource;
+import org.springframework.core.env.PropertySource;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.ui.ModelMap;
@@ -12,8 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.ConfigurableWebEnvironment;
 import org.thymeleaf.spring5.templateresolver.SpringResourceTemplateResolver;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -42,9 +45,29 @@ public class DevCheckController {
 	
 	@GetMapping("/allProperties")
 	@SneakyThrows
-	public String allProperties() {
-		ObjectMapper objectMapper = new ObjectMapper();
-		return objectMapper.writeValueAsString(environment.getPropertySources());
+	public Map<String, Object> allProperties() {
+		
+		String keyPrefix = "";
+		Map<String, Object> subProperties = new LinkedHashMap<String, Object>();
+		for (PropertySource<?> source : environment.getPropertySources()) {
+			if (source instanceof EnumerablePropertySource) {
+				for (String name : ((EnumerablePropertySource<?>) source).getPropertyNames()) {
+					String key = getSubKey(name, "", keyPrefix);
+					if (key != null && !subProperties.containsKey(key)) {
+						subProperties.put(key, source.getProperty(name));
+					}
+				}
+			}
+		}
+		
+		return subProperties;
+	}
+	
+	private static String getSubKey(String name, String rootPrefix, String keyPrefix) {
+		if (name.startsWith(rootPrefix + keyPrefix)) {
+			return name.substring((rootPrefix + keyPrefix).length());
+		}
+		return null;
 	}
 	
 	@GetMapping("/decoupledLogicToggle")

@@ -11,7 +11,7 @@ import net.luversof.bbs.domain.Bbs;
 import net.luversof.bbs.service.BbsService;
 
 @RestController
-@RequestMapping(value = "/board/{boardAlias}", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/bbs/{boardAlias}", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BbsController {
 
 	@Autowired
