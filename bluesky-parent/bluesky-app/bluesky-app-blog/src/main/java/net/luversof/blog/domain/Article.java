@@ -9,6 +9,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
 import javax.validation.constraints.NotNull;
 
@@ -35,7 +36,8 @@ public class Article {
 	private String title;
 
 	@NotEmpty(groups = { Save.class, Modify.class })
-	@Column(columnDefinition = "TEXT")
+	//@Column(columnDefinition = "TEXT")
+	@Lob
 	private String content;
 
 	@CreatedDate

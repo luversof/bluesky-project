@@ -1,5 +1,6 @@
 package net.luversof.blog.domain;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import javax.persistence.Column;
@@ -10,6 +11,7 @@ import javax.persistence.Index;
 import javax.persistence.Table;
 
 import org.hibernate.annotations.GenericGenerator;
+import org.springframework.data.annotation.CreatedDate;
 
 import lombok.Data;
 
@@ -31,5 +33,8 @@ public class Blog {
 
 	@Column(name = "user_id", length = 16)
 	private UUID userId;
+	
+	@CreatedDate
+	private LocalDateTime createdDate;
 
 }

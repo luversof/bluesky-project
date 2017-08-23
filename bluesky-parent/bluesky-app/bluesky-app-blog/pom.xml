@@ -9,8 +9,8 @@
 	<artifactId>bluesky-app-blog</artifactId>
 	<dependencies>
 		<dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-opensource-data-jpa</artifactId>
+			<groupId>net.luversof.boot</groupId>
+			<artifactId>bluesky-boot-starter-data-jpa</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>net.luversof</groupId>

@@ -106,19 +106,6 @@
 			</dependency>
 			<!-- (e) encryption -->
 
-			<!-- (s) mybatis -->
-			<dependency>
-				<groupId>org.mybatis.spring.boot</groupId>
-				<artifactId>mybatis-spring-boot-starter</artifactId>
-				<version>1.3.0</version>
-			</dependency>
-			<dependency>
-				<groupId>org.mybatis</groupId>
-				<artifactId>mybatis-typehandlers-jsr310</artifactId>
-				<version>1.0.2</version>
-			</dependency>
-			<!-- (e) mybatis -->
-
 			<!-- <dependency> <groupId>org.jadira.usertype</groupId> <artifactId>usertype.core</artifactId> 
 				<version>6.0.1.GA</version> </dependency> -->
 
@@ -193,21 +180,6 @@
 			<dependency>
 				<groupId>net.luversof</groupId>
 				<artifactId>bluesky-opensource-integration</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>net.luversof</groupId>
-				<artifactId>bluesky-opensource-jdbc</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>net.luversof</groupId>
-				<artifactId>bluesky-opensource-mybatis</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>net.luversof</groupId>
-				<artifactId>bluesky-opensource-data-jpa</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
