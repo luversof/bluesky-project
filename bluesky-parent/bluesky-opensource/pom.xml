@@ -10,7 +10,6 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>bluesky-opensource-security</module>
-		<module>bluesky-opensource-data-mongodb</module>
 		<module>bluesky-opensource-integration</module>
 	</modules>
 	<dependencies>
