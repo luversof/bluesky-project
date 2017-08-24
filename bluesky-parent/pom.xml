@@ -4,7 +4,7 @@
 	<groupId>net.luversof</groupId>
 	<artifactId>bluesky-parent</artifactId>
 	<packaging>pom</packaging>
-	<version>0.0.1-SNAPSHOT</version>
+	<!-- <version>0.0.1-SNAPSHOT</version> -->
 	<modules>
 		<module>bluesky-app</module>
 		<module>bluesky-web</module>
@@ -123,7 +123,7 @@
 			<dependency>
 				<groupId>org.webjars</groupId>
 				<artifactId>bootstrap</artifactId>
-				<version>4.0.0-alpha.6-1</version>
+				<version>4.0.0-beta</version>
 			</dependency>
 			<dependency>
 				<groupId>org.webjars</groupId>

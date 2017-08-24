@@ -21,7 +21,7 @@ public class PreBbsAuthorizeAspect {
 	@Autowired
 	private BbsService bbsService;
 	
-	@Before("@annotation(net.luversof.bbs.annotation.PreBbsAuthorize)")
+	@Before("@annotation(preBbsAuthorize)")
 	public void before(JoinPoint joinPoint, PreBbsAuthorize preBbsAuthorize) {
 		MethodSignature signature = (MethodSignature) joinPoint.getSignature();
 		if (!Arrays.stream(signature.getParameterNames()).anyMatch(parameterName -> preBbsAuthorize.boardAlias().equals(parameterName))) {

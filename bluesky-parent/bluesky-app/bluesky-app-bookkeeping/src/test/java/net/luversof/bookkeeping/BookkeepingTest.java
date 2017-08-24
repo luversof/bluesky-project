@@ -21,7 +21,7 @@ public class BookkeepingTest extends GeneralTest {
 	@Test
 	public void save() {
 		Bookkeeping bookkeeping = new Bookkeeping();
-		bookkeeping.setName("test1");
+		bookkeeping.setName("test2");
 		log.debug("bookkeeping : {}", bookkeeping);
 		Bookkeeping result = bookkeepingService.create(bookkeeping);
 		log.debug("bookkeeping : {}", bookkeeping);
@@ -30,7 +30,7 @@ public class BookkeepingTest extends GeneralTest {
 	
 	@Test
 	public void findOne() {
-		log.debug("bookkeeping : {}", bookkeepingService.findById(UUID.fromString("1")));
+		log.debug("bookkeeping : {}", bookkeepingService.findById(TEST_USER_ID));
 	}
 	
 	@Test

@@ -47,7 +47,7 @@ import net.luversof.web.constant.AuthorizeRole;
  * @author bluesky
  *
  */
-@RestController
+//@RestController
 @PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 @RequestMapping(value = "/bookkeeping/{bookkeeping.id}/statistics", produces = MediaType.APPLICATION_JSON_VALUE)
 public class StatisticsController {

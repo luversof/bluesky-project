@@ -32,10 +32,8 @@
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-opensource-security</artifactId>
 		</dependency>
-		<!-- <dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-opensource-integration</artifactId>
-		</dependency> -->
+		<!-- <dependency> <groupId>net.luversof</groupId> <artifactId>bluesky-opensource-integration</artifactId> 
+			</dependency> -->
 		<!-- (e) bluesky -->
 
 		<!-- (s) spring-boot -->
@@ -58,6 +56,10 @@
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-eureka</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.data</groupId>
+			<artifactId>spring-data-rest-hal-browser</artifactId>
 		</dependency>
 		<!-- (e) spring-boot -->
 

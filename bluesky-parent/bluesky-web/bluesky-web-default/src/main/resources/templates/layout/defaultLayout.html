@@ -22,7 +22,8 @@
 	<!-- (e) jquery -->
 	
 	<!-- (s) bootstrap -->	
-	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js"></script>
+	<!-- <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js"></script> -->
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.js"></script>
 	<script type="text/javascript" th:src="#{url.bootstrap.js}"></script>
 	<link rel="stylesheet" type="text/css" th:href="#{url.bootstrap.css}" />
 	<!-- (e) bootstrap -->
@@ -46,11 +47,11 @@
 </head>
 <body>
 	<!-- (s) navibar -->
-	<nav class="navbar navbar-toggleable-md navbar-inverse fixed-top bg-inverse">
-		<button type="button" class="navbar-toggler navbar-toggler-right" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+	<nav class="navbar navbar-expand-lg navbar-dark fixed-top bg-dark">
+		<a class="navbar-brand" th:href="@{/}">Bluesky</a>
+		<button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar" aria-controls="navbar">
 			<span class="navbar-toggler-icon"></span>
 		</button>
-		<a class="navbar-brand" th:href="@{/}">Bluesky</a>
 		<div class="collapse navbar-collapse" id="navbar">
 			<ul class="navbar-nav mr-auto">
 				<li class="nav-item" th:classappend="${menu.id == 'bbs' ? 'active' : ''}">

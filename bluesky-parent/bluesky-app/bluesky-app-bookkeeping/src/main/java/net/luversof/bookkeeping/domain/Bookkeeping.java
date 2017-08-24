@@ -41,7 +41,7 @@ public class Bookkeeping {
 	private String name;
 
 	@Column(name = "user_id", length = 16)
-	@NotEmpty(groups = Update.class)
+	@NotEmpty(groups = { Update.class, Search.class })
 	private UUID userId;
 
 	/**
@@ -58,4 +58,6 @@ public class Bookkeeping {
 
 	public interface Delete {
 	}
+	
+	public interface Search {}
 }

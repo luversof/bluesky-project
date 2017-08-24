@@ -19,7 +19,7 @@ import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.core.exception.BlueskyException;
 import net.luversof.security.core.userdetails.BlueskyUser;
 
-@Component
+//@Component
 public class BookkeepingHandlerMethodArgumentResolver implements HandlerMethodArgumentResolver {
 	
 	@Autowired

@@ -23,7 +23,7 @@ import net.luversof.bookkeeping.service.AssetService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
 
-@RestController
+//@RestController
 @PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 @RequestMapping(value = "/bookkeeping/{bookkeeping.id}/asset", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AssetController {

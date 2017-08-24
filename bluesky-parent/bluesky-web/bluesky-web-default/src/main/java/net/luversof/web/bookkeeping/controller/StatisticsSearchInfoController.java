@@ -14,7 +14,7 @@ import net.luversof.bookkeeping.domain.StatisticsSearchInfo;
 import net.luversof.bookkeeping.service.StatisticsSearchInfoService;
 import net.luversof.web.constant.AuthorizeRole;
 
-@RestController
+//@RestController
 @PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 @RequestMapping(value = "/bookkeeping/{bookkeeping.id}/statisticsSearchInfo", produces = MediaType.APPLICATION_JSON_VALUE)
 public class StatisticsSearchInfoController {

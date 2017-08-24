@@ -18,7 +18,7 @@ import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
 
-@Controller
+//@Controller
 @RequestMapping(value = "/bookkeeping", produces = MediaType.TEXT_HTML_VALUE)
 public class BookkeepingViewController {
 	
