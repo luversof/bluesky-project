@@ -1,9 +1,9 @@
-drop database user;
-drop database blog;
-drop database bookkeeping;
-drop database bbs;
+DROP DATABASE IF EXISTS user;
+DROP DATABASE IF EXISTS blog;
+DROP DATABASE IF EXISTS bookkeeping;
+DROP DATABASE IF EXISTS bbs;
 
-create database user;
-create database blog;
-create database bookkeeping;
-create database bbs;
+CREATE DATABASE IF NOT EXISTS user;
+CREATE DATABASE IF NOT EXISTS blog;
+CREATE DATABASE IF NOT EXISTS bookkeeping;
+CREATE DATABASE IF NOT EXISTS bbs;
