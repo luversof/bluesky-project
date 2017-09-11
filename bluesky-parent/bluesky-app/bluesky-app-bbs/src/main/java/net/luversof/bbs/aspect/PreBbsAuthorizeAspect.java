@@ -17,7 +17,7 @@ import net.luversof.core.exception.BlueskyException;
 @Aspect
 @Component
 public class PreBbsAuthorizeAspect {
-	
+
 	@Autowired
 	private BbsService bbsService;
 	

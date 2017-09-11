@@ -314,6 +314,14 @@
 			<id>spring-milestones</id>
 			<url>http://repo.spring.io/milestone</url>
 		</repository>
+		<repository>
+			<id>github-bluesky-maven-repo</id>
+			<url>https://raw.githubusercontent.com/luversof/bluesky-maven-repo/master/snapshots</url>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
+		</repository>
 	</repositories>
 	<pluginRepositories>
 		<pluginRepository>
