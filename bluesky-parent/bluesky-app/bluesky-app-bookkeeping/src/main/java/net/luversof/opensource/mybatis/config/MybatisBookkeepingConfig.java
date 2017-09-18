@@ -3,12 +3,15 @@ package net.luversof.opensource.mybatis.config;
 import javax.sql.DataSource;
 
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.type.TypeHandler;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+
+import net.luversof.boot.autoconfigure.mybatis.type.UUIDTypeHandler;
 
 
 @Configuration
@@ -21,6 +24,7 @@ public class MybatisBookkeepingConfig {
 				new PathMatchingResourcePatternResolver().getResources("classpath*:net/luversof/bookkeeping/mapper/xml/*Mapper.xml")
 			);
 		sqlSessionFactoryBean.setTypeHandlersPackage("net.luversof.boot.autoconfigure.mybatis.type");
+		sqlSessionFactoryBean.setTypeHandlers(new TypeHandler[]{new UUIDTypeHandler()});
 		sqlSessionFactoryBean.setDataSource(bookkeepingDataSource);
 		sqlSessionFactoryBean.afterPropertiesSet();
 		return sqlSessionFactoryBean.getObject();
