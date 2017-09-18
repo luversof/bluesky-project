@@ -21,7 +21,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 import lombok.Data;
 import net.luversof.web.util.DevCheckUtil;
 
-@Controller("brickModulesDevCheckViewController")
+@Controller
 @RequestMapping(value = "/_check", produces = MediaType.TEXT_HTML_VALUE)
 public class DevCheckViewController {
 	
