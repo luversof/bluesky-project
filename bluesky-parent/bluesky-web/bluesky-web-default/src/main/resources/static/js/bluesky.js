@@ -114,8 +114,12 @@ $(document).ready(function() {
 	 * ajax 전역 에러 처리
 	 */
 	$(document).ajaxError(function(event, jqXHR, ajaxSettings, thrownError) {
-		var result = jqXHR.responseJSON.result;
 		var alertMessage = "에러가 발생하였습니다.";
+		if (jqXHR.responseJSON === undefined) {
+			//alert(alertMessage);
+			return;
+		}
+		var result = jqXHR.responseJSON.result;
 		if (result === undefined) {
 			alert(alertMessage);
 			return;

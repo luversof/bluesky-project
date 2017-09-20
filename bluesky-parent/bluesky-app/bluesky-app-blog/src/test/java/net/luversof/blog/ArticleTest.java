@@ -113,17 +113,17 @@ public class ArticleTest extends GeneralTest {
 		}
 	}
 
-	@Test
-//	@Ignore
-	public void selectPaging테스트() {
-		Blog blog = blogRepository.findByUserId(userId).get();
-		
-		Pageable page = PageRequest.of(1, 10);
-		Page<Article> blogList = articleRepository.findByBlog(blog, page);
-		log.debug("blogList : {}", blogList);
-		log.debug("blogList : {}", blogList.getContent());
-		
-	}
+//	@Test
+////	@Ignore
+//	public void selectPaging테스트() {
+//		Blog blog = blogRepository.findByUserId(userId).get();
+//		
+//		Pageable page = PageRequest.of(1, 10);
+//		Page<Article> blogList = articleRepository.findByBlog(blog, page);
+//		log.debug("blogList : {}", blogList);
+//		log.debug("blogList : {}", blogList.getContent());
+//		
+//	}
 	
 //	@Test
 //	@Ignore

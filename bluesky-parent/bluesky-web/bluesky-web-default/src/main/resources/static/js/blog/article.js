@@ -1,6 +1,21 @@
 $(document).ready(function() {
-	var blog = function() {
+	/*var */article = function() {
+		var _link = {
+			list : "/api/blogArticles/search/findByBlogId"	
+		}
+		
+		var _list = function(blogId) {
+			var data = {};
+			data.id = blogId;
+			return $.getJSON(_link.list, data);
+		}
+		
 		return {
+			list : function(blogId) {
+				_list(blogId).done(function(data) {
+					console.log(data);
+				});
+			},
 			create : function() {
 				var form = $("[name=blog-create]");
 				$.ajax({
@@ -52,20 +67,20 @@ $(document).ready(function() {
 	
 	$("[name=blog-create] :submit").on("click", function(e) {
 		e.preventDefault();
-		blog.create();
+		article.create();
 	});
 
 	$("[name=blog-write] :submit").on("click", function(e) {
 		e.preventDefault();
-		blog.save();
+		article.save();
 	});
 	
 	$("[name=blog-modify] :submit").on("click", function(e) {
 		e.preventDefault();
-		blog.modify();
+		article.modify();
 	});
 	
 	$("[data-delete-blog-article-articleId]").on("click", function() {
-		blog.remove($(this).attr("data-delete-blog-article-blogId"), $(this).attr("data-delete-blog-article-articleId"));
+		blarticleog.remove($(this).attr("data-delete-blog-article-blogId"), $(this).attr("data-delete-blog-article-articleId"));
 	});
 });
