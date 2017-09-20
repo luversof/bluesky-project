@@ -36,7 +36,7 @@
 			</tr>
 		</thead>
 		<tbody>
-			<tr th:if="${articlePage.hasContent()}" th:each="blogArticle : ${articlePage.getContent()}">
+			<!-- <tr th:if="${articlePage.hasContent()}" th:each="blogArticle : ${articlePage.getContent()}">
 				<td th:text="${blogArticle.id}">id</td>
 				<td th:text="${blogArticle.category} ? ${blogArticle.category.name}">category</td>
 				<td><a th:href="#{url.blog.view.view(${blogArticle.blog.id}, ${blogArticle.id})}" th:text="${blogArticle.title}">title</a></td>
@@ -45,10 +45,10 @@
 			</tr>
 			<tr th:if="${!articlePage.hasContent()}" class="text-center">
 				<td colspan="5" th:text="#{blog.article.message.empty.content}">article.message.empty.content</td>
-			</tr>
+			</tr> -->
 		</tbody>
 		<tfoot>
-			<tr>
+			<!-- <tr>
 				<td colspan="5" class="text-center">
 					<nav aria-label="Page navigation">
 						<ul class="pagination justify-content-center" th:if="${articlePage.totalPages} > 0">
@@ -71,7 +71,7 @@
 						<a th:href="#{url.blog.view.write(${blogId})}" sec:authorize="isAuthenticated()" class="btn btn-outline-primary" th:text="#{blog.menu.write}">write</a>
 					</div>
 				</td>
-			</tr>
+			</tr> -->
 		</tfoot>
 	</table>
 </th:block>

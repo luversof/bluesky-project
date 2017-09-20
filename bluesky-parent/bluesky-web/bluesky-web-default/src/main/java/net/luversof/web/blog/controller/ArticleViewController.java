@@ -24,9 +24,6 @@ import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.Article;
 import net.luversof.blog.domain.Article.Get;
 import net.luversof.blog.domain.Blog;
-import net.luversof.blog.service.ArticleService;
-import net.luversof.blog.service.BlogService;
-import net.luversof.blog.service.CategoryService;
 import net.luversof.core.exception.BlueskyException;
 import net.luversof.web.constant.AuthorizeRole;
 
@@ -37,14 +34,14 @@ public class ArticleViewController {
 	@Resource(name = "messageSourceAccessor")
 	private MessageSourceAccessor messageSourceAccessor;
 
-	@Autowired
-	private BlogService blogService;
-
-	@Autowired
-	private ArticleService articleService;
-
-	@Autowired
-	private CategoryService categoryService;
+//	@Autowired
+//	private BlogService blogService;
+//
+//	@Autowired
+//	private ArticleService articleService;
+//
+//	@Autowired
+//	private CategoryService categoryService;
 
 	@GetMapping(value = { "", "/view" })
 	public String redirectArticleList(@PathVariable(name = "blog.id") UUID blogId) {
@@ -65,10 +62,10 @@ public class ArticleViewController {
 	 */
 	@GetMapping(value = "/list")
 	public String list(@PathVariable(name = "blog.id") UUID blogId, @PageableDefault(sort = { "id" }, direction = Direction.DESC) Pageable pageable, ModelMap modelMap) {
-		Blog blog = blogService.findById(blogId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
-		Page<Article> articlePage = articleService.findByBlog(blog, pageable);
-		modelMap.addAttribute("articlePage", articlePage);
-		modelMap.addAttribute("blogId", blogId);
+//		Blog blog = blogService.findById(blogId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
+//		Page<Article> articlePage = articleService.findByBlog(blog, pageable);
+//		modelMap.addAttribute("articlePage", articlePage);
+//		modelMap.addAttribute("blogId", blogId);
 		return "blog/list";
 	}
 
@@ -81,9 +78,9 @@ public class ArticleViewController {
 	 */
 	@GetMapping(value = "/view/{id}")
 	public String view(@Validated(Get.class) Article article, ModelMap modelMap) {
-		Article viewArticle = articleService.findById(article.getId()).get();
-		articleService.incraseViewCount(viewArticle);
-		modelMap.addAttribute("article", viewArticle);
+//		Article viewArticle = articleService.findById(article.getId()).get();
+//		articleService.incraseViewCount(viewArticle);
+//		modelMap.addAttribute("article", viewArticle);
 		return "blog/view";
 	}
 
@@ -97,8 +94,8 @@ public class ArticleViewController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@GetMapping(value = "/write")
 	public String writePage(@PathVariable(name = "blog.id") UUID blogId, ModelMap modelMap) {
-		modelMap.addAttribute("categoryList", categoryService.findByBlogId(blogId));
-		modelMap.addAttribute("blogId", blogId);
+//		modelMap.addAttribute("categoryList", categoryService.findByBlogId(blogId));
+//		modelMap.addAttribute("blogId", blogId);
 		return "blog/write";
 	}
 
@@ -112,8 +109,8 @@ public class ArticleViewController {
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@GetMapping(value = "/modify/{id}")
 	public String modifyPage(@Validated(Get.class) Article article, ModelMap modelMap) {
-		modelMap.addAttribute("article", articleService.findById(article.getId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_ARTICLE)));
-		modelMap.addAttribute("categoryList", categoryService.findByBlog(blogService.findById(article.getBlog().getId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG))));
+//		modelMap.addAttribute("article", articleService.findById(article.getId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_ARTICLE)));
+//		modelMap.addAttribute("categoryList", categoryService.findByBlog(blogService.findById(article.getBlog().getId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG))));
 		return "blog/modify";
 	}
 }

@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import lombok.Setter;
 import net.luversof.blog.domain.Blog;
-import net.luversof.blog.service.BlogService;
+import net.luversof.blog.repository.BlogRepository;
 import net.luversof.core.util.AbstractRequestAttributeUtil;
 import net.luversof.user.service.LoginUserService;
 
@@ -20,7 +20,7 @@ public class BlogRequestAttributeUtil extends AbstractRequestAttributeUtil {
 	private static final String USER_BLOG = "__user_blog";
 	
 	@Setter
-	private static BlogService blogService;
+	private static BlogRepository blogRepository;
 	
 	@Setter
 	private static LoginUserService loginUserService;
@@ -46,7 +46,7 @@ public class BlogRequestAttributeUtil extends AbstractRequestAttributeUtil {
 			return null;
 		}
 		
-		userBlogOptional = blogService.findByUserId(userId);
+		userBlogOptional = blogRepository.findByUserId(userId);
 		setRequestAttribute(USER_BLOG, userBlogOptional);
 		return userBlogOptional.orElse(null);
 	}

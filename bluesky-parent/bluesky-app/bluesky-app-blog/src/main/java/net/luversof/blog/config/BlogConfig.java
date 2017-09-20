@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.util.Assert;
 
-import net.luversof.blog.service.BlogService;
+import net.luversof.blog.repository.BlogRepository;
 import net.luversof.blog.util.BlogRequestAttributeUtil;
 import net.luversof.user.service.LoginUserService;
 
@@ -16,16 +16,16 @@ import net.luversof.user.service.LoginUserService;
 public class BlogConfig {
 	
 	@Autowired
-	private BlogService blogService;
+	private BlogRepository blogRepository;
 	
 	@Autowired
 	private LoginUserService loginUserService;
 	
 	@PostConstruct
 	public void postConstruct() {
-		Assert.notNull(blogService, "blogService must not be null");
+		Assert.notNull(blogRepository, "blogRepository must not be null");
 		Assert.notNull(loginUserService, "loginUserService must not be null");
-		BlogRequestAttributeUtil.setBlogService(blogService);
+		BlogRequestAttributeUtil.setBlogRepository(blogRepository);
 		BlogRequestAttributeUtil.setLoginUserService(loginUserService);
 	}
 	

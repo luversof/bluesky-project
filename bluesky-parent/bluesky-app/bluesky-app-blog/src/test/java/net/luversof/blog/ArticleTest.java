@@ -16,21 +16,21 @@ import net.luversof.GeneralTest;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.domain.Article;
 import net.luversof.blog.domain.Category;
-import net.luversof.blog.service.CategoryService;
-import net.luversof.blog.service.ArticleService;
-import net.luversof.blog.service.BlogService;
+import net.luversof.blog.repository.ArticleRepository;
+import net.luversof.blog.repository.BlogRepository;
+import net.luversof.blog.repository.CategoryRepository;
 
 @Slf4j
 public class ArticleTest extends GeneralTest {
 
 	@Autowired
-	private ArticleService blogArticleService;
+	private ArticleRepository articleRepository;
 	
 	@Autowired
-	private CategoryService blogArticleCategoryService;
+	private CategoryRepository categoryRepository;
 	
 	@Autowired
-	private BlogService blogService;
+	private BlogRepository blogRepository ;
 	
 	private UUID userId = UUID.fromString("77a04682-3032-492c-9449-5ba986491eef");
 	
@@ -38,13 +38,13 @@ public class ArticleTest extends GeneralTest {
 	@Test
 //	@Ignore
 	public void selectTest() {
-		Optional<Article> blogArticleOptional = blogArticleService.findById(18);
+		Optional<Article> blogArticleOptional = articleRepository.findById((long) 18);
 		log.debug("result : {}", blogArticleOptional.get());
 	}
 	
 	@Test
 	public void 카테고리추가글작성테스트() {
-		Blog blog = blogService.findByUserId(userId).get();
+		Blog blog = blogRepository.findByUserId(userId).get();
 		for (int i = 0 ; i < 1024 ; i ++) {
 			
 			Article article = new Article();
@@ -59,7 +59,7 @@ public class ArticleTest extends GeneralTest {
 			articleCategory.setId(4);
 			//article.setArticleCategory(articleCategory);
 			
-			Article savedArticle = blogArticleService.save(article);
+			Article savedArticle = articleRepository.save(article);
 			log.debug("savedArticle : {}", savedArticle);
 		}
 		
@@ -68,13 +68,13 @@ public class ArticleTest extends GeneralTest {
 
 	@Test
 	public void 글삭제테스트() {
-		blogArticleService.delete(11);
+		articleRepository.deleteById((long) 11);
 	}
 	
 	
 	@Test
 	public void 수정전파테스트() {
-		Article article = blogArticleService.findById(11).get();
+		Article article = articleRepository.findById((long) 11).get();
 		article.setContent("수정했음3");
 		
 //		ArticleCategory articleCategory = articleCategoryService.findOne(4);
@@ -85,7 +85,7 @@ public class ArticleTest extends GeneralTest {
 		article.setCategory(category);
 		
 //		article.getArticleCategory().setName("수정2");
-		blogArticleService.save(article);
+		articleRepository.save(article);
 	}
 	
 	@Test
@@ -96,10 +96,10 @@ public class ArticleTest extends GeneralTest {
 		article.setTitle("한글제목");
 		article.setContent("한글내용");
 		
-		Category category = blogArticleCategoryService.findById(1).orElse(null);
+		Category category = categoryRepository.findById((long) 1).orElse(null);
 		article.setCategory(category);
 
-		Article savedArticle = blogArticleService.save(article);
+		Article savedArticle = articleRepository.save(article);
 		log.debug("article : {}", article);
 		log.debug("savedBlog : {}", savedArticle);
 		log.debug("savedBlog : {}", savedArticle.getId());
@@ -116,10 +116,10 @@ public class ArticleTest extends GeneralTest {
 	@Test
 //	@Ignore
 	public void selectPaging테스트() {
-		Blog blog = blogService.findByUserId(userId).get();
+		Blog blog = blogRepository.findByUserId(userId).get();
 		
 		Pageable page = PageRequest.of(1, 10);
-		Page<Article> blogList = blogArticleService.findByBlog(blog, page);
+		Page<Article> blogList = articleRepository.findByBlog(blog, page);
 		log.debug("blogList : {}", blogList);
 		log.debug("blogList : {}", blogList.getContent());
 		
@@ -135,7 +135,7 @@ public class ArticleTest extends GeneralTest {
 	
 	@Test
 	public void 블로그카테고리테스트() {
-		List<Category> list = blogArticleCategoryService.findByBlog(null);
+		List<Category> list = categoryRepository.findByBlog(null);
 		
 		
 		log.debug("list : {}", list);
@@ -143,8 +143,8 @@ public class ArticleTest extends GeneralTest {
 	
 	@Test
 	public void 블로그객체비교테스트() {
-		Blog blog = blogService.findById(UUID.randomUUID()).get();
-		Article article = blogArticleService.findById(1).get();
+		Blog blog = blogRepository.findById(UUID.randomUUID()).get();
+		Article article = articleRepository.findById((long) 1).get();
 		
 		System.out.println(blog);
 		System.out.println(article.getBlog());
