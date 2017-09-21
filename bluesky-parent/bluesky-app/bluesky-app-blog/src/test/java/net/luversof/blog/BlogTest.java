@@ -17,11 +17,13 @@ public class BlogTest extends GeneralTest {
 	@Autowired
 	private BlogRepository blogRepository;
 	
-//	@Test
-//	public void saveTest() {
-//		Blog blog = blogRepository.create();
-//		log.debug("blog : {}", blog);
-//	}
+	@Test
+	public void saveTest() {
+		Blog blog = new Blog();
+		blog.setUserId(UUID.randomUUID());
+		blogRepository.save(blog);
+		log.debug("blog : {}", blog);
+	}
 	
 	@Test
 	public void findAll() {

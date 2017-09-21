@@ -33,7 +33,10 @@ public class BlueskyUser implements UserDetails, CredentialsContainer {
     private final UserType userType;
     private final String externalId;	// oauth 인증으로 넘어온 경우의 externalId 정보
     
+    private final User user;
+    
     public BlueskyUser(User user) {
+    	this.user = user;
     	this.id = user.getId();
     	this.username = user.getUsername();
     	this.password = user.getPassword();

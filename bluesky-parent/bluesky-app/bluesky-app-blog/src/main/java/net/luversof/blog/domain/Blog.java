@@ -11,6 +11,7 @@ import javax.persistence.Index;
 import javax.persistence.Table;
 
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.envers.Audited;
 import org.springframework.data.annotation.CreatedDate;
 
 import lombok.Data;
@@ -22,6 +23,7 @@ import lombok.Data;
  */
 @Data
 @Entity
+@Audited
 @Table(indexes = @Index(name = "IDX_Blog_userId", columnList = "user_id", unique = true) )
 public class Blog {
 

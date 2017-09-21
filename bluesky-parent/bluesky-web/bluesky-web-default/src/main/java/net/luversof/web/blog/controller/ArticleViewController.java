@@ -65,7 +65,7 @@ public class ArticleViewController {
 //		Blog blog = blogService.findById(blogId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
 //		Page<Article> articlePage = articleService.findByBlog(blog, pageable);
 //		modelMap.addAttribute("articlePage", articlePage);
-//		modelMap.addAttribute("blogId", blogId);
+		modelMap.addAttribute("blogId", blogId);
 		return "blog/list";
 	}
 

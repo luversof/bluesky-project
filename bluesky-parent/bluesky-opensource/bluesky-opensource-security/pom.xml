@@ -10,11 +10,11 @@
 	<dependencies>
 
 		<!-- (s) provided -->
-		<dependency>
+<!-- 		<dependency>
 			<groupId>javax.servlet</groupId>
 			<artifactId>javax.servlet-api</artifactId>
 			<scope>provided</scope>
-		</dependency>
+		</dependency> -->
 		<!-- (e) provided -->
 
 		<dependency>

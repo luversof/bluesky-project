@@ -7,9 +7,7 @@ import java.util.UUID;
 
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.security.test.context.support.WithMockUser;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
@@ -37,8 +35,9 @@ public class ArticleTest extends GeneralTest {
 
 	@Test
 //	@Ignore
+	@WithMockUser
 	public void selectTest() {
-		Optional<Article> blogArticleOptional = articleRepository.findById((long) 18);
+		Optional<Article> blogArticleOptional = articleRepository.findById((long) 2);
 		log.debug("result : {}", blogArticleOptional.get());
 	}
 	

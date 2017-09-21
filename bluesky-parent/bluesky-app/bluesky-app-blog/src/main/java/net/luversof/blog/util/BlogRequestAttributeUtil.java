@@ -7,6 +7,7 @@ import lombok.Setter;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.BlogRepository;
 import net.luversof.core.util.AbstractRequestAttributeUtil;
+import net.luversof.user.domain.User;
 import net.luversof.user.service.LoginUserService;
 
 /**
@@ -16,7 +17,6 @@ import net.luversof.user.service.LoginUserService;
  */
 public class BlogRequestAttributeUtil extends AbstractRequestAttributeUtil {
 	
-	private static final String USER_ID = "__user_id";
 	private static final String USER_BLOG = "__user_blog";
 	
 	@Setter
@@ -26,14 +26,8 @@ public class BlogRequestAttributeUtil extends AbstractRequestAttributeUtil {
 	private static LoginUserService loginUserService;
 	
 	public static UUID getUserId() {
-		Optional<UUID> userIdOptional = getRequestAttribute(USER_ID);
-		if (userIdOptional != null) {
-			return userIdOptional.orElse(null);
-		}
-		
-		userIdOptional = loginUserService.getUserId();
-		setRequestAttribute(USER_ID, userIdOptional);
-		return userIdOptional.orElse(null);
+		Optional<User> userOptional = loginUserService.getUser();
+		return userOptional.isPresent() ? userOptional.get().getId() : null;
 	}
 	
 	public static Blog getUserBlog() {

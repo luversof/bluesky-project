@@ -1,5 +1,5 @@
 $(document).ready(function() {
-	/*var */article = function() {
+	/*var */$.article = function() {
 		var _link = {
 			list : "/api/blogArticles/search/findByBlogId"	
 		}
@@ -13,7 +13,8 @@ $(document).ready(function() {
 		return {
 			list : function(blogId) {
 				_list(blogId).done(function(data) {
-					console.log(data);
+					console.log("data : ", data);
+					console.log(Mustache.render($("#articleListTemplate").html(), data));
 				});
 			},
 			create : function() {
@@ -67,20 +68,20 @@ $(document).ready(function() {
 	
 	$("[name=blog-create] :submit").on("click", function(e) {
 		e.preventDefault();
-		article.create();
+		$.article.create();
 	});
 
 	$("[name=blog-write] :submit").on("click", function(e) {
 		e.preventDefault();
-		article.save();
+		$.article.save();
 	});
 	
 	$("[name=blog-modify] :submit").on("click", function(e) {
 		e.preventDefault();
-		article.modify();
+		$.article.modify();
 	});
 	
 	$("[data-delete-blog-article-articleId]").on("click", function() {
-		blarticleog.remove($(this).attr("data-delete-blog-article-blogId"), $(this).attr("data-delete-blog-article-articleId"));
+		$.remove($(this).attr("data-delete-blog-article-blogId"), $(this).attr("data-delete-blog-article-articleId"));
 	});
 });

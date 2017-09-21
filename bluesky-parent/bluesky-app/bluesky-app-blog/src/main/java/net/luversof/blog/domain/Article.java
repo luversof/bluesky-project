@@ -12,14 +12,17 @@ import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
 import javax.validation.constraints.NotNull;
 
+import org.hibernate.envers.Audited;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.rest.core.annotation.Description;
 
 import lombok.Data;
 
 @Data
 @Entity
+@Audited
 public class Article {
 
 	@Id
@@ -31,6 +34,7 @@ public class Article {
 	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_article_blogId"))
 	private Blog blog;
 
+	@Description("제목")
 	@NotEmpty(groups = { Save.class, Modify.class })
 	private String title;
 

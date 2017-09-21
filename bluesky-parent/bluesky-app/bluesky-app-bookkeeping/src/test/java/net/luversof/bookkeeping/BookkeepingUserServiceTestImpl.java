@@ -12,8 +12,8 @@ import net.luversof.user.service.LoginUserService;
 public class BookkeepingUserServiceTestImpl implements LoginUserService {
 
 	@Override
-	public Optional<UUID> getUserId() {
-		return Optional.of(UUID.randomUUID());
+	public UUID getUserId() {
+		return UUID.randomUUID();
 	}
 
 	@Override
