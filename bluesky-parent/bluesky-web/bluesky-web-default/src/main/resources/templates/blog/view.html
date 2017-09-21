@@ -4,6 +4,11 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="blog/_template/blogLayout">
 <head>
+	<script>
+	$(document).ready(function() {
+		$.article.view("[[${blogId}]]", "[[${articleId}]]");
+	});
+	</script>
 	<script type="text/javascript" th:src="#{url.gist-embed.js}" defer="defer"></script>
 </head>
 <body>

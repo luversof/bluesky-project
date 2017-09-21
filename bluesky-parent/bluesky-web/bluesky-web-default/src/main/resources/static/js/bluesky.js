@@ -117,6 +117,11 @@ $(document).ready(function() {
 	 */
 	$(document).ajaxError(function(event, jqXHR, ajaxSettings, thrownError) {
 		var alertMessage = "에러가 발생하였습니다.";
+		if (jqXHR.status == 401) {
+			alert("로그인이 필요합니다.")
+			return;
+		}
+		
 		if (jqXHR.responseJSON === undefined) {
 			//alert(alertMessage);
 			return;

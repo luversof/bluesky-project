@@ -1,7 +1,8 @@
 $(document).ready(function() {
 	/*var */$.article = function() {
 		var _link = {
-			list : "/api/blogArticles/search/findByBlogId"	
+			list : "/api/blogArticles/search/findByBlogId",
+			view : "/api/blogArticles/{0}"
 		}
 		
 		var _list = function(blogId) {
@@ -13,10 +14,24 @@ $(document).ready(function() {
 		return {
 			list : function(blogId) {
 				_list(blogId).done(function(data) {
-					console.log("data : ", data);
-					console.log(Mustache.render($("#articleListTemplate").html(), data));
+					data.getId = function() {
+						var parts = this._links.self.href.split("/");
+						return parts[parts.length - 1];
+					}
+					data.getViewUrl = function() {
+						var parts = this._links.self.href.split("/");
+						return $.i18n.prop("url.blog.view.view", blogId, parts[parts.length - 1]);
+					}
+					data.getCreateDateFormat = function() {
+						return moment(this.createDate).format("LL");
+					}
+					console.log(data);
+					$(".table tbody").html(Mustache.render($("#articleListTemplate").html(), data));
 				});
 			},
+			view : function(blogId, articleId) {
+				
+			}
 			create : function() {
 				var form = $("[name=blog-create]");
 				$.ajax({

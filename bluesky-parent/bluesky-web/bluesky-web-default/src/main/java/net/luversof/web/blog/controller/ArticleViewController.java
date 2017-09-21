@@ -5,9 +5,7 @@ import java.util.UUID;
 
 import javax.annotation.Resource;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.MessageSourceAccessor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.web.PageableDefault;
@@ -20,11 +18,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.Article;
 import net.luversof.blog.domain.Article.Get;
-import net.luversof.blog.domain.Blog;
-import net.luversof.core.exception.BlueskyException;
 import net.luversof.web.constant.AuthorizeRole;
 
 @Controller
@@ -77,10 +72,11 @@ public class ArticleViewController {
 	 * @return
 	 */
 	@GetMapping(value = "/view/{id}")
-	public String view(@Validated(Get.class) Article article, ModelMap modelMap) {
+	public String view(@PathVariable(name = "blog.id") UUID blogId, @PathVariable(name = "id") UUID articleId, ModelMap modelMap) {
 //		Article viewArticle = articleService.findById(article.getId()).get();
 //		articleService.incraseViewCount(viewArticle);
-//		modelMap.addAttribute("article", viewArticle);
+		modelMap.addAttribute("blogId", blogId);
+		modelMap.addAttribute("articleId", articleId);
 		return "blog/view";
 	}
 

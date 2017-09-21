@@ -12,19 +12,16 @@
 	<script id="articleListTemplate" th:type="'mustache/template'">
 		{{#_embedded.blogArticles}}
 		<tr>
-			<td th:text="${blogArticle.id}">{{id}}</td>
-			<td th:text="${blogArticle.category} ? ${blogArticle.category.name}">category</td>
-			<td><a
-				th:href="#{url.blog.view.view(${blogArticle.blog.id}, ${blogArticle.id})}"
-				th:text="${blogArticle.title}">title</a></td>
-			<td
-				th:text="${blogArticle.createdDate == null ? '' : #temporals.format(blogArticle.createdDate, 'yyyy-MM-dd')}">createdDate</td>
-			<td th:text="${blogArticle.viewCount}"></td>
+			<td>{{getId}}</td>
+			<td th:text="${blogArticle.category} ? ${blogArticle.category.name}"></td>
+			<td><a href="{{{getViewUrl}}}">{{title}}</a></td>
+			<td>{{getCreateDateFormat}}</td>
+			<td>{{viewCount}}</td>
 		</tr>
 		{{/_embedded.blogArticles}}
 		{{^_embedded.blogArticles}}
 		<tr class="text-center">
-			<td colspan="5" th:text="#{blog.article.message.empty.content}">article.message.empty.content</td>
+			<td colspan="5" th:text="">[[#{blog.article.message.empty.content}]]</td>
 		</tr>
 		{{/_embedded.blogArticles}}
 	</script>

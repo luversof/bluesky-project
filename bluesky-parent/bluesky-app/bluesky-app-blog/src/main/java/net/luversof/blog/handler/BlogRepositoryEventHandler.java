@@ -12,7 +12,6 @@ import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.BlogRepository;
 import net.luversof.core.exception.BlueskyException;
-import net.luversof.core.exception.CoreErrorCode;
 import net.luversof.user.service.LoginUserService;
 
 @Component

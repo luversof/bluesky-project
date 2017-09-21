@@ -33,7 +33,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.Statistics;
 import net.luversof.bookkeeping.domain.StatisticsSearchInfo;

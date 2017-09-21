@@ -105,7 +105,7 @@ public class CoreExceptionHandler {
 		resultMap.put(RESULT, errorMessageList);
 		return new ModelAndView(ErrorPage.DEFAULT, resultMap);
 	}
-	
+	/*
 	@ExceptionHandler
 	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
 	public ModelAndView handleException(Exception exception) {
@@ -113,7 +113,7 @@ public class CoreExceptionHandler {
 		Map<String, ErrorMessage> resultMap = new HashMap<>();
 		resultMap.put(RESULT, getErrorMessage(exception));
 		return new ModelAndView(ErrorPage.DEFAULT, resultMap);
-	}
+	}*/
 
 	private ErrorMessage getErrorMessage(Exception exception) {
 		ErrorMessage errorMessage = new ErrorMessage();
