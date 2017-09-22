@@ -32,7 +32,7 @@ public class ArticleRepositoryEventHandler {
 	public void HandleBeforeCreate(Article article) {
 		UUID userId = loginUserService.getUserId();
 		Blog blog = blogRepository.findByUserId(userId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_USER_BLOG));
-		if (!blog.getId().equals(article.getBlog().getId())) {
+		if (article.getBlog() == null || !blog.getId().equals(article.getBlog().getId())) {
 			throw new BlueskyException(BlogErrorCode.INVALID_PARAMETER_BLOG_ID);
 		}
 		
