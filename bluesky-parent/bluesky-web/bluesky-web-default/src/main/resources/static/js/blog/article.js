@@ -11,6 +11,11 @@ $(document).ready(function() {
 			return $.getJSON(_link.list, data);
 		}
 		
+		var _view = function(blogId, articleId) {
+			var data = {};
+			return $.getJSON(_link.view.format(articleId), data);
+		}
+		
 		return {
 			list : function(blogId) {
 				_list(blogId).done(function(data) {
@@ -30,8 +35,11 @@ $(document).ready(function() {
 				});
 			},
 			view : function(blogId, articleId) {
-				
-			}
+				_view(blogId, articleId).done(function(data) {
+					console.log(Mustache.render($("#articleViewTemplate").html(), data));
+					$(".blog-view").html(Mustache.render($("#articleViewTemplate").html(), data));
+				});
+			},
 			create : function() {
 				var form = $("[name=blog-create]");
 				$.ajax({

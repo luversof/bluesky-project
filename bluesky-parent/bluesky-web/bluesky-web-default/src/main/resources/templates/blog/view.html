@@ -10,11 +10,20 @@
 	});
 	</script>
 	<script type="text/javascript" th:src="#{url.gist-embed.js}" defer="defer"></script>
+	<script id="articleViewTemplate" th:type="'mustache/template'">
+		<article>
+			<h2>{{#category}}[{{category.name}}] {{/category}}{{title}}</h2>
+			<p><time pubdate="pubdate">createdDate</time></p>
+			<p th:text="#{blog.article.text.viewCount} + ' : '">{{viewCount}}</p>
+			<div>{{{content}}}</div>
+		</article>
+	</script>
 </head>
 <body>
 	<th:block layout:fragment="content-blog">
 
 		<div class="blog-view">
+			<!-- 
 			<article>
 				<h2 th:text="${article.category} ? #{blog.article.message.title(${article.title}, ${article.category.name})} : ${article.title}">title</h2>
 				<p><time pubdate="pubdate" th:text="${#temporals.format(article.createdDate, 'yyyy-MM-dd mm:HH:ss')}">createdDate</time></p>
@@ -47,8 +56,8 @@
 				<div class="panel panel-default text-center">
 					<div class="fb-comments panel-body" th:attr="data-href='http://luversof.cafe24.com/blog/' + ${article.id}" ></div>
 				</div>
-				<!-- facebook 댓글은 나중에 고민하자, width 가변 문제 해결 필요  -->
 			</div>
+			 -->
 		</div>
 	</th:block>
 </body>

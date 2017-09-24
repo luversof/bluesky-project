@@ -72,7 +72,7 @@ public class ArticleViewController {
 	 * @return
 	 */
 	@GetMapping(value = "/view/{id}")
-	public String view(@PathVariable(name = "blog.id") UUID blogId, @PathVariable(name = "id") UUID articleId, ModelMap modelMap) {
+	public String view(@PathVariable(name = "blog.id") UUID blogId, @PathVariable(name = "id") long articleId, ModelMap modelMap) {
 //		Article viewArticle = articleService.findById(article.getId()).get();
 //		articleService.incraseViewCount(viewArticle);
 		modelMap.addAttribute("blogId", blogId);
