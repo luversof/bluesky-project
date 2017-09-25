@@ -3,9 +3,15 @@ package net.luversof.blog.handler;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.bind.validation.BindValidationException;
+import org.springframework.boot.context.properties.bind.validation.ValidationErrors;
 import org.springframework.data.rest.core.annotation.HandleBeforeCreate;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindException;
+import org.springframework.validation.ValidationUtils;
+import org.springframework.validation.Validator;
 
 import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.Article;
@@ -27,9 +33,20 @@ public class ArticleRepositoryEventHandler {
 	
 	@Autowired
 	private CategoryRepository categoryRepository;
+	
+	@Autowired
+	private Validator validator;
 
 	@HandleBeforeCreate
-	public void HandleBeforeCreate(Article article) {
+	public void HandleBeforeCreate(Article article) throws BindException {
+		
+		// 이름 첫부분 소문자 처리 확인 필요?
+		BeanPropertyBindingResult beanPropertyBindingResult = new BeanPropertyBindingResult(article, article.getClass().getSimpleName());
+		ValidationUtils.invokeValidator(validator, article, beanPropertyBindingResult, Article.Save.class);
+		if (beanPropertyBindingResult.hasErrors()) {
+			throw new BindException(beanPropertyBindingResult);
+		}
+		
 		UUID userId = loginUserService.getUserId();
 		Blog blog = blogRepository.findByUserId(userId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_USER_BLOG));
 		if (article.getBlog() == null || !blog.getId().equals(article.getBlog().getId())) {

@@ -1,10 +1,23 @@
 package net.luversof.blog.repository.support;
 
+import java.time.LocalDateTime;
+
 import org.springframework.data.rest.core.config.Projection;
 
 import net.luversof.blog.domain.Article;
+import net.luversof.blog.domain.Blog;
 
 @Projection(name = "articleProjection", types = Article.class)
-public class ArticleProjection extends Article {
-
+public interface ArticleProjection {
+	
+	long getId();
+	String getTitle();
+	String getContent();
+	LocalDateTime getCreatedDate();
+	LocalDateTime getLastModifiedDate();
+	long getViewCount();
+	
+	Blog getBlog();
+//	UUID getId();
+//	LocalDateTime getCreatedDate();
 }
