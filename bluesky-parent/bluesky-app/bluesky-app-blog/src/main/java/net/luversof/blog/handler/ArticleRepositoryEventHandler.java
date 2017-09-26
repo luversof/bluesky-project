@@ -19,6 +19,7 @@ import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.BlogRepository;
 import net.luversof.blog.repository.CategoryRepository;
 import net.luversof.core.exception.BlueskyException;
+import net.luversof.core.util.ValidationUtil;
 import net.luversof.user.service.LoginUserService;
 
 @Component
@@ -34,18 +35,9 @@ public class ArticleRepositoryEventHandler {
 	@Autowired
 	private CategoryRepository categoryRepository;
 	
-	@Autowired
-	private Validator validator;
-
 	@HandleBeforeCreate
 	public void HandleBeforeCreate(Article article) throws BindException {
-		
-		// 이름 첫부분 소문자 처리 확인 필요?
-		BeanPropertyBindingResult beanPropertyBindingResult = new BeanPropertyBindingResult(article, article.getClass().getSimpleName());
-		ValidationUtils.invokeValidator(validator, article, beanPropertyBindingResult, Article.Save.class);
-		if (beanPropertyBindingResult.hasErrors()) {
-			throw new BindException(beanPropertyBindingResult);
-		}
+		ValidationUtil.validate(article, Article.Save.class);
 		
 		UUID userId = loginUserService.getUserId();
 		Blog blog = blogRepository.findByUserId(userId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_USER_BLOG));

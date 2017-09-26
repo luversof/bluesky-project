@@ -4,13 +4,14 @@ import java.io.File;
 import java.text.MessageFormat;
 import java.util.Comparator;
 
-import lombok.extern.slf4j.Slf4j;
-import net.luversof.core.exception.CoreErrorCode;
-import net.luversof.core.util.EncryptionUtil;
-
 import org.junit.Test;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.PathMatcher;
+import org.springframework.util.StringUtils;
+
+import lombok.extern.slf4j.Slf4j;
+import net.luversof.core.exception.CoreErrorCode;
+import net.luversof.core.util.EncryptionUtil;
 
 @Slf4j
 public class SimpleTest {
@@ -79,5 +80,11 @@ public class SimpleTest {
 		
 		
 		log.debug("result : {}", patternComparator);
+	}
+	
+	@Test
+	public void test6() {
+		String uncapitalize = StringUtils.uncapitalize("TestTranslate_TET");
+		log.debug("translate : {}", uncapitalize);
 	}
 }
