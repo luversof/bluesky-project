@@ -28,19 +28,20 @@ public class Article {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@NotNull(groups = { Get.class })
+	@NotNull(groups = { Get.class, Save.class, Delete.class })
 	private long id;
 
 	@ManyToOne
 	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_article_blogId"))
+	@NotNull(groups = { Save.class, Delete.class })
 	private Blog blog;
 
 	@Description("제목")
-	@NotEmpty(groups = { Save.class, Modify.class })
+	@NotEmpty(groups = { Create.class, Save.class })
 	private String title;
 
-	@NotEmpty(groups = { Save.class, Modify.class })
-	//@Column(columnDefinition = "TEXT")
+	@NotEmpty(groups = { Create.class, Save.class })
+	// @Column(columnDefinition = "TEXT")
 	@Lob
 	private String content;
 
@@ -51,7 +52,7 @@ public class Article {
 	private LocalDateTime lastModifiedDate;
 
 	private long viewCount;
-	
+
 	@ManyToOne
 	@JoinColumn(name = "category_id", foreignKey = @ForeignKey(name = "FK_article_categoryId"))
 	private Category category;
@@ -59,9 +60,12 @@ public class Article {
 	public interface Get {
 	};
 
+	public interface Create {
+	};
+
 	public interface Save {
 	};
 
-	public interface Modify {
+	public interface Delete {
 	};
 }

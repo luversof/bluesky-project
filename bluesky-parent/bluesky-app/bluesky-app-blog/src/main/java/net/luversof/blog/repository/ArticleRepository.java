@@ -13,7 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.blog.domain.Article;
-import net.luversof.blog.repository.support.ArticleProjection;
+import net.luversof.blog.projection.ArticleProjection;
 
 @PreAuthorize("hasRole('ROLE_USER')")
 @RepositoryRestResource(path = "blogArticles", collectionResourceRel = "blogArticles", collectionResourceDescription = @Description("아티클리포지토리collection"), itemResourceDescription = @Description("아티클리포지토리item"), excerptProjection = ArticleProjection.class)

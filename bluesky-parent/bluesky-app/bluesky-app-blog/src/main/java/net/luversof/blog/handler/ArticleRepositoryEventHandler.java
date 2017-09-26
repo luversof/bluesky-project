@@ -3,15 +3,12 @@ package net.luversof.blog.handler;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.bind.validation.BindValidationException;
-import org.springframework.boot.context.properties.bind.validation.ValidationErrors;
 import org.springframework.data.rest.core.annotation.HandleBeforeCreate;
+import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
+import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindException;
-import org.springframework.validation.ValidationUtils;
-import org.springframework.validation.Validator;
 
 import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.Article;
@@ -37,8 +34,23 @@ public class ArticleRepositoryEventHandler {
 	
 	@HandleBeforeCreate
 	public void HandleBeforeCreate(Article article) throws BindException {
+		ValidationUtil.validate(article, Article.Create.class);
+		checkArticle(article);
+	}
+	
+	
+	@HandleBeforeSave
+	public void HandleBeforeSave(Article article) throws BindException {
 		ValidationUtil.validate(article, Article.Save.class);
-		
+		checkArticle(article);
+	}
+	
+	@HandleBeforeDelete
+	public void HandleBeforeDelete(Article article) {
+		checkArticle(article);
+	}
+	
+	private void checkArticle(Article article) {
 		UUID userId = loginUserService.getUserId();
 		Blog blog = blogRepository.findByUserId(userId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_USER_BLOG));
 		if (article.getBlog() == null || !blog.getId().equals(article.getBlog().getId())) {
@@ -46,8 +58,7 @@ public class ArticleRepositoryEventHandler {
 		}
 		
 		if (article.getCategory() != null && article.getCategory().getId() > 0) {
-			article.setCategory(categoryRepository.findById(article.getCategory().getId()).orElse(null));
+			categoryRepository.findById(article.getCategory().getId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.INVALID_PARAMETER_CATEGORY_ID));
 		}
-		article.setBlog(blog);
 	}
 }

@@ -1,4 +1,4 @@
-package net.luversof.blog.repository.support;
+package net.luversof.blog.projection;
 
 import java.time.LocalDateTime;
 
@@ -9,15 +9,18 @@ import net.luversof.blog.domain.Blog;
 
 @Projection(name = "articleProjection", types = Article.class)
 public interface ArticleProjection {
-	
+
 	long getId();
+
 	String getTitle();
+
 	String getContent();
+
 	LocalDateTime getCreatedDate();
+
 	LocalDateTime getLastModifiedDate();
+
 	long getViewCount();
-	
+
 	Blog getBlog();
-//	UUID getId();
-//	LocalDateTime getCreatedDate();
 }
