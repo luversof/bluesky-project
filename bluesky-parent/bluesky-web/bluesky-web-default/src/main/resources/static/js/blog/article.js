@@ -17,7 +17,7 @@ $(document).ready(function() {
 		}
 		
 		return {
-			list : function(blogId) {
+			list : function(blogId, targetArea) {
 				_list(blogId).done(function(data) {
 					data.getId = function() {
 						var parts = this._links.self.href.split("/");
@@ -31,13 +31,13 @@ $(document).ready(function() {
 						return moment(this.createDate).format("LL");
 					}
 					console.log(data);
-					$(".table tbody").html(Mustache.render($("#articleListTemplate").html(), data));
+					targetArea.html(Mustache.render($("#articleListTemplate").html(), data));
 				});
 			},
-			view : function(blogId, articleId) {
+			view : function(blogId, articleId, targetArea) {
 				_view(blogId, articleId).done(function(data) {
 					console.log(Mustache.render($("#articleViewTemplate").html(), data));
-					$(".blog-view").html(Mustache.render($("#articleViewTemplate").html(), data));
+					targetArea.html(Mustache.render($("#articleViewTemplate").html(), data));
 				});
 			},
 			create : function() {

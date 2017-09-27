@@ -6,7 +6,7 @@
 <head>
 	<script>
 	$(document).ready(function() {
-		$.article.view("[[${blogId}]]", "[[${articleId}]]");
+		$.article.view("[[${blogId}]]", "[[${articleId}]]", $(".blog-view"));
 	});
 	</script>
 	<script type="text/javascript" th:src="#{url.gist-embed.js}" defer="defer"></script>
@@ -17,11 +17,20 @@
 			<p th:text="#{blog.article.text.viewCount} + ' : '">{{viewCount}}</p>
 			<div>{{{content}}}</div>
 		</article>
+		
+		
+		<div class="text-center">
+			<a sec:authorize="isAuthenticated()" class="btn btn-outline-primary" href="[[#{url.blog.view.write(${blogId})}]]">[[#{blog.menu.write}]]</a>
+			<a sec:authorize="isAuthenticated()" class="btn btn-outline-primary" href="[[#{url.blog.view.modify(${blogId}, ${articleId})}]]" th:if="${#authentication.principal.id == article.blog.userId}">[[#{blog.menu.modify}]]</a>
+			<button sec:authorize="isAuthenticated()" class="btn btn-outline-danger" th:if="${#authentication.principal.id == article.blog.userId}" th:attr="data-delete-blog-article-articleId=${article.id},data-delete-blog-article-blogId=${article.blog.id}">[[#{blog.menu.delete}]]</button>
+			<a class="btn btn-outline-secondary" href="[[#{url.blog.view.list(${blogId})}]]">[[#{blog.menu.list}]]</a>
+		</div>
 	</script>
 </head>
 <body>
 	<th:block layout:fragment="content-blog">
-
+	
+	
 		<div class="blog-view">
 			<!-- 
 			<article>

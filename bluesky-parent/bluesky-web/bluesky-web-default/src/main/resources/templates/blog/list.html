@@ -6,49 +6,72 @@
 <head>
 	<script>
 	$(document).ready(function() {
-		$.article.list("[[${blogId}]]");
+		$.article.list("[[${blogId}]]", $(".table"));
 	});
 	</script>
 	<script id="articleListTemplate" th:type="'mustache/template'">
-		{{#_embedded.blogArticles}}
-		<tr>
-			<td>{{getId}}</td>
-			<td th:text="${blogArticle.category} ? ${blogArticle.category.name}"></td>
-			<td><a href="{{{getViewUrl}}}">{{title}}</a></td>
-			<td>{{getCreateDateFormat}}</td>
-			<td>{{viewCount}}</td>
-		</tr>
-		{{/_embedded.blogArticles}}
-		{{^_embedded.blogArticles}}
-		<tr class="text-center">
-			<td colspan="5" th:text="">[[#{blog.article.message.empty.content}]]</td>
-		</tr>
-		{{/_embedded.blogArticles}}
+		<thead>
+			<tr>
+				<th>[[#{blog.article.text.id}]]</th>
+				<th>[[#{blog.article.text.category}]]</th>
+				<th>[[#{blog.article.text.title}]]</th>
+				<th>[[#{blog.article.text.createdDate}]]</th>
+				<th>[[#{blog.article.text.viewCount}]]</th>
+			</tr>
+		</thead>
+	
+		<tbody>
+			{{#_embedded.blogArticles}}
+			<tr>
+				<td>{{getId}}</td>
+				<td th:text="${blogArticle.category} ? ${blogArticle.category.name}"></td>
+				<td><a href="{{{getViewUrl}}}">{{title}}</a></td>
+				<td>{{getCreateDateFormat}}</td>
+				<td>{{viewCount}}</td>
+			</tr>
+			{{/_embedded.blogArticles}}
+			{{^_embedded.blogArticles}}
+			<tr class="text-center">
+				<td colspan="5" th:text="">[[#{blog.article.message.empty.content}]]</td>
+			</tr>
+			{{/_embedded.blogArticles}}
+		</tbody>
+		<tfoot>
+			<tr>
+				<td colspan="5" class="text-center">
+					<nav aria-label="Page navigation">
+						{{#totalPages}}
+						<ul class="pagination justify-content-center">
+							{{^isFirstPage}}
+							<li class="page-item" th:if="${!articlePage.first}">
+      							<a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}(page=${articlePage.number - 1})}" aria-label="Previous">
+									<span aria-hidden="true">&laquo;</span>
+									<span class="sr-only">Previous</span>
+								</a>
+							</li>
+							{{/isFirstPage}}
+							<li class="page-item" th:classappend="${i == currentPage} ? 'active'"><a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}}" th:text="${articlePage.number + 1}">1</a></li>
+							{{^isLastPage}}
+							<li class="page-item" th:if="${!articlePage.last}">
+								<a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}(page=${articlePage.number + 1})}" aria-label="Next">
+									<span aria-hidden="true">&raquo;</span>
+									<span class="sr-only">Next</span>
+								</a>
+							</li>
+							{{/isLastPage}}
+						</ul>
+						{{/totalPages}}
+					</nav>
+					<div>
+						<a href="[[#{url.blog.view.write(${blogId})}]]" sec:authorize="isAuthenticated()" class="btn btn-outline-primary">[[#{blog.menu.write}]]</a>
+					</div>
+				</td>
+			</tr>
+		</tfoot>
 	</script>
 </head>
 <body>
 <th:block layout:fragment="content-blog">
-	<!-- <table class="table" id="test">
-		<thead>
-			<tr>
-				<th th:text="#{blog.article.text.id}">id</th>
-				<th th:text="#{blog.article.text.category}">category</th>
-				<th th:text="#{blog.article.text.title}">title</th>
-				<th th:text="#{blog.article.text.createdDate}">createdDate</th>
-				<th th:text="#{blog.article.text.viewCount}">viewCount</th>
-			</tr>
-		</thead>
-		<tbody>
-			<tr>
-				<td>글번호</td>
-				<td>카테고리</td>
-				<td><a href="#none">제목</a></td>
-				<td>생성일</td>
-				<td>조회수</td>
-			</tr>
-		</tbody>
-	</table> -->
-	
 	<table class="table">
 		<thead>
 			<tr>
