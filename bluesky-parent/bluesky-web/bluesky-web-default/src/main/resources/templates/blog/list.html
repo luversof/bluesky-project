@@ -6,7 +6,8 @@
 <head>
 	<script>
 	$(document).ready(function() {
-		$.article.list("[[${blogId}]]", $(".table"));
+		$.article.setBlogId("[[${blogId}]]");
+		$.article.list($(".table"), $("#articleListTemplate").html());
 	});
 	</script>
 	<script id="articleListTemplate" th:type="'mustache/template'">
@@ -62,10 +63,11 @@
 						</ul>
 						{{/totalPages}}
 					</nav>
+					{{#userInfo.isLogin}}
 					<div>
-						::{{userInfo.isLoginUser}}::
-						<a href="[[#{url.blog.view.write(${blogId})}]]" sec:authorize="isAuthenticated()" class="btn btn-outline-primary">[[#{blog.menu.write}]]</a>
+						<a href="[[#{url.blog.view.write(${blogId})}]]" class="btn btn-outline-primary">[[#{blog.menu.write}]]</a>
 					</div>
+					{{/userInfo.isLogin}}
 				</td>
 			</tr>
 		</tfoot>

@@ -1,31 +1,42 @@
 $(document).ready(function() {
-	/*var */$.article = function() {
+	$.article = function() {
+		var _blogId;
 		var _link = {
 			list : "/api/blogArticles/search/findByBlogId",
-			view : "/api/blogArticles/{0}"
+			view : "/api/blogArticles/{0}",
+			create : "/api/blogArticles",
+			categoryList : "/api/categories/search/findByBlogId"
 		}
 		
-		var _list = function(blogId) {
+		var _list = function() {
 			var data = {};
-			data.id = blogId;
+			data.id = _blogId;
 			return $.getJSON(_link.list, data);
 		}
 		
-		var _view = function(blogId, articleId) {
+		var _view = function(articleId) {
+			return $.getJSON(_link.view.format(articleId));
+		}
+		
+		var _categoryList = function() {
 			var data = {};
-			return $.getJSON(_link.view.format(articleId), data);
+			data.blogId = _blogId;
+			return $.getJSON(_link.categoryList, data);
 		}
 		
 		return {
-			list : function(blogId, targetArea) {
-				_list(blogId).done(function(data) {
+			setBlogId : function(blogId) {
+				_blogId = blogId;
+			},
+			list : function(targetArea, targetTemplate) {
+				_list().done(function(data) {
 					data.getId = function() {
 						var parts = this._links.self.href.split("/");
 						return parts[parts.length - 1];
 					}
 					data.getViewUrl = function() {
 						var parts = this._links.self.href.split("/");
-						return $.i18n.prop("url.blog.view.view", blogId, parts[parts.length - 1]);
+						return $.i18n.prop("url.blog.view.view", _blogId, parts[parts.length - 1]);
 					}
 					data.getCreateDateFormat = function() {
 						return moment(this.createDate).format("LL");
@@ -35,23 +46,30 @@ $(document).ready(function() {
 					}
 					data.userInfo = userInfo;
 					console.log(data);
-					targetArea.html(Mustache.render($("#articleListTemplate").html(), data));
+					targetArea.html(Mustache.render(targetTemplate, data));
 				});
 			},
-			view : function(blogId, articleId, targetArea) {
-				_view(blogId, articleId).done(function(data) {
+			view : function(articleId, targetArea, targetTemplate) {
+				_view(articleId).done(function(data) {
 					console.log(Mustache.render($("#articleViewTemplate").html(), data));
-					targetArea.html(Mustache.render($("#articleViewTemplate").html(), data));
+					targetArea.html(Mustache.render(targetTemplate, data));
 				});
 			},
-			create : function() {
-				var form = $("[name=blog-create]");
+			createForm : function(targetArea, targetTemplate) {
+				return _categoryList().done(function(data) {
+					targetArea.html(Mustache.render(targetTemplate, data))
+				});
+			},
+			create : function(form) {
+				console.log("TEST");
+				console.log(makeFormDataJSON(form));
 				$.ajax({
-					type : form.attr("method"),
-					url : form.attr("action"),
-					dataType : "json",
+					type : "post",
+					url : _link.create,
+					contentType : "application/json",
+					data : makeFormDataJSON(form),
 					success : function(data) {
-						location.href = $.i18n.prop("url.blog.view.list", data.id);
+						location.href = $.i18n.prop("url.blog.view.view", _blogId, getIdFromDataRest(data));
 					}
 				});
 			},
@@ -93,9 +111,9 @@ $(document).ready(function() {
 		};
 	}();
 	
-	$("[name=blog-create] :submit").on("click", function(e) {
+	$(document).on("submit", "form[name=article-create]", function(e) {
 		e.preventDefault();
-		$.article.create();
+		$.article.create($(this));
 	});
 
 	$("[name=blog-write] :submit").on("click", function(e) {

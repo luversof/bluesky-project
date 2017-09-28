@@ -75,6 +75,26 @@ var navbar = {
 };
 
 /**
+ * jquery form serializeArray 를 json으로 변환
+ * spring data rest
+ */
+var makeFormDataJSON = function(targetForm) {
+	var json = {};
+	$.each(targetForm.serializeArray(), function(idx, ele){
+		json[ele.name] = ele.value;
+	});
+	return JSON.stringify(json);
+}
+
+/**
+ * spring data rest 응답에서 id를 추출
+ */
+var getIdFromDataRest = function(data) {
+	var parts = data._links.self.href.split("/");
+	return parts[parts.length - 1];
+}
+
+/**
  * 유저 정보 관련 data
  */
 var UserInfo = function(userId) {
