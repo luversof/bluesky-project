@@ -63,6 +63,7 @@
 						{{/totalPages}}
 					</nav>
 					<div>
+						::{{userInfo.isLoginUser}}::
 						<a href="[[#{url.blog.view.write(${blogId})}]]" sec:authorize="isAuthenticated()" class="btn btn-outline-primary">[[#{blog.menu.write}]]</a>
 					</div>
 				</td>

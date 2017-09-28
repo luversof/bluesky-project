@@ -23,7 +23,6 @@ import lombok.Data;
 @Data
 @Entity
 @Audited
-@Description("게시글 관련 도메인.")
 public class Article {
 
 	@Id

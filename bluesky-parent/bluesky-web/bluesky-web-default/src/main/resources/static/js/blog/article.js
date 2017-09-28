@@ -30,6 +30,10 @@ $(document).ready(function() {
 					data.getCreateDateFormat = function() {
 						return moment(this.createDate).format("LL");
 					}
+					data.isLoginUser = function() {
+						return this
+					}
+					data.userInfo = userInfo;
 					console.log(data);
 					targetArea.html(Mustache.render($("#articleListTemplate").html(), data));
 				});

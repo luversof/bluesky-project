@@ -44,8 +44,9 @@
 		    }
 		});
 	</script>
-	<script sec:authorize="isAuthenticated()">
-		var userId = "[[${#authentication.principal.id}]]";
+	
+	<script>
+		var userInfo = UserInfo("[[${#authorization.expression('hasRole(''ROLE_USER'')') ? #authentication.principal.id : ''}]]");
 	</script>
 </head>
 <body>

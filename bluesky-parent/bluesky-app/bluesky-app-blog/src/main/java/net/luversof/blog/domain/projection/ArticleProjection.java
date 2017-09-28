@@ -1,4 +1,4 @@
-package net.luversof.blog.projection;
+package net.luversof.blog.domain.projection;
 
 import java.time.LocalDateTime;
 

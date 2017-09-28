@@ -74,6 +74,39 @@ var navbar = {
 	}
 };
 
+/**
+ * 유저 정보 관련 data
+ */
+var UserInfo = function(userId) {
+	var _userId = userId;
+	var _targetUserId;
+	
+	var _isLogin = function() {
+		return _userId !== undefined && _userId != "";
+	}
+	return {
+		getUserId : function() {
+			return _userId;
+		},
+		setTargetUserId : function(targetUserId) {
+			_targetUserId = targetUserId;
+		},
+		/**
+		 * 로그인 여부 확인
+		 */
+		isLogin : function() {
+			return _isLogin();
+		},
+		/**
+		 * 로그인한 유저가 대상 유저와 일치하는지 확인
+		 */
+		isLoginUser : function(targetUserId) {
+			console.log(targetUserId);
+			return _isLogin() && _userId == targetUserId; 
+		}
+	}
+}
+
 $(document).ready(function() {
 	
 	/**
