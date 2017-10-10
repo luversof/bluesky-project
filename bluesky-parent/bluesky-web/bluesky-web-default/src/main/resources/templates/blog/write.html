@@ -5,7 +5,7 @@
 	layout:decorator="blog/_template/blogLayout">
 <head>
 	<script type="text/javascript" th:src="#{url.jquery-tinymce.js}"></script>
-	<script>
+	<script type="text/javascript">
 	$(document).ready(function() {
 		$.article.setBlogId("[[${blogId}]]");
 		$.article.createForm($(".container"), $("#articleCreateFormTemplate").html()).done(function() {
@@ -30,6 +30,7 @@
 					<input class="form-control" type="text" name="title" id="title" placeholder="[[#{blog.article.text.title}]]" />
 				</div>
 			</div>
+			{{#_embedded.categories.length}}
 			<div class="form-group row">
 				<label class="col-form-label" for="category">[[#{blog.article.text.category}]]</label>
 				<div class="col-10">
@@ -40,6 +41,7 @@
 					</select>
 				</div>
 			</div>
+			{{/_embedded.categories.length}}
 			<div class="form-group row">
 				<label class="col-form-label" for="content">[[#{blog.article.text.content}]]</label>
 				<div class="col-10">

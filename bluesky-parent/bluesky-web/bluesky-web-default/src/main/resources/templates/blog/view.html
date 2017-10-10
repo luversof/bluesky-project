@@ -4,7 +4,7 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="blog/_template/blogLayout">
 <head>
-	<script>
+	<script type="text/javascript">
 	$(document).ready(function() {
 		$.article.setBlogId("[[${blogId}]]");
 		$.article.view("[[${articleId}]]", $(".blog-view"), $("#articleViewTemplate").html());
@@ -15,7 +15,7 @@
 		<article>
 			<h2>{{#category}}[{{category.name}}] {{/category}}{{title}}</h2>
 			<p><time pubdate="pubdate">createdDate</time></p>
-			<p th:text="#{blog.article.text.viewCount} + ' : '">{{viewCount}}</p>
+			<p>[[#{blog.article.text.viewCount}]] : {{viewCount}}</p>
 			<div>{{{content}}}</div>
 		</article>
 		
