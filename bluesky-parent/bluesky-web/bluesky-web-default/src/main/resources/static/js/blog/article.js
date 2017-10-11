@@ -1,9 +1,10 @@
 $(document).ready(function() {
 	$.article = function() {
 		var _blogId;
+		var _articleId;
 		var _link = {
 			list : "/api/blogArticles/search/findByBlogId",
-			view : "/api/blogArticles/{0}",
+			findOne : "/api/blogArticles/{0}",
 			create : "/api/blogArticles",
 			categoryList : "/api/categories/search/findByBlogId"
 		}
@@ -14,8 +15,8 @@ $(document).ready(function() {
 			return $.getJSON(_link.list, data);
 		}
 		
-		var _view = function(articleId) {
-			return $.getJSON(_link.view.format(articleId));
+		var _findOne = function() {
+			return $.getJSON(_link.findOne.format(_articleId));
 		}
 		
 		var _categoryList = function() {
@@ -27,6 +28,9 @@ $(document).ready(function() {
 		return {
 			setBlogId : function(blogId) {
 				_blogId = blogId;
+			},
+			setArticleId : function(articleId) {
+				_articleId = articleId;
 			},
 			list : function(targetArea, targetTemplate) {
 				_list().done(function(data) {
@@ -49,8 +53,8 @@ $(document).ready(function() {
 					targetArea.html(Mustache.render(targetTemplate, data));
 				});
 			},
-			view : function(articleId, targetArea, targetTemplate) {
-				_view(articleId).done(function(data) {
+			findOne : function(targetArea, targetTemplate) {
+				_findOne().done(function(data) {
 					console.log(Mustache.render($("#articleViewTemplate").html(), data));
 					targetArea.html(Mustache.render(targetTemplate, data));
 				});
@@ -58,6 +62,11 @@ $(document).ready(function() {
 			createForm : function(targetArea, targetTemplate) {
 				return _categoryList().done(function(data) {
 					targetArea.html(Mustache.render(targetTemplate, data))
+				});
+			},
+			modifyForm : function(targetArea, targetTemplate) {
+				return _categoryList().done(function(data) {
+					_findOne(articleId)
 				});
 			},
 			create : function(form) {

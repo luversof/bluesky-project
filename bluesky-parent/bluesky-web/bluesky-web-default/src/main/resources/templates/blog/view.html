@@ -7,7 +7,8 @@
 	<script type="text/javascript">
 	$(document).ready(function() {
 		$.article.setBlogId("[[${blogId}]]");
-		$.article.view("[[${articleId}]]", $(".blog-view"), $("#articleViewTemplate").html());
+		$.article.setArticleId("[[${articleId}]]");
+		$.article.findOne($(".blog-view"), $("#articleViewTemplate").html());
 	});
 	</script>
 	<script type="text/javascript" th:src="#{url.gist-embed.js}" defer="defer"></script>
