@@ -1,2 +1,6 @@
 #PropertySource Loaders
 #org.springframework.boot.env.PropertySourceLoader=net.luversof.core.EncryptedPropertySourceLoader
+
+# Application Context Initializers
+org.springframework.context.ApplicationContextInitializer=\
+net.luversof.core.context.BlueskyApplicationContextInitializer

@@ -23,4 +23,4 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
 	@RestResource(description = @Description("파인드바이블로그"))
 	Page<Article> findByBlogId(@Param("id") UUID id, Pageable pageable);
 	
-}	
+}

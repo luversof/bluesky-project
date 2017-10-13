@@ -29,10 +29,10 @@
 		</dependency>
 		<!-- (e) spring-boot -->
 
-		<dependency>
+		<!-- <dependency>
 			<groupId>org.springframework.security.oauth</groupId>
 			<artifactId>spring-security-oauth2</artifactId>
-		</dependency>
+		</dependency> -->
 
 		<dependency>
 			<groupId>net.luversof</groupId>

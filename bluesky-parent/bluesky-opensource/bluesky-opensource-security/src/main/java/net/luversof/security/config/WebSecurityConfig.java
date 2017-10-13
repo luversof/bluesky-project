@@ -7,8 +7,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.client.filter.OAuth2ClientAuthenticationProcessingFilter;
-import org.springframework.security.oauth2.client.filter.OAuth2ClientContextFilter;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
@@ -26,17 +24,17 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	@Autowired
 	private UserDetailsService userDetailsService;
 	
-	@Autowired
-	private OAuth2ClientContextFilter oAuth2ClientContextFilter;
-	
-	@Autowired
-	private OAuth2ClientAuthenticationProcessingFilter githubAuthenticationProcessingFilter;
-	
-	@Autowired
-	private OAuth2ClientAuthenticationProcessingFilter facebookAuthenticationProcessingFilter;
-	
-	@Autowired
-	private OAuth2ClientAuthenticationProcessingFilter battleNetAuthenticationProcessingFilter;
+//	@Autowired
+//	private OAuth2ClientContextFilter oAuth2ClientContextFilter;
+//	
+//	@Autowired
+//	private OAuth2ClientAuthenticationProcessingFilter githubAuthenticationProcessingFilter;
+//	
+//	@Autowired
+//	private OAuth2ClientAuthenticationProcessingFilter facebookAuthenticationProcessingFilter;
+//	
+//	@Autowired
+//	private OAuth2ClientAuthenticationProcessingFilter battleNetAuthenticationProcessingFilter;
 	
 //	@Autowired
 //	public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
@@ -67,10 +65,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 			.and()
 //			.addFilterBefore(new OAuth2ClientContextFilter(), UsernamePasswordAuthenticationFilter.class)
 			.addFilterBefore(new RequestContextFilter(), SecurityContextPersistenceFilter.class)
-			.addFilterAfter(oAuth2ClientContextFilter, BasicAuthenticationFilter.class)
-			.addFilterAfter(githubAuthenticationProcessingFilter, BasicAuthenticationFilter.class)
-			.addFilterAfter(facebookAuthenticationProcessingFilter, BasicAuthenticationFilter.class)
-			.addFilterAfter(battleNetAuthenticationProcessingFilter, BasicAuthenticationFilter.class)
+//			.addFilterAfter(oAuth2ClientContextFilter, BasicAuthenticationFilter.class)
+//			.addFilterAfter(githubAuthenticationProcessingFilter, BasicAuthenticationFilter.class)
+//			.addFilterAfter(facebookAuthenticationProcessingFilter, BasicAuthenticationFilter.class)
+//			.addFilterAfter(battleNetAuthenticationProcessingFilter, BasicAuthenticationFilter.class)
 //			.addFilterAfter(oAuth2AuthenticationProcessingFilter, ExceptionTranslationFilter.class)
 			.exceptionHandling().accessDeniedPage("/error/accessDenied").and()
 			.logout().logoutSuccessHandler(logoutSuccessHandler).and()
