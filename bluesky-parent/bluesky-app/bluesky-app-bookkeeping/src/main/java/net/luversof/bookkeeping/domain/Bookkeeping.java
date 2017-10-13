@@ -28,12 +28,14 @@ public class Bookkeeping {
 	@GenericGenerator(name = "uuid-gen", strategy = "uuid2")
 	@Column(length = 16)
 	@Min.List({
-		@Min(value = 1, groups = { Bookkeeping.Update.class, Bookkeeping.Delete.class }),
-		@Min(value = 1, groups = { Asset.Create.class, Asset.Update.class, Asset.Delete.class }),
-		@Min(value = 1, groups = { EntryGroup.Create.class, EntryGroup.Update.class, EntryGroup.Delete.class }),
-		@Min(value = 1, groups = { Entry.Create.class, Entry.Update.class, Entry.Delete.class }),
-		@Min(value = 1, groups = { EntrySearchInfo.Select.class, EntrySearchInfo.SelectEntryList.class }),
-		@Min(value = 1, groups = { StatisticsSearchInfo.Select.class, StatisticsSearchInfo.SelectEntryList.class })
+		@Min(value = 1, groups = { 
+				Bookkeeping.Update.class, Bookkeeping.Delete.class,
+				Asset.Create.class, Asset.Update.class, Asset.Delete.class,
+				EntryGroup.Create.class, EntryGroup.Update.class, EntryGroup.Delete.class,
+				Entry.Create.class, Entry.Update.class, Entry.Delete.class,
+				EntrySearchInfo.Select.class, EntrySearchInfo.SelectEntryList.class,
+				StatisticsSearchInfo.Select.class, StatisticsSearchInfo.SelectEntryList.class
+				})
 	})
 	private UUID id;
 

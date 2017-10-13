@@ -52,19 +52,19 @@ public class SecurityExceptionHandler {
 		return new ModelAndView("login");
 	}
 
-	@Value("${oauth2.client.battleNet.clientId}")
-	private String battleNetClientId;
+//	@Value("${oauth2.client.battleNet.clientId}")
+//	private String battleNetClientId;
 	
 	@SneakyThrows
 	@ExceptionHandler
 	@ResponseStatus(value = HttpStatus.UNAUTHORIZED)
 	public ModelAndView accessDeniedException(HttpServletResponse response, AccessDeniedException exception, HandlerMethod  handlerMethod, NativeWebRequest request) throws IOException {
 		
-		if (((HttpServletRequest) request.getNativeRequest()).getRequestURI().equals("/battleNet/d3/index")) {
-			response.sendRedirect("https://kr.battle.net/oauth/authorize?client_id=" + battleNetClientId + "&redirect_uri=https://localhost:8443/oauth/battleNetAuthorizeResult&scope=wow.profile&response_type=code");
-			return new ModelAndView("redirect:https://kr.battle.net/oauth/authorize?client_id=" + battleNetClientId + "&redirect_uri=https://localhost:8443/oauth/battleNetAuthorizeResult&scope=wow.profile&response_type=code");
-		} else {
-		}
+//		if (((HttpServletRequest) request.getNativeRequest()).getRequestURI().equals("/battleNet/d3/index")) {
+//			response.sendRedirect("https://kr.battle.net/oauth/authorize?client_id=" + battleNetClientId + "&redirect_uri=https://localhost:8443/oauth/battleNetAuthorizeResult&scope=wow.profile&response_type=code");
+//			return new ModelAndView("redirect:https://kr.battle.net/oauth/authorize?client_id=" + battleNetClientId + "&redirect_uri=https://localhost:8443/oauth/battleNetAuthorizeResult&scope=wow.profile&response_type=code");
+//		} else {
+//		}
 		
 		if (contentNegotiatingViewResolver.getContentNegotiationManager().resolveMediaTypes(request).contains(MediaType.APPLICATION_JSON)
 				|| Arrays.asList(handlerMethod.getMethodAnnotation(RequestMapping.class).produces()).contains(MediaType.APPLICATION_JSON_VALUE)) {
