@@ -49,16 +49,16 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
 		</dependency>
-		<dependency>
+		<!-- <dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
-		<!-- <dependency> <groupId>org.springframework.cloud</groupId> <artifactId>spring-cloud-starter-eureka</artifactId> 
-			</dependency> -->
+		<dependency> <groupId>org.springframework.cloud</groupId> <artifactId>spring-cloud-starter-eureka</artifactId> 
+			</dependency>
 		<dependency>
 			<groupId>org.springframework.data</groupId>
 			<artifactId>spring-data-rest-hal-browser</artifactId>
-		</dependency>
+		</dependency> -->
 		<!-- (e) spring-boot -->
 
 		<!-- (s) template engine -->
@@ -69,14 +69,14 @@
 		<!-- (s) template engine -->
 
 		<!-- (s) thymeleaf extras -->
-		<dependency>
+		<!-- <dependency>
 			<groupId>nz.net.ultraq.thymeleaf</groupId>
 			<artifactId>thymeleaf-layout-dialect</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.thymeleaf.extras</groupId>
 			<artifactId>thymeleaf-extras-java8time</artifactId>
-		</dependency>
+		</dependency> -->
 		<!-- (e) thymeleaf extras -->
 
 		<!-- (s) meneService 관련 -->
