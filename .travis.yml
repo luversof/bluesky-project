@@ -1,7 +1,7 @@
 # .travis.yml
 language: java
 jdk:
-- oraclejdk9
+- oraclejdk8
 
 script: 
   cd bluesky-parent;
