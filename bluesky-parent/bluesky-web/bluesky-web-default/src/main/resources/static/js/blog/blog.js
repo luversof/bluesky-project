@@ -1,7 +1,7 @@
 $(document).ready(function() {
 	 
 	
-	/*var */$.blog = function() {
+	var blog = function() {
 		var _link = {
 			get : function(blogId) {
 				return "/api/blogs/{0}".format(blogId);

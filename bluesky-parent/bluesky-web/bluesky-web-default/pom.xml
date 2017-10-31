@@ -69,14 +69,14 @@
 		<!-- (s) template engine -->
 
 		<!-- (s) thymeleaf extras -->
-		<!-- <dependency>
+		<dependency>
 			<groupId>nz.net.ultraq.thymeleaf</groupId>
 			<artifactId>thymeleaf-layout-dialect</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.thymeleaf.extras</groupId>
 			<artifactId>thymeleaf-extras-java8time</artifactId>
-		</dependency> -->
+		</dependency>
 		<!-- (e) thymeleaf extras -->
 
 		<!-- (s) meneService 관련 -->
