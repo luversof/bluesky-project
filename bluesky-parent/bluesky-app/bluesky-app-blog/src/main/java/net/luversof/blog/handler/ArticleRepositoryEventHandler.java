@@ -8,7 +8,6 @@ import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.validation.BindException;
 
 import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.Article;
@@ -33,14 +32,14 @@ public class ArticleRepositoryEventHandler {
 	private CategoryRepository categoryRepository;
 	
 	@HandleBeforeCreate
-	public void HandleBeforeCreate(Article article) throws BindException {
+	public void HandleBeforeCreate(Article article) {
 		ValidationUtil.validate(article, Article.Create.class);
 		checkArticle(article);
 	}
 	
 	
 	@HandleBeforeSave
-	public void HandleBeforeSave(Article article) throws BindException {
+	public void HandleBeforeSave(Article article) {
 		ValidationUtil.validate(article, Article.Save.class);
 		checkArticle(article);
 	}

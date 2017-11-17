@@ -7,6 +7,7 @@ import org.springframework.validation.ValidationUtils;
 import org.springframework.validation.Validator;
 
 import lombok.Setter;
+import lombok.SneakyThrows;
 
 
 /**
@@ -16,9 +17,11 @@ import lombok.Setter;
  */
 public abstract class ValidationUtil {
 	
-	@Setter private static Validator validator;
+	@Setter
+	private static Validator validator;
 
-	public static void validate (Object object, Object... validationHints) throws BindException {
+	@SneakyThrows
+	public static void validate(Object object, Object... validationHints) {
 		BeanPropertyBindingResult beanPropertyBindingResult = new BeanPropertyBindingResult(object, StringUtils.uncapitalize(object.getClass().getSimpleName()));
 		ValidationUtils.invokeValidator(validator, object, beanPropertyBindingResult, validationHints);
 		if (beanPropertyBindingResult.hasErrors()) {
