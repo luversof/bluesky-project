@@ -6,6 +6,7 @@ import java.util.Map;
 import javax.validation.constraints.NotNull;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.PropertySource;
 import org.springframework.http.MediaType;
@@ -33,7 +34,7 @@ public class DevCheckController {
 	private MenuService menuService;
 	
 	@Autowired
-	private ConfigurableWebEnvironment environment;
+	private ConfigurableEnvironment environment;
 	
 	@Autowired
 	private SpringResourceTemplateResolver defaultTemplateResolver;
