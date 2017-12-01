@@ -10,7 +10,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -25,10 +24,7 @@ public class IndexController {
 	private String a;
 
 	@GetMapping({ "/", "/index" })
-	public String index(@RequestHeader(value = "User-Agent") String userAgent) {
-		System.out.println("테스트!!");
-		System.out.println("a : " + a);
-		System.out.println(userAgent);
+	public String index() {
 		return "index";
 	}
 	
