@@ -74,12 +74,12 @@ public class ApiDocumentation extends GeneralTest {
 								fieldWithPath("timestamp").description("The time, in milliseconds, at which the error occurred"))));
 	}
 	
-	@Test
-	public void indexExample() throws Exception {
-		this.mockMvc.perform(get("/").accept(MediaType.APPLICATION_JSON)) 
-		.andExpect(status().isOk()) 
-		.andDo(document("index")); 
-	}
+//	@Test
+//	public void indexExample() throws Exception {
+//		this.mockMvc.perform(get("/")) 
+//		.andExpect(status().isOk()) 
+//		.andDo(document("index")); 
+//	}
 	
 	@Test
 	public void apiExample() throws Exception {

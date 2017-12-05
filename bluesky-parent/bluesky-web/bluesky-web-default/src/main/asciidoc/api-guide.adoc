@@ -1,0 +1,225 @@
+= RESTful API Guide
+Bluesky;
+:doctype: book
+:icons: font
+:source-highlighter: highlightjs
+:toc: left
+:toclevels: 4
+:sectlinks:
+:operation-curl-request-title: Example request
+:operation-http-response-title: Example response
+
+[[개요]]
+= 개요
+
+[[개요-http-verbs]]
+== HTTP verbs
+
+RESTful 메모는 HTTP 동사 사용시 표준 HTTP 및 REST 규칙에 최대한 가깝게 노력합니다.
+
+|===
+| Verb | Usage
+
+| `GET`
+| 리소스를 검색하는 데 사용됩니다.
+
+| `POST`
+| 새 리소스를 만드는 데 사용됩니다.
+
+| `PATCH`
+| 부분 업데이트를 포함하여 기존 리소스를 업데이트하는 데 사용됩니다.
+
+| `DELETE`
+| 기존 자원을 삭제하는 데 사용됩니다.
+|===
+
+[[개요-http-status-codes]]
+== HTTP status codes
+
+RESTful notes tries to adhere as closely as possible to standard HTTP and REST conventions in its
+use of HTTP status codes.
+
+|===
+| Status code | Usage
+
+| `200 OK`
+| 요청이 완료되었습니다.
+
+| `201 Created`
+| 새 리소스가 성공적으로 만들어졌습니다. 리소스의 URI는 응답의 Location헤더 에서 사용할 수 있습니다.
+`Location` header
+
+| `204 No Content`
+| 기존 리소스에 대한 업데이트가 성공적으로 적용되었습니다.
+
+| `400 Bad Request`
+| 요청이 잘못되었습니다. 응답 본문에는 추가 정보를 제공하는 오류가 포함됩니다.
+
+| `404 Not Found`
+| 요청한 리소스가 존재하지 않습니다.
+|===
+
+[[개요-errors]]
+== Errors
+
+오류 응답 (상태 코드> = 400)이 반환 될 때마다 본문에 문제를 설명하는 JSON 개체가 포함됩니다. 오류 개체의 구조는 다음과 같습니다.
+
+include::{snippets}/error-example/response-fields.adoc[]
+
+예를 들어, 메모에 존재하지 않는 태그를 적용하려는 요청은 `400 Bad Request` 응답 을 생성합니다 .
+
+include::{snippets}/error-example/http-response.adoc[]
+
+[[개요-hypermedia]]
+== Hypermedia
+
+RESTful Notes uses hypermedia and resources include links to other resources in their
+responses. Responses are in http://stateless.co/hal_specification.html[Hypertext Application
+from resource to resource.
+Language (HAL)] format. Links can be found beneath the `_links` key. Users of the API should
+not create URIs themselves, instead they should use the above-described links to navigate
+
+[[resources]]
+= Resources
+
+
+
+[[resources-index]]
+== Index
+
+The index provides the entry point into the service.
+
+
+
+[[resources-index-access]]
+=== Accessing the index
+
+A `GET` request is used to access the index
+
+operation::index-example[snippets='response-fields,http-response,links']
+
+
+
+[[resources-notes]]
+== Notes
+
+The Notes resources is used to create and list notes
+
+
+
+[[resources-notes-list]]
+=== Listing notes
+
+A `GET` request will list all of the service's notes.
+
+operation::notes-list-example[snippets='response-fields,curl-request,http-response,links']
+
+
+
+[[resources-notes-create]]
+=== Creating a note
+
+A `POST` request is used to create a note.
+
+operation::notes-create-example[snippets='request-fields,curl-request,http-response']
+
+
+
+[[resources-tags]]
+== Tags
+
+The Tags resource is used to create and list tags.
+
+
+
+[[resources-tags-list]]
+=== Listing tags
+
+A `GET` request will list all of the service's tags.
+
+operation::tags-list-example[snippets='response-fields,curl-request,http-response,links']
+
+
+
+[[resources-tags-create]]
+=== Creating a tag
+
+A `POST` request is used to create a note
+
+operation::tags-create-example[snippets='request-fields,curl-request,http-response']
+
+
+
+[[resources-note]]
+== Note
+
+The Note resource is used to retrieve, update, and delete individual notes
+
+
+
+[[resources-note-links]]
+=== Links
+
+include::{snippets}/note-get-example/links.adoc[]
+
+
+
+[[resources-note-retrieve]]
+=== Retrieve a note
+
+A `GET` request will retrieve the details of a note
+
+operation::note-get-example[snippets='response-fields,curl-request,http-response']
+
+
+
+[[resources-note-update]]
+=== Update a note
+
+A `PATCH` request is used to update a note
+
+==== Request structure
+
+include::{snippets}/note-update-example/request-fields.adoc[]
+
+To leave an attribute of a note unchanged, any of the above may be omitted from the request.
+
+==== Example request
+
+include::{snippets}/note-update-example/curl-request.adoc[]
+
+==== Example response
+
+include::{snippets}/note-update-example/http-response.adoc[]
+
+
+
+[[resources-tag]]
+== Tag
+
+The Tag resource is used to retrieve, update, and delete individual tags
+
+
+
+[[resources-tag-links]]
+=== Links
+
+include::{snippets}/tag-get-example/links.adoc[]
+
+
+
+[[resources-tag-retrieve]]
+=== Retrieve a tag
+
+A `GET` request will retrieve the details of a tag
+
+operation::tag-get-example[snippets='response-fields,curl-request,http-response']
+
+
+
+[[resources-tag-update]]
+=== Update a tag
+
+A `PATCH` request is used to update a tag
+
+operation::tag-update-example[snippets='request-fields,curl-request,http-response']
