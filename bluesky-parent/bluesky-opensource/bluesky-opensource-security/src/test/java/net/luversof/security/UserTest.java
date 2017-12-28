@@ -8,6 +8,9 @@ import net.luversof.user.service.UserService;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.codec.Hex;
+import org.springframework.security.crypto.encrypt.Encryptors;
+import org.springframework.security.crypto.encrypt.TextEncryptor;
 
 @Slf4j
 public class UserTest extends GeneralTest {
@@ -33,5 +36,13 @@ public class UserTest extends GeneralTest {
 		BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
 		User user = userService.addUser("bluesky", bCryptPasswordEncoder.encode("bluesky"));
 		log.debug("user : {}", user);
+	}
+	
+	@Test
+	public void 암호화테스트() {
+		log.debug("test : {}", Hex.encode("cloud".getBytes()));
+		log.debug("test : {}", Hex.decode("73616c74"));
+		TextEncryptor textEncryptor = Encryptors.text("bluesky", "73616c74");
+		log.debug("encrypt:  {}", textEncryptor.encrypt("테스트 문구입니다."));
 	}
 }

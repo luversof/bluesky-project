@@ -75,7 +75,8 @@
 				<input type="text" name="username" th:placeholder="#{username}" class="form-control" autofocus="autofocus"/>
 				<input type="password" name="password" th:placeholder="#{password}" class="form-control" />
 				<input type="submit" class="btn btn-outline-primary" th:value="#{login}" />
-				<a class="btn btn-outline-primary" th:href="@{'https://github.com/login/oauth/authorize'(client_id=${@environment.getProperty('spring.security.oauth2.client.registration.github.client-id')})}" data-toggle="tooltip" data-placement="bottom" title="github 로그인"><i class="fa fa-github fa-lg"></i></a>
+				<!-- <a class="btn btn-outline-primary" th:href="@{'https://github.com/login/oauth/authorize'(client_id=${@environment.getProperty('spring.security.oauth2.client.registration.github.client-id')},state=1)}" data-toggle="tooltip" data-placement="bottom" title="github 로그인"><i class="fa fa-github fa-lg"></i></a> -->
+				<a class="btn btn-outline-primary" th:href="@{/oauth2/authorization/github}" data-toggle="tooltip" data-placement="bottom" title="github 로그인"><i class="fa fa-github fa-lg"></i></a>
 				<a class="btn btn-outline-primary" th:href="@{'https://www.facebook.com/dialog/oauth'(client_id=${@environment.getProperty('oauth2.client.facebook.clientId')},redirect_uri=${@environment.getProperty('bluesky.domain')}+'/oauth/facebookAuthorizeResult')}" data-toggle="tooltip" data-placement="bottom" title="facebook 로그인"><i class="fa fa-facebook fa-lg"></i></a>
 				<a class="btn btn-outline-primary" th:href="@{'https://kr.battle.net/oauth/authorize'(client_id=${@environment.getProperty('oauth2.client.battleNet.clientId')},redirect_uri='https://localhost:8443/oauth/battleNetAuthorizeResult',scope='wow.profile',response_type='code')}" data-toggle="tooltip" data-placement="bottom" title="배틀넷 로그인"><i class="fa fa-bold" aria-hidden="true"></i></a>
 			</form>
