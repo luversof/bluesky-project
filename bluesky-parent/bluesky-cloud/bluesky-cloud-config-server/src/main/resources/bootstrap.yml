@@ -1,0 +1,6 @@
+encrypt:
+  keyStore:
+    location: classpath:/bluesky.jks
+    password: blueskyStorePass
+    alias: bluesky-Project
+    secret: blueskyKeyPass

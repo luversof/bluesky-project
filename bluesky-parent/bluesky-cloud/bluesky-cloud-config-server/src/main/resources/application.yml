@@ -1,6 +1,8 @@
 server:
   port: 8888
 spring:
+  application:
+    name: bluesky-cloud-config-server
   cloud:
     config:
       server:
@@ -9,4 +11,3 @@ spring:
           default-label: develop
     bus:
       enabled: false
-management.security.enabled: false
