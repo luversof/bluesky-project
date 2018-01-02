@@ -3,7 +3,8 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity4"
 	lang="ko"
-	th:with="menu = ${@menuService.getMenu()}">
+	th:with="menu = ${@menuService.getMenu()},
+	userUtil = ${T(net.luversof.user.util.UserUtil)}">
 <head>
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -46,7 +47,7 @@
 	</script>
 	
 	<script>
-		var userInfo = UserInfo("[[${#authorization.expression('hasRole(''ROLE_USER'')') ? #authentication.principal.id : ''}]]");
+		var userInfo = UserInfo("[[${userUtil.getLoginUser().isPresent() ? userUtil.getLoginUser().get().id : ''}]]");
 	</script>
 </head>
 <body>

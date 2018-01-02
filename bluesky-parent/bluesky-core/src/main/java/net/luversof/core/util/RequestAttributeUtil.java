@@ -5,7 +5,7 @@ import java.text.MessageFormat;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
-public abstract class AbstractRequestAttributeUtil {
+public abstract class RequestAttributeUtil {
 
 	@SuppressWarnings("unchecked")
 	protected static <T> T getRequestAttribute(String name) {

@@ -3,10 +3,10 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>net.luversof</groupId>
-		<artifactId>bluesky-app</artifactId>
+		<artifactId>bluesky-parent</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>bluesky-app-domain</artifactId>
+	<artifactId>bluesky-domain</artifactId>
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.data</groupId>

@@ -5,9 +5,11 @@ import net.luversof.GeneralTest;
 import net.luversof.user.domain.User;
 import net.luversof.user.repository.UserRepository;
 import net.luversof.user.service.UserService;
+import net.luversof.user.util.UserUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.junit.Test;
@@ -62,5 +64,11 @@ public class UserTest extends GeneralTest {
 	@Test
 	public void findAll() {
 		log.debug("result : {}", userRepository.findAll());
+	}
+	
+	@Test
+	public void userUtilTest() {
+		Optional<User> loginUser = UserUtil.getLoginUser();
+		log.debug("user : {}", loginUser);
 	}
 }

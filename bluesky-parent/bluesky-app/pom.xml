@@ -13,13 +13,16 @@
 		<module>bluesky-app-bookkeeping</module>
 		<module>bluesky-app-user</module>
 		<module>bluesky-app-api-battlenet</module>
-		<module>bluesky-app-domain</module>
 		<module>bluesky-app-bbs</module>
 	</modules>
 	<dependencies>
 		<dependency>
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-domain</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>net.luversof</groupId>

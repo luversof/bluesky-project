@@ -12,6 +12,7 @@
 		<module>bluesky-opensource</module>
 		<module>bluesky-test</module>
 		<module>bluesky-cloud</module>
+		<module>bluesky-domain</module>
 	</modules>
 
 	<parent>
@@ -157,19 +158,6 @@
 				<version>1.16.18</version>
 			</dependency>
 
-			<!-- (s) encryption -->
-			<dependency>
-				<groupId>org.bouncycastle</groupId>
-				<artifactId>bcprov-jdk15on</artifactId>
-				<version>1.57</version>
-			</dependency>
-			<dependency>
-				<groupId>org.jasypt</groupId>
-				<artifactId>jasypt-spring31</artifactId>
-				<version>1.9.2</version>
-			</dependency>
-			<!-- (e) encryption -->
-
 			<!-- <dependency> <groupId>org.jadira.usertype</groupId> <artifactId>usertype.core</artifactId> 
 				<version>6.0.1.GA</version> </dependency> -->
 
@@ -218,6 +206,11 @@
 			</dependency>
 			<dependency>
 				<groupId>net.luversof</groupId>
+				<artifactId>bluesky-domain</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.luversof</groupId>
 				<artifactId>bluesky-app-api-battlenet</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -234,11 +227,6 @@
 			<dependency>
 				<groupId>net.luversof</groupId>
 				<artifactId>bluesky-app-bookkeeping</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>net.luversof</groupId>
-				<artifactId>bluesky-app-domain</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>

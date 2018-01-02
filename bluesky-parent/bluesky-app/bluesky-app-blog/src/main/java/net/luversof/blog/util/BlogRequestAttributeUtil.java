@@ -6,7 +6,7 @@ import java.util.UUID;
 import lombok.Setter;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.BlogRepository;
-import net.luversof.core.util.AbstractRequestAttributeUtil;
+import net.luversof.core.util.RequestAttributeUtil;
 import net.luversof.user.domain.User;
 import net.luversof.user.service.LoginUserService;
 
@@ -15,7 +15,7 @@ import net.luversof.user.service.LoginUserService;
  * @author bluesky
  *
  */
-public class BlogRequestAttributeUtil extends AbstractRequestAttributeUtil {
+public class BlogRequestAttributeUtil extends RequestAttributeUtil {
 	
 	private static final String USER_BLOG = "__user_blog";
 	
