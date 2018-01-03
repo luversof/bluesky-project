@@ -1,11 +1,10 @@
-package net.luversof.security.service;
+package net.luversof.security.core.userdetails;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
-import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.user.domain.User;
 import net.luversof.user.service.UserService;
 

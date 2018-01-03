@@ -11,4 +11,13 @@ public enum UserType {
 	BATTLENET(new String[]{ "ROLE_USER", "ROLE_USER_BATTLENET" });
 	
 	@Getter private String[] authorities;
+	
+	public static UserType findByName(String name) {
+		for (UserType userType : UserType.values()) {
+			if (userType.name().equalsIgnoreCase(name)) {
+				return userType;
+			}
+		}
+		return null;
+	}
 }

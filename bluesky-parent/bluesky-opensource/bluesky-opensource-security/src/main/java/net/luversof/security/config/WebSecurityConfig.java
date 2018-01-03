@@ -9,10 +9,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
-import org.springframework.security.web.context.SecurityContextPersistenceFilter;
-import org.springframework.web.filter.RequestContextFilter;
 
 import lombok.SneakyThrows;
+import net.luversof.security.oauth2.client.BlueskyOAuth2AuthorizedClientService;
 
 @Configuration
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
@@ -23,22 +22,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	@Autowired
 	private UserDetailsService userDetailsService;
 	
-//	@Autowired
-//	private OAuth2ClientContextFilter oAuth2ClientContextFilter;
-//	
-//	@Autowired
-//	private OAuth2ClientAuthenticationProcessingFilter githubAuthenticationProcessingFilter;
-//	
-//	@Autowired
-//	private OAuth2ClientAuthenticationProcessingFilter facebookAuthenticationProcessingFilter;
-//	
-//	@Autowired
-//	private OAuth2ClientAuthenticationProcessingFilter battleNetAuthenticationProcessingFilter;
-	
-//	@Autowired
-//	public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-//		auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder);
-//	}
+	@Autowired
+	private BlueskyOAuth2AuthorizedClientService blueskyOAuth2AuthorizedClientService;
 	
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
@@ -63,17 +48,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 //				.anyRequest().authenticated()
 			.and()
 //			.addFilterBefore(new OAuth2ClientContextFilter(), UsernamePasswordAuthenticationFilter.class)
-			.addFilterBefore(new RequestContextFilter(), SecurityContextPersistenceFilter.class)
-//			.addFilterAfter(oAuth2ClientContextFilter, BasicAuthenticationFilter.class)
-//			.addFilterAfter(githubAuthenticationProcessingFilter, BasicAuthenticationFilter.class)
-//			.addFilterAfter(facebookAuthenticationProcessingFilter, BasicAuthenticationFilter.class)
-//			.addFilterAfter(battleNetAuthenticationProcessingFilter, BasicAuthenticationFilter.class)
-//			.addFilterAfter(oAuth2AuthenticationProcessingFilter, ExceptionTranslationFilter.class)
 			.exceptionHandling().accessDeniedPage("/error/accessDenied").and()
 			.logout().logoutSuccessHandler(logoutSuccessHandler).and()
 			.formLogin().loginPage("/login").successHandler(authenticationSuccessHandler).and()
 			.rememberMe().and()
-			.oauth2Login().and()
+			.oauth2Login().successHandler(authenticationSuccessHandler).authorizedClientService(blueskyOAuth2AuthorizedClientService).and()
 //			.csrf().and()
 			.csrf().disable()
             .httpBasic().and()

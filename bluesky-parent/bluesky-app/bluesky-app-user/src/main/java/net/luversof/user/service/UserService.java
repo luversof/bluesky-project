@@ -52,7 +52,7 @@ public class UserService {
 	 * @param userType
 	 * @return
 	 */
-	public User addUser(String username, UserType userType, String externalId) {
+	public User addUser(String username, UserType userType, String externalId, List<String> authorityList) {
 		User user = new User();
 		user.setUsername(username);
 		user.setAccountNonExpired(true);
@@ -62,7 +62,7 @@ public class UserService {
 		user.setUserType(userType);
 		user.setExternalId(externalId);
 		List<UserAuthority> userAuthorityList = new ArrayList<>();
-		for (String authority : userType.getAuthorities()) {
+		for (String authority : authorityList) {
 			UserAuthority userAuthority = new UserAuthority();
 			userAuthority.setAuthority(authority);
 			userAuthority.setUser(user);

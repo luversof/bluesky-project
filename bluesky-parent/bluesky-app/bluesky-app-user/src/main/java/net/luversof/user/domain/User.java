@@ -13,6 +13,8 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 import org.hibernate.annotations.GenericGenerator;
 import org.springframework.data.annotation.CreatedDate;
@@ -21,6 +23,7 @@ import lombok.Data;
 
 @Entity
 @Data
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "username", "userType" }))
 public class User {
 	@Id
 	//@GeneratedValue(strategy = GenerationType.IDENTITY)
