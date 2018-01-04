@@ -7,7 +7,8 @@ import lombok.Getter;
 public enum UserType {
 	LOCAL(new String[]{ "ROLE_USER" }),
 	GITHUB(new String[]{ "ROLE_USER", "ROLE_USER_GITHUB" }), 
-	FACEBOOK(new String[]{ "ROLE_USER", "ROLE_USER_FACEBOOK" }), 
+	FACEBOOK(new String[]{ "ROLE_USER", "ROLE_USER_FACEBOOK" }),
+	GOOGLE(new String[]{ "ROLE_USER", "ROLE_USER_GOOGLE" }),
 	BATTLENET(new String[]{ "ROLE_USER", "ROLE_USER_BATTLENET" });
 	
 	@Getter private String[] authorities;
