@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +16,9 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -102,5 +106,18 @@ public class SimpleTest {
 
 	private Reader read(String path) {
 		return new InputStreamReader(getClass().getClassLoader().getResourceAsStream(path));
+	}
+	
+	@Autowired
+	private RestTemplate restTemplate = new RestTemplate();
+	
+	@Test
+	public void test3() throws URISyntaxException {
+		//URI uri = new URI("sts://daoum.net");
+		URI uri = URI.create("sts://daoum.net");
+		log.debug("protocol : {}", uri.getScheme());
+		Object forObject = restTemplate.getForObject(uri, Object.class);
+		
+		log.debug("forObject : {}", forObject);
 	}
 }
