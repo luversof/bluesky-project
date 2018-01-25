@@ -13,7 +13,7 @@ public class TestWebSocketConfig implements WebSocketConfigurer {
 
 	@Override
 	public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-		registry.addHandler(new TestTextWebSocketHandler(), "/questions2").withSockJS();
+		//registry.addHandler(new TestTextWebSocketHandler(), "/questions2").withSockJS();
 	}
 	
 

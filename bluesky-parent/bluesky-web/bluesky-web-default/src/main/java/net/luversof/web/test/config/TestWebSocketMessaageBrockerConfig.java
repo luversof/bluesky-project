@@ -11,16 +11,23 @@ import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
 @EnableWebSocketMessageBroker
 public class TestWebSocketMessaageBrockerConfig extends AbstractWebSocketMessageBrokerConfigurer {
 
+
+	@Override
+	public void configureMessageBroker(MessageBrokerRegistry registry) {
+		registry
+			.setApplicationDestinationPrefixes("/app")
+			.enableStompBrokerRelay("/topic", "/queue")
+			.setRelayHost("10.0.75.1")
+			.setRelayPort(5672)
+			//.setSystemHeartbeatReceiveInterval(10000)
+            //.setSystemHeartbeatSendInterval(10000);
+			;
+	}
+	
 	@Override
 	public void registerStompEndpoints(StompEndpointRegistry registry) {
 		registry.addEndpoint("/questions2").withSockJS();
 	}
-
-	@Override
-	public void configureMessageBroker(MessageBrokerRegistry registry) {
-		registry.setApplicationDestinationPrefixes("/app").enableSimpleBroker("/topic", "/queue");
-	}
-	
 	
 	
 	public class TestDefaultHandshakeHandler extends DefaultHandshakeHandler {

@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,9 +36,5 @@ public class TestController {
 			}
 		}
 	}
-	
-	@MessageMapping("/questions2")
-	public String processQuestion2(String question2) {
-		return question2.toUpperCase();
-	}
+
 }
