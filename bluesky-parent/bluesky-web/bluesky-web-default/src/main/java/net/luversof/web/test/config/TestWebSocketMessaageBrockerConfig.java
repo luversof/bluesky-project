@@ -18,7 +18,6 @@ public class TestWebSocketMessaageBrockerConfig extends AbstractWebSocketMessage
 			.setApplicationDestinationPrefixes("/app")
 			.enableStompBrokerRelay("/topic", "/queue")
 			.setRelayHost("10.0.75.1")
-			.setRelayPort(5672)
 			//.setSystemHeartbeatReceiveInterval(10000)
             //.setSystemHeartbeatSendInterval(10000);
 			;
@@ -26,7 +25,10 @@ public class TestWebSocketMessaageBrockerConfig extends AbstractWebSocketMessage
 	
 	@Override
 	public void registerStompEndpoints(StompEndpointRegistry registry) {
-		registry.addEndpoint("/questions2").withSockJS();
+		registry.addEndpoint("/questions2")
+//			.setAllowedOrigins("http://10.0.75.1")
+			.setAllowedOrigins("*")
+			.withSockJS();
 	}
 	
 	

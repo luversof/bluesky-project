@@ -1,0 +1,49 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-spring4-4.dtd">
+<html
+	xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+	layout:decorator="layout/defaultLayout">
+<head>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.1.4/sockjs.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+	<script>
+	ws2 = new SockJS("/questions2");
+
+	stompClient = Stomp.over(ws2);
+
+	stompClient.connect({}, function(frame) {
+		stompClient.subscribe("/topic/questions2", function(message) {
+			msg = message;
+			console.log("questions2 : ", message);
+			$("#chatArea").append(message.body).append("<br />");
+		});
+		stompClient.subscribe("/user/queue/private", function(message) {
+			msg = message;
+			console.log("private : ", message);
+			$("body").prepend(message.body);
+		});
+	}, function (error) {
+		console.log("STOMP protocol error ", error);
+	});
+
+
+	function sendMessage(msg) {
+		stompClient.send("/app/questions2", {}, msg);
+	}
+	
+	$(document).ready(function() {
+		$("#say").keyup(function(e) {
+		    if (e.keyCode == 13) {
+		    	sendMessage($(this).val());
+		    	$(this).val("");
+		    }        
+		});
+	});
+	</script>
+</head>
+<div layout:fragment="content">
+	테스트를 해보자
+	<div id="chatArea"></div>
+	<input type="text" id="say"></input>
+</div>
+</html>
