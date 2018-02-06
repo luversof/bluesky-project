@@ -2,8 +2,8 @@ package net.luversof.opensource.jdbc.config;
 
 import javax.sql.DataSource;
 
+import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
@@ -14,8 +14,14 @@ import org.springframework.context.annotation.PropertySource;
 public class JdbcBlogConfig {
 	
 	@Bean
-	@ConfigurationProperties(prefix = "datasource.blog")
-	public DataSource blogDataSource() {
-		return DataSourceBuilder.create().build();
+	@ConfigurationProperties("datasource.blog")
+	public DataSourceProperties blogDataSourceProperties() {
+		return new DataSourceProperties();
 	}
+	
+	@Bean
+	public DataSource blogDataSource(DataSourceProperties blogDataSourceProperties) {
+		return blogDataSourceProperties.initializeDataSourceBuilder().build();
+	}
+
 }
