@@ -1,0 +1,26 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>net.luversof</groupId>
+		<artifactId>bluesky-batch</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>bluesky-batch-sample</artifactId>
+	<dependencies>
+		<!-- (s) bluesky-boot -->
+		<dependency>
+			<groupId>net.luversof.boot</groupId>
+			<artifactId>bluesky-boot-starter-batch</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.luversof.boot</groupId>
+			<artifactId>bluesky-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.luversof.boot</groupId>
+			<artifactId>bluesky-boot-starter-mybatis</artifactId>
+		</dependency>
+		<!-- (e) bluesky-boot -->
+	</dependencies>
+</project>

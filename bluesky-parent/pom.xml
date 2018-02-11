@@ -13,6 +13,7 @@
 		<module>bluesky-test</module>
 		<module>bluesky-cloud</module>
 		<module>bluesky-domain</module>
+		<module>bluesky-batch</module>
 	</modules>
 
 	<parent>
