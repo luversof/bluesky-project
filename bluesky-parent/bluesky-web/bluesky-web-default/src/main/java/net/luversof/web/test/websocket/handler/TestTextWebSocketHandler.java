@@ -1,4 +1,4 @@
-package net.luversof.web.test.handler;
+package net.luversof.web.test.websocket.handler;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;

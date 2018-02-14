@@ -1,5 +1,4 @@
 spring:
-  profiles: opdev
   cloud:
     config:
       name: bluesky-project

@@ -20,8 +20,7 @@ public class JdbcBlogConfig {
 	}
 	
 	@Bean
-	public DataSource blogDataSource(DataSourceProperties blogDataSourceProperties) {
-		return blogDataSourceProperties.initializeDataSourceBuilder().build();
+	public DataSource blogDataSource() {
+		return blogDataSourceProperties().initializeDataSourceBuilder().build();
 	}
-
 }

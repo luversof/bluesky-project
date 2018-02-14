@@ -14,7 +14,7 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
-@EnableJpaRepositories(basePackages = "net.luversof.blog.**.repository", entityManagerFactoryRef = "blogEntityManagerFactory", transactionManagerRef = "blogTransactionManager")
+@EnableJpaRepositories(basePackages = "net.luversof.blog.repository", entityManagerFactoryRef = "blogEntityManagerFactory", transactionManagerRef = "blogTransactionManager")
 public class DataJpaBlogConfig {
 	
 	@Bean(name = "blogEntityManagerFactory")
@@ -22,7 +22,7 @@ public class DataJpaBlogConfig {
 		return builder
 				.dataSource(blogDataSource)
 				.persistenceUnit("blogPersistenceUnit")
-				.packages("net.luversof.blog.**.domain").build();
+				.packages("net.luversof.blog.domain").build();
 	}
 	
 	@Bean(name = "blogTransactionManager")

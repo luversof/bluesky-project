@@ -20,8 +20,8 @@ public class JdbcBookkeepingConfig {
 	}
 	
 	@Bean
-	public DataSource bookkeepingDataSource(DataSourceProperties bookkeepingDataSourceProperties) {
-		return bookkeepingDataSourceProperties.initializeDataSourceBuilder().build();
+	public DataSource bookkeepingDataSource() {
+		return bookkeepingDataSourceProperties().initializeDataSourceBuilder().build();
 	}
 }
 

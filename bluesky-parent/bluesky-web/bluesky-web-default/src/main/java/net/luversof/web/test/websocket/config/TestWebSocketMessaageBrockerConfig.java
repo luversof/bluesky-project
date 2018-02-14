@@ -1,4 +1,4 @@
-package net.luversof.web.test.config;
+package net.luversof.web.test.websocket.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;

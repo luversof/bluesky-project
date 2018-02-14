@@ -13,27 +13,14 @@ import org.springframework.context.annotation.PropertySource;
 @PropertySource(value = "classpath:batch-jdbc-${spring.profiles.active}.properties", ignoreResourceNotFound = true)
 public class BatchJdbcConfig {
 
-	
 	@Bean
-	@ConfigurationProperties("datasource.bbs")
-	public DataSourceProperties bbsDataSourceProperties() {
+	@ConfigurationProperties("datasource.batch")
+	public DataSourceProperties batchDataSourceProperties() {
 		return new DataSourceProperties();
 	}
 	
 	@Bean
-	public DataSource bbsDataSource(DataSourceProperties bbsDataSourceProperties) {
-		return bbsDataSourceProperties.initializeDataSourceBuilder().build();
+	public DataSource batchDataSource() {
+		return batchDataSourceProperties().initializeDataSourceBuilder().build();
 	}
-	
-	@Bean
-	@ConfigurationProperties("datasource.blog")
-	public DataSourceProperties blogDataSourceProperties() {
-		return new DataSourceProperties();
-	}
-	
-	@Bean
-	public DataSource blogDataSource(DataSourceProperties blogDataSourceProperties) {
-		return blogDataSourceProperties.initializeDataSourceBuilder().build();
-	}
-
 }

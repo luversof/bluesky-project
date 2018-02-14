@@ -1,4 +1,4 @@
-package net.luversof.web.test.controller;
+package net.luversof.web.test.websocket.controller;
 
 import java.io.IOException;
 import java.util.List;

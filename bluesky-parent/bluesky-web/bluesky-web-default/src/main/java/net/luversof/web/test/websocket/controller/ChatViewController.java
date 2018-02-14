@@ -1,4 +1,4 @@
-package net.luversof.web.test.controller;
+package net.luversof.web.test.websocket.controller;
 
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;

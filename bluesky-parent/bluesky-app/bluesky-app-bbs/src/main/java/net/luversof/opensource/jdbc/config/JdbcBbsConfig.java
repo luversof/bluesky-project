@@ -20,8 +20,7 @@ public class JdbcBbsConfig {
 	}
 	
 	@Bean
-	public DataSource bbsDataSource(DataSourceProperties bbsDataSourceProperties) {
-		return bbsDataSourceProperties.initializeDataSourceBuilder().build();
+	public DataSource bbsDataSource() {
+		return bbsDataSourceProperties().initializeDataSourceBuilder().build();
 	}
-
 }

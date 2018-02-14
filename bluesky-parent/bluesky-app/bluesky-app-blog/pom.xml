@@ -22,7 +22,11 @@
 		</dependency>
 		<dependency>
 			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-opensource-security</artifactId>
+			<artifactId>bluesky-app-user</artifactId>
 		</dependency>
+		<!-- <dependency>
+			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-opensource-security</artifactId>
+		</dependency> -->
 	</dependencies>
 </project>
