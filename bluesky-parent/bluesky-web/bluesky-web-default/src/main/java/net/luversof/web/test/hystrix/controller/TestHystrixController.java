@@ -1,30 +1,45 @@
 package net.luversof.web.test.hystrix.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.web.test.hystrix.service.TestHystrixService;
 
-@RestController
+@Controller
+@RequestMapping(value = "/", produces = { MediaType.TEXT_HTML_VALUE, MediaType.APPLICATION_JSON_VALUE })
 public class TestHystrixController {
 
 	@Autowired
 	private TestHystrixService testHystrixService;
 	
 	@GetMapping("/testHystrix")
-	public String test(@RequestParam String message) {
-		return testHystrixService.defaultStores(message);
+	public void test(@RequestParam String message, ModelMap modelMap) {
+		modelMap.addAttribute("result", testHystrixService.defaultStores(message));
 	}
 	
 	@GetMapping("/testHystrix2")
-	public String test2() {
-		return testHystrixService.defaultStores("test2");
+	public void test2(ModelMap modelMap) {
+		modelMap.addAttribute("result", testHystrixService.defaultStores("test2"));
 	}
 	
 	@GetMapping("/testHystrix3")
-	public String test3() {
-		return testHystrixService.defaultStores("ERROR");
+	public void test3(ModelMap modelMap) {
+		modelMap.addAttribute("result", testHystrixService.defaultStores("ERROR"));
+	}
+	
+
+	@GetMapping(value = "/testHystrix4", produces = MediaType.APPLICATION_JSON_VALUE)
+	public void test4(ModelMap modelMap) {
+		modelMap.addAttribute("result", testHystrixService.defaultStores("test4"));
+	}
+	
+	@GetMapping(value = "/testHystrix5", produces = MediaType.TEXT_HTML_VALUE)
+	public void test5(ModelMap modelMap) {
+		modelMap.addAttribute("result", testHystrixService.defaultStores("test5"));
 	}
 }
