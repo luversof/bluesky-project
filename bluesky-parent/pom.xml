@@ -5,23 +5,22 @@
 	<artifactId>bluesky-parent</artifactId>
 	<packaging>pom</packaging>
 	<version>0.0.1-SNAPSHOT</version>
-	<modules>
-		<module>bluesky-app</module>
-		<module>bluesky-web</module>
-		<module>bluesky-core</module>
-		<module>bluesky-opensource</module>
-		<module>bluesky-test</module>
-		<module>bluesky-cloud</module>
-		<module>bluesky-domain</module>
-		<module>bluesky-batch</module>
-	</modules>
-
 	<parent>
 		<groupId>net.luversof.boot</groupId>
 		<artifactId>bluesky-boot-starter-parent</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 		<!-- <relativePath>../../bluesky-boot/bluesky-boot-starters/bluesky-boot-starter-parent</relativePath> -->
 	</parent>
+	
+	<modules>
+		<module>bluesky-app</module>
+		<module>bluesky-web</module>
+		<module>bluesky-core</module>
+		<module>bluesky-opensource</module>
+		<module>bluesky-test</module>
+		<module>bluesky-domain</module>
+		<module>bluesky-batch</module>
+	</modules>
 
 	<properties>
 		<spring-cloud.version>Finchley.M6</spring-cloud.version>
