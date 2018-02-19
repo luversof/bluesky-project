@@ -19,27 +19,27 @@ public class TestHystrixController {
 	
 	@GetMapping("/testHystrix")
 	public void test(@RequestParam String message, ModelMap modelMap) {
-		modelMap.addAttribute("result", testHystrixService.defaultStores(message));
+		modelMap.addAttribute("result", testHystrixService.getStores(message));
 	}
 	
 	@GetMapping("/testHystrix2")
 	public void test2(ModelMap modelMap) {
-		modelMap.addAttribute("result", testHystrixService.defaultStores("test2"));
+		modelMap.addAttribute("result", testHystrixService.getStores("test2"));
 	}
 	
 	@GetMapping("/testHystrix3")
 	public void test3(ModelMap modelMap) {
-		modelMap.addAttribute("result", testHystrixService.defaultStores("ERROR"));
+		modelMap.addAttribute("result", testHystrixService.getStores("ERROR"));
 	}
 	
 
 	@GetMapping(value = "/testHystrix4", produces = MediaType.APPLICATION_JSON_VALUE)
 	public void test4(ModelMap modelMap) {
-		modelMap.addAttribute("result", testHystrixService.defaultStores("test4"));
+		modelMap.addAttribute("result", testHystrixService.getStores("test4"));
 	}
 	
 	@GetMapping(value = "/testHystrix5", produces = MediaType.TEXT_HTML_VALUE)
 	public void test5(ModelMap modelMap) {
-		modelMap.addAttribute("result", testHystrixService.defaultStores("test5"));
+		modelMap.addAttribute("result", testHystrixService.getStores("test5"));
 	}
 }

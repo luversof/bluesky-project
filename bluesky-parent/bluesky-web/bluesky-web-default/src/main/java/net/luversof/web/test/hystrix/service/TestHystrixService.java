@@ -1,21 +1,21 @@
 package net.luversof.web.test.hystrix.service;
 
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 
 import net.luversof.core.exception.BlueskyException;
 
-@Component
+@Service
 public class TestHystrixService {
 
 
-    @HystrixCommand(fallbackMethod = "defaultStores")
-    public Object getStores(String message) {
+    public String defaultStores(String message) {
         return "fail";
     }
 
-    public String defaultStores(String message) {
+    @HystrixCommand(fallbackMethod = "defaultStores", groupKey="testGroupKey", commandKey = "testCommandKey")
+    public String getStores(String message) {
     	
     	if (message.equals("ERROR")) {
     		throw new BlueskyException("ERROR");
