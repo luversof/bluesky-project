@@ -14,6 +14,6 @@ public class HystrixTest extends GeneralTest {
 	
 	@Test
 	public void test() {
-		log.debug("hystrixTestService : {}", hystrixTestService.defaultStores("testaaa"));
+		log.debug("hystrixTestService : {}", hystrixTestService.getStores("testaaa"));
 	}
 }

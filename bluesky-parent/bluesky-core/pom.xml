@@ -11,10 +11,6 @@
 	<dependencies>
 		<!-- (s) spring boot -->
 		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-config</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-aop</artifactId>
 		</dependency>
@@ -27,10 +23,21 @@
 			<artifactId>spring-boot-starter-reactor-netty</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<!-- (e) spring boot -->
+	
+		<!-- (s) spring cloud -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-config</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-netflix-hystrix</artifactId>
 		</dependency>
-		<!-- (e) spring boot -->
+		<!-- (e) spring cloud -->
 
 		<dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>

@@ -1,5 +1,1 @@
-spring:
-  cloud:
-    config:
-      name: bluesky-project
-      uri: http://localhost:8888
+spring.cloud.config.name: bluesky-project

@@ -10,12 +10,12 @@ import net.luversof.core.exception.BlueskyException;
 public class HystrixTestService {
 
 
-    @HystrixCommand(fallbackMethod = "defaultStores")
-    public Object getStores(String message) {
+    public String defaultStores(String message) {
         return "fail";
     }
 
-    public String defaultStores(String message) {
+    @HystrixCommand(fallbackMethod = "defaultStores")
+    public String getStores(String message) {
     	
     	if (message.equals("ERROR")) {
     		throw new BlueskyException("ERROR");
