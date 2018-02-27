@@ -15,6 +15,7 @@ body { margin: 0; padding: 0;}
 .devcheck-container .url { display: table-cell ; padding: 0 0 0 20px;}
 .devcheck-container .link_blank { margin-left: 5px; vertical-align: middle; }
 .devcheck-container .thead { font-weight: bold; font-size: 18px; border-top: 5px solid #f4f5f7}
+.devcheck-container .devcheck-comment { display:block; font-size: 12px; color: #5fb8e3; letter-spacing: -.5px; }
 </style>
 </head>
 <body>
@@ -30,7 +31,8 @@ body { margin: 0; padding: 0;}
         
         <li th:each="devCheckInfo : ${devCheckInfoList}" th:with="handlerMethodMap = ${devCheckInfo.handlerMethodMap}">
             <span class="bean-name">
-            [[${devCheckInfo.beanName}]]
+	            [[${devCheckInfo.beanName}]]
+            	<span class="devcheck-comment" th:if="${devCheckInfo.description}">[(${devCheckInfo.description})]</span>
             </span>
             <span class="value" th:each="map : ${handlerMethodMap}" th:with="requestMappingInfo = ${map.key},handlerMethod = ${map.value}">
                 <input type="hidden" name="group" th:value="${map.value.bean}" />

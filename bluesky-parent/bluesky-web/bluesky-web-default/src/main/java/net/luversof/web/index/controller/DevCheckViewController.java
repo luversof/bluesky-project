@@ -19,6 +19,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 
 
 import lombok.Data;
+import net.luversof.core.annotation.DevCheckDescription;
 import net.luversof.web.util.DevCheckUtil;
 
 @Controller
@@ -28,6 +29,7 @@ public class DevCheckViewController {
 	@Autowired
 	private RequestMappingHandlerMapping requestMappingHandlerMapping;
 	
+	
 	@GetMapping({"", "/index"})
 	public String index(ModelMap modelMap) {
 		Map<RequestMappingInfo, HandlerMethod> handlerMethodMap = requestMappingHandlerMapping.getHandlerMethods().entrySet().stream()
@@ -36,7 +38,10 @@ public class DevCheckViewController {
 				.collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 		
 		List<DevCheckInfo> devCheckInfoList = new ArrayList<>();
-		handlerMethodMap.entrySet().forEach(map -> devCheckInfoList.add(new DevCheckInfo(map)));
+		handlerMethodMap.entrySet().forEach(map -> {
+			if ((!map.getValue().hasMethodAnnotation(DevCheckDescription.class) || (map.getValue().hasMethodAnnotation(DevCheckDescription.class) && map.getValue().getMethodAnnotation(DevCheckDescription.class).displayable())))
+				devCheckInfoList.add(new DevCheckInfo(map));
+		});
 		modelMap.addAttribute("devCheckInfoList", devCheckInfoList.stream().sorted(Comparator.comparing(DevCheckInfo::getBeanName).thenComparing(devCheckInfo-> devCheckInfo.getUrlList().get(0))).collect(Collectors.toList()));
 		return "_check/index";
 	}
@@ -50,10 +55,14 @@ public class DevCheckViewController {
 				urlList.add(DevCheckUtil.getUrlWithParameter(url, handlerMethodMap.getValue().getMethod()));
 			}
 			this.handlerMethodMap = handlerMethodMap;
+			if (handlerMethodMap.getValue().hasMethodAnnotation(DevCheckDescription.class))	{
+				this.description = handlerMethodMap.getValue().getMethodAnnotation(DevCheckDescription.class).value();
+			}
 		}
 		
 		private String beanName;
 		private List<String> urlList;
+		private String description;
 		Entry<RequestMappingInfo, HandlerMethod> handlerMethodMap;
 	}
 }

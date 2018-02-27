@@ -20,13 +20,13 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.ConfigurableWebEnvironment;
 import org.thymeleaf.spring5.templateresolver.SpringResourceTemplateResolver;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
+import net.luversof.core.annotation.DevCheckDescription;
 import net.luversof.web.constant.AuthorizeRole;
 import net.luversof.web.index.service.MenuService;
 
@@ -54,6 +54,7 @@ public class DevCheckController {
 		menuService.reload();
 	}
 	
+	@DevCheckDescription("모든 properties 조회")
 	@GetMapping("/allProperties")
 	@SneakyThrows
 	public Map<String, Object> allProperties() {
@@ -81,6 +82,7 @@ public class DevCheckController {
 		return null;
 	}
 	
+	@DevCheckDescription("thymeleaf decoupledLogic 설정 on/off 처리")
 	@GetMapping("/decoupledLogicToggle")
 	public boolean decoupledLogicToggle() {
 		defaultTemplateResolver.setUseDecoupledLogic(!defaultTemplateResolver.getUseDecoupledLogic());
@@ -99,6 +101,7 @@ public class DevCheckController {
 		public static interface CheckName {}
 	}
 
+	@DevCheckDescription(displayable = false)
 	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
 	@GetMapping("/exceptionOrderTest")
 	public void exceptionOrderTest(@Validated(User.CheckName.class) User user, ModelMap modelMap) {
@@ -106,11 +109,13 @@ public class DevCheckController {
 	}
 	
 	
+	@DevCheckDescription("eureka client serviceList 조회")
 	@GetMapping("/discoveryClientServiceList")
 	public List<String> discoveryClientServiceList() {
 		return discoveryClient.getServices();
 	}
 	
+	@DevCheckDescription("loadBalancer 조회")
 	@GetMapping("/serviceInstance")
 	public ServiceInstance serviceInstance(String serviceId) {
 		return loadBalancerClient.choose(serviceId);
