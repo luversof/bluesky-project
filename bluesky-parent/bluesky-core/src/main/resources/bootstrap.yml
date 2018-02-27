@@ -1,5 +1,20 @@
 spring.cloud.config.name: bluesky-project
-users:
-  ribbon:
-    NIWSServerListClassName: com.netflix.loadbalancer.ConfigurationBasedServerList
-    NFLoadBalancerRuleClassName: com.netflix.loadbalancer.WeightedResponseTimeRule
+#ribbon:
+#  eager-load:
+#    enabled: true
+#---
+#foo:
+#  ribbon:
+#    eureka:
+#      enabled: false
+#    listOfServers: example.com,google.com
+#---
+#bluesky-cloud-config-server:
+#  ribbon:
+#    eureka:
+#      enabled: true
+#---
+#bluesky-test:
+#  ribbon:
+#    eureka:
+#      enabled: true

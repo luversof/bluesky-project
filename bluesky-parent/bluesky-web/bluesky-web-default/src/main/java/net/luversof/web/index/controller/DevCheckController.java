@@ -1,11 +1,15 @@
 package net.luversof.web.index.controller;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.validation.constraints.NotNull;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.PropertySource;
@@ -38,6 +42,12 @@ public class DevCheckController {
 	
 	@Autowired
 	private SpringResourceTemplateResolver defaultTemplateResolver;
+	
+	@Autowired
+	private DiscoveryClient discoveryClient;
+	
+	@Autowired
+	private LoadBalancerClient loadBalancerClient;
 
 	@GetMapping("/menuReload")
 	public void menuReload() {
@@ -93,6 +103,17 @@ public class DevCheckController {
 	@GetMapping("/exceptionOrderTest")
 	public void exceptionOrderTest(@Validated(User.CheckName.class) User user, ModelMap modelMap) {
 		modelMap.addAttribute(user);
+	}
+	
+	
+	@GetMapping("/discoveryClientServiceList")
+	public List<String> discoveryClientServiceList() {
+		return discoveryClient.getServices();
+	}
+	
+	@GetMapping("/serviceInstance")
+	public ServiceInstance serviceInstance(String serviceId) {
+		return loadBalancerClient.choose(serviceId);
 	}
 	
 //	@Autowired
