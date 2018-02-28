@@ -1,0 +1,11 @@
+battlenet-api:
+  ribbon:
+    eureka.enabled: false
+    listOfServers: https://kr.api.battle.net,https://kr.api.battle.net
+    ServerListRefreshInterval: 15000
+
+    
+#ribbon:
+#  eureka:
+#   enabled: false
+

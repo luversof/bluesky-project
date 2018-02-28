@@ -2,6 +2,8 @@ package net.luversof.api.battlenet;
 
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.web.client.RestTemplate;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
@@ -29,5 +31,15 @@ public class D3ServiceTest extends GeneralTest {
 	@Test
 	public void getItemDataTest() {
 		log.debug("getItemDataTest result : {}", d3Service.getItemData("Unique_Helm_002_p1", locale));
+	}
+	
+	@Autowired
+	@Qualifier("restTemplate")
+	private RestTemplate restTemplate;
+	
+	@Test
+	public void test() { 
+		//log.debug("result : {}", restTemplate.getForObject("http://bluesky-cloud-config-server/bluesky-project.yml", String.class));
+//		log.debug("result : {}", restTemplate.getForObject("https://www.daum.net/", String.class));
 	}
 }

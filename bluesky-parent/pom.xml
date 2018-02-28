@@ -22,10 +22,6 @@
 		<module>bluesky-batch</module>
 	</modules>
 
-	<properties>
-		<spring-cloud.version>Finchley.M6</spring-cloud.version>
-	</properties>
-
 	<build>
 		<resources>
 			<resource>
@@ -143,14 +139,6 @@
 				</dependency> -->
 			<!-- (e) 2.0.8에서 AuthorizationCodeAccessTokenProvider mastateMandatory 
 				설정 문제로 인해 이전 버전 처리 -->
-
-			<dependency>
-				<groupId>org.springframework.cloud</groupId>
-				<artifactId>spring-cloud-dependencies</artifactId>
-				<version>${spring-cloud.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
 
 			<!-- <dependency> <groupId>org.jadira.usertype</groupId> <artifactId>usertype.core</artifactId> 
 				<version>6.0.1.GA</version> </dependency> -->
