@@ -24,9 +24,9 @@
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-app-user</artifactId>
 		</dependency>
-		<!-- <dependency>
+		<dependency>
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-opensource-security</artifactId>
-		</dependency> -->
+		</dependency>
 	</dependencies>
 </project>
