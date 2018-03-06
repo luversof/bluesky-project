@@ -53,27 +53,24 @@
 			<groupId>org.springframework.data</groupId>
 			<artifactId>spring-data-rest-hal-browser</artifactId>
 		</dependency>
-		<dependency>
+		<!-- <dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-context-indexer</artifactId>
 			<optional>true</optional>
-		</dependency>
-
+		</dependency> -->
+ 
 		<!-- (e) spring-boot -->
 
-		<!-- (s) template engine -->
+		<!-- (s) thymeleaf -->
 		<dependency>
 			<groupId>org.thymeleaf.extras</groupId>
 			<artifactId>thymeleaf-extras-springsecurity4</artifactId>
 		</dependency>
-		<!-- (s) template engine -->
-
-		<!-- (s) thymeleaf extras -->
 		<dependency>
 			<groupId>nz.net.ultraq.thymeleaf</groupId>
 			<artifactId>thymeleaf-layout-dialect</artifactId>
 		</dependency>
-		<!-- (e) thymeleaf extras -->
+		<!-- (e) thymeleaf -->
 
 		<!-- (s) meneService 관련 -->
 		<dependency>
@@ -132,7 +129,7 @@
 
 	</dependencies>
 
-	<build>
+	<!-- <build>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
@@ -150,5 +147,5 @@
 				<artifactId>maven-resources-plugin</artifactId>
 			</plugin>
 		</plugins>
-	</build>
+	</build> -->
 </project>
