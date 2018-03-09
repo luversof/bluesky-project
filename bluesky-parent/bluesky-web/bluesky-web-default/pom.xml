@@ -53,12 +53,9 @@
 			<groupId>org.springframework.data</groupId>
 			<artifactId>spring-data-rest-hal-browser</artifactId>
 		</dependency>
-		<!-- <dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-context-indexer</artifactId>
-			<optional>true</optional>
-		</dependency> -->
- 
+		<!-- <dependency> <groupId>org.springframework</groupId> <artifactId>spring-context-indexer</artifactId> 
+			<optional>true</optional> </dependency> -->
+
 		<!-- (e) spring-boot -->
 
 		<!-- (s) thymeleaf -->
@@ -80,6 +77,10 @@
 		<!-- (e) meneService 관련 -->
 
 		<!-- (s) javascript libarary -->
+		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>webjars-locator-core</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.webjars</groupId>
 			<artifactId>jquery</artifactId>
@@ -129,23 +130,9 @@
 
 	</dependencies>
 
-	<!-- <build>
-		<plugins>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-			</plugin>
-			<plugin>
-				<groupId>org.asciidoctor</groupId>
-				<artifactId>asciidoctor-maven-plugin</artifactId>
-			</plugin>
-			<plugin>
-				<artifactId>maven-resources-plugin</artifactId>
-			</plugin>
-		</plugins>
-	</build> -->
+	<!-- <build> <plugins> <plugin> <groupId>org.springframework.boot</groupId> 
+		<artifactId>spring-boot-maven-plugin</artifactId> </plugin> <plugin> <groupId>org.apache.maven.plugins</groupId> 
+		<artifactId>maven-surefire-plugin</artifactId> </plugin> <plugin> <groupId>org.asciidoctor</groupId> 
+		<artifactId>asciidoctor-maven-plugin</artifactId> </plugin> <plugin> <artifactId>maven-resources-plugin</artifactId> 
+		</plugin> </plugins> </build> -->
 </project>
