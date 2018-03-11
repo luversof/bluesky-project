@@ -3,14 +3,13 @@ package net.luversof.web.config;
 import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.format.datetime.standard.DateTimeFormatterRegistrar;
-import org.springframework.web.servlet.ThemeResolver;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ViewResolverRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import org.springframework.web.servlet.theme.CookieThemeResolver;
+import org.springframework.web.servlet.theme.ThemeChangeInterceptor;
 import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
 import org.thymeleaf.spring5.templateresolver.SpringResourceTemplateResolver;
 import org.thymeleaf.spring5.view.ThymeleafViewResolver;
@@ -47,10 +46,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
 		registry.viewResolver(thymeleafViewResolver);
 		registry.enableContentNegotiation(new MappingJackson2JsonView(objectMapper));
 	}
-	
-	
-	@Bean
-	public ThemeResolver themeResolver() {
-		return new CookieThemeResolver();
+
+	@Override
+	public void addInterceptors(InterceptorRegistry registry) {
+		registry.addInterceptor(new ThemeChangeInterceptor());
 	}
 }

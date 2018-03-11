@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
+import org.springframework.context.MessageSource;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.PropertySource;
@@ -48,6 +49,9 @@ public class DevCheckController {
 	
 	@Autowired
 	private LoadBalancerClient loadBalancerClient;
+	
+	@Autowired
+	private MessageSource messageSource;
 
 	@GetMapping("/menuReload")
 	public void menuReload() {
@@ -119,6 +123,12 @@ public class DevCheckController {
 	@GetMapping("/serviceInstance")
 	public ServiceInstance serviceInstance(String serviceId) {
 		return loadBalancerClient.choose(serviceId);
+	}
+	
+	@DevCheckDescription("메세지 조회")
+	@GetMapping("/messageSource") 
+	public MessageSource messageSource() {
+		return messageSource;
 	}
 	
 //	@Autowired

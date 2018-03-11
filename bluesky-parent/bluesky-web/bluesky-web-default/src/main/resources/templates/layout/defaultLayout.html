@@ -68,18 +68,18 @@
 			</ul>
 			<form class="form-inline" sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post">
 				<!-- <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/> -->
-				<span class="navbar-text">Logged in as <a href="#none" class="navbar-link" sec:authentication="name">Username</a></span>&nbsp;
+				<span class="navbar-text mr-sm-1">Logged in as <a href="#none" class="navbar-link" sec:authentication="name">Username</a></span>
 				<input type="submit" class="btn btn-outline-primary" th:value="#{logout}" />
 			</form>
 			<form class="form-inline" sec:authorize="!isAuthenticated()" th:action="@{/login}" method="post" th:fragment="loginArea">
 				<!-- <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/> -->
-				<input type="text" name="username" th:placeholder="#{username}" class="form-control" autofocus="autofocus"/>
-				<input type="password" name="password" th:placeholder="#{password}" class="form-control" />
-				<input type="submit" class="btn btn-outline-primary" th:value="#{login}" />
-				<a class="btn btn-outline-primary" th:href="@{/oauth2/authorization/google}" data-toggle="tooltip" data-placement="bottom" title="구글 로그인"><i class="fa fa-google" aria-hidden="true"></i></a>
-				<a class="btn btn-outline-primary" th:href="@{/oauth2/authorization/facebook}" data-toggle="tooltip" data-placement="bottom" title="facebook 로그인"><i class="fa fa-facebook fa-lg"></i></a>
-				<a class="btn btn-outline-primary" th:href="@{/oauth2/authorization/github}" data-toggle="tooltip" data-placement="bottom" title="github 로그인"><i class="fa fa-github fa-lg"></i></a>
-				<a class="btn btn-outline-primary" th:href="@{/oauth2/authorization/battlenet}" data-toggle="tooltip" data-placement="bottom" title="배틀넷 로그인"><i class="fa fa-bold" aria-hidden="true"></i></a>
+				<input class="form-control mr-sm-1" type="text" name="username" th:placeholder="#{username}" autofocus="autofocus"/>
+				<input class="form-control mr-sm-1" type="password" name="password" th:placeholder="#{password}" />
+				<input class="btn btn-outline-primary mr-sm-2" type="submit" th:value="#{login}" />
+				<a class="btn btn-outline-primary mr-sm-1" th:href="@{/oauth2/authorization/google}" data-toggle="tooltip" data-placement="bottom" title="구글 로그인"><i class="fa fa-google" aria-hidden="true"></i></a>
+				<a class="btn btn-outline-primary mr-sm-1" th:href="@{/oauth2/authorization/facebook}" data-toggle="tooltip" data-placement="bottom" title="facebook 로그인"><i class="fa fa-facebook fa-lg"></i></a>
+				<a class="btn btn-outline-primary mr-sm-1" th:href="@{/oauth2/authorization/github}" data-toggle="tooltip" data-placement="bottom" title="github 로그인"><i class="fa fa-github fa-lg"></i></a>
+				<a class="btn btn-outline-primary mr-sm-1" th:href="@{/oauth2/authorization/battlenet}" data-toggle="tooltip" data-placement="bottom" title="배틀넷 로그인"><i class="fa fa-bold" aria-hidden="true"></i></a>
 			</form>
 		</div>
 	</nav>
