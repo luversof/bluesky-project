@@ -29,6 +29,10 @@
 	<link rel="stylesheet" type="text/css" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" />
 	<!-- (e) bootstrap -->
 	
+	<!-- (s) bootswatch -->
+	<link rel="stylesheet" type="text/css" th:if="${!#themes.code('url.bootswatch.css').isEmpty()}" th:href="@{${#themes.code('url.bootswatch.css')}}" />
+	<!-- (e) bootswatch -->
+	
     <link rel="stylesheet" type="text/css" th:href="@{/webjars/font-awesome/css/font-awesome.min.css}" />
 	
 	<link rel="stylesheet" type="text/css" th:href="@{/css/bluesky.css}" />
@@ -64,6 +68,14 @@
 				</li>
 				<li class="nav-item" th:classappend="${menu.id == 'blog' ? 'active' : ''}">
 					<a class="nav-link" th:href="@{#{url.blog.view.home}}">Blog</a>
+				</li>
+				<li class="nav-item dropdown">
+					<a class="nav-link dropdown-toggle" href="#" id="theme-select" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">theme</a>
+					<div class="dropdown-menu" aria-labelledby="theme-select" th:with="urlBuilder=${T(org.springframework.web.servlet.support.ServletUriComponentsBuilder).fromCurrentRequest()}">
+						<a class="dropdown-item" th:each="theme : ${@environment.getProperty('theme-list').split(',')}"
+						th:classappend="${springRequestContext.theme.name eq theme} ? active"
+						th:href="${urlBuilder.replaceQueryParam('theme', theme).toUriString()}" th:text="${theme}">theme</a>
+					</div>
 				</li>
 			</ul>
 			<form class="form-inline" sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post">

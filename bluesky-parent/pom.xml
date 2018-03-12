@@ -11,7 +11,7 @@
 		<version>0.0.1-SNAPSHOT</version>
 		<!-- <relativePath>../../bluesky-boot/bluesky-boot-starters/bluesky-boot-starter-parent</relativePath> -->
 	</parent>
-	
+
 	<modules>
 		<module>bluesky-app</module>
 		<module>bluesky-web</module>
@@ -158,6 +158,32 @@
 				<groupId>org.webjars</groupId>
 				<artifactId>bootstrap</artifactId>
 				<version>4.0.0</version>
+			</dependency>
+			<dependency>
+				<groupId>org.webjars</groupId>
+				<artifactId>bootstrap-material-design</artifactId>
+				<version>4.1.1</version>
+			</dependency>
+			<dependency> <!-- classic 에 해당 버전이 없어 임시로 npm 처리 -->
+				<groupId>org.webjars.npm</groupId>
+				<artifactId>bootswatch</artifactId>
+				<version>4.0.0</version>
+				<exclusions>
+					<exclusion>
+						<groupId>org.webjars.npm</groupId>
+						<artifactId>bootstrap</artifactId>
+					</exclusion>
+
+					<exclusion>
+						<groupId>org.webjars.npm</groupId>
+						<artifactId>jquery</artifactId>
+					</exclusion>
+
+					<exclusion>
+						<groupId>org.webjars.npm</groupId>
+						<artifactId>popper.js</artifactId>
+					</exclusion>
+				</exclusions>
 			</dependency>
 			<dependency>
 				<groupId>org.webjars</groupId>

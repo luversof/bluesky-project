@@ -32,8 +32,10 @@
 			</form>
 		</div>
 		[[${#authentication}]]안보이나?<br />
-		theme bluesky.domain :  [[${#themes.code('testKey.a')}]] <br />
-		test : [[${@environment.getProperty('server.port')}]]
+		theme url.bootswatch.css :  [[${#themes.code('url.bootswatch.css')}]] <br />
+		test : [[${@environment.getProperty('server.port')}]]<br />
+		[[${springRequestContext.theme.name}]]
+		
 	</div>
 </body>
 </html>
