@@ -4,7 +4,7 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="blog/_template/blogLayout">
 <head>
-	<script type="text/javascript" th:src="#{url.jquery-tinymce.js}"></script>
+	<script type="text/javascript" th:src="@{/webjars/tinymce-jquery/tinymce.min.js}"></script>
 	<script type="text/javascript">
 	$(document).ready(function() {
 		$.article.setBlogId("[[${blogId}]]");

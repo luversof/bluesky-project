@@ -4,9 +4,9 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="layout/defaultLayout">
 <head>
-	<script type="text/javascript" th:src="@{#{url.mustache.js}}"></script>
-	<script type="text/javascript" th:src="@{#{url.moment.js}}"></script>
-	<script type="text/javascript" th:src="@{#{url.moment.locale.ko.js}}"></script>
+	<script type="text/javascript" th:src="@{/webjars/mustachejs/mustache.min.js}"></script>
+	<script type="text/javascript" th:src="@{/webjars/momentjs/min/moment.min.js}"></script>
+	<script type="text/javascript" th:src="@{/webjars/momentjs/locale/ko.js}"></script>
 	<script type="text/javascript" th:src="@{/js/blog/blog.js}"></script>
 	<script type="text/javascript" th:src="@{/js/blog/article.js}"></script>
 </head>
