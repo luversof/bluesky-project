@@ -6,6 +6,16 @@ body {
 	padding-top: 50px;
 }
 
+.nav-item .dropdown-menu.show {
+    display: flex;
+    width: 420px;
+    flex-wrap: wrap;
+}
+
+.nav-item .dropdown-item {
+    width: 33.333%;
+}
+
 /* .navbar {
 	opacity: 0.95;
 }
