@@ -47,7 +47,7 @@
 								<button type="button" class="btn btn-default {{#isSortColumnEntryType}}btn-info{{/isSortColumnEntryType}}" data-menu-sortColumn="entryType" data-menu-sortDirection="{{#isSortColumnEntryType}}{{sortDirection}}{{/isSortColumnEntryType}}">
 									지출 유형
 									{{#isSortColumnEntryType}}
-										<i class="fa fa-sort-{{sortDirection}}" aria-hidden="true"></i>
+										<i class="fas fa-sort-{{sortDirection}}" aria-hidden="true"></i>
 									{{/isSortColumnEntryType}}
 								</button>
 							</th>
@@ -57,7 +57,7 @@
 								<button type="button" class="btn btn-default {{#isSortColumnAmount}}btn-info{{/isSortColumnAmount}}" data-menu-sortColumn="amount" data-menu-sortDirection="{{#isSortColumnAmount}}{{sortDirection}}{{/isSortColumnAmount}}">
 									금액
 									{{#isSortColumnAmount}}
-										<i class="fa fa-sort-amount-{{sortDirection}}" aria-hidden="true"></i>
+										<i class="fas fa-sort-amount-{{sortDirection}}" aria-hidden="true"></i>
 									{{/isSortColumnAmount}}
 								</button>
 							</th>
@@ -66,7 +66,7 @@
 								<button type="button" class="btn btn-default {{#isSortColumnEntryDate}}btn-info{{/isSortColumnEntryDate}}" data-menu-sortColumn="entryDate" data-menu-sortDirection="{{#isSortColumnEntryDate}}{{sortDirection}}{{/isSortColumnEntryDate}}">
 									날짜
 									{{#isSortColumnEntryDate}}
-										<i class="fa fa-sort-{{sortDirection}}" aria-hidden="true"></i>
+										<i class="fas fa-sort-{{sortDirection}}" aria-hidden="true"></i>
 									{{/isSortColumnEntryDate}}
 								</button>
 							</th>
@@ -76,13 +76,13 @@
 							<td colspan="7">
 								<div class="btn-group" role="group">
 									<div class="btn-group" role="group">
-										<button type="button" class="btn btn-default" role="button" data-menu="selectCreateEntryType" value="CREDIT"><i class="fa fa-plus" aria-hidden="true"></i> 수입</button>
+										<button type="button" class="btn btn-default" role="button" data-menu="selectCreateEntryType" value="CREDIT"><i class="fas fa-plus" aria-hidden="true"></i> 수입</button>
 									</div>
 									<div class="btn-group" role="group">
-										<button type="button" class="btn btn-default" role="button" data-menu="selectCreateEntryType" value="DEBIT"><i class="fa fa-minus" aria-hidden="true"></i> 지출</button>
+										<button type="button" class="btn btn-default" role="button" data-menu="selectCreateEntryType" value="DEBIT"><i class="fas fa-minus" aria-hidden="true"></i> 지출</button>
 									</div>
 									<div class="btn-group" role="group">
-										<button type="button" class="btn btn-default" role="button" data-menu="selectCreateEntryType" value="TRANSFER"><i class="fa fa-exchange" aria-hidden="true"></i> 이체</button>
+										<button type="button" class="btn btn-default" role="button" data-menu="selectCreateEntryType" value="TRANSFER"><i class="fas fa-exchange-alt" aria-hidden="true"></i> 이체</button>
 									</div>
 								</div>
 							</td>
@@ -91,7 +91,7 @@
 							<td></td>
 							<td>
 								<div class="input-group">
-	  								<span class="input-group-addon"><i class="fa fa-bars" aria-hidden="true"></i></span>
+	  								<span class="input-group-addon"><i class="fas fa-bars" aria-hidden="true"></i></span>
   									<select class="form-control" name="createEntryGroup">
 										{{#entryGroupList}}
 											<option value="{{id}}">{{name}}</option>
@@ -101,7 +101,7 @@
 							</td>
 							<td>
 								<div class="input-group">
-  									<span class="input-group-addon"><i class="fa fa-minus" aria-hidden="true"></i></span>
+  									<span class="input-group-addon"><i class="fas fa-minus" aria-hidden="true"></i></span>
 									<select class="form-control" name="createDebitAsset">
 										{{#assetList}}
 											<option value="{{id}}">{{name}}</option>
@@ -111,7 +111,7 @@
 							</td>
 							<td>
 								<div class="input-group">
-  									<span class="input-group-addon"><i class="fa fa-plus" aria-hidden="true"></i></span>
+  									<span class="input-group-addon"><i class="fas fa-plus" aria-hidden="true"></i></span>
 									<select class="form-control" name="createCreditAsset">
 										{{#assetList}}
 											<option value="{{id}}">{{name}}</option>
@@ -134,14 +134,14 @@
 		</script>
 		<script type="text/template" id="template-entry-view">
 			<td>
-				{{#isCredit}}<button type="button" class="btn btn-info" data-toggle="tooltip" data-placement="right" title="수입"><i class="fa fa-plus" aria-hidden="true"></i></button>{{/isCredit}}
-				{{#isDebit}}<button type="button" class="btn btn-danger" data-toggle="tooltip" data-placement="right" title="지출"><i class="fa fa-minus" aria-hidden="true"></i></button>{{/isDebit}}
-				{{#isTransfer}}<button type="button" class="btn btn-default" data-toggle="tooltip" data-placement="right" title="이체"><i class="fa fa-exchange" aria-hidden="true"></i></button>{{/isTransfer}}
+				{{#isCredit}}<button type="button" class="btn btn-info" data-toggle="tooltip" data-placement="right" title="수입"><i class="fas fa-plus" aria-hidden="true"></i></button>{{/isCredit}}
+				{{#isDebit}}<button type="button" class="btn btn-danger" data-toggle="tooltip" data-placement="right" title="지출"><i class="fas fa-minus" aria-hidden="true"></i></button>{{/isDebit}}
+				{{#isTransfer}}<button type="button" class="btn btn-default" data-toggle="tooltip" data-placement="right" title="이체"><i class="fas fa-exchange" aria-hidden="true"></i></button>{{/isTransfer}}
 			</td>
 			{{^isTransfer}}
 			<td>
 				<div class="input-group">
-	  				<span class="input-group-addon"><i class="fa fa-bars" aria-hidden="true"></i></span>
+	  				<span class="input-group-addon"><i class="fas fa-bars" aria-hidden="true"></i></span>
 					<select class="form-control" name="entryGroup">
 						{{#entryGroupList}}
 							{{#isTargetEntryGroup}}
@@ -155,7 +155,7 @@
 			{{#entry.debitAsset}}
 			<td>
 				<div class="input-group">
-					<span class="input-group-addon"><i class="fa fa-minus" aria-hidden="true"></i></span>
+					<span class="input-group-addon"><i class="fas fa-minus" aria-hidden="true"></i></span>
 					<select class="form-control" name="debitAsset">
 						{{#assetList}}
 							<option value="{{id}}" >{{name}}</option>
@@ -167,7 +167,7 @@
 			{{#entry.creditAsset}}
 			<td>
 				<div class="input-group">
-					<span class="input-group-addon"><i class="fa fa-plus" aria-hidden="true"></i></span>
+					<span class="input-group-addon"><i class="fas fa-plus" aria-hidden="true"></i></span>
 					<select class="form-control" name="creditAsset">
 						{{#assetList}}
 							<option value="{{id}}" >{{name}}</option>
