@@ -1,15 +1,11 @@
 package net.luversof.core;
 
-import java.net.URI;
-
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
 import org.springframework.web.client.RestTemplate;
-
-import com.netflix.loadbalancer.ServerList;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +14,8 @@ import net.luversof.GeneralTest;
 @Slf4j
 public class RibbonTest extends GeneralTest {
 
-	@Autowired(required = false)
-	private ServerList ribbonServerList;
+//	@Autowired(required = false)
+//	private ServerList ribbonServerList;
 	 
 	@Autowired
 	private LoadBalancerClient loadBalancerClient;

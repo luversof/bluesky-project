@@ -1,9 +1,6 @@
 package net.luversof.web.test.websocket.controller;
 
-import java.security.Principal;
-
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
 
 @Controller
