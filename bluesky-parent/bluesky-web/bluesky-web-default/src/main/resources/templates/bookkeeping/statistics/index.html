@@ -82,7 +82,7 @@
 								<button type="button" class="btn btn-default {{#isSortEntryType}}btn-info{{/isSortEntryType}}" data-menu-sortColumn="entryType" data-menu-sortDirection="{{#isSortEntryType}}{{sortDirection}}{{/isSortEntryType}}">
 									지출 유형
 									{{#isSortEntryType}}
-										<i class="fa fa-sort-{{sortDirection}}" aria-hidden="true"></i>
+										<i class="fas fa-sort-{{sortDirection}}" aria-hidden="true"></i>
 									{{/isSortEntryType}}
 								</button>
 							</th>
@@ -91,7 +91,7 @@
 								<button type="button" class="btn btn-default {{#isSortColumnAmount}}btn-info{{/isSortColumnAmount}}" data-menu-sortColumn="amount" data-menu-sortDirection="{{#isSortColumnAmount}}{{sortDirection}}{{/isSortColumnAmount}}">
 									금액
 									{{#isSortColumnAmount}}
-										<i class="fa fa-sort-amount-{{sortDirection}}" aria-hidden="true"></i>
+										<i class="fas fa-sort-amount-{{sortDirection}}" aria-hidden="true"></i>
 									{{/isSortColumnAmount}}
 								</button>
 							</th>
@@ -107,8 +107,8 @@
 		</script>
 		<script type="text/template" id="template-statistics-view">
 			<td>
-				{{#isCredit}}<button type="button" class="btn btn-info" data-toggle="tooltip" data-placement="right" title="수입"><i class="fa fa-plus" aria-hidden="true"></i></button>{{/isCredit}}
-				{{#isDebit}}<button type="button" class="btn btn-danger" data-toggle="tooltip" data-placement="right" title="지출"><i class="fa fa-minus" aria-hidden="true"></i></button>{{/isDebit}}
+				{{#isCredit}}<button type="button" class="btn btn-info" data-toggle="tooltip" data-placement="right" title="수입"><i class="fas fa-plus" aria-hidden="true"></i></button>{{/isCredit}}
+				{{#isDebit}}<button type="button" class="btn btn-danger" data-toggle="tooltip" data-placement="right" title="지출"><i class="fas fa-minus" aria-hidden="true"></i></button>{{/isDebit}}
 			</td>
 			<td>
 				{{statistics.entryGroup.name}}

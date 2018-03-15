@@ -33,10 +33,10 @@
 							menu = ${#strings.contains(path, '/asset/setting') ? 'assetSetting' : menu},
 							menu = ${#strings.contains(path, '/entryGroup/setting') ? 'entryGroupSetting' : menu},
 							isSettingMenu = ${#strings.contains(path, '/setting')}">
-						<li th:class="${menu} == 'entry' ? active"><a th:href="@{#{url.bookkeeping.entry(${bookkeepingId})}}"><i class="fa fa-pencil"></i> 가계부 입력</a></li>
-						<li th:class="${menu} == 'statistics' ? active"><a th:href="@{#{url.bookkeeping.statistics(${bookkeepingId})}}"><i class="fa fa-bar-chart"></i> 통계 보기</a></li>
+						<li th:class="${menu} == 'entry' ? active"><a th:href="@{#{url.bookkeeping.entry(${bookkeepingId})}}"><i class="fas fa-pencil-alt"></i> 가계부 입력</a></li>
+						<li th:class="${menu} == 'statistics' ? active"><a th:href="@{#{url.bookkeeping.statistics(${bookkeepingId})}}"><i class="far fa-chart-bar"></i> 통계 보기</a></li>
 						<li th:class="${isSettingMenu} ? active">
-							<a href="#"><i class="fa fa-cogs"></i> 설정</a>
+							<a href="#"><i class="fas fa-cogs"></i> 설정</a>
 							<ul class="nav nav-pills nav-stacked" th:attr="aria-expanded=${isSettingMenu}">
 								<li th:class="${menu} == 'bookkeepingSetting' ? active"><a th:href="@{#{url.bookkeeping.setting.bookkeeping}}"><i th:class="${menu} == 'bookkeepingSetting' ? 'fa fa-cog fa-spin' : 'fa fa-cog'"></i>  가계부 관리</a></li>
 								<li th:class="${menu} == 'assetSetting' ? active"><a th:href="@{#{url.bookkeeping.setting.asset(${bookkeepingId})}}"><i th:class="${menu} == 'assetSetting' ? 'fa fa-cog fa-spin' : 'fa fa-cog'"></i>  자산 관리</a></li>
