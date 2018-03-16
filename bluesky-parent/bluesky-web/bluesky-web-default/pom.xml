@@ -32,8 +32,10 @@
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-opensource-security</artifactId>
 		</dependency>
-		<!-- <dependency> <groupId>net.luversof</groupId> <artifactId>bluesky-opensource-integration</artifactId> 
-			</dependency> -->
+		<dependency>
+			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-opensource-integration</artifactId>
+		</dependency>
 		<!-- (e) bluesky -->
 
 		<!-- (s) spring-boot -->
@@ -57,6 +59,17 @@
 			<optional>true</optional> </dependency> -->
 
 		<!-- (e) spring-boot -->
+
+		<!-- (s) spring cloud stream test -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-stream</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-stream-binder-rabbit</artifactId>
+		</dependency>
+		<!-- (e) spring cloud stream test -->
 
 		<!-- (s) thymeleaf -->
 		<dependency>

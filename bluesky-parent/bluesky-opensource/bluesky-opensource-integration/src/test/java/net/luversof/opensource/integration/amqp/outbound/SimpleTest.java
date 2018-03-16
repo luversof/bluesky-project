@@ -1,22 +1,22 @@
 package net.luversof.opensource.integration.amqp.outbound;
 
 import org.junit.Test;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
-import net.luversof.opensource.integration.amqp.outbound.AmqpOutboundTestConfig.MyGateway;
 
 @Slf4j
-public class AmqpOutboundTest extends GeneralTest {
+public class SimpleTest extends GeneralTest {
 	
 	@Autowired
-	private MyGateway gateway;
-
+	private RabbitTemplate rabbitTemplate;
+	
 	@Test
 	public void test() {
 		for(int i = 0 ; i < 500; i++) {
-			gateway.sendToRabbit("테스트 코드를 발송해보자." + i);
+			rabbitTemplate.convertAndSend("foo2", "테스트 코드를 발송해보자." + i);
 		}
 		
 		log.debug("end");
