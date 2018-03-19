@@ -3,24 +3,18 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>net.luversof</groupId>
-		<artifactId>bluesky-parent</artifactId>
+		<artifactId>bluesky-opensource</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>bluesky-opensource</artifactId>
-	<packaging>pom</packaging>
-	<modules>
-		<module>bluesky-opensource-security</module>
-		<module>bluesky-opensource-integration</module>
-		<module>bluesky-opensource-cloud-stream</module>
-	</modules>
+	<artifactId>bluesky-opensource-cloud-stream</artifactId>
 	<dependencies>
 		<dependency>
 			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-core</artifactId>
+			<artifactId>bluesky-opensource-integration</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-test</artifactId>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-stream-rabbit</artifactId>
 		</dependency>
 	</dependencies>
 </project>

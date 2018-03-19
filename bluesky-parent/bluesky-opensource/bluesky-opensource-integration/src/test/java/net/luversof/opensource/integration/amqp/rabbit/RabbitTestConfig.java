@@ -1,4 +1,4 @@
-package net.luversof.opensource.integration.amqp.outbound;
+package net.luversof.opensource.integration.amqp.rabbit;
 
 import java.util.Date;
 
@@ -12,16 +12,16 @@ import org.springframework.messaging.handler.annotation.Payload;
 
 @Configuration
 @RabbitListener(queues = "foo2")
-public class SimpleTestConfig {
+public class RabbitTestConfig {
 
 	@Bean
 	public Queue fooQueue() {
 		return new Queue("foo2");
 	}
 
-	@RabbitHandler
-	public void process(@Payload String foo2) {
-		System.out.println(new Date() + ": " + foo2);
-	}
+//	@RabbitHandler
+//	public void process(@Payload String foo2) {
+//		System.out.println(new Date() + ": " + foo2);
+//	}
 
 }

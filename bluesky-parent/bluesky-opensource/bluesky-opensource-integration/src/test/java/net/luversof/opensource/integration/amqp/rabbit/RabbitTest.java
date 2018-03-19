@@ -1,4 +1,4 @@
-package net.luversof.opensource.integration.amqp.outbound;
+package net.luversof.opensource.integration.amqp.rabbit;
 
 import org.junit.Test;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 
 @Slf4j
-public class SimpleTest extends GeneralTest {
+public class RabbitTest extends GeneralTest {
 	
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
