@@ -1,0 +1,21 @@
+//package net.luversof.opensource.cloud.stream;
+//
+//import org.junit.Test;
+//import org.springframework.beans.factory.annotation.Autowired;
+//
+//import lombok.extern.slf4j.Slf4j;
+//import net.luversof.GeneralTest;
+//
+//@Slf4j
+//public class BaristaTest extends GeneralTest {
+//	
+//	@Autowired
+//	private Barista barista;
+//	
+//	
+//	@Test
+//	public void test() {
+//		log.debug("test : {}", barista);
+//	}
+//
+//}

@@ -19,9 +19,9 @@ public class RabbitTestConfig {
 		return new Queue("foo2");
 	}
 
-//	@RabbitHandler
-//	public void process(@Payload String foo2) {
-//		System.out.println(new Date() + ": " + foo2);
-//	}
+	@RabbitHandler
+	public void process(@Payload String foo2) {
+		System.out.println(new Date() + ": " + foo2);
+	}
 
 }
