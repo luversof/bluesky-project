@@ -32,10 +32,7 @@
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-opensource-security</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-opensource-integration</artifactId>
-		</dependency>
+		
 		<!-- (e) bluesky -->
 
 		<!-- (s) spring-boot -->
@@ -61,6 +58,10 @@
 		<!-- (e) spring-boot -->
 
 		<!-- (s) spring cloud stream test -->
+		<!-- <dependency>
+			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-opensource-integration</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-stream</artifactId>
@@ -68,7 +69,7 @@
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-stream-binder-rabbit</artifactId>
-		</dependency>
+		</dependency> -->
 		<!-- (e) spring cloud stream test -->
 
 		<!-- (s) thymeleaf -->
@@ -96,17 +97,13 @@
 		</dependency>
 		<dependency>
 			<groupId>org.webjars</groupId>
-			<artifactId>jquery</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>jquery-i18n-properties</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
 			<artifactId>bootstrap</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>bootstrap-material-design</artifactId>
+		</dependency>
+		<dependency> <!-- classic 에 해당 버전이 없어 임시로 npm 처리 -->
 			<groupId>org.webjars.npm</groupId>
 			<artifactId>bootswatch</artifactId>
 		</dependency>
@@ -116,7 +113,11 @@
 		</dependency>
 		<dependency>
 			<groupId>org.webjars</groupId>
-			<artifactId>tinymce-jquery</artifactId>
+			<artifactId>jquery</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>jquery-i18n-properties</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.webjars</groupId>
@@ -125,6 +126,14 @@
 		<dependency>
 			<groupId>org.webjars</groupId>
 			<artifactId>momentjs</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>tinymce-jquery</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>vue</artifactId>
 		</dependency>
 		<!-- (e) javascript libarary -->
 

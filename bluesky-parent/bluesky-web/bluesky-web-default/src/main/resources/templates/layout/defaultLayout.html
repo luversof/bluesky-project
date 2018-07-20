@@ -17,26 +17,9 @@
 	
 	<title>Bluesky Project</title>
 	
-	<!-- (s) jquery -->
+	<!--/* (s) jquery */-->
 	<script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
 	<script type="text/javascript" th:src="@{/webjars/jquery-i18n-properties/jquery.i18n.properties.min.js}"></script>
-	<!-- (e) jquery -->
-	
-	<!-- (s) bootstrap -->	
-	<!-- <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js"></script> -->
-	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.js"></script>
-	<script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
-	<link rel="stylesheet" type="text/css" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" />
-	<!-- (e) bootstrap -->
-	
-	<!-- (s) bootswatch -->
-	<link rel="stylesheet" type="text/css" th:if="${!#themes.code('url.bootswatch.css').isEmpty()}" th:href="@{${#themes.code('url.bootswatch.css')}}" />
-	<!-- (e) bootswatch -->
-	
-    <script type="text/javascript" th:src="@{/webjars/font-awesome/svg-with-js/js/fontawesome-all.min.js}"></script>
-	
-	<link rel="stylesheet" type="text/css" th:href="@{/css/bluesky.css}" />
-	<script type="text/javascript" th:src="@{/js/bluesky.js}"></script>
 	<script type="text/javascript">
 		jQuery.i18n.properties({
 		    name:'message', 
@@ -49,6 +32,30 @@
 		    }
 		});
 	</script>
+	<!--/* (e) jquery */-->
+	
+	<!--/* (s) bootstrap */-->	
+	<!-- <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js"></script> -->
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.js"></script>
+	<script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+	<link rel="stylesheet" type="text/css" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" />
+	<!--/* (e) bootstrap */-->
+	
+	<!--/* (s) bootswatch */-->
+	<link rel="stylesheet" type="text/css" th:if="${!#themes.code('url.bootswatch.css').isEmpty()}" th:href="@{${#themes.code('url.bootswatch.css')}}" />
+	<!--/* (e) bootswatch */-->
+	
+	<!--/* (s) font-awesome */-->
+    <script type="text/javascript" th:src="@{/webjars/font-awesome/js/all.js}"></script>
+	<!--/* (e) font-awesome */-->
+	
+	<!--/* (s) vue */-->
+	<script type="text/javascript" th:src="@{/webjars/vue/vue.min.js}"></script>
+	<!--/* (e) vue */-->
+	
+	<link rel="stylesheet" type="text/css" th:href="@{/css/bluesky.css}" />
+	<script type="text/javascript" th:src="@{/js/bluesky.js}"></script>
+	
 	
 	<script>
 		var userInfo = UserInfo("[[${userUtil.getLoginUser().isPresent() ? userUtil.getLoginUser().get().id : ''}]]");
