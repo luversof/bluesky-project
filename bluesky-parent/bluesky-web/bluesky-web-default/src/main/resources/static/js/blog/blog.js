@@ -4,7 +4,7 @@ $(document).ready(function() {
 	var blog = function() {
 		var _link = {
 			get : function(blogId) {
-				return "/api/blogs/{0}".format(blogId);
+				return $.i18n.prop("url.blog.api.get", blogId);
 			}
 		}
 		
@@ -17,11 +17,11 @@ $(document).ready(function() {
 		
 		return {
 			create : function() {
-				var form = $("[name=blog-create]");
 				$.ajax({
-					type : form.attr("method"),
-					url : form.attr("action"),
-					dataType : "json",
+					type : "POST",
+					url : $.i18n.prop("url.blog.api.create"),
+					contentType:"application/hal+json; charset=utf-8",
+					data : JSON.stringify({}),
 					success : function(data) {
 						location.href = $.i18n.prop("url.blog.view.list", data.id);
 					}
@@ -33,7 +33,7 @@ $(document).ready(function() {
 		};
 	}();
 	
-	$("[name=blog-create] :submit").on("click", function(e) {
+	$(".blog-create").on("click", function(e) {
 		e.preventDefault();
 		blog.create();
 	});

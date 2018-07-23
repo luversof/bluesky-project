@@ -4,6 +4,12 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="bbs/layout/bbsLayout">
 <head>
+	<script>
+	
+		if (!userInfo.isLogin()) {
+			alert("로그인이 필요합니다.");
+		}		
+	</script>
 </head>
 <body>
 	<div layout:fragment="bbsContent">

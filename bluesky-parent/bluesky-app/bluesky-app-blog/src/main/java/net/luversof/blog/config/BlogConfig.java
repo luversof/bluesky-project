@@ -5,8 +5,11 @@ import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.data.rest.core.config.RepositoryRestConfiguration;
+import org.springframework.data.rest.webmvc.config.RepositoryRestConfigurerAdapter;
 import org.springframework.util.Assert;
 
+import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.BlogRepository;
 import net.luversof.blog.util.BlogRequestAttributeUtil;
 import net.luversof.user.service.LoginUserService;
@@ -30,4 +33,14 @@ public class BlogConfig {
 	}
 	
 
+	
+	@Configuration
+	public static class BlogRepositoryRestConfigurerAdapter extends RepositoryRestConfigurerAdapter {
+
+		@Override
+		public void configureRepositoryRestConfiguration(RepositoryRestConfiguration config) {
+			config.exposeIdsFor(Blog.class);
+		}
+		
+	}
 }
