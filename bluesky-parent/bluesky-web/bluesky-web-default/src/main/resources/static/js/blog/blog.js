@@ -17,15 +17,7 @@ $(document).ready(function() {
 		
 		return {
 			create : function() {
-				$.ajax({
-					type : "POST",
-					url : $.i18n.prop("url.blog.api.create"),
-					contentType:"application/hal+json; charset=utf-8",
-					data : JSON.stringify({}),
-					success : function(data) {
-						location.href = $.i18n.prop("url.blog.view.list", data.id);
-					}
-				});
+				
 			},
 			get : function(blogId) {
 				return _get(blogId);
@@ -33,9 +25,29 @@ $(document).ready(function() {
 		};
 	}();
 	
-	$(".blog-create").on("click", function(e) {
+	/*$(".blog-create").on("click", function(e) {
 		e.preventDefault();
 		blog.create();
-	});
+	});*/
 	
+	var blogVue = new Vue({
+		el : "#blogContent",
+		components : {
+			"blog-create" : {
+				methods : {
+					create : function() {
+						$.ajax({
+							type : "POST",
+							url : $.i18n.prop("url.blog.api.create"),
+							contentType:"application/hal+json; charset=utf-8",
+							data : JSON.stringify({}),
+							success : function(data) {
+								location.href = $.i18n.prop("url.blog.view.list", data.id);
+							}
+						});
+					}
+				}
+			}
+		}
+	});
 });

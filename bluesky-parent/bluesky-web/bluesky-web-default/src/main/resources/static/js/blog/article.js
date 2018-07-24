@@ -138,4 +138,25 @@ $(document).ready(function() {
 	$("[data-delete-blog-article-articleId]").on("click", function() {
 		$.remove($(this).attr("data-delete-blog-article-blogId"), $(this).attr("data-delete-blog-article-articleId"));
 	});
+	
+	
+	var articleVue = new Vue({
+		el : "#blogContent",
+		components : {
+			"blog-list" : {
+				data : function() {
+					return { 
+						articleList : function() {
+							var blogId = "b68f7647-6ddd-4b8c-aecf-352e82ad764e";
+							
+							return $.ajax({
+								type : "GET",
+								url : $.i18n.prop("url.blog.api.get", blogId)
+							})
+						}
+					}
+				}
+			}
+		}
+	});
 });

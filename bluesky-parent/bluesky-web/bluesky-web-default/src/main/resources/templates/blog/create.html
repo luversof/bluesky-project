@@ -3,13 +3,14 @@
 	xmlns:th="http://www.thymeleaf.org"
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="blog/_template/blogLayout">
-<th:block layout:fragment="content-blog">
+<th:block layout:fragment="content-blog" >
 
-	<h2>블로그를 생성하세요.</h2>
-
-	<div>
-		<input type="submit" class="btn btn-default blog-create" value="생성"/>
-	</div>
-
+	<blog-create inline-template>
+		<div>
+			<h2>블로그를 생성하세요.</h2>
+			<input type="submit" class="btn btn-default blog-create" value="생성" @click="create" />
+		</div>
+	</blog-create>
+	
 </th:block>
 </html>
