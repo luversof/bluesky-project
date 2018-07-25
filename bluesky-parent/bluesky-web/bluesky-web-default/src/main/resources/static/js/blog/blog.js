@@ -51,7 +51,7 @@ $(document).ready(function() {
 			"blog-list" : {
 				data : function() {
 					return { 
-						articleList : []
+						articleListResponse : {}
 					}
 				},
 				methods : {
@@ -60,7 +60,7 @@ $(document).ready(function() {
 						var articleId = 123;
 						return $.i18n.prop("url.blog.view.view", blogId, articleId);
 					},
-					getArticleList : function() {
+					getArticleListResponse : function() {
 						var _this = this;
 						var blogId = "b68f7647-6ddd-4b8c-aecf-352e82ad764e";
 						$.ajax({
@@ -68,13 +68,30 @@ $(document).ready(function() {
 							url : $.i18n.prop("url.article.api.get-list"),
 							data : { id : blogId }
 						}).done(function(response) {
-							_this.articleList = response
+							_this.articleListResponse = response;
 						});
+					},
+					getArticleList : function() {
+						if (this.articleListResponse._embedded == undefined || this.articleListResponse._embedded.blogArticles == undefined) {
+							return [];
+						}
+						return this.articleListResponse._embedded.blogArticles;
 					}
+					
 				},
 				mounted : function() {
-					console.log(this);
-					this.getArticleList();
+					console.log("mounted");
+					this.getArticleListResponse();
+				},
+				computed : {
+					
+				}
+			},
+			"nav" : {
+				data : function() {
+					return {
+						
+					}
 				}
 			}
 		}

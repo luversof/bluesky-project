@@ -21,20 +21,20 @@
 					<!--/* <th>[[#{blog.article.text.category}]]</th> */-->
 					<th>[[#{blog.article.text.title}]]</th>
 					<th>[[#{blog.article.text.createdDate}]]</th>
-					<th>[[#{blog.article.text.viewCount}]]{{articleList}}</th>
+					<th>[[#{blog.article.text.viewCount}]]</th>
 				</tr>
 			</thead>
 		
 			<tbody>
-				<tr v-if="articleList.length > 0" v-for="article in articleList">
+				<tr v-if="getArticleList().length == 0" class="text-center">
+					<td colspan="5" th:text="#{blog.article.message.empty.content}">[[#{blog.article.message.empty.content}]]</td>
+				</tr>
+				<tr v-else="getArticleList().length == 0"  v-for="article in getArticleList()">
 					<td>{{getId}}</td>
 					<!--/* <td th:text="${blogArticle.category} ? ${blogArticle.category.name}"></td> */-->
 					<td><a v-bind:href="getViewUrl">{{title}}</a></td>
 					<td>{{getCreateDateFormat}}</td>
 					<td>{{viewCount}}</td>
-				</tr>
-				<tr v-else="articleList.length > 0" class="text-center">
-					<td colspan="5" th:text="#{blog.article.message.empty.content}">[[#{blog.article.message.empty.content}]]</td>
 				</tr>
 			</tbody>
 			<tfoot>
@@ -73,6 +73,7 @@
 			</tfoot>
 		</table>
 	</blog-list>
+	
 </th:block>
 </body>
 </html>
