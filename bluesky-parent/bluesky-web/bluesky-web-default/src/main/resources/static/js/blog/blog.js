@@ -31,11 +31,11 @@ $(document).ready(function() {
 	});*/
 	
 	var blogVue = new Vue({
-		el : "#blogContent",
+		el : "#blog-content",
 		components : {
 			"blog-create" : {
 				methods : {
-					create : function() {
+					create : function(event) {
 						$.ajax({
 							type : "POST",
 							url : $.i18n.prop("url.blog.api.create"),
@@ -46,6 +46,35 @@ $(document).ready(function() {
 							}
 						});
 					}
+				}
+			},
+			"blog-list" : {
+				data : function() {
+					return { 
+						articleList : []
+					}
+				},
+				methods : {
+					getViewUrl : function() {
+						var blogId = "b68f7647-6ddd-4b8c-aecf-352e82ad764e";
+						var articleId = 123;
+						return $.i18n.prop("url.blog.view.view", blogId, articleId);
+					},
+					getArticleList : function() {
+						var _this = this;
+						var blogId = "b68f7647-6ddd-4b8c-aecf-352e82ad764e";
+						$.ajax({
+							type : "GET",
+							url : $.i18n.prop("url.article.api.get-list"),
+							data : { id : blogId }
+						}).done(function(response) {
+							_this.articleList = response
+						});
+					}
+				},
+				mounted : function() {
+					console.log(this);
+					this.getArticleList();
 				}
 			}
 		}

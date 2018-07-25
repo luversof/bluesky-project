@@ -5,73 +5,73 @@
 	layout:decorator="blog/_template/blogLayout">
 <head>
 	<script>
-	$(document).ready(function() {
+	/* $(document).ready(function() {
 		$.article.setBlogId("[[${blogId}]]");
 		$.article.list($(".table"), $("#articleListTemplate").html());
-	});
+	}); */
 	</script>
 </head>
 <body>
 <th:block layout:fragment="content-blog">
-	<blog-list>
-	<table class="table">
-		<thead>
-			<tr>
-				<th>[[#{blog.article.text.id}]]</th>
-				<!--/* <th>[[#{blog.article.text.category}]]</th> */-->
-				<th>[[#{blog.article.text.title}]]</th>
-				<th>[[#{blog.article.text.createdDate}]]</th>
-				<th>[[#{blog.article.text.viewCount}]]</th>
-			</tr>
-		</thead>
-	
-		<tbody>
-			<tr v-if="false">
-				<td>{{getId}}</td>
-				<!--/* <td th:text="${blogArticle.category} ? ${blogArticle.category.name}"></td> */-->
-				<td><a href="{{{getViewUrl}}}">{{title}}</a></td>
-				<td>{{getCreateDateFormat}}</td>
-				<td>{{viewCount}}</td>
-			</tr>
-			<tr v-else="true" class="text-center">
-				<td colspan="5" th:text="#{blog.article.message.empty.content}">[[#{blog.article.message.empty.content}]]</td>
-			</tr>
-		</tbody>
-		<tfoot>
-			<tr>
-				<td colspan="5" class="text-center">
-					<!--/* <nav aria-label="Page navigation">
-						{{#totalPages}}
-						<ul class="pagination justify-content-center">
-							{{^isFirstPage}}
-							<li class="page-item" th:if="${!articlePage.first}">
-      							<a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}(page=${articlePage.number - 1})}" aria-label="Previous">
-									<span aria-hidden="true">&laquo;</span>
-									<span class="sr-only">Previous</span>
-								</a>
-							</li>
-							{{/isFirstPage}}
-							<li class="page-item" th:classappend="${i == currentPage} ? 'active'"><a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}}" th:text="${articlePage.number + 1}">1</a></li>
-							{{^isLastPage}}
-							<li class="page-item" th:if="${!articlePage.last}">
-								<a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}(page=${articlePage.number + 1})}" aria-label="Next">
-									<span aria-hidden="true">&raquo;</span>
-									<span class="sr-only">Next</span>
-								</a>
-							</li>
-							{{/isLastPage}}
-						</ul>
-						{{/totalPages}}
-					</nav>
-					{{#userInfo.isLogin}}
-					<div>
-						<a href="[[#{url.blog.view.write(${blogId})}]]" class="btn btn-outline-primary">[[#{blog.menu.write}]]</a>
-					</div>
-					{{/userInfo.isLogin}} */-->
-				</td>
-			</tr>
-		</tfoot>
-	</table>
+	<blog-list inline-template>
+		<table class="table">
+			<thead>
+				<tr>
+					<th>[[#{blog.article.text.id}]]</th>
+					<!--/* <th>[[#{blog.article.text.category}]]</th> */-->
+					<th>[[#{blog.article.text.title}]]</th>
+					<th>[[#{blog.article.text.createdDate}]]</th>
+					<th>[[#{blog.article.text.viewCount}]]{{articleList}}</th>
+				</tr>
+			</thead>
+		
+			<tbody>
+				<tr v-if="articleList.length > 0" v-for="article in articleList">
+					<td>{{getId}}</td>
+					<!--/* <td th:text="${blogArticle.category} ? ${blogArticle.category.name}"></td> */-->
+					<td><a v-bind:href="getViewUrl">{{title}}</a></td>
+					<td>{{getCreateDateFormat}}</td>
+					<td>{{viewCount}}</td>
+				</tr>
+				<tr v-else="articleList.length > 0" class="text-center">
+					<td colspan="5" th:text="#{blog.article.message.empty.content}">[[#{blog.article.message.empty.content}]]</td>
+				</tr>
+			</tbody>
+			<tfoot>
+				<tr>
+					<td colspan="5" class="text-center">
+						<!--/* <nav aria-label="Page navigation">
+							{{#totalPages}}
+							<ul class="pagination justify-content-center">
+								{{^isFirstPage}}
+								<li class="page-item" th:if="${!articlePage.first}">
+	      							<a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}(page=${articlePage.number - 1})}" aria-label="Previous">
+										<span aria-hidden="true">&laquo;</span>
+										<span class="sr-only">Previous</span>
+									</a>
+								</li>
+								{{/isFirstPage}}
+								<li class="page-item" th:classappend="${i == currentPage} ? 'active'"><a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}}" th:text="${articlePage.number + 1}">1</a></li>
+								{{^isLastPage}}
+								<li class="page-item" th:if="${!articlePage.last}">
+									<a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}(page=${articlePage.number + 1})}" aria-label="Next">
+										<span aria-hidden="true">&raquo;</span>
+										<span class="sr-only">Next</span>
+									</a>
+								</li>
+								{{/isLastPage}}
+							</ul>
+							{{/totalPages}}
+						</nav>
+						{{#userInfo.isLogin}}
+						<div>
+							<a href="[[#{url.blog.view.write(${blogId})}]]" class="btn btn-outline-primary">[[#{blog.menu.write}]]</a>
+						</div>
+						{{/userInfo.isLogin}} */-->
+					</td>
+				</tr>
+			</tfoot>
+		</table>
 	</blog-list>
 </th:block>
 </body>
