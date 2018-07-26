@@ -220,4 +220,11 @@ $(document).ready(function() {
 	$("button.cancel").on("click", function() {
 		history.back();
 	});
+	
+	Vue.component("common-nav", {
+		template : "#common-nav",
+		data : function() {
+			return {};
+		}
+	});
 });

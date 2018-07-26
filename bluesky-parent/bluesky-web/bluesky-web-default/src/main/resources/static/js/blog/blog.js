@@ -80,20 +80,13 @@ $(document).ready(function() {
 					
 				},
 				mounted : function() {
-					console.log("mounted");
 					this.getArticleListResponse();
 				},
 				computed : {
 					
 				}
-			},
-			"nav" : {
-				data : function() {
-					return {
-						
-					}
-				}
 			}
 		}
 	});
+	console.log("blogVue : ", blogVue);
 });

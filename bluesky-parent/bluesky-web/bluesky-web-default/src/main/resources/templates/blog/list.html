@@ -13,6 +13,35 @@
 </head>
 <body>
 <th:block layout:fragment="content-blog">
+
+	<script type="text/x-template" id="common-nav">
+		<nav aria-label="Page navigation">123123
+		<!--/*
+			{{#totalPages}}
+			<ul class="pagination justify-content-center">
+				{{^isFirstPage}}
+				<li class="page-item" th:if="${!articlePage.first}">
+   							<a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}(page=${articlePage.number - 1})}" aria-label="Previous">
+						<span aria-hidden="true">&laquo;</span>
+						<span class="sr-only">Previous</span>
+					</a>
+				</li>
+				{{/isFirstPage}}
+				<li class="page-item" th:classappend="${i == currentPage} ? 'active'"><a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}}" th:text="${articlePage.number + 1}">1</a></li>
+				{{^isLastPage}}
+				<li class="page-item" th:if="${!articlePage.last}">
+					<a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}(page=${articlePage.number + 1})}" aria-label="Next">
+						<span aria-hidden="true">&raquo;</span>
+						<span class="sr-only">Next</span>
+					</a>
+				</li>
+				{{/isLastPage}}
+			</ul>
+			{{/totalPages}}
+		*/-->
+		</nav>
+	</script>
+	
 	<blog-list inline-template>
 		<table class="table">
 			<thead>
@@ -40,29 +69,8 @@
 			<tfoot>
 				<tr>
 					<td colspan="5" class="text-center">
-						<!--/* <nav aria-label="Page navigation">
-							{{#totalPages}}
-							<ul class="pagination justify-content-center">
-								{{^isFirstPage}}
-								<li class="page-item" th:if="${!articlePage.first}">
-	      							<a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}(page=${articlePage.number - 1})}" aria-label="Previous">
-										<span aria-hidden="true">&laquo;</span>
-										<span class="sr-only">Previous</span>
-									</a>
-								</li>
-								{{/isFirstPage}}
-								<li class="page-item" th:classappend="${i == currentPage} ? 'active'"><a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}}" th:text="${articlePage.number + 1}">1</a></li>
-								{{^isLastPage}}
-								<li class="page-item" th:if="${!articlePage.last}">
-									<a class="page-link" th:href="@{#{url.blog.view.list(${blogId})}(page=${articlePage.number + 1})}" aria-label="Next">
-										<span aria-hidden="true">&raquo;</span>
-										<span class="sr-only">Next</span>
-									</a>
-								</li>
-								{{/isLastPage}}
-							</ul>
-							{{/totalPages}}
-						</nav>
+						<common-nav></common-nav>
+						<!--/*
 						{{#userInfo.isLogin}}
 						<div>
 							<a href="[[#{url.blog.view.write(${blogId})}]]" class="btn btn-outline-primary">[[#{blog.menu.write}]]</a>
