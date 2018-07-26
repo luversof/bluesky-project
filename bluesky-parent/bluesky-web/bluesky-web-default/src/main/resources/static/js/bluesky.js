@@ -223,8 +223,10 @@ $(document).ready(function() {
 	
 	Vue.component("common-nav", {
 		template : "#common-nav",
+		props : ["page"],
 		data : function() {
-			return {};
+			return {
+			};
 		}
 	});
 });

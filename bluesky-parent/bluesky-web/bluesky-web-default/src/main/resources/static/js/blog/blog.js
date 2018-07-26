@@ -77,7 +77,6 @@ $(document).ready(function() {
 						}
 						return this.articleListResponse._embedded.blogArticles;
 					}
-					
 				},
 				mounted : function() {
 					this.getArticleListResponse();
