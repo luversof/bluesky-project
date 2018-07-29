@@ -29,7 +29,6 @@ $(document).ready(function() {
 		e.preventDefault();
 		blog.create();
 	});*/
-	
 	var blogVue = new Vue({
 		el : "#blog-content",
 		components : {
@@ -87,5 +86,6 @@ $(document).ready(function() {
 			}
 		}
 	});
+	blogVue.nav = {};
 	console.log("blogVue : ", blogVue);
 });

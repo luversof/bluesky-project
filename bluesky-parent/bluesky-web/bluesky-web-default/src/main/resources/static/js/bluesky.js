@@ -222,11 +222,32 @@ $(document).ready(function() {
 	});
 	
 	Vue.component("common-nav", {
-		template : "#common-nav",
-		props : ["page"],
+		//template : "#common-nav",
+		template : '\
+			<nav aria-label="Page navigation">{{ nav }} {{ getSize() }}</nav>\
+		',
+		props : ["nav", "size", "totalElements", "totalPages", "number"],
 		data : function() {
 			return {
 			};
+		},
+		methods : {
+			getSize : function() {
+				if (this.nav == null) {
+					return 0;
+				}
+				return this.nav.size;
+			}
+		},
+		computed : {
+		},
+		created : function() {
+//            console.log("created ")
+        },
+		mounted : function() {
+//			console.log("mounted ")
+		},
+		watch: {
 		}
 	});
 });
