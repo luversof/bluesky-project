@@ -222,21 +222,75 @@ $(document).ready(function() {
 	});
 	
 	Vue.component("common-nav", {
-		//template : "#common-nav",
 		template : '\
-			<nav aria-label="Page navigation">{{ nav }} {{ getSize() }}</nav>\
+			<nav aria-label="Page navigation">\
+				<ul class="pagination justify-content-center">\
+					<li class="page-item" v-if="isPrevPageExist()">\
+						<a class="page-link" @click="movePageFnc(page)" th:href="@{#{url.blog.view.list(${blogId})}(page=${articlePage.number - 1})}" aria-label="Previous">\
+							<span aria-hidden="true">&laquo;</span>\
+							<span class="sr-only">Previous</span>\
+						</a>\
+					</li>\
+					<li class="page-item" v-for="page in getPageList()" :class="{ active : page == getPage() }"><a class="page-link" @click="movePageFnc(page)" th:href="@{#{url.blog.view.list(${blogId})}}">{{page}}</a></li>\
+					<li class="page-item" v-if="isNextPageExist()">\
+						<a class="page-link" @click="movePageFnc(page) th:href="@{#{url.blog.view.list(${blogId})}(page=${articlePage.number - 1})}" aria-label="Next">\
+							<span aria-hidden="true">&raquo;</span>\
+							<span class="sr-only">Next</span>\
+						</a>\
+					</li>\
+				</ul>\
+			</nav>\
 		',
-		props : ["nav", "size", "totalElements", "totalPages", "number"],
+		props : {
+			pageInfo : {
+				type : Object,
+				default : function() {
+					return { "size": 20, "totalElements": 0, "totalPages": 0, "number": 0 }
+				}
+			},
+			pageBlockSize : {
+				type : Number, 
+				default : 5 
+			},
+			movePageFnc : {
+				type : Function,
+				default : function(page) {
+					alert("movePageFnc(page) Function is not set");
+				}
+			}
+		},
 		data : function() {
 			return {
 			};
 		},
 		methods : {
-			getSize : function() {
-				if (this.nav == null) {
-					return 0;
+			getPage : function() {
+				return this.pageInfo.number <= 0 ? 1 : this.pageInfo.number + 1;
+			},
+			getFirstPage : function() {
+				return ((this.getPage() - 1) / this.pageBlockSize) * this.pageBlockSize + 1;
+			},
+			getLastPage : function() {
+				return this.pageInfo.totalPages == 0 ? 1 : Math.min(this.getFirstPage() + this.pageInfo.pageBlockSize - 1, this.pageInfo.totalPages);
+			},
+			isPrevPageExist : function() {
+				return this.getFirstPage() != 1; 
+			},
+			isNextPageExist : function() {
+				return this.pageInfo.totalPages == 0 ? false : this.getLastPage() != this.pageInfo.totalPages;
+			},
+			getPrevPage : function() {
+				return this.isPrevPageExist() ? this.getFirstPage() - 1 : 1;
+			},
+			getNextPage : function() {
+				return this.isNextPageExist() ? this.getLastPage() + 1 : this.getLastPage();
+			},
+			getPageList : function() {
+				var pageList = [];
+				for (var i = this.getFirstPage() ; i <= this.getLastPage(); i++) {
+					pageList.push(i);
 				}
-				return this.nav.size;
+				return pageList;
 			}
 		},
 		computed : {

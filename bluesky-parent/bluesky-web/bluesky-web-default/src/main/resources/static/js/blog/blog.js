@@ -29,8 +29,21 @@ $(document).ready(function() {
 		e.preventDefault();
 		blog.create();
 	});*/
+	blogVueData = {
+		blogId : "",
+	};
+	
 	var blogVue = new Vue({
 		el : "#blog-content",
+		data : blogVueData,
+		methods : {
+			/**
+			 * 글보기 페이지 이동
+			 */
+			getViewUrl : function(articleId) {
+				return $.i18n.prop("url.blog.view.view", this.blogId, articleId);
+			}
+		},
 		components : {
 			"blog-create" : {
 				methods : {
@@ -49,27 +62,34 @@ $(document).ready(function() {
 			},
 			"blog-list" : {
 				data : function() {
-					return { 
+					return {
 						articleListResponse : {}
-					}
+					};
 				},
 				methods : {
-					getViewUrl : function() {
-						var blogId = "b68f7647-6ddd-4b8c-aecf-352e82ad764e";
-						var articleId = 123;
-						return $.i18n.prop("url.blog.view.view", blogId, articleId);
+					/**
+					 * 글목록 페이지 이동
+					 */
+					getListUrl : function(page) {
+						console.log("getListUrl : ", this.$parent.blogId);
+						location.href = $.i18n.prop("url.blog.view.list", this.$parent.blogId) + "?" + $.param({ page : page });
 					},
+					/**
+					 * 글 목록 조회 ajax 호출
+					 */
 					getArticleListResponse : function() {
 						var _this = this;
-						var blogId = "b68f7647-6ddd-4b8c-aecf-352e82ad764e";
 						$.ajax({
 							type : "GET",
 							url : $.i18n.prop("url.article.api.get-list"),
-							data : { id : blogId }
+							data : { id : this.$parent.blogId }
 						}).done(function(response) {
 							_this.articleListResponse = response;
 						});
 					},
+					/**
+					 * 글 목록 조회
+					 */
 					getArticleList : function() {
 						if (this.articleListResponse._embedded == undefined || this.articleListResponse._embedded.blogArticles == undefined) {
 							return [];
@@ -82,10 +102,18 @@ $(document).ready(function() {
 				},
 				computed : {
 					
+				},
+				components : {
+					"blog-write-button" : {
+						template : '\
+							<div>\
+								버튼버튼버튼\
+							</div>'
+					}		
 				}
 			}
+			
 		}
 	});
-	blogVue.nav = {};
 	console.log("blogVue : ", blogVue);
 });
