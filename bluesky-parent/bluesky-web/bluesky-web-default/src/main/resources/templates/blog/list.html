@@ -6,6 +6,7 @@
 <head>
 	<script>
 	$(document).ready(function() {
+		console.log("test - blogId");
 		blogVueData.blogId = "[[${blogId}]]";
 	});
 	</script>
@@ -17,7 +18,7 @@
 		<table class="table">
 			<thead>
 				<tr>
-					<th>[[#{blog.article.text.id}]]</th>
+					<th>[[#{blog.article.text.id}]] {{blogId}}</th>
 					<!--/* <th>[[#{blog.article.text.category}]]</th> */-->
 					<th>[[#{blog.article.text.title}]]</th>
 					<th>[[#{blog.article.text.createdDate}]]</th>
@@ -40,14 +41,8 @@
 			<tfoot>
 				<tr>
 					<td colspan="5" class="text-center">
-						<slot><common-nav :page-info="articleListResponse.page" :move-page-fnc="getListUrl" /></slot>
+						<slot><common-nav :page-info="articleListResponse.page" :move-page-fnc="moveListView" /></slot>
 						<slot><blog-write-button /></slot>
-						<!--/*
-						{{#userInfo.isLogin}}
-						<div>
-							<a href="[[#{url.blog.view.write(${blogId})}]]" class="btn btn-outline-primary">[[#{blog.menu.write}]]</a>
-						</div>
-						{{/userInfo.isLogin}} */-->
 					</td>
 				</tr>
 			</tfoot>

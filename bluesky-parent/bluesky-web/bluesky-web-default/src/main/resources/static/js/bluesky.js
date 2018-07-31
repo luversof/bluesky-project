@@ -220,20 +220,38 @@ $(document).ready(function() {
 	$("button.cancel").on("click", function() {
 		history.back();
 	});
+
 	
+	
+	/** (s) vue.js 설정 **/
+
+	/**
+	 * Vue 공통 mixin은 이곳에 정의하여 사용
+	 */
+	commonMixin = {
+		methods : {
+			i18n : function(key, args) {
+				return $.i18n.prop(key, args);
+			}
+		}	
+	}
+	
+	/**
+	 * 공통 nav 설정
+	 */
 	Vue.component("common-nav", {
 		template : '\
 			<nav aria-label="Page navigation">\
 				<ul class="pagination justify-content-center">\
 					<li class="page-item" v-if="isPrevPageExist()">\
-						<a class="page-link" @click="movePageFnc(page)" th:href="@{#{url.blog.view.list(${blogId})}(page=${articlePage.number - 1})}" aria-label="Previous">\
+						<a class="page-link" @click="movePageFnc(getFirstPage() - 1)" aria-label="Previous">\
 							<span aria-hidden="true">&laquo;</span>\
 							<span class="sr-only">Previous</span>\
 						</a>\
 					</li>\
-					<li class="page-item" v-for="page in getPageList()" :class="{ active : page == getPage() }"><a class="page-link" @click="movePageFnc(page)" th:href="@{#{url.blog.view.list(${blogId})}}">{{page}}</a></li>\
+					<li class="page-item" v-for="page in getPageList()" :class="{ active : page == getPage() }"><a class="page-link" @click="movePageFnc(page)">{{page}}</a></li>\
 					<li class="page-item" v-if="isNextPageExist()">\
-						<a class="page-link" @click="movePageFnc(page) th:href="@{#{url.blog.view.list(${blogId})}(page=${articlePage.number - 1})}" aria-label="Next">\
+						<a class="page-link" @click="movePageFnc(getLastPage() + 1) aria-label="Next">\
 							<span aria-hidden="true">&raquo;</span>\
 							<span class="sr-only">Next</span>\
 						</a>\
@@ -258,10 +276,6 @@ $(document).ready(function() {
 					alert("movePageFnc(page) Function is not set");
 				}
 			}
-		},
-		data : function() {
-			return {
-			};
 		},
 		methods : {
 			getPage : function() {
@@ -292,16 +306,8 @@ $(document).ready(function() {
 				}
 				return pageList;
 			}
-		},
-		computed : {
-		},
-		created : function() {
-//            console.log("created ")
-        },
-		mounted : function() {
-//			console.log("mounted ")
-		},
-		watch: {
 		}
 	});
+	
+	/** (e) vue.js 설정 **/
 });
