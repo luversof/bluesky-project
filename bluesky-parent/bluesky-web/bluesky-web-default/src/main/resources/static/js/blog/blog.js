@@ -4,7 +4,7 @@ $(document).ready(function() {
 	 * blog에서 사용하는 공통 data
 	 */
 	blogVueData = {
-		blogId : "",
+		blogId : /\/blog\/([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/\w*/.exec(location.pathname)[1],
 		userInfo : userInfo
 	};
 	
