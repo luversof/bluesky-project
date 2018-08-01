@@ -31,35 +31,32 @@
 	<th:block layout:fragment="content-blog">
 		<div class="container">
 			<blog-write inline-template>
-				<div class="form-group row">
-					<label class="col-form-label" for="title">{{i18n("blog.article.text.title")}}</label>
-					<div class="col-10">
-						<input class="form-control" type="text" name="title" id="title" :placeholder="i18n('blog.article.text.title')" />
+				<form onsubmit="return false;">
+					<div class="form-group row">
+						<label class="col-form-label" for="title">{{i18n("blog.article.text.title")}}</label>
+						<div class="col-10">
+							<input class="form-control" type="text" name="title" id="title" :placeholder="i18n('blog.article.text.title')" />
+						</div>
 					</div>
-				</div>
-				<!-- 
-				{{#_embedded.categories.length}}
-				<div class="form-group row">
-					<label class="col-form-label" for="category">[[#{blog.article.text.category}]]</label>
-					<div class="col-10">
-						<select id="category" name="category" class="form-control">
-							{{#_embedded.categories}}
-								<option value="{{_links.self.href}}">{{name}}</option>
-							{{/_embedded.categories}}
-						</select>
+					<div class="form-group row" v-if="getCategoryList().length > 0">
+						<label class="col-form-label" for="category">[[#{blog.article.text.category}]]</label>
+						<div class="col-10">
+							<select id="category" name="category" class="form-control">
+									<option  v-for="catyegory in getCategoryList()" value="_links.self.href">{{category.name}}</option>
+							</select>
+						</div>
 					</div>
-				</div>
-				{{/_embedded.categories.length}}
-				<div class="form-group row">
-					<label class="col-form-label" for="content">[[#{blog.article.text.content}]]</label>
-					<div class="col-10">
-						<textarea class="form-control" rows="13" name="content" id="content" placeholder="[[#{blog.article.text.content}]]"></textarea>
+					<div class="form-group row">
+						<label class="col-form-label" for="content">[[#{blog.article.text.content}]]</label>
+						<div class="col-10">
+							<textarea class="form-control" rows="13" name="content" id="content" th:placeholder="#{blog.article.text.content}"></textarea>
+						</div>
 					</div>
-				</div>
-				<div class="text-center">
-					<button class="btn btn-outline-primary" type="submit">[[#{blog.menu.save}]]</button>
-					<button class="btn btn-outline-default cancel" type="button">[[#{blog.menu.cancel}]]</button>
-				</div> -->
+					<div class="text-center">
+						<button class="btn btn-outline-primary" type="submit">[[#{blog.menu.save}]]</button>
+						<button class="btn btn-outline-default cancel" type="button">[[#{blog.menu.cancel}]]</button>
+					</div>
+				</form>
 			</blog-write>
 		</div>
 	</th:block>

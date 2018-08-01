@@ -33,7 +33,6 @@ $(document).ready(function() {
 			 */
 			getCategoryListResponse : function() {
 				var _this = this;
-				console.log("asdfasdf ", this.blogId);
 				$.ajax({
 					type : "GET",
 					url : $.i18n.prop("url.category.api.get-list"),
@@ -95,7 +94,9 @@ $(document).ready(function() {
 		},
 		mixins : [blogMixin],
 		methods : {
-			
+			save : function() {
+				
+			}
 		},
 		mounted : function() {
 			this.getCategoryListResponse();
