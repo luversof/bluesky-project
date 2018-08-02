@@ -4,12 +4,6 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="blog/_template/blogLayout">
 <head>
-	<script>
-	$(document).ready(function() {
-		console.log("test - blogId");
-		blogVueData.blogId = "[[${blogId}]]";
-	});
-	</script>
 </head>
 <body>
 <th:block layout:fragment="content-blog">
@@ -28,14 +22,14 @@
 		
 			<tbody>
 				<tr v-if="getArticleList().length == 0" class="text-center">
-					<td colspan="5" th:text="#{blog.article.message.empty.content}">[[#{blog.article.message.empty.content}]]</td>
+					<td colspan="5" v-text="i18n('blog.article.message.empty.content')"></td>
 				</tr>
-				<tr v-else="getArticleList().length == 0"  v-for="article in getArticleList()">
-					<td>{{getId}}</td>
+				<tr v-else="getArticleList().length == 0" v-for="article in getArticleList()">
+					<td v-text=article.id></td>
 					<!--/* <td th:text="${blogArticle.category} ? ${blogArticle.category.name}"></td> */-->
-					<td><a v-bind:href="getViewUrl">{{title}}</a></td>
-					<td>{{getCreateDateFormat}}</td>
-					<td>{{viewCount}}</td>
+					<td><a v-bind:href="getViewUrl(article.id)" v-text="article.title"></a></td>
+					<td v-text="dateFormat(article.createdDate, 'LL')"></td>
+					<td v-text="article.viewCount"></td>
 				</tr>
 			</tbody>
 			<tfoot>

@@ -12,64 +12,30 @@
 	});
 	</script>
 	<script type="text/javascript" th:src="#{url.gist-embed.js}" defer="defer"></script>
-	<script id="articleViewTemplate" th:type="'mustache/template'">
-		<article>
-			<h2>{{#category}}[{{category.name}}] {{/category}}{{title}}</h2>
-			<p><time pubdate="pubdate">createdDate</time></p>
-			<p>[[#{blog.article.text.viewCount}]] : {{viewCount}}</p>
-			<div>{{{content}}}</div>
-		</article>
-		
-		
-		<div class="text-center">
-			<a sec:authorize="isAuthenticated()" class="btn btn-outline-primary" href="[[#{url.blog.view.write(${blogId})}]]">[[#{blog.menu.write}]]</a>
-			<a sec:authorize="isAuthenticated()" class="btn btn-outline-primary" href="[[#{url.blog.view.modify(${blogId}, ${articleId})}]]" th:if="${#authentication.principal.id == article.blog.userId}">[[#{blog.menu.modify}]]</a>
-			<button sec:authorize="isAuthenticated()" class="btn btn-outline-danger" th:if="${#authentication.principal.id == article.blog.userId}" th:attr="data-delete-blog-article-articleId=${article.id},data-delete-blog-article-blogId=${article.blog.id}">[[#{blog.menu.delete}]]</button>
-			<a class="btn btn-outline-secondary" href="[[#{url.blog.view.list(${blogId})}]]">[[#{blog.menu.list}]]</a>
-		</div>
-	</script>
+	
 </head>
 <body>
 	<th:block layout:fragment="content-blog">
 	
 	
-		<div class="blog-view">
-			<!-- 
-			<article>
-				<h2 th:text="${article.category} ? #{blog.article.message.title(${article.title}, ${article.category.name})} : ${article.title}">title</h2>
-				<p><time pubdate="pubdate" th:text="${#temporals.format(article.createdDate, 'yyyy-MM-dd mm:HH:ss')}">createdDate</time></p>
-				<p th:text="#{blog.article.text.viewCount} + ' : ' + ${article.viewCount}"></p>
-				<div th:utext="${article.content}">content</div>
-			</article>
-			
-
-			<div class="text-center">
-				<a sec:authorize="isAuthenticated()" class="btn btn-outline-primary" th:href="#{url.blog.view.write(${article.blog.id})}" th:text="#{blog.menu.write}">write</a>
-				<a sec:authorize="isAuthenticated()" class="btn btn-outline-primary" th:href="#{url.blog.view.modify(${article.blog.id}, ${article.id})}" th:if="${#authentication.principal.id == article.blog.userId}" th:text="#{blog.menu.modify}">modify</a>
-				<button sec:authorize="isAuthenticated()" class="btn btn-outline-danger" th:if="${#authentication.principal.id == article.blog.userId}" th:attr="data-delete-blog-article-articleId=${article.id},data-delete-blog-article-blogId=${article.blog.id}" th:text="#{blog.menu.delete}">delete</button>
-				<a class="btn btn-outline-secondary" th:href="#{url.blog.view.list(${article.blog.id})}" th:text="#{blog.menu.list}">list</a>
-			</div>
-
-			<form class="form-horizontal delete" sec:authorize="isAuthenticated()" th:if="${#authentication.principal.id == article.blog.userId}" th:action="@{${article.id}}" method="post">
-				<input type="hidden" name="_method" value="delete" />
-				<input type="hidden" name="id" th:value="${article.id}" />
-			</form>
-			
-			<div th:if="${#arrays.contains(@environment.getActiveProfiles(), 'live')}">
-				<div id="fb-root"></div>
-				<script type="text/javascript">(function(d, s, id) {
-				  var js, fjs = d.getElementsByTagName(s)[0];
-				  if (d.getElementById(id)) return;
-				  js = d.createElement(s); js.id = id;
-				  js.src = "//connect.facebook.net/ko_KR/all.js#xfbml=1&amp;appId=124755777691522";
-				  fjs.parentNode.insertBefore(js, fjs);
-				}(document, 'script', 'facebook-jssdk'));</script>
-				<div class="panel panel-default text-center">
-					<div class="fb-comments panel-body" th:attr="data-href='http://luversof.cafe24.com/blog/' + ${article.id}" ></div>
+		<blog-view inline-template class="blog-view">
+			<div>
+				<article>
+					<h2>{{#category}}[{{category.name}}] {{/category}}{{title}}</h2>
+					<p><time pubdate="pubdate">createdDate</time></p>
+					<p>[[#{blog.article.text.viewCount}]] : {{viewCount}}</p>
+					<div>{{{content}}}</div>
+				</article>
+				
+				
+				<div class="text-center">
+					<a sec:authorize="isAuthenticated()" class="btn btn-outline-primary" href="[[#{url.blog.view.write(${blogId})}]]">[[#{blog.menu.write}]]</a>
+					<a sec:authorize="isAuthenticated()" class="btn btn-outline-primary" href="[[#{url.blog.view.modify(${blogId}, ${articleId})}]]" th:if="${#authentication.principal.id == article.blog.userId}">[[#{blog.menu.modify}]]</a>
+					<button sec:authorize="isAuthenticated()" class="btn btn-outline-danger" th:if="${#authentication.principal.id == article.blog.userId}" th:attr="data-delete-blog-article-articleId=${article.id},data-delete-blog-article-blogId=${article.blog.id}">[[#{blog.menu.delete}]]</button>
+					<a class="btn btn-outline-secondary" href="[[#{url.blog.view.list(${blogId})}]]">[[#{blog.menu.list}]]</a>
 				</div>
 			</div>
-			 -->
-		</div>
+		</blog-view>
 	</th:block>
 </body>
 </html>

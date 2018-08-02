@@ -121,7 +121,6 @@ var UserInfo = function(userId) {
 		 * 로그인한 유저가 대상 유저와 일치하는지 확인
 		 */
 		isLoginUser : function(targetUserId) {
-			console.log(targetUserId);
 			return _isLogin() && _userId == targetUserId; 
 		}
 	}
@@ -232,6 +231,9 @@ $(document).ready(function() {
 		methods : {
 			i18n : function(key, args) {
 				return $.i18n.prop(key, args);
+			},
+			dateFormat : function(date, format) {
+				return moment(date).format(format);
 			}
 		}	
 	}
@@ -263,7 +265,7 @@ $(document).ready(function() {
 			pageInfo : {
 				type : Object,
 				default : function() {
-					return { "size": 20, "totalElements": 0, "totalPages": 0, "number": 0 }
+					return { "size": 20, "totalElements": 1, "totalPages": 1, "number": 0 }
 				}
 			},
 			pageBlockSize : {
@@ -285,7 +287,7 @@ $(document).ready(function() {
 				return ((this.getPage() - 1) / this.pageBlockSize) * this.pageBlockSize + 1;
 			},
 			getLastPage : function() {
-				return this.pageInfo.totalPages == 0 ? 1 : Math.min(this.getFirstPage() + this.pageInfo.pageBlockSize - 1, this.pageInfo.totalPages);
+				return this.pageInfo.totalPages == 0 ? 1 : Math.min(this.getFirstPage() + this.pageBlockSize - 1, this.pageInfo.totalPages);
 			},
 			isPrevPageExist : function() {
 				return this.getFirstPage() != 1; 

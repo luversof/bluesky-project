@@ -49,13 +49,11 @@ $(document).ready(function() {
 						return this
 					}
 					data.userInfo = userInfo;
-					console.log(data);
 					targetArea.html(Mustache.render(targetTemplate, data));
 				});
 			},
 			findOne : function(targetArea, targetTemplate) {
 				_findOne().done(function(data) {
-					console.log(Mustache.render($("#articleViewTemplate").html(), data));
 					targetArea.html(Mustache.render(targetTemplate, data));
 				});
 			},
@@ -70,8 +68,6 @@ $(document).ready(function() {
 				});
 			},
 			create : function(form) {
-				console.log("TEST");
-				console.log(makeFormDataJSON(form));
 				$.ajax({
 					type : "post",
 					url : _link.create,

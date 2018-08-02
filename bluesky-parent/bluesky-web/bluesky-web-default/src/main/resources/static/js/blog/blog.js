@@ -13,8 +13,11 @@ $(document).ready(function() {
 	 */
 	var blogMixin = Vue.extend({
 		data : function() { 
-			var _data = blogVueData;
-			_data.categoryListResponse = {};
+			var _data = {
+				blog : {},
+				categoryListResponse : {}
+			} 
+			$.extend(_data, blogVueData);
 			return _data;
 		},
 		mixins : [commonMixin],
@@ -27,6 +30,18 @@ $(document).ready(function() {
 			},
 			moveListView : function(page) {
 				location.href = $.i18n.prop("url.blog.view.list", this.blogId) + (page == undefined ? "" : "?" + $.param({ page : page }));
+			},
+			/**
+			 * 블로그 조회 ajax 호출
+			 */
+			getBlogResponse : function() {
+				var _this = this;
+				$.ajax({
+					type : "GET",
+					url : $.i18n.prop("url.blog.api.get", this.blogId),
+				}).done(function(response) {
+					_this.blog = response;
+				});
 			},
 			/**
 			 * 카테고리 목록 조회 ajax 호출
@@ -55,7 +70,7 @@ $(document).ready(function() {
 	
 	var blogWriteButton = Vue.extend({
 		data : function() { 
-			return blogVueData;
+			return $.extend({}, blogVueData);
 		},
 		mixins : [blogMixin],
 		template : '\
@@ -89,24 +104,44 @@ $(document).ready(function() {
 	
 	var blogWrite = Vue.extend({
 		data : function() {
-			var _data = blogVueData;
+			var _data = {
+				content : "내용",
+				title : "제목"
+			}
+			$.extend(_data, blogVueData);
 			return _data;
 		},
 		mixins : [blogMixin],
 		methods : {
-			save : function() {
-				
+			write : function(event) {
+				var _this = this;
+				$.ajax({
+					type : "POST",
+					url : $.i18n.prop("url.blog-article.api.create"),
+					contentType:"application/hal+json; charset=utf-8",
+					data : JSON.stringify({
+						blog : this.blog._links.self.href,
+						title : this.title,
+						content : this.content
+					}),
+					success : function(data) {
+						location.href = _this.getViewUrl(data.id);
+					}
+				});
 			}
 		},
 		mounted : function() {
+			this.getBlogResponse();
 			this.getCategoryListResponse();
 		},
 	});
 	
 	var blogList = Vue.extend({
 		data : function() {
-			var _data = blogVueData;
-			_data.articleListResponse = {};
+			var _data = {
+				articleListResponse : {}
+			};
+			$.extend(_data, blogVueData);
 			return _data;
 		},
 		mixins : [blogMixin],
@@ -115,11 +150,10 @@ $(document).ready(function() {
 			 * 글 목록 조회 ajax 호출
 			 */
 			getArticleListResponse : function() {
-				console.log("test - ajax call");
 				var _this = this;
 				$.ajax({
 					type : "GET",
-					url : $.i18n.prop("url.article.api.get-list"),
+					url : $.i18n.prop("url.blog-article.api.get-list"),
 					data : { id : this.blogId }
 				}).done(function(response) {
 					_this.articleListResponse = response;
@@ -143,13 +177,21 @@ $(document).ready(function() {
 		}
 	});
 	
+	var blogView = Vue.extend({
+		data : function() {
+			return blogVueData;
+		},
+		mixins : [blogMixin],
+	});
+	
 	var blogVue = new Vue({
 		el : "#blog-content",
 		data : blogVueData,
 		components : {
 			"blog-create" : blogCreate,
 			"blog-write" : blogWrite,
-			"blog-list" : blogList
+			"blog-list" : blogList,
+			"blog-view" : blogView
 		}
 	});
 	console.log("blogVue : ", blogVue);

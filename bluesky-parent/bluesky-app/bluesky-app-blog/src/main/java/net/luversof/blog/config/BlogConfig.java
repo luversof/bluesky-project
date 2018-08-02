@@ -9,6 +9,7 @@ import org.springframework.data.rest.core.config.RepositoryRestConfiguration;
 import org.springframework.data.rest.webmvc.config.RepositoryRestConfigurerAdapter;
 import org.springframework.util.Assert;
 
+import net.luversof.blog.domain.Article;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.BlogRepository;
 import net.luversof.blog.util.BlogRequestAttributeUtil;
@@ -39,7 +40,7 @@ public class BlogConfig {
 
 		@Override
 		public void configureRepositoryRestConfiguration(RepositoryRestConfiguration config) {
-			config.exposeIdsFor(Blog.class);
+			config.exposeIdsFor(Blog.class, Article.class);
 		}
 		
 	}

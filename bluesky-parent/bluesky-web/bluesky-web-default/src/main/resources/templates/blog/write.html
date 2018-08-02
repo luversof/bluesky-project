@@ -5,11 +5,6 @@
 	layout:decorator="blog/_template/blogLayout">
 <head>
 	<script th:src="@{/webjars/tinymce-jquery/tinymce.min.js}"></script>
-	<script>
-	$(document).ready(function() {
-		blogVueData.blogId = "[[${blogId}]]";
-	});
-	</script>
 	<script type="text/javascript">
 	$(document).ready(function() {
 		/* $.article.setBlogId("[[${blogId}]]");
@@ -31,30 +26,30 @@
 	<th:block layout:fragment="content-blog">
 		<div class="container">
 			<blog-write inline-template>
-				<form onsubmit="return false;">
+				<form  @submit.prevent="write">
 					<div class="form-group row">
-						<label class="col-form-label" for="title">{{i18n("blog.article.text.title")}}</label>
+						<label class="col-form-label" for="title" v-text="i18n('blog.article.text.title')"></label>
 						<div class="col-10">
-							<input class="form-control" type="text" name="title" id="title" :placeholder="i18n('blog.article.text.title')" />
+							<input class="form-control" type="text" name="title" v-model="title" :placeholder="i18n('blog.article.text.title')" />
 						</div>
 					</div>
 					<div class="form-group row" v-if="getCategoryList().length > 0">
-						<label class="col-form-label" for="category">[[#{blog.article.text.category}]]</label>
+						<label class="col-form-label" for="category" th:text="#{blog.article.text.category}"></label>
 						<div class="col-10">
 							<select id="category" name="category" class="form-control">
-									<option  v-for="catyegory in getCategoryList()" value="_links.self.href">{{category.name}}</option>
+								<option v-for="catyegory in getCategoryList()" value="_links.self.href" v-text="category.name"></option>
 							</select>
 						</div>
 					</div>
 					<div class="form-group row">
-						<label class="col-form-label" for="content">[[#{blog.article.text.content}]]</label>
+						<label class="col-form-label" for="content" th:text="#{blog.article.text.content}"></label>
 						<div class="col-10">
-							<textarea class="form-control" rows="13" name="content" id="content" th:placeholder="#{blog.article.text.content}"></textarea>
+							<textarea class="form-control" rows="13" name="content" v-model="content" th:placeholder="#{blog.article.text.content}"></textarea>
 						</div>
 					</div>
 					<div class="text-center">
-						<button class="btn btn-outline-primary" type="submit">[[#{blog.menu.save}]]</button>
-						<button class="btn btn-outline-default cancel" type="button">[[#{blog.menu.cancel}]]</button>
+						<button class="btn btn-outline-primary" type="submit" th:text="#{blog.menu.save}"></button>
+						<button class="btn btn-outline-default cancel" type="button" th:text="#{blog.menu.cancel}"></button>
 					</div>
 				</form>
 			</blog-write>
