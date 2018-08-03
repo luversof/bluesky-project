@@ -4,38 +4,29 @@
 	xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
 	layout:decorator="blog/_template/blogLayout">
 <head>
-	<script type="text/javascript">
-	$(document).ready(function() {
-		$.article.setBlogId("[[${blogId}]]");
-		$.article.setArticleId("[[${articleId}]]");
-		$.article.findOne($(".blog-view"), $("#articleViewTemplate").html());
-	});
-	</script>
 	<script type="text/javascript" th:src="#{url.gist-embed.js}" defer="defer"></script>
-	
 </head>
 <body>
 	<th:block layout:fragment="content-blog">
 	
 	
-		<blog-view inline-template class="blog-view">
+		<blog-article-view inline-template class="blog-view">
 			<div>
 				<article>
-					<h2>{{#category}}[{{category.name}}] {{/category}}{{title}}</h2>
-					<p><time pubdate="pubdate">createdDate</time></p>
-					<p>[[#{blog.article.text.viewCount}]] : {{viewCount}}</p>
-					<div>{{{content}}}</div>
+					<h2 v-text="blogArticle.title"></h2>
+					<p><time pubdate="pubdate" v-text="dateFormat(blogArticle.createdDate, 'LL')"></time></p>
+					<p><span>[[#{blog.article.text.viewCount}]] : </span><span v-text="blogArticle.viewCount"></span></p>
+					<div v-html="blogArticle.content"></div>
 				</article>
 				
 				
 				<div class="text-center">
-					<a sec:authorize="isAuthenticated()" class="btn btn-outline-primary" href="[[#{url.blog.view.write(${blogId})}]]">[[#{blog.menu.write}]]</a>
-					<a sec:authorize="isAuthenticated()" class="btn btn-outline-primary" href="[[#{url.blog.view.modify(${blogId}, ${articleId})}]]" th:if="${#authentication.principal.id == article.blog.userId}">[[#{blog.menu.modify}]]</a>
-					<button sec:authorize="isAuthenticated()" class="btn btn-outline-danger" th:if="${#authentication.principal.id == article.blog.userId}" th:attr="data-delete-blog-article-articleId=${article.id},data-delete-blog-article-blogId=${article.blog.id}">[[#{blog.menu.delete}]]</button>
+					<slot><blog-article-modify-button /></slot>
+					<slot><blog-article-delete-button /></slot>
 					<a class="btn btn-outline-secondary" href="[[#{url.blog.view.list(${blogId})}]]">[[#{blog.menu.list}]]</a>
 				</div>
 			</div>
-		</blog-view>
+		</blog-article-view>
 	</th:block>
 </body>
 </html>

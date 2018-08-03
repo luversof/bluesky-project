@@ -4,7 +4,14 @@ $(document).ready(function() {
 	 * blog에서 사용하는 공통 data
 	 */
 	blogVueData = {
-		blogId : /\/blog\/([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/\w*/.exec(location.pathname)[1],
+		blogId : function() {
+			var res = /\/blog\/([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/\w*/.exec(location.pathname);
+			return res == undefined ? null : res[1];	
+		}(),
+		blogArticleId : function() {
+			var res = /\/blog\/([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/view\/(\d+)/.exec(location.pathname);
+			return res == undefined ? null : res[2];
+		}(),
 		userInfo : userInfo
 	};
 	
@@ -12,10 +19,12 @@ $(document).ready(function() {
 	 * blog에서 사용하는 공통 method
 	 */
 	var blogMixin = Vue.extend({
-		data : function() { 
+		data : function() {
 			var _data = {
 				blog : {},
-				categoryListResponse : {}
+				categoryListResponse : {},
+				blogArticle : {},
+				blogArticleListResponse : {}
 			} 
 			$.extend(_data, blogVueData);
 			return _data;
@@ -64,24 +73,92 @@ $(document).ready(function() {
 					return [];
 				}
 				return this.categoryListResponse._embedded.blogArticles;
+			},
+			getBlogArticleResponse : function() {
+				var _this = this;
+				$.ajax({
+					type : "GET",
+					url : $.i18n.prop("url.blog-article.api.get", this.blogArticleId),
+				}).done(function(response) {
+					_this.blogArticle = response;
+				});
 			}
-		},
+		}
 	});
 	
-	var blogWriteButton = Vue.extend({
+	var blogArticleWriteButton = Vue.extend({
 		data : function() { 
-			return $.extend({}, blogVueData);
+			return $.extend({}, this.$parent.$data);
 		},
 		mixins : [blogMixin],
-		template : '\
-			<div v-if="userInfo.isLogin()">\
-				<a :href="getWriteUrl()" class="btn btn-outline-primary">{{i18n("blog.menu.write")}}</a>\
-			</div>'
+		template : '<a v-if="isDisplayButton()" :href="getWriteUrl()" class="btn btn-outline-primary">{{i18n("blog.menu.write")}}</a>',
+		methods : {
+			isDisplayButton : function() {
+				return this.userInfo.isLogin();
+			}
+		}
+	});
+	
+	var blogArticleModifyButton = Vue.extend({
+		data : function() { 
+			if (this.$parent.$data.blog == undefined || this.$parent.userInfo == undefined) {
+				alert("modifyButton require blog, userInfo data");
+			}
+			return this.$parent.$data;
+		},
+		mixins : [blogMixin],
+		template : '<a v-if="isDisplayButton()" :href="getModifyUrl()" class="btn btn-outline-primary">{{i18n("blog.menu.modify")}}</a>',
+		mounted : function() {
+			if (this.blog.id == undefined) {
+				this.getBlogResponse();
+			}
+		},
+		methods : {
+			isDisplayButton : function() {
+				return this.userInfo.isLogin() && this.blog.userId == this.userInfo.getUserId();
+			},
+			getModifyUrl : function() {
+				return $.i18n.prop("url.blog.view.modify", this.blogId, this.blogArticle.id);
+			}
+		}
+	});
+	
+	var blogArticleDeleteButton = Vue.extend({
+		data : function() { 
+			if (this.$parent.$data.blog == undefined || this.$parent.userInfo == undefined) {
+				alert("deleteButton require blog, userInfo data");
+			}
+			return this.$parent.$data;
+		},
+		mixins : [blogMixin],
+		template : '<a v-if="isDisplayButton()" href="#none" @click="remove()" class="btn btn-outline-danger">{{i18n("blog.menu.delete")}}</a>',
+		mounted : function() {
+			if (this.blog.id == undefined) {
+				this.getBlogResponse();
+			}
+		},
+		methods : {
+			isDisplayButton : function() {
+				return this.userInfo.isLogin() && this.blog.userId == this.userInfo.getUserId();
+			},
+			getModifyUrl : function() {
+				return $.i18n.prop("url.blog.view.modify", this.blogId, this.blogArticle.id);
+			},
+			remove : function() {
+				var _this = this;
+				$.ajax({
+					type : "DELETE",
+					url : $.i18n.prop("url.blog-article.api.get", this.blogId, this.blogArticle.id),
+				}).done(function(response) {
+					_this.moveListView(1);
+				});
+			}
+		}
 	});
 	
 	var blogCreate = Vue.extend({
 		data : function() { 
-			return blogVueData 
+			return this.$parent.$data 
 		},
 		mixins : [blogMixin],
 		methods : {
@@ -102,13 +179,13 @@ $(document).ready(function() {
 		}
 	});
 	
-	var blogWrite = Vue.extend({
+	var blogArticleWrite = Vue.extend({
 		data : function() {
 			var _data = {
 				content : "내용",
 				title : "제목"
 			}
-			$.extend(_data, blogVueData);
+			$.extend(_data, this.$parent.$data);
 			return _data;
 		},
 		mixins : [blogMixin],
@@ -136,62 +213,70 @@ $(document).ready(function() {
 		},
 	});
 	
-	var blogList = Vue.extend({
+	var blogArticleList = Vue.extend({
 		data : function() {
-			var _data = {
-				articleListResponse : {}
-			};
-			$.extend(_data, blogVueData);
-			return _data;
+			return this.$parent.$data;
 		},
 		mixins : [blogMixin],
 		methods : {
 			/**
 			 * 글 목록 조회 ajax 호출
 			 */
-			getArticleListResponse : function() {
+			getBlogArticleListResponse : function() {
 				var _this = this;
 				$.ajax({
 					type : "GET",
 					url : $.i18n.prop("url.blog-article.api.get-list"),
 					data : { id : this.blogId }
 				}).done(function(response) {
-					_this.articleListResponse = response;
+					_this.blogArticleListResponse = response;
 				});
 			},
 			/**
 			 * 글 목록 조회
 			 */
-			getArticleList : function() {
-				if (this.articleListResponse._embedded == undefined || this.articleListResponse._embedded.blogArticles == undefined) {
+			getBlogArticleList : function() {
+				if (this.blogArticleListResponse._embedded == undefined || this.blogArticleListResponse._embedded.blogArticles == undefined) {
 					return [];
 				}
-				return this.articleListResponse._embedded.blogArticles;
+				return this.blogArticleListResponse._embedded.blogArticles;
 			}
 		},
 		mounted : function() {
-			this.getArticleListResponse();
+			this.getBlogArticleListResponse();
+			this.getCategoryListResponse();
 		},
 		components : {
-			"blog-write-button" : blogWriteButton
+			blogArticleWriteButton : blogArticleWriteButton
 		}
 	});
 	
-	var blogView = Vue.extend({
+	var blogArticleView = Vue.extend({
 		data : function() {
-			return blogVueData;
+			return this.$parent.$data;
 		},
 		mixins : [blogMixin],
+		methods : {
+		},
+		mounted : function() {
+			console.log("blogArticleView", this)
+			this.getBlogArticleResponse();
+		},
+		components : {
+			blogArticleModifyButton : blogArticleModifyButton,
+			blogArticleDeleteButton : blogArticleDeleteButton
+		}
 	});
 	
 	var blogVue = new Vue({
 		el : "#blog-content",
 		data : blogVueData,
+		mixins : [blogMixin],
 		components : {
-			"blog-create" : blogCreate,
-			"blog-write" : blogWrite,
-			"blog-list" : blogList,
-			"blog-view" : blogView
+			blogCreate : blogCreate,
+			blogArticleList : blogArticleList,
+			blogArticleWrite : blogArticleWrite,
+			blogArticleView : blogArticleView
 		}
 	});
 	console.log("blogVue : ", blogVue);

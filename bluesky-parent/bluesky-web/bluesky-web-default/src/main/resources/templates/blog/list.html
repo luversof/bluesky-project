@@ -8,11 +8,11 @@
 <body>
 <th:block layout:fragment="content-blog">
 	
-	<blog-list inline-template>
+	<blog-article-list inline-template>
 		<table class="table">
 			<thead>
 				<tr>
-					<th>[[#{blog.article.text.id}]]</th>
+					<th>[[#{blog.article.text.id}]]  {{getWriteUrl()}}</th>
 					<!--/* <th>[[#{blog.article.text.category}]]</th> */-->
 					<th>[[#{blog.article.text.title}]]</th>
 					<th>[[#{blog.article.text.createdDate}]]</th>
@@ -21,27 +21,27 @@
 			</thead>
 		
 			<tbody>
-				<tr v-if="getArticleList().length == 0" class="text-center">
+				<tr v-if="getBlogArticleList().length == 0" class="text-center">
 					<td colspan="5" v-text="i18n('blog.article.message.empty.content')"></td>
 				</tr>
-				<tr v-else="getArticleList().length == 0" v-for="article in getArticleList()">
-					<td v-text=article.id></td>
+				<tr v-else="getBlogArticleList().length == 0" v-for="blogArticle in getBlogArticleList()">
+					<td v-text="blogArticle.id"></td>
 					<!--/* <td th:text="${blogArticle.category} ? ${blogArticle.category.name}"></td> */-->
-					<td><a v-bind:href="getViewUrl(article.id)" v-text="article.title"></a></td>
-					<td v-text="dateFormat(article.createdDate, 'LL')"></td>
-					<td v-text="article.viewCount"></td>
+					<td><a v-bind:href="getViewUrl(blogArticle.id)" v-text="blogArticle.title"></a></td>
+					<td v-text="dateFormat(blogArticle.createdDate, 'LL')"></td>
+					<td v-text="blogArticle.viewCount"></td>
 				</tr>
 			</tbody>
 			<tfoot>
 				<tr>
 					<td colspan="5" class="text-center">
-						<slot><common-nav :page-info="articleListResponse.page" :move-page-fnc="moveListView" /></slot>
-						<slot><blog-write-button /></slot>
+						<slot><common-nav :page-info="blogArticleListResponse.page" :move-page-fnc="moveListView" /></slot>
+						<slot><blog-article-write-button /></slot>
 					</td>
 				</tr>
 			</tfoot>
 		</table>
-	</blog-list>
+	</blog-article-list>
 </th:block>
 </body>
 </html>

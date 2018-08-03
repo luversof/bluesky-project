@@ -25,7 +25,7 @@
 <body>
 	<th:block layout:fragment="content-blog">
 		<div class="container">
-			<blog-write inline-template>
+			<blog-article-write inline-template>
 				<form  @submit.prevent="write">
 					<div class="form-group row">
 						<label class="col-form-label" for="title" v-text="i18n('blog.article.text.title')"></label>
@@ -52,7 +52,7 @@
 						<button class="btn btn-outline-default cancel" type="button" th:text="#{blog.menu.cancel}"></button>
 					</div>
 				</form>
-			</blog-write>
+			</blog-article-write>
 		</div>
 	</th:block>
 </body>
