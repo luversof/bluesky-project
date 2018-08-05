@@ -266,11 +266,11 @@
 
 	<profiles>
 		<profile>
-			<id>local</id>
+			<id>localdev</id>
 			<repositories>
 				<repository>
 					<id>bluesky-local-nexus</id>
-					<url>http://192.168.0.3:8081/groups/public</url>
+					<url>http://192.168.0.11:8081/groups/public</url>
 					<releases>
 						<enabled>true</enabled>
 					</releases>
@@ -283,89 +283,11 @@
 			<distributionManagement>
 				<repository>
 					<id>bluesky-releases</id>
-					<url>http://192.168.0.3:8081/repository/bluesky-releases/</url>
+					<url>http://192.168.0.11:8081/repository/maven-releases/</url>
 				</repository>
 				<snapshotRepository>
 					<id>bluesky-snapshots</id>
-					<url>http://192.168.0.3:8081/repository/bluesky-snapshots/</url>
-				</snapshotRepository>
-			</distributionManagement>
-		</profile>
-		<profile>
-			<id>local-develop</id>
-			<repositories>
-				<repository>
-					<id>bluesky-local-nexus</id>
-					<url>http://192.168.0.3:8081/groups/public</url>
-					<releases>
-						<enabled>true</enabled>
-					</releases>
-					<snapshots>
-						<enabled>true</enabled>
-						<updatePolicy>always</updatePolicy>
-					</snapshots>
-				</repository>
-			</repositories>
-			<distributionManagement>
-				<repository>
-					<id>bluesky-releases-develop</id>
-					<url>http://192.168.0.3:8081/repository/bluesky-releases-develop/</url>
-				</repository>
-				<snapshotRepository>
-					<id>bluesky-snapshots-develop</id>
-					<url>http://192.168.0.3:8081/repository/bluesky-snapshots-develop/</url>
-				</snapshotRepository>
-			</distributionManagement>
-		</profile>
-		<profile>
-			<id>opdev</id>
-			<repositories>
-				<repository>
-					<id>bluesky-local-nexus</id>
-					<url>http://192.168.99.100:8081/groups/public</url>
-					<releases>
-						<enabled>true</enabled>
-					</releases>
-					<snapshots>
-						<enabled>true</enabled>
-						<updatePolicy>always</updatePolicy>
-					</snapshots>
-				</repository>
-			</repositories>
-			<distributionManagement>
-				<repository>
-					<id>bluesky-releases</id>
-					<url>http://192.168.99.100:8081/repository/bluesky-releases/</url>
-				</repository>
-				<snapshotRepository>
-					<id>bluesky-snapshots</id>
-					<url>http://192.168.99.100:8081/repository/bluesky-snapshots/</url>
-				</snapshotRepository>
-			</distributionManagement>
-		</profile>
-		<profile>
-			<id>opdev-develop</id>
-			<repositories>
-				<repository>
-					<id>bluesky-local-nexus</id>
-					<url>http://192.168.99.100:8081/groups/public</url>
-					<releases>
-						<enabled>true</enabled>
-					</releases>
-					<snapshots>
-						<enabled>true</enabled>
-						<updatePolicy>always</updatePolicy>
-					</snapshots>
-				</repository>
-			</repositories>
-			<distributionManagement>
-				<repository>
-					<id>bluesky-releases-develop</id>
-					<url>http://192.168.99.100:8081/repository/bluesky-releases-develop/</url>
-				</repository>
-				<snapshotRepository>
-					<id>bluesky-snapshots-develop</id>
-					<url>http://192.168.99.100:8081/repository/bluesky-snapshots-develop/</url>
+					<url>http://192.168.0.11:8081/repository/maven-snapshots/</url>
 				</snapshotRepository>
 			</distributionManagement>
 		</profile>

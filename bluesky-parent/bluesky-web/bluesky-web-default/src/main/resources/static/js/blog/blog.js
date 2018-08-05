@@ -107,7 +107,7 @@ $(document).ready(function() {
 			return this.$parent.$data;
 		},
 		mixins : [blogMixin],
-		template : '<a v-if="isDisplayButton()" :href="getModifyUrl()" class="btn btn-outline-primary">{{i18n("blog.menu.modify")}}</a>',
+		template : '<a v-if="isDisplayButton()" :href="getModifyUrl()" class="btn btn-outline-primary" v-text="i18n("blog.menu.modify")"></a>',
 		mounted : function() {
 			if (this.blog.id == undefined) {
 				this.getBlogResponse();
@@ -131,7 +131,7 @@ $(document).ready(function() {
 			return this.$parent.$data;
 		},
 		mixins : [blogMixin],
-		template : '<a v-if="isDisplayButton()" href="#none" @click="remove()" class="btn btn-outline-danger">{{i18n("blog.menu.delete")}}</a>',
+		template : '<a v-if="isDisplayButton()" href="#none" @click="remove()" class="btn btn-outline-danger" v-text="i18n("blog.menu.delete")"></a>',
 		mounted : function() {
 			if (this.blog.id == undefined) {
 				this.getBlogResponse();
@@ -141,14 +141,41 @@ $(document).ready(function() {
 			isDisplayButton : function() {
 				return this.userInfo.isLogin() && this.blog.userId == this.userInfo.getUserId();
 			},
-			getModifyUrl : function() {
-				return $.i18n.prop("url.blog.view.modify", this.blogId, this.blogArticle.id);
+			remove : function() {
+				var _this = this;
+				$.ajax({
+					type : "DELETE",
+					url : $.i18n.prop("url.blog-article.api.get", this.blogArticle.id),
+				}).done(function(response) {
+					_this.moveListView(1);
+				});
+			}
+		}
+	});
+	
+	var blogArticleListButton = Vue.extend({
+		data : function() { 
+			if (this.$parent.$data.blog == undefined || this.$parent.userInfo == undefined) {
+				alert("deleteButton require blog, userInfo data");
+			}
+			return this.$parent.$data;
+		},
+		mixins : [blogMixin],
+		template : '<a href="#none" @click="remove()" class="btn btn-outline-secondary" v-text="i18n("blog.menu.list")"></a>',
+		mounted : function() {
+			if (this.blog.id == undefined) {
+				this.getBlogResponse();
+			}
+		},
+		methods : {
+			isDisplayButton : function() {
+				return this.userInfo.isLogin() && this.blog.userId == this.userInfo.getUserId();
 			},
 			remove : function() {
 				var _this = this;
 				$.ajax({
 					type : "DELETE",
-					url : $.i18n.prop("url.blog-article.api.get", this.blogId, this.blogArticle.id),
+					url : $.i18n.prop("url.blog-article.api.get", this.blogArticle.id),
 				}).done(function(response) {
 					_this.moveListView(1);
 				});
@@ -264,7 +291,8 @@ $(document).ready(function() {
 		},
 		components : {
 			blogArticleModifyButton : blogArticleModifyButton,
-			blogArticleDeleteButton : blogArticleDeleteButton
+			blogArticleDeleteButton : blogArticleDeleteButton,
+			blogArticleListButton : blogArticleListButton
 		}
 	});
 	
