@@ -63,7 +63,7 @@ $(document).ready(function() {
 					data : { id : this.blogId }
 				}).done(function(response) {
 					_this.categoryListResponse = response;
-				});
+				}).fail(function() {});
 			},
 			/**
 			 * 글 목록 조회
@@ -81,7 +81,7 @@ $(document).ready(function() {
 					url : $.i18n.prop("url.blog-article.api.get", this.blogArticleId),
 				}).done(function(response) {
 					_this.blogArticle = response;
-				});
+				}).fail(function() {});
 			}
 		}
 	});
@@ -107,7 +107,7 @@ $(document).ready(function() {
 			return this.$parent.$data;
 		},
 		mixins : [blogMixin],
-		template : '<a v-if="isDisplayButton()" :href="getModifyUrl()" class="btn btn-outline-primary" v-text="i18n("blog.menu.modify")"></a>',
+		template : '<a v-if="isDisplayButton()" :href="getModifyUrl()" class="btn btn-outline-primary">{{i18n("blog.menu.modify")}}</a>',
 		mounted : function() {
 			if (this.blog.id == undefined) {
 				this.getBlogResponse();
@@ -131,7 +131,7 @@ $(document).ready(function() {
 			return this.$parent.$data;
 		},
 		mixins : [blogMixin],
-		template : '<a v-if="isDisplayButton()" href="#none" @click="remove()" class="btn btn-outline-danger" v-text="i18n("blog.menu.delete")"></a>',
+		template : '<a v-if="isDisplayButton()" href="#none" @click="remove()" class="btn btn-outline-danger">{{i18n("blog.menu.delete")}}</a>',
 		mounted : function() {
 			if (this.blog.id == undefined) {
 				this.getBlogResponse();
@@ -161,7 +161,7 @@ $(document).ready(function() {
 			return this.$parent.$data;
 		},
 		mixins : [blogMixin],
-		template : '<a href="#none" @click="remove()" class="btn btn-outline-secondary" v-text="i18n("blog.menu.list")"></a>',
+		template : '<a href="#none" @click="moveListView()" class="btn btn-outline-secondary">{{i18n("blog.menu.list")}}</a>',
 		mounted : function() {
 			if (this.blog.id == undefined) {
 				this.getBlogResponse();

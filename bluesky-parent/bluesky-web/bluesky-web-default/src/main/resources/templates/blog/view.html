@@ -19,11 +19,10 @@
 					<div v-html="blogArticle.content"></div>
 				</article>
 				
-				
 				<div class="text-center">
 					<slot><blog-article-modify-button /></slot>
 					<slot><blog-article-delete-button /></slot>
-					<a class="btn btn-outline-secondary" href="[[#{url.blog.view.list(${blogId})}]]">[[#{blog.menu.list}]]</a>
+					<slot><blog-article-list-button /></slot>
 				</div>
 			</div>
 		</blog-article-view>
