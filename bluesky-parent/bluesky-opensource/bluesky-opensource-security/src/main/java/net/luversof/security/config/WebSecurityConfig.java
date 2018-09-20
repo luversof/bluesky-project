@@ -43,6 +43,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 		authenticationSuccessHandler.setUseReferer(true);
 		
 		http
+			.headers().frameOptions().sameOrigin().and()
 			.authorizeRequests()
 				.antMatchers("/test/**").permitAll()
 //				.anyRequest().authenticated()
