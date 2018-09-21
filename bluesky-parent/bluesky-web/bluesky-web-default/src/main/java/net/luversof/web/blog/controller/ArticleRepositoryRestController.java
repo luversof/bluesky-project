@@ -22,25 +22,24 @@ import net.luversof.blog.repository.ArticleRepository;
  *
  */
 @RepositoryRestController
-@RequestMapping("/blogArticles")
-public class BlogRepositoryRestController {
+public class ArticleRepositoryRestController {
 	
 	@Autowired
 	private ArticleRepository articleRepository;
 
-	@GetMapping("/search/test")
+	@GetMapping("/blogArticles/search/test")
 	public @ResponseBody ResponseEntity<?> findAllTest(String testParam) {
 		List<Article> articleList = articleRepository.findAll();
 		Resources<Article> resources = new Resources<Article>(articleList); 
-        resources.add(ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(BlogRepositoryRestController.class).findAllTest(testParam)).withSelfRel()); 
+        resources.add(ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(ArticleRepositoryRestController.class).findAllTest(testParam)).withSelfRel()); 
         return ResponseEntity.ok(resources); 
 	}
 	
-	@GetMapping("/search/test2")
+	@GetMapping("/blogArticles/search/test2")
 	public @ResponseBody ResponseEntity<?> findAllTest2() {
 		List<Article> articleList = articleRepository.findAll();
 		Resources<Article> resources = new Resources<Article>(articleList); 
-        resources.add(ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(BlogRepositoryRestController.class).findAllTest2()).withSelfRel()); 
+        resources.add(ControllerLinkBuilder.linkTo(ControllerLinkBuilder.methodOn(ArticleRepositoryRestController.class).findAllTest2()).withSelfRel()); 
         return ResponseEntity.ok(resources); 
 	}
 }
