@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
@@ -32,7 +33,7 @@
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-opensource-security</artifactId>
 		</dependency>
-		
+
 		<!-- (e) bluesky -->
 
 		<!-- (s) spring-boot -->
@@ -54,22 +55,17 @@
 		</dependency>
 		<!-- <dependency> <groupId>org.springframework</groupId> <artifactId>spring-context-indexer</artifactId> 
 			<optional>true</optional> </dependency> -->
-
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-properties-migrator</artifactId>
+		</dependency>
 		<!-- (e) spring-boot -->
 
 		<!-- (s) spring cloud stream test -->
-		<!-- <dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-opensource-integration</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-stream</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-stream-binder-rabbit</artifactId>
-		</dependency> -->
+		<!-- <dependency> <groupId>net.luversof</groupId> <artifactId>bluesky-opensource-integration</artifactId> 
+			</dependency> <dependency> <groupId>org.springframework.cloud</groupId> <artifactId>spring-cloud-stream</artifactId> 
+			</dependency> <dependency> <groupId>org.springframework.cloud</groupId> <artifactId>spring-cloud-stream-binder-rabbit</artifactId> 
+			</dependency> -->
 		<!-- (e) spring cloud stream test -->
 
 		<!-- (s) thymeleaf -->

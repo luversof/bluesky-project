@@ -10,8 +10,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.blog.domain.Blog;
 
-@PreAuthorize("hasRole('ROLE_USER')")
+//@PreAuthorize("hasRole('ROLE_USER')")
 @Transactional(readOnly = true)
 public interface BlogRepository extends JpaRepository<Blog, UUID> {
+	@PreAuthorize("hasRole('ROLE_USER')")
 	Optional<Blog> findByUserId(@Param("userId") UUID userId); 
 }
