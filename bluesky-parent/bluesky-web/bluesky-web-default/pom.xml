@@ -74,7 +74,7 @@
 			<artifactId>thymeleaf-extras-springsecurity4</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>nz.net.ultraq.thymeleaf</groupId>
+			<groupId>com.github.zhanhb</groupId>
 			<artifactId>thymeleaf-layout-dialect</artifactId>
 		</dependency>
 		<!-- (e) thymeleaf -->
