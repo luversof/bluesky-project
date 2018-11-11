@@ -14,6 +14,7 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 
 import org.hibernate.envers.Audited;
+import org.hibernate.validator.constraints.Length;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.rest.core.annotation.Description;
@@ -37,6 +38,7 @@ public class Article {
 
 	@Description("제목")
 	@NotEmpty(groups = { Create.class, Save.class })
+	@Length(min = 3, max = 50, groups = { Create.class, Save.class })
 	private String title;
 
 	@NotEmpty(groups = { Create.class, Save.class })
