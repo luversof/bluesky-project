@@ -1,5 +1,8 @@
 package net.luversof.blog.controller;
 
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
+
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +30,7 @@ public class BlogRepositoryRestController {
 		}
 		Blog blog = blogRepository.findByUserId(userId).orElse(null);
 		Resource<Blog> resources = new Resource<Blog>(blog);
+		resources.add(linkTo(methodOn(BlogRepositoryRestController.class).getProducers()).withSelfRel());
 		return ResponseEntity.ok(resources);
 	}
 

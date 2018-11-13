@@ -25,7 +25,7 @@ public class BlogRepositoryEventHandler {
 	private BlogRepository blogRepository;
 	
 	@HandleBeforeCreate
-	public void HandleBeforeCreate(Blog blog) {
+	public void handleBeforeCreate(Blog blog) {
 		UUID userId = loginUserService.getUserId();
 		if (blogRepository.findByUserId(userId).isPresent()) {
 			throw new BlueskyException(BlogErrorCode.ALREADY_EXIST_USER_BLOG);
@@ -34,7 +34,7 @@ public class BlogRepositoryEventHandler {
 	}
 	
 	@HandleBeforeSave
-	public void HandleBeforeSave(Blog blog) {
+	public void handleBeforeSave(Blog blog) {
 		UUID userId = loginUserService.getUserId();
 		Blog userBlog = blogRepository.findByUserId(userId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_USER_BLOG));
 		if (!userBlog.getId().equals(blog.getId())) {

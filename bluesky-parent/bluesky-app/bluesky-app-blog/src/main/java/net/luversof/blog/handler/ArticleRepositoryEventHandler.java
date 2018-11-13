@@ -32,20 +32,20 @@ public class ArticleRepositoryEventHandler {
 	private CategoryRepository categoryRepository;
 	
 	@HandleBeforeCreate
-	public void HandleBeforeCreate(Article article) {
+	public void handleBeforeCreate(Article article) {
 		ValidationUtil.validate(article, Article.Create.class);
 		checkArticle(article);
 	}
 	
 	
 	@HandleBeforeSave
-	public void HandleBeforeSave(Article article) {
+	public void handleBeforeSave(Article article) {
 		ValidationUtil.validate(article, Article.Save.class);
 		checkArticle(article);
 	}
 	
 	@HandleBeforeDelete
-	public void HandleBeforeDelete(Article article) {
+	public void handleBeforeDelete(Article article) {
 		checkArticle(article);
 	}
 	
