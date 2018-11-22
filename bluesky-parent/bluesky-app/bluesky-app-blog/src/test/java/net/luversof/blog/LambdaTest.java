@@ -14,20 +14,13 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.reflect.Invokable;
-
 import jdk.nashorn.api.scripting.NashornScriptEngine;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
-import net.luversof.blog.domain.LambdaTestDomain;
 import net.luversof.blog.repository.BlogRepository;
 
 @Slf4j
 public class LambdaTest extends GeneralTest {
-	
-	@Autowired
-	private ObjectMapper objectMapper;
 	
 	@Autowired
 	private BlogRepository blogRepository;
@@ -48,6 +41,7 @@ public class LambdaTest extends GeneralTest {
 		
 	}
 	
+	@SuppressWarnings("unused")
 	@Test
 	public void test2() throws FileNotFoundException, ScriptException, NoSuchMethodException {
 		ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
@@ -55,9 +49,9 @@ public class LambdaTest extends GeneralTest {
 		Invocable invocable = (Invocable) engine;
 		NashornScriptEngine nashornScriptEngine = (NashornScriptEngine) engine;
 		invocable.invokeFunction("test", applicationContext, blogRepository);
-		//nashornScriptEngine.getContext().get
 	}
 	
+	@SuppressWarnings("unused")
 	@Test
 	public void test3() throws FileNotFoundException, ScriptException {
 		ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");

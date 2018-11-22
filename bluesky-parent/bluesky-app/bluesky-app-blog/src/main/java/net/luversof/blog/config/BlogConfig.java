@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.rest.core.config.RepositoryRestConfiguration;
-import org.springframework.data.rest.webmvc.config.RepositoryRestConfigurerAdapter;
+import org.springframework.data.rest.webmvc.config.RepositoryRestConfigurer;
 import org.springframework.util.Assert;
 
 import net.luversof.blog.domain.Article;
@@ -36,7 +36,7 @@ public class BlogConfig {
 
 	
 	@Configuration
-	public static class BlogRepositoryRestConfigurerAdapter extends RepositoryRestConfigurerAdapter {
+	public static class BlogRepositoryRestConfigurerAdapter implements RepositoryRestConfigurer {
 
 		@Override
 		public void configureRepositoryRestConfiguration(RepositoryRestConfiguration config) {

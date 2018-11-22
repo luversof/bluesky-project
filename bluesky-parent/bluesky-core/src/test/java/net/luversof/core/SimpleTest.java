@@ -3,6 +3,7 @@ package net.luversof.core;
 import java.io.File;
 import java.text.MessageFormat;
 import java.util.Comparator;
+import java.util.stream.Stream;
 
 import org.junit.Test;
 import org.springframework.util.AntPathMatcher;
@@ -64,5 +65,12 @@ public class SimpleTest {
 	public void test6() {
 		String uncapitalize = StringUtils.uncapitalize("TestTranslate_TET");
 		log.debug("translate : {}", uncapitalize);
+	}
+	
+	@Test
+	public void test7() {
+		Stream.of(1, 2, 3, 4, 5, 6).takeWhile(i -> i <= 3).forEach(System.out::println);
+		
+		
 	}
 }
