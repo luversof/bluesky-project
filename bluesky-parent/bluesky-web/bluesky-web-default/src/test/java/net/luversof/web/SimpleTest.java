@@ -15,6 +15,7 @@ import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 
+import org.assertj.core.util.Arrays;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -119,5 +120,19 @@ public class SimpleTest {
 		Object forObject = restTemplate.getForObject(uri, Object.class);
 		
 		log.debug("forObject : {}", forObject);
+	}
+	
+	
+	@Test
+	public void test4() {
+		
+		int[][] arr = Arrays.array(
+				new int[]{ 9, 20, 28, 18, 11 }, 
+				new int[]{ 30, 1, 21, 17, 28 });
+		
+		for (int i = 0 ; i < arr[0].length ; i++ ) {
+			System.out.println(Integer.toBinaryString(arr[0][i] | arr[1][i]).replace("1", "#").replace("0", " "));
+		}
+		
 	}
 }
