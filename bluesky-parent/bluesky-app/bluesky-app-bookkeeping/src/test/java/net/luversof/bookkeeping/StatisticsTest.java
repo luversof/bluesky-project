@@ -1,5 +1,6 @@
 package net.luversof.bookkeeping;
 
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -55,5 +56,19 @@ public class StatisticsTest extends GeneralTest {
 		List<Statistics> entryList = statisticsService.selectStatistics(statisticsSearchInfo);
 		log.debug("entryList : {}", entryList);
 		
+	}
+	
+	@Test
+	public void test2() {
+		Bookkeeping bookkeeping = new Bookkeeping();
+		bookkeeping.setId(UUID.randomUUID());
+		
+		StatisticsSearchInfo statisticsSearchInfo = new StatisticsSearchInfo();
+		statisticsSearchInfo.setBookkeeping(bookkeeping);
+		statisticsSearchInfo.setChronoUnit(ChronoUnit.YEARS);
+		statisticsSearchInfo.setTargetLocalDate(LocalDate.now());
+		
+		List<Statistics> entryList = statisticsService.selectStatistics(statisticsSearchInfo);
+		log.debug("entryList : {}", entryList);
 	}
 }
