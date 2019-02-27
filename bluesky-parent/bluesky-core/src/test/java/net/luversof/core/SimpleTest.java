@@ -5,6 +5,11 @@ import java.text.MessageFormat;
 import java.util.Comparator;
 import java.util.stream.Stream;
 
+import org.jasypt.encryption.StringEncryptor;
+import org.jasypt.encryption.pbe.PooledPBEStringEncryptor;
+import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
+import org.jasypt.encryption.pbe.config.SimpleStringPBEConfig;
+import org.jasypt.salt.StringFixedSaltGenerator;
 import org.junit.Test;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.PathMatcher;
@@ -70,7 +75,26 @@ public class SimpleTest {
 	@Test
 	public void test7() {
 		Stream.of(1, 2, 3, 4, 5, 6).takeWhile(i -> i <= 3).forEach(System.out::println);
+	}
+	
+	@Test
+	public void test8() {
+		StandardPBEStringEncryptor encryptor = getStringEncryptor();
 		
+		String str = "4B01EE59-10FC-11E9-80EB-001DD8B71EF6";
+		String encStr = encryptor.encrypt(str);
+		log.debug("test : {}, {}", str, encStr);
+		String decStr = encryptor.decrypt(encStr);
+		log.debug("test : {}", decStr);
+//		log.debug("test : {}", encryptor.decrypt("H9hV5rD8yF9glY8uP7aZ/6Jo0suOmLxW+WGeeIt74PlhBnCJqCtgdQ=="));
+	}
+	
+	private StandardPBEStringEncryptor getStringEncryptor() {
+		StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
+		encryptor.setAlgorithm("PBEWithMD5AndDES");
+		encryptor.setPassword("test");
+		encryptor.setSaltGenerator(new StringFixedSaltGenerator("12345678"));
 		
+	    return encryptor;
 	}
 }
