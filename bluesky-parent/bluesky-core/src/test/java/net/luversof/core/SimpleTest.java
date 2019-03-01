@@ -5,20 +5,26 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
 import java.security.Security;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.jasypt.encryption.StringEncryptor;
 import org.jasypt.encryption.pbe.PooledPBEStringEncryptor;
+import org.jasypt.encryption.pbe.StandardPBEBigIntegerEncryptor;
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
-import org.jasypt.encryption.pbe.config.SimpleStringPBEConfig;
+import org.jasypt.encryption.pbe.config.PBEConfig;
+import org.jasypt.encryption.pbe.config.SimplePBEConfig;
 import org.jasypt.exceptions.EncryptionOperationNotPossibleException;
+import org.jasypt.registry.AlgorithmRegistry;
 import org.jasypt.salt.StringFixedSaltGenerator;
 import org.junit.Test;
 import org.springframework.security.crypto.encrypt.Encryptors;
@@ -88,75 +94,107 @@ public class SimpleTest {
 	
 	@Test
 	public void test7() {
-		Stream.of(1, 2, 3, 4, 5, 6).takeWhile(i -> i <= 3).forEach(System.out::println);
+		log.debug("result : {}", getAlphaNumericString(19));
 	}
 	
 	@Test
 	public void test8() {
-		PooledPBEStringEncryptor encryptor = getMd5Encryptor("lms_1");
-		
-		String str = "4B01EE59-10FC-11E9-80EB-001DD8B71EF6";
-		String encStr = encryptor.encrypt(str);
-		String decStr = encryptor.decrypt(encStr);
-		log.debug("test : {}, {}, {}", str, encStr, decStr);
-		
+		log.debug("test : {}", KeyGenerators.string().generateKey());
 	}
 	
 	@Test
-	public void test9() {
-		final String password = "I AM SHERLOCKED"; 
+	public void textEncryptorTest() {
+		final String password = "somePassword"; 
 		final String salt = KeyGenerators.string().generateKey(); 
 		TextEncryptor encryptor = Encryptors.text(password, salt); 
 		System.out.println("Salt: \"" + salt + "\"");
-		String str = "\"4B01EE59-10FC-11E9-80EB-001DD8B71EF6\"";
-		String encStr = encryptor.encrypt("4B01EE59-10FC-11E9-80EB-001DD8B71EF6");
+		String str = "4B01EE59-10FC-11E9-80EB-001DD8B71EF6";
+		String encStr = encryptor.encrypt(str);
 		String decStr = encryptor.decrypt(encStr);
-		log.debug("test : {}, {}, {}", encryptor.encrypt("4B01EE59-10FC-11E9-80EB-001DD8B71EF6"));
+		log.debug("str : {}, encStr : {}, decStr : {}", str, encStr, decStr);
 	}
 	
 	@Test
-	public void test11() throws UnsupportedEncodingException {
+	public void getAllAlgorithms() {
+		log.debug("allDigestAlgorithms : {}", AlgorithmRegistry.getAllDigestAlgorithms());
+		log.debug("allPBEAlgorithms : {}", AlgorithmRegistry.getAllPBEAlgorithms());
+	}
+	
+	@Test
+	public void encryptSimpleTest() {
+		StringEncryptor md5Encryptor = getEncryptor("somePassword");
+		String str = "testString";
+		String encStr = md5Encryptor.encrypt(str);
+		String decStr = md5Encryptor.decrypt(encStr);
+		log.debug("str : {}, encStr : {}, decStr : {}", str, encStr, decStr);
+		log.debug("str : {}, encStr : {}, decStr : {}", str, md5Encryptor.encrypt(str), decStr);
+		log.debug("str : {}, encStr : {}, decStr : {}", str, md5Encryptor.encrypt(str), decStr);
+		log.debug("str : {}, encStr : {}, decStr : {}", str, md5Encryptor.encrypt(str), decStr);
+		log.debug("str : {}, encStr : {}, decStr : {}", str, md5Encryptor.encrypt(str), decStr);
+	}
+	
+	@Test
+	public void encryptTest() throws UnsupportedEncodingException {
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start("encryptor create");
 		
-		int forLength = 10;
+		int encryptTestCount = 100;
+		int testStrCount = 10;
 		
-//		Map<Integer, StringEncryptor> encryptorMap = new HashMap<>();
-		Map<Integer, PooledPBEStringEncryptor> encryptorMap = new HashMap<>();
+		Map<Integer, StringEncryptor> encryptorMap = new HashMap<>();
 		
 		// encryptor 생성
 		
-		IntStream.range(1, forLength + 1).forEach(idx -> {
-			encryptorMap.put(idx, getAES128Encryptor("lms_" + idx));
+		IntStream.range(1, encryptTestCount + 1).forEach(idx -> {
+			encryptorMap.put(idx, getEncryptor("somePassword_" + idx));
 		});
 		stopWatch.stop();
 		
-		String characterId = "D94E0757-2F3D-11E9-80F1-001DD8B71EBC";
-		
-		// 단일 charId 여러번 암호화 확인 
-		IntStream.range(1, forLength + 1).forEach(idx -> {
-			String encCharacterId = encryptorMap.get(2).encrypt(characterId);
-			String decCharacterId = encryptorMap.get(2).decrypt(encCharacterId);
-			log.debug("characterId : {}, enc : {}, dec : {}", characterId, encCharacterId, decCharacterId);
+		stopWatch.start("단일 호출 test");
+		IntStream.range(1,  testStrCount + 1).forEach(idx -> {
+			singleEncryptorTest(encryptorMap, 2, encryptTestCount, UUID.randomUUID().toString().toUpperCase());
 		});
+		stopWatch.stop();
 		
+		stopWatch.start("암복호화 test");
+		IntStream.range(1,  testStrCount + 1).forEach(idx -> {
+			multiEncryptorTest(encryptorMap, encryptTestCount, UUID.randomUUID().toString().toUpperCase());
+		});
+		stopWatch.stop();
+		
+		System.out.println(stopWatch.prettyPrint());
+		log.debug("total Second : {}", stopWatch.getTotalTimeSeconds());
+		
+	}
+	
+	// 단일 encryptor 여러번 호출
+	private void singleEncryptorTest(Map<Integer, StringEncryptor> encryptorMap, int mapKey, int encryptTestCount, String str) {
+		IntStream.range(1, encryptTestCount + 1).forEach(idx -> {
+			String encStr = encryptorMap.get(mapKey).encrypt(str);
+			String decStr = encryptorMap.get(mapKey).decrypt(encStr);
+			if (!str.equals(decStr)) {
+				log.debug("str : {}, encStr : {}, decStr : {}", str, encStr, decStr);
+			}
+		});
+	}
+	
+	// 여러개 encryptor 암복호화 확인
+	private void multiEncryptorTest(Map<Integer, StringEncryptor> encryptorMap, int encryptTestCount, String str) {
 		// 서버별 암호화 확인 및 다른 서버키로 복호화 확인
-		IntStream.range(1, forLength + 1).forEach(idx -> {
-			stopWatch.start("encrypt test");
-			String encCharacterId = encryptorMap.get(idx).encrypt(characterId);
-			stopWatch.stop();
-			stopWatch.start("decrypt test");
-			String decCharacterId = encryptorMap.get(idx).decrypt(encCharacterId);
-			stopWatch.stop();
-			assertThat(characterId.equals(decCharacterId));
-			log.debug("characterId : {}, enc : {}, dec : {}", characterId, encCharacterId, decCharacterId);
+		IntStream.range(1, encryptTestCount + 1).forEach(idx -> {
 			
-			IntStream.range(1, forLength + 1).forEach(idx2 -> {
+			String encStr = encryptorMap.get(idx).encrypt(str);
+			String decStr = encryptorMap.get(idx).decrypt(encStr);
+			assertThat(str.equals(decStr));
+				
+			if (!str.equals(decStr)) {
+				log.debug("str : {}, encStr : {}, decStr : {}", str, encStr, decStr);
+			}
+			
+			IntStream.range(1, encryptTestCount + 1).forEach(idx2 -> {
 				if (idx != idx2) {
 					assertThatExceptionOfType(EncryptionOperationNotPossibleException.class).isThrownBy(() -> {
-						String decCharacterId2 = encryptorMap.get(idx2).decrypt(decCharacterId);
-
-						if (decCharacterId2.length() != 36) {
+						if (encryptorMap.get(idx2).decrypt(decStr).length() != 36) {
 							throw new EncryptionOperationNotPossibleException();
 						}
 					});
@@ -165,29 +203,75 @@ public class SimpleTest {
 			});
 			
 		});
-		
-		System.out.println(stopWatch.prettyPrint());
-		
 	}
 	
-	private PooledPBEStringEncryptor getMd5Encryptor(String password) {
+	private StringEncryptor getEncryptor(String password) {
 		PooledPBEStringEncryptor encryptor = new PooledPBEStringEncryptor();
-		encryptor.setPassword(password);
-		encryptor.setAlgorithm("PBEWithMD5AndDES");
-		encryptor.setPoolSize(1);
-		encryptor.setSaltGenerator(new StringFixedSaltGenerator("1234567890123456"));
+		encryptor.setConfig(getPBEConfig(password));
 		return encryptor;
 	}
 	
-	private PooledPBEStringEncryptor getAES128Encryptor(String password) {
+	private PBEConfig getPBEConfig(String password) {
+		SimplePBEConfig config = new SimplePBEConfig();
+		config.setAlgorithm("PBEWithMD5AndDES");
+		config.setProvider(new BouncyCastleProvider());
+		//config.setAlgorithm("PBEWithSHA256And128BitAES-CBC-BC");
+		config.setPassword(password);
+		config.setPoolSize(2);
+		config.setSaltGenerator(new StringFixedSaltGenerator(getAlphaNumericString(16)));
+		return config;
+	}
+	
+	private String getAlphaNumericString(int n) { 
+        // chose a Character random from this String 
+        // String AlphaNumericString = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvxyz0123456789";
+   		String AlphaNumericString = "~!@#$%^&*()_+|";
+  
+        // create StringBuffer size of AlphaNumericString 
+        StringBuilder sb = new StringBuilder(n); 
+  
+        for (int i = 0; i < n; i++) { 
+            // generate a random number between 
+            // 0 to AlphaNumericString variable length 
+			int index = (int) (AlphaNumericString.length() * Math.random()); 
+  
+            // add Character one by one in end of sb 
+			sb.append(AlphaNumericString.charAt(index)); 
+        }
+        return sb.toString(); 
+    } 
+  
+	
+	@Test
+	public void checkSupportAlgorithm() {
 		Security.addProvider(new BouncyCastleProvider());
-		
-		PooledPBEStringEncryptor encryptor = new PooledPBEStringEncryptor();
-		encryptor.setPassword(password);
-		encryptor.setProviderName("BC");
-		encryptor.setAlgorithm("PBEWITHSHA256AND128BITAES-CBC-BC");
-		encryptor.setPoolSize(1);
-		encryptor.setSaltGenerator(new StringFixedSaltGenerator("1234567890123456"));
-		return encryptor;
+		List<Object> supported = new ArrayList<>();
+		List<Object> unsupported = new ArrayList<>();
+		for (Object algorithm : AlgorithmRegistry.getAllPBEAlgorithms()) {
+			try {
+				StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
+				encryptor.setPassword("somePassword");
+				encryptor.setAlgorithm(String.valueOf(algorithm));
+
+				String str = "test";
+				String encStr = encryptor.encrypt(str);
+				String decStr = encryptor.decrypt(encStr);
+				assertThat(str.equals(decStr));
+				supported.add(algorithm);
+			} catch (EncryptionOperationNotPossibleException e) {
+				unsupported.add(algorithm);
+			}
+		}
+		log.debug("supported : {}", supported);
+		log.debug("unsupported : {}", unsupported);
 	}
+	
+	@Test
+	public void bigIntegerEncryptorTest() {
+		  StandardPBEBigIntegerEncryptor encryptor = new StandardPBEBigIntegerEncryptor();
+		  encryptor.setAlgorithm("PBEWithMD5AndDES");
+		  encryptor.setPassword("somePassword");
+		  log.debug("test : {}", encryptor.encrypt(new BigInteger("123123")));
+	}
+	
 }
