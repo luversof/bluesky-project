@@ -274,4 +274,37 @@ public class SimpleTest {
 		  log.debug("test : {}", encryptor.encrypt(new BigInteger("123123")));
 	}
 	
+	
+	@Test
+	public void testChangeSalt() {
+		SimplePBEConfig config = new SimplePBEConfig();
+		config.setAlgorithm("PBEWithMD5AndDES");
+		config.setProvider(new BouncyCastleProvider());
+		//config.setAlgorithm("PBEWithSHA256And128BitAES-CBC-BC");
+		config.setPassword("1234567890123456");
+		config.setPoolSize(2);
+		config.setSaltGenerator(new StringFixedSaltGenerator(getAlphaNumericString(16)));
+		
+		StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
+		encryptor.setConfig(config);
+		
+		{
+			encryptor.setSaltGenerator(new StringFixedSaltGenerator("1234567890123456"));
+			String str = "testValue";
+			String encStr = encryptor.encrypt(str);
+			String decStr = encryptor.decrypt(encStr);
+			log.debug("TEST : {}, {}, {}", str, encStr, decStr);
+		}
+		
+		{
+			encryptor.setSaltGenerator(new StringFixedSaltGenerator("3216549870321654"));
+			String str = "testValue";
+			String encStr = encryptor.encrypt(str);
+			String decStr = encryptor.decrypt(encStr);
+			log.debug("TEST : {}, {}, {}", str, encStr, decStr);
+		}
+		
+		
+		
+	}
 }
