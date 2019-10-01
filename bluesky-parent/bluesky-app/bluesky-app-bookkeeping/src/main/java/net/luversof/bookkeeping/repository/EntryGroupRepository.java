@@ -10,5 +10,7 @@ import net.luversof.bookkeeping.domain.EntryGroup;
 
 @Transactional(readOnly = true)
 public interface EntryGroupRepository extends JpaRepository<EntryGroup, Long> {
+
 	List<EntryGroup> findByBookkeepingId(UUID bookkeepingId);
+
 }

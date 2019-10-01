@@ -26,7 +26,7 @@ import org.jasypt.encryption.pbe.config.SimplePBEConfig;
 import org.jasypt.exceptions.EncryptionOperationNotPossibleException;
 import org.jasypt.registry.AlgorithmRegistry;
 import org.jasypt.salt.StringFixedSaltGenerator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.encrypt.Encryptors;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.security.crypto.keygen.KeyGenerators;

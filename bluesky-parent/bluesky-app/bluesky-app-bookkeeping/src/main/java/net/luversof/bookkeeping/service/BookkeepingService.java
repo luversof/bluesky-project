@@ -13,7 +13,6 @@ import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.repository.BookkeepingRepository;
 import net.luversof.core.exception.BlueskyException;
-import net.luversof.user.service.LoginUserService;
 
 @Service
 public class BookkeepingService {
@@ -26,10 +25,10 @@ public class BookkeepingService {
 	
 	@Autowired
 	private AssetService assetService;
-	
+
 	@Autowired
-	private LoginUserService loginUserService;
-	
+	private EntryService entryService;
+
 	/**
 	 * 가계부 생성시 아래 default 데이터 생성
 	 * 기본 자산 (asset)
@@ -39,7 +38,10 @@ public class BookkeepingService {
 	 */
 	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
 	public Bookkeeping create(Bookkeeping bookkeeping) {
-		bookkeeping.setUserId(loginUserService.getUserId());
+		if (bookkeeping.getUserId() == null) {
+			throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_USER_ID);
+		}
+
 		bookkeepingRepository.save(bookkeeping);
 		assetService.initialDataSave(bookkeeping);
 		entryGroupService.initialDataSave(bookkeeping);
@@ -48,7 +50,7 @@ public class BookkeepingService {
 	
 	public Bookkeeping update(Bookkeeping bookkeeping) {
 		Bookkeeping targetBookkeeping = findById(bookkeeping.getId());
-		if (targetBookkeeping.getUserId() != bookkeeping.getUserId()) {
+		if (!targetBookkeeping.getUserId().equals(bookkeeping.getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
 		
@@ -64,18 +66,18 @@ public class BookkeepingService {
 	}
 	
 	/**
-	 * 삭제의 경우 관련한 데이터를 모두 삭제 처리를 해야할까?
+	 * 완전 삭제의 경우 관련한 데이터를 모두 삭제 처리
 	 * @param bookkeeping
 	 */
 	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
 	public void delete(Bookkeeping bookkeeping) {
 		Bookkeeping targetBookkeeping = findById(bookkeeping.getId());
-		if (targetBookkeeping.getUserId() != bookkeeping.getUserId()) {
+		if (!targetBookkeeping.getUserId().equals(bookkeeping.getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
-		
-		entryGroupService.deleteBybookkeepingId(bookkeeping.getId());
-		assetService.deleteBybookkeepingId(bookkeeping.getId());
-		bookkeepingRepository.delete(bookkeeping);
+		entryService.deleteByBookkeepingId(targetBookkeeping.getId());
+		entryGroupService.deleteBybookkeepingId(targetBookkeeping.getId());
+		assetService.deleteBybookkeepingId(targetBookkeeping.getId());
+		bookkeepingRepository.delete(targetBookkeeping);
 	}
 }

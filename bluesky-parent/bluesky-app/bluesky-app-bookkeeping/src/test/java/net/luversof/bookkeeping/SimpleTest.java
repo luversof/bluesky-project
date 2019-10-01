@@ -6,7 +6,7 @@ import java.util.Arrays;
 import java.util.TimeZone;
 import java.util.UUID;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.format.datetime.standard.DateTimeContextHolder;
 import org.springframework.util.StringUtils;

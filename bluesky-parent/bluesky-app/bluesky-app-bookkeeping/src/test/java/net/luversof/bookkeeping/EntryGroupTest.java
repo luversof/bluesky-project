@@ -7,11 +7,12 @@ import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.EntryGroup;
+import net.luversof.bookkeeping.repository.EntryGroupRepository;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.bookkeeping.service.EntryGroupService;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Slf4j
@@ -22,12 +23,15 @@ public class EntryGroupTest extends GeneralTest {
 	
 	@Autowired
 	private BookkeepingService bookkeepingService;
+
+	@Autowired
+	private EntryGroupRepository entryGroupRepository;
 	
 	private Bookkeeping bookkeeping;
 	
 	static final UUID TEST_USER_ID = UUID.fromString("1");
 	
-	@Before
+	@BeforeAll
 	public void before() {
 		bookkeeping = bookkeepingService.findByUserId(TEST_USER_ID).get(0);
 	}

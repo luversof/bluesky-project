@@ -50,7 +50,7 @@ public class Bookkeeping {
 	 * 시작일. startDay라고 해야하나?
 	 */
 	@Range(min = 1, max = 28, groups = { Create.class, Update.class })
-	private int baseDate;
+	private int baseDate = 1;
 
 	public interface Create {
 	};

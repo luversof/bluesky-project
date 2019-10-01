@@ -2,10 +2,10 @@ package net.luversof.bookkeeping;
 
 import java.time.LocalDate;
 
-import org.junit.Test;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.bookkeeping.util.BookkeepingUtils;
+import org.junit.jupiter.api.Test;
 
 @Slf4j
 public class BookkeepingUtilsTest {

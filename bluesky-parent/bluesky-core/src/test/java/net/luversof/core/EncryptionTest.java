@@ -1,15 +1,14 @@
 package net.luversof.core;
 
-import java.text.MessageFormat;
-import java.util.Properties;
-
-import org.junit.Test;
+import lombok.extern.slf4j.Slf4j;
+import net.luversof.GeneralTest;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 
-import lombok.extern.slf4j.Slf4j;
-import net.luversof.GeneralTest;
+import java.text.MessageFormat;
+import java.util.Properties;
 
 @Slf4j
 public class EncryptionTest extends GeneralTest {

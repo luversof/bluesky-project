@@ -10,7 +10,7 @@ import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.bookkeeping.service.AssetService;
 import net.luversof.bookkeeping.service.BookkeepingService;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Slf4j

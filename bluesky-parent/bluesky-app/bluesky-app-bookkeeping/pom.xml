@@ -9,10 +9,6 @@
 	<artifactId>bluesky-app-bookkeeping</artifactId>
 	<dependencies>
 		<dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-app-user</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>net.luversof.boot</groupId>
 			<artifactId>bluesky-boot-starter-data-jpa</artifactId>
 		</dependency>

@@ -50,7 +50,7 @@ public class AssetService {
 	
 	public Asset create(Asset asset) {
 		Bookkeeping targetBookkeeping = bookkeepingService.findById(asset.getBookkeeping().getId());
-		if (targetBookkeeping.getUserId() != asset.getBookkeeping().getUserId()) {
+		if (!targetBookkeeping.getUserId().equals(asset.getBookkeeping().getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
 		return assetRepository.save(asset);
@@ -58,11 +58,11 @@ public class AssetService {
 	
 	public Asset update(Asset asset) {
 		Bookkeeping targetBookkeeping = bookkeepingService.findById(asset.getBookkeeping().getId());
-		if (targetBookkeeping.getUserId() != asset.getBookkeeping().getUserId()) {
+		if (!targetBookkeeping.getUserId().equals(asset.getBookkeeping().getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
 		Asset targetAsset = findOne(asset.getId());
-		if (targetAsset.getBookkeeping().getUserId() != asset.getBookkeeping().getUserId()) {
+		if (!targetAsset.getBookkeeping().getUserId().equals(asset.getBookkeeping().getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ASSET);
 		}
 		return assetRepository.save(asset);
@@ -78,7 +78,7 @@ public class AssetService {
 	
 	public void delete(Asset asset) {
 		Bookkeeping targetBookkeeping = bookkeepingService.findById(asset.getBookkeeping().getId());
-		if (targetBookkeeping.getUserId() != asset.getBookkeeping().getUserId()) {
+		if (!targetBookkeeping.getUserId().equals(asset.getBookkeeping().getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
 		Asset targetAsset = findOne(asset.getId());

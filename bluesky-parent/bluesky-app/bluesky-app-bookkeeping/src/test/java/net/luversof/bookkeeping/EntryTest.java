@@ -1,24 +1,25 @@
 package net.luversof.bookkeeping;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.UUID;
-
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.format.datetime.standard.DateTimeContextHolder;
-
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.EntryGroup;
+import net.luversof.bookkeeping.repository.EntryGroupRepository;
+import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.bookkeeping.service.EntryGroupService;
 import net.luversof.bookkeeping.service.EntryService;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.format.datetime.standard.DateTimeContextHolder;
+
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 public class EntryTest extends GeneralTest {
@@ -31,11 +32,14 @@ public class EntryTest extends GeneralTest {
 	
 	@Autowired
 	private EntryService entryService;
-	
+
+	@Autowired
+	private EntryRepository entryRepository;
+
 	// 세이브 테스트
 	@Test
-	public void test2() {
-		Bookkeeping bookkeeping = bookkeepingService.findById(UUID.fromString("1"));
+	public void create() {
+		Bookkeeping bookkeeping = bookkeepingService.findById(UUID.fromString("35929103-da22-49e7-9d76-214bb081593f"));
 		List<EntryGroup> entryGroupList = entryGroupService.findByBookkeepingId(bookkeeping.getId());
 		
 		Entry entry = new Entry();
@@ -88,16 +92,11 @@ public class EntryTest extends GeneralTest {
 		List<Entry> entryList = entryService.findByBookkeepingIdAndEntryDateBetween(UUID.fromString("1"), startDate.atStartOfDay(timeZone), endDate.atStartOfDay(timeZone));
 		log.debug("entryList : {}", entryList);
 	}
-	
-	
+
 	@Test
-	public void test6() {
-		entryService.test(12);
-	}
-	
-	@Test
-	public void LocaleTest() {
-		
+	public void deleteByBookkeeping() {
+		Bookkeeping bookkeeping = bookkeepingService.findById(UUID.fromString("35929103-da22-49e7-9d76-214bb081593f"));
+		log.debug("deleteByBookkeeping : {}", entryRepository.deleteByBookkeepingIdQuery(bookkeeping.getId()));
 	}
 	
 	@Test

@@ -1,19 +1,18 @@
 package net.luversof.bookkeeping.service;
 
 
-import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.UUID;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.EntrySearchInfo;
 import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.core.exception.BlueskyException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 public class EntryService {
@@ -26,7 +25,7 @@ public class EntryService {
 
 	public Entry create(Entry entry) {
 		Bookkeeping targetBookkeeping = bookkeepingService.findById(entry.getBookkeeping().getId());
-		if (targetBookkeeping.getUserId() != entry.getBookkeeping().getUserId()) {
+		if (!targetBookkeeping.getUserId().equals(entry.getBookkeeping().getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
 		return entryRepository.save(entry);
@@ -34,11 +33,11 @@ public class EntryService {
 	
 	public Entry update(Entry entry) {
 		Bookkeeping targetBookkeeping = bookkeepingService.findById(entry.getBookkeeping().getId());
-		if (targetBookkeeping.getUserId() != entry.getBookkeeping().getUserId()) {
+		if (!targetBookkeeping.getUserId().equals(entry.getBookkeeping().getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
 		Entry targetEntry = findOne(entry.getId());
-		if (targetEntry.getBookkeeping().getUserId() != entry.getBookkeeping().getUserId()) {
+		if (!targetEntry.getBookkeeping().getUserId().equals(entry.getBookkeeping().getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRY);
 		}
 		return entryRepository.save(entry);
@@ -50,11 +49,11 @@ public class EntryService {
 
 	public void delete(Entry entry) {
 		Bookkeeping targetBookkeeping = bookkeepingService.findById(entry.getBookkeeping().getId());
-		if (targetBookkeeping.getUserId() != entry.getBookkeeping().getUserId()) {
+		if (!targetBookkeeping.getUserId().equals(entry.getBookkeeping().getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
 		}
 		Entry targetEntry = findOne(entry.getId());
-		if (targetEntry.getBookkeeping().getUserId() != entry.getBookkeeping().getUserId()) {
+		if (!targetEntry.getBookkeeping().getUserId().equals(entry.getBookkeeping().getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRY);
 		}
 		entryRepository.delete(entry);
@@ -83,8 +82,8 @@ public class EntryService {
 	}
 	
 	
-	public void test(long id) {
-		entryRepository.deleteById(id);
+	public int deleteByBookkeepingId(UUID bookkeepingId) {
+		return entryRepository.deleteByBookkeepingIdQuery(bookkeepingId);
 	}
 	
 }
