@@ -19,7 +19,7 @@ public class BookkeepingTest extends GeneralTest {
     @Autowired
     private BookkeepingRepository bookkeepingRepository;
 
-    static final UUID TEST_USER_ID = UUID.randomUUID();
+    static final UUID TEST_USER_ID = UUID.fromString("35929103-da22-49e7-9d76-214bb081593f");
 
     @Test
     public void save() {
@@ -33,14 +33,12 @@ public class BookkeepingTest extends GeneralTest {
     }
 
     @Test
-    public void findAll() {
-        log.debug("bookkeeping : {}", bookkeepingRepository.findAll());
-    }
-
-    @Test
-    public void findOne() {
-    	log.debug("bookkeeping : {}", bookkeepingService.findById(UUID.fromString("35929103-da22-49e7-9d76-214bb081593f")));
-//    	log.debug("bookkeeping : {}", bookkeepingService.findById(TEST_USER_ID));
+    public void update() {
+        Bookkeeping bookkeeping = new Bookkeeping();
+        bookkeeping.setUserId(TEST_USER_ID);
+        bookkeeping.setBaseDate(11);
+        Bookkeeping updateBookkeeping = bookkeepingService.update(bookkeeping);
+        log.debug("bookkeeping : {}", updateBookkeeping);
     }
 
     @Test

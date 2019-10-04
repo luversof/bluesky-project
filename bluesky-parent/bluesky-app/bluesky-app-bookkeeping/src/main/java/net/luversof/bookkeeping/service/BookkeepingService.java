@@ -2,6 +2,7 @@ package net.luversof.bookkeeping.service;
 
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,20 +48,55 @@ public class BookkeepingService {
 		entryGroupService.initialDataSave(bookkeeping);
 		return bookkeeping;
 	}
-	
-	public Bookkeeping update(Bookkeeping bookkeeping) {
-		Bookkeeping targetBookkeeping = findById(bookkeeping.getId());
-		if (!targetBookkeeping.getUserId().equals(bookkeeping.getUserId())) {
-			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
+
+	/**
+	 * userId 기반으로 bookkeeping 정보를 조회한다.
+	 * N개 이상 있는 경우 요청 시 bookkeepingId 필요
+	 * @param bookkeeping
+	 * @return
+	 */
+	private Optional<Bookkeeping> getUserBookkeeping(Bookkeeping bookkeeping) {
+		if (bookkeeping.getUserId() == null) {
+			throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_USER_ID);
 		}
-		
-		return bookkeepingRepository.save(bookkeeping);
+		List<Bookkeeping> bookkeepingList = findByUserId(bookkeeping.getUserId());
+		if (bookkeepingList.isEmpty()) {
+			return Optional.empty();
+		}
+		if (bookkeepingList.size() == 1) {
+			return Optional.of(bookkeepingList.get(0));
+		}
+
+		if (bookkeeping.getId() == null) {
+			throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING_ID);
+		}
+		return bookkeepingList.stream().filter(x -> x.getId().equals(bookkeeping.getId())).findAny();
 	}
-	
+
+	/**
+	 * 유저의 가계부 변경
+	 *
+	 * @param bookkeeping
+	 * @return
+	 */
+	public Bookkeeping update(Bookkeeping bookkeeping) {
+		Bookkeeping targetBookkeeping = getUserBookkeeping(bookkeeping).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		if (bookkeeping.getBaseDate() > 0) {
+			targetBookkeeping.setBaseDate(bookkeeping.getBaseDate());
+		}
+
+		if (bookkeeping.getName() != null) {
+			targetBookkeeping.setName(bookkeeping.getName());
+		}
+
+		return bookkeepingRepository.save(targetBookkeeping);
+	}
+
+	@Deprecated
 	public Bookkeeping findById(UUID id) {
 		return bookkeepingRepository.findById(id).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 	}
-	
+
 	public List<Bookkeeping> findByUserId(UUID userId) {
 		return bookkeepingRepository.findByUserId(userId);
 	}

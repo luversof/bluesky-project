@@ -13,5 +13,5 @@ import net.luversof.bookkeeping.domain.Bookkeeping;
 public interface BookkeepingRepository extends JpaRepository<Bookkeeping, UUID>, RevisionRepository<Bookkeeping, UUID, Integer> {
 	
 	List<Bookkeeping> findByUserId(UUID userId);
-	
+
 }
