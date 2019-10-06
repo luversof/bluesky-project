@@ -77,10 +77,10 @@ $(document).ready(function() {
 			};
 			data.isSortColumnEntryType = function() {
 				return this.sortColumn === "entryType";
-			}
+			};
 			data.isSortColumnName = function() {
 				return this.sortColumn === "name";
-			}
+			};
 			this.$el.html(Mustache.render(this.template, data));
 			this.collection.each(function(entryGroup) {
 				var entryGroupView = new $.EntryGroupView({ model : entryGroup });

@@ -75,13 +75,13 @@ $(document).ready(function() {
 			};
 			data.isSortColumnAssetType = function() {
 				return this.sortColumn === "assetType";
-			}
+			};
 			data.isSortColumnName = function() {
 				return this.sortColumn === "name";
-			}
+			};
 			data.isSortColumnAmount = function() {
 				return this.sortColumn === "amount";
-			}
+			};
 			this.$el.html(Mustache.render(this.template, data));
 			this.collection.each(function(asset) {
 				var assetView = new $.AssetView({ model : asset });

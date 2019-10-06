@@ -1,18 +1,15 @@
 package net.luversof.batch.sample;
 
-import org.junit.Rule;
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.test.rule.OutputCapture;
 
 import net.luversof.batch.Application;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class SampleBatchApplicationTests {
 
-	@Rule
 	public OutputCapture outputCapture = new OutputCapture();
 
 	@Test

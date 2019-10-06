@@ -3,7 +3,7 @@ $(document).ready(function() {
 	//var svg = d3.select("body")
 	var svg = d3.select("#statisticsChartArea")
 		.append("svg")
-		.append("g")
+		.append("g");
 	
 	svg.append("g").attr("class", "slices");
 	svg.append("g").attr("class", "labels");
@@ -42,7 +42,7 @@ $(document).ready(function() {
 		//1. 수입의 경우만 테스트를 해보자
 		var filteredStatisticsArray = statisticsArray.filter(function(statistics) {
 			return statistics.entryGroup.entryType === entryType;
-		})
+		});
 		//console.log("filteredStatisticsArray : ", filteredStatisticsArray);
 		
 		//1-1. color 목록 계산 (이렇게 하는건 무슨 이유때문이지?)
@@ -214,5 +214,5 @@ $(document).ready(function() {
 		polyline
 		.exit().transition().delay(duration)
 		.remove();
-	};
+    }
 });

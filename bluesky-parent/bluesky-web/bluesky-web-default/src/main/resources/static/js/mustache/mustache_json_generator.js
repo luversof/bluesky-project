@@ -14,7 +14,7 @@ $(document).ready(function() {
 				async : false
 			});
 			_config["reservedWord"] = reservedWord;
-		}
+		};
 		_getPreservedWord();
 		
 		var _isReservedWord = function(word) {
@@ -26,14 +26,14 @@ $(document).ready(function() {
 				}
 			}
 			return isReserved;
-		}
+		};
 		
 		// reservedWord는 true, false값만 가지는 boolean으로 예상? -> TODO 여러 타입의 예약어에 대한 개발을 해야함
 		var _generator = function(tokens, json) {
 			_generatorInner(tokens, json);
 			_removeRepeatWordJson(json, json, []);
 			_repositionReservedWordJson(json, json);
-		}
+		};
 		
 
 		/**
@@ -55,7 +55,7 @@ $(document).ready(function() {
 					}
 				}
 			}
-		}
+		};
 		// 상위 리스트에서 사용하는 키와 동일한 이름이 하위리스트에 있는 경우 하위의 키는 제거함
 		var _removeRepeatWordJson = function(json, root, upperKeyList) {
 			var isRoot = json === root;
@@ -88,7 +88,7 @@ $(document).ready(function() {
 					}
 				}
 			}
-		}
+		};
 		
 		/**
 		 * data에 대해 초기화 처리를 하는 함수
@@ -107,12 +107,12 @@ $(document).ready(function() {
 					}
 				}
 			}
-		}
+		};
 		
 		
 		var _isBbsListAionUserInfoListEditor = function(name) {
 			return (new RegExp("bbsListAionUserInfo-.*").test(name)); 
-		}
+		};
 
 		
 		// 기본 token은 length : 4 인 array의 집합
@@ -158,13 +158,13 @@ $(document).ready(function() {
 				}
 			}
 			return json;
-		}
+		};
 		
 		var _merge = function(template, data) {
 			var json = {};
 			_generator(Mustache.parse(template), json);
 			return _mergeInner(json, data);
-		}
+		};
 		
 		var _mergeFromList = function(templateList, data) {
 			var json = {};
@@ -172,7 +172,7 @@ $(document).ready(function() {
 				_generator(Mustache.parse(templateList[i]), json);
 			}
 			return _mergeInner(json, data);
-		}
+		};
 		
 		/**
 		 * data를 기준으로 jsonFormat을 다시 생성하는 함수
@@ -204,7 +204,7 @@ $(document).ready(function() {
 				}
 			}
 			return jsonResult;
-		}
+		};
 
 		
 		return {
@@ -264,10 +264,10 @@ $(document).ready(function() {
 				_initDataValue(data);
 			}
 		}
-	}
+	};
 	
 	var config = {
-	}
+	};
 	
 	$.mustacheJSONGenerator = MustacheJSONGenerator(config);
 });

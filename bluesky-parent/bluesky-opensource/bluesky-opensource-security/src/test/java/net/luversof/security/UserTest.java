@@ -1,5 +1,15 @@
 package net.luversof.security;
 
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.codec.Hex;
+import org.springframework.security.crypto.encrypt.Encryptors;
+import org.springframework.security.crypto.encrypt.TextEncryptor;
+
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -7,16 +17,6 @@ import net.luversof.GeneralTest;
 import net.luversof.security.UserTest.Person.PersonBuilder;
 import net.luversof.user.domain.User;
 import net.luversof.user.service.UserService;
-
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.codec.Hex;
-import org.springframework.security.crypto.encrypt.Encryptors;
-import org.springframework.security.crypto.encrypt.TextEncryptor;
 
 @Slf4j
 public class UserTest extends GeneralTest {

@@ -6,9 +6,9 @@ var test = function(applicationContext, blogRepository) {
 	print("blogList : ", blogList);
 	print("blogList2 : ", blogList2);
 	
-	for each (var blog in blogList) {
+	for each (var blog in blogList;) {
 		print("blog", blog);
-		print("blog id ", blog.getId())
+		print("blog id ", blog.getId());
 		print("blog id check", blog.getId() == "b68f7647-6ddd-4b8c-aecf-352e82ad764e")
 			
 	}
@@ -17,11 +17,11 @@ var test = function(applicationContext, blogRepository) {
 		throw ("ERROR Message")
 	}
 	
-}
+};
 
 var test2 = function() {
 	
-}
+};
 
 
 var a = 12;

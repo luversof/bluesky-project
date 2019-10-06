@@ -52,9 +52,9 @@ public class CoreExceptionHandler {
 		
 		if (Arrays.asList(handlerMethod.getMethodAnnotation(RequestMapping.class).produces()).contains(MediaType.APPLICATION_JSON_VALUE) ){
 			log.debug("json exception");
-		};
+		}
 
-		Map<String, ErrorMessage> resultMap = new HashMap<>();
+        Map<String, ErrorMessage> resultMap = new HashMap<>();
 		resultMap.put(RESULT, getErrorMessage(exception));
 		return new ModelAndView(exception.getErrorPage(), resultMap);
 	}

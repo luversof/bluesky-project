@@ -67,7 +67,7 @@ public class SimpleTest {
 	}
 	
 	@Test
-	public void test2() throws JsonParseException, JsonMappingException, IOException {
+	public void test2() throws IOException {
 		XmlMapper xmlMapper = new XmlMapper();
 		ClassPathResource classPathResource = new ClassPathResource("test.xml");
 		InputStream inputStream = classPathResource.getInputStream();

@@ -29,8 +29,8 @@ public class BlogRepositoryEventHandler {
 		UUID userId = loginUserService.getUserId();
 		if (blogRepository.findByUserId(userId).isPresent()) {
 			throw new BlueskyException(BlogErrorCode.ALREADY_EXIST_USER_BLOG);
-		};
-		blog.setUserId(userId);	
+		}
+        blog.setUserId(userId);
 	}
 	
 	@HandleBeforeSave

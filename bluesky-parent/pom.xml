@@ -53,14 +53,6 @@
 	</build>
 
 	<dependencies>
-		<!-- (s) spring boot test -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<!-- (e) spring boot test -->
-
 		<dependency>
 			<groupId>net.luversof.boot</groupId>
 			<artifactId>bluesky-boot-starter</artifactId>

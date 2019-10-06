@@ -2,7 +2,7 @@ package net.luversof.opensource.integration.amqp.inbound;
 
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;

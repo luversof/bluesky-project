@@ -1,18 +1,19 @@
 package net.luversof.user;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.user.domain.User;
 import net.luversof.user.repository.UserRepository;
 import net.luversof.user.service.UserService;
 import net.luversof.user.util.UserUtil;
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class UserTest extends GeneralTest {

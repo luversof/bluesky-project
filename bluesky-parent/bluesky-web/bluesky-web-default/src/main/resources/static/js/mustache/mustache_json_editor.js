@@ -16,7 +16,7 @@ $(document).ready(function() {
 				async : false
 			});
 			_config["reservedWord"] = reservedWord;
-		}
+		};
 		_getPreservedWord();
 		
 		var contentsJsonEditor = $.contentsMenu.getTemplate("contentsJsonEditor", "/mustache/contents/contentsJsonEditor.html");
@@ -27,19 +27,19 @@ $(document).ready(function() {
 		
 		var _initForm = function() {
 			_form = $("<form />").addClass("contentsJsonEditor form-horizontal");
-		}
+		};
 		
 		var _isFileEditor = function(word) {
 			return (new RegExp("file-.*").test(word));
-		}
+		};
 		
 		var _isBbsListAionUserInfoLinkEditor = function(word) {
 			return (new RegExp("bbsListAionUserInfoLink-.*").test(word)); 
-		}
+		};
 		
 		var _isBbsListAionUserInfoListEditor = function(name) {
 			return (new RegExp("bbsListAionUserInfo-.*").test(name)); 
-		}
+		};
 		
 		/**
 		 * select 기능 예약어 여부 확인
@@ -47,11 +47,11 @@ $(document).ready(function() {
 		 */
 		var _isSelectEditor = function(word) {
 			return (new RegExp("select-.*").test(word));
-		}
+		};
 		var _getSelectList = function(word) {
 			var parts = word.split("-");
 			return parts[2].split("_");
-		}
+		};
 		
 		var _isReservedWord = function(word) {
 			var isReserved = false;
@@ -65,7 +65,7 @@ $(document).ready(function() {
 				}
 			}
 			return isReserved;
-		}
+		};
 		
 		/**
 		 * 예약어를 사용하는 경우 해당 예약어에 대해 선택 기능을 제공한다.
@@ -90,7 +90,7 @@ $(document).ready(function() {
 				.append($("<div />").addClass("panel-heading").text("미리보기 선택 옵션"))
 				.append($("<div />").addClass("panel-body").append(Mustache.render(contentsJsonEditor, renderData)))
 			);
-		}
+		};
 		
 		var _makeEditor = function(data, parentKey, index) {
 			// json key 순서중 array는 제일 뒤에 처리를 하기 위해 for 문을 2번으로 나누었음
@@ -104,7 +104,7 @@ $(document).ready(function() {
 					if (index !== undefined) {
 						name += "[" + index + "]";
 					}
-					name = (name === "") ? key : name += "[" + key + "]"
+					name = (name === "") ? key : name += "[" + key + "]";
 					var renderData = {
 						key : key,		// template에서 지정한 키워드
 						name : name,		// 전체 이름 ex: contacts[0][first-name]
@@ -142,7 +142,7 @@ $(document).ready(function() {
 						isReservedWord : function(key) {
 							return _isReservedWord(key);
 						}
-					}
+					};
 					_form.append(Mustache.render(contentsJsonEditor, renderData));
 				}
 			}
@@ -156,7 +156,7 @@ $(document).ready(function() {
 					}
 				}
 			}
-		}
+		};
 		
 		/**
 		 * data를 통해 추출되는 key list를 계산하여 모두 반환한다.
@@ -172,7 +172,7 @@ $(document).ready(function() {
 					if (index !== undefined) {
 						id += "[" + index + "]";
 					}
-					id = (id === "") ? key : id += "[" + key + "]"
+					id = (id === "") ? key : id += "[" + key + "]";
 					keyList.push(id);
 				}
 			}
@@ -187,7 +187,7 @@ $(document).ready(function() {
 				}
 			}
 			return keyList;
-		}
+		};
 		
 		/**
 		 * 정규표현식으로 배열인 경우 그룹을 지을 대상 keyList를 호출함
@@ -201,7 +201,7 @@ $(document).ready(function() {
 			}
 			array.push(matches[0]);
 			_getKeyArray(key, array);
-		}
+		};
 		
 		/**
 		 * keyList에서 배열 속성인 key만 가진 keyGroup을 호출
@@ -215,7 +215,7 @@ $(document).ready(function() {
 			var keyArray = [];
 			for (var i = 0 ; i < keyList.length ; i++) {
 				var groupKeyArray = [];
-				_getKeyArray(keyList[i], groupKeyArray)
+				_getKeyArray(keyList[i], groupKeyArray);
 				var key = "";
 				for (var j = 0 ; j < groupKeyArray.length ; j++) {
 					key += groupKeyArray[j];
@@ -246,7 +246,7 @@ $(document).ready(function() {
 				}
 			}
 			return uniqueKeyArray;
-		}
+		};
 		
 		
 		/**
@@ -261,7 +261,7 @@ $(document).ready(function() {
 				return null;
 			}
 			return matches[0];
-		}
+		};
 		
 		
 		
@@ -287,7 +287,7 @@ $(document).ready(function() {
 								}
 								return label;
 							}
-						}
+						};
 						targetEditorListGroupArea = $(Mustache.render(contentsJsonEditorListGroup, renderData));
 						$(this).closest(".form-group").before(targetEditorListGroupArea);
 					}
@@ -317,7 +317,7 @@ $(document).ready(function() {
 								}
 								return label;
 							}
-						}
+						};
 						targetEditorListGroupPartArea = $(Mustache.render(contentsJsonEditorListGroupPart, renderData));
 						targetEditorListGroupArea.find(">.panel-body").append(targetEditorListGroupPartArea)
 					}
@@ -327,11 +327,11 @@ $(document).ready(function() {
 			}
 			
 			
-		}
+		};
 		
 		var _getJson = function() {
 			return $(".contentsJsonEditor").serializeJSON({ useIntKeysAsArrayIndex : true });
-		}
+		};
 		
 		/**
 		 * keyGroup을 기준으로 data의 해당 값을 반환
@@ -346,7 +346,7 @@ $(document).ready(function() {
 				dataPart = dataPart[keyParts[i].replace("]", "")];
 			}
 			return dataPart;
-		}
+		};
 		
 		/**
 		 * keyGroup을 기준으로 data의 해당 키를 반환, eval로 해당 위치를 획득할 수 있게 한다.
@@ -365,16 +365,16 @@ $(document).ready(function() {
 				}
 			}
 			return dataKey;
-		}
+		};
 		
 		var _patternKeyGroupIndex = /\[\d*\]$/;
 		var _getIndexFromKeyGroup = function(keyGruop) {
-			var matches = _patternKeyGroupIndex.exec(keyGruop)
+			var matches = _patternKeyGroupIndex.exec(keyGruop);
 			if (matches === null) {
 				return null;
 			}
 			return Number(matches[0].replace("[", "").replace("]", ""));
-		}
+		};
 		
 		return {
 			/**
@@ -490,11 +490,11 @@ $(document).ready(function() {
 				
 				if (!sendResponse) {
 					alert("해당 정보를 호출할 수 없습니다.");
-					return;
+
 				}
 			}
 		}
-	}
+	};
 	
 	var config = {
 		area : {
@@ -507,7 +507,7 @@ $(document).ready(function() {
 			listGroupUp : ".editor-list-group-up",
 			listGroupDown : ".editor-list-group-down"
 		}
-	}
+	};
 	
 	$.mustacheJSONEditor = MustacheJSONEditor(config);
 	

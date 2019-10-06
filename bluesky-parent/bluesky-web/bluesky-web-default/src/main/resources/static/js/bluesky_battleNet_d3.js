@@ -14,13 +14,13 @@ $(document).ready(function() {
 				_addLambdaCareerProfile(data.battleTag);
 				$(".content-battleNet").html(Mustache.render(_getProfileTemplate(), data));
 			});
-		}
+		};
 		
 		var _addLambdaCareerProfile = function(battleTag) {
 			var data = _profile[battleTag];
 			data.getLinkBattleTag = function() {
 				return this.battleTag.replace("#", "-");
-			}
+			};
 			data.getClassName = function() {
 				if (this["class"] === "monk") {
 					return "수도사";
@@ -38,7 +38,7 @@ $(document).ready(function() {
 					return "테스트";
 				}
 			}
-		}
+		};
 		
 		/**
 		 * careerProfile template
@@ -51,10 +51,10 @@ $(document).ready(function() {
 			var result = $.ajax({
 				url : "/html/battleNet/d3/profile.html",
 				async : false
-			})
+			});
 			_profileTemplate = result.responseText;
 			return _profileTemplate;
-		}
+		};
 		
 		var _getCareerProfile = function(battleTag) {
 			if (_profile[battleTag] !== undefined) {
@@ -75,7 +75,7 @@ $(document).ready(function() {
 				_addLambdaCareerProfile(battleTag);
 				$(".content-battleNet").html(Mustache.render(_getProfileTemplate(), data));
 			});
-		}
+		};
 		
 		var _getHeroProfile = function(battleTag, heroId) {
 			if (_hero[battleTag] !== undefined && _hero[battleTag][heroId] !== undefined) {
@@ -95,13 +95,13 @@ $(document).ready(function() {
 					_displayHeroProfile(battleTag, heroId);
 				}
 			});
-		}
+		};
 		
 		var _displayHeroProfile = function(battleTag, heroId) {
 			var data = _hero[battleTag][heroId];
 			var template = _getHeroProfileTemplate();
 			
-			var partials = {"heroProfileItem" : _getHeroProfileItemTemplate()}
+			var partials = {"heroProfileItem" : _getHeroProfileItemTemplate()};
 			
 			for (var key in data.items) {
 				if (data.items.hasOwnProperty(key)) {
@@ -143,7 +143,7 @@ $(document).ready(function() {
 			};
 			
 			$("#hero-" + heroId + " .panel-body").html(Mustache.render(template, data, partials));
-		}
+		};
 		
 		var _getItemData = function(tooltipParams) {
 			if (_item[tooltipParams] !== undefined) {
@@ -161,7 +161,7 @@ $(document).ready(function() {
 					_displayItemData(tooltipParams);
 				}
 			});
-		}
+		};
 		
 		var _displayItemData = function(tooltipParams) {
 			var data = _item[tooltipParams];
@@ -174,16 +174,16 @@ $(document).ready(function() {
 					} 
 				}
 				return false;
-			}
+			};
 			data.isDisplayGemName = function() {
 				return this.attributes.passive.length > 0;
-			}
+			};
 			data.getGemNameColor = function() {
 				return this.attributes.passive[0].color;
-			}
+			};
 			
 			$("#d3-itemData").html(Mustache.render(template, data));
-		}
+		};
 		
 
 		
@@ -195,10 +195,10 @@ $(document).ready(function() {
 			var result = $.ajax({
 				url : "/html/battleNet/d3/heroProfile.html",
 				async : false
-			})
+			});
 			_heroProfileTemplate = result.responseText;
 			return _heroProfileTemplate;
-		}
+		};
 		
 		var _heroProfileItemTemplate = null;
 		var _getHeroProfileItemTemplate = function() {
@@ -208,10 +208,10 @@ $(document).ready(function() {
 			var result = $.ajax({
 				url : "/html/battleNet/d3/heroProfileItem.html",
 				async : false
-			})
+			});
 			_heroProfileItemTemplate = result.responseText;
 			return _heroProfileItemTemplate;
-		}
+		};
 		
 		var _itemDataTemplate = null;
 		var _getItemDataTemplate = function() {
@@ -221,10 +221,10 @@ $(document).ready(function() {
 			var result = $.ajax({
 				url : "/html/battleNet/d3/itemData.html",
 				async : false
-			})
+			});
 			_itemDataTemplate = result.responseText;
 			return _itemDataTemplate;
-		}
+		};
 		return { 
 			getMyProfile : function() {
 				_getMyProfile();
@@ -279,10 +279,10 @@ $(document).ready(function() {
 		//console.log("test ", battleTag);
 		if (battleTag === "") {
 			alert("배틀 태그를 입력해주세요.");
-		};
-		battleNet.getCareerProfile(battleTag);
+        }
+        battleNet.getCareerProfile(battleTag);
 		return false;
-	})
+	});
 	
 	$("body").css("padding-top", "0px");
 	$(".navbar").remove();

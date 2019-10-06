@@ -18,11 +18,11 @@ $(document).ready(function() {
 			// entrySearchInfo는 월단위로 표시를 고정함
 			data.getTargetDate = function() {
 				return moment(data.startZonedDateTime).format(data.getMomentDateFormat());
-			}
+			};
 			//console.log("EntrySearchInfoView render", data.getTargetDate(), moment(data.startZonedDateTime).format(data.getMomentDateFormat()));
 			this.$el
 				.html(Mustache.render(this.template, data))
-				.find("input[name=entrySearchInfoTargetDate]").datepicker({ format : data.getDatepickerDateFormat(), language: "ko", minViewMode : 1, autoclose : true })
+				.find("input[name=entrySearchInfoTargetDate]").datepicker({ format : data.getDatepickerDateFormat(), language: "ko", minViewMode : 1, autoclose : true });
 			return this;
 		},
 		selectEntrySearchInfo : function(targetLocalDate) {

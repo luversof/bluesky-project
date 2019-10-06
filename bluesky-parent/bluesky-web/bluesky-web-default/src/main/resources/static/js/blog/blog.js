@@ -25,7 +25,7 @@ $(document).ready(function() {
 				categoryListResponse : {},
 				blogArticle : {},
 				blogArticleListResponse : {}
-			} 
+			};
 			$.extend(_data, blogVueData);
 			return _data;
 		},
@@ -211,7 +211,7 @@ $(document).ready(function() {
 			var _data = {
 				content : "내용",
 				title : "제목"
-			}
+			};
 			$.extend(_data, this.$parent.$data);
 			return _data;
 		},
@@ -286,7 +286,7 @@ $(document).ready(function() {
 		methods : {
 		},
 		mounted : function() {
-			console.log("blogArticleView", this)
+			console.log("blogArticleView", this);
 			this.getBlogArticleResponse();
 		},
 		components : {

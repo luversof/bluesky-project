@@ -53,12 +53,12 @@ public class Bookkeeping {
 	private int baseDate = 1;
 
 	public interface Create {
-	};
+	}
 
-	public interface Update {
-	};
+    public interface Update {
+	}
 
-	public interface Delete {
+    public interface Delete {
 	}
 	
 	public interface Search {}

@@ -59,14 +59,14 @@ public class Article {
 	private Category category;
 
 	public interface Get {
-	};
+	}
 
-	public interface Create {
-	};
+    public interface Create {
+	}
 
-	public interface Save {
-	};
+    public interface Save {
+	}
 
-	public interface Delete {
-	};
+    public interface Delete {
+	}
 }

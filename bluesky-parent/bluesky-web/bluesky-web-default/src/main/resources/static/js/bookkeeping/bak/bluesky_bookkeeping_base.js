@@ -4,7 +4,7 @@ $(document).ready(function() {
 		// config : {url, displayArea, handsontableConfig}
 		var _handsontable = function() {
 			return _config.displayArea.data("handsontable");
-		}
+		};
 		return {
 			init : function() {
 				if (_handsontable() !== null) {
@@ -110,9 +110,8 @@ $(document).ready(function() {
 				var targetCellData = this.getData()[index];
 				if (targetCellData[0] === undefined) {
 					return;
-				};
-				
-				var dataObj = _config.displayArea.data("dataObj");
+                }
+                var dataObj = _config.displayArea.data("dataObj");
 				
 				var targetData;
 				for (var i = 0 ; i < dataObj.length ; i++) {

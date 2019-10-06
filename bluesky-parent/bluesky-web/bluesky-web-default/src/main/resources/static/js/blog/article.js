@@ -7,23 +7,23 @@ $(document).ready(function() {
 			findOne : "/api/blogArticles/{0}",
 			create : "/api/blogArticles",
 			categoryList : "/api/categories/search/findByBlogId"
-		}
+		};
 		
 		var _list = function() {
 			var data = {};
 			data.id = _blogId;
 			return $.getJSON(_link.list, data);
-		}
+		};
 		
 		var _findOne = function() {
 			return $.getJSON(_link.findOne.format(_articleId));
-		}
+		};
 		
 		var _categoryList = function() {
 			var data = {};
 			data.blogId = _blogId;
 			return $.getJSON(_link.categoryList, data);
-		}
+		};
 		
 		return {
 			setBlogId : function(blogId) {
@@ -37,17 +37,17 @@ $(document).ready(function() {
 					data.getId = function() {
 						var parts = this._links.self.href.split("/");
 						return parts[parts.length - 1];
-					}
+					};
 					data.getViewUrl = function() {
 						var parts = this._links.self.href.split("/");
 						return $.i18n.prop("url.blog.view.view", _blogId, parts[parts.length - 1]);
-					}
+					};
 					data.getCreateDateFormat = function() {
 						return moment(this.createDate).format("LL");
-					}
+					};
 					data.isLoginUser = function() {
 						return this
-					}
+					};
 					data.userInfo = userInfo;
 					targetArea.html(Mustache.render(targetTemplate, data));
 				});

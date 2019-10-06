@@ -9,5 +9,5 @@ package net.luversof.bookkeeping.constant;
 public enum EntryType {
 	DEBIT,		//인출
 	CREDIT,		//입금
-	TRANSFER;	//이체
+	TRANSFER    //이체
 }

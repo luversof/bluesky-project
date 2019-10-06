@@ -51,12 +51,12 @@ public class Entry implements Serializable {
 	private String memo;
 
 	public interface Create {
-	};
+	}
 
-	public interface Update {
-	};
+    public interface Update {
+	}
 
-	public interface Delete {
+    public interface Delete {
 	}
 
 	public EntryType getEntryType() {

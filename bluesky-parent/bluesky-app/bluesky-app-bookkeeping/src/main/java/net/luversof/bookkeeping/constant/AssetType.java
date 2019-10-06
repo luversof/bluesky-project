@@ -11,5 +11,5 @@ public enum AssetType {
 	BANK,		//은행
 	CARD,		//카드
 	CHECKCARD,	//체크카드
-	LOAN;		//대츨
+	LOAN        //대츨
 }

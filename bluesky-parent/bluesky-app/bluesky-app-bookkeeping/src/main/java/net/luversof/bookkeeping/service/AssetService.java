@@ -39,7 +39,7 @@ public class AssetService {
 			for (String defaltAssetName : assetInitialData.getDefaltAssetNames()) {
 				Asset asset = new Asset();
 				asset.setBookkeeping(bookkeeping);
-				asset.setAmount((long) 0);
+				asset.setAmount(0);
 				asset.setAssetType(assetInitialData.getAssetType());
 				asset.setName(defaltAssetName);
 				assetSet.add(asset);

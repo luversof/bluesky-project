@@ -1,10 +1,10 @@
 package net.luversof.blog;
 
-import net.luversof.blog.domain.Blog;
-
 import java.util.UUID;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import net.luversof.blog.domain.Blog;
 
 public class SimpleTest {
 

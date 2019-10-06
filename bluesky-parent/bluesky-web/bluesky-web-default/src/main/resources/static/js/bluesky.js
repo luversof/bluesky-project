@@ -84,7 +84,7 @@ var makeFormDataJSON = function(targetForm) {
 		json[ele.name] = ele.value;
 	});
 	return JSON.stringify(json);
-}
+};
 
 /**
  * spring data rest 응답에서 id를 추출
@@ -92,7 +92,7 @@ var makeFormDataJSON = function(targetForm) {
 var getIdFromDataRest = function(data) {
 	var parts = data._links.self.href.split("/");
 	return parts[parts.length - 1];
-}
+};
 
 /**
  * 유저 정보 관련 data
@@ -103,7 +103,7 @@ var UserInfo = function(userId) {
 	
 	var _isLogin = function() {
 		return _userId !== undefined && _userId != "";
-	}
+	};
 	return {
 		getUserId : function() {
 			return _userId;
@@ -124,7 +124,7 @@ var UserInfo = function(userId) {
 			return _isLogin() && _userId == targetUserId; 
 		}
 	}
-}
+};
 
 $(document).ready(function() {
 	
@@ -152,7 +152,7 @@ $(document).ready(function() {
 	});
 	
 	//$("body").tooltip({ selector : "[data-toggle=tooltip]" });
-	 $('[data-toggle="tooltip"]').tooltip()
+	 $('[data-toggle="tooltip"]').tooltip();
 	
 	/* (s) csrf */
 	/* 
@@ -170,7 +170,7 @@ $(document).ready(function() {
 	$(document).ajaxError(function(event, jqXHR, ajaxSettings, thrownError) {
 		var alertMessage = "에러가 발생하였습니다.";
 		if (jqXHR.status == 401) {
-			alert("로그인이 필요합니다.")
+			alert("로그인이 필요합니다.");
 			return;
 		}
 		
@@ -236,7 +236,7 @@ $(document).ready(function() {
 				return moment(date).format(format);
 			}
 		}	
-	}
+	};
 	
 	/**
 	 * 공통 nav 설정

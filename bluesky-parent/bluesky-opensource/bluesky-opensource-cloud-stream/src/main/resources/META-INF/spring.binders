@@ -1,2 +1,2 @@
-rabbit:\
+rabbit=\
 org.springframework.cloud.stream.binder.rabbit.config.RabbitServiceAutoConfiguration

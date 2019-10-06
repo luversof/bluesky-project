@@ -35,35 +35,41 @@ $(document).ready(function() {
 				entry : this.model.toJSON(),
 				assetList : assetCollection.toJSON(),
 				entryGroupList : entryGroupCollection.toJSON()
-			}
+			};
 			data.getEntryDate = function() {
 				return moment(new Date(data.entry.entryDate)).format("YYYY-MM-DD")
-			}
+			};
 			
 			//entryType을 먼저 확인
 			var entryType = this.model.get("entryType");
 			
 			data.isTargetEntryGroup = function() {
 				return this.entryType === entryType;
-			}
+			};
 			data.isCredit = function() {
 				return entryType === "CREDIT";
-			}
+			};
 			data.isDebit = function() {
 				return entryType === "DEBIT";
-			}
+			};
 			data.isTransfer = function() {
 				return entryType === "TRANSFER";
-			}
+			};
 			data.entryAmountFormat = function() {
 				return numeral(this.entry.amount).format();
-			}
+			};
 			
 			this.$el.html(Mustache.render(this.template, data));
-			if (this.model.get("entryGroup") !== null) { this.$el.find("select[name=entryGroup] > option[value=" + this.model.get("entryGroup").id + "]").attr("selected", "selected") };
-			if (this.model.get("debitAsset") !== null) { this.$el.find("select[name=debitAsset] > option[value=" + this.model.get("debitAsset").id + "]").attr("selected", "selected") };
-			if (this.model.get("creditAsset") !== null) { this.$el.find("select[name=creditAsset] > option[value=" + this.model.get("creditAsset").id + "]").attr("selected", "selected") };
-			this.$el.find("[data-menu=updateEntry]").hide();
+            if (this.model.get("entryGroup") !== null) {
+                this.$el.find("select[name=entryGroup] > option[value=" + this.model.get("entryGroup").id + "]").attr("selected", "selected")
+            }
+            if (this.model.get("debitAsset") !== null) {
+                this.$el.find("select[name=debitAsset] > option[value=" + this.model.get("debitAsset").id + "]").attr("selected", "selected")
+            }
+            if (this.model.get("creditAsset") !== null) {
+                this.$el.find("select[name=creditAsset] > option[value=" + this.model.get("creditAsset").id + "]").attr("selected", "selected")
+            }
+            this.$el.find("[data-menu=updateEntry]").hide();
 			
 			//외부 모듈 이벤트 핸들링 추가
 			this.$el.find("input[name=entryDate]").datepicker({ language: "ko", autoclose : true });
@@ -175,24 +181,24 @@ $(document).ready(function() {
 				return _.reduce(entryList, function(amount, entry) {
 					return numeral(numeral().unformat(amount) + (entry.entryType === "CREDIT" ? entry.amount : 0)).format(format);
 				}, 0);
-			}
+			};
 			data.getTotalDebitAmount = function() {
 				return _.reduce(entryList, function(amount, entry) {
 					return numeral(numeral().unformat(amount) + (entry.entryType === "DEBIT" ? entry.amount : 0)).format(format);
 				}, 0);
-			}
+			};
 			data.getTotalAmount = function() {
 				return numeral(numeral().unformat(data.getTotalCreditAmount()) - numeral().unformat(data.getTotalDebitAmount())).format(format);
-			}
+			};
 			data.isSortColumnEntryType = function() {
 				return this.sortColumn === "entryType";
-			}
+			};
 			data.isSortColumnEntryDate = function() {
 				return this.sortColumn === "entryDate";
-			}
+			};
 			data.isSortColumnAmount = function() {
 				return this.sortColumn === "amount";
-			}
+			};
 			
 			this.$el.html(Mustache.render(this.template, data));
 			this.collection.each(function(entry) {

@@ -16,33 +16,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import javax.servlet.RequestDispatcher;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.restdocs.JUnitRestDocumentation;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import net.luversof.GeneralTest;
 
-
-
 public class ApiDocumentation extends GeneralTest {
-	
-	@Rule
-	public final JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
 	
 	private MockMvc mockMvc;
 
-	@Autowired
-	private WebApplicationContext context;
-
-	@Before
-	public void setUp() {
-		this.mockMvc = MockMvcBuilders.webAppContextSetup(this.context)
-				.apply(documentationConfiguration(this.restDocumentation))
+	@BeforeEach
+	public void setUp(WebApplicationContext webApplicationContext,
+			RestDocumentationContextProvider restDocumentation) {
+		this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
+				.apply(documentationConfiguration(restDocumentation))
 				.alwaysDo(document("api/"))
 				.build();
 	}

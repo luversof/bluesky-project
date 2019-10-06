@@ -18,13 +18,13 @@ $(document).ready(function() {
 			var data = this.model.toJSON();
 			data.getTargetDate = function() {
 				return moment(data.startZonedDateTime).format(data.getMomentDateFormat());
-			}
+			};
 			data.isChronoUnitYears = function() {
 				return data.chronoUnit === "YEARS";
-			}
+			};
 			data.isChronoUnitMonths = function() {
 				return data.chronoUnit === "MONTHS";
-			}
+			};
 			this.$el
 				.html(Mustache.render(this.template, data))
 				.find("input[name=statisticsSearchInfoTargetDate]").datepicker({ format : data.getDatepickerDateFormat(), language: "ko", minViewMode : data.getMomentManipulateKey(), autoclose : true }).end();

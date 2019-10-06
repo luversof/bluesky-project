@@ -102,7 +102,7 @@ public class DevCheckController {
 		private String name;
 		private String type;
 		
-		public static interface CheckName {}
+		public interface CheckName {}
 	}
 
 	@DevCheckDescription(displayable = false)

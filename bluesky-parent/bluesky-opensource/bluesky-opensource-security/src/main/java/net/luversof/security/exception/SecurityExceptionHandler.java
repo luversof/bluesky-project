@@ -95,8 +95,8 @@ public class SecurityExceptionHandler {
 				String localizedMessage = MessageUtil.getMessage(defaultMessageSourceResolvable);
 				errorMessage.setMessage(localizedMessage);
 				errorMessage.setDisplayableMessage(true);
-			};
-		} else {
+			}
+        } else {
 			errorMessage.setMessage(exception.getLocalizedMessage());
 		}
 		return errorMessage;

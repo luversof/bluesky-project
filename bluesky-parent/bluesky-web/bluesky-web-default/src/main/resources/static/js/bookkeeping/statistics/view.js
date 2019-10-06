@@ -23,27 +23,27 @@ $(document).ready(function() {
 				statistics : this.model.toJSON(),
 				//assetList : assetCollection.toJSON(),
 				entryGroupList : entryGroupCollection.toJSON()
-			}
+			};
 			
 			//entryType을 먼저 확인
 			var entryType = this.model.get("entryGroup").entryType;
 		
 			data.isTargetEntryGroup = function() {
 				return this.entryType === entryType;
-			}
+			};
 			data.isCredit = function() {
 				return entryType === "CREDIT";
-			}
+			};
 			data.isDebit = function() {
 				return entryType === "DEBIT";
-			}
+			};
 			data.statisticsAmountFormat = function() {
 				return numeral(this.statistics.amount).format();
-			}
+			};
 			
 			data.statisticsAmountPercent = function() {
 				return "??%";
-			}
+			};
 			
 			this.$el.html(Mustache.render(this.template, data));
 			return this;
@@ -87,30 +87,30 @@ $(document).ready(function() {
 				return _.reduce(statisticsList, function(amount, statistics) {
 					return numeral(numeral().unformat(amount) + (statistics.entryGroup.entryType === "CREDIT" ? statistics.amount : 0)).format(format);
 				}, 0);
-			}
+			};
 			data.getTotalDebitAmount = function() {
 				return _.reduce(statisticsList, function(amount, statistics) {
 					return numeral(numeral().unformat(amount) + (statistics.entryGroup.entryType === "DEBIT" ? statistics.amount : 0)).format(format);
 				}, 0);
-			}
+			};
 			data.getTotalAmount = function() {
 				return numeral(numeral().unformat(data.getTotalCreditAmount()) - numeral().unformat(data.getTotalDebitAmount())).format(format);
-			}
+			};
 			data.isSortEntryType = function() {
 				return this.sortColumn === "entryType";
-			}
+			};
 			data.isSortColumnAmount = function() {
 				return this.sortColumn === "amount";
-			}
+			};
 			data.isDisplayEntryTypeTotal = function() {
 				return displayEntryType === "TOTAL";
-			}
+			};
 			data.isDisplayEntryTypeCredit = function() {
 				return displayEntryType === "CREDIT";
-			}
+			};
 			data.isDisplayEntryTypeDebit = function() {
 				return displayEntryType === "DEBIT";
-			}
+			};
 			
 			this.$el.html(Mustache.render(this.template, data));
 			this.collection.each(function(statistics) {

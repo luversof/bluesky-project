@@ -1,7 +1,7 @@
 
 var svg = d3.select("body")
 	.append("svg")
-	.append("g")
+	.append("g");
 
 svg.append("g")
 	.attr("class", "slices");
@@ -33,7 +33,7 @@ svg.attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 var key = function(d){ return d.data.label; };
 
 var color = d3.scale.category20()
-	.domain(["Lorem ipsum", "dolor sit", "amet", "consectetur", "adipisicing", "elit", "sed", "do", "eiusmod", "tempor", "incididunt"])
+	.domain(["Lorem ipsum", "dolor sit", "amet", "consectetur", "adipisicing", "elit", "sed", "do", "eiusmod", "tempor", "incididunt"]);
 	//.range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
 
 function randomData (){
@@ -199,4 +199,4 @@ function change(data) {
 	polyline
 		.exit().transition().delay(duration)
 		.remove();
-};
+}

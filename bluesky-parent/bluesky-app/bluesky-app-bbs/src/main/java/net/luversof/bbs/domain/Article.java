@@ -49,11 +49,11 @@ public class Article {
 	private LocalDateTime lastModifiedDate;
 
 	public interface Get {
-	};
+	}
 
-	public interface Save {
-	};
+    public interface Save {
+	}
 
-	public interface Modify {
-	};
+    public interface Modify {
+	}
 }
