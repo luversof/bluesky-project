@@ -40,8 +40,7 @@ public class SecurityLoginUserService implements LoginUserService {
 		
 		if (authentication instanceof OAuth2AuthenticationToken) {
 			OAuth2AuthenticationToken oAuth2AuthenticationToken = (OAuth2AuthenticationToken) authentication;
-			User user = userService.findByExternalIdAndUserType(oAuth2AuthenticationToken.getPrincipal().getName(), UserType.findByName(oAuth2AuthenticationToken.getAuthorizedClientRegistrationId()));
-			return Optional.of(user);
+			return userService.findByExternalIdAndUserType(oAuth2AuthenticationToken.getPrincipal().getName(), UserType.findByName(oAuth2AuthenticationToken.getAuthorizedClientRegistrationId()));
 		}
 		return Optional.empty();
 	}

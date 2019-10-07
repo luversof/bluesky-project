@@ -28,13 +28,13 @@ public class UserTest extends GeneralTest {
 	
 	@Test
 	public void 테스트() {
-		User user = userService.findByUsername(USERNAME);
+		User user = userService.findByUsername(USERNAME).get();
 		log.debug("user : {}", user);
 	}
 	
 	@Test
 	public void 회원삭제() {
-		User user = userService.findByUsername(USERNAME);
+		User user = userService.findByUsername(USERNAME).get();
 		userService.remove(user);
 		log.debug("user : {}", user);
 	}

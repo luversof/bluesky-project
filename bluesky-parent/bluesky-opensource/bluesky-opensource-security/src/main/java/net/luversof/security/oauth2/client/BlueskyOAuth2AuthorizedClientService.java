@@ -3,6 +3,7 @@ package net.luversof.security.oauth2.client;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -41,8 +42,8 @@ public class BlueskyOAuth2AuthorizedClientService implements OAuth2AuthorizedCli
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T extends OAuth2AuthorizedClient> T loadAuthorizedClient(String clientRegistrationId, String principalName) {
-		User user = userService.findByExternalIdAndUserType(principalName, UserType.findByName(clientRegistrationId));
-		if (user == null) {
+		Optional<User> user = userService.findByExternalIdAndUserType(principalName, UserType.findByName(clientRegistrationId));
+		if (user.isEmpty()) {
 			return null;
 		}
 		
@@ -55,8 +56,8 @@ public class BlueskyOAuth2AuthorizedClientService implements OAuth2AuthorizedCli
 
 	@Override
 	public void saveAuthorizedClient(OAuth2AuthorizedClient authorizedClient, Authentication principal) {
-		User user = userService.findByExternalIdAndUserType(principal.getName(), UserType.findByName(authorizedClient.getClientRegistration().getRegistrationId()));
-		if (user == null) {
+		Optional<User> user = userService.findByExternalIdAndUserType(principal.getName(), UserType.findByName(authorizedClient.getClientRegistration().getRegistrationId()));
+		if (user.isEmpty()) {
 			List<String> authorityList = principal.getAuthorities().stream().map(grantedAuthority -> grantedAuthority.getAuthority()).collect(Collectors.toList());
 			userService.addUser(principal.getName(), UserType.findByName(authorizedClient.getClientRegistration().getRegistrationId()), principal.getName(), authorityList);
 		}

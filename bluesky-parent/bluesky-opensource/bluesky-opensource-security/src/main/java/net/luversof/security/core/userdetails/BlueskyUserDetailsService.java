@@ -16,7 +16,7 @@ public class BlueskyUserDetailsService implements UserDetailsService {
 
 	@Override
 	public UserDetails loadUserByUsername(String username) {
-		User user = userService.findByUsername(username);
+		User user = userService.findByUsername(username).get();
 		return new BlueskyUser(user);
 	}
 

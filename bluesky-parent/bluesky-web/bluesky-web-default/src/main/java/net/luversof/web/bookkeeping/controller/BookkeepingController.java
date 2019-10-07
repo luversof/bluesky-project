@@ -6,20 +6,18 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.service.BookkeepingService;
-import net.luversof.security.util.SecurityUtil;
+import net.luversof.user.domain.User;
 import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
@@ -37,9 +35,9 @@ public class BookkeepingController {
 	 */
 	@PreAuthorize("hasRole('ROLE_USER')")
 	@GetMapping
-	public Optional<Bookkeeping> getBookkeepingList() {
+	public Optional<Bookkeeping> getBookkeepingList(User user) {
 		Bookkeeping bookkeeping = new Bookkeeping();
-		bookkeeping.setUserId(SecurityUtil.getUser().get().getId());
+		bookkeeping.setUserId(user.getId());
 		return bookkeepingService.getUserBookkeeping(bookkeeping);
 	}
 
@@ -50,20 +48,24 @@ public class BookkeepingController {
 		return bookkeepingService.getUserBookkeeping(bookkeeping);
 	}
 	
+	@PreAuthorize("hasRole('ROLE_USER')")
 	@PostMapping
-	public Bookkeeping createBookkeeping(@RequestBody @Validated(Bookkeeping.Create.class) Bookkeeping bookkeeping) {
+	public Bookkeeping createBookkeeping(@Validated(Bookkeeping.Create.class) Bookkeeping bookkeeping, User user) {
+		bookkeeping.setUserId(user.getId());
 		return bookkeepingService.create(bookkeeping);
 	}
 	
 	@PreAuthorize("hasRole('ROLE_USER') and authentication.principal.id == #bookkeeping.userId")
 	@PutMapping(value="/{id}")
-	public Bookkeeping updateBookkeeping(@RequestBody @Validated(Bookkeeping.Update.class) Bookkeeping bookkeeping) {
+	public Bookkeeping updateBookkeeping(@Validated(Bookkeeping.Update.class) Bookkeeping bookkeeping, User user) {
+		bookkeeping.setUserId(user.getId());
 		return bookkeepingService.update(bookkeeping);
 	}
 	
+	@PreAuthorize("hasRole('ROLE_USER')")
 	@DeleteMapping(value="/{id}")
-	public Bookkeeping deleteBookkeeping(@Validated(Bookkeeping.Delete.class) Bookkeeping bookkeeping, Authentication authentication) {
-		bookkeeping.setUserId(SecurityUtil.getUser().get().getId());
+	public Bookkeeping deleteBookkeeping(@Validated(Bookkeeping.Delete.class) Bookkeeping bookkeeping, User user) {
+		bookkeeping.setUserId(user.getId());
 		bookkeepingService.delete(bookkeeping);
 		return bookkeeping;
 	}

@@ -43,7 +43,7 @@ public class Bookkeeping {
 	private String name;
 
 	@Column(name = "user_id", length = 16)
-	@NotEmpty(groups = { Update.class, Search.class })
+	@NotEmpty(groups = { Search.class })
 	private UUID userId;
 
 	/**
