@@ -1,19 +1,25 @@
 package net.luversof.bookkeeping.constant;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import net.luversof.boot.autoconfigure.context.MessageUtil;
 
+import java.text.MessageFormat;
+
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public enum AssetInitialData {
 
-	WALLET(AssetType.WALLET, new String[]{ "지갑" });
+	WALLET(AssetType.WALLET, "defaultWallet");
 	
 	@Getter
 	private AssetType assetType;
 	
 	@Getter
-	private String[] defaltAssetNames;
+	private String messageCode;
 	
-	AssetInitialData(AssetType assetType, String[] defaltAssetNames) {
-		this.assetType = assetType;
-		this.defaltAssetNames = defaltAssetNames;
+	public String getName() {
+		return MessageUtil.getMessage(MessageFormat.format("constant.bookkeeping.asset.{0}.name", getMessageCode()));
 	}
+
 }

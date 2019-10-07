@@ -1,19 +1,20 @@
 package net.luversof.bookkeeping;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import lombok.extern.slf4j.Slf4j;
-import net.luversof.GeneralTest;
-import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.domain.EntryGroup;
-import net.luversof.bookkeeping.repository.EntryGroupRepository;
-import net.luversof.bookkeeping.service.BookkeepingService;
-import net.luversof.bookkeeping.service.EntryGroupService;
-
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.extern.slf4j.Slf4j;
+import net.luversof.GeneralTest;
+import net.luversof.bookkeeping.constant.EntryGroupInitialData;
+import net.luversof.bookkeeping.domain.Bookkeeping;
+import net.luversof.bookkeeping.domain.EntryGroup;
+import net.luversof.bookkeeping.service.BookkeepingService;
+import net.luversof.bookkeeping.service.EntryGroupService;
 
 @Slf4j
 public class EntryGroupTest extends GeneralTest {
@@ -23,19 +24,22 @@ public class EntryGroupTest extends GeneralTest {
 	
 	@Autowired
 	private BookkeepingService bookkeepingService;
-
-	@Autowired
-	private EntryGroupRepository entryGroupRepository;
 	
 	private Bookkeeping bookkeeping;
+
+	static final UUID TEST_USER_ID = UUID.fromString("35929103-da22-49e7-9d76-214bb081593f");
 	
-	static final UUID TEST_USER_ID = UUID.fromString("1");
-	
-	@BeforeAll
+	@BeforeEach
 	public void before() {
-		bookkeeping = bookkeepingService.findByUserId(TEST_USER_ID).get(0);
+		Bookkeeping bookkeeping = new Bookkeeping();
+    	bookkeeping.setUserId(TEST_USER_ID);
+		bookkeeping = bookkeepingService.getUserBookkeeping(bookkeeping).get();
 	}
-	
+
+	@Test
+	public void entryGroupInitialDataName() {
+		Arrays.stream(EntryGroupInitialData.values()).forEach(x -> log.debug("{} name : {}", x, x.getName()));
+	}
 	@Test
 	public void initialDataSave() {
 		List<EntryGroup> result = entryGroupService.initialDataSave(bookkeeping);

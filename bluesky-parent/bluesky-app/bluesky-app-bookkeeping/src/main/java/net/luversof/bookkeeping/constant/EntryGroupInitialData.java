@@ -1,6 +1,11 @@
 package net.luversof.bookkeeping.constant;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import net.luversof.boot.autoconfigure.context.MessageUtil;
+
+import java.text.MessageFormat;
 
 /**
  * 최초 생성시 추가되는 항목
@@ -8,19 +13,28 @@ import lombok.Getter;
  * @author bluesky
  *
  */
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public enum EntryGroupInitialData {
-
-	CREDIT(EntryType.CREDIT, new String[] { "월급", "상여금", "이자", "기타" }), 
-	DEBIT(EntryType.DEBIT, new String[] { "식사", "교통비", "생활품", "자기계발", "관리비", "문화", "사회생활", "교육", "기타" });
+	SALARY(EntryType.CREDIT, "salary"),
+	BONUS(EntryType.CREDIT, "bonus"),
+	INTEREST(EntryType.CREDIT, "interest"),
+	CREDIT_ETC(EntryType.CREDIT, "etc"),
+	FOOD(EntryType.DEBIT, "foot"),
+	TRANSPORTATION(EntryType.DEBIT, "transportation"),
+	LIVING(EntryType.DEBIT, "living"),
+	STUDY(EntryType.DEBIT, "study"),
+	CULTURE(EntryType.DEBIT, "culture"),
+	SOCIAL(EntryType.DEBIT, "social"),
+	MAINTENANCE_COST(EntryType.DEBIT, "maintenanceCost"),
+	DEBIT_ETC(EntryType.DEBIT, "etc");
 
 	@Getter
 	private EntryType entryType;
 	
 	@Getter
-	private String[] defaltEntryGroupNames;
+	private String messageCode;
 
-	EntryGroupInitialData(EntryType entryType, String[] defaltEntryGroupNames) {
-		this.entryType = entryType;
-		this.defaltEntryGroupNames = defaltEntryGroupNames;
+	public String getName() {
+		return MessageUtil.getMessage(MessageFormat.format("constant.bookkeeping.entryGroup.{0}.{1}.name", getEntryType().name().toLowerCase(), getMessageCode()));
 	}
 }

@@ -1,6 +1,6 @@
 package net.luversof.web.bookkeeping.method.support;
 
-import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.MethodParameter;
@@ -35,13 +35,13 @@ public class BookkeepingHandlerMethodArgumentResolver implements HandlerMethodAr
 		if (authentication == null || !(authentication.getPrincipal() instanceof BlueskyUser)) {
 			throw new PreAuthenticatedCredentialsNotFoundException("BlogHandlerMethodArgumentResolver");
 		}
-		BlueskyUser user = (BlueskyUser) authentication.getPrincipal();
-		
-		List<Bookkeeping> bookkeepingList = bookkeepingService.findByUserId(user.getId());
-		if (bookkeepingList.isEmpty()) {
+		Bookkeeping bookkeeping = new Bookkeeping();
+		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+		Optional<Bookkeeping> userBookkeeping = bookkeepingService.getUserBookkeeping(bookkeeping);
+		if (userBookkeeping.isEmpty()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING).errorPage("redirect:/bookkeeping/create");
 		}
-		return bookkeepingList.get(0);
+		return userBookkeeping.get();
 	}
 
 }

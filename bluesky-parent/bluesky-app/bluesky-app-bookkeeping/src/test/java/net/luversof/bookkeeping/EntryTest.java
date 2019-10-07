@@ -1,25 +1,26 @@
 package net.luversof.bookkeeping;
 
-import lombok.extern.slf4j.Slf4j;
-import net.luversof.GeneralTest;
-import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.domain.Entry;
-import net.luversof.bookkeeping.domain.EntryGroup;
-import net.luversof.bookkeeping.repository.EntryGroupRepository;
-import net.luversof.bookkeeping.repository.EntryRepository;
-import net.luversof.bookkeeping.service.BookkeepingService;
-import net.luversof.bookkeeping.service.EntryGroupService;
-import net.luversof.bookkeeping.service.EntryService;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.format.datetime.standard.DateTimeContextHolder;
-
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.format.datetime.standard.DateTimeContextHolder;
+
+import lombok.extern.slf4j.Slf4j;
+import net.luversof.GeneralTest;
+import net.luversof.bookkeeping.domain.Bookkeeping;
+import net.luversof.bookkeeping.domain.Entry;
+import net.luversof.bookkeeping.domain.EntryGroup;
+import net.luversof.bookkeeping.repository.EntryRepository;
+import net.luversof.bookkeeping.service.BookkeepingService;
+import net.luversof.bookkeeping.service.EntryGroupService;
+import net.luversof.bookkeeping.service.EntryService;
 
 @Slf4j
 public class EntryTest extends GeneralTest {
@@ -35,11 +36,21 @@ public class EntryTest extends GeneralTest {
 
 	@Autowired
 	private EntryRepository entryRepository;
+	
+	private Bookkeeping bookkeeping;
+
+	static final UUID TEST_USER_ID = UUID.fromString("35929103-da22-49e7-9d76-214bb081593f");
+	
+	@BeforeEach
+	public void before() {
+		Bookkeeping bookkeeping = new Bookkeeping();
+    	bookkeeping.setUserId(TEST_USER_ID);
+		bookkeeping = bookkeepingService.getUserBookkeeping(bookkeeping).get();
+	}
 
 	// 세이브 테스트
 	@Test
 	public void create() {
-		Bookkeeping bookkeeping = bookkeepingService.findById(UUID.fromString("35929103-da22-49e7-9d76-214bb081593f"));
 		List<EntryGroup> entryGroupList = entryGroupService.findByBookkeepingId(bookkeeping.getId());
 		
 		Entry entry = new Entry();
@@ -95,7 +106,6 @@ public class EntryTest extends GeneralTest {
 
 	@Test
 	public void deleteByBookkeeping() {
-		Bookkeeping bookkeeping = bookkeepingService.findById(UUID.fromString("35929103-da22-49e7-9d76-214bb081593f"));
 		log.debug("deleteByBookkeeping : {}", entryRepository.deleteByBookkeepingIdQuery(bookkeeping.getId()));
 	}
 	

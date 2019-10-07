@@ -1,23 +1,20 @@
 package net.luversof.bookkeeping;
 
-import lombok.extern.slf4j.Slf4j;
-import net.luversof.GeneralTest;
-import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.repository.BookkeepingRepository;
-import net.luversof.bookkeeping.service.BookkeepingService;
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
+import net.luversof.GeneralTest;
+import net.luversof.bookkeeping.domain.Bookkeeping;
+import net.luversof.bookkeeping.service.BookkeepingService;
 
 @Slf4j
 public class BookkeepingTest extends GeneralTest {
 
     @Autowired
     private BookkeepingService bookkeepingService;
-
-    @Autowired
-    private BookkeepingRepository bookkeepingRepository;
 
     static final UUID TEST_USER_ID = UUID.fromString("35929103-da22-49e7-9d76-214bb081593f");
 
@@ -43,7 +40,9 @@ public class BookkeepingTest extends GeneralTest {
 
     @Test
     public void findByUserId() {
-        log.debug("bookkeeping : {}", bookkeepingService.findByUserId(TEST_USER_ID));
+    	Bookkeeping bookkeeping = new Bookkeeping();
+    	bookkeeping.setUserId(TEST_USER_ID);
+        log.debug("bookkeeping : {}", bookkeepingService.getUserBookkeeping(bookkeeping));
     }
 
     @Test

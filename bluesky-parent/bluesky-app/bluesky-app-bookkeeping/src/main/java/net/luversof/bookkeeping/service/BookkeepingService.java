@@ -1,19 +1,17 @@
 package net.luversof.bookkeeping.service;
 
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import net.luversof.bookkeeping.constant.BookkeepingConstants;
 import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.repository.BookkeepingRepository;
 import net.luversof.core.exception.BlueskyException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class BookkeepingService {
@@ -55,11 +53,11 @@ public class BookkeepingService {
 	 * @param bookkeeping
 	 * @return
 	 */
-	private Optional<Bookkeeping> getUserBookkeeping(Bookkeeping bookkeeping) {
+	public Optional<Bookkeeping> getUserBookkeeping(Bookkeeping bookkeeping) {
 		if (bookkeeping.getUserId() == null) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_USER_ID);
 		}
-		List<Bookkeeping> bookkeepingList = findByUserId(bookkeeping.getUserId());
+		List<Bookkeeping> bookkeepingList = bookkeepingRepository.findByUserId(bookkeeping.getUserId());
 		if (bookkeepingList.isEmpty()) {
 			return Optional.empty();
 		}
@@ -92,25 +90,13 @@ public class BookkeepingService {
 		return bookkeepingRepository.save(targetBookkeeping);
 	}
 
-	@Deprecated
-	public Bookkeeping findById(UUID id) {
-		return bookkeepingRepository.findById(id).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-	}
-
-	public List<Bookkeeping> findByUserId(UUID userId) {
-		return bookkeepingRepository.findByUserId(userId);
-	}
-	
 	/**
 	 * 완전 삭제의 경우 관련한 데이터를 모두 삭제 처리
 	 * @param bookkeeping
 	 */
 	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
 	public void delete(Bookkeeping bookkeeping) {
-		Bookkeeping targetBookkeeping = findById(bookkeeping.getId());
-		if (!targetBookkeeping.getUserId().equals(bookkeeping.getUserId())) {
-			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_BOOKKEEPING);
-		}
+		Bookkeeping targetBookkeeping = getUserBookkeeping(bookkeeping).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		entryService.deleteByBookkeepingId(targetBookkeeping.getId());
 		entryGroupService.deleteBybookkeepingId(targetBookkeeping.getId());
 		assetService.deleteBybookkeepingId(targetBookkeeping.getId());

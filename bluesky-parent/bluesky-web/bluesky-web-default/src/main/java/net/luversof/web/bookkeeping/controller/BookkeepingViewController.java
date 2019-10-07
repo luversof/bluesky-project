@@ -1,6 +1,6 @@
 package net.luversof.web.bookkeeping.controller;
 
-import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -31,10 +31,12 @@ public class BookkeepingViewController {
 	@GetMapping(value = "/setting")
 	public void setting(ModelMap modelMap, Authentication authentication) {
 		// 기본 설정한 bookkeeping Id를 반환하자.
-		BlueskyUser blueskyUser = (BlueskyUser) authentication.getPrincipal();
-		List<Bookkeeping> bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId());
-		if (!bookkeepingList.isEmpty()) {
-			modelMap.addAttribute("bookkeepingId", bookkeepingList.get(0).getId());
+		Bookkeeping bookkeeping = new Bookkeeping();
+		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+		
+		Optional<Bookkeeping> userBookkeeping = bookkeepingService.getUserBookkeeping(bookkeeping);
+		if (userBookkeeping.isPresent()) {
+			modelMap.addAttribute("bookkeepingId", userBookkeeping.get().getId());
 		}
 	}
 	
