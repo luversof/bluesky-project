@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,7 +18,7 @@ import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.constant.AuthorizeRole;
 
-//@Controller
+@Controller
 @RequestMapping(value = "/bookkeeping", produces = MediaType.TEXT_HTML_VALUE)
 public class BookkeepingViewController {
 	
@@ -27,6 +28,10 @@ public class BookkeepingViewController {
 //	@RequestMapping(value = "/index", method = RequestMethod.GET)
 //	public void index() {
 //	}
+	
+	@GetMapping(value = "/test")
+	public void test() {
+	}
 	
 	@GetMapping(value = "/setting")
 	public void setting(ModelMap modelMap, Authentication authentication) {

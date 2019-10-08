@@ -30,8 +30,36 @@ function createBookkeeping() {
 	request.send(encodeURI('name=test'));
 }
 
-$.ajax({
-	url : "bookkeeping.json",
-	type : "post",
-	data : { "aaa" : "ccc" }
-})
+//$.ajax({
+//	url : "bookkeeping.json",
+//	type : "post",
+//	data : { "aaa" : "ccc" }
+//})
+
+function errorHandler(err) {
+	console.log("ERROR ", err);
+}
+
+
+var Bookkeeping = function() {
+	return {
+		getBookkeeping : function() {
+			return fetch("/bookkeeping.json", { 
+				method: "GET",
+				credentials: "same-origin",
+				headers : {
+					"Content-type" : "application/json"
+				}
+			}).then(response => {
+				if (response.ok) {
+					return response.json();
+				} else {
+					//console.log("err  : ", response.json());
+					return Promise.reject({ response : response.json() })
+				}
+			}).catch(err => console.error("test ", err));
+		}
+	}
+}
+var bookkeeping = Bookkeeping();
+
