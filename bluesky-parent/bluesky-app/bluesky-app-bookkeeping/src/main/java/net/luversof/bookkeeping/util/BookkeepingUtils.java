@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
-import net.luversof.core.exception.BlueskyException;
+import net.luversof.boot.exception.BlueskyException;
 
 public class BookkeepingUtils {
 	

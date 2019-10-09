@@ -16,7 +16,7 @@ import net.luversof.bookkeeping.constant.EntryGroupInitialData;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.repository.EntryGroupRepository;
-import net.luversof.core.exception.BlueskyException;
+import net.luversof.boot.exception.BlueskyException;
 
 @Service
 public class EntryGroupService {

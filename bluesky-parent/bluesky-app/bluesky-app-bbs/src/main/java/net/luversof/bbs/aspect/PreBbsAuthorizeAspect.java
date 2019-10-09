@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import net.luversof.bbs.annotation.PreBbsAuthorize;
 import net.luversof.bbs.domain.Bbs;
 import net.luversof.bbs.service.BbsService;
-import net.luversof.core.exception.BlueskyException;
+import net.luversof.boot.exception.BlueskyException;
 
 @Aspect
 @Component

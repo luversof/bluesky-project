@@ -9,7 +9,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Service;
 
-import net.luversof.core.exception.BlueskyException;
+import net.luversof.boot.exception.BlueskyException;
 import net.luversof.core.exception.CoreErrorCode;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.user.domain.User;

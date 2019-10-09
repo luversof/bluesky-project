@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.BlogRepository;
-import net.luversof.core.exception.BlueskyException;
+import net.luversof.boot.exception.BlueskyException;
 import net.luversof.user.service.LoginUserService;
 
 @Component

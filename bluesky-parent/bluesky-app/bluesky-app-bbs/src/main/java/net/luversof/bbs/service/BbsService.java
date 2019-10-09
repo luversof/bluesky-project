@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import net.luversof.bbs.constant.BbsErrorCode;
 import net.luversof.bbs.domain.Bbs;
 import net.luversof.bbs.repository.BbsRepository;
-import net.luversof.core.exception.BlueskyException;
+import net.luversof.boot.exception.BlueskyException;
 
 @Service
 public class BbsService {

@@ -14,7 +14,7 @@ import net.luversof.blog.domain.Article;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.BlogRepository;
 import net.luversof.blog.repository.CategoryRepository;
-import net.luversof.core.exception.BlueskyException;
+import net.luversof.boot.exception.BlueskyException;
 import net.luversof.core.util.ValidationUtil;
 import net.luversof.user.service.LoginUserService;
 

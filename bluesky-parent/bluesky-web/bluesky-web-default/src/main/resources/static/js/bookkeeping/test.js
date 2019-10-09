@@ -36,8 +36,11 @@ function createBookkeeping() {
 //	data : { "aaa" : "ccc" }
 //})
 
-function errorHandler(err) {
-	console.log("ERROR ", err);
+function commonErrorHandler(response) {
+	console.log("ERR ", response);
+	response.json().then((data) => {
+		console.log("error body", data.result);
+	});
 }
 
 
@@ -51,13 +54,18 @@ var Bookkeeping = function() {
 					"Content-type" : "application/json"
 				}
 			}).then(response => {
+				console.log("response : ", response);
+				// console.log("response : ", response.json());
 				if (response.ok) {
 					return response.json();
 				} else {
-					//console.log("err  : ", response.json());
-					return Promise.reject({ response : response.json() })
+					// console.log("err  : ", response.json());
+					throw response;
+					// return Promise.reject(response.json())
 				}
-			}).catch(err => console.error("test ", err));
+			}).then(data => {
+				console.log("data : ", data);
+			}).catch(commonErrorHandler);
 		}
 	}
 }
