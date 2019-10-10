@@ -54,17 +54,20 @@ var Bookkeeping = function() {
 					"Content-type" : "application/json"
 				}
 			}).then(response => {
-				console.log("response : ", response);
-				// console.log("response : ", response.json());
 				if (response.ok) {
 					return response.json();
 				} else {
-					// console.log("err  : ", response.json());
 					throw response;
-					// return Promise.reject(response.json())
 				}
 			}).then(data => {
-				console.log("data : ", data);
+				if (data == null) {
+					if (confirm("현재 소유한 가계부가 없습니다. 가계부를 생성하시겠습니까?")) {
+						// 가계부 생성
+					}
+				} else {
+					// 해당 가계부 노출?
+				}
+				
 			}).catch(commonErrorHandler);
 		}
 	}
