@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,7 +23,7 @@ import net.luversof.web.constant.AuthorizeRole;
 
 @RestController
 @PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-@RequestMapping(value = "/bookkeeping", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/bookkeeping", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BookkeepingController {
 
 	@Autowired
@@ -50,21 +51,21 @@ public class BookkeepingController {
 	
 	@PreAuthorize("hasRole('ROLE_USER')")
 	@PostMapping
-	public Bookkeeping createBookkeeping(@Validated(Bookkeeping.Create.class) Bookkeeping bookkeeping, User user) {
+	public Bookkeeping createBookkeeping(@RequestBody @Validated(Bookkeeping.Create.class) Bookkeeping bookkeeping, User user) {
 		bookkeeping.setUserId(user.getId());
 		return bookkeepingService.create(bookkeeping);
 	}
 	
-	@PreAuthorize("hasRole('ROLE_USER') and authentication.principal.id == #bookkeeping.userId")
+	@PreAuthorize("hasRole('ROLE_USER')")
 	@PutMapping(value="/{id}")
-	public Bookkeeping updateBookkeeping(@Validated(Bookkeeping.Update.class) Bookkeeping bookkeeping, User user) {
+	public Bookkeeping updateBookkeeping(@RequestBody @Validated(Bookkeeping.Update.class) Bookkeeping bookkeeping, User user) {
 		bookkeeping.setUserId(user.getId());
 		return bookkeepingService.update(bookkeeping);
 	}
 	
 	@PreAuthorize("hasRole('ROLE_USER')")
 	@DeleteMapping(value="/{id}")
-	public Bookkeeping deleteBookkeeping(@Validated(Bookkeeping.Delete.class) Bookkeeping bookkeeping, User user) {
+	public Bookkeeping deleteBookkeeping(@RequestBody @Validated(Bookkeeping.Delete.class) Bookkeeping bookkeeping, User user) {
 		bookkeeping.setUserId(user.getId());
 		bookkeepingService.delete(bookkeeping);
 		return bookkeeping;
