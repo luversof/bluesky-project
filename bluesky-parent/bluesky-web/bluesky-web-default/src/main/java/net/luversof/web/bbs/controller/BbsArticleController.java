@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,7 +27,7 @@ public class BbsArticleController {
 	@PreBbsAuthorize(checkBbsActivated = true)
 	@GetMapping
 	public Page<Article> list(@PathVariable String boardAlias, @RequestParam(defaultValue = "1") int page) {
-		Page<Article> bbsArticleList = bbsArticleService.selectBbsArticleList(boardAlias, PageRequest.of(page - 1, 20, new Sort(Direction.DESC, "id")));
+		Page<Article> bbsArticleList = bbsArticleService.selectBbsArticleList(boardAlias, PageRequest.of(page - 1, 20, Sort.by("id").descending()));
 		log.debug("bbsArticleList : {}", bbsArticleList);
 		return bbsArticleList;
 	}

@@ -42,6 +42,11 @@ public class BookkeepingController {
 		return bookkeepingService.getUserBookkeeping(bookkeeping);
 	}
 
+	/**
+	 * TODO 타인의 bookkeeping 은 추후 고민
+	 * @param id
+	 * @return
+	 */
 	@GetMapping(value = "/{id}")
 	public Optional<Bookkeeping> getBookkeeping(@PathVariable UUID id) {
 		Bookkeeping bookkeeping = new Bookkeeping();
@@ -57,17 +62,17 @@ public class BookkeepingController {
 	}
 	
 	@PreAuthorize("hasRole('ROLE_USER')")
-	@PutMapping(value="/{id}")
+	@PutMapping
 	public Bookkeeping updateBookkeeping(@RequestBody @Validated(Bookkeeping.Update.class) Bookkeeping bookkeeping, User user) {
 		bookkeeping.setUserId(user.getId());
 		return bookkeepingService.update(bookkeeping);
 	}
 	
 	@PreAuthorize("hasRole('ROLE_USER')")
-	@DeleteMapping(value="/{id}")
-	public Bookkeeping deleteBookkeeping(@RequestBody @Validated(Bookkeeping.Delete.class) Bookkeeping bookkeeping, User user) {
+	@DeleteMapping
+	public void deleteBookkeeping(User user) {
+		Bookkeeping bookkeeping = new Bookkeeping();
 		bookkeeping.setUserId(user.getId());
 		bookkeepingService.delete(bookkeeping);
-		return bookkeeping;
 	}
 }

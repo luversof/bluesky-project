@@ -13,7 +13,6 @@ import javax.persistence.Table;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.envers.Audited;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.rest.core.annotation.Description;
 
 import lombok.Data;
 
@@ -34,7 +33,6 @@ public class Blog {
 	@Column(length = 16)
 	private UUID id;
 
-	@Description("유저 Id정보, 입력시 필요하지 않음.")
 	@Column(name = "user_id", length = 16)
 	private UUID userId;
 	

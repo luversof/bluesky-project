@@ -17,7 +17,6 @@ import org.hibernate.envers.Audited;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.rest.core.annotation.Description;
 
 import lombok.Data;
 
@@ -36,7 +35,6 @@ public class Article {
 	@NotNull(groups = { Save.class, Delete.class })
 	private Blog blog;
 
-	@Description("제목")
 	@NotEmpty(groups = { Create.class, Save.class })
 	@Length(min = 3, max = 50, groups = { Create.class, Save.class })
 	private String title;
