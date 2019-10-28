@@ -29,7 +29,6 @@ public class Bookkeeping {
 	@Column(length = 16)
 	@Min.List({
 		@Min(value = 1, groups = { 
-				Bookkeeping.Update.class, 
 				Asset.Create.class, Asset.Update.class, Asset.Delete.class,
 				EntryGroup.Create.class, EntryGroup.Update.class, EntryGroup.Delete.class,
 				Entry.Create.class, Entry.Update.class, Entry.Delete.class,
