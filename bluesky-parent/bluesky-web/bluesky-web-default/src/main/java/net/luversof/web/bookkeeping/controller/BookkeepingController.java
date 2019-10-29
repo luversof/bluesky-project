@@ -17,7 +17,6 @@ import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.service.BookkeepingService;
 import net.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.security.core.userdetails.BlueskyUser;
-import net.luversof.user.domain.User;
 
 @RestController
 @BlueskyPreAuthorize
@@ -50,9 +49,9 @@ public class BookkeepingController {
 	}
 	
 	@DeleteMapping
-	public void deleteBookkeeping(User user) {
+	public void deleteBookkeeping(BlueskyUser blueskyUser) {
 		Bookkeeping bookkeeping = new Bookkeeping();
-		bookkeeping.setUserId(user.getId());
+		bookkeeping.setUserId(blueskyUser.getId());
 		bookkeepingService.delete(bookkeeping);
 	}
 }
