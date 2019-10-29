@@ -4,9 +4,6 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,11 +12,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.service.BookkeepingService;
-import net.luversof.security.core.userdetails.BlueskyUser;
-import net.luversof.web.constant.AuthorizeRole;
+import net.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
+import net.luversof.user.domain.User;
 
-@Controller
+//@Controller
 @RequestMapping(value = "/bookkeeping", produces = MediaType.TEXT_HTML_VALUE)
+@Deprecated
 public class BookkeepingViewController {
 	
 	@Autowired
@@ -34,12 +32,9 @@ public class BookkeepingViewController {
 	}
 	
 	@GetMapping(value = "/setting")
-	public void setting(ModelMap modelMap, Authentication authentication) {
+	public void setting(ModelMap modelMap, User user) {
 		// 기본 설정한 bookkeeping Id를 반환하자.
-		Bookkeeping bookkeeping = new Bookkeeping();
-		bookkeeping.setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
-		
-		Optional<Bookkeeping> userBookkeeping = bookkeepingService.getUserBookkeeping(bookkeeping);
+		Optional<Bookkeeping> userBookkeeping = bookkeepingService.getUserBookkeeping(user.getId());
 		if (userBookkeeping.isPresent()) {
 			modelMap.addAttribute("bookkeepingId", userBookkeeping.get().getId());
 		}
@@ -70,19 +65,19 @@ public class BookkeepingViewController {
 	}
 	
 	
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@BlueskyPreAuthorize
 	@GetMapping(value = "/{bookkeepingId}/entryGroup/setting")
 	public String entryGroupList(@PathVariable long bookkeepingId) {
 		return "bookkeeping/entryGroup/setting";
 	}
 	
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@BlueskyPreAuthorize
 	@GetMapping(value = "/{bookkeepingId}/asset/setting")
 	public String assetList(@PathVariable long bookkeepingId) {
 		return "bookkeeping/asset/setting";
 	}
 	
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@BlueskyPreAuthorize
 	@GetMapping(value = "/{bookkeepingId}/statistics/index")
 	public String statisticsList(@PathVariable long bookkeepingId) {
 		return "bookkeeping/statistics/index";

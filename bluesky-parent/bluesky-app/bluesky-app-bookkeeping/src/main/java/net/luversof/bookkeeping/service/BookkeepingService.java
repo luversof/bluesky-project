@@ -3,6 +3,7 @@ package net.luversof.bookkeeping.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -50,15 +51,17 @@ public class BookkeepingService {
 
 	/**
 	 * userId 기반으로 bookkeeping 정보를 조회한다.
-	 * N개 이상 있는 경우 요청 시 bookkeepingId 필요
+	 * N개 이상 있는 경우는 첫번째 반환 처리함
+	 * 
 	 * @param bookkeeping
 	 * @return
 	 */
-	public Optional<Bookkeeping> getUserBookkeeping(Bookkeeping bookkeeping) {
-		if (bookkeeping.getUserId() == null) {
+	public Optional<Bookkeeping> getUserBookkeeping(UUID userId) {
+		if (userId == null) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_USER_ID);
 		}
-		List<Bookkeeping> bookkeepingList = bookkeepingRepository.findByUserId(bookkeeping.getUserId());
+		List<Bookkeeping> bookkeepingList = bookkeepingRepository.findByUserId(userId);
+		
 		if (bookkeepingList.isEmpty()) {
 			return Optional.empty();
 		}
@@ -66,10 +69,7 @@ public class BookkeepingService {
 			return Optional.of(bookkeepingList.get(0));
 		}
 
-		if (bookkeeping.getId() == null) {
-			throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING_ID);
-		}
-		return bookkeepingList.stream().filter(x -> x.getId().equals(bookkeeping.getId())).findAny();
+		return Optional.of(bookkeepingList.get(0));
 	}
 
 	/**
@@ -79,7 +79,7 @@ public class BookkeepingService {
 	 * @return
 	 */
 	public Bookkeeping update(Bookkeeping bookkeeping) {
-		Bookkeeping targetBookkeeping = getUserBookkeeping(bookkeeping).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		Bookkeeping targetBookkeeping = getUserBookkeeping(bookkeeping.getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		if (bookkeeping.getBaseDate() > 0) {
 			targetBookkeeping.setBaseDate(bookkeeping.getBaseDate());
 		}
@@ -97,7 +97,7 @@ public class BookkeepingService {
 	 */
 	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
 	public void delete(Bookkeeping bookkeeping) {
-		Bookkeeping targetBookkeeping = getUserBookkeeping(bookkeeping).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		Bookkeeping targetBookkeeping = getUserBookkeeping(bookkeeping.getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		entryService.deleteByBookkeepingId(targetBookkeeping.getId());
 		entryGroupService.deleteBybookkeepingId(targetBookkeeping.getId());
 		assetService.deleteBybookkeepingId(targetBookkeeping.getId());

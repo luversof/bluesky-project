@@ -7,13 +7,13 @@ import javax.annotation.Resource;
 
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import net.luversof.web.constant.AuthorizeRole;
+import net.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
+
 
 @Controller
 @RequestMapping(value = "/blog/{blogId}", produces = MediaType.TEXT_HTML_VALUE)
@@ -62,7 +62,7 @@ public class ArticleViewController {
 	 * @param modelMap
 	 * @return
 	 */
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@BlueskyPreAuthorize
 	@GetMapping(value = "/write")
 	public String writePage(@PathVariable UUID blogId) {
 		return "blog/write";
@@ -75,7 +75,7 @@ public class ArticleViewController {
 	 * @param modelMap
 	 * @return
 	 */
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@BlueskyPreAuthorize
 	@GetMapping(value = "/modify/{articleId}")
 	public String modifyPage(@PathVariable UUID blogId, @PathVariable long articleId) {
 		return "blog/modify";

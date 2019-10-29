@@ -33,9 +33,7 @@ public class AssetTest extends GeneralTest {
 
 	@Test
 	public void initialDataSave() {
-		Bookkeeping bookkeeping = new Bookkeeping();
-		bookkeeping.setUserId(TEST_USER_ID);
-		Bookkeeping userBookkeeping = bookkeepingService.getUserBookkeeping(bookkeeping).get();
+		Bookkeeping userBookkeeping = bookkeepingService.getUserBookkeeping(TEST_USER_ID).get();
 		List<Asset> result = assetService.initialDataSave(userBookkeeping);
 		log.debug("defaultAsset : {}", result);
 	}

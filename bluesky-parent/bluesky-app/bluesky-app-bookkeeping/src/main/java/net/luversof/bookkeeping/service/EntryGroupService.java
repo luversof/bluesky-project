@@ -46,12 +46,12 @@ public class EntryGroupService {
 	}
 	
 	public EntryGroup create(EntryGroup entryGroup) {
-		bookkeepingService.getUserBookkeeping(entryGroup.getBookkeeping()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		bookkeepingService.getUserBookkeeping(entryGroup.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		return entryGroupRepository.save(entryGroup);
 	}
 	
 	public EntryGroup update(EntryGroup entryGroup) {
-		bookkeepingService.getUserBookkeeping(entryGroup.getBookkeeping()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		bookkeepingService.getUserBookkeeping(entryGroup.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		EntryGroup targetEntryGroup = findOne(entryGroup.getId());
 		if (targetEntryGroup.getBookkeeping().getUserId() != entryGroup.getBookkeeping().getUserId()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRYGROUP);
@@ -68,7 +68,7 @@ public class EntryGroupService {
 	}
 
 	public void delete(EntryGroup entryGroup) {
-		bookkeepingService.getUserBookkeeping(entryGroup.getBookkeeping()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		bookkeepingService.getUserBookkeeping(entryGroup.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		EntryGroup targetEntryGroup = findOne(entryGroup.getId());
 		if (targetEntryGroup.getBookkeeping().getUserId() != entryGroup.getBookkeeping().getUserId()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRYGROUP);

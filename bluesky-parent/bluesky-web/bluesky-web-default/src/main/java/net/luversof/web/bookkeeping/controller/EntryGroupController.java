@@ -5,7 +5,6 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,11 +17,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.service.EntryGroupService;
+import net.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.security.core.userdetails.BlueskyUser;
-import net.luversof.web.constant.AuthorizeRole;
 
 //@RestController
-@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+@BlueskyPreAuthorize
 @RequestMapping(value = "/bookkeeping/{bookkeeping.id}/entryGroup", produces = MediaType.APPLICATION_JSON_VALUE)
 public class EntryGroupController {
 

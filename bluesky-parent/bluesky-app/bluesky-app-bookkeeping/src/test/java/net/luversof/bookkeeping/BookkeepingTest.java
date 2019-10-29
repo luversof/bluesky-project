@@ -40,9 +40,7 @@ public class BookkeepingTest extends GeneralTest {
 
     @Test
     public void findByUserId() {
-    	Bookkeeping bookkeeping = new Bookkeeping();
-    	bookkeeping.setUserId(TEST_USER_ID);
-        log.debug("bookkeeping : {}", bookkeepingService.getUserBookkeeping(bookkeeping));
+        log.debug("bookkeeping : {}", bookkeepingService.getUserBookkeeping(TEST_USER_ID));
     }
 
     @Test

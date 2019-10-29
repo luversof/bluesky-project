@@ -25,13 +25,13 @@ public class EntryService {
 	private BookkeepingService bookkeepingService;
 
 	public Entry create(Entry entry) {
-		Bookkeeping bookkeeping = bookkeepingService.getUserBookkeeping(entry.getBookkeeping()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		Bookkeeping bookkeeping = bookkeepingService.getUserBookkeeping(entry.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		entry.setBookkeeping(bookkeeping);
 		return entryRepository.save(entry);
 	}
 	
 	public Entry update(Entry entry) {
-		Bookkeeping bookkeeping = bookkeepingService.getUserBookkeeping(entry.getBookkeeping()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		Bookkeeping bookkeeping = bookkeepingService.getUserBookkeeping(entry.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		entry.setBookkeeping(bookkeeping);
 		Entry targetEntry = findOne(entry.getId());
 		if (!targetEntry.getBookkeeping().getUserId().equals(entry.getBookkeeping().getUserId())) {
@@ -45,7 +45,7 @@ public class EntryService {
 	}
 
 	public void delete(Entry entry) {
-		Bookkeeping bookkeeping = bookkeepingService.getUserBookkeeping(entry.getBookkeeping()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		Bookkeeping bookkeeping = bookkeepingService.getUserBookkeeping(entry.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		entry.setBookkeeping(bookkeeping);
 		Entry targetEntry = findOne(entry.getId());
 		if (!targetEntry.getBookkeeping().getUserId().equals(entry.getBookkeeping().getUserId())) {
@@ -59,7 +59,7 @@ public class EntryService {
 	 * @return
 	 */
 	public List<Entry> findByEntrySearchInfo(EntrySearchInfo entrySearchInfo) {
-		Bookkeeping targetBookkeeping = bookkeepingService.getUserBookkeeping(entrySearchInfo.getBookkeeping()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		Bookkeeping targetBookkeeping = bookkeepingService.getUserBookkeeping(entrySearchInfo.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		int baseDate = targetBookkeeping.getBaseDate();
 		entrySearchInfo.setBaseDate(baseDate);
 		return entryRepository.findByBookkeepingIdAndEntryDateBetween(entrySearchInfo.getBookkeeping().getId(), entrySearchInfo.getStartZonedDateTime(), entrySearchInfo.getEndZonedDateTime());

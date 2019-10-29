@@ -16,7 +16,7 @@ public class StatisticsSearchInfoService {
 	private BookkeepingService bookkeepingService;
 	
 	public StatisticsSearchInfo getStatisticsSearchInfo(StatisticsSearchInfo statisticsSearchInfo) {
-		Bookkeeping targetBookkeeping = bookkeepingService.getUserBookkeeping(statisticsSearchInfo.getBookkeeping()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		Bookkeeping targetBookkeeping = bookkeepingService.getUserBookkeeping(statisticsSearchInfo.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		statisticsSearchInfo.setBookkeeping(targetBookkeeping);
 		statisticsSearchInfo.setBaseDate(targetBookkeeping.getBaseDate());
 		return statisticsSearchInfo;

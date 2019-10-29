@@ -15,7 +15,6 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.PropertySource;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,8 +26,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
+import net.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.core.annotation.DevCheckDescription;
-import net.luversof.web.constant.AuthorizeRole;
 import net.luversof.web.index.service.MenuService;
 
 @RestController
@@ -106,7 +105,7 @@ public class DevCheckController {
 	}
 
 	@DevCheckDescription(displayable = false)
-	@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
+	@BlueskyPreAuthorize
 	@GetMapping("/exceptionOrderTest")
 	public void exceptionOrderTest(@Validated(User.CheckName.class) User user, ModelMap modelMap) {
 		modelMap.addAttribute(user);

@@ -1,30 +1,26 @@
 package net.luversof.web.bookkeeping.controller;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PostAuthorize;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.service.AssetService;
+import net.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.security.core.userdetails.BlueskyUser;
-import net.luversof.web.constant.AuthorizeRole;
 
-//@RestController
-@PreAuthorize(AuthorizeRole.PRE_AUTHORIZE_ROLE)
-@RequestMapping(value = "/bookkeeping/{bookkeeping.id}/asset", produces = MediaType.APPLICATION_JSON_VALUE)
+@RestController
+@BlueskyPreAuthorize
+@RequestMapping(value = "/api/bookkeeping/asset", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AssetController {
 
 	@Autowired
@@ -37,10 +33,9 @@ public class AssetController {
 	 * @param modelMap
 	 * @return
 	 */
-	@PostAuthorize("(returnObject == null or returnObject.size() == 0) or returnObject.get(0).bookkeeping.userId == authentication.principal.id")
 	@GetMapping
-	public List<Asset> getAssetList(@PathVariable("bookkeeping.id") UUID bookkeepingId) {
-		return assetService.findByBookkeepingId(bookkeepingId);
+	public List<Asset> getUserAssetList(BlueskyUser blueskyUser) {
+		return assetService.getUserAssetList(blueskyUser.getId());
 	}
 
 	/**
@@ -51,20 +46,20 @@ public class AssetController {
 	 * @return
 	 */
 	@PostMapping
-	public Asset createAsset(@RequestBody @Validated(Asset.Create.class) Asset asset, Authentication authentication) {
-		asset.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+	public Asset createAsset(@RequestBody @Validated(Asset.Create.class) Asset asset, BlueskyUser blueskyUser) {
+		asset.getBookkeeping().setUserId(blueskyUser.getId());
 		return assetService.create(asset);
 	}
 
 	@PutMapping(value = "/{id}")
-	public Asset updateAsset(@RequestBody @Validated(Asset.Update.class) Asset asset, Authentication authentication) {
-		asset.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+	public Asset updateAsset(@RequestBody @Validated(Asset.Update.class) Asset asset, BlueskyUser blueskyUser) {
+		asset.getBookkeeping().setUserId(blueskyUser.getId());
 		return assetService.update(asset);
 	}
 
 	@DeleteMapping(value = "/{id}")
-	public void deleteAsset(@Validated(Asset.Delete.class) Asset asset, Authentication authentication) {
-		asset.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+	public void deleteAsset(@Validated(Asset.Delete.class) Asset asset, BlueskyUser blueskyUser) {
+		asset.getBookkeeping().setUserId(blueskyUser.getId());
 		assetService.delete(asset);
 	}
 	 

@@ -33,7 +33,7 @@ public class EntryGroupTest extends GeneralTest {
 	public void before() {
 		Bookkeeping bookkeeping = new Bookkeeping();
     	bookkeeping.setUserId(TEST_USER_ID);
-		bookkeeping = bookkeepingService.getUserBookkeeping(bookkeeping).get();
+		bookkeeping = bookkeepingService.getUserBookkeeping(bookkeeping.getUserId()).get();
 	}
 
 	@Test
