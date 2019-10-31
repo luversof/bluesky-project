@@ -8,7 +8,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
-import javax.persistence.OneToOne;
+import javax.persistence.ManyToOne;
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
@@ -27,19 +27,19 @@ public class Entry implements Serializable {
 	@Min(value = 1, groups = { Update.class, Delete.class })
 	private long id;
 
-	@OneToOne
+	@ManyToOne
 	@Valid
 	private Bookkeeping bookkeeping;
 
-	@OneToOne
+	@ManyToOne
 	@JoinColumn(name = "debit_asset_id")
 	private Asset debitAsset;
 
-	@OneToOne
+	@ManyToOne
 	@JoinColumn(name = "credit_asset_id")
 	private Asset creditAsset;
 
-	@OneToOne
+	@ManyToOne
 	private EntryGroup entryGroup;
 
 	@NotNull(groups = { Create.class, Update.class })

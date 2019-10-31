@@ -6,7 +6,7 @@ import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.OneToOne;
+import javax.persistence.ManyToOne;
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
@@ -40,7 +40,7 @@ public class EntryGroup {
 	@Enumerated(EnumType.STRING)
 	private EntryType entryType;
 
-	@OneToOne
+	@ManyToOne
 	@Valid
 	private Bookkeeping bookkeeping;
 

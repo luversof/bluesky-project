@@ -4,6 +4,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
@@ -41,7 +42,7 @@ public class Asset {
 	@Valid
 	private Bookkeeping bookkeeping;
 
-	@OneToOne
+	@ManyToOne
 	@NotNull(groups = { Create.class, Update.class })
 	private AssetGroup assetGroup;
 
