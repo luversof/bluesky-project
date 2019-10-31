@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.bookkeeping.constant.BookkeepingConstants;
 import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
+import net.luversof.bookkeeping.domain.AssetGroup;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.repository.BookkeepingRepository;
 import net.luversof.boot.exception.BlueskyException;
@@ -23,6 +24,9 @@ public class BookkeepingService {
 	
 	@Autowired
 	private EntryGroupService entryGroupService;
+	
+	@Autowired
+	private AssetGroupService assetGroupService;
 	
 	@Autowired
 	private AssetService assetService;
@@ -44,7 +48,8 @@ public class BookkeepingService {
 		}
 
 		bookkeepingRepository.save(bookkeeping);
-		assetService.initialDataSave(bookkeeping);
+		List<AssetGroup> assetGroupList = assetGroupService.initialDataSave(bookkeeping);
+		assetService.initialDataSave(bookkeeping, assetGroupList);
 		entryGroupService.initialDataSave(bookkeeping);
 		return bookkeeping;
 	}

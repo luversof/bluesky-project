@@ -1,28 +1,21 @@
 package net.luversof.bookkeeping;
 
-import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.bookkeeping.constant.AssetInitialData;
-import net.luversof.bookkeeping.domain.Asset;
-import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.repository.EntryRepository;
-import net.luversof.bookkeeping.service.AssetService;
-import net.luversof.bookkeeping.service.BookkeepingService;
 
 @Slf4j
 public class AssetTest extends GeneralTest {
 	
-	@Autowired
-	private AssetService assetService;
-	
-	@Autowired
-	private BookkeepingService bookkeepingService;
+//	@Autowired
+//	private AssetService assetService;
+//	
+//	@Autowired
+//	private BookkeepingService bookkeepingService;
 
 	static final UUID TEST_USER_ID = UUID.fromString("35929103-da22-49e7-9d76-214bb081593f");
 
@@ -31,17 +24,12 @@ public class AssetTest extends GeneralTest {
 		log.debug("defaultAsset name : {}", AssetInitialData.WALLET.getName());
 	}
 
-	@Test
-	public void initialDataSave() {
-		Bookkeeping userBookkeeping = bookkeepingService.getUserBookkeeping(TEST_USER_ID).get();
-		List<Asset> result = assetService.initialDataSave(userBookkeeping);
-		log.debug("defaultAsset : {}", result);
-	}
-	
-	
-	@SuppressWarnings("unused")
-	@Autowired
-	private EntryRepository entryRepository;
+//	@Test
+//	public void initialDataSave() {
+//		Bookkeeping userBookkeeping = bookkeepingService.getUserBookkeeping(TEST_USER_ID).get();
+//		List<Asset> result = assetService.initialDataSave(userBookkeeping);
+//		log.debug("defaultAsset : {}", result);
+//	}
 
 	
 //	/**

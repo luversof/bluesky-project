@@ -1,8 +1,6 @@
 package net.luversof.bookkeeping.service;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +11,7 @@ import net.luversof.bookkeeping.constant.AssetInitialData;
 import net.luversof.bookkeeping.constant.BookkeepingConstants;
 import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Asset;
+import net.luversof.bookkeeping.domain.AssetGroup;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.repository.AssetRepository;
 import net.luversof.boot.exception.BlueskyException;
@@ -33,17 +32,8 @@ public class AssetService {
 	 * @return
 	 */
 	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
-	public List<Asset> initialDataSave(Bookkeeping bookkeeping) {
-		Set<Asset> assetSet = new HashSet<>();
-		for (AssetInitialData assetInitialData : AssetInitialData.values()) {
-			Asset asset = new Asset();
-			asset.setBookkeeping(bookkeeping);
-			asset.setAmount(0);
-			asset.setAssetType(assetInitialData.getAssetType());
-			asset.setName(assetInitialData.getName());
-			assetSet.add(asset);
-		}
-		return assetRepository.saveAll(assetSet);
+	public List<Asset> initialDataSave(Bookkeeping bookkeeping, List<AssetGroup> assetGroupList) {
+		return assetRepository.saveAll(AssetInitialData.getAssetList(bookkeeping, assetGroupList));
 	}
 	
 	public Asset create(Asset asset) {
