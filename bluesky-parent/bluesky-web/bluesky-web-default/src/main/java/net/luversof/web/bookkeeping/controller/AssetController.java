@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.Asset;
+import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.service.AssetService;
 import net.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.security.core.userdetails.BlueskyUser;
@@ -47,18 +48,21 @@ public class AssetController {
 	 */
 	@PostMapping
 	public Asset createAsset(@RequestBody @Validated(Asset.Create.class) Asset asset, BlueskyUser blueskyUser) {
+		asset.setBookkeeping(new Bookkeeping());
 		asset.getBookkeeping().setUserId(blueskyUser.getId());
 		return assetService.create(asset);
 	}
 
 	@PutMapping(value = "/{id}")
 	public Asset updateAsset(@RequestBody @Validated(Asset.Update.class) Asset asset, BlueskyUser blueskyUser) {
+		asset.setBookkeeping(new Bookkeeping());
 		asset.getBookkeeping().setUserId(blueskyUser.getId());
 		return assetService.update(asset);
 	}
 
 	@DeleteMapping(value = "/{id}")
 	public void deleteAsset(@Validated(Asset.Delete.class) Asset asset, BlueskyUser blueskyUser) {
+		asset.setBookkeeping(new Bookkeeping());
 		asset.getBookkeeping().setUserId(blueskyUser.getId());
 		assetService.delete(asset);
 	}

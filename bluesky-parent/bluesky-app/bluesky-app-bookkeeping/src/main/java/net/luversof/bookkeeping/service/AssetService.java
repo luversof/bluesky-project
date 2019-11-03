@@ -37,12 +37,12 @@ public class AssetService {
 	}
 	
 	public Asset create(Asset asset) {
-		bookkeepingService.getUserBookkeeping(asset.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		asset.setBookkeeping(bookkeepingService.getUserBookkeeping(asset.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING)));
 		return assetRepository.save(asset);
 	}
 	
 	public Asset update(Asset asset) {
-		bookkeepingService.getUserBookkeeping(asset.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		asset.setBookkeeping(bookkeepingService.getUserBookkeeping(asset.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING)));
 		Asset targetAsset = findOne(asset.getId());
 		if (!targetAsset.getBookkeeping().getUserId().equals(asset.getBookkeeping().getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ASSET);
