@@ -8,7 +8,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.Table;
-import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 
 import org.hibernate.annotations.GenericGenerator;
@@ -27,15 +27,11 @@ public class Bookkeeping {
 	@GeneratedValue(generator = "uuid-gen")
 	@GenericGenerator(name = "uuid-gen", strategy = "uuid2")
 	@Column(length = 16)
-	@Min.List({
-		@Min(value = 1, groups = { 
-				Asset.Create.class, Asset.Update.class, Asset.Delete.class,
-				EntryGroup.Create.class, EntryGroup.Update.class, EntryGroup.Delete.class,
-				Entry.Create.class, Entry.Update.class, Entry.Delete.class,
-				EntrySearchInfo.Select.class, EntrySearchInfo.SelectEntryList.class,
-				StatisticsSearchInfo.Select.class, StatisticsSearchInfo.SelectEntryList.class
-				})
-	})
+	@NotBlank.List({ @NotBlank(groups = { Asset.Create.class, Asset.Update.class, Asset.Delete.class,
+			EntryGroup.Create.class, EntryGroup.Update.class, EntryGroup.Delete.class,
+			Entry.Create.class, Entry.Update.class, Entry.Delete.class,
+			EntrySearchInfo.Select.class, EntrySearchInfo.SelectEntryList.class,
+			StatisticsSearchInfo.Select.class, StatisticsSearchInfo.SelectEntryList.class }) })
 	private UUID id;
 
 	@NotEmpty(groups = { Create.class, Update.class })
@@ -54,8 +50,9 @@ public class Bookkeeping {
 	public interface Create {
 	}
 
-    public interface Update {
+	public interface Update {
 	}
 
-	public interface Search {}
+	public interface Search {
+	}
 }

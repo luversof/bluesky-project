@@ -5,7 +5,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Min;
 
 import org.hibernate.envers.Audited;
 
@@ -23,7 +23,7 @@ import net.luversof.bookkeeping.constant.AssetGroupType;
 @Audited
 public class AssetGroup {
 
-	@NotNull(groups = { Asset.Create.class })
+	@Min(value = 1, groups = { Asset.Create.class })
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;

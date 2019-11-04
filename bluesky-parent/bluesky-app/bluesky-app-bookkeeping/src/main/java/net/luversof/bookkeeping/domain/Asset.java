@@ -43,7 +43,8 @@ public class Asset {
 	private Bookkeeping bookkeeping;
 
 	@ManyToOne
-	@NotNull(groups = { Create.class, Update.class })
+	/* @NotNull(groups = { Create.class, Update.class }) */
+	@Valid
 	private AssetGroup assetGroup;
 
 	public interface Create {
