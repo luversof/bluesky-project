@@ -26,6 +26,20 @@ public class AssetController {
 
 	@Autowired
 	private AssetService assetService;
+
+	/**
+	 * requestBody에 @PathVariable의 id가 맵핑 안되는 부분은 어떻게 처리해야할까?
+	 * @param asset
+	 * @param bookkeepingId
+	 * @param authentication
+	 * @return
+	 */
+	@PostMapping
+	public Asset createUserAsset(@RequestBody @Validated(Asset.Create.class) Asset asset, BlueskyUser blueskyUser) {
+		asset.setBookkeeping(new Bookkeeping());
+		asset.getBookkeeping().setUserId(blueskyUser.getId());
+		return assetService.createUserAsset(asset);
+	}
 	
 	/**
 	 * 해당 bookkeeping의 자산 리스트 반환
@@ -39,32 +53,18 @@ public class AssetController {
 		return assetService.getUserAssetList(blueskyUser.getId());
 	}
 
-	/**
-	 * requestBody에 @PathVariable의 id가 맵핑 안되는 부분은 어떻게 처리해야할까?
-	 * @param asset
-	 * @param bookkeepingId
-	 * @param authentication
-	 * @return
-	 */
-	@PostMapping
-	public Asset createAsset(@RequestBody @Validated(Asset.Create.class) Asset asset, BlueskyUser blueskyUser) {
+	@PutMapping
+	public Asset updateUserAsset(@RequestBody @Validated(Asset.Update.class) Asset asset, BlueskyUser blueskyUser) {
 		asset.setBookkeeping(new Bookkeeping());
 		asset.getBookkeeping().setUserId(blueskyUser.getId());
-		return assetService.create(asset);
+		return assetService.updateUserAsset(asset);
 	}
 
-	@PutMapping(value = "/{id}")
-	public Asset updateAsset(@RequestBody @Validated(Asset.Update.class) Asset asset, BlueskyUser blueskyUser) {
+	@DeleteMapping
+	public void deleteUserAsset(@RequestBody @Validated(Asset.Delete.class) Asset asset, BlueskyUser blueskyUser) {
 		asset.setBookkeeping(new Bookkeeping());
 		asset.getBookkeeping().setUserId(blueskyUser.getId());
-		return assetService.update(asset);
-	}
-
-	@DeleteMapping(value = "/{id}")
-	public void deleteAsset(@Validated(Asset.Delete.class) Asset asset, BlueskyUser blueskyUser) {
-		asset.setBookkeeping(new Bookkeeping());
-		asset.getBookkeeping().setUserId(blueskyUser.getId());
-		assetService.delete(asset);
+		assetService.deleteUserAsset(asset);
 	}
 	 
 }

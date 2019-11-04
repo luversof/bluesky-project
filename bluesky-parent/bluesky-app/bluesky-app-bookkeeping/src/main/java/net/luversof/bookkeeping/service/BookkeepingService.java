@@ -42,7 +42,7 @@ public class BookkeepingService {
 	 * @return
 	 */
 	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
-	public Bookkeeping create(Bookkeeping bookkeeping) {
+	public Bookkeeping createUserBookkeeping(Bookkeeping bookkeeping) {
 		if (bookkeeping.getUserId() == null) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_USER_ID);
 		}
@@ -83,7 +83,7 @@ public class BookkeepingService {
 	 * @param bookkeeping
 	 * @return
 	 */
-	public Bookkeeping update(Bookkeeping bookkeeping) {
+	public Bookkeeping updateUserBookkeeping(Bookkeeping bookkeeping) {
 		Bookkeeping targetBookkeeping = getUserBookkeeping(bookkeeping.getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		if (bookkeeping.getBaseDate() > 0) {
 			targetBookkeeping.setBaseDate(bookkeeping.getBaseDate());
@@ -101,7 +101,7 @@ public class BookkeepingService {
 	 * @param bookkeeping
 	 */
 	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
-	public void delete(Bookkeeping bookkeeping) {
+	public void deleteUserBookkeeping(Bookkeeping bookkeeping) {
 		Bookkeeping targetBookkeeping = getUserBookkeeping(bookkeeping.getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		entryService.deleteByBookkeepingId(targetBookkeeping.getId());
 		entryGroupService.deleteBybookkeepingId(targetBookkeeping.getId());
