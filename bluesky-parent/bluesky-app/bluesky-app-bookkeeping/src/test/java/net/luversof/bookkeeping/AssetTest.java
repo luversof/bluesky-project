@@ -1,27 +1,51 @@
 package net.luversof.bookkeeping;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.bookkeeping.constant.AssetInitialData;
+import net.luversof.bookkeeping.domain.Asset;
+import net.luversof.bookkeeping.domain.Bookkeeping;
+import net.luversof.bookkeeping.repository.BookkeepingRepository;
+import net.luversof.bookkeeping.service.AssetService;
 
 @Slf4j
 public class AssetTest extends GeneralTest {
 	
-//	@Autowired
-//	private AssetService assetService;
-//	
+	@Autowired
+	private AssetService assetService;
+	
 //	@Autowired
 //	private BookkeepingService bookkeepingService;
+	
+	@Autowired
+	private BookkeepingRepository bookkeepingRepository;
+	
+	private Bookkeeping getBookkeeping() {
+		return bookkeepingRepository.findAll().get(0);
+	}
 
 	static final UUID TEST_USER_ID = UUID.fromString("35929103-da22-49e7-9d76-214bb081593f");
 
 	@Test
 	public void assetInitialDataName() {
 		log.debug("defaultAsset name : {}", AssetInitialData.WALLET.getName());
+	}
+	
+	@Test
+	public void getAssetList() {
+		Bookkeeping bookkeeping = getBookkeeping();
+		if (bookkeeping == null) {
+			return;
+		}
+		
+		List<Asset> userAssetList = assetService.getUserAssetList(bookkeeping.getUserId());
+		log.debug("assetList : {}", userAssetList);
 	}
 
 //	@Test

@@ -8,8 +8,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.Table;
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.envers.Audited;
@@ -27,7 +27,7 @@ public class Bookkeeping {
 	@GeneratedValue(generator = "uuid-gen")
 	@GenericGenerator(name = "uuid-gen", strategy = "uuid2")
 	@Column(length = 16)
-	@NotBlank.List({ @NotBlank(groups = { Asset.Create.class, Asset.Update.class, Asset.Delete.class,
+	@NotNull.List({ @NotNull(groups = { Asset.Create.class, Asset.Update.class, Asset.Delete.class,
 			EntryGroup.Create.class, EntryGroup.Update.class, EntryGroup.Delete.class,
 			Entry.Create.class, Entry.Update.class, Entry.Delete.class,
 			EntrySearchInfo.Select.class, EntrySearchInfo.SelectEntryList.class,
