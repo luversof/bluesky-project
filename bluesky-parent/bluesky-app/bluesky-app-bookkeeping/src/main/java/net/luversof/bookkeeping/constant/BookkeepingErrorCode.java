@@ -14,5 +14,8 @@ public enum BookkeepingErrorCode {
 	NOT_OWNER_ENTRY,
 	
 	NOT_SUPPORT_CHRONOUNIT,
+	
+	
+	DISABLED_CHANGE_ASSET_GROUP
 	;
 }

@@ -22,7 +22,9 @@ public class AssetService {
 	@Autowired
 	private AssetRepository assetRepository;
 	
-
+	@Autowired
+	private AssetGroupService assetGroupService;
+	
 	@Autowired
 	private BookkeepingService bookkeepingService;
 	
@@ -47,6 +49,17 @@ public class AssetService {
 		Asset targetAsset = findOne(asset.getId());
 		if (!targetAsset.getBookkeeping().getUserId().equals(asset.getBookkeeping().getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ASSET);
+		}
+		
+		if (asset.getAssetGroup().getId() != targetAsset.getAssetGroup().getId()) {
+			List<AssetGroup> userAssetGroupList = assetGroupService.getUserAssetGroupList(asset.getBookkeeping().getUserId());
+			userAssetGroupList.forEach(userAssetGroup -> {
+				if (userAssetGroup.getId() == asset.getAssetGroup().getId() && userAssetGroup.getAssetGroupType() != null) {
+					throw new BlueskyException(BookkeepingErrorCode.DISABLED_CHANGE_ASSET_GROUP);
+				} else {
+					targetAsset.setAssetGroup(userAssetGroup);
+				}
+			});
 		}
 		
 		targetAsset.setName(asset.getName());
