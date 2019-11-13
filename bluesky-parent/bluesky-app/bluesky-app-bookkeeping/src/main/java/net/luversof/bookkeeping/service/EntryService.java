@@ -59,10 +59,10 @@ public class EntryService {
 	 * @return
 	 */
 	public List<Entry> findByEntrySearchInfo(EntrySearchInfo entrySearchInfo) {
-		Bookkeeping targetBookkeeping = bookkeepingService.getUserBookkeeping(entrySearchInfo.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		Bookkeeping targetBookkeeping = bookkeepingService.getUserBookkeeping(entrySearchInfo.getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		int baseDate = targetBookkeeping.getBaseDate();
 		entrySearchInfo.setBaseDate(baseDate);
-		return entryRepository.findByBookkeepingIdAndEntryDateBetween(entrySearchInfo.getBookkeeping().getId(), entrySearchInfo.getStartZonedDateTime(), entrySearchInfo.getEndZonedDateTime());
+		return entryRepository.findByBookkeepingIdAndEntryDateBetween(targetBookkeeping.getId(), entrySearchInfo.getStartZonedDateTime(), entrySearchInfo.getEndZonedDateTime());
 	}
 
 	/**

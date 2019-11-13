@@ -15,8 +15,7 @@ public class EntrySearchInfoService {
 	private BookkeepingService bookkeepingService;
 	
 	public EntrySearchInfo getEntrySearchInfo(EntrySearchInfo entrySearchInfo) {
-		Bookkeeping targetBookkeeping = bookkeepingService.getUserBookkeeping(entrySearchInfo.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		entrySearchInfo.setBookkeeping(targetBookkeeping);
+		Bookkeeping targetBookkeeping = bookkeepingService.getUserBookkeeping(entrySearchInfo.getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		entrySearchInfo.setBaseDate(targetBookkeeping.getBaseDate());
 		return entrySearchInfo;
 	}

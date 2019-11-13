@@ -27,7 +27,7 @@ public class BookkeepingController {
 	private BookkeepingService bookkeepingService;
 	
 	@PostMapping
-	public Bookkeeping createUserBookkeeping(@RequestBody @Validated(Bookkeeping.Create.class) Bookkeeping bookkeeping, BlueskyUser blueskyUser) {
+	public Bookkeeping createUserBookkeeping(BlueskyUser blueskyUser, @RequestBody @Validated(Bookkeeping.Create.class) Bookkeeping bookkeeping) {
 		bookkeeping.setUserId(blueskyUser.getId());
 		return bookkeepingService.createUserBookkeeping(bookkeeping);
 	}
@@ -43,7 +43,7 @@ public class BookkeepingController {
 	}
 	
 	@PutMapping
-	public Bookkeeping updateUserBookkeeping(@RequestBody @Validated(Bookkeeping.Update.class) Bookkeeping bookkeeping, BlueskyUser blueskyUser) {
+	public Bookkeeping updateUserBookkeeping(BlueskyUser blueskyUser, @RequestBody @Validated(Bookkeeping.Update.class) Bookkeeping bookkeeping) {
 		bookkeeping.setUserId(blueskyUser.getId());
 		return bookkeepingService.updateUserBookkeeping(bookkeeping);
 	}

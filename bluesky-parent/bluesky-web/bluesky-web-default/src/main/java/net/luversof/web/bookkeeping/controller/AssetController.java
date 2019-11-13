@@ -35,7 +35,7 @@ public class AssetController {
 	 * @return
 	 */
 	@PostMapping
-	public Asset createUserAsset(@RequestBody @Validated(Asset.Create.class) Asset asset, BlueskyUser blueskyUser) {
+	public Asset createUserAsset(BlueskyUser blueskyUser, @RequestBody @Validated(Asset.Create.class) Asset asset) {
 		asset.setBookkeeping(new Bookkeeping());
 		asset.getBookkeeping().setUserId(blueskyUser.getId());
 		return assetService.createUserAsset(asset);
@@ -54,14 +54,14 @@ public class AssetController {
 	}
 
 	@PutMapping
-	public Asset updateUserAsset(@RequestBody @Validated(Asset.Update.class) Asset asset, BlueskyUser blueskyUser) {
+	public Asset updateUserAsset(BlueskyUser blueskyUser, @RequestBody @Validated(Asset.Update.class) Asset asset) {
 		asset.setBookkeeping(new Bookkeeping());
 		asset.getBookkeeping().setUserId(blueskyUser.getId());
 		return assetService.updateUserAsset(asset);
 	}
 
 	@DeleteMapping
-	public void deleteUserAsset(@RequestBody @Validated(Asset.Delete.class) Asset asset, BlueskyUser blueskyUser) {
+	public void deleteUserAsset(BlueskyUser blueskyUser, @RequestBody @Validated(Asset.Delete.class) Asset asset) {
 		asset.setBookkeeping(new Bookkeeping());
 		asset.getBookkeeping().setUserId(blueskyUser.getId());
 		assetService.deleteUserAsset(asset);

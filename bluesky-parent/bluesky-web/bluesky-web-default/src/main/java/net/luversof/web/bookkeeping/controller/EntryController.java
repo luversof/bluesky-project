@@ -4,8 +4,6 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PostAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.EntrySearchInfo;
@@ -21,9 +20,9 @@ import net.luversof.bookkeeping.service.EntryService;
 import net.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.security.core.userdetails.BlueskyUser;
 
-//@RestController
+@RestController
 @BlueskyPreAuthorize
-@RequestMapping(value = "/bookkeeping/{bookkeeping.id}/entry", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/bookkeeping/entry", produces = MediaType.APPLICATION_JSON_VALUE)
 public class EntryController {
 	
 	@Autowired
@@ -41,27 +40,27 @@ public class EntryController {
 	 * 페이지에서 사용할 데이터를 내려줘야할까?
 	 * 우선 검색 결과를 내려준 이후 처리 고민
 	 */
-	@PostAuthorize("(returnObject == null or returnObject.size() == 0) or returnObject.get(0).bookkeeping.userId == authentication.principal.id")
 	@GetMapping
-	public List<Entry> getEntryList(@Validated(SelectEntryList.class) EntrySearchInfo entrySearchInfo) {
+	public List<Entry> getUserEntryList(BlueskyUser blueskyUser, @Validated(SelectEntryList.class) EntrySearchInfo entrySearchInfo) {
+		entrySearchInfo.setUserId(blueskyUser.getId());
 		return entryService.findByEntrySearchInfo(entrySearchInfo);
 	}
 	
 	@PostMapping
-	public Entry createEntry(@RequestBody @Validated(Entry.Create.class) Entry entry, Authentication authentication) {
-		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+	public Entry createUserEntry(BlueskyUser blueskyUser, @RequestBody @Validated(Entry.Create.class) Entry entry) {
+		entry.getBookkeeping().setUserId(blueskyUser.getId());
 		return entryService.create(entry);
 	}
 
-	@PutMapping(value = "/{id}")
-	public Entry modify(@RequestBody @Validated(Entry.Update.class) Entry entry, Authentication authentication) {
-		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+	@PutMapping
+	public Entry updateUserEntry(BlueskyUser blueskyUser, @RequestBody @Validated(Entry.Update.class) Entry entry) {
+		entry.getBookkeeping().setUserId(blueskyUser.getId());
 		return entryService.update(entry);
 	}
 	
-	@DeleteMapping(value = "/{id}")
-	public void delete(@Validated(Entry.Delete.class) Entry entry, Authentication authentication) {
-		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
+	@DeleteMapping
+	public void deleteUserEntry(BlueskyUser blueskyUser, @Validated(Entry.Delete.class) Entry entry) {
+		entry.getBookkeeping().setUserId(blueskyUser.getId());
 		entryService.delete(entry);
 	}
 }

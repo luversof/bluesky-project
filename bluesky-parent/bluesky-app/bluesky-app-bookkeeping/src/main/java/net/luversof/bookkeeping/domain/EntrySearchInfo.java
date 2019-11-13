@@ -3,8 +3,8 @@ package net.luversof.bookkeeping.domain;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.UUID;
 
-import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -24,8 +24,7 @@ public class EntrySearchInfo {
 	/**
 	 * user의 bookkeeping table id 값
 	 */
-	@Valid
-	private Bookkeeping bookkeeping;
+	private UUID userId;
 	
 	/**
 	 * user의 bookkeeping table baseDate 값
