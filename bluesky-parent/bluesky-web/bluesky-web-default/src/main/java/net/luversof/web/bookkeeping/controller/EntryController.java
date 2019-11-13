@@ -4,8 +4,6 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PostAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,17 +11,18 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
+import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
-import net.luversof.bookkeeping.domain.EntrySearchInfo;
-import net.luversof.bookkeeping.domain.EntrySearchInfo.SelectEntryList;
+import net.luversof.bookkeeping.domain.web.EntryRequestParam;
 import net.luversof.bookkeeping.service.EntryService;
 import net.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.security.core.userdetails.BlueskyUser;
 
-//@RestController
+@RestController
 @BlueskyPreAuthorize
-@RequestMapping(value = "/bookkeeping/{bookkeeping.id}/entry", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/bookkeeping/entry", produces = MediaType.APPLICATION_JSON_VALUE)
 public class EntryController {
 	
 	@Autowired
@@ -41,27 +40,31 @@ public class EntryController {
 	 * 페이지에서 사용할 데이터를 내려줘야할까?
 	 * 우선 검색 결과를 내려준 이후 처리 고민
 	 */
-	@PostAuthorize("(returnObject == null or returnObject.size() == 0) or returnObject.get(0).bookkeeping.userId == authentication.principal.id")
 	@GetMapping
-	public List<Entry> getEntryList(@Validated(SelectEntryList.class) EntrySearchInfo entrySearchInfo) {
-		return entryService.findByEntrySearchInfo(entrySearchInfo);
+	public List<Entry> searchUserEntry(@Validated(EntryRequestParam.Search.class) EntryRequestParam entryRequestParam, BlueskyUser blueskyUser) {
+		entryRequestParam.setBookkeeping(new Bookkeeping());
+		entryRequestParam.getBookkeeping().setUserId(blueskyUser.getId());
+		return entryService.searchUserEntryByEntryRequestParam(entryRequestParam);
 	}
 	
 	@PostMapping
-	public Entry createEntry(@RequestBody @Validated(Entry.Create.class) Entry entry, Authentication authentication) {
-		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
-		return entryService.create(entry);
+	public Entry createUserEntry(@RequestBody @Validated(Entry.Create.class) Entry entry, BlueskyUser blueskyUser) {
+		entry.setBookkeeping(new Bookkeeping());
+		entry.getBookkeeping().setUserId(blueskyUser.getId());
+		return entryService.createUserEntry(entry);
 	}
 
-	@PutMapping(value = "/{id}")
-	public Entry modify(@RequestBody @Validated(Entry.Update.class) Entry entry, Authentication authentication) {
-		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
-		return entryService.update(entry);
+	@PutMapping
+	public Entry updateUserEntry(@RequestBody @Validated(Entry.Update.class) Entry entry, BlueskyUser blueskyUser) {
+		entry.setBookkeeping(new Bookkeeping());
+		entry.getBookkeeping().setUserId(blueskyUser.getId());
+		return entryService.updateUserEntry(entry);
 	}
 	
-	@DeleteMapping(value = "/{id}")
-	public void delete(@Validated(Entry.Delete.class) Entry entry, Authentication authentication) {
-		entry.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
-		entryService.delete(entry);
+	@DeleteMapping
+	public void deleteUserEntry(@Validated(Entry.Delete.class) Entry entry, BlueskyUser blueskyUser) {
+		entry.setBookkeeping(new Bookkeeping());
+		entry.getBookkeeping().setUserId(blueskyUser.getId());
+		entryService.deleteUserEntry(entry);
 	}
 }

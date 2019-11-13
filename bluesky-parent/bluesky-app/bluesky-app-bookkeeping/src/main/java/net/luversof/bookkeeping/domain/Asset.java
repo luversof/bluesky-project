@@ -8,8 +8,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.NotBlank;
 
 import org.hibernate.envers.Audited;
 
@@ -28,11 +27,10 @@ public class Asset {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@NotNull(groups = { Update.class, Delete.class })
 	@Min(value = 1, groups = { Update.class, Delete.class })
 	private long id;
 
-	@NotEmpty(groups = { Create.class, Update.class })
+	@NotBlank(groups = { Create.class, Update.class })
 	private String name;
 
 	private long amount;
