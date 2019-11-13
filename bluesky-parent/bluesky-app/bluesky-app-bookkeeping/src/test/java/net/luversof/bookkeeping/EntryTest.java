@@ -59,7 +59,7 @@ public class EntryTest extends GeneralTest {
 		entry.setEntryGroup(entryGroupList.get(3));
 		entry.setMemo("test");
 		
-		entryService.create(entry);
+		entryService.createUserEntry(entry);
 		
 		log.debug("Test : {}", entry);
 	}

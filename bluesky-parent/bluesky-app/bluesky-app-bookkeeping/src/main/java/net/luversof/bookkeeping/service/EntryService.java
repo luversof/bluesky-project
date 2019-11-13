@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
-import net.luversof.bookkeeping.domain.EntrySearchInfo;
+import net.luversof.bookkeeping.domain.web.EntryRequestParam;
 import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.boot.exception.BlueskyException;
 
@@ -24,13 +24,27 @@ public class EntryService {
 	@Autowired
 	private BookkeepingService bookkeepingService;
 
-	public Entry create(Entry entry) {
+	public Entry createUserEntry(Entry entry) {
 		Bookkeeping bookkeeping = bookkeepingService.getUserBookkeeping(entry.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		entry.setBookkeeping(bookkeeping);
 		return entryRepository.save(entry);
 	}
+
+	/**
+	 * 기간 기준 검색
+	 * @param entrySearchInfo
+	 * @return
+	 */
+	public List<Entry> searchUserEntryByEntryRequestParam(EntryRequestParam entryRequestParam) {
+		Bookkeeping targetBookkeeping = bookkeepingService.getUserBookkeeping(entryRequestParam.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		return entryRepository.findByBookkeepingIdAndEntryDateBetween(targetBookkeeping.getId(), entryRequestParam.getStartZonedDateTime(), entryRequestParam.getEndZonedDateTime());
+	}
+
+	public Entry findOne(long id) {
+		return entryRepository.getOne(id);
+	}
 	
-	public Entry update(Entry entry) {
+	public Entry updateUserEntry(Entry entry) {
 		Bookkeeping bookkeeping = bookkeepingService.getUserBookkeeping(entry.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		entry.setBookkeeping(bookkeeping);
 		Entry targetEntry = findOne(entry.getId());
@@ -40,11 +54,7 @@ public class EntryService {
 		return entryRepository.save(entry);
 	}
 
-	public Entry findOne(long id) {
-		return entryRepository.getOne(id);
-	}
-
-	public void delete(Entry entry) {
+	public void deleteUserEntry(Entry entry) {
 		Bookkeeping bookkeeping = bookkeepingService.getUserBookkeeping(entry.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		entry.setBookkeeping(bookkeeping);
 		Entry targetEntry = findOne(entry.getId());
@@ -52,17 +62,6 @@ public class EntryService {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRY);
 		}
 		entryRepository.delete(entry);
-	}
-	
-	/**
-	 * @param entrySearchInfo
-	 * @return
-	 */
-	public List<Entry> findByEntrySearchInfo(EntrySearchInfo entrySearchInfo) {
-		Bookkeeping targetBookkeeping = bookkeepingService.getUserBookkeeping(entrySearchInfo.getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		int baseDate = targetBookkeeping.getBaseDate();
-		entrySearchInfo.setBaseDate(baseDate);
-		return entryRepository.findByBookkeepingIdAndEntryDateBetween(targetBookkeeping.getId(), entrySearchInfo.getStartZonedDateTime(), entrySearchInfo.getEndZonedDateTime());
 	}
 
 	/**

@@ -9,7 +9,6 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
@@ -28,7 +27,6 @@ public class Entry implements Serializable {
 	private long id;
 
 	@ManyToOne
-	@Valid
 	private Bookkeeping bookkeeping;
 
 	@ManyToOne
