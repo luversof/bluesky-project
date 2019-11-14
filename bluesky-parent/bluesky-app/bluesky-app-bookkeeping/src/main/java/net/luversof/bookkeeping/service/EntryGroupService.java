@@ -1,16 +1,12 @@
 package net.luversof.bookkeeping.service;
 
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import net.luversof.bookkeeping.constant.BookkeepingConstants;
 import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.bookkeeping.constant.EntryGroupInitialData;
 import net.luversof.bookkeeping.domain.Bookkeeping;
@@ -32,44 +28,33 @@ public class EntryGroupService {
 	 * @param bookkeeping
 	 * @return
 	 */
-	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
+	//@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
 	public List<EntryGroup> initialDataSave(Bookkeeping bookkeeping) {
-		Set<EntryGroup> entryGroupSet = new HashSet<>();
-		for (EntryGroupInitialData entryGroupInitialData : EntryGroupInitialData.values()) {
-			EntryGroup entryGroup = new EntryGroup();
-			entryGroup.setEntryType(entryGroupInitialData.getEntryType());
-			entryGroup.setName(entryGroupInitialData.getName());
-			entryGroup.setBookkeeping(bookkeeping);
-			entryGroupSet.add(entryGroup);
-		}
-		return entryGroupRepository.saveAll(entryGroupSet);
+		return entryGroupRepository.saveAll(EntryGroupInitialData.getEntryGroupList(bookkeeping));
 	}
 	
-	public EntryGroup create(EntryGroup entryGroup) {
-		bookkeepingService.getUserBookkeeping(entryGroup.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+	public EntryGroup createUserEntryGroup(EntryGroup entryGroup) {
+		entryGroup.setBookkeeping(bookkeepingService.getUserBookkeeping(entryGroup.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING)));
 		return entryGroupRepository.save(entryGroup);
 	}
 	
-	public EntryGroup update(EntryGroup entryGroup) {
+	public List<EntryGroup> getUserEntryGroupList(UUID userId) {
+		Bookkeeping userBookkeeping = bookkeepingService.getUserBookkeeping(userId).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		return entryGroupRepository.findByBookkeepingId(userBookkeeping.getId());
+	}
+	
+	public EntryGroup updateUserEntryGroup(EntryGroup entryGroup) {
 		bookkeepingService.getUserBookkeeping(entryGroup.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		EntryGroup targetEntryGroup = findOne(entryGroup.getId());
+		EntryGroup targetEntryGroup = entryGroupRepository.findById(entryGroup.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRYGROUP));
 		if (targetEntryGroup.getBookkeeping().getUserId() != entryGroup.getBookkeeping().getUserId()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRYGROUP);
 		}
 		return entryGroupRepository.save(entryGroup);
 	}
 
-	public EntryGroup findOne(long id) {
-		return entryGroupRepository.getOne(id);
-	}
-	
-	public List<EntryGroup> findByBookkeepingId(UUID bookkeepingId) {
-		return entryGroupRepository.findByBookkeepingId(bookkeepingId);
-	}
-
-	public void delete(EntryGroup entryGroup) {
+	public void deleteUserEntryGroup(EntryGroup entryGroup) {
 		bookkeepingService.getUserBookkeeping(entryGroup.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		EntryGroup targetEntryGroup = findOne(entryGroup.getId());
+		EntryGroup targetEntryGroup = entryGroupRepository.findById(entryGroup.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRYGROUP));
 		if (targetEntryGroup.getBookkeeping().getUserId() != entryGroup.getBookkeeping().getUserId()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRYGROUP);
 		}
@@ -77,7 +62,7 @@ public class EntryGroupService {
 	}
 	
 	public void deleteBybookkeepingId(UUID bookkeepingId) {
-		List<EntryGroup> entryGroupList = findByBookkeepingId(bookkeepingId);
+		List<EntryGroup> entryGroupList = entryGroupRepository.findByBookkeepingId(bookkeepingId);
 		entryGroupRepository.deleteAll(entryGroupList);
 	}
 }

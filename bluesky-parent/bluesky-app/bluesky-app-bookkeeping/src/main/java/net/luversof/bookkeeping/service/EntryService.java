@@ -35,33 +35,33 @@ public class EntryService {
 	 * @param entrySearchInfo
 	 * @return
 	 */
-	public List<Entry> searchUserEntryByEntryRequestParam(EntryRequestParam entryRequestParam) {
+	public List<Entry> searchUserEntry(EntryRequestParam entryRequestParam) {
 		Bookkeeping targetBookkeeping = bookkeepingService.getUserBookkeeping(entryRequestParam.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		return entryRepository.findByBookkeepingIdAndEntryDateBetween(targetBookkeeping.getId(), entryRequestParam.getStartZonedDateTime(), entryRequestParam.getEndZonedDateTime());
 	}
 
-	public Entry findOne(long id) {
-		return entryRepository.getOne(id);
-	}
-	
 	public Entry updateUserEntry(Entry entry) {
 		Bookkeeping bookkeeping = bookkeepingService.getUserBookkeeping(entry.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		entry.setBookkeeping(bookkeeping);
-		Entry targetEntry = findOne(entry.getId());
-		if (!targetEntry.getBookkeeping().getUserId().equals(entry.getBookkeeping().getUserId())) {
+		Entry targetEntry = entryRepository.findById(entry.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRY));
+		if (!targetEntry.getBookkeeping().getUserId().equals(bookkeeping.getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRY);
 		}
-		return entryRepository.save(entry);
+		
+		targetEntry.setAmount(entry.getAmount());
+		targetEntry.setEntryDate(entry.getEntryDate());
+		targetEntry.setMemo(entry.getMemo());
+		// TOOD 변경 할 속성 처리 - 하위 domain 에 대해 변경은 각 domain의 validation 체크가 필요함 
+		
+		return entryRepository.save(targetEntry);
 	}
 
 	public void deleteUserEntry(Entry entry) {
 		Bookkeeping bookkeeping = bookkeepingService.getUserBookkeeping(entry.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		entry.setBookkeeping(bookkeeping);
-		Entry targetEntry = findOne(entry.getId());
-		if (!targetEntry.getBookkeeping().getUserId().equals(entry.getBookkeeping().getUserId())) {
+		Entry targetEntry = entryRepository.findById(entry.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRY));
+		if (!targetEntry.getBookkeeping().getUserId().equals(bookkeeping.getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRY);
 		}
-		entryRepository.delete(entry);
+		entryRepository.delete(targetEntry);
 	}
 
 	/**

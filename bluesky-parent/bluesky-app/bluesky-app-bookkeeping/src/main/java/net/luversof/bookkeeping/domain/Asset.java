@@ -37,7 +37,6 @@ public class Asset {
 
 	// @JsonIgnore
 	@OneToOne
-	@Valid
 	private Bookkeeping bookkeeping;
 
 	@ManyToOne

@@ -13,7 +13,7 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 import lombok.Data;
-import net.luversof.bookkeeping.constant.EntryType;
+import net.luversof.bookkeeping.constant.EntryGroupType;
 
 @Entity
 @Data
@@ -57,13 +57,13 @@ public class Entry implements Serializable {
     public interface Delete {
 	}
 
-	public EntryType getEntryType() {
+	public EntryGroupType getEntryType() {
 		if (this.debitAsset == null && this.creditAsset != null) {
-			return EntryType.CREDIT;
+			return EntryGroupType.CREDIT;
 		} else if (this.debitAsset != null && this.creditAsset == null) {
-			return EntryType.DEBIT;
+			return EntryGroupType.DEBIT;
 		} else if (this.debitAsset != null && this.creditAsset != null) {
-			return EntryType.TRANSFER;
+			return EntryGroupType.TRANSFER;
 		}
 		return null;
 	}

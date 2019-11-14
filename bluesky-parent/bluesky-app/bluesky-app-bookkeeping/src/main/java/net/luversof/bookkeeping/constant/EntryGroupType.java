@@ -6,7 +6,7 @@ package net.luversof.bookkeeping.constant;
  * @author bluesky
  *
  */
-public enum EntryType {
+public enum EntryGroupType {
 	DEBIT,		//인출
 	CREDIT,		//입금
 	TRANSFER    //이체

@@ -48,7 +48,7 @@ public class EntryGroupTest extends GeneralTest {
 	
 	@Test
 	public void findEntryGroupList() {
-		List<EntryGroup> entryGroupList = entryGroupService.findByBookkeepingId(bookkeeping.getId());
+		List<EntryGroup> entryGroupList = entryGroupService.getUserEntryGroupList(TEST_USER_ID);
 		log.debug("entryGroupList : {}", entryGroupList);
 	}
 

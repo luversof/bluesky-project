@@ -1,54 +1,57 @@
 package net.luversof.web.bookkeeping.controller;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
+import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.service.EntryGroupService;
 import net.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.security.core.userdetails.BlueskyUser;
 
-//@RestController
+@RestController
 @BlueskyPreAuthorize
-@RequestMapping(value = "/bookkeeping/{bookkeeping.id}/entryGroup", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/bookkeeping/entryGroup", produces = MediaType.APPLICATION_JSON_VALUE)
 public class EntryGroupController {
 
 	@Autowired
 	private EntryGroupService entryGroupService;
 
-	@GetMapping
-	public List<EntryGroup> getEntryGroupList(@PathVariable("bookkeeping.id") UUID bookkeepingId, Authentication authentication) {
-		return entryGroupService.findByBookkeepingId(bookkeepingId);
-	}
 
 	@PostMapping
-	public EntryGroup createEntryGroup(@RequestBody @Validated(EntryGroup.Create.class) EntryGroup entryGroup, Authentication authentication) {
-		entryGroup.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
-		return entryGroupService.create(entryGroup);
+	public EntryGroup createUserEntryGroup(@RequestBody @Validated(EntryGroup.Create.class) EntryGroup entryGroup, BlueskyUser blueskyUser) {
+		entryGroup.setBookkeeping(new Bookkeeping());
+		entryGroup.getBookkeeping().setUserId(blueskyUser.getId());
+		return entryGroupService.createUserEntryGroup(entryGroup);
 	}
 
-	@PutMapping(value = "/{id}")
-	public EntryGroup updateEntryGroup(@RequestBody @Validated(EntryGroup.Update.class) EntryGroup entryGroup, Authentication authentication) {
-		entryGroup.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
-		return entryGroupService.update(entryGroup);
+	@GetMapping
+	public List<EntryGroup> getUserEntryGroupList(BlueskyUser blueskyUser) {
+		return entryGroupService.getUserEntryGroupList(blueskyUser.getId());
 	}
 
-	@DeleteMapping(value = "/{id}")
-	public void deleteEntryGroup(@Validated(EntryGroup.Delete.class) EntryGroup entryGroup, Authentication authentication) {
-		entryGroup.getBookkeeping().setUserId(((BlueskyUser) authentication.getPrincipal()).getId());
-		entryGroupService.delete(entryGroup);
+	@PutMapping
+	public EntryGroup updateUserEntryGroup(@RequestBody @Validated(EntryGroup.Update.class) EntryGroup entryGroup, BlueskyUser blueskyUser) {
+		entryGroup.setBookkeeping(new Bookkeeping());
+		entryGroup.getBookkeeping().setUserId(blueskyUser.getId());
+		return entryGroupService.updateUserEntryGroup(entryGroup);
+	}
+
+	@DeleteMapping
+	public void deleteUserEntryGroup(@Validated(EntryGroup.Delete.class) EntryGroup entryGroup, BlueskyUser blueskyUser) {
+		entryGroup.setBookkeeping(new Bookkeeping());
+		entryGroup.getBookkeeping().setUserId(blueskyUser.getId());
+		entryGroupService.deleteUserEntryGroup(entryGroup);
 	}
 
 }

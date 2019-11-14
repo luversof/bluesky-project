@@ -106,6 +106,7 @@ public class BookkeepingService {
 		entryService.deleteByBookkeepingId(targetBookkeeping.getId());
 		entryGroupService.deleteBybookkeepingId(targetBookkeeping.getId());
 		assetService.deleteBybookkeepingId(targetBookkeeping.getId());
+		assetGroupService.deleteByBookkeepingId(targetBookkeeping.getId());
 		bookkeepingRepository.delete(targetBookkeeping);
 	}
 }

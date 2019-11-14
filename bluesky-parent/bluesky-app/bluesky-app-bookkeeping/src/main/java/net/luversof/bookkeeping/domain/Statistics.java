@@ -3,7 +3,7 @@ package net.luversof.bookkeeping.domain;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.luversof.bookkeeping.constant.EntryType;
+import net.luversof.bookkeeping.constant.EntryGroupType;
 
 /**
  * 통계 정보 반환을 위한 객체
@@ -24,7 +24,7 @@ public class Statistics {
 	 * client 의 sort 처리를 위해 entryGroup.entryType alias 처리
 	 * @return
 	 */
-	public EntryType getEntryType() {
+	public EntryGroupType getEntryType() {
 		if (entryGroup == null) {
 			return null;
 		}

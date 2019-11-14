@@ -51,7 +51,7 @@ public class EntryTest extends GeneralTest {
 	// 세이브 테스트
 	@Test
 	public void create() {
-		List<EntryGroup> entryGroupList = entryGroupService.findByBookkeepingId(bookkeeping.getId());
+		List<EntryGroup> entryGroupList = entryGroupService.getUserEntryGroupList(TEST_USER_ID);
 		
 		Entry entry = new Entry();
 		entry.setBookkeeping(bookkeeping);

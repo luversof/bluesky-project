@@ -5,10 +5,8 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.bookkeeping.constant.AssetInitialData;
-import net.luversof.bookkeeping.constant.BookkeepingConstants;
 import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.domain.AssetGroup;
@@ -33,7 +31,7 @@ public class AssetService {
 	 * @param bookkeeping
 	 * @return
 	 */
-	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
+	// @Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
 	public List<Asset> initialDataSave(Bookkeeping bookkeeping, List<AssetGroup> assetGroupList) {
 		return assetRepository.saveAll(AssetInitialData.getAssetList(bookkeeping, assetGroupList));
 	}
@@ -43,11 +41,21 @@ public class AssetService {
 		return assetRepository.save(asset);
 	}
 	
-	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
+	public List<Asset> getUserAssetList(UUID userId) {
+		Bookkeeping userBookkeeping = bookkeepingService.getUserBookkeeping(userId).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		return assetRepository.findByBookkeepingId(userBookkeeping.getId());
+	}
+	
+	/**
+	 * 변경할 컬럼을 일일이 지정하는 방식 말고 다른 방식은 없을까?
+	 * @param asset
+	 * @return
+	 */
 	public Asset updateUserAsset(Asset asset) {
-		asset.setBookkeeping(bookkeepingService.getUserBookkeeping(asset.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING)));
-		Asset targetAsset = findOne(asset.getId());
-		if (!targetAsset.getBookkeeping().getUserId().equals(asset.getBookkeeping().getUserId())) {
+		Bookkeeping bookkeeping = bookkeepingService.getUserBookkeeping(asset.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		//asset.setBookkeeping();
+		Asset targetAsset = assetRepository.findById(asset.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ASSET));
+		if (!targetAsset.getBookkeeping().getUserId().equals(bookkeeping.getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ASSET);
 		}
 		
@@ -61,36 +69,22 @@ public class AssetService {
 				}
 			});
 		}
-		
 		targetAsset.setName(asset.getName());
+		
 		return assetRepository.save(targetAsset);
 	}
 
-	public Asset findOne(long id) {
-		return assetRepository.getOne(id);
-	}
-	
-	public List<Asset> getUserAssetList(UUID userId) {
-		Bookkeeping userBookkeeping = bookkeepingService.getUserBookkeeping(userId).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		return assetRepository.findByBookkeepingId(userBookkeeping.getId());
-	}
-	
-	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
 	public void deleteUserAsset(Asset asset) {
 		bookkeepingService.getUserBookkeeping(asset.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		Asset targetAsset = findOne(asset.getId());
+		Asset targetAsset = assetRepository.findById(asset.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ASSET));
 		if (!targetAsset.getBookkeeping().getUserId().equals(asset.getBookkeeping().getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ASSET);
 		}
-		assetRepository.delete(asset);
+		assetRepository.delete(targetAsset);
 	}
-	
-	public List<Asset> findByBookkeepingId(UUID bookkeepingId) {
-		return assetRepository.findByBookkeepingId(bookkeepingId);
-	}
-	
+
 	public void deleteBybookkeepingId(UUID bookkeepingId) {
-		List<Asset> assetList = findByBookkeepingId(bookkeepingId);
+		List<Asset> assetList = assetRepository.findByBookkeepingId(bookkeepingId);
 		assetRepository.deleteAll(assetList);
 	}
 }
