@@ -9,8 +9,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
+import net.luversof.bookkeeping.constant.EntryGroupType;
+import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
+import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.domain.web.EntryRequestParam;
 import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.boot.exception.BlueskyException;
@@ -23,10 +26,38 @@ public class EntryService {
 	
 	@Autowired
 	private BookkeepingService bookkeepingService;
+	
+	@Autowired
+	private EntryGroupService entryGroupService;
+	
+	@Autowired
+	private AssetService assetService;
 
 	public Entry createUserEntry(Entry entry) {
 		Bookkeeping bookkeeping = bookkeepingService.getUserBookkeeping(entry.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		entry.setBookkeeping(bookkeeping);
+		
+		// 요청이 income인 경우 expenseAsset 삭제 처리
+		if (entry.getEntryGroupType() == EntryGroupType.INCOME) {
+			entry.setExpenseAsset(null);
+		}
+		
+		// 요청이 expense인 경우 incomeAsset 삭제 처리
+		if (entry.getEntryGroupType() == EntryGroupType.EXPENSE) {
+			entry.setIncomeAsset(null);
+		}
+		
+		// incomeAsset, expenseAsset이 해당 유저의 정보인지 확인
+		if (entry.getIncomeAsset() != null) {
+			
+			Asset targetAsset = assetService.findById(entry.getIncomeAsset().getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ASSET));
+			if (!targetAsset.getBookkeeping().getUserId().equals(entry.getBookkeeping().getUserId())) {
+				throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ASSET);
+			}
+			entry.setIncomeAsset(targetAsset);
+		}
+		
+		
 		return entryRepository.save(entry);
 	}
 

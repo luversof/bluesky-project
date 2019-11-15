@@ -7,7 +7,7 @@ package net.luversof.bookkeeping.constant;
  *
  */
 public enum EntryGroupType {
-	DEBIT,		//인출
-	CREDIT,		//입금
+	INCOME,		//수입
+	EXPENSE,	//지출
 	TRANSFER    //이체
 }

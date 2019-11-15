@@ -1,6 +1,7 @@
 package net.luversof.bookkeeping.service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +42,10 @@ public class AssetService {
 		return assetRepository.save(asset);
 	}
 	
+	public Optional<Asset> findById(long id) {
+		return assetRepository.findById(id);
+	}
+	
 	public List<Asset> getUserAssetList(UUID userId) {
 		Bookkeeping userBookkeeping = bookkeepingService.getUserBookkeeping(userId).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		return assetRepository.findByBookkeepingId(userBookkeeping.getId());
@@ -54,7 +59,7 @@ public class AssetService {
 	public Asset updateUserAsset(Asset asset) {
 		Bookkeeping bookkeeping = bookkeepingService.getUserBookkeeping(asset.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		//asset.setBookkeeping();
-		Asset targetAsset = assetRepository.findById(asset.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ASSET));
+		Asset targetAsset = findById(asset.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ASSET));
 		if (!targetAsset.getBookkeeping().getUserId().equals(bookkeeping.getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ASSET);
 		}
@@ -76,7 +81,7 @@ public class AssetService {
 
 	public void deleteUserAsset(Asset asset) {
 		bookkeepingService.getUserBookkeeping(asset.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		Asset targetAsset = assetRepository.findById(asset.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ASSET));
+		Asset targetAsset = findById(asset.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ASSET));
 		if (!targetAsset.getBookkeeping().getUserId().equals(asset.getBookkeeping().getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ASSET);
 		}

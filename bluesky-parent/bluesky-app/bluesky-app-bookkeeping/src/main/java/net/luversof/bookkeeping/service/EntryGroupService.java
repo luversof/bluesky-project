@@ -2,6 +2,7 @@ package net.luversof.bookkeeping.service;
 
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,10 @@ public class EntryGroupService {
 		return entryGroupRepository.save(entryGroup);
 	}
 	
+	public Optional<EntryGroup> findById(long id) {
+		return entryGroupRepository.findById(id);
+	}
+	
 	public List<EntryGroup> getUserEntryGroupList(UUID userId) {
 		Bookkeeping userBookkeeping = bookkeepingService.getUserBookkeeping(userId).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		return entryGroupRepository.findByBookkeepingId(userBookkeeping.getId());
@@ -45,7 +50,7 @@ public class EntryGroupService {
 	
 	public EntryGroup updateUserEntryGroup(EntryGroup entryGroup) {
 		bookkeepingService.getUserBookkeeping(entryGroup.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		EntryGroup targetEntryGroup = entryGroupRepository.findById(entryGroup.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRYGROUP));
+		EntryGroup targetEntryGroup = findById(entryGroup.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRYGROUP));
 		if (targetEntryGroup.getBookkeeping().getUserId() != entryGroup.getBookkeeping().getUserId()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRYGROUP);
 		}
@@ -54,7 +59,7 @@ public class EntryGroupService {
 
 	public void deleteUserEntryGroup(EntryGroup entryGroup) {
 		bookkeepingService.getUserBookkeeping(entryGroup.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		EntryGroup targetEntryGroup = entryGroupRepository.findById(entryGroup.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRYGROUP));
+		EntryGroup targetEntryGroup = findById(entryGroup.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRYGROUP));
 		if (targetEntryGroup.getBookkeeping().getUserId() != entryGroup.getBookkeeping().getUserId()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRYGROUP);
 		}

@@ -20,18 +20,18 @@ import java.util.List;
  */
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public enum EntryGroupInitialData {
-	SALARY("salary", EntryGroupType.CREDIT),
-	BONUS("bonus", EntryGroupType.CREDIT),
-	INTEREST("interest", EntryGroupType.CREDIT),
-	CREDIT_ETC("etc", EntryGroupType.CREDIT),
-	FOOD("foot", EntryGroupType.DEBIT),
-	TRANSPORTATION("transportation", EntryGroupType.DEBIT),
-	LIVING("living", EntryGroupType.DEBIT),
-	STUDY("study", EntryGroupType.DEBIT),
-	CULTURE("culture", EntryGroupType.DEBIT),
-	SOCIAL("social", EntryGroupType.DEBIT),
-	MAINTENANCE_COST("maintenanceCost", EntryGroupType.DEBIT),
-	DEBIT_ETC("etc", EntryGroupType.DEBIT);
+	SALARY("salary", EntryGroupType.INCOME),
+	BONUS("bonus", EntryGroupType.INCOME),
+	INTEREST("interest", EntryGroupType.INCOME),
+	INCOME_ETC("etc", EntryGroupType.INCOME),
+	FOOD("foot", EntryGroupType.EXPENSE),
+	TRANSPORTATION("transportation", EntryGroupType.EXPENSE),
+	LIVING("living", EntryGroupType.EXPENSE),
+	STUDY("study", EntryGroupType.EXPENSE),
+	CULTURE("culture", EntryGroupType.EXPENSE),
+	SOCIAL("social", EntryGroupType.EXPENSE),
+	MAINTENANCE_COST("maintenanceCost", EntryGroupType.EXPENSE),
+	EXPENSE_ETC("etc", EntryGroupType.EXPENSE);
 
 	
 	@Getter

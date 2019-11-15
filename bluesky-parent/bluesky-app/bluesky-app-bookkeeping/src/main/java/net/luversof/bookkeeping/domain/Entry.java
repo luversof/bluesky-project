@@ -1,9 +1,11 @@
 package net.luversof.bookkeeping.domain;
 
 import java.io.Serializable;
-import java.time.ZonedDateTime;
+import java.time.LocalDate;
 
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -28,23 +30,27 @@ public class Entry implements Serializable {
 
 	@ManyToOne
 	private Bookkeeping bookkeeping;
+	
+	@NotNull(groups = { Create.class })
+	@Enumerated(EnumType.STRING)
+	private EntryGroupType entryGroupType;
 
 	@ManyToOne
-	@JoinColumn(name = "debit_asset_id")
-	private Asset debitAsset;
+	@JoinColumn(name = "incomeAsset_id")
+	private Asset incomeAsset;
 
 	@ManyToOne
-	@JoinColumn(name = "credit_asset_id")
-	private Asset creditAsset;
+	@JoinColumn(name = "expenseAsset_id")
+	private Asset expenseAsset;
 
 	@ManyToOne
 	private EntryGroup entryGroup;
 
-	@NotNull(groups = { Create.class, Update.class })
+	@Min(value = 1, groups = { Create.class, Update.class })
 	private long amount;
 
 	@NotNull(groups = { Create.class, Update.class })
-	private ZonedDateTime entryDate;
+	private LocalDate entryDate;
 
 	private String memo;
 
@@ -57,14 +63,4 @@ public class Entry implements Serializable {
     public interface Delete {
 	}
 
-	public EntryGroupType getEntryType() {
-		if (this.debitAsset == null && this.creditAsset != null) {
-			return EntryGroupType.CREDIT;
-		} else if (this.debitAsset != null && this.creditAsset == null) {
-			return EntryGroupType.DEBIT;
-		} else if (this.debitAsset != null && this.creditAsset != null) {
-			return EntryGroupType.TRANSFER;
-		}
-		return null;
-	}
 }
