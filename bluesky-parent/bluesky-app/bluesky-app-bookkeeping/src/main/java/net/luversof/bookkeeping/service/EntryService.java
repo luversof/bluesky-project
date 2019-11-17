@@ -1,7 +1,7 @@
 package net.luversof.bookkeeping.service;
 
 
-import java.time.ZonedDateTime;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,7 +13,6 @@ import net.luversof.bookkeeping.constant.EntryGroupType;
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
-import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.domain.web.EntryRequestParam;
 import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.boot.exception.BlueskyException;
@@ -33,23 +32,44 @@ public class EntryService {
 	@Autowired
 	private AssetService assetService;
 
+	/**
+	 * income / expense / transfer
+	 * @param entry
+	 * @return
+	 */
 	public Entry createUserEntry(Entry entry) {
 		Bookkeeping bookkeeping = bookkeepingService.getUserBookkeeping(entry.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		entry.setBookkeeping(bookkeeping);
 		
-		// 요청이 income인 경우 expenseAsset 삭제 처리
+		// 요청이 income인 경우 expenseAsset 삭제 처리 & incomeAsset 검증
 		if (entry.getEntryGroupType() == EntryGroupType.INCOME) {
 			entry.setExpenseAsset(null);
+			
+			if (entry.getIncomeAsset() == null) {
+				throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_INCOME_ASSET);
+			}
 		}
 		
-		// 요청이 expense인 경우 incomeAsset 삭제 처리
+		// 요청이 expense인 경우 incomeAsset 삭제 처리 & expenseAset 검증
 		if (entry.getEntryGroupType() == EntryGroupType.EXPENSE) {
 			entry.setIncomeAsset(null);
+			
+			if (entry.getExpenseAsset() == null) {
+				throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_EXPENSE_ASSET);
+			}
+		}
+		
+		if (entry.getEntryGroupType() == EntryGroupType.TRANSFER) {
+			if (entry.getIncomeAsset() == null) {
+				throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_INCOME_ASSET);
+			}
+			if (entry.getExpenseAsset() == null) {
+				throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_EXPENSE_ASSET);
+			}
 		}
 		
 		// incomeAsset, expenseAsset이 해당 유저의 정보인지 확인
 		if (entry.getIncomeAsset() != null) {
-			
 			Asset targetAsset = assetService.findById(entry.getIncomeAsset().getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ASSET));
 			if (!targetAsset.getBookkeeping().getUserId().equals(entry.getBookkeeping().getUserId())) {
 				throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ASSET);
@@ -68,7 +88,7 @@ public class EntryService {
 	 */
 	public List<Entry> searchUserEntry(EntryRequestParam entryRequestParam) {
 		Bookkeeping targetBookkeeping = bookkeepingService.getUserBookkeeping(entryRequestParam.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		return entryRepository.findByBookkeepingIdAndEntryDateBetween(targetBookkeeping.getId(), entryRequestParam.getStartZonedDateTime(), entryRequestParam.getEndZonedDateTime());
+		return entryRepository.findByBookkeepingIdAndEntryDateBetween(targetBookkeeping.getId(), entryRequestParam.getStartLocalDate(), entryRequestParam.getEndLocalDate());
 	}
 
 	public Entry updateUserEntry(Entry entry) {
@@ -102,8 +122,8 @@ public class EntryService {
 	 * @param endZonedDateTime
 	 * @return
 	 */
-	public List<Entry> findByBookkeepingIdAndEntryDateBetween(UUID bookkeepingId, ZonedDateTime startZonedDateTime, ZonedDateTime endZonedDateTime) {
-		return entryRepository.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startZonedDateTime, endZonedDateTime);
+	public List<Entry> findByBookkeepingIdAndEntryDateBetween(UUID bookkeepingId, LocalDate startLocalDate, LocalDate endLocalDate) {
+		return entryRepository.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startLocalDate, endLocalDate);
 	}
 	
 	

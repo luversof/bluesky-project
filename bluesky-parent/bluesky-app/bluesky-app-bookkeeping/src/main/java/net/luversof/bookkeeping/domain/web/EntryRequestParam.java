@@ -1,6 +1,6 @@
 package net.luversof.bookkeeping.domain.web;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDate;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -24,10 +24,10 @@ public class EntryRequestParam {
 	private Bookkeeping bookkeeping;
 	
 	@NotNull(groups = Search.class)
-	private ZonedDateTime startZonedDateTime;
+	private LocalDate startLocalDate;
 	
 	@NotNull(groups = Search.class)
-	private ZonedDateTime endZonedDateTime;
+	private LocalDate endLocalDate;
 	
 	public interface Search {}
 }

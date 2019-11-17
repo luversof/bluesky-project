@@ -99,8 +99,7 @@ public class EntryTest extends GeneralTest {
 	public void test5() {
 		LocalDate startDate = LocalDate.parse("2016-05-02"); 
 		LocalDate endDate = LocalDate.parse("2016-05-03");
-		ZoneId timeZone = ZoneId.of(LocaleContextHolder.getTimeZone().getID());
-		List<Entry> entryList = entryService.findByBookkeepingIdAndEntryDateBetween(UUID.fromString("1"), startDate.atStartOfDay(timeZone), endDate.atStartOfDay(timeZone));
+		List<Entry> entryList = entryService.findByBookkeepingIdAndEntryDateBetween(UUID.fromString("1"), startDate, endDate);
 		log.debug("entryList : {}", entryList);
 	}
 
