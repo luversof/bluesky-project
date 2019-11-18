@@ -24,10 +24,10 @@ public class Statistics {
 	 * client 의 sort 처리를 위해 entryGroup.entryType alias 처리
 	 * @return
 	 */
-	public EntryGroupType getEntryType() {
+	public EntryGroupType getEntryGroupType() {
 		if (entryGroup == null) {
 			return null;
 		}
-		return entryGroup.getEntryType();
+		return entryGroup.getEntryGroupType();
 	}
 }

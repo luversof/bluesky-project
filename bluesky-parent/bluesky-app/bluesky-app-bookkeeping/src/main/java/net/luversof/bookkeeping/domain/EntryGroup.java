@@ -40,7 +40,7 @@ public class EntryGroup {
 	
 	@NotNull(groups = { Create.class, Update.class })
 	@Enumerated(EnumType.STRING)
-	private EntryGroupType entryType;
+	private EntryGroupType entryGroupType;
 
 	public interface Create {
 	}

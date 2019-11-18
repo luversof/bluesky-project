@@ -38,10 +38,10 @@ public enum EntryGroupInitialData {
 	private String messageCode;
 	
 	@Getter
-	private EntryGroupType entryType;
+	private EntryGroupType entryGroupType;
 
 	public String getName() {
-		return MessageUtil.getMessage(MessageFormat.format("constant.bookkeeping.entry-group.{0}.{1}.name", this.getEntryType().name(), this.getMessageCode()));
+		return MessageUtil.getMessage(MessageFormat.format("constant.bookkeeping.entry-group.{0}.{1}.name", this.getEntryGroupType().name(), this.getMessageCode()));
 	}
 	
 	public static List<EntryGroup> getEntryGroupList(Bookkeeping bookkeeping) {
@@ -51,7 +51,7 @@ public enum EntryGroupInitialData {
 			EntryGroup entryGroup = new EntryGroup();
 			entryGroup.setName(entryGroupInitialData.getName());
 			entryGroup.setBookkeeping(bookkeeping);
-			entryGroup.setEntryType(entryGroupInitialData.getEntryType());
+			entryGroup.setEntryGroupType(entryGroupInitialData.getEntryGroupType());
 			entryGroupList.add(entryGroup);
 		});
 		
