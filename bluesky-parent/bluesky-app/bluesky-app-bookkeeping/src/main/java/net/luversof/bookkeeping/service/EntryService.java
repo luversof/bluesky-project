@@ -59,7 +59,10 @@ public class EntryService {
 			}
 		}
 		
+		// 요청이 transfer 인 경우 entryGroup 삭제 처리
 		if (entry.getEntryGroupType() == EntryGroupType.TRANSFER) {
+			entry.setEntryGroup(null);
+			
 			if (entry.getIncomeAsset() == null) {
 				throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_INCOME_ASSET);
 			}
@@ -70,11 +73,19 @@ public class EntryService {
 		
 		// incomeAsset, expenseAsset이 해당 유저의 정보인지 확인
 		if (entry.getIncomeAsset() != null) {
-			Asset targetAsset = assetService.findById(entry.getIncomeAsset().getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ASSET));
+			Asset targetAsset = assetService.findById(entry.getIncomeAsset().getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_OWNER_INCOME_ASSET));
 			if (!targetAsset.getBookkeeping().getUserId().equals(entry.getBookkeeping().getUserId())) {
 				throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ASSET);
 			}
 			entry.setIncomeAsset(targetAsset);
+		}
+		
+		if (entry.getExpenseAsset() != null) {
+			Asset targetAsset = assetService.findById(entry.getExpenseAsset().getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_OWNER_EXPENSE_ASSET));
+			if (!targetAsset.getBookkeeping().getUserId().equals(entry.getBookkeeping().getUserId())) {
+				throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ASSET);
+			}
+			entry.setExpenseAsset(targetAsset);
 		}
 		
 		
