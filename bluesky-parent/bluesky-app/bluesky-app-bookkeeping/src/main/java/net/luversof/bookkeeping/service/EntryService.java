@@ -13,6 +13,7 @@ import net.luversof.bookkeeping.constant.EntryGroupType;
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
+import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.domain.web.EntryRequestParam;
 import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.boot.exception.BlueskyException;
@@ -73,21 +74,32 @@ public class EntryService {
 		
 		// incomeAsset, expenseAsset이 해당 유저의 정보인지 확인
 		if (entry.getIncomeAsset() != null) {
-			Asset targetAsset = assetService.findById(entry.getIncomeAsset().getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_OWNER_INCOME_ASSET));
+			Asset targetAsset = assetService.findById(entry.getIncomeAsset().getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_INCOME_ASSET));
 			if (!targetAsset.getBookkeeping().getUserId().equals(entry.getBookkeeping().getUserId())) {
-				throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ASSET);
+				throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_INCOME_ASSET);
 			}
 			entry.setIncomeAsset(targetAsset);
 		}
 		
 		if (entry.getExpenseAsset() != null) {
-			Asset targetAsset = assetService.findById(entry.getExpenseAsset().getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_OWNER_EXPENSE_ASSET));
+			Asset targetAsset = assetService.findById(entry.getExpenseAsset().getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_EXPENSE_ASSET));
 			if (!targetAsset.getBookkeeping().getUserId().equals(entry.getBookkeeping().getUserId())) {
-				throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ASSET);
+				throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_EXPENSE_ASSET);
 			}
 			entry.setExpenseAsset(targetAsset);
 		}
 		
+		if (entry.getEntryGroup() != null) {
+			EntryGroup entryGroup = entryGroupService.findById(entry.getEntryGroup().getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRYGROUP));
+			if (!entryGroup.getBookkeeping().getUserId().equals(entry.getBookkeeping().getUserId())) {
+				throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRYGROUP);
+			}
+			entry.setEntryGroup(entryGroup);
+		}
+		
+		if (entry.getMemo() == null || entry.getMemo().isBlank()) {
+			entry.setMemo(entry.getEntryGroup().getName());
+		}
 		
 		return entryRepository.save(entry);
 	}
