@@ -1,6 +1,7 @@
 package net.luversof.bookkeeping.service;
 
 
+import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -98,7 +99,11 @@ public class EntryService {
 		}
 		
 		if (entry.getMemo() == null || entry.getMemo().isBlank()) {
-			entry.setMemo(entry.getEntryGroup().getName());
+			if (entry.getEntryGroupType() == EntryGroupType.TRANSFER) {
+				entry.setMemo(MessageFormat.format("{0} -> {1}", entry.getExpenseAsset().getName(), entry.getIncomeAsset().getName()));
+			} else {
+				entry.setMemo(entry.getEntryGroup().getName());
+			}
 		}
 		
 		return entryRepository.save(entry);
