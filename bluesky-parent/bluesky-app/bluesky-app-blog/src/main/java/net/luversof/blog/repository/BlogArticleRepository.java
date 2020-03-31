@@ -5,14 +5,13 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
-import net.luversof.blog.domain.Article;
+import net.luversof.blog.domain.BlogArticle;
 
 @Transactional(readOnly = true)
-public interface ArticleRepository extends JpaRepository<Article, Long> {
+public interface BlogArticleRepository extends JpaRepository<BlogArticle, Long> {
 	
-	Page<Article> findByBlogId(@Param("id") UUID id, Pageable pageable);
+	Page<BlogArticle> findByBlogId(UUID blogId, Pageable pageable);
 	
 }

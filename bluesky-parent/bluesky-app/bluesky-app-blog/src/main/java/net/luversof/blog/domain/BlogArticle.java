@@ -23,7 +23,7 @@ import lombok.Data;
 @Data
 @Entity
 @Audited
-public class Article {
+public class BlogArticle {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -54,7 +54,7 @@ public class Article {
 
 	@ManyToOne
 	@JoinColumn(name = "category_id", foreignKey = @ForeignKey(name = "FK_article_categoryId"))
-	private Category category;
+	private BlogCategory category;
 
 	public interface Get {
 	}

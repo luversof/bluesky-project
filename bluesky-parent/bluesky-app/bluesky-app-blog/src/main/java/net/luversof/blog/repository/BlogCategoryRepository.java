@@ -8,11 +8,11 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.blog.domain.Blog;
-import net.luversof.blog.domain.Category;
+import net.luversof.blog.domain.BlogCategory;
 
 @Transactional(readOnly = true)
-public interface CategoryRepository extends JpaRepository<Category, Long> {
-	List<Category> findByBlog(@Param("blog") Blog blog);
+public interface BlogCategoryRepository extends JpaRepository<BlogCategory, Long> {
+	List<BlogCategory> findByBlog(@Param("blog") Blog blog);
 
-	List<Category> findByBlogId(@Param("blogId") UUID blogId);
+	List<BlogCategory> findByBlogId(@Param("blogId") UUID blogId);
 }
