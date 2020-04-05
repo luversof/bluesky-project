@@ -27,15 +27,32 @@ public class BlogArticleService {
 	}
 	
 	public BlogArticle save(BlogArticle blogArticle) {
-		Blog userBlog = blogService.findByUserId().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_USER_BLOG));
+		Blog userBlog = blogService.findByUserId().get();
 		blogArticle.setBlog(userBlog);
 		return blogArticleRepository.save(blogArticle);
 	}
 	
 	
-	public void delete(UUID userId, Long articleId) {
+	public BlogArticle modify(BlogArticle blogArticle) {
+		
+		Blog userBlog = blogService.findByUserId().get();
+		
+		BlogArticle targetBlogArticle = blogArticleRepository.findById(blogArticle.getId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
+		if (!targetBlogArticle.getBlog().getUserId().equals(userBlog.getUserId())) {
+			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLE);
+		}
+		
+		targetBlogArticle.setTitle(blogArticle.getTitle());
+		targetBlogArticle.setContent(blogArticle.getContent());
+		
+		return blogArticleRepository.save(targetBlogArticle);
+	}
+	
+	
+	public void delete(Long articleId) {
+		Blog userBlog = blogService.findByUserId().get();
 		BlogArticle blogAarticle = blogArticleRepository.findById(articleId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
-		if (!blogAarticle.getBlog().getUserId().equals(userId)) {
+		if (!blogAarticle.getBlog().getUserId().equals(userBlog.getUserId())) {
 			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLE);
 		}
 		blogArticleRepository.deleteById(articleId);

@@ -33,23 +33,13 @@ public class BlogViewController {
 	@GetMapping
 	public String home() {
 		Blog userBlog = BlogRequestAttributeUtil.getUserBlog();
-		if (userBlog == null) {
-			return "redirect:/blog/create";
-		}
 		return String.join("", "redirect:", MessageFormat.format(messageSourceAccessor.getMessage("url.blog.view.list"), userBlog.getId()));
-	}
-
-	@GetMapping(value = "/create")
-	public void createForm() {
 	}
 
 	@GetMapping(value = { "/{blogId}", "/{blogId}/view" })
 	public String redirectArticleList(@PathVariable UUID blogId) {
 		return String.join("", "redirect:", MessageFormat.format(messageSourceAccessor.getMessage("url.blog.view.list"), blogId));
 	}
-
-	@GetMapping(value = "/{blogId}/create")
-	public void createForm2() {}
 
 	/**
 	 * 글 목록
