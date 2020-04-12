@@ -27,19 +27,19 @@ public class BlogArticle {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@NotNull(groups = { Get.class, Save.class, Delete.class })
+	@NotNull(groups = { Get.class, Update.class, Delete.class })
 	private long id;
 
 	@ManyToOne
 	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_article_blogId"))
-	@NotNull(groups = { Save.class, Delete.class })
+	@NotNull(groups = { Update.class, Delete.class })
 	private Blog blog;
 
-	@NotEmpty(groups = { Create.class, Save.class })
-	@Length(min = 3, max = 50, groups = { Create.class, Save.class })
+	@NotEmpty(groups = { Create.class, Update.class })
+	@Length(min = 3, max = 50, groups = { Create.class, Update.class })
 	private String title;
 
-	@NotEmpty(groups = { Create.class, Save.class })
+	@NotEmpty(groups = { Create.class, Update.class })
 	// @Column(columnDefinition = "TEXT")
 	@Lob
 	private String content;
@@ -62,7 +62,7 @@ public class BlogArticle {
     public interface Create {
 	}
 
-    public interface Save {
+    public interface Update {
 	}
 
     public interface Delete {

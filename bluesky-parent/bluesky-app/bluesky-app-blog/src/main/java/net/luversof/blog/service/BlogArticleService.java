@@ -1,5 +1,6 @@
 package net.luversof.blog.service;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,14 +27,17 @@ public class BlogArticleService {
 		return blogArticleRepository.findByBlogId(blogId, pageable);
 	}
 	
-	public BlogArticle save(BlogArticle blogArticle) {
+	public Optional<BlogArticle> findById(long id) {
+		return blogArticleRepository.findById(id);
+	}
+	
+	public BlogArticle create(BlogArticle blogArticle) {
 		Blog userBlog = blogService.findByUserId().get();
 		blogArticle.setBlog(userBlog);
 		return blogArticleRepository.save(blogArticle);
 	}
 	
-	
-	public BlogArticle modify(BlogArticle blogArticle) {
+	public BlogArticle update(BlogArticle blogArticle) {
 		
 		Blog userBlog = blogService.findByUserId().get();
 		

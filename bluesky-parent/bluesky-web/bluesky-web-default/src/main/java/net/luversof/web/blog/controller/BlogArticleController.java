@@ -1,11 +1,13 @@
 package net.luversof.web.blog.controller;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,21 +28,26 @@ public class BlogArticleController {
 	@Autowired
 	private BlogArticleService blogArticleService;
 	
-	@GetMapping("/{blogId}")
-	public Page<BlogArticle> getMyBlog(@PathVariable UUID blogId, Pageable pageable) {
+	@GetMapping("/search/findByBlogId/{blogId}")
+	public Page<BlogArticle> getBlogArticleList(@PathVariable UUID blogId, Pageable pageable) {
 		return blogArticleService.findByBlogId(blogId, pageable);
+	}
+	
+	@GetMapping("{/{id}")
+	public Optional<BlogArticle> findById(@PathVariable long id) {
+		return blogArticleService.findById(id);
 	}
 	
 	@BlueskyPreAuthorize
 	@PostMapping
-	public BlogArticle save(@RequestBody BlogArticle blogArticle) {
-		return blogArticleService.save(blogArticle);
+	public BlogArticle save(@RequestBody @Validated(BlogArticle.Create.class) BlogArticle blogArticle) {
+		return blogArticleService.create(blogArticle);
 	}
 	
 	@BlueskyPreAuthorize
 	@PutMapping("/{id}")
-	public BlogArticle modify(@RequestBody BlogArticle blogArticle) {
-		return blogArticleService.modify(blogArticle);
+	public BlogArticle modify(@RequestBody @Validated(BlogArticle.Update.class) BlogArticle blogArticle) {
+		return blogArticleService.update(blogArticle);
 	}
 	
 	@BlueskyPreAuthorize
