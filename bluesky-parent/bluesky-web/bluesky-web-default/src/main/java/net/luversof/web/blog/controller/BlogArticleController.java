@@ -40,7 +40,7 @@ public class BlogArticleController {
 	
 	@BlueskyPreAuthorize
 	@PostMapping
-	public BlogArticle save(@RequestBody @Validated(BlogArticle.Create.class) BlogArticle blogArticle) {
+	public BlogArticle create(@RequestBody @Validated(BlogArticle.Create.class) BlogArticle blogArticle) {
 		return blogArticleService.create(blogArticle);
 	}
 	
