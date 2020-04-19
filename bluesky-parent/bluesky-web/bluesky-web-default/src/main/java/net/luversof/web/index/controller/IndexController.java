@@ -3,7 +3,6 @@ package net.luversof.web.index.controller;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
@@ -11,7 +10,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -59,9 +57,6 @@ public class IndexController {
 	@GetMapping("login")
 	public void login() {}
 
-	@Autowired
-	private List<HandlerExceptionResolver> handlerExceptionResolverList;
-	
 	@GetMapping("/index3")
 	public void index3() {
 		throw new BlueskyException("blog.menu.modify");

@@ -7,10 +7,8 @@ spring:
   mvc:
     locale: KO_KR
     contentnegotiation:
-      favor-path-extension: true
       media-types:
         json: application/json
-    pathmatch.use-suffix-pattern: true
   jackson:
     serialization:
       write-dates-as-timestamps: false
