@@ -35,9 +35,12 @@ public class BlogArticleController {
 		return blogArticleService.findByBlogId(blogId, blogArticlePageRequest.toPageRequest());
 	}
 	
+	
 	@GetMapping("/{id}")
 	public Optional<BlogArticle> findById(@PathVariable long id) {
-		return blogArticleService.findById(id);
+		Optional<BlogArticle> savedBlogArticle = blogArticleService.findById(id);
+		blogArticleService.increaseViewCount(savedBlogArticle.get());
+		return savedBlogArticle;
 	}
 	
 	@BlueskyPreAuthorize

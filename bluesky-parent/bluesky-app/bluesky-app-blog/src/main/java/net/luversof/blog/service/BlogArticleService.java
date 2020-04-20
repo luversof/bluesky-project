@@ -31,6 +31,16 @@ public class BlogArticleService {
 		return blogArticleRepository.findById(id);
 	}
 	
+	/**
+	 * 조회수 증가 처리
+	 * @param blogArticle
+	 * @return
+	 */
+	public BlogArticle increaseViewCount(BlogArticle blogArticle) {
+		blogArticle.setViewCount(blogArticle.getViewCount() + 1);
+		return blogArticleRepository.save(blogArticle);
+	}
+	
 	public BlogArticle create(BlogArticle blogArticle) {
 		Blog userBlog = blogService.findByUserId().get();
 		blogArticle.setBlog(userBlog);
