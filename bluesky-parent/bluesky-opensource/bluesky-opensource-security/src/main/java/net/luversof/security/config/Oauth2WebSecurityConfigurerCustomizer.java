@@ -5,6 +5,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
+import lombok.SneakyThrows;
 import net.luversof.boot.autoconfigure.security.servlet.WebSecurityConfigurerCustomizer;
 import net.luversof.security.oauth2.client.BlueskyOAuth2AuthorizedClientService;
 
@@ -14,8 +15,9 @@ public class Oauth2WebSecurityConfigurerCustomizer implements WebSecurityConfigu
 	@Autowired
 	private BlueskyOAuth2AuthorizedClientService blueskyOAuth2AuthorizedClientService;
 
+	@SneakyThrows
 	@Override
-	public void postConfigure(HttpSecurity http) throws Exception {
+	public void postConfigure(HttpSecurity http) {
 		SimpleUrlAuthenticationSuccessHandler authenticationSuccessHandler = new SimpleUrlAuthenticationSuccessHandler();
 		authenticationSuccessHandler.setUseReferer(true);
 		
