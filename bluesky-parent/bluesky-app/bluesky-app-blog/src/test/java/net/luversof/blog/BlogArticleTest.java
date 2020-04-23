@@ -3,8 +3,10 @@ package net.luversof.blog;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.UUID;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -13,36 +15,60 @@ import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.blog.domain.BlogArticle;
 import net.luversof.blog.domain.Blog;
-import net.luversof.blog.domain.BlogCategory;
+import net.luversof.blog.domain.BlogArticleCategory;
 import net.luversof.blog.repository.BlogArticleRepository;
 import net.luversof.blog.repository.BlogRepository;
-import net.luversof.blog.repository.BlogCategoryRepository;
+import net.luversof.blog.repository.BlogArticleCategoryRepository;
 
 @Slf4j
-public class ArticleTest extends GeneralTest {
+public class BlogArticleTest extends GeneralTest {
 
 	@Autowired
-	private BlogArticleRepository articleRepository;
+	private BlogRepository blogRepository;
 	
 	@Autowired
-	private BlogCategoryRepository categoryRepository;
+	private BlogArticleRepository blogArticleRepository;
 	
 	@Autowired
-	private BlogRepository blogRepository ;
+	private BlogArticleCategoryRepository blogArticleCategoryRepository;
+	
 	
 	private UUID userId = UUID.fromString("77a04682-3032-492c-9449-5ba986491eef");
 	
 
 	@Test
+	@DisplayName("글 보기 테스트")
 //	@Ignore
 	@WithMockUser
 	public void selectTest() {
-		Optional<BlogArticle> blogArticleOptional = articleRepository.findById((long) 2);
+		Optional<BlogArticle> blogArticleOptional = blogArticleRepository.findById((long) 2);
 		log.debug("result : {}", blogArticleOptional.get());
+	}
+
+	
+	@Test
+	@DisplayName("글 쓰기 테스트")
+	public void writeBlogArticle() {
+		
+		Blog blog = blogRepository.findAll().get(0);
+		
+		List<BlogArticleCategory> blogArticleCategoryList = blogArticleCategoryRepository.findByBlog(blog);
+		
+		
+		BlogArticle blogArticle = new BlogArticle();
+		blogArticle.setTitle("글 제목");
+		blogArticle.setContent("글 내용");
+		blogArticle.setBlog(blog);
+		
+		if (!blogArticleCategoryList.isEmpty()) {
+			blogArticle.setBlogArticleCategory(blogArticleCategoryList.get(new Random().nextInt(blogArticleCategoryList.size())));
+		}
+		
+		log.debug("save : {}", blogArticleRepository.save(blogArticle));
 	}
 	
 	@Test
-	public void 카테고리추가글작성테스트() {
+	public void 카테고리추가복수글작성테스트() {
 		Blog blog = blogRepository.findByUserId(userId).get();
 		for (int i = 0 ; i < 1024 ; i ++) {
 			
@@ -52,13 +78,13 @@ public class ArticleTest extends GeneralTest {
 			article.setContent("한글내용" + i);
 			
 //			ArticleCategory articleCategory = articleCategoryService.findOne(4);
-			BlogCategory articleCategory = new BlogCategory();
+			BlogArticleCategory articleCategory = new BlogArticleCategory();
 			articleCategory.setBlog(blog);
 			articleCategory.setName("바꿨다" + i);
 			articleCategory.setId(4);
 			//article.setArticleCategory(articleCategory);
 			
-			BlogArticle savedArticle = articleRepository.save(article);
+			BlogArticle savedArticle = blogArticleRepository.save(article);
 			log.debug("savedArticle : {}", savedArticle);
 		}
 		
@@ -67,24 +93,24 @@ public class ArticleTest extends GeneralTest {
 
 	@Test
 	public void 글삭제테스트() {
-		articleRepository.deleteById((long) 11);
+		blogArticleRepository.deleteById((long) 11);
 	}
 	
 	
 	@Test
 	public void 수정전파테스트() {
-		BlogArticle article = articleRepository.findById((long) 11).get();
+		BlogArticle article = blogArticleRepository.findById((long) 11).get();
 		article.setContent("수정했음3");
 		
 //		ArticleCategory articleCategory = articleCategoryService.findOne(4);
-		BlogCategory category = new BlogCategory();
+		BlogArticleCategory category = new BlogArticleCategory();
 		category.setBlog(article.getBlog());
 		category.setName("추가32331");
 		category.setId(5);
-		article.setCategory(category);
+		article.setBlogArticleCategory(category);
 		
 //		article.getArticleCategory().setName("수정2");
-		articleRepository.save(article);
+		blogArticleRepository.save(article);
 	}
 	
 	@Test
@@ -95,10 +121,10 @@ public class ArticleTest extends GeneralTest {
 		article.setTitle("한글제목");
 		article.setContent("한글내용");
 		
-		BlogCategory category = categoryRepository.findById((long) 1).orElse(null);
-		article.setCategory(category);
+		BlogArticleCategory category = blogArticleCategoryRepository.findById((long) 1).orElse(null);
+		article.setBlogArticleCategory(category);
 
-		BlogArticle savedArticle = articleRepository.save(article);
+		BlogArticle savedArticle = blogArticleRepository.save(article);
 		log.debug("article : {}", article);
 		log.debug("savedBlog : {}", savedArticle);
 		log.debug("savedBlog : {}", savedArticle.getId());
@@ -134,7 +160,7 @@ public class ArticleTest extends GeneralTest {
 	
 	@Test
 	public void 블로그카테고리테스트() {
-		List<BlogCategory> list = categoryRepository.findByBlog(null);
+		List<BlogArticleCategory> list = blogArticleCategoryRepository.findByBlog(null);
 		
 		
 		log.debug("list : {}", list);
@@ -143,7 +169,7 @@ public class ArticleTest extends GeneralTest {
 	@Test
 	public void 블로그객체비교테스트() {
 		Blog blog = blogRepository.findById(UUID.randomUUID()).get();
-		BlogArticle article = articleRepository.findById((long) 1).get();
+		BlogArticle article = blogArticleRepository.findById((long) 1).get();
 		
 		System.out.println(blog);
 		System.out.println(article.getBlog());

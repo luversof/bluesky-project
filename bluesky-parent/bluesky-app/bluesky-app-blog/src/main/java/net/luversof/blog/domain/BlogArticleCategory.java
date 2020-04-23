@@ -15,7 +15,7 @@ import lombok.Data;
 @Data
 @Entity
 @Audited
-public class BlogCategory {
+public class BlogArticleCategory {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

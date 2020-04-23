@@ -31,7 +31,7 @@ public class BlogArticle {
 	private long id;
 
 	@ManyToOne
-	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_article_blogId"))
+	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_blogArticle_blogId"))
 	@NotNull(groups = { Update.class, Delete.class })
 	private Blog blog;
 
@@ -53,8 +53,8 @@ public class BlogArticle {
 	private long viewCount;
 
 	@ManyToOne
-	@JoinColumn(name = "category_id", foreignKey = @ForeignKey(name = "FK_article_categoryId"))
-	private BlogCategory category;
+	@JoinColumn(name = "category_id", foreignKey = @ForeignKey(name = "FK_blogArticle_categoryId"))
+	private BlogArticleCategory blogArticleCategory;
 
 	public interface Get {
 	}
