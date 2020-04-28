@@ -8,9 +8,9 @@ import org.springframework.stereotype.Service;
 
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.repository.BlogRepository;
-import net.luversof.blog.util.BlogRequestAttributeUtil;
 import net.luversof.boot.exception.BlueskyException;
 import net.luversof.user.constant.UserErrorCode;
+import net.luversof.user.util.UserUtil;
 
 @Service
 public class BlogService {
@@ -24,10 +24,8 @@ public class BlogService {
 	 * @return
 	 */
 	public Optional<Blog> findByUserId() {
-		UUID userId = BlogRequestAttributeUtil.getUserId();
-		if (userId == null) {
-			throw new BlueskyException(UserErrorCode.NEED_LOGIN);
-		}
+		UUID userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getId();
+		
 		Optional<Blog> findBlog = findByUserId(userId);
 		if (findBlog.isEmpty()) {
 			return Optional.of(createBlog(userId));

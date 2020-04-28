@@ -14,7 +14,10 @@ import net.luversof.blog.domain.BlogArticle;
 import net.luversof.blog.domain.BlogArticleCategory;
 import net.luversof.blog.repository.BlogArticleCategoryRepository;
 import net.luversof.blog.repository.BlogArticleRepository;
+import net.luversof.blog.util.BlogRequestAttributeUtil;
 import net.luversof.boot.exception.BlueskyException;
+import net.luversof.user.constant.UserErrorCode;
+import net.luversof.user.util.UserUtil;
 
 @Service
 public class BlogArticleService {
@@ -47,8 +50,11 @@ public class BlogArticleService {
 	}
 	
 	public BlogArticle create(BlogArticle blogArticle) {
+		UUID userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getId();
+		
 		Blog userBlog = blogService.findByUserId().get();
 		blogArticle.setBlog(userBlog);
+		blogArticle.setUserId(userId);
 		
 		checkBlogArtcieCategory(blogArticle);
 		
@@ -57,7 +63,7 @@ public class BlogArticleService {
 	
 	public BlogArticle update(BlogArticle blogArticle) {
 		
-		Blog userBlog = blogService.findByUserId().get();
+		Blog userBlog = BlogRequestAttributeUtil.getUserBlog();
 		
 		BlogArticle targetBlogArticle = blogArticleRepository.findById(blogArticle.getId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
 		if (!targetBlogArticle.getBlog().getUserId().equals(userBlog.getUserId())) {
