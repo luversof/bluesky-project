@@ -33,7 +33,7 @@ public class BlogArticle {
 	private long id;
 
 	@ManyToOne
-	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_blogArticle_blogId"))
+	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_blogArticle_blogId"), nullable = false)
 	@NotNull(groups = { Update.class, Delete.class })
 	private Blog blog;
 
@@ -52,7 +52,7 @@ public class BlogArticle {
 	@LastModifiedDate
 	private LocalDateTime lastModifiedDate;
 	
-	@Column(name = "user_id", length = 16)
+	@Column(name = "user_id", length = 16, nullable = false)
 	private UUID userId;
 
 	private long viewCount;

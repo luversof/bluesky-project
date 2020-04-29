@@ -33,7 +33,7 @@ public class Blog {
 	@Column(length = 16)
 	private UUID id;
 
-	@Column(name = "user_id", length = 16)
+	@Column(name = "user_id", length = 16, nullable = false)
 	private UUID userId;
 	
 	@CreatedDate

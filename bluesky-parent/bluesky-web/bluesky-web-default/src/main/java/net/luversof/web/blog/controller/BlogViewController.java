@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import javax.annotation.Resource;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
@@ -13,8 +14,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import net.luversof.blog.domain.Blog;
+import net.luversof.blog.service.BlogService;
 import net.luversof.blog.util.BlogRequestAttributeUtil;
 import net.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
+import net.luversof.boot.exception.BlueskyException;
+import net.luversof.user.constant.UserErrorCode;
+import net.luversof.user.util.UserUtil;
 
 @Controller
 @RequestMapping(value = "/blog", produces = MediaType.TEXT_HTML_VALUE)
@@ -22,6 +27,9 @@ public class BlogViewController {
 	
 	@Resource(name = "messageSourceAccessor")
 	private MessageSourceAccessor messageSourceAccessor;
+	
+	@Autowired
+	private BlogService blogService;
 
 	/**
 	 * 진입 페이지 blog 정보가 없는 경우 생성 페이지로 이동
@@ -32,7 +40,10 @@ public class BlogViewController {
 	@BlueskyPreAuthorize
 	@GetMapping
 	public String home() {
-		Blog userBlog = BlogRequestAttributeUtil.getUserBlog();
+		Blog userBlog = BlogRequestAttributeUtil.getUserBlog().orElseGet(() -> {
+			UUID userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getId();
+			return blogService.createBlog(userId);
+		});
 		return String.join("", "redirect:", MessageFormat.format(messageSourceAccessor.getMessage("url.blog.view.list"), userBlog.getId()));
 	}
 

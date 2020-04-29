@@ -50,4 +50,15 @@ public class BlogCommentService {
 		
 		return blogCommentRepository.save(targetBlogComment);
 	}
+	
+	public void delete(long commentId) {
+		UUID userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getId();
+		
+		BlogComment blogComment = blogCommentRepository.findById(commentId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGCOMMENT));
+		if (!blogComment.getUserId().equals(userId)) {
+			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGCOMMENT);
+		}
+		
+		blogCommentRepository.deleteById(commentId);
+	}
 }

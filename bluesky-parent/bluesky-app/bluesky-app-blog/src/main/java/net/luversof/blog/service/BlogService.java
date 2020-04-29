@@ -19,8 +19,7 @@ public class BlogService {
 	private BlogRepository blogRepository;
 	
 	/**
-	 * 로그인한 유저 기준으로 조회
-	 * 없으면 생성함
+	 * 로그인한 유저의 blog 조회
 	 * @return
 	 */
 	public Optional<Blog> findByUserId() {

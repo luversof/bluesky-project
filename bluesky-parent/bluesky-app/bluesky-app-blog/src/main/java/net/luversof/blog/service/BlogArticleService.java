@@ -63,7 +63,7 @@ public class BlogArticleService {
 	
 	public BlogArticle update(BlogArticle blogArticle) {
 		
-		Blog userBlog = BlogRequestAttributeUtil.getUserBlog();
+		Blog userBlog = BlogRequestAttributeUtil.getUserBlog().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
 		
 		BlogArticle targetBlogArticle = blogArticleRepository.findById(blogArticle.getId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
 		if (!targetBlogArticle.getBlog().getUserId().equals(userBlog.getUserId())) {
@@ -80,7 +80,7 @@ public class BlogArticleService {
 	}
 	
 	
-	public void delete(Long articleId) {
+	public void delete(long articleId) {
 		Blog userBlog = blogService.findByUserId().get();
 		BlogArticle blogAarticle = blogArticleRepository.findById(articleId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
 		if (!blogAarticle.getBlog().getUserId().equals(userBlog.getUserId())) {

@@ -51,7 +51,7 @@ public class BlogComment {
 	@LastModifiedDate
 	private LocalDateTime lastModifiedDate;
 	
-	@Column(name = "user_id", length = 16)
+	@Column(name = "user_id", length = 16, nullable = false)
 	private UUID userId;
 	
 	public interface Get {

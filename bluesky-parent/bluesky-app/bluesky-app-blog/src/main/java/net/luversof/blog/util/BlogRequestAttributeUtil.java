@@ -21,19 +21,19 @@ public class BlogRequestAttributeUtil extends RequestAttributeUtil {
 	@Setter
 	private static BlogService blogService;
 	
-	public static Blog getUserBlog() {
+	public static Optional<Blog> getUserBlog() {
 		Optional<Blog> userBlogOptional = getRequestAttribute(USER_BLOG);
 		if (userBlogOptional != null) {
-			return userBlogOptional.orElse(null);
+			return userBlogOptional;
 		}
 		Optional<User> loginUser = UserUtil.getLoginUser();
 		if (loginUser.isEmpty()) {
-			return null;
+			return Optional.empty();
 		}
 		
 		userBlogOptional = blogService.findByUserId();
 		setRequestAttribute(USER_BLOG, userBlogOptional);
-		return userBlogOptional.orElse(null);
+		return userBlogOptional;
 	}
 	
 	

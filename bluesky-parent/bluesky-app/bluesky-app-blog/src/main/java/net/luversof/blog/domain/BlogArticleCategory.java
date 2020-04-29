@@ -1,5 +1,6 @@
 package net.luversof.blog.domain;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.ForeignKey;
 import javax.persistence.GeneratedValue;
@@ -22,8 +23,9 @@ public class BlogArticleCategory {
 	private long id;
 
 	@ManyToOne
-	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_blogArticleCategory_blogId"))
+	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_blogArticleCategory_blogId"), nullable = false)
 	private Blog blog;
-	
+
+	@Column(length = 64, nullable = false)
 	private String name;
 }
