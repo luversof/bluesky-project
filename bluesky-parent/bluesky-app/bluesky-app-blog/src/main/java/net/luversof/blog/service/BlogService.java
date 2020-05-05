@@ -23,9 +23,8 @@ public class BlogService {
 	 * @return
 	 */
 	public Optional<Blog> findByUserId() {
-		UUID userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getId();
-		
-		Optional<Blog> findBlog = findByUserId(userId);
+		var userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getId();
+		var findBlog = findByUserId(userId);
 		if (findBlog.isEmpty()) {
 			return Optional.of(createBlog(userId));
 		}
@@ -38,7 +37,7 @@ public class BlogService {
 	}
 
 	public Blog createBlog(UUID userId) {
-		Blog blog = new Blog();
+		var blog = new Blog();
 		blog.setUserId(userId);
 		return blogRepository.save(blog);
 	}

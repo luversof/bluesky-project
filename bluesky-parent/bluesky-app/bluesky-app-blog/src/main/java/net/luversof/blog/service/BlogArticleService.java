@@ -9,9 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import net.luversof.blog.constant.BlogErrorCode;
-import net.luversof.blog.domain.Blog;
 import net.luversof.blog.domain.BlogArticle;
-import net.luversof.blog.domain.BlogArticleCategory;
 import net.luversof.blog.repository.BlogArticleCategoryRepository;
 import net.luversof.blog.repository.BlogArticleRepository;
 import net.luversof.blog.util.BlogRequestAttributeUtil;
@@ -50,9 +48,8 @@ public class BlogArticleService {
 	}
 	
 	public BlogArticle create(BlogArticle blogArticle) {
-		UUID userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getId();
-		
-		Blog userBlog = blogService.findByUserId().get();
+		var userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getId();
+		var userBlog = blogService.findByUserId().get();
 		blogArticle.setBlog(userBlog);
 		blogArticle.setUserId(userId);
 		
@@ -62,10 +59,8 @@ public class BlogArticleService {
 	}
 	
 	public BlogArticle update(BlogArticle blogArticle) {
-		
-		Blog userBlog = BlogRequestAttributeUtil.getUserBlog().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
-		
-		BlogArticle targetBlogArticle = blogArticleRepository.findById(blogArticle.getId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
+		var userBlog = BlogRequestAttributeUtil.getUserBlog().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
+		var targetBlogArticle = blogArticleRepository.findById(blogArticle.getId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
 		if (!targetBlogArticle.getBlog().getUserId().equals(userBlog.getUserId())) {
 			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLE);
 		}
@@ -81,8 +76,8 @@ public class BlogArticleService {
 	
 	
 	public void delete(long articleId) {
-		Blog userBlog = blogService.findByUserId().get();
-		BlogArticle blogAarticle = blogArticleRepository.findById(articleId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
+		var userBlog = blogService.findByUserId().get();
+		var blogAarticle = blogArticleRepository.findById(articleId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
 		if (!blogAarticle.getBlog().getUserId().equals(userBlog.getUserId())) {
 			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLE);
 		}
@@ -99,8 +94,7 @@ public class BlogArticleService {
 			return;
 		}
 		
-		BlogArticleCategory blogArticleCategory = blogArticleCategoryRepository.findById(blogArticle.getBlogArticleCategory().getId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLECATEGORY));
-		
+		var blogArticleCategory = blogArticleCategoryRepository.findById(blogArticle.getBlogArticleCategory().getId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLECATEGORY));
 		if (!blogArticleCategory.getBlog().equals(blogArticle.getBlog())) {
 			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLECATEGORY);
 		}

@@ -6,7 +6,6 @@ import lombok.Setter;
 import net.luversof.blog.domain.Blog;
 import net.luversof.blog.service.BlogService;
 import net.luversof.core.util.RequestAttributeUtil;
-import net.luversof.user.domain.User;
 import net.luversof.user.util.UserUtil;
 
 /**
@@ -26,7 +25,8 @@ public class BlogRequestAttributeUtil extends RequestAttributeUtil {
 		if (userBlogOptional != null) {
 			return userBlogOptional;
 		}
-		Optional<User> loginUser = UserUtil.getLoginUser();
+		
+		var loginUser = UserUtil.getLoginUser();
 		if (loginUser.isEmpty()) {
 			return Optional.empty();
 		}

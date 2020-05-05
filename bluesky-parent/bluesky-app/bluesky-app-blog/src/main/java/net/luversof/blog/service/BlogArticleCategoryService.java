@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import net.luversof.blog.constant.BlogErrorCode;
-import net.luversof.blog.domain.Blog;
 import net.luversof.blog.domain.BlogArticleCategory;
 import net.luversof.blog.repository.BlogArticleCategoryRepository;
 import net.luversof.boot.exception.BlueskyException;
@@ -29,7 +28,7 @@ public class BlogArticleCategoryService {
 	 * @return
 	 */
 	public List<BlogArticleCategory> findByUserBlogId() {
-		Blog userBlog = blogService.findByUserId().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_USER_BLOG));
+		var userBlog = blogService.findByUserId().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_USER_BLOG));
 		return blogArticleCategoryRepository.findByBlog(userBlog);
 	}
 }
