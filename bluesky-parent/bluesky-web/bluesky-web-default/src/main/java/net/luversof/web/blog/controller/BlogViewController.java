@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import net.luversof.blog.domain.Blog;
 import net.luversof.blog.service.BlogService;
 import net.luversof.blog.util.BlogRequestAttributeUtil;
 import net.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
@@ -40,8 +39,8 @@ public class BlogViewController {
 	@BlueskyPreAuthorize
 	@GetMapping
 	public String home() {
-		Blog userBlog = BlogRequestAttributeUtil.getUserBlog().orElseGet(() -> {
-			UUID userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getId();
+		var userBlog = BlogRequestAttributeUtil.getUserBlog().orElseGet(() -> {
+			var userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getId();
 			return blogService.createBlog(userId);
 		});
 		return String.join("", "redirect:", MessageFormat.format(messageSourceAccessor.getMessage("url.blog.view.list"), userBlog.getId()));

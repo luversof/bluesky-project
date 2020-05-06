@@ -1,5 +1,7 @@
 package net.luversof.blog.service;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +25,10 @@ public class BlogCommentService {
 
 	public Page<BlogComment> findByBlogArticleId(long blogArticleId, Pageable pageable) {
 		return blogCommentRepository.findByBlogArticleId(blogArticleId, pageable);
+	}
+	
+	public Optional<BlogComment> findById(long blogCommentId) {
+		return blogCommentRepository.findById(blogCommentId);
 	}
 	
 	public BlogComment create(BlogComment blogComment) {
@@ -57,5 +63,9 @@ public class BlogCommentService {
 		}
 		
 		blogCommentRepository.deleteById(commentId);
+	}
+	
+	public long countByBlogArticleId(long blogArticleId) {
+		return blogCommentRepository.countByBlogArticleId(blogArticleId);
 	}
 }

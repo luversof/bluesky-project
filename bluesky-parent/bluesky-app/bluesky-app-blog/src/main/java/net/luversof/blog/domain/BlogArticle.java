@@ -56,6 +56,8 @@ public class BlogArticle {
 	private UUID userId;
 
 	private long viewCount;
+	
+	private long blogCommentCount;
 
 	@ManyToOne
 	@JoinColumn(name = "category_id", foreignKey = @ForeignKey(name = "FK_blogArticle_categoryId"))

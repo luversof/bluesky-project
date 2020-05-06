@@ -11,5 +11,7 @@ import net.luversof.blog.domain.BlogComment;
 public interface BlogCommentRepository extends JpaRepository<BlogComment, Long> {
 
 	Page<BlogComment> findByBlogArticleId(long blogArticleId, Pageable pageable);
+
+	long countByBlogArticleId(long blogArticleId);
 	
 }

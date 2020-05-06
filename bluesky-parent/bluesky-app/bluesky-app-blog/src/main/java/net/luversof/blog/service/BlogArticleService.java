@@ -29,6 +29,9 @@ public class BlogArticleService {
 	@Autowired
 	private BlogService blogService;
 	
+	@Autowired
+	private BlogCommentService blogCommentService;
+	
 	public Page<BlogArticle> findByBlogId(UUID blogId, Pageable pageable) {
 		return blogArticleRepository.findByBlogId(blogId, pageable);
 	}
@@ -101,5 +104,12 @@ public class BlogArticleService {
 		
 		blogArticle.setBlogArticleCategory(blogArticleCategory);
 		
+	}
+	
+	public BlogArticle updateBlogCommentCount(long blogArticleId) {
+		BlogArticle blogArticle = findById(blogArticleId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
+		long blogCommentCount = blogCommentService.countByBlogArticleId(blogArticleId);
+		blogArticle.setBlogCommentCount(blogCommentCount);
+		return blogArticleRepository.save(blogArticle);
 	}
 }

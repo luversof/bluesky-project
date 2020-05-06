@@ -13,9 +13,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.BlogComment;
+import net.luversof.blog.service.BlogArticleService;
 import net.luversof.blog.service.BlogCommentService;
 import net.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
+import net.luversof.boot.exception.BlueskyException;
 import net.luversof.web.blog.domain.BlogCommentPageRequest;
 
 @RestController
@@ -25,6 +28,9 @@ public class BlogCommentController {
 	@Autowired
 	private BlogCommentService blogCommentService;
 	
+	@Autowired
+	private BlogArticleService blogArticleService;
+	
 	@GetMapping("/search/findByBlogArticleId/{blogArticleId}")
 	public Page<BlogComment> findByBlogArticleId(@PathVariable long blogArticleId, BlogCommentPageRequest blogCommentPageRequest) {
 		return blogCommentService.findByBlogArticleId(blogArticleId, blogCommentPageRequest.toPageRequest());
@@ -33,7 +39,9 @@ public class BlogCommentController {
 	@BlueskyPreAuthorize
 	@PostMapping
 	public BlogComment create(@RequestBody @Validated(BlogComment.Create.class) BlogComment blogComment) {
-		return blogCommentService.create(blogComment);
+		var savedBlogComment = blogCommentService.create(blogComment);
+		blogArticleService.updateBlogCommentCount(savedBlogComment.getBlogArticle().getId());
+		return savedBlogComment;
 	}
 	
 	@BlueskyPreAuthorize
@@ -45,7 +53,9 @@ public class BlogCommentController {
 	@BlueskyPreAuthorize
 	@DeleteMapping("/{id}")
 	public void delete(@PathVariable long id) {
+		var blogArticleId = blogCommentService.findById(id).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGCOMMENT)).getBlogArticle().getId();
 		blogCommentService.delete(id);
+		blogArticleService.updateBlogCommentCount(blogArticleId);
 	}
 
 }
