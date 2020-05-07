@@ -3,6 +3,7 @@ package net.luversof.user;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -64,6 +65,11 @@ public class UserTest extends GeneralTest {
 	@Test
 	public void findAll() {
 		log.debug("result : {}", userRepository.findAll());
+	}
+	
+	@Test
+	public void findById() {
+		log.debug("result : {}", userRepository.findByIdIn(List.of(UUID.fromString("4c466928-3115-47f8-892e-507a54591b09"), UUID.fromString("6565b40a-6211-429d-8c09-0a8115996b3f"))));
 	}
 	
 	@Test

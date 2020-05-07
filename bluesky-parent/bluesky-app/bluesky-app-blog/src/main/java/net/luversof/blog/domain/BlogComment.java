@@ -11,6 +11,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.Transient;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -19,6 +20,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import lombok.Data;
+import net.luversof.user.domain.User;
 
 /**
  * BlogArticle에 대한 댓글
@@ -53,6 +55,9 @@ public class BlogComment {
 	
 	@Column(name = "user_id", length = 16, nullable = false)
 	private UUID userId;
+	
+	@Transient
+	private User user;
 	
 	public interface Get {
 	}

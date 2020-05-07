@@ -1,8 +1,10 @@
 package net.luversof.user.service;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -78,8 +80,12 @@ public class UserService {
 		return userRepository.save(user);
 	}
 
-	public User findOne(long id) {
-		return userRepository.getOne(id);
+	public Optional<User> findById(UUID id) {
+		return userRepository.findById(id);
+	}
+	
+	public List<User> findByIdIn(Collection<UUID> ids) {
+		return userRepository.findByIdIn(ids);
 	}
 
 	public Optional<User> findByUsername(String username) {

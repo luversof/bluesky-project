@@ -1,6 +1,9 @@
 package net.luversof.blog.service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -12,6 +15,8 @@ import net.luversof.blog.domain.BlogComment;
 import net.luversof.blog.repository.BlogCommentRepository;
 import net.luversof.boot.exception.BlueskyException;
 import net.luversof.user.constant.UserErrorCode;
+import net.luversof.user.domain.User;
+import net.luversof.user.service.UserService;
 import net.luversof.user.util.UserUtil;
 
 @Service
@@ -21,14 +26,23 @@ public class BlogCommentService {
 	private BlogCommentRepository blogCommentRepository;
 	
 	@Autowired
+	private UserService userService;
+	
+	@Autowired
 	private BlogArticleService blogArticleService;
 
 	public Page<BlogComment> findByBlogArticleId(long blogArticleId, Pageable pageable) {
-		return blogCommentRepository.findByBlogArticleId(blogArticleId, pageable);
+		Page<BlogComment> blogCommentPage = blogCommentRepository.findByBlogArticleId(blogArticleId, pageable);
+		setUserName(blogCommentPage);
+		return blogCommentPage;
 	}
 	
 	public Optional<BlogComment> findById(long blogCommentId) {
-		return blogCommentRepository.findById(blogCommentId);
+		Optional<BlogComment> BlogCommentOptional = blogCommentRepository.findById(blogCommentId);
+		if (BlogCommentOptional.isPresent()) {
+			setUserName(BlogCommentOptional.get());
+		}
+		return BlogCommentOptional;
 	}
 	
 	public BlogComment create(BlogComment blogComment) {
@@ -67,5 +81,25 @@ public class BlogCommentService {
 	
 	public long countByBlogArticleId(long blogArticleId) {
 		return blogCommentRepository.countByBlogArticleId(blogArticleId);
+	}
+	
+	
+	private void setUserName(Iterable<BlogComment> blogCommentIterable) {
+		List<UUID> ids = new ArrayList<>();
+		blogCommentIterable.forEach(blogComment -> ids.add(blogComment.getUserId()));
+		
+		List<User> userList = userService.findByIdIn(ids);
+		userList.forEach(user -> {
+			blogCommentIterable.forEach(blogComment -> {
+				if (blogComment.getUserId().equals(user.getId())) {
+					blogComment.setUser(user);
+				}
+			});
+		});
+	}
+	
+	private void setUserName(BlogComment blogComment) {
+		User user = userService.findById(blogComment.getUserId()).orElse(null);
+		blogComment.setUser(user);
 	}
 }
