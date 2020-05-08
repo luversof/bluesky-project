@@ -19,6 +19,8 @@ import javax.persistence.UniqueConstraint;
 import org.hibernate.annotations.GenericGenerator;
 import org.springframework.data.annotation.CreatedDate;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import lombok.Data;
 
 @Entity
@@ -46,6 +48,7 @@ public class User {
     private boolean credentialsNonExpired;
     private boolean enabled;
 
+    @JsonManagedReference
 	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, mappedBy = "user")
 	private List<UserAuthority> userAuthorityList;
 	
