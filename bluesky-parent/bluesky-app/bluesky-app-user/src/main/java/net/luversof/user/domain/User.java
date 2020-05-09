@@ -19,7 +19,7 @@ import javax.persistence.UniqueConstraint;
 import org.hibernate.annotations.GenericGenerator;
 import org.springframework.data.annotation.CreatedDate;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.Data;
 
@@ -37,23 +37,35 @@ public class User {
 	@Column(nullable = false)
 	private String username;
 
+	@JsonIgnore
 	private String password;
 
+	@JsonIgnore
 	@CreatedDate
 //	@DateTimeFormat(iso = ISO.DATE_TIME)
 	private LocalDateTime createdDate;
 
+	@JsonIgnore
 	private boolean accountNonExpired;
+	
+	@JsonIgnore
     private boolean accountNonLocked;
+	
+	@JsonIgnore
     private boolean credentialsNonExpired;
+	
+	@JsonIgnore
     private boolean enabled;
 
-    @JsonManagedReference
+	@JsonIgnore
+    // @JsonManagedReference
 	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, mappedBy = "user")
 	private List<UserAuthority> userAuthorityList;
 	
+	@JsonIgnore
 	@Enumerated(EnumType.STRING)
 	private UserType userType;
 	
+	@JsonIgnore
 	private String externalId;
 }
