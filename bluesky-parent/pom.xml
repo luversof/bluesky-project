@@ -5,7 +5,7 @@
 	<groupId>net.luversof</groupId>
 	<artifactId>bluesky-parent</artifactId>
 	<packaging>pom</packaging>
-	<version>0.0.1-SNAPSHOT</version>
+<!-- 	<version>0.0.1-SNAPSHOT</version> -->
 	<parent>
 		<groupId>net.luversof.boot</groupId>
 		<artifactId>bluesky-boot-starter-parent</artifactId>
