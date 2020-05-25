@@ -68,7 +68,6 @@ public class BlogArticleService {
 			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLE);
 		}
 		
-		targetBlogArticle.setBlog(userBlog);
 		targetBlogArticle.setTitle(blogArticle.getTitle());
 		targetBlogArticle.setContent(blogArticle.getContent());
 		
@@ -78,13 +77,13 @@ public class BlogArticleService {
 	}
 	
 	
-	public void delete(long articleId) {
-		var userBlog = blogService.findByUserId().get();
-		var blogAarticle = blogArticleRepository.findById(articleId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
+	public void delete(long blogArticleId) {
+		var userBlog = BlogRequestAttributeUtil.getUserBlog().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
+		var blogAarticle = blogArticleRepository.findById(blogArticleId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
 		if (!blogAarticle.getBlog().getUserId().equals(userBlog.getUserId())) {
 			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLE);
 		}
-		blogArticleRepository.deleteById(articleId);
+		blogArticleRepository.deleteById(blogArticleId);
 	}
 	
 	/**
