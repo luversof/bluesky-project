@@ -106,8 +106,8 @@ public class BlogArticleService {
 	}
 	
 	public BlogArticle updateBlogCommentCount(long blogArticleId) {
-		BlogArticle blogArticle = findById(blogArticleId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
-		long blogCommentCount = blogCommentService.countByBlogArticleId(blogArticleId);
+		var blogArticle = findById(blogArticleId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
+		var blogCommentCount = blogCommentService.countByBlogArticleId(blogArticleId);
 		blogArticle.setBlogCommentCount(blogCommentCount);
 		return blogArticleRepository.save(blogArticle);
 	}

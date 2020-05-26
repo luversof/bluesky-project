@@ -12,8 +12,8 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 
 import org.hibernate.envers.Audited;
 import org.hibernate.validator.constraints.Length;
@@ -29,12 +29,11 @@ public class BlogArticle {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@NotNull(groups = { Get.class, Update.class, Delete.class, BlogComment.Update.class })
+	@Min(value = 1, groups = { Get.class, Update.class, Delete.class, BlogComment.Update.class })
 	private long id;
 
 	@ManyToOne
 	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_blogArticle_blogId"), nullable = false)
-	@NotNull(groups = { Update.class, Delete.class })
 	private Blog blog;
 
 	@NotEmpty(groups = { Create.class, Update.class })

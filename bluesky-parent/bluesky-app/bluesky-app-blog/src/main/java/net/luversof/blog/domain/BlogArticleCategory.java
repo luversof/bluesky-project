@@ -8,6 +8,8 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotEmpty;
 
 import org.hibernate.envers.Audited;
 
@@ -20,6 +22,7 @@ public class BlogArticleCategory {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Min(value = 1, groups = { Update.class, Delete.class})
 	private long id;
 
 	@ManyToOne
@@ -27,5 +30,15 @@ public class BlogArticleCategory {
 	private Blog blog;
 
 	@Column(length = 64, nullable = false)
+	@NotEmpty(groups = { Create.class, Update.class })
 	private String name;
+
+	public interface Create {
+	}
+
+	public interface Update {
+	}
+
+	public interface Delete {
+	}
 }
