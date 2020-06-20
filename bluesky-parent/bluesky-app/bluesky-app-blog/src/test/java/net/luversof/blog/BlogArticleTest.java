@@ -13,12 +13,12 @@ import org.springframework.security.test.context.support.WithMockUser;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
-import net.luversof.blog.domain.BlogArticle;
-import net.luversof.blog.domain.Blog;
-import net.luversof.blog.domain.BlogArticleCategory;
-import net.luversof.blog.repository.BlogArticleRepository;
-import net.luversof.blog.repository.BlogRepository;
-import net.luversof.blog.repository.BlogArticleCategoryRepository;
+import net.luversof.blog.domain.mysql.Blog;
+import net.luversof.blog.domain.mysql.BlogArticle;
+import net.luversof.blog.domain.mysql.BlogArticleCategory;
+import net.luversof.blog.repository.mysql.BlogArticleCategoryRepository;
+import net.luversof.blog.repository.mysql.BlogArticleRepository;
+import net.luversof.blog.repository.mysql.BlogRepository;
 
 @Slf4j
 public class BlogArticleTest extends GeneralTest {

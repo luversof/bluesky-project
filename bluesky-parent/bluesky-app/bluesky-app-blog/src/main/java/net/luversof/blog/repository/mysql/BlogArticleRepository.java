@@ -1,4 +1,4 @@
-package net.luversof.blog.repository;
+package net.luversof.blog.repository.mysql;
 
 import java.util.UUID;
 
@@ -7,7 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
-import net.luversof.blog.domain.BlogArticle;
+import net.luversof.blog.domain.mysql.BlogArticle;
 
 @Transactional(readOnly = true)
 public interface BlogArticleRepository extends JpaRepository<BlogArticle, Long> {

@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.blog.constant.BlogErrorCode;
-import net.luversof.blog.domain.BlogComment;
+import net.luversof.blog.domain.mysql.BlogComment;
 import net.luversof.blog.service.BlogArticleService;
 import net.luversof.blog.service.BlogCommentService;
 import net.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;

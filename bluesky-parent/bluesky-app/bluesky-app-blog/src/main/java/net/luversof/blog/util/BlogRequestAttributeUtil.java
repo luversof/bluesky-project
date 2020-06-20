@@ -3,7 +3,7 @@ package net.luversof.blog.util;
 import java.util.Optional;
 
 import lombok.Setter;
-import net.luversof.blog.domain.Blog;
+import net.luversof.blog.domain.mysql.Blog;
 import net.luversof.blog.service.BlogService;
 import net.luversof.core.util.RequestAttributeUtil;
 import net.luversof.user.util.UserUtil;

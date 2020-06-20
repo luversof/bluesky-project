@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import net.luversof.blog.constant.BlogErrorCode;
-import net.luversof.blog.domain.BlogArticleCategory;
-import net.luversof.blog.repository.BlogArticleCategoryRepository;
+import net.luversof.blog.domain.mysql.BlogArticleCategory;
+import net.luversof.blog.repository.mysql.BlogArticleCategoryRepository;
 import net.luversof.blog.util.BlogRequestAttributeUtil;
 import net.luversof.boot.exception.BlueskyException;
 

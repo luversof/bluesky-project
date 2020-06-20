@@ -9,9 +9,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import net.luversof.blog.constant.BlogErrorCode;
-import net.luversof.blog.domain.BlogArticle;
-import net.luversof.blog.repository.BlogArticleCategoryRepository;
-import net.luversof.blog.repository.BlogArticleRepository;
+import net.luversof.blog.domain.mysql.BlogArticle;
+import net.luversof.blog.repository.mysql.BlogArticleCategoryRepository;
+import net.luversof.blog.repository.mysql.BlogArticleRepository;
 import net.luversof.blog.util.BlogRequestAttributeUtil;
 import net.luversof.boot.exception.BlueskyException;
 import net.luversof.user.constant.UserErrorCode;

@@ -7,10 +7,10 @@ import org.springframework.data.domain.PageRequest;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
-import net.luversof.blog.domain.BlogArticle;
-import net.luversof.blog.domain.BlogComment;
-import net.luversof.blog.repository.BlogArticleRepository;
-import net.luversof.blog.repository.BlogCommentRepository;
+import net.luversof.blog.domain.mysql.BlogArticle;
+import net.luversof.blog.domain.mysql.BlogComment;
+import net.luversof.blog.repository.mysql.BlogArticleRepository;
+import net.luversof.blog.repository.mysql.BlogCommentRepository;
 
 @Slf4j
 public class BlogCommentTest extends GeneralTest {

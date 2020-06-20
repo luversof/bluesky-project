@@ -9,10 +9,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
-import net.luversof.blog.domain.Blog;
-import net.luversof.blog.domain.BlogArticleCategory;
-import net.luversof.blog.repository.BlogArticleCategoryRepository;
-import net.luversof.blog.repository.BlogRepository;
+import net.luversof.blog.domain.mysql.Blog;
+import net.luversof.blog.domain.mysql.BlogArticleCategory;
+import net.luversof.blog.repository.mysql.BlogArticleCategoryRepository;
+import net.luversof.blog.repository.mysql.BlogRepository;
 
 @Slf4j
 public class BlogArticleCategoryTest extends GeneralTest {

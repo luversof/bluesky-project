@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import net.luversof.blog.domain.Blog;
+import net.luversof.blog.domain.mysql.Blog;
 import net.luversof.blog.service.BlogService;
 import net.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 

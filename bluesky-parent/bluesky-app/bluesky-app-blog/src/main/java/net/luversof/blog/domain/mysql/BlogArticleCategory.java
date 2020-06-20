@@ -1,4 +1,4 @@
-package net.luversof.blog.domain;
+package net.luversof.blog.domain.mysql;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;

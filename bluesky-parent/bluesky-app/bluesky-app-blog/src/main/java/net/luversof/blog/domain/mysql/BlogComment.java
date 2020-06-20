@@ -1,4 +1,4 @@
-package net.luversof.blog.domain;
+package net.luversof.blog.domain.mysql;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -10,41 +10,43 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
-import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
-import javax.validation.constraints.Min;
+import javax.persistence.Transient;
+import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 
-import org.hibernate.envers.Audited;
-import org.hibernate.validator.constraints.Length;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import lombok.Data;
+import net.luversof.user.domain.User;
 
+/**
+ * BlogArticle에 대한 댓글
+ * 댓글은 무조건 Article에 종속인게 좋은 걸까? *
+ * 어차피 서비스가 한 묶음이니 종속으로 구현하고 별도 구현이 필요한 경우 따로 고민 
+ * @author luver
+ *
+ */
 @Data
 @Entity
-@Audited
-public class BlogArticle {
+public class BlogComment {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Min(value = 1, groups = { Get.class, Update.class, Delete.class, BlogComment.Update.class })
+	@NotNull(groups = { Get.class, Update.class, Delete.class })
 	private long id;
-
+	
+	@Valid
 	@ManyToOne
-	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_blogArticle_blogId"), nullable = false)
-	private Blog blog;
-
+	@JoinColumn(name = "blogArticle_id", foreignKey = @ForeignKey(name = "FK_blogComment_blogArticleId"))
+	@NotNull(groups = { Update.class, Delete.class })
+	private BlogArticle blogArticle;
+	
 	@NotEmpty(groups = { Create.class, Update.class })
-	@Length(min = 3, max = 50, groups = { Create.class, Update.class })
-	private String title;
-
-	@NotEmpty(groups = { Create.class, Update.class })
-	// @Column(columnDefinition = "TEXT")
-	@Lob
-	private String content;
-
+	private String comment;
+	
 	@CreatedDate
 	private LocalDateTime createdDate;
 
@@ -53,15 +55,10 @@ public class BlogArticle {
 	
 	@Column(name = "user_id", length = 16, nullable = false)
 	private UUID userId;
-
-	private long viewCount;
 	
-	private long blogCommentCount;
-
-	@ManyToOne
-	@JoinColumn(name = "category_id", foreignKey = @ForeignKey(name = "FK_blogArticle_categoryId"))
-	private BlogArticleCategory blogArticleCategory;
-
+	@Transient
+	private User user;
+	
 	public interface Get {
 	}
 
