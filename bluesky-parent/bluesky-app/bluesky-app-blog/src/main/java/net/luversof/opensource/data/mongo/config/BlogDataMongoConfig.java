@@ -29,8 +29,8 @@ public class BlogDataMongoConfig {
 //		return new MongoTemplate(blogMongoDatabaseFactory);
 //	}
 	
-	@Autowired
-	private MongoProperties mongoProperties;
+//	@Autowired
+//	private MongoProperties mongoProperties;
 //	
 //	@Autowired
 //	private MongoTemplate blogMongoTemplate
