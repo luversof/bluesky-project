@@ -20,7 +20,7 @@ import net.luversof.boot.autoconfigure.mongo.config.MongoProperties;
 
 @Configuration
 @EnableMongoRepositories(basePackages = "net.luversof.blog.repository.mongo", mongoTemplateRef = "blogMongoTemplate")
-@PropertySource(value = "classpath:blog-data-mongo-${spring.profiles.active}.properties", ignoreResourceNotFound = true)
+@PropertySource(value = "classpath:blog-data-mongodb-${spring.profiles.active}.properties", ignoreResourceNotFound = true)
 //@EnableMongoAuditing
 public class BlogDataMongoConfig {
 
