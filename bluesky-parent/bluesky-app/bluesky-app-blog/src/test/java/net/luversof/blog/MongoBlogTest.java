@@ -35,7 +35,7 @@ public class MongoBlogTest extends GeneralTest {
 	@Test
 	public void save() {
 		Blog blog = new Blog() ;
-		blog.setTestText("TEST");
+		blog.setTestText("TEST2");
 		var result = blogRepository.save(blog);
 		log.debug("result : {}", result);
 	}
