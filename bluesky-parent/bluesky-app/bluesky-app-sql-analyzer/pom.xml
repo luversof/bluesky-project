@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>net.luversof</groupId>
 		<artifactId>bluesky-app</artifactId>
-		<version>0.0.1-SNAPSHOT</version>
+		<version>${bluesky-project.version}</version>
 	</parent>
 	<artifactId>bluesky-app-sql-analyzer</artifactId>
 	<dependencies>

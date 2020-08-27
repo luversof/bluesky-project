@@ -5,12 +5,16 @@
 	<groupId>net.luversof</groupId>
 	<artifactId>bluesky-parent</artifactId>
 	<packaging>pom</packaging>
-<!-- 	<version>0.0.1-SNAPSHOT</version> -->
+	<version>${bluesky-project.version}</version>
 	<parent>
 		<groupId>net.luversof.boot</groupId>
 		<artifactId>bluesky-boot-starter-parent</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
+	
+	<properties>
+		<bluesky-project.version>0.0.1-SNAPSHOT</bluesky-project.version>
+	</properties>
 
 	<modules>
 		<module>bluesky-app</module>
