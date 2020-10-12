@@ -26,13 +26,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
+import net.luversof.boot.annotation.DevCheckDescription;
 import net.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
-import net.luversof.core.annotation.DevCheckDescription;
 import net.luversof.web.index.service.MenuService;
 
 @RestController
 @RequestMapping(value = "/_check", produces = MediaType.APPLICATION_JSON_VALUE)
-public class DevCheckController {
+public class WebDevCheckController {
 	
 	@Autowired
 	private MenuService menuService;
