@@ -2,7 +2,11 @@ package net.luversof.web.index.controller;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import javax.sql.DataSource;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
@@ -22,6 +26,9 @@ public class IndexController {
 	
 	@Value("${datasource.blog.username}")
 	private String a;
+	
+	@Autowired
+	private Map<String, DataSource> dataSourceMap;
 
 	@GetMapping({ "/", "/index" })
 	public String index() {

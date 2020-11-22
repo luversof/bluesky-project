@@ -6,6 +6,11 @@
 <body>
 	<div layout:fragment="content">
 		<br />
+		<script>
+			var a = "[[${#servletContext.contextPath}]]"
+			var a = "[[${#httpServletRequest.getContextPath()}]]"
+				var a = "[[@{/}]]"
+		</script>
 		<div class="well">	
 			웰컴
 			<script type="text/javascript">

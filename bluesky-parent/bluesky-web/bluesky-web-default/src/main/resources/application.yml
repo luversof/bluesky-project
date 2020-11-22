@@ -4,8 +4,8 @@ spring:
   application:
     name: bluesky-web-default
   messages.basename: classpath:static/message/message
+  web.locale: KO_KR
   mvc:
-    locale: KO_KR
     contentnegotiation:
       media-types:
         json: application/json

@@ -11,7 +11,7 @@
 		<artifactId>bluesky-boot-starter-parent</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-	
+
 	<properties>
 		<bluesky-project.version>0.0.1-SNAPSHOT</bluesky-project.version>
 	</properties>
@@ -280,14 +280,15 @@
 	<repositories>
 		<repository>
 			<id>spring-snapshots</id>
-			<url>http://repo.spring.io/snapshot</url>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
+			<url>https://repo.spring.io/snapshot</url>
+			<snapshots />
+			<releases>
+				<enabled>false</enabled>
+			</releases>
 		</repository>
 		<repository>
 			<id>spring-milestones</id>
-			<url>http://repo.spring.io/milestone</url>
+			<url>https://repo.spring.io/milestone</url>
 		</repository>
 		<repository>
 			<id>github-bluesky-maven-repo</id>
@@ -301,11 +302,15 @@
 	<pluginRepositories>
 		<pluginRepository>
 			<id>spring-snapshots</id>
-			<url>http://repo.spring.io/snapshot</url>
+			<url>https://repo.spring.io/snapshot</url>
+			<snapshots />
+			<releases>
+				<enabled>false</enabled>
+			</releases>
 		</pluginRepository>
 		<pluginRepository>
 			<id>spring-milestones</id>
-			<url>http://repo.spring.io/milestone</url>
+			<url>https://repo.spring.io/milestone</url>
 		</pluginRepository>
 	</pluginRepositories>
 </project>

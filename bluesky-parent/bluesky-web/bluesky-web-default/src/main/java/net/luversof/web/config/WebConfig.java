@@ -17,11 +17,12 @@ public class WebConfig {
 		return resourceBundleThemeSource;
 	}
 
-	@Bean
-	public ThemeResolver themeResolver() {
-		CookieThemeResolver cookieThemeResolver = new CookieThemeResolver();
-		cookieThemeResolver.setDefaultThemeName("default");
-		return cookieThemeResolver;
-	}
+// boot 2.4 이후 이거 bean 정의 사용이 안되는데 확인 필요
+//	@Bean
+//	public ThemeResolver themeResolver() {
+//		CookieThemeResolver cookieThemeResolver = new CookieThemeResolver();
+//		cookieThemeResolver.setDefaultThemeName("default");
+//		return cookieThemeResolver;
+//	}
 
 }
