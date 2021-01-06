@@ -86,6 +86,11 @@
 			<version>2.3.1</version>
 		</dependency>
 		<!-- (e) jdk 11 추기 설정 부분 -->
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-properties-migrator</artifactId>
+		</dependency>
 	</dependencies>
 
 	<dependencyManagement>

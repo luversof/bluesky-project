@@ -2,7 +2,7 @@ server:
   port: 8082
 spring:
   application:
-    name: bluesky-web-default
+    name: bluesky-project
   messages.basename: classpath:static/message/message
   web.locale: KO_KR
   mvc:
@@ -12,3 +12,13 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
+  config.import: classpath:/config/bootstrap.yml
+---
+spring:
+  config:
+    activate.on-profile: localdev
+    import: configserver:http://localhost:8888
+  cloud:
+    config:
+      profile: localdev
+---

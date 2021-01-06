@@ -38,4 +38,5 @@ public class BlueskyCoreConfig {
 	public RestTemplate loadBalancedRestTemplate() {
 		return new RestTemplate();
 	}
+	
 }

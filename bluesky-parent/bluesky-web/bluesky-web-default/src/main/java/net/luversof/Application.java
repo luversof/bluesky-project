@@ -6,9 +6,9 @@ import org.springframework.cloud.client.SpringCloudApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.ComponentScan;
 
-//@SpringCloudApplication
 @SpringBootApplication
 @EnableDiscoveryClient
+//@SpringCloudApplication
 //@ComponentScan
 public class Application {
 
