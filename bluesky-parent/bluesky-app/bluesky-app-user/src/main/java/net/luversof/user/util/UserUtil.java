@@ -2,8 +2,8 @@ package net.luversof.user.util;
 
 import java.util.Optional;
 
+import io.github.luversof.boot.util.RequestAttributeUtil;
 import lombok.Setter;
-import net.luversof.core.util.RequestAttributeUtil;
 import net.luversof.user.domain.User;
 import net.luversof.user.service.LoginUserService;
 

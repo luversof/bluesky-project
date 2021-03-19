@@ -12,13 +12,13 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
-  config.import: classpath:/config/bootstrap.yml
----
-spring:
-  config:
-    activate.on-profile: localdev
-    import: configserver:http://localhost:8888
-  cloud:
-    config:
-      profile: localdev
----
+#  config.import: classpath:/config/bootstrap.yml
+#---
+#spring:
+#  config:
+#    activate.on-profile: localdev
+#    import: configserver:http://localhost:8888
+#  cloud:
+#    config:
+#      profile: localdev
+#---

@@ -8,12 +8,12 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.bookkeeping.constant.EntryGroupInitialData;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.repository.EntryGroupRepository;
-import net.luversof.boot.exception.BlueskyException;
 
 @Service
 public class EntryGroupService {

@@ -8,9 +8,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.bookkeeping.domain.StatisticsSearchInfo;
 import net.luversof.bookkeeping.service.StatisticsSearchInfoService;
-import net.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 
 //@RestController
 @BlueskyPreAuthorize

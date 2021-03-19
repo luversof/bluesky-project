@@ -5,12 +5,13 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.EntryGroup;
-import net.luversof.boot.autoconfigure.context.MessageUtil;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import io.github.luversof.boot.autoconfigure.context.MessageUtil;
 
 /**
  * 최초 생성시 추가되는 항목

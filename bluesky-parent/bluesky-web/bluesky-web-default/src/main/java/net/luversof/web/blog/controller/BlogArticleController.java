@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.blog.domain.mysql.BlogArticle;
 import net.luversof.blog.service.BlogArticleService;
-import net.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.web.blog.domain.BlogArticlePageRequest;
 
 @RestController

@@ -6,12 +6,13 @@ import lombok.Getter;
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.domain.AssetGroup;
 import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.boot.autoconfigure.context.MessageUtil;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import io.github.luversof.boot.autoconfigure.context.MessageUtil;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)

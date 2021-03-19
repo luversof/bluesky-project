@@ -10,7 +10,7 @@
 	<dependencies>
 		<!-- (s) test -->
 		<dependency>
-			<groupId>net.luversof.boot</groupId>
+			<groupId>io.github.luversof</groupId>
 			<artifactId>bluesky-boot-starter-test</artifactId>
 		</dependency>
 		<!-- (e) test -->

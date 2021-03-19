@@ -9,10 +9,10 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.bbs.annotation.PreBbsAuthorize;
 import net.luversof.bbs.domain.Bbs;
 import net.luversof.bbs.service.BbsService;
-import net.luversof.boot.exception.BlueskyException;
 
 @Aspect
 @Component

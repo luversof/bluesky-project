@@ -5,8 +5,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
+import io.github.luversof.boot.autoconfigure.security.servlet.WebSecurityConfigurerCustomizer;
 import lombok.SneakyThrows;
-import net.luversof.boot.autoconfigure.security.servlet.WebSecurityConfigurerCustomizer;
 import net.luversof.security.oauth2.client.BlueskyOAuth2AuthorizedClientService;
 
 @Component

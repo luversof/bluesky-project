@@ -10,7 +10,7 @@
 	<artifactId>bluesky-app-sql-analyzer</artifactId>
 	<dependencies>
 		<dependency>
-			<groupId>net.luversof.boot</groupId>
+			<groupId>io.github.luversof</groupId>
 			<artifactId>bluesky-boot-starter-mybatis</artifactId>
 		</dependency>
 	</dependencies>

@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.blog.domain.mysql.BlogArticleCategory;
 import net.luversof.blog.service.BlogArticleCategoryService;
-import net.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 
 @RestController
 @RequestMapping(value = "/api/blogArticleCategory", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)

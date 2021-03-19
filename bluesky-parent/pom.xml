@@ -7,7 +7,7 @@
 	<packaging>pom</packaging>
 	<version>${bluesky-project.version}</version>
 	<parent>
-		<groupId>net.luversof.boot</groupId>
+		<groupId>io.github.luversof</groupId>
 		<artifactId>bluesky-boot-starter-parent</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
@@ -58,7 +58,7 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>net.luversof.boot</groupId>
+			<groupId>io.github.luversof</groupId>
 			<artifactId>bluesky-boot-starter</artifactId>
 		</dependency>
 		<dependency>

@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
-import net.luversof.boot.autoconfigure.mybatis.type.UUIDTypeHandler;
+import io.github.luversof.boot.autoconfigure.mybatis.type.UUIDTypeHandler;
 
 
 @Configuration

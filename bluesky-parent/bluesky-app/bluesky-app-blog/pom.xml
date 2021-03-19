@@ -10,7 +10,7 @@
 	<artifactId>bluesky-app-blog</artifactId>
 	<dependencies>
 		<dependency>
-			<groupId>net.luversof.boot</groupId>
+			<groupId>io.github.luversof</groupId>
 			<artifactId>bluesky-boot-starter-data-jpa</artifactId>
 		</dependency>
 		<dependency>
