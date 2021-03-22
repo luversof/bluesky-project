@@ -45,10 +45,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webflux</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-thymeleaf</artifactId>
-		</dependency>
 		<!-- <dependency> <groupId>org.springframework</groupId> <artifactId>spring-context-indexer</artifactId> 
 			<optional>true</optional> </dependency> -->
 		<!-- (e) spring-boot -->
@@ -60,71 +56,12 @@
 			</dependency> -->
 		<!-- (e) spring cloud stream test -->
 
-		<!-- (s) thymeleaf -->
-		<dependency>
-			<groupId>org.thymeleaf.extras</groupId>
-			<artifactId>thymeleaf-extras-springsecurity5</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.github.zhanhb</groupId>
-			<artifactId>thymeleaf-layout-dialect</artifactId>
-		</dependency>
-		<!-- (e) thymeleaf -->
-
 		<!-- (s) meneService 관련 -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.dataformat</groupId>
 			<artifactId>jackson-dataformat-xml</artifactId>
 		</dependency>
 		<!-- (e) meneService 관련 -->
-
-		<!-- (s) javascript libarary -->
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>webjars-locator-core</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>bootstrap</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>bootstrap-material-design</artifactId>
-		</dependency>
-		<dependency> <!-- classic 에 해당 버전이 없어 임시로 npm 처리 -->
-			<groupId>org.webjars.npm</groupId>
-			<artifactId>bootswatch</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>font-awesome</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>jquery</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>jquery-i18n-properties</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>mustachejs</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>momentjs</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>tinymce-jquery</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>vue</artifactId>
-		</dependency>
-		<!-- (e) javascript libarary -->
-
 
 		<!-- (s) test -->
 		<dependency>

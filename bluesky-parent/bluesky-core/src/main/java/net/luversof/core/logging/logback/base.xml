@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE included>
 <included>
-	<include resource="org/springframework/boot/logging/logback/base.xml"/>
-	<property name="LOG_FILE" value="./logs/catalina.out" />
+	<include resource="io/github/luversof/boot/logging/logback/base.xml"/>
 	
-	<!-- (s) 기본 로그 레벨 값 설정 -->
+	<logger name="net.luversof" level="${PROJECT_ACTIVE_LOG_LEVEL}" />
+	
+	<!-- <property name="LOG_FILE" value="./logs/catalina.out" />
+	
+	(s) 기본 로그 레벨 값 설정
 	<property name="loggerLevelBluesky" value="DEBUG" />
 	<property name="loggerLevel" value="INFO" />
 	<if condition='p("spring.profiles.active").equals("live")'>
@@ -13,15 +16,15 @@
 			<property name="loggerLevel" value="INFO" />
 		</then>
 	</if>
-	<!-- (e) 기본 로그 레벨 값 설정 -->
+	(e) 기본 로그 레벨 값 설정
 	
 	<logger name="net.luversof" level="${loggerLevelBluesky}" />
 	<logger name="java.sql" level="${loggerLevel}" />
-	<!-- <logger name="org.hibernate.type" level="trace" /> -->
-	<!-- <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="trace" /> -->
+	<logger name="org.hibernate.type" level="trace" />
+	<logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="trace" />
 	<logger name="org.springframework" level="${loggerLevel}" />
-	<!-- <logger name="org.springframework.boot" level="${loggerLevelBluesky}" /> -->
-	<!-- <logger name="org.springframework.security" level="${loggerLevelBluesky}" /> -->
+	<logger name="org.springframework.boot" level="${loggerLevelBluesky}" />
+	<logger name="org.springframework.security" level="${loggerLevelBluesky}" />
 	<logger name="org.mybatis" level="debug" />
 	
 	<if condition='p("spring.profiles.active").equals("live")'>
@@ -36,5 +39,5 @@
 				<appender-ref ref="FILE" />
 			</root>
 		</else>
-	</if>
+	</if> -->
 </included>

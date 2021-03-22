@@ -22,7 +22,7 @@ import net.luversof.blog.service.BlogArticleService;
 import net.luversof.web.blog.domain.BlogArticlePageRequest;
 
 @RestController
-@RequestMapping(value = "/api/blogArticle", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/blogArticle")
 public class BlogArticleController {
 
 	@Autowired
@@ -41,7 +41,7 @@ public class BlogArticleController {
 		return savedBlogArticle;
 	}
 	
-	@BlueskyPreAuthorize
+//	@BlueskyPreAuthorize
 	@PostMapping
 	public BlogArticle create(@RequestBody @Validated(BlogArticle.Create.class) BlogArticle blogArticle) {
 		return blogArticleService.create(blogArticle);

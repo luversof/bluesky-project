@@ -1,0 +1,107 @@
+{
+  "ko": {
+    "NEED_LOGIN": "로그인이 필요합니다.",
+    "login": "로그인",
+    "logout": "로그아웃",
+    "username": "계정",
+    "password": "비밀번호",
+    "blog": {},
+    "user": {
+      "username": "유저이름"
+    },
+    "blogArticle": {
+      "id": "번호",
+      "title": "제목",
+      "content": "내용",
+      "createdDate": "생성일",
+      "viewCount": "조회수",
+
+      "menu": {
+        "list": "글 목록",
+        "view": "글 보기",
+        "write": "글 쓰기",
+        "modify": "글 수정하기"
+      },
+      "button": {
+        "write": "쓰기",
+        "modify": "수정",
+        "delete": "삭제",
+        "cancel": "취소"
+      },
+      "msg": {
+        "deleteConfirm": "글을 삭제하시겠습니까?"
+      }
+    },
+    "blogComment": {
+      "comment": "댓글",
+      "menu": {
+        "list": "댓글 목록",
+        "write": "댓글 쓰기",
+        "modify": "댓글 수정",
+        "delete": "댓글 삭제"
+      },
+      "button": {
+        "write": "쓰기",
+        "modify": "수정",
+        "delete": "삭제"
+      },
+      "msg": {
+        "deleteConfirm": "댓글을 삭제하시겠습니까?"
+      }
+    },
+    "blogArticleCategory": {
+      "name": "분류"
+    },
+    "bookkeeping": {
+      "name": "가계부 이름",
+      "baseDate": "월 시작일",
+      "button": {
+        "create": "생성",
+        "update": "변경",
+        "delete": "삭제",
+        "reset": "리셋"
+      },
+      "link": {
+        "create": "생성하기",
+        "update": "수정하기"
+      },
+      "asset": {
+        "id": "번호",
+        "name": "이름",
+        "amount": "금액",
+        "assetGroup": "자산그룹",
+        "menu": "메뉴",
+        "button": {
+          "create": "생성",
+          "update": "수정",
+          "delete": "삭제",
+          "cancel": "취소"
+        }
+      },
+      "entry": {
+        "entryDate": "날짜",
+        "entryGroupType": "유형",
+        "entryGroup": "분류",
+        "incomeAsset": "수입자산",
+        "expenseAsset": "지출자산",
+        "amount": "금액",
+        "memo": "메모",
+        "menu": "메뉴",
+        "button": {
+          "income": "수입",
+          "expense": "지출",
+          "transfer": "이체",
+          "create": "생성",
+          "update": "수정",
+          "delete": "삭제",
+          "cancel": "취소"
+        }
+      },
+      "entryGroupType": {
+        "INCOME": "수입",
+        "EXPENSE": "지출",
+        "TRANSFER": "이체"
+      }
+    }
+  }
+}
