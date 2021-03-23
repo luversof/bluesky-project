@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import lombok.Data;
 import net.luversof.security.service.SecurityLoginUserService;
 import net.luversof.user.domain.User;
@@ -18,6 +19,7 @@ public class LoginInfoController {
 	@Autowired
 	private SecurityLoginUserService securityLoginUserService;
 
+	@BlueskyPreAuthorize
 	@GetMapping
 	public LoginInfo loginInfo() {
 		
@@ -29,7 +31,6 @@ public class LoginInfoController {
 			return loginInfo;
 		}
 		
-		loginInfo.setLogin(true);
 		loginInfo.setId(user.getId());
 		loginInfo.setName(user.getUsername());
 		
@@ -38,7 +39,6 @@ public class LoginInfoController {
 	
 	@Data
 	public class LoginInfo {
-		private boolean isLogin;
 		private UUID id;
 		private String name;
 	}
