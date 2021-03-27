@@ -218,7 +218,7 @@
 		</repository>
 		<repository>
 			<id>github-bluesky-maven-repo</id>
-			<url>https://raw.githubusercontent.com/luversof/bluesky-maven-repo/master/snapshots</url>
+			<url>https://raw.githubusercontent.com/luversof/bluesky-maven-repo/main/snapshots</url>
 			<snapshots>
 				<enabled>true</enabled>
 				<updatePolicy>always</updatePolicy>
