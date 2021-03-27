@@ -5,4 +5,4 @@ jdk:
 
 script: 
   cd bluesky-parent;
-  mvn install -q -DskipTests=true -Dspring.profiles.active=localdev
+  mvn clean install -q -B -U -DskipTests=true -Dspring.profiles.active=localdev
