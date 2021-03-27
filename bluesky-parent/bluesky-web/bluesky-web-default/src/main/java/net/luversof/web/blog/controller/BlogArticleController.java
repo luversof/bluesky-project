@@ -22,7 +22,7 @@ import net.luversof.blog.service.BlogArticleService;
 import net.luversof.web.blog.domain.BlogArticlePageRequest;
 
 @RestController
-@RequestMapping(value = "/api/blogArticle")
+@RequestMapping(value = "/api/blogArticle", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 public class BlogArticleController {
 
 	@Autowired
