@@ -37,7 +37,9 @@ public class BlogArticleController {
 	@GetMapping("/{id}")
 	public Optional<BlogArticle> findById(@PathVariable long id) {
 		var savedBlogArticle = blogArticleService.findById(id);
-		blogArticleService.increaseViewCount(savedBlogArticle.get());
+		if (savedBlogArticle.isPresent()) {
+			blogArticleService.increaseViewCount(savedBlogArticle.get());
+		}
 		return savedBlogArticle;
 	}
 	

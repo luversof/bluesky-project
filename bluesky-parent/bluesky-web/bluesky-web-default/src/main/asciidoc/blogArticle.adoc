@@ -1,0 +1,4 @@
+
+include::{snippets}/blogArticle/create/curl-request.adoc[]
+
+include::{snippets}/blogArticle/create/httpie-request.adoc[]

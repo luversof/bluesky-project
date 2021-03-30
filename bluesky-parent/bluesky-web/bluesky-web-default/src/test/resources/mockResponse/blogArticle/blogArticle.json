@@ -1,0 +1,16 @@
+{
+    "id": 1,
+    "blog": {
+        "id": "97052572-3309-4fee-921f-473c59aa922e",
+        "userId": "974c8f3a-cab9-4150-824a-fb6e4ae12405",
+        "createdDate": "2020-09-29T10:32:29"
+    },
+    "title": "tewste",
+    "content": "asdfasdfasdfasdfasdf",
+    "createdDate": "2021-01-06T14:35:51",
+    "lastModifiedDate": "2021-03-29T15:39:58",
+    "userId": "974c8f3a-cab9-4150-824a-fb6e4ae12405",
+    "viewCount": 56,
+    "blogCommentCount": 0,
+    "blogArticleCategory": null
+}
