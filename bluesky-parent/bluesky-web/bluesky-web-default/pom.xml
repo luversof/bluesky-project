@@ -65,6 +65,11 @@
 
 		<!-- (s) test -->
 		<dependency>
+			<groupId>io.github.luversof</groupId>
+			<artifactId>bluesky-boot-test-autoconfigure</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.restdocs</groupId>
 			<artifactId>spring-restdocs-mockmvc</artifactId>
 			<scope>test</scope>
@@ -81,9 +86,24 @@
 
 	</dependencies>
 
-	<!-- <build> <plugins> <plugin> <groupId>org.springframework.boot</groupId> 
-		<artifactId>spring-boot-maven-plugin</artifactId> </plugin> <plugin> <groupId>org.apache.maven.plugins</groupId> 
-		<artifactId>maven-surefire-plugin</artifactId> </plugin> <plugin> <groupId>org.asciidoctor</groupId> 
-		<artifactId>asciidoctor-maven-plugin</artifactId> </plugin> <plugin> <artifactId>maven-resources-plugin</artifactId> 
-		</plugin> </plugins> </build> -->
+	<profiles>
+		<profile>
+			<id>asciidoctor</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.asciidoctor</groupId>
+						<artifactId>asciidoctor-maven-plugin</artifactId>
+						<configuration>
+							<attributes>
+								<java-version>${java.version}</java-version>
+								<spring-restdocs-version>${spring-restdocs.version}</spring-restdocs-version>
+								<bluesky-boot-version>${bluesky-boot.version}</bluesky-boot-version>
+							</attributes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>
