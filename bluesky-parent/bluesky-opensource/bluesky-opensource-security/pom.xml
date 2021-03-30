@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>net.luversof</groupId>
 		<artifactId>bluesky-opensource</artifactId>
-		<version>${bluesky-project.version}</version>
+		<version>0.0.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>bluesky-opensource-security</artifactId>
 	<dependencies>
