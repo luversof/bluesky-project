@@ -9,6 +9,10 @@
 	</parent>
 	<artifactId>bluesky-web-default</artifactId>
 	<packaging>jar</packaging>
+	
+	<properties>
+		<asciidocs.output.directory>src/main/resources/static/docs</asciidocs.output.directory>
+	</properties>
 
 	<dependencies>
 

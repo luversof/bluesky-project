@@ -25,6 +25,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.restdocs.payload.JsonFieldType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,6 +41,7 @@ import net.luversof.web.blog.controller.BlogArticleController;
 
 @WebMvcTest(BlogArticleController.class)
 @ContextConfiguration(classes = { TestApplication.class })
+@ActiveProfiles("localdev")
 public class BlogArticleTest extends RestDocsTest {
 
 	@Autowired
@@ -62,7 +64,7 @@ public class BlogArticleTest extends RestDocsTest {
 			fieldWithPath("userId").type(JsonFieldType.STRING).description("유저 Id"),
 			fieldWithPath("viewCount").type(JsonFieldType.NUMBER).description("조회수"),
 			fieldWithPath("blogCommentCount").type(JsonFieldType.NUMBER).description("댓글수"),
-			subsectionWithPath("blogArticleCategory").description("blogArticle category 정보 참조") };
+			fieldWithPath("blogArticleCategory").type(JsonFieldType.OBJECT).optional().description("blogArticle category 정보 참조") };
 
 	@BeforeAll
 	static void beforeAll() {

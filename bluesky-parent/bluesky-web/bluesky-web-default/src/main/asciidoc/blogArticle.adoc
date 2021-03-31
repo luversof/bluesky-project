@@ -1,4 +1,10 @@
+= blogArticle API
+include::{docdir}/_attributes.adoc[]
 
-include::{snippets}/blogArticle/create/curl-request.adoc[]
+== create
 
-include::{snippets}/blogArticle/create/httpie-request.adoc[]
+operation::/blogArticle/create[snippets='curl-request,httpie-request,http-request,path-parameters,request-body,http-response,response-body,response-fields']
+
+== findById
+
+operation::/blogArticle/findById[snippets='curl-request,httpie-request,http-request,path-parameters,request-body,http-response,response-body,response-fields']

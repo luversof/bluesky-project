@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 2.0.10">
+<title>blogArticle API</title>
+<link rel="stylesheet" href="css/spring.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+<style>
+.hidden {
+	display: none;
+}
+
+.switch {
+	border-width: 1px 1px 0 1px;
+	border-style: solid;
+	border-color: #7a2518;
+	display: inline-block;
+}
+
+.switch--item {
+	padding: 10px;
+	background-color: #ffffff;
+	color: #7a2518;
+	display: inline-block;
+	cursor: pointer;
+}
+
+.switch--item:not(:first-child) {
+	border-width: 0 0 0 1px;
+	border-style: solid;
+	border-color: #7a2518;
+}
+
+.switch--item.selected {
+	background-color: #7a2519;
+	color: #ffffff;
+}
+</style>
+<script type="text/javascript">
+function addBlockSwitches() {
+	for (var primary of document.querySelectorAll('.primary')) {
+		var switchItem = createSwitchItem(primary, createBlockSwitch(primary));
+		switchItem.item.classList.add("selected");
+		var title = primary.querySelector('.title')
+		title.remove();
+	}
+	for (var secondary of document.querySelectorAll('.secondary')) {
+		var primary = findPrimary(secondary);
+		if (primary === null) {
+			console.error("Found secondary block with no primary sibling");
+		}
+		else {
+			var switchItem = createSwitchItem(secondary, primary.querySelector('.switch'));
+			switchItem.content.classList.add("hidden");
+			primary.append(switchItem.content);
+			secondary.remove();
+		}
+	}
+}
+
+function createElementFromHtml(html) {
+	var template = document.createElement('template');
+    template.innerHTML = html;
+    return template.content.firstChild;
+}
+
+function createBlockSwitch(primary) {
+    var blockSwitch = createElementFromHtml('<div class="switch"></div>');
+    primary.prepend(blockSwitch)
+	return blockSwitch;
+}
+
+function findPrimary(secondary) {
+	var candidate = secondary.previousElementSibling;
+	while (candidate != null && !candidate.classList.contains('primary')) {
+		candidate = candidate.previousElementSibling;
+	}
+	return candidate;
+}
+
+function createSwitchItem(block, blockSwitch) {
+	var blockName = block.querySelector('.title').textContent;
+	var content = block.querySelectorAll('.content').item(0);
+	var colist = block.querySelector('.colist')
+	if (colist != null) {
+		content.append();
+	}
+	var item = createElementFromHtml('<div class="switch--item">' + blockName + '</div>');
+	item.dataset.blockName = blockName;
+	content.dataset.blockName = blockName;
+	blockSwitch.append(item);
+	return {'item': item, 'content': content};
+}
+
+function globalSwitch() {
+	document.querySelectorAll(".switch--item").forEach(function(item) {
+		var blockId = blockIdForSwitchItem(item);
+		var handler = function(event) {
+			selectedText = event.target.textContent;
+			window.localStorage.setItem(blockId, selectedText);
+			for (var switchItem of document.querySelectorAll(".switch--item")) {
+				if (blockIdForSwitchItem(switchItem) === blockId && switchItem.textContent === selectedText) {
+					select(switchItem);
+				}
+			}
+		}
+		item.addEventListener("click", handler);
+		if (item.textContent === window.localStorage.getItem(blockId)) {
+			select(item);
+		}
+	});
+}
+
+function select(selected) {
+	for (var child of selected.parentNode.children) {
+		child.classList.remove("selected");
+	}
+	selected.classList.add("selected");
+	for (var child of selected.parentNode.parentNode.children) {
+		if (child.classList.contains("content")) {
+			if (selected.dataset.blockName === child.dataset.blockName) {
+				child.classList.remove("hidden");
+			}
+			else {
+				child.classList.add("hidden");
+			}
+		}
+	}	
+}
+
+function blockIdForSwitchItem(item) {
+	idComponents = []
+	for (var switchItem of item.parentNode.querySelectorAll(".switch--item")) {
+		idComponents.push(switchItem.textContent.toLowerCase());
+	}
+	return idComponents.sort().join("-")
+}
+
+window.onload = function() {
+	addBlockSwitches();
+	globalSwitch();
+};
+</script>
+
+</head>
+<body class="book toc2 toc-left">
+<div id="header">
+<h1>blogArticle API</h1>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#create">1. create</a>
+<ul class="sectlevel2">
+<li><a href="#create_curl_request">1.1. Curl request</a></li>
+<li><a href="#create_httpie_request">1.2. HTTPie request</a></li>
+<li><a href="#create_http_request">1.3. HTTP request</a></li>
+<li><a href="#create_path_parameters">1.4. Path parameters</a></li>
+<li><a href="#create_request_body">1.5. Request body</a></li>
+<li><a href="#create_http_response">1.6. HTTP response</a></li>
+<li><a href="#create_response_body">1.7. Response body</a></li>
+<li><a href="#create_response_fields">1.8. Response fields</a></li>
+</ul>
+</li>
+<li><a href="#findbyid">2. findById</a>
+<ul class="sectlevel2">
+<li><a href="#findbyid_curl_request">2.1. Curl request</a></li>
+<li><a href="#findbyid_httpie_request">2.2. HTTPie request</a></li>
+<li><a href="#findbyid_http_request">2.3. HTTP request</a></li>
+<li><a href="#findbyid_path_parameters">2.4. Path parameters</a></li>
+<li><a href="#findbyid_request_body">2.5. Request body</a></li>
+<li><a href="#findbyid_http_response">2.6. HTTP response</a></li>
+<li><a href="#findbyid_response_body">2.7. Response body</a></li>
+<li><a href="#findbyid_response_fields">2.8. Response fields</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="create"><a class="anchor" href="#create"></a>1. create</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="create_curl_request"><a class="anchor" href="#create_curl_request"></a>1.1. Curl request</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code data-lang="bash" class="language-bash hljs">$ curl 'http://localhost:8080/api/blogArticle' -i -X POST \
+    -H 'Content-Type: application/json;charset=UTF-8' \
+    -d '{
+  "id" : 0,
+  "blog" : null,
+  "title" : "title",
+  "content" : "content",
+  "createdDate" : null,
+  "lastModifiedDate" : null,
+  "userId" : null,
+  "viewCount" : 0,
+  "blogCommentCount" : 0,
+  "blogArticleCategory" : null
+}'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="create_httpie_request"><a class="anchor" href="#create_httpie_request"></a>1.2. HTTPie request</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code data-lang="bash" class="language-bash hljs">$ echo '{
+  "id" : 0,
+  "blog" : null,
+  "title" : "title",
+  "content" : "content",
+  "createdDate" : null,
+  "lastModifiedDate" : null,
+  "userId" : null,
+  "viewCount" : 0,
+  "blogCommentCount" : 0,
+  "blogArticleCategory" : null
+}' | http POST 'http://localhost:8080/api/blogArticle' \
+    'Content-Type:application/json;charset=UTF-8'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="create_http_request"><a class="anchor" href="#create_http_request"></a>1.3. HTTP request</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code data-lang="http" class="language-http hljs">POST /api/blogArticle HTTP/1.1
+Content-Type: application/json;charset=UTF-8
+Content-Length: 237
+Host: localhost:8080
+
+{
+  "id" : 0,
+  "blog" : null,
+  "title" : "title",
+  "content" : "content",
+  "createdDate" : null,
+  "lastModifiedDate" : null,
+  "userId" : null,
+  "viewCount" : 0,
+  "blogCommentCount" : 0,
+  "blogArticleCategory" : null
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="create_path_parameters"><a class="anchor" href="#create_path_parameters"></a>1.4. Path parameters</h3>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. /api/blogArticle</caption>
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Parameter</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+</table>
+</div>
+<div class="sect2">
+<h3 id="create_request_body"><a class="anchor" href="#create_request_body"></a>1.5. Request body</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-none hljs">{
+  "id" : 0,
+  "blog" : null,
+  "title" : "title",
+  "content" : "content",
+  "createdDate" : null,
+  "lastModifiedDate" : null,
+  "userId" : null,
+  "viewCount" : 0,
+  "blogCommentCount" : 0,
+  "blogArticleCategory" : null
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="create_http_response"><a class="anchor" href="#create_http_response"></a>1.6. HTTP response</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code data-lang="http" class="language-http hljs">HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Content-Length: 473
+
+{
+  "id" : 1,
+  "blog" : {
+    "id" : "97052572-3309-4fee-921f-473c59aa922e",
+    "userId" : "974c8f3a-cab9-4150-824a-fb6e4ae12405",
+    "createdDate" : "2020-09-29T10:32:29"
+  },
+  "title" : "tewste",
+  "content" : "asdfasdfasdfasdfasdf",
+  "createdDate" : "2021-01-06T14:35:51",
+  "lastModifiedDate" : "2021-03-29T15:39:58",
+  "userId" : "974c8f3a-cab9-4150-824a-fb6e4ae12405",
+  "viewCount" : 56,
+  "blogCommentCount" : 0,
+  "blogArticleCategory" : null
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="create_response_body"><a class="anchor" href="#create_response_body"></a>1.7. Response body</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-none hljs">{
+  "id" : 1,
+  "blog" : {
+    "id" : "97052572-3309-4fee-921f-473c59aa922e",
+    "userId" : "974c8f3a-cab9-4150-824a-fb6e4ae12405",
+    "createdDate" : "2020-09-29T10:32:29"
+  },
+  "title" : "tewste",
+  "content" : "asdfasdfasdfasdfasdf",
+  "createdDate" : "2021-01-06T14:35:51",
+  "lastModifiedDate" : "2021-03-29T15:39:58",
+  "userId" : "974c8f3a-cab9-4150-824a-fb6e4ae12405",
+  "viewCount" : 56,
+  "blogCommentCount" : 0,
+  "blogArticleCategory" : null
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="create_response_fields"><a class="anchor" href="#create_response_fields"></a>1.8. Response fields</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Path</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Nullable</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>id</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Number</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">blogArticle Id</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>title</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">제목</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>content</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">내용</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>createdDate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">생성일</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>lastModifiedDate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">수정일</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>userId</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">유저 Id</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>viewCount</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Number</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">조회수</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>blogCommentCount</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Number</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">댓글수</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>blogArticleCategory</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Object</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">blogArticle category 정보 참조</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>blog.id</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">blog Id</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>blog.userId</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">유저 Id</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>blog.createdDate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">유저 가입일</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="findbyid"><a class="anchor" href="#findbyid"></a>2. findById</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="findbyid_curl_request"><a class="anchor" href="#findbyid_curl_request"></a>2.1. Curl request</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code data-lang="bash" class="language-bash hljs">$ curl 'http://localhost:8080/api/blogArticle/1' -i -X GET \
+    -H 'Content-Type: application/json;charset=UTF-8'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="findbyid_httpie_request"><a class="anchor" href="#findbyid_httpie_request"></a>2.2. HTTPie request</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code data-lang="bash" class="language-bash hljs">$ http GET 'http://localhost:8080/api/blogArticle/1' \
+    'Content-Type:application/json;charset=UTF-8'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="findbyid_http_request"><a class="anchor" href="#findbyid_http_request"></a>2.3. HTTP request</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code data-lang="http" class="language-http hljs">GET /api/blogArticle/1 HTTP/1.1
+Content-Type: application/json;charset=UTF-8
+Host: localhost:8080</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="findbyid_path_parameters"><a class="anchor" href="#findbyid_path_parameters"></a>2.4. Path parameters</h3>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. /api/blogArticle/{id}</caption>
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Parameter</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>id</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">blogArticle Id</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="findbyid_request_body"><a class="anchor" href="#findbyid_request_body"></a>2.5. Request body</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-none hljs"></code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="findbyid_http_response"><a class="anchor" href="#findbyid_http_response"></a>2.6. HTTP response</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code data-lang="http" class="language-http hljs">HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Content-Length: 473
+
+{
+  "id" : 1,
+  "blog" : {
+    "id" : "97052572-3309-4fee-921f-473c59aa922e",
+    "userId" : "974c8f3a-cab9-4150-824a-fb6e4ae12405",
+    "createdDate" : "2020-09-29T10:32:29"
+  },
+  "title" : "tewste",
+  "content" : "asdfasdfasdfasdfasdf",
+  "createdDate" : "2021-01-06T14:35:51",
+  "lastModifiedDate" : "2021-03-29T15:39:58",
+  "userId" : "974c8f3a-cab9-4150-824a-fb6e4ae12405",
+  "viewCount" : 56,
+  "blogCommentCount" : 0,
+  "blogArticleCategory" : null
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="findbyid_response_body"><a class="anchor" href="#findbyid_response_body"></a>2.7. Response body</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-none hljs">{
+  "id" : 1,
+  "blog" : {
+    "id" : "97052572-3309-4fee-921f-473c59aa922e",
+    "userId" : "974c8f3a-cab9-4150-824a-fb6e4ae12405",
+    "createdDate" : "2020-09-29T10:32:29"
+  },
+  "title" : "tewste",
+  "content" : "asdfasdfasdfasdfasdf",
+  "createdDate" : "2021-01-06T14:35:51",
+  "lastModifiedDate" : "2021-03-29T15:39:58",
+  "userId" : "974c8f3a-cab9-4150-824a-fb6e4ae12405",
+  "viewCount" : 56,
+  "blogCommentCount" : 0,
+  "blogArticleCategory" : null
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="findbyid_response_fields"><a class="anchor" href="#findbyid_response_fields"></a>2.8. Response fields</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Path</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Nullable</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>id</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Number</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">blogArticle Id</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>title</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">제목</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>content</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">내용</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>createdDate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">생성일</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>lastModifiedDate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">수정일</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>userId</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">유저 Id</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>viewCount</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Number</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">조회수</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>blogCommentCount</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Number</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">댓글수</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>blogArticleCategory</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Object</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>true</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">blogArticle category 정보 참조</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>blog.id</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">blog Id</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>blog.userId</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">유저 Id</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>blog.createdDate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>String</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">유저 가입일</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2021-03-31 15:23:57 +0900
+</div>
+</div>
+<link rel="stylesheet" href="js/highlight/styles/github.min.css">
+<script src="js/highlight/highlight.min.js"></script>
+<script>hljs.initHighlighting()</script>
+<script type="text/javascript" src="js/tocbot/tocbot.min.js"></script>
+<script type="text/javascript" src="js/toc.js"></script>
+</body>
+</html>
