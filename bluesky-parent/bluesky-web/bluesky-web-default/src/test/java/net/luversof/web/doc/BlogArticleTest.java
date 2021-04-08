@@ -7,11 +7,13 @@ import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.docu
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedRequestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.springframework.restdocs.request.RequestDocumentation.requestParameters;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.HashMap;
@@ -19,15 +21,19 @@ import java.util.HashMap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.restdocs.payload.JsonFieldType;
+import org.springframework.restdocs.request.ParameterDescriptor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.util.LinkedMultiValueMap;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.github.luversof.boot.test.autoconfigure.restdocs.RestDocsTest;
@@ -49,7 +55,7 @@ public class BlogArticleTest extends RestDocsTest {
 
 	@MockBean
 	private BlogArticleController blogArticleController;
-
+	
 	private static FieldDescriptor[] blogFields = new FieldDescriptor[] {
 			fieldWithPath("id").type(JsonFieldType.STRING).description("blog Id"),
 			fieldWithPath("userId").type(JsonFieldType.STRING).description("유저 Id"),
@@ -68,6 +74,7 @@ public class BlogArticleTest extends RestDocsTest {
 
 	@BeforeAll
 	static void beforeAll() {
+		
 	}
 
 	@Test
@@ -89,17 +96,19 @@ public class BlogArticleTest extends RestDocsTest {
 		given(blogArticleController.create(any()))
 				.willReturn(getMock("blogArticle/blogArticle.json", BlogArticle.class));
 
-		var blogArticle = new BlogArticle();
-		blogArticle.setTitle("title");
-		blogArticle.setContent("content");
-
+		var blogArticle = new HashMap<>();
+		blogArticle.put("title", "title");
+		blogArticle.put("content", "content");
+		
 		this.mockMvc.perform(post("/api/blogArticle").contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(blogArticle))
 				)
 				.andExpect(status().isOk())
 				.andDo(document("blogArticle/create",
 						pathParameters(),
-//						requestFields(blogArticleFields).andWithPrefix("blog.", blogFields),
+						requestFields(
+								fieldWithPath("title").description("title"),
+								fieldWithPath("content").description("content")),
 						responseFields(blogArticleFields).andWithPrefix("blog.", blogFields)));
 	}
 }
