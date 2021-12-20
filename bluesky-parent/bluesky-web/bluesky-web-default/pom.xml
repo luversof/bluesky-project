@@ -9,7 +9,7 @@
 	</parent>
 	<artifactId>bluesky-web-default</artifactId>
 	<packaging>jar</packaging>
-	
+
 	<properties>
 		<asciidocs.output.directory>src/main/resources/static/docs</asciidocs.output.directory>
 	</properties>
@@ -45,6 +45,8 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
+		<!-- <dependency> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-starter-thymeleaf</artifactId> 
+			</dependency> -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webflux</artifactId>
@@ -87,6 +89,13 @@
 			<artifactId>spring-boot-starter-websocket</artifactId>
 		</dependency>
 		<!-- (e) websocket -->
+
+		<!-- (s) resilience4j -->
+		<dependency>
+			<groupId>io.github.resilience4j</groupId>
+			<artifactId>resilience4j-spring-boot2</artifactId>
+		</dependency>
+		<!-- (e) resilience4j -->
 
 	</dependencies>
 
