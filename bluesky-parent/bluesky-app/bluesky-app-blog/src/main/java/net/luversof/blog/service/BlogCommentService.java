@@ -14,6 +14,7 @@ import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.mysql.BlogComment;
 import net.luversof.blog.repository.mysql.BlogCommentRepository;
+import net.luversof.blog.util.BlogRequestAttributeUtil;
 import net.luversof.user.constant.UserErrorCode;
 import net.luversof.user.domain.User;
 import net.luversof.user.service.UserService;
@@ -27,9 +28,6 @@ public class BlogCommentService {
 	
 	@Autowired
 	private UserService userService;
-	
-	@Autowired
-	private BlogArticleService blogArticleService;
 
 	public Page<BlogComment> findByBlogArticleId(long blogArticleId, Pageable pageable) {
 		Page<BlogComment> blogCommentPage = blogCommentRepository.findByBlogArticleId(blogArticleId, pageable);
@@ -51,7 +49,7 @@ public class BlogCommentService {
 			throw new BlueskyException(BlogErrorCode.NOT_EXIST_PARAMETER_BLOGARTICLE_ID);
 		}
 		
-		blogArticleService.findById(blogComment.getBlogArticle().getId());
+		BlogRequestAttributeUtil.getBlogArticleService().findById(blogComment.getBlogArticle().getId());
 		blogComment.setUserId(userId);
 		
 		return blogCommentRepository.save(blogComment);

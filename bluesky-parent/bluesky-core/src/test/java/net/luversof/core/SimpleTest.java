@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -306,5 +307,10 @@ public class SimpleTest {
 		
 		
 		
+	}
+	
+	@Test
+	public void test9() {
+		log.debug("test : {}", TimeUnit.MINUTES.toMillis(10));
 	}
 }

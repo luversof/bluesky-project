@@ -18,15 +18,13 @@ import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.domain.web.EntryRequestParam;
 import net.luversof.bookkeeping.repository.EntryRepository;
+import net.luversof.bookkeeping.util.BookkeepingUtils;
 
 @Service
 public class EntryService {
 	
 	@Autowired
 	private EntryRepository entryRepository;
-	
-	@Autowired
-	private BookkeepingService bookkeepingService;
 	
 	@Autowired
 	private EntryGroupService entryGroupService;
@@ -40,7 +38,7 @@ public class EntryService {
 	 * @return
 	 */
 	public Entry createUserEntry(Entry entry) {
-		Bookkeeping bookkeeping = bookkeepingService.getUserBookkeeping(entry.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		Bookkeeping bookkeeping = BookkeepingUtils.getBookkeepingService().getUserBookkeeping(entry.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		entry.setBookkeeping(bookkeeping);
 		
 		// 요청이 income인 경우 expenseAsset 삭제 처리 & incomeAsset 검증
@@ -115,12 +113,12 @@ public class EntryService {
 	 * @return
 	 */
 	public List<Entry> searchUserEntry(EntryRequestParam entryRequestParam) {
-		Bookkeeping targetBookkeeping = bookkeepingService.getUserBookkeeping(entryRequestParam.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		Bookkeeping targetBookkeeping = BookkeepingUtils.getBookkeepingService().getUserBookkeeping(entryRequestParam.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		return entryRepository.findByBookkeepingIdAndEntryDateBetween(targetBookkeeping.getId(), entryRequestParam.getStartLocalDate(), entryRequestParam.getEndLocalDate());
 	}
 
 	public Entry updateUserEntry(Entry entry) {
-		Bookkeeping bookkeeping = bookkeepingService.getUserBookkeeping(entry.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		Bookkeeping bookkeeping = BookkeepingUtils.getBookkeepingService().getUserBookkeeping(entry.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		Entry targetEntry = entryRepository.findById(entry.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRY));
 		if (!targetEntry.getBookkeeping().getUserId().equals(bookkeeping.getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRY);
@@ -135,7 +133,7 @@ public class EntryService {
 	}
 
 	public void deleteUserEntry(Entry entry) {
-		Bookkeeping bookkeeping = bookkeepingService.getUserBookkeeping(entry.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		Bookkeeping bookkeeping = BookkeepingUtils.getBookkeepingService().getUserBookkeeping(entry.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		Entry targetEntry = entryRepository.findById(entry.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRY));
 		if (!targetEntry.getBookkeeping().getUserId().equals(bookkeeping.getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRY);

@@ -14,6 +14,7 @@ import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.domain.AssetGroup;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.repository.AssetRepository;
+import net.luversof.bookkeeping.util.BookkeepingUtils;
 
 @Service
 public class AssetService {
@@ -23,9 +24,6 @@ public class AssetService {
 	
 	@Autowired
 	private AssetGroupService assetGroupService;
-	
-	@Autowired
-	private BookkeepingService bookkeepingService;
 	
 	/**
 	 * 초기 데이터 insert
@@ -38,7 +36,7 @@ public class AssetService {
 	}
 	
 	public Asset createUserAsset(Asset asset) {
-		asset.setBookkeeping(bookkeepingService.getUserBookkeeping(asset.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING)));
+		asset.setBookkeeping(BookkeepingUtils.getBookkeepingService().getUserBookkeeping(asset.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING)));
 		return assetRepository.save(asset);
 	}
 	
@@ -47,7 +45,7 @@ public class AssetService {
 	}
 	
 	public List<Asset> getUserAssetList(UUID userId) {
-		Bookkeeping userBookkeeping = bookkeepingService.getUserBookkeeping(userId).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		Bookkeeping userBookkeeping = BookkeepingUtils.getBookkeepingService().getUserBookkeeping(userId).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		return assetRepository.findByBookkeepingId(userBookkeeping.getId());
 	}
 	
@@ -57,7 +55,7 @@ public class AssetService {
 	 * @return
 	 */
 	public Asset updateUserAsset(Asset asset) {
-		Bookkeeping bookkeeping = bookkeepingService.getUserBookkeeping(asset.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		Bookkeeping bookkeeping = BookkeepingUtils.getBookkeepingService().getUserBookkeeping(asset.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		//asset.setBookkeeping();
 		Asset targetAsset = findById(asset.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ASSET));
 		if (!targetAsset.getBookkeeping().getUserId().equals(bookkeeping.getUserId())) {
@@ -80,7 +78,7 @@ public class AssetService {
 	}
 
 	public void deleteUserAsset(Asset asset) {
-		bookkeepingService.getUserBookkeeping(asset.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		BookkeepingUtils.getBookkeepingService().getUserBookkeeping(asset.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		Asset targetAsset = findById(asset.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ASSET));
 		if (!targetAsset.getBookkeeping().getUserId().equals(asset.getBookkeeping().getUserId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ASSET);

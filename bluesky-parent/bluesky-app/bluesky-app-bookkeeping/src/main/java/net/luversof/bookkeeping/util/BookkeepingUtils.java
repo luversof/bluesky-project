@@ -3,11 +3,21 @@ package net.luversof.bookkeeping.util;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
+import org.springframework.context.ApplicationContext;
+
 import io.github.luversof.boot.exception.BlueskyException;
+import lombok.Setter;
 import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
+import net.luversof.bookkeeping.service.BookkeepingService;
 
 public class BookkeepingUtils {
 	
+	@Setter
+	private static ApplicationContext applicationContext;
+	
+	public static BookkeepingService getBookkeepingService() {
+		return applicationContext.getBean(BookkeepingService.class);
+	}
 	
 	public static LocalDate getStartLocalDate(LocalDate targetLocalDate, int baseDate, ChronoUnit chronoUnit) {
 		if (ChronoUnit.MONTHS == chronoUnit) {
