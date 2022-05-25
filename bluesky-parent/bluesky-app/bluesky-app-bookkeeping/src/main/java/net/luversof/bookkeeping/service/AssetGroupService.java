@@ -65,7 +65,7 @@ public class AssetGroupService {
 		assetGroupRepository.delete(targetAssetGroup);
 	}
 	
-	public void deleteByBookkeepingId(UUID bookkeepingId) {
+	public void deleteByBookkeepingId(String bookkeepingId) {
 		List<AssetGroup> assetGroupList = assetGroupRepository.findByBookkeepingId(bookkeepingId);
 		assetGroupRepository.deleteAll(assetGroupList);
 	}

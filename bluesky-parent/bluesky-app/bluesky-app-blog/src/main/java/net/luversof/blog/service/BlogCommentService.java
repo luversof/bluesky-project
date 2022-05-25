@@ -3,7 +3,6 @@ package net.luversof.blog.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -44,7 +43,7 @@ public class BlogCommentService {
 	}
 	
 	public BlogComment create(BlogComment blogComment) {
-		var userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getId();
+		var userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getUserId();
 		if (blogComment.getBlogArticle() == null || blogComment.getBlogArticle().getId() <= 0) {
 			throw new BlueskyException(BlogErrorCode.NOT_EXIST_PARAMETER_BLOGARTICLE_ID);
 		}
@@ -56,7 +55,7 @@ public class BlogCommentService {
 	}
 	
 	public BlogComment update(BlogComment blogComment) {
-		var userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getId();
+		var userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getUserId();
 		var targetBlogComment = blogCommentRepository.findById(blogComment.getId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGCOMMENT));
 		if (!targetBlogComment.getUserId().equals(userId)) {
 			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGCOMMENT);
@@ -68,7 +67,7 @@ public class BlogCommentService {
 	}
 	
 	public void delete(long commentId) {
-		var userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getId();
+		var userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getUserId();
 		var blogComment = blogCommentRepository.findById(commentId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGCOMMENT));
 		if (!blogComment.getUserId().equals(userId)) {
 			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGCOMMENT);
@@ -83,13 +82,13 @@ public class BlogCommentService {
 	
 	
 	private void setUserName(Iterable<BlogComment> blogCommentIterable) {
-		List<UUID> ids = new ArrayList<>();
+		List<String> ids = new ArrayList<>();
 		blogCommentIterable.forEach(blogComment -> ids.add(blogComment.getUserId()));
 		
-		List<User> userList = userService.findByIdIn(ids);
+		List<User> userList = userService.findByUserIdIn(ids);
 		userList.forEach(user -> {
 			blogCommentIterable.forEach(blogComment -> {
-				if (blogComment.getUserId().equals(user.getId())) {
+				if (blogComment.getUserId().equals(user.getUserId())) {
 					blogComment.setUser(user);
 				}
 			});
@@ -97,7 +96,7 @@ public class BlogCommentService {
 	}
 	
 	private void setUserName(BlogComment blogComment) {
-		User user = userService.findById(blogComment.getUserId()).orElse(null);
+		User user = userService.findByUserId(blogComment.getUserId()).orElse(null);
 		blogComment.setUser(user);
 	}
 }

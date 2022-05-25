@@ -1,7 +1,5 @@
 package net.luversof.bookkeeping.domain;
 
-import java.util.UUID;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -11,14 +9,12 @@ import javax.persistence.Table;
 import javax.validation.constraints.NotBlank;
 
 import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.envers.Audited;
 import org.hibernate.validator.constraints.Range;
 
 import lombok.Data;
 
 @Data
 @Entity
-@Audited
 @Table(indexes = @Index(name = "IDX_Bookkeeping_userId", columnList = "user_id", unique = true))
 public class Bookkeeping {
 
@@ -26,13 +22,15 @@ public class Bookkeeping {
 	@GeneratedValue(generator = "uuid-gen")
 	@GenericGenerator(name = "uuid-gen", strategy = "uuid2")
 	@Column(length = 16)
-	private UUID id;
-
+	private long idx;
+	
+	private String bookkeepingId;
+	
 	@NotBlank(groups = { Create.class, Update.class })
 	private String name;
 
 	@Column(name = "user_id", length = 16)
-	private UUID userId;
+	private String userId;
 
 	/**
 	 * 시작일. startDay라고 해야하나?

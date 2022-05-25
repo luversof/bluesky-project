@@ -1,16 +1,14 @@
 package net.luversof.bookkeeping.domain;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.ManyToOne;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
-
-import org.hibernate.envers.Audited;
 
 import lombok.Data;
 import net.luversof.bookkeeping.constant.AssetGroupType;
@@ -23,7 +21,6 @@ import net.luversof.bookkeeping.constant.AssetGroupType;
  */
 @Entity
 @Data
-@Audited
 public class AssetGroup {
 
 	@Id
@@ -34,8 +31,8 @@ public class AssetGroup {
 	@NotBlank(groups = { Create.class, Update.class })
 	private String name;
 
-	@ManyToOne
-	private Bookkeeping bookkeeping;
+	@Column(name = "bookkeeping_id", length = 36, nullable = false)
+	private String bookkeepingId;
 
 	@Enumerated(EnumType.STRING)
 	private AssetGroupType assetGroupType;

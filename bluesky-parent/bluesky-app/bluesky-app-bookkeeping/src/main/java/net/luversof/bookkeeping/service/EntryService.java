@@ -39,7 +39,7 @@ public class EntryService {
 	 */
 	public Entry createUserEntry(Entry entry) {
 		Bookkeeping bookkeeping = BookkeepingUtils.getBookkeepingService().getUserBookkeeping(entry.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		entry.setBookkeeping(bookkeeping);
+		entry.setBookkeepingId(bookkeeping.getBookkeepingId());
 		
 		// 요청이 income인 경우 expenseAsset 삭제 처리 & incomeAsset 검증
 		if (entry.getEntryGroupType() == EntryGroupType.INCOME) {
@@ -148,12 +148,12 @@ public class EntryService {
 	 * @param endZonedDateTime
 	 * @return
 	 */
-	public List<Entry> findByBookkeepingIdAndEntryDateBetween(UUID bookkeepingId, LocalDate startLocalDate, LocalDate endLocalDate) {
+	public List<Entry> findByBookkeepingIdAndEntryDateBetween(String bookkeepingId, LocalDate startLocalDate, LocalDate endLocalDate) {
 		return entryRepository.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startLocalDate, endLocalDate);
 	}
 	
 	
-	public int deleteByBookkeepingId(UUID bookkeepingId) {
+	public int deleteByBookkeepingId(String bookkeepingId) {
 		return entryRepository.deleteByBookkeepingIdQuery(bookkeepingId);
 	}
 	

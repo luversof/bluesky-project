@@ -1,7 +1,6 @@
 package net.luversof.blog.domain.mysql;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
+import java.time.ZonedDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -48,13 +47,13 @@ public class BlogComment {
 	private String comment;
 	
 	@CreatedDate
-	private LocalDateTime createdDate;
+	private ZonedDateTime createdDate;
 
 	@LastModifiedDate
-	private LocalDateTime lastModifiedDate;
+	private ZonedDateTime lastModifiedDate;
 	
-	@Column(name = "user_id", length = 16, nullable = false)
-	private UUID userId;
+	@Column(length = 16, nullable = false)
+	private String userId;
 	
 	@Transient
 	private User user;

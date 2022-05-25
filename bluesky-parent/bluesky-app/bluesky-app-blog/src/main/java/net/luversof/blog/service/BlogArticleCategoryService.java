@@ -36,15 +36,16 @@ public class BlogArticleCategoryService {
 	public BlogArticleCategory create(BlogArticleCategory blogArticleCategory) {
 		var userBlog = BlogRequestAttributeUtil.getUserBlog().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
 		
-		blogArticleCategory.setBlog(userBlog);
+		blogArticleCategory.setBlogId(userBlog.getBlogId());
 		
 		return blogArticleCategoryRepository.save(blogArticleCategory);
 	}
 	
 	public BlogArticleCategory update(BlogArticleCategory blogArticleCategory) {
 		var userBlog = BlogRequestAttributeUtil.getUserBlog().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
-		var targetBlogArticleCategory = blogArticleCategoryRepository.findById(blogArticleCategory.getId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLECATEGORY));
-		if (!targetBlogArticleCategory.getBlog().getUserId().equals(userBlog.getUserId())) {
+		var targetBlogArticleCategory = blogArticleCategoryRepository.findById(blogArticleCategory.getIdx()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLECATEGORY));
+		
+		if (!targetBlogArticleCategory.getBlogId().equals(userBlog.getBlogId())) {
 			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLECATEGORY);
 		}
 		
@@ -60,7 +61,7 @@ public class BlogArticleCategoryService {
 		var userBlog = BlogRequestAttributeUtil.getUserBlog().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
 		var targetBlogArticleCategory = blogArticleCategoryRepository.findById(id).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLECATEGORY));
 		
-		if (!targetBlogArticleCategory.getBlog().getUserId().equals(userBlog.getUserId())) {
+		if (!targetBlogArticleCategory.getBlogId().equals(userBlog.getBlogId())) {
 			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLECATEGORY);
 		}
 		

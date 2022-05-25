@@ -28,7 +28,8 @@ public class UserService {
 	 */
 	public User addUser(String username, String password) {
 		User user = new User();
-		user.setUsername(username);
+		user.setUserId(UUID.randomUUID().toString());
+		user.setUserName(username);
 		user.setPassword(password);
 		user.setAccountNonExpired(true);
 		user.setAccountNonLocked(true);
@@ -39,8 +40,8 @@ public class UserService {
 		List<UserAuthority> userAuthorityList = new ArrayList<>();
 		for (String authority : userType.getAuthorities()) {
 			UserAuthority userAuthority = new UserAuthority();
+			userAuthority.setUserId(user.getUserId());
 			userAuthority.setAuthority(authority);
-			userAuthority.setUser(user);
 			userAuthorityList.add(userAuthority);
 		}
 		user.setUserAuthorityList(userAuthorityList);
@@ -57,7 +58,8 @@ public class UserService {
 	 */
 	public User addUser(String username, UserType userType, String externalId, List<String> authorityList) {
 		User user = new User();
-		user.setUsername(username);
+		user.setUserId(UUID.randomUUID().toString());
+		user.setUserName(username);
 		user.setAccountNonExpired(true);
 		user.setAccountNonLocked(true);
 		user.setCredentialsNonExpired(true);
@@ -67,8 +69,8 @@ public class UserService {
 		List<UserAuthority> userAuthorityList = new ArrayList<>();
 		for (String authority : authorityList) {
 			UserAuthority userAuthority = new UserAuthority();
+			userAuthority.setUserId(user.getUserId());
 			userAuthority.setAuthority(authority);
-			userAuthority.setUser(user);
 			userAuthorityList.add(userAuthority);
 		}
 		user.setUserAuthorityList(userAuthorityList);
@@ -80,16 +82,16 @@ public class UserService {
 		return userRepository.save(user);
 	}
 
-	public Optional<User> findById(UUID id) {
-		return userRepository.findById(id);
+	public Optional<User> findByUserId(String userId) {
+		return userRepository.findByUserId(userId);
 	}
 	
-	public List<User> findByIdIn(Collection<UUID> ids) {
-		return userRepository.findByIdIn(ids);
+	public List<User> findByUserIdIn(Collection<String> userIds) {
+		return userRepository.findByUserIdIn(userIds);
 	}
 
 	public Optional<User> findByUsername(String username) {
-		return userRepository.findByUsername(username);
+		return userRepository.findByUserName(username);
 	}
 	
 	public Optional<User> findByExternalIdAndUserType(String externalId, UserType userType) {

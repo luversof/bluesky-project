@@ -44,7 +44,7 @@ public class AssetService {
 		return assetRepository.findById(id);
 	}
 	
-	public List<Asset> getUserAssetList(UUID userId) {
+	public List<Asset> getUserAssetList(String userId) {
 		Bookkeeping userBookkeeping = BookkeepingUtils.getBookkeepingService().getUserBookkeeping(userId).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		return assetRepository.findByBookkeepingId(userBookkeeping.getId());
 	}
@@ -86,7 +86,7 @@ public class AssetService {
 		assetRepository.delete(targetAsset);
 	}
 
-	public void deleteBybookkeepingId(UUID bookkeepingId) {
+	public void deleteBybookkeepingId(String bookkeepingId) {
 		List<Asset> assetList = assetRepository.findByBookkeepingId(bookkeepingId);
 		assetRepository.deleteAll(assetList);
 	}

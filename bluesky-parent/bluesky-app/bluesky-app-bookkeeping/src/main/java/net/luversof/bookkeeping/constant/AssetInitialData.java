@@ -33,7 +33,7 @@ public enum AssetInitialData {
 		Arrays.asList(AssetInitialData.values()).forEach(assetInitialData -> {
 			Asset asset = new Asset();
 			asset.setName(assetInitialData.getName());
-			asset.setBookkeeping(bookkeeping);
+			asset.setBookkeepingId(bookkeeping.getBookkeepingId());
 			asset.setAssetGroup(assetGroupList.stream().filter(
 					assetGroup -> assetGroup.getName().equals(assetInitialData.getAssetGroupInitialData().getName()))
 					.findFirst().orElse(null));

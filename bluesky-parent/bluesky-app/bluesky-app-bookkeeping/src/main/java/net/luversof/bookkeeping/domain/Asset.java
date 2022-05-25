@@ -1,16 +1,14 @@
 package net.luversof.bookkeeping.domain;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToOne;
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
-
-import org.hibernate.envers.Audited;
 
 import lombok.Data;
 
@@ -22,7 +20,6 @@ import lombok.Data;
  */
 @Entity
 @Data
-@Audited
 public class Asset {
 
 	@Id
@@ -35,9 +32,8 @@ public class Asset {
 
 	private long amount;
 
-	// @JsonIgnore
-	@OneToOne
-	private Bookkeeping bookkeeping;
+	@Column(name = "bookkeeping_id", length = 36, nullable = false)
+	private String bookkeepingId;
 
 	@ManyToOne
 	/* @NotNull(groups = { Create.class, Update.class }) */

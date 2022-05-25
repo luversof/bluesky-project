@@ -35,7 +35,7 @@ public class BlogArticleCategoryTest extends GeneralTest {
 		for (int i = 0; i < 10; i++) {
 			BlogArticleCategory blogArticleCategory = new BlogArticleCategory();
 			
-			blogArticleCategory.setBlog(blog);
+			blogArticleCategory.setBlogId(blog.getBlogId());
 			blogArticleCategory.setName("카테고리 " + i);
 			blogArticleCategoryList.add(blogArticleCategory);
 			

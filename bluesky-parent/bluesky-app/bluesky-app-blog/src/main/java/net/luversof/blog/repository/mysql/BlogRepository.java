@@ -9,8 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import net.luversof.blog.domain.mysql.Blog;
 
 @Transactional(readOnly = true)
-public interface BlogRepository extends JpaRepository<Blog, UUID> {
+public interface BlogRepository extends JpaRepository<Blog, Long> {
 
-	Optional<Blog> findByUserId(UUID userId); 
+	Optional<Blog> findByUserId(String userId); 
 
 }

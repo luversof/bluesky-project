@@ -1,30 +1,28 @@
 package net.luversof.blog.domain.mysql;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
+import java.time.ZonedDateTime;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.ForeignKey;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.Lob;
-import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 
-import org.hibernate.envers.Audited;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.validator.constraints.Length;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 
 import lombok.Data;
 
 @Data
 @Entity
-@Audited
 public class BlogArticle {
 
 	@Id
@@ -32,9 +30,13 @@ public class BlogArticle {
 	@Min(value = 1, groups = { Get.class, Update.class, Delete.class, BlogComment.Update.class })
 	private long id;
 
-	@ManyToOne
-	@JoinColumn(name = "blog_id", foreignKey = @ForeignKey(name = "FK_blogArticle_blogId"), nullable = false)
+	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+	@JoinColumn(name = "blog_id", referencedColumnName = "blogId")
 	private Blog blog;
+	
+	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+	@JoinColumn(name = "category_id", referencedColumnName = "categoryId")
+	private BlogArticleCategory blogArticleCategory;
 
 	@NotEmpty(groups = { Create.class, Update.class })
 	@Length(min = 3, max = 50, groups = { Create.class, Update.class })
@@ -45,22 +47,18 @@ public class BlogArticle {
 	@Lob
 	private String content;
 
-	@CreatedDate
-	private LocalDateTime createdDate;
+	@CreationTimestamp
+	private ZonedDateTime createdDate;
 
-	@LastModifiedDate
-	private LocalDateTime lastModifiedDate;
+	@UpdateTimestamp
+	private ZonedDateTime lastModifiedDate;
 	
-	@Column(name = "user_id", length = 16, nullable = false)
-	private UUID userId;
+	@Column(length = 36, nullable = false)
+	private String userId;
 
 	private long viewCount;
 	
 	private long blogCommentCount;
-
-	@ManyToOne
-	@JoinColumn(name = "category_id", foreignKey = @ForeignKey(name = "FK_blogArticle_categoryId"))
-	private BlogArticleCategory blogArticleCategory;
 
 	public interface Get {
 	}

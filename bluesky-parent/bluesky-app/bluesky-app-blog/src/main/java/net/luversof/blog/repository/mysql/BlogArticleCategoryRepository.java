@@ -1,7 +1,6 @@
 package net.luversof.blog.repository.mysql;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,5 +13,5 @@ public interface BlogArticleCategoryRepository extends JpaRepository<BlogArticle
 	
 	List<BlogArticleCategory> findByBlog(Blog blog);
 
-	List<BlogArticleCategory> findByBlogId(UUID blogId);
+	List<BlogArticleCategory> findByBlogId(String blogId);
 }

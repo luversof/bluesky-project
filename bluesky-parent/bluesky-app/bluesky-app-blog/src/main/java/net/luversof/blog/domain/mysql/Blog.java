@@ -1,18 +1,21 @@
 package net.luversof.blog.domain.mysql;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
+import java.time.ZonedDateTime;
+import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
-import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.envers.Audited;
-import org.springframework.data.annotation.CreatedDate;
+import org.hibernate.annotations.CreationTimestamp;
 
 import lombok.Data;
 
@@ -23,20 +26,25 @@ import lombok.Data;
  */
 @Data
 @Entity
-@Audited
-@Table(indexes = @Index(name = "IDX_Blog_userId", columnList = "user_id", unique = true) )
+@Table(indexes = { @Index(columnList = "user_id") })
 public class Blog {
 
 	@Id
-	@GeneratedValue(generator = "uuid-gen")
-	@GenericGenerator(name = "uuid-gen", strategy = "uuid2")
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(length = 16)
-	private UUID id;
-
-	@Column(name = "user_id", length = 16, nullable = false)
-	private UUID userId;
+	private long idx;
 	
-	@CreatedDate
-	private LocalDateTime createdDate;
+	@Column(length = 36, nullable = false, unique = true)
+	private String blogId;
+
+	@Column(name = "user_id", length = 36, nullable = false)
+	private String userId;
+	
+	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+	@JoinColumn(name = "blogId")
+	private List<BlogArticleCategory> blogArticleCategoryList;
+	
+	@CreationTimestamp
+	private ZonedDateTime createdDate;
 
 }

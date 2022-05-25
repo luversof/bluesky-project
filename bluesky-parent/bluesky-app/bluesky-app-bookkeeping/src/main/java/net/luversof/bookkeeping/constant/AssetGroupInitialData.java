@@ -35,7 +35,7 @@ public enum AssetGroupInitialData {
 		Arrays.asList(AssetGroupInitialData.values()).forEach(assetGroupInitialData -> {
 			AssetGroup assetGroup = new AssetGroup();
 			assetGroup.setName(assetGroupInitialData.getName());
-			assetGroup.setBookkeeping(bookkeeping);
+			assetGroup.setBookkeepingId(bookkeeping.getBookkeepingId());
 			assetGroup.setAssetGroupType(assetGroupInitialData.getAssetGroupType());
 			assetGroupList.add(assetGroup);
 		});

@@ -43,7 +43,8 @@ public class EntryGroupService {
 	
 	public List<EntryGroup> getUserEntryGroupList(UUID userId) {
 		Bookkeeping userBookkeeping = BookkeepingUtils.getBookkeepingService().getUserBookkeeping(userId).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		return entryGroupRepository.findByBookkeepingId(userBookkeeping.getId());
+		return entryGroupRepository.findByBookkeepingId(userBookkeeping.getBookkeepingId());
+		
 	}
 	
 	public EntryGroup updateUserEntryGroup(EntryGroup entryGroup) {
@@ -64,7 +65,7 @@ public class EntryGroupService {
 		entryGroupRepository.delete(entryGroup);
 	}
 	
-	public void deleteBybookkeepingId(UUID bookkeepingId) {
+	public void deleteBybookkeepingId(String bookkeepingId) {
 		List<EntryGroup> entryGroupList = entryGroupRepository.findByBookkeepingId(bookkeepingId);
 		entryGroupRepository.deleteAll(entryGroupList);
 	}

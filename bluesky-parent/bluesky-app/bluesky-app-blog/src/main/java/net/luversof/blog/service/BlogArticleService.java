@@ -1,7 +1,6 @@
 package net.luversof.blog.service;
 
 import java.util.Optional;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -32,7 +31,7 @@ public class BlogArticleService {
 	@Autowired
 	private BlogCommentService blogCommentService;
 	
-	public Page<BlogArticle> findByBlogId(UUID blogId, Pageable pageable) {
+	public Page<BlogArticle> findByBlogId(String blogId, Pageable pageable) {
 		return blogArticleRepository.findByBlogId(blogId, pageable);
 	}
 	
@@ -51,7 +50,7 @@ public class BlogArticleService {
 	}
 	
 	public BlogArticle create(BlogArticle blogArticle) {
-		var userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getId();
+		var userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getUserId();
 		var userBlog = blogService.findByUserId().get();
 		blogArticle.setBlog(userBlog);
 		blogArticle.setUserId(userId);
@@ -91,13 +90,13 @@ public class BlogArticleService {
 	 * @param blogArticle
 	 */
 	private void checkBlogArtcieCategory(BlogArticle blogArticle) {
-		if (blogArticle.getBlogArticleCategory() == null || blogArticle.getBlogArticleCategory().getId() <= 0) {
+		if (blogArticle.getBlogArticleCategory() == null || blogArticle.getBlogArticleCategory().getIdx() <= 0) {
 			blogArticle.setBlogArticleCategory(null);
 			return;
 		}
 		
-		var blogArticleCategory = blogArticleCategoryRepository.findById(blogArticle.getBlogArticleCategory().getId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLECATEGORY));
-		if (!blogArticleCategory.getBlog().equals(blogArticle.getBlog())) {
+		var blogArticleCategory = blogArticleCategoryRepository.findById(blogArticle.getBlogArticleCategory().getIdx()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLECATEGORY));
+		if (!blogArticleCategory.getBlogId().equals(blogArticle.getBlog().getBlogId())) {
 			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLECATEGORY);
 		}
 		

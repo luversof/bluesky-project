@@ -18,8 +18,8 @@ public class EmptyLoginUserService implements LoginUserService {
 	}
 
 	@Override
-	public UUID getUserId() {
-		return UUID.randomUUID();
+	public String getUserId() {
+		return UUID.randomUUID().toString();
 	}
 
 }

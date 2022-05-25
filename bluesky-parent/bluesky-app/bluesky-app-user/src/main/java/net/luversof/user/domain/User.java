@@ -1,8 +1,8 @@
 package net.luversof.user.domain;
 
-import java.time.LocalDateTime;
+import java.io.Serializable;
+import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.UUID;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -11,13 +11,14 @@ import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
-import org.hibernate.annotations.GenericGenerator;
-import org.springframework.data.annotation.CreatedDate;
+import org.hibernate.annotations.CreationTimestamp;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -25,25 +26,28 @@ import lombok.Data;
 
 @Entity
 @Data
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "username", "userType" }))
-public class User {
+@Table(uniqueConstraints = { @UniqueConstraint(columnNames = { "userName", "userType" }) })
+public class User implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
 	@Id
-	//@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@GeneratedValue(generator = "uuid-gen")
-	@GenericGenerator(name = "uuid-gen", strategy = "uuid2")
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(length = 16)
-	private UUID id;
+	private long idx;
+	
+	@Column(nullable = false, length = 36, unique = true)
+	private String userId;
 
 	@Column(nullable = false)
-	private String username;
+	private String userName;
 
 	@JsonIgnore
 	private String password;
 
 	@JsonIgnore
-	@CreatedDate
-//	@DateTimeFormat(iso = ISO.DATE_TIME)
-	private LocalDateTime createdDate;
+	@CreationTimestamp
+	private ZonedDateTime createdDate;
 
 	@JsonIgnore
 	private boolean accountNonExpired;
@@ -57,9 +61,8 @@ public class User {
 	@JsonIgnore
     private boolean enabled;
 
-	@JsonIgnore
-    // @JsonManagedReference
-	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, mappedBy = "user")
+	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+	@JoinColumn(name = "user_id", referencedColumnName = "userId")
 	private List<UserAuthority> userAuthorityList;
 	
 	@JsonIgnore

@@ -3,7 +3,11 @@ package net.luversof.security.core.userdetails;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
+
+import org.springframework.security.core.CredentialsContainer;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,18 +15,13 @@ import net.luversof.user.domain.User;
 import net.luversof.user.domain.UserAuthority;
 import net.luversof.user.domain.UserType;
 
-import org.springframework.security.core.CredentialsContainer;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.security.core.userdetails.UserDetails;
-
 @Data
 @AllArgsConstructor
 public class BlueskyUser implements UserDetails, CredentialsContainer {
 	
 	private static final long serialVersionUID = -7218355940538132953L;
 	
-	private final UUID id;
+	private final String id;
 	private final String username;
 	private String password;
 	private final Collection<? extends GrantedAuthority> authorities;
@@ -37,8 +36,8 @@ public class BlueskyUser implements UserDetails, CredentialsContainer {
     
     public BlueskyUser(User user) {
     	this.user = user;
-    	this.id = user.getId();
-    	this.username = user.getUsername();
+    	this.id = user.getUserId();
+    	this.username = user.getUserName();
     	this.password = user.getPassword();
     	
     	List<String> authorityList = new ArrayList<>();

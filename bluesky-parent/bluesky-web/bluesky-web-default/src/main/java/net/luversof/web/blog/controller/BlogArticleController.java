@@ -1,7 +1,6 @@
 package net.luversof.web.blog.controller;
 
 import java.util.Optional;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -29,7 +28,7 @@ public class BlogArticleController {
 	private BlogArticleService blogArticleService;
 	
 	@GetMapping("/search/findByBlogId/{blogId}")
-	public Page<BlogArticle> findByBlogId(@PathVariable UUID blogId, BlogArticlePageRequest blogArticlePageRequest) {
+	public Page<BlogArticle> findByBlogId(@PathVariable String blogId, BlogArticlePageRequest blogArticlePageRequest) {
 		return blogArticleService.findByBlogId(blogId, blogArticlePageRequest.toPageRequest());
 	}
 	

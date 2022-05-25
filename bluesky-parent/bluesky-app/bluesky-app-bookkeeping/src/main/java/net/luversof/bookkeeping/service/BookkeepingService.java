@@ -61,7 +61,7 @@ public class BookkeepingService {
 	 * @param bookkeeping
 	 * @return
 	 */
-	public Optional<Bookkeeping> getUserBookkeeping(UUID userId) {
+	public Optional<Bookkeeping> getUserBookkeeping(String userId) {
 		if (userId == null) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_USER_ID);
 		}
@@ -103,10 +103,10 @@ public class BookkeepingService {
 	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
 	public void deleteUserBookkeeping(Bookkeeping bookkeeping) {
 		Bookkeeping targetBookkeeping = getUserBookkeeping(bookkeeping.getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		entryService.deleteByBookkeepingId(targetBookkeeping.getId());
-		entryGroupService.deleteBybookkeepingId(targetBookkeeping.getId());
-		assetService.deleteBybookkeepingId(targetBookkeeping.getId());
-		assetGroupService.deleteByBookkeepingId(targetBookkeeping.getId());
+		entryService.deleteByBookkeepingId(targetBookkeeping.getBookkeepingId());
+		entryGroupService.deleteBybookkeepingId(targetBookkeeping.getBookkeepingId());
+		assetService.deleteBybookkeepingId(targetBookkeeping.getBookkeepingId());
+		assetGroupService.deleteByBookkeepingId(targetBookkeeping.getBookkeepingId());
 		bookkeepingRepository.delete(targetBookkeeping);
 	}
 }

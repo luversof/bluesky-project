@@ -1,7 +1,6 @@
 package net.luversof.security.service;
 
 import java.util.Optional;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -24,8 +23,8 @@ public class SecurityLoginUserService implements LoginUserService {
 	private UserService userService;
 
 	@Override
-	public UUID getUserId() {
-		return getUser().orElseThrow(() -> new BlueskyException(CoreErrorCode.NOT_EXIST_USER_ID)).getId();
+	public String getUserId() {
+		return getUser().orElseThrow(() -> new BlueskyException(CoreErrorCode.NOT_EXIST_USER_ID)).getUserId();
 	}
 
 	@Override

@@ -51,7 +51,7 @@ public enum EntryGroupInitialData {
 		Arrays.asList(EntryGroupInitialData.values()).forEach(entryGroupInitialData -> {
 			EntryGroup entryGroup = new EntryGroup();
 			entryGroup.setName(entryGroupInitialData.getName());
-			entryGroup.setBookkeeping(bookkeeping);
+			entryGroup.setBookkeepingId(bookkeeping.getBookkeepingId());
 			entryGroup.setEntryGroupType(entryGroupInitialData.getEntryGroupType());
 			entryGroupList.add(entryGroup);
 		});
