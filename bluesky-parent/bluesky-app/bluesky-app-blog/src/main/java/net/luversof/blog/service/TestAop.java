@@ -31,6 +31,9 @@ public class TestAop {
 	@Autowired
 	private Validator validator;
 	
+//	@Pointcut("execution(*, *(..))")
+//	private void cut() {}
+	
 	//@Around("execution(* *(@net.luversof.blog.domain.mysql.TestAnnotation (*), ..)) && args(field, ..)")
 	@Around(value = "@args(net.luversof.blog.domain.mysql.TestAnnotation)", argNames = "field")
 	public void around(ProceedingJoinPoint joinPoint, Object field) throws Throwable {
