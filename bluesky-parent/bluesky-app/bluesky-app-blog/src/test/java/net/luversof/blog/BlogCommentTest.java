@@ -8,9 +8,9 @@ import org.springframework.data.domain.PageRequest;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.blog.domain.mysql.BlogArticle;
-import net.luversof.blog.domain.mysql.BlogComment;
+import net.luversof.blog.domain.mysql.BlogArticleComment;
 import net.luversof.blog.repository.mysql.BlogArticleRepository;
-import net.luversof.blog.repository.mysql.BlogCommentRepository;
+import net.luversof.blog.repository.mysql.BlogArticleCommentRepository;
 
 @Slf4j
 public class BlogCommentTest extends GeneralTest {
@@ -19,13 +19,13 @@ public class BlogCommentTest extends GeneralTest {
 	private BlogArticleRepository blogArticleRepository;
 
 	@Autowired
-	private BlogCommentRepository blogCommentRepository;
+	private BlogArticleCommentRepository blogCommentRepository;
 
 	@DisplayName("댓글 목록 조회")
 	@Test
 	public void blogCommentList() {
 		BlogArticle blogArticle = blogArticleRepository.findAll().get(0);
-		log.debug("test : {}", blogCommentRepository.findByBlogArticleId(blogArticle.getId(), PageRequest.of(0,  10)));
+		log.debug("test : {}", blogCommentRepository.findByBlogArticleId(blogArticle.getIdx(), PageRequest.of(0,  10)));
 	}
 	
 	@DisplayName("댓글 쓰기")
@@ -33,8 +33,8 @@ public class BlogCommentTest extends GeneralTest {
 	public void blogCommentWrite() {
 		BlogArticle blogArticle = blogArticleRepository.findAll().get(0);
 		
-		BlogComment blogComment = new BlogComment();
-		blogComment.setBlogArticle(blogArticle);
+		BlogArticleComment blogComment = new BlogArticleComment();
+		blogComment.setBlogArticleId(blogArticle.getBlogArticleId());
 		
 		blogComment.setComment("TEST");
 		

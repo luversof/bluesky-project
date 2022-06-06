@@ -4,14 +4,9 @@ import java.time.ZonedDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.ForeignKey;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Transient;
-import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 
@@ -19,7 +14,6 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import lombok.Data;
-import net.luversof.user.domain.User;
 
 /**
  * BlogArticle에 대한 댓글
@@ -30,18 +24,16 @@ import net.luversof.user.domain.User;
  */
 @Data
 @Entity
-public class BlogComment {
+public class BlogArticleComment {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@NotNull(groups = { Get.class, Update.class, Delete.class })
 	private long id;
 	
-	@Valid
-	@ManyToOne
-	@JoinColumn(name = "blogArticle_id", foreignKey = @ForeignKey(name = "FK_blogComment_blogArticleId"))
+	@Column(name = "blogArticle_id", length = 36, nullable = false)
 	@NotNull(groups = { Update.class, Delete.class })
-	private BlogArticle blogArticle;
+	private String blogArticleId;
 	
 	@NotEmpty(groups = { Create.class, Update.class })
 	private String comment;
@@ -52,11 +44,8 @@ public class BlogComment {
 	@LastModifiedDate
 	private ZonedDateTime lastModifiedDate;
 	
-	@Column(length = 16, nullable = false)
+	@Column(name = "user_id", length = 36, nullable = false)
 	private String userId;
-	
-	@Transient
-	private User user;
 	
 	public interface Get {
 	}

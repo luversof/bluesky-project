@@ -9,7 +9,6 @@ import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.mysql.BlogArticleCategory;
 import net.luversof.blog.repository.mysql.BlogArticleCategoryRepository;
-import net.luversof.blog.util.BlogRequestAttributeUtil;
 
 @Service
 public class BlogArticleCategoryService {
@@ -17,38 +16,20 @@ public class BlogArticleCategoryService {
 	@Autowired
 	private BlogArticleCategoryRepository blogArticleCategoryRepository;
 	
-	@Autowired
-	private BlogService blogService;
-	
 //	public List<BlogArticleCategory> findByBlogId(UUID blogId) {
 //		return blogArticleCategoryRepository.findByBlogId(blogId);
 //	}
 
-	/**
-	 * 로그인한 유저의 BlogArticleCategoryList 조회
-	 * @return
-	 */
-	public List<BlogArticleCategory> findByUserBlogId() {
-		var userBlog = blogService.findByUserId().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_USER_BLOG));
-		return blogArticleCategoryRepository.findByBlog(userBlog);
+	public List<BlogArticleCategory> findByBlogId(String blogId) {
+		return blogArticleCategoryRepository.findByBlogId(blogId);
 	}
 	
 	public BlogArticleCategory create(BlogArticleCategory blogArticleCategory) {
-		var userBlog = BlogRequestAttributeUtil.getUserBlog().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
-		
-		blogArticleCategory.setBlogId(userBlog.getBlogId());
-		
 		return blogArticleCategoryRepository.save(blogArticleCategory);
 	}
 	
 	public BlogArticleCategory update(BlogArticleCategory blogArticleCategory) {
-		var userBlog = BlogRequestAttributeUtil.getUserBlog().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
-		var targetBlogArticleCategory = blogArticleCategoryRepository.findById(blogArticleCategory.getIdx()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLECATEGORY));
-		
-		if (!targetBlogArticleCategory.getBlogId().equals(userBlog.getBlogId())) {
-			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLECATEGORY);
-		}
-		
+		var targetBlogArticleCategory = blogArticleCategoryRepository.findByBlogArticleCategoryId(blogArticleCategory.getBlogArticleCategoryId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLECATEGORY));
 		targetBlogArticleCategory.setName(blogArticleCategory.getName());
 		return blogArticleCategoryRepository.save(targetBlogArticleCategory);
 	}
@@ -58,14 +39,7 @@ public class BlogArticleCategoryService {
 	 * 굳이 그렇게 해야할까? 그냥 카테고리를 지우고 해당 카테고리 목록은 후처리를 고민하는게 더 나을거 같기도 한데?
 	 */
 	public void delete(long id) {
-		var userBlog = BlogRequestAttributeUtil.getUserBlog().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
 		var targetBlogArticleCategory = blogArticleCategoryRepository.findById(id).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLECATEGORY));
-		
-		if (!targetBlogArticleCategory.getBlogId().equals(userBlog.getBlogId())) {
-			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLECATEGORY);
-		}
-		
 		blogArticleCategoryRepository.delete(targetBlogArticleCategory);
-		
 	}
 }

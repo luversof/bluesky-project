@@ -5,8 +5,6 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Index;
-import javax.persistence.Table;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 
@@ -14,7 +12,7 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(indexes = @Index(columnList = "blog_id"))
+//@Table(indexes = @Index(columnList = "blog_id"))
 public class BlogArticleCategory {
 
 	@Id
@@ -23,7 +21,7 @@ public class BlogArticleCategory {
 	private long idx;
 	
 	@Column(length = 36, nullable = false)
-	private String categoryId;
+	private String blogArticleCategoryId;
 
 	@Column(name = "blog_id", length = 36, nullable = false)
 	private String blogId;

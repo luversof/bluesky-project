@@ -52,13 +52,13 @@ class BlogArticleTest extends GeneralTest {
 		
 		Blog blog = blogRepository.findAll().get(0);
 		
-		List<BlogArticleCategory> blogArticleCategoryList = blogArticleCategoryRepository.findByBlog(blog);
+		List<BlogArticleCategory> blogArticleCategoryList = blogArticleCategoryRepository.findByBlogId(blog.getBlogId());
 		
 		
 		BlogArticle blogArticle = new BlogArticle();
 		blogArticle.setTitle("글 제목");
 		blogArticle.setContent("글 내용");
-		blogArticle.setBlog(blog);
+		blogArticle.setBlogId(blog.getBlogId());
 		
 		if (!blogArticleCategoryList.isEmpty()) {
 			blogArticle.setBlogArticleCategory(blogArticleCategoryList.get(new Random().nextInt(blogArticleCategoryList.size())));
@@ -73,7 +73,7 @@ class BlogArticleTest extends GeneralTest {
 		for (int i = 0 ; i < 1024 ; i ++) {
 			
 			BlogArticle article = new BlogArticle();
-			article.setBlog(blog);
+			article.setBlogId(blog.getBlogId());
 			article.setTitle("한글제목" + i);
 			article.setContent("한글내용" + i);
 			
@@ -104,7 +104,7 @@ class BlogArticleTest extends GeneralTest {
 		
 //		ArticleCategory articleCategory = articleCategoryService.findOne(4);
 		BlogArticleCategory category = new BlogArticleCategory();
-		category.setBlogId(article.getBlog().getBlogId());
+		category.setBlogId(article.getBlogId());
 		category.setName("추가32331");
 		category.setIdx(5);
 		article.setBlogArticleCategory(category);
@@ -117,7 +117,7 @@ class BlogArticleTest extends GeneralTest {
 	//@Ignore
 	void saveTest() {
 		BlogArticle article = new BlogArticle();
-		article.setBlog(null);
+		article.setBlogId(null);
 		article.setTitle("한글제목");
 		article.setContent("한글내용");
 		
@@ -127,7 +127,7 @@ class BlogArticleTest extends GeneralTest {
 		BlogArticle savedArticle = blogArticleRepository.save(article);
 		log.debug("article : {}", article);
 		log.debug("savedBlog : {}", savedArticle);
-		log.debug("savedBlog : {}", savedArticle.getId());
+		log.debug("savedBlog : {}", savedArticle.getIdx());
 	}
 	
 	@Test
@@ -160,7 +160,7 @@ class BlogArticleTest extends GeneralTest {
 	
 	@Test
 	void 블로그카테고리테스트() {
-		List<BlogArticleCategory> list = blogArticleCategoryRepository.findByBlog(null);
+		List<BlogArticleCategory> list = blogArticleCategoryRepository.findByBlogId(null);
 		
 		
 		log.debug("list : {}", list);
@@ -172,8 +172,8 @@ class BlogArticleTest extends GeneralTest {
 		BlogArticle article = blogArticleRepository.findById(1L).get();
 		
 		System.out.println(blog);
-		System.out.println(article.getBlog());
-		System.out.println(blog.equals(article.getBlog()));
+		System.out.println(article.getBlogId());
+		System.out.println(blog.equals(article.getBlogId()));
 		
 	}
 }

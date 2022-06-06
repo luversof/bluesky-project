@@ -5,12 +5,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
-import net.luversof.blog.domain.mysql.BlogComment;
+import net.luversof.blog.domain.mysql.BlogArticleComment;
 
 @Transactional(readOnly = true)
-public interface BlogCommentRepository extends JpaRepository<BlogComment, Long> {
+public interface BlogArticleCommentRepository extends JpaRepository<BlogArticleComment, Long> {
 
-	Page<BlogComment> findByBlogArticleId(long blogArticleId, Pageable pageable);
+	Page<BlogArticleComment> findByBlogArticleId(long blogArticleId, Pageable pageable);
 
 	long countByBlogArticleId(long blogArticleId);
 	

@@ -1,6 +1,7 @@
 package net.luversof.blog.domain.mysql;
 
 import java.time.ZonedDateTime;
+import java.util.List;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -12,6 +13,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.Lob;
 import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 
@@ -27,16 +29,22 @@ public class BlogArticle {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Min(value = 1, groups = { Get.class, Update.class, Delete.class, BlogComment.Update.class })
-	private long id;
+	@Min(value = 1, groups = { Get.class, Update.class, Delete.class, BlogArticleComment.Update.class })
+	private long idx;
+	
+	@Column(length = 36, nullable = false, unique = true)
+	private String blogArticleId;
 
-	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-	@JoinColumn(name = "blog_id", referencedColumnName = "blogId")
-	private Blog blog;
+	@Column(name = "blog_id", length = 36, nullable = false)
+	private String blogId;
+	
+	@OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+	@JoinColumn(name = "blogArticleCategory_id", referencedColumnName = "blogArticleCategoryId")
+	private BlogArticleCategory blogArticleCategory;
 	
 	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-	@JoinColumn(name = "category_id", referencedColumnName = "categoryId")
-	private BlogArticleCategory blogArticleCategory;
+	@JoinColumn(name = "blogArticle_id", referencedColumnName = "blogArticleId")
+	private List<BlogArticleComment> blogArticleCommentList;
 
 	@NotEmpty(groups = { Create.class, Update.class })
 	@Length(min = 3, max = 50, groups = { Create.class, Update.class })
@@ -53,7 +61,7 @@ public class BlogArticle {
 	@UpdateTimestamp
 	private ZonedDateTime lastModifiedDate;
 	
-	@Column(length = 36, nullable = false)
+	@Column(name = "user_id", length = 36, nullable = false)
 	private String userId;
 
 	private long viewCount;

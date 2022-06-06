@@ -1,6 +1,7 @@
 package net.luversof.blog.service;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -31,13 +32,18 @@ public class BlogArticleService {
 	@Autowired
 	private BlogCommentService blogCommentService;
 	
+	public Optional<BlogArticle> findById(long id) {
+		return blogArticleRepository.findById(id);
+	}
+	
 	public Page<BlogArticle> findByBlogId(String blogId, Pageable pageable) {
 		return blogArticleRepository.findByBlogId(blogId, pageable);
 	}
 	
-	public Optional<BlogArticle> findById(long id) {
-		return blogArticleRepository.findById(id);
+	public Optional<BlogArticle> findByBlogArticleId(String blogArticleId) {
+		return blogArticleRepository.findByBlogArticleId(blogArticleId);
 	}
+	
 	
 	/**
 	 * 조회수 증가 처리
@@ -51,8 +57,9 @@ public class BlogArticleService {
 	
 	public BlogArticle create(BlogArticle blogArticle) {
 		var userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getUserId();
-		var userBlog = blogService.findByUserId().get();
-		blogArticle.setBlog(userBlog);
+		var userBlog = blogService.findByUserId(userId).get();
+		blogArticle.setBlogArticleId(UUID.randomUUID().toString());
+		blogArticle.setBlogId(userBlog.getBlogId());
 		blogArticle.setUserId(userId);
 		
 		checkBlogArtcieCategory(blogArticle);
@@ -61,9 +68,8 @@ public class BlogArticleService {
 	}
 	
 	public BlogArticle update(BlogArticle blogArticle) {
-		var userBlog = BlogRequestAttributeUtil.getUserBlog().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
-		var targetBlogArticle = blogArticleRepository.findById(blogArticle.getId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
-		if (!targetBlogArticle.getBlog().getUserId().equals(userBlog.getUserId())) {
+		var targetBlogArticle = blogArticleRepository.findByBlogArticleId(blogArticle.getBlogArticleId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
+		if (!targetBlogArticle.getUserId().equals(blogArticle.getUserId())) {
 			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLE);
 		}
 		
@@ -77,11 +83,11 @@ public class BlogArticleService {
 	
 	
 	public void delete(long blogArticleId) {
-		var userBlog = BlogRequestAttributeUtil.getUserBlog().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
-		var blogAarticle = blogArticleRepository.findById(blogArticleId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
-		if (!blogAarticle.getBlog().getUserId().equals(userBlog.getUserId())) {
-			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLE);
-		}
+//		var userBlog = BlogRequestAttributeUtil.getUserBlog().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
+//		var blogAarticle = blogArticleRepository.findById(blogArticleId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
+//		if (!blogAarticle.getBlog().getUserId().equals(userBlog.getUserId())) {
+//			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLE);
+//		}
 		blogArticleRepository.deleteById(blogArticleId);
 	}
 	
@@ -96,7 +102,7 @@ public class BlogArticleService {
 		}
 		
 		var blogArticleCategory = blogArticleCategoryRepository.findById(blogArticle.getBlogArticleCategory().getIdx()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLECATEGORY));
-		if (!blogArticleCategory.getBlogId().equals(blogArticle.getBlog().getBlogId())) {
+		if (!blogArticleCategory.getBlogId().equals(blogArticle.getBlogId())) {
 			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLECATEGORY);
 		}
 		

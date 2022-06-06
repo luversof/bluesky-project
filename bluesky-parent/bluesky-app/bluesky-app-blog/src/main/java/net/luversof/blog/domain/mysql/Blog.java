@@ -10,10 +10,9 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
-import javax.persistence.Table;
+import javax.validation.constraints.NotEmpty;
 
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -26,7 +25,7 @@ import lombok.Data;
  */
 @Data
 @Entity
-@Table(indexes = { @Index(columnList = "user_id") })
+//@Table(indexes = { @Index(columnList = "user_id") })
 public class Blog {
 
 	@Id
@@ -37,14 +36,17 @@ public class Blog {
 	@Column(length = 36, nullable = false, unique = true)
 	private String blogId;
 
+//	@NotEmpty(groups = Create.class)
 	@Column(name = "user_id", length = 36, nullable = false)
 	private String userId;
 	
 	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-	@JoinColumn(name = "blogId")
+	@JoinColumn(name = "blog_id", referencedColumnName = "blogId")
 	private List<BlogArticleCategory> blogArticleCategoryList;
 	
 	@CreationTimestamp
 	private ZonedDateTime createdDate;
 
+	
+	public interface Create {};
 }

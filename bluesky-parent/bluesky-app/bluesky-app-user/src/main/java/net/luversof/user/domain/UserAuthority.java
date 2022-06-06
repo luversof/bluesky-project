@@ -5,14 +5,12 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Index;
-import javax.persistence.Table;
 
 import lombok.Data;
 
 @Entity
 @Data
-@Table(indexes = { @Index(columnList = "user_id") })	// db 에서 create index 수행 시 table name이 소문자로 바뀜 (개인 db 설정 문제인 듯.)
+//@Table(indexes = { @Index(columnList = "user_id") })	// db 에서 create index 수행 시 table name이 소문자로 바뀜 (개인 db 설정 문제인 듯.)
 public class UserAuthority {
 
 	@Id
