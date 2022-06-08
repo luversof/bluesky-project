@@ -35,6 +35,7 @@ public class BlogArticle {
 	@Column(length = 36, nullable = false, unique = true)
 	private String blogArticleId;
 
+	@NotEmpty(groups = { Create.class })
 	@Column(name = "blog_id", length = 36, nullable = false)
 	private String blogId;
 	
@@ -46,11 +47,11 @@ public class BlogArticle {
 	@JoinColumn(name = "blogArticle_id", referencedColumnName = "blogArticleId")
 	private List<BlogArticleComment> blogArticleCommentList;
 
-	@NotEmpty(groups = { Create.class, Update.class })
-	@Length(min = 3, max = 50, groups = { Create.class, Update.class })
+	@NotEmpty(groups = { Create.class, CreateRequest.class, Update.class })
+	@Length(min = 3, max = 50, groups = { Create.class, CreateRequest.class, Update.class })
 	private String title;
 
-	@NotEmpty(groups = { Create.class, Update.class })
+	@NotEmpty(groups = { Create.class, CreateRequest.class, Update.class })
 	// @Column(columnDefinition = "TEXT")
 	@Lob
 	private String content;
@@ -61,6 +62,7 @@ public class BlogArticle {
 	@UpdateTimestamp
 	private ZonedDateTime lastModifiedDate;
 	
+	@NotEmpty(groups = { Create.class })
 	@Column(name = "user_id", length = 36, nullable = false)
 	private String userId;
 
@@ -72,6 +74,9 @@ public class BlogArticle {
 	}
 
     public interface Create {
+	}
+    
+    public interface CreateRequest {
 	}
 
     public interface Update {

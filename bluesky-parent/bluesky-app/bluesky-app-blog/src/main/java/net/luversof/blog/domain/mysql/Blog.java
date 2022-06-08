@@ -1,5 +1,6 @@
 package net.luversof.blog.domain.mysql;
 
+import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.List;
 
@@ -26,7 +27,9 @@ import lombok.Data;
 @Data
 @Entity
 //@Table(indexes = { @Index(columnList = "user_id") })
-public class Blog {
+public class Blog implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,7 +39,7 @@ public class Blog {
 	@Column(length = 36, nullable = false, unique = true)
 	private String blogId;
 
-//	@NotEmpty(groups = Create.class)
+	@NotEmpty(groups = Create.class)
 	@Column(name = "user_id", length = 36, nullable = false)
 	private String userId;
 	
@@ -49,4 +52,5 @@ public class Blog {
 
 	
 	public interface Create {};
+	
 }

@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import io.github.luversof.boot.autoconfigure.validation.annotation.BlueskyValidated;
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.mysql.BlogArticle;
@@ -55,12 +56,10 @@ public class BlogArticleService {
 		return blogArticleRepository.save(blogArticle);
 	}
 	
-	public BlogArticle create(BlogArticle blogArticle) {
-		var userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getUserId();
-		var userBlog = blogService.findByUserId(userId).get();
+	public BlogArticle create(@BlueskyValidated(BlogArticle.Create.class) BlogArticle blogArticle) {
+		// 존재하는 blog인지 확인
+		var targetBlog = blogService.findByBlogId(blogArticle.getBlogId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
 		blogArticle.setBlogArticleId(UUID.randomUUID().toString());
-		blogArticle.setBlogId(userBlog.getBlogId());
-		blogArticle.setUserId(userId);
 		
 		checkBlogArtcieCategory(blogArticle);
 		
@@ -97,13 +96,13 @@ public class BlogArticleService {
 	 */
 	private void checkBlogArtcieCategory(BlogArticle blogArticle) {
 		if (blogArticle.getBlogArticleCategory() == null || blogArticle.getBlogArticleCategory().getIdx() <= 0) {
-			blogArticle.setBlogArticleCategory(null);
+//			blogArticle.setBlogArticleCategory(null);
 			return;
 		}
 		
-		var blogArticleCategory = blogArticleCategoryRepository.findById(blogArticle.getBlogArticleCategory().getIdx()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLECATEGORY));
+		var blogArticleCategory = blogArticleCategoryRepository.findByBlogArticleCategoryId(blogArticle.getBlogArticleCategory().getBlogArticleCategoryId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLECATEGORY));
 		if (!blogArticleCategory.getBlogId().equals(blogArticle.getBlogId())) {
-			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLECATEGORY);
+			throw new BlueskyException(BlogErrorCode.NOT_TARGET_BLOGARTICLECATEGORY);
 		}
 		
 		blogArticle.setBlogArticleCategory(blogArticleCategory);

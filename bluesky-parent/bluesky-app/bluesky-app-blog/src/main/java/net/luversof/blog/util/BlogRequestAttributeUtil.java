@@ -1,5 +1,6 @@
 package net.luversof.blog.util;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.context.ApplicationContext;
@@ -17,7 +18,7 @@ import net.luversof.blog.service.BlogService;
  */
 public class BlogRequestAttributeUtil extends RequestAttributeUtil {
 	
-	private static final String BLOG_BY_USERID = "__blog_by_userId_{0}";
+	private static final String BLOGLIST_BY_USERID = "__blogList_by_userId_{0}";
 	
 	@Setter
 	private static ApplicationContext applicationContext;
@@ -30,16 +31,16 @@ public class BlogRequestAttributeUtil extends RequestAttributeUtil {
 		return applicationContext.getBean(BlogArticleService.class);
 	}
 	
-	public static Optional<Blog> getBlogByUserId(String userId) {
-		var attributeName = getAttributeName(BLOG_BY_USERID, userId);
-		Optional<Blog> blogOptional = getRequestAttribute(attributeName);
-		if (blogOptional != null) {
-			return blogOptional;
+	public static List<Blog> getBlogListByUserId(String userId) {
+		var attributeName = getAttributeName(BLOGLIST_BY_USERID, userId);
+		List<Blog> blogList = getRequestAttribute(attributeName);
+		if (blogList != null) {
+			return blogList;
 		}
 		
-		blogOptional = getBlogService().findByUserId(userId);
-		setRequestAttribute(BLOG_BY_USERID, blogOptional);
-		return blogOptional;
+		blogList = getBlogService().findByUserId(userId);
+		setRequestAttribute(BLOGLIST_BY_USERID, blogList);
+		return blogList;
 	}
 	
 //	public static Optional<Blog> getUserBlog() {
