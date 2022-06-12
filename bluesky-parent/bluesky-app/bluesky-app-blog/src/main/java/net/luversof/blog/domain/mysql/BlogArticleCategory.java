@@ -1,5 +1,7 @@
 package net.luversof.blog.domain.mysql;
 
+import java.io.Serializable;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -13,7 +15,9 @@ import lombok.Data;
 @Data
 @Entity
 //@Table(indexes = @Index(columnList = "blog_id"))
-public class BlogArticleCategory {
+public class BlogArticleCategory implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,14 +27,18 @@ public class BlogArticleCategory {
 	@Column(length = 36, nullable = false)
 	private String blogArticleCategoryId;
 
+	@NotEmpty(groups = Create.class)
 	@Column(name = "blog_id", length = 36, nullable = false)
 	private String blogId;
 
 	@Column(length = 64, nullable = false)
-	@NotEmpty(groups = { Create.class, Update.class })
+	@NotEmpty(groups = { Create.class, CreateParam.class, Update.class })
 	private String name;
 
 	public interface Create {
+	}
+	
+	public interface CreateParam {
 	}
 
 	public interface Update {

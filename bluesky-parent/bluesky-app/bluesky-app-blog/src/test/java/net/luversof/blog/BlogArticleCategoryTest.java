@@ -1,7 +1,6 @@
 package net.luversof.blog;
 
-import java.util.ArrayList;
-import java.util.List;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -9,40 +8,60 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
-import net.luversof.blog.domain.mysql.Blog;
 import net.luversof.blog.domain.mysql.BlogArticleCategory;
-import net.luversof.blog.repository.mysql.BlogArticleCategoryRepository;
-import net.luversof.blog.repository.mysql.BlogRepository;
+import net.luversof.blog.service.BlogArticleCategoryService;
+import net.luversof.blog.service.BlogService;
 
 @Slf4j
-public class BlogArticleCategoryTest extends GeneralTest {
+class BlogArticleCategoryTest extends GeneralTest {
 	
 	@Autowired
-	private BlogArticleCategoryRepository blogArticleCategoryRepository;
+	private BlogService blogService;
 	
 	@Autowired
-	private BlogRepository blogRepository;
+	private BlogArticleCategoryService blogArticleCategoryService;
 
 	@Test
-	@DisplayName("카테고리 저장 테스트")
-	public void saveBlogArticleCategory() {
-		// 1. 대상 blog 조회
-		Blog blog = blogRepository.findAll().get(0);
+	@DisplayName("카테고리 생성 테스트")
+	void create() {
+		var blog = blogService.findByUserId(BlogTestConstant.USER_ID).stream().findFirst().get();
+		assertThat(blog).isNotNull();
 		
-		List<BlogArticleCategory> blogArticleCategoryList = new ArrayList<>();
-		
-		// 2. 저장 목록 생성
-		for (int i = 0; i < 10; i++) {
-			BlogArticleCategory blogArticleCategory = new BlogArticleCategory();
+		var blogArticleCategory = new BlogArticleCategory();
+		blogArticleCategory.setBlogId(blog.getBlogId());
+		blogArticleCategory.setName("카테고리 테스트");
 			
-			blogArticleCategory.setBlogId(blog.getBlogId());
-			blogArticleCategory.setName("카테고리 " + i);
-			blogArticleCategoryList.add(blogArticleCategory);
-			
-		}
+		var savedBlogArticleCategory = blogArticleCategoryService.create(blogArticleCategory);
+		assertThat(savedBlogArticleCategory).isNotNull();
+		log.debug("saveAll : {}", savedBlogArticleCategory);
+	}
+	
+	@Test
+	@DisplayName("카테고리 조회 테스트")
+	void findByBlogId() {
+		var blog = blogService.findByUserId(BlogTestConstant.USER_ID).stream().findFirst().get();
+		assertThat(blog).isNotNull();
 		
-		// 3. 저장
-		log.debug("saveAll : {}", blogArticleCategoryRepository.saveAll(blogArticleCategoryList));
+		var blogArticleCategoryList = blogArticleCategoryService.findByBlogId(blog.getBlogId());
+		assertThat(blogArticleCategoryList).isNotEmpty();
+		
+		log.debug("blogArticleCategoryList : {}", blogArticleCategoryList);
+	}
+	
+	@Test
+	@DisplayName("카테고리 수정 테스트")
+	void updateBlogArticleCategory() {
+		var blog = blogService.findByUserId(BlogTestConstant.USER_ID).stream().findFirst().get();
+		
+		var blogArticleCategoryList = blogArticleCategoryService.findByBlogId(blog.getBlogId());
+		assertThat(blogArticleCategoryList).isNotEmpty();
+		
+		var blogArticleCategory = blogArticleCategoryList.get(0);
+		blogArticleCategory.setName("카테고리 수정");
+		
+		var result = blogArticleCategoryService.update(blogArticleCategory);
+		
+		log.debug("blogArticleCategory : {}", result);
 		
 	}
 }

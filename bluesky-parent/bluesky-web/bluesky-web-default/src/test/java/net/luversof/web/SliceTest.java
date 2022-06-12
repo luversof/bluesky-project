@@ -1,7 +1,9 @@
 package net.luversof.web;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -27,6 +29,6 @@ public class SliceTest {
 
 	@Test
 	void test() {
-		given(blogController.userBlog()).willReturn(Optional.of(new Blog()));
+		given(blogController.userBlogList(any())).willReturn(List.of(new Blog()));
 	}
 }

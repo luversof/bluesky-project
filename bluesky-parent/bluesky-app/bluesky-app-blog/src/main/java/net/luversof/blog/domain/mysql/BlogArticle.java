@@ -1,12 +1,11 @@
 package net.luversof.blog.domain.mysql;
 
+import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.List;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -25,7 +24,9 @@ import lombok.Data;
 
 @Data
 @Entity
-public class BlogArticle {
+public class BlogArticle implements Serializable {
+	
+	private static final long serialVersionUID = 1L;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,11 +40,11 @@ public class BlogArticle {
 	@Column(name = "blog_id", length = 36, nullable = false)
 	private String blogId;
 	
-	@OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+	@OneToOne
 	@JoinColumn(name = "blogArticleCategory_id", referencedColumnName = "blogArticleCategoryId")
 	private BlogArticleCategory blogArticleCategory;
 	
-	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+	@OneToMany
 	@JoinColumn(name = "blogArticle_id", referencedColumnName = "blogArticleId")
 	private List<BlogArticleComment> blogArticleCommentList;
 
@@ -65,10 +66,6 @@ public class BlogArticle {
 	@NotEmpty(groups = { Create.class })
 	@Column(name = "user_id", length = 36, nullable = false)
 	private String userId;
-
-	private long viewCount;
-	
-	private long blogCommentCount;
 
 	public interface Get {
 	}

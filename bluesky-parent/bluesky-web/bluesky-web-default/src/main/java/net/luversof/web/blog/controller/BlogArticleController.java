@@ -33,12 +33,10 @@ public class BlogArticleController {
 	}
 	
 	
-	@GetMapping("/{id}")
-	public Optional<BlogArticle> findById(@PathVariable long id) {
-		var savedBlogArticle = blogArticleService.findById(id);
-		if (savedBlogArticle.isPresent()) {
-			blogArticleService.increaseViewCount(savedBlogArticle.get());
-		}
+	@GetMapping("/{blogArticleId}")
+	public Optional<BlogArticle> findByBlogArticleId(@PathVariable String blogArticleId) {
+		var savedBlogArticle = blogArticleService.findByBlogArticleId(blogArticleId);
+		// TODO blogArticle 조회수 증가 처리
 		return savedBlogArticle;
 	}
 	
@@ -49,15 +47,15 @@ public class BlogArticleController {
 	}
 	
 	@BlueskyPreAuthorize
-	@PutMapping("/{id}")
+	@PutMapping("/{blogArticleId}")
 	public BlogArticle update(@RequestBody @Validated(BlogArticle.Update.class) BlogArticle blogArticle) {
 		return blogArticleService.update(blogArticle);
 	}
 	
 	@BlueskyPreAuthorize
-	@DeleteMapping("/{id}")
-	public void delete(@PathVariable long id) {
-		blogArticleService.delete(id);
+	@DeleteMapping("/{blogArticleId}")
+	public void delete(@PathVariable String blogArticleId) {
+		blogArticleService.deleteByBlogArticleId(blogArticleId);
 	}
 
 }

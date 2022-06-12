@@ -1,7 +1,6 @@
 package net.luversof.user.service;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -9,6 +8,9 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import io.github.luversof.boot.autoconfigure.validation.annotation.BlueskyValidated;
+import io.github.luversof.boot.exception.BlueskyException;
+import net.luversof.user.constant.UserErrorCode;
 import net.luversof.user.domain.User;
 import net.luversof.user.domain.UserAuthority;
 import net.luversof.user.domain.UserType;
@@ -19,6 +21,35 @@ public class UserService {
 
 	@Autowired
 	private UserRepository userRepository;
+	
+	@Autowired
+	private UserAuthorityService userAuthorityService;
+	
+	public User addUser(@BlueskyValidated(User.Create.class) User user) {
+		userRepository.findByUserName(user.getUserName()).ifPresent(target -> {
+			throw new BlueskyException(UserErrorCode.ALREADY_EXIST_USER);
+		});
+		
+		user.setUserId(UUID.randomUUID().toString());
+		user.setAccountNonExpired(true);
+		user.setAccountNonLocked(true);
+		user.setCredentialsNonExpired(true);
+		user.setEnabled(true);
+		UserType userType = UserType.LOCAL;
+		user.setUserType(userType);
+		userRepository.save(user);
+		
+		List<UserAuthority> userAuthorityList = new ArrayList<>();
+		for (String authority : userType.getAuthorities()) {
+			UserAuthority userAuthority = new UserAuthority();
+			userAuthority.setUserId(user.getUserId());
+			userAuthority.setAuthority(authority);
+			userAuthorityList.add(userAuthority);
+		}
+		userAuthorityService.saveAll(userAuthorityList);
+		user.setUserAuthorityList(userAuthorityList);
+		return user;
+	}
 
 	/**
 	 * 최초 회원 가입 처리
@@ -28,25 +59,9 @@ public class UserService {
 	 */
 	public User addUser(String username, String password) {
 		User user = new User();
-		user.setUserId(UUID.randomUUID().toString());
 		user.setUserName(username);
 		user.setPassword(password);
-		user.setAccountNonExpired(true);
-		user.setAccountNonLocked(true);
-		user.setCredentialsNonExpired(true);
-		user.setEnabled(true);
-		UserType userType = UserType.LOCAL;
-		user.setUserType(userType);
-		List<UserAuthority> userAuthorityList = new ArrayList<>();
-		for (String authority : userType.getAuthorities()) {
-			UserAuthority userAuthority = new UserAuthority();
-			userAuthority.setUserId(user.getUserId());
-			userAuthority.setAuthority(authority);
-			userAuthorityList.add(userAuthority);
-		}
-		user.setUserAuthorityList(userAuthorityList);
-		userRepository.save(user);
-		return user;
+		return addUser(user);
 	}
 	
 	/**
@@ -86,10 +101,6 @@ public class UserService {
 		return userRepository.findByUserId(userId);
 	}
 	
-	public List<User> findByUserIdIn(Collection<String> userIds) {
-		return userRepository.findByUserIdIn(userIds);
-	}
-
 	public Optional<User> findByUsername(String username) {
 		return userRepository.findByUserName(username);
 	}

@@ -4,10 +4,8 @@ import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.List;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -43,7 +41,7 @@ public class Blog implements Serializable {
 	@Column(name = "user_id", length = 36, nullable = false)
 	private String userId;
 	
-	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+	@OneToMany
 	@JoinColumn(name = "blog_id", referencedColumnName = "blogId")
 	private List<BlogArticleCategory> blogArticleCategoryList;
 	

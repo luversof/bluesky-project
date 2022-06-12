@@ -1,6 +1,7 @@
 package net.luversof.blog.service;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -17,18 +18,18 @@ import net.luversof.user.constant.UserErrorCode;
 import net.luversof.user.util.UserUtil;
 
 @Service
-public class BlogCommentService {
+public class BlogArticleCommentService {
 
 	@Autowired
 	private BlogArticleCommentRepository blogCommentRepository;
 	
-	public Page<BlogArticleComment> findByBlogArticleId(long blogArticleId, Pageable pageable) {
+	public Page<BlogArticleComment> findByBlogArticleId(String blogArticleId, Pageable pageable) {
 		Page<BlogArticleComment> blogCommentPage = blogCommentRepository.findByBlogArticleId(blogArticleId, pageable);
 		return blogCommentPage;
 	}
 	
-	public Optional<BlogArticleComment> findById(long blogCommentId) {
-		Optional<BlogArticleComment> BlogCommentOptional = blogCommentRepository.findById(blogCommentId);
+	public Optional<BlogArticleComment> findByBlogArticleCommentId(String blogArticleCommentId) {
+		Optional<BlogArticleComment> BlogCommentOptional = blogCommentRepository.findByBlogArticleCommentId(blogArticleCommentId);
 		return BlogCommentOptional;
 	}
 	
@@ -39,6 +40,7 @@ public class BlogCommentService {
 		}
 		
 		BlogRequestAttributeUtil.getBlogArticleService().findByBlogArticleId(blogComment.getBlogArticleId());
+		blogComment.setBlogArticleCommentId(UUID.randomUUID().toString());
 		blogComment.setUserId(userId);
 		
 		return blogCommentRepository.save(blogComment);
@@ -56,17 +58,11 @@ public class BlogCommentService {
 		return blogCommentRepository.save(targetBlogComment);
 	}
 	
-	public void delete(long commentId) {
-		var userId = UserUtil.getLoginUser().orElseThrow(() -> new BlueskyException(UserErrorCode.NEED_LOGIN)).getUserId();
-		var blogComment = blogCommentRepository.findById(commentId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGCOMMENT));
-		if (!blogComment.getUserId().equals(userId)) {
-			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGCOMMENT);
-		}
-		
-		blogCommentRepository.deleteById(commentId);
+	public void deleteByBlogArticleCommentId(String blogArticleCommentId) {
+		blogCommentRepository.deleteByBlogArticleCommentId(blogArticleCommentId);
 	}
 	
-	public long countByBlogArticleId(long blogArticleId) {
+	public long countByBlogArticleId(String blogArticleId) {
 		return blogCommentRepository.countByBlogArticleId(blogArticleId);
 	}
 	

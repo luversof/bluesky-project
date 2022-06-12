@@ -13,7 +13,7 @@ import net.luversof.blog.repository.mysql.BlogArticleRepository;
 import net.luversof.blog.repository.mysql.BlogArticleCommentRepository;
 
 @Slf4j
-public class BlogCommentTest extends GeneralTest {
+public class BlogArticleCommentTest extends GeneralTest {
 
 	@Autowired
 	private BlogArticleRepository blogArticleRepository;
@@ -25,7 +25,7 @@ public class BlogCommentTest extends GeneralTest {
 	@Test
 	public void blogCommentList() {
 		BlogArticle blogArticle = blogArticleRepository.findAll().get(0);
-		log.debug("test : {}", blogCommentRepository.findByBlogArticleId(blogArticle.getIdx(), PageRequest.of(0,  10)));
+		log.debug("test : {}", blogCommentRepository.findByBlogArticleId(blogArticle.getBlogArticleId(), PageRequest.of(0,  10)));
 	}
 	
 	@DisplayName("댓글 쓰기")

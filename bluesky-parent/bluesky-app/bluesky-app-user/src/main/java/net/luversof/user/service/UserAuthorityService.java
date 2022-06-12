@@ -1,5 +1,7 @@
 package net.luversof.user.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +17,10 @@ public class UserAuthorityService {
 	
 	public UserAuthority save(UserAuthority userAuthority) {
 		return userAuthorityRepository.save(userAuthority);
+	}
+	
+	public List<UserAuthority> saveAll(List<UserAuthority> userAuthorityList) {
+		return userAuthorityRepository.saveAll(userAuthorityList);
 	}
 	
 	public UserAuthority findOne(long id) {

@@ -2,6 +2,7 @@ package net.luversof.blog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.beanvalidation.SpringValidatorAdapter;
@@ -28,6 +29,7 @@ class BlogTest extends GeneralTest {
 	}
 	
 	@Test
+	@DisplayName("blog 생성")
 	void createBlog() {
 		Blog blog = new Blog();
 		blog.setUserId(BlogTestConstant.USER_ID);

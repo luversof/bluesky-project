@@ -17,45 +17,44 @@ import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAutho
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.mysql.BlogArticleComment;
-import net.luversof.blog.service.BlogArticleService;
-import net.luversof.blog.service.BlogCommentService;
+import net.luversof.blog.service.BlogArticleCommentService;
+import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.web.blog.domain.BlogCommentPageRequest;
 
 @RestController
-@RequestMapping(value = "/api/blogComment", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-public class BlogCommentController {
+@RequestMapping(value = "/api/blogArticleComment", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+public class BlogArticleCommentController {
 
 	@Autowired
-	private BlogCommentService blogCommentService;
-	
-	@Autowired
-	private BlogArticleService blogArticleService;
+	private BlogArticleCommentService blogArticleCommentService;
 	
 	@GetMapping("/search/findByBlogArticleId/{blogArticleId}")
-	public Page<BlogArticleComment> findByBlogArticleId(@PathVariable long blogArticleId, BlogCommentPageRequest blogCommentPageRequest) {
-		return blogCommentService.findByBlogArticleId(blogArticleId, blogCommentPageRequest.toPageRequest());
+	public Page<BlogArticleComment> findByBlogArticleId(@PathVariable String blogArticleId, BlogCommentPageRequest blogCommentPageRequest) {
+		return blogArticleCommentService.findByBlogArticleId(blogArticleId, blogCommentPageRequest.toPageRequest());
 	}
 	
 	@BlueskyPreAuthorize
 	@PostMapping
 	public BlogArticleComment create(@RequestBody @Validated(BlogArticleComment.Create.class) BlogArticleComment blogComment) {
-		var savedBlogComment = blogCommentService.create(blogComment);
-		blogArticleService.updateBlogCommentCount(savedBlogComment.getBlogArticle().getId());
+		var savedBlogComment = blogArticleCommentService.create(blogComment);
+		// TODO comment 조회수 증가
 		return savedBlogComment;
 	}
 	
 	@BlueskyPreAuthorize
-	@PutMapping("/{id}")
+	@PutMapping("/{blogArticleCommentId}")
 	public BlogArticleComment update(@RequestBody @Validated(BlogArticleComment.Update.class) BlogArticleComment blogComment) {
-		return blogCommentService.update(blogComment);
+		return blogArticleCommentService.update(blogComment);
 	}
 	
 	@BlueskyPreAuthorize
-	@DeleteMapping("/{id}")
-	public void delete(@PathVariable long id) {
-		var blogArticleId = blogCommentService.findById(id).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGCOMMENT)).getBlogArticle().getId();
-		blogCommentService.delete(id);
-		blogArticleService.updateBlogCommentCount(blogArticleId);
+	@DeleteMapping("/{blogArticleCommentId}")
+	public void deleteByBlogArticleCommentId(@PathVariable String blogArticleCommentId, BlueskyUser blueskyUser) {
+		var blogArticleComment = blogArticleCommentService.findByBlogArticleCommentId(blogArticleCommentId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGCOMMENT));
+		if (!blogArticleComment.getUserId().equals(blueskyUser.getId())) {
+			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGCOMMENT);
+		}
+		blogArticleCommentService.deleteByBlogArticleCommentId(blogArticleCommentId);
 	}
 
 }

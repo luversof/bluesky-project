@@ -1,6 +1,8 @@
 package net.luversof.blog;
 
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -8,6 +10,7 @@ import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import lombok.extern.slf4j.Slf4j;
@@ -40,9 +43,9 @@ class BlogArticleTest extends GeneralTest {
 	@DisplayName("글 쓰기 테스트")
 	void writeBlogArticle() {
 		
-		Blog blog = blogService.findByUserId(BlogTestConstant.USER_ID).stream().findFirst().get();
+		var blog = blogService.findByUserId(BlogTestConstant.USER_ID).stream().findFirst().get();
 		
-		List<BlogArticleCategory> blogArticleCategoryList = blogArticleCategoryService.findByBlogId(blog.getBlogId());
+		var blogArticleCategoryList = blogArticleCategoryService.findByBlogId(blog.getBlogId());
 		
 		
 		BlogArticle blogArticle = new BlogArticle();
@@ -56,6 +59,16 @@ class BlogArticleTest extends GeneralTest {
 		}
 		
 		log.debug("save : {}", blogArticleService.create(blogArticle));
+	}
+	
+	@Test
+	@DisplayName("글 목록 보기 테스트")
+	void selectBlogArticleList() {
+		var blog = blogService.findByUserId(BlogTestConstant.USER_ID).stream().findFirst().get();
+		var pageRequest = PageRequest.of(0, 10);
+		var blogArticleList = blogArticleService.findByBlogId(blog.getBlogId(), pageRequest);
+		assertThat(blogArticleList).isNotNull();
+		log.debug("blogArticleList : {}", blogArticleList);
 	}
 
 	@Test

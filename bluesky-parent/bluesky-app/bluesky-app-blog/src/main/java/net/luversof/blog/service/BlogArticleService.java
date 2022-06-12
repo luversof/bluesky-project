@@ -14,9 +14,6 @@ import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.mysql.BlogArticle;
 import net.luversof.blog.repository.mysql.BlogArticleCategoryRepository;
 import net.luversof.blog.repository.mysql.BlogArticleRepository;
-import net.luversof.blog.util.BlogRequestAttributeUtil;
-import net.luversof.user.constant.UserErrorCode;
-import net.luversof.user.util.UserUtil;
 
 @Service
 public class BlogArticleService {
@@ -30,12 +27,9 @@ public class BlogArticleService {
 	@Autowired
 	private BlogService blogService;
 	
-	@Autowired
-	private BlogCommentService blogCommentService;
-	
-	public Optional<BlogArticle> findById(long id) {
-		return blogArticleRepository.findById(id);
-	}
+//	public Optional<BlogArticle> findById(long id) {
+//		return blogArticleRepository.findById(id);
+//	}
 	
 	public Page<BlogArticle> findByBlogId(String blogId, Pageable pageable) {
 		return blogArticleRepository.findByBlogId(blogId, pageable);
@@ -46,19 +40,9 @@ public class BlogArticleService {
 	}
 	
 	
-	/**
-	 * 조회수 증가 처리
-	 * @param blogArticle
-	 * @return
-	 */
-	public BlogArticle increaseViewCount(BlogArticle blogArticle) {
-		blogArticle.setViewCount(blogArticle.getViewCount() + 1);
-		return blogArticleRepository.save(blogArticle);
-	}
-	
 	public BlogArticle create(@BlueskyValidated(BlogArticle.Create.class) BlogArticle blogArticle) {
 		// 존재하는 blog인지 확인
-		var targetBlog = blogService.findByBlogId(blogArticle.getBlogId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
+		blogService.findByBlogId(blogArticle.getBlogId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
 		blogArticle.setBlogArticleId(UUID.randomUUID().toString());
 		
 		checkBlogArtcieCategory(blogArticle);
@@ -81,13 +65,13 @@ public class BlogArticleService {
 	}
 	
 	
-	public void delete(long blogArticleId) {
+	public void deleteByBlogArticleId(String blogArticleId) {
 //		var userBlog = BlogRequestAttributeUtil.getUserBlog().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
 //		var blogAarticle = blogArticleRepository.findById(blogArticleId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
 //		if (!blogAarticle.getBlog().getUserId().equals(userBlog.getUserId())) {
 //			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLE);
 //		}
-		blogArticleRepository.deleteById(blogArticleId);
+		blogArticleRepository.deleteByBlogArticleId(blogArticleId);
 	}
 	
 	/**
@@ -107,12 +91,5 @@ public class BlogArticleService {
 		
 		blogArticle.setBlogArticleCategory(blogArticleCategory);
 		
-	}
-	
-	public BlogArticle updateBlogCommentCount(long blogArticleId) {
-		var blogArticle = findById(blogArticleId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
-		var blogCommentCount = blogCommentService.countByBlogArticleId(blogArticleId);
-		blogArticle.setBlogCommentCount(blogCommentCount);
-		return blogArticleRepository.save(blogArticle);
 	}
 }

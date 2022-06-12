@@ -31,6 +31,9 @@ public class BlogArticleComment {
 	@NotNull(groups = { Get.class, Update.class, Delete.class })
 	private long id;
 	
+	@Column(length = 36, nullable = false)
+	private String blogArticleCommentId;
+	
 	@Column(name = "blogArticle_id", length = 36, nullable = false)
 	@NotNull(groups = { Update.class, Delete.class })
 	private String blogArticleId;
