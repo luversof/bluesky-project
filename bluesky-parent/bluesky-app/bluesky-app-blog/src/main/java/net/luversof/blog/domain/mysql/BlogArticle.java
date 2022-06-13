@@ -13,7 +13,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.Lob;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -30,9 +29,9 @@ public class BlogArticle implements Serializable {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Min(value = 1, groups = { Get.class, Update.class, Delete.class, BlogArticleComment.Update.class })
 	private long idx;
 	
+	@NotEmpty(groups = { Get.class, Update.class, Delete.class, DeleteParam.class })
 	@Column(length = 36, nullable = false, unique = true)
 	private String blogArticleId;
 
@@ -48,11 +47,11 @@ public class BlogArticle implements Serializable {
 	@JoinColumn(name = "blogArticle_id", referencedColumnName = "blogArticleId")
 	private List<BlogArticleComment> blogArticleCommentList;
 
-	@NotEmpty(groups = { Create.class, CreateRequest.class, Update.class })
-	@Length(min = 3, max = 50, groups = { Create.class, CreateRequest.class, Update.class })
+	@NotEmpty(groups = { Create.class, CreateParam.class, Update.class })
+	@Length(min = 3, max = 50, groups = { Create.class, CreateParam.class, Update.class })
 	private String title;
 
-	@NotEmpty(groups = { Create.class, CreateRequest.class, Update.class })
+	@NotEmpty(groups = { Create.class, CreateParam.class, Update.class })
 	// @Column(columnDefinition = "TEXT")
 	@Lob
 	private String content;
@@ -63,7 +62,7 @@ public class BlogArticle implements Serializable {
 	@UpdateTimestamp
 	private ZonedDateTime lastModifiedDate;
 	
-	@NotEmpty(groups = { Create.class })
+	@NotEmpty(groups = { Create.class, Update.class, Delete.class })
 	@Column(name = "user_id", length = 36, nullable = false)
 	private String userId;
 
@@ -73,12 +72,15 @@ public class BlogArticle implements Serializable {
     public interface Create {
 	}
     
-    public interface CreateRequest {
+    public interface CreateParam {
 	}
 
     public interface Update {
 	}
 
     public interface Delete {
+	}
+    
+    public interface DeleteParam {
 	}
 }

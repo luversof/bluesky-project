@@ -14,8 +14,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
-import io.github.luversof.boot.exception.BlueskyException;
-import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.mysql.BlogArticleComment;
 import net.luversof.blog.service.BlogArticleCommentService;
 import net.luversof.security.core.userdetails.BlueskyUser;
@@ -35,26 +33,21 @@ public class BlogArticleCommentController {
 	
 	@BlueskyPreAuthorize
 	@PostMapping
-	public BlogArticleComment create(@RequestBody @Validated(BlogArticleComment.Create.class) BlogArticleComment blogComment) {
-		var savedBlogComment = blogArticleCommentService.create(blogComment);
+	public BlogArticleComment create(@RequestBody @Validated(BlogArticleComment.Create.class) BlogArticleComment blogArticleComment) {
+		var savedBlogArticleComment = blogArticleCommentService.create(blogArticleComment);
 		// TODO comment 조회수 증가
-		return savedBlogComment;
+		return savedBlogArticleComment;
 	}
 	
 	@BlueskyPreAuthorize
 	@PutMapping("/{blogArticleCommentId}")
-	public BlogArticleComment update(@RequestBody @Validated(BlogArticleComment.Update.class) BlogArticleComment blogComment) {
-		return blogArticleCommentService.update(blogComment);
+	public BlogArticleComment update(@RequestBody @Validated(BlogArticleComment.Update.class) BlogArticleComment blogArticleComment) {
+		return blogArticleCommentService.update(blogArticleComment);
 	}
 	
 	@BlueskyPreAuthorize
 	@DeleteMapping("/{blogArticleCommentId}")
-	public void deleteByBlogArticleCommentId(@PathVariable String blogArticleCommentId, BlueskyUser blueskyUser) {
-		var blogArticleComment = blogArticleCommentService.findByBlogArticleCommentId(blogArticleCommentId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGCOMMENT));
-		if (!blogArticleComment.getUserId().equals(blueskyUser.getId())) {
-			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGCOMMENT);
-		}
-		blogArticleCommentService.deleteByBlogArticleCommentId(blogArticleCommentId);
+	public void deleteByBlogArticleCommentId(@RequestBody @Validated(BlogArticleComment.Delete.class) BlogArticleComment blogArticleComment, BlueskyUser blueskyUser) {
+		blogArticleCommentService.delete(blogArticleComment);
 	}
-
 }

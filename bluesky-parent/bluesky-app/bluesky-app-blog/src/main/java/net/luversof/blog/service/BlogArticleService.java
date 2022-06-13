@@ -50,7 +50,7 @@ public class BlogArticleService {
 		return blogArticleRepository.save(blogArticle);
 	}
 	
-	public BlogArticle update(BlogArticle blogArticle) {
+	public BlogArticle update(@BlueskyValidated(BlogArticle.Update.class) BlogArticle blogArticle) {
 		var targetBlogArticle = blogArticleRepository.findByBlogArticleId(blogArticle.getBlogArticleId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
 		if (!targetBlogArticle.getUserId().equals(blogArticle.getUserId())) {
 			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLE);
@@ -65,13 +65,12 @@ public class BlogArticleService {
 	}
 	
 	
-	public void deleteByBlogArticleId(String blogArticleId) {
-//		var userBlog = BlogRequestAttributeUtil.getUserBlog().orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
-//		var blogAarticle = blogArticleRepository.findById(blogArticleId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
-//		if (!blogAarticle.getBlog().getUserId().equals(userBlog.getUserId())) {
-//			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLE);
-//		}
-		blogArticleRepository.deleteByBlogArticleId(blogArticleId);
+	public void delete(@BlueskyValidated(BlogArticle.Delete.class) BlogArticle blogArticle) {
+		var targetBlogArticle = blogArticleRepository.findByBlogArticleId(blogArticle.getBlogArticleId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
+		if (!targetBlogArticle.getUserId().equals(blogArticle.getUserId())) {
+			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLE);
+		}
+		blogArticleRepository.delete(targetBlogArticle);
 	}
 	
 	/**

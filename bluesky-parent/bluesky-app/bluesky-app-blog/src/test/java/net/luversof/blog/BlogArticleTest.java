@@ -3,15 +3,18 @@ package net.luversof.blog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.annotation.Rollback;
+import org.springframework.transaction.annotation.Transactional;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
@@ -24,6 +27,9 @@ import net.luversof.blog.service.BlogArticleService;
 import net.luversof.blog.service.BlogService;
 
 @Slf4j
+@Transactional
+@Rollback(false)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class BlogArticleTest extends GeneralTest {
 
 	@Autowired
@@ -40,8 +46,9 @@ class BlogArticleTest extends GeneralTest {
 	
 	
 	@Test
+	@Order(1)
 	@DisplayName("글 쓰기 테스트")
-	void writeBlogArticle() {
+	void create() {
 		
 		var blog = blogService.findByUserId(BlogTestConstant.USER_ID).stream().findFirst().get();
 		
@@ -62,27 +69,36 @@ class BlogArticleTest extends GeneralTest {
 	}
 	
 	@Test
+	@Order(2)
 	@DisplayName("글 목록 보기 테스트")
-	void selectBlogArticleList() {
+	void findByBlogId() {
 		var blog = blogService.findByUserId(BlogTestConstant.USER_ID).stream().findFirst().get();
-		var pageRequest = PageRequest.of(0, 10);
-		var blogArticleList = blogArticleService.findByBlogId(blog.getBlogId(), pageRequest);
+		var blogArticleList = blogArticleService.findByBlogId(blog.getBlogId(), PageRequest.of(0, 10));
 		assertThat(blogArticleList).isNotNull();
 		log.debug("blogArticleList : {}", blogArticleList);
 	}
 
 	@Test
+	@Order(3)
 	@DisplayName("글 보기 테스트")
 //	@Ignore
-	@WithMockUser
-	void selectTest() {
-		Optional<BlogArticle> blogArticleOptional = blogArticleRepository.findById((long) 2);
+//	@WithMockUser
+	void findByBlogArticleId() {
+		var blog = blogService.findByUserId(BlogTestConstant.USER_ID).stream().findFirst().get();
+		var blogArticlePaging = blogArticleService.findByBlogId(blog.getBlogId(), PageRequest.of(0, 10));
+		var targetBlogArticle = blogArticlePaging.get().findFirst().get();
+		
+		var blogArticleOptional = blogArticleService.findByBlogArticleId(targetBlogArticle.getBlogArticleId());
+		
+		assertThat(blogArticleOptional).isNotNull();
+		
 		log.debug("result : {}", blogArticleOptional.get());
 	}
 
 
 	
 	@Test
+	@Disabled
 	void 카테고리추가복수글작성테스트() {
 		Blog blog = blogService.findByUserId(BlogTestConstant.USER_ID).stream().findFirst().get();
 		for (int i = 0 ; i < 1024 ; i ++) {
@@ -107,78 +123,18 @@ class BlogArticleTest extends GeneralTest {
 	
 
 	@Test
-	void 글삭제테스트() {
-		blogArticleRepository.deleteById((long) 11);
-	}
-	
-	
-	@Test
-	void 수정전파테스트() {
-		BlogArticle article = blogArticleRepository.findById((long) 11).get();
-		article.setContent("수정했음3");
+	@Order(4)
+	@DisplayName("글 삭제 테스트")
+	void delete() {
+		var blog = blogService.findByUserId(BlogTestConstant.USER_ID).stream().findFirst().get();
+		var blogArticlePaging = blogArticleService.findByBlogId(blog.getBlogId(), PageRequest.of(0, 10));
+		var targetBlogArticle = blogArticlePaging.get().findFirst().get();
 		
-//		ArticleCategory articleCategory = articleCategoryService.findOne(4);
-		BlogArticleCategory category = new BlogArticleCategory();
-		category.setBlogId(article.getBlogId());
-		category.setName("추가32331");
-		category.setIdx(5);
-		article.setBlogArticleCategory(category);
+		BlogArticle blogArticle = new BlogArticle();
+		blogArticle.setBlogArticleId(targetBlogArticle.getBlogArticleId());
+		blogArticle.setUserId(targetBlogArticle.getUserId());
+		blogArticleService.delete(blogArticle);
 		
-//		article.getArticleCategory().setName("수정2");
-		blogArticleRepository.save(article);
-	}
-	
-	@Test
-	//@Ignore
-	void saveTest() {
-		BlogArticle article = new BlogArticle();
-		article.setBlogId(null);
-		article.setTitle("한글제목");
-		article.setContent("한글내용");
-		
-//		BlogArticleCategory category = blogArticleCategoryService.findById((long) 1).orElse(null);
-//		article.setBlogArticleCategory(category);
-
-		BlogArticle savedArticle = blogArticleRepository.save(article);
-		log.debug("article : {}", article);
-		log.debug("savedBlog : {}", savedArticle);
-		log.debug("savedBlog : {}", savedArticle.getIdx());
-	}
-	
-	@Test
-//	@Ignore
-	void 대량save테스트() {
-		for (int i = 0 ; i < 11 ; i++) {
-			saveTest();
-		}
-	}
-
-//	@Test
-////	@Ignore
-//	void selectPaging테스트() {
-//		Blog blog = blogRepository.findByUserId(userId).get();
-//		
-//		Pageable page = PageRequest.of(1, 10);
-//		Page<Article> blogList = articleRepository.findByBlog(blog, page);
-//		log.debug("blogList : {}", blogList);
-//		log.debug("blogList : {}", blogList.getContent());
-//		
-//	}
-	
-//	@Test
-//	@Ignore
-//	void 테스트() {
-//		QBlog blog = QBlog.blog;
-//		Iterable<Article> list = articleRepository.findAll(blog.content.startsWith("c"));
-//		log.debug("list : {}", list);
-//	}
-	
-	@Test
-	void 블로그카테고리테스트() {
-		List<BlogArticleCategory> list = blogArticleCategoryService.findByBlogId(null);
-		
-		
-		log.debug("list : {}", list);
 	}
 	
 }

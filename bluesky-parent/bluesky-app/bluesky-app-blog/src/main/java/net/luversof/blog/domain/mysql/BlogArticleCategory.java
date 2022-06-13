@@ -9,7 +9,6 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.Table;
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 
 import lombok.Data;
@@ -23,10 +22,10 @@ public class BlogArticleCategory implements Serializable {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Min(value = 1, groups = { Update.class, Delete.class})
 	private long idx;
 	
 	@Column(length = 36, nullable = false, unique = true)
+	@NotEmpty(groups = { Update.class, Delete.class })
 	private String blogArticleCategoryId;
 
 	@NotEmpty(groups = Create.class)

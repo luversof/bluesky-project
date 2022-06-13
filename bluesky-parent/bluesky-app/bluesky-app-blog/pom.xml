@@ -17,9 +17,5 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-mongodb</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-app-user</artifactId>
-		</dependency>
 	</dependencies>
 </project>

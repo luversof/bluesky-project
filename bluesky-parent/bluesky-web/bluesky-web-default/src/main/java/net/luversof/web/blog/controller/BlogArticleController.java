@@ -54,8 +54,8 @@ public class BlogArticleController {
 	
 	@BlueskyPreAuthorize
 	@DeleteMapping("/{blogArticleId}")
-	public void delete(@PathVariable String blogArticleId) {
-		blogArticleService.deleteByBlogArticleId(blogArticleId);
+	public void delete(@RequestBody @Validated(BlogArticle.Delete.class) BlogArticle blogArticle) {
+		blogArticleService.delete(blogArticle);
 	}
 
 }

@@ -1,7 +1,5 @@
 package net.luversof.blog;
 
-import java.util.Map;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -22,8 +20,8 @@ public class MongoBlogTest extends GeneralTest {
 	@Qualifier("blogMongoTemplate")
 	private MongoTemplate blogMongoTemplate;
 	
-	@Autowired
-	private Map<String, MongoTemplate> mongoTemplateMap;
+//	@Autowired
+//	private Map<String, MongoTemplate> mongoTemplateMap;
 
 	@Test
 	public void test() {

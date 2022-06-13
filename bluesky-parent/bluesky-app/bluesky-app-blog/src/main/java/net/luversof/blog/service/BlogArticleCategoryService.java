@@ -27,7 +27,7 @@ public class BlogArticleCategoryService {
 		return blogArticleCategoryRepository.save(blogArticleCategory);
 	}
 	
-	public BlogArticleCategory update(BlogArticleCategory blogArticleCategory) {
+	public BlogArticleCategory update(@BlueskyValidated(BlogArticleCategory.Update.class) BlogArticleCategory blogArticleCategory) {
 		var targetBlogArticleCategory = blogArticleCategoryRepository.findByBlogArticleCategoryId(blogArticleCategory.getBlogArticleCategoryId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLECATEGORY));
 		targetBlogArticleCategory.setName(blogArticleCategory.getName());
 		return blogArticleCategoryRepository.save(targetBlogArticleCategory);
@@ -36,8 +36,8 @@ public class BlogArticleCategoryService {
 	/**
 	 * 해당 카테고리 글이 하나라도 있으면 삭제 불가 처리 해야 하지 않을까?
 	 */
-	public void deleteByBlogArticleCategoryId(String blogArticleCategoryId) {
-		var targetBlogArticleCategory = blogArticleCategoryRepository.findByBlogArticleCategoryId(blogArticleCategoryId).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLECATEGORY));
+	public void delete(@BlueskyValidated(BlogArticleCategory.Delete.class) BlogArticleCategory blogArticleCategory) {
+		var targetBlogArticleCategory = blogArticleCategoryRepository.findByBlogArticleCategoryId(blogArticleCategory.getBlogArticleCategoryId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLECATEGORY));
 		blogArticleCategoryRepository.delete(targetBlogArticleCategory);
 	}
 }
