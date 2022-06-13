@@ -31,7 +31,7 @@ public class BlogArticleComment {
 	@NotNull(groups = { Get.class, Update.class, Delete.class })
 	private long id;
 	
-	@Column(length = 36, nullable = false)
+	@Column(length = 36, nullable = false, unique = true)
 	private String blogArticleCommentId;
 	
 	@Column(name = "blogArticle_id", length = 36, nullable = false)

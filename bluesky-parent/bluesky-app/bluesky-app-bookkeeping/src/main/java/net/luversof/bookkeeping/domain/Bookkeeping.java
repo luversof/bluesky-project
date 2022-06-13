@@ -24,6 +24,7 @@ public class Bookkeeping {
 	@Column(length = 16)
 	private long idx;
 	
+	@Column(length = 36, nullable = false, unique = true)
 	private String bookkeepingId;
 	
 	@NotBlank(groups = { Create.class, Update.class })

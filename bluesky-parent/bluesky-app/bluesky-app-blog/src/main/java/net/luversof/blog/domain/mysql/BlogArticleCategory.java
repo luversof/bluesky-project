@@ -7,6 +7,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
+import javax.persistence.Table;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 
@@ -14,7 +16,7 @@ import lombok.Data;
 
 @Data
 @Entity
-//@Table(indexes = @Index(columnList = "blog_id"))
+@Table(name = "BlogArticleCategory", indexes = @Index(columnList = "blog_id"))
 public class BlogArticleCategory implements Serializable {
 
 	private static final long serialVersionUID = 1L;
@@ -24,7 +26,7 @@ public class BlogArticleCategory implements Serializable {
 	@Min(value = 1, groups = { Update.class, Delete.class})
 	private long idx;
 	
-	@Column(length = 36, nullable = false)
+	@Column(length = 36, nullable = false, unique = true)
 	private String blogArticleCategoryId;
 
 	@NotEmpty(groups = Create.class)

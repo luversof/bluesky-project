@@ -9,8 +9,10 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
+import javax.persistence.Table;
 import javax.validation.constraints.NotEmpty;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -24,7 +26,7 @@ import lombok.Data;
  */
 @Data
 @Entity
-//@Table(indexes = { @Index(columnList = "user_id") })
+@Table(name = "Blog", indexes = { @Index(columnList = "user_id") })
 public class Blog implements Serializable {
 
 	private static final long serialVersionUID = 1L;

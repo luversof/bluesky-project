@@ -25,7 +25,7 @@ import lombok.Data;
 
 @Entity
 @Data
-@Table(uniqueConstraints = { @UniqueConstraint(columnNames = { "userName", "userType" }) })
+@Table(name = "User", uniqueConstraints = { @UniqueConstraint(columnNames = { "userName", "userType" }) })
 public class User implements Serializable {
 
 	private static final long serialVersionUID = 1L;
