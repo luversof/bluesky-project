@@ -10,7 +10,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 import org.springframework.data.annotation.CreatedDate;
@@ -34,10 +34,10 @@ public class Article {
 	@JoinColumn(name = "bbs_id", foreignKey = @ForeignKey(name = "FK_article_bbsId"))
 	private Bbs bbs;
 
-	@NotEmpty(groups = { Save.class, Modify.class })
+	@NotBlank(groups = { Save.class, Modify.class })
 	private String title;
 
-	@NotEmpty(groups = { Save.class, Modify.class })
+	@NotBlank(groups = { Save.class, Modify.class })
 	private String content;
 
 	@Column(updatable = false)

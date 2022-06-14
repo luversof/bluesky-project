@@ -8,7 +8,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 import lombok.Data;
@@ -28,8 +28,11 @@ public class EntryGroup {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Min(value = 1, groups = { Update.class, Delete.class })
 	private long id;
+	
+	@Column(length = 36, nullable = false, unique = true)
+	private String entryGroupId;
 
-	@NotEmpty(groups = { Create.class, Update.class })
+	@NotBlank(groups = { Create.class, Update.class })
 	private String name;
 
 	@Column(name = "bookkeeping_id", length = 36, nullable = false)

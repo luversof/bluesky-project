@@ -7,7 +7,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotBlank;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -29,15 +29,15 @@ public class BlogArticleComment {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
 	
-	@NotEmpty(groups = { Get.class, Update.class, Delete.class })
+	@NotBlank(groups = { Get.class, Update.class, Delete.class })
 	@Column(length = 36, nullable = false, unique = true)
 	private String blogArticleCommentId;
 	
-	@NotEmpty(groups = { Create.class, CreateParam.class, Update.class, Delete.class })
+	@NotBlank(groups = { Create.class, CreateParam.class, Update.class, Delete.class })
 	@Column(name = "blogArticle_id", length = 36, nullable = false)
 	private String blogArticleId;
 	
-	@NotEmpty(groups = { Create.class, CreateParam.class, Update.class })
+	@NotBlank(groups = { Create.class, CreateParam.class, Update.class })
 	private String comment;
 	
 	@CreatedDate
@@ -46,7 +46,7 @@ public class BlogArticleComment {
 	@LastModifiedDate
 	private ZonedDateTime lastModifiedDate;
 	
-	@NotEmpty(groups = { Create.class, Update.class, Delete.class })
+	@NotBlank(groups = { Create.class, Update.class, Delete.class })
 	@Column(name = "user_id", length = 36, nullable = false)
 	private String userId;
 	

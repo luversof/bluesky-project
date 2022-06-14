@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.service.AssetService;
+import net.luversof.bookkeeping.service.BasicAssetService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 
 @RestController
@@ -25,7 +25,7 @@ import net.luversof.security.core.userdetails.BlueskyUser;
 public class AssetController {
 
 	@Autowired
-	private AssetService assetService;
+	private BasicAssetService assetService;
 
 	/**
 	 * requestBody에 @PathVariable의 id가 맵핑 안되는 부분은 어떻게 처리해야할까?

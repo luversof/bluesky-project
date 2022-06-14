@@ -24,12 +24,14 @@ public class Bookkeeping {
 	@Column(length = 16)
 	private long idx;
 	
+	@NotBlank(groups = { Create.class, Update.class, Delete.class })
 	@Column(length = 36, nullable = false, unique = true)
 	private String bookkeepingId;
 	
 	@NotBlank(groups = { Create.class, Update.class })
 	private String name;
 
+	@NotBlank(groups = { Create.class, Update.class, Delete.class })
 	@Column(name = "user_id", length = 16)
 	private String userId;
 
@@ -43,6 +45,9 @@ public class Bookkeeping {
 	}
 
 	public interface Update {
+	}
+	
+	public interface Delete {
 	}
 
 	public interface Search {

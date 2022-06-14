@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.service.BookkeepingService;
+import net.luversof.bookkeeping.service.BasicBookkeepingService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 
 @RestController
@@ -24,7 +24,7 @@ import net.luversof.security.core.userdetails.BlueskyUser;
 public class BookkeepingController {
 
 	@Autowired
-	private BookkeepingService bookkeepingService;
+	private BasicBookkeepingService bookkeepingService;
 	
 	@PostMapping
 	public Bookkeeping createUserBookkeeping(BlueskyUser blueskyUser, @RequestBody @Validated(Bookkeeping.Create.class) Bookkeeping bookkeeping) {

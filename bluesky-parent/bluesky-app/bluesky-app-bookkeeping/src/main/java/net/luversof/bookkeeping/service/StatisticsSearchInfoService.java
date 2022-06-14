@@ -13,7 +13,7 @@ import net.luversof.bookkeeping.domain.StatisticsSearchInfo;
 public class StatisticsSearchInfoService {
 	
 	@Autowired
-	private BookkeepingService bookkeepingService;
+	private BasicBookkeepingService bookkeepingService;
 	
 	public StatisticsSearchInfo getStatisticsSearchInfo(StatisticsSearchInfo statisticsSearchInfo) {
 		Bookkeeping targetBookkeeping = bookkeepingService.getUserBookkeeping(statisticsSearchInfo.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));

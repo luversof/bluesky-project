@@ -14,7 +14,7 @@ import net.luversof.GeneralTest;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Statistics;
 import net.luversof.bookkeeping.domain.StatisticsSearchInfo;
-import net.luversof.bookkeeping.service.BookkeepingService;
+import net.luversof.bookkeeping.service.BasicBookkeepingService;
 import net.luversof.bookkeeping.service.StatisticsSearchInfoService;
 import net.luversof.bookkeeping.service.StatisticsService;
 
@@ -25,7 +25,7 @@ public class StatisticsTest extends GeneralTest {
 	private StatisticsSearchInfoService statisticsSearchInfoService;
 	
 	@Autowired
-	private BookkeepingService bookkeepingService;
+	private BasicBookkeepingService bookkeepingService;
 	
 	@Autowired
 	private StatisticsService statisticsService;

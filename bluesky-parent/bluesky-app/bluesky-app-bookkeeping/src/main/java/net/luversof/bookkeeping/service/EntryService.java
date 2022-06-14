@@ -30,7 +30,7 @@ public class EntryService {
 	private EntryGroupService entryGroupService;
 	
 	@Autowired
-	private AssetService assetService;
+	private BasicAssetService assetService;
 
 	/**
 	 * income / expense / transfer

@@ -15,7 +15,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
-import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotBlank;
 
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -35,11 +35,11 @@ public class User implements Serializable {
 	@Column(length = 16)
 	private long idx;
 	
-	@NotEmpty(groups = Create.class)
+	@NotBlank(groups = Create.class)
 	@Column(nullable = false, length = 36, unique = true)
 	private String userId;
 
-	@NotEmpty(groups = Create.class)
+	@NotBlank(groups = Create.class)
 	@Column(nullable = false)
 	private String userName;
 

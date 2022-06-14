@@ -13,7 +13,7 @@ import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
-import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotBlank;
 
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -39,7 +39,7 @@ public class Blog implements Serializable {
 	@Column(length = 36, nullable = false, unique = true)
 	private String blogId;
 
-	@NotEmpty(groups = Create.class)
+	@NotBlank(groups = Create.class)
 	@Column(name = "user_id", length = 36, nullable = false)
 	private String userId;
 	

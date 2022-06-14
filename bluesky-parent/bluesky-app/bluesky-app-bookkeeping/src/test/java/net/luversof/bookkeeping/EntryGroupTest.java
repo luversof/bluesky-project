@@ -13,7 +13,7 @@ import net.luversof.GeneralTest;
 import net.luversof.bookkeeping.constant.EntryGroupInitialData;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.EntryGroup;
-import net.luversof.bookkeeping.service.BookkeepingService;
+import net.luversof.bookkeeping.service.BasicBookkeepingService;
 import net.luversof.bookkeeping.service.EntryGroupService;
 
 @Slf4j
@@ -23,7 +23,7 @@ public class EntryGroupTest extends GeneralTest {
 	private EntryGroupService entryGroupService;
 	
 	@Autowired
-	private BookkeepingService bookkeepingService;
+	private BasicBookkeepingService bookkeepingService;
 	
 	private Bookkeeping bookkeeping;
 

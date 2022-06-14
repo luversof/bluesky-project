@@ -12,13 +12,13 @@ import net.luversof.bookkeeping.constant.AssetInitialData;
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.repository.BookkeepingRepository;
-import net.luversof.bookkeeping.service.AssetService;
+import net.luversof.bookkeeping.service.BasicAssetService;
 
 @Slf4j
 public class AssetTest extends GeneralTest {
 	
 	@Autowired
-	private AssetService assetService;
+	private BasicAssetService assetService;
 	
 //	@Autowired
 //	private BookkeepingService bookkeepingService;

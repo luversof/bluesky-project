@@ -26,6 +26,9 @@ public class Asset {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Min(value = 1, groups = { Update.class, Delete.class })
 	private long id;
+	
+	@Column(length = 36, nullable = false, unique = true)
+	private String assetId;
 
 	@NotBlank(groups = { Create.class, Update.class })
 	private String name;

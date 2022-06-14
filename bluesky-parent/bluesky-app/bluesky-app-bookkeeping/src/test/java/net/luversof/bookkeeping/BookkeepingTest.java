@@ -8,13 +8,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.service.BookkeepingService;
+import net.luversof.bookkeeping.service.BasicBookkeepingService;
 
 @Slf4j
 public class BookkeepingTest extends GeneralTest {
 
     @Autowired
-    private BookkeepingService bookkeepingService;
+    private BasicBookkeepingService bookkeepingService;
 
     static final UUID TEST_USER_ID = UUID.fromString("35929103-da22-49e7-9d76-214bb081593f");
 

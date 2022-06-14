@@ -9,7 +9,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.Table;
-import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotBlank;
 
 import lombok.Data;
 
@@ -24,16 +24,16 @@ public class BlogArticleCategory implements Serializable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long idx;
 	
+	@NotBlank(groups = { Update.class, Delete.class })
 	@Column(length = 36, nullable = false, unique = true)
-	@NotEmpty(groups = { Update.class, Delete.class })
 	private String blogArticleCategoryId;
 
-	@NotEmpty(groups = Create.class)
+	@NotBlank(groups = Create.class)
 	@Column(name = "blog_id", length = 36, nullable = false)
 	private String blogId;
 
+	@NotBlank(groups = { Create.class, CreateParam.class, Update.class })
 	@Column(length = 64, nullable = false)
-	@NotEmpty(groups = { Create.class, CreateParam.class, Update.class })
 	private String name;
 
 	public interface Create {

@@ -27,10 +27,15 @@ public class AssetGroup {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Min(value = 1, groups = { Update.class, Delete.class, Asset.Create.class })
 	private long id;
+	
+	@NotBlank(groups = { Update.class })
+	@Column(length = 36, nullable = false, unique = true)
+	private String assetGroupId;
 
-	@NotBlank(groups = { Create.class, Update.class })
+	@NotBlank(groups = { Create.class, CreateParam.class, Update.class })
 	private String name;
 
+	@NotBlank(groups = { Create.class, Update.class })
 	@Column(name = "bookkeeping_id", length = 36, nullable = false)
 	private String bookkeepingId;
 
@@ -38,6 +43,7 @@ public class AssetGroup {
 	private AssetGroupType assetGroupType;
 	
 	public static interface Create {}
+	public static interface CreateParam {}
 	public static interface Update {}
 	public static interface Delete {}
 }

@@ -18,7 +18,7 @@ import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.repository.EntryRepository;
-import net.luversof.bookkeeping.service.BookkeepingService;
+import net.luversof.bookkeeping.service.BasicBookkeepingService;
 import net.luversof.bookkeeping.service.EntryGroupService;
 import net.luversof.bookkeeping.service.EntryService;
 
@@ -26,7 +26,7 @@ import net.luversof.bookkeeping.service.EntryService;
 public class EntryTest extends GeneralTest {
 	
 	@Autowired
-	private BookkeepingService bookkeepingService;
+	private BasicBookkeepingService bookkeepingService;
 
 	@Autowired
 	private EntryGroupService entryGroupService;

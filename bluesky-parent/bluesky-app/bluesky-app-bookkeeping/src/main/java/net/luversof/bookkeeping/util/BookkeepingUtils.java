@@ -8,15 +8,15 @@ import org.springframework.context.ApplicationContext;
 import io.github.luversof.boot.exception.BlueskyException;
 import lombok.Setter;
 import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
-import net.luversof.bookkeeping.service.BookkeepingService;
+import net.luversof.bookkeeping.service.BasicBookkeepingService;
 
 public class BookkeepingUtils {
 	
 	@Setter
 	private static ApplicationContext applicationContext;
 	
-	public static BookkeepingService getBookkeepingService() {
-		return applicationContext.getBean(BookkeepingService.class);
+	public static BasicBookkeepingService getBookkeepingService() {
+		return applicationContext.getBean(BasicBookkeepingService.class);
 	}
 	
 	public static LocalDate getStartLocalDate(LocalDate targetLocalDate, int baseDate, ChronoUnit chronoUnit) {

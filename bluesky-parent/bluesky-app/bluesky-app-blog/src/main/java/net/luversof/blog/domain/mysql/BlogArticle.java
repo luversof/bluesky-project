@@ -13,7 +13,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.Lob;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
-import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotBlank;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -31,11 +31,11 @@ public class BlogArticle implements Serializable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long idx;
 	
-	@NotEmpty(groups = { Get.class, Update.class, Delete.class, DeleteParam.class })
+	@NotBlank(groups = { Get.class, Update.class, Delete.class, DeleteParam.class })
 	@Column(length = 36, nullable = false, unique = true)
 	private String blogArticleId;
 
-	@NotEmpty(groups = { Create.class })
+	@NotBlank(groups = { Create.class })
 	@Column(name = "blog_id", length = 36, nullable = false)
 	private String blogId;
 	
@@ -47,11 +47,11 @@ public class BlogArticle implements Serializable {
 	@JoinColumn(name = "blogArticle_id", referencedColumnName = "blogArticleId")
 	private List<BlogArticleComment> blogArticleCommentList;
 
-	@NotEmpty(groups = { Create.class, CreateParam.class, Update.class })
+	@NotBlank(groups = { Create.class, CreateParam.class, Update.class })
 	@Length(min = 3, max = 50, groups = { Create.class, CreateParam.class, Update.class })
 	private String title;
 
-	@NotEmpty(groups = { Create.class, CreateParam.class, Update.class })
+	@NotBlank(groups = { Create.class, CreateParam.class, Update.class })
 	// @Column(columnDefinition = "TEXT")
 	@Lob
 	private String content;
@@ -62,7 +62,7 @@ public class BlogArticle implements Serializable {
 	@UpdateTimestamp
 	private ZonedDateTime lastModifiedDate;
 	
-	@NotEmpty(groups = { Create.class, Update.class, Delete.class })
+	@NotBlank(groups = { Create.class, Update.class, Delete.class })
 	@Column(name = "user_id", length = 36, nullable = false)
 	private String userId;
 
