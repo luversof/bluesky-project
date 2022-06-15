@@ -54,7 +54,8 @@ public class BasicBookkeepingService implements BookkeepingService {
 
 	@Override
 	public void delete(Bookkeeping bookkeeping) {
-		bookkeepingRepository.deleteByBookkeepingId(bookkeeping.getBookkeepingId());
+		Bookkeeping targetBookkeeping = bookkeepingRepository.findByBookkeepingId(bookkeeping.getBookkeepingId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		bookkeepingRepository.delete(targetBookkeeping);
 	}
 
 }

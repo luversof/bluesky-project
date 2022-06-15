@@ -28,12 +28,12 @@ public class Bookkeeping {
 	@Column(length = 36, nullable = false, unique = true)
 	private String bookkeepingId;
 	
-	@NotBlank(groups = { Create.class, Update.class })
-	private String name;
-
 	@NotBlank(groups = { Create.class, Update.class, Delete.class })
 	@Column(name = "user_id", length = 16)
 	private String userId;
+	
+	@NotBlank(groups = { Create.class, Update.class })
+	private String name;
 
 	/**
 	 * 시작일. startDay라고 해야하나?

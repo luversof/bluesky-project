@@ -10,6 +10,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import io.github.luversof.boot.autoconfigure.context.MessageUtil;
 
@@ -45,13 +46,14 @@ public enum EntryGroupInitialData {
 		return MessageUtil.getMessage(MessageFormat.format("constant.bookkeeping.entry-group.{0}.{1}.name", this.getEntryGroupType().name(), this.getMessageCode()));
 	}
 	
-	public static List<EntryGroup> getEntryGroupList(Bookkeeping bookkeeping) {
+	public static List<EntryGroup> createEntryGroupList(String bookkeepingId) {
 		List<EntryGroup> entryGroupList = new ArrayList<>();
 		
 		Arrays.asList(EntryGroupInitialData.values()).forEach(entryGroupInitialData -> {
 			EntryGroup entryGroup = new EntryGroup();
+			entryGroup.setEntryGroupId(UUID.randomUUID().toString());
+			entryGroup.setBookkeepingId(bookkeepingId);
 			entryGroup.setName(entryGroupInitialData.getName());
-			entryGroup.setBookkeepingId(bookkeeping.getBookkeepingId());
 			entryGroup.setEntryGroupType(entryGroupInitialData.getEntryGroupType());
 			entryGroupList.add(entryGroup);
 		});

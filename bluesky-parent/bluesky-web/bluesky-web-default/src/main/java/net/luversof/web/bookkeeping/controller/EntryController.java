@@ -17,7 +17,7 @@ import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAutho
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.web.EntryRequestParam;
-import net.luversof.bookkeeping.service.EntryService;
+import net.luversof.bookkeeping.service.BasicEntryService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 
 @RestController
@@ -26,7 +26,7 @@ import net.luversof.security.core.userdetails.BlueskyUser;
 public class EntryController {
 	
 	@Autowired
-	private EntryService entryService;
+	private BasicEntryService entryService;
 	
 	@PostMapping
 	public Entry createUserEntry(@RequestBody @Validated(Entry.Create.class) Entry entry, BlueskyUser blueskyUser) {

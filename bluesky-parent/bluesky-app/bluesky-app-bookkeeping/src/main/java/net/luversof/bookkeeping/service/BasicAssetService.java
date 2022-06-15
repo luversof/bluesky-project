@@ -11,7 +11,6 @@ import net.luversof.bookkeeping.constant.AssetInitialData;
 import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.domain.AssetGroup;
-import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.repository.AssetRepository;
 
 @Service
@@ -26,8 +25,8 @@ public class BasicAssetService implements AssetService {
 	 * @return
 	 */
 	// @Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
-	public List<Asset> initialDataSave(Bookkeeping bookkeeping, List<AssetGroup> assetGroupList) {
-		return assetRepository.saveAll(AssetInitialData.getAssetList(bookkeeping, assetGroupList));
+	public List<Asset> createInitialData(String bookkeepingId, List<AssetGroup> assetGroupList) {
+		return assetRepository.saveAll(AssetInitialData.createAssetList(bookkeepingId, assetGroupList));
 	}
 	
 	@Override
@@ -66,8 +65,8 @@ public class BasicAssetService implements AssetService {
 	}
 
 	@Override
-	public void deleteAllBybookkeepingId(Asset asset) {
-		List<Asset> assetList = assetRepository.findByBookkeepingId(asset.getBookkeepingId());
+	public void deleteAllByBookkeepingId(String bookkeepingId) {
+		List<Asset> assetList = assetRepository.findByBookkeepingId(bookkeepingId);
 		assetRepository.deleteAll(assetList);
 	}
 }

@@ -21,7 +21,7 @@ public class CompositeBookkeepingService implements BookkeepingService {
 	private BasicBookkeepingService bookkeepingService;
 	
 	@Autowired
-	private EntryGroupService entryGroupService;
+	private BasicEntryGroupService entryGroupService;
 	
 	@Autowired
 	private BasicAssetGroupService assetGroupService;
@@ -30,7 +30,7 @@ public class CompositeBookkeepingService implements BookkeepingService {
 	private BasicAssetService assetService;
 
 	@Autowired
-	private EntryService entryService;
+	private BasicEntryService entryService;
 
 	/**
 	 * 가계부 생성시 아래 default 데이터 생성
@@ -45,9 +45,9 @@ public class CompositeBookkeepingService implements BookkeepingService {
 		}
 
 		bookkeepingService.create(bookkeeping);
-		List<AssetGroup> assetGroupList = assetGroupService.initialDataSave(bookkeeping);
-		assetService.initialDataSave(bookkeeping, assetGroupList);
-		entryGroupService.initialDataSave(bookkeeping);
+		List<AssetGroup> assetGroupList = assetGroupService.createInitialData(bookkeeping.getBookkeepingId());
+		assetService.createInitialData(bookkeeping.getBookkeepingId(), assetGroupList);
+		entryGroupService.createInitialData(bookkeeping.getBookkeepingId());
 		return bookkeeping;
 	}
 	
@@ -77,12 +77,12 @@ public class CompositeBookkeepingService implements BookkeepingService {
 	 */
 	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
 	public void delete(@BlueskyValidated(Bookkeeping.Delete.class) Bookkeeping bookkeeping) {
-		Bookkeeping targetBookkeeping = bookkeepingService.findByBookkeepingId(bookkeeping.getBookkeepingId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		entryService.deleteByBookkeepingId(targetBookkeeping.getBookkeepingId());
-		entryGroupService.deleteBybookkeepingId(targetBookkeeping.getBookkeepingId());
-		assetService.deleteBybookkeepingId(targetBookkeeping.getBookkeepingId());
-		assetGroupService.deleteByBookkeepingId(targetBookkeeping.getBookkeepingId());
-		bookkeepingService.delete(targetBookkeeping);
+		String bookkeepingId = bookkeeping.getBookkeepingId();
+		bookkeepingService.delete(bookkeeping);
+		entryService.deleteByBookkeepingId(bookkeepingId);
+		entryGroupService.deleteAllBybookkeepingId(bookkeepingId);
+		assetService.deleteAllByBookkeepingId(bookkeepingId);
+		assetGroupService.deleteAllByBookkeepingId(bookkeepingId);
 	}
 
 }

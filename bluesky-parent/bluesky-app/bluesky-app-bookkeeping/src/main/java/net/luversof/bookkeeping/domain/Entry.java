@@ -10,8 +10,6 @@ import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
@@ -29,6 +27,9 @@ public class Entry implements Serializable {
 	@NotNull(groups = { Update.class, Delete.class })
 	@Min(value = 1, groups = { Update.class, Delete.class })
 	private long id;
+	
+	@Column(length = 36, nullable = false, unique = true)
+	private String entryId;
 
 	@Column(name = "bookkeeping_id", length = 36, nullable = false)
 	private String bookkeepingId;
@@ -37,16 +38,14 @@ public class Entry implements Serializable {
 	@Enumerated(EnumType.STRING)
 	private EntryGroupType entryGroupType;
 
-	@ManyToOne
-	@JoinColumn(name = "incomeAsset_id")
-	private Asset incomeAsset;
+	@Column(name = "incomeAsset_id", length = 36)
+	private String incomeAssetId;
 
-	@ManyToOne
-	@JoinColumn(name = "expenseAsset_id")
-	private Asset expenseAsset;
+	@Column(name = "expenseAsset_id", length = 36)
+	private String expenseAssetId;
 
-	@ManyToOne
-	private EntryGroup entryGroup;
+	@Column(name = "entryGroup_id", length = 36, nullable = false)
+	private String entryGroupId;
 
 	@Min(value = 1, groups = { Create.class, Update.class })
 	private long amount;

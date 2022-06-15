@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.EntryGroup;
-import net.luversof.bookkeeping.service.EntryGroupService;
+import net.luversof.bookkeeping.service.BasicEntryGroupService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 
 @RestController
@@ -25,7 +25,7 @@ import net.luversof.security.core.userdetails.BlueskyUser;
 public class EntryGroupController {
 
 	@Autowired
-	private EntryGroupService entryGroupService;
+	private BasicEntryGroupService entryGroupService;
 
 
 	@PostMapping

@@ -32,11 +32,11 @@ public class EntryGroup {
 	@Column(length = 36, nullable = false, unique = true)
 	private String entryGroupId;
 
-	@NotBlank(groups = { Create.class, Update.class })
-	private String name;
-
 	@Column(name = "bookkeeping_id", length = 36, nullable = false)
 	private String bookkeepingId;
+	
+	@NotBlank(groups = { Create.class, Update.class })
+	private String name;
 	
 	@NotNull(groups = { Create.class, Update.class })
 	@Enumerated(EnumType.STRING)

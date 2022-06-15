@@ -9,7 +9,6 @@ import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.bookkeeping.constant.AssetGroupInitialData;
 import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.AssetGroup;
-import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.repository.AssetGroupRepository;
 
 @Service
@@ -24,8 +23,8 @@ public class BasicAssetGroupService implements AssetGroupService {
 	 * @return
 	 */
 	// @Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
-	public List<AssetGroup> initialDataSave(Bookkeeping bookkeeping) {
-		return assetGroupRepository.saveAll(AssetGroupInitialData.getAssetGroupList(bookkeeping));
+	public List<AssetGroup> createInitialData(String bookkeepingId) {
+		return assetGroupRepository.saveAll(AssetGroupInitialData.createAssetGroupList(bookkeepingId));
 	}
 	
 	@Override
@@ -53,8 +52,8 @@ public class BasicAssetGroupService implements AssetGroupService {
 	}
 	
 	@Override
-	public void deleteAllByBookkeepingId(AssetGroup assetGroup) {
-		List<AssetGroup> assetGroupList = assetGroupRepository.findByBookkeepingId(assetGroup.getBookkeepingId());
+	public void deleteAllByBookkeepingId(String bookkeepingId) {
+		List<AssetGroup> assetGroupList = assetGroupRepository.findByBookkeepingId(bookkeepingId);
 		assetGroupRepository.deleteAll(assetGroupList);
 	}
 }

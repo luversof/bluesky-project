@@ -5,7 +5,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 
-import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -25,8 +24,7 @@ import net.luversof.bookkeeping.util.BookkeepingUtils;
 @Data
 public class StatisticsSearchInfo {
 
-	@Valid
-	private Bookkeeping bookkeeping;
+	private String bookkeepingId;
 
 	private int baseDate = 1;
 	

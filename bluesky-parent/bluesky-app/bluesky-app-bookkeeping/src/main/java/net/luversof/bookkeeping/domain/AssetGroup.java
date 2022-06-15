@@ -27,7 +27,7 @@ public class AssetGroup {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Min(value = 1, groups = { Update.class, Delete.class, Asset.Create.class })
 	private long id;
-	
+
 	@NotBlank(groups = { Update.class })
 	@Column(length = 36, nullable = false, unique = true)
 	private String assetGroupId;
@@ -41,9 +41,16 @@ public class AssetGroup {
 
 	@Enumerated(EnumType.STRING)
 	private AssetGroupType assetGroupType;
-	
-	public static interface Create {}
-	public static interface CreateParam {}
-	public static interface Update {}
-	public static interface Delete {}
+
+	public static interface Create {
+	}
+
+	public static interface CreateParam {
+	}
+
+	public static interface Update {
+	}
+
+	public static interface Delete {
+	}
 }

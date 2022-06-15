@@ -1,72 +1,23 @@
 package net.luversof.bookkeeping.service;
 
-
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import io.github.luversof.boot.exception.BlueskyException;
-import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
-import net.luversof.bookkeeping.constant.EntryGroupInitialData;
-import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.EntryGroup;
-import net.luversof.bookkeeping.repository.EntryGroupRepository;
-import net.luversof.bookkeeping.util.BookkeepingUtils;
 
-@Service
-public class EntryGroupService {
+public interface EntryGroupService {
 
-	@Autowired
-	private EntryGroupRepository entryGroupRepository;
+	List<EntryGroup> createInitialData(String bookkeepingId);
 	
-	/**
-	 * 초기 데이터 insert
-	 * @param bookkeeping
-	 * @return
-	 */
-	//@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
-	public List<EntryGroup> initialDataSave(Bookkeeping bookkeeping) {
-		return entryGroupRepository.saveAll(EntryGroupInitialData.getEntryGroupList(bookkeeping));
-	}
+	EntryGroup create(EntryGroup entryGroup);
 	
-	public EntryGroup createUserEntryGroup(EntryGroup entryGroup) {
-		entryGroup.setBookkeeping(BookkeepingUtils.getBookkeepingService().getUserBookkeeping(entryGroup.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING)));
-		return entryGroupRepository.save(entryGroup);
-	}
+	Optional<EntryGroup> findByEntryGroupId(String entryGroupId);
 	
-	public Optional<EntryGroup> findById(long id) {
-		return entryGroupRepository.findById(id);
-	}
+	List<EntryGroup> findByBookkeepingId(String bookkeepingId);
 	
-	public List<EntryGroup> getUserEntryGroupList(UUID userId) {
-		Bookkeeping userBookkeeping = BookkeepingUtils.getBookkeepingService().getUserBookkeeping(userId).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		return entryGroupRepository.findByBookkeepingId(userBookkeeping.getBookkeepingId());
-		
-	}
+	EntryGroup update(EntryGroup entryGroup);
 	
-	public EntryGroup updateUserEntryGroup(EntryGroup entryGroup) {
-		BookkeepingUtils.getBookkeepingService().getUserBookkeeping(entryGroup.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		EntryGroup targetEntryGroup = findById(entryGroup.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRYGROUP));
-		if (targetEntryGroup.getBookkeeping().getUserId() != entryGroup.getBookkeeping().getUserId()) {
-			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRYGROUP);
-		}
-		return entryGroupRepository.save(entryGroup);
-	}
-
-	public void deleteUserEntryGroup(EntryGroup entryGroup) {
-		BookkeepingUtils.getBookkeepingService().getUserBookkeeping(entryGroup.getBookkeeping().getUserId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		EntryGroup targetEntryGroup = findById(entryGroup.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRYGROUP));
-		if (targetEntryGroup.getBookkeeping().getUserId() != entryGroup.getBookkeeping().getUserId()) {
-			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRYGROUP);
-		}
-		entryGroupRepository.delete(entryGroup);
-	}
+	void delete(EntryGroup entryGroup);
 	
-	public void deleteBybookkeepingId(String bookkeepingId) {
-		List<EntryGroup> entryGroupList = entryGroupRepository.findByBookkeepingId(bookkeepingId);
-		entryGroupRepository.deleteAll(entryGroupList);
-	}
+	void deleteAllBybookkeepingId(String bookkeepingId);
 }

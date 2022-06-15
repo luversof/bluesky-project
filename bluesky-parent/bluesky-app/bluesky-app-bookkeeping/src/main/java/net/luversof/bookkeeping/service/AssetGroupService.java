@@ -6,6 +6,8 @@ import net.luversof.bookkeeping.domain.AssetGroup;
 
 public interface AssetGroupService {
 
+	List<AssetGroup> createInitialData(String bookkeepingId);
+	
 	AssetGroup create(AssetGroup assetGroup);
 	
 	List<AssetGroup> findByBookkeepingId(String bookkeepingId);
@@ -14,6 +16,6 @@ public interface AssetGroupService {
 	
 	void delete(AssetGroup assetGroup);
 	
-	void deleteAllByBookkeepingId(AssetGroup assetGroup);
+	void deleteAllByBookkeepingId(String bookkeepingId);
 
 }

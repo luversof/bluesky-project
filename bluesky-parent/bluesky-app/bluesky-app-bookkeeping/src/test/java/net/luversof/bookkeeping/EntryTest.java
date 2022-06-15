@@ -19,8 +19,10 @@ import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.bookkeeping.service.BasicBookkeepingService;
-import net.luversof.bookkeeping.service.EntryGroupService;
-import net.luversof.bookkeeping.service.EntryService;
+import net.luversof.bookkeeping.service.BasicEntryGroupService;
+import net.luversof.bookkeeping.service.BasicEntryService;
+import net.luversof.bookkeeping.service.CompositeEntryGroupService;
+import net.luversof.bookkeeping.service.CompositeEntryService;
 
 @Slf4j
 public class EntryTest extends GeneralTest {
@@ -29,10 +31,10 @@ public class EntryTest extends GeneralTest {
 	private BasicBookkeepingService bookkeepingService;
 
 	@Autowired
-	private EntryGroupService entryGroupService;
+	private CompositeEntryGroupService entryGroupService;
 	
 	@Autowired
-	private EntryService entryService;
+	private CompositeEntryService entryService;
 
 	@Autowired
 	private EntryRepository entryRepository;
@@ -43,23 +45,21 @@ public class EntryTest extends GeneralTest {
 	
 	@BeforeEach
 	public void before() {
-		Bookkeeping bookkeeping = new Bookkeeping();
-    	bookkeeping.setUserId(TEST_USER_ID);
-		bookkeeping = bookkeepingService.getUserBookkeeping(bookkeeping.getUserId()).get();
+    	bookkeeping = bookkeepingService.findByUserId(BookkeepingTestConstant.USER_ID).stream().findFirst().get();
 	}
 
 	// 세이브 테스트
 	@Test
 	public void create() {
-		List<EntryGroup> entryGroupList = entryGroupService.getUserEntryGroupList(TEST_USER_ID);
+		List<EntryGroup> entryGroupList = entryGroupService.findByBookkeepingId(bookkeeping.getBookkeepingId());
 		
 		Entry entry = new Entry();
-		entry.setBookkeeping(bookkeeping);
+		entry.setBookkeepingId(bookkeeping.getBookkeepingId());
 		entry.setAmount(123);
-		entry.setEntryGroup(entryGroupList.get(3));
+		entry.setEntryGroupId(entryGroupList.stream().findAny().get().getEntryGroupId());
 		entry.setMemo("test");
 		
-		entryService.createUserEntry(entry);
+		entryService.create(entry);
 		
 		log.debug("Test : {}", entry);
 	}
@@ -99,13 +99,13 @@ public class EntryTest extends GeneralTest {
 	public void test5() {
 		LocalDate startDate = LocalDate.parse("2016-05-02"); 
 		LocalDate endDate = LocalDate.parse("2016-05-03");
-		List<Entry> entryList = entryService.findByBookkeepingIdAndEntryDateBetween(UUID.fromString("1"), startDate, endDate);
+		List<Entry> entryList = entryService.findByBookkeepingIdAndEntryDateBetween(bookkeeping.getBookkeepingId(), startDate, endDate);
 		log.debug("entryList : {}", entryList);
 	}
 
 	@Test
 	public void deleteByBookkeeping() {
-		log.debug("deleteByBookkeeping : {}", entryRepository.deleteByBookkeepingIdQuery(bookkeeping.getId()));
+		entryRepository.deleteByBookkeepingId(bookkeeping.getBookkeepingId());
 	}
 	
 	@Test

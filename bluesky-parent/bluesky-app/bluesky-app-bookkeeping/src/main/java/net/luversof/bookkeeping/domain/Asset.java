@@ -5,8 +5,6 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 
@@ -30,18 +28,16 @@ public class Asset {
 	@Column(length = 36, nullable = false, unique = true)
 	private String assetId;
 
+	@Column(name = "bookkeeping_id", length = 36, nullable = false)
+	private String bookkeepingId;
+	
+	@Column(name = "assetGroup_id", length = 36, nullable = false)
+	private String assetGroupId;
+	
 	@NotBlank(groups = { Create.class, Update.class })
 	private String name;
 
 	private long amount;
-
-	@Column(name = "bookkeeping_id", length = 36, nullable = false)
-	private String bookkeepingId;
-
-	@ManyToOne
-	/* @NotNull(groups = { Create.class, Update.class }) */
-	@Valid
-	private AssetGroup assetGroup;
 
 	public interface Create {
 	}
