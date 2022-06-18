@@ -5,7 +5,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.validation.constraints.Min;
+import javax.persistence.Index;
+import javax.persistence.Table;
 import javax.validation.constraints.NotBlank;
 
 import lombok.Data;
@@ -16,18 +17,20 @@ import lombok.Data;
  * @author bluesky
  *
  */
-@Entity
 @Data
+@Entity
+@Table(indexes = { @Index(name = "UK_asset_assetId", columnList = "assetId", unique = true), @Index(name = "IDX_asset_bookkeepingId", columnList = "bookkeeping_id") })
 public class Asset {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Min(value = 1, groups = { Update.class, Delete.class })
-	private long id;
+	private long idx;
 	
-	@Column(length = 36, nullable = false, unique = true)
+	@NotBlank(groups = { Update.class, Delete.class })
+	@Column(length = 36, nullable = false)
 	private String assetId;
 
+	@NotBlank(groups = { Update.class, Delete.class })
 	@Column(name = "bookkeeping_id", length = 36, nullable = false)
 	private String bookkeepingId;
 	
@@ -37,7 +40,7 @@ public class Asset {
 	@NotBlank(groups = { Create.class, Update.class })
 	private String name;
 
-	private long amount;
+//	private long amount;	// 이거 어떻게 계산하는게 좋을까? 
 
 	public interface Create {
 	}

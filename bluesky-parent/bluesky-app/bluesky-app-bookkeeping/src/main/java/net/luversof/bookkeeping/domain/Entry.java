@@ -10,14 +10,17 @@ import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
+import javax.persistence.Table;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 import lombok.Data;
 import net.luversof.bookkeeping.constant.EntryGroupType;
 
-@Entity
 @Data
+@Entity
+@Table(indexes = { @Index(name = "UK_entry_entryId", columnList = "entryId", unique = true), @Index(name = "IDX_entry_bookkeepingId", columnList = "bookkeeping_id") })
 public class Entry implements Serializable {
 
 	private static final long serialVersionUID = 1L;
@@ -26,9 +29,9 @@ public class Entry implements Serializable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@NotNull(groups = { Update.class, Delete.class })
 	@Min(value = 1, groups = { Update.class, Delete.class })
-	private long id;
+	private long idx;
 	
-	@Column(length = 36, nullable = false, unique = true)
+	@Column(length = 36, nullable = false)
 	private String entryId;
 
 	@Column(name = "bookkeeping_id", length = 36, nullable = false)

@@ -7,6 +7,8 @@ import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
+import javax.persistence.Table;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 
@@ -19,17 +21,18 @@ import net.luversof.bookkeeping.constant.AssetGroupType;
  * @author luver
  *
  */
-@Entity
 @Data
+@Entity
+@Table(indexes = { @Index(name = "UK_assetGroup_assetGroupId", columnList = "assetGroupId", unique = true), @Index(name = "IDX_assetGroup_bookkeepingId", columnList = "bookkeeping_id") })
 public class AssetGroup {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Min(value = 1, groups = { Update.class, Delete.class, Asset.Create.class })
-	private long id;
+	private long idx;
 
 	@NotBlank(groups = { Update.class })
-	@Column(length = 36, nullable = false, unique = true)
+	@Column(length = 36, nullable = false)
 	private String assetGroupId;
 
 	@NotBlank(groups = { Create.class, CreateParam.class, Update.class })

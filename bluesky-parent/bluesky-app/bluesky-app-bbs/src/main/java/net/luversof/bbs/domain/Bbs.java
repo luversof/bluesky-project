@@ -12,12 +12,15 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(indexes = @Index(name = "IDX_Bbs_alias", columnList = "alias", unique = true) )
+@Table(indexes = { @Index(name = "UK_bbs_bbsId", columnList = "bbsId", unique = true), @Index(name = "UK_bbs_alias", columnList = "alias", unique = true) })
 public class Bbs {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
+	
+	@Column(length = 36, nullable = false)
+	private String bbsId;
 	
 	@Column(length = 15)
 	private String alias;

@@ -1,5 +1,8 @@
 package net.luversof.bookkeeping;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -15,19 +18,23 @@ public class BookkeepingTest extends GeneralTest {
     private CompositeBookkeepingService bookkeepingService;
 
     @Test
-    public void save() {
+    @DisplayName("Bookkeeping 생성")
+    public void create() {
         Bookkeeping bookkeeping = new Bookkeeping();
         bookkeeping.setName("test2");
         bookkeeping.setUserId(BookkeepingTestConstant.USER_ID);
         log.debug("bookkeeping : {}", bookkeeping);
         Bookkeeping result = bookkeepingService.create(bookkeeping);
+        assertThat(result).isNotNull();
         log.debug("bookkeeping : {}", bookkeeping);
         log.debug("result : {}", result);
     }
     
     @Test
     public void findByUserId() {
-    	log.debug("bookkeeping : {}", bookkeepingService.findByUserId(BookkeepingTestConstant.USER_ID));
+    	var bookkeepingList = bookkeepingService.findByUserId(BookkeepingTestConstant.USER_ID);
+    	assertThat(bookkeepingList).isNotEmpty();
+    	log.debug("bookkeepingList : {}", bookkeepingList);
     }
 
     @Test

@@ -11,10 +11,10 @@ import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
 import javax.validation.constraints.NotBlank;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -25,7 +25,7 @@ import lombok.Data;
 
 @Entity
 @Data
-@Table(name = "User", uniqueConstraints = { @UniqueConstraint(columnNames = { "userName", "userType" }) })
+@Table(name = "User", indexes = { @Index(name = "UK_user_userId", columnList = "userId", unique = true), @Index(name = "UK_user_userNameUserType", columnList = "userName, userType", unique = true) })
 public class User implements Serializable {
 
 	private static final long serialVersionUID = 1L;
@@ -36,7 +36,7 @@ public class User implements Serializable {
 	private long idx;
 	
 	@NotBlank(groups = Create.class)
-	@Column(nullable = false, length = 36, unique = true)
+	@Column(nullable = false, length = 36)
 	private String userId;
 
 	@NotBlank(groups = Create.class)

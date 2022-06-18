@@ -4,12 +4,11 @@ import java.time.LocalDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.ForeignKey;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
+import javax.persistence.Index;
+import javax.persistence.Table;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
@@ -20,19 +19,22 @@ import lombok.Data;
 
 @Data
 @Entity
-public class Article {
+@Table(indexes = { @Index(name = "UK_bbsArticle_bbsArticleId", columnList = "bbsArticleId", unique = true), @Index(name = "IDX_article_bbsId", columnList = "bbs_id"), @Index(name = "IDX_article_userId", columnList = "user_id") })
+public class BbsArticle {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@NotNull(groups = { Get.class })
 	private long id;
-	
-	@Column(name = "user_id")
-	private long userId;
 
-	@ManyToOne
-	@JoinColumn(name = "bbs_id", foreignKey = @ForeignKey(name = "FK_article_bbsId"))
-	private Bbs bbs;
+	@Column(length = 36, nullable = false)
+	private String bbsArticleId;
+
+	@Column(name = "user_id", length = 36, nullable = false)
+	private String userId;
+
+	@Column(name = "bbs_id", length = 36, nullable = false)
+	private String bbsId;
 
 	@NotBlank(groups = { Save.class, Modify.class })
 	private String title;
@@ -51,9 +53,9 @@ public class Article {
 	public interface Get {
 	}
 
-    public interface Save {
+	public interface Save {
 	}
 
-    public interface Modify {
+	public interface Modify {
 	}
 }

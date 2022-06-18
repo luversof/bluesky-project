@@ -3,29 +3,28 @@ package net.luversof.bookkeeping.domain;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.Table;
 import javax.validation.constraints.NotBlank;
 
-import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.validator.constraints.Range;
 
 import lombok.Data;
 
 @Data
 @Entity
-@Table(indexes = @Index(name = "IDX_Bookkeeping_userId", columnList = "user_id", unique = true))
+@Table(indexes = { @Index(name = "UK_bookkeeping_bookkeepingId", columnList = "bookkeepingId", unique = true), @Index(name = "IDX_bookkeeping_userId", columnList = "user_id") })
 public class Bookkeeping {
 
 	@Id
-	@GeneratedValue(generator = "uuid-gen")
-	@GenericGenerator(name = "uuid-gen", strategy = "uuid2")
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(length = 16)
 	private long idx;
 	
-	@NotBlank(groups = { Create.class, Update.class, Delete.class })
-	@Column(length = 36, nullable = false, unique = true)
+	@NotBlank(groups = { Update.class, Delete.class })
+	@Column(length = 36, nullable = false)
 	private String bookkeepingId;
 	
 	@NotBlank(groups = { Create.class, Update.class, Delete.class })

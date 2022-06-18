@@ -1,11 +1,5 @@
 package net.luversof.bookkeeping.constant;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.domain.EntryGroup;
-
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,6 +7,10 @@ import java.util.List;
 import java.util.UUID;
 
 import io.github.luversof.boot.autoconfigure.context.MessageUtil;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import net.luversof.bookkeeping.domain.EntryGroup;
 
 /**
  * 최초 생성시 추가되는 항목

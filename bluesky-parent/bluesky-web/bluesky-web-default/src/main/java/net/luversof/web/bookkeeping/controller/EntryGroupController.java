@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
-import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.EntryGroup;
-import net.luversof.bookkeeping.service.BasicEntryGroupService;
+import net.luversof.bookkeeping.service.CompositeBookkeepingService;
+import net.luversof.bookkeeping.service.CompositeEntryGroupService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 
 @RestController
@@ -25,33 +25,36 @@ import net.luversof.security.core.userdetails.BlueskyUser;
 public class EntryGroupController {
 
 	@Autowired
-	private BasicEntryGroupService entryGroupService;
-
+	private CompositeEntryGroupService entryGroupService;
+	
+	@Autowired
+	private CompositeBookkeepingService bookkeepingService;
 
 	@PostMapping
-	public EntryGroup createUserEntryGroup(@RequestBody @Validated(EntryGroup.Create.class) EntryGroup entryGroup, BlueskyUser blueskyUser) {
-		entryGroup.setBookkeeping(new Bookkeeping());
-		entryGroup.getBookkeeping().setUserId(blueskyUser.getId());
-		return entryGroupService.createUserEntryGroup(entryGroup);
+	public EntryGroup create(@RequestBody @Validated(EntryGroup.Create.class) EntryGroup entryGroup, BlueskyUser blueskyUser) {
+		var bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId());
+		entryGroup.setBookkeepingId(bookkeepingList.stream().findFirst().get().getBookkeepingId());
+		return entryGroupService.create(entryGroup);
 	}
 
 	@GetMapping
-	public List<EntryGroup> getUserEntryGroupList(BlueskyUser blueskyUser) {
-		return entryGroupService.getUserEntryGroupList(blueskyUser.getId());
+	public List<EntryGroup> findByBookkeepingId(BlueskyUser blueskyUser) {
+		var bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId());
+		return entryGroupService.findByBookkeepingId(bookkeepingList.stream().findFirst().get().getBookkeepingId());
 	}
 
 	@PutMapping
-	public EntryGroup updateUserEntryGroup(@RequestBody @Validated(EntryGroup.Update.class) EntryGroup entryGroup, BlueskyUser blueskyUser) {
-		entryGroup.setBookkeeping(new Bookkeeping());
-		entryGroup.getBookkeeping().setUserId(blueskyUser.getId());
-		return entryGroupService.updateUserEntryGroup(entryGroup);
+	public EntryGroup update(@RequestBody @Validated(EntryGroup.Update.class) EntryGroup entryGroup, BlueskyUser blueskyUser) {
+		var bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId());
+		entryGroup.setBookkeepingId(bookkeepingList.stream().findFirst().get().getBookkeepingId());
+		return entryGroupService.update(entryGroup);
 	}
 
 	@DeleteMapping
-	public void deleteUserEntryGroup(@Validated(EntryGroup.Delete.class) EntryGroup entryGroup, BlueskyUser blueskyUser) {
-		entryGroup.setBookkeeping(new Bookkeeping());
-		entryGroup.getBookkeeping().setUserId(blueskyUser.getId());
-		entryGroupService.deleteUserEntryGroup(entryGroup);
+	public void delete(@Validated(EntryGroup.Delete.class) EntryGroup entryGroup, BlueskyUser blueskyUser) {
+		var bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId());
+		entryGroup.setBookkeepingId(bookkeepingList.stream().findFirst().get().getBookkeepingId());
+		entryGroupService.delete(entryGroup);
 	}
 
 }

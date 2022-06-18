@@ -3,7 +3,6 @@ package net.luversof.bookkeeping;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,13 +31,9 @@ public class StatisticsTest extends GeneralTest {
 	
 	private Bookkeeping bookkeeping;
 
-	static final UUID TEST_USER_ID = UUID.fromString("35929103-da22-49e7-9d76-214bb081593f");
-	
 	@BeforeEach
 	public void before() {
-		Bookkeeping bookkeeping = new Bookkeeping();
-    	bookkeeping.setUserId(TEST_USER_ID);
-		bookkeeping = bookkeepingService.getUserBookkeeping(bookkeeping.getUserId()).get();
+		bookkeeping = bookkeepingService.findByUserId(BookkeepingTestConstant.USER_ID).stream().findFirst().get();
 	}
 
 	/**
@@ -51,7 +46,7 @@ public class StatisticsTest extends GeneralTest {
 		//2 statisticsSearchInfo 획득
 		StatisticsSearchInfo statisticsSearchInfo = new StatisticsSearchInfo();
 		statisticsSearchInfo.setChronoUnit(ChronoUnit.YEARS);
-		statisticsSearchInfo.setBookkeeping(bookkeeping);
+		statisticsSearchInfo.setBookkeepingId(bookkeeping.getBookkeepingId());
 		
 		statisticsSearchInfoService.getStatisticsSearchInfo(statisticsSearchInfo);
 		
@@ -70,11 +65,8 @@ public class StatisticsTest extends GeneralTest {
 	
 	@Test
 	public void test2() {
-		Bookkeeping bookkeeping = new Bookkeeping();
-		bookkeeping.setId(UUID.randomUUID());
-		
 		StatisticsSearchInfo statisticsSearchInfo = new StatisticsSearchInfo();
-		statisticsSearchInfo.setBookkeeping(bookkeeping);
+		statisticsSearchInfo.setBookkeepingId(bookkeeping.getBookkeepingId());
 		statisticsSearchInfo.setChronoUnit(ChronoUnit.YEARS);
 		statisticsSearchInfo.setTargetLocalDate(LocalDate.now());
 		

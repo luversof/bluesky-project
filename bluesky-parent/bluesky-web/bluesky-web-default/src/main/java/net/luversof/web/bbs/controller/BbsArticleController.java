@@ -1,5 +1,7 @@
 package net.luversof.web.bbs.controller;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -13,8 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.bbs.annotation.PreBbsAuthorize;
-import net.luversof.bbs.domain.Article;
-import net.luversof.bbs.service.ArticleService;
+import net.luversof.bbs.domain.BbsArticle;
+import net.luversof.bbs.service.BbsArticleService;
 
 @Slf4j
 @RestController
@@ -22,19 +24,19 @@ import net.luversof.bbs.service.ArticleService;
 public class BbsArticleController {
 	
 	@Autowired
-	private ArticleService bbsArticleService;
+	private BbsArticleService bbsArticleService;
 	
 	@PreBbsAuthorize(checkBbsActivated = true)
 	@GetMapping
-	public Page<Article> list(@PathVariable String boardAlias, @RequestParam(defaultValue = "1") int page) {
-		Page<Article> bbsArticleList = bbsArticleService.selectBbsArticleList(boardAlias, PageRequest.of(page - 1, 20, Sort.by("id").descending()));
+	public Page<BbsArticle> list(@PathVariable String boardAlias, @RequestParam(defaultValue = "1") int page) {
+		Page<BbsArticle> bbsArticleList = bbsArticleService.findByBbsId(boardAlias, PageRequest.of(page - 1, 20, Sort.by("id").descending()));
 		log.debug("bbsArticleList : {}", bbsArticleList);
 		return bbsArticleList;
 	}
 	
 	@GetMapping(value = "/{id}")
-	public Article view(@PathVariable String boardAlias, @PathVariable  long id) {
-		Article bbsArticle = bbsArticleService.selectBbsArticle(id);
+	public Optional<BbsArticle> view(@PathVariable String boardAlias, @PathVariable String bbsArticleId) {
+		Optional<BbsArticle> bbsArticle = bbsArticleService.findByBbsArticleId(bbsArticleId);
 		log.debug("bbsArticleList : {}", bbsArticle);
 		return bbsArticle;
 	}

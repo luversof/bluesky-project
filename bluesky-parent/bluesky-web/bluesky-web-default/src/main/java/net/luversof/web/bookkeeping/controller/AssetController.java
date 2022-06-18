@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.bookkeeping.domain.Asset;
-import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.service.BasicAssetService;
+import net.luversof.bookkeeping.service.CompositeAssetService;
+import net.luversof.bookkeeping.service.CompositeBookkeepingService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 
 @RestController
@@ -25,7 +25,10 @@ import net.luversof.security.core.userdetails.BlueskyUser;
 public class AssetController {
 
 	@Autowired
-	private BasicAssetService assetService;
+	private CompositeAssetService assetService;
+	
+	@Autowired
+	private CompositeBookkeepingService bookkeepingService;
 
 	/**
 	 * requestBody에 @PathVariable의 id가 맵핑 안되는 부분은 어떻게 처리해야할까?
@@ -35,10 +38,10 @@ public class AssetController {
 	 * @return
 	 */
 	@PostMapping
-	public Asset createUserAsset(BlueskyUser blueskyUser, @RequestBody @Validated(Asset.Create.class) Asset asset) {
-		asset.setBookkeeping(new Bookkeeping());
-		asset.getBookkeeping().setUserId(blueskyUser.getId());
-		return assetService.createUserAsset(asset);
+	public Asset create(BlueskyUser blueskyUser, @RequestBody @Validated(Asset.Create.class) Asset asset) {
+		var bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId());
+		asset.setBookkeepingId(bookkeepingList.stream().findFirst().get().getBookkeepingId());
+		return assetService.create(asset);
 	}
 	
 	/**
@@ -49,22 +52,21 @@ public class AssetController {
 	 * @return
 	 */
 	@GetMapping
-	public List<Asset> getUserAssetList(BlueskyUser blueskyUser) {
-		return assetService.getUserAssetList(blueskyUser.getId());
+	public List<Asset> findByBookkeepingId(BlueskyUser blueskyUser) {
+		var bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId());
+		return assetService.findByBookkeepingId(bookkeepingList.stream().findFirst().get().getBookkeepingId());
 	}
 
 	@PutMapping
-	public Asset updateUserAsset(BlueskyUser blueskyUser, @RequestBody @Validated(Asset.Update.class) Asset asset) {
-		asset.setBookkeeping(new Bookkeeping());
-		asset.getBookkeeping().setUserId(blueskyUser.getId());
-		return assetService.updateUserAsset(asset);
+	public Asset update(BlueskyUser blueskyUser, @RequestBody @Validated(Asset.Update.class) Asset asset) {
+		var bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId());
+		asset.setBookkeepingId(bookkeepingList.stream().findFirst().get().getBookkeepingId());
+		return assetService.update(asset);
 	}
 
 	@DeleteMapping
-	public void deleteUserAsset(BlueskyUser blueskyUser, @RequestBody @Validated(Asset.Delete.class) Asset asset) {
-		asset.setBookkeeping(new Bookkeeping());
-		asset.getBookkeeping().setUserId(blueskyUser.getId());
-		assetService.deleteUserAsset(asset);
+	public void delete(BlueskyUser blueskyUser, @RequestBody @Validated(Asset.Delete.class) Asset asset) {
+		assetService.delete(asset);
 	}
 	 
 }

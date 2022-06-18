@@ -1,6 +1,6 @@
 package net.luversof.web.bookkeeping.controller;
 
-import java.util.Optional;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.service.BasicBookkeepingService;
+import net.luversof.bookkeeping.service.CompositeBookkeepingService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 
 @RestController
@@ -24,12 +24,12 @@ import net.luversof.security.core.userdetails.BlueskyUser;
 public class BookkeepingController {
 
 	@Autowired
-	private BasicBookkeepingService bookkeepingService;
+	private CompositeBookkeepingService bookkeepingService;
 	
 	@PostMapping
-	public Bookkeeping createUserBookkeeping(BlueskyUser blueskyUser, @RequestBody @Validated(Bookkeeping.Create.class) Bookkeeping bookkeeping) {
+	public Bookkeeping create(BlueskyUser blueskyUser, @RequestBody @Validated(Bookkeeping.Create.class) Bookkeeping bookkeeping) {
 		bookkeeping.setUserId(blueskyUser.getId());
-		return bookkeepingService.createUserBookkeeping(bookkeeping);
+		return bookkeepingService.create(bookkeeping);
 	}
 	
 	/**
@@ -38,20 +38,20 @@ public class BookkeepingController {
 	 * @return
 	 */
 	@GetMapping
-	public Optional<Bookkeeping> getUserBookkeepingList(BlueskyUser blueskyUser) {
-		return bookkeepingService.getUserBookkeeping(blueskyUser.getId());
+	public List<Bookkeeping> findByUserId(BlueskyUser blueskyUser) {
+		return bookkeepingService.findByUserId(blueskyUser.getId());
 	}
 	
 	@PutMapping
-	public Bookkeeping updateUserBookkeeping(BlueskyUser blueskyUser, @RequestBody @Validated(Bookkeeping.Update.class) Bookkeeping bookkeeping) {
+	public Bookkeeping update(BlueskyUser blueskyUser, @RequestBody @Validated(Bookkeeping.Update.class) Bookkeeping bookkeeping) {
 		bookkeeping.setUserId(blueskyUser.getId());
-		return bookkeepingService.updateUserBookkeeping(bookkeeping);
+		return bookkeepingService.update(bookkeeping);
 	}
 	
 	@DeleteMapping
-	public void deleteUserBookkeeping(BlueskyUser blueskyUser) {
+	public void delete(BlueskyUser blueskyUser) {
 		Bookkeeping bookkeeping = new Bookkeeping();
 		bookkeeping.setUserId(blueskyUser.getId());
-		bookkeepingService.deleteUserBookkeeping(bookkeeping);
+		bookkeepingService.delete(bookkeeping);
 	}
 }

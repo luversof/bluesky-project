@@ -1,7 +1,6 @@
 package net.luversof.bookkeeping;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,8 +10,8 @@ import net.luversof.GeneralTest;
 import net.luversof.bookkeeping.constant.AssetInitialData;
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.repository.BookkeepingRepository;
 import net.luversof.bookkeeping.service.BasicAssetService;
+import net.luversof.bookkeeping.service.BasicBookkeepingService;
 
 @Slf4j
 public class AssetTest extends GeneralTest {
@@ -24,13 +23,12 @@ public class AssetTest extends GeneralTest {
 //	private BookkeepingService bookkeepingService;
 	
 	@Autowired
-	private BookkeepingRepository bookkeepingRepository;
+	private BasicBookkeepingService bookkeepingService;
 	
 	private Bookkeeping getBookkeeping() {
-		return bookkeepingRepository.findAll().get(0);
+		return bookkeepingService.findByUserId(BookkeepingTestConstant.USER_ID).stream().findFirst().get();
 	}
 
-	static final UUID TEST_USER_ID = UUID.fromString("35929103-da22-49e7-9d76-214bb081593f");
 
 	@Test
 	public void assetInitialDataName() {
@@ -44,7 +42,7 @@ public class AssetTest extends GeneralTest {
 			return;
 		}
 		
-		List<Asset> userAssetList = assetService.getUserAssetList(bookkeeping.getUserId());
+		List<Asset> userAssetList = assetService.findByBookkeepingId(bookkeeping.getBookkeepingId());
 		log.debug("assetList : {}", userAssetList);
 	}
 

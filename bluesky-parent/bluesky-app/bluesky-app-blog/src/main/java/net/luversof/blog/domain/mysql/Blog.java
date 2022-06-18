@@ -21,12 +21,13 @@ import lombok.Data;
 
 /**
  * blog 정보
+ * 
  * @author luver
  *
  */
 @Data
 @Entity
-@Table(name = "Blog", indexes = { @Index(columnList = "user_id") })
+@Table(name = "Blog", indexes = @Index(columnList = "user_id"))
 public class Blog implements Serializable {
 
 	private static final long serialVersionUID = 1L;
@@ -35,22 +36,22 @@ public class Blog implements Serializable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(length = 16)
 	private long idx;
-	
+
 	@Column(length = 36, nullable = false, unique = true)
 	private String blogId;
 
 	@NotBlank(groups = Create.class)
 	@Column(name = "user_id", length = 36, nullable = false)
 	private String userId;
-	
+
 	@OneToMany
 	@JoinColumn(name = "blog_id", referencedColumnName = "blogId")
 	private List<BlogArticleCategory> blogArticleCategoryList;
-	
+
 	@CreationTimestamp
 	private ZonedDateTime createdDate;
 
-	
-	public interface Create {};
-	
+	public interface Create {
+	};
+
 }

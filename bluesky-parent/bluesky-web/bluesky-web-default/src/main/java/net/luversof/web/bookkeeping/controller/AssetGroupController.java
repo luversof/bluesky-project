@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.bookkeeping.domain.AssetGroup;
-import net.luversof.bookkeeping.domain.Bookkeeping;
-import net.luversof.bookkeeping.service.BasicAssetGroupService;
+import net.luversof.bookkeeping.service.CompositeAssetGroupService;
+import net.luversof.bookkeeping.service.CompositeBookkeepingService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 
 @RestController
@@ -25,32 +25,36 @@ import net.luversof.security.core.userdetails.BlueskyUser;
 public class AssetGroupController {
 	
 	@Autowired
-	private BasicAssetGroupService assetGroupService;
+	private CompositeAssetGroupService assetGroupService;
+	
+	@Autowired
+	private CompositeBookkeepingService bookkeepingService;
 	
 	@PostMapping
-	public AssetGroup createUserAssetGroup(@RequestBody @Validated(AssetGroup.Create.class) AssetGroup assetGroup, BlueskyUser blueskyUser) {
-		assetGroup.setBookkeeping(new Bookkeeping());
-		assetGroup.getBookkeeping().setUserId(blueskyUser.getId());
-		return assetGroupService.createUserAssetGroup(assetGroup);
+	public AssetGroup create(@RequestBody @Validated(AssetGroup.Create.class) AssetGroup assetGroup, BlueskyUser blueskyUser) {
+		var bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId());
+		assetGroup.setBookkeepingId(bookkeepingList.stream().findFirst().get().getBookkeepingId());
+		return assetGroupService.create(assetGroup);
 	}
 	
 	@GetMapping
-	public List<AssetGroup> getUserAssetGroupList(BlueskyUser blueskyUser) {
-		return assetGroupService.getUserAssetGroupList(blueskyUser.getId());
+	public List<AssetGroup> findByBookkeepingId(BlueskyUser blueskyUser) {
+		var bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId());
+		return assetGroupService.findByBookkeepingId(bookkeepingList.stream().findFirst().get().getBookkeepingId());
 	}
 	
 	@PutMapping
-	public AssetGroup updateUserAssetGroup(@RequestBody @Validated(AssetGroup.Update.class) AssetGroup assetGroup, BlueskyUser blueskyUser) {
-		assetGroup.setBookkeeping(new Bookkeeping());
-		assetGroup.getBookkeeping().setUserId(blueskyUser.getId());
-		return assetGroupService.updateUserAssetGroup(assetGroup);
+	public AssetGroup update(@RequestBody @Validated(AssetGroup.Update.class) AssetGroup assetGroup, BlueskyUser blueskyUser) {
+		var bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId());
+		assetGroup.setBookkeepingId(bookkeepingList.stream().findFirst().get().getBookkeepingId());
+		return assetGroupService.update(assetGroup);
 	}
 	
 	@DeleteMapping
-	public void deleteUserAssetGroup(@RequestBody @Validated(AssetGroup.Delete.class) AssetGroup assetGroup, BlueskyUser blueskyUser) {
-		assetGroup.setBookkeeping(new Bookkeeping());
-		assetGroup.getBookkeeping().setUserId(blueskyUser.getId());
-		assetGroupService.deleteUserAssetGroup(assetGroup);
+	public void delete(@RequestBody @Validated(AssetGroup.Delete.class) AssetGroup assetGroup, BlueskyUser blueskyUser) {
+		var bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId());
+		assetGroup.setBookkeepingId(bookkeepingList.stream().findFirst().get().getBookkeepingId());
+		assetGroupService.delete(assetGroup);
 	}
 
 }

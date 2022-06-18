@@ -4,12 +4,15 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
+import io.github.luversof.boot.autoconfigure.validation.annotation.BlueskyValidated;
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.bookkeeping.domain.Asset;
 import net.luversof.bookkeeping.domain.AssetGroup;
 
+@Service
 public class CompositeAssetService implements AssetService {
 	
 	@Autowired
@@ -26,7 +29,7 @@ public class CompositeAssetService implements AssetService {
 	}
 	
 	@Override
-	public Asset create(Asset asset) {
+	public Asset create(@BlueskyValidated(Asset.Create.class) Asset asset) {
 		return assetService.create(asset);
 	}
 	
@@ -41,7 +44,7 @@ public class CompositeAssetService implements AssetService {
 	}
 
 	@Override
-	public Asset update(Asset asset) {
+	public Asset update(@BlueskyValidated(Asset.Update.class) Asset asset) {
 		Asset targetAsset = findByAssetId(asset.getAssetId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ASSET));
 		if (!targetAsset.getBookkeepingId().equals(asset.getBookkeepingId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ASSET);
@@ -63,7 +66,7 @@ public class CompositeAssetService implements AssetService {
 	}
 	
 	@Override
-	public void delete(Asset asset) {
+	public void delete(@BlueskyValidated(Asset.Delete.class) Asset asset) {
 		bookkeepingService.findByBookkeepingId(asset.getBookkeepingId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		assetService.delete(asset);
 	}

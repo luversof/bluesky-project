@@ -1,7 +1,5 @@
 package net.luversof.web.user.controller;
 
-import java.util.UUID;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,15 +30,15 @@ public class LoginInfoController {
 			return loginInfo;
 		}
 		
-		loginInfo.setId(user.getId());
-		loginInfo.setName(user.getUsername());
+		loginInfo.setId(user.getUserId());
+		loginInfo.setName(user.getUserName());
 		
 		return loginInfo;
 	}
 	
 	@Data
 	public class LoginInfo {
-		private UUID id;
+		private String id;
 		private String name;
 	}
 }

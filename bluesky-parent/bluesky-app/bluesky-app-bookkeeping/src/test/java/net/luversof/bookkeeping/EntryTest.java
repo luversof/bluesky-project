@@ -19,8 +19,6 @@ import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.EntryGroup;
 import net.luversof.bookkeeping.repository.EntryRepository;
 import net.luversof.bookkeeping.service.BasicBookkeepingService;
-import net.luversof.bookkeeping.service.BasicEntryGroupService;
-import net.luversof.bookkeeping.service.BasicEntryService;
 import net.luversof.bookkeeping.service.CompositeEntryGroupService;
 import net.luversof.bookkeeping.service.CompositeEntryService;
 

@@ -67,7 +67,7 @@ public class BasicEntryService implements EntryService {
 	@Override
 	public Entry update(Entry entry) {
 		bookkeepingService.findByBookkeepingId(entry.getBookkeepingId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		Entry targetEntry = entryRepository.findById(entry.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRY));
+		Entry targetEntry = entryRepository.findByEntryId(entry.getEntryId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRY));
 		
 		targetEntry.setAmount(entry.getAmount());
 		targetEntry.setEntryDate(entry.getEntryDate());
@@ -80,7 +80,7 @@ public class BasicEntryService implements EntryService {
 	@Override
 	public void delete(Entry entry) {
 		bookkeepingService.findByBookkeepingId(entry.getBookkeepingId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		Entry targetEntry = entryRepository.findById(entry.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRY));
+		Entry targetEntry = entryRepository.findByEntryId(entry.getEntryId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRY));
 		entryRepository.delete(targetEntry);
 	}
 

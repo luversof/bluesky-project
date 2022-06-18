@@ -11,10 +11,10 @@ public class D3Service {
 	@Autowired
 	private RestTemplate restTemplate;
 	
-	@Value("${api.battleNet.apikey}")
+	@Value("${api.battle-net.api-key}")
 	private String apikey;
 	
-	@Value("${api.battleNet.apiHost}")
+	@Value("${api.battle-net.api-host}")
 	private String battleNetApiHost;
 	
 	public Object getCareerProfile(String battleTag, String locale) {

@@ -14,10 +14,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
-import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.web.EntryRequestParam;
-import net.luversof.bookkeeping.service.BasicEntryService;
+import net.luversof.bookkeeping.service.CompositeBookkeepingService;
+import net.luversof.bookkeeping.service.CompositeEntryService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 
 @RestController
@@ -26,13 +26,16 @@ import net.luversof.security.core.userdetails.BlueskyUser;
 public class EntryController {
 	
 	@Autowired
-	private BasicEntryService entryService;
+	private CompositeEntryService entryService;
+	
+	@Autowired
+	private CompositeBookkeepingService bookkeepingService;
 	
 	@PostMapping
-	public Entry createUserEntry(@RequestBody @Validated(Entry.Create.class) Entry entry, BlueskyUser blueskyUser) {
-		entry.setBookkeeping(new Bookkeeping());
-		entry.getBookkeeping().setUserId(blueskyUser.getId());
-		return entryService.createUserEntry(entry);
+	public Entry create(@RequestBody @Validated(Entry.Create.class) Entry entry, BlueskyUser blueskyUser) {
+		var bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId());
+		entry.setBookkeepingId(bookkeepingList.stream().findFirst().get().getBookkeepingId());
+		return entryService.create(entry);
 	}
 	
 	/*
@@ -48,23 +51,23 @@ public class EntryController {
 	 * 우선 검색 결과를 내려준 이후 처리 고민
 	 */
 	@GetMapping
-	public List<Entry> searchUserEntry(@Validated(EntryRequestParam.Search.class) EntryRequestParam entryRequestParam, BlueskyUser blueskyUser) {
-		entryRequestParam.setBookkeeping(new Bookkeeping());
-		entryRequestParam.getBookkeeping().setUserId(blueskyUser.getId());
-		return entryService.searchUserEntry(entryRequestParam);
+	public List<Entry> search(@Validated(EntryRequestParam.Search.class) EntryRequestParam entryRequestParam, BlueskyUser blueskyUser) {
+		var bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId());
+		entryRequestParam.setBookkeepingId(bookkeepingList.stream().findFirst().get().getBookkeepingId());
+		return entryService.search(entryRequestParam);
 	}
 	
 	@PutMapping
-	public Entry updateUserEntry(@RequestBody @Validated(Entry.Update.class) Entry entry, BlueskyUser blueskyUser) {
-		entry.setBookkeeping(new Bookkeeping());
-		entry.getBookkeeping().setUserId(blueskyUser.getId());
-		return entryService.updateUserEntry(entry);
+	public Entry update(@RequestBody @Validated(Entry.Update.class) Entry entry, BlueskyUser blueskyUser) {
+		var bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId());
+		entry.setBookkeepingId(bookkeepingList.stream().findFirst().get().getBookkeepingId());
+		return entryService.update(entry);
 	}
 	
 	@DeleteMapping
-	public void deleteUserEntry(@Validated(Entry.Delete.class) Entry entry, BlueskyUser blueskyUser) {
-		entry.setBookkeeping(new Bookkeeping());
-		entry.getBookkeeping().setUserId(blueskyUser.getId());
-		entryService.deleteUserEntry(entry);
+	public void delete(@Validated(Entry.Delete.class) Entry entry, BlueskyUser blueskyUser) {
+		var bookkeepingList = bookkeepingService.findByUserId(blueskyUser.getId());
+		entry.setBookkeepingId(bookkeepingList.stream().findFirst().get().getBookkeepingId());
+		entryService.delete(entry);
 	}
 }

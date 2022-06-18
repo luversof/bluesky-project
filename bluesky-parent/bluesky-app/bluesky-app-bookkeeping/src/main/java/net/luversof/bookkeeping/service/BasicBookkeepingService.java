@@ -3,6 +3,7 @@ package net.luversof.bookkeeping.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class BasicBookkeepingService implements BookkeepingService {
 		if (bookkeeping.getUserId() == null) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_USER_ID);
 		}
+		bookkeeping.setBookkeepingId(UUID.randomUUID().toString());
 		return bookkeepingRepository.save(bookkeeping);
 	}
 

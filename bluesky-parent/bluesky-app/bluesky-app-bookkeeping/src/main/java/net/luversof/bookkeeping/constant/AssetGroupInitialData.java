@@ -11,7 +11,6 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import net.luversof.bookkeeping.domain.AssetGroup;
-import net.luversof.bookkeeping.domain.Bookkeeping;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
