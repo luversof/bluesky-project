@@ -15,7 +15,7 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "BlogArticleCategory", indexes = @Index(columnList = "blog_id"))
+@Table(indexes = { @Index(name = "UK_blogArticleCategory_blogArticleCategoryId", columnList = "blogArticleCategoryId", unique = true), @Index(name = "IDX_blogArticleCategory_blogId", columnList = "blog_id") })
 public class BlogArticleCategory implements Serializable {
 
 	private static final long serialVersionUID = 1L;
@@ -25,7 +25,7 @@ public class BlogArticleCategory implements Serializable {
 	private long idx;
 	
 	@NotBlank(groups = { Update.class, Delete.class })
-	@Column(length = 36, nullable = false, unique = true)
+	@Column(length = 36, nullable = false)
 	private String blogArticleCategoryId;
 
 	@NotBlank(groups = Create.class)

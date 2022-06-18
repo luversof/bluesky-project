@@ -9,7 +9,6 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.Table;
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 
 import lombok.Data;
@@ -28,10 +27,9 @@ public class AssetGroup {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Min(value = 1, groups = { Update.class, Delete.class, Asset.Create.class })
 	private long idx;
 
-	@NotBlank(groups = { Update.class })
+	@NotBlank(groups = { Update.class, Delete.class })
 	@Column(length = 36, nullable = false)
 	private String assetGroupId;
 

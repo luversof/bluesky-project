@@ -20,7 +20,6 @@ public class Bookkeeping {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(length = 16)
 	private long idx;
 	
 	@NotBlank(groups = { Update.class, Delete.class })

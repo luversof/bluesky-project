@@ -22,7 +22,7 @@ public class Bbs {
 	@Column(length = 36, nullable = false)
 	private String bbsId;
 	
-	@Column(length = 15)
+	@Column(length = 15, nullable = false)
 	private String alias;
 	
 	private boolean isBbsActivated;

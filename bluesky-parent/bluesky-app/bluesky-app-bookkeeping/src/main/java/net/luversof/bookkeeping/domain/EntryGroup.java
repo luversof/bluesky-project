@@ -9,9 +9,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.Table;
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 
 import lombok.Data;
 import net.luversof.bookkeeping.constant.EntryGroupType;
@@ -29,9 +27,9 @@ public class EntryGroup {
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Min(value = 1, groups = { Update.class, Delete.class })
 	private long idx;
 	
+	@NotBlank(groups = { Update.class, Delete.class })
 	@Column(length = 36, nullable = false)
 	private String entryGroupId;
 
@@ -41,7 +39,7 @@ public class EntryGroup {
 	@NotBlank(groups = { Create.class, Update.class })
 	private String name;
 	
-	@NotNull(groups = { Create.class, Update.class })
+	@NotBlank(groups = { Create.class, Update.class })
 	@Enumerated(EnumType.STRING)
 	private EntryGroupType entryGroupType;
 

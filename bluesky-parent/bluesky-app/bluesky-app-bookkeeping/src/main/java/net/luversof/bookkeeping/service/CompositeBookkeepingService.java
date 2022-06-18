@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import io.github.luversof.boot.autoconfigure.validation.annotation.BlueskyValidated;
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.bookkeeping.constant.BookkeepingConstants;
 import net.luversof.bookkeeping.constant.BookkeepingErrorCode;
@@ -39,7 +38,7 @@ public class CompositeBookkeepingService implements BookkeepingService {
 	 * @param bookkeeping
 	 * @return
 	 */
-	public Bookkeeping create(@BlueskyValidated(Bookkeeping.Create.class) Bookkeeping bookkeeping) {
+	public Bookkeeping create(Bookkeeping bookkeeping) {
 		if (bookkeeping.getUserId() == null) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_USER_ID);
 		}
@@ -67,7 +66,7 @@ public class CompositeBookkeepingService implements BookkeepingService {
 	 * @param bookkeeping
 	 * @return
 	 */
-	public Bookkeeping update(@BlueskyValidated(Bookkeeping.Update.class) Bookkeeping bookkeeping) {
+	public Bookkeeping update(Bookkeeping bookkeeping) {
 		return bookkeepingService.update(bookkeeping);
 	}
 
@@ -76,7 +75,7 @@ public class CompositeBookkeepingService implements BookkeepingService {
 	 * @param bookkeeping
 	 */
 	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
-	public void delete(@BlueskyValidated(Bookkeeping.Delete.class) Bookkeeping bookkeeping) {
+	public void delete(Bookkeeping bookkeeping) {
 		String bookkeepingId = bookkeeping.getBookkeepingId();
 		bookkeepingService.delete(bookkeeping);
 		entryService.deleteByBookkeepingId(bookkeepingId);

@@ -7,6 +7,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
+import javax.persistence.Table;
 import javax.validation.constraints.NotBlank;
 
 import org.springframework.data.annotation.CreatedDate;
@@ -23,6 +25,8 @@ import lombok.Data;
  */
 @Data
 @Entity
+@Table(indexes = { @Index(name = "UK_blogArticleComment_blogArticleCommentId", columnList = "blogArticleCommentId", unique = true), @Index(name = "IDX_blogArticleComment_blogArticleId", columnList = "blogArticle_id"),
+		@Index(name = "IDX_blogArticleComment_userId", columnList = "user_id") })
 public class BlogArticleComment {
 
 	@Id
@@ -30,7 +34,7 @@ public class BlogArticleComment {
 	private long id;
 	
 	@NotBlank(groups = { Get.class, Update.class, Delete.class })
-	@Column(length = 36, nullable = false, unique = true)
+	@Column(length = 36, nullable = false)
 	private String blogArticleCommentId;
 	
 	@NotBlank(groups = { Create.class, CreateParam.class, Update.class, Delete.class })

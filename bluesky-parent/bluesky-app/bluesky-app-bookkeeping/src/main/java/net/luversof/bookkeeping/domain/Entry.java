@@ -13,7 +13,7 @@ import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.Table;
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.NotBlank;
 
 import lombok.Data;
 import net.luversof.bookkeeping.constant.EntryGroupType;
@@ -27,17 +27,16 @@ public class Entry implements Serializable {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@NotNull(groups = { Update.class, Delete.class })
-	@Min(value = 1, groups = { Update.class, Delete.class })
 	private long idx;
 	
+	@NotBlank(groups = { Update.class, Delete.class })
 	@Column(length = 36, nullable = false)
 	private String entryId;
 
 	@Column(name = "bookkeeping_id", length = 36, nullable = false)
 	private String bookkeepingId;
 	
-	@NotNull(groups = { Create.class })
+	@NotBlank(groups = { Create.class })
 	@Enumerated(EnumType.STRING)
 	private EntryGroupType entryGroupType;
 
@@ -53,7 +52,7 @@ public class Entry implements Serializable {
 	@Min(value = 1, groups = { Create.class, Update.class })
 	private long amount;
 
-	@NotNull(groups = { Create.class, Update.class })
+	@NotBlank(groups = { Create.class, Update.class })
 	private LocalDate entryDate;
 
 	private String memo;

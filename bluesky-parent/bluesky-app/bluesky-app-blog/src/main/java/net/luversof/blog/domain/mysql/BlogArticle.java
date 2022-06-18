@@ -9,10 +9,12 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.Lob;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
+import javax.persistence.Table;
 import javax.validation.constraints.NotBlank;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -23,6 +25,7 @@ import lombok.Data;
 
 @Data
 @Entity
+@Table(indexes = { @Index(name = "UK_blogArticle_blogArticleId", columnList = "blogArticleId", unique = true), @Index(name = "IDX_blogArticle_blogId", columnList = "blog_id"), @Index(name = "IDX_blogArticle_userId", columnList = "user_id") })
 public class BlogArticle implements Serializable {
 	
 	private static final long serialVersionUID = 1L;
@@ -32,7 +35,7 @@ public class BlogArticle implements Serializable {
 	private long idx;
 	
 	@NotBlank(groups = { Get.class, Update.class, Delete.class, DeleteParam.class })
-	@Column(length = 36, nullable = false, unique = true)
+	@Column(length = 36, nullable = false)
 	private String blogArticleId;
 
 	@NotBlank(groups = { Create.class })

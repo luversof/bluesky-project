@@ -10,9 +10,9 @@ import javax.persistence.Table;
 
 import lombok.Data;
 
-@Entity
 @Data
-@Table(name = "UserAuthority", indexes = { @Index(columnList = "user_id") })	// db 에서 create index 수행 시 table name이 소문자로 바뀜 (개인 db 설정 문제인 듯.)
+@Entity
+@Table(indexes = { @Index(name = "IDX_userAuthority_userId", columnList = "user_id") })	// db 에서 create index 수행 시 table name이 소문자로 바뀜 (개인 db 설정 문제인 듯.)
 public class UserAuthority {
 
 	@Id

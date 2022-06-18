@@ -1,7 +1,5 @@
 package net.luversof.user;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -13,8 +11,8 @@ import javax.transaction.Transactional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.Rollback;
 
-import io.github.luversof.boot.exception.BlueskyException;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.user.domain.User;
@@ -22,6 +20,7 @@ import net.luversof.user.service.UserService;
 import net.luversof.user.util.UserUtil;
 
 @Slf4j
+@Rollback(false)
 @Transactional
 class UserTest extends GeneralTest {
 	
@@ -31,19 +30,24 @@ class UserTest extends GeneralTest {
 	private UserService userService;
 	
 	@Test
+	@DisplayName("유저 추가")
+	void addUserTest() {
+//		assertThrows(BlueskyException.class, () ->{
+		var user = userService.findByUsername(USERNAME).orElse(null);
+		if (user != null) {
+			return;
+		}
+		
+		user = userService.addUser(USERNAME, "testPassword");
+		log.debug("user : {}", user);
+//		});
+	}
+	
+	@Test
 	@DisplayName("유저 조회")
 	void findByUsername() {
 		User user = userService.findByUsername(USERNAME).get();
 		log.debug("user : {}", user);
-	}
-	
-	@Test
-	@DisplayName("유저 추가")
-	void addUserTest() {
-		assertThrows(BlueskyException.class, () ->{
-			var user = userService.addUser(USERNAME, "testPassword");
-			log.debug("user : {}", user);
-		});
 	}
 	
 	@Test

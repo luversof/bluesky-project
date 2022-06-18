@@ -3,6 +3,7 @@ package net.luversof.bookkeeping.service;
 import java.util.List;
 import java.util.Optional;
 
+import io.github.luversof.boot.autoconfigure.validation.annotation.BlueskyValidated;
 import net.luversof.bookkeeping.domain.Bookkeeping;
 
 public interface BookkeepingService {
@@ -15,18 +16,18 @@ public interface BookkeepingService {
 	 * @param bookkeeping
 	 * @return
 	 */
-	Bookkeeping create(Bookkeeping bookkeeping);
+	Bookkeeping create(@BlueskyValidated(Bookkeeping.Create.class) Bookkeeping bookkeeping);
 	
 	Optional<Bookkeeping> findByBookkeepingId(String bookkeepingId);
 	
 	List<Bookkeeping> findByUserId(String userId);
 	
-	Bookkeeping update(Bookkeeping bookkeeping);
+	Bookkeeping update(@BlueskyValidated(Bookkeeping.Update.class) Bookkeeping bookkeeping);
 
 	/**
 	 * 완전 삭제의 경우 관련한 데이터를 모두 삭제 처리
 	 * @param bookkeeping
 	 */
-	void delete(Bookkeeping bookkeeping);
+	void delete(@BlueskyValidated(Bookkeeping.Delete.class) Bookkeeping bookkeeping);
 
 }

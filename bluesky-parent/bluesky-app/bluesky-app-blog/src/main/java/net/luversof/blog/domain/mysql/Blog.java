@@ -27,17 +27,16 @@ import lombok.Data;
  */
 @Data
 @Entity
-@Table(name = "Blog", indexes = @Index(columnList = "user_id"))
+@Table(indexes = { @Index(name = "UK_blog_blogId", columnList = "blogId", unique = true), @Index(name = "IDX_blog_userId", columnList = "user_id") })
 public class Blog implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(length = 16)
 	private long idx;
 
-	@Column(length = 36, nullable = false, unique = true)
+	@Column(length = 36, nullable = false)
 	private String blogId;
 
 	@NotBlank(groups = Create.class)
