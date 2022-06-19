@@ -97,17 +97,17 @@
 		</dependency>
 		<!-- (e) resilience4j -->
 
-		<!-- <dependency>
+		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-ui</artifactId>
 			<version>1.6.9</version>
-		</dependency> -->
+		</dependency>
 
-		<dependency>
+		<!-- <dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-webmvc-core</artifactId>
 			<version>1.6.9</version>
-		</dependency>
+		</dependency> -->
 
 	</dependencies>
 
