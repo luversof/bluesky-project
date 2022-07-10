@@ -33,7 +33,7 @@ import net.luversof.web.index.service.MenuService;
 
 @DevCheckController
 @RestController
-@RequestMapping(value = "/_check", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "${bluesky-boot.dev-check.path-prefix}", produces = MediaType.APPLICATION_JSON_VALUE)
 public class WebDevCheckController {
 	
 	@Autowired
