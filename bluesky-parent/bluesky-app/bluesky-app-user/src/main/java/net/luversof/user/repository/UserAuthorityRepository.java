@@ -6,6 +6,6 @@ import net.luversof.user.domain.UserAuthority;
 
 public interface UserAuthorityRepository extends CrudRepository<UserAuthority, Long> {
 	
-	Long deleteByUserId(String userId);
+	long deleteByUserId(String userId);
 
 }

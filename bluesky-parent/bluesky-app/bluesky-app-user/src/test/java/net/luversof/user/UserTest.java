@@ -54,8 +54,7 @@ class UserTest extends GeneralTest {
 	@DisplayName("회원삭제")
 	void deleteByUserId() {
 		User user = userService.findByUsername(USERNAME).get();
-//		userService.deleteByUserId(user.getUserId());
-		userService.delete(user);
+		userService.deleteByUserId(user.getUserId());
 		log.debug("user : {}", user);
 	}
 	

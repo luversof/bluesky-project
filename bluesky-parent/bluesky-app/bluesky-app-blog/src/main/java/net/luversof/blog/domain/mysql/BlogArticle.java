@@ -10,7 +10,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
-import javax.persistence.JoinColumn;
 import javax.persistence.Lob;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
@@ -42,12 +41,10 @@ public class BlogArticle implements Serializable {
 	@Column(name = "blog_id", length = 36, nullable = false)
 	private String blogId;
 	
-	@OneToOne
-	@JoinColumn(name = "blogArticleCategory_id", referencedColumnName = "blogArticleCategoryId")
+	@OneToOne(mappedBy = "blogArticleCategoryId")
 	private BlogArticleCategory blogArticleCategory;
 	
-	@OneToMany
-	@JoinColumn(name = "blogArticle_id", referencedColumnName = "blogArticleId")
+	@OneToMany(mappedBy = "blogArticleId")
 	private List<BlogArticleComment> blogArticleCommentList;
 
 	@NotBlank(groups = { Create.class, CreateParam.class, Update.class })

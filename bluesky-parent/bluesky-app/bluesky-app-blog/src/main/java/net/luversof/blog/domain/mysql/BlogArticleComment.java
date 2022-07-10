@@ -1,5 +1,6 @@
 package net.luversof.blog.domain.mysql;
 
+import java.io.Serializable;
 import java.time.ZonedDateTime;
 
 import javax.persistence.Column;
@@ -27,7 +28,9 @@ import lombok.Data;
 @Entity
 @Table(indexes = { @Index(name = "UK_blogArticleComment_blogArticleCommentId", columnList = "blogArticleCommentId", unique = true), @Index(name = "IDX_blogArticleComment_blogArticleId", columnList = "blogArticle_id"),
 		@Index(name = "IDX_blogArticleComment_userId", columnList = "user_id") })
-public class BlogArticleComment {
+public class BlogArticleComment implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -113,10 +113,6 @@ public class UserService {
 		return userRepository.findByExternalIdAndUserType(externalId, userType);
 	}
 	
-	public void delete(User user) {
-		userRepository.delete(user);
-	}
-
 	public void deleteByUserId(String userId) {
 		userAuthorityService.deleteByUserId(userId);
 		userRepository.deleteByUserId(userId);

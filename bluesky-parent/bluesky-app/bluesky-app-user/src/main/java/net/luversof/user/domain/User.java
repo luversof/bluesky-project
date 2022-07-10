@@ -13,7 +13,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
-import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.validation.constraints.NotBlank;
@@ -62,8 +61,7 @@ public class User implements Serializable {
 	@JsonIgnore
     private boolean enabled;
 
-	@OneToMany(cascade = CascadeType.PERSIST)
-	@JoinColumn(name = "user_id", referencedColumnName = "userId")
+	@OneToMany(mappedBy = "userId", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<UserAuthority> userAuthorityList;
 	
 	@JsonIgnore

@@ -27,7 +27,7 @@ public class UserAuthorityService {
 		return userAuthorityRepository.findById(id);
 	}
 	
-	public Long deleteByUserId(String userId) {
+	public long deleteByUserId(String userId) {
 		return userAuthorityRepository.deleteByUserId(userId);
 	}
 }
