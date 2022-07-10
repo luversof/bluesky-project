@@ -6,12 +6,12 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.transaction.Transactional;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.Rollback;
+import org.springframework.transaction.annotation.Transactional;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
@@ -51,9 +51,11 @@ class UserTest extends GeneralTest {
 	}
 	
 	@Test
-	void 회원삭제() {
+	@DisplayName("회원삭제")
+	void deleteByUserId() {
 		User user = userService.findByUsername(USERNAME).get();
-		userService.remove(user);
+//		userService.deleteByUserId(user.getUserId());
+		userService.delete(user);
 		log.debug("user : {}", user);
 	}
 	

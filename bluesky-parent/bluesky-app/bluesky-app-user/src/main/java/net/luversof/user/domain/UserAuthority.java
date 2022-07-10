@@ -1,5 +1,7 @@
 package net.luversof.user.domain;
 
+import java.io.Serializable;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -13,7 +15,9 @@ import lombok.Data;
 @Data
 @Entity
 @Table(indexes = { @Index(name = "IDX_userAuthority_userId", columnList = "user_id") })	// db 에서 create index 수행 시 table name이 소문자로 바뀜 (개인 db 설정 문제인 듯.)
-public class UserAuthority {
+public class UserAuthority implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

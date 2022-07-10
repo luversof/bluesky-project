@@ -1,6 +1,7 @@
 package net.luversof.user.service;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,16 +15,19 @@ public class UserAuthorityService {
 	@Autowired
 	private UserAuthorityRepository userAuthorityRepository;
 	
-	
 	public UserAuthority save(UserAuthority userAuthority) {
 		return userAuthorityRepository.save(userAuthority);
 	}
 	
-	public List<UserAuthority> saveAll(List<UserAuthority> userAuthorityList) {
+	public Iterable<UserAuthority> saveAll(List<UserAuthority> userAuthorityList) {
 		return userAuthorityRepository.saveAll(userAuthorityList);
 	}
 	
-	public UserAuthority findOne(long id) {
-		return userAuthorityRepository.getReferenceById(id);
+	public Optional<UserAuthority> findById(long id) {
+		return userAuthorityRepository.findById(id);
+	}
+	
+	public Long deleteByUserId(String userId) {
+		return userAuthorityRepository.deleteByUserId(userId);
 	}
 }

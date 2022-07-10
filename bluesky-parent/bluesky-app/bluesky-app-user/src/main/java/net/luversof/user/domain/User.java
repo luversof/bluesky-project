@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -34,7 +35,7 @@ public class User implements Serializable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long idx;
 	
-	@NotBlank(groups = Create.class)
+	@NotBlank(groups = { Create.class, Delete.class })
 	@Column(nullable = false, length = 36)
 	private String userId;
 
@@ -61,7 +62,7 @@ public class User implements Serializable {
 	@JsonIgnore
     private boolean enabled;
 
-	@OneToMany
+	@OneToMany(cascade = CascadeType.PERSIST)
 	@JoinColumn(name = "user_id", referencedColumnName = "userId")
 	private List<UserAuthority> userAuthorityList;
 	
@@ -73,4 +74,6 @@ public class User implements Serializable {
 	private String externalId;
 	
 	public interface Create {}
+	
+	public interface Delete {}
 }

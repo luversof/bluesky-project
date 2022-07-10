@@ -5,11 +5,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import io.github.luversof.boot.autoconfigure.validation.annotation.BlueskyValidated;
 import io.github.luversof.boot.exception.BlueskyException;
+import net.luversof.user.constant.UserConstant;
 import net.luversof.user.constant.UserErrorCode;
 import net.luversof.user.domain.User;
 import net.luversof.user.domain.UserAuthority;
@@ -17,8 +20,9 @@ import net.luversof.user.domain.UserType;
 import net.luversof.user.repository.UserRepository;
 
 @Service
+@Transactional(transactionManager = UserConstant.TRANSACTION_MANAGER)
 public class UserService {
-
+	
 	@Autowired
 	private UserRepository userRepository;
 	
@@ -108,8 +112,13 @@ public class UserService {
 	public Optional<User> findByExternalIdAndUserType(String externalId, UserType userType) {
 		return userRepository.findByExternalIdAndUserType(externalId, userType);
 	}
-
-	public void remove(User user) {
+	
+	public void delete(User user) {
 		userRepository.delete(user);
+	}
+
+	public void deleteByUserId(String userId) {
+		userAuthorityService.deleteByUserId(userId);
+		userRepository.deleteByUserId(userId);
 	}
 }

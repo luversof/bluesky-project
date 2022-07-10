@@ -1,8 +1,11 @@
 package net.luversof.user.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.CrudRepository;
 
 import net.luversof.user.domain.UserAuthority;
 
-public interface UserAuthorityRepository extends JpaRepository<UserAuthority, Long> {
+public interface UserAuthorityRepository extends CrudRepository<UserAuthority, Long> {
+	
+	Long deleteByUserId(String userId);
+
 }

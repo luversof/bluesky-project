@@ -10,6 +10,7 @@ import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAutho
 import lombok.Data;
 import net.luversof.security.service.SecurityLoginUserService;
 import net.luversof.user.domain.User;
+import net.luversof.user.service.UserService;
 
 @RestController
 @RequestMapping(value= "/api/user/loginInfo", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -34,6 +35,14 @@ public class LoginInfoController {
 		loginInfo.setName(user.getUserName());
 		
 		return loginInfo;
+	}
+	
+	@Autowired
+	private UserService userService;
+	
+	@GetMapping("/deleteTest")
+	public void test(String userId) {
+		userService.deleteByUserId(userId);
 	}
 	
 	@Data
