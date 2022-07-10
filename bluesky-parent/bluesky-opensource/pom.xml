@@ -10,8 +10,6 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>bluesky-opensource-security</module>
-		<module>bluesky-opensource-integration</module>
-		<module>bluesky-opensource-cloud-stream</module>
 	</modules>
 	<dependencies>
 		<dependency>
