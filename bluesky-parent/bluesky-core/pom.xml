@@ -53,26 +53,9 @@
 		</dependency>
 		<!-- (e) boot admin -->
 
-		<!-- (s) jasypt test -->
-		<dependency>
-			<groupId>org.jasypt</groupId>
-			<artifactId>jasypt</artifactId>
-			<version>1.9.2</version>
-		</dependency>
-		<!-- <dependency>
-			<groupId>org.bouncycastle</groupId>
-			<artifactId>bcprov-jdk15on</artifactId>
-			<version>1.61</version>
-		</dependency> -->
-		<!-- (e) jasypt test -->
-
 		<dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>
-			<artifactId>jackson-datatype-jsr310</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.fasterxml.jackson.datatype</groupId>
-			<artifactId>jackson-datatype-jdk8</artifactId>
+			<artifactId>jackson-datatype-hibernate5</artifactId>
 		</dependency>
 
 		<dependency>

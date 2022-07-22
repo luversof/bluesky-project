@@ -33,12 +33,11 @@ public class SecurityLoginUserService implements LoginUserService {
 		if (authentication == null) {
 			return Optional.empty();
 		}
-		if (authentication.getPrincipal() instanceof BlueskyUser) {
-			return Optional.of(((BlueskyUser) authentication.getPrincipal()).getUser());
+		if (authentication.getPrincipal() instanceof BlueskyUser blueskyUser) {
+			return Optional.of(blueskyUser.getUser());
 		}
 		
-		if (authentication instanceof OAuth2AuthenticationToken) {
-			OAuth2AuthenticationToken oAuth2AuthenticationToken = (OAuth2AuthenticationToken) authentication;
+		if (authentication instanceof OAuth2AuthenticationToken oAuth2AuthenticationToken) {
 			return userService.findByExternalIdAndUserType(oAuth2AuthenticationToken.getPrincipal().getName(), UserType.findByName(oAuth2AuthenticationToken.getAuthorizedClientRegistrationId()));
 		}
 		return Optional.empty();

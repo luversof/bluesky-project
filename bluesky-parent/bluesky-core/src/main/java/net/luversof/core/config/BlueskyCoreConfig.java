@@ -8,6 +8,9 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
+
+
 @Configuration
 @ComponentScan("net.luversof.core")
 @PropertySource("classpath:core.properties")
@@ -23,6 +26,11 @@ public class BlueskyCoreConfig {
 	@Bean
 	public RestTemplate loadBalancedRestTemplate() {
 		return new RestTemplate();
+	}
+	
+	@Bean
+	public Hibernate5Module hibernate5Module(){
+		return new Hibernate5Module();
 	}
 	
 }
