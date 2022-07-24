@@ -23,13 +23,11 @@ public class BlogArticleCommentService {
 	private BlogArticleCommentRepository blogCommentRepository;
 	
 	public Page<BlogArticleComment> findByBlogArticleId(String blogArticleId, Pageable pageable) {
-		Page<BlogArticleComment> blogCommentPage = blogCommentRepository.findByBlogArticleId(blogArticleId, pageable);
-		return blogCommentPage;
+		return blogCommentRepository.findByBlogArticleId(blogArticleId, pageable);
 	}
 	
 	public Optional<BlogArticleComment> findByBlogArticleCommentId(String blogArticleCommentId) {
-		Optional<BlogArticleComment> BlogCommentOptional = blogCommentRepository.findByBlogArticleCommentId(blogArticleCommentId);
-		return BlogCommentOptional;
+		return blogCommentRepository.findByBlogArticleCommentId(blogArticleCommentId);
 	}
 	
 	public BlogArticleComment create(@BlueskyValidated(BlogArticleComment.Create.class) BlogArticleComment blogArticleComment) {
@@ -44,7 +42,7 @@ public class BlogArticleCommentService {
 	}
 	
 	public BlogArticleComment update(@BlueskyValidated(BlogArticleComment.Update.class) BlogArticleComment blogArticleComment) {
-		var targetBlogComment = blogCommentRepository.findById(blogArticleComment.getId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGCOMMENT));
+		var targetBlogComment = blogCommentRepository.findByBlogArticleCommentId(blogArticleComment.getBlogArticleCommentId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGCOMMENT));
 		if (!targetBlogComment.getUserId().equals(blogArticleComment.getUserId())) {
 			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGCOMMENT);
 		}

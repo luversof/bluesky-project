@@ -98,7 +98,7 @@ class BlogArticleTest extends GeneralTest {
 
 	
 	@Test
-	@Disabled
+	@Disabled("임시 제거")
 	void 카테고리추가복수글작성테스트() {
 		Blog blog = blogService.findByUserId(BlogTestConstant.USER_ID).stream().findFirst().get();
 		for (int i = 0 ; i < 1024 ; i ++) {

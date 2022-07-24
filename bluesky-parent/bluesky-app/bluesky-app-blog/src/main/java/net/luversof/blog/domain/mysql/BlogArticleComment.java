@@ -34,7 +34,7 @@ public class BlogArticleComment implements Serializable {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private long id;
+	private long idx;
 	
 	@NotBlank(groups = { Get.class, Update.class, Delete.class })
 	@Column(length = 36, nullable = false)

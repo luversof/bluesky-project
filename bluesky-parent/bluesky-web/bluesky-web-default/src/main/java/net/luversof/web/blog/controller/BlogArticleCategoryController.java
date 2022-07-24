@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import io.github.luversof.boot.exception.BlueskyException;
+import io.swagger.v3.oas.annotations.Operation;
 import net.luversof.blog.constant.BlogErrorCode;
 import net.luversof.blog.domain.mysql.BlogArticleCategory;
 import net.luversof.blog.service.BlogArticleCategoryService;
@@ -31,6 +32,7 @@ public class BlogArticleCategoryController {
 	@Autowired
 	private BlogService blogService;
 	
+	@Operation(summary = "블로그 카테고리 조회 - 로그인 유저 별")
 	@BlueskyPreAuthorize
 	@GetMapping("/search/findByUserBlogId")
 	public List<BlogArticleCategory> findByUserBlogId(String blogId, BlueskyUser blueskyUser) {
@@ -42,18 +44,21 @@ public class BlogArticleCategoryController {
 		return blogArticleCategoryService.findByBlogId(blogId);
 	}
 
+	@Operation(summary = "블로그 카테고리 생성")
 	@BlueskyPreAuthorize
 	@PostMapping
 	public BlogArticleCategory create(@RequestBody @Validated(BlogArticleCategory.Create.class) BlogArticleCategory blogArticleCategory) {
 		return blogArticleCategoryService.create(blogArticleCategory);
 	}
 	
+	@Operation(summary = "블로그 카테고리 수정")
 	@BlueskyPreAuthorize
 	@PutMapping("/{blogArticleCategoryId}")
 	public BlogArticleCategory update(@RequestBody @Validated(BlogArticleCategory.Update.class) BlogArticleCategory blogArticleCategory) {
 		return blogArticleCategoryService.update(blogArticleCategory);
 	}
-	
+
+	@Operation(summary = "블로그 카테고리 삭제")
 	@BlueskyPreAuthorize
 	@DeleteMapping("/{blogArticleCategoryId}")
 	public void delete(@RequestBody @Validated(BlogArticleCategory.Delete.class) BlogArticleCategory blogArticleCategory) {

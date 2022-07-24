@@ -27,10 +27,6 @@ public class BlogArticleService {
 	@Autowired
 	private BlogService blogService;
 	
-//	public Optional<BlogArticle> findById(long id) {
-//		return blogArticleRepository.findById(id);
-//	}
-	
 	public Page<BlogArticle> findByBlogId(String blogId, Pageable pageable) {
 		return blogArticleRepository.findByBlogId(blogId, pageable);
 	}
@@ -79,7 +75,6 @@ public class BlogArticleService {
 	 */
 	private void checkBlogArtcieCategory(BlogArticle blogArticle) {
 		if (blogArticle.getBlogArticleCategory() == null || blogArticle.getBlogArticleCategory().getIdx() <= 0) {
-//			blogArticle.setBlogArticleCategory(null);
 			return;
 		}
 		

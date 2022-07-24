@@ -49,6 +49,6 @@ public class Blog implements Serializable {
 	private ZonedDateTime createdDate;
 
 	public interface Create {
-	};
+	}
 
 }

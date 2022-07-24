@@ -42,21 +42,4 @@ public class BlogRequestAttributeUtil extends RequestAttributeUtil {
 		return blogList;
 	}
 	
-//	public static Optional<Blog> getUserBlog() {
-//		Optional<Blog> userBlogOptional = getRequestAttribute(USER_BLOG);
-//		if (userBlogOptional != null) {
-//			return userBlogOptional;
-//		}
-//		
-//		var loginUser = UserUtil.getLoginUser();
-//		if (loginUser.isEmpty()) {
-//			return Optional.empty();
-//		}
-//		
-//		userBlogOptional = getBlogService().findByUserId();
-//		setRequestAttribute(USER_BLOG, userBlogOptional);
-//		return userBlogOptional;
-//	}
-	
-
 }
