@@ -19,6 +19,7 @@ import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAutho
 import io.swagger.v3.oas.annotations.Operation;
 import net.luversof.blog.domain.mysql.BlogArticle;
 import net.luversof.blog.service.BlogArticleService;
+import net.luversof.security.util.SecurityUtil;
 import net.luversof.web.blog.domain.BlogArticlePageRequest;
 
 @RestController
@@ -38,15 +39,17 @@ public class BlogArticleController {
 	@Operation(summary = "블로그 글 조회")
 	@GetMapping("/{blogArticleId}")
 	public Optional<BlogArticle> findByBlogArticleId(@PathVariable String blogArticleId) {
+		
 		var savedBlogArticle = blogArticleService.findByBlogArticleId(blogArticleId);
 		// TODO blogArticle 조회수 증가 처리
 		return savedBlogArticle;
 	}
 	
 	@Operation(summary = "블로그 글 생성")
-//	@BlueskyPreAuthorize
+	@BlueskyPreAuthorize
 	@PostMapping
-	public BlogArticle create(@RequestBody @Validated(BlogArticle.Create.class) BlogArticle blogArticle) {
+	public BlogArticle create(@RequestBody @Validated(BlogArticle.CreateParam.class) BlogArticle blogArticle) {
+		blogArticle.setUserId(SecurityUtil.getBlueskyUser().getId());
 		return blogArticleService.create(blogArticle);
 	}
 	
@@ -54,6 +57,7 @@ public class BlogArticleController {
 	@BlueskyPreAuthorize
 	@PutMapping("/{blogArticleId}")
 	public BlogArticle update(@RequestBody @Validated(BlogArticle.Update.class) BlogArticle blogArticle) {
+		blogArticle.setUserId(SecurityUtil.getBlueskyUser().getId());
 		return blogArticleService.update(blogArticle);
 	}
 	
@@ -61,6 +65,7 @@ public class BlogArticleController {
 	@BlueskyPreAuthorize
 	@DeleteMapping("/{blogArticleId}")
 	public void delete(@RequestBody @Validated(BlogArticle.Delete.class) BlogArticle blogArticle) {
+		blogArticle.setUserId(SecurityUtil.getBlueskyUser().getId());
 		blogArticleService.delete(blogArticle);
 	}
 
