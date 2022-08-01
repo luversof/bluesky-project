@@ -56,7 +56,7 @@ public class BlogArticleController {
 	@Operation(summary = "블로그 글 수정")
 	@BlueskyPreAuthorize
 	@PutMapping("/{blogArticleId}")
-	public BlogArticle update(@RequestBody @Validated(BlogArticle.Update.class) BlogArticle blogArticle) {
+	public BlogArticle update(@RequestBody @Validated(BlogArticle.UpdateParam.class) BlogArticle blogArticle) {
 		blogArticle.setUserId(SecurityUtil.getBlueskyUser().getId());
 		return blogArticleService.update(blogArticle);
 	}
@@ -64,7 +64,7 @@ public class BlogArticleController {
 	@Operation(summary = "블로그 글 삭제")
 	@BlueskyPreAuthorize
 	@DeleteMapping("/{blogArticleId}")
-	public void delete(@RequestBody @Validated(BlogArticle.Delete.class) BlogArticle blogArticle) {
+	public void delete(@Validated(BlogArticle.DeleteParam.class) BlogArticle blogArticle) {
 		blogArticle.setUserId(SecurityUtil.getBlueskyUser().getId());
 		blogArticleService.delete(blogArticle);
 	}
