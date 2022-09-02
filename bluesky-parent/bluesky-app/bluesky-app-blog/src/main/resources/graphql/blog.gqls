@@ -1,0 +1,52 @@
+type Blog {
+  idx: ID!
+  blogId: String!
+  userId: String!
+  blogArticleCategoryList: [BlogArticleCategory]
+}
+
+type BlogArticle {
+  idx: ID!
+  blogArticleId: String!
+  blogId: String!
+  userId: String!
+  blogArticleCategoryList: [BlogArticleCategory]
+}
+
+type BlogArticleCategory {
+  idx: ID!
+  blogArticleCategoryId: String!
+  blogId: String!
+  name: String!
+}
+
+# generic 처리는 어떻게 할 수 있는걸까...
+type Page {
+  page: Int
+  size: Int
+}
+
+
+
+
+type Query {
+  # blog - 로그인한 유저 blog 목록 조회
+  userBlogList: [Blog]
+  
+  # blogArticle - blogId로 page 조회
+  findByBlogId(blogId: String): Page
+  
+  # blogArticle - blogArticleId로 단건 조회
+  findByBlogArticleId(blogArticleId: String): BlogArticle
+  
+  
+  testA: [Int]
+  
+  testB: [String]
+}
+ 
+type Mutation {
+  createBlog: Blog
+}
+
+

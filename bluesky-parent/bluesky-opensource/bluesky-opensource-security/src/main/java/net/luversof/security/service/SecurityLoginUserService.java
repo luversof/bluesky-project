@@ -10,14 +10,14 @@ import org.springframework.stereotype.Service;
 
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.core.exception.CoreErrorCode;
+import net.luversof.core.service.UserIdService;
 import net.luversof.security.core.userdetails.BlueskyUser;
 import net.luversof.user.domain.User;
 import net.luversof.user.domain.UserType;
-import net.luversof.user.service.LoginUserService;
 import net.luversof.user.service.UserService;
 
 @Service
-public class SecurityLoginUserService implements LoginUserService {
+public class SecurityLoginUserService implements UserIdService {
 	
 	@Autowired
 	private UserService userService;
@@ -27,7 +27,6 @@ public class SecurityLoginUserService implements LoginUserService {
 		return getUser().orElseThrow(() -> new BlueskyException(CoreErrorCode.NOT_EXIST_USER_ID)).getUserId();
 	}
 
-	@Override
 	public Optional<User> getUser() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		if (authentication == null) {

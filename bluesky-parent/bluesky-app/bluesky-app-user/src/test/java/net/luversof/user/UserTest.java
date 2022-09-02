@@ -2,10 +2,8 @@ package net.luversof.user;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.user.domain.User;
 import net.luversof.user.service.UserService;
-import net.luversof.user.util.UserUtil;
 
 @Slf4j
 @Rollback(false)
@@ -77,12 +74,6 @@ class UserTest extends GeneralTest {
 		log.debug("result : {}", userList);
 		List<String> nameList = userList.stream().map(user -> user.getUserName()).collect(Collectors.toList());
 		log.debug("result : {}", nameList);
-	}
-	
-	@Test
-	void userUtilTest() {
-		Optional<User> loginUser = UserUtil.getLoginUser();
-		log.debug("user : {}", loginUser);
 	}
 	
 	@Test

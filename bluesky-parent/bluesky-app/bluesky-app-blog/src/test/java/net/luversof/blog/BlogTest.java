@@ -5,11 +5,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.graphql.data.query.QueryByExampleDataFetcher;
 import org.springframework.validation.beanvalidation.SpringValidatorAdapter;
 
+import graphql.schema.DataFetcher;
+import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.DataFetchingEnvironmentImpl;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.blog.domain.mysql.Blog;
+import net.luversof.blog.repository.mysql.BlogRepository;
 import net.luversof.blog.service.BlogService;
 
 @Slf4j
@@ -37,5 +43,18 @@ class BlogTest extends GeneralTest {
 		assertThat(result).isNotNull();
 		log.debug("result : {}", result);
 	}
+	
+	@Autowired
+	private BlogRepository blogRepository;
 
+	@Test
+	@SneakyThrows
+	@DisplayName("blog 생성 with graphql")
+	void createBlogGraphQL() {
+		DataFetcher<Blog> dataFetcher = QueryByExampleDataFetcher.builder(blogRepository).single();
+		DataFetchingEnvironment environment = DataFetchingEnvironmentImpl.newDataFetchingEnvironment().build();
+
+		Blog blog = dataFetcher.get(environment);
+		log.debug("blog : {}", blog);
+	}
 }

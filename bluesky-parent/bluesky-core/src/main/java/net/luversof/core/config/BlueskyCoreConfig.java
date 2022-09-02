@@ -1,5 +1,6 @@
 package net.luversof.core.config;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -9,6 +10,9 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
+
+import net.luversof.core.service.UserIdService;
+import net.luversof.core.service.NullUserIdService;
 
 
 @Configuration
@@ -31,6 +35,12 @@ public class BlueskyCoreConfig {
 	@Bean
 	public Hibernate5Module hibernate5Module(){
 		return new Hibernate5Module();
+	}
+	
+	@ConditionalOnMissingBean
+	@Bean
+	public UserIdService userIdService() {
+		return new NullUserIdService();
 	}
 	
 }

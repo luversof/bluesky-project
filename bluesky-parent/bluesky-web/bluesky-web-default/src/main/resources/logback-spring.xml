@@ -2,4 +2,12 @@
 <!DOCTYPE configuration>
 <configuration>
 	<include resource="net/luversof/core/logging/logback/base.xml" />
+
+
+	<springProfile name="!live">
+		<logger name="org.springframework.graphql"
+			level="DEBUG" />
+		<logger name="graphql"
+			level="DEBUG" />
+	</springProfile>
 </configuration>
