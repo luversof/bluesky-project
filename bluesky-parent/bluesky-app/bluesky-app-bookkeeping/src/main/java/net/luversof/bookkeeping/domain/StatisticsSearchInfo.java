@@ -5,10 +5,9 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 
-import javax.validation.constraints.NotNull;
-
 import org.springframework.context.i18n.LocaleContextHolder;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import net.luversof.bookkeeping.util.BookkeepingUtils;
 

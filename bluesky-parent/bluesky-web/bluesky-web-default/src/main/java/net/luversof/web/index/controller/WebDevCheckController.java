@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import javax.validation.constraints.NotNull;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
@@ -25,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.github.luversof.boot.autoconfigure.devcheck.core.annotation.DevCheckController;
 import io.github.luversof.boot.autoconfigure.devcheck.core.annotation.DevCheckDescription;
 import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

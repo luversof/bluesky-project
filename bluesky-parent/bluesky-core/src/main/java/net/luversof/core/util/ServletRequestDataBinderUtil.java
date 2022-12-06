@@ -1,12 +1,12 @@
 package net.luversof.core.util;
 
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.ServletRequestDataBinder;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * 요청받은 request 의 parameter를 기반으로 modelAttribute object를 호출하는 유틸.

@@ -5,8 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.PostConstruct;
-
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.AntPathMatcher;
@@ -16,6 +14,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
+import jakarta.annotation.PostConstruct;
 import lombok.SneakyThrows;
 
 @Service

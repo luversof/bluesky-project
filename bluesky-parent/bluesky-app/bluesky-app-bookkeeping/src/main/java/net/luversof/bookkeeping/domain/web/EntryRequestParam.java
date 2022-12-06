@@ -2,8 +2,7 @@ package net.luversof.bookkeeping.domain.web;
 
 import java.time.LocalDate;
 
-import javax.validation.constraints.NotNull;
-
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
