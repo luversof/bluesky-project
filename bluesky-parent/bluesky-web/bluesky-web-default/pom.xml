@@ -54,6 +54,13 @@
 		<!-- <dependency> <groupId>org.springframework</groupId> <artifactId>spring-context-indexer</artifactId> 
 			<optional>true</optional> </dependency> -->
 		<!-- (e) spring-boot -->
+		
+		<!-- (s) spring-cloud -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+		</dependency>
+		<!-- (e) spring-cloud -->
 
 		<!-- (s) spring cloud stream test -->
 		<!-- <dependency> <groupId>net.luversof</groupId> <artifactId>bluesky-opensource-integration</artifactId> 
