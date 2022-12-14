@@ -9,13 +9,10 @@
 	</parent>
 	<artifactId>bluesky-web-default</artifactId>
 	<packaging>jar</packaging>
-
 	<properties>
 		<asciidocs.output.directory>src/main/resources/static/docs</asciidocs.output.directory>
 	</properties>
-
 	<dependencies>
-
 		<!-- (s) bluesky -->
 		<dependency>
 			<groupId>net.luversof</groupId>
@@ -37,9 +34,7 @@
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-opensource-security</artifactId>
 		</dependency>
-
 		<!-- (e) bluesky -->
-
 		<!-- (s) spring-boot -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -54,28 +49,24 @@
 		<!-- <dependency> <groupId>org.springframework</groupId> <artifactId>spring-context-indexer</artifactId> 
 			<optional>true</optional> </dependency> -->
 		<!-- (e) spring-boot -->
-		
 		<!-- (s) spring-cloud -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
 		<!-- (e) spring-cloud -->
-
 		<!-- (s) spring cloud stream test -->
 		<!-- <dependency> <groupId>net.luversof</groupId> <artifactId>bluesky-opensource-integration</artifactId> 
 			</dependency> <dependency> <groupId>org.springframework.cloud</groupId> <artifactId>spring-cloud-stream</artifactId> 
 			</dependency> <dependency> <groupId>org.springframework.cloud</groupId> <artifactId>spring-cloud-stream-binder-rabbit</artifactId> 
 			</dependency> -->
 		<!-- (e) spring cloud stream test -->
-
 		<!-- (s) meneService 관련 -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.dataformat</groupId>
 			<artifactId>jackson-dataformat-xml</artifactId>
 		</dependency>
 		<!-- (e) meneService 관련 -->
-
 		<!-- (s) test -->
 		<dependency>
 			<groupId>io.github.luversof</groupId>
@@ -88,36 +79,29 @@
 			<scope>test</scope>
 		</dependency>
 		<!-- (e) test -->
-
-
 		<!-- (s) websocket -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-websocket</artifactId>
 		</dependency>
 		<!-- (e) websocket -->
-
 		<!-- (s) resilience4j -->
 		<dependency>
 			<groupId>io.github.resilience4j</groupId>
 			<artifactId>resilience4j-spring-boot2</artifactId>
 		</dependency>
 		<!-- (e) resilience4j -->
-
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-ui</artifactId>
 			<version>1.6.9</version>
 		</dependency>
-
 		<!-- <dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-webmvc-core</artifactId>
 			<version>1.6.9</version>
 		</dependency> -->
-
 	</dependencies>
-
 	<profiles>
 		<profile>
 			<id>asciidoctor</id>
@@ -138,4 +122,21 @@
 			</build>
 		</profile>
 	</profiles>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>com.google.cloud.tools</groupId>
+				<artifactId>jib-maven-plugin</artifactId>
+				<configuration>
+					<to>
+						<image>luversof/bluesky-web-default</image>
+					</to>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>

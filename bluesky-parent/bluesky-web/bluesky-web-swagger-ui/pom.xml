@@ -13,17 +13,15 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 		<!-- (e) spring-boot -->
-		
 		<!-- (s) spring-cloud -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
 		<!-- (e) spring-cloud -->
-		
 		<dependency>
-    		<groupId>org.webjars</groupId>
-    		<artifactId>webjars-locator-core</artifactId>
+			<groupId>org.webjars</groupId>
+			<artifactId>webjars-locator-core</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.webjars</groupId>
@@ -31,4 +29,21 @@
 			<version>4.15.5</version>
 		</dependency>
 	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>com.google.cloud.tools</groupId>
+				<artifactId>jib-maven-plugin</artifactId>
+				<configuration>
+					<to>
+						<image>luversof/bluesky-web-swagger-ui</image>
+					</to>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>
