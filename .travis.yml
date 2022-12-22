@@ -1,8 +1,0 @@
-# .travis.yml
-language: java
-jdk:
-- openjdk11
-
-script: 
-  cd bluesky-parent;
-  mvn clean package -q -B -U -DskipTests=true -Dspring.profiles.active=localdev
