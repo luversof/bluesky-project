@@ -97,13 +97,6 @@
 		</dependency>
 		<!-- (e) websocket -->
 
-		<!-- (s) resilience4j -->
-		<dependency>
-			<groupId>io.github.resilience4j</groupId>
-			<artifactId>resilience4j-spring-boot2</artifactId>
-		</dependency>
-		<!-- (e) resilience4j -->
-
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-ui</artifactId>
