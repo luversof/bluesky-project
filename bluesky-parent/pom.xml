@@ -190,6 +190,7 @@
 		</profile>
 	</profiles>
 	<repositories>
+
 		<repository>
 			<id>spring-snapshots</id>
 			<url>https://repo.spring.io/snapshot</url>
@@ -223,7 +224,7 @@
 			</snapshots>
 		</repository>
 		<repository>
-			<id>bluesky-snapshots</id>
+			<id>bluesky-k8s-snapshots</id>
 			<url>http://nexus-service:8082/repository/maven-snapshots/</url>
 			<snapshots>
 				<enabled>true</enabled>
