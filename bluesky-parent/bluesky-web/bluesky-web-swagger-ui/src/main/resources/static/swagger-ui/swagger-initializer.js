@@ -3,7 +3,12 @@ window.onload = function() {
 
   // the following lines will be replaced by docker/configurator, when it runs in a docker-container
   window.ui = SwaggerUIBundle({
-    url: "http://localhost:30130/v3/api-docs",
+    urls: [
+		{"name" : "bluesky-api-bookkeeping", "url" : "http://localhost:30130/v3/api-docs"}
+		],
+	operationsSorter : "alpha",
+	withCredentials : true,
+	queryConfigEnabled : true,
     dom_id: '#swagger-ui',
     deepLinking: true,
     presets: [
