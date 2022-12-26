@@ -225,7 +225,7 @@
 		</repository>
 		<repository>
 			<id>bluesky-k8s-snapshots</id>
-			<url>http://nexus-service:8082/repository/maven-snapshots/</url>
+			<url>http://nexus-service.default.svc.cluster.local:8082/repository/maven-snapshots/</url>
 			<snapshots>
 				<enabled>true</enabled>
 				<updatePolicy>always</updatePolicy>
