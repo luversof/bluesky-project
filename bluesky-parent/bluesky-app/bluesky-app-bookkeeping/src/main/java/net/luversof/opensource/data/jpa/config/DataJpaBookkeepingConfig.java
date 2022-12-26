@@ -17,18 +17,18 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Configuration
 @EnableJpaRepositories(basePackages = "net.luversof.bookkeeping.**.repository", entityManagerFactoryRef = "bookkeepingEntityManagerFactory", transactionManagerRef = "bookkeepingTransactionManager")
 public class DataJpaBookkeepingConfig {
-	
-	@Bean(name = "bookkeepingEntityManagerFactory")
-	public LocalContainerEntityManagerFactoryBean bookkeepingEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("bookkeepingDataSource") DataSource bookkeepingDataSource) {
-		return builder
-				.dataSource(bookkeepingDataSource)
-				.persistenceUnit("bookkeepingPersistenceUnit")
-				.packages(Jsr310JpaConverters.class)
-				.packages("net.luversof.bookkeeping.**.domain").build();
-	}
-	
-	@Bean(name = "bookkeepingTransactionManager")
-	public PlatformTransactionManager bookkeepingTransactionManager(@Qualifier("bookkeepingEntityManagerFactory") LocalContainerEntityManagerFactoryBean bookkeepingEntityManagerFactory) {
-		return new JpaTransactionManager(bookkeepingEntityManagerFactory.getObject());
-	}
+
+    @Bean(name = "bookkeepingEntityManagerFactory")
+    LocalContainerEntityManagerFactoryBean bookkeepingEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("bookkeepingDataSource") DataSource bookkeepingDataSource) {
+        return builder
+                .dataSource(bookkeepingDataSource)
+                .persistenceUnit("bookkeepingPersistenceUnit")
+                .packages(Jsr310JpaConverters.class)
+                .packages("net.luversof.bookkeeping.**.domain").build();
+    }
+
+    @Bean(name = "bookkeepingTransactionManager")
+    PlatformTransactionManager bookkeepingTransactionManager(@Qualifier("bookkeepingEntityManagerFactory") LocalContainerEntityManagerFactoryBean bookkeepingEntityManagerFactory) {
+        return new JpaTransactionManager(bookkeepingEntityManagerFactory.getObject());
+    }
 }

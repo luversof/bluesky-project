@@ -12,16 +12,16 @@ import org.springframework.context.annotation.PropertySource;
 @PropertySource(value = "classpath:jdbc-bookkeeping.properties", ignoreResourceNotFound = true)
 @PropertySource(value = "classpath:jdbc-bookkeeping-${spring.profiles.active}.properties", ignoreResourceNotFound = true)
 public class JdbcBookkeepingConfig {
-	
-	@Bean
-	@ConfigurationProperties("datasource.bookkeeping")
-	public DataSourceProperties bookkeepingDataSourceProperties() {
-		return new DataSourceProperties();
-	}
-	
-	@Bean
-	public DataSource bookkeepingDataSource() {
-		return bookkeepingDataSourceProperties().initializeDataSourceBuilder().build();
-	}
+
+    @Bean
+    @ConfigurationProperties("datasource.bookkeeping")
+    DataSourceProperties bookkeepingDataSourceProperties() {
+        return new DataSourceProperties();
+    }
+
+    @Bean
+    DataSource bookkeepingDataSource() {
+        return bookkeepingDataSourceProperties().initializeDataSourceBuilder().build();
+    }
 }
 

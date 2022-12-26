@@ -17,16 +17,16 @@ import io.github.luversof.boot.autoconfigure.mybatis.type.UUIDTypeHandler;
 @Configuration
 @MapperScan(basePackages = "net.luversof.bookkeeping.mapper", sqlSessionFactoryRef = "bookkeepingSqlSessionFactory")
 public class MybatisBookkeepingConfig {
-	@Bean
-	public SqlSessionFactory bookkeepingSqlSessionFactory(@Qualifier("bookkeepingDataSource") DataSource bookkeepingDataSource) throws Exception {
-		SqlSessionFactoryBean sqlSessionFactoryBean = new SqlSessionFactoryBean();
-		sqlSessionFactoryBean.setMapperLocations(
-				new PathMatchingResourcePatternResolver().getResources("classpath*:net/luversof/bookkeeping/mapper/xml/*Mapper.xml")
-			);
-		sqlSessionFactoryBean.setTypeHandlersPackage("net.luversof.boot.autoconfigure.mybatis.type");
-		sqlSessionFactoryBean.setTypeHandlers(new TypeHandler[]{new UUIDTypeHandler()});
-		sqlSessionFactoryBean.setDataSource(bookkeepingDataSource);
-		sqlSessionFactoryBean.afterPropertiesSet();
-		return sqlSessionFactoryBean.getObject();
-	}
+    @Bean
+    SqlSessionFactory bookkeepingSqlSessionFactory(@Qualifier("bookkeepingDataSource") DataSource bookkeepingDataSource) throws Exception {
+        SqlSessionFactoryBean sqlSessionFactoryBean = new SqlSessionFactoryBean();
+        sqlSessionFactoryBean.setMapperLocations(
+                new PathMatchingResourcePatternResolver().getResources("classpath*:net/luversof/bookkeeping/mapper/xml/*Mapper.xml")
+        );
+        sqlSessionFactoryBean.setTypeHandlersPackage("net.luversof.boot.autoconfigure.mybatis.type");
+        sqlSessionFactoryBean.setTypeHandlers(new TypeHandler[]{new UUIDTypeHandler()});
+        sqlSessionFactoryBean.setDataSource(bookkeepingDataSource);
+        sqlSessionFactoryBean.afterPropertiesSet();
+        return sqlSessionFactoryBean.getObject();
+    }
 }
