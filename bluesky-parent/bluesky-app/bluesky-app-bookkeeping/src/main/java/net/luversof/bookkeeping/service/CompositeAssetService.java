@@ -29,6 +29,7 @@ public class CompositeAssetService implements AssetService {
 	
 	@Override
 	public Asset create(Asset asset) {
+		bookkeepingService.findByBookkeepingId(asset.getBookkeepingId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING_ID));
 		return assetService.create(asset);
 	}
 	

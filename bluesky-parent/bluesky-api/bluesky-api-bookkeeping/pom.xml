@@ -19,6 +19,14 @@
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
 		<!-- (e) spring-cloud -->
+		
+		<!-- (s) springdoc-openapi -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+		</dependency>
+		<!-- (e) springdoc-openapi -->
+		
 		<dependency>
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-app-bookkeeping</artifactId>
@@ -33,11 +41,6 @@
 			<plugin>
 				<groupId>com.google.cloud.tools</groupId>
 				<artifactId>jib-maven-plugin</artifactId>
-				<configuration>
-					<to>
-						<image>luversof/bluesky-api-bookkeeing</image>
-					</to>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>
