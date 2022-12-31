@@ -36,10 +36,10 @@
 		</dependency>
 		<!-- (e) spring cloud -->
 
-		<dependency>
+		<!--<dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-hibernate5</artifactId>
-		</dependency>
+		</dependency>-->
 
 		<dependency>
 			<groupId>net.luversof</groupId>

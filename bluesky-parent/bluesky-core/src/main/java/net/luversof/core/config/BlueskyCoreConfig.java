@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
+//import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
 
 import net.luversof.core.service.UserIdService;
 import net.luversof.core.service.NullUserIdService;
@@ -32,10 +32,10 @@ public class BlueskyCoreConfig {
 		return new RestTemplate();
 	}
 	
-	@Bean
-	public Hibernate5Module hibernate5Module(){
-		return new Hibernate5Module();
-	}
+//	@Bean
+//	public Hibernate5Module hibernate5Module(){
+//		return new Hibernate5Module();
+//	}
 	
 	@ConditionalOnMissingBean
 	@Bean
