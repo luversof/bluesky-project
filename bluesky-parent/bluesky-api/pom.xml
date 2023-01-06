@@ -9,6 +9,8 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>bluesky-api-bookkeeping</module>
+		<module>bluesky-api-user</module>
+		<module>bluesky-api-gate</module>
 	</modules>
 	<dependencies></dependencies>
 </project>

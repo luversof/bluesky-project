@@ -31,7 +31,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.bookkeeping.domain.Statistics;
 import net.luversof.bookkeeping.domain.StatisticsSearchInfo;
 import net.luversof.bookkeeping.service.StatisticsService;
@@ -44,7 +43,6 @@ import net.luversof.bookkeeping.service.StatisticsService;
  *
  */
 //@RestController
-@BlueskyPreAuthorize
 @RequestMapping(value = "/bookkeeping/{bookkeeping.id}/statistics", produces = MediaType.APPLICATION_JSON_VALUE)
 public class StatisticsController {
 	

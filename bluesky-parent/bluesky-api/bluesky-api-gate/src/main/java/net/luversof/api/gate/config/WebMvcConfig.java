@@ -1,4 +1,4 @@
-package net.luversof.api.bookkeeping.config;
+package net.luversof.api.gate.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;

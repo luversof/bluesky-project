@@ -13,13 +13,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.bookkeeping.domain.Entry;
 import net.luversof.bookkeeping.domain.web.EntryRequestParam;
 import net.luversof.bookkeeping.service.CompositeEntryService;
 
 @RestController
-@BlueskyPreAuthorize
 @RequestMapping(value = "/api/bookkeeping/entry", produces = MediaType.APPLICATION_JSON_VALUE)
 public class EntryController {
 	
