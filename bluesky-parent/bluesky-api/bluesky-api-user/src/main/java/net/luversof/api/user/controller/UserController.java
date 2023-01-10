@@ -29,18 +29,18 @@ public class UserController {
 		return userService.addUser(user);
 	}
 	
-	@GetMapping
+	@GetMapping("/search/findByUserId")
 	public Optional<User> findByUserId(String userId) {
 		return userService.findByUserId(userId);
 	}
 	
-	@GetMapping
+	@GetMapping("/search/findByUsername")
 	public Optional<User> findByUsername(String userName) {
 		return userService.findByUsername(userName);
 	}
 	
-	@GetMapping
-	public Optional<User> findByUsername(String externalId, UserType userType) {
+	@GetMapping("/search/findByExternalIdAndUserType")
+	public Optional<User> findByExternalIdAndUserType(String externalId, UserType userType) {
 		return userService.findByExternalIdAndUserType(externalId, userType);
 	}
 	
