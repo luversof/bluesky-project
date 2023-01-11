@@ -17,13 +17,6 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 		<!-- (e) spring-boot -->
-		<!-- (s) test -->
-		<dependency>
-			<groupId>io.github.luversof</groupId>
-			<artifactId>bluesky-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<!-- (e) test -->
 		<!-- (s) spring-cloud -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>

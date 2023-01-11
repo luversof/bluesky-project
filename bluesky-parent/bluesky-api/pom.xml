@@ -12,5 +12,10 @@
 		<module>bluesky-api-user</module>
 		<module>bluesky-api-gate</module>
 	</modules>
-	<dependencies></dependencies>
+	<dependencies>
+		<dependency>
+			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-test</artifactId>
+		</dependency>
+	</dependencies>
 </project>

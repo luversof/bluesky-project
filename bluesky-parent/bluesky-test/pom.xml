@@ -10,10 +10,12 @@
 	<dependencies>
 		<!-- (s) test -->
 		<dependency>
-			<groupId>io.github.luversof</groupId>
-			<artifactId>bluesky-boot-starter-test</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
 		</dependency>
 		<!-- (e) test -->
+		
+		<!--
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
@@ -26,5 +28,6 @@
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-stream-test-support</artifactId>
 		</dependency>
+		-->
 	</dependencies>
 </project>
