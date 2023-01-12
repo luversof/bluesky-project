@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import net.luversof.api.gate.user.domain.User;
 
-@FeignClient(value = "bluesky-api-user", path = "/api/user"/* , url="http://user.api.bluesky.local" */)
+@FeignClient(value = "bluesky-api-user", path = "/api/user", url="${gate.feign-client.url.user:''}")
 public interface UserClient {
 
 	@GetMapping("/search/findByUserId")
