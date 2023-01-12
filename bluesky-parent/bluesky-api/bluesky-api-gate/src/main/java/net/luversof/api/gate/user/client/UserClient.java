@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 import net.luversof.api.gate.user.domain.User;
 
-@FeignClient(value = "bluesky-api-user-service", path = "/api/user")
+@FeignClient(value = "bluesky-api-user", path = "/api/user")
 public interface UserClient {
 
 	@GetMapping("/search/findByUserId")
