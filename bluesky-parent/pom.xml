@@ -23,7 +23,6 @@
 		<module>bluesky-opensource</module>
 		<module>bluesky-test</module>
 		<module>bluesky-domain</module>
-		<module>bluesky-batch</module>
 		<module>bluesky-api</module>
 	</modules>
 
