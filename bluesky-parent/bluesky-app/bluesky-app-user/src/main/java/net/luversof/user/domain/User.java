@@ -6,7 +6,6 @@ import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -41,33 +40,25 @@ public class User implements Serializable {
 	@Column(nullable = false)
 	private String userName;
 
-	@JsonIgnore
 	private String password;
 
-	@JsonIgnore
 	@CreationTimestamp
 	private ZonedDateTime createdDate;
 
-	@JsonIgnore
 	private boolean accountNonExpired;
 	
-	@JsonIgnore
     private boolean accountNonLocked;
 	
-	@JsonIgnore
     private boolean credentialsNonExpired;
 	
-	@JsonIgnore
     private boolean enabled;
 
 	@OneToMany(mappedBy = "userId", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<UserAuthority> userAuthorityList;
 	
-	@JsonIgnore
 	@Enumerated(EnumType.STRING)
 	private UserType userType;
 	
-	@JsonIgnore
 	private String externalId;
 	
 	public interface Create {}
