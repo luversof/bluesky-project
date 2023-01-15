@@ -7,10 +7,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.extern.slf4j.Slf4j;
 import net.luversof.api.gate.user.client.UserClient;
 import net.luversof.api.gate.user.domain.User;
 
 
+@Slf4j
 @RestController
 @RequestMapping(value= "/api/user")
 public class UserController {
@@ -20,6 +22,8 @@ public class UserController {
 	
 	@GetMapping("/search/findByUserId")
 	public Optional<User> findByUserId(String userId) {
-		return userClient.findByUserId(userId);
+		var user = userClient.findByUserId(userId);
+		log.debug("user : {}", user);
+		return user;
 	}
 }
