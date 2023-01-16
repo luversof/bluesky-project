@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.api.gate.constant.GateUserErrorCode;
 import net.luversof.api.gate.security.domain.BlueskyUser;
-import net.luversof.api.gate.user.client.UserClient;
+import net.luversof.api.gate.user.client.UserDetailsClient;
 import net.luversof.api.gate.user.domain.User;
 
 /**
@@ -22,7 +22,7 @@ import net.luversof.api.gate.user.domain.User;
 public class SecurityUserService {
 	
 	@Autowired
-	private UserClient userClient;
+	private UserDetailsClient userClient;
 
 	public String getUserId() {
 		return getUser().orElseThrow(() -> new BlueskyException(GateUserErrorCode.NOT_EXIST_USER)).userId();

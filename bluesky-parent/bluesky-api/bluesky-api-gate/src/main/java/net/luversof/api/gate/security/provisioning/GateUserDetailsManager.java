@@ -4,40 +4,38 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.provisioning.UserDetailsManager;
+import org.springframework.stereotype.Component;
 
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.api.gate.constant.GateUserErrorCode;
-import net.luversof.api.gate.security.domain.BlueskyUser;
-import net.luversof.api.gate.user.client.UserClient;
+import net.luversof.api.gate.user.client.UserDetailsClient;
+import net.luversof.api.gate.user.domain.BlueskyUserDetails;
 
+@Component
 public class GateUserDetailsManager implements UserDetailsManager {
 	
 
 	@Autowired
-	private UserClient userClient;
+	private UserDetailsClient userDetailsClient;
 
 	@Override
-	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		var user = userClient.findByUserId(username).orElseThrow(() -> new BlueskyException(GateUserErrorCode.NOT_EXIST_USER));
-		return new BlueskyUser(user);
+	public BlueskyUserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+		return userDetailsClient.loadUserByUsername(username).orElseThrow(() -> new BlueskyException(GateUserErrorCode.NOT_EXIST_USER));
 	}
 
 	@Override
 	public void createUser(UserDetails user) {
-		// TODO Auto-generated method stub
-		
+		userDetailsClient.createUser(user);
 	}
 
 	@Override
 	public void updateUser(UserDetails user) {
-		// TODO Auto-generated method stub
-		
+		userDetailsClient.updateUser(user);
 	}
 
 	@Override
 	public void deleteUser(String username) {
-		// TODO Auto-generated method stub
-		
+		userDetailsClient.deleteUser(username);
 	}
 
 	@Override
