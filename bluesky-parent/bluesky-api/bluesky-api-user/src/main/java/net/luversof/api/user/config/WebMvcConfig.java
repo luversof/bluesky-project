@@ -21,7 +21,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
 	
 	@Bean
 	SecurityFilterChain userSecurityFilterChain(HttpSecurity http) throws Exception {
-		http.csrf().disable();
+		http
+		.authorizeHttpRequests().anyRequest().permitAll().and()
+		.csrf().disable();
 		return http.build();
 	}
 
