@@ -35,9 +35,19 @@ class UserDetailsManagerTest extends GeneralTest {
 	}
 	
 	@Test
+	void deleteUser() {
+		userDetailsManager.deleteUser("user");
+	}
+	
+	@Test
 	void encryptTest() {
 		var encoder = new BCryptPasswordEncoder();
 		log.debug("encode string : {}", encoder.encode("test"));
 		//encoder result : $2a$10$GEfQb7E10fOeFQo2XowAkubxab4XQGKOvO0Vf.zo6HGUPevVA2t2e
+		assertThat(encoder.matches("test", "$2a$10$GEfQb7E10fOeFQo2XowAkubxab4XQGKOvO0Vf.zo6HGUPevVA2t2e")).isTrue();
+		
+		log.debug("encode string : {}", passwordEncoder.encode("test"));
+		//encode string : {bcrypt}$2a$10$Oc60Qx5tpBNfA6du4HMWDeBotdxoln.wTdiowKkbrHFmIo6jIxrIy
+		assertThat(passwordEncoder.matches("test", "{bcrypt}$2a$10$Oc60Qx5tpBNfA6du4HMWDeBotdxoln.wTdiowKkbrHFmIo6jIxrIy")).isTrue();
 	}
 }

@@ -8,7 +8,6 @@ import org.springframework.context.annotation.PropertySource;
 @SpringBootApplication
 //@EnableDiscoveryClient
 //@SpringCloudApplication
-@PropertySource("classpath:test.properties")
 //@ComponentScan("net.luversof")
 public class TestApplication {
 	public static void main(String[] args) {

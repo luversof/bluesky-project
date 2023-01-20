@@ -4,6 +4,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 
 
-@SpringBootTest(classes = TestApplication.class, webEnvironment = WebEnvironment.NONE)
+@SpringBootTest(classes = TestApplication.class/* , webEnvironment = WebEnvironment.NONE */)
 public abstract class GeneralTest {
 }
