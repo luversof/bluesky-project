@@ -1,10 +1,10 @@
-package net.luversof.api.user.controller;
+package net.luversof.api.user.security.oauth2.client.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.JdbcOAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,8 +34,10 @@ public class UserOAuth2AuthorizedClientController {
 	public void removeAuthorizedClient(@RequestParam String clientRegistrationId, @RequestParam String principalName) {
 		oAuth2AuthorizedClientService.removeAuthorizedClient(clientRegistrationId, principalName);
 	}
+
 	
-	public static record SaveAuthorizedClientParam(OAuth2AuthorizedClient authorizedClient, Authentication principal) {
+	private static record SaveAuthorizedClientParam(OAuth2AuthorizedClient authorizedClient, OAuth2AuthenticationToken principal) {
 		
 	}
+	
 }
