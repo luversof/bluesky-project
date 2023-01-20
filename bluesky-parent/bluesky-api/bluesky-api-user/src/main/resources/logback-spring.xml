@@ -3,6 +3,5 @@
 <configuration>
 	<include resource="io/github/luversof/boot/logging/logback/base.xml"/>
 	<logger name="net.luversof" level="${PROJECT_ACTIVE_LOG_LEVEL}" />
-	<logger name="com.fasterxml" level="debug" />
-	<root level="debug" />
+	<root level="info" />
 </configuration>
