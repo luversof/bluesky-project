@@ -1,16 +1,16 @@
 package net.luversof.api.gate.security.oauth2.client.config;
 
+import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import net.luversof.api.gate.security.oauth2.client.client.OAuth2AuthorizedClientClient;
+import org.springframework.security.oauth2.client.jackson2.OAuth2ClientJackson2Module;
 
 @Configuration
 public class GateSecurityOauth2ClientConfig {
-
-//	@Bean
-//	public GateOAuth2AuthorizedClientService gateOAuth2AuthorizedClientService(OAuth2AuthorizedClientClient oAuth2AuthorizedClientClient) {
-//		return new GateOAuth2AuthorizedClientService(oAuth2AuthorizedClientClient);
-//	}
+	
+	@Bean
+	OAuth2ClientJackson2Module oAuth2ClientJackson2Module(ObjectMapperProvider objectMapperProvider) {
+		return new OAuth2ClientJackson2Module();
+	}
 
 }
