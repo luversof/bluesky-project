@@ -11,4 +11,10 @@ public class IndexController {
 		return "index";
 	}
 	
+	
+	@GetMapping("/oauth2/authorization/**")
+	public String oauth2() {
+		return "oauth2";
+	}
+	
 }
