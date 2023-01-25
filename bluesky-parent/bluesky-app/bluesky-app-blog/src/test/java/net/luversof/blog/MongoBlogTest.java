@@ -11,7 +11,7 @@ import net.luversof.blog.domain.mongo.Blog;
 import net.luversof.blog.repository.mongo.BlogRepository;
 
 @Slf4j
-public class MongoBlogTest extends GeneralTest {
+class MongoBlogTest implements GeneralTest {
 	
 	@Autowired
 	private BlogRepository blogRepository;
@@ -24,14 +24,14 @@ public class MongoBlogTest extends GeneralTest {
 //	private Map<String, MongoTemplate> mongoTemplateMap;
 
 	@Test
-	public void test() {
+	void test() {
 		var findAll = blogRepository.findAll();
 		log.debug("test : {}", findAll);
 	}
 	
 	
 	@Test
-	public void save() {
+	void save() {
 		Blog blog = new Blog() ;
 		blog.setTestText("TEST2");
 		var result = blogRepository.save(blog);

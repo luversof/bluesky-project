@@ -14,7 +14,7 @@ import net.luversof.bookkeeping.service.BasicAssetService;
 import net.luversof.bookkeeping.service.BasicBookkeepingService;
 
 @Slf4j
-public class AssetTest extends GeneralTest {
+class AssetTest implements GeneralTest {
 	
 	@Autowired
 	private BasicAssetService assetService;
@@ -31,12 +31,12 @@ public class AssetTest extends GeneralTest {
 
 
 	@Test
-	public void assetInitialDataName() {
+	void assetInitialDataName() {
 		log.debug("defaultAsset name : {}", AssetInitialData.WALLET.getName());
 	}
 	
 	@Test
-	public void getAssetList() {
+	void getAssetList() {
 		Bookkeeping bookkeeping = getBookkeeping();
 		if (bookkeeping == null) {
 			return;

@@ -9,13 +9,13 @@ import net.luversof.bbs.domain.Bbs;
 import net.luversof.bbs.service.BbsService;
 
 @Slf4j
-public class BbsTest extends GeneralTest {
+class BbsTest implements GeneralTest {
 
 	@Autowired
 	private BbsService bbsService;
 	
 	@Test
-	public void test() {
+	void test() {
 		Bbs bbs = new Bbs();
 		bbs.setAlias("free");
 		bbsService.save(bbs);
@@ -23,7 +23,7 @@ public class BbsTest extends GeneralTest {
 	}
 	
 	@Test
-	public void test2() {
+	void test2() {
 		Bbs bbs = bbsService.findByAlias("free");
 		log.debug("bbs : {}", bbs);
 		Bbs bbs2 = bbsService.findByAlias("free2");

@@ -23,7 +23,7 @@ import net.luversof.bookkeeping.service.CompositeEntryGroupService;
 import net.luversof.bookkeeping.service.CompositeEntryService;
 
 @Slf4j
-public class EntryTest extends GeneralTest {
+class EntryTest implements GeneralTest {
 	
 	@Autowired
 	private BasicBookkeepingService bookkeepingService;
@@ -48,7 +48,7 @@ public class EntryTest extends GeneralTest {
 
 	// 세이브 테스트
 	@Test
-	public void create() {
+	void create() {
 		List<EntryGroup> entryGroupList = entryGroupService.findByBookkeepingId(bookkeeping.getBookkeepingId());
 		
 		Entry entry = new Entry();
@@ -66,7 +66,7 @@ public class EntryTest extends GeneralTest {
 	 * 특정일 기준으로 한달 기간 조회
 	 */
 	@Test
-	public void test3() {
+	void test3() {
 		log.debug("TEST : {}", ZonedDateTime.now());
 		
 		int baseDate = 21;
@@ -94,7 +94,7 @@ public class EntryTest extends GeneralTest {
 	 * 특정 일자 데이트 호출 확인
 	 */
 	@Test
-	public void test5() {
+	void test5() {
 		LocalDate startDate = LocalDate.parse("2016-05-02"); 
 		LocalDate endDate = LocalDate.parse("2016-05-03");
 		List<Entry> entryList = entryService.findByBookkeepingIdAndEntryDateBetween(bookkeeping.getBookkeepingId(), startDate, endDate);
@@ -102,12 +102,12 @@ public class EntryTest extends GeneralTest {
 	}
 
 	@Test
-	public void deleteByBookkeeping() {
+	void deleteByBookkeeping() {
 		entryRepository.deleteByBookkeepingId(bookkeeping.getBookkeepingId());
 	}
 	
 	@Test
-	public void zoneIdTest() {
+	void zoneIdTest() {
 		ZoneId timeZone = DateTimeContextHolder.getDateTimeContext().getTimeZone();
 		log.debug("zoneId : {}", timeZone);
 	}

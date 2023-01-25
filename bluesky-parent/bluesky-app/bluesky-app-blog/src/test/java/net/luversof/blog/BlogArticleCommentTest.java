@@ -13,7 +13,7 @@ import net.luversof.blog.repository.mysql.BlogArticleRepository;
 import net.luversof.blog.repository.mysql.BlogArticleCommentRepository;
 
 @Slf4j
-class BlogArticleCommentTest extends GeneralTest {
+class BlogArticleCommentTest implements GeneralTest {
 
 	@Autowired
 	private BlogArticleRepository blogArticleRepository;

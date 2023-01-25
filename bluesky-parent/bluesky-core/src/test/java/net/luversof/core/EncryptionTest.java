@@ -12,7 +12,7 @@ import java.text.MessageFormat;
 import java.util.Properties;
 
 @Slf4j
-public class EncryptionTest extends GeneralTest {
+class EncryptionTest implements GeneralTest {
 
 	@Value("${test.value}")
 	String testValue;
@@ -24,7 +24,7 @@ public class EncryptionTest extends GeneralTest {
 	String testValue3;
 	
 	@Test
-	public void test() {
+	void test() {
 		log.debug("result : {}, {}, {}", testValue, testValue2, testValue3);
 		
 		
@@ -38,7 +38,7 @@ public class EncryptionTest extends GeneralTest {
 	String test;
 	
 	@Test
-	public void test2() {
+	void test2() {
 		log.debug("test : {}", test);
 	}
 	
@@ -46,7 +46,7 @@ public class EncryptionTest extends GeneralTest {
 	private ApplicationContext applicationContext;
 	
 	@Test
-	public void test3() {
+	void test3() {
 		log.debug("test : {}", applicationContext.getMessage("HttpRequestMethodNotSupportedException", null, null));
 	}
 	
@@ -55,7 +55,7 @@ public class EncryptionTest extends GeneralTest {
 	private Properties properties;
 	
 	@Test
-	public void test4() {
+	void test4() {
 		log.debug("result : {}", properties);
 	}
 }

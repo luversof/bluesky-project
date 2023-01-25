@@ -12,14 +12,14 @@ import net.luversof.bookkeeping.domain.Bookkeeping;
 import net.luversof.bookkeeping.service.CompositeBookkeepingService;
 
 @Slf4j
-public class BookkeepingTest extends GeneralTest {
+class BookkeepingTest implements GeneralTest {
 
     @Autowired
     private CompositeBookkeepingService bookkeepingService;
 
     @Test
     @DisplayName("Bookkeeping 생성")
-    public void create() {
+    void create() {
         Bookkeeping bookkeeping = new Bookkeeping();
         bookkeeping.setName("test2");
         bookkeeping.setUserId(BookkeepingTestConstant.USER_ID);
@@ -31,14 +31,14 @@ public class BookkeepingTest extends GeneralTest {
     }
     
     @Test
-    public void findByUserId() {
+    void findByUserId() {
     	var bookkeepingList = bookkeepingService.findByUserId(BookkeepingTestConstant.USER_ID);
     	assertThat(bookkeepingList).isNotEmpty();
     	log.debug("bookkeepingList : {}", bookkeepingList);
     }
 
     @Test
-    public void update() {
+    void update() {
     	var bookkeeping = bookkeepingService.findByUserId(BookkeepingTestConstant.USER_ID).stream().findFirst().get();
         bookkeeping.setUserId(BookkeepingTestConstant.USER_ID);
         bookkeeping.setBaseDate(11);
@@ -47,7 +47,7 @@ public class BookkeepingTest extends GeneralTest {
     }
 
     @Test
-    public void delete() {
+    void delete() {
     	var bookkeeping = bookkeepingService.findByUserId(BookkeepingTestConstant.USER_ID).stream().findFirst().get();
         bookkeepingService.delete(bookkeeping);
     }

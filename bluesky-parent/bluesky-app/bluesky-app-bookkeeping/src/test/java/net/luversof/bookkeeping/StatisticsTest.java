@@ -18,7 +18,7 @@ import net.luversof.bookkeeping.service.StatisticsSearchInfoService;
 import net.luversof.bookkeeping.service.StatisticsService;
 
 @Slf4j
-public class StatisticsTest extends GeneralTest {
+class StatisticsTest implements GeneralTest {
 	
 	@Autowired
 	private StatisticsSearchInfoService statisticsSearchInfoService;
@@ -40,7 +40,7 @@ public class StatisticsTest extends GeneralTest {
 	 * 통계를 위해 entryList 추출 -> statisticsList로 전환
 	 */
 	@Test
-	public void test () {
+	void test () {
 		//1. 대상 bookkeeping 획득
 		
 		//2 statisticsSearchInfo 획득
@@ -64,7 +64,7 @@ public class StatisticsTest extends GeneralTest {
 	}
 	
 	@Test
-	public void test2() {
+	void test2() {
 		StatisticsSearchInfo statisticsSearchInfo = new StatisticsSearchInfo();
 		statisticsSearchInfo.setBookkeepingId(bookkeeping.getBookkeepingId());
 		statisticsSearchInfo.setChronoUnit(ChronoUnit.YEARS);

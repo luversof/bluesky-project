@@ -30,7 +30,7 @@ import net.luversof.blog.service.BlogService;
 @Transactional
 @Rollback(false)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class BlogArticleTest extends GeneralTest {
+class BlogArticleTest implements GeneralTest {
 
 	@Autowired
 	private BlogArticleRepository blogArticleRepository;

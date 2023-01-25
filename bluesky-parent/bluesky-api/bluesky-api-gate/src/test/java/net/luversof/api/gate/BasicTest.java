@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 
 @Slf4j
-class BasicTest extends GeneralTest {
+class BasicTest implements GeneralTest {
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;

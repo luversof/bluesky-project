@@ -17,7 +17,7 @@ import net.luversof.bbs.repository.BbsArticleRepository;
 import net.luversof.bbs.repository.BbsRepository;
 
 @Slf4j
-public class BbsArticleTest extends GeneralTest {
+class BbsArticleTest implements GeneralTest {
 
 	@Autowired
 	private BbsArticleRepository bbsArticleRepository;
@@ -26,7 +26,7 @@ public class BbsArticleTest extends GeneralTest {
 	private BbsRepository bbsRepository;
 	
 	@Test
-	public void 단건입력() {
+	void 단건입력() {
 		Bbs bbs = bbsRepository.getReferenceById((long) 1);
 		BbsArticle bbsArticle = new BbsArticle();
 		bbsArticle.setBbsId(bbs.getBbsId());
@@ -37,7 +37,7 @@ public class BbsArticleTest extends GeneralTest {
 	}
 	
 	@Test
-	public void 다량입력() {
+	void 다량입력() {
 		Bbs bbs = bbsRepository.getReferenceById((long) 1);
 
 		List<BbsArticle> bbsArticleList = new ArrayList<>();
@@ -53,7 +53,7 @@ public class BbsArticleTest extends GeneralTest {
 	}
 	
 	@Test
-	public void 페이징테스트() {
+	void 페이징테스트() {
 		Page<BbsArticle> bbsArticleList = bbsArticleRepository.findByBbsId("free", PageRequest.of(0, 20, Sort.by("id").descending()));
 		log.debug("result : {}", bbsArticleList.getContent());
 		

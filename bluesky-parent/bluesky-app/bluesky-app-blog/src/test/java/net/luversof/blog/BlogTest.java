@@ -19,7 +19,7 @@ import net.luversof.blog.repository.mysql.BlogRepository;
 import net.luversof.blog.service.BlogService;
 
 @Slf4j
-class BlogTest extends GeneralTest {
+class BlogTest implements GeneralTest {
 	
 	@Autowired
 	private BlogService blogService;

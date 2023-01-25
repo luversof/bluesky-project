@@ -10,7 +10,7 @@ import net.luversof.GeneralTest;
 import net.luversof.api.battlenet.d3.service.D3Service;
 
 @Slf4j
-public class D3ServiceTest extends GeneralTest {
+class D3ServiceTest implements GeneralTest {
 
 	@Autowired
 	private D3Service d3Service;
@@ -19,17 +19,17 @@ public class D3ServiceTest extends GeneralTest {
 	private String locale = "ko_KR";
 	
 	@Test
-	public void getCareerProfileTest() {
+	void getCareerProfileTest() {
 		log.debug("getCareerProfileTest result : {}", d3Service.getCareerProfile("파란하늘#3794", "ko_KR"));
 	}
 	
 	@Test
-	public void getHeroProfileTest() {
+	void getHeroProfileTest() {
 		log.debug("getHeroProfileTest result : {}", d3Service.getHeroProfile(profile, 40533, locale));
 	}
 	
 	@Test
-	public void getItemDataTest() {
+	void getItemDataTest() {
 		log.debug("getItemDataTest result : {}", d3Service.getItemData("Unique_Helm_002_p1", locale));
 	}
 	
@@ -38,7 +38,7 @@ public class D3ServiceTest extends GeneralTest {
 	private RestTemplate restTemplate;
 	
 	@Test
-	public void test() { 
+	void test() { 
 		//log.debug("result : {}", restTemplate.getForObject("http://bluesky-cloud-config-server/bluesky-project.yml", String.class));
 //		log.debug("result : {}", restTemplate.getForObject("https://www.daum.net/", String.class));
 	}

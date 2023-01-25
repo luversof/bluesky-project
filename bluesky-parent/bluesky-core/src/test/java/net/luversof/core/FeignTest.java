@@ -7,13 +7,13 @@ import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 
 @Slf4j
-public class FeignTest extends GeneralTest {
+class FeignTest implements GeneralTest {
 
 	@Autowired
 	private FeignTestService feignTestService;
 	
 	@Test
-	public void test() {
+	void test() {
 		log.debug("result : {}", feignTestService.test());
 	}
 }

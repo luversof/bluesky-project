@@ -16,7 +16,7 @@ import net.luversof.bookkeeping.service.BasicBookkeepingService;
 import net.luversof.bookkeeping.service.CompositeEntryGroupService;
 
 @Slf4j
-public class EntryGroupTest extends GeneralTest {
+class EntryGroupTest implements GeneralTest {
 	
 	@Autowired
 	private BasicBookkeepingService bookkeepingService;
@@ -33,17 +33,17 @@ public class EntryGroupTest extends GeneralTest {
 	}
 
 	@Test
-	public void entryGroupInitialDataName() {
+	void entryGroupInitialDataName() {
 		Arrays.stream(EntryGroupInitialData.values()).forEach(x -> log.debug("{} name : {}", x, x.getName()));
 	}
 	@Test
-	public void initialDataSave() {
+	void initialDataSave() {
 		List<EntryGroup> result = entryGroupService.createInitialData(bookkeeping.getBookkeepingId());
 		log.debug("defaultSave : {}", result);
 	}
 	
 	@Test
-	public void findEntryGroupList() {
+	void findEntryGroupList() {
 		List<EntryGroup> entryGroupList = entryGroupService.findByBookkeepingId(bookkeeping.getBookkeepingId());
 		log.debug("entryGroupList : {}", entryGroupList);
 	}

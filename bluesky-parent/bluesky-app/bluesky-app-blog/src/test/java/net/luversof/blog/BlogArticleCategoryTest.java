@@ -13,7 +13,7 @@ import net.luversof.blog.service.BlogArticleCategoryService;
 import net.luversof.blog.service.BlogService;
 
 @Slf4j
-class BlogArticleCategoryTest extends GeneralTest {
+class BlogArticleCategoryTest implements GeneralTest {
 	
 	@Autowired
 	private BlogService blogService;

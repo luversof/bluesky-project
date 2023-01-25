@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 
 @Slf4j
-public class RibbonTest extends GeneralTest {
+class RibbonTest implements GeneralTest {
 
 //	@Autowired(required = false)
 //	private ServerList ribbonServerList;
@@ -29,7 +29,7 @@ public class RibbonTest extends GeneralTest {
 	
 	@Test
 	@SneakyThrows
-	public void test() {
+	void test() {
 		
 		log.debug("discoveryClient serviceList : {}", discoveryClient.getServices());
 		ServiceInstance instance = loadBalancerClient.choose("bluesky-cloud-config-server");
@@ -39,7 +39,7 @@ public class RibbonTest extends GeneralTest {
 	}
 	
 	@Test
-	public void test2() {
+	void test2() {
 		//log.debug("restTemplate result : {}", restTemplate.getForObject("http://bluesky-web-default/_check/discoveryClientServiceList", Object.class ));
 		log.debug("restTemplate result : {}", restTemplate.getForObject("http://bluesky-cloud-config-server/bluesky-project.yml", String.class ));
 	}
