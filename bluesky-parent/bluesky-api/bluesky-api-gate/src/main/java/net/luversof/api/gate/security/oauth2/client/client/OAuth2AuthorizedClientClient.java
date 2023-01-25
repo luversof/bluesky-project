@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(value = "bluesky-api-user", contextId = "api-user-oauth2AuthorizedClient", path = "/api/user/oauth2AuthorizedClient", url = "${gate.feign-client.url.user:}")
+@FeignClient(value = "bluesky-api-user", contextId = "api-user-oauth2AuthorizedClient", path = "/api/user/oAuth2AuthorizedClient", url = "${gate.feign-client.url.user:}")
 public interface OAuth2AuthorizedClientClient {
 
 	@GetMapping

@@ -1,4 +1,4 @@
-package net.luversof.api.user.security.oauth2.client.controller;
+package net.luversof.api.user.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(value = "/api/user/oauth2AuthorizedClient", produces = MediaType.APPLICATION_JSON_VALUE)
-public class UserOAuth2AuthorizedClientController {
+@RequestMapping(value = "/api/user/oAuth2AuthorizedClient", produces = MediaType.APPLICATION_JSON_VALUE)
+public class OAuth2AuthorizedClientController {
 
 	@Autowired
 	private JdbcOAuth2AuthorizedClientService oAuth2AuthorizedClientService;

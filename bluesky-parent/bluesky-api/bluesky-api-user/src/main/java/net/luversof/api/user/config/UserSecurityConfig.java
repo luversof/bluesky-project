@@ -1,4 +1,4 @@
-package net.luversof.api.user.security.oauth2.client.config;
+package net.luversof.api.user.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -14,7 +14,7 @@ import jakarta.annotation.PostConstruct;
 
 
 @Configuration
-public class UserSecurityOauth2ClientConfig {
+public class UserSecurityConfig {
 	
 	@Autowired
 	private ObjectMapper objectMapper;

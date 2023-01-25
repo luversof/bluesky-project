@@ -2,6 +2,7 @@ package net.luversof.api.user.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -11,8 +12,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import net.luversof.user.domain.BlueskyUserDetails;
 
 @RestController
 @RequestMapping(value = "/api/user/userDetails", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -27,15 +26,15 @@ public class UserDetailsController {
 	}
 	
 	@PostMapping
-	public BlueskyUserDetails createUser(@RequestBody BlueskyUserDetails userDetails) {
-		userDetailsManager.createUser(userDetails);
-		return userDetails;
+	public UserDetails createUser(@RequestBody User user) {
+		userDetailsManager.createUser(user);
+		return user;
 	}
 	
 	@PutMapping
-	public BlueskyUserDetails updateUser(@RequestBody BlueskyUserDetails userDetails) {
-		userDetailsManager.updateUser(userDetails);
-		return userDetails;
+	public UserDetails updateUser(@RequestBody User user) {
+		userDetailsManager.updateUser(user);
+		return user;
 	}
 	
 	@DeleteMapping
