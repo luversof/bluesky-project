@@ -3,5 +3,5 @@
 <configuration>
 	<include resource="io/github/luversof/boot/logging/logback/base.xml"/>
 	<logger name="net.luversof" level="${PROJECT_ACTIVE_LOG_LEVEL}" />
-	<root level="debug" />
+	<root level="info" />
 </configuration>

@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -72,13 +71,11 @@ public class GateDevCheckController {
 //		return messageSource.getMessage(searchKeyword, null, targetLocale);
 //	}
 	
-	@PreAuthorize("hasRole('ROLE_USER')")
-	@GetMapping("/test_security_hasRole")
+	@GetMapping("/authentication")
 	public Authentication testSecurityHasRole() {
 		SecurityContext context = SecurityContextHolder.getContext();
 		return context.getAuthentication();
 	}
-	
 	
 	@GetMapping("/test_BlueskyException")
 	public void testBlueskyException() {

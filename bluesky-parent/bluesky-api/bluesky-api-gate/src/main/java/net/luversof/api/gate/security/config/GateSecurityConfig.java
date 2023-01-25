@@ -45,7 +45,7 @@ public class GateSecurityConfig {
             throws Exception {
 
         http.userDetailsService(userDetailsService);
-//        http.authorizeHttpRequests((requests) -> requests.anyRequest().authenticated());
+        http.authorizeHttpRequests((requests) -> requests.anyRequest().permitAll());
 		http.oauth2Login(Customizer.withDefaults());
 		http.oauth2Client().authorizedClientService(gateOAuth2AuthorizedClientService);
 
