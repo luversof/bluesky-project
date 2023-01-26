@@ -8,6 +8,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -34,6 +35,9 @@ public class GateDevCheckController {
 	
 	@Autowired
 	private BlueskyReloadableResourceBundleMessageSource messageSource;
+	
+	@Autowired
+	private Environment environment;
 
 	@GetMapping("/messageSource")
 	public MessageSource messageSource() {
@@ -75,6 +79,11 @@ public class GateDevCheckController {
 	public Authentication testSecurityHasRole() {
 		SecurityContext context = SecurityContextHolder.getContext();
 		return context.getAuthentication();
+	}
+	
+	@GetMapping("/property")
+	public String property(String key) {
+		return environment.getProperty(key);
 	}
 	
 	@GetMapping("/test_BlueskyException")
