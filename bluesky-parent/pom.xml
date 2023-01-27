@@ -20,7 +20,6 @@
 		<module>bluesky-app</module>
 		<module>bluesky-web</module>
 		<module>bluesky-core</module>
-		<module>bluesky-opensource</module>
 		<module>bluesky-test</module>
 		<module>bluesky-api</module>
 	</modules>
@@ -112,11 +111,6 @@
 			<dependency>
 				<groupId>net.luversof</groupId>
 				<artifactId>bluesky-app-user</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>net.luversof</groupId>
-				<artifactId>bluesky-opensource-security</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
