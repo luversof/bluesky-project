@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(value = "bluesky-api-user", contextId = "api-user-userDetails", path = "/api/user/userDetails", url = "${gate.feign-client.url.user:}")
+import net.luversof.api.gate.user.config.UserClientFeignConfiguration;
+
+@FeignClient(value = "bluesky-api-user", contextId = "api-user-userDetails", path = "/api/user/userDetails", url = "${gate.feign-client.url.user:}", configuration = UserClientFeignConfiguration.class)
 public interface UserDetailsClient {
 
 	@GetMapping("/search/loadUserByUsername")

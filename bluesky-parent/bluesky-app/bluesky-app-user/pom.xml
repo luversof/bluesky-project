@@ -11,7 +11,7 @@
 		<!-- (s) spring-boot -->
 		<dependency>
 			<groupId>io.github.luversof</groupId>
-			<artifactId>bluesky-boot-starter-data-jpa</artifactId>
+			<artifactId>bluesky-boot-starter-jdbc</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -22,11 +22,6 @@
 			<artifactId>spring-security-oauth2-client</artifactId>
 		</dependency>
 		<!-- (e) spring-boot -->
-		
-		<dependency>
-			<groupId>org.hibernate.validator</groupId>
-			<artifactId>hibernate-validator</artifactId>
-		</dependency>
 
 	</dependencies>
 </project>
