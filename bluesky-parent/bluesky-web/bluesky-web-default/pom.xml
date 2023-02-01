@@ -30,10 +30,6 @@
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-app-bookkeeping</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-opensource-security</artifactId>
-		</dependency>
 		<!-- (e) bluesky -->
 		<!-- (s) spring-boot -->
 		<dependency>
@@ -42,6 +38,10 @@
 		</dependency>
 		<!-- <dependency> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-starter-thymeleaf</artifactId> 
 			</dependency> -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webflux</artifactId>

@@ -1,4 +1,4 @@
-package net.luversof.api.gate.security.provisioning;
+package net.luversof.api.gate.user.provisioning;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.User;

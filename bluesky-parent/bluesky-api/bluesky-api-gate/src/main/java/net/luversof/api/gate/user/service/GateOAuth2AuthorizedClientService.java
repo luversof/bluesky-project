@@ -1,4 +1,4 @@
-package net.luversof.api.gate.security.oauth2.client.service;
+package net.luversof.api.gate.user.service;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
@@ -6,8 +6,8 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.stereotype.Service;
 
 import io.github.luversof.boot.util.ApplicationContextUtil;
-import net.luversof.api.gate.security.oauth2.client.client.OAuth2AuthorizedClientClient;
-import net.luversof.api.gate.security.oauth2.client.client.OAuth2AuthorizedClientClient.SaveAuthorizedClientParam;
+import net.luversof.api.gate.user.client.OAuth2AuthorizedClientClient;
+import net.luversof.api.gate.user.client.OAuth2AuthorizedClientClient.SaveAuthorizedClientParam;
 
 @Service
 public class GateOAuth2AuthorizedClientService implements OAuth2AuthorizedClientService {

@@ -1,6 +1,5 @@
-package net.luversof.api.gate.security.config;
+package net.luversof.api.gate.user.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,29 +10,17 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.jackson2.SecurityJackson2Modules;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import jakarta.annotation.PostConstruct;
-import net.luversof.api.gate.security.oauth2.client.service.GateOAuth2AuthorizedClientService;
+import net.luversof.api.gate.user.service.GateOAuth2AuthorizedClientService;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class GateSecurityConfig {
 	
-	@Autowired
-	private ObjectMapper objectMapper;
-	
-	@PostConstruct
-	public void postConstruct() {
-		objectMapper.registerModules(SecurityJackson2Modules.getModules(getClass().getClassLoader()));
-	}
-
     @Bean
     @ConditionalOnMissingBean
     PasswordEncoder passwordEncoder() {
@@ -45,7 +32,7 @@ public class GateSecurityConfig {
             throws Exception {
 
         http.userDetailsService(userDetailsService);
-        http.authorizeHttpRequests((requests) -> requests.anyRequest().permitAll());
+        http.authorizeHttpRequests(requests -> requests.anyRequest().permitAll());
 		http.oauth2Login(Customizer.withDefaults());
 		http.oauth2Client().authorizedClientService(gateOAuth2AuthorizedClientService);
 
