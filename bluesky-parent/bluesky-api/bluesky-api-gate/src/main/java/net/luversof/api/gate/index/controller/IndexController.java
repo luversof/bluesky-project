@@ -1,13 +1,17 @@
 package net.luversof.api.gate.index.controller;
 
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestMapping;
 
-@RestController
+@Controller
+@RequestMapping(produces = MediaType.TEXT_HTML_VALUE)
 public class IndexController {
 
-	@GetMapping
+	@GetMapping({"/", "/index"})
 	public String index() {
+		System.out.println("index 접근");
 		return "index";
 	}
 	
