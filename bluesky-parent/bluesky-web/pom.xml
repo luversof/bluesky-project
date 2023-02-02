@@ -10,6 +10,7 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>bluesky-web-default</module>
+		<module>bluesky-web-gate</module>
 		<module>bluesky-web-swagger-ui</module>
 	</modules>
 	<dependencies>
