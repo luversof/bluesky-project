@@ -28,11 +28,6 @@ public class BookkeepingController {
 		return bookkeepingService.create(bookkeeping);
 	}
 	
-	/**
-	 * 로그인한 유저의 bookkeeping 리스트 반환
-	 * @param authentication
-	 * @return
-	 */
 	@GetMapping
 	public List<Bookkeeping> findByUserId(String userId) {
 		return bookkeepingService.findByUserId(userId);

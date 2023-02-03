@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping(produces = MediaType.TEXT_HTML_VALUE)
 public class IndexController {
 
-	@GetMapping({"/", "/index"})
+	@GetMapping({"/", "/index", "/bookkeeping"})
 	public String index() {
 		return "forward:sveltekit.html";
 	}

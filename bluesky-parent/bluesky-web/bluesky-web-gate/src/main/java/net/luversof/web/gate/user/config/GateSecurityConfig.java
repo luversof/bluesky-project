@@ -1,5 +1,8 @@
 package net.luversof.web.gate.user.config;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -7,9 +10,13 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.user.OAuth2UserAuthority;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
@@ -25,6 +32,20 @@ public class GateSecurityConfig {
     @ConditionalOnMissingBean
     PasswordEncoder passwordEncoder() {
         return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+    }
+    
+    @Bean
+    GrantedAuthoritiesMapper userAuthoritiesMapper() {
+    	return authorities -> {
+    		if (!(authorities instanceof OAuth2UserAuthority)) {
+    			return authorities;
+    		}
+    		
+    		Set<GrantedAuthority> mappedAuthorities = new HashSet<>();
+    		mappedAuthorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+    		mappedAuthorities.addAll(authorities);
+    		return mappedAuthorities;
+    	};
     }
 
     @Bean
