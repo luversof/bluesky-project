@@ -110,11 +110,6 @@
 			</dependency>
 			<dependency>
 				<groupId>net.luversof</groupId>
-				<artifactId>bluesky-app-user</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>net.luversof</groupId>
 				<artifactId>bluesky-test</artifactId>
 				<version>${project.version}</version>
 				<scope>test</scope>
