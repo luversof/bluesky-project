@@ -35,6 +35,12 @@
 			<artifactId>spring-security-oauth2-client</artifactId>
 		</dependency>
 		<!-- (e) spring-security -->
+		<!-- (s) spring-session -->
+		<dependency>
+			<groupId>org.springframework.session</groupId>
+			<artifactId>spring-session-data-redis</artifactId>
+		</dependency>
+		<!-- (e) spring-session -->
 		<!-- (s) spring-cloud -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
@@ -61,6 +67,10 @@
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 		</dependency>
 		<!-- (e) springdoc-openapi -->
+		<dependency>
+			<groupId>io.lettuce</groupId>
+			<artifactId>lettuce-core</artifactId>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
