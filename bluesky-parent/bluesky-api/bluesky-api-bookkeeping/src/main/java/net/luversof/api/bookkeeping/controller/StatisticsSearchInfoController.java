@@ -8,8 +8,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import net.luversof.bookkeeping.domain.StatisticsSearchInfo;
-import net.luversof.bookkeeping.service.StatisticsSearchInfoService;
+import net.luversof.api.bookkeeping.domain.StatisticsSearchInfo;
+import net.luversof.api.bookkeeping.service.StatisticsSearchInfoService;
 
 //@RestController
 @RequestMapping(value = "/bookkeeping/{bookkeeping.id}/statisticsSearchInfo", produces = MediaType.APPLICATION_JSON_VALUE)

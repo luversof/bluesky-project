@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.web.gate.bookkeeping.client.BookkeepingClient;
@@ -28,7 +29,7 @@ public class BookkeepingController {
 	}
 	
 	@GetMapping
-	public List<Bookkeeping> findByUserId(String userId) {
+	public List<Bookkeeping> findByUserId(@RequestParam String userId) {
 		return bookkeepingClient.findByUserId(userId);
 	}
 	
@@ -38,8 +39,7 @@ public class BookkeepingController {
 	}
 	
 	@DeleteMapping
-	public void delete(String bookkeepingId) {
+	public void delete(@RequestParam String bookkeepingId) {
 		bookkeepingClient.delete(bookkeepingId);
 	}
-	
 }

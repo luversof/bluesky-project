@@ -13,9 +13,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import net.luversof.bookkeeping.domain.Entry;
-import net.luversof.bookkeeping.domain.web.EntryRequestParam;
-import net.luversof.bookkeeping.service.CompositeEntryService;
+import net.luversof.api.bookkeeping.domain.Entry;
+import net.luversof.api.bookkeeping.domain.web.EntryRequestParam;
+import net.luversof.api.bookkeeping.service.CompositeEntryService;
 
 @RestController
 @RequestMapping(value = "/api/bookkeeping/entry", produces = MediaType.APPLICATION_JSON_VALUE)

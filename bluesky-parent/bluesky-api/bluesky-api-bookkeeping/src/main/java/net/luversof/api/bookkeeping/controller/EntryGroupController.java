@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import net.luversof.bookkeeping.domain.EntryGroup;
-import net.luversof.bookkeeping.service.CompositeEntryGroupService;
+import net.luversof.api.bookkeeping.domain.EntryGroup;
+import net.luversof.api.bookkeeping.service.CompositeEntryGroupService;
 
 @RestController
 @RequestMapping(value = "/api/bookkeeping/entryGroup", produces = MediaType.APPLICATION_JSON_VALUE)

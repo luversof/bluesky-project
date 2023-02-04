@@ -10,6 +10,7 @@
 	<modules>
 		<module>bluesky-api-bookkeeping</module>
 		<module>bluesky-api-user</module>
+		<module>bluesky-api-blog</module>
 	</modules>
 	<dependencies>
 		<dependency>

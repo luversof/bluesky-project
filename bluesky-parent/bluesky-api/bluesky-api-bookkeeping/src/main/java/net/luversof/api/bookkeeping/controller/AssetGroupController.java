@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import net.luversof.bookkeeping.domain.AssetGroup;
-import net.luversof.bookkeeping.service.CompositeAssetGroupService;
+import net.luversof.api.bookkeeping.domain.AssetGroup;
+import net.luversof.api.bookkeeping.service.CompositeAssetGroupService;
 
 @RestController
 @RequestMapping(value = "/api/bookkeeping/assetGroup", produces = MediaType.APPLICATION_JSON_VALUE)

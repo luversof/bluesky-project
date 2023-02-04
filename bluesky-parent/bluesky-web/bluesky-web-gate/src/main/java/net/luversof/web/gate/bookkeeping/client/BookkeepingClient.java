@@ -11,9 +11,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import net.luversof.web.gate.bookkeeping.domain.Bookkeeping;
-import net.luversof.web.gate.user.config.UserClientFeignConfiguration;
 
-@FeignClient(value = "bluesky-api-bookkeeping", contextId = "api-bookkeeping-bookkeeping", path = "/api/bookkeeping", url = "${gate.feign-client.url.bookkeeping:}", configuration = UserClientFeignConfiguration.class)
+@FeignClient(value = "bluesky-api-bookkeeping", contextId = "api-bookkeeping-bookkeeping", path = "/api/bookkeeping", url = "${gate.feign-client.url.bookkeeping:}")
 public interface BookkeepingClient {
 
 	@PostMapping
