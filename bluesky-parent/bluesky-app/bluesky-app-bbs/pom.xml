@@ -9,12 +9,16 @@
 	<artifactId>bluesky-app-bbs</artifactId>
 	<dependencies>
 		<dependency>
-			<groupId>io.github.luversof</groupId>
-			<artifactId>bluesky-boot-starter-data-jpa</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.hibernate.validator</groupId>
 			<artifactId>hibernate-validator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mariadb.jdbc</groupId>
+			<artifactId>mariadb-java-client</artifactId>
 		</dependency>
 	</dependencies>
 </project>

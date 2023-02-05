@@ -14,7 +14,6 @@ import org.springframework.util.PathMatcher;
 import org.springframework.util.StringUtils;
 
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.core.exception.CoreErrorCode;
 
 @Slf4j
 class SimpleTest {
@@ -43,13 +42,6 @@ class SimpleTest {
 	void homeDirectoryTest() {
 		System.out.println(System.getProperty("user.home").replaceAll("\\\\", "/"));
 		System.out.println(File.separator);
-	}
-	
-	@Test
-	void test4() {
-		CoreErrorCode notExistUser = CoreErrorCode.NOT_EXIST_USER;
-		String join = String.join(".",  notExistUser.getClass().getSimpleName(), notExistUser.name());
-		log.debug("join : {}", join);
 	}
 	
 	@Test
