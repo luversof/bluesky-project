@@ -1,18 +1,21 @@
 package net.luversof.api.gate.board;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import net.luversof.GeneralTest;
+import net.luversof.GeneralWebTest;
 import net.luversof.web.gate.board.client.BoardClient;
 
-class BoardTest implements GeneralTest {
+class BoardTest implements GeneralWebTest {
 	
 	@Autowired
 	private BoardClient boardClient;
 
 	@Test
 	void findByAlias() {
-		boardClient.findByAlias("free");
+		var board = boardClient.findByAlias("free");
+		assertThat(board).isNotNull();
 	}
 }

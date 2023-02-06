@@ -16,17 +16,17 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Configuration
 @EnableJpaRepositories(basePackages = "net.luversof.api.board.**.repository", entityManagerFactoryRef = "boardEntityManagerFactory", transactionManagerRef = "boardTransactionManager")
 public class BoardDataJpaonfig {
-	
-	@Bean
-	public LocalContainerEntityManagerFactoryBean boardEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("boardDataSource") DataSource boardDataSource) {
-		return builder
-				.dataSource(boardDataSource)
-				.persistenceUnit("boardPersistenceUnit")
-				.packages("net.luversof.api.board.**.domain").build();
-	}
-	
-	@Bean
-	public PlatformTransactionManager boardTransactionManager(@Qualifier("boardEntityManagerFactory") LocalContainerEntityManagerFactoryBean boardEntityManagerFactory) {
-		return new JpaTransactionManager(boardEntityManagerFactory.getObject());
-	}
+
+    @Bean
+    LocalContainerEntityManagerFactoryBean boardEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("boardDataSource") DataSource boardDataSource) {
+        return builder
+                .dataSource(boardDataSource)
+                .persistenceUnit("boardPersistenceUnit")
+                .packages("net.luversof.api.board.**.domain").build();
+    }
+
+    @Bean
+    PlatformTransactionManager boardTransactionManager(@Qualifier("boardEntityManagerFactory") LocalContainerEntityManagerFactoryBean boardEntityManagerFactory) {
+        return new JpaTransactionManager(boardEntityManagerFactory.getObject());
+    }
 }

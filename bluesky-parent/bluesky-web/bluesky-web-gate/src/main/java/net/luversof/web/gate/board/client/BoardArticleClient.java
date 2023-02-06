@@ -16,16 +16,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import net.luversof.web.gate.board.domain.BoardArticle;
 
 
-@FeignClient(value = "bluesky-api-board", contextId = "api-board-article", path = "/api/board", url = "${gate.feign-client.url.board:}")
+@FeignClient(value = "bluesky-api-board", contextId = "api-board-article", path = "/api/board/article", url = "${gate.feign-client.url.board:}")
 public interface BoardArticleClient {
 
 	@PostMapping
 	BoardArticle create(@RequestBody BoardArticle boardArticle);
 	
-	
 	@GetMapping("/{alias}")
 	Page<BoardArticle> findByBoardId(@PathVariable String alias, @RequestBody Pageable pageable);
-	
 	
 	@GetMapping
 	Optional<BoardArticle> findByBoardArticleId(@RequestParam String boardArticleId);
@@ -35,4 +33,5 @@ public interface BoardArticleClient {
 	
 	@DeleteMapping
 	void delete(@RequestParam String boardArticleId);
+
 }

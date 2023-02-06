@@ -12,15 +12,15 @@ import org.springframework.context.annotation.PropertySource;
 @PropertySource(value = "classpath:blog-jdbc.properties", ignoreResourceNotFound = true)
 @PropertySource(value = "classpath:blog-jdbc-${spring.profiles.active}.properties", ignoreResourceNotFound = true)
 public class BlogJdbcConfig {
-	
-	@Bean
-	@ConfigurationProperties("datasource.blog")
-	public DataSourceProperties blogDataSourceProperties() {
-		return new DataSourceProperties();
-	}
-	
-	@Bean
-	public DataSource blogDataSource() {
-		return blogDataSourceProperties().initializeDataSourceBuilder().build();
-	}
+
+    @Bean
+    @ConfigurationProperties("datasource.blog")
+    DataSourceProperties blogDataSourceProperties() {
+        return new DataSourceProperties();
+    }
+
+    @Bean
+    DataSource blogDataSource() {
+        return blogDataSourceProperties().initializeDataSourceBuilder().build();
+    }
 }

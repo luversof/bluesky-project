@@ -10,15 +10,15 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 	public class BoardJdbcConfig {
-	
-	@Bean
-	@ConfigurationProperties("datasource.board")
-	public DataSourceProperties boardDataSourceProperties() {
-		return new DataSourceProperties();
-	}
-	
-	@Bean
-	public DataSource boardDataSource(@Qualifier("boardDataSourceProperties") DataSourceProperties dataSourceProperties) {
-		return dataSourceProperties.initializeDataSourceBuilder().build();
-	}
+
+    @Bean
+    @ConfigurationProperties("datasource.board")
+    DataSourceProperties boardDataSourceProperties() {
+        return new DataSourceProperties();
+    }
+
+    @Bean
+    DataSource boardDataSource(@Qualifier("boardDataSourceProperties") DataSourceProperties dataSourceProperties) {
+        return dataSourceProperties.initializeDataSourceBuilder().build();
+    }
 }
