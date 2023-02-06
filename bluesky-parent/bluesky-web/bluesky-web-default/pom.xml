@@ -18,14 +18,6 @@
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-app-api-battlenet</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-app-bbs</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-app-blog</artifactId>
-		</dependency>
 		<!-- (e) bluesky -->
 		<!-- (s) spring-boot -->
 		<dependency>

@@ -11,6 +11,7 @@
 		<module>bluesky-api-bookkeeping</module>
 		<module>bluesky-api-user</module>
 		<module>bluesky-api-blog</module>
+		<module>bluesky-api-board</module>
 	</modules>
 	<dependencies>
 		<dependency>

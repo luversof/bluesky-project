@@ -14,7 +14,7 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
-@EnableJpaRepositories(basePackages = "net.luversof.api.blog.repository.mysql", entityManagerFactoryRef = "blogEntityManagerFactory", transactionManagerRef = "blogTransactionManager")
+@EnableJpaRepositories(basePackages = "net.luversof.api.blog.repository.mariadb", entityManagerFactoryRef = "blogEntityManagerFactory", transactionManagerRef = "blogTransactionManager")
 public class BlogDataJpaConfig {
 	
 	@Bean(name = "blogEntityManagerFactory")
