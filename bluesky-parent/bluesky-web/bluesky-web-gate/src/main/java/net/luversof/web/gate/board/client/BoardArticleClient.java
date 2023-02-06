@@ -1,9 +1,38 @@
 package net.luversof.web.gate.board.client;
 
-import org.springframework.cloud.openfeign.FeignClient;
+import java.util.Optional;
 
-@FeignClient(value = "bluesky-api-board", contextId = "api-board", path = "/api/board", url = "${gate.feign-client.url.board:}")
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import net.luversof.web.gate.board.domain.BoardArticle;
+
+
+@FeignClient(value = "bluesky-api-board", contextId = "api-board-article", path = "/api/board", url = "${gate.feign-client.url.board:}")
 public interface BoardArticleClient {
 
+	@PostMapping
+	BoardArticle create(@RequestBody BoardArticle boardArticle);
 	
+	
+	@GetMapping("/{alias}")
+	Page<BoardArticle> findByBoardId(@PathVariable String alias, @RequestBody Pageable pageable);
+	
+	
+	@GetMapping
+	Optional<BoardArticle> findByBoardArticleId(@RequestParam String boardArticleId);
+	
+	@PutMapping
+	BoardArticle modify(@RequestBody BoardArticle boardArticle);
+	
+	@DeleteMapping
+	void delete(@RequestParam String boardArticleId);
 }
