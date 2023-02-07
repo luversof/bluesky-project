@@ -22,14 +22,6 @@ public class BlogArticleCommentService {
 	@Autowired
 	private BlogArticleCommentRepository blogCommentRepository;
 	
-	public Page<BlogArticleComment> findByBlogArticleId(String blogArticleId, Pageable pageable) {
-		return blogCommentRepository.findByBlogArticleId(blogArticleId, pageable);
-	}
-	
-	public Optional<BlogArticleComment> findByBlogArticleCommentId(String blogArticleCommentId) {
-		return blogCommentRepository.findByBlogArticleCommentId(blogArticleCommentId);
-	}
-	
 	public BlogArticleComment create(@BlueskyValidated(BlogArticleComment.Create.class) BlogArticleComment blogArticleComment) {
 		if (!StringUtils.hasText(blogArticleComment.getBlogArticleId())) {
 			throw new BlueskyException(BlogErrorCode.NOT_EXIST_PARAMETER_BLOGARTICLE_ID);
@@ -39,6 +31,18 @@ public class BlogArticleCommentService {
 		blogArticleComment.setBlogArticleCommentId(UUID.randomUUID().toString());
 		
 		return blogCommentRepository.save(blogArticleComment);
+	}
+	
+	public Page<BlogArticleComment> findByBlogArticleId(String blogArticleId, Pageable pageable) {
+		return blogCommentRepository.findByBlogArticleId(blogArticleId, pageable);
+	}
+	
+	public Optional<BlogArticleComment> findByBlogArticleCommentId(String blogArticleCommentId) {
+		return blogCommentRepository.findByBlogArticleCommentId(blogArticleCommentId);
+	}
+	
+	public long countByBlogArticleId(String blogArticleId) {
+		return blogCommentRepository.countByBlogArticleId(blogArticleId);
 	}
 	
 	public BlogArticleComment update(@BlueskyValidated(BlogArticleComment.Update.class) BlogArticleComment blogArticleComment) {
@@ -54,10 +58,6 @@ public class BlogArticleCommentService {
 	
 	public void delete(@BlueskyValidated(BlogArticleComment.Delete.class) BlogArticleComment blogArticleComment) {
 		blogCommentRepository.deleteByBlogArticleCommentId(blogArticleComment.getBlogArticleCommentId());
-	}
-	
-	public long countByBlogArticleId(String blogArticleId) {
-		return blogCommentRepository.countByBlogArticleId(blogArticleId);
 	}
 	
 }

@@ -16,18 +16,18 @@ public class BlogService {
 	
 	@Autowired
 	private BlogRepository blogRepository;
-	
-	public List<Blog> findByUserId(String userId) {
-		return blogRepository.findByUserId(userId);
+
+	public Blog createBlog(@BlueskyValidated(Blog.Create.class) Blog blog) {
+		blog.setBlogId(UUID.randomUUID().toString());
+		return blogRepository.save(blog);
 	}
 	
 	public Optional<Blog> findByBlogId(String blogId) {
 		return blogRepository.findByBlogId(blogId);
 	}
 
-	public Blog createBlog(@BlueskyValidated(Blog.Create.class) Blog blog) {
-		blog.setBlogId(UUID.randomUUID().toString());
-		return blogRepository.save(blog);
+	public List<Blog> findByUserId(String userId) {
+		return blogRepository.findByUserId(userId);
 	}
-
+	
 }

@@ -27,15 +27,6 @@ public class BlogArticleService {
 	@Autowired
 	private BlogService blogService;
 	
-	public Page<BlogArticle> findByBlogId(String blogId, Pageable pageable) {
-		return blogArticleRepository.findByBlogId(blogId, pageable);
-	}
-	
-	public Optional<BlogArticle> findByBlogArticleId(String blogArticleId) {
-		return blogArticleRepository.findByBlogArticleId(blogArticleId);
-	}
-	
-	
 	public BlogArticle create(@BlueskyValidated(BlogArticle.Create.class) BlogArticle blogArticle) {
 		// 존재하는 blog인지 확인
 		blogService.findByBlogId(blogArticle.getBlogId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
@@ -44,6 +35,14 @@ public class BlogArticleService {
 		checkBlogArtcieCategory(blogArticle);
 		
 		return blogArticleRepository.save(blogArticle);
+	}
+	
+	public Page<BlogArticle> findByBlogId(String blogId, Pageable pageable) {
+		return blogArticleRepository.findByBlogId(blogId, pageable);
+	}
+	
+	public Optional<BlogArticle> findByBlogArticleId(String blogArticleId) {
+		return blogArticleRepository.findByBlogArticleId(blogArticleId);
 	}
 	
 	public BlogArticle update(@BlueskyValidated(BlogArticle.Update.class) BlogArticle blogArticle) {

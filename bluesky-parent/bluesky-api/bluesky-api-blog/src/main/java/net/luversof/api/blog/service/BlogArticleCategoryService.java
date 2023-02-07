@@ -18,13 +18,13 @@ public class BlogArticleCategoryService {
 	@Autowired
 	private BlogArticleCategoryRepository blogArticleCategoryRepository;
 	
-	public List<BlogArticleCategory> findByBlogId(String blogId) {
-		return blogArticleCategoryRepository.findByBlogId(blogId);
-	}
-	
 	public BlogArticleCategory create(@BlueskyValidated(BlogArticleCategory.Create.class) BlogArticleCategory blogArticleCategory) {
 		blogArticleCategory.setBlogArticleCategoryId(UUID.randomUUID().toString());
 		return blogArticleCategoryRepository.save(blogArticleCategory);
+	}
+	
+	public List<BlogArticleCategory> findByBlogId(String blogId) {
+		return blogArticleCategoryRepository.findByBlogId(blogId);
 	}
 	
 	public BlogArticleCategory update(@BlueskyValidated(BlogArticleCategory.Update.class) BlogArticleCategory blogArticleCategory) {
