@@ -30,5 +30,16 @@ class BoardArticleTest implements GeneralWebTest {
 		var resultBoardArticle = boardArticleClient.create(boardArticle);
 		assertThat(resultBoardArticle).isNotNull();
 	}
+	
+	@Test
+	void findByBoardArticleId() {
+		var boardArticle = boardArticleClient.findByBoardArticleId("208e94d0-2560-4517-8ff5-1892d9f5f4df");
+		assertThat(boardArticle).isNotNull();
+	}
+	
+	@Test
+	void a() {
+		boardArticleClient.modify(null);
+	}
 
 }
