@@ -1,4 +1,4 @@
-package net.luversof.api.gate.board;
+package net.luversof.web.gate.board;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

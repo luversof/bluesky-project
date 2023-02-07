@@ -8,7 +8,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,12 +30,12 @@ public class BoardArticleController {
 		return boardArticleService.create(boardArticle);
 	}
 	
-	@GetMapping("/{alias}")
-	public Page<BoardArticle> findByBoardId(@PathVariable String alias, @RequestBody Pageable pageable) {
+	@GetMapping("/findByBoardId")
+	public Page<BoardArticle> findByBoardId(@RequestParam String alias, @RequestParam Pageable pageable) {
 		return boardArticleService.findByBoardId(alias, pageable);
 	}
 	
-	@GetMapping
+	@GetMapping("/findByBoardArticleId")
 	public Optional<BoardArticle> findByBoardArticleId(@RequestParam String boardArticleId) {
 		return boardArticleService.findByBoardArticleId(boardArticleId);
 	}

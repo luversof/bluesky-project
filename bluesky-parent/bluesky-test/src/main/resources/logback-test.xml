@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE configuration>
 <configuration>
-	<include resource="net/luversof/core/logging/logback/base.xml" />
+	<include resource="io/github/luversof/boot/logging/logback/base.xml"/>
+	
+	<logger name="net.luversof" level="debug" />
 	
 	<logger name="java.sql" level="debug" />
 	<!-- <logger name="org.hibernate" level="debug" /> -->

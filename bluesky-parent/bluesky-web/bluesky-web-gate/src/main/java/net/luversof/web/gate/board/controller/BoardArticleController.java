@@ -9,7 +9,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,12 +32,12 @@ public class BoardArticleController {
 		return boardArticleClient.create(boardArticle);
 	}
 	
-	@GetMapping("/{alias}")
-	public Page<BoardArticle> findByBoardId(@PathVariable String alias, @RequestBody Pageable pageable) {
+	@GetMapping("/findByBoardId")
+	public Page<BoardArticle> findByBoardId(@RequestParam String alias, @RequestParam Pageable pageable) {
 		return boardArticleClient.findByBoardId(alias, pageable);
 	}
 	
-	@GetMapping
+	@GetMapping("/findByBoardArticleId")
 	public Optional<BoardArticle> findByBoardArticleId(@RequestParam String boardArticleId) {
 		return boardArticleClient.findByBoardArticleId(boardArticleId);
 	}

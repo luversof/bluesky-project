@@ -7,7 +7,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,10 +21,10 @@ public interface BoardArticleClient {
 	@PostMapping
 	BoardArticle create(@RequestBody BoardArticle boardArticle);
 	
-	@GetMapping("/{alias}")
-	Page<BoardArticle> findByBoardId(@PathVariable String alias, @RequestBody Pageable pageable);
+	@GetMapping("/findByBoardId")
+	Page<BoardArticle> findByBoardId(@RequestParam String alias, @RequestParam Pageable pageable);
 	
-	@GetMapping
+	@GetMapping("/findByBoardArticleId")
 	Optional<BoardArticle> findByBoardArticleId(@RequestParam String boardArticleId);
 	
 	@PutMapping

@@ -1,15 +1,17 @@
-package net.luversof.api.gate.board;
+package net.luversof.web.gate.board;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralWebTest;
 import net.luversof.web.gate.board.client.BoardArticleClient;
 import net.luversof.web.gate.board.client.BoardClient;
 import net.luversof.web.gate.board.domain.BoardArticle;
 
+@Slf4j
 class BoardArticleTest implements GeneralWebTest {
 	
 	@Autowired
@@ -34,6 +36,7 @@ class BoardArticleTest implements GeneralWebTest {
 	@Test
 	void findByBoardArticleId() {
 		var boardArticle = boardArticleClient.findByBoardArticleId("208e94d0-2560-4517-8ff5-1892d9f5f4df");
+		log.debug("result : {}", boardArticle);
 		assertThat(boardArticle).isNotNull();
 	}
 	
