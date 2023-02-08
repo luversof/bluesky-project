@@ -13,12 +13,6 @@
 		<asciidocs.output.directory>src/main/resources/static/docs</asciidocs.output.directory>
 	</properties>
 	<dependencies>
-		<!-- (s) bluesky -->
-		<dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-app-api-battlenet</artifactId>
-		</dependency>
-		<!-- (e) bluesky -->
 		<!-- (s) spring-boot -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

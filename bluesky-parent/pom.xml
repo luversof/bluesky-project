@@ -16,9 +16,7 @@
 	</properties>
 
 	<modules>
-		<module>bluesky-app</module>
 		<module>bluesky-web</module>
-		<module>bluesky-core</module>
 		<module>bluesky-test</module>
 		<module>bluesky-api</module>
 	</modules>
@@ -82,26 +80,6 @@
 
 	<dependencyManagement>
 		<dependencies>
-			<dependency>
-				<groupId>net.luversof</groupId>
-				<artifactId>bluesky-core</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>net.luversof</groupId>
-				<artifactId>bluesky-app-api-battlenet</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>net.luversof</groupId>
-				<artifactId>bluesky-app-bbs</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>net.luversof</groupId>
-				<artifactId>bluesky-app-blog</artifactId>
-				<version>${project.version}</version>
-			</dependency>
 			<dependency>
 				<groupId>net.luversof</groupId>
 				<artifactId>bluesky-test</artifactId>
