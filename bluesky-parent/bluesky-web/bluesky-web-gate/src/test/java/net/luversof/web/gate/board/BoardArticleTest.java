@@ -34,9 +34,16 @@ class BoardArticleTest implements GeneralWebTest {
 	}
 	
 	@Test
+	void findByBoardId() {
+		var boardArticlePage = boardArticleClient.findByBoardAlias("free", 1);
+		log.debug("boardArticlePage : {}", boardArticlePage);
+		assertThat(boardArticlePage).isNotEmpty();
+	}
+	
+	@Test
 	void findByBoardArticleId() {
 		var boardArticle = boardArticleClient.findByBoardArticleId("208e94d0-2560-4517-8ff5-1892d9f5f4df");
-		log.debug("result : {}", boardArticle);
+		log.debug("boardArticle : {}", boardArticle);
 		assertThat(boardArticle).isNotNull();
 	}
 	

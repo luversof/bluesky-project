@@ -25,7 +25,7 @@ public class BoardController {
 		return boardService.create(board);
 	}
 	
-	@GetMapping
+	@GetMapping("/findByAlias")
 	public Board findByAlias(@RequestParam String alias) {
 		return boardService.findByAlias(alias);
 	}

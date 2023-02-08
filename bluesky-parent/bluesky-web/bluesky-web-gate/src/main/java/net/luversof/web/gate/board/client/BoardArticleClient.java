@@ -4,7 +4,6 @@ import java.util.Optional;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,8 +20,8 @@ public interface BoardArticleClient {
 	@PostMapping
 	BoardArticle create(@RequestBody BoardArticle boardArticle);
 	
-	@GetMapping("/findByBoardId")
-	Page<BoardArticle> findByBoardId(@RequestParam String alias, @RequestParam Pageable pageable);
+	@GetMapping("/findByBoardAlias")
+	Page<BoardArticle> findByBoardAlias(@RequestParam String boardAlias, @RequestParam int page);
 	
 	@GetMapping("/findByBoardArticleId")
 	Optional<BoardArticle> findByBoardArticleId(@RequestParam String boardArticleId);

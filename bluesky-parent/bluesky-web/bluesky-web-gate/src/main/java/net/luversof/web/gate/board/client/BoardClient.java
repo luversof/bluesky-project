@@ -16,7 +16,7 @@ public interface BoardClient {
 	@PostMapping
 	Board create(@RequestBody Board board);
 	
-	@GetMapping
+	@GetMapping("/findByAlias")
 	Board findByAlias(@RequestParam String alias);
 	
 	@PutMapping

@@ -4,7 +4,6 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,9 +31,9 @@ public class BoardArticleController {
 		return boardArticleClient.create(boardArticle);
 	}
 	
-	@GetMapping("/findByBoardId")
-	public Page<BoardArticle> findByBoardId(@RequestParam String alias, @RequestParam Pageable pageable) {
-		return boardArticleClient.findByBoardId(alias, pageable);
+	@GetMapping("/findByBoardAlias")
+	public Page<BoardArticle> findByBoardAlias(@RequestParam String boardAlias, @RequestParam int page) {
+		return boardArticleClient.findByBoardAlias(boardAlias, page);
 	}
 	
 	@GetMapping("/findByBoardArticleId")

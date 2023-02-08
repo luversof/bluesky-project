@@ -41,9 +41,9 @@ public class BoardArticleService {
 		
 	}
 	
-	public Page<BoardArticle> findByBoardId(String boardAlias, Pageable pageable) {
+	public Page<BoardArticle> findByAlias(String boardAlias, Pageable pageable) {
 		Board board = boardService.findByAlias(boardAlias);
-		return boardArticleRepository.findByBoardId(board.getAlias(), pageable);
+		return boardArticleRepository.findByBoardId(board.getBoardId(), pageable);
 	}
 	
 	public Optional<BoardArticle> findByBoardArticleId(String bbsArticleId) {

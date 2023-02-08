@@ -30,9 +30,9 @@ public class BoardArticleController {
 		return boardArticleService.create(boardArticle);
 	}
 	
-	@GetMapping("/findByBoardId")
-	public Page<BoardArticle> findByBoardId(@RequestParam String alias, @RequestParam Pageable pageable) {
-		return boardArticleService.findByBoardId(alias, pageable);
+	@GetMapping("/findByBoardAlias")
+	public Page<BoardArticle> findByBoardAlias(@RequestParam String boardAlias, Pageable pageable) {
+		return boardArticleService.findByAlias(boardAlias, pageable);
 	}
 	
 	@GetMapping("/findByBoardArticleId")
