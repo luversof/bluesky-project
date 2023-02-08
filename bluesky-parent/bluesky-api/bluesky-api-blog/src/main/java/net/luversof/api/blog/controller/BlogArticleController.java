@@ -31,7 +31,7 @@ public class BlogArticleController {
 	}
 	
 	@GetMapping("/findByBlogId")
-	public Page<BlogArticle> findByBlogId(@RequestParam String blogId, @RequestParam Pageable pageable) {
+	public Page<BlogArticle> findByBlogId(@RequestParam String blogId, Pageable pageable) {
 		return blogArticleService.findByBlogId(blogId, pageable);
 	}
 	

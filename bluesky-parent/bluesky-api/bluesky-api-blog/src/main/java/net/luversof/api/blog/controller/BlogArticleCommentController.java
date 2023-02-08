@@ -31,7 +31,7 @@ public class BlogArticleCommentController {
 	}
 	
 	@GetMapping("/findByBlogArticleId")
-	public Page<BlogArticleComment> findByBlogArticleId(@RequestParam String blogArticleId, @RequestParam Pageable pageable) {
+	public Page<BlogArticleComment> findByBlogArticleId(@RequestParam String blogArticleId, Pageable pageable) {
 		return blogArticleCommentService.findByBlogArticleId(blogArticleId, pageable);
 	}
 	
