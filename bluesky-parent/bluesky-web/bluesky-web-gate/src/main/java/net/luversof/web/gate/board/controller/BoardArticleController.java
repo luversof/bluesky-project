@@ -25,7 +25,7 @@ public class BoardArticleController {
 	@Autowired
 	private BoardArticleClient boardArticleClient;
 	
-	@PreAuthorize("hasRole('ROLE_USER')")
+	@PreAuthorize("hasRole('USER')")
 	@PostMapping
 	public BoardArticle create(@RequestBody BoardArticle boardArticle) {
 		return boardArticleClient.create(boardArticle);
@@ -41,13 +41,13 @@ public class BoardArticleController {
 		return boardArticleClient.findByBoardArticleId(boardArticleId);
 	}
 	
-	@PreAuthorize("hasRole('ROLE_USER')")
+	@PreAuthorize("hasRole('USER')")
 	@PutMapping
 	public BoardArticle modify(@RequestBody BoardArticle boardArticle) {
 		return boardArticleClient.modify(boardArticle);
 	}
 	
-	@PreAuthorize("hasRole('ROLE_USER')")
+	@PreAuthorize("hasRole('USER')")
 	@DeleteMapping
 	public void delete(@RequestParam String boardArticleId) {
 		boardArticleClient.delete(boardArticleId);
