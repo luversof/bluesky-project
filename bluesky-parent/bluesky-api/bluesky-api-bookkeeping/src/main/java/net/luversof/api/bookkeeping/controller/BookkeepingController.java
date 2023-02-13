@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
 import net.luversof.api.bookkeeping.domain.Bookkeeping;
 import net.luversof.api.bookkeeping.service.CompositeBookkeepingService;
 
@@ -22,12 +23,13 @@ public class BookkeepingController {
 
 	@Autowired
 	private CompositeBookkeepingService bookkeepingService;
-	
+
 	@PostMapping
 	public Bookkeeping create(@RequestBody @Validated(Bookkeeping.Create.class) Bookkeeping bookkeeping) {
 		return bookkeepingService.create(bookkeeping);
 	}
 	
+	@Operation(description = "해당 userId의 bookkeeping 목록 조회")
 	@GetMapping
 	public List<Bookkeeping> findByUserId(String userId) {
 		return bookkeepingService.findByUserId(userId);

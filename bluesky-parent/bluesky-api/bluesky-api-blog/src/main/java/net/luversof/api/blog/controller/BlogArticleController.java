@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,7 +27,7 @@ public class BlogArticleController {
 	private BlogArticleService blogArticleService;
 	
 	@PostMapping
-	public BlogArticle create(@RequestBody BlogArticle blogArticle) {
+	public BlogArticle create(@Validated(BlogArticle.Create.class) @RequestBody BlogArticle blogArticle) {
 		return blogArticleService.create(blogArticle);
 	}
 	
@@ -41,12 +42,12 @@ public class BlogArticleController {
 	}
 	
 	@PutMapping
-	public BlogArticle update(@RequestBody BlogArticle blogArticle) {
+	public BlogArticle update(@Validated(BlogArticle.Update.class) @RequestBody BlogArticle blogArticle) {
 		return blogArticleService.update(blogArticle);
 	}
 	
 	@DeleteMapping
-	public void delete(@RequestBody BlogArticle blogArticle) {
+	public void delete(@Validated(BlogArticle.Delete.class) @RequestBody BlogArticle blogArticle) {
 		blogArticleService.delete(blogArticle);
 	}
 	

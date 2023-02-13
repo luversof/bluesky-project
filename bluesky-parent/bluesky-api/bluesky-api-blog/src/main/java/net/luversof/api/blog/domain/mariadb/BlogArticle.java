@@ -33,7 +33,7 @@ public class BlogArticle implements Serializable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long idx;
 	
-	@NotBlank(groups = { Get.class, Update.class, UpdateParam.class, Delete.class, DeleteParam.class })
+	@NotBlank(groups = { Get.class, Update.class, Delete.class })
 	@Column(length = 36, nullable = false)
 	private String blogArticleId;
 
@@ -48,11 +48,11 @@ public class BlogArticle implements Serializable {
 	@OneToMany(mappedBy = "blogArticleId")
 	private List<BlogArticleComment> blogArticleCommentList;
 
-	@NotBlank(groups = { Create.class, CreateParam.class, Update.class })
-	@Size(min = 3, max = 50, groups = { Create.class, CreateParam.class, Update.class, UpdateParam.class })
+	@NotBlank(groups = { Create.class, Update.class })
+	@Size(min = 3, max = 50, groups = { Create.class, Update.class })
 	private String title;
 
-	@NotBlank(groups = { Create.class, CreateParam.class, Update.class, UpdateParam.class })
+	@NotBlank(groups = { Create.class, Update.class })
 	// @Column(columnDefinition = "TEXT")
 	@Lob
 	private String content;
@@ -67,24 +67,16 @@ public class BlogArticle implements Serializable {
 	@Column(name = "user_id", length = 36, nullable = false)
 	private String userId;
 
+	public interface Create {
+	}
+
 	public interface Get {
 	}
-
-    public interface Create {
-	}
     
-    public interface CreateParam {
-	}
-
     public interface Update {
-	}
-    
-    public interface UpdateParam {
 	}
 
     public interface Delete {
 	}
     
-    public interface DeleteParam {
-	}
 }
