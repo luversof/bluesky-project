@@ -33,6 +33,8 @@
 			<artifactId>spring-boot-admin-starter-client</artifactId>
 		</dependency>
 		<!-- (e) boot admin -->
+
+		<!-- (s) webjars -->
 		<dependency>
 			<groupId>org.webjars</groupId>
 			<artifactId>webjars-locator-core</artifactId>
@@ -41,6 +43,12 @@
 			<groupId>org.webjars</groupId>
 			<artifactId>swagger-ui</artifactId>
 			<version>4.15.5</version>
+		</dependency>
+		<!-- (e) webjars -->
+
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-access</artifactId>
 		</dependency>
 	</dependencies>
 	<build>
