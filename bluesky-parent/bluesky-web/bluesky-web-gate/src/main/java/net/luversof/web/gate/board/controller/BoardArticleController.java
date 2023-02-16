@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.web.gate.board.client.BoardArticleClient;
 import net.luversof.web.gate.board.domain.BoardArticle;
+import net.luversof.web.gate.user.util.UserUtil;
 
 @RestController
 @RequestMapping(value = "/api/board/article", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -28,7 +29,7 @@ public class BoardArticleController {
 	@PreAuthorize("hasRole('USER')")
 	@PostMapping
 	public BoardArticle create(@RequestBody BoardArticle boardArticle) {
-		return boardArticleClient.create(boardArticle);
+		return boardArticleClient.create(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
 	}
 	
 	@GetMapping("/findByBoardAlias")
@@ -44,12 +45,12 @@ public class BoardArticleController {
 	@PreAuthorize("hasRole('USER')")
 	@PutMapping
 	public BoardArticle modify(@RequestBody BoardArticle boardArticle) {
-		return boardArticleClient.modify(boardArticle);
+		return boardArticleClient.modify(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
 	}
 	
 	@PreAuthorize("hasRole('USER')")
 	@DeleteMapping
-	public void delete(@RequestParam String boardArticleId) {
-		boardArticleClient.delete(boardArticleId);
+	public void delete(@RequestBody BoardArticle boardArticle) {
+		boardArticleClient.delete(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
 	}
 }

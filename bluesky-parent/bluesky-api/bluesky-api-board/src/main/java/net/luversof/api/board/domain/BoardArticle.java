@@ -29,16 +29,17 @@ public class BoardArticle {
 	@Column(length = 36, nullable = false)
 	private String boardArticleId;
 
+	@NotBlank(groups = { Create.class, Modify.class, Delete.class })
 	@Column(name = "user_id", length = 36, nullable = false)
 	private String userId;
 
 	@Column(name = "board_id", length = 36, nullable = false)
 	private String boardId;
 
-	@NotBlank(groups = { Save.class, Modify.class })
+	@NotBlank(groups = { Create.class, Modify.class })
 	private String title;
 
-	@NotBlank(groups = { Save.class, Modify.class })
+	@NotBlank(groups = { Create.class, Modify.class })
 	private String content;
 
 	@Column(updatable = false)
@@ -49,12 +50,15 @@ public class BoardArticle {
 	@UpdateTimestamp
 	private ZonedDateTime lastModifiedDate;
 
+	public interface Create {
+	}
+
 	public interface Get {
 	}
 
-	public interface Save {
-	}
-
 	public interface Modify {
+	}
+	
+	public interface Delete {
 	}
 }

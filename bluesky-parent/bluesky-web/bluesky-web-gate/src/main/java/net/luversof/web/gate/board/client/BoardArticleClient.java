@@ -30,6 +30,6 @@ public interface BoardArticleClient {
 	BoardArticle modify(@RequestBody BoardArticle boardArticle);
 	
 	@DeleteMapping
-	void delete(@RequestParam String boardArticleId);
+	void delete(@RequestBody BoardArticle boardArticle);
 
 }

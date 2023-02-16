@@ -25,15 +25,16 @@ public class BoardArticleService {
 	private BoardArticleRepository boardArticleRepository;
 	
 	public BoardArticle create(BoardArticle boardArticle) {
-		// TODO 저장 전 체크
 		boardArticle.setBoardArticleId(UUID.randomUUID().toString());
-		
 		return boardArticleRepository.save(boardArticle);
 	}
 	
 	public BoardArticle modify(BoardArticle boardArticle) {
 		var targetBoardArticle = boardArticleRepository.findByBoardArticleId(boardArticle.getBoardArticleId()).orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARDARTICLE));
-		// TODO 변경 전 체크
+
+		if (!targetBoardArticle.getUserId().equals(boardArticle.getUserId())) {
+			throw new BlueskyException(BoardErrorCode.NOT_OWNER_BOARDARTICLE);
+		}
 		
 		targetBoardArticle.setTitle(boardArticle.getTitle());
 		targetBoardArticle.setContent(boardArticle.getContent());
@@ -51,8 +52,14 @@ public class BoardArticleService {
 	}
 
 	// 삭제 처리는 어떻게? 
-	public void deleteByBoardArticleId(String boardArticleId) {
-		boardArticleRepository.deleteByBoardArticleId(boardArticleId);
+	public void deleteByBoardArticleId(BoardArticle boardArticle) {
+		var targetBoardArticle = boardArticleRepository.findByBoardArticleId(boardArticle.getBoardArticleId()).orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARDARTICLE));
+		
+		if (!targetBoardArticle.getUserId().equals(boardArticle.getUserId())) {
+			throw new BlueskyException(BoardErrorCode.NOT_OWNER_BOARDARTICLE);
+		}
+		
+		boardArticleRepository.deleteByBoardArticleId(boardArticle.getBoardArticleId());
 	}
 	
 }
