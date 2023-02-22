@@ -29,7 +29,7 @@ public class BoardArticle {
 	@Column(length = 36, nullable = false)
 	private String boardArticleId;
 
-	@NotBlank(groups = { Create.class, Modify.class, Delete.class })
+	@NotBlank(groups = { Create.class, Modify.class })
 	@Column(name = "user_id", length = 36, nullable = false)
 	private String userId;
 
@@ -57,8 +57,5 @@ public class BoardArticle {
 	}
 
 	public interface Modify {
-	}
-	
-	public interface Delete {
 	}
 }

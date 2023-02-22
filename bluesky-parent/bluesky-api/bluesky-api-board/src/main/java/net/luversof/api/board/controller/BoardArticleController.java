@@ -47,7 +47,7 @@ public class BoardArticleController {
 	}
 	
 	@DeleteMapping
-	public void delete(@Validated(BoardArticle.Delete.class) @RequestBody BoardArticle boardArticle) {
-		boardArticleService.deleteByBoardArticleId(boardArticle);
+	public void delete(@RequestParam String boardArticleId, @RequestParam String userId) {
+		boardArticleService.deleteByBoardArticleId(boardArticleId, userId);
 	}
 }

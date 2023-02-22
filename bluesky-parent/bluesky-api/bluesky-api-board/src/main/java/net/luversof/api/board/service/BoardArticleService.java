@@ -52,14 +52,14 @@ public class BoardArticleService {
 	}
 
 	// 삭제 처리는 어떻게? 
-	public void deleteByBoardArticleId(BoardArticle boardArticle) {
-		var targetBoardArticle = boardArticleRepository.findByBoardArticleId(boardArticle.getBoardArticleId()).orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARDARTICLE));
+	public void deleteByBoardArticleId(String boardArticleId, String userId) {
+		var targetBoardArticle = boardArticleRepository.findByBoardArticleId(boardArticleId).orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARDARTICLE));
 		
-		if (!targetBoardArticle.getUserId().equals(boardArticle.getUserId())) {
+		if (!targetBoardArticle.getUserId().equals(userId)) {
 			throw new BlueskyException(BoardErrorCode.NOT_OWNER_BOARDARTICLE);
 		}
 		
-		boardArticleRepository.deleteByBoardArticleId(boardArticle.getBoardArticleId());
+		boardArticleRepository.delete(targetBoardArticle);
 	}
 	
 }
