@@ -1,8 +1,11 @@
 package net.luversof.api.board;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -34,7 +37,8 @@ class BoardArticleTest implements GeneralTest {
 	private BoardArticleService boardArticleService;
 	
 	@Test
-	void 단건입력() {
+	@DisplayName("게시글 생성")
+	void create() {
 		Board board = boardRepository.getReferenceById((long) 1);
 		BoardArticle boardArticle = new BoardArticle();
 		boardArticle.setBoardId(board.getBoardId());
@@ -58,6 +62,13 @@ class BoardArticleTest implements GeneralTest {
 			boardArticleList.add(bbsArticle);
 		}
 		boardArticleRepository.saveAll(boardArticleList);
+	}
+	
+	@Test
+	@DisplayName("게시글 목록 조회")
+	void findByAlias() {
+		var boardArticlePage = boardArticleService.findByAlias("free", PageRequest.of(0, 20, Sort.by("id").descending()));
+		assertThat(boardArticlePage).isNotEmpty();
 	}
 	
 	@Test

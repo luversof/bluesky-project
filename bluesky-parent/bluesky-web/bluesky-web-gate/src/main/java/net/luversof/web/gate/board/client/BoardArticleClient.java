@@ -1,5 +1,6 @@
 package net.luversof.web.gate.board.client;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.cloud.openfeign.FeignClient;
@@ -21,7 +22,7 @@ public interface BoardArticleClient {
 	BoardArticle create(@RequestBody BoardArticle boardArticle);
 	
 	@GetMapping("/findByBoardAlias")
-	Page<BoardArticle> findByBoardAlias(@RequestParam String boardAlias, @RequestParam int page);
+	Page<BoardArticle> findByBoardAlias(@RequestParam String boardAlias, @RequestParam int page, @RequestParam(required = false) int size, @RequestParam(required = false) List<String> sort);
 	
 	@GetMapping("/findByBoardArticleId")
 	Optional<BoardArticle> findByBoardArticleId(@RequestParam String boardArticleId);

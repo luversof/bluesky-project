@@ -1,5 +1,6 @@
 package net.luversof.web.gate.board.controller;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,9 +33,16 @@ public class BoardArticleController {
 		return boardArticleClient.create(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
 	}
 	
+	/**
+	 * Sort를 query parameter로 변경하기 귀찮아서 매개변수 처리하지 않음
+	 * @param boardAlias
+	 * @param page
+	 * @param pageable
+	 * @return
+	 */
 	@GetMapping("/findByBoardAlias")
 	public Page<BoardArticle> findByBoardAlias(@RequestParam String boardAlias, @RequestParam int page) {
-		return boardArticleClient.findByBoardAlias(boardAlias, page);
+		return boardArticleClient.findByBoardAlias(boardAlias, page, 20, List.of("id,desc"));
 	}
 	
 	@GetMapping("/findByBoardArticleId")
