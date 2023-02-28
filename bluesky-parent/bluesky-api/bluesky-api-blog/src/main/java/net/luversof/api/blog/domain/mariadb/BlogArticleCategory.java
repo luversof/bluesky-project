@@ -23,7 +23,7 @@ public class BlogArticleCategory implements Serializable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long idx;
 	
-	@NotBlank(groups = { Update.class, Delete.class })
+	@NotBlank(groups = Update.class)
 	@Column(length = 36, nullable = false)
 	private String blogArticleCategoryId;
 
@@ -31,19 +31,14 @@ public class BlogArticleCategory implements Serializable {
 	@Column(name = "blog_id", length = 36, nullable = false)
 	private String blogId;
 
-	@NotBlank(groups = { Create.class, CreateParam.class, Update.class })
+	@NotBlank(groups = { Create.class, Update.class })
 	@Column(length = 64, nullable = false)
 	private String name;
 
-	public interface Create {
-	}
+	public interface Create {}
+
+	public interface Update {}
 	
-	public interface CreateParam {
-	}
+	public interface Delete {}
 
-	public interface Update {
-	}
-
-	public interface Delete {
-	}
 }

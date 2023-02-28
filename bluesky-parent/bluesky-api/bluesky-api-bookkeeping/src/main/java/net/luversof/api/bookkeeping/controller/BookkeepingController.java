@@ -36,14 +36,12 @@ public class BookkeepingController {
 	}
 	
 	@PutMapping
-	public Bookkeeping update(@RequestBody @Validated(Bookkeeping.Update.class) Bookkeeping bookkeeping) {
+	public Bookkeeping update(@Validated(Bookkeeping.Update.class) @RequestBody Bookkeeping bookkeeping) {
 		return bookkeepingService.update(bookkeeping);
 	}
 	
 	@DeleteMapping
-	public void delete(String bookkeepingId) {
-		Bookkeeping bookkeeping = new Bookkeeping();
-		bookkeeping.setBookkeepingId(bookkeepingId);
+	public void delete(@Validated(Bookkeeping.Delete.class) @RequestBody Bookkeeping bookkeeping) {
 		bookkeepingService.delete(bookkeeping);
 	}
 }

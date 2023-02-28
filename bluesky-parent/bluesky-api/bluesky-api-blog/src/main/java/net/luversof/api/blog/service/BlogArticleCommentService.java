@@ -9,7 +9,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import io.github.luversof.boot.autoconfigure.validation.annotation.BlueskyValidated;
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.api.blog.constant.BlogErrorCode;
 import net.luversof.api.blog.domain.mariadb.BlogArticleComment;
@@ -22,7 +21,7 @@ public class BlogArticleCommentService {
 	@Autowired
 	private BlogArticleCommentRepository blogCommentRepository;
 	
-	public BlogArticleComment create(@BlueskyValidated(BlogArticleComment.Create.class) BlogArticleComment blogArticleComment) {
+	public BlogArticleComment create(BlogArticleComment blogArticleComment) {
 		if (!StringUtils.hasText(blogArticleComment.getBlogArticleId())) {
 			throw new BlueskyException(BlogErrorCode.NOT_EXIST_PARAMETER_BLOGARTICLE_ID);
 		}
@@ -45,7 +44,7 @@ public class BlogArticleCommentService {
 		return blogCommentRepository.countByBlogArticleId(blogArticleId);
 	}
 	
-	public BlogArticleComment update(@BlueskyValidated(BlogArticleComment.Update.class) BlogArticleComment blogArticleComment) {
+	public BlogArticleComment update(BlogArticleComment blogArticleComment) {
 		var targetBlogComment = blogCommentRepository.findByBlogArticleCommentId(blogArticleComment.getBlogArticleCommentId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGCOMMENT));
 		if (!targetBlogComment.getUserId().equals(blogArticleComment.getUserId())) {
 			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGCOMMENT);
@@ -56,7 +55,7 @@ public class BlogArticleCommentService {
 		return blogCommentRepository.save(targetBlogComment);
 	}
 	
-	public void delete(@BlueskyValidated(BlogArticleComment.Delete.class) BlogArticleComment blogArticleComment) {
+	public void delete(BlogArticleComment blogArticleComment) {
 		blogCommentRepository.deleteByBlogArticleCommentId(blogArticleComment.getBlogArticleCommentId());
 	}
 	

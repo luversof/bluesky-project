@@ -26,10 +26,11 @@ public class BoardArticle {
 	@NotNull(groups = { Get.class })
 	private long id;
 
+	@NotBlank(groups = Delete.class)
 	@Column(length = 36, nullable = false)
 	private String boardArticleId;
 
-	@NotBlank(groups = { Create.class, Modify.class })
+	@NotBlank(groups = { Create.class, Modify.class, Delete.class })
 	@Column(name = "user_id", length = 36, nullable = false)
 	private String userId;
 
@@ -50,12 +51,11 @@ public class BoardArticle {
 	@UpdateTimestamp
 	private ZonedDateTime lastModifiedDate;
 
-	public interface Create {
-	}
+	public interface Create {}
 
-	public interface Get {
-	}
+	public interface Get {}
 
-	public interface Modify {
-	}
+	public interface Modify {}
+	
+	public interface Delete {}
 }

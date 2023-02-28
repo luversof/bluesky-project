@@ -8,7 +8,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import io.github.luversof.boot.autoconfigure.validation.annotation.BlueskyValidated;
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.api.blog.constant.BlogErrorCode;
 import net.luversof.api.blog.domain.mariadb.BlogArticle;
@@ -27,7 +26,7 @@ public class BlogArticleService {
 	@Autowired
 	private BlogService blogService;
 	
-	public BlogArticle create(@BlueskyValidated(BlogArticle.Create.class) BlogArticle blogArticle) {
+	public BlogArticle create(BlogArticle blogArticle) {
 		// 존재하는 blog인지 확인
 		blogService.findByBlogId(blogArticle.getBlogId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
 		blogArticle.setBlogArticleId(UUID.randomUUID().toString());
@@ -45,7 +44,7 @@ public class BlogArticleService {
 		return blogArticleRepository.findByBlogArticleId(blogArticleId);
 	}
 	
-	public BlogArticle update(@BlueskyValidated(BlogArticle.Update.class) BlogArticle blogArticle) {
+	public BlogArticle update(BlogArticle blogArticle) {
 		var targetBlogArticle = blogArticleRepository.findByBlogArticleId(blogArticle.getBlogArticleId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
 		if (!targetBlogArticle.getUserId().equals(blogArticle.getUserId())) {
 			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLE);
@@ -60,7 +59,7 @@ public class BlogArticleService {
 	}
 	
 	
-	public void delete(@BlueskyValidated(BlogArticle.Delete.class) BlogArticle blogArticle) {
+	public void delete(BlogArticle blogArticle) {
 		var targetBlogArticle = blogArticleRepository.findByBlogArticleId(blogArticle.getBlogArticleId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
 		if (!targetBlogArticle.getUserId().equals(blogArticle.getUserId())) {
 			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLE);

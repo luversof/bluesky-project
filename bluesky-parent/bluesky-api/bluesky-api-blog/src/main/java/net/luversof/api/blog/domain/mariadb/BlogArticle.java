@@ -41,6 +41,10 @@ public class BlogArticle implements Serializable {
 	@Column(name = "blog_id", length = 36, nullable = false)
 	private String blogId;
 	
+	@NotBlank(groups = { Create.class, Update.class, Delete.class })
+	@Column(name = "user_id", length = 36, nullable = false)
+	private String userId;
+	
 	@OneToOne
 	@JoinColumn(name = "blogArticleCategory_id", referencedColumnName = "blogArticleCategoryId")
 	private BlogArticleCategory blogArticleCategory;
@@ -62,10 +66,6 @@ public class BlogArticle implements Serializable {
 
 	@UpdateTimestamp
 	private ZonedDateTime lastModifiedDate;
-	
-	@NotBlank(groups = { Create.class, Update.class, Delete.class })
-	@Column(name = "user_id", length = 36, nullable = false)
-	private String userId;
 
 	public interface Create {
 	}

@@ -7,7 +7,6 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import io.github.luversof.boot.autoconfigure.validation.annotation.BlueskyValidated;
 import net.luversof.api.blog.domain.mariadb.Blog;
 import net.luversof.api.blog.repository.mariadb.BlogRepository;
 
@@ -17,7 +16,7 @@ public class BlogService {
 	@Autowired
 	private BlogRepository blogRepository;
 
-	public Blog createBlog(@BlueskyValidated(Blog.Create.class) Blog blog) {
+	public Blog create(Blog blog) {
 		blog.setBlogId(UUID.randomUUID().toString());
 		return blogRepository.save(blog);
 	}

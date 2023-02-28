@@ -39,11 +39,15 @@ public class BlogArticleComment implements Serializable {
 	@Column(length = 36, nullable = false)
 	private String blogArticleCommentId;
 	
-	@NotBlank(groups = { Create.class, CreateParam.class, Update.class, Delete.class })
+	@NotBlank(groups = { Create.class, Update.class, Delete.class })
 	@Column(name = "blogArticle_id", length = 36, nullable = false)
 	private String blogArticleId;
 	
-	@NotBlank(groups = { Create.class, CreateParam.class, Update.class })
+	@NotBlank(groups = { Create.class, Update.class, Delete.class })
+	@Column(name = "user_id", length = 36, nullable = false)
+	private String userId;
+	
+	@NotBlank(groups = { Create.class, Update.class })
 	private String comment;
 	
 	@CreatedDate
@@ -52,22 +56,12 @@ public class BlogArticleComment implements Serializable {
 	@LastModifiedDate
 	private ZonedDateTime lastModifiedDate;
 	
-	@NotBlank(groups = { Create.class, Update.class, Delete.class })
-	@Column(name = "user_id", length = 36, nullable = false)
-	private String userId;
-	
-	public interface Get {
-	}
+	public interface Get {}
 
-    public interface Create {
-	}
+    public interface Create {}
     
-    public interface CreateParam {
-	}
+    public interface Update {}
 
-    public interface Update {
-	}
+    public interface Delete {}
 
-    public interface Delete {
-	}
 }
