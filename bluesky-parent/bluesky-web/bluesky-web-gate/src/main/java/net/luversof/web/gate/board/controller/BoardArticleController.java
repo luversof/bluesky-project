@@ -6,7 +6,6 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
 import net.luversof.web.gate.board.client.BoardArticleClient;
 import net.luversof.web.gate.board.domain.BoardArticle;
 import net.luversof.web.gate.user.util.UserUtil;
@@ -27,7 +27,7 @@ public class BoardArticleController {
 	@Autowired
 	private BoardArticleClient boardArticleClient;
 	
-	@PreAuthorize("hasRole('USER')")
+	@BlueskyPreAuthorize
 	@PostMapping
 	public BoardArticle create(@RequestBody BoardArticle boardArticle) {
 		return boardArticleClient.create(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
@@ -50,13 +50,13 @@ public class BoardArticleController {
 		return boardArticleClient.findByBoardArticleId(boardArticleId);
 	}
 	
-	@PreAuthorize("hasRole('USER')")
+	@BlueskyPreAuthorize
 	@PutMapping
 	public BoardArticle modify(@RequestBody BoardArticle boardArticle) {
 		return boardArticleClient.modify(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
 	}
 	
-	@PreAuthorize("hasRole('USER')")
+	@BlueskyPreAuthorize
 	@DeleteMapping
 	public void delete(@RequestParam String boardArticleId) {
 		boardArticleClient.delete(BoardArticle.builder().boardArticleId(boardArticleId).userId(UserUtil.getUserId()).build());

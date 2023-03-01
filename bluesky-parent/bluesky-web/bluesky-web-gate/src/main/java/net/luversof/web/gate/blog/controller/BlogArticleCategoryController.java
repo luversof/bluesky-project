@@ -13,8 +13,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
+import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.web.gate.blog.client.BlogArticleCategoryClient;
+import net.luversof.web.gate.blog.client.BlogClient;
 import net.luversof.web.gate.blog.domain.BlogArticleCategory;
+import net.luversof.web.gate.user.util.UserUtil;
 
 @RestController
 @RequestMapping(value = "/api/blog/articleCategory", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -23,8 +27,13 @@ public class BlogArticleCategoryController {
 	@Autowired
 	private BlogArticleCategoryClient blogArticleCategoryClient;
 	
+	@Autowired
+	private BlogClient blogClient;
+	
+	@BlueskyPreAuthorize
 	@PostMapping
 	public BlogArticleCategory create(@RequestBody BlogArticleCategory blogArticleCategory) {
+		checkUserBlog(blogArticleCategory);
 		return blogArticleCategoryClient.create(blogArticleCategory);
 	}
 	
@@ -33,14 +42,24 @@ public class BlogArticleCategoryController {
 		return blogArticleCategoryClient.findByBlogId(blogId);
 	}
 
+	@BlueskyPreAuthorize
 	@PutMapping
 	public BlogArticleCategory update(@RequestBody BlogArticleCategory blogArticleCategory) {
+		checkUserBlog(blogArticleCategory);
 		return blogArticleCategoryClient.update(blogArticleCategory);
 	}
 	
+	@BlueskyPreAuthorize
 	@DeleteMapping
 	public void delete(@RequestBody BlogArticleCategory blogArticleCategory) {
+		checkUserBlog(blogArticleCategory);
 		blogArticleCategoryClient.delete(blogArticleCategory);
 	}
 
+	private void checkUserBlog(BlogArticleCategory blogArticleCategory) {
+		var userBlogList = blogClient.findByUserId(UserUtil.getUserId());
+		if (userBlogList.stream().noneMatch(blog -> blog.blogId().equals(blogArticleCategory.blogId()))) {
+			throw new BlueskyException("NOT_USER_BLOG");
+		}
+	}
 }

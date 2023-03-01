@@ -23,7 +23,7 @@ public class BlogArticleCategory implements Serializable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long idx;
 	
-	@NotBlank(groups = Update.class)
+	@NotBlank(groups = { Update.class, Delete.class })
 	@Column(length = 36, nullable = false)
 	private String blogArticleCategoryId;
 

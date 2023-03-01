@@ -31,4 +31,5 @@ public interface BlogArticleClient {
 	
 	@DeleteMapping
 	void delete(@RequestBody BlogArticle blogArticle);
+
 }

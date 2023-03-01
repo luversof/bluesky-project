@@ -25,6 +25,6 @@ public interface BookkeepingClient {
 	Bookkeeping update(@RequestBody Bookkeeping bookkeeping);
 	
 	@DeleteMapping
-	void delete(@RequestParam String bookkeepingId);
+	void delete(@RequestBody Bookkeeping bookkeeping);
 	
 }

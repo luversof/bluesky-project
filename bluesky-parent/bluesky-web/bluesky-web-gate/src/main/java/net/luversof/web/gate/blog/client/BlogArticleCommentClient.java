@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,19 +18,22 @@ import net.luversof.web.gate.blog.domain.BlogArticleComment;
 @FeignClient(value = "bluesky-api-blog", contextId = "api-blog-articleComment", path = "/api/blog/articleComment", url = "${gate.feign-client.url.blog:}")
 public interface BlogArticleCommentClient {
 	
+	@PostMapping
+	BlogArticleComment create(@RequestBody BlogArticleComment blogArticleComment);
+	
 	@GetMapping("/findByBlogArticleId")
-	public Page<BlogArticleComment> findByBlogArticleId(@RequestParam String blogArticleId, Pageable pageable);
+	Page<BlogArticleComment> findByBlogArticleId(@RequestParam String blogArticleId, Pageable pageable);
 	
 	@GetMapping("/findByBlogArticleCommentId")
-	public Optional<BlogArticleComment> findByBlogArticleCommentId(@RequestParam String blogArticleCommentId);
+	Optional<BlogArticleComment> findByBlogArticleCommentId(@RequestParam String blogArticleCommentId);
 	
 	@GetMapping("/countByBlogArticleId")
-	public long countByBlogArticleId(@RequestParam String blogArticleId);
+	long countByBlogArticleId(@RequestParam String blogArticleId);
 	
 	@PutMapping
-	public BlogArticleComment update(@RequestBody BlogArticleComment blogArticleComment);
+	BlogArticleComment update(@RequestBody BlogArticleComment blogArticleComment);
 	
 	@DeleteMapping
-	public void delete(@RequestParam String blogArticleCommentId);
+	void delete(@RequestBody BlogArticleComment blogArticleComment);
 
 }
