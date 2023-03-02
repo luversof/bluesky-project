@@ -58,7 +58,7 @@ public class BoardArticleController {
 	
 	@BlueskyPreAuthorize
 	@DeleteMapping
-	public void delete(@RequestParam String boardArticleId) {
-		boardArticleClient.delete(BoardArticle.builder().boardArticleId(boardArticleId).userId(UserUtil.getUserId()).build());
+	public void delete(@RequestBody BoardArticle boardArticle) {
+		boardArticleClient.delete(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
 	}
 }
