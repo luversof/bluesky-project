@@ -32,15 +32,15 @@ public class AssetGroup {
 	@Column(length = 36, nullable = false)
 	private String assetGroupId;
 
-	@NotBlank(groups = { Create.class, CreateParam.class, Update.class })
-	private String name;
-
 	@NotBlank(groups = { Create.class, Update.class })
 	@Column(name = "bookkeeping_id", length = 36, nullable = false)
 	private String bookkeepingId;
-
+	
 	@Enumerated(EnumType.STRING)
 	private AssetGroupType assetGroupType;
+
+	@NotBlank(groups = { Create.class, CreateParam.class, Update.class })
+	private String name;
 
 	public static interface Create {
 	}

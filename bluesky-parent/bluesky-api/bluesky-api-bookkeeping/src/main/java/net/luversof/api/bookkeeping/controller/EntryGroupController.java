@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.api.bookkeeping.domain.EntryGroup;
@@ -29,7 +30,7 @@ public class EntryGroupController {
 	}
 
 	@GetMapping
-	public List<EntryGroup> findByBookkeepingId(String bookkeepingId) {
+	public List<EntryGroup> findByBookkeepingId(@RequestParam String bookkeepingId) {
 		return entryGroupService.findByBookkeepingId(bookkeepingId);
 	}
 
@@ -39,7 +40,7 @@ public class EntryGroupController {
 	}
 
 	@DeleteMapping
-	public void delete(@Validated(EntryGroup.Delete.class) EntryGroup entryGroup) {
+	public void delete(@RequestBody @Validated(EntryGroup.Delete.class) EntryGroup entryGroup) {
 		entryGroupService.delete(entryGroup);
 	}
 

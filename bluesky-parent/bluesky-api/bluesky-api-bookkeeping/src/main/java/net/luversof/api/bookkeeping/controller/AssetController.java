@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.api.bookkeeping.domain.Asset;
@@ -39,7 +40,7 @@ public class AssetController {
 	 * @return
 	 */
 	@GetMapping
-	public List<Asset> findByBookkeepingId(String bookkeepingId) {
+	public List<Asset> findByBookkeepingId(@RequestParam String bookkeepingId) {
 		return assetService.findByBookkeepingId(bookkeepingId);
 	}
 

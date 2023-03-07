@@ -1,6 +1,6 @@
 package net.luversof.api.bookkeeping.service;
 
-import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,8 +26,8 @@ public class CompositeEntryService implements EntryService {
 	}
 
 	@Override
-	public List<Entry> findByBookkeepingIdAndEntryDateBetween(String bookkeepingId, LocalDate startLocalDate, LocalDate endLocalDate) {
-		return entryService.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startLocalDate, endLocalDate);
+	public List<Entry> findByBookkeepingIdAndEntryDateBetween(String bookkeepingId, ZonedDateTime startDate, ZonedDateTime endDate) {
+		return entryService.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startDate, endDate);
 	}
 
 	@Override

@@ -1,6 +1,6 @@
 package net.luversof.api.bookkeeping.repository;
 
-import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,7 +15,7 @@ public interface EntryRepository extends JpaRepository<Entry, Long> {
 	
 	List<Entry> findByBookkeepingId(String bookkeepingId);
 	
-	List<Entry> findByBookkeepingIdAndEntryDateBetween(String bookkeepingId, LocalDate startLocalDate, LocalDate endLocalDate);
+	List<Entry> findByBookkeepingIdAndEntryDateBetween(String bookkeepingId, ZonedDateTime startDate, ZonedDateTime endDate);
 	
 //	@Modifying
 //	@Transactional

@@ -1,6 +1,6 @@
 package net.luversof.api.bookkeeping.domain.web;
 
-import java.time.LocalDate;
+import java.time.ZonedDateTime;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -22,10 +22,10 @@ public class EntryRequestParam {
 	private String userId;
 	
 	@NotNull(groups = Search.class)
-	private LocalDate startLocalDate;
+	private ZonedDateTime startDate;
 	
 	@NotNull(groups = Search.class)
-	private LocalDate endLocalDate;
+	private ZonedDateTime endDate;
 	
 	public interface Search {}
 }

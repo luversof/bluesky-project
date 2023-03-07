@@ -1,7 +1,7 @@
 package net.luversof.api.bookkeeping.service;
 
 
-import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,12 +56,12 @@ public class BasicEntryService implements EntryService {
 	@Override
 	public List<Entry> search(EntryRequestParam entryRequestParam) {
 		Bookkeeping targetBookkeeping = bookkeepingService.findByBookkeepingId(entryRequestParam.getBookkeepingId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		return entryRepository.findByBookkeepingIdAndEntryDateBetween(targetBookkeeping.getBookkeepingId(), entryRequestParam.getStartLocalDate(), entryRequestParam.getEndLocalDate());
+		return entryRepository.findByBookkeepingIdAndEntryDateBetween(targetBookkeeping.getBookkeepingId(), entryRequestParam.getStartDate(), entryRequestParam.getEndDate());
 	}
 	
 	@Override
-	public List<Entry> findByBookkeepingIdAndEntryDateBetween(String bookkeepingId, LocalDate startLocalDate, LocalDate endLocalDate) {
-		return entryRepository.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startLocalDate, endLocalDate);
+	public List<Entry> findByBookkeepingIdAndEntryDateBetween(String bookkeepingId, ZonedDateTime startDate, ZonedDateTime endDate) {
+		return entryRepository.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startDate, endDate);
 	}
 
 	@Override

@@ -1,6 +1,5 @@
 package net.luversof.api.bookkeeping;
 
-import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -9,7 +8,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.format.datetime.standard.DateTimeContextHolder;
 
 import lombok.extern.slf4j.Slf4j;
@@ -70,23 +68,21 @@ class EntryTest implements GeneralTest {
 		log.debug("TEST : {}", ZonedDateTime.now());
 		
 		int baseDate = 21;
-		LocalDate localDate = LocalDate.now();
-		log.debug("localDate : {}, {}", localDate, localDate.getDayOfMonth());
+		ZonedDateTime date = ZonedDateTime.now();
+		log.debug("date : {}, {}", date, date.getDayOfMonth());
 		
-		if (localDate.getDayOfMonth() >= baseDate) {
-			LocalDate startLocalDate = localDate.withDayOfMonth(baseDate);
-			log.debug("startLocalDate : {}, {}", startLocalDate, startLocalDate.getDayOfMonth());
-			LocalDate endLocalDate;
+		if (date.getDayOfMonth() >= baseDate) {
+			ZonedDateTime startDate = date.withDayOfMonth(baseDate);
+			log.debug("startDate : {}, {}", startDate, startDate.getDayOfMonth());
+			ZonedDateTime endDate;
 			if (baseDate == 1) {
-				endLocalDate = localDate.withDayOfMonth(1).plusMonths(1).minusDays(1);
+				endDate = date.withDayOfMonth(1).plusMonths(1).minusDays(1);
 			} else {
-				endLocalDate = localDate.withDayOfMonth(baseDate - 1).plusMonths(1);
+				endDate = date.withDayOfMonth(baseDate - 1).plusMonths(1);
 			}
-			log.debug("endLocalDate : {}, {}", endLocalDate, endLocalDate.getDayOfMonth());
+			log.debug("endDate : {}, {}", endDate, endDate.getDayOfMonth());
 		}
-		
-		ZonedDateTime testZonedlDateTime = localDate.atStartOfDay(ZoneId.of(LocaleContextHolder.getTimeZone().getID()));
-		log.debug("testZonedlDateTime : {}, {}", testZonedlDateTime, testZonedlDateTime.getDayOfMonth());
+		log.debug("date : {}, {}", date, date.getDayOfMonth());
 		//log.debug("result : {}", entryService.findByBookkeepingIdAndEntryDateBetween(1, null, null));
 	}
 	
@@ -95,8 +91,8 @@ class EntryTest implements GeneralTest {
 	 */
 	@Test
 	void test5() {
-		LocalDate startDate = LocalDate.parse("2016-05-02"); 
-		LocalDate endDate = LocalDate.parse("2016-05-03");
+		ZonedDateTime startDate = ZonedDateTime.parse("2016-05-02"); 
+		ZonedDateTime endDate = ZonedDateTime.parse("2016-05-03");
 		List<Entry> entryList = entryService.findByBookkeepingIdAndEntryDateBetween(bookkeeping.getBookkeepingId(), startDate, endDate);
 		log.debug("entryList : {}", entryList);
 	}

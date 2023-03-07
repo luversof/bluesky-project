@@ -36,11 +36,12 @@ public class EntryGroup {
 	private String bookkeepingId;
 	
 	@NotBlank(groups = { Create.class, Update.class })
-	private String name;
-	
-	@NotBlank(groups = { Create.class, Update.class })
 	@Enumerated(EnumType.STRING)
 	private EntryGroupType entryGroupType;
+	
+	@NotBlank(groups = { Create.class, Update.class })
+	private String name;
+	
 
 	public interface Create {
 	}

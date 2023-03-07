@@ -21,7 +21,7 @@ class BookkeepingTest implements GeneralTest {
     @DisplayName("Bookkeeping 생성")
     void create() {
         Bookkeeping bookkeeping = new Bookkeeping();
-        bookkeeping.setName("test2");
+        bookkeeping.setName("testName");
         bookkeeping.setUserId(BookkeepingTestConstant.USER_ID);
         log.debug("bookkeeping : {}", bookkeeping);
         Bookkeeping result = bookkeepingService.create(bookkeeping);

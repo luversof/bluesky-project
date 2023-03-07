@@ -1,6 +1,6 @@
 package net.luversof.api.bookkeeping.service;
 
-import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import net.luversof.api.bookkeeping.domain.Entry;
@@ -19,7 +19,7 @@ public interface EntryService {
 	 * @param endZonedDateTime
 	 * @return
 	 */
-	List<Entry> findByBookkeepingIdAndEntryDateBetween(String bookkeepingId, LocalDate startLocalDate, LocalDate endLocalDate);
+	List<Entry> findByBookkeepingIdAndEntryDateBetween(String bookkeepingId, ZonedDateTime startDate, ZonedDateTime endDate);
 	
 	Entry update(Entry entry);
 	
