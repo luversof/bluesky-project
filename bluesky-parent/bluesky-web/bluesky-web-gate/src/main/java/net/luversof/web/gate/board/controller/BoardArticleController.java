@@ -16,10 +16,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
+import lombok.extern.slf4j.Slf4j;
 import net.luversof.web.gate.board.client.BoardArticleClient;
 import net.luversof.web.gate.board.domain.BoardArticle;
 import net.luversof.web.gate.user.util.UserUtil;
 
+@Slf4j
 @RestController
 @RequestMapping(value = "/api/board/article", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BoardArticleController {
@@ -42,6 +44,7 @@ public class BoardArticleController {
 	 */
 	@GetMapping("/findByBoardAlias")
 	public Page<BoardArticle> findByBoardAlias(@RequestParam String boardAlias, @RequestParam int page) {
+		log.debug("findByBoardAlias boardAlias : {}", boardAlias);
 		return boardArticleClient.findByBoardAlias(boardAlias, page, 20, List.of("id,desc"));
 	}
 	
