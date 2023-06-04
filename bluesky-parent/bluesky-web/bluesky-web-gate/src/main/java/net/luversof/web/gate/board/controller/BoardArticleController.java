@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.github.luversof.boot.autoconfigure.security.annotation.BlueskyPreAuthorize;
+import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.web.gate.board.client.BoardArticleClient;
 import net.luversof.web.gate.board.domain.BoardArticle;
