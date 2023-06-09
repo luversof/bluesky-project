@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -54,12 +55,13 @@ class BoardArticleTest implements GeneralTest {
 
 		List<BoardArticle> boardArticleList = new ArrayList<>();
 		for (int i = 0 ; i < 100000 ; i ++) {
-			BoardArticle bbsArticle = new BoardArticle();
-			bbsArticle.setBoardId(board.getBoardId());
-			bbsArticle.setUserId("1");
-			bbsArticle.setTitle("테스트" + i);
-			bbsArticle.setContent("내용" + i);
-			boardArticleList.add(bbsArticle);
+			BoardArticle boardArticle = new BoardArticle();
+			boardArticle.setBoardArticleId(UUID.randomUUID().toString());
+			boardArticle.setBoardId(board.getBoardId());
+			boardArticle.setUserId("1");
+			boardArticle.setTitle("테스트" + i);
+			boardArticle.setContent("내용" + i);
+			boardArticleList.add(boardArticle);
 		}
 		boardArticleRepository.saveAll(boardArticleList);
 	}

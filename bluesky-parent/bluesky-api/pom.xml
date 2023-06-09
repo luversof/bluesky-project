@@ -12,6 +12,7 @@
 		<module>bluesky-api-user</module>
 		<module>bluesky-api-blog</module>
 		<module>bluesky-api-board</module>
+		<module>bluesky-api-stopword</module>
 	</modules>
 	<dependencies>
 		<dependency>

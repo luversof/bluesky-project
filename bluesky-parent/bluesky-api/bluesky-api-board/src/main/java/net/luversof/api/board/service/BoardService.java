@@ -4,13 +4,18 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import io.github.luversof.boot.exception.BlueskyException;
+import io.github.luversof.boot.jdbc.datasource.annotation.BlueskyRoutingDataSource;
+import io.github.luversof.boot.jdbc.datasource.context.BlueskyRoutingDataSourceContextHolder;
 import net.luversof.api.board.constant.BoardErrorCode;
 import net.luversof.api.board.domain.Board;
 import net.luversof.api.board.repository.BoardRepository;
 
+@Transactional(readOnly = false)
+@BlueskyRoutingDataSource("board")
 @Service
 public class BoardService {
 
@@ -28,7 +33,10 @@ public class BoardService {
 		return boardRepository.save(board);
 	}
 	
+//	@Transactional(readOnly = true)
+//	@BlueskyRoutingDataSource("blog")
 	public Board findByAlias(String alias) {
+//		BlueskyRoutingDataSourceContextHolder.setContext(() -> "blog");
 		return boardRepository.findByAlias(alias).orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARD));
 	}
 	

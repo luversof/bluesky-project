@@ -68,6 +68,13 @@
 			<artifactId>opentelemetry-exporter-zipkin</artifactId>
 		</dependency>
 
+		<!-- (s) test -->
+		<dependency>
+			<groupId>com.microsoft.sqlserver</groupId>
+			<artifactId>mssql-jdbc</artifactId>
+		</dependency>
+		<!-- (e) test -->
+
 	</dependencies>
 	<build>
 		<plugins>

@@ -15,12 +15,16 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
 @EnableJpaRepositories(basePackages = "net.luversof.api.board.**.repository", entityManagerFactoryRef = "boardEntityManagerFactory", transactionManagerRef = "boardTransactionManager")
-public class BoardDataJpaonfig {
+public class BoardDataJpaConfig {
 
     @Bean
-    LocalContainerEntityManagerFactoryBean boardEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("boardDataSource") DataSource boardDataSource) {
+    LocalContainerEntityManagerFactoryBean boardEntityManagerFactory(
+    		EntityManagerFactoryBuilder builder, 
+    		@Qualifier("boardDataSource") DataSource boardDataSource, 
+    		@Qualifier("blueskyRoutingDataSource") DataSource blueskyRoutingDataSource) {
         return builder
-                .dataSource(boardDataSource)
+//                .dataSource(boardDataSource)
+                .dataSource(blueskyRoutingDataSource)
                 .persistenceUnit("boardPersistenceUnit")
                 .packages("net.luversof.api.board.**.domain").build();
     }
