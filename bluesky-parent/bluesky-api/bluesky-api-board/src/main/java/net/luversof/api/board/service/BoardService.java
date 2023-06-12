@@ -10,12 +10,14 @@ import org.springframework.util.StringUtils;
 import io.github.luversof.boot.exception.BlueskyException;
 import io.github.luversof.boot.jdbc.datasource.annotation.RoutingDataSource;
 import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
+import lombok.extern.slf4j.Slf4j;
 import net.luversof.api.board.constant.BoardErrorCode;
 import net.luversof.api.board.domain.Board;
 import net.luversof.api.board.repository.BoardRepository;
 
-@Transactional(readOnly = false)
-@RoutingDataSource(value = "board", resolver = "boardRoutingDataSourceLookupKeyResolver")
+@Slf4j
+//@Transactional(readOnly = false)
+//@RoutingDataSource(value = "board")
 @Service
 public class BoardService {
 
@@ -35,8 +37,14 @@ public class BoardService {
 	
 //	@Transactional(readOnly = true)
 //	@RoutingDataSource("blog")
+	
 	public Board findByAlias(String alias) {
-//		RoutingDataSourceContextHolder.setContext(() -> "blog");
+		RoutingDataSourceContextHolder.setContext(() -> "board");
+		return boardRepository.findByAlias(alias).orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARD));
+	}
+	
+	public Board findByAlias2(String alias) {
+		RoutingDataSourceContextHolder.setContext(() -> "blog");
 		RoutingDataSourceContextHolder.getContext().getLookupKey();
 		return boardRepository.findByAlias(alias).orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARD));
 	}

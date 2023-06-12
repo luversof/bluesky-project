@@ -10,9 +10,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.extern.slf4j.Slf4j;
 import net.luversof.api.board.domain.Board;
 import net.luversof.api.board.service.BoardService;
 
+@Slf4j
 @RestController
 @RequestMapping(value = "/api/board", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BoardController {
@@ -27,7 +29,11 @@ public class BoardController {
 	
 	@GetMapping("/findByAlias")
 	public Board findByAlias(@RequestParam String alias) {
-		return boardService.findByAlias(alias);
+		var a =  boardService.findByAlias(alias);
+		log.debug("test : {}", a);
+		var b = boardService.findByAlias2(alias);
+		log.debug("test222 : {}", b);
+		return a;
 	}
 	
 	@PutMapping
