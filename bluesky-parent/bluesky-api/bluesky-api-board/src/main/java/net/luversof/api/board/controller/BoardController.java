@@ -31,8 +31,8 @@ public class BoardController {
 	public Board findByAlias(@RequestParam String alias) {
 		var a =  boardService.findByAlias(alias);
 		log.debug("test : {}", a);
-		var b = boardService.findByAlias2(alias);
-		log.debug("test222 : {}", b);
+//		var b = boardService.findByAlias2(alias);
+//		log.debug("test222 : {}", b);
 		return a;
 	}
 	

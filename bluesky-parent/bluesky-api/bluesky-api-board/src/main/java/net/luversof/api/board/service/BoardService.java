@@ -16,8 +16,8 @@ import net.luversof.api.board.domain.Board;
 import net.luversof.api.board.repository.BoardRepository;
 
 @Slf4j
-//@Transactional(readOnly = false)
-//@RoutingDataSource(value = "board")
+//@Transactional(readOnly = true)
+//@RoutingDataSource(value = "blog")
 @Service
 public class BoardService {
 
@@ -36,16 +36,19 @@ public class BoardService {
 	}
 	
 //	@Transactional(readOnly = true)
-//	@RoutingDataSource("blog")
-	
+//	@RoutingDataSource("board")
 	public Board findByAlias(String alias) {
 		RoutingDataSourceContextHolder.setContext(() -> "board");
-		return boardRepository.findByAlias(alias).orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARD));
+		var a = boardRepository.findByAlias(alias).orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARD));
+		log.debug("test : {}", a);
+		RoutingDataSourceContextHolder.setContext(() -> "blog");
+		var b = boardRepository.findByAlias(alias).orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARD));
+		log.debug("test22223333 : {}", b);
+		return a;
 	}
 	
 	public Board findByAlias2(String alias) {
 		RoutingDataSourceContextHolder.setContext(() -> "blog");
-		RoutingDataSourceContextHolder.getContext().getLookupKey();
 		return boardRepository.findByAlias(alias).orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARD));
 	}
 	
