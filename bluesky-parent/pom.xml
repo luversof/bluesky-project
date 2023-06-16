@@ -178,28 +178,6 @@
 				<updatePolicy>always</updatePolicy>
 			</snapshots>
 		</repository>
-		<repository>
-			<id>bluesky-k8s-snapshots</id>
-			<url>http://nexus-service.default.svc.cluster.local:8082/repository/maven-snapshots/</url>
-			<snapshots>
-				<enabled>true</enabled>
-				<updatePolicy>always</updatePolicy>
-			</snapshots>
-			<releases>
-				<enabled>false</enabled>
-			</releases>
-		</repository>
-		<repository>
-			<id>bluesky-localhost-snapshots</id>
-			<url>http://localhost:8082/repository/maven-snapshots/</url>
-			<snapshots>
-				<enabled>true</enabled>
-				<updatePolicy>always</updatePolicy>
-			</snapshots>
-			<releases>
-				<enabled>false</enabled>
-			</releases>
-		</repository>
 	</repositories>
 	<pluginRepositories>
 		<pluginRepository>
