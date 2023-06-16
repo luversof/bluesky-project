@@ -5,10 +5,11 @@
 	<groupId>net.luversof</groupId>
 	<artifactId>bluesky-parent</artifactId>
 	<packaging>pom</packaging>
+	<version>0.0.1-SNAPSHOT</version>
 	<parent>
 		<groupId>io.github.luversof</groupId>
 		<artifactId>bluesky-boot-parent</artifactId>
-		<version>0.0.1-SNAPSHOT</version>
+		<version>3.1.0-SNAPSHOT</version>
 	</parent>
 
 	<properties>

@@ -13,7 +13,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 @Configuration
 @PropertySource(value = "classpath:jdbc-user.properties", ignoreResourceNotFound = true)
-@PropertySource(value = "classpath:jdbc-user-${net-profile}.properties", ignoreResourceNotFound = true)
+@PropertySource(value = "classpath:jdbc-user-${bluesky-boot-profile}.properties", ignoreResourceNotFound = true)
 public class UserJdbcConfig {
 
 	@Bean
