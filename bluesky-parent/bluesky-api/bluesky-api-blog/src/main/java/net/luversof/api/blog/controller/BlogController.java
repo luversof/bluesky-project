@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import net.luversof.api.blog.controller.swagger.BlogControllerOperation;
 import net.luversof.api.blog.domain.mariadb.Blog;
 import net.luversof.api.blog.service.BlogService;
 
@@ -24,6 +25,7 @@ public class BlogController {
 	private BlogService blogService;
 	
 	@PostMapping
+	@BlogControllerOperation.Create
 	public Blog create(@Validated(Blog.Create.class) @RequestBody Blog blog) {
 		return blogService.create(blog);
 	}

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.api.board.controller.swagger.BoardControllerOperation;
 import net.luversof.api.board.domain.Board;
 import net.luversof.api.board.service.BoardService;
 
@@ -23,6 +24,7 @@ public class BoardController {
 	private BoardService boardService;
 
 	@PostMapping
+	@BoardControllerOperation.Create
 	public Board create(@RequestBody Board board) {
 		return boardService.create(board);
 	}
