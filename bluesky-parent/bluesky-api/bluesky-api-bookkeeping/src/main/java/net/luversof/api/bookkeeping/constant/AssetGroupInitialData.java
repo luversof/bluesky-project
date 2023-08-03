@@ -6,7 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import io.github.luversof.boot.autoconfigure.context.MessageUtil;
+import io.github.luversof.boot.context.MessageUtil;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
