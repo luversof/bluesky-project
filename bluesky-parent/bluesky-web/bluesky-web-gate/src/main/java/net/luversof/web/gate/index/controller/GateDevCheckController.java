@@ -12,18 +12,12 @@ import org.springframework.core.env.Environment;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.context.support.BlueskyReloadableResourceBundleMessageSource;
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
 import io.github.luversof.boot.devcheck.annotation.DevCheckDescription;
-import io.github.luversof.boot.exception.BlueskyException;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
 
 @DevCheckController
 public class GateDevCheckController {
@@ -83,22 +77,4 @@ public class GateDevCheckController {
 		return environment.getProperty(key);
 	}
 	
-	@GetMapping("/test_BlueskyException")
-	public void testBlueskyException() {
-		throw new BlueskyException("exceptionTest1");
-	}
-	
-	@GetMapping("/test_BindException")
-	public TestRecord testBindException(@Validated TestRecord testRecord) {
-		return testRecord;
-	}
-	
-	@PostMapping("/test_MethodArgumentNotValidException")
-	public TestRecord testMethodArgumentNotValidException(@RequestBody @Validated TestRecord testRecord) {
-		return testRecord;
-	}
-	
-	public static record TestRecord(@NotNull String strKey, @Min(3) int numKey) {
-		
-	}
 }
