@@ -76,5 +76,4 @@ public class GateDevCheckController {
 	public String property(String key) {
 		return environment.getProperty(key);
 	}
-
 }

@@ -13,7 +13,7 @@ import jakarta.validation.constraints.NotNull;
 
 @Controller
 public class ExceptionTestController {
-	
+
 	@GetMapping(value = "/blueskyExceptionHtml", produces = MediaType.TEXT_HTML_VALUE)
 	public void blueskyExceptionHtml() {
 		throw new BlueskyException("exceptionTest1");
@@ -24,18 +24,28 @@ public class ExceptionTestController {
 		throw new BlueskyException("exceptionTest1");
 	}
 	
+	@GetMapping(value = "/blueskyExceptionHtml500", produces = MediaType.TEXT_HTML_VALUE)
+	public void blueskyExceptionHtml500() {
+		throw new BlueskyException("exceptionTest1", 500);
+	}
+	
+	@GetMapping(value = "/blueskyExceptionJson500", produces = MediaType.APPLICATION_JSON_VALUE)
+	public void blueskyExceptionJson500() {
+		throw new BlueskyException("exceptionTest1", 500);
+	}
+	
+	
 	@GetMapping("/bindException")
-	public TestRecord testBindException(@Validated TestRecord testRecord) {
+	public TestRecord bindException(@Validated TestRecord testRecord) {
 		return testRecord;
 	}
 	
 	@PostMapping("/methodArgumentNotValidException")
-	public TestRecord testMethodArgumentNotValidException(@RequestBody @Validated TestRecord testRecord) {
+	public TestRecord methodArgumentNotValidException(@RequestBody @Validated TestRecord testRecord) {
 		return testRecord;
 	}
 	
 	public static record TestRecord(@NotNull String strKey, @Min(3) int numKey) {
 		
 	}
-	
 }
