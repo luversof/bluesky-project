@@ -1,17 +1,17 @@
-package net.luversof.web.gate.index.controller;
-
-import org.springframework.http.MediaType;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-
-@Controller
-@RequestMapping(produces = MediaType.TEXT_HTML_VALUE)
-public class IndexController {
-
-	@GetMapping({"/", "/index", "/bookkeeping"})
-	public String index() {
-		return "forward:sveltekit.html";
-	}
-	
-}
+//package net.luversof.web.gate.index.controller;
+//
+//import org.springframework.http.MediaType;
+//import org.springframework.stereotype.Controller;
+//import org.springframework.web.bind.annotation.GetMapping;
+//import org.springframework.web.bind.annotation.RequestMapping;
+//
+//@Controller
+//@RequestMapping(produces = MediaType.TEXT_HTML_VALUE)
+//public class IndexController {
+//
+//	@GetMapping({"/", "/index", "/bookkeeping"})
+//	public String index() {
+//		return "forward:sveltekit.html";
+//	}
+//	
+//}

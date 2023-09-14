@@ -14,6 +14,8 @@
 
 	<properties>
 		<bluesky-project.version>0.0.1-SNAPSHOT</bluesky-project.version>
+		
+		<vaadin.version>24.1.9</vaadin.version>
 	</properties>
 
 	<modules>
@@ -86,6 +88,14 @@
 				<artifactId>bluesky-test</artifactId>
 				<version>${project.version}</version>
 				<scope>test</scope>
+			</dependency>
+			
+			<dependency>
+				<groupId>com.vaadin</groupId>
+				<artifactId>vaadin-bom</artifactId>
+				<version>${vaadin.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
