@@ -1,22 +1,29 @@
 package net.luversof.web.gate.vaadin.layout;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
+import com.vaadin.flow.router.RouterLayout;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.theme.lumo.Lumo;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
 import jakarta.servlet.http.Cookie;
-import net.luversof.web.gate.vaadin.main.view.IndexView;
+import net.luversof.web.gate.user.util.UserUtil;
+import net.luversof.web.gate.vaadin.board.view.BoardIndexView;
+import net.luversof.web.gate.vaadin.main.view.MainIndexView;
 
-public class CommonLayout  extends AppLayout {
+public class CommonLayout  extends AppLayout implements RouterLayout  {
 
 	private static final long serialVersionUID = 1L;
 
@@ -39,21 +46,40 @@ public class CommonLayout  extends AppLayout {
             LumoUtility.Padding.Vertical.NONE,
             LumoUtility.Padding.Horizontal.MEDIUM);
 
-        addToNavbar(header); 
+        addToNavbar(header);
+        
+        
+        var loginInfo = UserUtil.getLoginInfo();
+        
+        if (loginInfo.isLogin()) {
+        	Button logoutButton = new Button("Logout", e -> getUI().get().getPage().setLocation("/logout"));
+        	addToNavbar(new Span(loginInfo.getUsername()), logoutButton);
+        } else {
+        	
+        	Button loginButton = new Button("Login", e -> getUI().get().getPage().fetchCurrentURL(url -> {
+				try {
+//					getUI().get().getPage().setLocation("/login?targetUrl=" + URLEncoder.encode(url.toString(), "UTF-8"));
+					URLEncoder.encode(url.toString(), "UTF-8");
+					getUI().get().getPage().setLocation("/login");
+				} catch (UnsupportedEncodingException e1) {
+					e1.printStackTrace();
+				}
+			}));
+        	addToNavbar(loginButton);
+        }
+        
         
         String theme = getThemeCookie();
         setTheme(theme);
         setThemeCookie(theme);
         
-        var themeToggle = new Button(VaadinIcon.ADJUST.create());
-        themeToggle.addClickListener(e -> {
+        var themeToggle = new Button(VaadinIcon.ADJUST.create(), e -> {
         	String changeTheme = getThemeCookie().equals("LIGHT") ? "DARK" : "LIGHT";
         	setTheme(changeTheme);
         	setThemeCookie(changeTheme);
         });
         
         addToNavbar(themeToggle);
-
     }
     
     private String getThemeCookie() {
@@ -80,9 +106,9 @@ public class CommonLayout  extends AppLayout {
     private void createDrawer() {
     	var sideNav = new SideNav();
     	sideNav.addItem(
-    			new SideNavItem("Index", IndexView.class, VaadinIcon.HOME_O.create()),  
-//                new SideNavItem("Board", BoardIndexView.class, VaadinIcon.DATABASE.create()),
-                new SideNavItem("Item2", "/ttest2", VaadinIcon.DATABASE.create())
+    			new SideNavItem("Home", MainIndexView.class, VaadinIcon.HOME_O.create()),
+                new SideNavItem("Board", BoardIndexView.class, VaadinIcon.DATABASE.create())
+//                new SideNavItem("Item2", "/ttest2", VaadinIcon.DATABASE.create())
                 );
         addToDrawer(sideNav);
     }

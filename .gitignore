@@ -240,5 +240,6 @@ buildNumber.properties
 #.DS_Store
 #rebel.xml
 #work/
+frontend/
 logs/
 build.properties
