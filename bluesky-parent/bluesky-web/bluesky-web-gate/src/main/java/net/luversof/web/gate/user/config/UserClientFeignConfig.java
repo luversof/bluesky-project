@@ -25,7 +25,10 @@ import feign.codec.Encoder;
 import feign.form.spring.SpringFormEncoder;
 import feign.optionals.OptionalDecoder;
 
-public class UserClientFeignConfiguration {
+/**
+ * UserClient에서 사용하기 위한 FeignConfig
+ */
+public class UserClientFeignConfig {
 	
 	@Autowired
 	private Jackson2ObjectMapperBuilder builder;

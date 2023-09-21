@@ -2,9 +2,19 @@ package net.luversof.web.gate.board.domain;
 
 import java.time.ZonedDateTime;
 
-import lombok.Builder;
+import lombok.Data;
 
-@Builder(toBuilder = true)
-public record BoardArticle(long id, String boardArticleId, String userId, String boardId, String title, String content, ZonedDateTime createdDate, ZonedDateTime lastModifiedDate) {
+
+@Data
+public class BoardArticle {
+
+	private long id;
+	private String boardArticleId;
+	private String userId;
+	private String boardId;
+	private String title;
+	private String content;
+	private ZonedDateTime createdDate;
+	private ZonedDateTime lastModifiedDate;
 
 }

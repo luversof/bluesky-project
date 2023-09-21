@@ -2,12 +2,12 @@ package net.luversof.web.gate.board;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Order;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralWebTest;
@@ -28,12 +28,11 @@ class BoardArticleTest implements GeneralWebTest {
 	@DisplayName("게시글 생성")
 	void create() {
 		var board = boardClient.findByAlias("free");
-		var boardArticle = BoardArticle.builder()
-				.boardId(board.boardId())
-				.userId("userId")
-				.title("title")
-				.content("content")
-				.build();
+		var boardArticle = new BoardArticle();
+		boardArticle.setBoardId(board.boardId());
+		boardArticle.setUserId("userId");
+		boardArticle.setTitle("title");
+		boardArticle.setContent("content");
 		var resultBoardArticle = boardArticleClient.create(boardArticle);
 		assertThat(resultBoardArticle).isNotNull();
 	}
@@ -41,8 +40,8 @@ class BoardArticleTest implements GeneralWebTest {
 	@Test
 	@DisplayName("게시글 목록 조회")
 	void findByBoardAlias() {
-		var boardArticlePage = boardArticleClient.findByBoardAlias("free", 0, 20,
-				List.of("id,desc" , "boardId,asc" ));
+		var pageRequest =  PageRequest.of(0, 20).withSort(Sort.by(Order.desc("id"), Order.asc("boardId")));
+		var boardArticlePage = boardArticleClient.findByBoardAlias("free", pageRequest);
 		log.debug("boardArticlePage.getContent() : {}", boardArticlePage.getContent());
 		assertThat(boardArticlePage).isNotEmpty();
 	}

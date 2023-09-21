@@ -1,10 +1,10 @@
 package net.luversof.web.gate.board.client;
 
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,7 +22,7 @@ public interface BoardArticleClient {
 	BoardArticle create(@RequestBody BoardArticle boardArticle);
 	
 	@GetMapping("/findByBoardAlias")
-	Page<BoardArticle> findByBoardAlias(@RequestParam String boardAlias, @RequestParam int page, @RequestParam(required = false) int size, @RequestParam(required = false) List<String> sort);
+	Page<BoardArticle> findByBoardAlias(@RequestParam String boardAlias, Pageable pageable);
 	
 	@GetMapping("/findByBoardArticleId")
 	Optional<BoardArticle> findByBoardArticleId(@RequestParam String boardArticleId);

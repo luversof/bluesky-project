@@ -1,10 +1,13 @@
 package net.luversof.web.gate.board.controller;
 
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.SortDefault;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,7 +35,8 @@ public class BoardArticleController {
 	@BlueskyPreAuthorize
 	@PostMapping
 	public BoardArticle create(@RequestBody BoardArticle boardArticle) {
-		return boardArticleClient.create(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
+		boardArticle.setUserId(UserUtil.getUserId());
+		return boardArticleClient.create(boardArticle);
 	}
 	
 	/**
@@ -43,9 +47,9 @@ public class BoardArticleController {
 	 * @return
 	 */
 	@GetMapping("/findByBoardAlias")
-	public Page<BoardArticle> findByBoardAlias(@RequestParam String boardAlias, @RequestParam int page) {
+	public Page<BoardArticle> findByBoardAlias(@RequestParam String boardAlias, @PageableDefault(size = 20) @SortDefault(sort = "id", direction = Direction.DESC) Pageable pageable) {
 		log.debug("findByBoardAlias boardAlias : {}", boardAlias);
-		return boardArticleClient.findByBoardAlias(boardAlias, page, 20, List.of("id,desc"));
+		return boardArticleClient.findByBoardAlias(boardAlias, pageable);
 	}
 	
 	@GetMapping("/findByBoardArticleId")
@@ -56,12 +60,14 @@ public class BoardArticleController {
 	@BlueskyPreAuthorize
 	@PutMapping
 	public BoardArticle modify(@RequestBody BoardArticle boardArticle) {
-		return boardArticleClient.modify(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
+		boardArticle.setUserId(UserUtil.getUserId());
+		return boardArticleClient.modify(boardArticle);
 	}
 	
 	@BlueskyPreAuthorize
 	@DeleteMapping
 	public void delete(@RequestBody BoardArticle boardArticle) {
-		boardArticleClient.delete(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
+		boardArticle.setUserId(UserUtil.getUserId());
+		boardArticleClient.delete(boardArticle);
 	}
 }

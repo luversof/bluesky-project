@@ -13,7 +13,6 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
-import com.vaadin.flow.router.RouterLayout;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.theme.lumo.Lumo;
 import com.vaadin.flow.theme.lumo.LumoUtility;
@@ -21,9 +20,11 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.servlet.http.Cookie;
 import net.luversof.web.gate.user.util.UserUtil;
 import net.luversof.web.gate.vaadin.board.view.BoardIndexView;
+import net.luversof.web.gate.vaadin.board.view.BoardListView;
+import net.luversof.web.gate.vaadin.board.view.BoardWriteView;
 import net.luversof.web.gate.vaadin.main.view.MainIndexView;
 
-public class CommonLayout  extends AppLayout implements RouterLayout  {
+public class CommonLayout extends AppLayout {
 
 	private static final long serialVersionUID = 1L;
 
@@ -105,9 +106,14 @@ public class CommonLayout  extends AppLayout implements RouterLayout  {
 
     private void createDrawer() {
     	var sideNav = new SideNav();
+    	
+    	var boardSideNavItem = new SideNavItem("Board", BoardIndexView.class, VaadinIcon.DATABASE.create());
+    	boardSideNavItem.setExpanded(false);
+//    	boardSideNavItem.addItem(new SideNavItem("BoardList", BoardListView.class));
+//    	boardSideNavItem.addItem(new SideNavItem("BoardWrite", BoardWriteView.class));
     	sideNav.addItem(
     			new SideNavItem("Home", MainIndexView.class, VaadinIcon.HOME_O.create()),
-                new SideNavItem("Board", BoardIndexView.class, VaadinIcon.DATABASE.create())
+    			boardSideNavItem
 //                new SideNavItem("Item2", "/ttest2", VaadinIcon.DATABASE.create())
                 );
         addToDrawer(sideNav);
