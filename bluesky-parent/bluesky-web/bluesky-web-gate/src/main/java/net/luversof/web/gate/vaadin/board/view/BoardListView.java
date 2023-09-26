@@ -2,32 +2,31 @@ package net.luversof.web.gate.vaadin.board.view;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouteConfiguration;
 import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
 
+import net.luversof.web.gate.board.client.BoardArticleClient;
 import net.luversof.web.gate.board.domain.BoardArticle;
-import net.luversof.web.gate.board.service.BoardArticleService;
-import net.luversof.web.gate.vaadin.layout.CommonLayout;
+import net.luversof.web.gate.vaadin.board.layout.BoardLayout;
 
 @AnonymousAllowed
-@Route(value = "/board/:boardAlias/list", layout = CommonLayout.class)
-public class BoardListView extends HorizontalLayout implements BeforeEnterObserver {
+@Route(value = ":boardAlias/list", layout = BoardLayout.class)
+public class BoardListView extends VerticalLayout implements BeforeEnterObserver {
 	
 	private static final long serialVersionUID = 1L;
 	
-	private BoardArticleService boardArticleService;
+	private BoardArticleClient boardArticleClient;
 	
 	private String boardAlias;
 	
-	public BoardListView(BoardArticleService boardArticleService) {
-		this.boardArticleService = boardArticleService;
+	public BoardListView(BoardArticleClient boardArticleClient) {
+		this.boardArticleClient = boardArticleClient;
 	}
 
 	@Override
@@ -42,7 +41,7 @@ public class BoardListView extends HorizontalLayout implements BeforeEnterObserv
 		boardArticleGrid.setColumns("id", "title", "createdDate");
 		boardArticleGrid.addColumn(e -> "테스트 : " + e.getUserId()).setId("testColumn");
 		
-		boardArticleGrid.setItems(q -> boardArticleService.findByBoardAlias(boardAlias, VaadinSpringDataHelpers.toSpringPageRequest(q)).stream());
+		boardArticleGrid.setItems(q -> boardArticleClient.findByBoardAlias(boardAlias, VaadinSpringDataHelpers.toSpringPageRequest(q)).stream());
 		
 		add(boardArticleGrid);
 		

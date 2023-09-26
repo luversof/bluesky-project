@@ -4,8 +4,12 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.i18n.CookieLocaleResolver;
+import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 
 import feign.Feign;
 import feign.RequestInterceptor;
@@ -24,7 +28,17 @@ public class GateWebMvcConfig implements WebMvcConfigurer {
 		.allowedMethods("*")
 		.allowCredentials(true);
 	}
+	
+	@Override
+	public void addInterceptors(InterceptorRegistry registry) {
+		registry.addInterceptor(new LocaleChangeInterceptor());
+	}
 
+	@Bean
+	LocaleResolver localeResolver() {
+		return new CookieLocaleResolver();
+	}
+	
 	/*
 	 * feign client 전체 적용
 	 */

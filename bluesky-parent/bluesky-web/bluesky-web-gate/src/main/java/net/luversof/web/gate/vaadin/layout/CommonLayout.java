@@ -2,6 +2,9 @@ package net.luversof.web.gate.vaadin.layout;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Locale;
+
+import org.springframework.web.servlet.LocaleResolver;
 
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
@@ -10,36 +13,48 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
+import com.vaadin.flow.i18n.I18NProvider;
 import com.vaadin.flow.server.VaadinService;
+import com.vaadin.flow.server.VaadinServletRequest;
+import com.vaadin.flow.server.VaadinServletResponse;
+import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.theme.lumo.Lumo;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
 import jakarta.servlet.http.Cookie;
 import net.luversof.web.gate.user.util.UserUtil;
 import net.luversof.web.gate.vaadin.board.view.BoardIndexView;
-import net.luversof.web.gate.vaadin.board.view.BoardListView;
-import net.luversof.web.gate.vaadin.board.view.BoardWriteView;
 import net.luversof.web.gate.vaadin.main.view.MainIndexView;
 
 public class CommonLayout extends AppLayout {
 
 	private static final long serialVersionUID = 1L;
+	
+	private LocaleResolver localeResolver;
 
-	public CommonLayout() {
+	public CommonLayout(LocaleResolver localeResolver) {
+		this.localeResolver = localeResolver;
+		
+		Locale locale = localeResolver.resolveLocale(VaadinServletRequest.getCurrent().getHttpServletRequest());
+		VaadinSession.getCurrent().setLocale(locale);
+		System.out.println(locale.toString());
+		
         createHeader();
         createDrawer();
     }
 
     private void createHeader() {
-        H1 logo = new H1("Bluesky POE");
+        H1 logo = new H1("Bluesky Gate");
         logo.addClassNames(
             LumoUtility.FontSize.LARGE, 
             LumoUtility.Margin.MEDIUM);
 
-        var header = new HorizontalLayout(new DrawerToggle(), logo ); 
+        var header = new HorizontalLayout(new DrawerToggle(), logo); 
 
         header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER); 
         header.setWidthFull();
@@ -52,9 +67,14 @@ public class CommonLayout extends AppLayout {
         
         var loginInfo = UserUtil.getLoginInfo();
         
+        var loginInfoArea = new HorizontalLayout();
+        loginInfoArea.setDefaultVerticalComponentAlignment(Alignment.CENTER);
+        
+        addToNavbar(loginInfoArea);
+        
         if (loginInfo.isLogin()) {
         	Button logoutButton = new Button("Logout", e -> getUI().get().getPage().setLocation("/logout"));
-        	addToNavbar(new Span(loginInfo.getUsername()), logoutButton);
+        	loginInfoArea.add(new Span(loginInfo.getUsername()), logoutButton);
         } else {
         	
         	Button loginButton = new Button("Login", e -> getUI().get().getPage().fetchCurrentURL(url -> {
@@ -66,7 +86,7 @@ public class CommonLayout extends AppLayout {
 					e1.printStackTrace();
 				}
 			}));
-        	addToNavbar(loginButton);
+        	loginInfoArea.add(loginButton);
         }
         
         
@@ -80,7 +100,25 @@ public class CommonLayout extends AppLayout {
         	setThemeCookie(changeTheme);
         });
         
-        addToNavbar(themeToggle);
+        loginInfoArea.add(themeToggle);
+        
+//        addToNavbar(themeToggle);
+        
+        
+        I18NProvider i18nProvider = VaadinService.getCurrent().getInstantiator().getI18NProvider();
+        
+        Select<Locale> localeSelect = new Select<>(e -> {
+        	var locale = e.getValue();
+        	localeResolver.setLocale(VaadinServletRequest.getCurrent().getHttpServletRequest(), VaadinServletResponse.getCurrent().getHttpServletResponse(), locale);
+        	VaadinSession.getCurrent().setLocale(locale);
+        });
+        localeSelect.setItems(i18nProvider.getProvidedLocales());
+        localeSelect.setItemLabelGenerator(Locale::getDisplayLanguage);
+        localeSelect.setValue(VaadinSession.getCurrent().getLocale());
+        
+        loginInfoArea.add(localeSelect);
+        
+//        addToNavbar(localeSelect);
     }
     
     private String getThemeCookie() {
@@ -108,9 +146,9 @@ public class CommonLayout extends AppLayout {
     	var sideNav = new SideNav();
     	
     	var boardSideNavItem = new SideNavItem("Board", BoardIndexView.class, VaadinIcon.DATABASE.create());
-    	boardSideNavItem.setExpanded(false);
-//    	boardSideNavItem.addItem(new SideNavItem("BoardList", BoardListView.class));
+    	boardSideNavItem.addItem(new SideNavItem("자유게시판", "/board/free/list"));
 //    	boardSideNavItem.addItem(new SideNavItem("BoardWrite", BoardWriteView.class));
+    	
     	sideNav.addItem(
     			new SideNavItem("Home", MainIndexView.class, VaadinIcon.HOME_O.create()),
     			boardSideNavItem

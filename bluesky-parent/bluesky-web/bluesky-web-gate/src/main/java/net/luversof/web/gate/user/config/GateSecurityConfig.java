@@ -36,7 +36,11 @@ public class GateSecurityConfig {
     }
     
     @Bean
-    SecurityFilterChain gateSecurityFilterchain(HttpSecurity http, UserDetailsService userDetailsService, GateOAuth2AuthorizedClientService gateOAuth2AuthorizedClientService) throws Exception {
+    SecurityFilterChain gateSecurityFilterchain(
+    		HttpSecurity http, 
+    		UserDetailsService userDetailsService, 
+    		GateOAuth2AuthorizedClientService gateOAuth2AuthorizedClientService
+    		) throws Exception {
     	var logoutSuccessHandler = new SimpleUrlLogoutSuccessHandler();
     	logoutSuccessHandler.setUseReferer(true);
     	
