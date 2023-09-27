@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>net.luversof</groupId>
@@ -29,14 +31,14 @@
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
 		</dependency>-->
 		<!-- (e) spring-boot -->
-		
+
 		<!-- (s) spring-security -->
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-oauth2-client</artifactId>
 		</dependency>
 		<!-- (e) spring-security -->
-		
+
 		<!-- (s) spring-session -->
 		<!-- vaadin과 같이 사용 하지 못함 -->
 		<!--<dependency>
@@ -48,7 +50,7 @@
 			<artifactId>spring-data-commons</artifactId>
 		</dependency>
 		<!-- (e) spring-session -->
-		
+
 		<!-- (s) spring-cloud -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
@@ -63,28 +65,28 @@
 			<artifactId>spring-cloud-starter-openfeign</artifactId>
 		</dependency>
 		<!-- (e) spring-cloud -->
-		
+
 		<!-- (s) boot admin -->
 		<dependency>
 			<groupId>de.codecentric</groupId>
 			<artifactId>spring-boot-admin-starter-client</artifactId>
 		</dependency>
 		<!-- (e) boot admin -->
-		
+
 		<!-- (s) springdoc-openapi -->
 		<!--<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 		</dependency>-->
 		<!-- (e) springdoc-openapi -->
-		
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
 			<optional>true</optional>
 		</dependency>
 
-		<!-- (s) vaadin --> 
+		<!-- (s) vaadin -->
 		<dependency>
 			<groupId>com.vaadin</groupId>
 			<artifactId>vaadin-spring-boot-starter</artifactId>
@@ -126,18 +128,23 @@
 				<groupId>com.google.cloud.tools</groupId>
 				<artifactId>jib-maven-plugin</artifactId>
 			</plugin>
-            <plugin>
-                <groupId>com.vaadin</groupId>
-                <artifactId>vaadin-maven-plugin</artifactId>
-                <version>${vaadin.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>prepare-frontend</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+			<plugin>
+				<groupId>com.vaadin</groupId>
+				<artifactId>vaadin-maven-plugin</artifactId>
+				<version>${vaadin.version}</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>prepare-frontend</goal>
+						</goals>
+						<phase>compile</phase>
+					</execution>
+				</executions>
+				<configuration>
+					<forceProductionBuild>true</forceProductionBuild>
+					<ciBuild>true</ciBuild>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 </project>

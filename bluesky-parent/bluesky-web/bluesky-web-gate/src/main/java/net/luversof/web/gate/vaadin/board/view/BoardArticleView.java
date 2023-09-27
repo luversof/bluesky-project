@@ -20,6 +20,8 @@ import net.luversof.web.gate.vaadin.board.layout.BoardLayout;
 @Route(value = ":boardAlias/view/:boardArticleId", layout = BoardLayout.class)
 public class BoardArticleView extends VerticalLayout implements BeforeEnterObserver {
 	
+	private static final long serialVersionUID = 1L;
+
 	private BoardArticleClient boardArticleClient;
 	
 	private String boardAlias;
