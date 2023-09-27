@@ -47,8 +47,8 @@ public class BoardArticleService {
 		return boardArticleRepository.findByBoardId(board.getBoardId(), pageable);
 	}
 	
-	public Optional<BoardArticle> findByBoardArticleId(String bbsArticleId) {
-		return boardArticleRepository.findByBoardArticleId(bbsArticleId);
+	public Optional<BoardArticle> findByBoardArticleId(String boardArticleId) {
+		return boardArticleRepository.findByBoardArticleId(boardArticleId);
 	}
 
 	// 삭제 처리는 어떻게? 

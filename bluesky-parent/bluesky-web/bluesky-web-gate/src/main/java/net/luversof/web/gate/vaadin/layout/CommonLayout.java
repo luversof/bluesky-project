@@ -28,8 +28,8 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 
 import jakarta.servlet.http.Cookie;
 import net.luversof.web.gate.user.util.UserUtil;
-import net.luversof.web.gate.vaadin.board.view.BoardIndexView;
-import net.luversof.web.gate.vaadin.main.view.MainIndexView;
+import net.luversof.web.gate.vaadin.board.view.BoardIndex;
+import net.luversof.web.gate.vaadin.main.view.MainIndex;
 
 public class CommonLayout extends AppLayout {
 
@@ -145,12 +145,12 @@ public class CommonLayout extends AppLayout {
     private void createDrawer() {
     	var sideNav = new SideNav();
     	
-    	var boardSideNavItem = new SideNavItem("Board", BoardIndexView.class, VaadinIcon.DATABASE.create());
+    	var boardSideNavItem = new SideNavItem("Board", BoardIndex.class, VaadinIcon.DATABASE.create());
     	boardSideNavItem.addItem(new SideNavItem("자유게시판", "/board/free/list"));
 //    	boardSideNavItem.addItem(new SideNavItem("BoardWrite", BoardWriteView.class));
     	
     	sideNav.addItem(
-    			new SideNavItem("Home", MainIndexView.class, VaadinIcon.HOME_O.create()),
+    			new SideNavItem("Home", MainIndex.class, VaadinIcon.HOME_O.create()),
     			boardSideNavItem
 //                new SideNavItem("Item2", "/ttest2", VaadinIcon.DATABASE.create())
                 );

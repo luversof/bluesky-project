@@ -2,6 +2,7 @@ package net.luversof.web.gate.vaadin.board.view;
 
 import org.springframework.util.StringUtils;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -16,17 +17,20 @@ import com.vaadin.flow.i18n.LocaleChangeObserver;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouteParam;
+import com.vaadin.flow.router.RouteParameters;
 
 import jakarta.annotation.security.RolesAllowed;
 import net.luversof.web.gate.board.client.BoardArticleClient;
 import net.luversof.web.gate.board.client.BoardClient;
 import net.luversof.web.gate.board.domain.BoardArticle;
 import net.luversof.web.gate.user.util.UserUtil;
+import net.luversof.web.gate.vaadin.GateVaadin;
 import net.luversof.web.gate.vaadin.board.layout.BoardLayout;
 
 @RolesAllowed("ROLE_USER")
 @Route(value = ":boardAlias/write", layout = BoardLayout.class)
-public class BoardWriteView extends FormLayout implements BeforeEnterObserver, LocaleChangeObserver  {
+public class BoardArticleWrite extends FormLayout implements BeforeEnterObserver, GateVaadin {
 
 	private static final long serialVersionUID = 1L;
 	
@@ -47,7 +51,7 @@ public class BoardWriteView extends FormLayout implements BeforeEnterObserver, L
 	private Button writeButton = new Button();
 	private Button cancelButton = new Button();
 	
-	public BoardWriteView(BoardClient boardClient, BoardArticleClient boardArticleClient) {
+	public BoardArticleWrite(BoardClient boardClient, BoardArticleClient boardArticleClient) {
 		this.boardClient = boardClient;
 		this.boardArticleClient = boardArticleClient;
 	}
@@ -59,8 +63,16 @@ public class BoardWriteView extends FormLayout implements BeforeEnterObserver, L
 	}
 
 	@Override
-	public void localeChange(LocaleChangeEvent event) {
-		updateLocale();
+	public void updateLocale() {
+		titleField.setLabel(getTranslation("boardArticle.title"));
+		titleField.setPlaceholder(getTranslation("boardArticle.title.placeholder"));
+		
+		contentTextArea.setLabel(getTranslation("boardArticle.content"));
+		contentTextArea.setPlaceholder(getTranslation("boardArticle.content.placeholder"));
+		
+		
+		writeButton.setText(getTranslation("board.button.write"));
+		cancelButton.setText(getTranslation("board.button.cancel"));
 	}
 	
 	void createView() {
@@ -92,6 +104,8 @@ public class BoardWriteView extends FormLayout implements BeforeEnterObserver, L
 			boardArticle.setBoardId(board.boardId());
 			var result = boardArticleClient.create(boardArticle);
 			
+			UI.getCurrent().navigate(BoardArticleView.class, new RouteParameters(new RouteParam("boardAlias", boardAlias), new RouteParam("boardArticleId", result.getBoardArticleId())));
+			
 			System.out.println("resuilt : " +  boardArticle.getBoardArticleId());
 		});
 		
@@ -101,17 +115,6 @@ public class BoardWriteView extends FormLayout implements BeforeEnterObserver, L
 		add(buttonLayout);
 		
 	}
-	
-	void updateLocale() {
-		titleField.setLabel(getTranslation("boardArticle.title"));
-		titleField.setPlaceholder(getTranslation("boardArticle.title.placeholder"));
-		
-		contentTextArea.setLabel(getTranslation("boardArticle.content"));
-		contentTextArea.setPlaceholder(getTranslation("boardArticle.content.placeholder"));
-		
-		
-		writeButton.setText(getTranslation("board.button.write"));
-		cancelButton.setText(getTranslation("board.button.cancel"));
-	}
+
 
 }

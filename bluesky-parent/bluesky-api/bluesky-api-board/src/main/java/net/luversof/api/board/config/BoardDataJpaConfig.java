@@ -20,10 +20,8 @@ public class BoardDataJpaConfig {
     @Bean
     LocalContainerEntityManagerFactoryBean boardEntityManagerFactory(
     		EntityManagerFactoryBuilder builder, 
-    		@Qualifier("boardDataSource") DataSource boardDataSource, 
     		@Qualifier("routingDataSource") DataSource routingDataSource) {
         return builder
-//                .dataSource(boardDataSource)
                 .dataSource(routingDataSource)
                 .persistenceUnit("boardPersistenceUnit")
                 .packages("net.luversof.api.board.**.domain").build();

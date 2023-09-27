@@ -13,12 +13,12 @@ import net.luversof.web.gate.vaadin.board.layout.BoardLayout;
 @AnonymousAllowed
 @PageTitle("Board")
 @Route(value = "", layout = BoardLayout.class)
-public class BoardIndexView extends HorizontalLayout {
+public class BoardIndex extends HorizontalLayout {
 
 	private static final long serialVersionUID = 1L;
 
-	public BoardIndexView() {
-		add(new RouterLink("List", BoardListView.class, new RouteParameters("boardAlias", "free")));
+	public BoardIndex() {
+		add(new RouterLink("List", BoardArticleList.class, new RouteParameters("boardAlias", "free")));
     }
     
 

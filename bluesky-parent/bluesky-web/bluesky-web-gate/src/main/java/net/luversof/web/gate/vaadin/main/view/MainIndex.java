@@ -11,10 +11,10 @@ import net.luversof.web.gate.vaadin.layout.CommonLayout;
 @AnonymousAllowed
 @PageTitle("Main")
 @Route(value = "", layout = CommonLayout.class)
-public class MainIndexView extends HorizontalLayout {
+public class MainIndex extends HorizontalLayout {
 	private static final long serialVersionUID = 1L;
 
-	public MainIndexView() {
+	public MainIndex() {
     	Div div = new Div();
     	div.setText("왜 안되는거임?");
     	add(div);

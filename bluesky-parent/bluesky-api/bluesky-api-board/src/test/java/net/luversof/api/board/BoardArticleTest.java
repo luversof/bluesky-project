@@ -74,6 +74,13 @@ class BoardArticleTest implements GeneralTest {
 	}
 	
 	@Test
+	@DisplayName("게시글 조회")
+	void findByBoardArticleId() {
+		var boardArticleOptional = boardArticleRepository.findByBoardArticleId("4a699a6e-dfb7-4749-b0c4-eb969714e59f");
+		assertThat(boardArticleOptional).isNotEmpty();
+	}
+	
+	@Test
 	void 페이징테스트() {
 		Page<BoardArticle> boardArticleList = boardArticleRepository.findByBoardId("free", PageRequest.of(0, 20, Sort.by("id").descending()));
 		log.debug("result : {}", boardArticleList.getContent());

@@ -10,5 +10,7 @@
 	<!-- <logger name="org.springframework.integration" level="debug" /> -->
 	<!-- <logger name="org.springframework.amqp" level="debug" /> -->
 	<!-- <logger name="com.rabbitmq" level="debug" /> -->
-	<logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="trace" />
+	<!-- <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="trace" /> -->
+	<!-- <logger name="org.hibernate.type.descriptor.jdbc.BasicBinder" level="trace" /> -->
+	<!-- <logger name="org.hibernate.orm.jdbc.bind" level="trace" /> -->
 </configuration>
