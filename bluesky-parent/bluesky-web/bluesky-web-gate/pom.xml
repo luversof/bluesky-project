@@ -74,10 +74,10 @@
 		<!-- (e) boot admin -->
 
 		<!-- (s) springdoc-openapi -->
-		<!--<dependency>
+		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-		</dependency>-->
+		</dependency>
 		<!-- (e) springdoc-openapi -->
 
 		<dependency>
