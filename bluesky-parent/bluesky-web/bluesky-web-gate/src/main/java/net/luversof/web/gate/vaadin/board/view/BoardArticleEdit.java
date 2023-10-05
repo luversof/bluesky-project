@@ -17,6 +17,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteParam;
 import com.vaadin.flow.router.RouteParameters;
 
+import io.github.luversof.boot.exception.BlueskyException;
 import jakarta.annotation.security.RolesAllowed;
 import net.luversof.web.gate.board.client.BoardArticleClient;
 import net.luversof.web.gate.board.client.BoardClient;
@@ -26,8 +27,8 @@ import net.luversof.web.gate.vaadin.GateVaadin;
 import net.luversof.web.gate.vaadin.board.layout.BoardLayout;
 
 @RolesAllowed("ROLE_USER")
-@Route(value = ":boardAlias/write", layout = BoardLayout.class)
-public class BoardArticleWrite extends FormLayout implements GateVaadin {
+@Route(value = ":boardAlias/edit/:boardArticleId", layout = BoardLayout.class)
+public class BoardArticleEdit extends FormLayout implements GateVaadin {
 
 	private static final long serialVersionUID = 1L;
 	
@@ -36,6 +37,7 @@ public class BoardArticleWrite extends FormLayout implements GateVaadin {
 	private BoardArticleClient boardArticleClient;
 	
 	private String boardAlias;
+	private String boardArticleId;
 	
 	private BoardArticle boardArticle;
 	
@@ -45,10 +47,10 @@ public class BoardArticleWrite extends FormLayout implements GateVaadin {
 	private TextArea contentTextArea = new TextArea();
 	
 	
-	private Button writeButton = new Button();
+	private Button editButton = new Button();
 	private Button cancelButton = new Button();
 	
-	public BoardArticleWrite(BoardClient boardClient, BoardArticleClient boardArticleClient) {
+	public BoardArticleEdit(BoardClient boardClient, BoardArticleClient boardArticleClient) {
 		this.boardClient = boardClient;
 		this.boardArticleClient = boardArticleClient;
 	}
@@ -56,6 +58,8 @@ public class BoardArticleWrite extends FormLayout implements GateVaadin {
 	@Override
 	public void setInstanceVariable(BeforeEnterEvent event) {
 		boardAlias = event.getRouteParameters().get("boardAlias").get();
+		boardArticleId = event.getRouteParameters().get("boardArticleId").get();
+		boardArticle = boardArticleClient.findByBoardArticleId(boardArticleId).orElseThrow(() -> new BlueskyException("board.NOT_EXIST_BOARDARTICLE"));
 	}
 
 	@Override
@@ -67,7 +71,7 @@ public class BoardArticleWrite extends FormLayout implements GateVaadin {
 		contentTextArea.setPlaceholder(getTranslation("boardArticle.content.placeholder"));
 		
 		
-		writeButton.setText(getTranslation("board.button.write"));
+		editButton.setText(getTranslation("board.button.edit"));
 		cancelButton.setText(getTranslation("board.button.cancel"));
 	}
 	
@@ -75,10 +79,9 @@ public class BoardArticleWrite extends FormLayout implements GateVaadin {
 	public void createView() {
 		updateLocale();
 		
-		boardArticle = new BoardArticle();
-		binder.readBean(boardArticle);
 		binder.forField(titleField).withValidator(StringUtils::hasText, (valueContext) -> getTranslation("boardArticle.title.validate")).bind(BoardArticle::getTitle, BoardArticle::setTitle);
 		binder.forField(contentTextArea).withValidator(StringUtils::hasText, (valueContext) -> getTranslation("boardArticle.content.validate")).bind(BoardArticle::getContent, BoardArticle::setContent);
+		binder.readBean(boardArticle);
 		
 		setResponsiveSteps(
 			new ResponsiveStep("0", 1)
@@ -87,8 +90,8 @@ public class BoardArticleWrite extends FormLayout implements GateVaadin {
 		add(titleField);
 		add(contentTextArea);
 		
-		writeButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-		writeButton.addClickListener(e -> {
+		editButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+		editButton.addClickListener(e -> {
 			try {
 				binder.writeBean(boardArticle);
 			} catch (ValidationException e1) {
@@ -99,14 +102,14 @@ public class BoardArticleWrite extends FormLayout implements GateVaadin {
 			
 			boardArticle.setUserId(UserUtil.getUserId());
 			boardArticle.setBoardId(board.boardId());
-			var result = boardArticleClient.create(boardArticle);
+			var result = boardArticleClient.modify(boardArticle);
 			
 			UI.getCurrent().navigate(BoardArticleView.class, new RouteParameters(new RouteParam("boardAlias", boardAlias), new RouteParam("boardArticleId", result.getBoardArticleId())));
 			
 			System.out.println("resuilt : " +  boardArticle.getBoardArticleId());
 		});
 		
-		var buttonLayout = new HorizontalLayout(writeButton, cancelButton);
+		var buttonLayout = new HorizontalLayout(editButton, cancelButton);
 		buttonLayout.setJustifyContentMode(JustifyContentMode.CENTER);
 		
 		add(buttonLayout);

@@ -146,7 +146,7 @@ public class CommonLayout extends AppLayout {
     	var sideNav = new SideNav();
     	
     	var boardSideNavItem = new SideNavItem("Board", BoardIndex.class, VaadinIcon.DATABASE.create());
-    	boardSideNavItem.addItem(new SideNavItem("자유게시판", "/board/free/list"));
+    	boardSideNavItem.addItem(new SideNavItem("자유게시판", "board/free/list", VaadinIcon.COMMENT.create()));
 //    	boardSideNavItem.addItem(new SideNavItem("BoardWrite", BoardWriteView.class));
     	
     	sideNav.addItem(
