@@ -1,8 +1,14 @@
 package net.luversof.web.gate.bookkeeping.domain;
 
-import lombok.Builder;
+import lombok.Data;
 
-@Builder(toBuilder = true)
-public record Bookkeeping(long idx, String bookkeepingId, String userId, String name, int baseDate) {
+@Data
+public class Bookkeeping {
+	
+	private long idx;
+	private String bookkeepingId;
+	private String userId;
+	private String name;
+	private int baseDate;
 
 }

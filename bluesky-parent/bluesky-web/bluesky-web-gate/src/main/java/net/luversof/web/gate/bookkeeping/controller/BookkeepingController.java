@@ -28,7 +28,8 @@ public class BookkeepingController {
 	@BlueskyPreAuthorize
 	@PostMapping
 	public Bookkeeping create(@RequestBody Bookkeeping bookkeeping) {
-		return bookkeepingClient.create(bookkeeping.toBuilder().userId(UserUtil.getUserId()).build());
+		bookkeeping.setUserId(UserUtil.getUserId());
+		return bookkeepingClient.create(bookkeeping);
 	}
 	
 	@GetMapping
@@ -39,12 +40,14 @@ public class BookkeepingController {
 	@BlueskyPreAuthorize
 	@PutMapping
 	public Bookkeeping update(@RequestBody Bookkeeping bookkeeping) {
-		return bookkeepingClient.update(bookkeeping.toBuilder().userId(UserUtil.getUserId()).build());
+		bookkeeping.setUserId(UserUtil.getUserId());
+		return bookkeepingClient.update(bookkeeping);
 	}
 	
 	@BlueskyPreAuthorize
 	@DeleteMapping
 	public void delete(@RequestBody Bookkeeping bookkeeping) {
-		bookkeepingClient.delete(bookkeeping.toBuilder().userId(UserUtil.getUserId()).build());
+		bookkeeping.setUserId(UserUtil.getUserId());
+		bookkeepingClient.delete(bookkeeping);
 	}
 }

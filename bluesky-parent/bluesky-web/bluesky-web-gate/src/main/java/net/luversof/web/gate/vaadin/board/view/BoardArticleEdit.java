@@ -60,6 +60,11 @@ public class BoardArticleEdit extends FormLayout implements GateVaadin {
 		boardAlias = event.getRouteParameters().get("boardAlias").get();
 		boardArticleId = event.getRouteParameters().get("boardArticleId").get();
 		boardArticle = boardArticleClient.findByBoardArticleId(boardArticleId).orElseThrow(() -> new BlueskyException("board.NOT_EXIST_BOARDARTICLE"));
+		
+		if (!boardArticle.getUserId().equals(UserUtil.getUserId())) {
+			throw new BlueskyException("NOT_USER_ARTICLE");
+		}
+		
 	}
 
 	@Override
@@ -108,6 +113,8 @@ public class BoardArticleEdit extends FormLayout implements GateVaadin {
 			
 			System.out.println("resuilt : " +  boardArticle.getBoardArticleId());
 		});
+		
+		cancelButton.addClickListener(e -> UI.getCurrent().getPage().getHistory().go(-1));
 		
 		var buttonLayout = new HorizontalLayout(editButton, cancelButton);
 		buttonLayout.setJustifyContentMode(JustifyContentMode.CENTER);

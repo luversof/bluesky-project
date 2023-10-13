@@ -2,6 +2,7 @@ package net.luversof.web.gate.vaadin.board.view;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.Route;
@@ -54,7 +55,11 @@ public class BoardArticleList extends VerticalLayout implements GateVaadin {
 		
 		writeButton.addClickListener(e -> BoardVaadinUtil.moveToWrite(boardAlias));
 		
-		add(writeButton);
+		var buttonLayout = new HorizontalLayout(writeButton);
+		buttonLayout.setSizeFull();
+		buttonLayout.setJustifyContentMode(JustifyContentMode.CENTER);
+		
+		add(buttonLayout);
 	}
 
 }

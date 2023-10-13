@@ -29,7 +29,9 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.servlet.http.Cookie;
 import net.luversof.web.gate.user.util.UserUtil;
 import net.luversof.web.gate.vaadin.board.view.BoardIndex;
+import net.luversof.web.gate.vaadin.bookkeeping.view.BookkeepingIndex;
 import net.luversof.web.gate.vaadin.main.view.MainIndex;
+
 
 public class CommonLayout extends AppLayout {
 
@@ -147,12 +149,13 @@ public class CommonLayout extends AppLayout {
     	
     	var boardSideNavItem = new SideNavItem("Board", BoardIndex.class, VaadinIcon.DATABASE.create());
     	boardSideNavItem.addItem(new SideNavItem("자유게시판", "board/free/list", VaadinIcon.COMMENT.create()));
-//    	boardSideNavItem.addItem(new SideNavItem("BoardWrite", BoardWriteView.class));
+//    	boardSideNavItem.addItem(new SideNavItem("test", BoardArticleList.class));
     	
     	sideNav.addItem(
     			new SideNavItem("Home", MainIndex.class, VaadinIcon.HOME_O.create()),
-    			boardSideNavItem
+    			boardSideNavItem,
 //                new SideNavItem("Item2", "/ttest2", VaadinIcon.DATABASE.create())
+    			new SideNavItem("Bookkeeping", BookkeepingIndex.class, VaadinIcon.MONEY.create())
                 );
         addToDrawer(sideNav);
     }

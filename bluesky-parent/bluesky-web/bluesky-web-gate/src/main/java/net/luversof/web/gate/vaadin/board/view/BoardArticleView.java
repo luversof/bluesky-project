@@ -13,6 +13,7 @@ import com.vaadin.flow.server.auth.AnonymousAllowed;
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.web.gate.board.client.BoardArticleClient;
 import net.luversof.web.gate.board.domain.BoardArticle;
+import net.luversof.web.gate.user.util.UserUtil;
 import net.luversof.web.gate.vaadin.GateVaadin;
 import net.luversof.web.gate.vaadin.board.layout.BoardLayout;
 import net.luversof.web.gate.vaadin.board.util.BoardVaadinUtil;
@@ -31,8 +32,9 @@ public class BoardArticleView extends VerticalLayout implements GateVaadin {
 	private BoardArticle boardArticle;
 	
 	private Button listButton = new Button();
-	private Button editButton = new Button();
 	private Button writeButton = new Button();
+	private Button editButton = new Button();
+	private Button deleteButton = new Button();
 
 	public BoardArticleView(BoardArticleClient boardArticleClient) {
 		this.boardArticleClient = boardArticleClient;
@@ -48,8 +50,9 @@ public class BoardArticleView extends VerticalLayout implements GateVaadin {
 	@Override
 	public void updateLocale() {
 		listButton.setText(getTranslation("board.button.list"));
-		editButton.setText(getTranslation("board.button.edit"));
 		writeButton.setText(getTranslation("board.button.write"));
+		editButton.setText(getTranslation("board.button.edit"));
+		deleteButton.setText(getTranslation("board.button.delete"));
 	}
 	
 	@Override
@@ -59,12 +62,26 @@ public class BoardArticleView extends VerticalLayout implements GateVaadin {
 		article.add(new Paragraph(boardArticle.getContent()));
 		
 		listButton.addClickListener(e -> BoardVaadinUtil.moveToList(boardAlias));
-		editButton.addClickListener(e -> BoardVaadinUtil.moveToEdit(boardAlias, boardArticleId));
 		writeButton.addClickListener(e -> BoardVaadinUtil.moveToWrite(boardAlias));
+		editButton.addClickListener(e -> BoardVaadinUtil.moveToEdit(boardAlias, boardArticleId));
+		deleteButton.addClickListener(e -> {
+			if (!boardArticle.getUserId().equals(UserUtil.getUserId())) {
+				throw new BlueskyException("NOT_USER_ARTICLE");
+			}
+			boardArticleClient.delete(boardArticle);
+			BoardVaadinUtil.moveToList(boardAlias);
+		});
 		
-		var buttonArea = new HorizontalLayout();
-		buttonArea.add(listButton, editButton, writeButton);
+		var buttonLayout = new HorizontalLayout(writeButton);
+		buttonLayout.setSizeFull();
+		buttonLayout.setJustifyContentMode(JustifyContentMode.CENTER);
+		buttonLayout.add(listButton, writeButton);
 		
-		add(article, buttonArea);
+		if (boardArticle.getUserId().equals(UserUtil.getUserId())) {
+			buttonLayout.add(editButton);
+			buttonLayout.add(deleteButton);
+		}
+		
+		add(article, buttonLayout);
 	}
 }
