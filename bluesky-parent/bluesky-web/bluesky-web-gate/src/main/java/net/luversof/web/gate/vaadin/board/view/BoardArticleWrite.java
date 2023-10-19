@@ -70,8 +70,6 @@ public class BoardArticleWrite extends FormLayout implements GateVaadin {
 	
 	@Override
 	public void createView() {
-		updateLocale();
-		
 		boardArticle = new BoardArticle();
 		binder.readBean(boardArticle);
 		binder.forField(titleField).withValidator(StringUtils::hasText, (valueContext) -> getTranslation("boardArticle.title.validate")).bind(BoardArticle::getTitle, BoardArticle::setTitle);

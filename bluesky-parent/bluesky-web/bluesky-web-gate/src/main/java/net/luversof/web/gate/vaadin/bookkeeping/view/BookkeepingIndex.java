@@ -1,5 +1,6 @@
 package net.luversof.web.gate.vaadin.bookkeeping.view;
 
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.router.Route;
@@ -29,7 +30,9 @@ public class BookkeepingIndex extends HorizontalLayout implements GateVaadin {
 		var bookkeepingList = bookkeepingClient.findByUserId(UserUtil.getUserId());
 		// 로그인한 유저의 bookkeeping으로 forward 처리
 		if (bookkeepingList.isEmpty()) {
-			BookkeepingVaadinUtil.moveToBookkeepingCreate();
+			add(new Button("생성된 가계부가 없습니다. 생성하시겠습니까?", e -> {
+				BookkeepingVaadinUtil.moveToBookkeepingCreate();
+			}));
 		} else {
 			// bookkeeping 목록 보여줌
 			for (var bookkeeping : bookkeepingList) {
