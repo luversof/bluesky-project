@@ -4,7 +4,6 @@ import org.springframework.util.StringUtils;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.formlayout.FormLayout.ResponsiveStep;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
@@ -14,6 +13,7 @@ import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import net.luversof.web.gate.bookkeeping.client.BookkeepingClient;
 import net.luversof.web.gate.bookkeeping.domain.Bookkeeping;
+import net.luversof.web.gate.user.util.UserUtil;
 import net.luversof.web.gate.vaadin.GateVaadin;
 import net.luversof.web.gate.vaadin.bookkeeping.layout.BookkeepingLayout;
 import net.luversof.web.gate.vaadin.bookkeeping.util.BookkeepingVaadinUtil;
@@ -71,6 +71,7 @@ public class BookkeepingCreate extends FormLayout implements GateVaadin {
 			} catch (ValidationException e1) {
 				e1.printStackTrace();
 			}
+			bookkeeping.setUserId(UserUtil.getUserId());
 			
 			var result = bookkeepingClient.create(bookkeeping);
 			BookkeepingVaadinUtil.moveToBookkeepingEntry(result.getBookkeepingId());

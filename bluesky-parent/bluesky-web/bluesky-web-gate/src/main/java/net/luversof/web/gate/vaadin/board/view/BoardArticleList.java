@@ -43,6 +43,9 @@ public class BoardArticleList extends VerticalLayout implements GateVaadin {
 	
 	@Override
 	public void createView() {
+		if (getComponentCount() > 0) {
+			return;
+		}
 		
 		var boardArticleGrid = new Grid<>(BoardArticle.class);
 		boardArticleGrid.setColumns("id", "title", "createdDate");
