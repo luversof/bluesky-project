@@ -1,5 +1,7 @@
 package net.luversof.web.gate.config;
 
+import java.util.Locale;
+
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,7 +38,9 @@ public class GateWebMvcConfig implements WebMvcConfigurer {
 
 	@Bean
 	LocaleResolver localeResolver() {
-		return new CookieLocaleResolver();
+		var localeResolver = new CookieLocaleResolver();
+		localeResolver.setDefaultLocale(Locale.KOREA);
+		return localeResolver;
 	}
 	
 	/*

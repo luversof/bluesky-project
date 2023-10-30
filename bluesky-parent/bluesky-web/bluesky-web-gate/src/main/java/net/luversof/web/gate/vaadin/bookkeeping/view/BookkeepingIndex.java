@@ -2,6 +2,7 @@ package net.luversof.web.gate.vaadin.bookkeeping.view;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.router.Route;
@@ -49,14 +50,20 @@ public class BookkeepingIndex extends HorizontalLayout implements GateVaadin {
 		bookkeepingGrid.setItems(DataProvider.ofCollection(bookkeepingClient.findByUserId(UserUtil.getUserId())));
 		bookkeepingGrid.addItemClickListener(e -> BookkeepingVaadinUtil.moveToBookkeepingEntry(e.getItem().getBookkeepingId()));
 		
-		add(bookkeepingGrid);
+//		add(bookkeepingGrid);
 
 		// 로그인한 유저의 bookkeeping으로 forward 처리
 		createButton.addClickListener(e -> {
 			BookkeepingVaadinUtil.moveToBookkeepingCreate();
 		});
 		
-		add(createButton);
+//		add(createButton);
+		
+		var div = new Div();
+		div.setWidthFull();
+		div.add(bookkeepingGrid);
+		div.add(createButton);
+		add(div);
 	}
 	
 	
