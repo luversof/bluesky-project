@@ -4,8 +4,10 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.router.RouteParameters;
 
 import lombok.experimental.UtilityClass;
+import net.luversof.web.gate.vaadin.bookkeeping.view.BookkeepingAsset;
 import net.luversof.web.gate.vaadin.bookkeeping.view.BookkeepingCreate;
 import net.luversof.web.gate.vaadin.bookkeeping.view.BookkeepingEntry;
+import net.luversof.web.gate.vaadin.bookkeeping.view.BookkeepingStatistics;
 
 /**
  * view page 구성
@@ -21,7 +23,15 @@ public class BookkeepingVaadinUtil {
 		UI.getCurrent().navigate(BookkeepingCreate.class);
 	}
 	
-	public static void moveToBookkeepingEntry(String bookkeepingId) {
+	public static void moveToEntry(String bookkeepingId) {
 		UI.getCurrent().navigate(BookkeepingEntry.class, new RouteParameters("bookkeepingId", bookkeepingId));
+	}
+	
+	public static void moveToStatistics(String bookkeepingId) {
+		UI.getCurrent().navigate(BookkeepingStatistics.class, new RouteParameters("bookkeepingId", bookkeepingId));
+	}
+	
+	public static void moveToAsset(String bookkeepingId) {
+		UI.getCurrent().navigate(BookkeepingAsset.class, new RouteParameters("bookkeepingId", bookkeepingId));
 	}
 }

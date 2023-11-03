@@ -30,6 +30,7 @@ public class BookkeepingIndex extends HorizontalLayout implements GateVaadin {
 		//removeAll();
 		this.bookkeepingClient = bookkeepingClient;
 	}
+
 	
 	
 
@@ -48,7 +49,7 @@ public class BookkeepingIndex extends HorizontalLayout implements GateVaadin {
 		var bookkeepingGrid = new Grid<>(Bookkeeping.class);
 		bookkeepingGrid.setColumns("name");
 		bookkeepingGrid.setItems(DataProvider.ofCollection(bookkeepingClient.findByUserId(UserUtil.getUserId())));
-		bookkeepingGrid.addItemClickListener(e -> BookkeepingVaadinUtil.moveToBookkeepingEntry(e.getItem().getBookkeepingId()));
+		bookkeepingGrid.addItemClickListener(e -> BookkeepingVaadinUtil.moveToEntry(e.getItem().getBookkeepingId()));
 		
 //		add(bookkeepingGrid);
 

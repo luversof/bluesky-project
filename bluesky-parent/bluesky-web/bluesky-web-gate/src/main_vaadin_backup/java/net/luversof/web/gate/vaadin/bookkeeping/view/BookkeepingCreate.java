@@ -74,7 +74,7 @@ public class BookkeepingCreate extends FormLayout implements GateVaadin {
 			bookkeeping.setUserId(UserUtil.getUserId());
 			
 			var result = bookkeepingClient.create(bookkeeping);
-			BookkeepingVaadinUtil.moveToBookkeepingEntry(result.getBookkeepingId());
+			BookkeepingVaadinUtil.moveToEntry(result.getBookkeepingId());
 		});
 		
 		add(createButton);

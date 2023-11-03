@@ -16,6 +16,10 @@ public class BookkeepingEntry extends FormLayout implements GateVaadin {
 
 	@Override
 	public void createView() {
+		if (getElement().getChildCount() > 0) {
+			return;
+		}
+
 		add(new Span("entry 보기"));
 	}
 
