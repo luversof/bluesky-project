@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+
+<a data-th-fragment="navButton" data-th-with="
+			text = ${text} ?: '버튼명',
+			activeCss = 'border-transparent hover:border-blue-500',
+			classProp = ''
+		"
+		data-th-href="${href}">
+	<button class="px-5 pt-1 h-12 border-b transition duration-300" 
+		data-th-classappend="${activeCss}"
+		data-th-text="${text}">
+	</button>
+</a>
+
+<nav class="grid grid-cols-2 items-center px-2" data-th-fragment="navbar">
+	<div class="">
+		<ul class="flex">
+			<li><a data-th-replace="~{ :: navButton(text = 'Home', href = '/')}"></a></li>
+			<li><a data-th-replace="~{ :: navButton(text = 'Board', href = '/board')}"></a></li>
+			<li><a data-th-replace="~{ :: navButton(text = 'Blog', href = '/blog')}"></a></li>
+			<li><a data-th-replace="~{ :: navButton(text = 'Bookkeeping', href = '/bookkeeping')}"></a></li>
+			<li><a data-th-replace="~{ :: navButton(text = 'UI components', href = '/ui-components')}"></a></li>
+			<li data-th-text="${param}"></li>
+		</ul>
+	</div>
+
+	<div class="text-right px-3">
+		<div data-sec-authorize="isAuthenticated()" data-th-text="${userUtil.getLoginInfo().username}">로그인 된 상태</div>
+		<div data-sec-authorize="!isAuthenticated()">
+			<a href="/oauth2/authorization/github">github 로그인</a>
+			<a href="/oauth2/authorization/github-local">github local 로그인</a>
+		</div>
+	</div>
+
+</nav>
+
+
+</html>
