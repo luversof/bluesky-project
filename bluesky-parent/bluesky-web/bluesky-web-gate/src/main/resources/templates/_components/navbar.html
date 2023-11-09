@@ -21,7 +21,7 @@
 			<li><a data-th-replace="~{ :: navButton(text = 'Blog', href = '/blog')}"></a></li>
 			<li><a data-th-replace="~{ :: navButton(text = 'Bookkeeping', href = '/bookkeeping')}"></a></li>
 			<li><a data-th-replace="~{ :: navButton(text = 'UI components', href = '/ui-components')}"></a></li>
-			<li data-th-text="${param}"></li>
+			<li data-th-text="${#ctx}"></li>
 		</ul>
 	</div>
 

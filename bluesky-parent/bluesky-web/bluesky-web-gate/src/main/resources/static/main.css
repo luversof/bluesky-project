@@ -585,6 +585,19 @@ video {
   text-align: right;
 }
 
+.text-3xl {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.underline {
+  text-decoration-line: underline;
+}
+
 .transition {
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-backdrop-filter;
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
@@ -595,6 +608,15 @@ video {
 
 .duration-300 {
   transition-duration: 300ms;
+}
+
+.my-header {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  margin-left: 1rem;
+  margin-right: 1rem;
+  font-size: 1.5rem;
+  line-height: 2rem;
 }
 
 .hover\:border-blue-500:hover {

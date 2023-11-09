@@ -1,19 +1,22 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-	layout:decorate="~{_layout/defaultLayout}">
+<html data-layout-decorate="~{_layout/defaultLayout}">
 
 <body>
 	index 테스트
 	::[[#{boardArticle.title}]]::
-	<div th:attr="data-test=#{boardArticle.title}">aa</div>
+	<div data-th-attr="data-test=#{boardArticle.title}">aa</div>
 	
-	<div layout:fragment="content">
-        index 본문
+	  <h1 class="text-3xl font-bold underline">
+    Hello world!
+  </h1>
+	
+	<div data-layout-fragment="content">
+        index 본문2
         
         <div class="my-header">헤더 클래스 처리</div>
     </div>
 
-	<div th:insert="~{_layout/defaultLayout :: copy}"></div>
+	<div data-th-insert="~{_layout/defaultLayout :: copy}"></div>
 </body>
 
 </html>
