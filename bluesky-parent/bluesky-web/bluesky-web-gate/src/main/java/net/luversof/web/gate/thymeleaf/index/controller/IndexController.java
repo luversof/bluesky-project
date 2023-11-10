@@ -1,4 +1,4 @@
-package net.luversof.web.gate.index.controller;
+package net.luversof.web.gate.thymeleaf.index.controller;
 
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;

@@ -2,26 +2,19 @@
 <html>
 
 <a data-th-fragment="navButton" data-th-with="
-			text = ${text} ?: '버튼명',
-			activeCss = 'border-transparent hover:border-blue-500',
-			classProp = ''
-		"
-		data-th-href="${href}">
-	<button class="px-5 pt-1 h-12 border-b transition duration-300" 
-		data-th-classappend="${activeCss}"
-		data-th-text="${text}">
+	activeCss = ${mainMenu.isCurrentMenu ? 'border-blue-500' : 'border-transparent hover:border-blue-500'},
+	classProp = ''" data-th-href="${mainMenu.url}">
+	<button data-th-class="'px-5 pt-1 h-12 border-b transition duration-300 ' + ${activeCss}"
+		data-th-classappend="${classProp}" data-th-text="#{${mainMenu.messageCode}}">
 	</button>
 </a>
 
-<nav class="grid grid-cols-2 items-center px-2" data-th-fragment="navbar">
+<nav class="grid grid-cols-2 items-center px-2" data-th-fragment="navbar" data-th-with="gateThymeleafUtil = ${T(net.luversof.web.gate.thymeleaf.util.GateThymeleafUtil)},
+		mainMenuList = ${gateThymeleafUtil.getMainMenuList()}">
 	<div class="">
 		<ul class="flex">
-			<li><a data-th-replace="~{ :: navButton(text = 'Home', href = '/')}"></a></li>
-			<li><a data-th-replace="~{ :: navButton(text = 'Board', href = '/board')}"></a></li>
-			<li><a data-th-replace="~{ :: navButton(text = 'Blog', href = '/blog')}"></a></li>
-			<li><a data-th-replace="~{ :: navButton(text = 'Bookkeeping', href = '/bookkeeping')}"></a></li>
-			<li><a data-th-replace="~{ :: navButton(text = 'UI components', href = '/ui-components')}"></a></li>
-			<li data-th-text="${#ctx}"></li>
+			<li data-th-each="mainMenu : ${mainMenuList}"><a
+					data-th-replace="~{ :: navButton(navButton = ${mainMenu})}"></a></li>
 		</ul>
 	</div>
 
