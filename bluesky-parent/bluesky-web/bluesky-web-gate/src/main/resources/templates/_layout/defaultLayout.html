@@ -1,17 +1,12 @@
 <!DOCTYPE html>
-<html data-th-with="userUtil = ${T(net.luversof.web.gate.user.util.UserUtil)}">
+<html>
 <head>
 	<link data-th-href="@{/main.css}" rel="stylesheet" /> 
 </head>
 <body>
 	<div data-th-insert="~{_components/navbar :: navbar}"></div>
 	
-	<a data-th-insert="~{_components/button :: button}" data-th-with="text = '버튼ㅂ11'" href="/teestasdfasdf"></a>
-	<a data-th-replace="~{_components/button :: button(text = '버튼ㅂ22')}" href="/teestasdfasdf"></a>::여기
-	
-	<div>상단</div>
 	<div data-layout-fragment="content">본문</div>
-	<div>하단</div>
 </body>
 
 </html>

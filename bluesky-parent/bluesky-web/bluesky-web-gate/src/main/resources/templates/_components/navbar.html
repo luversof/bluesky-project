@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 <html>
 
-<a data-th-fragment="navButton" data-th-with="
-	activeCss = ${mainMenu.isCurrentMenu ? 'border-blue-500' : 'border-transparent hover:border-blue-500'},
-	classProp = ''" data-th-href="${mainMenu.url}">
-	<button data-th-class="'px-5 pt-1 h-12 border-b transition duration-300 ' + ${activeCss}"
-		data-th-classappend="${classProp}" data-th-text="#{${mainMenu.messageCode}}">
-	</button>
-</a>
+<div data-th-fragment="navButton" data-th-replace="~{_components/navbutton :: navbutton(
+	isCurrentMenu = ${mainMenu.isCurrentMenu},
+	url = ${mainMenu.url},
+	text = #{${mainMenu.messageCode}},
+	classProp = '')}">
+	
+</div>
 
 <nav class="grid grid-cols-2 items-center px-2" data-th-fragment="navbar" data-th-with="gateThymeleafUtil = ${T(net.luversof.web.gate.thymeleaf.util.GateThymeleafUtil)},
 		mainMenuList = ${gateThymeleafUtil.getMainMenuList()}">
 	<div class="">
 		<ul class="flex">
 			<li data-th-each="mainMenu : ${mainMenuList}"><a
-					data-th-replace="~{ :: navButton(navButton = ${mainMenu})}"></a></li>
+					data-th-replace="~{ :: navButton(mainMenu = ${mainMenu})}"></a></li>
 		</ul>
 	</div>
 
-	<div class="text-right px-3">
+	<div class="text-right px-3" data-th-with="userUtil = ${T(net.luversof.web.gate.user.util.UserUtil)}">
 		<div data-sec-authorize="isAuthenticated()" data-th-text="${userUtil.getLoginInfo().username}">로그인 된 상태</div>
 		<div data-sec-authorize="!isAuthenticated()">
 			<a href="/oauth2/authorization/github">github 로그인</a>

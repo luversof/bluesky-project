@@ -13,5 +13,9 @@ public class IndexController {
 	public String index() {
 		return "index";
 	}
+	
+	@GetMapping("/ui-components")
+	public void uiComponents() {
+	}
 
 }
