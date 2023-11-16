@@ -1,14 +1,23 @@
 <!DOCTYPE html>
 <html data-layout-decorate="~{_layout/defaultLayout}">
+
 <body>
 	<div data-layout-fragment="content">
 		board 레이아웃
-		
-		<div data-layout-fragment="boardContent">
-			board 내용
+
+		<div class="flex flex-col lg:flex-row">
+			<div class="grid w-64 bg-base-100 place-items-center">
+				<th:block data-th-replace="~{_components/menu :: menu(menu = 'board', classAppend = 'bg-base-200 w-56')}" />
+			</div>
+			<div class="grid grow bg-base-200 place-items-center"
+				data-layout-fragment="boardContent">
+				content
+			</div>
 		</div>
-		
+
+
 		board 레이아웃 바닥
 	</div>
 </body>
+
 </html>

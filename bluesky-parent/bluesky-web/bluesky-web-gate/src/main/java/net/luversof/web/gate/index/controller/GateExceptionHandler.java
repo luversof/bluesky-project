@@ -5,11 +5,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.NativeWebRequest;
+import org.springframework.web.method.HandlerMethod;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import feign.FeignException;
+import io.github.luversof.boot.autoconfigure.exception.util.ExceptionUtil;
 
 @RestControllerAdvice
 public class GateExceptionHandler {
@@ -18,7 +21,7 @@ public class GateExceptionHandler {
 	private ObjectMapper objectMapper;
 
 	@ExceptionHandler
-	public ProblemDetail handleException(FeignException exception) {
+	public <T extends FeignException> Object handleException(T exception, HandlerMethod handlerMethod, NativeWebRequest nativeWebRequest) {
 		ProblemDetail problemDetail = null;
 		try {
 			problemDetail = objectMapper.readValue(exception.contentUTF8(), ProblemDetail.class);
@@ -26,6 +29,6 @@ public class GateExceptionHandler {
 			e.printStackTrace();
 			problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
 		}
-		return problemDetail;
+		return ExceptionUtil.handleException(problemDetail, handlerMethod, nativeWebRequest);
 	}
 }
