@@ -1,20 +1,15 @@
 <!DOCTYPE html>
 <html data-layout-decorate="~{_layout/defaultLayout}">
 
+<head>
+	
+</head>
+
 <body>
-	index 테스트
-	::[[#{boardArticle.title}]]::
-	<div data-th-attr="data-test=#{boardArticle.title}">aa</div>
-	
-	  <h1 class="text-3xl font-bold underline">
-    Hello world!
-  </h1>
-	
 	<div data-layout-fragment="content">
-        index 본문2
-        
-        <div class="my-header">헤더 클래스 처리</div>
-    </div>
+		index 본문2
+
+	</div>
 
 	<div data-th-insert="~{_layout/defaultLayout :: copy}"></div>
 </body>

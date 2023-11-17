@@ -1,8 +1,58 @@
 <!DOCTYPE html>
 <html data-layout-decorate="~{board/_layout/boardLayout}">
+
+<head>
+	  <script src="https://unpkg.com/htmx.org@1.9.8"></script>
+</head>
+
 <body>
-	<div data-layout-fragment="boardContent">
-		list
+	<div data-layout-fragment="contentBoard">
+		
+		[[${board}]]
+		<div class="overflow-x-auto" hx-get="/parts/board/boardArticlePage?boardAlias=free" hx-trigger="load">
+			<table class="table">
+				<!-- head -->
+				<thead>
+					<tr>
+						<th></th>
+						<th>Name</th>
+						<th>Job</th>
+						<th>Favorite Color</th>
+					</tr>
+				</thead>
+				<tbody>
+					<!-- row 1 -->
+					<tr>
+						<th>1</th>
+						<td>Cy Ganderton</td>
+						<td>Quality Control Specialist</td>
+						<td>Blue</td>
+					</tr>
+					<!-- row 2 -->
+					<tr class="hover">
+						<th>2</th>
+						<td>Hart Hagerty</td>
+						<td>Desktop Support Technician</td>
+						<td>Purple</td>
+					</tr>
+					<!-- row 3 -->
+					<tr>
+						<th>3</th>
+						<td>Brice Swyre</td>
+						<td>Tax Accountant</td>
+						<td>Red</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<div class="join place-content-center">
+			<button class="join-item btn btn-sm">1</button>
+			<button class="join-item btn btn-sm btn-active">2</button>
+			<button class="join-item btn btn-sm">3</button>
+			<button class="join-item btn btn-sm">4</button>
+		</div>
 	</div>
 </body>
+
 </html>

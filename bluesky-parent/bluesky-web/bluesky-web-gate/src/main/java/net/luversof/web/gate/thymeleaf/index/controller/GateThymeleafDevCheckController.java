@@ -15,7 +15,7 @@ public class GateThymeleafDevCheckController {
 	@Autowired
 	private GateThymeleafProperties gateThymeleafProperties; 
 
-	@DevCheckDescription("gateThymeleafProperties조회")
+	@DevCheckDescription("gateThymeleafProperties 조회")
 	@GetMapping(pathPrefix + "/gateThymeleafProperties")
 	public GateThymeleafProperties gateThymeleafProperties() {
 		return gateThymeleafProperties;
