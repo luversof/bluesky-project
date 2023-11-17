@@ -1,23 +1,20 @@
 <!DOCTYPE html>
-<html>
-<head>
-	<link data-th-href="@{/main.css}" rel="stylesheet" /> 
-</head>
+<html data-layout-decorate="~{_layout/defaultLayout}">
+
 <body>
-	<h1 class="text-2xl">UI Component 확인</h1>
-	
-	
-	<h2 class="text-xl">navbar</h2>
-	<div data-th-insert="~{_components/navbar :: navbar}"></div>
-	
-	<h2 class="text-lg">navbutton</h2>
-	insert는 해당 dom 하위에 추가 :
-	<a data-th-insert="~{_components/navbutton :: button}" data-th-with="text = 'insert 한 버튼'" href="/teestasdfasdf"></a>
-	<br />
-	
-	replace는 해당 dom을 대상으로 교체 :
-	<a data-th-replace="~{_components/navbutton :: button(text = 'replace 한 버튼')}" href="/teestasdfasdf"></a>
-	<br />
+	<div data-layout-fragment="content">
+		<h1 class="text-2xl">UI Component 확인</h1>
+
+		<h2 class="text-lg">navbutton</h2>
+		insert는 해당 dom 하위에 추가 :
+		<a data-th-insert="~{_components/navbutton :: button}" data-th-with="text = 'insert 한 버튼'"
+			href="/teestasdfasdf"></a>
+		<br />
+
+		replace는 해당 dom을 대상으로 교체 :
+		<a data-th-replace="~{_components/navbutton :: button(text = 'replace 한 버튼')}" href="/teestasdfasdf"></a>
+		<br />
+	</div>
 </body>
 
 </html>

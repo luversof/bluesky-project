@@ -6,7 +6,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import lombok.Data;
 
 @Data
-public class MainMenu {
+public class Menu {
 
 	private String messageCode;
 	private String url;
