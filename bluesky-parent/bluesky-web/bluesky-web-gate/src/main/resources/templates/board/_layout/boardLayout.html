@@ -3,20 +3,15 @@
 
 <body>
 	<div data-layout-fragment="content">
-		board 레이아웃
-
 		<div class="flex flex-col lg:flex-row">
-			<div class="grid w-64 bg-base-100 place-items-center">
-				<th:block data-th-replace="~{_components/menu :: menu(menu = 'board', classAppend = 'bg-base-200 w-56')}" />
+			<div class="grid w-64 bg-base-100">
+				<th:block
+					data-th-replace="~{_components/menu :: menu(menu = 'board', classAppend = 'bg-base-100 w-56')}" />
 			</div>
-			<div class="grid grow bg-base-200 place-items-center"
-				data-layout-fragment="boardContent">
+			<div class="grid grow bg-base-100" data-layout-fragment="contentBoard">
 				content
 			</div>
 		</div>
-
-
-		board 레이아웃 바닥
 	</div>
 </body>
 
