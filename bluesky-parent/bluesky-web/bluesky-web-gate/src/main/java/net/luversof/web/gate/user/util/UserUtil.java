@@ -6,7 +6,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 
 import lombok.experimental.UtilityClass;
-import net.luversof.web.gate.user.domain.LoginInfo;
+import net.luversof.web.gate.feign.user.domain.LoginInfo;
 
 @UtilityClass
 public class UserUtil {

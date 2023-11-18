@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import net.luversof.GeneralWebTest;
-import net.luversof.web.gate.bookkeeping.client.BookkeepingClient;
-import net.luversof.web.gate.bookkeeping.domain.Bookkeeping;
+import net.luversof.web.gate.feign.bookkeeping.client.BookkeepingClient;
+import net.luversof.web.gate.feign.bookkeeping.domain.Bookkeeping;
 
 class BookkeepingClientTest implements GeneralWebTest {
 

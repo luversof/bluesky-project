@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import net.luversof.GeneralWebTest;
-import net.luversof.web.gate.board.client.BoardClient;
+import net.luversof.web.gate.feign.board.client.BoardClient;
 
 class BoardTest implements GeneralWebTest {
 	

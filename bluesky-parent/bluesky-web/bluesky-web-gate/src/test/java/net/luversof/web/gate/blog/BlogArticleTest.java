@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import net.luversof.GeneralWebTest;
-import net.luversof.web.gate.blog.client.BlogArticleClient;
-import net.luversof.web.gate.blog.domain.BlogArticle;
+import net.luversof.web.gate.feign.blog.client.BlogArticleClient;
+import net.luversof.web.gate.feign.blog.domain.BlogArticle;
 
 class BlogArticleTest implements GeneralWebTest {
 

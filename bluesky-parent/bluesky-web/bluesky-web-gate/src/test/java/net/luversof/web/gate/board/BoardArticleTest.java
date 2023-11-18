@@ -11,9 +11,9 @@ import org.springframework.data.domain.Sort.Order;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralWebTest;
-import net.luversof.web.gate.board.client.BoardArticleClient;
-import net.luversof.web.gate.board.client.BoardClient;
-import net.luversof.web.gate.board.domain.BoardArticle;
+import net.luversof.web.gate.feign.board.client.BoardArticleClient;
+import net.luversof.web.gate.feign.board.client.BoardClient;
+import net.luversof.web.gate.feign.board.domain.BoardArticle;
 
 @Slf4j
 class BoardArticleTest implements GeneralWebTest {

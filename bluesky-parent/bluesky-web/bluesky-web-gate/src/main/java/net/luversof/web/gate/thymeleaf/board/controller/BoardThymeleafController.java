@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import io.github.luversof.boot.exception.BlueskyException;
-import net.luversof.web.gate.board.client.BoardClient;
+import net.luversof.web.gate.feign.board.client.BoardClient;
 
 @Controller
 @RequestMapping(value = "/board", produces = MediaType.TEXT_HTML_VALUE)

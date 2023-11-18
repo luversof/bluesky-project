@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.web.gate.constant.GateUserErrorCode;
-import net.luversof.web.gate.user.client.UserDetailsClient;
+import net.luversof.web.gate.feign.user.client.UserDetailsClient;
 
 @Component
 public class GateUserDetailsManager implements UserDetailsManager {
