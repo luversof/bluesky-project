@@ -26,8 +26,8 @@ import net.luversof.web.gate.user.util.UserUtil;
 
 @Slf4j
 @RestController
-@RequestMapping(value = "/api/board/article", produces = MediaType.APPLICATION_JSON_VALUE)
-public class BoardArticleController {
+@RequestMapping(value = "/json/boardArticle", produces = MediaType.APPLICATION_JSON_VALUE)
+public class BoardArticleJsonController {
 
 	@Autowired
 	private BoardArticleClient boardArticleClient;

@@ -2,56 +2,43 @@
 <html data-layout-decorate="~{board/_layout/boardLayout}">
 
 <head>
-	  <script src="https://unpkg.com/htmx.org@1.9.8"></script>
+	  <script src="https://unpkg.com/htmx.org@1.9.9"></script>
+	  
+	  <script>
+		function listQuery() {
+			return {
+				"boardAlias" : "free"
+			}
+		}
+		var boardAlias = "free";
+		var page = 1;
+		
+		function getPage() {
+			return page - 1;
+		}
+	  </script>
 </head>
 
 <body>
 	<div data-layout-fragment="contentBoard">
+		<button class="navbutton">테스트 버튼</button>
 		
+		<!-- 
 		[[${board}]]
-		<div class="overflow-x-auto" hx-get1="/mustache/board/boardArticlePage?boardAlias=free" hx-trigger="load">
-			<table class="table">
-				<!-- head -->
-				<thead>
-					<tr>
-						<th></th>
-						<th>Name</th>
-						<th>Job</th>
-						<th>Favorite Color</th>
-					</tr>
-				</thead>
-				<tbody>
-					<!-- row 1 -->
-					<tr>
-						<th>1</th>
-						<td>Cy Ganderton</td>
-						<td>Quality Control Specialist</td>
-						<td>Blue</td>
-					</tr>
-					<!-- row 2 -->
-					<tr class="hover">
-						<th>2</th>
-						<td>Hart Hagerty</td>
-						<td>Desktop Support Technician</td>
-						<td>Purple</td>
-					</tr>
-					<!-- row 3 -->
-					<tr>
-						<th>3</th>
-						<td>Brice Swyre</td>
-						<td>Tax Accountant</td>
-						<td>Red</td>
-					</tr>
-				</tbody>
-			</table>
+		-->
+		<div class="overflow-x-auto"
+			id="boardList"
+			hx-get="/mustache/board/boardArticlePage" 
+			hx-headers='{"Accept" : "text/mustache" }'
+			hx-trigger="load, click from:body source:.navbutton"
+			hx-trigger234="load"
+			hx-vals='js:{ boardAlias : boardAlias, page : getPage() }'
+		>
+			
+			<div class="skeleton w-auto h-64 grid justify-items-center items-center">
+			</div>
 		</div>
 
-		<div class="join place-content-center">
-			<button class="join-item btn btn-sm">1</button>
-			<button class="join-item btn btn-sm btn-active">2</button>
-			<button class="join-item btn btn-sm">3</button>
-			<button class="join-item btn btn-sm">4</button>
-		</div>
 	</div>
 </body>
 

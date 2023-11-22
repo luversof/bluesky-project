@@ -1606,6 +1606,31 @@ html {
   }
 }
 
+.skeleton {
+  border-radius: var(--rounded-box, 1rem);
+  --tw-bg-opacity: 1;
+  background-color: var(--fallback-b3,oklch(var(--b3)/var(--tw-bg-opacity)));
+  will-change: background-position;
+  animation: skeleton 1.8s ease-in-out infinite;
+  background-image: linear-gradient(
+    105deg,
+    transparent 0%,
+    transparent 40%,
+    var(--fallback-b1,oklch(var(--b1)/1)) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  background-size: 200% auto;
+  background-repeat: no-repeat;
+  background-position-x: -50%;
+}
+
+@media (prefers-reduced-motion) {
+  .skeleton {
+    animation-duration: 15s;
+  }
+}
+
 @keyframes skeleton {
   from {
     background-position: 150%;
@@ -1886,6 +1911,10 @@ html {
   height: 1.25rem;
 }
 
+.h-64 {
+  height: 16rem;
+}
+
 .w-5 {
   width: 1.25rem;
 }
@@ -1902,6 +1931,14 @@ html {
   width: 16rem;
 }
 
+.w-auto {
+  width: auto;
+}
+
+.w-full {
+  width: 100%;
+}
+
 .max-w-md {
   max-width: 28rem;
 }
@@ -1916,6 +1953,14 @@ html {
 
 .place-content-center {
   place-content: center;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-items-center {
+  justify-items: center;
 }
 
 .overflow-x-auto {
