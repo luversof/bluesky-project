@@ -12,6 +12,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.i18n.CookieLocaleResolver;
 import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 
+import net.luversof.web.gate.interceptor.PaginationInterceptor;
+
 @Configuration
 public class GateWebMvcConfig implements WebMvcConfigurer {
 
@@ -27,6 +29,7 @@ public class GateWebMvcConfig implements WebMvcConfigurer {
 	@Override
 	public void addInterceptors(InterceptorRegistry registry) {
 		registry.addInterceptor(new LocaleChangeInterceptor());
+		registry.addWebRequestInterceptor(new PaginationInterceptor());
 	}
 
 	@Bean

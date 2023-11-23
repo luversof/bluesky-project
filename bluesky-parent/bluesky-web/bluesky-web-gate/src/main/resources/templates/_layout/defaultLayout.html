@@ -1,14 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html data-theme="winter">
 
 <head>
 	<link data-th-href="@{/main.css}" rel="stylesheet" />
+	<script src="https://unpkg.com/theme-change"></script>
 </head>
 
 <body>
 	<div class="container mx-auto">
 
-		<div data-th-replace="~{_components/navbar :: navbar}"></div>
+		<div data-th-replace="~{_components/navbar}"></div>
 
 		<div data-layout-fragment="content">본문</div>
 

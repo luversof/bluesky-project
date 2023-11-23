@@ -5,10 +5,10 @@
 	<div data-layout-fragment="content">
 		<div class="flex flex-col lg:flex-row">
 			<div class="grid w-64 bg-base-100">
-				<th:block
-					data-th-replace="~{_components/menu :: menu(menu = 'board', classAppend = 'bg-base-100 w-56')}" />
+				<div
+					data-th-replace="~{_components/navmenu (menu = 'board', classAppend = 'bg-base-100 w-56')}" />
 			</div>
-			<div class="grid grow bg-base-100" data-layout-fragment="contentBoard">
+			<div class="grid grow bg-base-100" data-layout-fragment="content-board">
 				content
 			</div>
 		</div>

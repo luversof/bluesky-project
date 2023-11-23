@@ -2,43 +2,35 @@
 <html data-layout-decorate="~{board/_layout/boardLayout}">
 
 <head>
-	  <script src="https://unpkg.com/htmx.org@1.9.9"></script>
-	  
-	  <script>
-		function listQuery() {
-			return {
-				"boardAlias" : "free"
-			}
-		}
+	<script src="https://unpkg.com/htmx.org"></script>
+
+	<script>
 		var boardAlias = "free";
 		var page = 1;
-		
+
 		function getPage() {
 			return page - 1;
 		}
-	  </script>
+	</script>
 </head>
 
 <body>
-	<div data-layout-fragment="contentBoard">
-		<button class="navbutton">테스트 버튼</button>
-		
-		<!-- 
-		[[${board}]]
-		-->
-		<div class="overflow-x-auto"
-			id="boardList"
-			hx-get="/mustache/board/boardArticlePage" 
-			hx-headers='{"Accept" : "text/mustache" }'
-			hx-trigger="load, click from:body source:.navbutton"
-			hx-trigger234="load"
-			hx-vals='js:{ boardAlias : boardAlias, page : getPage() }'
-		>
-			
-			<div class="skeleton w-auto h-64 grid justify-items-center items-center">
+	<div data-layout-fragment="content-board">
+		<div class="" id="boardList"
+			hx-get="/fragment/board/boardArticlePage"
+			hx-headers='{"Accept" : "text/html" }'
+			hx-trigger="load delay:0s, click target:.navbutton"
+			hx-vals='js:{ boardAlias : boardAlias, page : getPage() }'>
+
+			<div class="flex flex-col gap-4 w-auto">
+				<div class="skeleton w-auto h-96"></div>
+				<div class="flex justify-between">
+					<div class="skeleton w-1/6 h-8"></div>
+					<div class="skeleton w-1/2 h-8"></div>
+					<div class="skeleton w-1/6 h-8"></div>
+				</div>
 			</div>
 		</div>
-
 	</div>
 </body>
 
