@@ -1,6 +1,8 @@
 package net.luversof.api.board.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,7 +24,7 @@ public class BoardController {
 	
 	@Autowired
 	private BoardService boardService;
-
+	
 	@PostMapping
 	@BoardControllerOperation.Create
 	public Board create(@RequestBody Board board) {
@@ -36,6 +38,11 @@ public class BoardController {
 //		var b = boardService.findByAlias2(alias);
 //		log.debug("test222 : {}", b);
 		return a;
+	}
+	
+	@GetMapping("/findAll")
+	public Page<Board> findAll(Pageable pageable) {
+		return boardService.findAll(pageable);
 	}
 	
 	@PutMapping

@@ -1,6 +1,8 @@
 package net.luversof.web.gate.feign.board.client;
 
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -18,6 +20,9 @@ public interface BoardClient {
 	
 	@GetMapping("/findByAlias")
 	Board findByAlias(@RequestParam String alias);
+	
+	@GetMapping("/findAll")
+	Page<Board> findAll(Pageable pageable);
 	
 	@PutMapping
 	Board update(@RequestBody Board board);
