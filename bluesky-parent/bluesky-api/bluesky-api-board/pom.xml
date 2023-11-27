@@ -52,10 +52,6 @@
 			<artifactId>logback-access</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.mariadb.jdbc</groupId>
-			<artifactId>mariadb-java-client</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-registry-prometheus</artifactId>
 		</dependency>
@@ -68,12 +64,16 @@
 			<artifactId>opentelemetry-exporter-zipkin</artifactId>
 		</dependency>
 
-		<!-- (s) test -->
+		<!-- (s) jdbc -->
+		<dependency>
+			<groupId>org.mariadb.jdbc</groupId>
+			<artifactId>mariadb-java-client</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>com.microsoft.sqlserver</groupId>
 			<artifactId>mssql-jdbc</artifactId>
 		</dependency>
-		<!-- (e) test -->
+		<!-- (e) jdbc -->
 
 	</dependencies>
 	<build>
