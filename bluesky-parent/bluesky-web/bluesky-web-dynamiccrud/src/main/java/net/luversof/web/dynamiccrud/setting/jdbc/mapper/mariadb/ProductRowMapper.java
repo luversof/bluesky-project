@@ -1,4 +1,4 @@
-package net.luversof.web.dynamiccrud.setting.jdbc.mapper;
+package net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -12,9 +12,7 @@ public class ProductRowMapper extends SettingRowMapper<Product> {
 		var product = new Product();
 		product.setProduct(rs.getString("product"));
 		product.setProductName(rs.getString("productName"));
-		product.setOperator(rs.getString("operator"));
-		product.setRegisterDate(getZonedDateTime(rs.getTimestamp("registerDate")));
-		product.setModifyDate(getZonedDateTime(rs.getTimestamp("modifyDate")));
+		setCommon(product, rs);
 		return product;
 	}
 

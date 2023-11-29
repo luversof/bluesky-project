@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.web.dynamiccrud.setting.domain.MainMenu;
 import net.luversof.web.dynamiccrud.setting.domain.Product;
-import net.luversof.web.dynamiccrud.setting.jdbc.mapper.ProductRowMapper;
+import net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb.ProductRowMapper;
 import net.luversof.web.dynamiccrud.setting.repository.MainMenuRepository;
 import net.luversof.web.dynamiccrud.setting.repository.ProductRepository;
 
