@@ -11,7 +11,7 @@ import lombok.Data;
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "Products")
-public class Product extends SettingClass {
+public class Product extends Setting {
 	
 	@Id
 	@Column(length = 20)

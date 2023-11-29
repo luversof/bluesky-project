@@ -10,7 +10,7 @@ import lombok.Data;
 
 @Data
 @MappedSuperclass
-public abstract class SettingClass {
+public abstract class Setting {
 	
 	private String operator;
 	

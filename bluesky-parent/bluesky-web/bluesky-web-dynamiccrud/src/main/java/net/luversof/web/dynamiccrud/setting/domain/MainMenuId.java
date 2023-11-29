@@ -1,5 +1,7 @@
 package net.luversof.web.dynamiccrud.setting.domain;
 
+import java.io.Serializable;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MainMenuId implements SettingClassId {
+public class MainMenuId implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 

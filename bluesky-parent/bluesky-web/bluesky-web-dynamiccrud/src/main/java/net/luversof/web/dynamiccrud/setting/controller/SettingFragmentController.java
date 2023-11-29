@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import net.luversof.web.dynamiccrud.setting.domain.QueryParameter;
+import net.luversof.web.dynamiccrud.setting.domain.SettingQueryParameter;
 import net.luversof.web.dynamiccrud.setting.service.SettingService;
 
 @Controller
@@ -19,7 +19,7 @@ public class SettingFragmentController {
 	private SettingService settingService;
 	
 	@GetMapping("/{type:product|mainMenu|subMenu|query|field}/findAll")
-	public String page(@PathVariable String type, QueryParameter queryParameter, Pageable pageable, Model model) {
+	public String page(@PathVariable String type, SettingQueryParameter queryParameter, Pageable pageable, Model model) {
 		model.addAttribute("page", settingService.find(type, queryParameter, pageable));
 		return "settings/_fragment/" + type + "Page";
 	}

@@ -13,7 +13,7 @@ import lombok.EqualsAndHashCode;
 @Entity
 @Table(name = "Fields")
 @IdClass(FieldId.class)
-public class Field extends SettingClass {
+public class Field extends Setting {
 	
 	@Id
 	@Column(length = 20)

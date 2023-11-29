@@ -13,7 +13,7 @@ import lombok.EqualsAndHashCode;
 @Entity
 @Table(name = "Queries")
 @IdClass(QueryId.class)
-public class Query extends SettingClass {
+public class Query extends Setting {
 	
 	@Id
 	@Column(length = 20)

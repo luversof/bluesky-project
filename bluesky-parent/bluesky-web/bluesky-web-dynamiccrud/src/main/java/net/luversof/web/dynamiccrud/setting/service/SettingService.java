@@ -11,8 +11,8 @@ import net.luversof.web.dynamiccrud.setting.domain.Field;
 import net.luversof.web.dynamiccrud.setting.domain.MainMenu;
 import net.luversof.web.dynamiccrud.setting.domain.Product;
 import net.luversof.web.dynamiccrud.setting.domain.Query;
-import net.luversof.web.dynamiccrud.setting.domain.QueryParameter;
-import net.luversof.web.dynamiccrud.setting.domain.SettingClass;
+import net.luversof.web.dynamiccrud.setting.domain.SettingQueryParameter;
+import net.luversof.web.dynamiccrud.setting.domain.Setting;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
 import net.luversof.web.dynamiccrud.setting.repository.FieldRepository;
 import net.luversof.web.dynamiccrud.setting.repository.MainMenuRepository;
@@ -46,7 +46,7 @@ public class SettingService {
 	private FieldRepository fieldRepository;
 
 	@SuppressWarnings("unchecked")
-	public <T extends SettingClass> Page<T> find(String type, QueryParameter queryParameter, Pageable pageable) {
+	public <T extends Setting> Page<T> find(String type, SettingQueryParameter queryParameter, Pageable pageable) {
 //		var repository = getRepository(type);
 		
 		// 이거 조건별로 체크하는거 어케 하면 좋을까?
@@ -66,7 +66,7 @@ public class SettingService {
 		return null;
 	}
 	
-	private Page<Product> findProduct(String type, QueryParameter queryParameter, Pageable pageable) {
+	private Page<Product> findProduct(String type, SettingQueryParameter queryParameter, Pageable pageable) {
 		if (!StringUtils.hasText(queryParameter.product())) {
 			return productRepository.findAll(pageable);
 		} else {
@@ -74,7 +74,7 @@ public class SettingService {
 		}
 	}
 	
-	private Page<MainMenu> findMainMenu(String type, QueryParameter queryParameter, Pageable pageable) {
+	private Page<MainMenu> findMainMenu(String type, SettingQueryParameter queryParameter, Pageable pageable) {
 		var hasProduct = StringUtils.hasText(queryParameter.product());
 		var hasMainMenu = StringUtils.hasText(queryParameter.mainMenu());
 		
@@ -91,15 +91,15 @@ public class SettingService {
 	}
 
 	
-	private Page<SubMenu> findSubMenu(String type, QueryParameter queryParameter, Pageable pageable) {
+	private Page<SubMenu> findSubMenu(String type, SettingQueryParameter queryParameter, Pageable pageable) {
 		return subMenuRepository.findAll(pageable);
 	}
 	
-	private Page<Query> findQuery(String type, QueryParameter queryParameter, Pageable pageable) {
+	private Page<Query> findQuery(String type, SettingQueryParameter queryParameter, Pageable pageable) {
 		return queryRepository.findAll(pageable);
 	}
 	
-	private Page<Field> findField(String type, QueryParameter queryParameter, Pageable pageable) {
+	private Page<Field> findField(String type, SettingQueryParameter queryParameter, Pageable pageable) {
 		return fieldRepository.findAll(pageable);
 	}
 	

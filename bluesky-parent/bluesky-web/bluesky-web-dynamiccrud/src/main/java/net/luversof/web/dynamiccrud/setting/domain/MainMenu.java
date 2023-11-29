@@ -13,7 +13,7 @@ import lombok.EqualsAndHashCode;
 @Entity
 @Table(name = "MainMenus")
 @IdClass(MainMenuId.class)
-public class MainMenu extends SettingClass {
+public class MainMenu extends Setting {
 	
 	@Id
 	@Column(length = 20)
