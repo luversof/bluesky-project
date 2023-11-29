@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html data-layout-decorate="~{_layout/defaultLayout}">
+
+<head>
+	<script src="https://unpkg.com/htmx.org"></script>
+	<script>
+		var params = new URLSearchParams(window.location.search);
+		
+		var type = "[[${type}]]";
+		
+		function refreshUrl() {
+			window.history.replaceState(null, null, "?" + params.toString());
+		}		 
+
+
+		function getParam(paramKey) {
+			if (params.get(paramKey) == '') params.delete(paramKey)
+			return params.get(paramKey) == null ? null : params.get(paramKey);
+		}
+		
+		function setParam(paramKey, paramValue) {
+			if (paramValue == null || paramValue == '') {
+				console.log("delete param", paramKey)
+				params.delete(paramKey);
+			} else {
+				params.set(paramKey, paramValue);
+			}
+			refreshUrl();
+		}
+		
+		function resetParam() {
+			setParam("product", null);
+			setParam("mainMenu", null);
+			setParam("subMenu", null);
+			document.querySelector("[name=product]").value = "";
+			document.querySelector("[name=mainMenu]").value = "";
+			document.querySelector("[name=subMenu]").value = "";
+		}
+		
+		// 주소에 보여지는 page에서 -1 한 값을 실제 페이지 요청에 사용함
+		function getRequestPage() {
+			var page = getParam("page"); 
+			return (page == null ? 1 : page) - 1;
+		}
+
+		// 각 메뉴마다 허용하는 parameter가 있으므로 해당 값을 체크
+		
+		
+		// 검색 처리 공통화 고민해야 함.
+		
+		// 상단 메뉴의 링크에 검색 parameter를 추가 처리
+		window.onload = function() {
+			// menu에 param을 추가하는 작업은 어떻게?
+			var target = document.querySelectorAll(".navbar .menu a")
+			target.forEach(el => el.addEventListener("click", (event) => {
+				var url = new URL(event.target.href);
+				params.forEach((value, key) => {
+					url.searchParams.set(key, value);
+				})
+				// page parameter는 제거
+				url.searchParams.delete("page");
+				el.setAttribute("href", url);
+			}));
+			
+		}
+	</script>
+</head>
+
+<body>
+	<div data-layout-fragment="content">
+		
+		<div>
+			<input type="text" data-th-value="${param.product}" name="product" placeholder="프로덕트 ID" class="input input-bordered input-sm w-48 navinput" onchange="setParam('product', this.value)" />
+			<input type="text" data-th-if="${type == 'mainMenu' || type == 'subMenu' || type == 'query' || type == 'field'}" data-th-value="${param.mainMenu}" name="mainMenu" placeholder="메인메뉴 ID" class="input input-bordered input-sm w-48 navinput" onchange="setParam('mainMenu', this.value)" />
+			<input type="text" data-th-if="${type == 'subMenu' || type == 'query' || type == 'field'}" data-th-value="${param.subMenu}" name="subMenu" placeholder="서브메뉴 ID" class="input input-bordered input-sm w-48 navinput" onchange="setParam('subMenu', this.value)" />
+			
+			<button class="btn btn-sm resetbutton" onclick="resetParam()">Reset</button>
+		</div>
+		
+		<div
+			data-th-attr="hx-get=@{/settings/fragment/{type}/findAll(type=${type})}"
+			hx-vals="js:{'page' : getRequestPage()}"
+			hx-include="[name='product'],[name='mainMenu'],[name='subMenu']"
+			hx-trigger="load delay:0s, click target:.navbutton, change from:.navinput, click from:.resetbutton"
+		>
+			
+		</div>
+	</div>
+
+	<div data-th-insert="~{_layout/defaultLayout :: copy}"></div>
+</body>
+
+</html>
