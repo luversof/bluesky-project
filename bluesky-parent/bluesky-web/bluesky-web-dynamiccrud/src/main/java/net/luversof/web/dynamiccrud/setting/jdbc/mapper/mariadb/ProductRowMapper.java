@@ -9,9 +9,10 @@ public class ProductRowMapper extends SettingRowMapper<Product> {
 
 	@Override
 	public Product mapRow(ResultSet rs, int rowNum) throws SQLException {
-		var product = new Product();
-		product.setProduct(rs.getString("product"));
-		product.setProductName(rs.getString("productName"));
+		var product = new Product(
+			rs.getString("product"),
+			rs.getString("productName")
+		);
 		setCommon(product, rs);
 		return product;
 	}

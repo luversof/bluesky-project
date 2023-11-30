@@ -3,18 +3,19 @@ package net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import net.luversof.web.dynamiccrud.setting.domain.Product;
+import net.luversof.web.dynamiccrud.setting.domain.MainMenu;
 
-public class MainMenuRowMapper extends SettingRowMapper<Product> {
+public class MainMenuRowMapper extends SettingRowMapper<MainMenu> {
 
 	@Override
-	public Product mapRow(ResultSet rs, int rowNum) throws SQLException {
-		var product = new Product();
-		product.setProduct(rs.getString("product"));
-		product.setProduct(rs.getString("mainMenu"));
-		product.setProductName(rs.getString("mainMenuName"));
-		setCommon(product, rs);
-		return product;
+	public MainMenu mapRow(ResultSet rs, int rowNum) throws SQLException {
+		var mainMenu = new MainMenu(
+			rs.getString("product"),
+			rs.getString("mainMenu"),
+			rs.getString("mainMenuName")
+		);
+		setCommon(mainMenu, rs);
+		return mainMenu;
 	}
 
 }

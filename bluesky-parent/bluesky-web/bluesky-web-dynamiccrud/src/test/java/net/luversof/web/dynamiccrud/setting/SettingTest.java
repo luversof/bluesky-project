@@ -9,11 +9,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.web.dynamiccrud.setting.domain.MainMenu;
 import net.luversof.web.dynamiccrud.setting.domain.Product;
+import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb.ProductRowMapper;
 import net.luversof.web.dynamiccrud.setting.repository.MainMenuRepository;
 import net.luversof.web.dynamiccrud.setting.repository.ProductRepository;
@@ -29,6 +33,9 @@ public class SettingTest implements GeneralTest {
 	
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
+	
+	@Autowired
+	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 	
 	@Test
 	void productSave() {
@@ -70,7 +77,7 @@ public class SettingTest implements GeneralTest {
 	void productFindById() {
 		var page = PageRequest.of(0,  10);
 		
-		var productPage = productRepository.findByProduct("aion", page);
+		var productPage = productRepository.findByProduct("noti", page);
 		
 		log.debug("page : {}", productPage);
 	}
@@ -79,7 +86,7 @@ public class SettingTest implements GeneralTest {
 	@Test
 	void mainMenuFindById() {
 		var page = PageRequest.of(0,  10);
-		var productPage = mainMenuRepository.findByProduct("aion", page);
+		var productPage = mainMenuRepository.findByProduct("noti", page);
 		
 		log.debug("page : {}", productPage);
 	}
@@ -91,4 +98,44 @@ public class SettingTest implements GeneralTest {
 		Product product = jdbcTemplate.queryForObject("select product, productName, operator, registerDate, modifyDate from Products where product = ?", new ProductRowMapper(), argList.toArray());
 		log.debug("product : {}", product);
 	}
+	
+	@Test
+	void namedParameterJdbcTemplateTest() {
+		var paramSource = new MapSqlParameterSource();
+		paramSource.addValue("product", "noti");
+		var product = namedParameterJdbcTemplate.queryForObject("select product, productName, operator, registerDate, modifyDate from Products where product = :product", paramSource, new ProductRowMapper());
+		log.debug("product : {}", product);
+	}
+	
+	/**
+	 * 다른 object로 parameter를 만드는 방법
+	 * 다만 여러 bean에서 가져와서 만들지는 못하는 듯?
+	 */
+	@Test
+	void namedParameterJdbcTemplateTest_1() {
+		var queryParameter = new SettingParameter("product", "noti", "main", "sub");
+		var paramSource = new BeanPropertySqlParameterSource(queryParameter);
+		Product product = namedParameterJdbcTemplate.queryForObject("select product, productName, operator, registerDate, modifyDate from Products where product = :product", paramSource, new ProductRowMapper());
+		log.debug("product : {}", product);
+	}
+	
+	@Test
+	void namedParameterJdbcTemplateTest2() {
+		var paramSource = new MapSqlParameterSource();
+		paramSource.addValue("product", "noti22");
+		List<Product> productList = namedParameterJdbcTemplate.query("select product, productName, operator, registerDate, modifyDate from Products where product = :product", paramSource, new ProductRowMapper());
+		log.debug("product : {}", productList);
+	}
+	
+
+	@Test
+	void namedParameterJdbcTemplateTest3() {
+		var paramSource = new MapSqlParameterSource();
+		paramSource.addValue("product", "noti");
+		int result = namedParameterJdbcTemplate.queryForObject("select COUNT(*) from Products where product = :product", paramSource, Integer.class);
+		log.debug("result : {}", result);
+	}
+	
+	
+
 }

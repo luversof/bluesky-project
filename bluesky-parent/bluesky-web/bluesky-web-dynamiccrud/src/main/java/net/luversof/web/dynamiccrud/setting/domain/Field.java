@@ -5,11 +5,15 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "Fields")
 @IdClass(FieldId.class)
@@ -47,7 +51,9 @@ public class Field extends Setting {
 	
 	private String enableEdit;
 	
-	private int formSize;
+	@Column
+	private Short formSize;
 	
-	private int formOrder;
+	@Column
+	private Short formOrder;
 }

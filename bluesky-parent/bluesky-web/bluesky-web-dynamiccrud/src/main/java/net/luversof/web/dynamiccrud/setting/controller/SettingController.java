@@ -6,14 +6,17 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+/**
+ * 관리자 설정용 페이지
+ */
 @Controller
-@RequestMapping("/settings")
-public class SettingsController {
+@RequestMapping("/setting")
+public class SettingController {
 
 	@GetMapping({ "", "/", "/index", "/{type:product|mainMenu|subMenu|query|field}" })
 	public String settings(@PathVariable String type, Model model) {
 		model.addAttribute("type", type);
-		return "settings/index";
+		return "setting/index";
 	}
 
 }

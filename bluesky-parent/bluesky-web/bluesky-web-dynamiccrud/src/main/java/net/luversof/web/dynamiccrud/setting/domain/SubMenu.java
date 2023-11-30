@@ -5,11 +5,15 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "SubMenus")
 @IdClass(SubMenuId.class)
@@ -33,11 +37,13 @@ public class SubMenu extends Setting {
 	
 	private int displayOrder;
 	
-	private int groupNo;
+	@Column
+	private Short groupNo;
 	
 	private String groupTemplate;
 	
-	private int pageSize;
+	@Column
+	private Short pageSize;
 	
 	private boolean enableCount;
 	

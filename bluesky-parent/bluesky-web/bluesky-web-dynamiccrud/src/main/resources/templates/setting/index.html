@@ -69,7 +69,7 @@
 <body>
 	<div data-layout-fragment="content">
 		
-		<div>
+		<div class="search">
 			<input type="text" data-th-value="${param.product}" name="product" placeholder="프로덕트 ID" class="input input-bordered input-sm w-48 navinput" onchange="setParam('product', this.value)" />
 			<input type="text" data-th-if="${type == 'mainMenu' || type == 'subMenu' || type == 'query' || type == 'field'}" data-th-value="${param.mainMenu}" name="mainMenu" placeholder="메인메뉴 ID" class="input input-bordered input-sm w-48 navinput" onchange="setParam('mainMenu', this.value)" />
 			<input type="text" data-th-if="${type == 'subMenu' || type == 'query' || type == 'field'}" data-th-value="${param.subMenu}" name="subMenu" placeholder="서브메뉴 ID" class="input input-bordered input-sm w-48 navinput" onchange="setParam('subMenu', this.value)" />
@@ -78,10 +78,10 @@
 		</div>
 		
 		<div
-			data-th-attr="hx-get=@{/settings/fragment/{type}/findAll(type=${type})}"
+			data-th-attr="hx-get=@{/setting/fragment/{type}/findAll(type=${type})}"
 			hx-vals="js:{'page' : getRequestPage()}"
-			hx-include="[name='product'],[name='mainMenu'],[name='subMenu']"
-			hx-trigger="load delay:0s, click target:.navbutton, change from:.navinput, click from:.resetbutton"
+			hx-include=".search>[name='product'],.search>[name='mainMenu'],.search>[name='subMenu']"
+			hx-trigger="load delay:0s, click target:.navbutton, change from:.navinput, click from:.search>.resetbutton"
 		>
 			
 		</div>
