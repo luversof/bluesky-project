@@ -82,15 +82,6 @@ public class SettingTest implements GeneralTest {
 		log.debug("page : {}", productPage);
 	}
 	
-
-	@Test
-	void mainMenuFindById() {
-		var page = PageRequest.of(0,  10);
-		var productPage = mainMenuRepository.findByProduct("noti", page);
-		
-		log.debug("page : {}", productPage);
-	}
-	
 	@Test
 	void jdbcTemplateTest() {
 		List<String> argList = new ArrayList<String>();

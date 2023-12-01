@@ -10,7 +10,7 @@
 			</label>
 			<div data-th-replace="~{_components/navmenu (menu = 'setting', classAppend = 'menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52')}" />
 		</div>
-		<a class="btn btn-ghost text-xl">Event Admin Setting</a>
+		<a class="btn btn-ghost text-xl" data-th-text="${navibarTitle?:'Event Admin Setting'}"></a>
 	</div>
 	<div class="navbar-center hidden lg:flex">
 		<div data-th-replace="~{_components/navmenu (menu = 'setting', classAppend = 'menu-horizontal px-1')}" />

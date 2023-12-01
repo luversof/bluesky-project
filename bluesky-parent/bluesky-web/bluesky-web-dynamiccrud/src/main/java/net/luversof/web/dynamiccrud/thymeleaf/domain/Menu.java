@@ -3,6 +3,7 @@ package net.luversof.web.dynamiccrud.thymeleaf.domain;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import io.github.luversof.boot.context.MessageUtil;
 import lombok.Data;
 
 @Data
@@ -15,6 +16,10 @@ public class Menu {
 	public boolean isCurrentMenu() {
 		var requestUri = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest().getRequestURI();
 		return ("/".equals(url)) ? requestUri.equals(url) : requestUri.contains(url);
+	}
+
+	public String getName() {
+		return MessageUtil.getMessage(messageCode, messageCode);
 	}
 
 }

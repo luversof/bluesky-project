@@ -1,2 +1,18 @@
+<!DOCTYPE html>
+<html data-layout-decorate="~{_layout/defaultLayout}" data-th-with="navibarTitle=${mainMenu.mainMenuName}">
 
-사용 페이지
+<head>
+	<script src="https://unpkg.com/htmx.org"></script>
+	<script>
+	</script>
+</head>
+
+<body>
+	<div data-layout-fragment="content">
+		여기
+	</div>
+
+	<div data-th-insert="~{_layout/defaultLayout :: copy}"></div>
+</body>
+
+</html>

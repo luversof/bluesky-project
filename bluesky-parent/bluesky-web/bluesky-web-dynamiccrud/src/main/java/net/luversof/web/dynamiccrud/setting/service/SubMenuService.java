@@ -16,9 +16,13 @@ import org.springframework.util.StringUtils;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
 import net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb.SubMenuRowMapper;
+import net.luversof.web.dynamiccrud.setting.repository.SubMenuRepository;
 
 @Service
 public class SubMenuService implements SettingService<SubMenu> {
+	
+	@Autowired
+	private SubMenuRepository subMenuRepository;
 	
 	@Autowired
 	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
@@ -67,6 +71,10 @@ public class SubMenuService implements SettingService<SubMenu> {
 		List<SubMenu> subMenuList = namedParameterJdbcTemplate.query(selectQueryBuilder.toString(), paramSource, ROW_MAPPER);
 		
 		return new PageImpl<>(subMenuList, pageable, totalCount);
+	}
+	
+	public List<SubMenu> findByProductAndMainMenu(String product, String mainMenu) {
+		return subMenuRepository.findByProductAndMainMenu(product, mainMenu);
 	}
 
 }

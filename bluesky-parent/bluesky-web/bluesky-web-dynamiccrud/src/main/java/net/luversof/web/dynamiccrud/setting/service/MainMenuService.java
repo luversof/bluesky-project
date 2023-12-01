@@ -16,9 +16,13 @@ import org.springframework.util.StringUtils;
 import net.luversof.web.dynamiccrud.setting.domain.MainMenu;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb.MainMenuRowMapper;
+import net.luversof.web.dynamiccrud.setting.repository.MainMenuRepository;
 
 @Service
 public class MainMenuService implements SettingService<MainMenu> {
+	
+	@Autowired
+	private MainMenuRepository mainMenuRepository;
 	
 	@Autowired
 	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
@@ -61,6 +65,10 @@ public class MainMenuService implements SettingService<MainMenu> {
 		List<MainMenu> mainMenuList = namedParameterJdbcTemplate.query(selectQueryBuilder.toString(), paramSource, ROW_MAPPER);
 		
 		return new PageImpl<>(mainMenuList, pageable, totalCount);
+	}
+	
+	public MainMenu findByProductAndMainMenu(String product, String mainMenu) {
+		return mainMenuRepository.findByProductAndMainMenu(product, mainMenu);
 	}
 
 }

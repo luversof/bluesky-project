@@ -4,14 +4,14 @@
 	data-th-with="
 	dynamicCrudThymeleafUtil = ${T(net.luversof.web.dynamiccrud.thymeleaf.util.DynamicCrudThymeleafUtil)},
 	menu=${menu},
-	menuList = ${dynamicCrudThymeleafUtil.getMenuList(menu)},
+	menuList = ${menuList?: dynamicCrudThymeleafUtil.getMenuList(menu)},
 	isCurrentMenu = ${isCurrentMenu?:false},
 	classAppend = ${classAppend}
 	"
 	data-th-classappend="${classAppend}">
 	<li data-th-each="menu : ${menuList}">
 		<a data-th-classappend="${menu.isCurrentMenu ? 'active' : ''}" data-th-href="${menu.url}"
-			data-th-text="#{${menu.messageCode}}">
+			data-th-text="${menu.name}">
 		</a>
 	</li>
 </ul>

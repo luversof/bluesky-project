@@ -67,7 +67,7 @@
 			<th data-th-text="${subMenu.enableInsert}"></th>
 			<th data-th-text="${subMenu.enableUpdate}"></th>
 			<th data-th-text="${subMenu.enableDelete}"></th>
-			<th>/url계산해서보여주는부분</th>
+			<th><a data-th-href="${subMenu.url}"  target="_blank">Link</a></th>
 			<th data-th-text="${subMenu.operator}"></th>
 			<th data-th-text="${#temporals.formatISO(subMenu.modifyDate)}"></th>
 			<td>
@@ -83,9 +83,7 @@
 
 
 <div class="flex justify-between items-center p-2">
-	<div>
-	</div>
-	<div>
+	<div class="grow">
 		<div data-th-replace="~{setting/_components/pagination (pagination = ${pagePagination})}"></div>
 	</div>
 	<div>

@@ -54,5 +54,9 @@ public class SubMenu extends Setting {
 	private boolean enableUpdate;
 	
 	private boolean enableDelete;
+	
+	public String getUrl() {
+		return String.format("/use/%s/%s/%s", getProduct(), getMainMenu(), getSubMenu());
+	}
 
 }
