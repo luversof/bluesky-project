@@ -27,10 +27,13 @@ public class MainMenuService implements SettingService<MainMenu> {
 	@Autowired
 	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 	
+	@Autowired
+	private SettingDataService settingDataService;
+	
 	private static final RowMapper<MainMenu> ROW_MAPPER = new MainMenuRowMapper();
 
 	@Override
-	public Page<MainMenu> find(SettingParameter queryParameter, Pageable pageable) {
+	public Page<MainMenu> find(SettingParameter settingParameter, Pageable pageable) {
 		
 		// select 쿼리 생성
 		var selectQueryBuilder = new StringBuilder("SELECT product, mainMenu, mainMenuName, operator, registerDate, modifyDate FROM MainMenus ");
@@ -39,16 +42,16 @@ public class MainMenuService implements SettingService<MainMenu> {
 		
 		var paramSource = new MapSqlParameterSource();
 		
-		if (StringUtils.hasText(queryParameter.product())) {
+		if (StringUtils.hasText(settingParameter.product())) {
 			selectQueryBuilder.append("WHERE product = :product ");
 			countQueryBuilder.append("WHERE product = :product ");
-			paramSource.addValue("product", queryParameter.product());
+			paramSource.addValue("product", settingParameter.product());
 		}
 		
-		if (StringUtils.hasText(queryParameter.mainMenu())) {
+		if (StringUtils.hasText(settingParameter.mainMenu())) {
 			selectQueryBuilder.append("WHERE mainMenu = :mainMenu ");
 			countQueryBuilder.append("WHERE mainMenu = :mainMenu ");
-			paramSource.addValue("mainMenu", queryParameter.mainMenu());
+			paramSource.addValue("mainMenu", settingParameter.mainMenu());
 		}
 		
 		selectQueryBuilder.append("LIMIT :limit OFFSET :offset");
@@ -68,7 +71,11 @@ public class MainMenuService implements SettingService<MainMenu> {
 	}
 	
 	public MainMenu findByProductAndMainMenu(String product, String mainMenu) {
-		return mainMenuRepository.findByProductAndMainMenu(product, mainMenu);
+		var targetMainMenu = settingDataService.getMainMenuList().stream().filter(subMenu -> subMenu.getProduct().equals(product) && subMenu.getMainMenu().equals(mainMenu)).findAny().orElseGet(() -> null);
+		if (targetMainMenu == null) {
+			targetMainMenu = mainMenuRepository.findByProductAndMainMenu(product, mainMenu);
+		}
+		return targetMainMenu;
 	}
 
 }

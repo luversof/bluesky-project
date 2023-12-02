@@ -8,6 +8,6 @@ import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 
 public interface SettingService<T extends Setting> {
 	
-	Page<T> find(SettingParameter queryParameter, Pageable pageable);
+	Page<T> find(SettingParameter settingParameter, Pageable pageable);
 
 }

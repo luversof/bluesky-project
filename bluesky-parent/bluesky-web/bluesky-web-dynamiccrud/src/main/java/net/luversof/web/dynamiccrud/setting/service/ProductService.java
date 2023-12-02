@@ -26,7 +26,7 @@ public class ProductService implements SettingService<Product> {
 	private static final RowMapper<Product> ROW_MAPPER = new ProductRowMapper();
 
 	@Override
-	public Page<Product> find(SettingParameter queryParameter, Pageable pageable) {
+	public Page<Product> find(SettingParameter settingParameter, Pageable pageable) {
 		
 		// select 쿼리 생성
 		var selectQueryBuilder = new StringBuilder("SELECT product, productName, operator, registerDate, modifyDate FROM Products ");
@@ -35,10 +35,10 @@ public class ProductService implements SettingService<Product> {
 		
 		var paramSource = new MapSqlParameterSource();
 		
-		if (StringUtils.hasText(queryParameter.product())) {
+		if (StringUtils.hasText(settingParameter.product())) {
 			selectQueryBuilder.append("WHERE product = :product ");
 			countQueryBuilder.append("WHERE product = :product ");
-			paramSource.addValue("product", queryParameter.product());
+			paramSource.addValue("product", settingParameter.product());
 		}
 		
 		selectQueryBuilder.append("LIMIT :limit OFFSET :offset");

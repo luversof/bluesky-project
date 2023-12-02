@@ -6,7 +6,6 @@ import java.util.Comparator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -29,8 +28,19 @@ public class UseController {
 	
 	@Autowired
 	private SubMenuService subMenuService;
+	
+	@GetMapping("/{product}/{mainMenu}")
+	public String redirectView(UseParameter useParameter) {
+		var subMenuList = subMenuService.findByProductAndMainMenu(useParameter.product(), useParameter.mainMenu());
+		if (subMenuList.isEmpty()) {
+			throw new BlueskyException("NOT_EXIST_SUBMENU");
+		}
+		subMenuList.sort(Comparator.comparing(SubMenu::getDisplayOrder));
+		return "redirect:" + subMenuList.get(0).getUrl();
+		
+	}
 
-	@GetMapping({ "/{product}/{mainMenu}", "/{product}/{mainMenu}/{subMenu}" })
+	@GetMapping( "/{product}/{mainMenu}/{subMenu}" )
 	public String view(UseParameter useParameter, Model model) {
 		
 		// Setting 정보를 호출하여 해당 요청에 대한 설정이 있는지 확인
@@ -49,8 +59,9 @@ public class UseController {
 		
 		model.addAttribute("useParameter", useParameter);
 		
+		// SubMenu를 화면 구성에 사용되는 Menu로 전환... 할 필요가 있나? (기존거 맞추느라 이렇게 한 상태)
 		var menuList = new ArrayList<Menu>();
-		subMenuList.sort(Comparator.comparingInt(SubMenu::getDisplayOrder));
+		subMenuList.sort(Comparator.comparing(SubMenu::getDisplayOrder));
 		subMenuList.forEach(subMenu -> {
 			var menu = new Menu();
 			menu.setUrl(subMenu.getUrl());
@@ -60,10 +71,6 @@ public class UseController {
 		
 		model.addAttribute("menuList", menuList);
 		
-		if (!StringUtils.hasText(useParameter.subMenu())) {
-			return "redirect:" + menuList.get(0).getUrl();
-		}
-		
 		var mainMenu = mainMenuService.findByProductAndMainMenu(useParameter.product(), useParameter.mainMenu());
 		model.addAttribute("mainMenu", mainMenu);
 		
@@ -71,4 +78,5 @@ public class UseController {
 		
 		return "use/index";
 	}
+	
 }

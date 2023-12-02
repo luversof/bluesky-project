@@ -26,7 +26,7 @@ public class FieldService implements SettingService<Field> {
 	private static final RowMapper<Field> ROW_MAPPER = new FieldRowMapper();
 
 	@Override
-	public Page<Field> find(SettingParameter queryParameter, Pageable pageable) {
+	public Page<Field> find(SettingParameter settingParameter, Pageable pageable) {
 		
 		// select 쿼리 생성
 		var selectQueryBuilder = new StringBuilder("SELECT product, mainMenu, subMenu, `column`, `name`, `type`, preset, `format`, `validation`, `visible`, enableSearch, enableEdit, formSize, formOrder, operator, registerDate, modifyDate FROM Fields ");
@@ -35,22 +35,22 @@ public class FieldService implements SettingService<Field> {
 		
 		var paramSource = new MapSqlParameterSource();
 		
-		if (StringUtils.hasText(queryParameter.product())) {
+		if (StringUtils.hasText(settingParameter.product())) {
 			selectQueryBuilder.append("WHERE product = :product ");
 			countQueryBuilder.append("WHERE product = :product ");
-			paramSource.addValue("product", queryParameter.product());
+			paramSource.addValue("product", settingParameter.product());
 		}
 		
-		if (StringUtils.hasText(queryParameter.mainMenu())) {
+		if (StringUtils.hasText(settingParameter.mainMenu())) {
 			selectQueryBuilder.append("WHERE mainMenu = :mainMenu ");
 			countQueryBuilder.append("WHERE mainMenu = :mainMenu ");
-			paramSource.addValue("mainMenu", queryParameter.mainMenu());
+			paramSource.addValue("mainMenu", settingParameter.mainMenu());
 		}
 		
-		if (StringUtils.hasText(queryParameter.subMenu())) {
+		if (StringUtils.hasText(settingParameter.subMenu())) {
 			selectQueryBuilder.append("WHERE subMenu = :subMenu ");
 			countQueryBuilder.append("WHERE subMenu = :subMenu ");
-			paramSource.addValue("subMenu", queryParameter.subMenu());
+			paramSource.addValue("subMenu", settingParameter.subMenu());
 		}
 		
 		selectQueryBuilder.append("LIMIT :limit OFFSET :offset");

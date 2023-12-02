@@ -40,7 +40,7 @@
 	</thead>
 	<tbody>
 		<tr class="hover" data-th-each="product : ${page.content}">
-			<th data-th-text="${product.product}"></th>
+			<th data-th-text="${product.product}"><input type="text" name="product" data-th-value="${product.product}" placeholder="Type here" class="input input-sm w-full max-w-xs" /></th>
 			<th data-th-text="${product.productName}"></th>
 			<th data-th-text="${product.operator}"></th>
 			<th data-th-text="${#temporals.formatISO(product.modifyDate)}"></th>
@@ -76,6 +76,23 @@
 	</div>
 </div>
 
-<div data-th-replace="~{setting/_components/model :: ${type} + 'Modal'}"></div>
+<button 
+	class="btn btn-sm"
+	hx-get="/setting/fragment/product/modal" 
+	hx-target="#modal"
+	data-modal-target="productModal"
+	 
+	>Open Modal</button>
+<script>
+	document.addEventListener('htmx:afterRequest', function(event) {
+		if (event.target.dataset.modalTarget) {
+			eval(event.target.dataset.modalTarget).showModal()
+		}
+});
+</script>
+
+
+
+
 
 

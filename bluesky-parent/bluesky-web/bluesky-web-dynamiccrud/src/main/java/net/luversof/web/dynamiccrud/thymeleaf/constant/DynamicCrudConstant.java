@@ -1,0 +1,52 @@
+package net.luversof.web.dynamiccrud.thymeleaf.constant;
+
+import lombok.experimental.UtilityClass;
+
+@UtilityClass
+public class DynamicCrudConstant {
+	
+	public static final String PATH_SETTING_PREFIX = "/setting";
+	public static final String PATH_USE_PREFIX = "/use";
+	public static final String PATH_FRAGMENT_PREFIX = "/fragment";
+	
+	public static final String PATH_VARIABLE_TYPE = "{type:product|mainMenu|subMenu|query|field}";
+	
+	/**
+	 * /setting/{type}
+	 */
+	public static final String PATH_SETTING_VIEW_INDEX = PATH_SETTING_PREFIX + "/" + PATH_VARIABLE_TYPE;
+	
+	public static final String PATH_SETTING_FRAGMENT_PREFIX = PATH_SETTING_PREFIX + PATH_FRAGMENT_PREFIX;
+	
+	/**
+	 * /setting/fragment/{type}/findAll
+	 */
+	public static final String PATH_SETTING_FRAGMENT_FIND_ALL = PATH_SETTING_FRAGMENT_PREFIX + "/" + PATH_VARIABLE_TYPE + "/findAll";
+	
+	/**
+	 * /setting/fragment/{type}/modal
+	 */
+	public static final String PATH_SETTING_FRAGMENT_MODAL = PATH_SETTING_FRAGMENT_PREFIX + "/" + PATH_VARIABLE_TYPE + "/modal";
+	
+	
+	
+	
+	
+	/**
+	 * /use/{product}/{mainMenu}/{subMenu}
+	 */
+	public static final String PATH_USE_VIEW_INDEX = PATH_USE_PREFIX + "/{product}/{mainMenu}/{subMenu}";
+	
+	public static final String PATH_USE_FRAGMENT_PREFIX = PATH_USE_PREFIX + PATH_FRAGMENT_PREFIX;
+	
+	/**
+	 * /use/fragment/{product}/{mainMenu}/{subMenu}/findAll
+	 */
+	public static final String PATH_USE_FRAGMENT_FIND_ALL = PATH_USE_FRAGMENT_PREFIX + "/{product}/{mainMenu}/{subMenu}/findAll";
+	
+	/**
+	 * /use/fragment/{product}/{mainMenu}/{subMenu}/modal
+	 */
+	public static final String PATH_USE_FRAGMENT_FIND_MODAL = PATH_USE_FRAGMENT_PREFIX + "/{product}/{mainMenu}/{subMenu}/modal";
+	
+}

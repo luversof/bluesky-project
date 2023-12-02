@@ -17,8 +17,8 @@ public class SettingServiceDecorator<T extends Setting> implements SettingServic
 	private Map<String, SettingService<T>> settingServiceMap;
 
 	@Override
-	public Page<T> find(SettingParameter queryParameter, Pageable pageable) {
-		return settingServiceMap.get(queryParameter.type() + "Service").find(queryParameter, pageable);
+	public Page<T> find(SettingParameter settingParameter, Pageable pageable) {
+		return settingServiceMap.get(settingParameter.type() + "Service").find(settingParameter, pageable);
 	}
 	
 

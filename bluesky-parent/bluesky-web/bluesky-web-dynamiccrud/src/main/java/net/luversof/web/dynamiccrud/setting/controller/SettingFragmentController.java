@@ -6,22 +6,32 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.service.SettingServiceDecorator;
+import net.luversof.web.dynamiccrud.thymeleaf.constant.DynamicCrudConstant;
 
 @Controller
-@RequestMapping("/setting/fragment")
 public class SettingFragmentController {
 	
 	@Autowired
 	private SettingServiceDecorator<?> settingService;
 	
-	@GetMapping("/{type:product|mainMenu|subMenu|query|field}/findAll")
-	public String page(@PathVariable String type, SettingParameter settingParameter, Pageable pageable, Model model) {
+	@GetMapping(DynamicCrudConstant.PATH_SETTING_FRAGMENT_FIND_ALL)
+	public void findAll(@PathVariable String type, SettingParameter settingParameter, Pageable pageable, Model model) {
 		model.addAttribute("page", settingService.find(settingParameter, pageable));
-		return "setting/_fragment/" + type + "Page";
+	}
+	
+	
+	@GetMapping(DynamicCrudConstant.PATH_SETTING_FRAGMENT_MODAL)
+	public void modal(@PathVariable String type) {
+	}
+	
+	/**
+	 * 개발 확인용 api
+	 */
+	@GetMapping("/setting/_components/*")
+	public void components() {
 	}
 	
 }

@@ -1,0 +1,29 @@
+package net.luversof.web.dynamiccrud.use.service;
+
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import net.luversof.web.dynamiccrud.setting.domain.Query;
+
+@Service
+public class UseServiceDecorator implements UseService {
+	
+	@Autowired
+	private Map<String, UseService> useServiceMap;
+
+	@Override
+	public Page<Map<String, Object>> find(Query query, Pageable pageable) {
+		if (query.getDbType().equals("mariadb")) {
+			UseService useService = useServiceMap.get("mariadbUseService");
+			
+			// query 기준으로 결과 반환 해야 하는데..
+			return useService.find(query, pageable);
+		}
+		return null;
+	}
+
+}
