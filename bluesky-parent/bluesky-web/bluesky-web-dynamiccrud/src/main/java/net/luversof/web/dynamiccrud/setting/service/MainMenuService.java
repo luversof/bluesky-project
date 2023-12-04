@@ -71,7 +71,10 @@ public class MainMenuService implements SettingService<MainMenu> {
 	}
 	
 	public MainMenu findByProductAndMainMenu(String product, String mainMenu) {
-		var targetMainMenu = settingDataService.getMainMenuList().stream().filter(subMenu -> subMenu.getProduct().equals(product) && subMenu.getMainMenu().equals(mainMenu)).findAny().orElseGet(() -> null);
+		var targetMainMenu = settingDataService.getMainMenuList().stream().filter(x -> 
+			x.getProduct().equals(product) 
+			&& x.getMainMenu().equals(mainMenu)
+		).findAny().orElseGet(() -> null);
 		if (targetMainMenu == null) {
 			targetMainMenu = mainMenuRepository.findByProductAndMainMenu(product, mainMenu);
 		}

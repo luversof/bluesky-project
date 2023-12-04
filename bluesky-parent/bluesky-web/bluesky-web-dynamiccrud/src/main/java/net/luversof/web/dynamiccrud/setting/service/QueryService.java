@@ -78,7 +78,11 @@ public class QueryService implements SettingService<Query> {
 	}
 	
 	public List<Query> findByProductAndMainMenuAndSubMenu(String product, String mainMenu, String subMenu) {
-		var queryList = settingDataService.getQueryList().stream().filter(query-> query.getProduct().equals(product) && query.getMainMenu().equals(mainMenu) && query.getSubMenu().equals(subMenu)).collect(Collectors.toList());
+		var queryList = settingDataService.getQueryList().stream().filter(x -> 
+			x.getProduct().equals(product) 
+			&& x.getMainMenu().equals(mainMenu) 
+			&& x.getSubMenu().equals(subMenu)
+		).collect(Collectors.toList());
 		if (queryList.isEmpty()) {
 			queryList = queryRepository.findByProductAndMainMenuAndSubMenu(product, mainMenu, subMenu);
 		}

@@ -2,6 +2,7 @@ package net.luversof.web.dynamiccrud.setting.service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -16,12 +17,19 @@ import org.springframework.util.StringUtils;
 import net.luversof.web.dynamiccrud.setting.domain.Field;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb.FieldRowMapper;
+import net.luversof.web.dynamiccrud.setting.repository.FieldRepository;
 
 @Service
 public class FieldService implements SettingService<Field> {
 	
 	@Autowired
+	private FieldRepository fieldRepository;
+	
+	@Autowired
 	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+	
+	@Autowired
+	private SettingDataService settingDataService;
 	
 	private static final RowMapper<Field> ROW_MAPPER = new FieldRowMapper();
 
@@ -69,4 +77,16 @@ public class FieldService implements SettingService<Field> {
 		return new PageImpl<>(fieldList, pageable, totalCount);
 	}
 
+	
+	public List<Field> findByProductAndMainMenuAndSubMenu(String product, String mainMenu, String subMenu) {
+		var fieldList = settingDataService.getFieldList().stream().filter(x -> 
+			x.getProduct().equals(product) 
+			&& x.getMainMenu().equals(mainMenu) 
+			&& x.getSubMenu().equals(subMenu)
+		).collect(Collectors.toList());
+		if (fieldList.isEmpty()) {
+			fieldList = fieldRepository.findByProductAndMainMenuAndSubMenu(product, mainMenu, subMenu);
+		}
+		return fieldList;
+	}
 }

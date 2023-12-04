@@ -3,13 +3,23 @@
 
 <head>
 	<script src="https://unpkg.com/htmx.org"></script>
+	<script data-th-src="@{/js/common.js}"></script>
 	<script>
 	</script>
 </head>
 
 <body>
 	<div data-layout-fragment="content">
-		여기
+		
+
+		<div
+			data-th-attr="hx-get=@{/use/fragment/{product}/{mainMenu}/{subMenu}/findAll(product=${useParameter.product}, mainMenu=${useParameter.mainMenu}, subMenu=${useParameter.subMenu})}"
+			hx-vals="js:{'page' : param.getRequestPage()}"
+			hx-include12=".search>[name='product'],.search>[name='mainMenu'],.search>[name='subMenu']"
+			hx-trigger="load delay:0s, click target:.navbutton, change from:.navinput, click from:.search>.resetbutton"
+		>
+			
+		</div>
 	</div>
 
 	<div data-th-insert="~{_layout/defaultLayout :: copy}"></div>
