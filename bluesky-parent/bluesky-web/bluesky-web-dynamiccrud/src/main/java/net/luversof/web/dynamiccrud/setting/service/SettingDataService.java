@@ -63,6 +63,9 @@ public class SettingDataService {
 			subMenu.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			subMenu.setSubMenu(KEY_EVENT_ADMIN_SUBMENU1_PRODUCT);
 			subMenu.setSubMenuName("Product");
+			subMenu.setEnableInsert(true);
+			subMenu.setEnableUpdate(true);
+			subMenu.setEnableDelete(true);
 			subMenu.setDisplayOrder(1);
 			subMenuList.add(subMenu);
 		}
@@ -73,6 +76,9 @@ public class SettingDataService {
 			subMenu.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			subMenu.setSubMenu(KEY_EVENT_ADMIN_SUBMENU2_MAINMENU);
 			subMenu.setSubMenuName("MainMenu");
+			subMenu.setEnableInsert(true);
+			subMenu.setEnableUpdate(true);
+			subMenu.setEnableDelete(true);
 			subMenu.setDisplayOrder(2);
 			subMenuList.add(subMenu);
 		}
@@ -83,6 +89,9 @@ public class SettingDataService {
 			subMenu.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			subMenu.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
 			subMenu.setSubMenuName("SubMenu");
+			subMenu.setEnableInsert(true);
+			subMenu.setEnableUpdate(true);
+			subMenu.setEnableDelete(true);
 			subMenu.setDisplayOrder(3);
 			subMenuList.add(subMenu);
 		}
@@ -93,6 +102,9 @@ public class SettingDataService {
 			subMenu.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			subMenu.setSubMenu(KEY_EVENT_ADMIN_SUBMENU4_QUERY);
 			subMenu.setSubMenuName("Query");
+			subMenu.setEnableInsert(true);
+			subMenu.setEnableUpdate(true);
+			subMenu.setEnableDelete(true);
 			subMenu.setDisplayOrder(4);
 			subMenuList.add(subMenu);
 		}
@@ -103,6 +115,9 @@ public class SettingDataService {
 			subMenu.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			subMenu.setSubMenu(KEY_EVENT_ADMIN_SUBMENU5_FIELD);
 			subMenu.setSubMenuName("Field");
+			subMenu.setEnableInsert(true);
+			subMenu.setEnableUpdate(true);
+			subMenu.setEnableDelete(true);
 			subMenu.setDisplayOrder(5);
 			subMenuList.add(subMenu);
 		}
@@ -162,7 +177,7 @@ public class SettingDataService {
 			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU5_FIELD);
 			query.setSqlCommandType("SELECT");
-			query.setQueryString("SELECT product, mainMenu, subMenu, column, name, type, preset, format, validation, visible, enableSearch, enableEdit, formSize, formOrder, operator, registerDate, modifyDate FROM Fields");
+			query.setQueryString("SELECT product, mainMenu, subMenu, `column`, `name`, `type`, preset, `format`, `validation`, visible, enableSearch, enableEdit, formSize, formOrder, operator, registerDate, modifyDate FROM Fields");
 			query.setDataSourceName(DATASOURCE_NAME);
 			query.setDbType(DB_TYPE);
 			queryList.add(query);
@@ -176,6 +191,7 @@ public class SettingDataService {
 			field.setSubMenu(KEY_EVENT_ADMIN_SUBMENU1_PRODUCT);
 			field.setColumn("product");
 			field.setName("프로덕트 ID");
+			field.setVisible(true);
 			field.setFormOrder((short) 1);
 			fieldList.add(field);
 		}
@@ -187,6 +203,7 @@ public class SettingDataService {
 			field.setSubMenu(KEY_EVENT_ADMIN_SUBMENU1_PRODUCT);
 			field.setColumn("productName");
 			field.setName("프로덕트 이름");
+			field.setVisible(true);
 			field.setFormOrder((short) 2);
 			fieldList.add(field);
 		}
@@ -200,6 +217,7 @@ public class SettingDataService {
 			field.setSubMenu(KEY_EVENT_ADMIN_SUBMENU2_MAINMENU);
 			field.setColumn("product");
 			field.setName("프로덕트 ID");
+			field.setVisible(true);
 			field.setFormOrder((short) 1);
 			fieldList.add(field);
 		}
@@ -211,6 +229,7 @@ public class SettingDataService {
 			field.setSubMenu(KEY_EVENT_ADMIN_SUBMENU2_MAINMENU);
 			field.setColumn("mainMenu");
 			field.setName("프로덕트 ID");
+			field.setVisible(true);
 			field.setFormOrder((short) 2);
 			fieldList.add(field);
 		}
@@ -222,6 +241,7 @@ public class SettingDataService {
 			field.setSubMenu(KEY_EVENT_ADMIN_SUBMENU2_MAINMENU);
 			field.setColumn("mainMenuName");
 			field.setName("메인메뉴 명");
+			field.setVisible(true);
 			field.setFormOrder((short) 3);
 			fieldList.add(field);
 		}
@@ -237,18 +257,8 @@ public class SettingDataService {
 			field.setSubMenu(SubMenu);
 			field.setColumn("operator");
 			field.setName("최종 수정");
+			field.setVisible(true);
 			field.setFormOrder((short) 20);
-			fieldList.add(field);
-		}
-		
-		{
-			var field = new Field();
-			field.setProduct(product);
-			field.setMainMenu(mainMenu);
-			field.setSubMenu(SubMenu);
-			field.setColumn("operator");
-			field.setName("최종 수정");
-			field.setFormOrder((short) 21);
 			fieldList.add(field);
 		}
 		
@@ -259,6 +269,19 @@ public class SettingDataService {
 			field.setSubMenu(SubMenu);
 			field.setColumn("modifyDate");
 			field.setName("수정일");
+			field.setVisible(true);
+			field.setFormOrder((short) 21);
+			fieldList.add(field);
+		}
+		
+		{
+			var field = new Field();
+			field.setProduct(product);
+			field.setMainMenu(mainMenu);
+			field.setSubMenu(SubMenu);
+			field.setColumn("registerDate");
+			field.setName("등록일");
+			field.setVisible(false);
 			field.setFormOrder((short) 22);
 			fieldList.add(field);
 		}

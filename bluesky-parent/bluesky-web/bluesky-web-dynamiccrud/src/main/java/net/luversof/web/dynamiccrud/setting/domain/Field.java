@@ -47,9 +47,9 @@ public class Field extends Setting {
 	
 	private boolean visible;
 	
-	private String enableSearch;
+	private String enableSearch;	// DISABLED, ENABLED, REQUIRED
 	
-	private String enableEdit;
+	private String enableEdit;	// DISABLED, ENABLED, REQUIRED
 	
 	@Column
 	private Short formSize;

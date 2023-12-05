@@ -33,12 +33,12 @@ public class Query extends Setting {
 	
 	@Id
 	@Column(length = 20)
-	private String sqlCommandType;
+	private String sqlCommandType;	// INSERT, SELECT, UPDATE, DELETE
 	
 	private String queryString;
 	
 	private String dataSourceName;
 	
-	private String dbType;
+	private String dbType;	//MsSql, MySql
 
 }
