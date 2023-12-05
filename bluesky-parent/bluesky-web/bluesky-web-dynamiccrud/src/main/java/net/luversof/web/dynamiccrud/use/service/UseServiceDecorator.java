@@ -1,5 +1,6 @@
 package net.luversof.web.dynamiccrud.use.service;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import net.luversof.web.dynamiccrud.setting.domain.Field;
 import net.luversof.web.dynamiccrud.setting.domain.Query;
 
 @Service
@@ -16,12 +18,12 @@ public class UseServiceDecorator implements UseService {
 	private Map<String, UseService> useServiceMap;
 
 	@Override
-	public Page<Map<String, Object>> find(Query query, Pageable pageable) {
+	public Page<Map<String, Object>> find(Query query, List<Field> fieldList, Pageable pageable, Map<String, String> paramMap) {
 		if (query.getDbType().equals("mariadb")) {
 			UseService useService = useServiceMap.get("mariadbUseService");
 			
 			// query 기준으로 결과 반환 해야 하는데..
-			return useService.find(query, pageable);
+			return useService.find(query, fieldList, pageable, paramMap);
 		}
 		return null;
 	}

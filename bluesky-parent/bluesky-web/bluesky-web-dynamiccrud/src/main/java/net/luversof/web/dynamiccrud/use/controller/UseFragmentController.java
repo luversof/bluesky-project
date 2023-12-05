@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.web.dynamiccrud.setting.domain.Field;
@@ -42,7 +43,7 @@ public class UseFragmentController {
 	 * 일단 SELECT 부분을 보여보자.
 	 */
 	@GetMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_FIND_ALL)
-	public String findAll(UseParameter useParameter, Pageable pageable, Model model) {
+	public String findAll(UseParameter useParameter, Pageable pageable, @RequestParam Map<String, String> paramMap, Model model) {
 		
 		SubMenu subMenu = getSubMenu(useParameter);
 		model.addAttribute("subMenu", subMenu);
@@ -50,12 +51,14 @@ public class UseFragmentController {
 		var parameter = useParameter.toBuilder().sqlCommandType("SELECT").build();
 		Query query = getQuery(parameter);
 		
-		
-		Page<Map<String, Object>> page = useService.find(query, pageable);
-		model.addAttribute("page", page);
-		
 		List<Field> fieldList = getFieldList(useParameter);
 		model.addAttribute("fieldList", fieldList);
+		
+		// 검색 조건의 경우 필수 검색의 값이 없으면 에러 처리
+		
+		
+		Page<Map<String, Object>> page = useService.find(query, fieldList, pageable, paramMap);
+		model.addAttribute("page", page);
 		
 		model.addAttribute("columnMap", ThymeleafUseUtil.getColumnMap(page, fieldList));
 		

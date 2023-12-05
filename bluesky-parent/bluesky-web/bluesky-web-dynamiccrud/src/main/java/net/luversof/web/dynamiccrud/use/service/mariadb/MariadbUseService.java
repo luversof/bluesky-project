@@ -15,6 +15,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
+import net.luversof.web.dynamiccrud.setting.domain.Field;
 import net.luversof.web.dynamiccrud.setting.domain.Query;
 import net.luversof.web.dynamiccrud.use.service.UseService;
 
@@ -27,7 +28,7 @@ public class MariadbUseService implements UseService {
 	private static final RowMapper<Map<String, Object>> ROW_MAPPER = new ColumnMapRowMapper();
 
 	@Override
-	public Page<Map<String, Object>> find(Query query, Pageable pageable) {
+	public Page<Map<String, Object>> find(Query query, List<Field> fieldList, Pageable pageable, Map<String, String> paramMap) {
 		RoutingDataSourceContextHolder.setContext(() -> query.getDataSourceName());
 		
 		var selectQueryBuilder = new StringBuilder(query.getQueryString() + " ");
@@ -46,9 +47,9 @@ public class MariadbUseService implements UseService {
 			return new PageImpl<>(Collections.emptyList(), pageable, totalCount);	
 		}
 		
-		List<Map<String, Object>> fieldList = namedParameterJdbcTemplate.query(selectQueryBuilder.toString(), paramSource, ROW_MAPPER);
+		List<Map<String, Object>> contentList = namedParameterJdbcTemplate.query(selectQueryBuilder.toString(), paramSource, ROW_MAPPER);
 		
-		return new PageImpl<>(fieldList, pageable, totalCount);
+		return new PageImpl<>(contentList, pageable, totalCount);
 	}
 
 }

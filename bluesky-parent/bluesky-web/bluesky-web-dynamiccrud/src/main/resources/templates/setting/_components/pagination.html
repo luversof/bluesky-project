@@ -2,7 +2,12 @@
 
 <div
 	class="w-full join place-content-center"
-	data-th-with="pagination = ${pagination}"
+	data-th-if="${page.totalPages > 0}"
+	data-th-with="
+		dynamicCrudThymeleafUtil = ${T(net.luversof.web.dynamiccrud.thymeleaf.util.DynamicCrudThymeleafUtil)},
+		page = ${page},
+		pagination = ${dynamicCrudThymeleafUtil.getPagination(page)}
+		"
 >
 	<button 
 		class="join-item btn btn-sm navbutton"
