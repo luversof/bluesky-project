@@ -1,11 +1,3 @@
-<div class="search">
-	<input type="text" data-th-value="${param.product}" name="product" placeholder="프로덕트 ID" class="input input-bordered input-sm w-48 searchinput" />
-	<input type="text" data-th-if="${type == 'mainMenu' || type == 'subMenu' || type == 'query' || type == 'field'}" data-th-value="${param.mainMenu}" name="mainMenu" placeholder="메인메뉴 ID" class="input input-bordered input-sm w-48 searchinput" />
-	<input type="text" data-th-if="${type == 'subMenu' || type == 'query' || type == 'field'}" data-th-value="${param.subMenu}" name="subMenu" placeholder="서브메뉴 ID" class="input input-bordered input-sm w-48 searchinput" />
-	
-	<button class="btn btn-sm resetbutton">Reset</button>
-</div>
-
 <div class="flex justify-between">
 	<div class="flex p-2">
 		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">

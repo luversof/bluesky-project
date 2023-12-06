@@ -42,17 +42,29 @@ public class MainMenuService implements SettingService<MainMenu> {
 		
 		var paramSource = new MapSqlParameterSource();
 		
+		var conditionQueryBuilder = new StringBuilder();
+		boolean checkAlreadWhereCondition = false;
+		if (StringUtils.hasText(settingParameter.product()) || StringUtils.hasText(settingParameter.mainMenu())) {
+			conditionQueryBuilder.append("WHERE ");
+		}
+		
 		if (StringUtils.hasText(settingParameter.product())) {
-			selectQueryBuilder.append("WHERE product = :product ");
-			countQueryBuilder.append("WHERE product = :product ");
+			conditionQueryBuilder.append("product = :product ");
 			paramSource.addValue("product", settingParameter.product());
+			checkAlreadWhereCondition = true;
 		}
 		
 		if (StringUtils.hasText(settingParameter.mainMenu())) {
-			selectQueryBuilder.append("WHERE mainMenu = :mainMenu ");
-			countQueryBuilder.append("WHERE mainMenu = :mainMenu ");
+			if (checkAlreadWhereCondition) {
+				conditionQueryBuilder.append("AND ");
+			}
+			conditionQueryBuilder.append("mainMenu = :mainMenu ");
 			paramSource.addValue("mainMenu", settingParameter.mainMenu());
+			checkAlreadWhereCondition = true;
 		}
+		
+		selectQueryBuilder.append(conditionQueryBuilder);
+		countQueryBuilder.append(conditionQueryBuilder);
 		
 		selectQueryBuilder.append("LIMIT :limit OFFSET :offset");
 		paramSource.addValue("limit", pageable.getPageSize());

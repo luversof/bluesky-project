@@ -2,6 +2,7 @@ package net.luversof.web.dynamiccrud.use.controller;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -10,7 +11,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import io.github.luversof.boot.exception.BlueskyException;
+import net.luversof.web.dynamiccrud.setting.domain.Field;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
+import net.luversof.web.dynamiccrud.setting.service.FieldService;
 import net.luversof.web.dynamiccrud.setting.service.MainMenuService;
 import net.luversof.web.dynamiccrud.setting.service.SubMenuService;
 import net.luversof.web.dynamiccrud.thymeleaf.domain.Menu;
@@ -28,6 +31,9 @@ public class UseController {
 	
 	@Autowired
 	private SubMenuService subMenuService;
+	
+	@Autowired
+	private FieldService fieldService;
 	
 	@GetMapping("/{product}/{mainMenu}")
 	public String redirectView(UseParameter useParameter) {
@@ -76,7 +82,16 @@ public class UseController {
 		
 		// Setting 정보를 기준으로 해당 데이터를 조회
 		
+		List<Field> fieldList = getFieldList(useParameter);
+		model.addAttribute("fieldList", fieldList);
+		model.addAttribute("hasSearchField", fieldList.stream().anyMatch(x -> x.isEnableEdit()));
+		
 		return "use/index";
+	}
+	
+	private List<Field> getFieldList(UseParameter useParameter) {
+		List<Field> fieldList = fieldService.findByProductAndMainMenuAndSubMenu(useParameter.product(), useParameter.mainMenu(), useParameter.subMenu());
+		return fieldList;
 	}
 	
 }

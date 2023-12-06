@@ -37,6 +37,31 @@ public class MariadbUseService implements UseService {
 		
 		var paramSource = new MapSqlParameterSource();
 		
+		// 필수 검색 조건이 있는 경우 확인
+		var requiredFieldList = fieldList.stream().filter(x -> "REQUIRED".equals(x.getEnableSearch())).toList();
+		if (requiredFieldList.stream().anyMatch(x -> !paramMap.containsKey(x.getColumn()))) {
+			return new PageImpl<>(Collections.emptyList(), pageable, 0);
+		}
+		
+		// 검색 대상 컬럼 목록 추출
+		var conditionQueryBuilder = new StringBuilder();
+		var targetFieldList = fieldList.stream().filter(x -> ("REQUIRED".equals(x.getEnableSearch()) || "ENABLED".equals(x.getEnableSearch())) && paramMap.containsKey(x.getColumn())).toList();
+		if (!targetFieldList.isEmpty()) {
+			boolean checkAlreadWhereCondition = false;
+			conditionQueryBuilder.append("WHERE ");
+			
+			for (var targetField : targetFieldList) {
+				if (checkAlreadWhereCondition) {
+					conditionQueryBuilder.append("AND ");
+				}
+				conditionQueryBuilder.append(String.format("%s = :%s ", targetField.getColumn(), targetField.getColumn()));
+				checkAlreadWhereCondition = true;
+			}
+		}
+		
+		selectQueryBuilder.append(conditionQueryBuilder);
+		countQueryBuilder.append(conditionQueryBuilder);
+		
 		selectQueryBuilder.append("LIMIT :limit OFFSET :offset");
 		paramSource.addValue("limit", pageable.getPageSize());
 		paramSource.addValue("offset", pageable.getOffset());
@@ -44,7 +69,7 @@ public class MariadbUseService implements UseService {
 		// count query를 먼저 조회
 		int totalCount = namedParameterJdbcTemplate.queryForObject(countQueryBuilder.toString(), paramSource, Integer.class);
 		if (totalCount == 0) {
-			return new PageImpl<>(Collections.emptyList(), pageable, totalCount);	
+			return new PageImpl<>(Collections.emptyList(), pageable, totalCount);
 		}
 		
 		List<Map<String, Object>> contentList = namedParameterJdbcTemplate.query(selectQueryBuilder.toString(), paramSource, ROW_MAPPER);

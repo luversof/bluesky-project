@@ -60,6 +60,7 @@ public class UseFragmentController {
 		Page<Map<String, Object>> page = useService.find(query, fieldList, pageable, paramMap);
 		model.addAttribute("page", page);
 		
+		// 화면 처리 관련 정보 
 		model.addAttribute("columnMap", ThymeleafUseUtil.getColumnMap(page, fieldList));
 		
 		// 여기도 필드 정보 기준으로 출력 처리를 해야 할꺼 같은데?

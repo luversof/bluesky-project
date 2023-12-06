@@ -4,7 +4,6 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
@@ -23,7 +22,6 @@ public class ThymeleafUseUtil {
 		
 		return getColumnMap(page.getContent().get(0),  fieldList);
 	}
-	
 	
 
 	public LinkedHashMap<String, String> getColumnMap(Map<String, Object> data, List<Field> fieldList) {
@@ -45,8 +43,7 @@ public class ThymeleafUseUtil {
 				}
 			});
 		}
-		
-		
 		return map;
 	}
+
 }

@@ -11,7 +11,7 @@ import net.luversof.web.dynamiccrud.thymeleaf.domain.Menu;
 import net.luversof.web.dynamiccrud.thymeleaf.domain.Pagination;
 
 @UtilityClass
-public class DynamicCrudThymeleafUtil {
+public class ThymeleafUtil {
 
 	public static List<Menu> getMenuList(String key) {
 		return ApplicationContextUtil.getApplicationContext().getBean(DynamicCrudThymeleafProperties.class).menu().get(key);

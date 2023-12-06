@@ -10,12 +10,37 @@
 
 <body>
 	<div data-layout-fragment="content">
-		
+
+
+		[[${fieldList}]]
+		:::
+		[[${param}]]
+		:여기S:
+		<div data-th-each="pkey : ${param}" data-th-text="${pkey}"></div>
+		:여기E:
+		<div class="search" data-th-if="${hasSearchField}">
+			<input type="text" class="input input-bordered input-sm w-48 searchinput" 
+				data-th-each="field : ${fieldList}" 
+				data-th-if="${field.isEnableSearch}" 
+				data-th-placeholder="${field.name}"
+				data-th-name="${field.column}"
+				data-th-value="${param[field.column]}"
+			>
+			
+			:::
+			
+			<input type="text" data-th-value="${param.product}" name="product" placeholder="프로덕트 ID" class="input input-bordered input-sm w-48 searchinput" />
+			<input type="text" data-th-if="${type == 'mainMenu' || type == 'subMenu' || type == 'query' || type == 'field'}" data-th-value="${param.mainMenu}" name="mainMenu" placeholder="메인메뉴 ID" class="input input-bordered input-sm w-48 searchinput" />
+			<input type="text" data-th-if="${type == 'subMenu' || type == 'query' || type == 'field'}" data-th-value="${param.subMenu}" name="subMenu" placeholder="서브메뉴 ID" class="input input-bordered input-sm w-48 searchinput" />
+			
+			<button class="btn btn-sm resetbutton">Reset</button>
+		</div>		
 
 		<div
 			data-th-attr="hx-get=@{/use/fragment/{product}/{mainMenu}/{subMenu}/findAll(product=${useParameter.product}, mainMenu=${useParameter.mainMenu}, subMenu=${useParameter.subMenu})}"
 			hx-vals="js:{'page' : param.getRequestPage()}"
 			hx-include12=".search>[name='product'],.search>[name='mainMenu'],.search>[name='subMenu']"
+			hx-include=".search>input"
 			hx-trigger="load delay:0s, click target:.navbutton, change from:.navinput, click from:.search>.resetbutton"
 		>
 			

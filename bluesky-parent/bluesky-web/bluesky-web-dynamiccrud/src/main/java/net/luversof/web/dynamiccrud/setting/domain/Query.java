@@ -35,10 +35,10 @@ public class Query extends Setting {
 	@Column(length = 20)
 	private String sqlCommandType;	// INSERT, SELECT, UPDATE, DELETE
 	
-	private String queryString;
-	
 	private String dataSourceName;
 	
 	private String dbType;	//MsSql, MySql
+	
+	private String queryString;
 
 }

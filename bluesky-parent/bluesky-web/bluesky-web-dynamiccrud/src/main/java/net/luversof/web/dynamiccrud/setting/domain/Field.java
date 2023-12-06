@@ -37,7 +37,7 @@ public class Field extends Setting {
 
 	private String name;
 
-	private String type;
+	private String type;		// BOOLEAN, DATE, INT, LINK, LONG, STRING, TEXT
 	
 	private String preset;
 	
@@ -56,4 +56,12 @@ public class Field extends Setting {
 	
 	@Column
 	private Short formOrder;
+	
+	public boolean isEnableSearch() {
+		return "ENABLED".equals(enableSearch) || "REQUIRED".equals(enableSearch);
+	}
+	
+	public boolean isEnableEdit() {
+		return "ENABLED".equals(enableEdit) || "REQUIRED".equals(enableEdit);
+	}
 }

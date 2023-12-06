@@ -2,9 +2,9 @@
 
 <ul class="menu"
 	data-th-with="
-	dynamicCrudThymeleafUtil = ${T(net.luversof.web.dynamiccrud.thymeleaf.util.DynamicCrudThymeleafUtil)},
+	thymeleafUtil = ${T(net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil)},
 	menu=${menu},
-	menuList = ${menuList?: dynamicCrudThymeleafUtil.getMenuList(menu)},
+	menuList = ${menuList?: thymeleafUtil.getMenuList(menu)},
 	isCurrentMenu = ${isCurrentMenu?:false},
 	classAppend = ${classAppend}
 	"

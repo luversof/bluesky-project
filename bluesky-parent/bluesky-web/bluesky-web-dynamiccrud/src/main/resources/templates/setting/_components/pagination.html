@@ -4,9 +4,9 @@
 	class="w-full join place-content-center"
 	data-th-if="${page.totalPages > 0}"
 	data-th-with="
-		dynamicCrudThymeleafUtil = ${T(net.luversof.web.dynamiccrud.thymeleaf.util.DynamicCrudThymeleafUtil)},
+		thymeleafUtil = ${T(net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil)},
 		page = ${page},
-		pagination = ${dynamicCrudThymeleafUtil.getPagination(page)}
+		pagination = ${thymeleafUtil.getPagination(page)}
 		"
 >
 	<button 
