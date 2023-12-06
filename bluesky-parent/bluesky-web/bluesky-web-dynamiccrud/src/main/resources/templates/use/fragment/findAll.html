@@ -40,7 +40,7 @@
 			<th data-th-each="column : ${columnMap}" data-th-text="${content.get(column.key)}"></th>
 			<th data-th-if="${subMenu.enableUpdate}">
 				<button class="btn btn-sm"
-					data-th-hx-get="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modal(product=${useParameter.product},mainMenu=${useParameter.mainMenu},subMenu=${useParameter.subMenu})}"
+					data-th-hx-get="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modal(product=${product},mainMenu=${mainMenu},subMenu=${subMenu})}"
 					hx-params="none" 
 					hx-target="#modalArea"
 					data-modal-target="modal"
@@ -61,7 +61,7 @@
 	</div>
 	<div>
 		<button data-th-if="${subMenu.enableInsert}" class="btn btn-sm"
-			data-th-hx-get="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modal(product=${useParameter.product},mainMenu=${useParameter.mainMenu},subMenu=${useParameter.subMenu})}"
+			data-th-hx-get="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modal(product=${product},mainMenu=${mainMenu},subMenu=${subMenu})}"
 			hx-target="#modalArea"
 			data-modal-target="modal"
 		>

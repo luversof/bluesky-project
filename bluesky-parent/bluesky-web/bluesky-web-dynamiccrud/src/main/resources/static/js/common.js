@@ -1,3 +1,5 @@
+var searchInputSelector = ".search .searchinput";
+
 var param = (function() {
 	var _params = new URLSearchParams(window.location.search);
 
@@ -22,13 +24,9 @@ var param = (function() {
 			this.refreshUrl();
 		},
 		resetParam() {
-			// 이거 특정 위치에 초기화 처리하는 방식으로 변경해야함
-			this.setParam("product", null);
-			this.setParam("mainMenu", null);
-			this.setParam("subMenu", null);
-			if (document.querySelector("[name=product]")) document.querySelector("[name=product]").value = "";
-			if (document.querySelector("[name=mainMenu]")) document.querySelector("[name=mainMenu]").value = "";
-			if (document.querySelector("[name=subMenu]")) document.querySelector("[name=subMenu]").value = "";
+			document.querySelectorAll(searchInputSelector).forEach(el => el.value = "");
+			_params = new URLSearchParams();
+			this.refreshUrl();
 		},
 		getRequestPage() {
 			var page = this.getParam("page");
@@ -46,6 +44,7 @@ document.addEventListener('htmx:afterRequest', function(event) {
 });
 
 
+
 window.onload = function() {
 	// 상단 메뉴의 링크에 검색 parameter를 추가 처리
 	document.querySelectorAll(".navbar .menu a").forEach(el => el.addEventListener("click", (event) => {
@@ -60,7 +59,7 @@ window.onload = function() {
 	}));
 	
 	// 검색 변경 이벤트
-	document.querySelectorAll(".search .searchinput").forEach(el => el.addEventListener("change", (event) => param.setParam(event.target.name, event.target.value)));
+	document.querySelectorAll(searchInputSelector).forEach(el => el.addEventListener("change", (event) => param.setParam(event.target.name, event.target.value)));
 	
 	// 검색 reset 버튼 이벤트
 	document.querySelectorAll(".search .resetbutton").forEach(el => el.addEventListener("click", () => param.resetParam()));

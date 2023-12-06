@@ -13,6 +13,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
 import net.luversof.web.dynamiccrud.setting.domain.Field;
@@ -45,7 +46,7 @@ public class MariadbUseService implements UseService {
 		
 		// 검색 대상 컬럼 목록 추출
 		var conditionQueryBuilder = new StringBuilder();
-		var targetFieldList = fieldList.stream().filter(x -> ("REQUIRED".equals(x.getEnableSearch()) || "ENABLED".equals(x.getEnableSearch())) && paramMap.containsKey(x.getColumn())).toList();
+		var targetFieldList = fieldList.stream().filter(x -> ("REQUIRED".equals(x.getEnableSearch()) || "ENABLED".equals(x.getEnableSearch())) && paramMap.containsKey(x.getColumn()) && StringUtils.hasText(paramMap.get(x.getColumn()))).toList();
 		if (!targetFieldList.isEmpty()) {
 			boolean checkAlreadWhereCondition = false;
 			conditionQueryBuilder.append("WHERE ");
@@ -55,6 +56,7 @@ public class MariadbUseService implements UseService {
 					conditionQueryBuilder.append("AND ");
 				}
 				conditionQueryBuilder.append(String.format("%s = :%s ", targetField.getColumn(), targetField.getColumn()));
+				paramSource.addValue(targetField.getColumn(), paramMap.get(targetField.getColumn()));
 				checkAlreadWhereCondition = true;
 			}
 		}
