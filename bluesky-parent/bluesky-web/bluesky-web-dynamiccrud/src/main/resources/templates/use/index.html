@@ -28,7 +28,7 @@
 			data-th-attr="hx-get=@{/use/fragment/{product}/{mainMenu}/{subMenu}/findAll(product=${product}, mainMenu=${mainMenu}, subMenu=${subMenu})}"
 			hx-vals="js:{'page' : param.getRequestPage()}"
 			hx-include=".search>input"
-			hx-trigger="load delay:0s, click target:.navbutton, change from:.search>.searchinput, click from:.search>.resetbutton delay:0.1s"
+			hx-trigger="load delay:0s, click target:.navbutton, change from:.search>.searchinput, click from:.search>.resetbutton delay:0.0001s"
 		>
 			
 		</div>

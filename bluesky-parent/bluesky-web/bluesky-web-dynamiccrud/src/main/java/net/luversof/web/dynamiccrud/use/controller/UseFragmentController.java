@@ -43,7 +43,13 @@ public class UseFragmentController {
 	 * 일단 SELECT 부분을 보여보자.
 	 */
 	@GetMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_FIND_ALL)
-	public String findAll(@PathVariable String product, @PathVariable String mainMenu, @PathVariable String subMenu, Pageable pageable, @RequestParam Map<String, String> paramMap, Model model) {
+	public String findAll(
+			@PathVariable String product, 
+			@PathVariable String mainMenu, 
+			@PathVariable String subMenu, 
+			Pageable pageable, 
+			@RequestParam Map<String, String> paramMap, 
+			Model model) {
 		
 		SubMenu targetSubMenu = getSubMenu(product, mainMenu, subMenu);
 		model.addAttribute("subMenu", targetSubMenu);
@@ -67,7 +73,11 @@ public class UseFragmentController {
 	}
 	
 	@GetMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_FIND_MODAL)
-	public String modal(@PathVariable String product, @PathVariable String mainMenu, @PathVariable String subMenu, Model model) {
+	public String modal(
+			@PathVariable String product, 
+			@PathVariable String mainMenu, 
+			@PathVariable String subMenu, 
+			Model model) {
 		// parameter가 있는 경우 해당 정보를 내려준다.
 		
 		

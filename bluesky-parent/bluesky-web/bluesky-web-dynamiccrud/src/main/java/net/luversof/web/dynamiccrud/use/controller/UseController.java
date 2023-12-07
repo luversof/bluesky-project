@@ -43,7 +43,11 @@ public class UseController {
 	}
 
 	@GetMapping( "/{product}/{mainMenu}/{subMenu}" )
-	public String view(@PathVariable String product, @PathVariable String mainMenu, @PathVariable String subMenu, Model model) {
+	public String view(
+			@PathVariable String product, 
+			@PathVariable String mainMenu, 
+			@PathVariable String subMenu, 
+			Model model) {
 		
 		// Setting 정보를 호출하여 해당 요청에 대한 설정이 있는지 확인
 		// Product, MainMenu는 볼것도 없이 SubMenu만 바로 조회하면 될 듯?

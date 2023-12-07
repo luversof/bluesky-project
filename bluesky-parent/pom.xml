@@ -9,7 +9,7 @@
 	<parent>
 		<groupId>io.github.luversof</groupId>
 		<artifactId>bluesky-boot-parent</artifactId>
-		<version>3.1.0-SNAPSHOT</version>
+		<version>3.2.0-SNAPSHOT</version>
 	</parent>
 
 	<properties>
@@ -163,8 +163,8 @@
 			</snapshots>
 		</repository>
 		<repository>
-			<id>github-bluesky-maven-repo</id>
-			<url>https://raw.githubusercontent.com/luversof/bluesky-maven-repo/main/snapshots</url>
+			<id>bluesky-snapshots</id>
+			<url>http://nexus.bluesky.local/repository/maven-snapshots/</url>
 			<snapshots>
 				<enabled>true</enabled>
 				<updatePolicy>always</updatePolicy>

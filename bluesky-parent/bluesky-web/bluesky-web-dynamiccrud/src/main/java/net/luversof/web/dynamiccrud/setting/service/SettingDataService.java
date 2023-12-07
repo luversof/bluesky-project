@@ -34,8 +34,12 @@ public class SettingDataService {
 	@Getter private List<SubMenu> subMenuList;
 	@Getter private List<Query> queryList;
 	@Getter private List<Field> fieldList;
-
+	
 	public SettingDataService() {
+		loadData();
+	}
+
+	public void loadData() {
 		
 		// 만들어보자...
 		{
@@ -242,7 +246,7 @@ public class SettingDataService {
 			field.setColumn("displayOrder");
 			field.setName("순서");
 			field.setVisible(true);
-			field.setEnableSearch("ENABLED");
+			field.setEnableSearch("DISABLED");
 			field.setEnableEdit("ENABLED");
 			field.setFormOrder((short) 5);
 			fieldList.add(field);
@@ -255,7 +259,7 @@ public class SettingDataService {
 			field.setColumn("enableExcel");
 			field.setName("엑셀");
 			field.setVisible(true);
-			field.setEnableSearch("ENABLED");
+			field.setEnableSearch("DISABLED");
 			field.setEnableEdit("ENABLED");
 			field.setFormOrder((short) 6);
 			fieldList.add(field);
@@ -268,7 +272,7 @@ public class SettingDataService {
 			field.setColumn("enableInsert");
 			field.setName("입력");
 			field.setVisible(true);
-			field.setEnableSearch("ENABLED");
+			field.setEnableSearch("DISABLED");
 			field.setEnableEdit("ENABLED");
 			field.setFormOrder((short) 7);
 			fieldList.add(field);
@@ -281,7 +285,7 @@ public class SettingDataService {
 			field.setColumn("enableUpdate");
 			field.setName("수정");
 			field.setVisible(true);
-			field.setEnableSearch("ENABLED");
+			field.setEnableSearch("DISABLED");
 			field.setEnableEdit("ENABLED");
 			field.setFormOrder((short) 8);
 			fieldList.add(field);
@@ -294,7 +298,7 @@ public class SettingDataService {
 			field.setColumn("enableDelete");
 			field.setName("삭제");
 			field.setVisible(true);
-			field.setEnableSearch("ENABLED");
+			field.setEnableSearch("DISABLED");
 			field.setEnableEdit("ENABLED");
 			field.setFormOrder((short) 9);
 			fieldList.add(field);
@@ -351,7 +355,7 @@ public class SettingDataService {
 			field.setColumn("queryString");
 			field.setName("쿼리");
 			field.setVisible(true);
-			field.setEnableSearch("ENABLED");
+			field.setEnableSearch("DISABLED");
 			field.setEnableEdit("ENABLED");
 			field.setFormOrder((short) 7);
 			fieldList.add(field);
@@ -382,7 +386,7 @@ public class SettingDataService {
 			field.setColumn("name");
 			field.setName("컬럼명");
 			field.setVisible(true);
-			field.setEnableSearch("ENABLED");
+			field.setEnableSearch("DISABLED");
 			field.setEnableEdit("ENABLED");
 			field.setFormOrder((short) 5);
 			fieldList.add(field);
@@ -408,7 +412,7 @@ public class SettingDataService {
 			field.setColumn("preset");
 			field.setName("프리셋");
 			field.setVisible(true);
-			field.setEnableSearch("ENABLED");
+			field.setEnableSearch("DISABLED");
 			field.setEnableEdit("ENABLED");
 			field.setFormOrder((short) 7);
 			fieldList.add(field);
@@ -421,7 +425,7 @@ public class SettingDataService {
 			field.setColumn("format");
 			field.setName("포맷");
 			field.setVisible(true);
-			field.setEnableSearch("ENABLED");
+			field.setEnableSearch("DISABLED");
 			field.setEnableEdit("ENABLED");
 			field.setFormOrder((short) 8);
 			fieldList.add(field);
@@ -434,7 +438,7 @@ public class SettingDataService {
 			field.setColumn("validation");
 			field.setName("검증");
 			field.setVisible(true);
-			field.setEnableSearch("ENABLED");
+			field.setEnableSearch("DISABLED");
 			field.setEnableEdit("ENABLED");
 			field.setFormOrder((short) 9);
 			fieldList.add(field);
@@ -447,7 +451,7 @@ public class SettingDataService {
 			field.setColumn("visible");
 			field.setName("표시여부");
 			field.setVisible(true);
-			field.setEnableSearch("ENABLED");
+			field.setEnableSearch("DISABLED");
 			field.setEnableEdit("ENABLED");
 			field.setFormOrder((short) 10);
 			fieldList.add(field);
@@ -460,7 +464,7 @@ public class SettingDataService {
 			field.setColumn("enableSearch");
 			field.setName("검색");
 			field.setVisible(true);
-			field.setEnableSearch("ENABLED");
+			field.setEnableSearch("DISABLED");
 			field.setEnableEdit("ENABLED");
 			field.setFormOrder((short) 11);
 			fieldList.add(field);
@@ -473,7 +477,7 @@ public class SettingDataService {
 			field.setColumn("enableEdit");
 			field.setName("입력");
 			field.setVisible(true);
-			field.setEnableSearch("ENABLED");
+			field.setEnableSearch("DISABLED");
 			field.setEnableEdit("ENABLED");
 			field.setFormOrder((short) 12);
 			fieldList.add(field);
@@ -486,7 +490,7 @@ public class SettingDataService {
 			field.setColumn("formSize");
 			field.setName("퐄크기");
 			field.setVisible(true);
-			field.setEnableSearch("ENABLED");
+			field.setEnableSearch("DISABLED");
 			field.setEnableEdit("ENABLED");
 			field.setFormOrder((short) 13);
 			fieldList.add(field);
@@ -499,7 +503,7 @@ public class SettingDataService {
 			field.setColumn("formOrder");
 			field.setName("폼순서");
 			field.setVisible(true);
-			field.setEnableSearch("ENABLED");
+			field.setEnableSearch("DISABLED");
 			field.setEnableEdit("ENABLED");
 			field.setFormOrder((short) 14);
 			fieldList.add(field);
