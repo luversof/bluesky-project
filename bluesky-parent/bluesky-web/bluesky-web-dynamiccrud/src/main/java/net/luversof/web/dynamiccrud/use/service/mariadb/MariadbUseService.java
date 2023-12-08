@@ -17,6 +17,7 @@ import org.springframework.util.StringUtils;
 
 import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
 import net.luversof.web.dynamiccrud.setting.domain.Field;
+import net.luversof.web.dynamiccrud.setting.domain.FieldEnable;
 import net.luversof.web.dynamiccrud.setting.domain.Query;
 import net.luversof.web.dynamiccrud.use.service.UseService;
 
@@ -39,14 +40,14 @@ public class MariadbUseService implements UseService {
 		var paramSource = new MapSqlParameterSource();
 		
 		// 필수 검색 조건이 있는 경우 확인
-		var requiredFieldList = fieldList.stream().filter(x -> "REQUIRED".equals(x.getEnableSearch())).toList();
+		var requiredFieldList = fieldList.stream().filter(x -> FieldEnable.REQUIRED.equals(x.getEnableSearch())).toList();
 		if (requiredFieldList.stream().anyMatch(x -> !paramMap.containsKey(x.getColumn()))) {
 			return new PageImpl<>(Collections.emptyList(), pageable, 0);
 		}
 		
 		// 검색 대상 컬럼 목록 추출
 		var conditionQueryBuilder = new StringBuilder();
-		var targetFieldList = fieldList.stream().filter(x -> ("REQUIRED".equals(x.getEnableSearch()) || "ENABLED".equals(x.getEnableSearch())) && paramMap.containsKey(x.getColumn()) && StringUtils.hasText(paramMap.get(x.getColumn()))).toList();
+		var targetFieldList = fieldList.stream().filter(x -> (FieldEnable.REQUIRED.equals(x.getEnableSearch()) || FieldEnable.ENABLED.equals(x.getEnableSearch())) && paramMap.containsKey(x.getColumn()) && StringUtils.hasText(paramMap.get(x.getColumn()))).toList();
 		if (!targetFieldList.isEmpty()) {
 			boolean checkAlreadWhereCondition = false;
 			conditionQueryBuilder.append("WHERE ");

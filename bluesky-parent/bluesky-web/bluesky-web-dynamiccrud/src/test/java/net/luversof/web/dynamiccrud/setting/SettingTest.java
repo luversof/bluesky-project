@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -13,6 +14,7 @@ import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
+import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.web.dynamiccrud.setting.domain.MainMenu;
@@ -21,6 +23,7 @@ import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb.ProductRowMapper;
 import net.luversof.web.dynamiccrud.setting.repository.MainMenuRepository;
 import net.luversof.web.dynamiccrud.setting.repository.ProductRepository;
+import net.luversof.web.dynamiccrud.setting.service.FieldService;
 
 @Slf4j
 public class SettingTest implements GeneralTest {
@@ -36,6 +39,14 @@ public class SettingTest implements GeneralTest {
 	
 	@Autowired
 	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+	
+	@Autowired
+	private FieldService fieldService;
+	
+	@BeforeAll
+	public static void beforeAll() {
+		RoutingDataSourceContextHolder.setContext(() -> "dynamiccrud_sample");
+	}
 	
 	@Test
 	void productSave() {
@@ -80,6 +91,13 @@ public class SettingTest implements GeneralTest {
 		var productPage = productRepository.findByProduct("noti", page);
 		
 		log.debug("page : {}", productPage);
+	}
+	
+	@Test
+	void fieldServiceFind() {
+		var page = PageRequest.of(0,  10);
+		var fieldPage = fieldService.find(null, page);
+		log.debug("fieldPage : {}", fieldPage);
 	}
 	
 	@Test

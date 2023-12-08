@@ -31,28 +31,37 @@ public class SubMenu extends Setting {
 	@Column(length = 40)
 	private String subMenu;
 	
+	@Column(length = 40, nullable = false)
 	private String subMenuName;
 	
+	@Column(length = 40, nullable = false)
 	private String template;
 	
-	private int displayOrder;
+	@Column(nullable = false)
+	private Short displayOrder;
 	
 	@Column
 	private Short groupNo;
 	
+	@Column(length = 40)
 	private String groupTemplate;
 	
 	@Column
 	private Short pageSize;
 	
+	@Column(nullable = false)
 	private boolean enableCount;
 	
+	@Column(nullable = false)
 	private boolean enableExcel;
 	
+	@Column(nullable = false)
 	private boolean enableInsert;
 	
+	@Column(nullable = false)
 	private boolean enableUpdate;
 	
+	@Column(nullable = false)
 	private boolean enableDelete;
 	
 	public String getUrl() {

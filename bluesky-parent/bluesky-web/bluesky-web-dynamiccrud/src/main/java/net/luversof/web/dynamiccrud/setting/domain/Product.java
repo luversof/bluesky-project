@@ -21,6 +21,7 @@ public class Product extends Setting {
 	@Column(length = 20)
 	private String product;
 	
+	@Column(length = 40, nullable = false)
 	private String productName;
 
 }

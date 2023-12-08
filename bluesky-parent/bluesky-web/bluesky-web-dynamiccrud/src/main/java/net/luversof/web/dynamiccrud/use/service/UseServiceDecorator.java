@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import net.luversof.web.dynamiccrud.setting.domain.Field;
 import net.luversof.web.dynamiccrud.setting.domain.Query;
+import net.luversof.web.dynamiccrud.setting.domain.QueryDbType;
 
 @Service
 public class UseServiceDecorator implements UseService {
@@ -19,7 +20,7 @@ public class UseServiceDecorator implements UseService {
 
 	@Override
 	public Page<Map<String, Object>> find(Query query, List<Field> fieldList, Pageable pageable, Map<String, String> paramMap) {
-		if (query.getDbType().equals("mariadb")) {
+		if (query.getDbType().equals(QueryDbType.MySql)) {
 			UseService useService = useServiceMap.get("mariadbUseService");
 			
 			// query 기준으로 결과 반환 해야 하는데..

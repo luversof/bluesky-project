@@ -14,12 +14,14 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import io.github.luversof.boot.jdbc.datasource.annotation.RoutingDataSource;
 import net.luversof.web.dynamiccrud.setting.domain.Field;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb.FieldRowMapper;
 import net.luversof.web.dynamiccrud.setting.repository.FieldRepository;
 
 @Service
+@RoutingDataSource(SettingDataService.DATASOURCE_NAME)
 public class FieldService implements SettingService<Field> {
 	
 	@Autowired
@@ -43,38 +45,42 @@ public class FieldService implements SettingService<Field> {
 		
 		var paramSource = new MapSqlParameterSource();
 		
-		var conditionQueryBuilder = new StringBuilder();
-		boolean checkAlreadWhereCondition = false;
-		if (StringUtils.hasText(settingParameter.product()) || StringUtils.hasText(settingParameter.mainMenu()) || StringUtils.hasText(settingParameter.subMenu())) {
-			conditionQueryBuilder.append("WHERE ");
-		}
-		
-		if (StringUtils.hasText(settingParameter.product())) {
-			conditionQueryBuilder.append("product = :product ");
-			paramSource.addValue("product", settingParameter.product());
-			checkAlreadWhereCondition = true;
-		}
-		
-		if (StringUtils.hasText(settingParameter.mainMenu())) {
-			if (checkAlreadWhereCondition) {
-				conditionQueryBuilder.append("AND ");
+		if (settingParameter != null) {
+			var conditionQueryBuilder = new StringBuilder();
+			boolean checkAlreadWhereCondition = false;
+			
+			if (StringUtils.hasText(settingParameter.product()) || StringUtils.hasText(settingParameter.mainMenu()) || StringUtils.hasText(settingParameter.subMenu())) {
+				conditionQueryBuilder.append("WHERE ");
 			}
-			conditionQueryBuilder.append("mainMenu = :mainMenu ");
-			paramSource.addValue("mainMenu", settingParameter.mainMenu());
-			checkAlreadWhereCondition = true;
-		}
-		
-		if (StringUtils.hasText(settingParameter.subMenu())) {
-			if (checkAlreadWhereCondition) {
-				conditionQueryBuilder.append("AND ");
+			
+			if (StringUtils.hasText(settingParameter.product())) {
+				conditionQueryBuilder.append("product = :product ");
+				paramSource.addValue("product", settingParameter.product());
+				checkAlreadWhereCondition = true;
 			}
-			conditionQueryBuilder.append("subMenu = :subMenu ");
-			paramSource.addValue("subMenu", settingParameter.subMenu());
-			checkAlreadWhereCondition = true;
+			
+			if (StringUtils.hasText(settingParameter.mainMenu())) {
+				if (checkAlreadWhereCondition) {
+					conditionQueryBuilder.append("AND ");
+				}
+				conditionQueryBuilder.append("mainMenu = :mainMenu ");
+				paramSource.addValue("mainMenu", settingParameter.mainMenu());
+				checkAlreadWhereCondition = true;
+			}
+			
+			if (StringUtils.hasText(settingParameter.subMenu())) {
+				if (checkAlreadWhereCondition) {
+					conditionQueryBuilder.append("AND ");
+				}
+				conditionQueryBuilder.append("subMenu = :subMenu ");
+				paramSource.addValue("subMenu", settingParameter.subMenu());
+				checkAlreadWhereCondition = true;
+			}
+			
+			selectQueryBuilder.append(conditionQueryBuilder);
+			countQueryBuilder.append(conditionQueryBuilder);
 		}
 		
-		selectQueryBuilder.append(conditionQueryBuilder);
-		countQueryBuilder.append(conditionQueryBuilder);
 		
 		selectQueryBuilder.append("LIMIT :limit OFFSET :offset");
 		paramSource.addValue("limit", pageable.getPageSize());
@@ -91,7 +97,6 @@ public class FieldService implements SettingService<Field> {
 		
 		return new PageImpl<>(fieldList, pageable, totalCount);
 	}
-
 	
 	public List<Field> findByProductAndMainMenuAndSubMenu(String product, String mainMenu, String subMenu) {
 		var fieldList = settingDataService.getFieldList().stream().filter(x -> 

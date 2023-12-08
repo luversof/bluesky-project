@@ -2,6 +2,8 @@ package net.luversof.web.dynamiccrud.setting.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
@@ -35,9 +37,12 @@ public class Field extends Setting {
 	@Column(length = 40)
 	private String column;
 
+	@Column(length = 40, nullable = false)
 	private String name;
 
-	private String type;		// BOOLEAN, DATE, INT, LINK, LONG, STRING, TEXT
+	@Enumerated(EnumType.STRING)
+	@Column(length = 20, nullable = false)
+	private FieldType type;		// BOOLEAN, DATE, INT, LINK, LONG, STRING, TEXT
 	
 	private String preset;
 	
@@ -45,11 +50,14 @@ public class Field extends Setting {
 	
 	private String validation;
 	
+	@Column(nullable = false)
 	private boolean visible;
 	
-	private String enableSearch;	// DISABLED, ENABLED, REQUIRED
+	@Column(length = 20, nullable = false)
+	private FieldEnable enableSearch;	// DISABLED, ENABLED, REQUIRED
 	
-	private String enableEdit;	// DISABLED, ENABLED, REQUIRED
+	@Column(length = 20, nullable = false)
+	private FieldEnable enableEdit;	// DISABLED, ENABLED, REQUIRED
 	
 	@Column
 	private Short formSize;
@@ -58,10 +66,10 @@ public class Field extends Setting {
 	private Short formOrder;
 	
 	public boolean isEnableSearch() {
-		return "ENABLED".equals(enableSearch) || "REQUIRED".equals(enableSearch);
+		return FieldEnable.ENABLED.equals(enableSearch) || FieldEnable.REQUIRED.equals(enableSearch);
 	}
 	
 	public boolean isEnableEdit() {
-		return "ENABLED".equals(enableEdit) || "REQUIRED".equals(enableEdit);
+		return FieldEnable.ENABLED.equals(enableEdit) || FieldEnable.REQUIRED.equals(enableEdit);
 	}
 }

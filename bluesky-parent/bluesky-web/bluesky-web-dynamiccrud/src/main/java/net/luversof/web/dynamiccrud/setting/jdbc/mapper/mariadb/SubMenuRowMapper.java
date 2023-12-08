@@ -15,7 +15,7 @@ public class SubMenuRowMapper extends SettingRowMapper<SubMenu> {
 			rs.getString("subMenu"),
 			rs.getString("subMenuName"),
 			rs.getString("template"),
-			rs.getInt("displayOrder"),
+			rs.getShort("displayOrder"),
 			rs.getShort("groupNo"),
 			rs.getString("groupTemplate"),
 			rs.getShort("pageSize"),

@@ -13,12 +13,14 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import io.github.luversof.boot.jdbc.datasource.annotation.RoutingDataSource;
 import net.luversof.web.dynamiccrud.setting.domain.MainMenu;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb.MainMenuRowMapper;
 import net.luversof.web.dynamiccrud.setting.repository.MainMenuRepository;
 
 @Service
+@RoutingDataSource(SettingDataService.DATASOURCE_NAME)
 public class MainMenuService implements SettingService<MainMenu> {
 	
 	@Autowired
@@ -42,29 +44,31 @@ public class MainMenuService implements SettingService<MainMenu> {
 		
 		var paramSource = new MapSqlParameterSource();
 		
-		var conditionQueryBuilder = new StringBuilder();
-		boolean checkAlreadWhereCondition = false;
-		if (StringUtils.hasText(settingParameter.product()) || StringUtils.hasText(settingParameter.mainMenu())) {
-			conditionQueryBuilder.append("WHERE ");
-		}
-		
-		if (StringUtils.hasText(settingParameter.product())) {
-			conditionQueryBuilder.append("product = :product ");
-			paramSource.addValue("product", settingParameter.product());
-			checkAlreadWhereCondition = true;
-		}
-		
-		if (StringUtils.hasText(settingParameter.mainMenu())) {
-			if (checkAlreadWhereCondition) {
-				conditionQueryBuilder.append("AND ");
+		if (settingParameter != null) {
+			var conditionQueryBuilder = new StringBuilder();
+			boolean checkAlreadWhereCondition = false;
+			if (StringUtils.hasText(settingParameter.product()) || StringUtils.hasText(settingParameter.mainMenu())) {
+				conditionQueryBuilder.append("WHERE ");
 			}
-			conditionQueryBuilder.append("mainMenu = :mainMenu ");
-			paramSource.addValue("mainMenu", settingParameter.mainMenu());
-			checkAlreadWhereCondition = true;
+			
+			if (StringUtils.hasText(settingParameter.product())) {
+				conditionQueryBuilder.append("product = :product ");
+				paramSource.addValue("product", settingParameter.product());
+				checkAlreadWhereCondition = true;
+			}
+			
+			if (StringUtils.hasText(settingParameter.mainMenu())) {
+				if (checkAlreadWhereCondition) {
+					conditionQueryBuilder.append("AND ");
+				}
+				conditionQueryBuilder.append("mainMenu = :mainMenu ");
+				paramSource.addValue("mainMenu", settingParameter.mainMenu());
+				checkAlreadWhereCondition = true;
+			}
+			
+			selectQueryBuilder.append(conditionQueryBuilder);
+			countQueryBuilder.append(conditionQueryBuilder);
 		}
-		
-		selectQueryBuilder.append(conditionQueryBuilder);
-		countQueryBuilder.append(conditionQueryBuilder);
 		
 		selectQueryBuilder.append("LIMIT :limit OFFSET :offset");
 		paramSource.addValue("limit", pageable.getPageSize());

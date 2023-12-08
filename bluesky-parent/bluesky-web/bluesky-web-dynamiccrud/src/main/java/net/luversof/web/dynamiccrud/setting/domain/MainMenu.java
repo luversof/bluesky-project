@@ -27,6 +27,7 @@ public class MainMenu extends Setting {
 	@Column(length = 40)
 	private String mainMenu;
 	
+	@Column(length = 40, nullable = false)
 	private String mainMenuName;
 
 }

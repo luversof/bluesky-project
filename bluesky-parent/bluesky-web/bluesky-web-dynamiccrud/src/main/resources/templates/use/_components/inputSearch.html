@@ -1,0 +1,44 @@
+<!--/*-->
+   field 설정에 따라 적절한 검색 창을 보여줌
+   input이 preset을 가지고 있다면 select로 처리
+   preset의 경우 |  구분자로 값이 나뉘어지고 , 구분자로 키/값이 나뉘어짐
+   input이 boolean을 가지고 있다면 checkbox로 처리
+   그외의 경우는 input text로 처리
+   date는 좀더 고민해보자.
+<!--*/-->
+
+<div class="search flex"
+	data-th-if="${hasSearchField}" 
+	data-th-with="
+		fieldList = ${fieldList}
+	"
+>
+	
+	<div
+		data-th-each="field : ${fieldList}" 
+		data-th-if="${field.isEnableSearch}"
+	>
+		<input type="text" class="input input-bordered input-sm w-48 searchinput"
+			data-th-if="${#strings.isEmpty(field.preset)}" 
+			data-th-placeholder="${field.name}"
+			data-th-name="${field.column}"
+			data-th-value="${param[field.column]}"
+		/>
+		
+		<select class="select select-sm select-bordered w-full max-w-xs searchinput"
+			data-th-unless="${#strings.isEmpty(field.preset)}"
+			data-th-name="${field.column}"
+		>
+			<option data-th-text="${field.name}" value="" />
+			<option 
+				data-th-each="presetPart : ${#strings.listSplit(field.preset,'|')}" 
+				data-th-value="${#strings.contains(presetPart, ',')? #strings.arraySplit(presetPart, ',')[1] : presetPart}" 
+				data-th-text="${#strings.contains(presetPart, ',')? #strings.arraySplit(presetPart, ',')[0] : presetPart}"
+			/>
+			
+			
+		</select>
+	</div>
+	
+	<button class="btn btn-sm resetbutton" data-th-text="#{button.text.reset}" />
+</div>

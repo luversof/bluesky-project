@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.web.dynamiccrud.setting.domain.Field;
 import net.luversof.web.dynamiccrud.setting.domain.Query;
+import net.luversof.web.dynamiccrud.setting.domain.QuerySqlCommandType;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
 import net.luversof.web.dynamiccrud.setting.service.FieldService;
 import net.luversof.web.dynamiccrud.setting.service.QueryService;
@@ -54,7 +55,7 @@ public class UseFragmentController {
 		SubMenu targetSubMenu = getSubMenu(product, mainMenu, subMenu);
 		model.addAttribute("subMenu", targetSubMenu);
 		
-		Query query = getQuery(product, mainMenu, subMenu, "SELECT");
+		Query query = getQuery(product, mainMenu, subMenu, QuerySqlCommandType.SELECT);
 		
 		List<Field> fieldList = getFieldList(product, mainMenu, subMenu);
 		model.addAttribute("fieldList", fieldList);
@@ -100,7 +101,7 @@ public class UseFragmentController {
 		return subMenuService.findByProductAndMainMenu(product, mainMenu).stream().filter(x -> x.getSubMenu().equals(subMenu)).findAny().orElseThrow(() -> new BlueskyException("NOT_EXIST_SELECT_SUBMENU"));
 	}
 
-	private Query getQuery(String product, String mainMenu, String subMenu, String sqlCommandType) {
+	private Query getQuery(String product, String mainMenu, String subMenu, QuerySqlCommandType sqlCommandType) {
 		List<Query> queryList = queryService.findByProductAndMainMenuAndSubMenu(product, mainMenu, subMenu);
 		return queryList.stream().filter(x -> x.getSqlCommandType().equals(sqlCommandType)).findAny().orElseThrow(() -> new BlueskyException("NOT_EXIST_SELECT_QUERY"));
 	}

@@ -4,6 +4,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import net.luversof.web.dynamiccrud.setting.domain.Query;
+import net.luversof.web.dynamiccrud.setting.domain.QueryDbType;
+import net.luversof.web.dynamiccrud.setting.domain.QuerySqlCommandType;
 
 public class QueryRowMapper extends SettingRowMapper<Query> {
 
@@ -13,10 +15,10 @@ public class QueryRowMapper extends SettingRowMapper<Query> {
 			rs.getString("product"),
 			rs.getString("mainMenu"),
 			rs.getString("subMenu"),
-			rs.getString("sqlCommandType"),
+			QuerySqlCommandType.valueOf(rs.getString("sqlCommandType")),
 			rs.getString("queryString"),
 			rs.getString("dataSourceName"),
-			rs.getString("dbType")
+			QueryDbType.valueOf(rs.getString("dbType"))
 		);
 		setCommon(query, rs);
 		return query;

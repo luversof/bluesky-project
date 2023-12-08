@@ -13,11 +13,13 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import io.github.luversof.boot.jdbc.datasource.annotation.RoutingDataSource;
 import net.luversof.web.dynamiccrud.setting.domain.Product;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb.ProductRowMapper;
 
 @Service
+@RoutingDataSource(SettingDataService.DATASOURCE_NAME)
 public class ProductService implements SettingService<Product> {
 	
 	@Autowired
@@ -35,10 +37,12 @@ public class ProductService implements SettingService<Product> {
 		
 		var paramSource = new MapSqlParameterSource();
 		
-		if (StringUtils.hasText(settingParameter.product())) {
-			selectQueryBuilder.append("WHERE product = :product ");
-			countQueryBuilder.append("WHERE product = :product ");
-			paramSource.addValue("product", settingParameter.product());
+		if (settingParameter != null) {
+			if (StringUtils.hasText(settingParameter.product())) {
+				selectQueryBuilder.append("WHERE product = :product ");
+				countQueryBuilder.append("WHERE product = :product ");
+				paramSource.addValue("product", settingParameter.product());
+			}
 		}
 		
 		selectQueryBuilder.append("LIMIT :limit OFFSET :offset");
