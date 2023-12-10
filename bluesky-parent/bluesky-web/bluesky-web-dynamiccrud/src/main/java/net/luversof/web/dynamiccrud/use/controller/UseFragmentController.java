@@ -53,15 +53,12 @@ public class UseFragmentController {
 			Model model) {
 		
 		SubMenu targetSubMenu = getSubMenu(product, mainMenu, subMenu);
-		model.addAttribute("subMenu", targetSubMenu);
+		model.addAttribute("targetSubMenu", targetSubMenu);
 		
 		Query query = getQuery(product, mainMenu, subMenu, QuerySqlCommandType.SELECT);
 		
 		List<Field> fieldList = getFieldList(product, mainMenu, subMenu);
 		model.addAttribute("fieldList", fieldList);
-		
-		// 검색 조건의 경우 필수 검색의 값이 없으면 에러 처리
-		
 		
 		Page<Map<String, Object>> page = useService.find(query, fieldList, pageable, paramMap);
 		model.addAttribute("page", page);
@@ -91,6 +88,7 @@ public class UseFragmentController {
 		
 		
 		List<Field> fieldList = getFieldList(product, mainMenu, subMenu);
+		model.addAttribute("fieldList", fieldList);
 		
 		// field를 적절히 보여준다.
 		

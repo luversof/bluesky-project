@@ -8,14 +8,28 @@ import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 
+import io.github.luversof.boot.exception.BlueskyException;
+import lombok.Setter;
 import lombok.experimental.UtilityClass;
 import net.luversof.web.dynamiccrud.setting.domain.Field;
+import net.luversof.web.dynamiccrud.setting.domain.Query;
+import net.luversof.web.dynamiccrud.setting.domain.QuerySqlCommandType;
+import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
+import net.luversof.web.dynamiccrud.setting.service.FieldService;
+import net.luversof.web.dynamiccrud.setting.service.QueryService;
+import net.luversof.web.dynamiccrud.setting.service.SubMenuService;
 
 @UtilityClass
 public class ThymeleafUseUtil {
+	
+	@Setter private static SubMenuService subMenuService;
+	
+	@Setter private static QueryService queryService;
+	
+	@Setter private static FieldService fieldService;
 
 	
-	public LinkedHashMap<String, String> getColumnMap(Page<Map<String, Object>> page, List<Field> fieldList) {
+	public static LinkedHashMap<String, String> getColumnMap(Page<Map<String, Object>> page, List<Field> fieldList) {
 		if (page == null || !page.hasContent()) {
 			return null;
 		}
@@ -24,7 +38,7 @@ public class ThymeleafUseUtil {
 	}
 	
 
-	public LinkedHashMap<String, String> getColumnMap(Map<String, Object> data, List<Field> fieldList) {
+	public static LinkedHashMap<String, String> getColumnMap(Map<String, Object> data, List<Field> fieldList) {
 		if (data == null || data.isEmpty()) {
 			return null;
 		}
@@ -44,6 +58,20 @@ public class ThymeleafUseUtil {
 			});
 		}
 		return map;
+	}
+	
+	public static SubMenu getSubMenu(String product, String mainMenu, String subMenu) {
+		return subMenuService.findByProductAndMainMenu(product, mainMenu).stream().filter(x -> x.getSubMenu().equals(subMenu)).findAny().orElseThrow(() -> new BlueskyException("NOT_EXIST_SELECT_SUBMENU"));
+	}
+
+	public static Query getQuery(String product, String mainMenu, String subMenu, QuerySqlCommandType sqlCommandType) {
+		List<Query> queryList = queryService.findByProductAndMainMenuAndSubMenu(product, mainMenu, subMenu);
+		return queryList.stream().filter(x -> x.getSqlCommandType().equals(sqlCommandType)).findAny().orElseThrow(() -> new BlueskyException("NOT_EXIST_SELECT_QUERY"));
+	}
+	
+	public static List<Field> getFieldList(String product, String mainMenu, String subMenu) {
+		List<Field> fieldList = fieldService.findByProductAndMainMenuAndSubMenu(product, mainMenu, subMenu);
+		return fieldList;
 	}
 
 }

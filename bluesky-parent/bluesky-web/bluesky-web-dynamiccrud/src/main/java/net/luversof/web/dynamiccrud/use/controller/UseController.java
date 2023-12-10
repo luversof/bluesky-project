@@ -9,20 +9,19 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.web.dynamiccrud.setting.domain.Field;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
 import net.luversof.web.dynamiccrud.setting.service.FieldService;
 import net.luversof.web.dynamiccrud.setting.service.SubMenuService;
+import net.luversof.web.dynamiccrud.thymeleaf.constant.DynamicCrudConstant;
 import net.luversof.web.dynamiccrud.thymeleaf.domain.Menu;
 
 /**
  * 설정된 데이터를 호출하여 화면을 구성
  */
 @Controller
-@RequestMapping("/use")
 public class UseController {
 	
 	@Autowired
@@ -31,7 +30,7 @@ public class UseController {
 	@Autowired
 	private FieldService fieldService;
 	
-	@GetMapping("/{product}/{mainMenu}")
+	@GetMapping("/use/{product}/{mainMenu}")
 	public String redirectView(@PathVariable String product, @PathVariable String mainMenu) {
 		var subMenuList = subMenuService.findByProductAndMainMenu(product, mainMenu);
 		if (subMenuList.isEmpty()) {
@@ -42,7 +41,7 @@ public class UseController {
 		
 	}
 
-	@GetMapping( "/{product}/{mainMenu}/{subMenu}" )
+	@GetMapping(DynamicCrudConstant.PATH_USE_VIEW_INDEX)
 	public String view(
 			@PathVariable String product, 
 			@PathVariable String mainMenu, 
