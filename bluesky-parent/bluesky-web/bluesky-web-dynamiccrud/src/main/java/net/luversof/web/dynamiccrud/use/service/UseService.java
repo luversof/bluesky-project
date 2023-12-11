@@ -12,5 +12,7 @@ import net.luversof.web.dynamiccrud.setting.domain.Query;
 public interface UseService {
 	
 	Page<Map<String, Object>> find(Query query, List<Field> fieldList, Pageable pageable, Map<String, String> paramMap);
+	
+	Object insert(Query query, List<Field> fieldList, Map<String, String> postData);
 
 }

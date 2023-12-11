@@ -10,32 +10,19 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import io.github.luversof.boot.exception.BlueskyException;
+import jakarta.servlet.http.HttpServletResponse;
 import net.luversof.web.dynamiccrud.setting.domain.Field;
 import net.luversof.web.dynamiccrud.setting.domain.Query;
 import net.luversof.web.dynamiccrud.setting.domain.QuerySqlCommandType;
-import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
-import net.luversof.web.dynamiccrud.setting.service.FieldService;
-import net.luversof.web.dynamiccrud.setting.service.QueryService;
-import net.luversof.web.dynamiccrud.setting.service.SubMenuService;
 import net.luversof.web.dynamiccrud.thymeleaf.constant.DynamicCrudConstant;
 import net.luversof.web.dynamiccrud.use.service.UseServiceDecorator;
 import net.luversof.web.dynamiccrud.use.util.ThymeleafUseUtil;
 
 @Controller
 public class UseFragmentController {
-	
-	
-	@Autowired
-	private SubMenuService subMenuService;
-	
-	@Autowired
-	private QueryService queryService;
-	
-	@Autowired
-	private FieldService fieldService;
 	
 	@Autowired
 	private UseServiceDecorator useService;
@@ -49,15 +36,12 @@ public class UseFragmentController {
 			@PathVariable String mainMenu, 
 			@PathVariable String subMenu, 
 			Pageable pageable, 
-			@RequestParam Map<String, String> paramMap, 
+			@RequestParam Map<String, String> paramMap,
 			Model model) {
 		
-		SubMenu targetSubMenu = getSubMenu(product, mainMenu, subMenu);
-		model.addAttribute("targetSubMenu", targetSubMenu);
+		Query query = ThymeleafUseUtil.getQuery(product, mainMenu, subMenu, QuerySqlCommandType.SELECT);
 		
-		Query query = getQuery(product, mainMenu, subMenu, QuerySqlCommandType.SELECT);
-		
-		List<Field> fieldList = getFieldList(product, mainMenu, subMenu);
+		List<Field> fieldList = ThymeleafUseUtil.getFieldList(product, mainMenu, subMenu);
 		model.addAttribute("fieldList", fieldList);
 		
 		Page<Map<String, Object>> page = useService.find(query, fieldList, pageable, paramMap);
@@ -74,7 +58,7 @@ public class UseFragmentController {
 	public String modal(
 			@PathVariable String product, 
 			@PathVariable String mainMenu, 
-			@PathVariable String subMenu, 
+			@PathVariable String subMenu,
 			Model model) {
 		// parameter가 있는 경우 해당 정보를 내려준다.
 		
@@ -87,7 +71,7 @@ public class UseFragmentController {
 		
 		
 		
-		List<Field> fieldList = getFieldList(product, mainMenu, subMenu);
+		List<Field> fieldList = ThymeleafUseUtil.getFieldList(product, mainMenu, subMenu);
 		model.addAttribute("fieldList", fieldList);
 		
 		// field를 적절히 보여준다.
@@ -95,21 +79,23 @@ public class UseFragmentController {
 		return "use/fragment/modal";
 	}
 	
-	private SubMenu getSubMenu(String product, String mainMenu, String subMenu) {
-		return subMenuService.findByProductAndMainMenu(product, mainMenu).stream().filter(x -> x.getSubMenu().equals(subMenu)).findAny().orElseThrow(() -> new BlueskyException("NOT_EXIST_SELECT_SUBMENU"));
-	}
-
-	private Query getQuery(String product, String mainMenu, String subMenu, QuerySqlCommandType sqlCommandType) {
-		List<Query> queryList = queryService.findByProductAndMainMenuAndSubMenu(product, mainMenu, subMenu);
-		return queryList.stream().filter(x -> x.getSqlCommandType().equals(sqlCommandType)).findAny().orElseThrow(() -> new BlueskyException("NOT_EXIST_SELECT_QUERY"));
+	@PostMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_FIND_MODAL)
+	public String modalPost(
+			@PathVariable String product, 
+			@PathVariable String mainMenu, 
+			@PathVariable String subMenu,
+			@RequestParam Map<String, String> postData,
+			HttpServletResponse response,
+			Model model) {
+		response.setHeader("HX-Trigger", "modalPost");	// 응답 트리거를 위한 설정
+		
+		// 생성 처리
+		
+		
+		
+		return "use/fragment/modal";
 	}
 	
-	private List<Field> getFieldList(String product, String mainMenu, String subMenu) {
-		List<Field> fieldList = fieldService.findByProductAndMainMenuAndSubMenu(product, mainMenu, subMenu);
-		return fieldList;
-	}
-	
-
 	/**
 	 * 개발용 api
 	 */

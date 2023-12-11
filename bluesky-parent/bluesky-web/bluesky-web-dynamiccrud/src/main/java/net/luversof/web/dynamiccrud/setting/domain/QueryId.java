@@ -19,6 +19,6 @@ public class QueryId implements Serializable {
 	
 	private String subMenu;
 	
-	private String sqlCommandType;
+	private QuerySqlCommandType sqlCommandType;
 
 }

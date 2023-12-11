@@ -40,8 +40,8 @@ public class Field extends Setting {
 	@Column(length = 40, nullable = false)
 	private String name;
 
-	@Enumerated(EnumType.STRING)
 	@Column(length = 20, nullable = false)
+	@Enumerated(EnumType.STRING)
 	private FieldType type;		// BOOLEAN, DATE, INT, LINK, LONG, STRING, TEXT
 	
 	private String preset;
@@ -54,9 +54,11 @@ public class Field extends Setting {
 	private boolean visible;
 	
 	@Column(length = 20, nullable = false)
+	@Enumerated(EnumType.STRING)
 	private FieldEnable enableSearch;	// DISABLED, ENABLED, REQUIRED
 	
 	@Column(length = 20, nullable = false)
+	@Enumerated(EnumType.STRING)
 	private FieldEnable enableEdit;	// DISABLED, ENABLED, REQUIRED
 	
 	@Column
@@ -69,7 +71,15 @@ public class Field extends Setting {
 		return FieldEnable.ENABLED.equals(enableSearch) || FieldEnable.REQUIRED.equals(enableSearch);
 	}
 	
+	public boolean isEnableSearchRequired() {
+		return FieldEnable.REQUIRED.equals(enableSearch);
+	}
+	
 	public boolean isEnableEdit() {
 		return FieldEnable.ENABLED.equals(enableEdit) || FieldEnable.REQUIRED.equals(enableEdit);
+	}
+	
+	public boolean isEnableEditRequired() {
+		return FieldEnable.REQUIRED.equals(enableEdit);
 	}
 }

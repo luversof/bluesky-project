@@ -1,24 +1,26 @@
 <!--/*-->
 	전달받은 fieldList로 입력 폼을 생성한다.
+	
 <!--*/-->
 
 [[${fieldList}]]
 
 <dialog id="modal" class="modal">
-	<div class="modal-box">
+	<div class="modal-box max-w-xl">
 		<form method="dialog">
 			<button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
 		</form>
 		<h3 class="font-bold text-lg" data-th-text="#{setting.text.create}"></h3>
 		<div class="m-2">
-			<div class="join w-full m-1">
-				<button class="btn btn-sm join-item w-1/4" data-th-text="#{product.column.product}"></button>
-				<input type="text" name="product" placeholder="" class="input input-sm input-bordered join-item w-full max-w-xs" />
-			</div>
-			<div class="join w-full m-1">
-				<button class="btn btn-sm join-item w-1/4" data-th-text="#{product.column.productName}"></button>
-				<input type="text" name="productName" placeholder="" class="input input-sm input-bordered join-item w-full max-w-xs" />
-			</div>
+			<form id="modalForm"
+				data-th-hx-post="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modal(product=${product},mainMenu=${mainMenu},subMenu=${subMenu})}"
+				hx-target="#modalArea"
+			>
+				<div class="join w-full m-1" data-th-each="field : ${fieldList}" data-th-if="${field.isEnableEdit()}">
+					<button class="btn btn-sm join-item w-1/4" data-th-text="${field.name}"></button>
+					<input type="text" data-th-name="${field.column}" placeholder="" class="input input-sm input-bordered join-item w-full" data-th-required="${field.isEnableEditRequired()}" />
+				</div>
+			</form>
 		</div>
 
 
@@ -30,7 +32,12 @@
 			</div>
 
 			<div class="flex justify-between">
-				<button class="btn btn-sm mr-1" data-th-text="#{button.text.create}" />
+				<button class="btn btn-sm mr-1" data-th-text="#{button.text.create}"
+					data-modal-target="modal"
+					data-modal-action="close"
+					form="modalForm"
+					 
+				/>
 				<form method="dialog">
 					<!-- if there is a button in form, it will close the modal -->
 					<button class="btn btn-sm" data-th-text="#{button.text.cancel}" />

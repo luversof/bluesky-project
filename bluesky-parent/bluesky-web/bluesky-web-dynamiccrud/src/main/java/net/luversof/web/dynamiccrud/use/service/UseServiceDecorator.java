@@ -29,4 +29,14 @@ public class UseServiceDecorator implements UseService {
 		return null;
 	}
 
+	@Override
+	public Object insert(Query query, List<Field> fieldList, Map<String, String> postData) {
+		if (query.getDbType().equals(QueryDbType.MySql)) {
+			UseService useService = useServiceMap.get("mariadbUseService");
+			
+			return useService.insert(query, fieldList, postData);
+		}
+		return null;
+	}
+
 }

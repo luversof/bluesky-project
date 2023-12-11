@@ -80,4 +80,24 @@ public class MariadbUseService implements UseService {
 		return new PageImpl<>(contentList, pageable, totalCount);
 	}
 
+	/**
+	 * insert query는 등록된 쿼리를 그대로 실행하고 넘겨받은 postData만 설정함
+	 */
+	@Override
+	public Object insert(Query query, List<Field> fieldList, Map<String, String> postData) {
+		RoutingDataSourceContextHolder.setContext(() -> query.getDataSourceName());
+		
+		var insertQueryBuilder = new StringBuilder(query.getQueryString() + " ");
+		var paramSource = new MapSqlParameterSource();
+		
+		var targetFieldList = fieldList.stream().filter(x -> (FieldEnable.REQUIRED.equals(x.getEnableSearch()) || FieldEnable.ENABLED.equals(x.getEnableSearch())) && postData.containsKey(x.getColumn()) && StringUtils.hasText(postData.get(x.getColumn()))).toList();
+		if (!targetFieldList.isEmpty()) {
+			postData.forEach((key, value) -> paramSource.addValue(key, value));
+		}
+		
+		
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

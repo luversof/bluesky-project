@@ -70,6 +70,7 @@ public class SettingDataService {
 			subMenu.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			subMenu.setSubMenu(KEY_EVENT_ADMIN_SUBMENU1_PRODUCT);
 			subMenu.setSubMenuName("Product");
+			subMenu.setTemplate("pagingList");
 			subMenu.setEnableInsert(true);
 			subMenu.setEnableUpdate(true);
 			subMenu.setEnableDelete(true);
@@ -83,6 +84,7 @@ public class SettingDataService {
 			subMenu.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			subMenu.setSubMenu(KEY_EVENT_ADMIN_SUBMENU2_MAINMENU);
 			subMenu.setSubMenuName("MainMenu");
+			subMenu.setTemplate("pagingList");
 			subMenu.setEnableInsert(true);
 			subMenu.setEnableUpdate(true);
 			subMenu.setEnableDelete(true);
@@ -96,6 +98,7 @@ public class SettingDataService {
 			subMenu.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			subMenu.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
 			subMenu.setSubMenuName("SubMenu");
+			subMenu.setTemplate("pagingList");
 			subMenu.setEnableInsert(true);
 			subMenu.setEnableUpdate(true);
 			subMenu.setEnableDelete(true);
@@ -109,6 +112,7 @@ public class SettingDataService {
 			subMenu.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			subMenu.setSubMenu(KEY_EVENT_ADMIN_SUBMENU4_QUERY);
 			subMenu.setSubMenuName("Query");
+			subMenu.setTemplate("pagingList");
 			subMenu.setEnableInsert(true);
 			subMenu.setEnableUpdate(true);
 			subMenu.setEnableDelete(true);
@@ -122,6 +126,7 @@ public class SettingDataService {
 			subMenu.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			subMenu.setSubMenu(KEY_EVENT_ADMIN_SUBMENU5_FIELD);
 			subMenu.setSubMenuName("Field");
+			subMenu.setTemplate("pagingList");
 			subMenu.setEnableInsert(true);
 			subMenu.setEnableUpdate(true);
 			subMenu.setEnableDelete(true);
@@ -203,7 +208,7 @@ public class SettingDataService {
 			field.setType(FieldType.STRING);
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.ENABLED);
-			field.setEnableEdit(FieldEnable.ENABLED);
+			field.setEnableEdit(FieldEnable.REQUIRED);
 			field.setFormOrder((short) 2);
 			fieldList.add(field);
 		}

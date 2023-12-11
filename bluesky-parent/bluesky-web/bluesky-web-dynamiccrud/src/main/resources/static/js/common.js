@@ -36,10 +36,15 @@ var param = (function() {
 })();
 
 
-// htmx modal open 처리
 document.addEventListener('htmx:afterRequest', function(event) {
+	// data-modal-target="대상modal" 있으면 관련하여 modal 처리
 	if (event.target.dataset.modalTarget) {
-		eval(event.target.dataset.modalTarget).showModal()
+		console.log("진입!!!	")
+		if (event.target.dataset.modalAction == "showModal") {
+			eval(event.target.dataset.modalTarget).showModal();
+		} else if(event.target.dataset.modalAction == "close") {
+			eval(event.target.dataset.modalTarget).close();
+		}
 	}
 });
 

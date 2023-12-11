@@ -17,8 +17,11 @@
 			data-th-attr="hx-get=@{/use/fragment/{product}/{mainMenu}/{subMenu}/findAll(product=${product}, mainMenu=${mainMenu}, subMenu=${subMenu})}"
 			hx-vals="js:{'page' : param.getRequestPage()}"
 			hx-include=".search input,.search select"
-			hx-trigger="load delay:0s, click target:.navbutton, change from:(.search .searchinput), click from:(.search .resetbutton) delay:0.0001s"
-		/>
+			hx-trigger="load delay:0s, click target:.navbutton, change from:(.search .searchinput), click from:(.search .resetbutton) delay:0.0001s, modalPost from:body"
+		>
+		</div>
+		
+		<div id="modalArea"></div>
 	</div>
 
 	<div data-th-insert="~{_layout/defaultLayout :: copy}" />
