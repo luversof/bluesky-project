@@ -48,7 +48,7 @@
 				<button class="btn btn-sm"
 					data-th-hx-get="@{/setting/fragment/product/modal(type=${type},product=${product.product})}"
 					hx-params="none" 
-					hx-target="#modalArea"
+					hx-target="#fragmentArea"
 					data-modal-target="modal"
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -70,7 +70,7 @@
 	<div>
 		<button class="btn btn-sm"
 			hx-get="/setting/fragment/product/modal" 
-			hx-target="#modalArea"
+			hx-target="#fragmentArea"
 			data-modal-target="modal"
 			data-modal-action="showModal"
 		>

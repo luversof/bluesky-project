@@ -19,22 +19,32 @@ public class UseServiceDecorator implements UseService {
 	private Map<String, UseService> useServiceMap;
 
 	@Override
-	public Page<Map<String, Object>> find(Query query, List<Field> fieldList, Pageable pageable, Map<String, String> paramMap) {
+	public Page<Map<String, Object>> find(Query query, List<Field> fieldList, Pageable pageable, Map<String, String> dataMap) {
 		if (query.getDbType().equals(QueryDbType.MySql)) {
 			UseService useService = useServiceMap.get("mariadbUseService");
 			
 			// query 기준으로 결과 반환 해야 하는데..
-			return useService.find(query, fieldList, pageable, paramMap);
+			return useService.find(query, fieldList, pageable, dataMap);
+		}
+		return null;
+	}
+	
+	@Override
+	public Object create(Query query, List<Field> fieldList, Map<String, String> dataMap) {
+		if (query.getDbType().equals(QueryDbType.MySql)) {
+			UseService useService = useServiceMap.get("mariadbUseService");
+			
+			return useService.create(query, fieldList, dataMap);
 		}
 		return null;
 	}
 
 	@Override
-	public Object insert(Query query, List<Field> fieldList, Map<String, String> postData) {
+	public Object update(Query query, List<Field> fieldList, Map<String, String> dataMap) {
 		if (query.getDbType().equals(QueryDbType.MySql)) {
 			UseService useService = useServiceMap.get("mariadbUseService");
 			
-			return useService.insert(query, fieldList, postData);
+			return useService.update(query, fieldList, dataMap);
 		}
 		return null;
 	}

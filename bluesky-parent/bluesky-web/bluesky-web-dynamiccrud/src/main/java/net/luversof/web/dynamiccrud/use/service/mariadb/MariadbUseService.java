@@ -30,7 +30,7 @@ public class MariadbUseService implements UseService {
 	private static final RowMapper<Map<String, Object>> ROW_MAPPER = new ColumnMapRowMapper();
 
 	@Override
-	public Page<Map<String, Object>> find(Query query, List<Field> fieldList, Pageable pageable, Map<String, String> paramMap) {
+	public Page<Map<String, Object>> find(Query query, List<Field> fieldList, Pageable pageable, Map<String, String> dataMap) {
 		RoutingDataSourceContextHolder.setContext(() -> query.getDataSourceName());
 		
 		var selectQueryBuilder = new StringBuilder(query.getQueryString() + " ");
@@ -41,13 +41,13 @@ public class MariadbUseService implements UseService {
 		
 		// 필수 검색 조건이 있는 경우 확인
 		var requiredFieldList = fieldList.stream().filter(x -> FieldEnable.REQUIRED.equals(x.getEnableSearch())).toList();
-		if (requiredFieldList.stream().anyMatch(x -> !paramMap.containsKey(x.getColumn()))) {
+		if (requiredFieldList.stream().anyMatch(x -> !dataMap.containsKey(x.getColumn()))) {
 			return new PageImpl<>(Collections.emptyList(), pageable, 0);
 		}
 		
 		// 검색 대상 컬럼 목록 추출
 		var conditionQueryBuilder = new StringBuilder();
-		var targetFieldList = fieldList.stream().filter(x -> (FieldEnable.REQUIRED.equals(x.getEnableSearch()) || FieldEnable.ENABLED.equals(x.getEnableSearch())) && paramMap.containsKey(x.getColumn()) && StringUtils.hasText(paramMap.get(x.getColumn()))).toList();
+		var targetFieldList = fieldList.stream().filter(x -> (FieldEnable.REQUIRED.equals(x.getEnableSearch()) || FieldEnable.ENABLED.equals(x.getEnableSearch())) && dataMap.containsKey(x.getColumn()) && StringUtils.hasText(dataMap.get(x.getColumn()))).toList();
 		if (!targetFieldList.isEmpty()) {
 			boolean checkAlreadWhereCondition = false;
 			conditionQueryBuilder.append("WHERE ");
@@ -57,7 +57,7 @@ public class MariadbUseService implements UseService {
 					conditionQueryBuilder.append("AND ");
 				}
 				conditionQueryBuilder.append(String.format("%s = :%s ", targetField.getColumn(), targetField.getColumn()));
-				paramSource.addValue(targetField.getColumn(), paramMap.get(targetField.getColumn()));
+				paramSource.addValue(targetField.getColumn(), dataMap.get(targetField.getColumn()));
 				checkAlreadWhereCondition = true;
 			}
 		}
@@ -79,25 +79,31 @@ public class MariadbUseService implements UseService {
 		
 		return new PageImpl<>(contentList, pageable, totalCount);
 	}
-
+	
 	/**
-	 * insert query는 등록된 쿼리를 그대로 실행하고 넘겨받은 postData만 설정함
+	 * jdbcTemplate은 insert, update를  update method로 동일하게 수행
 	 */
 	@Override
-	public Object insert(Query query, List<Field> fieldList, Map<String, String> postData) {
+	public Object create(Query query, List<Field> fieldList, Map<String, String> dataMap) {
+		return update(query, fieldList, dataMap);
+	}
+
+	/**
+	 * insert/update query는 등록된 쿼리를 그대로 실행하고 넘겨받은 postData만 설정함
+	 */
+	@Override
+	public Object update(Query query, List<Field> fieldList, Map<String, String> dataMap) {
 		RoutingDataSourceContextHolder.setContext(() -> query.getDataSourceName());
 		
 		var insertQueryBuilder = new StringBuilder(query.getQueryString() + " ");
 		var paramSource = new MapSqlParameterSource();
 		
-		var targetFieldList = fieldList.stream().filter(x -> (FieldEnable.REQUIRED.equals(x.getEnableSearch()) || FieldEnable.ENABLED.equals(x.getEnableSearch())) && postData.containsKey(x.getColumn()) && StringUtils.hasText(postData.get(x.getColumn()))).toList();
+		var targetFieldList = fieldList.stream().filter(x -> (FieldEnable.REQUIRED.equals(x.getEnableSearch()) || FieldEnable.ENABLED.equals(x.getEnableSearch())) && dataMap.containsKey(x.getColumn()) && StringUtils.hasText(dataMap.get(x.getColumn()))).toList();
 		if (!targetFieldList.isEmpty()) {
-			postData.forEach((key, value) -> paramSource.addValue(key, value));
+			dataMap.forEach((key, value) -> paramSource.addValue(key, value));
 		}
 		
-		
-		// TODO Auto-generated method stub
-		return null;
+		return namedParameterJdbcTemplate.update(insertQueryBuilder.toString(), paramSource);
 	}
 
 }

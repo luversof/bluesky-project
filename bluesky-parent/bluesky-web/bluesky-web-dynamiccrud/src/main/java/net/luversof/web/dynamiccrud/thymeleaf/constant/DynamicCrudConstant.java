@@ -47,6 +47,6 @@ public class DynamicCrudConstant {
 	/**
 	 * /use/fragment/{product}/{mainMenu}/{subMenu}/modal
 	 */
-	public static final String PATH_USE_FRAGMENT_FIND_MODAL = PATH_USE_FRAGMENT_PREFIX + "/{product}/{mainMenu}/{subMenu}/modal";
+	public static final String PATH_USE_FRAGMENT_MODAL = PATH_USE_FRAGMENT_PREFIX + "/{product}/{mainMenu}/{subMenu}/modal/{modalMode:create|update}";
 	
 }

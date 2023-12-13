@@ -1,10 +1,8 @@
 package net.luversof.web.dynamiccrud.use.controller;
 
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -14,8 +12,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import jakarta.servlet.http.HttpServletResponse;
-import net.luversof.web.dynamiccrud.setting.domain.Field;
-import net.luversof.web.dynamiccrud.setting.domain.Query;
 import net.luversof.web.dynamiccrud.setting.domain.QuerySqlCommandType;
 import net.luversof.web.dynamiccrud.thymeleaf.constant.DynamicCrudConstant;
 import net.luversof.web.dynamiccrud.use.service.UseServiceDecorator;
@@ -39,12 +35,12 @@ public class UseFragmentController {
 			@RequestParam Map<String, String> paramMap,
 			Model model) {
 		
-		Query query = ThymeleafUseUtil.getQuery(product, mainMenu, subMenu, QuerySqlCommandType.SELECT);
+		var query = ThymeleafUseUtil.getQuery(product, mainMenu, subMenu, QuerySqlCommandType.SELECT);
+		var fieldList = ThymeleafUseUtil.getFieldList(product, mainMenu, subMenu);
 		
-		List<Field> fieldList = ThymeleafUseUtil.getFieldList(product, mainMenu, subMenu);
 		model.addAttribute("fieldList", fieldList);
 		
-		Page<Map<String, Object>> page = useService.find(query, fieldList, pageable, paramMap);
+		var page = useService.find(query, fieldList, pageable, paramMap);
 		model.addAttribute("page", page);
 		
 		// 화면 처리 관련 정보 
@@ -54,44 +50,39 @@ public class UseFragmentController {
 		return "use/fragment/findAll";
 	}
 	
-	@GetMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_FIND_MODAL)
+	@GetMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_MODAL)
 	public String modal(
 			@PathVariable String product, 
 			@PathVariable String mainMenu, 
 			@PathVariable String subMenu,
-			Model model) {
-		// parameter가 있는 경우 해당 정보를 내려준다.
-		
-		
-		// 수정인 경우는 수정할 데이터를 내려주면 되는데 입력인 경우는 어떻게 구분? sqlCommandType을 사용할까?
-//		if ("UPDATE".equals(useParameter.sqlCommandType())) {
-//			var selectParameter = useParameter.toBuilder().sqlCommandType("SELECT").build();
-			// 해당 컬럼의 데이터만 조회하려면 어케 함?
-//		}
-		
-		
-		
-		List<Field> fieldList = ThymeleafUseUtil.getFieldList(product, mainMenu, subMenu);
-		model.addAttribute("fieldList", fieldList);
-		
-		// field를 적절히 보여준다.
-		
+			@PathVariable String modalMode) {
 		return "use/fragment/modal";
 	}
 	
-	@PostMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_FIND_MODAL)
-	public String modalPost(
+	@PostMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_MODAL)
+	public String createModal(
 			@PathVariable String product, 
 			@PathVariable String mainMenu, 
 			@PathVariable String subMenu,
-			@RequestParam Map<String, String> postData,
+			@PathVariable String modalMode,
+			@RequestParam Map<String, String> dataMap,
 			HttpServletResponse response,
 			Model model) {
-		response.setHeader("HX-Trigger", "modalPost");	// 응답 트리거를 위한 설정
 		
-		// 생성 처리
+		var fieldList = ThymeleafUseUtil.getFieldList(product, mainMenu, subMenu);
 		
-		
+		// 로그인한 유저 정보 추가 (설정 정보의 경우 필요하여 추가함. 기본 제공 변수 값에 대한 정의가 필요할수도 있음)
+		dataMap.put("operator", "bluesky계정");
+
+		if (modalMode.equals("create")) {
+			var query = ThymeleafUseUtil.getQuery(product, mainMenu, subMenu, QuerySqlCommandType.INSERT);
+			useService.create(query, fieldList, dataMap);
+			response.setHeader("HX-Trigger", "createModal");	// Htmx 응답 트리거를 위한 설정
+		} else {
+			var query = ThymeleafUseUtil.getQuery(product, mainMenu, subMenu, QuerySqlCommandType.UPDATE);
+			useService.update(query, fieldList, dataMap);
+			response.setHeader("HX-Trigger", "updateModal");	// Htmx 응답 트리거를 위한 설정
+		}
 		
 		return "use/fragment/modal";
 	}

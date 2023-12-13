@@ -29,8 +29,9 @@ public class SettingDataService {
 	private static final String KEY_EVENT_ADMIN_SUBMENU3_SUBMENU = "subMenu";
 	private static final String KEY_EVENT_ADMIN_SUBMENU4_QUERY = "query";
 	private static final String KEY_EVENT_ADMIN_SUBMENU5_FIELD = "field";
+	private static final QueryDbType DB_TYPE = QueryDbType.MySql; 
 	
-	public static final String DATASOURCE_NAME = "dynamiccrud_sample"; 
+	public static final String DATASOURCE_NAME = "dynamiccrud_sample";
 	
 	@Getter private Product product;
 	@Getter private List<MainMenu> mainMenuList;
@@ -141,9 +142,45 @@ public class SettingDataService {
 			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU1_PRODUCT);
 			query.setSqlCommandType(QuerySqlCommandType.SELECT);
-			query.setQueryString("SELECT product, productName, operator, registerDate, modifyDate FROM Products");
+			query.setQueryString("SELECT * FROM Products");
 			query.setDataSourceName(DATASOURCE_NAME);
-			query.setDbType(QueryDbType.MySql);
+			query.setDbType(DB_TYPE);
+			queryList.add(query);
+		}
+		
+		{
+			var query = new Query();
+			query.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU1_PRODUCT);
+			query.setSqlCommandType(QuerySqlCommandType.INSERT);
+			query.setQueryString("INSERT INTO Products (product, productName, operator, registerDate, modifyDate) VALUES (:product, :productName, :operator, NOW(), NOW())");
+			query.setDataSourceName(DATASOURCE_NAME);
+			query.setDbType(DB_TYPE);
+			queryList.add(query);
+		}
+		
+		{
+			var query = new Query();
+			query.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU1_PRODUCT);
+			query.setSqlCommandType(QuerySqlCommandType.UPDATE);
+			query.setQueryString("UPDATE Products SET productName = :productName, operator = :operator, modifyDate = NOW() WHERE product = :product");
+			query.setDataSourceName(DATASOURCE_NAME);
+			query.setDbType(DB_TYPE);
+			queryList.add(query);
+		}
+		
+		{
+			var query = new Query();
+			query.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU1_PRODUCT);
+			query.setSqlCommandType(QuerySqlCommandType.DELETE);
+			query.setQueryString("DELETE FROM Products WHERE product = :product");
+			query.setDataSourceName(DATASOURCE_NAME);
+			query.setDbType(DB_TYPE);
 			queryList.add(query);
 		}
 		
@@ -153,9 +190,45 @@ public class SettingDataService {
 			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU2_MAINMENU);
 			query.setSqlCommandType(QuerySqlCommandType.SELECT);
-			query.setQueryString("SELECT product, mainMenu, mainMenuName, operator, registerDate, modifyDate FROM MainMenus");
+			query.setQueryString("SELECT * FROM MainMenus");
 			query.setDataSourceName(DATASOURCE_NAME);
-			query.setDbType(QueryDbType.MySql);
+			query.setDbType(DB_TYPE);
+			queryList.add(query);
+		}
+		
+		{
+			var query = new Query();
+			query.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU2_MAINMENU);
+			query.setSqlCommandType(QuerySqlCommandType.INSERT);
+			query.setQueryString("INSERT INTO MainMenus (product, mainMenu, mainMenuName, operator, registerDate, modifyDate) VALUES (:product, :mainMenu, :mainMenuName, :operator, NOW(), NOW())");
+			query.setDataSourceName(DATASOURCE_NAME);
+			query.setDbType(DB_TYPE);
+			queryList.add(query);
+		}
+		
+		{
+			var query = new Query();
+			query.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU2_MAINMENU);
+			query.setSqlCommandType(QuerySqlCommandType.UPDATE);
+			query.setQueryString("UPDATE MainMenus SET mainMenuName = :mainMenuName, operator = :operator, modifyDate = NOW() WHERE product = :product AND mainMenu = :mainMenu");
+			query.setDataSourceName(DATASOURCE_NAME);
+			query.setDbType(DB_TYPE);
+			queryList.add(query);
+		}
+		
+		{
+			var query = new Query();
+			query.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU2_MAINMENU);
+			query.setSqlCommandType(QuerySqlCommandType.DELETE);
+			query.setQueryString("DELETE FROM MainMenus WHERE product = :product AND mainMenu = :mainMenu");
+			query.setDataSourceName(DATASOURCE_NAME);
+			query.setDbType(DB_TYPE);
 			queryList.add(query);
 		}
 		
@@ -165,9 +238,45 @@ public class SettingDataService {
 			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
 			query.setSqlCommandType(QuerySqlCommandType.SELECT);
-			query.setQueryString("SELECT product, mainMenu, subMenu, subMenuName, template, displayOrder, groupNo, groupTemplate, pageSize, enableCount, enableExcel, enableInsert, enableUpdate, enableDelete, operator, registerDate, modifyDate FROM SubMenus");
+			query.setQueryString("SELECT * FROM SubMenus");
 			query.setDataSourceName(DATASOURCE_NAME);
-			query.setDbType(QueryDbType.MySql);
+			query.setDbType(DB_TYPE);
+			queryList.add(query);
+		}
+		
+		{
+			var query = new Query();
+			query.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
+			query.setSqlCommandType(QuerySqlCommandType.INSERT);
+			query.setQueryString("INSERT INTO SubMenus (product, mainMenu, subMenu, subMenuName, template, displayOrder, groupNo, groupTemplate, pageSize, enableCount, enableExcel, enableInsert, enableUpdate, enableDelete, operator, registerDate, modifyDate) VALUES (:product, :mainMenu, :subMenu, :subMenuName, :template, :displayOrder, :groupNo, :groupTemplate, :pageSize, :enableCount, :enableExcel, :enableInsert, :enableUpdate, :enableDelete, :operator, NOW(), NOW())");
+			query.setDataSourceName(DATASOURCE_NAME);
+			query.setDbType(DB_TYPE);
+			queryList.add(query);
+		}
+		
+		{
+			var query = new Query();
+			query.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
+			query.setSqlCommandType(QuerySqlCommandType.UPDATE);
+			query.setQueryString("UPDATE SubMenus SET subMenuName = :subMenuName, template = :template, displayOrder = :displayOrder, groupNo = :groupNo, groupTemplate = :groupTemplate, pageSize = :pageSize, enableCount = :enableCount, enableExcel = :enableExcel, enableInsert = :enableInsert, enableUpdate = :enableUpdate, enableDelete = :enableDelete, operator = :operator, modifyDate = NOW() WHERE product = :product AND mainMenu = :mainMenu AND subMenu = :subMenu");
+			query.setDataSourceName(DATASOURCE_NAME);
+			query.setDbType(DB_TYPE);
+			queryList.add(query);
+		}
+		
+		{
+			var query = new Query();
+			query.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
+			query.setSqlCommandType(QuerySqlCommandType.DELETE);
+			query.setQueryString("DELETE FROM SubMenus WHERE product = :product AND mainMenu = :mainMenu AND subMenu = :subMenu");
+			query.setDataSourceName(DATASOURCE_NAME);
+			query.setDbType(DB_TYPE);
 			queryList.add(query);
 		}
 		
@@ -177,9 +286,33 @@ public class SettingDataService {
 			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU4_QUERY);
 			query.setSqlCommandType(QuerySqlCommandType.SELECT);
-			query.setQueryString("SELECT product, mainMenu, subMenu, sqlCommandType, queryString, dataSourceName, dbType, operator, registerDate, modifyDate FROM Queries");
+			query.setQueryString("SELECT * FROM Queries");
 			query.setDataSourceName(DATASOURCE_NAME);
-			query.setDbType(QueryDbType.MySql);
+			query.setDbType(DB_TYPE);
+			queryList.add(query);
+		}
+		
+		{
+			var query = new Query();
+			query.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU4_QUERY);
+			query.setSqlCommandType(QuerySqlCommandType.UPDATE);
+			query.setQueryString("UPDATE SubMenus SET queryString = :queryStriung, dataSourceName = :dataSourceName, dbType = :dbType WHERE product = :product AND mainMenu = :mainMenu AND subMenu = :subMenu");
+			query.setDataSourceName(DATASOURCE_NAME);
+			query.setDbType(DB_TYPE);
+			queryList.add(query);
+		}
+		
+		{
+			var query = new Query();
+			query.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU4_QUERY);
+			query.setSqlCommandType(QuerySqlCommandType.DELETE);
+			query.setQueryString("DELETE FROM SubMenus WHERE product = :product AND mainMenu = :mainMenu AND subMenu = :subMenu");
+			query.setDataSourceName(DATASOURCE_NAME);
+			query.setDbType(DB_TYPE);
 			queryList.add(query);
 		}
 		
@@ -189,9 +322,9 @@ public class SettingDataService {
 			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU5_FIELD);
 			query.setSqlCommandType(QuerySqlCommandType.SELECT);
-			query.setQueryString("SELECT product, mainMenu, subMenu, `column`, `name`, `type`, preset, `format`, `validation`, visible, enableSearch, enableEdit, formSize, formOrder, operator, registerDate, modifyDate FROM Fields");
+			query.setQueryString("SELECT * FROM Fields");
 			query.setDataSourceName(DATASOURCE_NAME);
-			query.setDbType(QueryDbType.MySql);
+			query.setDbType(DB_TYPE);
 			queryList.add(query);
 		}
 		

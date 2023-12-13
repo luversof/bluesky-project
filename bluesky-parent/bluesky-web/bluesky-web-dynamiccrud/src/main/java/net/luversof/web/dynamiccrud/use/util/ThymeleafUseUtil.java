@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 
+import io.github.luversof.boot.devcheck.annotation.DevCheckUtil;
 import io.github.luversof.boot.exception.BlueskyException;
 import io.github.luversof.boot.util.ApplicationContextUtil;
 import lombok.experimental.UtilityClass;
@@ -19,7 +20,11 @@ import net.luversof.web.dynamiccrud.setting.service.FieldService;
 import net.luversof.web.dynamiccrud.setting.service.QueryService;
 import net.luversof.web.dynamiccrud.setting.service.SubMenuService;
 
+/**
+ * 이거 요청별로 캐시 처리
+ */
 @UtilityClass
+@DevCheckUtil
 public class ThymeleafUseUtil {
 	
 	public static LinkedHashMap<String, String> getColumnMap(Page<Map<String, Object>> page, List<Field> fieldList) {
@@ -59,7 +64,7 @@ public class ThymeleafUseUtil {
 
 	public static Query getQuery(String product, String mainMenu, String subMenu, QuerySqlCommandType sqlCommandType) {
 		List<Query> queryList = ApplicationContextUtil.getApplicationContext().getBean(QueryService.class).findByProductAndMainMenuAndSubMenu(product, mainMenu, subMenu);
-		return queryList.stream().filter(x -> x.getSqlCommandType().equals(sqlCommandType)).findAny().orElseThrow(() -> new BlueskyException("NOT_EXIST_SELECT_QUERY"));
+		return queryList.stream().filter(x -> x.getSqlCommandType().equals(sqlCommandType)).findAny().orElseThrow(() -> new BlueskyException("NOT_EXIST_QUERY_TYPE").setErrorMessageArgs(sqlCommandType.toString()));
 	}
 	
 	public static List<Field> getFieldList(String product, String mainMenu, String subMenu) {
