@@ -49,4 +49,13 @@ public class UseServiceDecorator implements UseService {
 		return null;
 	}
 
+	@Override
+	public Object delete(Query query, List<Field> fieldList, Map<String, String> dataMap) {
+		if (query.getDbType().equals(QueryDbType.MySql)) {
+			UseService useService = useServiceMap.get("mariadbUseService");
+			
+			return useService.delete(query, fieldList, dataMap);
+		}
+		return null;
+	}
 }

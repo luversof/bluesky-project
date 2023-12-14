@@ -1,5 +1,6 @@
-var searchInputSelector = ".search .searchinput";
+var searchInputSelector = "#searchArea .searchinput";
 
+// url query parameter 처리
 var param = (() => {
 	var _params = new URLSearchParams(window.location.search);
 
@@ -36,27 +37,96 @@ var param = (() => {
 })();
 
 
+function copyContentDataToModal(contentDataEl, modalTarget) {
+	contentDataEl.querySelectorAll("input[type=hidden]").forEach(el => {
+		modalTarget.querySelector("[name=" + el.name  +"]").value = el.value;
+	});
+}
+
+// 이거 굳이 필요한가?
+function copySearchAreaToModal(modalTarget) {
+	document.querySelectorAll("#searchArea .searchinput").forEach(el => {
+		modalTarget.querySelector("[name=" + el.name  +"]").value = el.value;
+	});
+}
+
+
+function deleteData(event) {
+		// 삭제 대상이 선택되어 있는지 확인
+		var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
+		if (checkedList.length <= 0) {
+			alert("삭제할 행을 체크해주세요.");
+			event.preventDefault();
+			return;
+		}
+		if (!confirm("선택한 항목을 정말 삭제하시겠습니까?")) {
+			console.log("테스트")
+			event.preventDefault();
+			return;
+		}
+		// 선택 대상들의 input 데이터를 submit 해야 함
+		
+}
+
+document.addEventListener('htmx:beforeRequest', (event) => {
+	
+	/** (s) deleteButton의 경우 처리 */
+	if (event.target.classList.contains("deleteButton")) {
+		deleteData(event);
+	}
+});
+
+
 // htmx trigger로 로딩된 이후 modal을 띄우거나 종료 처리
 document.addEventListener('htmx:afterRequest', (event) => {
-	// data-modal-target="대상modal" 있으면 관련하여 modal 처리
+	/** (s) data-modal-target="대상modal" 속성이 있는 경우 modal 관련 처리 수행 */ 
 	if (event.target.dataset.modalTarget) {
 		if (event.target.dataset.modalAction == "showModal") {
 			var modalTarget = eval(event.target.dataset.modalTarget);
-			// modal 생성 시 해당 버튼에 hidden input이 있으면 해당 값을 modal에 설정 
-			event.target.querySelectorAll("input[type=hidden]").forEach(el => {
-				modalTarget.querySelector("[name=" + el.name  +"]").value = el.value;
-			});
+			// modal 생성 시 요청한 버튼에 hidden input이 있으면 해당 값을 modal에 설정
+			if (event.target.closest("tr")) {
+				copyContentDataToModal(event.target.closest("tr").querySelector(".contentData"), modalTarget)
+			}
 			
+			/** (s) 데이터 복사 eventListener */
+			//modal 관련 eventListener 등록
+			// contentTable 영역에 선택한 체크박스 라인의 데이터를 #modalForm의 input 으로 가져온다.
+			modalTarget.querySelector(".copyDataButton").addEventListener("click", () => {
+				var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
+				if (checkedList.length <= 0) {
+					alert("복사할 행을 체크해주세요.");
+					return;
+				}
+				copyContentDataToModal(checkedList[0].closest("tr").querySelector(".contentData"), modalTarget)
+			})
+			/** (e) 데이터 복사 eventListener */
+
+			/** (s) 검색 복사 eventListener */			
+			modalTarget.querySelector(".copySearchButton").addEventListener("click", () => {
+				copySearchAreaToModal(modalTarget);
+			});
+			/** (e) 검색 복사 eventListener */
 			modalTarget.showModal();
 		} else if(event.target.dataset.modalAction == "close") {
 			// 이거 페이지 첫번째 페이지로 이동을 해줘야 하나? (데이터 생성 후 닫는 경우만 해당..)
 			eval(event.target.dataset.modalTarget).close();
 		}
 	}
+	/** (e) data-modal-target="대상modal" 속성이 있는 경우 modal 관련 처리 수행 */
 });
 
-// modal에서 데이터 생성 요청 후 page를 1로 초기화하여 바닥 페이지 데이터 요청 시 해당 값 사용  
+/** 테이블에서 선택한 tr 에 대해 활성화 표시 */
+function contentDataRowCheck(target) {
+	if (target.checked) {
+		target.closest("tr").classList.add("active");
+	} else {
+		target.closest("tr").classList.remove("active");		
+	}
+}
+
+// modal에서 데이터 생성 요청 후 page를 1로 초기화하여 바닥 페이지 데이터 갱신 시 첫 페이지로 이동 처리  
 document.addEventListener('createModal', () => param.setParam("page", 1));
+
 
 window.addEventListener('load', () => {
 	// 상단 메뉴의 링크에 검색 parameter를 추가 처리
@@ -78,5 +148,5 @@ window.addEventListener('load', () => {
 	}));
 	
 	// 검색 reset 버튼 이벤트
-	document.querySelectorAll(".search .resetbutton").forEach(el => el.addEventListener("click", () => param.resetParam()));
+	document.querySelectorAll("#searchArea .resetbutton").forEach(el => el.addEventListener("click", () => param.resetParam()));
 });

@@ -4,9 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -66,6 +68,16 @@ public class SettingTest implements GeneralTest {
 	@BeforeAll
 	public static void beforeAll() {
 		RoutingDataSourceContextHolder.setContext(() -> "dynamiccrud_sample");
+	}
+	
+	
+	@Test
+	@DisplayName("insert query 생성")
+	void insertQuery() {
+		// insert query 생성 시 where 조건은 '__org__' 를 붙인 값으로 처리
+		String query = "UPDATE SubMenus SET queryString = :queryStriung, dataSourceName = :dataSourceName, dbType = :dbType where product = :product AND mainMenu = :mainMenu AND subMenu = :subMenu";
+		String[] split = Pattern.compile(" WHERE ", Pattern.CASE_INSENSITIVE).split(query);
+		log.debug("test : length: {}, {}", split.length, List.of(split));
 	}
 	
 	@Test

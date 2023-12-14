@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html data-layout-decorate="~{_layout/defaultLayout}">
+
+<head>
+
+</head>
+
+<body>
+	<div data-layout-fragment="content">
+
+		<div class="prose max-w-none">
+			<h1>BE 개발 관련 dom attribute 설정 정보</h1>
+			tailwindcss나 daisyui의 class 명명 규칙과 별개로 사용하기 위한 값들에 대한 목록
+			<ul>
+				<li>검색 영역 관련
+					<ul>
+						<li><b>#searchArea</b> : 검색 영역 지정</li>
+						<li><b>.searchinput</b> : 검색 영역의 검색 input 지정</li>
+						<li><b>.resetbutton</b> : 검색의 reset 버튼</li>
+					</ul>
+				</li>
+				<li>contentTable 관련
+					<ul>
+						<li><b>#contentTable</b> : content를 보여주는 테이블 지정</li>
+						<li><b>.contentData</b> : list 목록의 input hidden 정보를 담고 있는 영역 지정</li>
+						<li><b>.contentDataCheck</b> : list 목록의 checkbox 영역 지정</li>
+						<li><b>[name=contentDataCheck]</b> : contentTable의 content 목록의 checkBox</li>
+						<li><b>.deleteButton</b> : 삭제 버튼</li>
+					</ul>
+				</li>
+				<li>
+					modal 관련
+					<ul>
+						<li><b>#fragmentArea</b> : fragment 호출 영역 (에러 발생시 에러가 표시되는 영역)</li>
+						<li><b>#modal</b> : modal의 id (현재까지 modal이 1종이라 별다른 이름을 만들지 않음)</li>
+						<li><b>#modalForm</b> : modal의 form id. modal내 submit button의 대상 지정을 위해 사용</li>
+						<li><b>.copyDataButton</b> : modal의 데이터 복사 버튼</li>
+						<li><b>.copySearchButton</b> : modal의 검색 복사 버튼</li>
+					</ul>
+				</li>
+			</ul>
+		</div>
+	</div>
+
+	<div data-th-insert="~{_layout/defaultLayout :: copy}"></div>
+</body>
+
+</html>

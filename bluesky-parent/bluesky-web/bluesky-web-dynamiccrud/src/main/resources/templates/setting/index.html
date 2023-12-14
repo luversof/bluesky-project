@@ -21,10 +21,14 @@
 		</div>
 		
 		<div
-			data-th-attr="hx-get=@{/setting/fragment/{type}/findAll(type=${type})}"
+			data-th-attr="hx-get=@{/setting/fragment/{type}/list(type=${type})}"
 			hx-vals="js:{'page' : param.getRequestPage()}"
-			hx-include=".search>[name='product'],.search>[name='mainMenu'],.search>[name='subMenu']"
-			hx-trigger="load delay:0s, click target:.navbutton, change from:.searchinput, click from:.search>.resetbutton"
+			hx-include="#searchArea .searchinput"
+			hx-trigger="
+				load delay:0s,
+				click target:.navbutton, 
+				change from:(#searchArea .searchinput),
+				click from:(#searchArea .resetbutton)"
 		>
 		</div>
 		

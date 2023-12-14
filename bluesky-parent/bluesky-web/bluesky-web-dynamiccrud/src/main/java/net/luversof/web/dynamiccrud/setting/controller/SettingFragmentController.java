@@ -19,8 +19,8 @@ public class SettingFragmentController {
 	@Autowired
 	private SettingServiceDecorator<?> settingService;
 	
-	@GetMapping(DynamicCrudConstant.PATH_SETTING_FRAGMENT_FIND_ALL)
-	public void findAll(@PathVariable String type, SettingParameter settingParameter, Pageable pageable, Model model) {
+	@GetMapping(DynamicCrudConstant.PATH_SETTING_FRAGMENT_LIST)
+	public void list(@PathVariable String type, SettingParameter settingParameter, Pageable pageable, Model model) {
 		model.addAttribute("page", settingService.find(settingParameter, pageable));
 	}
 	

@@ -81,18 +81,10 @@ public class MariadbUseService implements UseService {
 	}
 	
 	/**
-	 * jdbcTemplate은 insert, update를  update method로 동일하게 수행
+	 * jdbcTemplate은 insert, update, delete를  update method로 동일하게 수행
 	 */
 	@Override
 	public Object create(Query query, List<Field> fieldList, Map<String, String> dataMap) {
-		return update(query, fieldList, dataMap);
-	}
-
-	/**
-	 * insert/update query는 등록된 쿼리를 그대로 실행하고 넘겨받은 postData만 설정함
-	 */
-	@Override
-	public Object update(Query query, List<Field> fieldList, Map<String, String> dataMap) {
 		RoutingDataSourceContextHolder.setContext(() -> query.getDataSourceName());
 		
 		var insertQueryBuilder = new StringBuilder(query.getQueryString() + " ");
@@ -104,6 +96,23 @@ public class MariadbUseService implements UseService {
 		}
 		
 		return namedParameterJdbcTemplate.update(insertQueryBuilder.toString(), paramSource);
+	}
+
+	/**
+	 * insert/update query는 등록된 쿼리를 그대로 실행하고 넘겨받은 postData만 설정함
+	 */
+	@Override
+	public Object update(Query query, List<Field> fieldList, Map<String, String> dataMap) {
+		return update(query, fieldList, dataMap);
+	}
+	
+	
+	/**
+	 * Delete의 경우 여러 건을 동시 삭제할 수도 있음.
+	 */
+	@Override
+	public Object delete(Query query, List<Field> fieldList, Map<String, String> dataMap) {
+		return update(query, fieldList, dataMap);
 	}
 
 }

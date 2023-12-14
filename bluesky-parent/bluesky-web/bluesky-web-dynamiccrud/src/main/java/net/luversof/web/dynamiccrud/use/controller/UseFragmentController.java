@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,18 +27,18 @@ public class UseFragmentController {
 	/**
 	 * 일단 SELECT 부분을 보여보자.
 	 */
-	@GetMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_FIND_ALL)
-	public String findAll(
+	@GetMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_LIST)
+	public String list(
 			@PathVariable String product, 
 			@PathVariable String mainMenu, 
 			@PathVariable String subMenu, 
 			Pageable pageable, 
 			@RequestParam Map<String, String> paramMap,
+			HttpServletResponse response,
 			Model model) {
 		
 		var query = ThymeleafUseUtil.getQuery(product, mainMenu, subMenu, QuerySqlCommandType.SELECT);
 		var fieldList = ThymeleafUseUtil.getFieldList(product, mainMenu, subMenu);
-		
 		model.addAttribute("fieldList", fieldList);
 		
 		var page = useService.find(query, fieldList, pageable, paramMap);
@@ -47,7 +48,9 @@ public class UseFragmentController {
 		model.addAttribute("columnMap", ThymeleafUseUtil.getColumnMap(page, fieldList));
 		
 		// 여기도 필드 정보 기준으로 출력 처리를 해야 할꺼 같은데?
-		return "use/fragment/findAll";
+		
+		response.setHeader("HX-Trigger", "fragmentList");	// Htmx 응답 트리거를 위한 설정
+		return "use/fragment/list";
 	}
 	
 	@GetMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_MODAL)
@@ -83,6 +86,20 @@ public class UseFragmentController {
 			useService.update(query, fieldList, dataMap);
 			response.setHeader("HX-Trigger", "updateModal");	// Htmx 응답 트리거를 위한 설정
 		}
+		
+		return "use/fragment/modal";
+	}
+	
+	@PostMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_MODAL_DELETE)
+	public String deleteModal(
+			@PathVariable String product, 
+			@PathVariable String mainMenu, 
+			@PathVariable String subMenu,
+			@PathVariable String modalMode,
+			@RequestParam MultiValueMap<String, String> dataMap,
+			HttpServletResponse response,
+			Model model) {
+		response.setHeader("HX-Trigger", "deleteModal");	// Htmx 응답 트리거를 위한 설정
 		
 		return "use/fragment/modal";
 	}

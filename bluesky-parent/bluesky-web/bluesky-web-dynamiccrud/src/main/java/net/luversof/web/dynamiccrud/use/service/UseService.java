@@ -16,5 +16,7 @@ public interface UseService {
 	Object create(Query query, List<Field> fieldList, Map<String, String> dataMap);
 	
 	Object update(Query query, List<Field> fieldList, Map<String, String> dataMap);
+	
+	Object delete(Query query, List<Field> fieldList, Map<String, String> dataMap);
 
 }

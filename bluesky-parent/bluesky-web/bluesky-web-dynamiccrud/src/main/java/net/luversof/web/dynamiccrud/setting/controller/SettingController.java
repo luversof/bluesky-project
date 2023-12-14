@@ -13,9 +13,9 @@ import net.luversof.web.dynamiccrud.thymeleaf.constant.DynamicCrudConstant;
 @Controller
 public class SettingController {
 
-	@GetMapping({ "", "/", "/setting", "/setting/", "/setting/index" })
+	@GetMapping({ "/setting", "/setting/", "/setting/index" })
 	public String redirectIndex() {
-		return "redirect:" + "/setting/product";
+		return "redirect:/setting/product";
 	}
 
 	@GetMapping(DynamicCrudConstant.PATH_SETTING_VIEW_INDEX)

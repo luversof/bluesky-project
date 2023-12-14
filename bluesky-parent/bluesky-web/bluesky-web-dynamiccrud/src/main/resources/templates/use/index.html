@@ -12,16 +12,17 @@
 	<div data-layout-fragment="content">
 		
 		<div data-th-replace="~{use/_components/inputSearch}" />
-
+		
 		<div
-			data-th-attr="hx-get=@{/use/fragment/{product}/{mainMenu}/{subMenu}/findAll(product=${product}, mainMenu=${mainMenu}, subMenu=${subMenu})}"
+			data-th-attr="hx-get=@{/use/fragment/{product}/{mainMenu}/{subMenu}/list(product=${product}, mainMenu=${mainMenu}, subMenu=${subMenu})}"
 			hx-vals="js:{'page' : param.getRequestPage()}"
-			hx-include=".search input,.search select"
+			hx-include="#searchArea .searchinput"
+			hx-boost="true"
 			hx-trigger="
 				load delay:0s,
 				click target:.navbutton, 
-				change from:(.search .searchinput) delay:0.0001s, 
-				click from:(.search .resetbutton) delay:0.0001s,
+				change from:(#searchArea .searchinput) delay:0.0001s, 
+				click from:(#searchArea .resetbutton) delay:0.0001s,
 				createModal from:body delay:0.0001s,
 				updateModal from:body delay:0.0001s"
 		>

@@ -22,7 +22,7 @@ import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
 @Service
 public class SettingDataService {
 
-	private static final String KEY_EVENT_ADMIN_PRODUCT = "setting";
+	public static final String KEY_EVENT_ADMIN_PRODUCT = "setting";
 	private static final String KEY_EVENT_ADMIN_MAINMENU = "menu";
 	private static final String KEY_EVENT_ADMIN_SUBMENU1_PRODUCT = "product";
 	private static final String KEY_EVENT_ADMIN_SUBMENU2_MAINMENU = "mainMenu";
@@ -72,6 +72,7 @@ public class SettingDataService {
 			subMenu.setSubMenu(KEY_EVENT_ADMIN_SUBMENU1_PRODUCT);
 			subMenu.setSubMenuName("Product");
 			subMenu.setTemplate("pagingList");
+			subMenu.setEnableExcel(true);
 			subMenu.setEnableInsert(true);
 			subMenu.setEnableUpdate(true);
 			subMenu.setEnableDelete(true);
@@ -86,6 +87,7 @@ public class SettingDataService {
 			subMenu.setSubMenu(KEY_EVENT_ADMIN_SUBMENU2_MAINMENU);
 			subMenu.setSubMenuName("MainMenu");
 			subMenu.setTemplate("pagingList");
+			subMenu.setEnableExcel(true);
 			subMenu.setEnableInsert(true);
 			subMenu.setEnableUpdate(true);
 			subMenu.setEnableDelete(true);
@@ -100,6 +102,7 @@ public class SettingDataService {
 			subMenu.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
 			subMenu.setSubMenuName("SubMenu");
 			subMenu.setTemplate("pagingList");
+			subMenu.setEnableExcel(true);
 			subMenu.setEnableInsert(true);
 			subMenu.setEnableUpdate(true);
 			subMenu.setEnableDelete(true);
@@ -114,6 +117,7 @@ public class SettingDataService {
 			subMenu.setSubMenu(KEY_EVENT_ADMIN_SUBMENU4_QUERY);
 			subMenu.setSubMenuName("Query");
 			subMenu.setTemplate("pagingList");
+			subMenu.setEnableExcel(true);
 			subMenu.setEnableInsert(true);
 			subMenu.setEnableUpdate(true);
 			subMenu.setEnableDelete(true);
@@ -128,6 +132,7 @@ public class SettingDataService {
 			subMenu.setSubMenu(KEY_EVENT_ADMIN_SUBMENU5_FIELD);
 			subMenu.setSubMenuName("Field");
 			subMenu.setTemplate("pagingList");
+			subMenu.setEnableExcel(true);
 			subMenu.setEnableInsert(true);
 			subMenu.setEnableUpdate(true);
 			subMenu.setEnableDelete(true);
@@ -154,7 +159,11 @@ public class SettingDataService {
 			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU1_PRODUCT);
 			query.setSqlCommandType(QuerySqlCommandType.INSERT);
-			query.setQueryString("INSERT INTO Products (product, productName, operator, registerDate, modifyDate) VALUES (:product, :productName, :operator, NOW(), NOW())");
+			query.setQueryString("""
+					INSERT INTO Products 
+					(product, productName, operator, registerDate, modifyDate) 
+					VALUES (:product, :productName, :operator, NOW(), NOW())
+					""");
 			query.setDataSourceName(DATASOURCE_NAME);
 			query.setDbType(DB_TYPE);
 			queryList.add(query);
@@ -166,7 +175,11 @@ public class SettingDataService {
 			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU1_PRODUCT);
 			query.setSqlCommandType(QuerySqlCommandType.UPDATE);
-			query.setQueryString("UPDATE Products SET productName = :productName, operator = :operator, modifyDate = NOW() WHERE product = :product");
+			query.setQueryString("""
+					UPDATE Products 
+					SET product = :product, productName = :productName, operator = :operator, modifyDate = NOW() 
+					WHERE product = :__org__product
+					""");
 			query.setDataSourceName(DATASOURCE_NAME);
 			query.setDbType(DB_TYPE);
 			queryList.add(query);
@@ -202,7 +215,11 @@ public class SettingDataService {
 			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU2_MAINMENU);
 			query.setSqlCommandType(QuerySqlCommandType.INSERT);
-			query.setQueryString("INSERT INTO MainMenus (product, mainMenu, mainMenuName, operator, registerDate, modifyDate) VALUES (:product, :mainMenu, :mainMenuName, :operator, NOW(), NOW())");
+			query.setQueryString("""
+					INSERT INTO MainMenus 
+					(product, mainMenu, mainMenuName, operator, registerDate, modifyDate) 
+					VALUES (:product, :mainMenu, :mainMenuName, :operator, NOW(), NOW())
+					""");
 			query.setDataSourceName(DATASOURCE_NAME);
 			query.setDbType(DB_TYPE);
 			queryList.add(query);
@@ -214,7 +231,11 @@ public class SettingDataService {
 			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU2_MAINMENU);
 			query.setSqlCommandType(QuerySqlCommandType.UPDATE);
-			query.setQueryString("UPDATE MainMenus SET mainMenuName = :mainMenuName, operator = :operator, modifyDate = NOW() WHERE product = :product AND mainMenu = :mainMenu");
+			query.setQueryString("""
+					UPDATE MainMenus 
+					SET product = :product, mainMenu = :mainMenu, mainMenuName = :mainMenuName, operator = :operator, modifyDate = NOW() 
+					WHERE product = :__org__product AND mainMenu = :__org__mainMenu
+					""");
 			query.setDataSourceName(DATASOURCE_NAME);
 			query.setDbType(DB_TYPE);
 			queryList.add(query);
@@ -226,7 +247,9 @@ public class SettingDataService {
 			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU2_MAINMENU);
 			query.setSqlCommandType(QuerySqlCommandType.DELETE);
-			query.setQueryString("DELETE FROM MainMenus WHERE product = :product AND mainMenu = :mainMenu");
+			query.setQueryString("""
+					DELETE FROM MainMenus 
+					WHERE product = :product AND mainMenu = :mainMenu""");
 			query.setDataSourceName(DATASOURCE_NAME);
 			query.setDbType(DB_TYPE);
 			queryList.add(query);
@@ -250,7 +273,11 @@ public class SettingDataService {
 			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
 			query.setSqlCommandType(QuerySqlCommandType.INSERT);
-			query.setQueryString("INSERT INTO SubMenus (product, mainMenu, subMenu, subMenuName, template, displayOrder, groupNo, groupTemplate, pageSize, enableCount, enableExcel, enableInsert, enableUpdate, enableDelete, operator, registerDate, modifyDate) VALUES (:product, :mainMenu, :subMenu, :subMenuName, :template, :displayOrder, :groupNo, :groupTemplate, :pageSize, :enableCount, :enableExcel, :enableInsert, :enableUpdate, :enableDelete, :operator, NOW(), NOW())");
+			query.setQueryString("""
+					INSERT INTO SubMenus 
+					(product, mainMenu, subMenu, subMenuName, template, displayOrder, groupNo, groupTemplate, pageSize, enableCount, enableExcel, enableInsert, enableUpdate, enableDelete, operator, registerDate, modifyDate) 
+					VALUES (:product, :mainMenu, :subMenu, :subMenuName, :template, :displayOrder, :groupNo, :groupTemplate, :pageSize, :enableCount, :enableExcel, :enableInsert, :enableUpdate, :enableDelete, :operator, NOW(), NOW())
+					""");
 			query.setDataSourceName(DATASOURCE_NAME);
 			query.setDbType(DB_TYPE);
 			queryList.add(query);
@@ -262,7 +289,11 @@ public class SettingDataService {
 			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
 			query.setSqlCommandType(QuerySqlCommandType.UPDATE);
-			query.setQueryString("UPDATE SubMenus SET subMenuName = :subMenuName, template = :template, displayOrder = :displayOrder, groupNo = :groupNo, groupTemplate = :groupTemplate, pageSize = :pageSize, enableCount = :enableCount, enableExcel = :enableExcel, enableInsert = :enableInsert, enableUpdate = :enableUpdate, enableDelete = :enableDelete, operator = :operator, modifyDate = NOW() WHERE product = :product AND mainMenu = :mainMenu AND subMenu = :subMenu");
+			query.setQueryString("""
+					UPDATE SubMenus 
+					SET product = :product, mainMenu = :mainMenu, subMenu = :subMenu, subMenuName = :subMenuName, template = :template, displayOrder = :displayOrder, groupNo = :groupNo, groupTemplate = :groupTemplate, pageSize = :pageSize, enableCount = :enableCount, enableExcel = :enableExcel, enableInsert = :enableInsert, enableUpdate = :enableUpdate, enableDelete = :enableDelete, operator = :operator, modifyDate = NOW() 
+					WHERE product = :__org__product AND mainMenu = :__org__mainMenu AND subMenu = :__org__subMenu
+					""");
 			query.setDataSourceName(DATASOURCE_NAME);
 			query.setDbType(DB_TYPE);
 			queryList.add(query);
@@ -274,7 +305,10 @@ public class SettingDataService {
 			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
 			query.setSqlCommandType(QuerySqlCommandType.DELETE);
-			query.setQueryString("DELETE FROM SubMenus WHERE product = :product AND mainMenu = :mainMenu AND subMenu = :subMenu");
+			query.setQueryString("""
+					DELETE FROM SubMenus 
+					WHERE product = :product AND mainMenu = :mainMenu AND subMenu = :subMenu
+					""");
 			query.setDataSourceName(DATASOURCE_NAME);
 			query.setDbType(DB_TYPE);
 			queryList.add(query);
@@ -297,8 +331,28 @@ public class SettingDataService {
 			query.setProduct(KEY_EVENT_ADMIN_PRODUCT);
 			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU4_QUERY);
+			query.setSqlCommandType(QuerySqlCommandType.INSERT);
+			query.setQueryString("""
+					INSERT INTO Queries 
+					(product, mainMenu, subMenu, sqlCommandType, queryString, dataSourceName, dbType, operator, registerDate, modifyDate) 
+					VALUES (:product, :mainMenu, :subMenu, :sqlCommandType, :queryString, :dataSourceName, :dbType, :operator, NOW(), NOW())
+					""");
+			query.setDataSourceName(DATASOURCE_NAME);
+			query.setDbType(DB_TYPE);
+			queryList.add(query);
+		}
+		
+		{
+			var query = new Query();
+			query.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU4_QUERY);
 			query.setSqlCommandType(QuerySqlCommandType.UPDATE);
-			query.setQueryString("UPDATE SubMenus SET queryString = :queryStriung, dataSourceName = :dataSourceName, dbType = :dbType WHERE product = :product AND mainMenu = :mainMenu AND subMenu = :subMenu");
+			query.setQueryString("""
+					UPDATE Queries 
+					SET product = :product, mainMenu = :mainMenu, subMenu = :subMenu, sqlCommandType = :sqlCommandType, queryString = :queryString, dataSourceName = :dataSourceName, dbType = :dbType, operator = :operator, modifyDate = NOW() 
+					WHERE product = :__org__product AND mainMenu = :__org__mainMenu AND subMenu = :__org__subMenu AND sqlCommandType = :__org__sqlCommandType
+					""");
 			query.setDataSourceName(DATASOURCE_NAME);
 			query.setDbType(DB_TYPE);
 			queryList.add(query);
@@ -310,7 +364,10 @@ public class SettingDataService {
 			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU4_QUERY);
 			query.setSqlCommandType(QuerySqlCommandType.DELETE);
-			query.setQueryString("DELETE FROM SubMenus WHERE product = :product AND mainMenu = :mainMenu AND subMenu = :subMenu");
+			query.setQueryString("""
+					DELETE FROM SubMenus 
+					WHERE product = :product AND mainMenu = :mainMenu AND subMenu = :subMenu
+					""");
 			query.setDataSourceName(DATASOURCE_NAME);
 			query.setDbType(DB_TYPE);
 			queryList.add(query);
@@ -323,6 +380,53 @@ public class SettingDataService {
 			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU5_FIELD);
 			query.setSqlCommandType(QuerySqlCommandType.SELECT);
 			query.setQueryString("SELECT * FROM Fields");
+			query.setDataSourceName(DATASOURCE_NAME);
+			query.setDbType(DB_TYPE);
+			queryList.add(query);
+		}
+		
+		{
+			var query = new Query();
+			query.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU5_FIELD);
+			query.setSqlCommandType(QuerySqlCommandType.INSERT);
+			query.setQueryString("""
+					INSERT INTO Fields 
+					(product, mainMenu, subMenu, `column`, `name`, `type`, preset, `format`, `validation`, `visible`, enableSearch, enableEdit, formSize, formOrder, operator, registerDate, modifyDate) 
+					VALUES (:product, :mainMenu, :subMenu, :column, :name, :type, :preset, :format, :validation, :visible, :enableSearch, :enableEdit, :formSize, :formOrder, :operator, NOW(), NOW())
+					""");
+			query.setDataSourceName(DATASOURCE_NAME);
+			query.setDbType(DB_TYPE);
+			queryList.add(query);
+		}
+		
+		{
+			var query = new Query();
+			query.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU5_FIELD);
+			query.setSqlCommandType(QuerySqlCommandType.UPDATE);
+			query.setQueryString("""
+					UPDATE Fields 
+					SET product = :product, mainMenu = :mainMenu, subMenu = :subMenu, `column` = :column, `name` = :name, `type` = :type, preset = :preset, `format` = :format, `validation` = :validation, `visible` = :visible, enableSearch = :enableSearch, enableEdit = :enableEdit, formSize = :formSize, formOrder = :formOrder, operator = :operator, modifyDate = NOW() 
+					WHERE product = :__org__product AND mainMenu = :__org__mainMenu AND subMenu = :__org__subMenu AND `column` = :__org__column
+					""");
+			query.setDataSourceName(DATASOURCE_NAME);
+			query.setDbType(DB_TYPE);
+			queryList.add(query);
+		}
+		
+		{
+			var query = new Query();
+			query.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			query.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU5_FIELD);
+			query.setSqlCommandType(QuerySqlCommandType.DELETE);
+			query.setQueryString("""
+					DELETE FROM Fields 
+					WHERE product = :product AND mainMenu = :mainMenu AND subMenu = :subMenu AND `column` = :column
+					""");
 			query.setDataSourceName(DATASOURCE_NAME);
 			query.setDbType(DB_TYPE);
 			queryList.add(query);
@@ -690,7 +794,7 @@ public class SettingDataService {
 		field.setType(FieldType.STRING);
 		field.setVisible(true);
 		field.setEnableSearch(FieldEnable.ENABLED);
-		field.setEnableEdit(FieldEnable.ENABLED);
+		field.setEnableEdit(FieldEnable.REQUIRED);
 		field.setFormOrder((short) 1);
 		fieldList.add(field);
 	}
@@ -705,7 +809,7 @@ public class SettingDataService {
 		field.setType(FieldType.STRING);
 		field.setVisible(true);
 		field.setEnableSearch(FieldEnable.ENABLED);
-		field.setEnableEdit(FieldEnable.ENABLED);
+		field.setEnableEdit(FieldEnable.REQUIRED);
 		field.setFormOrder((short) 2);
 		fieldList.add(field);
 	}
@@ -720,7 +824,7 @@ public class SettingDataService {
 		field.setType(FieldType.STRING);
 		field.setVisible(true);
 		field.setEnableSearch(FieldEnable.ENABLED);
-		field.setEnableEdit(FieldEnable.ENABLED);
+		field.setEnableEdit(FieldEnable.REQUIRED);
 		field.setFormOrder((short) 3);
 		fieldList.add(field);
 	}

@@ -19,9 +19,9 @@ public class DynamicCrudConstant {
 	public static final String PATH_SETTING_FRAGMENT_PREFIX = PATH_SETTING_PREFIX + PATH_FRAGMENT_PREFIX;
 	
 	/**
-	 * /setting/fragment/{type}/findAll
+	 * /setting/fragment/{type}/list
 	 */
-	public static final String PATH_SETTING_FRAGMENT_FIND_ALL = PATH_SETTING_FRAGMENT_PREFIX + "/" + PATH_VARIABLE_TYPE + "/findAll";
+	public static final String PATH_SETTING_FRAGMENT_LIST = PATH_SETTING_FRAGMENT_PREFIX + "/" + PATH_VARIABLE_TYPE + "/list";
 	
 	/**
 	 * /setting/fragment/{type}/modal
@@ -42,11 +42,13 @@ public class DynamicCrudConstant {
 	/**
 	 * /use/fragment/{product}/{mainMenu}/{subMenu}/findAll
 	 */
-	public static final String PATH_USE_FRAGMENT_FIND_ALL = PATH_USE_FRAGMENT_PREFIX + "/{product}/{mainMenu}/{subMenu}/findAll";
+	public static final String PATH_USE_FRAGMENT_LIST = PATH_USE_FRAGMENT_PREFIX + "/{product}/{mainMenu}/{subMenu}/list";
 	
 	/**
 	 * /use/fragment/{product}/{mainMenu}/{subMenu}/modal
 	 */
 	public static final String PATH_USE_FRAGMENT_MODAL = PATH_USE_FRAGMENT_PREFIX + "/{product}/{mainMenu}/{subMenu}/modal/{modalMode:create|update}";
+	
+	public static final String PATH_USE_FRAGMENT_MODAL_DELETE = PATH_USE_FRAGMENT_PREFIX + "/{product}/{mainMenu}/{subMenu}/modal/{modalMode:delete}";
 	
 }

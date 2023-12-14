@@ -1,5 +1,6 @@
 <!--/*-->
 	전달받은 fieldList로 입력 폼을 생성한다.
+	원본 값은 '__org__' prefix를 붙인 값으로 전달한다.
 <!--*/-->
 <dialog id="modal" class="modal"
 	data-th-with="
@@ -18,8 +19,16 @@
 			>
 				<div class="join w-full m-1" data-th-each="field : ${fieldList}" data-th-if="${field.isEnableEdit()}">
 					<button class="btn btn-sm join-item w-1/4" data-th-text="${field.name}"></button>
-					<input type="text" data-th-name="${field.column}" placeholder="" class="input input-sm input-bordered join-item w-full" data-th-required="${field.isEnableEditRequired()}" />
+					<input type="text" class="input input-sm input-bordered join-item w-full"
+						 data-th-name="${field.column}"
+						 data-th-required="${field.isEnableEditRequired()}"
+					/>
 				</div>
+				<input type="hidden"
+					data-th-each="field : ${fieldList}"
+					data-th-if="${field.isEnableEdit()}"
+					data-th-name="'\_\_org\_\_' + ${field.column}"
+				/>
 			</form>
 		</div>
 
@@ -27,8 +36,8 @@
 		<div class="flex justify-between">
 
 			<div>
-				<button class="btn btn-sm">검색값 복사</button>
-				<button class="btn btn-sm">데이터 복사</button>
+				<button class="btn btn-sm copySearchButton" data-th-text="#{use.text.modal.copySearchArea}"></button>
+				<button class="btn btn-sm copyDataButton" data-th-text="#{use.text.modal.copyContentData}"></button>
 			</div>
 
 			<div class="flex justify-between">
