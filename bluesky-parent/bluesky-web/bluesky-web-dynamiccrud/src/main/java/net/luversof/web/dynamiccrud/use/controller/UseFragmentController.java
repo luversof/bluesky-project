@@ -99,8 +99,11 @@ public class UseFragmentController {
 			@RequestParam MultiValueMap<String, String> dataMap,
 			HttpServletResponse response,
 			Model model) {
-		response.setHeader("HX-Trigger", "deleteModal");	// Htmx 응답 트리거를 위한 설정
+		var query = ThymeleafUseUtil.getQuery(product, mainMenu, subMenu, QuerySqlCommandType.DELETE);
+		var fieldList = ThymeleafUseUtil.getFieldList(product, mainMenu, subMenu);
+		useService.delete(query, fieldList, dataMap);
 		
+		response.setHeader("HX-Trigger", "deleteModal");	// Htmx 응답 트리거를 위한 설정
 		return "use/fragment/modal";
 	}
 	

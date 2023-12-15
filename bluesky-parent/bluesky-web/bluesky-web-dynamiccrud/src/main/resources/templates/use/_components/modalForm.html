@@ -1,0 +1,72 @@
+<form id="modalForm"
+	data-th-with="
+		fieldList = ${fieldList},
+		fieldType = ${T(net.luversof.web.dynamiccrud.setting.domain.FieldType)}
+	"
+	data-th-hx-post="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modal/{modalMode}(product=${product},mainMenu=${mainMenu},subMenu=${subMenu},modalMode=${modalMode})}"
+	hx-target="#fragmentArea"
+>
+	<div class="join w-full m-1" data-th-each="field : ${fieldList}" data-th-if="${field.isEnableEdit()}">
+		<!--/*-->
+		최우선으로 preset이 있는 경우 preset 기준 select를 구성
+		없으면 그 다음 분기를 고려
+		<!--*/-->
+		
+		<div class="btn btn-sm join-item w-1/3" data-th-text="${field.name}"></div>
+		
+		<th-block data-th-if="${#strings.isEmpty(field.preset)}">
+			<!--/*-->
+			preset이 없는 경우 Field의 type에 따라 input을 설정
+			type : boolean, date, int, lonk, long, string, text
+			<!--*/-->
+			
+			<th-block data-th-switch="${field.type}">
+				
+				<th-block data-th-case="${fieldType.BOOLEAN}">
+					<input type="checkbox" class="toggle toggle-lg toggle-info ml-2" data-th-name="${field.column}" />
+				</th-block>
+				<th-block data-th-case="${fieldType.INT}">
+					<input type="text" class="input input-sm input-bordered join-item w-full"
+						 data-th-name="${field.column}"
+						 data-th-required="${field.isEnableEditRequired()}"
+					/>
+				</th-block>
+				<th-block data-th-case="*">
+					<input type="text" class="input input-sm input-bordered join-item w-full"
+						 data-th-name="${field.column}"
+						 data-th-required="${field.isEnableEditRequired()}"
+					/>
+				</th-block>
+				
+			</th-block>
+			
+			
+		</th-block>
+		<th-block data-th-unless="${#strings.isEmpty(field.preset)}">
+			<select class="select select-sm select-bordered join-item w-full"
+				data-th-name="${field.column}"
+			>
+				<option data-th-text="${field.name}" value="" />
+				<option 
+					data-th-each="presetPart : ${#strings.listSplit(field.preset,'|')}" 
+					data-th-value="${#strings.contains(presetPart, ',')? #strings.arraySplit(presetPart, ',')[1] : presetPart}" 
+					data-th-text="${#strings.contains(presetPart, ',')? #strings.arraySplit(presetPart, ',')[0] : presetPart}"
+				/>
+				
+				
+			</select>
+			
+		</th-block>
+		
+	</div>
+	
+	
+	
+	
+	
+	<input type="hidden"
+		data-th-each="field : ${fieldList}"
+		data-th-if="${field.isEnableEdit()}"
+		data-th-name="'\_\_org\_\_' + ${field.column}"
+	/>
+</form>

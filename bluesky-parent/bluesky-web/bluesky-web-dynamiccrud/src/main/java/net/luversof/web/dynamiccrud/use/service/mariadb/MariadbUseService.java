@@ -1,6 +1,8 @@
 package net.luversof.web.dynamiccrud.use.service.mariadb;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -13,6 +15,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 
 import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
@@ -103,16 +106,39 @@ public class MariadbUseService implements UseService {
 	 */
 	@Override
 	public Object update(Query query, List<Field> fieldList, Map<String, String> dataMap) {
-		return update(query, fieldList, dataMap);
+		return create(query, fieldList, dataMap);
 	}
 	
 	
 	/**
-	 * Delete의 경우 여러 건을 동시 삭제할 수도 있음.
+	 * Delete의 경우 여러 건을 동시에 삭제할 수 있음.
+	 * 삭제도 update 쿼리를 통해 수행함
 	 */
 	@Override
-	public Object delete(Query query, List<Field> fieldList, Map<String, String> dataMap) {
-		return update(query, fieldList, dataMap);
+	public Object delete(Query query, List<Field> fieldList, MultiValueMap<String, String> dataMap) {
+		List<Map<String, String>> dataMapList = new ArrayList<>();
+		
+		dataMap.forEach((key, value) -> {
+			// 갯수 만큼 맵을 추가한다.
+			if (dataMapList.isEmpty()) {
+				for (int i = 0; i < value.size() ; i++) {
+					dataMapList.add(new HashMap<String, String>());
+				}
+			}
+			
+			for (int i = 0 ; i < value.size() ; i++) {
+				dataMapList.get(i).put(key, value.get(i));
+			}
+			System.out.println("test : " + key);
+		});
+
+		List<Object> resultList = new ArrayList<Object>();
+		dataMapList.forEach(map -> {
+			Object result = update(query, fieldList, map);
+			resultList.add(result);
+		});
+		return resultList;	
 	}
 
 }
+ 

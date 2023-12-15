@@ -39,7 +39,7 @@
 				<th data-th-each="column : ${columnMap}" data-th-text="${column.value}"></th>
 				<th data-th-if="${targetSubMenu.enableUpdate}" data-th-text="#{use.text.update}"></th>
 				<th data-th-if="${targetSubMenu.enableInsert || targetSubMenu.enableUpdate || targetSubMenu.enableDelete}">
-					<input type="checkbox" class="checkbox" />
+					<input name="contentDataCheckToggle" type="checkbox" class="checkbox" />
 				</th>
 			</tr>
 		</thead>
@@ -73,7 +73,7 @@
 					</button>
 				</td>
 				<td data-th-if="${targetSubMenu.enableInsert || targetSubMenu.enableUpdate || targetSubMenu.enableDelete}">
-					<input name="contentDataCheck" type="checkbox" class="checkbox" onclick="contentDataRowCheck(this)" />
+					<input name="contentDataCheck" type="checkbox" class="checkbox" />
 				</td>
 			</tr>
 		</tbody>
@@ -103,7 +103,7 @@
 			<button class="btn btn-sm deleteButton"
 				data-th-if="${targetSubMenu.enableDelete}"
 				data-th-hx-post="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modal/delete(product=${product},mainMenu=${mainMenu},subMenu=${subMenu})}"
-				hx-include="#contentTable tr.active .contentData input"
+				hx-include="#contentTable tr:has(input[name=contentDataCheck]:checked) .contentData input"
 				hx-target="#fragmentArea"
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">

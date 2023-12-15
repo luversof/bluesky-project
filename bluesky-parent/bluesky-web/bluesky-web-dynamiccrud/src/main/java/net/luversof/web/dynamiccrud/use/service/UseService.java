@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.util.MultiValueMap;
 
 import net.luversof.web.dynamiccrud.setting.domain.Field;
 import net.luversof.web.dynamiccrud.setting.domain.Query;
@@ -17,6 +18,6 @@ public interface UseService {
 	
 	Object update(Query query, List<Field> fieldList, Map<String, String> dataMap);
 	
-	Object delete(Query query, List<Field> fieldList, Map<String, String> dataMap);
+	Object delete(Query query, List<Field> fieldList, MultiValueMap<String, String> dataMap);
 
 }

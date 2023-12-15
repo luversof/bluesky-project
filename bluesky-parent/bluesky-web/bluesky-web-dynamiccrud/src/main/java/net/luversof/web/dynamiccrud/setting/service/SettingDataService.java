@@ -507,7 +507,7 @@ public class SettingDataService {
 			field.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
 			field.setColumn("enableExcel");
 			field.setName("엑셀");
-			field.setType(FieldType.STRING);
+			field.setType(FieldType.BOOLEAN);
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.DISABLED);
 			field.setEnableEdit(FieldEnable.ENABLED);
@@ -521,7 +521,7 @@ public class SettingDataService {
 			field.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
 			field.setColumn("enableInsert");
 			field.setName("입력");
-			field.setType(FieldType.STRING);
+			field.setType(FieldType.BOOLEAN);
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.DISABLED);
 			field.setEnableEdit(FieldEnable.ENABLED);
@@ -535,7 +535,7 @@ public class SettingDataService {
 			field.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
 			field.setColumn("enableUpdate");
 			field.setName("수정");
-			field.setType(FieldType.STRING);
+			field.setType(FieldType.BOOLEAN);
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.DISABLED);
 			field.setEnableEdit(FieldEnable.ENABLED);
@@ -549,7 +549,7 @@ public class SettingDataService {
 			field.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
 			field.setColumn("enableDelete");
 			field.setName("삭제");
-			field.setType(FieldType.STRING);
+			field.setType(FieldType.BOOLEAN);
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.DISABLED);
 			field.setEnableEdit(FieldEnable.ENABLED);
@@ -759,7 +759,7 @@ public class SettingDataService {
 			field.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			field.setSubMenu(KEY_EVENT_ADMIN_SUBMENU5_FIELD);
 			field.setColumn("formSize");
-			field.setName("퐄크기");
+			field.setName("폼크기");
 			field.setType(FieldType.INT);
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.DISABLED);

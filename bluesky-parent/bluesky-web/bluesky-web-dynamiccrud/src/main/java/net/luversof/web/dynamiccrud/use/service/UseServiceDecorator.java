@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
 
 import net.luversof.web.dynamiccrud.setting.domain.Field;
 import net.luversof.web.dynamiccrud.setting.domain.Query;
@@ -50,7 +51,7 @@ public class UseServiceDecorator implements UseService {
 	}
 
 	@Override
-	public Object delete(Query query, List<Field> fieldList, Map<String, String> dataMap) {
+	public Object delete(Query query, List<Field> fieldList, MultiValueMap<String, String> dataMap) {
 		if (query.getDbType().equals(QueryDbType.MySql)) {
 			UseService useService = useServiceMap.get("mariadbUseService");
 			

@@ -2,6 +2,7 @@
 	전달받은 fieldList로 입력 폼을 생성한다.
 	원본 값은 '__org__' prefix를 붙인 값으로 전달한다.
 <!--*/-->
+
 <dialog id="modal" class="modal"
 	data-th-with="
 		thymeleafUseUtil = ${T(net.luversof.web.dynamiccrud.use.util.ThymeleafUseUtil)},
@@ -13,25 +14,8 @@
 		</form>
 		<h3 class="font-bold text-lg" data-th-text="#{use.text.modal.__${modalMode}__}"></h3>
 		<div class="m-2">
-			<form id="modalForm"
-				data-th-hx-post="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modal/{modalMode}(product=${product},mainMenu=${mainMenu},subMenu=${subMenu},modalMode=${modalMode})}"
-				hx-target="#fragmentArea"
-			>
-				<div class="join w-full m-1" data-th-each="field : ${fieldList}" data-th-if="${field.isEnableEdit()}">
-					<button class="btn btn-sm join-item w-1/4" data-th-text="${field.name}"></button>
-					<input type="text" class="input input-sm input-bordered join-item w-full"
-						 data-th-name="${field.column}"
-						 data-th-required="${field.isEnableEditRequired()}"
-					/>
-				</div>
-				<input type="hidden"
-					data-th-each="field : ${fieldList}"
-					data-th-if="${field.isEnableEdit()}"
-					data-th-name="'\_\_org\_\_' + ${field.column}"
-				/>
-			</form>
+			<div data-th-replace="~{use/_components/modalForm}" />
 		</div>
-
 
 		<div class="flex justify-between">
 

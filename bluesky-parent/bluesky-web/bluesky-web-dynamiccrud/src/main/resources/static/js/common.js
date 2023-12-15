@@ -36,10 +36,15 @@ var param = (() => {
 	}
 })();
 
-
+/** modalForm에 field type에 따라 input이 생성됨. type에 따라 알맞게 데이터를 설정 */
 function copyContentDataToModal(contentDataEl, modalTarget) {
 	contentDataEl.querySelectorAll("input[type=hidden]").forEach(el => {
-		modalTarget.querySelector("[name=" + el.name  +"]").value = el.value;
+		var targetInput = modalTarget.querySelector("[name=" + el.name + "]");
+		if (targetInput.type == "checkbox") {
+			targetInput.checked = eval(el.value);
+		} else {
+			targetInput.value = el.value;
+		}
 	});
 }
 
@@ -113,16 +118,23 @@ document.addEventListener('htmx:afterRequest', (event) => {
 		}
 	}
 	/** (e) data-modal-target="대상modal" 속성이 있는 경우 modal 관련 처리 수행 */
+	
+	/** 체크박스 선택 처리 */
+	event.target.querySelectorAll("input[name=contentDataCheck]").forEach(el => el.addEventListener("change", (event) => {
+		if (event.target.checked) {
+			event.target.closest("tr").classList.add("active");
+		} else {
+			event.target.closest("tr").classList.remove("active");		
+		}
+	}));
+	
+	event.target.querySelectorAll("input[name=contentDataCheckToggle]").forEach(el => el.addEventListener("change", (event) => {
+		event.target.closest("table").querySelector("tbody").querySelectorAll("input[name=contentDataCheck]").forEach(el => {
+			el.checked = event.target.checked;
+			el.dispatchEvent(new Event("change"));
+		});
+	}));
 });
-
-/** 테이블에서 선택한 tr 에 대해 활성화 표시 */
-function contentDataRowCheck(target) {
-	if (target.checked) {
-		target.closest("tr").classList.add("active");
-	} else {
-		target.closest("tr").classList.remove("active");		
-	}
-}
 
 // modal에서 데이터 생성 요청 후 page를 1로 초기화하여 바닥 페이지 데이터 갱신 시 첫 페이지로 이동 처리  
 document.addEventListener('createModal', () => param.setParam("page", 1));
