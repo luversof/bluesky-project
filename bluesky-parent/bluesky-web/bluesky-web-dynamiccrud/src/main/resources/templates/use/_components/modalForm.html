@@ -23,13 +23,20 @@
 			<th-block data-th-switch="${field.type}">
 				
 				<th-block data-th-case="${fieldType.BOOLEAN}">
-					<input type="checkbox" class="toggle toggle-lg toggle-info ml-2" data-th-name="${field.column}" />
+					<input type="checkbox" class="toggle toggle-lg toggle-info ml-2" />
+					<input type="hidden" data-th-name="${field.column}" value="false" />
 				</th-block>
 				<th-block data-th-case="${fieldType.INT}">
-					<input type="text" class="input input-sm input-bordered join-item w-full"
+					<input type="number" class="input input-sm input-bordered join-item w-full"
 						 data-th-name="${field.column}"
 						 data-th-required="${field.isEnableEditRequired()}"
 					/>
+				</th-block>
+				<th-block data-th-case="${fieldType.TEXT}">
+					<textarea class="textarea textarea-sm textarea-bordered join-item w-full h-40"
+						 data-th-name="${field.column}"
+						 data-th-required="${field.isEnableEditRequired()}"
+					></textarea>
 				</th-block>
 				<th-block data-th-case="*">
 					<input type="text" class="input input-sm input-bordered join-item w-full"
@@ -45,6 +52,7 @@
 		<th-block data-th-unless="${#strings.isEmpty(field.preset)}">
 			<select class="select select-sm select-bordered join-item w-full"
 				data-th-name="${field.column}"
+				data-th-required="${field.isEnableEditRequired()}"
 			>
 				<option data-th-text="${field.name}" value="" />
 				<option 

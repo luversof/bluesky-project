@@ -365,8 +365,8 @@ public class SettingDataService {
 			query.setSubMenu(KEY_EVENT_ADMIN_SUBMENU4_QUERY);
 			query.setSqlCommandType(QuerySqlCommandType.DELETE);
 			query.setQueryString("""
-					DELETE FROM SubMenus 
-					WHERE product = :product AND mainMenu = :mainMenu AND subMenu = :subMenu
+					DELETE FROM Queries 
+					WHERE product = :product AND mainMenu = :mainMenu AND subMenu = :subMenu AND sqlCommandType = :sqlCommandType
 					""");
 			query.setDataSourceName(DATASOURCE_NAME);
 			query.setDbType(DB_TYPE);
@@ -445,7 +445,7 @@ public class SettingDataService {
 			field.setType(FieldType.STRING);
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.ENABLED);
-			field.setEnableEdit(FieldEnable.REQUIRED);
+			field.setEnableEdit(FieldEnable.ENABLED);
 			field.setFormOrder((short) 2);
 			fieldList.add(field);
 		}
@@ -491,13 +491,83 @@ public class SettingDataService {
 			field.setProduct(KEY_EVENT_ADMIN_PRODUCT);
 			field.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
 			field.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
+			field.setColumn("template");
+			field.setName("템플릿");
+			field.setType(FieldType.STRING);
+			field.setVisible(true);
+			field.setEnableSearch(FieldEnable.DISABLED);
+			field.setEnableEdit(FieldEnable.ENABLED);
+			field.setFormOrder((short) 5);
+			fieldList.add(field);
+		}
+		{
+			var field = new Field();
+			field.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			field.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			field.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
 			field.setColumn("displayOrder");
 			field.setName("순서");
 			field.setType(FieldType.INT);
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.DISABLED);
 			field.setEnableEdit(FieldEnable.ENABLED);
-			field.setFormOrder((short) 5);
+			field.setFormOrder((short) 6);
+			fieldList.add(field);
+		}
+		{
+			var field = new Field();
+			field.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			field.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			field.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
+			field.setColumn("groupNo");
+			field.setName("그룹번호");
+			field.setType(FieldType.INT);
+			field.setVisible(true);
+			field.setEnableSearch(FieldEnable.DISABLED);
+			field.setEnableEdit(FieldEnable.ENABLED);
+			field.setFormOrder((short) 7);
+			fieldList.add(field);
+		}
+		{
+			var field = new Field();
+			field.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			field.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			field.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
+			field.setColumn("groupTemplate");
+			field.setName("그룹템플릿");
+			field.setType(FieldType.STRING);
+			field.setVisible(true);
+			field.setEnableSearch(FieldEnable.DISABLED);
+			field.setEnableEdit(FieldEnable.ENABLED);
+			field.setFormOrder((short) 8);
+			fieldList.add(field);
+		}
+		{
+			var field = new Field();
+			field.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			field.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			field.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
+			field.setColumn("pageSize");
+			field.setName("페이지크기");
+			field.setType(FieldType.INT);
+			field.setVisible(true);
+			field.setEnableSearch(FieldEnable.DISABLED);
+			field.setEnableEdit(FieldEnable.ENABLED);
+			field.setFormOrder((short) 9);
+			fieldList.add(field);
+		}
+		{
+			var field = new Field();
+			field.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			field.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			field.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
+			field.setColumn("enableCount");
+			field.setName("카운팅");
+			field.setType(FieldType.BOOLEAN);
+			field.setVisible(true);
+			field.setEnableSearch(FieldEnable.DISABLED);
+			field.setEnableEdit(FieldEnable.ENABLED);
+			field.setFormOrder((short) 10);
 			fieldList.add(field);
 		}
 		{
@@ -511,7 +581,7 @@ public class SettingDataService {
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.DISABLED);
 			field.setEnableEdit(FieldEnable.ENABLED);
-			field.setFormOrder((short) 6);
+			field.setFormOrder((short) 11);
 			fieldList.add(field);
 		}
 		{
@@ -525,7 +595,7 @@ public class SettingDataService {
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.DISABLED);
 			field.setEnableEdit(FieldEnable.ENABLED);
-			field.setFormOrder((short) 7);
+			field.setFormOrder((short) 12);
 			fieldList.add(field);
 		}
 		{
@@ -539,7 +609,7 @@ public class SettingDataService {
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.DISABLED);
 			field.setEnableEdit(FieldEnable.ENABLED);
-			field.setFormOrder((short) 8);
+			field.setFormOrder((short) 13);
 			fieldList.add(field);
 		}
 		{
@@ -553,7 +623,7 @@ public class SettingDataService {
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.DISABLED);
 			field.setEnableEdit(FieldEnable.ENABLED);
-			field.setFormOrder((short) 9);
+			field.setFormOrder((short) 14);
 			fieldList.add(field);
 		}
 		addDefaultField(KEY_EVENT_ADMIN_PRODUCT, KEY_EVENT_ADMIN_MAINMENU, KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
@@ -572,7 +642,7 @@ public class SettingDataService {
 			field.setPreset("INSERT|SELECT|UPDATE|DELETE");
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.ENABLED);
-			field.setEnableEdit(FieldEnable.ENABLED);
+			field.setEnableEdit(FieldEnable.REQUIRED);
 			field.setFormOrder((short) 4);
 			fieldList.add(field);
 		}
@@ -586,7 +656,7 @@ public class SettingDataService {
 			field.setType(FieldType.STRING);
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.ENABLED);
-			field.setEnableEdit(FieldEnable.ENABLED);
+			field.setEnableEdit(FieldEnable.REQUIRED);
 			field.setFormOrder((short) 5);
 			fieldList.add(field);
 		}
@@ -601,7 +671,7 @@ public class SettingDataService {
 			field.setPreset("MsSql|MySql");
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.ENABLED);
-			field.setEnableEdit(FieldEnable.ENABLED);
+			field.setEnableEdit(FieldEnable.REQUIRED);
 			field.setFormOrder((short) 6);
 			fieldList.add(field);
 		}
@@ -612,10 +682,10 @@ public class SettingDataService {
 			field.setSubMenu(KEY_EVENT_ADMIN_SUBMENU4_QUERY);
 			field.setColumn("queryString");
 			field.setName("쿼리");
-			field.setType(FieldType.STRING);
+			field.setType(FieldType.TEXT);
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.DISABLED);
-			field.setEnableEdit(FieldEnable.ENABLED);
+			field.setEnableEdit(FieldEnable.REQUIRED);
 			field.setFormOrder((short) 7);
 			fieldList.add(field);
 		}
@@ -634,7 +704,7 @@ public class SettingDataService {
 			field.setType(FieldType.STRING);
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.ENABLED);
-			field.setEnableEdit(FieldEnable.ENABLED);
+			field.setEnableEdit(FieldEnable.REQUIRED);
 			field.setFormOrder((short) 4);
 			fieldList.add(field);
 		}
@@ -663,7 +733,7 @@ public class SettingDataService {
 			field.setPreset("BOOLEAN|DATE|INT|LINK|LONG|STRING|TEXT");
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.ENABLED);
-			field.setEnableEdit(FieldEnable.ENABLED);
+			field.setEnableEdit(FieldEnable.REQUIRED);
 			field.setFormOrder((short) 6);
 			fieldList.add(field);
 		}
@@ -716,10 +786,10 @@ public class SettingDataService {
 			field.setSubMenu(KEY_EVENT_ADMIN_SUBMENU5_FIELD);
 			field.setColumn("visible");
 			field.setName("표시여부");
-			field.setType(FieldType.STRING);
+			field.setType(FieldType.BOOLEAN);
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.DISABLED);
-			field.setEnableEdit(FieldEnable.ENABLED);
+			field.setEnableEdit(FieldEnable.REQUIRED);
 			field.setFormOrder((short) 10);
 			fieldList.add(field);
 		}
@@ -734,7 +804,7 @@ public class SettingDataService {
 			field.setPreset("DISABLED|ENABLED|REQUIRED");
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.DISABLED);
-			field.setEnableEdit(FieldEnable.ENABLED);
+			field.setEnableEdit(FieldEnable.REQUIRED);
 			field.setFormOrder((short) 11);
 			fieldList.add(field);
 		}
@@ -749,7 +819,7 @@ public class SettingDataService {
 			field.setPreset("DISABLED|ENABLED|REQUIRED");
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.DISABLED);
-			field.setEnableEdit(FieldEnable.ENABLED);
+			field.setEnableEdit(FieldEnable.REQUIRED);
 			field.setFormOrder((short) 12);
 			fieldList.add(field);
 		}

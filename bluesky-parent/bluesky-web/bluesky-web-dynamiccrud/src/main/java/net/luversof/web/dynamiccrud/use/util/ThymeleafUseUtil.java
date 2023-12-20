@@ -1,10 +1,8 @@
 package net.luversof.web.dynamiccrud.use.util;
 
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 
@@ -44,18 +42,21 @@ public class ThymeleafUseUtil {
 		
 		var map = new LinkedHashMap<String, String>();
 		
-		// Field 정보가 있으면 설정된 field에 대해서만 노출 처리
-		if (fieldList != null && !fieldList.isEmpty()) {
-			var targetFieldList = fieldList.stream().filter(Field::isVisible).sorted(Comparator.comparing(Field::getFormOrder)).collect(Collectors.toList());
-			targetFieldList.forEach(field -> map.put(field.getColumn(), field.getName()));
-		} else {
-			// Field 정보가 없으면 그냥 전체 노출 처리
-			data.keySet().forEach(key -> {
-				if (!map.containsKey(key)) {
+		// Field 정보가 없으면 그냥 전체 노출 처리
+		data.keySet().forEach(key -> {
+			if (fieldList != null && !fieldList.isEmpty()) {
+				var targetField = fieldList.stream().filter(x -> x.getColumn().equals(key)).findAny().orElseGet(() -> null);
+				if (targetField == null) {
 					map.put(key, key);
+				} else {
+					if (targetField.isVisible()) {
+						map.put(targetField.getColumn(), targetField.getName());
+					}
 				}
-			});
-		}
+			} else {
+				map.put(key, key);
+			}
+		});
 		return map;
 	}
 	

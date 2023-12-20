@@ -40,10 +40,12 @@ var param = (() => {
 function copyContentDataToModal(contentDataEl, modalTarget) {
 	contentDataEl.querySelectorAll("input[type=hidden]").forEach(el => {
 		var targetInput = modalTarget.querySelector("[name=" + el.name + "]");
-		if (targetInput.type == "checkbox") {
-			targetInput.checked = eval(el.value);
-		} else {
-			targetInput.value = el.value;
+		targetInput.value = el.value;
+		if (!el.name.startsWith("__org__")) {
+			var checkBoxInput = targetInput.closest("div").querySelector("input[type=checkbox]");
+			if (checkBoxInput != null) {
+				checkBoxInput.checked = eval(el.value);
+			}
 		}
 	});
 }
@@ -80,8 +82,6 @@ document.addEventListener('htmx:beforeRequest', (event) => {
 		deleteData(event);
 	}
 });
-
-
 // htmx trigger로 로딩된 이후 modal을 띄우거나 종료 처리
 document.addEventListener('htmx:afterRequest', (event) => {
 	/** (s) data-modal-target="대상modal" 속성이 있는 경우 modal 관련 처리 수행 */ 
@@ -107,10 +107,17 @@ document.addEventListener('htmx:afterRequest', (event) => {
 			/** (e) 데이터 복사 eventListener */
 
 			/** (s) 검색 복사 eventListener */			
-			modalTarget.querySelector(".copySearchButton").addEventListener("click", () => {
-				copySearchAreaToModal(modalTarget);
-			});
+			modalTarget.querySelector(".copySearchButton").addEventListener("click", () => copySearchAreaToModal(modalTarget));
 			/** (e) 검색 복사 eventListener */
+			
+			
+			/** (s) modal의 checkBox의 on/off 값 설정 eventListener */
+			modalTarget.querySelectorAll('input[type=checkbox]').forEach(el => el.addEventListener("change", (event) => 
+				event.target.closest('div').querySelector("input[type=hidden]").value = event.target.checked ? true : false
+			));
+			
+			/** (e) modal의 checkBox의 on/off 값 설정 eventListener */
+			
 			modalTarget.showModal();
 		} else if(event.target.dataset.modalAction == "close") {
 			// 이거 페이지 첫번째 페이지로 이동을 해줘야 하나? (데이터 생성 후 닫는 경우만 해당..)

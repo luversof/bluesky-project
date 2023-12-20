@@ -1,6 +1,7 @@
 package net.luversof.web.dynamiccrud.setting.service;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -107,6 +108,6 @@ public class FieldService implements SettingService<Field> {
 		if (fieldList.isEmpty()) {
 			fieldList = fieldRepository.findByProductAndMainMenuAndSubMenu(product, mainMenu, subMenu);
 		}
-		return fieldList;
+		return fieldList.stream().sorted(Comparator.comparing(Field::getFormOrder)).collect(Collectors.toList());
 	}
 }

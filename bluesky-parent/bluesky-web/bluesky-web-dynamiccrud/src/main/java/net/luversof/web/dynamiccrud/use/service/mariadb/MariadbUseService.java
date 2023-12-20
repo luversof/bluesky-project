@@ -1,10 +1,12 @@
 package net.luversof.web.dynamiccrud.use.service.mariadb;
 
+import java.sql.JDBCType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -21,6 +23,7 @@ import org.springframework.util.StringUtils;
 import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
 import net.luversof.web.dynamiccrud.setting.domain.Field;
 import net.luversof.web.dynamiccrud.setting.domain.FieldEnable;
+import net.luversof.web.dynamiccrud.setting.domain.FieldType;
 import net.luversof.web.dynamiccrud.setting.domain.Query;
 import net.luversof.web.dynamiccrud.use.service.UseService;
 
@@ -36,9 +39,10 @@ public class MariadbUseService implements UseService {
 	public Page<Map<String, Object>> find(Query query, List<Field> fieldList, Pageable pageable, Map<String, String> dataMap) {
 		RoutingDataSourceContextHolder.setContext(() -> query.getDataSourceName());
 		
-		var selectQueryBuilder = new StringBuilder(query.getQueryString() + " ");
+		var selectQueryBuilder = new StringBuilder(query.getQueryString());
 		
-		var countQueryBuilder = new StringBuilder("SELECT COUNT(1) FROM " + query.getQueryString().split("FROM")[1] + " ");
+		var countQueryBuilder = new StringBuilder("SELECT COUNT(1) FROM ");
+		countQueryBuilder.append(Pattern.compile("FROM", Pattern.CASE_INSENSITIVE).split(query.getQueryString())[1]);
 		
 		var paramSource = new MapSqlParameterSource();
 		
@@ -53,7 +57,7 @@ public class MariadbUseService implements UseService {
 		var targetFieldList = fieldList.stream().filter(x -> (FieldEnable.REQUIRED.equals(x.getEnableSearch()) || FieldEnable.ENABLED.equals(x.getEnableSearch())) && dataMap.containsKey(x.getColumn()) && StringUtils.hasText(dataMap.get(x.getColumn()))).toList();
 		if (!targetFieldList.isEmpty()) {
 			boolean checkAlreadWhereCondition = false;
-			conditionQueryBuilder.append("WHERE ");
+			conditionQueryBuilder.append(" WHERE ");
 			
 			for (var targetField : targetFieldList) {
 				if (checkAlreadWhereCondition) {
@@ -68,7 +72,7 @@ public class MariadbUseService implements UseService {
 		selectQueryBuilder.append(conditionQueryBuilder);
 		countQueryBuilder.append(conditionQueryBuilder);
 		
-		selectQueryBuilder.append("LIMIT :limit OFFSET :offset");
+		selectQueryBuilder.append(" LIMIT :limit OFFSET :offset");
 		paramSource.addValue("limit", pageable.getPageSize());
 		paramSource.addValue("offset", pageable.getOffset());
 		
@@ -92,10 +96,10 @@ public class MariadbUseService implements UseService {
 		
 		var insertQueryBuilder = new StringBuilder(query.getQueryString() + " ");
 		var paramSource = new MapSqlParameterSource();
-		
 		var targetFieldList = fieldList.stream().filter(x -> (FieldEnable.REQUIRED.equals(x.getEnableSearch()) || FieldEnable.ENABLED.equals(x.getEnableSearch())) && dataMap.containsKey(x.getColumn()) && StringUtils.hasText(dataMap.get(x.getColumn()))).toList();
 		if (!targetFieldList.isEmpty()) {
-			dataMap.forEach((key, value) -> paramSource.addValue(key, value));
+			setSqlParameterSourceRegisterSqlType(paramSource, fieldList);
+			dataMap.forEach((key, value) -> paramSource.addValue(key, StringUtils.hasText(value) ? value : null));
 		}
 		
 		return namedParameterJdbcTemplate.update(insertQueryBuilder.toString(), paramSource);
@@ -107,6 +111,14 @@ public class MariadbUseService implements UseService {
 	@Override
 	public Object update(Query query, List<Field> fieldList, Map<String, String> dataMap) {
 		return create(query, fieldList, dataMap);
+	}
+	
+	private void setSqlParameterSourceRegisterSqlType(MapSqlParameterSource paramSource, List<Field> fieldList) {
+		fieldList.forEach(field -> {
+			if (field.getType().equals(FieldType.BOOLEAN)) {
+				paramSource.registerSqlType(field.getColumn(), JDBCType.BIT.getVendorTypeNumber());
+			}
+		});
 	}
 	
 	
