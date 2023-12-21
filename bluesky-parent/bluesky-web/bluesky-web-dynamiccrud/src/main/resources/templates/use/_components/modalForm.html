@@ -3,7 +3,7 @@
 		fieldList = ${fieldList},
 		fieldType = ${T(net.luversof.web.dynamiccrud.setting.domain.FieldType)}
 	"
-	data-th-hx-post="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modal/{modalMode}(product=${product},mainMenu=${mainMenu},subMenu=${subMenu},modalMode=${modalMode})}"
+	data-th-hx-post="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modalForm/{modalMode}(product=${product},mainMenu=${mainMenu},subMenu=${subMenu},modalMode=${modalMode})}"
 	hx-target="#fragmentArea"
 >
 	<div class="join w-full m-1" data-th-each="field : ${fieldList}" data-th-if="${field.isEnableEdit()}">

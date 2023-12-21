@@ -12,7 +12,7 @@
 		<form method="dialog">
 			<button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
 		</form>
-		<h3 class="font-bold text-lg" data-th-text="#{use.text.modal.__${modalMode}__}"></h3>
+		<h3 class="font-bold text-lg" data-th-text="#{use.text.modalForm.__${modalMode}__}"></h3>
 		<div class="m-2">
 			<div data-th-replace="~{use/_components/modalForm}" />
 		</div>
@@ -20,16 +20,12 @@
 		<div class="flex justify-between">
 
 			<div>
-				<button class="btn btn-sm copySearchButton" data-th-text="#{use.text.modal.copySearchArea}"></button>
-				<button class="btn btn-sm copyDataButton" data-th-text="#{use.text.modal.copyContentData}"></button>
+				<button class="btn btn-sm copySearchButton" data-th-text="#{use.text.modalForm.copySearchArea}"></button>
+				<button class="btn btn-sm copyDataButton" data-th-text="#{use.text.modalForm.copyContentData}"></button>
 			</div>
 
 			<div class="flex justify-between">
-				<button class="btn btn-sm mr-1" data-th-text="#{button.text.__${modalMode}__}"
-					data-modal-target="modal"
-					data-modal-action="close"
-					form="modalForm"
-				/>
+				<button class="btn btn-sm mr-1" data-th-text="#{button.text.__${modalMode}__}" form="modalForm" />
 				<form method="dialog">
 					<!-- if there is a button in form, it will close the modal -->
 					<button class="btn btn-sm" data-th-text="#{button.text.cancel}" />

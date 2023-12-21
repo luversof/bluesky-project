@@ -1,4 +1,5 @@
 var searchInputSelector = "#searchArea .searchinput";
+var modalSelector = "#modal";
 
 // url query parameter 처리
 var param = (() => {
@@ -58,93 +59,136 @@ function copySearchAreaToModal(modalTarget) {
 }
 
 
-function deleteData(event) {
-		// 삭제 대상이 선택되어 있는지 확인
-		var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
-		if (checkedList.length <= 0) {
-			alert("삭제할 행을 체크해주세요.");
-			event.preventDefault();
-			return;
-		}
-		if (!confirm("선택한 항목을 정말 삭제하시겠습니까?")) {
-			console.log("테스트")
-			event.preventDefault();
-			return;
-		}
-		// 선택 대상들의 input 데이터를 submit 해야 함
-		
+function checkDeleteData(event) {
+	// 삭제 대상이 선택되어 있는지 확인
+	var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
+	if (checkedList.length <= 0) {
+		alert("삭제할 행을 체크해주세요.");
+		event.preventDefault();
+		return;
+	}
+	if (!confirm("선택한 항목을 정말 삭제하시겠습니까?")) {
+		event.preventDefault();
+		return;
+	}
 }
 
+function checkExportData(event) {
+	// 삭제 대상이 선택되어 있는지 확인
+	var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
+	if (checkedList.length <= 0) {
+		alert("export할 행을 체크해주세요.");
+		event.preventDefault();
+		return;
+	}
+}
+
+// htmx에서 request를 발생하기 전 사전 처리가 필요한 항목들에 대한 설정
+// 더 나은 방법은 없나?
 document.addEventListener('htmx:beforeRequest', (event) => {
-	
-	/** (s) deleteButton의 경우 처리 */
+	/** (s) deleteButton 처리 */
 	if (event.target.classList.contains("deleteButton")) {
-		deleteData(event);
+		checkDeleteData(event);
 	}
+	/** (e) deleteButton 처리 */
+	
+	/** (s) exportButton 처리 */
+	if (event.target.classList.contains("exportButton")) {
+		checkExportData(event);
+	}
+	/** (e) exportButton 처리 */
 });
-// htmx trigger로 로딩된 이후 modal을 띄우거나 종료 처리
-document.addEventListener('htmx:afterRequest', (event) => {
-	/** (s) data-modal-target="대상modal" 속성이 있는 경우 modal 관련 처리 수행 */ 
-	if (event.target.dataset.modalTarget) {
-		if (event.target.dataset.modalAction == "showModal") {
-			var modalTarget = eval(event.target.dataset.modalTarget);
-			// modal 생성 시 요청한 버튼에 hidden input이 있으면 해당 값을 modal에 설정
-			if (event.target.closest("tr")) {
-				copyContentDataToModal(event.target.closest("tr").querySelector(".contentData"), modalTarget)
+
+document.addEventListener('showList', () => 
+	setTimeout(() => {
+		var target = document.querySelector("#contentTable");
+			/** 체크박스 선택 처리 */
+		target.querySelectorAll("input[name=contentDataCheck]").forEach(el => el.addEventListener("change", (event) => {
+			if (event.target.checked) {
+				event.target.closest("tr").classList.add("active");
+			} else {
+				event.target.closest("tr").classList.remove("active");		
 			}
-			
-			/** (s) 데이터 복사 eventListener */
-			//modal 관련 eventListener 등록
-			// contentTable 영역에 선택한 체크박스 라인의 데이터를 #modalForm의 input 으로 가져온다.
-			modalTarget.querySelector(".copyDataButton").addEventListener("click", () => {
-				var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
-				if (checkedList.length <= 0) {
-					alert("복사할 행을 체크해주세요.");
-					return;
-				}
-				copyContentDataToModal(checkedList[0].closest("tr").querySelector(".contentData"), modalTarget)
-			})
-			/** (e) 데이터 복사 eventListener */
+		}));
+		
+		target.querySelectorAll("input[name=contentDataCheckToggle]").forEach(el => el.addEventListener("change", (event) => {
+			event.target.closest("table").querySelector("tbody").querySelectorAll("input[name=contentDataCheck]").forEach(el => {
+				el.checked = event.target.checked;
+				el.dispatchEvent(new Event("change"));
+			});
+		}));
+	}, 1)
+);
 
-			/** (s) 검색 복사 eventListener */			
-			modalTarget.querySelector(".copySearchButton").addEventListener("click", () => copySearchAreaToModal(modalTarget));
-			/** (e) 검색 복사 eventListener */
-			
-			
-			/** (s) modal의 checkBox의 on/off 값 설정 eventListener */
-			modalTarget.querySelectorAll('input[type=checkbox]').forEach(el => el.addEventListener("change", (event) => 
-				event.target.closest('div').querySelector("input[type=hidden]").value = event.target.checked ? true : false
-			));
-			
-			/** (e) modal의 checkBox의 on/off 값 설정 eventListener */
-			
-			modalTarget.showModal();
-		} else if(event.target.dataset.modalAction == "close") {
-			// 이거 페이지 첫번째 페이지로 이동을 해줘야 하나? (데이터 생성 후 닫는 경우만 해당..)
-			eval(event.target.dataset.modalTarget).close();
-		}
-	}
-	/** (e) data-modal-target="대상modal" 속성이 있는 경우 modal 관련 처리 수행 */
-	
-	/** 체크박스 선택 처리 */
-	event.target.querySelectorAll("input[name=contentDataCheck]").forEach(el => el.addEventListener("change", (event) => {
-		if (event.target.checked) {
-			event.target.closest("tr").classList.add("active");
-		} else {
-			event.target.closest("tr").classList.remove("active");		
-		}
-	}));
-	
-	event.target.querySelectorAll("input[name=contentDataCheckToggle]").forEach(el => el.addEventListener("change", (event) => {
-		event.target.closest("table").querySelector("tbody").querySelectorAll("input[name=contentDataCheck]").forEach(el => {
-			el.checked = event.target.checked;
-			el.dispatchEvent(new Event("change"));
-		});
-	}));
+document.addEventListener('showCreateModalForm', () => 
+	setTimeout(() => {
+		var modalTarget = document.querySelector(modalSelector);	
+		
+		/** (s) 데이터 복사 eventListener */
+		//modal 관련 eventListener 등록
+		// contentTable 영역에 선택한 체크박스 라인의 데이터를 #modalForm의 input 으로 가져온다.
+		modalTarget.querySelector(".copyDataButton").addEventListener("click", () => {
+			var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
+			if (checkedList.length <= 0) {
+				alert("복사할 행을 체크해주세요.");
+				return;
+			}
+			copyContentDataToModal(checkedList[0].closest("tr").querySelector(".contentData"), modalTarget)
+		})
+		/** (e) 데이터 복사 eventListener */
+
+		/** (s) 검색 복사 eventListener */			
+		modalTarget.querySelector(".copySearchButton").addEventListener("click", () => copySearchAreaToModal(modalTarget));
+		/** (e) 검색 복사 eventListener */
+		
+		
+		/** (s) modal의 checkBox의 on/off 값 설정 eventListener */
+		modalTarget.querySelectorAll('input[type=checkbox]').forEach(el => el.addEventListener("change", (event) => 
+			event.target.closest('div').querySelector("input[type=hidden]").value = event.target.checked ? true : false
+		));
+		
+		/** (e) modal의 checkBox의 on/off 값 설정 eventListener */
+		
+		modalTarget.showModal();
+		
+	}, 1)
+);
+
+document.addEventListener('showUpdateModalForm', (event) => {
+	setTimeout(() => {
+		var modalTarget = document.querySelector(modalSelector);
+		copyContentDataToModal(event.target.closest("tr").querySelector(".contentData"), modalTarget)
+		modalTarget.showModal();
+	}, 1)
 });
 
-// modal에서 데이터 생성 요청 후 page를 1로 초기화하여 바닥 페이지 데이터 갱신 시 첫 페이지로 이동 처리  
-document.addEventListener('createModal', () => param.setParam("page", 1));
+// modalForm에 데이터 생성 요청 후 page를 1로 초기화하여 바닥 페이지 데이터 갱신 시 첫 페이지로 이동 처리  
+document.addEventListener('createModalForm', () => param.setParam("page", 1));
+
+document.addEventListener('closeModalForm', () => {
+	setTimeout(() => {
+		document.querySelector(modalSelector).close();
+	}, 1)
+});
+
+
+document.addEventListener('showExportModalBulk', () => {
+	setTimeout(() => {
+		var modalTarget = document.querySelector(modalSelector);
+		var checkedIds = [...document.querySelectorAll("#contentTable input[name=contentDataCheck]")].filter(el => el.checked).map(el => parseInt(el.value));
+		var targetList = contentList.filter((el, index) => checkedIds.includes(index));
+		modalTarget.querySelector("textarea").value = JSON.stringify(targetList);
+		modalTarget.showModal();
+	}, 1)
+});
+
+document.addEventListener('showImportModalBulk', () => {
+	setTimeout(() => {
+		var modalTarget = document.querySelector(modalSelector);
+		modalTarget.showModal();
+	}, 1)
+});
+
 
 
 window.addEventListener('load', () => {

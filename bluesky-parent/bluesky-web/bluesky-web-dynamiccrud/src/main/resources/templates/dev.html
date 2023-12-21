@@ -21,6 +21,7 @@
 				</li>
 				<li>contentTable 관련
 					<ul>
+						<li><b>#content</b> : content 영역 지정</li>
 						<li><b>#contentTable</b> : content를 보여주는 테이블 지정</li>
 						<li><b>.contentData</b> : list 목록의 input hidden 정보를 담고 있는 영역 지정</li>
 						<li><b>.contentDataCheck</b> : list 목록의 checkbox 영역 지정</li>
@@ -31,13 +32,24 @@
 				<li>
 					modal 관련
 					<ul>
-						<li><b>#fragmentArea</b> : fragment 호출 영역 (에러 발생시 에러가 표시되는 영역)</li>
+						<li><b>#fragmentArea</b> : fragment 호출 영역 (에러 발생시 에러를 표시되는 영역이기도 함)</li>
 						<li><b>#modal</b> : modal의 id (현재까지 modal이 1종이라 별다른 이름을 만들지 않음)</li>
 						<li><b>#modalForm</b> : modal의 form id. modal내 submit button의 대상 지정을 위해 사용</li>
 						<li><b>.copyDataButton</b> : modal의 데이터 복사 버튼</li>
 						<li><b>.copySearchButton</b> : modal의 검색 복사 버튼</li>
 					</ul>
 				</li>
+				<ul>
+					HX-Trigger (요청 응답 이후 처리를 위한 설정)					
+					<li><b>showList</b></li>
+					<li><b>showCreateModalForm</b></li>
+					<li><b>showUpdateModalForm</b></li>
+					<li><b>createModalForm</b></li>
+					<li><b>updateModalForm</b></li>
+					<li><b>deleteModalForm</b></li>
+					<li><b>closeModalForm</b></li>
+				</ul>
+				
 			</ul>
 			
 			<h1>UI Components</h1>

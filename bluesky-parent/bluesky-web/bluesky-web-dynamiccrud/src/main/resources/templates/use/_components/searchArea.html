@@ -10,36 +10,34 @@
 <div class="flex"
 	id="searchArea"
 	data-th-if="${hasSearchField}" 
-	data-th-with="
-		fieldList = ${fieldList}
-	"
+	data-th-with="fieldList = ${fieldList}"
 >
-	
-	<div
-		data-th-each="field : ${fieldList}" 
-		data-th-if="${field.isEnableSearch}"
-	>
-		<input type="text" class="input input-bordered input-sm w-48 searchinput"
-			data-th-if="${#strings.isEmpty(field.preset)}" 
-			data-th-placeholder="${field.name}"
-			data-th-name="${field.column}"
-			data-th-value="${param[field.column]}"
-		/>
-		
-		<select class="select select-sm select-bordered w-full max-w-xs searchinput"
-			data-th-unless="${#strings.isEmpty(field.preset)}"
-			data-th-name="${field.column}"
-		>
-			<option data-th-text="${field.name}" value="" />
-			<option 
-				data-th-each="presetPart : ${#strings.listSplit(field.preset,'|')}" 
-				data-th-value="${#strings.contains(presetPart, ',')? #strings.arraySplit(presetPart, ',')[1] : presetPart}" 
-				data-th-text="${#strings.contains(presetPart, ',')? #strings.arraySplit(presetPart, ',')[0] : presetPart}"
+	<div class="p-1">
+		<th-block
+			data-th-each="field : ${fieldList}"
+			data-th-if="${field.isEnableSearch}">
+			<input type="text" class="input input-bordered input-sm w-48 searchinput"
+				data-th-if="${#strings.isEmpty(field.preset)}" 
+				data-th-placeholder="${field.name}"
+				data-th-name="${field.column}"
+				data-th-value="${param[field.column]}"
 			/>
 			
-			
-		</select>
+			<select class="select select-sm select-bordered w-full max-w-xs searchinput"
+				data-th-unless="${#strings.isEmpty(field.preset)}"
+				data-th-name="${field.column}"
+			>
+				<option data-th-text="${field.name}" value="" />
+				<option 
+					data-th-each="presetPart : ${#strings.listSplit(field.preset,'|')}" 
+					data-th-value="${#strings.contains(presetPart, ',')? #strings.arraySplit(presetPart, ',')[1] : presetPart}" 
+					data-th-text="${#strings.contains(presetPart, ',')? #strings.arraySplit(presetPart, ',')[0] : presetPart}"
+				/>
+				
+				
+			</select>
+		</th-block>
+		<button class="btn btn-sm resetbutton" data-th-text="#{button.text.reset}" />
 	</div>
 	
-	<button class="btn btn-sm resetbutton" data-th-text="#{button.text.reset}" />
 </div>

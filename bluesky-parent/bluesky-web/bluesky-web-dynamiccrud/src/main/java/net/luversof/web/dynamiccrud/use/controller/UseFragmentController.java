@@ -49,21 +49,23 @@ public class UseFragmentController {
 		
 		// 여기도 필드 정보 기준으로 출력 처리를 해야 할꺼 같은데?
 		
-		response.setHeader("HX-Trigger", "fragmentList");	// Htmx 응답 트리거를 위한 설정
+		response.setHeader("HX-Trigger", "showList");	// Htmx 응답 트리거를 위한 설정
 		return "use/fragment/list";
 	}
 	
-	@GetMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_MODAL)
-	public String modal(
+	@GetMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_MODAL_FORM)
+	public String modalForm(
 			@PathVariable String product, 
 			@PathVariable String mainMenu, 
 			@PathVariable String subMenu,
-			@PathVariable String modalMode) {
-		return "use/fragment/modal";
+			@PathVariable String modalMode,
+			HttpServletResponse response) {
+		response.setHeader("HX-Trigger", modalMode.equals("create") ? "showCreateModalForm" : "showUpdateModalForm");	// Htmx 응답 트리거를 위한 설정
+		return "use/fragment/modalForm";
 	}
 	
-	@PostMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_MODAL)
-	public String createModal(
+	@PostMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_MODAL_FORM)
+	public String createModalForm(
 			@PathVariable String product, 
 			@PathVariable String mainMenu, 
 			@PathVariable String subMenu,
@@ -80,18 +82,18 @@ public class UseFragmentController {
 		if (modalMode.equals("create")) {
 			var query = ThymeleafUseUtil.getQuery(product, mainMenu, subMenu, QuerySqlCommandType.INSERT);
 			useService.create(query, fieldList, dataMap);
-			response.setHeader("HX-Trigger", "createModal");	// Htmx 응답 트리거를 위한 설정
+			response.setHeader("HX-Trigger", "createModalForm,closeModalForm");	// Htmx 응답 트리거를 위한 설정
 		} else {
 			var query = ThymeleafUseUtil.getQuery(product, mainMenu, subMenu, QuerySqlCommandType.UPDATE);
 			useService.update(query, fieldList, dataMap);
-			response.setHeader("HX-Trigger", "updateModal");	// Htmx 응답 트리거를 위한 설정
+			response.setHeader("HX-Trigger", "updateModalForm");	// Htmx 응답 트리거를 위한 설정
 		}
 		
-		return "use/fragment/modal";
+		return "use/fragment/modalForm";
 	}
 	
-	@PostMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_MODAL_DELETE)
-	public String deleteModal(
+	@PostMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_MODAL_FORM_DELETE)
+	public String deleteModalForm(
 			@PathVariable String product, 
 			@PathVariable String mainMenu, 
 			@PathVariable String subMenu,
@@ -103,8 +105,19 @@ public class UseFragmentController {
 		var fieldList = ThymeleafUseUtil.getFieldList(product, mainMenu, subMenu);
 		useService.delete(query, fieldList, dataMap);
 		
-		response.setHeader("HX-Trigger", "deleteModal");	// Htmx 응답 트리거를 위한 설정
-		return "use/fragment/modal";
+		response.setHeader("HX-Trigger", "deleteModalForm");	// Htmx 응답 트리거를 위한 설정
+		return "use/fragment/modalForm";
+	}
+	
+	@GetMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_MODAL_BULK)
+	public String modalBulk(
+			@PathVariable String product, 
+			@PathVariable String mainMenu, 
+			@PathVariable String subMenu,
+			@PathVariable String modalMode,
+			HttpServletResponse response) {
+		response.setHeader("HX-Trigger", modalMode.equals("import") ? "showImportModalBulk" : "showExportModalBulk");	// Htmx 응답 트리거를 위한 설정
+		return "use/fragment/modalBulk";
 	}
 	
 	/**

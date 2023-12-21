@@ -1,0 +1,13 @@
+<form id="modalBulkForm"
+	data-th-hx-post="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modalBulk/{modalMode}(product=${product},mainMenu=${mainMenu},subMenu=${subMenu},modalMode=${modalMode})}"
+	hx-target="#fragmentArea"
+>
+	<div class="w-full m-1">
+		
+		<textarea class="textarea textarea-sm textarea-bordered w-full h-60"
+			 data-th-readonly="${modalMode == 'export'}"
+		></textarea>
+				
+	</div>
+	
+</form>

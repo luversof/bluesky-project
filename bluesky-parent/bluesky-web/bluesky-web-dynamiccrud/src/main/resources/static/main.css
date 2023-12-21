@@ -4109,6 +4109,10 @@ html {
   height: 1.5rem;
 }
 
+.h-60 {
+  height: 15rem;
+}
+
 .min-h-full {
   min-height: 100%;
 }
@@ -4205,6 +4209,10 @@ html {
 
 .p-0 {
   padding: 0px;
+}
+
+.p-1 {
+  padding: 0.25rem;
 }
 
 .p-2 {
