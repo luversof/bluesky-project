@@ -51,6 +51,8 @@ public class DynamicCrudConstant {
 	
 	public static final String PATH_USE_FRAGMENT_MODAL_FORM_DELETE = PATH_USE_FRAGMENT_PREFIX + "/{product}/{mainMenu}/{subMenu}/modalForm/{modalMode:delete}";
 	
-	public static final String PATH_USE_FRAGMENT_MODAL_BULK = PATH_USE_FRAGMENT_PREFIX + "/{product}/{mainMenu}/{subMenu}/modalBulk/{modalMode:import|export}";
+	public static final String PATH_USE_FRAGMENT_MODAL_BULK_FORM = PATH_USE_FRAGMENT_PREFIX + "/{product}/{mainMenu}/{subMenu}/modalBulkForm/{modalMode:import|export}";
+	
+	public static final String PATH_USE_FRAGMENT_EXCEL = PATH_USE_FRAGMENT_PREFIX + "/{product}/{mainMenu}/{subMenu}/excel";
 	
 }

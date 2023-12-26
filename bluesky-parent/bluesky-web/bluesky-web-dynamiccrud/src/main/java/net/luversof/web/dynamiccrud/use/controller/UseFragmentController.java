@@ -1,5 +1,6 @@
 package net.luversof.web.dynamiccrud.use.controller;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jakarta.servlet.http.HttpServletResponse;
 import net.luversof.web.dynamiccrud.setting.domain.QuerySqlCommandType;
 import net.luversof.web.dynamiccrud.thymeleaf.constant.DynamicCrudConstant;
@@ -23,6 +29,9 @@ public class UseFragmentController {
 	
 	@Autowired
 	private UseServiceDecorator useService;
+	
+	@Autowired
+	private ObjectMapper objectMapper;
 
 	/**
 	 * 일단 SELECT 부분을 보여보자.
@@ -109,15 +118,39 @@ public class UseFragmentController {
 		return "use/fragment/modalForm";
 	}
 	
-	@GetMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_MODAL_BULK)
-	public String modalBulk(
+	@GetMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_MODAL_BULK_FORM)
+	public String modalBulkForm(
 			@PathVariable String product, 
 			@PathVariable String mainMenu, 
 			@PathVariable String subMenu,
 			@PathVariable String modalMode,
 			HttpServletResponse response) {
-		response.setHeader("HX-Trigger", modalMode.equals("import") ? "showImportModalBulk" : "showExportModalBulk");	// Htmx 응답 트리거를 위한 설정
-		return "use/fragment/modalBulk";
+		response.setHeader("HX-Trigger", modalMode.equals("import") ? "showImportModalBulkForm" : "showExportModalBulkForm");	// Htmx 응답 트리거를 위한 설정
+		return "use/fragment/modalBulkForm";
+	}
+	
+	@PostMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_MODAL_BULK_FORM)
+	public String importModalBulkForm(@PathVariable String product, 
+			@PathVariable String mainMenu, 
+			@PathVariable String subMenu,
+			@PathVariable String modalMode,
+			@RequestParam Map<String, String> dataMap,
+			HttpServletResponse response) throws JsonMappingException, JsonProcessingException {
+		var dataMapList = objectMapper.readValue(dataMap.get("bulkData"), new TypeReference<List<Map<String, String>>>() {});
+		
+		var fieldList = ThymeleafUseUtil.getFieldList(product, mainMenu, subMenu);
+		var query = ThymeleafUseUtil.getQuery(product, mainMenu, subMenu, QuerySqlCommandType.INSERT);
+		for (var map : dataMapList) {
+			useService.create(query, fieldList, map);
+		}
+		
+		response.setHeader("HX-Trigger", "importModalBulkForm");	// Htmx 응답 트리거를 위한 설정
+		return "use/fragment/modalBulkForm";
+	}
+	
+	@GetMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_EXCEL)
+	public void test() {
+		
 	}
 	
 	/**

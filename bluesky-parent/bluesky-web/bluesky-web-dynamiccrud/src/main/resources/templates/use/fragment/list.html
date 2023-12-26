@@ -20,7 +20,7 @@
 		<div>
 			<button class="btn btn-sm exportButton" 
 				data-th-if="${thymeleafUseUtil.isAdminMenu(product)}"
-				data-th-hx-get="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modalBulk/export(product=${product},mainMenu=${mainMenu},subMenu=${subMenu})}"
+				data-th-hx-get="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modalBulkForm/export(product=${product},mainMenu=${mainMenu},subMenu=${subMenu})}"
 				hx-target="#fragmentArea"
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -30,7 +30,7 @@
 			</button>
 			<button class="btn btn-sm importButton"
 				data-th-if="${thymeleafUseUtil.isAdminMenu(product)}"
-				data-th-hx-get="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modalBulk/import(product=${product},mainMenu=${mainMenu},subMenu=${subMenu})}"
+				data-th-hx-get="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modalBulkForm/import(product=${product},mainMenu=${mainMenu},subMenu=${subMenu})}"
 				hx-target="#fragmentArea"
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">

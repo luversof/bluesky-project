@@ -32,23 +32,61 @@
 				<li>
 					modal 관련
 					<ul>
-						<li><b>#fragmentArea</b> : fragment 호출 영역 (에러 발생시 에러를 표시되는 영역이기도 함)</li>
-						<li><b>#modal</b> : modal의 id (현재까지 modal이 1종이라 별다른 이름을 만들지 않음)</li>
-						<li><b>#modalForm</b> : modal의 form id. modal내 submit button의 대상 지정을 위해 사용</li>
-						<li><b>.copyDataButton</b> : modal의 데이터 복사 버튼</li>
-						<li><b>.copySearchButton</b> : modal의 검색 복사 버튼</li>
+						<li>
+							공통 설정
+							<ul>
+								<li><b>#fragmentArea</b> : fragment 호출 영역 (에러 발생시 에러를 표시되는 영역이기도 함)</li>
+								<li><b>#modal</b> : modal의 id (현재까지 modal이 1종이라 별다른 이름을 만들지 않음)</li>
+							</ul>
+						</li>
+						<li>
+							form modal 관련 (기본적인 CRUD modal)
+							<ul>
+								<li>
+									css selector
+									<ul>
+										<li><b>#modalForm</b> : modal의 form id. modal내 submit button의 대상 지정을 위해 사용</li>
+										<li><b>.copyDataButton</b> : modal의 데이터 복사 버튼 (바닥 페이지의 선택한 데이터를 form으로 복사)</li>
+										<li><b>.copySearchButton</b> : modal의 검색 복사 버튼</li>
+									</ul>
+								</li>
+								<li>
+									HX-Trigger (요청 응답 이후 htmx trigger 처리를 위한 설정)
+									<ul>
+										<li><b>showList</b> : 페이지 호출 뷰 응답</li>
+										<li><b>showCreateModalForm</b> : 생성 모달 뷰 응답</li>
+										<li><b>showUpdateModalForm</b> : 수정 모달 뷰 응답</li>
+										<li><b>createModalForm</b> : 생성 요청 응답</li>
+										<li><b>updateModalForm</b> : 수정 요청 응답</li>
+										<li><b>deleteModalForm</b> : 삭제 요청 응답</li>
+										<li><b>closeModalForm</b> : 모달을 닫아야 하는 응답의 경우 이 값이 같이 호출됨</li>
+									</ul>
+								</li>
+							</ul>
+						</li>
+						<li>
+							bulk form modal 관련 (import export)
+							<ul>
+								<li>
+									css selector
+									<ul>
+										<li><b>#modalBulkForm</b> : modal의 form id. modal내 submit buuton의 대상 지정을 위해 사용</li>
+										<li><b>.copyDataButton</b> : modal의 데이터 복사 버튼(bulkform textarea의 데이터를 clipboard로 복사하는 역할)</li>
+									</ul>
+								</li>
+								<li>
+									HX-Trigger (요청 응답 이후 htmx trigger 처리를 위한 설정)
+									<ul>
+										<li><b>showImportModalBulkForm</b></li>
+										<li><b>showExportModalBulkForm</b></li>
+										<li><b>importModalBulkForm</b></li>
+									</ul>
+								</li>
+							</ul>
+						</li>
 					</ul>
+					
 				</li>
-				<ul>
-					HX-Trigger (요청 응답 이후 처리를 위한 설정)					
-					<li><b>showList</b></li>
-					<li><b>showCreateModalForm</b></li>
-					<li><b>showUpdateModalForm</b></li>
-					<li><b>createModalForm</b></li>
-					<li><b>updateModalForm</b></li>
-					<li><b>deleteModalForm</b></li>
-					<li><b>closeModalForm</b></li>
-				</ul>
 				
 			</ul>
 			

@@ -38,7 +38,7 @@ var param = (() => {
 })();
 
 /** modalForm에 field type에 따라 input이 생성됨. type에 따라 알맞게 데이터를 설정 */
-function copyContentDataToModal(contentDataEl, modalTarget) {
+function copyContentDataToModalForm(contentDataEl, modalTarget) {
 	contentDataEl.querySelectorAll("input[type=hidden]").forEach(el => {
 		var targetInput = modalTarget.querySelector("[name=" + el.name + "]");
 		targetInput.value = el.value;
@@ -51,8 +51,8 @@ function copyContentDataToModal(contentDataEl, modalTarget) {
 	});
 }
 
-// 이거 굳이 필요한가?
-function copySearchAreaToModal(modalTarget) {
+// 검색 내용을 modalForm으로 복사
+function copySearchAreaToModalForm(modalTarget) {
 	document.querySelectorAll("#searchArea .searchinput").forEach(el => {
 		modalTarget.querySelector("[name=" + el.name  +"]").value = el.value;
 	});
@@ -125,7 +125,6 @@ document.addEventListener('showCreateModalForm', () =>
 		var modalTarget = document.querySelector(modalSelector);	
 		
 		/** (s) 데이터 복사 eventListener */
-		//modal 관련 eventListener 등록
 		// contentTable 영역에 선택한 체크박스 라인의 데이터를 #modalForm의 input 으로 가져온다.
 		modalTarget.querySelector(".copyDataButton").addEventListener("click", () => {
 			var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
@@ -133,12 +132,12 @@ document.addEventListener('showCreateModalForm', () =>
 				alert("복사할 행을 체크해주세요.");
 				return;
 			}
-			copyContentDataToModal(checkedList[0].closest("tr").querySelector(".contentData"), modalTarget)
+			copyContentDataToModalForm(checkedList[0].closest("tr").querySelector(".contentData"), modalTarget)
 		})
 		/** (e) 데이터 복사 eventListener */
 
 		/** (s) 검색 복사 eventListener */			
-		modalTarget.querySelector(".copySearchButton").addEventListener("click", () => copySearchAreaToModal(modalTarget));
+		modalTarget.querySelector(".copySearchButton").addEventListener("click", () => copySearchAreaToModalForm(modalTarget));
 		/** (e) 검색 복사 eventListener */
 		
 		
@@ -157,7 +156,7 @@ document.addEventListener('showCreateModalForm', () =>
 document.addEventListener('showUpdateModalForm', (event) => {
 	setTimeout(() => {
 		var modalTarget = document.querySelector(modalSelector);
-		copyContentDataToModal(event.target.closest("tr").querySelector(".contentData"), modalTarget)
+		copyContentDataToModalForm(event.target.closest("tr").querySelector(".contentData"), modalTarget)
 		modalTarget.showModal();
 	}, 1)
 });
@@ -172,23 +171,43 @@ document.addEventListener('closeModalForm', () => {
 });
 
 
-document.addEventListener('showExportModalBulk', () => {
+document.addEventListener('showExportModalBulkForm', () => {
 	setTimeout(() => {
 		var modalTarget = document.querySelector(modalSelector);
 		var checkedIds = [...document.querySelectorAll("#contentTable input[name=contentDataCheck]")].filter(el => el.checked).map(el => parseInt(el.value));
-		var targetList = contentList.filter((el, index) => checkedIds.includes(index));
+		var targetList = contentList.filter((_el, index) => checkedIds.includes(index));
 		modalTarget.querySelector("textarea").value = JSON.stringify(targetList);
+		
+		// copyButton eventListener
+		/** (s) 데이터 복사 eventListener */
+		// textArea의 데이터를 clipboard로 복사한다.
+		modalTarget.querySelector(".copyDataButton").addEventListener("click", () => {
+			if (navigator.clipboard == undefined) {
+				alert("클립보드 복사가 지원되지 않는 환경입니다.\n직접 복사하여 사용하세요.")
+			} else {
+				navigator.clipboard.writeText(modalTarget.querySelector("textarea").value).then(() => {
+					alert("데이터를 clipboard에 복사하였습니다.");
+			    }).catch(err => {
+			        console.log('클립보드 복사 실패', err);
+			    })
+			}
+		});
+		
+		/** (e) 데이터 복사 eventListener */		
+		
 		modalTarget.showModal();
 	}, 1)
 });
 
-document.addEventListener('showImportModalBulk', () => {
+document.addEventListener('showImportModalBulkForm', () => {
 	setTimeout(() => {
 		var modalTarget = document.querySelector(modalSelector);
 		modalTarget.showModal();
 	}, 1)
 });
 
+// modalForm에 데이터 생성 요청 후 page를 1로 초기화하여 바닥 페이지 데이터 갱신 시 첫 페이지로 이동 처리  
+document.addEventListener('importModalBulkForm', () => param.setParam("page", 1));
 
 
 window.addEventListener('load', () => {
