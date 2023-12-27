@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -12,6 +13,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.View;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -23,6 +26,7 @@ import net.luversof.web.dynamiccrud.setting.domain.QuerySqlCommandType;
 import net.luversof.web.dynamiccrud.thymeleaf.constant.DynamicCrudConstant;
 import net.luversof.web.dynamiccrud.use.service.UseServiceDecorator;
 import net.luversof.web.dynamiccrud.use.util.ThymeleafUseUtil;
+import net.luversof.web.dynamiccrud.use.view.UseExcelView;
 
 @Controller
 public class UseFragmentController {
@@ -130,7 +134,8 @@ public class UseFragmentController {
 	}
 	
 	@PostMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_MODAL_BULK_FORM)
-	public String importModalBulkForm(@PathVariable String product, 
+	public String importModalBulkForm(
+			@PathVariable String product, 
 			@PathVariable String mainMenu, 
 			@PathVariable String subMenu,
 			@PathVariable String modalMode,
@@ -149,8 +154,16 @@ public class UseFragmentController {
 	}
 	
 	@GetMapping(DynamicCrudConstant.PATH_USE_FRAGMENT_EXCEL)
-	public void test() {
-		
+	public View excel(
+			@PathVariable String product, 
+			@PathVariable String mainMenu, 
+			@PathVariable String subMenu,
+			@RequestParam Map<String, String> paramMap,
+			HttpServletResponse response,
+			Model model) {
+		// 다운로드의 페이지 사이즈는 어떻게 처리할지 고민 필요. 일단 기존 호출 방식을 활용
+		list(product, mainMenu, subMenu, PageRequest.of(0, 65536), paramMap, response, model);
+		return new UseExcelView();
 	}
 	
 	/**
