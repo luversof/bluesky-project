@@ -35,8 +35,21 @@
 						<li>
 							공통 설정
 							<ul>
-								<li><b>#fragmentArea</b> : fragment 호출 영역 (에러 발생시 에러를 표시되는 영역이기도 함)</li>
-								<li><b>#modal</b> : modal의 id (현재까지 modal이 1종이라 별다른 이름을 만들지 않음)</li>
+								<li>
+									css selector
+									<ul>
+										<li><b>#fragmentArea</b> : fragment 호출 영역 (에러 발생시 에러를 표시되는 영역이기도 함)</li>
+										<li><b>#modal</b> : modal의 id (현재까지 modal이 1종이라 별다른 이름을 만들지 않음)</li>
+									</ul>
+									
+								</li>
+								<li>
+									HX-Trigger (요청 응답 이후 htmx trigger 처리를 위한 설정)
+									<ul>
+										<li><b>showModalForm</b> : 생성 모달 뷰 응답</li>
+										<li><b>closeModalForm</b> : 모달을 닫아야 하는 응답의 경우 (쓰이는 경우가 현재는 없음)</li>
+									</ul>
+								</li>
 							</ul>
 						</li>
 						<li>
@@ -54,12 +67,11 @@
 									HX-Trigger (요청 응답 이후 htmx trigger 처리를 위한 설정)
 									<ul>
 										<li><b>showList</b> : 페이지 호출 뷰 응답</li>
-										<li><b>showCreateModalForm</b> : 생성 모달 뷰 응답</li>
-										<li><b>showUpdateModalForm</b> : 수정 모달 뷰 응답</li>
-										<li><b>createModalForm</b> : 생성 요청 응답</li>
-										<li><b>updateModalForm</b> : 수정 요청 응답</li>
-										<li><b>deleteModalForm</b> : 삭제 요청 응답</li>
-										<li><b>closeModalForm</b> : 모달을 닫아야 하는 응답의 경우 이 값이 같이 호출됨</li>
+										<li><b>createModalForm</b> : 모달 뷰 응답</li>
+										<li><b>updateModalForm</b> : 모달 뷰 응답</li>
+										<li><b>createModal</b> : 생성 요청 응답</li>
+										<li><b>updateModal</b> : 수정 요청 응답</li>
+										<li><b>deleteModal</b> : 삭제 요청 응답</li>
 									</ul>
 								</li>
 							</ul>
@@ -77,9 +89,9 @@
 								<li>
 									HX-Trigger (요청 응답 이후 htmx trigger 처리를 위한 설정)
 									<ul>
-										<li><b>showImportModalBulkForm</b></li>
-										<li><b>showExportModalBulkForm</b></li>
-										<li><b>importModalBulkForm</b></li>
+										<li><b>importModalBulkForm</b> : 모달 뷰 응답</li>
+										<li><b>exportModalBulkForm</b> : 모달 뷰 응답</li>
+										<li><b>importModalBulk</b> : 생성 요청 응답</li>
 									</ul>
 								</li>
 							</ul>

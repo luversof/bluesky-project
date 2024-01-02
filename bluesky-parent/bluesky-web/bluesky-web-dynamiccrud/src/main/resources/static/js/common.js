@@ -53,9 +53,7 @@ function copyContentDataToModalForm(contentDataEl, modalTarget) {
 
 // 검색 내용을 modalForm으로 복사
 function copySearchAreaToModalForm(modalTarget) {
-	document.querySelectorAll("#searchArea .searchinput").forEach(el => {
-		modalTarget.querySelector("[name=" + el.name  +"]").value = el.value;
-	});
+	document.querySelectorAll("#searchArea .searchinput").forEach(el => modalTarget.querySelector("[name=" + el.name  +"]").value = el.value);
 }
 
 
@@ -120,8 +118,11 @@ document.addEventListener('showList', () =>
 	}, 1)
 );
 
-document.addEventListener('showCreateModalForm', () => 
-	setTimeout(() => {
+
+document.addEventListener('showModalForm', () => setTimeout(() => document.querySelector(modalSelector).showModal(), 1));
+document.addEventListener('closeModalForm', () => setTimeout(() => document.querySelector(modalSelector).close(), 1));
+
+function addEventListenerModalForm() {
 		var modalTarget = document.querySelector(modalSelector);	
 		
 		/** (s) 데이터 복사 eventListener */
@@ -142,36 +143,26 @@ document.addEventListener('showCreateModalForm', () =>
 		
 		
 		/** (s) modal의 checkBox의 on/off 값 설정 eventListener */
-		modalTarget.querySelectorAll('input[type=checkbox]').forEach(el => el.addEventListener("change", (event) => 
+		modalTarget.querySelectorAll('input[type=checkbox]').forEach(el => el.addEventListener("change", (event) =>
 			event.target.closest('div').querySelector("input[type=hidden]").value = event.target.checked ? true : false
 		));
-		
 		/** (e) modal의 checkBox의 on/off 값 설정 eventListener */
-		
-		modalTarget.showModal();
-		
-	}, 1)
-);
+}
 
-document.addEventListener('showUpdateModalForm', (event) => {
+document.addEventListener('createModalForm', () => setTimeout(() => addEventListenerModalForm(), 1));
+
+document.addEventListener('updateModalForm', (event) => {
 	setTimeout(() => {
+		addEventListenerModalForm();
 		var modalTarget = document.querySelector(modalSelector);
 		copyContentDataToModalForm(event.target.closest("tr").querySelector(".contentData"), modalTarget)
-		modalTarget.showModal();
 	}, 1)
 });
 
 // modalForm에 데이터 생성 요청 후 page를 1로 초기화하여 바닥 페이지 데이터 갱신 시 첫 페이지로 이동 처리  
-document.addEventListener('createModalForm', () => param.setParam("page", 1));
+document.addEventListener('createModal', () => param.setParam("page", 1));
 
-document.addEventListener('closeModalForm', () => {
-	setTimeout(() => {
-		document.querySelector(modalSelector).close();
-	}, 1)
-});
-
-
-document.addEventListener('showExportModalBulkForm', () => {
+document.addEventListener('exportModalBulkForm', () => {
 	setTimeout(() => {
 		var modalTarget = document.querySelector(modalSelector);
 		var checkedIds = [...document.querySelectorAll("#contentTable input[name=contentDataCheck]")].filter(el => el.checked).map(el => parseInt(el.value));
@@ -194,21 +185,11 @@ document.addEventListener('showExportModalBulkForm', () => {
 		});
 		
 		/** (e) 데이터 복사 eventListener */		
-		
-		modalTarget.showModal();
-	}, 1)
-});
-
-document.addEventListener('showImportModalBulkForm', () => {
-	setTimeout(() => {
-		var modalTarget = document.querySelector(modalSelector);
-		modalTarget.showModal();
 	}, 1)
 });
 
 // modalForm에 데이터 생성 요청 후 page를 1로 초기화하여 바닥 페이지 데이터 갱신 시 첫 페이지로 이동 처리  
-document.addEventListener('importModalBulkForm', () => param.setParam("page", 1));
-
+document.addEventListener('importModalBulk', () => param.setParam("page", 1));
 
 window.addEventListener('load', () => {
 	// 상단 메뉴의 링크에 검색 parameter를 추가 처리

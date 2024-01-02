@@ -1,5 +1,6 @@
 package net.luversof.web.dynamiccrud.use.controller;
 
+import java.text.MessageFormat;
 import java.util.List;
 import java.util.Map;
 
@@ -13,7 +14,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.View;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -73,7 +73,7 @@ public class UseFragmentController {
 			@PathVariable String subMenu,
 			@PathVariable String modalMode,
 			HttpServletResponse response) {
-		response.setHeader("HX-Trigger", modalMode.equals("create") ? "showCreateModalForm" : "showUpdateModalForm");	// Htmx 응답 트리거를 위한 설정
+		response.setHeader("HX-Trigger", MessageFormat.format("{0}ModalForm,showModalForm", modalMode));	// Htmx 응답 트리거를 위한 설정
 		return "use/fragment/modalForm";
 	}
 	
@@ -95,11 +95,11 @@ public class UseFragmentController {
 		if (modalMode.equals("create")) {
 			var query = ThymeleafUseUtil.getQuery(product, mainMenu, subMenu, QuerySqlCommandType.INSERT);
 			useService.create(query, fieldList, dataMap);
-			response.setHeader("HX-Trigger", "createModalForm,closeModalForm");	// Htmx 응답 트리거를 위한 설정
+			response.setHeader("HX-Trigger", "createModal");	// Htmx 응답 트리거를 위한 설정
 		} else {
 			var query = ThymeleafUseUtil.getQuery(product, mainMenu, subMenu, QuerySqlCommandType.UPDATE);
 			useService.update(query, fieldList, dataMap);
-			response.setHeader("HX-Trigger", "updateModalForm");	// Htmx 응답 트리거를 위한 설정
+			response.setHeader("HX-Trigger", "updateModal");	// Htmx 응답 트리거를 위한 설정
 		}
 		
 		return "use/fragment/modalForm";
@@ -118,7 +118,7 @@ public class UseFragmentController {
 		var fieldList = ThymeleafUseUtil.getFieldList(product, mainMenu, subMenu);
 		useService.delete(query, fieldList, dataMap);
 		
-		response.setHeader("HX-Trigger", "deleteModalForm");	// Htmx 응답 트리거를 위한 설정
+		response.setHeader("HX-Trigger", "deleteModal");	// Htmx 응답 트리거를 위한 설정
 		return "use/fragment/modalForm";
 	}
 	
@@ -129,7 +129,9 @@ public class UseFragmentController {
 			@PathVariable String subMenu,
 			@PathVariable String modalMode,
 			HttpServletResponse response) {
-		response.setHeader("HX-Trigger", modalMode.equals("import") ? "showImportModalBulkForm" : "showExportModalBulkForm");	// Htmx 응답 트리거를 위한 설정
+		
+		
+		response.setHeader("HX-Trigger", MessageFormat.format("{0}ModalBulkForm,showModalForm", modalMode));	// Htmx 응답 트리거를 위한 설정
 		return "use/fragment/modalBulkForm";
 	}
 	
@@ -149,7 +151,7 @@ public class UseFragmentController {
 			useService.create(query, fieldList, map);
 		}
 		
-		response.setHeader("HX-Trigger", "importModalBulkForm");	// Htmx 응답 트리거를 위한 설정
+		response.setHeader("HX-Trigger", "importModalBulk");	// Htmx 응답 트리거를 위한 설정
 		return "use/fragment/modalBulkForm";
 	}
 	
