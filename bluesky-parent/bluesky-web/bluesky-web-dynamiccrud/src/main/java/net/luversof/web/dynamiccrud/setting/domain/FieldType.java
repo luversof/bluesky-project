@@ -8,5 +8,6 @@ public enum FieldType {
 	LINK,	// 쓰이지 않는 듯 한데...(1건 발견)
 	LONG,
 	STRING,
-	TEXT
+	TEXT,
+	SPEL	// 테스트로 추가
 }

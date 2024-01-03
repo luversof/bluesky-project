@@ -42,7 +42,7 @@ public class ThymeleafUseUtil {
 		
 		var map = new LinkedHashMap<String, String>();
 		
-		// Field 정보가 없으면 그냥 전체 노출 처리
+		// Field 정보가 없으면 그대로 노출 처리
 		data.keySet().forEach(key -> {
 			if (fieldList != null && !fieldList.isEmpty()) {
 				var targetField = fieldList.stream().filter(x -> x.getColumn().equals(key)).findAny().orElseGet(() -> null);
@@ -57,6 +57,9 @@ public class ThymeleafUseUtil {
 				map.put(key, key);
 			}
 		});
+		
+		// fieldList중 SPEL 형식이 있는 경우 추가해야 함
+		// 잠만.. 이거 엑셀에도 보여줘야 하고 view에도 보여줘야 하는데 이걸 한꺼번해 처리할 수 있는 객체를 만드는게 더 좋을 것 같은데?
 		return map;
 	}
 	

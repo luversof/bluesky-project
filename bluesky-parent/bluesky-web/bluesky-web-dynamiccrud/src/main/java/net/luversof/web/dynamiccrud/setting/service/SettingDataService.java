@@ -730,7 +730,7 @@ public class SettingDataService {
 			field.setColumn("type");
 			field.setName("컬럼타입");
 			field.setType(FieldType.STRING);
-			field.setPreset("BOOLEAN|DATE|INT|LINK|LONG|STRING|TEXT");
+			field.setPreset("BOOLEAN|DATE|INT|LINK|LONG|STRING|TEXT|SPEL");
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.ENABLED);
 			field.setEnableEdit(FieldEnable.REQUIRED);
@@ -847,7 +847,7 @@ public class SettingDataService {
 			field.setType(FieldType.INT);
 			field.setVisible(true);
 			field.setEnableSearch(FieldEnable.DISABLED);
-			field.setEnableEdit(FieldEnable.ENABLED);
+			field.setEnableEdit(FieldEnable.REQUIRED);
 			field.setFormOrder((short) 14);
 			fieldList.add(field);
 		}
