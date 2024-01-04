@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.text.MessageFormat;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,12 +16,12 @@ import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.DefaultIndexedColorMap;
 import org.apache.poi.xssf.usermodel.XSSFColor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.servlet.view.document.AbstractXlsxView;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import net.luversof.web.dynamiccrud.use.domain.ContentInfo;
 
 public class UseExcelView extends AbstractXlsxView {
 
@@ -33,11 +32,15 @@ public class UseExcelView extends AbstractXlsxView {
 		var product = String.valueOf(model.get("product"));
 		var mainMenu = String.valueOf(model.get("mainMenu"));
 		var subMenu = String.valueOf(model.get("subMenu"));
-		@SuppressWarnings("unchecked")
-		var columnMap = (LinkedHashMap<String, String>) model.get("columnMap");
+//		@SuppressWarnings("unchecked")
+//		var columnMap = (LinkedHashMap<String, String>) model.get("columnMap");
 		
-		@SuppressWarnings("unchecked")
-		var page = (Page<Map<String, Object>>) model.get("page");
+		
+		// 기존 방식의 데이터 호출. 제거 예정
+//		@SuppressWarnings("unchecked")
+//		var page = (Page<Map<String, Object>>) model.get("page");
+		
+		var contentInfo = (ContentInfo) model.get("contentInfo");
 	
 		Sheet sheet = workbook.createSheet(subMenu);
 		
@@ -51,23 +54,24 @@ public class UseExcelView extends AbstractXlsxView {
 			var row = sheet.createRow(rowIdx++);
 		
 			int cellIdx = 0;
-			for (var entry : columnMap.entrySet()) {
+			
+			for (var contentKey : contentInfo.getContentKeyList()) {
 				var cell = row.createCell(cellIdx++);
-				cell.setCellValue(entry.getValue());
+				cell.setCellValue(contentKey.getKey());
 				cell.setCellStyle(headerCellStyle);
 			}
 		}
 		
 		// col data 설정
 		{
-			List<Map<String, Object>> contentList = page.getContent();
-			for (int i = 0 ; i < contentList.size() ; i++) {
+			List<Map<String, Object>> processedContentMapList = contentInfo.getProcessedContentMapList();
+			for (int i = 0 ; i < processedContentMapList.size() ; i++) {
 				var row = sheet.createRow(rowIdx++);
 				
 				int cellIdx = 0;
-				for (var entry : columnMap.entrySet()) {
+				for (var entry : processedContentMapList.get(i).entrySet()) {
 					var cell = row.createCell(cellIdx++);
-					cell.setCellValue( String.valueOf(contentList.get(i).get(entry.getKey()) ));
+					cell.setCellValue(String.valueOf(entry.getValue()));
 					cell.setCellStyle(contentCellStyle);
 				}
 			}
@@ -76,7 +80,7 @@ public class UseExcelView extends AbstractXlsxView {
 		// width 설정 (데이터가 모두 추가된 이후 설정해야 적용됨)
 		{
 			int cellIdx = 0;
-			for (@SuppressWarnings("unused") var entry : columnMap.entrySet()) {
+			for (@SuppressWarnings("unused") var contentKey : contentInfo.getContentKeyList()) {
 				sheet.autoSizeColumn(cellIdx++);
 			}
 		}

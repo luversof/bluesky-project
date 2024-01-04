@@ -195,9 +195,7 @@ window.addEventListener('load', () => {
 	// 상단 메뉴의 링크에 검색 parameter를 추가 처리
 	document.querySelectorAll(".navbar .menu a").forEach(el => el.addEventListener("click", (event) => {
 		var url = new URL(event.target.href);
-		param.getParams().forEach((value, key) => {
-			url.searchParams.set(key, value);
-		})
+		param.getParams().forEach((value, key) => url.searchParams.set(key, value))
 		// page parameter는 제거
 		url.searchParams.delete("page");
 		el.setAttribute("href", url);

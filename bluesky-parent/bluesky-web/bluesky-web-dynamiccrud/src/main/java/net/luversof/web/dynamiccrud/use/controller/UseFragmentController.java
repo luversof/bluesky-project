@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import net.luversof.web.dynamiccrud.setting.domain.QuerySqlCommandType;
 import net.luversof.web.dynamiccrud.thymeleaf.constant.DynamicCrudConstant;
+import net.luversof.web.dynamiccrud.use.domain.ContentInfo;
 import net.luversof.web.dynamiccrud.use.service.UseServiceDecorator;
 import net.luversof.web.dynamiccrud.use.util.ThymeleafUseUtil;
 import net.luversof.web.dynamiccrud.use.view.UseExcelView;
@@ -57,8 +58,8 @@ public class UseFragmentController {
 		var page = useService.find(query, fieldList, pageable, paramMap);
 		model.addAttribute("page", page);
 		
-		// 화면 처리 관련 정보 
-		model.addAttribute("columnMap", ThymeleafUseUtil.getColumnMap(page, fieldList));
+		// 응답 데이터 목록 관리 객체
+		model.addAttribute("contentInfo", new ContentInfo(page.getContent(), fieldList));
 		
 		// 여기도 필드 정보 기준으로 출력 처리를 해야 할꺼 같은데?
 		

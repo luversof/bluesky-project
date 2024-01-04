@@ -626,6 +626,21 @@ public class SettingDataService {
 			field.setFormOrder((short) 14);
 			fieldList.add(field);
 		}
+		{
+			var field = new Field();
+			field.setProduct(KEY_EVENT_ADMIN_PRODUCT);
+			field.setMainMenu(KEY_EVENT_ADMIN_MAINMENU);
+			field.setSubMenu(KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
+			field.setColumn("link");
+			field.setName("링크");
+			field.setType(FieldType.SPEL);
+			field.setFormat("'<a href=\"/use/' + #product + '/' + #mainMenu + '/' + #subMenu + '\" target=\"_blank\">link</a>'");
+			field.setVisible(true);
+			field.setEnableSearch(FieldEnable.DISABLED);
+			field.setEnableEdit(FieldEnable.DISABLED);
+			field.setFormOrder((short) 15);
+			fieldList.add(field);
+		}
 		addDefaultField(KEY_EVENT_ADMIN_PRODUCT, KEY_EVENT_ADMIN_MAINMENU, KEY_EVENT_ADMIN_SUBMENU3_SUBMENU);
 		
 		addProjectField(KEY_EVENT_ADMIN_PRODUCT, KEY_EVENT_ADMIN_MAINMENU, KEY_EVENT_ADMIN_SUBMENU4_QUERY);

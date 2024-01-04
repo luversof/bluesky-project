@@ -53,12 +53,13 @@
 			</a>
 		</div>
 	</div>
-	<table class="table table-xs" id="contentTable" data-th-if="${page.totalElements > 0}">
+	
+	<table class="table table-xs" id="contentTable" data-th-if="${contentInfo.processedContentMapList ne null}">
 		<!-- head -->
 		<thead>
 			<tr>
 				<th class="w-0 p-0"></th>
-				<th data-th-each="column : ${columnMap}" data-th-text="${column.value}"></th>
+				<th data-th-each="contentKey : ${contentInfo.contentKeyList}" data-th-text="${contentKey.key}"></th>
 				<th data-th-if="${targetSubMenu.enableUpdate}" data-th-text="#{use.text.update}"></th>
 				<th data-th-if="${targetSubMenu.enableInsert || targetSubMenu.enableUpdate || targetSubMenu.enableDelete}">
 					<input name="contentDataCheckToggle" type="checkbox" class="checkbox" />
@@ -66,22 +67,22 @@
 			</tr>
 		</thead>
 		<tbody>
-			<tr class="hover" data-th-each="content,iterator : ${page.content}">
+			<tr class="hover" data-th-each="content,iterator : ${contentInfo.processedContentMapList}">
 				<td class="w-0 p-0 contentData">
 					<input type="hidden"
 						data-th-if="${field.isEnableEdit()}"
 						data-th-each="field : ${fieldList}" 
 						data-th-name="${field.column}"
-						data-th-value="${content.get(field.column)}"
+						data-th-value="${contentInfo.contentMapList.get(iterator.index).get(field.column)}"
 					/>
 					<input type="hidden"
 						data-th-each="field : ${fieldList}"
 						data-th-if="${field.isEnableEdit()}"
 						data-th-name="'\_\_org\_\_' + ${field.column}"
-						data-th-value="${content.get(field.column)}"
+						data-th-value="${contentInfo.contentMapList.get(iterator.index).get(field.column)}"
 					/>
 				</td>
-				<td data-th-each="column : ${columnMap}" data-th-text="${content.get(column.key)}"></td>
+				<td data-th-each="contentKey : ${contentInfo.contentKeyList}" data-th-utext="${content.get(contentKey.key)}"></td>
 				<td data-th-if="${targetSubMenu.enableUpdate}">
 					<button class="btn btn-sm"
 						data-th-hx-get="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modalForm/update(product=${product},mainMenu=${mainMenu},subMenu=${subMenu})}"

@@ -1,10 +1,12 @@
 package net.luversof.web.dynamiccrud.use.domain;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,6 +16,7 @@ import net.luversof.web.dynamiccrud.setting.domain.FieldType;
 
 /**
  * 응답할 데이터 목록을 가공한 정보를 담고 있는 객체
+ * 적당한 이름이 생각나지 않네...
  */
 public class ContentInfo {
 	
@@ -22,6 +25,15 @@ public class ContentInfo {
 	 */
 	@Getter
 	private List<ContentKey> contentKeyList;
+	
+	/**
+	 * view 페이지 input form 처리를 위해 원본 데이터를 같이 전달해야 함.
+	 * 이 때 db data에는 column type SPEL인 값이 존재하지 않으므로 해당 값도 같이 추가해서 전달
+	 * 근데 이게 의미가 있나? db에 저장하는 data가 아니고 field 정의에 저장되는 값인데...
+	 * SPEL의 경우 update가 불가하도록 처리가 필요할 듯 함 
+	 */
+	@Getter
+	private List<Map<String, Object>> contentMapList;
 	
 	/**
 	 * 가공된 목록을 담고있는 맵 리스트
@@ -35,6 +47,8 @@ public class ContentInfo {
 		if (contentMapList == null || contentMapList.isEmpty()) {
 			return;
 		}
+		
+		this.contentMapList = contentMapList;
 		
 		// contentKeyMap을 만들어보자.
 		// keyMap의 순서 처리는 어떻게 해야 할까?
@@ -72,15 +86,36 @@ public class ContentInfo {
 		
 		
 		// 계산된 contentKeyList를 기준으로 processedContentMapList를 만든다.
+		var expressionParser = new SpelExpressionParser();
+		
 		processedContentMapList = new ArrayList<>();
-		for (var contentMap : contentMapList) {
+		for (var contentMap : this.contentMapList) {
+			var evaluationContext = new StandardEvaluationContext();
+			evaluationContext.setVariables(contentMap);
+			
+			var processedContentMap = new LinkedHashMap<String, Object>();
 			for (var contentKey : contentKeyList) {
-				
-				
-				
 				// type에 따라 적절하게 값을 처리한다.
-				
+				// SPEL의 경우 format의 설정을 기준으로 처리
+				// contentMap에도 SPEL의 value를 추가
+				if (contentKey.getType().equals(FieldType.SPEL)) {	
+					var field = fieldList.stream().filter(x -> x.getColumn().equals(contentKey.getOriginKey())).findAny().orElseGet(() -> null);
+					if (field.getFormat() == null || field.getFormat().isEmpty()) {
+						processedContentMap.put(contentKey.getKey(), null);	
+						contentMap.put(contentKey.getOriginKey(), null);
+					} else {
+						var expression = expressionParser.parseExpression(field.getFormat());
+						
+						var value = expression.getValue(evaluationContext);
+						contentMap.put(contentKey.getOriginKey(), value);
+						processedContentMap.put(contentKey.getKey(), value);
+						
+					}
+				} else {
+					processedContentMap.put(contentKey.getKey(), contentMap.get(contentKey.getOriginKey()));
+				}
 			}
+			processedContentMapList.add(processedContentMap);
 		}
 	}
 
