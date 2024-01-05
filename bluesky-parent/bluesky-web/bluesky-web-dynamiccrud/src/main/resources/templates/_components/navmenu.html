@@ -9,6 +9,7 @@
 	classAppend = ${classAppend}
 	"
 	data-th-classappend="${classAppend}">
+	
 	<li data-th-each="menu : ${menuList}">
 		<a data-th-classappend="${menu.isCurrentMenu ? 'active' : ''}" data-th-href="${menu.url}"
 			data-th-text="${menu.name}">

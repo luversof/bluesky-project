@@ -5,28 +5,28 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class DynamicCrudConstant {
 	
-	public static final String PATH_SETTING_PREFIX = "/setting";
+//	public static final String PATH_SETTING_PREFIX = "/setting";
 	public static final String PATH_USE_PREFIX = "/use";
 	public static final String PATH_FRAGMENT_PREFIX = "/fragment";
 	
-	public static final String PATH_VARIABLE_TYPE = "{type:product|mainMenu|subMenu|query|field}";
+//	public static final String PATH_VARIABLE_TYPE = "{type:product|mainMenu|subMenu|query|field}";
 	
 	/**
 	 * /setting/{type}
 	 */
-	public static final String PATH_SETTING_VIEW_INDEX = PATH_SETTING_PREFIX + "/" + PATH_VARIABLE_TYPE;
+//	public static final String PATH_SETTING_VIEW_INDEX = PATH_SETTING_PREFIX + "/" + PATH_VARIABLE_TYPE;
 	
-	public static final String PATH_SETTING_FRAGMENT_PREFIX = PATH_SETTING_PREFIX + PATH_FRAGMENT_PREFIX;
+//	public static final String PATH_SETTING_FRAGMENT_PREFIX = PATH_SETTING_PREFIX + PATH_FRAGMENT_PREFIX;
 	
 	/**
 	 * /setting/fragment/{type}/list
 	 */
-	public static final String PATH_SETTING_FRAGMENT_LIST = PATH_SETTING_FRAGMENT_PREFIX + "/" + PATH_VARIABLE_TYPE + "/list";
+//	public static final String PATH_SETTING_FRAGMENT_LIST = PATH_SETTING_FRAGMENT_PREFIX + "/" + PATH_VARIABLE_TYPE + "/list";
 	
 	/**
 	 * /setting/fragment/{type}/modal
 	 */
-	public static final String PATH_SETTING_FRAGMENT_MODAL = PATH_SETTING_FRAGMENT_PREFIX + "/" + PATH_VARIABLE_TYPE + "/modal";
+//	public static final String PATH_SETTING_FRAGMENT_MODAL = PATH_SETTING_FRAGMENT_PREFIX + "/" + PATH_VARIABLE_TYPE + "/modal";
 	
 	
 	

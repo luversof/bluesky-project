@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<html data-layout-decorate="~{_layout/defaultLayout}" data-th-with="navibarTitle=${@mainMenuService.findByProductAndMainMenu(product, mainMenu).mainMenuName}">
+<html data-layout-decorate="~{_layout/defaultLayout}" data-th-with="
+	thymeleafUseUtil = ${T(net.luversof.web.dynamiccrud.use.util.ThymeleafUseUtil)},
+	navibarTitle=${thymeleafUseUtil.getMainMenu(product, mainMenu).mainMenuName}">
 
 <head>
 	<script src="https://unpkg.com/htmx.org"></script>
