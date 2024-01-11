@@ -52,7 +52,7 @@ public class UseController {
 			throw new BlueskyException("INVALID_SUBMENU");
 		}
 		
-		// SubMenu를 화면 구성에 사용되는 Menu로 전환... 할 필요가 있나? (기존거 맞추느라 이렇게 한 상태)
+		// SubMenu를 화면 구성에 사용되는 Menu로 전환
 		var menuList = new ArrayList<Menu>();
 		subMenuList.sort(Comparator.comparing(SubMenu::getDisplayOrder));
 		subMenuList.forEach(x -> {

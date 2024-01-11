@@ -11,23 +11,22 @@ import org.springframework.util.StringUtils;
 
 import io.github.luversof.boot.exception.BlueskyException;
 import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
+import net.luversof.web.dynamiccrud.setting.domain.Field;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
-import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
-import net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb.SubMenuRowMapper;
+import net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb.FieldRowMapper;
 import net.luversof.web.dynamiccrud.setting.service.SettingServiceListSupplier;
 import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant;
 
 @Service
-public class EventAdminMysqlSubMenuService implements SettingServiceListSupplier<SubMenu> {
-
+public class EventAdminMariadbFieldService implements SettingServiceListSupplier<Field> {
+	
 	@Autowired
 	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 	
-	private static final RowMapper<SubMenu> ROW_MAPPER = new SubMenuRowMapper();
+	private static final RowMapper<Field> ROW_MAPPER = new FieldRowMapper();
 
-	
 	@Override
-	public List<SubMenu> findList(SettingParameter settingParameter) {
+	public List<Field> findList(SettingParameter settingParameter) {
 		var product = settingParameter.product();
 		if (!StringUtils.hasText(product)) {
 			throw new BlueskyException("NOT_EXIST_PARAMETER_PRODUCT");
@@ -38,13 +37,19 @@ public class EventAdminMysqlSubMenuService implements SettingServiceListSupplier
 			throw new BlueskyException("NOT_EXIST_PARAMETER_MAINMENU");
 		}
 		
+		var subMenu = settingParameter.subMenu();
+		if (!StringUtils.hasText(subMenu)) {
+			throw new BlueskyException("NOT_EXIST_PARAMETER_SUBMENU");
+		}
+		
 		RoutingDataSourceContextHolder.setContext(() -> EventAdminConstant.DATASOURCE_NAME);
 		
 		var paramSource = new MapSqlParameterSource();
 		paramSource.addValue("product", product);
 		paramSource.addValue("mainMenu", mainMenu);
+		paramSource.addValue("subMenu", subMenu);
 		
-		return namedParameterJdbcTemplate.query("SELECT * FROM SubMenus WHERE product = :product AND mainMenu = :mainMenu", paramSource, ROW_MAPPER);
+		return namedParameterJdbcTemplate.query("SELECT * FROM Fields WHERE product = :product AND mainMenu = :mainMenu AND subMenu = :subMenu", paramSource, ROW_MAPPER);
 	}
 
 }

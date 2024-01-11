@@ -32,7 +32,7 @@ import net.luversof.web.dynamiccrud.setting.repository.QueryRepository;
 import net.luversof.web.dynamiccrud.setting.repository.SubMenuRepository;
 import net.luversof.web.dynamiccrud.setting.service.FieldServiceDecorator;
 import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant;
-import net.luversof.web.dynamiccrud.setting.service.eventadminmysql.EventAdminMysqlProductService;
+import net.luversof.web.dynamiccrud.setting.service.eventadminmysql.EventAdminMariadbProductService;
 
 @Slf4j
 public class SettingTest implements GeneralTest {
@@ -43,6 +43,7 @@ public class SettingTest implements GeneralTest {
 	@Autowired
 	private MainMenuRepository mainMenuRepository;
 	
+	@SuppressWarnings("unused")
 	@Autowired
 	private SubMenuRepository subMenuRepository;
 	
@@ -194,11 +195,11 @@ public class SettingTest implements GeneralTest {
 	
 	
 	@Autowired
-	private EventAdminMysqlProductService eventAdminMysqlProductService;
+	private EventAdminMariadbProductService eventAdminMariadbProductService;
 	
 	@Test
 	void eventAdminMysqlProductServiceTest() {
-		Product product = eventAdminMysqlProductService.findOne(new SettingParameter("noti", null, null));
+		Product product = eventAdminMariadbProductService.findOne(new SettingParameter("noti", null, null));
 		assertThat(product).isNotNull();
 		log.debug("product : {}", product);
 	}

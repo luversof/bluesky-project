@@ -14,7 +14,6 @@ import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
 import net.luversof.web.dynamiccrud.setting.service.FieldServiceDecorator;
 import net.luversof.web.dynamiccrud.setting.service.MainMenuServiceDecorator;
-import net.luversof.web.dynamiccrud.setting.service.ProductServiceDecorator;
 import net.luversof.web.dynamiccrud.setting.service.QueryServiceDecorator;
 import net.luversof.web.dynamiccrud.setting.service.SubMenuServiceDecorator;
 import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant;
