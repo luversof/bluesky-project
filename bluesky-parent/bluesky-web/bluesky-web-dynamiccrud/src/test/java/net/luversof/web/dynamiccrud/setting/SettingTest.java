@@ -19,26 +19,26 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
-import net.luversof.web.dynamiccrud.setting.domain.Field;
+import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.MainMenu;
-import net.luversof.web.dynamiccrud.setting.domain.Product;
-import net.luversof.web.dynamiccrud.setting.domain.Query;
+import net.luversof.web.dynamiccrud.setting.domain.Project;
+import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
-import net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb.ProductRowMapper;
-import net.luversof.web.dynamiccrud.setting.repository.FieldRepository;
+import net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb.ProjectRowMapper;
+import net.luversof.web.dynamiccrud.setting.repository.DbFieldRepository;
 import net.luversof.web.dynamiccrud.setting.repository.MainMenuRepository;
-import net.luversof.web.dynamiccrud.setting.repository.ProductRepository;
-import net.luversof.web.dynamiccrud.setting.repository.QueryRepository;
+import net.luversof.web.dynamiccrud.setting.repository.ProjectRepository;
+import net.luversof.web.dynamiccrud.setting.repository.DbQueryRepository;
 import net.luversof.web.dynamiccrud.setting.repository.SubMenuRepository;
-import net.luversof.web.dynamiccrud.setting.service.FieldServiceDecorator;
+import net.luversof.web.dynamiccrud.setting.service.DbFieldServiceDecorator;
 import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant;
-import net.luversof.web.dynamiccrud.setting.service.eventadminmysql.EventAdminMariadbProductService;
+import net.luversof.web.dynamiccrud.setting.service.eventadminmariadb.EventAdminMariadbProjectService;
 
 @Slf4j
 public class SettingTest implements GeneralTest {
 
 	@Autowired
-	private ProductRepository productRepository;
+	private ProjectRepository productRepository;
 	
 	@Autowired
 	private MainMenuRepository mainMenuRepository;
@@ -48,10 +48,10 @@ public class SettingTest implements GeneralTest {
 	private SubMenuRepository subMenuRepository;
 	
 	@Autowired
-	private QueryRepository queryRepository;
+	private DbQueryRepository queryRepository;
 	
 	@Autowired
-	private FieldRepository fieldRepository;
+	private DbFieldRepository fieldRepository;
 	
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
@@ -60,7 +60,7 @@ public class SettingTest implements GeneralTest {
 	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 	
 	@Autowired
-	private FieldServiceDecorator fieldService;
+	private DbFieldServiceDecorator fieldService;
 	
 	@BeforeAll
 	public static void beforeAll() {
@@ -80,11 +80,11 @@ public class SettingTest implements GeneralTest {
 	@Test
 	void productSave() {
 		
-		var product = new Product();
-		product.setProduct("test");
+		var product = new Project();
+		product.setProjectId("test");
 		
-		product.setProductName("테스트 프로덕트");
-		product.setOperator("bluesky");
+		product.setProjectName("테스트 프로덕트");
+		product.setWriter("bluesky");
 		var result = productRepository.save(product);
 		
 		log.debug("result : {}", result);
@@ -95,11 +95,11 @@ public class SettingTest implements GeneralTest {
 	@Test
 	void mainMenuSave() {
 		var mainMenu = new MainMenu();
-		mainMenu.setProduct("test");
-		mainMenu.setMainMenu("testMainMenu");
+		mainMenu.setProjectId("test");
+		mainMenu.setMainMenuId("testMainMenu");
 
 		mainMenu.setMainMenuName("mainMenuName");
-		mainMenu.setOperator("bluesky");
+		mainMenu.setWriter("bluesky");
 		var result2 = mainMenuRepository.save(mainMenu);
 		
 		log.debug("result2 : {}", result2);
@@ -117,33 +117,33 @@ public class SettingTest implements GeneralTest {
 	void productFindById() {
 		var page = PageRequest.of(0,  10);
 		
-		var productPage = productRepository.findByProduct("noti", page);
+		var productPage = productRepository.findByAdminProjectIdAndProjectId("eventAdmin", "noti", page);
 		
 		log.debug("page : {}", productPage);
 	}
 	
 	@Test
 	void productRepositoryFind() {
-		var result = productRepository.findByProduct("setting", PageRequest.of(0,  10));
+		var result = productRepository.findByAdminProjectIdAndProjectId("eventAdmin", "setting", PageRequest.of(0,  10));
 		log.debug("result : {}", result);
 	}
 	
 	
 	@Test
 	void queryRepositoryFind() {
-		List<Query> queryList = queryRepository.findByProductAndMainMenuAndSubMenu("setting", "menu", "product");
+		List<DbQuery> queryList = queryRepository.findByAdminProjectIdAndProjectIdAndMainMenuIdAndSubMenuId("eventAdmin", "setting", "menu", "product");
 		log.debug("queryList : {}", queryList);
 	}
 	
 	@Test
 	void fieldServiceFind() {
-		var fieldPage = fieldService.findList(new SettingParameter(EventAdminConstant.KEY_PRODUCT, EventAdminConstant.KEY_MAINMENU, EventAdminConstant.KEY_SUBMENU1_PRODUCT));
+		var fieldPage = fieldService.findList(new SettingParameter(EventAdminConstant.KEY_ADMIN_PROJECT, EventAdminConstant.KEY_PROJECT, EventAdminConstant.KEY_MAINMENU, EventAdminConstant.KEY_SUBMENU1_PROJECT));
 		log.debug("fieldPage : {}", fieldPage);
 	}
 	
 	@Test
 	void fieldRepositoryFind() {
-		List<Field> fieldList = fieldRepository.findByProductAndMainMenuAndSubMenu("setting", "menu", "product");
+		List<DbField> fieldList = fieldRepository.findByAdminProjectIdAndProjectIdAndMainMenuIdAndSubMenuId("eventAdmin", "setting", "menu", "product");
 		log.debug("fieldList : {}", fieldList);
 	}
 	
@@ -152,7 +152,7 @@ public class SettingTest implements GeneralTest {
 	void jdbcTemplateProjectSelectTest() {
 		List<String> argList = new ArrayList<String>();
 		argList.add("test");
-		Product product = jdbcTemplate.queryForObject("select product, productName, operator, registerDate, modifyDate from Products where product = ?", new ProductRowMapper(), argList.toArray());
+		Project product = jdbcTemplate.queryForObject("select product, productName, operator, registerDate, modifyDate from Products where product = ?", new ProjectRowMapper(), argList.toArray());
 		log.debug("product : {}", product);
 	}
 	
@@ -160,7 +160,7 @@ public class SettingTest implements GeneralTest {
 	void namedParameterJdbcTemplateProjectSelectTest() {
 		var paramSource = new MapSqlParameterSource();
 		paramSource.addValue("product", "noti");
-		var product = namedParameterJdbcTemplate.queryForObject("select product, productName, operator, registerDate, modifyDate from Products where product = :product", paramSource, new ProductRowMapper());
+		var product = namedParameterJdbcTemplate.queryForObject("select product, productName, operator, registerDate, modifyDate from Products where product = :product", paramSource, new ProjectRowMapper());
 		log.debug("product : {}", product);
 	}
 	
@@ -170,9 +170,9 @@ public class SettingTest implements GeneralTest {
 	 */
 	@Test
 	void namedParameterJdbcTemplateProjectSelectTest2() {
-		var queryParameter = new SettingParameter("noti", "main", "sub");
+		var queryParameter = new SettingParameter("admin", "noti", "main", "sub");
 		var paramSource = new BeanPropertySqlParameterSource(queryParameter);
-		Product product = namedParameterJdbcTemplate.queryForObject("select product, productName, operator, registerDate, modifyDate from Products where product = :product", paramSource, new ProductRowMapper());
+		Project product = namedParameterJdbcTemplate.queryForObject("select product, productName, operator, registerDate, modifyDate from Products where product = :product", paramSource, new ProjectRowMapper());
 		log.debug("product : {}", product);
 	}
 	
@@ -180,7 +180,7 @@ public class SettingTest implements GeneralTest {
 	void namedParameterJdbcTemplateProjectSelectListTest() {
 		var paramSource = new MapSqlParameterSource();
 		paramSource.addValue("product", "noti22");
-		List<Product> productList = namedParameterJdbcTemplate.query("select product, productName, operator, registerDate, modifyDate from Products where product = :product", paramSource, new ProductRowMapper());
+		List<Project> productList = namedParameterJdbcTemplate.query("select product, productName, operator, registerDate, modifyDate from Products where product = :product", paramSource, new ProjectRowMapper());
 		log.debug("product : {}", productList);
 	}
 	
@@ -195,11 +195,11 @@ public class SettingTest implements GeneralTest {
 	
 	
 	@Autowired
-	private EventAdminMariadbProductService eventAdminMariadbProductService;
+	private EventAdminMariadbProjectService eventAdminMariadbProductService;
 	
 	@Test
 	void eventAdminMysqlProductServiceTest() {
-		Product product = eventAdminMariadbProductService.findOne(new SettingParameter("noti", null, null));
+		Project product = eventAdminMariadbProductService.findOne(new SettingParameter("admin", "noti", null, null));
 		assertThat(product).isNotNull();
 		log.debug("product : {}", product);
 	}

@@ -4,9 +4,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -17,26 +16,24 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "Queries")
-@IdClass(QueryId.class)
-public class Query extends Setting {
+@Table(name = "DbQuery", uniqueConstraints = @UniqueConstraint(columnNames = { "adminProjectId", "projectId", "mainMenuId", "subMenuId", "sqlCommandType" }))
+public class DbQuery extends Setting {
 	
-	@Id
 	@Column(length = 20)
-	private String product;
+	private String adminProjectId;
 	
-	@Id
+	@Column(length = 20)
+	private String projectId;
+	
 	@Column(length = 40)
-	private String mainMenu;
+	private String mainMenuId;
 	
-	@Id
 	@Column(length = 40)
-	private String subMenu;
+	private String subMenuId;
 	
-	@Id
 	@Column(length = 20)
 	@Enumerated(EnumType.STRING)
-	private QuerySqlCommandType sqlCommandType;	// INSERT, SELECT, UPDATE, DELETE
+	private DbQuerySqlCommandType sqlCommandType;	// INSERT, SELECT, UPDATE, DELETE
 	
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String queryString;
@@ -46,7 +43,7 @@ public class Query extends Setting {
 	
 	@Column(length = 20, nullable = false)
 	@Enumerated(EnumType.STRING)
-	private QueryDbType dbType;	//MsSql, MySql
+	private DbQueryDbType dbType;	//MsSql, MySql
 	
 
 }

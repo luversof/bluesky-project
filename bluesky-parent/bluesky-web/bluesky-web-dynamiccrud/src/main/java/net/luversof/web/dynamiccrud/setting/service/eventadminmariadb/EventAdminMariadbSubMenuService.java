@@ -1,4 +1,4 @@
-package net.luversof.web.dynamiccrud.setting.service.eventadminmysql;
+package net.luversof.web.dynamiccrud.setting.service.eventadminmariadb;
 
 import java.util.List;
 
@@ -28,23 +28,29 @@ public class EventAdminMariadbSubMenuService implements SettingServiceListSuppli
 	
 	@Override
 	public List<SubMenu> findList(SettingParameter settingParameter) {
-		var product = settingParameter.product();
-		if (!StringUtils.hasText(product)) {
-			throw new BlueskyException("NOT_EXIST_PARAMETER_PRODUCT");
+		var adminProjectId = settingParameter.adminProjectId();
+		if (!StringUtils.hasText(adminProjectId)) {
+			throw new BlueskyException("NOT_EXIST_PARAMETER_ADMINPROJECTID");
 		}
 		
-		var mainMenu = settingParameter.mainMenu();
-		if (!StringUtils.hasText(mainMenu)) {
-			throw new BlueskyException("NOT_EXIST_PARAMETER_MAINMENU");
+		var projectId = settingParameter.projectId();
+		if (!StringUtils.hasText(projectId)) {
+			throw new BlueskyException("NOT_EXIST_PARAMETER_PROJECTID");
+		}
+		
+		var mainMenuId = settingParameter.mainMenuId();
+		if (!StringUtils.hasText(mainMenuId)) {
+			throw new BlueskyException("NOT_EXIST_PARAMETER_MAINMENUID");
 		}
 		
 		RoutingDataSourceContextHolder.setContext(() -> EventAdminConstant.DATASOURCE_NAME);
 		
 		var paramSource = new MapSqlParameterSource();
-		paramSource.addValue("product", product);
-		paramSource.addValue("mainMenu", mainMenu);
+		paramSource.addValue("adminProjectId", adminProjectId);
+		paramSource.addValue("projectId", projectId);
+		paramSource.addValue("mainMenuId", mainMenuId);
 		
-		return namedParameterJdbcTemplate.query("SELECT * FROM SubMenus WHERE product = :product AND mainMenu = :mainMenu", paramSource, ROW_MAPPER);
+		return namedParameterJdbcTemplate.query("SELECT * FROM SubMenu WHERE adminProjectId = :adminProjectId AND projectId = :projectId AND mainMenuId = :mainMenuId", paramSource, ROW_MAPPER);
 	}
 
 }

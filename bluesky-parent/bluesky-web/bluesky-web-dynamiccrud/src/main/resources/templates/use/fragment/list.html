@@ -2,7 +2,7 @@
 	id="content"
 	data-th-with="
 		thymeleafUseUtil = ${T(net.luversof.web.dynamiccrud.use.util.ThymeleafUseUtil)},
-		targetSubMenu = ${thymeleafUseUtil.getSubMenu(product, mainMenu, subMenu)}"
+		targetSubMenu = ${thymeleafUseUtil.getSubMenu(adminProjectId, projectId, mainMenuId, subMenuId)}"
 >
 	<script data-th-inline="javascript">
 		/*<![CDATA[*/
@@ -19,8 +19,8 @@
 		</div>
 		<div>
 			<button class="btn btn-sm exportButton" 
-				data-th-if="${thymeleafUseUtil.isAdminMenu(product)}"
-				data-th-hx-get="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modalBulkForm/export(product=${product},mainMenu=${mainMenu},subMenu=${subMenu})}"
+				data-th-if="${thymeleafUseUtil.isAdminMenu(adminProjectId)}"
+				data-th-hx-get="@{/{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/modalBulkForm/export(adminProjectId=${adminProjectId},projectId=${projectId},mainMenuId=${mainMenuId},subMenuId=${subMenuId})}"
 				hx-target="#fragmentArea"
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -29,8 +29,8 @@
 				[[#{button.text.export}]]
 			</button>
 			<button class="btn btn-sm importButton"
-				data-th-if="${thymeleafUseUtil.isAdminMenu(product)}"
-				data-th-hx-get="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modalBulkForm/import(product=${product},mainMenu=${mainMenu},subMenu=${subMenu})}"
+				data-th-if="${thymeleafUseUtil.isAdminMenu(adminProjectId)}"
+				data-th-hx-get="@{/{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/modalBulkForm/import(adminProjectId=${adminProjectId},projectId=${projectId},mainMenuId=${mainMenuId},subMenuId=${subMenuId})}"
 				hx-target="#fragmentArea"
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -40,7 +40,7 @@
 			</button>
 			<a
 				data-th-if="${targetSubMenu.enableExcel}"
-				data-th-href="@{/use/fragment/{product}/{mainMenu}/{subMenu}/excel(product=${product},mainMenu=${mainMenu},subMenu=${subMenu})}"
+				data-th-href="@{/{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/excel(adminProjectId=${adminProjectId},projectId=${projectId},mainMenuId=${mainMenuId},subMenuId=${subMenuId})}"
 				download
 				target="_blank"
 			>
@@ -70,22 +70,22 @@
 			<tr class="hover" data-th-each="content,iterator : ${contentInfo.processedContentMapList}">
 				<td class="w-0 p-0 contentData">
 					<input type="hidden"
-						data-th-if="${field.isEnableEdit()}"
-						data-th-each="field : ${fieldList}" 
-						data-th-name="${field.column}"
-						data-th-value="${contentInfo.contentMapList.get(iterator.index).get(field.column)}"
+						data-th-each="dbField : ${dbFieldList}" 
+						data-th-if="${dbField.isEnableEdit()}"
+						data-th-name="${dbField.columnId}"
+						data-th-value="${contentInfo.contentMapList.get(iterator.index).get(dbField.columnId)}"
 					/>
 					<input type="hidden"
-						data-th-each="field : ${fieldList}"
-						data-th-if="${field.isEnableEdit()}"
-						data-th-name="'\_\_org\_\_' + ${field.column}"
-						data-th-value="${contentInfo.contentMapList.get(iterator.index).get(field.column)}"
+						data-th-each="dbField : ${dbFieldList}"
+						data-th-if="${dbField.isEnableEdit()}"
+						data-th-name="'\_\_org\_\_' + ${dbField.columnId}"
+						data-th-value="${contentInfo.contentMapList.get(iterator.index).get(dbField.columnId)}"
 					/>
 				</td>
 				<td data-th-each="contentKey : ${contentInfo.contentKeyList}" data-th-utext="${content.get(contentKey.key)}"></td>
 				<td data-th-if="${targetSubMenu.enableUpdate}">
 					<button class="btn btn-sm"
-						data-th-hx-get="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modalForm/update(product=${product},mainMenu=${mainMenu},subMenu=${subMenu})}"
+						data-th-hx-get="@{/{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/modalForm/update(adminProjectId=${adminProjectId},projectId=${projectId},mainMenuId=${mainMenuId},subMenuId=${subMenuId})}"
 						hx-target="#fragmentArea"
 					>
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -111,7 +111,7 @@
 		<div>
 			<button class="btn btn-sm"
 				data-th-if="${targetSubMenu.enableInsert}" 
-				data-th-hx-get="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modalForm/create(product=${product},mainMenu=${mainMenu},subMenu=${subMenu})}"
+				data-th-hx-get="@{/{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/modalForm/create(adminProjectId=${adminProjectId},projectId=${projectId},mainMenuId=${mainMenuId},subMenuId=${subMenuId})}"
 				hx-target="#fragmentArea"
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -121,7 +121,7 @@
 			</button>
 			<button class="btn btn-sm deleteButton"
 				data-th-if="${targetSubMenu.enableDelete}"
-				data-th-hx-post="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modalForm/delete(product=${product},mainMenu=${mainMenu},subMenu=${subMenu})}"
+				data-th-hx-post="@{/{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/modalForm/delete(adminProjectId=${adminProjectId},projectId=${projectId},mainMenuId=${mainMenuId},subMenuId=${subMenuId})}"
 				hx-include="#contentTable tr:has(input[name=contentDataCheck]:checked) .contentData input"
 				hx-target="#fragmentArea"
 			>

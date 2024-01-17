@@ -6,7 +6,7 @@
 <dialog id="modal" class="modal"
 	data-th-with="
 		thymeleafUseUtil = ${T(net.luversof.web.dynamiccrud.use.util.ThymeleafUseUtil)},
-		fieldList = ${thymeleafUseUtil.getFieldList(product, mainMenu, subMenu)}
+		dbFieldList = ${thymeleafUseUtil.getDbFieldList(adminProjectId, projectId, mainMenuId, subMenuId)}
 	">
 	<div class="modal-box max-w-xl">
 		<form method="dialog">

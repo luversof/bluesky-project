@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 import io.github.luversof.boot.exception.BlueskyException;
-import net.luversof.web.dynamiccrud.setting.domain.Field;
+import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
-import net.luversof.web.dynamiccrud.thymeleaf.constant.DynamicCrudConstant;
+import net.luversof.web.dynamiccrud.thymeleaf.constant.UrlConstant;
 import net.luversof.web.dynamiccrud.thymeleaf.domain.Menu;
 import net.luversof.web.dynamiccrud.use.util.ThymeleafUseUtil;
 
@@ -22,9 +22,12 @@ import net.luversof.web.dynamiccrud.use.util.ThymeleafUseUtil;
 @Controller
 public class UseController {
 	
-	@GetMapping("/use/{product}/{mainMenu}")
-	public String redirectView(@PathVariable String product, @PathVariable String mainMenu) {
-		var subMenuList = ThymeleafUseUtil.getSubMenuList(product, mainMenu);
+	@GetMapping("/{adminProjectId}/use/{projectId}/{mainMenuId}")
+	public String redirectView(
+			@PathVariable String adminProjectId, 
+			@PathVariable String projectId, 
+			@PathVariable String mainMenuId) {
+		var subMenuList = ThymeleafUseUtil.getSubMenuList(adminProjectId, projectId, mainMenuId);
 		if (subMenuList.isEmpty()) {
 			throw new BlueskyException("NOT_EXIST_SUBMENU");
 		}
@@ -33,22 +36,23 @@ public class UseController {
 		
 	}
 
-	@GetMapping(DynamicCrudConstant.PATH_USE_VIEW_INDEX)
+	@GetMapping(UrlConstant.PATH_USE_VIEW_INDEX)
 	public String view(
-			@PathVariable String product, 
-			@PathVariable String mainMenu, 
-			@PathVariable String subMenu,
+			@PathVariable String adminProjectId,
+			@PathVariable String projectId, 
+			@PathVariable String mainMenuId, 
+			@PathVariable String subMenuId,
 			Model model) {
 		
 		/** (s)  상단 메뉴 처리 **/
-		var subMenuList = ThymeleafUseUtil.getSubMenuList(product, mainMenu);
+		var subMenuList = ThymeleafUseUtil.getSubMenuList(adminProjectId, projectId, mainMenuId);
 		if (subMenuList.isEmpty()) {
 			throw new BlueskyException("NOT_EXIST_SUBMENU");
 		}
 		
 		model.addAttribute("subMenuList", subMenuList);
 		
-		if (subMenu != null && !subMenuList.stream().anyMatch(x -> x.getSubMenu().equals(subMenu))) {
+		if (subMenuId != null && !subMenuList.stream().anyMatch(x -> x.getSubMenuId().equals(subMenuId))) {
 			throw new BlueskyException("INVALID_SUBMENU");
 		}
 		
@@ -66,9 +70,9 @@ public class UseController {
 		
 		// Setting 정보를 기준으로 해당 데이터를 조회
 		
-		List<Field> fieldList = ThymeleafUseUtil.getFieldList(product, mainMenu, subMenu);
-		model.addAttribute("fieldList", fieldList);
-		model.addAttribute("hasSearchField", fieldList.stream().anyMatch(x -> x.isEnableSearch()));
+		List<DbField> dbFieldList = ThymeleafUseUtil.getDbFieldList(adminProjectId, projectId, mainMenuId, subMenuId);
+		model.addAttribute("dbFieldList", dbFieldList);
+		model.addAttribute("hasSearchField", dbFieldList.stream().anyMatch(x -> x.isEnableSearch()));
 		
 		/** (e)  상단 메뉴 처리 **/
 		

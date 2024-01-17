@@ -1,5 +1,5 @@
 <form id="modalBulkForm"
-	data-th-hx-post="@{/use/fragment/{product}/{mainMenu}/{subMenu}/modalBulkForm/{modalMode}(product=${product},mainMenu=${mainMenu},subMenu=${subMenu},modalMode=${modalMode})}"
+	data-th-hx-post="@{/{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/modalBulkForm/{modalMode}(adminProjectId=${adminProjectId},projectId=${projectId},mainMenuId=${mainMenuId},subMenuId=${subMenuId},modalMode=${modalMode})}"
 	hx-target="#fragmentArea"
 >
 	<div class="w-full m-1">

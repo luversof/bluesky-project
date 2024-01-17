@@ -21,10 +21,11 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 
 import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
-import net.luversof.web.dynamiccrud.setting.domain.Field;
-import net.luversof.web.dynamiccrud.setting.domain.FieldEnable;
-import net.luversof.web.dynamiccrud.setting.domain.FieldType;
-import net.luversof.web.dynamiccrud.setting.domain.Query;
+import net.luversof.web.dynamiccrud.setting.domain.DbField;
+import net.luversof.web.dynamiccrud.setting.domain.DbFieldEnable;
+import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
+import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
+import net.luversof.web.dynamiccrud.support.DynamicCrudSettingTransactionHandler;
 import net.luversof.web.dynamiccrud.use.service.UseService;
 
 @Service
@@ -33,10 +34,13 @@ public class MariadbUseService implements UseService {
 	@Autowired
 	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 	
+	@Autowired
+	private DynamicCrudSettingTransactionHandler dynamicCrudSettingTransactionHandler;
+	
 	private static final RowMapper<Map<String, Object>> ROW_MAPPER = new ColumnMapRowMapper();
 
 	@Override
-	public Page<Map<String, Object>> find(Query query, List<Field> fieldList, Pageable pageable, Map<String, String> dataMap) {
+	public Page<Map<String, Object>> find(DbQuery query, List<DbField> fieldList, Pageable pageable, Map<String, String> dataMap) {
 		RoutingDataSourceContextHolder.setContext(() -> query.getDataSourceName());
 		
 		var selectQueryBuilder = new StringBuilder(query.getQueryString());
@@ -47,14 +51,14 @@ public class MariadbUseService implements UseService {
 		var paramSource = new MapSqlParameterSource();
 		
 		// 필수 검색 조건이 있는 경우 확인
-		var requiredFieldList = fieldList.stream().filter(x -> FieldEnable.REQUIRED.equals(x.getEnableSearch())).toList();
-		if (requiredFieldList.stream().anyMatch(x -> !dataMap.containsKey(x.getColumn()))) {
+		var requiredFieldList = fieldList.stream().filter(x -> DbFieldEnable.REQUIRED.equals(x.getEnableSearch())).toList();
+		if (requiredFieldList.stream().anyMatch(x -> !dataMap.containsKey(x.getColumnId()))) {
 			return new PageImpl<>(Collections.emptyList(), pageable, 0);
 		}
 		
 		// 검색 대상 컬럼 목록 추출
 		var conditionQueryBuilder = new StringBuilder();
-		var targetFieldList = fieldList.stream().filter(x -> (FieldEnable.REQUIRED.equals(x.getEnableSearch()) || FieldEnable.ENABLED.equals(x.getEnableSearch())) && dataMap.containsKey(x.getColumn()) && StringUtils.hasText(dataMap.get(x.getColumn()))).toList();
+		var targetFieldList = fieldList.stream().filter(x -> (DbFieldEnable.REQUIRED.equals(x.getEnableSearch()) || DbFieldEnable.ENABLED.equals(x.getEnableSearch())) && dataMap.containsKey(x.getColumnId()) && StringUtils.hasText(dataMap.get(x.getColumnId()))).toList();
 		if (!targetFieldList.isEmpty()) {
 			boolean checkAlreadWhereCondition = false;
 			conditionQueryBuilder.append(" WHERE ");
@@ -63,8 +67,8 @@ public class MariadbUseService implements UseService {
 				if (checkAlreadWhereCondition) {
 					conditionQueryBuilder.append("AND ");
 				}
-				conditionQueryBuilder.append(String.format("%s = :%s ", targetField.getColumn(), targetField.getColumn()));
-				paramSource.addValue(targetField.getColumn(), dataMap.get(targetField.getColumn()));
+				conditionQueryBuilder.append(String.format("%s = :%s ", targetField.getColumnId(), targetField.getColumnId()));
+				paramSource.addValue(targetField.getColumnId(), dataMap.get(targetField.getColumnId()));
 				checkAlreadWhereCondition = true;
 			}
 		}
@@ -91,32 +95,31 @@ public class MariadbUseService implements UseService {
 	 * jdbcTemplate은 insert, update, delete를  update method로 동일하게 수행
 	 */
 	@Override
-	public Object create(Query query, List<Field> fieldList, Map<String, String> dataMap) {
+	public Object create(DbQuery query, List<DbField> fieldList, Map<String, String> dataMap) {
 		RoutingDataSourceContextHolder.setContext(() -> query.getDataSourceName());
 		
 		var insertQueryBuilder = new StringBuilder(query.getQueryString() + " ");
 		var paramSource = new MapSqlParameterSource();
-		var targetFieldList = fieldList.stream().filter(x -> (FieldEnable.REQUIRED.equals(x.getEnableSearch()) || FieldEnable.ENABLED.equals(x.getEnableSearch())) && dataMap.containsKey(x.getColumn()) && StringUtils.hasText(dataMap.get(x.getColumn()))).toList();
+		var targetFieldList = fieldList.stream().filter(x -> (DbFieldEnable.REQUIRED.equals(x.getEnableSearch()) || DbFieldEnable.ENABLED.equals(x.getEnableSearch())) && dataMap.containsKey(x.getColumnId()) && StringUtils.hasText(dataMap.get(x.getColumnId()))).toList();
 		if (!targetFieldList.isEmpty()) {
 			setSqlParameterSourceRegisterSqlType(paramSource, fieldList);
 			dataMap.forEach((key, value) -> paramSource.addValue(key, StringUtils.hasText(value) ? value : null));
 		}
-		
-		return namedParameterJdbcTemplate.update(insertQueryBuilder.toString(), paramSource);
+		return dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() -> namedParameterJdbcTemplate.update(insertQueryBuilder.toString(), paramSource));
 	}
 
 	/**
 	 * insert/update query는 등록된 쿼리를 그대로 실행하고 넘겨받은 postData만 설정함
 	 */
 	@Override
-	public Object update(Query query, List<Field> fieldList, Map<String, String> dataMap) {
+	public Object update(DbQuery query, List<DbField> fieldList, Map<String, String> dataMap) {
 		return create(query, fieldList, dataMap);
 	}
 	
-	private void setSqlParameterSourceRegisterSqlType(MapSqlParameterSource paramSource, List<Field> fieldList) {
+	private void setSqlParameterSourceRegisterSqlType(MapSqlParameterSource paramSource, List<DbField> fieldList) {
 		fieldList.forEach(field -> {
-			if (field.getType().equals(FieldType.BOOLEAN)) {
-				paramSource.registerSqlType(field.getColumn(), JDBCType.BIT.getVendorTypeNumber());
+			if (field.getColumnType().equals(DbFieldColumnType.BOOLEAN)) {
+				paramSource.registerSqlType(field.getColumnId(), JDBCType.BIT.getVendorTypeNumber());
 			}
 		});
 	}
@@ -127,7 +130,7 @@ public class MariadbUseService implements UseService {
 	 * 삭제도 update 쿼리를 통해 수행함
 	 */
 	@Override
-	public Object delete(Query query, List<Field> fieldList, MultiValueMap<String, String> dataMap) {
+	public Object delete(DbQuery query, List<DbField> fieldList, MultiValueMap<String, String> dataMap) {
 		List<Map<String, String>> dataMapList = new ArrayList<>();
 		
 		dataMap.forEach((key, value) -> {

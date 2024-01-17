@@ -2,8 +2,8 @@ package net.luversof.web.dynamiccrud.setting.repository;
 
 import net.luversof.web.dynamiccrud.setting.domain.MainMenu;
 
-public interface MainMenuRepository extends SettingRepository<MainMenu, String> {
+public interface MainMenuRepository extends SettingRepository<MainMenu, Long> {
 
-	MainMenu findByProductAndMainMenu(String product, String mainMenu);
+	MainMenu findByAdminProjectIdAndProjectIdAndMainMenuId(String adminProjectId, String projectId, String mainMenuId);
 
 }

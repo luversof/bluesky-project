@@ -10,8 +10,9 @@ public class MainMenuRowMapper extends SettingRowMapper<MainMenu> {
 	@Override
 	public MainMenu mapRow(ResultSet rs, int rowNum) throws SQLException {
 		var mainMenu = new MainMenu(
-			rs.getString("product"),
-			rs.getString("mainMenu"),
+			rs.getString("adminProjectId"),
+			rs.getString("projectId"),
+			rs.getString("mainMenuId"),
 			rs.getString("mainMenuName")
 		);
 		setCommon(mainMenu, rs);

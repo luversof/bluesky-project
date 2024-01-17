@@ -9,9 +9,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
-import net.luversof.web.dynamiccrud.setting.domain.Field;
-import net.luversof.web.dynamiccrud.setting.domain.Query;
-import net.luversof.web.dynamiccrud.setting.domain.QueryDbType;
+import net.luversof.web.dynamiccrud.setting.domain.DbField;
+import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
+import net.luversof.web.dynamiccrud.setting.domain.DbQueryDbType;
 
 @Service
 public class UseServiceDecorator implements UseService {
@@ -20,8 +20,8 @@ public class UseServiceDecorator implements UseService {
 	private Map<String, UseService> useServiceMap;
 
 	@Override
-	public Page<Map<String, Object>> find(Query query, List<Field> fieldList, Pageable pageable, Map<String, String> dataMap) {
-		if (query.getDbType().equals(QueryDbType.MySql)) {
+	public Page<Map<String, Object>> find(DbQuery query, List<DbField> fieldList, Pageable pageable, Map<String, String> dataMap) {
+		if (query.getDbType().equals(DbQueryDbType.MySql)) {
 			UseService useService = useServiceMap.get("mariadbUseService");
 			
 			// query 기준으로 결과 반환 해야 하는데..
@@ -31,8 +31,8 @@ public class UseServiceDecorator implements UseService {
 	}
 	
 	@Override
-	public Object create(Query query, List<Field> fieldList, Map<String, String> dataMap) {
-		if (query.getDbType().equals(QueryDbType.MySql)) {
+	public Object create(DbQuery query, List<DbField> fieldList, Map<String, String> dataMap) {
+		if (query.getDbType().equals(DbQueryDbType.MySql)) {
 			UseService useService = useServiceMap.get("mariadbUseService");
 			
 			return useService.create(query, fieldList, dataMap);
@@ -41,8 +41,8 @@ public class UseServiceDecorator implements UseService {
 	}
 
 	@Override
-	public Object update(Query query, List<Field> fieldList, Map<String, String> dataMap) {
-		if (query.getDbType().equals(QueryDbType.MySql)) {
+	public Object update(DbQuery query, List<DbField> fieldList, Map<String, String> dataMap) {
+		if (query.getDbType().equals(DbQueryDbType.MySql)) {
 			UseService useService = useServiceMap.get("mariadbUseService");
 			
 			return useService.update(query, fieldList, dataMap);
@@ -51,8 +51,8 @@ public class UseServiceDecorator implements UseService {
 	}
 
 	@Override
-	public Object delete(Query query, List<Field> fieldList, MultiValueMap<String, String> dataMap) {
-		if (query.getDbType().equals(QueryDbType.MySql)) {
+	public Object delete(DbQuery query, List<DbField> fieldList, MultiValueMap<String, String> dataMap) {
+		if (query.getDbType().equals(DbQueryDbType.MySql)) {
 			UseService useService = useServiceMap.get("mariadbUseService");
 			
 			return useService.delete(query, fieldList, dataMap);

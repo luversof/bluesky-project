@@ -1,7 +1,8 @@
 package net.luversof.web.dynamiccrud.setting.service.eventadmin;
 
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_ADMIN_PROJECT;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_MAINMENU;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_PRODUCT;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_PROJECT;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +27,8 @@ public class EventAdminMainMenuService implements SettingServiceSupplier<MainMen
 		mainMenuList = new ArrayList<>();
 		{
 			var mainMenu = new MainMenu(
-					KEY_PRODUCT,
+					KEY_ADMIN_PROJECT,
+					KEY_PROJECT,
 					KEY_MAINMENU,
 				"Event Admin Setting"
 			);
@@ -37,8 +39,9 @@ public class EventAdminMainMenuService implements SettingServiceSupplier<MainMen
 	@Override
 	public MainMenu findOne(SettingParameter settingParameter) {
 		return mainMenuList.stream()
-				.filter(x -> x.getProduct().equals(settingParameter.product())
-						&& x.getMainMenu().equals(settingParameter.mainMenu()))
+				.filter(x -> x.getAdminProjectId().equals(settingParameter.adminProjectId())
+						&& x.getProjectId().equals(settingParameter.projectId())
+						&& x.getMainMenuId().equals(settingParameter.mainMenuId()))
 				.findAny().orElseGet(() -> null);
 	}
 

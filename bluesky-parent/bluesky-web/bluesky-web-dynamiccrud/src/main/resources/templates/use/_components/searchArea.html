@@ -10,26 +10,26 @@
 <div class="flex"
 	id="searchArea"
 	data-th-if="${hasSearchField}" 
-	data-th-with="fieldList = ${fieldList}"
+	data-th-with="dbFieldList = ${dbFieldList}"
 >
 	<div class="p-1">
 		<th-block
-			data-th-each="field : ${fieldList}"
-			data-th-if="${field.isEnableSearch}">
+			data-th-each="dbField : ${dbFieldList}"
+			data-th-if="${dbField.isEnableSearch}">
 			<input type="text" class="input input-bordered input-sm w-48 searchinput"
-				data-th-if="${#strings.isEmpty(field.preset)}" 
-				data-th-placeholder="${field.name}"
-				data-th-name="${field.column}"
-				data-th-value="${param[field.column]}"
+				data-th-if="${#strings.isEmpty(dbField.columnPreset)}" 
+				data-th-placeholder="${dbField.columnName}"
+				data-th-name="${dbField.columnId}"
+				data-th-value="${param[dbField.columnId]}"
 			/>
 			
 			<select class="select select-sm select-bordered searchinput"
-				data-th-unless="${#strings.isEmpty(field.preset)}"
-				data-th-name="${field.column}"
+				data-th-unless="${#strings.isEmpty(dbField.columnPreset)}"
+				data-th-name="${dbField.columnId}"
 			>
-				<option data-th-text="${field.name}" value="" />
+				<option data-th-text="${dbField.columnName}" value="" />
 				<option 
-					data-th-each="presetPart : ${#strings.listSplit(field.preset,'|')}" 
+					data-th-each="presetPart : ${#strings.listSplit(dbField.columnPreset,'|')}" 
 					data-th-value="${#strings.contains(presetPart, ',')? #strings.arraySplit(presetPart, ',')[1] : presetPart}" 
 					data-th-text="${#strings.contains(presetPart, ',')? #strings.arraySplit(presetPart, ',')[0] : presetPart}"
 				/>

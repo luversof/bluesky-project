@@ -14,9 +14,9 @@ public abstract class SettingRowMapper<T extends Setting> implements RowMapper<T
 	
 	
 	protected void setCommon(T t, ResultSet rs) throws SQLException {
-		t.setOperator(rs.getString("operator"));
-		t.setRegisterDate(getZonedDateTime(rs.getTimestamp("registerDate")));
-		t.setModifyDate(getZonedDateTime(rs.getTimestamp("modifyDate")));
+		t.setWriter(rs.getString("writer"));
+		t.setCreateDate(getZonedDateTime(rs.getTimestamp("createDate")));
+		t.setUpdateDate(getZonedDateTime(rs.getTimestamp("updateDate")));
 	}
 
 	protected ZonedDateTime getZonedDateTime(Timestamp timestamp) {

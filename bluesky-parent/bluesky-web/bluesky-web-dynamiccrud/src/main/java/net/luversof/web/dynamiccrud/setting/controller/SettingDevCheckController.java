@@ -6,15 +6,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
-import net.luversof.web.dynamiccrud.setting.domain.Field;
+import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.MainMenu;
-import net.luversof.web.dynamiccrud.setting.domain.Product;
-import net.luversof.web.dynamiccrud.setting.domain.Query;
+import net.luversof.web.dynamiccrud.setting.domain.Project;
+import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
-import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminFieldService;
+import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminDbFieldService;
 import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminMainMenuService;
-import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminProductService;
-import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminQueryService;
+import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminProjectService;
+import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminDbQueryService;
 import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminSubMenuService;
 
 @DevCheckController
@@ -23,7 +23,7 @@ public class SettingDevCheckController {
 	private final String pathPrefix = "/setting";
 	
 	@Autowired
-	private EventAdminProductService eventAdminProductService;
+	private EventAdminProjectService eventAdminProjectService;
 	
 	@Autowired
 	private EventAdminMainMenuService eventAdminMainMenuService;
@@ -32,14 +32,14 @@ public class SettingDevCheckController {
 	private EventAdminSubMenuService eventAdminSubMenuService;
 	
 	@Autowired
-	private EventAdminQueryService eventAdminQueryService;
+	private EventAdminDbQueryService eventAdminQueryService;
 	
 	@Autowired
-	private EventAdminFieldService eventAdminFieldService;
+	private EventAdminDbFieldService eventAdminFieldService;
 	
-	@GetMapping(pathPrefix + "/product")
-	public Product product() {
-		return eventAdminProductService.getProduct();
+	@GetMapping(pathPrefix + "/project")
+	public Project project() {
+		return eventAdminProjectService.getProject();
 	}
 	
 	@GetMapping(pathPrefix + "/mainMenuList")
@@ -52,13 +52,13 @@ public class SettingDevCheckController {
 		return eventAdminSubMenuService.getSubMenuList();
 	}
 	
-	@GetMapping(pathPrefix + "/queryList")
-	public List<Query> queryList() {
-		return eventAdminQueryService.getQueryList();
+	@GetMapping(pathPrefix + "/dbQueryList")
+	public List<DbQuery> dbQueryList() {
+		return eventAdminQueryService.getDbQueryList();
 	}
 	
-	@GetMapping(pathPrefix + "/fieldList")
-	public List<Field> fieldList() {
-		return eventAdminFieldService.getFieldList();
+	@GetMapping(pathPrefix + "/dbFieldList")
+	public List<DbField> dbFieldList() {
+		return eventAdminFieldService.getDbFieldList();
 	}
 }

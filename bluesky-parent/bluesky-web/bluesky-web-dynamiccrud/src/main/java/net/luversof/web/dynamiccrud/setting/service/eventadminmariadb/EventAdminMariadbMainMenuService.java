@@ -1,4 +1,4 @@
-package net.luversof.web.dynamiccrud.setting.service.eventadminmysql;
+package net.luversof.web.dynamiccrud.setting.service.eventadminmariadb;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
@@ -25,23 +25,29 @@ public class EventAdminMariadbMainMenuService implements SettingServiceSupplier<
 	
 	@Override
 	public MainMenu findOne(SettingParameter settingParameter) {
-		var product = settingParameter.product();
-		if (!StringUtils.hasText(product)) {
-			throw new BlueskyException("NOT_EXIST_PARAMETER_PRODUCT");
+		var adminProjectId = settingParameter.adminProjectId();
+		if (!StringUtils.hasText(adminProjectId)) {
+			throw new BlueskyException("NOT_EXIST_PARAMETER_ADMINPROJECTID");
 		}
 		
-		var mainMenu = settingParameter.mainMenu();
-		if (!StringUtils.hasText(mainMenu)) {
-			throw new BlueskyException("NOT_EXIST_PARAMETER_MAINMENU");
+		var projectId = settingParameter.projectId();
+		if (!StringUtils.hasText(projectId)) {
+			throw new BlueskyException("NOT_EXIST_PARAMETER_PROJECTID");
+		}
+		
+		var mainMenuId = settingParameter.mainMenuId();
+		if (!StringUtils.hasText(mainMenuId)) {
+			throw new BlueskyException("NOT_EXIST_PARAMETER_MAINMENUID");
 		}
 		
 		RoutingDataSourceContextHolder.setContext(() -> EventAdminConstant.DATASOURCE_NAME);
 		
 		var paramSource = new MapSqlParameterSource();
-		paramSource.addValue("product", product);
-		paramSource.addValue("mainMenu", mainMenu);
+		paramSource.addValue("adminProjectId", adminProjectId);
+		paramSource.addValue("projectId", projectId);
+		paramSource.addValue("mainMenuId", mainMenuId);
 		
-		return namedParameterJdbcTemplate.query("SELECT * FROM MainMenus WHERE product = :product AND mainMenu = :mainMenu", paramSource, ROW_MAPPER).stream().findAny().orElseGet(() -> null);
+		return namedParameterJdbcTemplate.query("SELECT * FROM MainMenu WHERE adminProjectId = :adminProjectId AND projectId = :projectId AND mainMenuId = :mainMenuId", paramSource, ROW_MAPPER).stream().findAny().orElseGet(() -> null);
 	}
 
 }

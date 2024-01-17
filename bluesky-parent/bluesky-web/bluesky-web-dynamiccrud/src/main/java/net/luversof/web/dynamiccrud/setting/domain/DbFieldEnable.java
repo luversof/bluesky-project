@@ -1,6 +1,6 @@
 package net.luversof.web.dynamiccrud.setting.domain;
 
-public enum FieldEnable {
+public enum DbFieldEnable {
 	DISABLED, 
 	ENABLED, 
 	REQUIRED

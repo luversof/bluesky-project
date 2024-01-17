@@ -1,6 +1,6 @@
 package net.luversof.web.dynamiccrud.setting.domain;
 
-public enum FieldType {
+public enum DbFieldColumnType {
 
 	BOOLEAN,
 	DATE,	// 예전 방식, 개선 필요

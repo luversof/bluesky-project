@@ -1,12 +1,13 @@
 package net.luversof.web.dynamiccrud.setting.service.eventadmin;
 
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_ADMIN_PROJECT;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_MAINMENU;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_PRODUCT;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU1_PRODUCT;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_PROJECT;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU1_PROJECT;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU2_MAINMENU;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU3_SUBMENU;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU4_QUERY;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU5_FIELD;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU4_DBQUERY;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU5_DBFIELD;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,10 +33,11 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 		subMenuList = new ArrayList<>();
 		{
 			var subMenu = new SubMenu();
-			subMenu.setProduct(KEY_PRODUCT);
-			subMenu.setMainMenu(KEY_MAINMENU);
-			subMenu.setSubMenu(KEY_SUBMENU1_PRODUCT);
-			subMenu.setSubMenuName("Product");
+			subMenu.setAdminProjectId(KEY_ADMIN_PROJECT);
+			subMenu.setProjectId(KEY_PROJECT);
+			subMenu.setMainMenuId(KEY_MAINMENU);
+			subMenu.setSubMenuId(KEY_SUBMENU1_PROJECT);
+			subMenu.setSubMenuName("Project");
 			subMenu.setTemplate("pagingList");
 			subMenu.setEnableExcel(true);
 			subMenu.setEnableInsert(true);
@@ -47,9 +49,10 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 
 		{
 			var subMenu = new SubMenu();
-			subMenu.setProduct(KEY_PRODUCT);
-			subMenu.setMainMenu(KEY_MAINMENU);
-			subMenu.setSubMenu(KEY_SUBMENU2_MAINMENU);
+			subMenu.setAdminProjectId(KEY_ADMIN_PROJECT);
+			subMenu.setProjectId(KEY_PROJECT);
+			subMenu.setMainMenuId(KEY_MAINMENU);
+			subMenu.setSubMenuId(KEY_SUBMENU2_MAINMENU);
 			subMenu.setSubMenuName("MainMenu");
 			subMenu.setTemplate("pagingList");
 			subMenu.setEnableExcel(true);
@@ -62,9 +65,10 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 
 		{
 			var subMenu = new SubMenu();
-			subMenu.setProduct(KEY_PRODUCT);
-			subMenu.setMainMenu(KEY_MAINMENU);
-			subMenu.setSubMenu(KEY_SUBMENU3_SUBMENU);
+			subMenu.setAdminProjectId(KEY_ADMIN_PROJECT);
+			subMenu.setProjectId(KEY_PROJECT);
+			subMenu.setMainMenuId(KEY_MAINMENU);
+			subMenu.setSubMenuId(KEY_SUBMENU3_SUBMENU);
 			subMenu.setSubMenuName("SubMenu");
 			subMenu.setTemplate("pagingList");
 			subMenu.setEnableExcel(true);
@@ -77,9 +81,10 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 
 		{
 			var subMenu = new SubMenu();
-			subMenu.setProduct(KEY_PRODUCT);
-			subMenu.setMainMenu(KEY_MAINMENU);
-			subMenu.setSubMenu(KEY_SUBMENU4_QUERY);
+			subMenu.setAdminProjectId(KEY_ADMIN_PROJECT);
+			subMenu.setProjectId(KEY_PROJECT);
+			subMenu.setMainMenuId(KEY_MAINMENU);
+			subMenu.setSubMenuId(KEY_SUBMENU4_DBQUERY);
 			subMenu.setSubMenuName("Query");
 			subMenu.setTemplate("pagingList");
 			subMenu.setEnableExcel(true);
@@ -92,9 +97,10 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 
 		{
 			var subMenu = new SubMenu();
-			subMenu.setProduct(KEY_PRODUCT);
-			subMenu.setMainMenu(KEY_MAINMENU);
-			subMenu.setSubMenu(KEY_SUBMENU5_FIELD);
+			subMenu.setAdminProjectId(KEY_ADMIN_PROJECT);
+			subMenu.setProjectId(KEY_PROJECT);
+			subMenu.setMainMenuId(KEY_MAINMENU);
+			subMenu.setSubMenuId(KEY_SUBMENU5_DBFIELD);
 			subMenu.setSubMenuName("Field");
 			subMenu.setTemplate("pagingList");
 			subMenu.setEnableExcel(true);
@@ -109,8 +115,9 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 	@Override
 	public List<SubMenu> findList(SettingParameter settingParameter) {
 		return subMenuList.stream()
-				.filter(x -> x.getProduct().equals(settingParameter.product())
-						&& x.getMainMenu().equals(settingParameter.mainMenu()))
+				.filter(x -> x.getAdminProjectId().equals(settingParameter.adminProjectId())
+						&& x.getProjectId().equals(settingParameter.projectId())
+						&& x.getMainMenuId().equals(settingParameter.mainMenuId()))
 				.toList();
 	}
 

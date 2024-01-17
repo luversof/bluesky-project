@@ -1,6 +1,6 @@
 package net.luversof.web.dynamiccrud.setting.domain;
 
-public enum QueryDbType {
+public enum DbQueryDbType {
 	MySql,
 	MsSql
 }

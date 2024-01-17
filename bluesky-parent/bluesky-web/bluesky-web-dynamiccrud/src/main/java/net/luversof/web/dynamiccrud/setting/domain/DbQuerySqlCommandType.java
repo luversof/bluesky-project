@@ -1,6 +1,6 @@
 package net.luversof.web.dynamiccrud.setting.domain;
 
-public enum QuerySqlCommandType {
+public enum DbQuerySqlCommandType {
 	INSERT,
 	SELECT,
 	UPDATE,

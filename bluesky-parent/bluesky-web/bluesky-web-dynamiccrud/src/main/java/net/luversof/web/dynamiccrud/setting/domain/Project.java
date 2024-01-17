@@ -2,8 +2,8 @@ package net.luversof.web.dynamiccrud.setting.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,14 +14,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "Products")
-public class Product extends Setting {
+@Table(name = "Project", uniqueConstraints = @UniqueConstraint(columnNames = { "adminProjectId", "projectId" }))
+public class Project extends Setting {
 	
-	@Id
 	@Column(length = 20)
-	private String product;
+	private String adminProjectId;
+	
+	@Column(length = 20)
+	private String projectId;
 	
 	@Column(length = 40, nullable = false)
-	private String productName;
+	private String projectName;
 
 }

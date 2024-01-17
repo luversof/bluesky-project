@@ -10,9 +10,10 @@ public class SubMenuRowMapper extends SettingRowMapper<SubMenu> {
 	@Override
 	public SubMenu mapRow(ResultSet rs, int rowNum) throws SQLException {
 		var subMenu = new SubMenu(
-			rs.getString("product"),
-			rs.getString("mainMenu"),
-			rs.getString("subMenu"),
+			rs.getString("adminProjectId"),
+			rs.getString("projectId"),
+			rs.getString("mainMenuId"),
+			rs.getString("subMenuId"),
 			rs.getString("subMenuName"),
 			rs.getString("template"),
 			rs.getShort("displayOrder"),

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html data-layout-decorate="~{_layout/defaultLayout}" data-th-with="
 	thymeleafUseUtil = ${T(net.luversof.web.dynamiccrud.use.util.ThymeleafUseUtil)},
-	navibarTitle=${thymeleafUseUtil.getMainMenu(product, mainMenu).mainMenuName}">
+	navibarTitle=${thymeleafUseUtil.getMainMenu(adminProjectId, projectId, mainMenuId).mainMenuName}">
 
 <head>
 	<script src="https://unpkg.com/htmx.org"></script>
@@ -16,7 +16,7 @@
 		<div data-th-replace="~{use/_components/searchArea}" />
 		
 		<div
-			data-th-attr="hx-get=@{/use/fragment/{product}/{mainMenu}/{subMenu}/list(product=${product}, mainMenu=${mainMenu}, subMenu=${subMenu})}"
+			data-th-attr="hx-get=@{/{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/list(adminProjectId=${adminProjectId},projectId=${projectId},mainMenuId=${mainMenuId},subMenuId=${subMenuId})}"
 			hx-vals="js:{'page' : param.getRequestPage()}"
 			hx-include="#searchArea .searchinput"
 			hx-boost="true"

@@ -29,9 +29,9 @@ public class UseExcelView extends AbstractXlsxView {
 	protected void buildExcelDocument(Map<String, Object> model, Workbook workbook, HttpServletRequest request,
 			HttpServletResponse response) throws Exception {
 		
-		var product = String.valueOf(model.get("product"));
-		var mainMenu = String.valueOf(model.get("mainMenu"));
-		var subMenu = String.valueOf(model.get("subMenu"));
+		var projectId = String.valueOf(model.get("projectId"));
+		var mainMenuId = String.valueOf(model.get("mainMenuId"));
+		var subMenuId = String.valueOf(model.get("subMenuId"));
 //		@SuppressWarnings("unchecked")
 //		var columnMap = (LinkedHashMap<String, String>) model.get("columnMap");
 		
@@ -42,7 +42,7 @@ public class UseExcelView extends AbstractXlsxView {
 		
 		var contentInfo = (ContentInfo) model.get("contentInfo");
 	
-		Sheet sheet = workbook.createSheet(subMenu);
+		Sheet sheet = workbook.createSheet(subMenuId);
 		
 		var headerCellStyle = createCellStyle(workbook, CellType.HEADER);
 		var contentCellStyle = createCellStyle(workbook, CellType.CONTENT);
@@ -89,9 +89,9 @@ public class UseExcelView extends AbstractXlsxView {
 		response.setHeader(HttpHeaders.CONTENT_DISPOSITION, 
 			MessageFormat.format(
 				"attachment; filename={0}_{1}_{2}_{3}.xlsx", 
-				product,
-				mainMenu,
-				subMenu,
+				projectId,
+				mainMenuId,
+				subMenuId,
 				ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")))
 				);
 //		response.setHeader("Content-Transfer-Encoding", "binary");

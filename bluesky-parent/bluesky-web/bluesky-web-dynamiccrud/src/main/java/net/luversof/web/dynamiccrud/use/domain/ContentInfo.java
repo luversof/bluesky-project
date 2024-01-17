@@ -11,8 +11,8 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
-import net.luversof.web.dynamiccrud.setting.domain.Field;
-import net.luversof.web.dynamiccrud.setting.domain.FieldType;
+import net.luversof.web.dynamiccrud.setting.domain.DbField;
+import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
 
 /**
  * 응답할 데이터 목록을 가공한 정보를 담고 있는 객체
@@ -41,7 +41,7 @@ public class ContentInfo {
 	@Getter
 	private List<Map<String, Object>> processedContentMapList;
 	
-	public ContentInfo(List<Map<String, Object>> contentMapList, List<Field> fieldList) {
+	public ContentInfo(List<Map<String, Object>> contentMapList, List<DbField> fieldList) {
 		
 		// 데이터가 없으면 계산을 할 수 없음.
 		if (contentMapList == null || contentMapList.isEmpty()) {
@@ -62,24 +62,24 @@ public class ContentInfo {
 		
 		firstContent.keySet().forEach(key -> {
 			if (fieldList == null || fieldList.isEmpty()) {
-				contentKeyList.add(new ContentKey(key, key, FieldType.STRING));
+				contentKeyList.add(new ContentKey(key, key, DbFieldColumnType.STRING));
 				return;
 			}
 			
-			var targetField = fieldList.stream().filter(x -> x.getColumn().equals(key)).findAny().orElseGet(() -> null);
+			var targetField = fieldList.stream().filter(x -> x.getColumnId().equals(key)).findAny().orElseGet(() -> null);
 			if (targetField == null) {
-				contentKeyList.add(new ContentKey(key, key, FieldType.STRING));
+				contentKeyList.add(new ContentKey(key, key, DbFieldColumnType.STRING));
 				return;
 			}
 			
-			if (targetField.isVisible()) {
-				contentKeyList.add(new ContentKey(targetField.getColumn(), targetField.getName(), targetField.getType()));
+			if (targetField.isColumnVisible()) {
+				contentKeyList.add(new ContentKey(targetField.getColumnId(), targetField.getColumnName(), targetField.getColumnType()));
 			}
 		});
 		
 		// SPEL 타입의 key도 추가해야 함
-		fieldList.stream().filter(x -> x.getType().equals(FieldType.SPEL)).forEach(field -> {
-			contentKeyList.add(new ContentKey(field.getColumn(), field.getName(), field.getType()));
+		fieldList.stream().filter(x -> x.getColumnType().equals(DbFieldColumnType.SPEL)).forEach(field -> {
+			contentKeyList.add(new ContentKey(field.getColumnId(), field.getColumnName(), field.getColumnType()));
 		});
 		
 		// TODO Collections.swap(listCountries, 1, 5); 과 같이 사용하여 contentKeyList 순서를 정렬해야 함
@@ -98,13 +98,13 @@ public class ContentInfo {
 				// type에 따라 적절하게 값을 처리한다.
 				// SPEL의 경우 format의 설정을 기준으로 처리
 				// contentMap에도 SPEL의 value를 추가
-				if (contentKey.getType().equals(FieldType.SPEL)) {	
-					var field = fieldList.stream().filter(x -> x.getColumn().equals(contentKey.getOriginKey())).findAny().orElseGet(() -> null);
-					if (field.getFormat() == null || field.getFormat().isEmpty()) {
+				if (contentKey.getType().equals(DbFieldColumnType.SPEL)) {	
+					var field = fieldList.stream().filter(x -> x.getColumnId().equals(contentKey.getOriginKey())).findAny().orElseGet(() -> null);
+					if (field.getColumnFormat() == null || field.getColumnFormat().isEmpty()) {
 						processedContentMap.put(contentKey.getKey(), null);	
 						contentMap.put(contentKey.getOriginKey(), null);
 					} else {
-						var expression = expressionParser.parseExpression(field.getFormat());
+						var expression = expressionParser.parseExpression(field.getColumnFormat());
 						
 						var value = expression.getValue(evaluationContext);
 						contentMap.put(contentKey.getOriginKey(), value);
@@ -131,7 +131,7 @@ public class ContentInfo {
 		
 		private String originKey;
 		private String key;
-		private FieldType type;
+		private DbFieldColumnType type;
 		
 	}
 }

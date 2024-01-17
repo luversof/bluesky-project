@@ -7,17 +7,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.util.MultiValueMap;
 
-import net.luversof.web.dynamiccrud.setting.domain.Field;
-import net.luversof.web.dynamiccrud.setting.domain.Query;
+import net.luversof.web.dynamiccrud.setting.domain.DbField;
+import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
 
 public interface UseService {
 	
-	Page<Map<String, Object>> find(Query query, List<Field> fieldList, Pageable pageable, Map<String, String> dataMap);
+	Page<Map<String, Object>> find(DbQuery query, List<DbField> fieldList, Pageable pageable, Map<String, String> dataMap);
 	
-	Object create(Query query, List<Field> fieldList, Map<String, String> dataMap);
+	Object create(DbQuery query, List<DbField> fieldList, Map<String, String> dataMap);
 	
-	Object update(Query query, List<Field> fieldList, Map<String, String> dataMap);
+	Object update(DbQuery query, List<DbField> fieldList, Map<String, String> dataMap);
 	
-	Object delete(Query query, List<Field> fieldList, MultiValueMap<String, String> dataMap);
+	Object delete(DbQuery query, List<DbField> fieldList, MultiValueMap<String, String> dataMap);
 
 }

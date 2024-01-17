@@ -2,34 +2,33 @@ package net.luversof.web.dynamiccrud.setting.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import net.luversof.web.dynamiccrud.setting.constant.SettingConstant;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "SubMenus")
-@IdClass(SubMenuId.class)
+@Table(name = "SubMenu", uniqueConstraints = @UniqueConstraint(columnNames = { "adminProjectId", "projectId", "mainMenuId", "subMenuId" }))
 public class SubMenu extends Setting {
 	
-	@Id
 	@Column(length = 20)
-	private String product;
+	private String adminProjectId;
 	
-	@Id
-	@Column(length = 40)
-	private String mainMenu;
+	@Column(length = 20)
+	private String projectId;
 	
-	@Id
 	@Column(length = 40)
-	private String subMenu;
+	private String mainMenuId;
+	
+	@Column(length = 40)
+	private String subMenuId;
 	
 	@Column(length = 40, nullable = false)
 	private String subMenuName;
@@ -65,7 +64,11 @@ public class SubMenu extends Setting {
 	private boolean enableDelete;
 	
 	public String getUrl() {
-		return String.format("/use/%s/%s/%s", getProduct(), getMainMenu(), getSubMenu());
+		if (SettingConstant.KEY_ADMIN_PROJECT.equals(getAdminProjectId())) {
+			return String.format("/%s/use/%s/%s/%s", getAdminProjectId(), getProjectId(), getMainMenuId(), getSubMenuId());
+		} else {
+			return String.format("/%s/use/%s/%s/%s", getAdminProjectId(), getProjectId(), getMainMenuId(), getSubMenuId());
+		}
 	}
 
 }
