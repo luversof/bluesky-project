@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
-import net.luversof.web.dynamiccrud.setting.domain.DbQuerySqlCommandType;
+import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.thymeleaf.constant.UrlConstant;
 import net.luversof.web.dynamiccrud.use.domain.ContentInfo;
 import net.luversof.web.dynamiccrud.use.service.UseServiceDecorator;
@@ -46,17 +46,16 @@ public class UseFragmentController {
 			@PathVariable String adminProjectId,
 			@PathVariable String projectId, 
 			@PathVariable String mainMenuId, 
-			@PathVariable String subMenuId, 
+			@PathVariable String subMenuId,
 			Pageable pageable, 
 			@RequestParam Map<String, String> paramMap,
 			HttpServletResponse response,
 			Model model) {
-		
-		var dbQuery = ThymeleafUseUtil.getDbQuery(adminProjectId, projectId, mainMenuId, subMenuId, DbQuerySqlCommandType.SELECT);
-		var dbFieldList = ThymeleafUseUtil.getDbFieldList(adminProjectId, projectId, mainMenuId, subMenuId);
+		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
+		var dbFieldList = ThymeleafUseUtil.getDbFieldList(settingParameter);
 		model.addAttribute("dbFieldList", dbFieldList);
 		
-		var page = useService.find(dbQuery, dbFieldList, pageable, paramMap);
+		var page = useService.find(settingParameter, pageable, paramMap);
 		model.addAttribute("page", page);
 		
 		// 응답 데이터 목록 관리 객체
@@ -91,18 +90,16 @@ public class UseFragmentController {
 			HttpServletResponse response,
 			Model model) {
 		
-		var dbFieldList = ThymeleafUseUtil.getDbFieldList(adminProjectId, projectId, mainMenuId, subMenuId);
+		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
 		
 		// 로그인한 유저 정보 추가 (설정 정보의 경우 필요하여 추가함. 기본 제공 변수 값에 대한 정의가 필요할수도 있음)
 		dataMap.put("writer", "bluesky계정");
 
 		if (modalMode.equals("create")) {
-			var dbQuery = ThymeleafUseUtil.getDbQuery(adminProjectId, projectId, mainMenuId, subMenuId, DbQuerySqlCommandType.INSERT);
-			useService.create(dbQuery, dbFieldList, dataMap);
+			useService.create(settingParameter, dataMap);
 			response.setHeader("HX-Trigger", "createModal");	// Htmx 응답 트리거를 위한 설정
 		} else {
-			var dbQuery = ThymeleafUseUtil.getDbQuery(adminProjectId, projectId, mainMenuId, subMenuId, DbQuerySqlCommandType.UPDATE);
-			useService.update(dbQuery, dbFieldList, dataMap);
+			useService.update(settingParameter, dataMap);
 			response.setHeader("HX-Trigger", "updateModal");	// Htmx 응답 트리거를 위한 설정
 		}
 		
@@ -119,9 +116,8 @@ public class UseFragmentController {
 			@RequestParam MultiValueMap<String, String> dataMap,
 			HttpServletResponse response,
 			Model model) {
-		var dbQuery = ThymeleafUseUtil.getDbQuery(adminProjectId, projectId, mainMenuId, subMenuId, DbQuerySqlCommandType.DELETE);
-		var dbFieldList = ThymeleafUseUtil.getDbFieldList(adminProjectId, projectId, mainMenuId, subMenuId);
-		useService.delete(dbQuery, dbFieldList, dataMap);
+		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
+		useService.delete(settingParameter, dataMap);
 		
 		response.setHeader("HX-Trigger", "deleteModal");	// Htmx 응답 트리거를 위한 설정
 		return "use/fragment/modalForm";
@@ -150,12 +146,11 @@ public class UseFragmentController {
 			@PathVariable String modalMode,
 			@RequestParam Map<String, String> dataMap,
 			HttpServletResponse response) throws JsonMappingException, JsonProcessingException {
+		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
 		var dataMapList = objectMapper.readValue(dataMap.get("bulkData"), new TypeReference<List<Map<String, String>>>() {});
 		
-		var dbFieldList = ThymeleafUseUtil.getDbFieldList(adminProjectId, projectId, mainMenuId, subMenuId);
-		var dbQuery = ThymeleafUseUtil.getDbQuery(adminProjectId, projectId, mainMenuId, subMenuId, DbQuerySqlCommandType.INSERT);
 		for (var map : dataMapList) {
-			useService.create(dbQuery, dbFieldList, map);
+			useService.create(settingParameter, map);
 		}
 		
 		response.setHeader("HX-Trigger", "importModalBulk");	// Htmx 응답 트리거를 위한 설정

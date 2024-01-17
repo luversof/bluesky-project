@@ -25,8 +25,11 @@ import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldEnable;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
+import net.luversof.web.dynamiccrud.setting.domain.DbQuerySqlCommandType;
+import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.support.DynamicCrudSettingTransactionHandler;
 import net.luversof.web.dynamiccrud.use.service.UseService;
+import net.luversof.web.dynamiccrud.use.util.ThymeleafUseUtil;
 
 @Service
 public class MariadbUseService implements UseService {
@@ -40,25 +43,28 @@ public class MariadbUseService implements UseService {
 	private static final RowMapper<Map<String, Object>> ROW_MAPPER = new ColumnMapRowMapper();
 
 	@Override
-	public Page<Map<String, Object>> find(DbQuery query, List<DbField> fieldList, Pageable pageable, Map<String, String> dataMap) {
-		RoutingDataSourceContextHolder.setContext(() -> query.getDataSourceName());
+	public Page<Map<String, Object>> find(SettingParameter settingParameter, Pageable pageable, Map<String, String> dataMap) {
+		var dbQuery = ThymeleafUseUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.SELECT);
+		var dbFieldList = ThymeleafUseUtil.getDbFieldList(settingParameter);
 		
-		var selectQueryBuilder = new StringBuilder(query.getQueryString());
+		RoutingDataSourceContextHolder.setContext(() -> dbQuery.getDataSourceName());
+		
+		var selectQueryBuilder = new StringBuilder(dbQuery.getQueryString());
 		
 		var countQueryBuilder = new StringBuilder("SELECT COUNT(1) FROM ");
-		countQueryBuilder.append(Pattern.compile("FROM", Pattern.CASE_INSENSITIVE).split(query.getQueryString())[1]);
+		countQueryBuilder.append(Pattern.compile("FROM", Pattern.CASE_INSENSITIVE).split(dbQuery.getQueryString())[1]);
 		
 		var paramSource = new MapSqlParameterSource();
 		
 		// 필수 검색 조건이 있는 경우 확인
-		var requiredFieldList = fieldList.stream().filter(x -> DbFieldEnable.REQUIRED.equals(x.getEnableSearch())).toList();
+		var requiredFieldList = dbFieldList.stream().filter(x -> DbFieldEnable.REQUIRED.equals(x.getEnableSearch())).toList();
 		if (requiredFieldList.stream().anyMatch(x -> !dataMap.containsKey(x.getColumnId()))) {
 			return new PageImpl<>(Collections.emptyList(), pageable, 0);
 		}
 		
 		// 검색 대상 컬럼 목록 추출
 		var conditionQueryBuilder = new StringBuilder();
-		var targetFieldList = fieldList.stream().filter(x -> (DbFieldEnable.REQUIRED.equals(x.getEnableSearch()) || DbFieldEnable.ENABLED.equals(x.getEnableSearch())) && dataMap.containsKey(x.getColumnId()) && StringUtils.hasText(dataMap.get(x.getColumnId()))).toList();
+		var targetFieldList = dbFieldList.stream().filter(x -> (DbFieldEnable.REQUIRED.equals(x.getEnableSearch()) || DbFieldEnable.ENABLED.equals(x.getEnableSearch())) && dataMap.containsKey(x.getColumnId()) && StringUtils.hasText(dataMap.get(x.getColumnId()))).toList();
 		if (!targetFieldList.isEmpty()) {
 			boolean checkAlreadWhereCondition = false;
 			conditionQueryBuilder.append(" WHERE ");
@@ -91,46 +97,34 @@ public class MariadbUseService implements UseService {
 		return new PageImpl<>(contentList, pageable, totalCount);
 	}
 	
-	/**
-	 * jdbcTemplate은 insert, update, delete를  update method로 동일하게 수행
-	 */
+	
 	@Override
-	public Object create(DbQuery query, List<DbField> fieldList, Map<String, String> dataMap) {
-		RoutingDataSourceContextHolder.setContext(() -> query.getDataSourceName());
-		
-		var insertQueryBuilder = new StringBuilder(query.getQueryString() + " ");
-		var paramSource = new MapSqlParameterSource();
-		var targetFieldList = fieldList.stream().filter(x -> (DbFieldEnable.REQUIRED.equals(x.getEnableSearch()) || DbFieldEnable.ENABLED.equals(x.getEnableSearch())) && dataMap.containsKey(x.getColumnId()) && StringUtils.hasText(dataMap.get(x.getColumnId()))).toList();
-		if (!targetFieldList.isEmpty()) {
-			setSqlParameterSourceRegisterSqlType(paramSource, fieldList);
-			dataMap.forEach((key, value) -> paramSource.addValue(key, StringUtils.hasText(value) ? value : null));
-		}
-		return dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() -> namedParameterJdbcTemplate.update(insertQueryBuilder.toString(), paramSource));
+	public Object create(SettingParameter settingParameter, Map<String, String> dataMap) {
+		var dbQuery = ThymeleafUseUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.INSERT);
+		var dbFieldList = ThymeleafUseUtil.getDbFieldList(settingParameter);
+		return jdbcTemplateUpdate(dbQuery, dbFieldList, dataMap);
 	}
 
 	/**
 	 * insert/update query는 등록된 쿼리를 그대로 실행하고 넘겨받은 postData만 설정함
 	 */
 	@Override
-	public Object update(DbQuery query, List<DbField> fieldList, Map<String, String> dataMap) {
-		return create(query, fieldList, dataMap);
+	public Object update(SettingParameter settingParameter, Map<String, String> dataMap) {
+		var dbQuery = ThymeleafUseUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.UPDATE);
+		var dbFieldList = ThymeleafUseUtil.getDbFieldList(settingParameter);
+		return jdbcTemplateUpdate(dbQuery, dbFieldList, dataMap);
 	}
-	
-	private void setSqlParameterSourceRegisterSqlType(MapSqlParameterSource paramSource, List<DbField> fieldList) {
-		fieldList.forEach(field -> {
-			if (field.getColumnType().equals(DbFieldColumnType.BOOLEAN)) {
-				paramSource.registerSqlType(field.getColumnId(), JDBCType.BIT.getVendorTypeNumber());
-			}
-		});
-	}
-	
+
 	
 	/**
 	 * Delete의 경우 여러 건을 동시에 삭제할 수 있음.
 	 * 삭제도 update 쿼리를 통해 수행함
 	 */
 	@Override
-	public Object delete(DbQuery query, List<DbField> fieldList, MultiValueMap<String, String> dataMap) {
+	public Object delete(SettingParameter settingParameter, MultiValueMap<String, String> dataMap) {
+		var dbQuery = ThymeleafUseUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.DELETE);
+		var dbFieldList = ThymeleafUseUtil.getDbFieldList(settingParameter);
+		
 		List<Map<String, String>> dataMapList = new ArrayList<>();
 		
 		dataMap.forEach((key, value) -> {
@@ -149,10 +143,35 @@ public class MariadbUseService implements UseService {
 
 		List<Object> resultList = new ArrayList<Object>();
 		dataMapList.forEach(map -> {
-			Object result = update(query, fieldList, map);
+			Object result = jdbcTemplateUpdate(dbQuery, dbFieldList, map);
 			resultList.add(result);
 		});
 		return resultList;	
+	}
+	
+	
+	/**
+	 * jdbcTemplate은 insert, update, delete를  update method로 동일하게 수행
+	 */
+	private Object jdbcTemplateUpdate(DbQuery dbQuery, List<DbField> dbFieldList, Map<String, String> dataMap) {
+		RoutingDataSourceContextHolder.setContext(() -> dbQuery.getDataSourceName());
+		
+		var insertQueryBuilder = new StringBuilder(dbQuery.getQueryString() + " ");
+		var paramSource = new MapSqlParameterSource();
+		var targetFieldList = dbFieldList.stream().filter(x -> (DbFieldEnable.REQUIRED.equals(x.getEnableSearch()) || DbFieldEnable.ENABLED.equals(x.getEnableSearch())) && dataMap.containsKey(x.getColumnId()) && StringUtils.hasText(dataMap.get(x.getColumnId()))).toList();
+		if (!targetFieldList.isEmpty()) {
+			setSqlParameterSourceRegisterSqlType(paramSource, dbFieldList);
+			dataMap.forEach((key, value) -> paramSource.addValue(key, StringUtils.hasText(value) ? value : null));
+		}
+		return dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() -> namedParameterJdbcTemplate.update(insertQueryBuilder.toString(), paramSource));
+	}
+	
+	private void setSqlParameterSourceRegisterSqlType(MapSqlParameterSource paramSource, List<DbField> fieldList) {
+		fieldList.forEach(field -> {
+			if (field.getColumnType().equals(DbFieldColumnType.BOOLEAN)) {
+				paramSource.registerSqlType(field.getColumnId(), JDBCType.BIT.getVendorTypeNumber());
+			}
+		});
 	}
 
 }

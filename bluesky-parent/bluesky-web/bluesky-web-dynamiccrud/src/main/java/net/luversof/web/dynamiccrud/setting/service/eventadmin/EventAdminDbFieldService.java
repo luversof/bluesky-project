@@ -95,12 +95,13 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setProjectId(KEY_PROJECT);
 			field.setMainMenuId(KEY_MAINMENU);
 			field.setSubMenuId(KEY_SUBMENU3_SUBMENU);
-			field.setColumnId("template");
-			field.setColumnName("템플릿");
+			field.setColumnId("dbType");
+			field.setColumnName("DB 타입");
 			field.setColumnType(DbFieldColumnType.STRING);
+			field.setColumnPreset("MsSql|MySql");
 			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
+			field.setEnableSearch(DbFieldEnable.ENABLED);
+			field.setEnableEdit(DbFieldEnable.REQUIRED);
 			field.setFormOrder((short) 5);
 			dbFieldList.add(field);
 		}
@@ -125,36 +126,6 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setProjectId(KEY_PROJECT);
 			field.setMainMenuId(KEY_MAINMENU);
 			field.setSubMenuId(KEY_SUBMENU3_SUBMENU);
-			field.setColumnId("groupNo");
-			field.setColumnName("그룹번호");
-			field.setColumnType(DbFieldColumnType.INT);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormOrder((short) 7);
-			dbFieldList.add(field);
-		}
-		{
-			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU3_SUBMENU);
-			field.setColumnId("groupTemplate");
-			field.setColumnName("그룹템플릿");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormOrder((short) 8);
-			dbFieldList.add(field);
-		}
-		{
-			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU3_SUBMENU);
 			field.setColumnId("pageSize");
 			field.setColumnName("페이지크기");
 			field.setColumnType(DbFieldColumnType.INT);
@@ -162,21 +133,6 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.ENABLED);
 			field.setFormOrder((short) 9);
-			dbFieldList.add(field);
-		}
-		{
-			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU3_SUBMENU);
-			field.setColumnId("enableCount");
-			field.setColumnName("카운팅");
-			field.setColumnType(DbFieldColumnType.BOOLEAN);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormOrder((short) 10);
 			dbFieldList.add(field);
 		}
 		{
@@ -248,7 +204,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnId("link");
 			field.setColumnName("링크");
 			field.setColumnType(DbFieldColumnType.SPEL);
-			field.setColumnFormat("'<a href=\"/use/' + #projectId + '/' + #mainMenuId + '/' + #subMenuId + '\" target=\"_blank\">link</a>'");
+			field.setColumnFormat("'<a href=\"/' + #adminProjectId + '/use/' + #projectId + '/' + #mainMenuId + '/' + #subMenuId + '\" target=\"_blank\">link</a>'");
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.DISABLED);
@@ -289,22 +245,6 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setEnableSearch(DbFieldEnable.ENABLED);
 			field.setEnableEdit(DbFieldEnable.REQUIRED);
 			field.setFormOrder((short) 5);
-			dbFieldList.add(field);
-		}
-		{
-			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU4_DBQUERY);
-			field.setColumnId("dbType");
-			field.setColumnName("DB 타입");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnPreset("MsSql|MySql");
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.ENABLED);
-			field.setEnableEdit(DbFieldEnable.REQUIRED);
-			field.setFormOrder((short) 6);
 			dbFieldList.add(field);
 		}
 		{

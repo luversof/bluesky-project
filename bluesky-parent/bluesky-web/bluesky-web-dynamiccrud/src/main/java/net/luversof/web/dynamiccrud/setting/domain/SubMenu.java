@@ -2,6 +2,8 @@ package net.luversof.web.dynamiccrud.setting.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
@@ -33,24 +35,16 @@ public class SubMenu extends Setting {
 	@Column(length = 40, nullable = false)
 	private String subMenuName;
 	
-	@Column(length = 40, nullable = false)
-	private String template;
+	@Column(length = 20, nullable = false)
+	@Enumerated(EnumType.STRING)
+	private SubMenuDbType dbType;	//MsSql, MySql
 	
 	@Column(nullable = false)
 	private Short displayOrder;
 	
 	@Column
-	private Short groupNo;
-	
-	@Column(length = 40)
-	private String groupTemplate;
-	
-	@Column
 	private Short pageSize;
-	
-	@Column(nullable = false)
-	private boolean enableCount;
-	
+
 	@Column(nullable = false)
 	private boolean enableExcel;
 	

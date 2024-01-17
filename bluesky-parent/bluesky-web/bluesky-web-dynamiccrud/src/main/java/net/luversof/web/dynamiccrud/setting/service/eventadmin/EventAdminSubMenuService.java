@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import lombok.Getter;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
+import net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType;
 import net.luversof.web.dynamiccrud.setting.service.SettingServiceListSupplier;
 
 @Service
@@ -32,82 +33,92 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 	private void loadData() {
 		subMenuList = new ArrayList<>();
 		{
-			var subMenu = new SubMenu();
-			subMenu.setAdminProjectId(KEY_ADMIN_PROJECT);
-			subMenu.setProjectId(KEY_PROJECT);
-			subMenu.setMainMenuId(KEY_MAINMENU);
-			subMenu.setSubMenuId(KEY_SUBMENU1_PROJECT);
-			subMenu.setSubMenuName("Project");
-			subMenu.setTemplate("pagingList");
-			subMenu.setEnableExcel(true);
-			subMenu.setEnableInsert(true);
-			subMenu.setEnableUpdate(true);
-			subMenu.setEnableDelete(true);
-			subMenu.setDisplayOrder((short) 1);
+			var subMenu = new SubMenu(
+					KEY_ADMIN_PROJECT,
+					KEY_PROJECT,
+					KEY_MAINMENU,
+					KEY_SUBMENU1_PROJECT,
+					"Project",
+					SubMenuDbType.MySql,
+					(short) 1,
+					(short) 20,
+					true,
+					true,
+					true,
+					true
+			);
 			subMenuList.add(subMenu);
 		}
 
 		{
-			var subMenu = new SubMenu();
-			subMenu.setAdminProjectId(KEY_ADMIN_PROJECT);
-			subMenu.setProjectId(KEY_PROJECT);
-			subMenu.setMainMenuId(KEY_MAINMENU);
-			subMenu.setSubMenuId(KEY_SUBMENU2_MAINMENU);
-			subMenu.setSubMenuName("MainMenu");
-			subMenu.setTemplate("pagingList");
-			subMenu.setEnableExcel(true);
-			subMenu.setEnableInsert(true);
-			subMenu.setEnableUpdate(true);
-			subMenu.setEnableDelete(true);
-			subMenu.setDisplayOrder((short) 2);
+			var subMenu = new SubMenu(
+					KEY_ADMIN_PROJECT,
+					KEY_PROJECT,
+					KEY_MAINMENU,
+					KEY_SUBMENU2_MAINMENU,
+					"MainMenu",
+					SubMenuDbType.MySql,
+					(short) 2,
+					(short) 20,
+					true,
+					true,
+					true,
+					true
+			);
 			subMenuList.add(subMenu);
 		}
 
 		{
-			var subMenu = new SubMenu();
-			subMenu.setAdminProjectId(KEY_ADMIN_PROJECT);
-			subMenu.setProjectId(KEY_PROJECT);
-			subMenu.setMainMenuId(KEY_MAINMENU);
-			subMenu.setSubMenuId(KEY_SUBMENU3_SUBMENU);
-			subMenu.setSubMenuName("SubMenu");
-			subMenu.setTemplate("pagingList");
-			subMenu.setEnableExcel(true);
-			subMenu.setEnableInsert(true);
-			subMenu.setEnableUpdate(true);
-			subMenu.setEnableDelete(true);
-			subMenu.setDisplayOrder((short) 3);
+			var subMenu = new SubMenu(
+					KEY_ADMIN_PROJECT,
+					KEY_PROJECT,
+					KEY_MAINMENU,
+					KEY_SUBMENU3_SUBMENU,
+					"SubMenu",
+					SubMenuDbType.MySql,
+					(short) 3,
+					(short) 20,
+					true,
+					true,
+					true,
+					true
+			);
 			subMenuList.add(subMenu);
 		}
 
 		{
-			var subMenu = new SubMenu();
-			subMenu.setAdminProjectId(KEY_ADMIN_PROJECT);
-			subMenu.setProjectId(KEY_PROJECT);
-			subMenu.setMainMenuId(KEY_MAINMENU);
-			subMenu.setSubMenuId(KEY_SUBMENU4_DBQUERY);
-			subMenu.setSubMenuName("Query");
-			subMenu.setTemplate("pagingList");
-			subMenu.setEnableExcel(true);
-			subMenu.setEnableInsert(true);
-			subMenu.setEnableUpdate(true);
-			subMenu.setEnableDelete(true);
-			subMenu.setDisplayOrder((short) 4);
+			var subMenu = new SubMenu(
+					KEY_ADMIN_PROJECT,
+					KEY_PROJECT,
+					KEY_MAINMENU,
+					KEY_SUBMENU4_DBQUERY,
+					"Query",
+					SubMenuDbType.MySql,
+					(short) 4,
+					(short) 20,
+					true,
+					true,
+					true,
+					true
+			);
 			subMenuList.add(subMenu);
 		}
 
 		{
-			var subMenu = new SubMenu();
-			subMenu.setAdminProjectId(KEY_ADMIN_PROJECT);
-			subMenu.setProjectId(KEY_PROJECT);
-			subMenu.setMainMenuId(KEY_MAINMENU);
-			subMenu.setSubMenuId(KEY_SUBMENU5_DBFIELD);
-			subMenu.setSubMenuName("Field");
-			subMenu.setTemplate("pagingList");
-			subMenu.setEnableExcel(true);
-			subMenu.setEnableInsert(true);
-			subMenu.setEnableUpdate(true);
-			subMenu.setEnableDelete(true);
-			subMenu.setDisplayOrder((short) 5);
+			var subMenu = new SubMenu(
+					KEY_ADMIN_PROJECT,
+					KEY_PROJECT,
+					KEY_MAINMENU,
+					KEY_SUBMENU5_DBFIELD,
+					"Field",
+					SubMenuDbType.MySql,
+					(short) 5,
+					(short) 20,
+					true,
+					true,
+					true,
+					true
+			);
 			subMenuList.add(subMenu);
 		}
 	}

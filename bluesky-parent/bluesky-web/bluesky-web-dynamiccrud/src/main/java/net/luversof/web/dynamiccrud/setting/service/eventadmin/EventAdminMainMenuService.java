@@ -30,7 +30,7 @@ public class EventAdminMainMenuService implements SettingServiceSupplier<MainMen
 					KEY_ADMIN_PROJECT,
 					KEY_PROJECT,
 					KEY_MAINMENU,
-				"Event Admin Setting"
+					"Event Admin Setting"
 			);
 			mainMenuList.add(mainMenu);
 		}	

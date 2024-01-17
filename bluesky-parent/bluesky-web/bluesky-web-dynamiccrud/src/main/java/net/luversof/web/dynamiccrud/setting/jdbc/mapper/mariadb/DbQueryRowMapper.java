@@ -4,7 +4,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
-import net.luversof.web.dynamiccrud.setting.domain.DbQueryDbType;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuerySqlCommandType;
 
 public class DbQueryRowMapper extends SettingRowMapper<DbQuery> {
@@ -18,8 +17,7 @@ public class DbQueryRowMapper extends SettingRowMapper<DbQuery> {
 			rs.getString("subMenuId"),
 			DbQuerySqlCommandType.valueOf(rs.getString("sqlCommandType")),
 			rs.getString("queryString"),
-			rs.getString("dataSourceName"),
-			DbQueryDbType.valueOf(rs.getString("dbType"))
+			rs.getString("dataSourceName")
 		);
 		setCommon(query, rs);
 		return query;

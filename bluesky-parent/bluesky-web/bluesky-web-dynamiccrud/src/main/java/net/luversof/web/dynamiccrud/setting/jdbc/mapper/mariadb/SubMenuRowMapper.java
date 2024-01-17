@@ -3,6 +3,7 @@ package net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
 
 public class SubMenuRowMapper extends SettingRowMapper<SubMenu> {
@@ -15,12 +16,9 @@ public class SubMenuRowMapper extends SettingRowMapper<SubMenu> {
 			rs.getString("mainMenuId"),
 			rs.getString("subMenuId"),
 			rs.getString("subMenuName"),
-			rs.getString("template"),
+			SubMenuDbType.valueOf(rs.getString("dbType")),
 			rs.getShort("displayOrder"),
-			rs.getShort("groupNo"),
-			rs.getString("groupTemplate"),
 			rs.getShort("pageSize"),
-			rs.getBoolean("enableCount"),
 			rs.getBoolean("enableExcel"),
 			rs.getBoolean("enableInsert"),
 			rs.getBoolean("enableUpdate"),

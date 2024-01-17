@@ -40,10 +40,5 @@ public class DbQuery extends Setting {
 	
 	@Column(length = 40, nullable = false)
 	private String dataSourceName;
-	
-	@Column(length = 20, nullable = false)
-	@Enumerated(EnumType.STRING)
-	private DbQueryDbType dbType;	//MsSql, MySql
-	
 
 }

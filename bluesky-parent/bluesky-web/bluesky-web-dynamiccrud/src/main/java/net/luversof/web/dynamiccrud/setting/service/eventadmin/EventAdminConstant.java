@@ -1,7 +1,7 @@
 package net.luversof.web.dynamiccrud.setting.service.eventadmin;
 
 import net.luversof.web.dynamiccrud.setting.constant.SettingConstant;
-import net.luversof.web.dynamiccrud.setting.domain.DbQueryDbType;
+import net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType;
 
 public class EventAdminConstant {
 	public static final String KEY_ADMIN_PROJECT = SettingConstant.KEY_ADMIN_PROJECT;
@@ -12,6 +12,6 @@ public class EventAdminConstant {
 	public static final String KEY_SUBMENU3_SUBMENU = "subMenu";
 	public static final String KEY_SUBMENU4_DBQUERY = "dbQuery";
 	public static final String KEY_SUBMENU5_DBFIELD = "dbField";
-	public static final DbQueryDbType DB_TYPE = DbQueryDbType.MySql; 
+	public static final SubMenuDbType DB_TYPE = SubMenuDbType.MySql; 
 	public static final String DATASOURCE_NAME = "dynamiccrud";
 }

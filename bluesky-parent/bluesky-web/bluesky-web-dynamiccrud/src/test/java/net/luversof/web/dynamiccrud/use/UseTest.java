@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuerySqlCommandType;
+import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.use.domain.ContentInfo;
 import net.luversof.web.dynamiccrud.use.service.UseServiceDecorator;
 import net.luversof.web.dynamiccrud.use.util.ThymeleafUseUtil;
@@ -41,6 +42,7 @@ public class UseTest implements GeneralTest {
 		var projectId = "aaaa";
 		var mainMenuId = "amenu";
 		var subMenuId = "asubmenu";
+		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
 
 		var query = ThymeleafUseUtil.getDbQuery(adminProjectId, projectId, mainMenuId, subMenuId, DbQuerySqlCommandType.SELECT);
 		assertThat(query).isNotNull();
@@ -52,7 +54,7 @@ public class UseTest implements GeneralTest {
 
 		var paramMap = Collections.<String, String>emptyMap();
 
-		var page = useService.find(query, fieldList, pageable, paramMap);
+		var page = useService.find(settingParameter, pageable, paramMap);
 
 		var contentInfo = new ContentInfo(page.getContent(), fieldList);
 		assertThat(contentInfo).isNotNull();
