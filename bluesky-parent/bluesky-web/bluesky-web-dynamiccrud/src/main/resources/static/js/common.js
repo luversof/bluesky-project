@@ -1,4 +1,3 @@
-var searchInputSelector = "#searchArea .searchinput";
 var modalSelector = "#modal";
 
 // url query parameter 처리
@@ -26,7 +25,7 @@ var param = (() => {
 			this.refreshUrl();
 		},
 		resetParam() {
-			document.querySelectorAll(searchInputSelector).forEach(el => el.value = "");
+			document.querySelectorAll("#searchArea .searchinput").forEach(el => el.value = "");
 			_params = new URLSearchParams();
 			this.refreshUrl();
 		},
@@ -37,25 +36,64 @@ var param = (() => {
 	}
 })();
 
-/** modalForm에 field type에 따라 input이 생성됨. type에 따라 알맞게 데이터를 설정 */
-function copyContentDataToModalForm(contentDataEl, modalTarget) {
-	contentDataEl.querySelectorAll("input[type=hidden]").forEach(el => {
-		var targetInput = modalTarget.querySelector("[name=" + el.name + "]");
-		targetInput.value = el.value;
-		if (!el.name.startsWith("__org__")) {
-			var checkBoxInput = targetInput.closest("div").querySelector("input[type=checkbox]");
-			if (checkBoxInput != null) {
-				checkBoxInput.checked = eval(el.value);
-			}
+var modalFormFn = (() => {
+	return {
+		/** modalForm에 field type에 따라 input이 생성됨. type에 따라 알맞게 데이터를 설정 */
+		copyContentDataToModalForm(contentDataEl) {
+			var modalTarget = document.querySelector(modalSelector);
+			contentDataEl.querySelectorAll("input[type=hidden]").forEach(el => {
+				var targetInput = modalTarget.querySelector("[name=" + el.name + "]");
+				targetInput.value = el.value;
+				if (!el.name.startsWith("__org__")) {
+					var checkBoxInput = targetInput.closest("div").querySelector("input[type=checkbox]");
+					if (checkBoxInput != null) {
+						checkBoxInput.checked = eval(el.value);
+					}
+				}
+			});
+		},
+		/** 검색 내용을 modalForm으로 복사 */
+		copySearchAreaToModalForm(modalTarget) {
+			document.querySelectorAll("#searchArea .searchinput").forEach(el => modalTarget.querySelector("[name=" + el.name  +"]").value = el.value);
+		},
+		/** modalForm 영역에 초기 처리 */
+		initialize() {
+			var modalTarget = document.querySelector(modalSelector);
+			
+			/** (s) 데이터 복사 eventListener */
+			// contentTable 영역에 선택한 체크박스 라인의 데이터를 #modalForm의 input 으로 가져온다.
+			modalTarget.querySelector(".copyDataButton").addEventListener("click", () => {
+				var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
+				if (checkedList.length <= 0) {
+					alert("복사할 행을 체크해주세요.");
+					return;
+				}
+				this.copyContentDataToModalForm(checkedList[0].closest("tr").querySelector(".contentData"))
+			})
+			/** (e) 데이터 복사 eventListener */
+	
+			/** (s) 검색 복사 eventListener */			
+			modalTarget.querySelector(".copySearchButton").addEventListener("click", () => this.copySearchAreaToModalForm(modalTarget));
+			/** (e) 검색 복사 eventListener */
+			
+			
+			/** (s) modal의 checkBox의 on/off 값 설정 eventListener */
+			modalTarget.querySelectorAll('#modalForm input[type=checkbox]').forEach(el => el.addEventListener("change", (event) =>
+				event.target.closest('div').querySelector("input[type=hidden]").value = event.target.checked ? true : false
+			));
+			/** (e) modal의 checkBox의 on/off 값 설정 eventListener */
+			
+			/** (s) select 메뉴 중 required 이면서 값이 1개만 있는 경우 해당 값으로 기본 설정 (편의성 제공) */
+			modalTarget.querySelectorAll("#modalForm select").forEach(el => {
+				var optionList = el.querySelectorAll("option:not([value=''])");
+				if (el.required == true && optionList.length == 1) {
+					optionList[0].selected = true;
+				}
+			});
+			/** (e) select 메뉴 중 required 이면서 값이 1개만 있는 경우 해당 값으로 기본 설정 (편의성 제공) */
 		}
-	});
-}
-
-// 검색 내용을 modalForm으로 복사
-function copySearchAreaToModalForm(modalTarget) {
-	document.querySelectorAll("#searchArea .searchinput").forEach(el => modalTarget.querySelector("[name=" + el.name  +"]").value = el.value);
-}
-
+	}
+})();
 
 function checkDeleteData(event) {
 	// 삭제 대상이 선택되어 있는지 확인
@@ -97,96 +135,57 @@ document.addEventListener('htmx:beforeRequest', (event) => {
 	/** (e) exportButton 처리 */
 });
 
-document.addEventListener('showList', () => 
-	setTimeout(() => {
-		var target = document.querySelector("#contentTable");
-			/** 체크박스 선택 처리 */
-		target.querySelectorAll("input[name=contentDataCheck]").forEach(el => el.addEventListener("change", (event) => {
-			if (event.target.checked) {
-				event.target.closest("tr").classList.add("active");
-			} else {
-				event.target.closest("tr").classList.remove("active");		
-			}
-		}));
-		
-		target.querySelectorAll("input[name=contentDataCheckToggle]").forEach(el => el.addEventListener("change", (event) => {
-			event.target.closest("table").querySelector("tbody").querySelectorAll("input[name=contentDataCheck]").forEach(el => {
-				el.checked = event.target.checked;
-				el.dispatchEvent(new Event("change"));
-			});
-		}));
-	}, 1)
-);
+document.addEventListener('showList', () => setTimeout(() => {
+	/** 체크박스 선택 처리 */
+	document.querySelectorAll("#contentTable input[name=contentDataCheck]").forEach(el => el.addEventListener("change", (event) => {
+		if (event.target.checked) {
+			event.target.closest("tr").classList.add("active");
+		} else {
+			event.target.closest("tr").classList.remove("active");		
+		}
+	}));
+	
+	document.querySelectorAll("#contentTable input[name=contentDataCheckToggle]").forEach(el => el.addEventListener("change", (event) => {
+		event.target.closest("table").querySelector("tbody").querySelectorAll("input[name=contentDataCheck]").forEach(el => {
+			el.checked = event.target.checked;
+			el.dispatchEvent(new Event("change"));
+		});
+	}));
+}, 1));
 
 
 document.addEventListener('showModalForm', () => setTimeout(() => document.querySelector(modalSelector).showModal(), 1));
 document.addEventListener('closeModalForm', () => setTimeout(() => document.querySelector(modalSelector).close(), 1));
-
-function addEventListenerModalForm() {
-		var modalTarget = document.querySelector(modalSelector);	
-		
-		/** (s) 데이터 복사 eventListener */
-		// contentTable 영역에 선택한 체크박스 라인의 데이터를 #modalForm의 input 으로 가져온다.
-		modalTarget.querySelector(".copyDataButton").addEventListener("click", () => {
-			var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
-			if (checkedList.length <= 0) {
-				alert("복사할 행을 체크해주세요.");
-				return;
-			}
-			copyContentDataToModalForm(checkedList[0].closest("tr").querySelector(".contentData"), modalTarget)
-		})
-		/** (e) 데이터 복사 eventListener */
-
-		/** (s) 검색 복사 eventListener */			
-		modalTarget.querySelector(".copySearchButton").addEventListener("click", () => copySearchAreaToModalForm(modalTarget));
-		/** (e) 검색 복사 eventListener */
-		
-		
-		/** (s) modal의 checkBox의 on/off 값 설정 eventListener */
-		modalTarget.querySelectorAll('input[type=checkbox]').forEach(el => el.addEventListener("change", (event) =>
-			event.target.closest('div').querySelector("input[type=hidden]").value = event.target.checked ? true : false
-		));
-		/** (e) modal의 checkBox의 on/off 값 설정 eventListener */
-}
-
-document.addEventListener('createModalForm', () => setTimeout(() => addEventListenerModalForm(), 1));
-
-document.addEventListener('updateModalForm', (event) => {
-	setTimeout(() => {
-		addEventListenerModalForm();
-		var modalTarget = document.querySelector(modalSelector);
-		copyContentDataToModalForm(event.target.closest("tr").querySelector(".contentData"), modalTarget)
-	}, 1)
-});
+document.addEventListener('createModalForm', () => setTimeout(() => modalFormFn.initialize(), 1));
+document.addEventListener('updateModalForm', (event) => setTimeout(() => {
+	modalFormFn.initialize();
+	modalFormFn.copyContentDataToModalForm(event.target.closest("tr").querySelector(".contentData"))
+}, 1));
 
 // modalForm에 데이터 생성 요청 후 page를 1로 초기화하여 바닥 페이지 데이터 갱신 시 첫 페이지로 이동 처리  
 document.addEventListener('createModal', () => param.setParam("page", 1));
-
-document.addEventListener('exportModalBulkForm', () => {
-	setTimeout(() => {
-		var modalTarget = document.querySelector(modalSelector);
-		var checkedIds = [...document.querySelectorAll("#contentTable input[name=contentDataCheck]")].filter(el => el.checked).map(el => parseInt(el.value));
-		var targetList = contentList.filter((_el, index) => checkedIds.includes(index));
-		modalTarget.querySelector("textarea").value = JSON.stringify(targetList);
-		
-		// copyButton eventListener
-		/** (s) 데이터 복사 eventListener */
-		// textArea의 데이터를 clipboard로 복사한다.
-		modalTarget.querySelector(".copyDataButton").addEventListener("click", () => {
-			if (navigator.clipboard == undefined) {
-				alert("클립보드 복사가 지원되지 않는 환경입니다.\n직접 복사하여 사용하세요.")
-			} else {
-				navigator.clipboard.writeText(modalTarget.querySelector("textarea").value).then(() => {
-					alert("데이터를 clipboard에 복사하였습니다.");
-			    }).catch(err => {
-			        console.log('클립보드 복사 실패', err);
-			    })
-			}
-		});
-		
-		/** (e) 데이터 복사 eventListener */		
-	}, 1)
-});
+document.addEventListener('exportModalBulkForm', () => setTimeout(() => {
+	var modalTarget = document.querySelector(modalSelector);
+	var checkedIds = [...document.querySelectorAll("#contentTable input[name=contentDataCheck]")].filter(el => el.checked).map(el => parseInt(el.value));
+	var targetList = contentList.filter((_el, index) => checkedIds.includes(index));
+	modalTarget.querySelector("textarea").value = JSON.stringify(targetList);
+	
+	// copyButton eventListener
+	/** (s) 데이터 복사 eventListener */
+	// textArea의 데이터를 clipboard로 복사한다.
+	modalTarget.querySelector(".copyDataButton").addEventListener("click", () => {
+		if (navigator.clipboard == undefined) {
+			alert("클립보드 복사가 지원되지 않는 환경입니다.\n직접 복사하여 사용하세요.")
+		} else {
+			navigator.clipboard.writeText(modalTarget.querySelector("textarea").value).then(() => {
+				alert("데이터를 clipboard에 복사하였습니다.");
+		    }).catch(err => {
+		        console.log('클립보드 복사 실패', err);
+		    })
+		}
+	});
+	/** (e) 데이터 복사 eventListener */		
+}, 1));
 
 // modalForm에 데이터 생성 요청 후 page를 1로 초기화하여 바닥 페이지 데이터 갱신 시 첫 페이지로 이동 처리  
 document.addEventListener('importModalBulk', () => param.setParam("page", 1));
@@ -203,7 +202,7 @@ window.addEventListener('load', () => {
 	}));
 	
 	// 검색 변경 이벤트, 변경 시 page는 1로 리셋한다.
-	document.querySelectorAll(searchInputSelector).forEach(el => el.addEventListener("change", (event) => {
+	document.querySelectorAll("#searchArea .searchinput").forEach(el => el.addEventListener("change", (event) => {
 		param.setParam("page", 1);
 		param.setParam(event.target.name, event.target.value);
 	}));

@@ -8,7 +8,7 @@ public class IndexController {
 	
 	@GetMapping({ "", "/",})
 	public String index() {
-		return "redirect:/use/setting/menu/product";
+		return "redirect:/admin/use/eventAdmin/menu/project";	// 임시 처리
 	}
 
 	@GetMapping("/dev")
