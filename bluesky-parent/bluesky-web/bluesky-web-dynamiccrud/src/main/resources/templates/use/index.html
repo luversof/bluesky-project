@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html data-layout-decorate="~{_layout/defaultLayout}" data-th-with="
-	thymeleafUseUtil = ${T(net.luversof.web.dynamiccrud.use.util.ThymeleafUseUtil)},
-	navibarTitle=${thymeleafUseUtil.getMainMenu(adminProjectId, projectId, mainMenuId).mainMenuName}">
+	settingUtil = ${T(net.luversof.web.dynamiccrud.setting.util.SettingUtil)},
+	navibarTitle=${settingUtil.getMainMenu(adminProjectId, projectId, mainMenuId).mainMenuName}">
 
 <head>
 	<script src="https://unpkg.com/htmx.org"></script>

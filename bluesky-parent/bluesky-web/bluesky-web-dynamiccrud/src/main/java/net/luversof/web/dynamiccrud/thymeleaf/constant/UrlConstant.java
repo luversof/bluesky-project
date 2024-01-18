@@ -9,28 +9,10 @@ public class UrlConstant {
 	public static final String PATH_USE_PREFIX = "/{adminProjectId}/use";
 	public static final String PATH_FRAGMENT_PREFIX = "/fragment";
 	
-//	public static final String PATH_VARIABLE_TYPE = "{type:project|mainMenu|subMenu|query|field}";
-	
 	/**
-	 * /setting/{type}
+	 * {projectId}/setting/{mainMenuId}/{subMenuId}
 	 */
-//	public static final String PATH_SETTING_VIEW_INDEX = PATH_SETTING_PREFIX + "/" + PATH_VARIABLE_TYPE;
-	
-//	public static final String PATH_SETTING_FRAGMENT_PREFIX = PATH_SETTING_PREFIX + PATH_FRAGMENT_PREFIX;
-	
-	/**
-	 * /setting/fragment/{type}/list
-	 */
-//	public static final String PATH_SETTING_FRAGMENT_LIST = PATH_SETTING_FRAGMENT_PREFIX + "/" + PATH_VARIABLE_TYPE + "/list";
-	
-	/**
-	 * /setting/fragment/{type}/modal
-	 */
-//	public static final String PATH_SETTING_FRAGMENT_MODAL = PATH_SETTING_FRAGMENT_PREFIX + "/" + PATH_VARIABLE_TYPE + "/modal";
-	
-	
-	
-	
+	public static final String PATH_SETTING_VIEW_INDEX = PATH_SETTING_PREFIX + "/{mainMenuId}/{subMenuId}";
 	
 	/**
 	 * /{adminProjectId}/use/{projectId}/{mainMenuId}/{subMenuId}
@@ -45,14 +27,23 @@ public class UrlConstant {
 	public static final String PATH_USE_FRAGMENT_LIST = PATH_USE_FRAGMENT_PREFIX + "/{projectId}/{mainMenuId}/{subMenuId}/list";
 	
 	/**
-	 * /{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/modal
+	 * /{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/modalForm/{modalMode:create|update}
 	 */
 	public static final String PATH_USE_FRAGMENT_MODAL_FORM = PATH_USE_FRAGMENT_PREFIX + "/{projectId}/{mainMenuId}/{subMenuId}/modalForm/{modalMode:create|update}";
 	
+	/**
+	 * /{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/modalForm/{modalMode:delete}
+	 */
 	public static final String PATH_USE_FRAGMENT_MODAL_FORM_DELETE = PATH_USE_FRAGMENT_PREFIX + "/{projectId}/{mainMenuId}/{subMenuId}/modalForm/{modalMode:delete}";
 	
+	/**
+	 * /{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/modalBulkForm/{modalMode:import|export}
+	 */
 	public static final String PATH_USE_FRAGMENT_MODAL_BULK_FORM = PATH_USE_FRAGMENT_PREFIX + "/{projectId}/{mainMenuId}/{subMenuId}/modalBulkForm/{modalMode:import|export}";
 	
+	/**
+	 * /{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/excel
+	 */
 	public static final String PATH_USE_FRAGMENT_EXCEL = PATH_USE_FRAGMENT_PREFIX + "/{projectId}/{mainMenuId}/{subMenuId}/excel";
 	
 }

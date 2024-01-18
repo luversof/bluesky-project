@@ -10,7 +10,7 @@ import org.springframework.util.MultiValueMap;
 
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType;
-import net.luversof.web.dynamiccrud.use.util.ThymeleafUseUtil;
+import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 
 @Service
 public class UseServiceDecorator implements UseService {
@@ -20,7 +20,7 @@ public class UseServiceDecorator implements UseService {
 
 	@Override
 	public Page<Map<String, Object>> find(SettingParameter settingParameter, Pageable pageable, Map<String, String> dataMap) {
-		var subMenu = ThymeleafUseUtil.getSubMenu(settingParameter);
+		var subMenu = SettingUtil.getSubMenu(settingParameter);
 		if (subMenu.getDbType().equals(SubMenuDbType.MySql)) {
 			UseService useService = useServiceMap.get("mariadbUseService");
 			
@@ -32,7 +32,7 @@ public class UseServiceDecorator implements UseService {
 	
 	@Override
 	public Object create(SettingParameter settingParameter, Map<String, String> dataMap) {
-		var subMenu = ThymeleafUseUtil.getSubMenu(settingParameter);
+		var subMenu = SettingUtil.getSubMenu(settingParameter);
 		if (subMenu.getDbType().equals(SubMenuDbType.MySql)) {
 			UseService useService = useServiceMap.get("mariadbUseService");
 			
@@ -43,7 +43,7 @@ public class UseServiceDecorator implements UseService {
 
 	@Override
 	public Object update(SettingParameter settingParameter, Map<String, String> dataMap) {
-		var subMenu = ThymeleafUseUtil.getSubMenu(settingParameter);
+		var subMenu = SettingUtil.getSubMenu(settingParameter);
 		if (subMenu.getDbType().equals(SubMenuDbType.MySql)) {
 			UseService useService = useServiceMap.get("mariadbUseService");
 			
@@ -54,7 +54,7 @@ public class UseServiceDecorator implements UseService {
 
 	@Override
 	public Object delete(SettingParameter settingParameter, MultiValueMap<String, String> dataMap) {
-		var subMenu = ThymeleafUseUtil.getSubMenu(settingParameter);
+		var subMenu = SettingUtil.getSubMenu(settingParameter);
 		if (subMenu.getDbType().equals(SubMenuDbType.MySql)) {
 			UseService useService = useServiceMap.get("mariadbUseService");
 			

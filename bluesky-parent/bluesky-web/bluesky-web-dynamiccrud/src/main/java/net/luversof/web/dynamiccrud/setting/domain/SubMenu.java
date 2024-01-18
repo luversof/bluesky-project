@@ -59,7 +59,7 @@ public class SubMenu extends Setting {
 	
 	public String getUrl() {
 		if (SettingConstant.KEY_ADMIN_PROJECT.equals(getAdminProjectId())) {
-			return String.format("/%s/use/%s/%s/%s", getAdminProjectId(), getProjectId(), getMainMenuId(), getSubMenuId());
+			return String.format("/%s/setting/%s/%s", getProjectId(), getMainMenuId(), getSubMenuId());
 		} else {
 			return String.format("/%s/use/%s/%s/%s", getAdminProjectId(), getProjectId(), getMainMenuId(), getSubMenuId());
 		}

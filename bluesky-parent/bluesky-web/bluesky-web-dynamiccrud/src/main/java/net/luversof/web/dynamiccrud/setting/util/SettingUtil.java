@@ -1,4 +1,4 @@
-package net.luversof.web.dynamiccrud.use.util;
+package net.luversof.web.dynamiccrud.setting.util;
 
 import java.util.Collections;
 import java.util.List;
@@ -25,7 +25,7 @@ import net.luversof.web.dynamiccrud.setting.service.SubMenuServiceDecorator;
  */
 @UtilityClass
 @DevCheckUtil
-public class ThymeleafUseUtil extends RequestAttributeUtil {
+public class SettingUtil extends RequestAttributeUtil {
 	
 	private static final String SUBMENU_LIST = "__subMenuList_{0}_{1}_{2}";
 	private static final String DBQUERY_LIST = "__dbQueryList_{0}_{1}_{2}_{3}";

@@ -27,9 +27,9 @@ import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuerySqlCommandType;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
+import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 import net.luversof.web.dynamiccrud.support.DynamicCrudSettingTransactionHandler;
 import net.luversof.web.dynamiccrud.use.service.UseService;
-import net.luversof.web.dynamiccrud.use.util.ThymeleafUseUtil;
 
 @Service
 public class MariadbUseService implements UseService {
@@ -44,8 +44,8 @@ public class MariadbUseService implements UseService {
 
 	@Override
 	public Page<Map<String, Object>> find(SettingParameter settingParameter, Pageable pageable, Map<String, String> dataMap) {
-		var dbQuery = ThymeleafUseUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.SELECT);
-		var dbFieldList = ThymeleafUseUtil.getDbFieldList(settingParameter);
+		var dbQuery = SettingUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.SELECT);
+		var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
 		
 		RoutingDataSourceContextHolder.setContext(() -> dbQuery.getDataSourceName());
 		
@@ -100,8 +100,8 @@ public class MariadbUseService implements UseService {
 	
 	@Override
 	public Object create(SettingParameter settingParameter, Map<String, String> dataMap) {
-		var dbQuery = ThymeleafUseUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.INSERT);
-		var dbFieldList = ThymeleafUseUtil.getDbFieldList(settingParameter);
+		var dbQuery = SettingUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.INSERT);
+		var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
 		return jdbcTemplateUpdate(dbQuery, dbFieldList, dataMap);
 	}
 
@@ -110,8 +110,8 @@ public class MariadbUseService implements UseService {
 	 */
 	@Override
 	public Object update(SettingParameter settingParameter, Map<String, String> dataMap) {
-		var dbQuery = ThymeleafUseUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.UPDATE);
-		var dbFieldList = ThymeleafUseUtil.getDbFieldList(settingParameter);
+		var dbQuery = SettingUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.UPDATE);
+		var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
 		return jdbcTemplateUpdate(dbQuery, dbFieldList, dataMap);
 	}
 
@@ -122,8 +122,8 @@ public class MariadbUseService implements UseService {
 	 */
 	@Override
 	public Object delete(SettingParameter settingParameter, MultiValueMap<String, String> dataMap) {
-		var dbQuery = ThymeleafUseUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.DELETE);
-		var dbFieldList = ThymeleafUseUtil.getDbFieldList(settingParameter);
+		var dbQuery = SettingUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.DELETE);
+		var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
 		
 		List<Map<String, String>> dataMapList = new ArrayList<>();
 		

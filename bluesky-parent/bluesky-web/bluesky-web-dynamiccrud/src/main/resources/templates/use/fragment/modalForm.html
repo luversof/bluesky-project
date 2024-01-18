@@ -5,8 +5,8 @@
 
 <dialog id="modal" class="modal"
 	data-th-with="
-		thymeleafUseUtil = ${T(net.luversof.web.dynamiccrud.use.util.ThymeleafUseUtil)},
-		dbFieldList = ${thymeleafUseUtil.getDbFieldList(adminProjectId, projectId, mainMenuId, subMenuId)}
+		settingUtil = ${T(net.luversof.web.dynamiccrud.setting.util.SettingUtil)},
+		dbFieldList = ${settingUtil.getDbFieldList(adminProjectId, projectId, mainMenuId, subMenuId)}
 	">
 	<div class="modal-box max-w-xl">
 		<form method="dialog">

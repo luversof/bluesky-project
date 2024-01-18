@@ -18,9 +18,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuerySqlCommandType;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
+import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 import net.luversof.web.dynamiccrud.use.domain.ContentInfo;
 import net.luversof.web.dynamiccrud.use.service.UseServiceDecorator;
-import net.luversof.web.dynamiccrud.use.util.ThymeleafUseUtil;
 
 @Slf4j
 public class UseTest implements GeneralTest {
@@ -44,10 +44,10 @@ public class UseTest implements GeneralTest {
 		var subMenuId = "asubmenu";
 		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
 
-		var query = ThymeleafUseUtil.getDbQuery(adminProjectId, projectId, mainMenuId, subMenuId, DbQuerySqlCommandType.SELECT);
+		var query = SettingUtil.getDbQuery(adminProjectId, projectId, mainMenuId, subMenuId, DbQuerySqlCommandType.SELECT);
 		assertThat(query).isNotNull();
 
-		var fieldList = ThymeleafUseUtil.getDbFieldList(adminProjectId, projectId, mainMenuId, subMenuId);
+		var fieldList = SettingUtil.getDbFieldList(adminProjectId, projectId, mainMenuId, subMenuId);
 		assertThat(fieldList).isNotEmpty();
 
 		var pageable = PageRequest.of(0, 20);

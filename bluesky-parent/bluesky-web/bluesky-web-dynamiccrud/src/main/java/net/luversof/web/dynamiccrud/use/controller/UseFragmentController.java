@@ -23,10 +23,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
+import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 import net.luversof.web.dynamiccrud.thymeleaf.constant.UrlConstant;
 import net.luversof.web.dynamiccrud.use.domain.ContentInfo;
 import net.luversof.web.dynamiccrud.use.service.UseServiceDecorator;
-import net.luversof.web.dynamiccrud.use.util.ThymeleafUseUtil;
 import net.luversof.web.dynamiccrud.use.view.UseExcelView;
 
 @Controller
@@ -52,7 +52,7 @@ public class UseFragmentController {
 			HttpServletResponse response,
 			Model model) {
 		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
-		var dbFieldList = ThymeleafUseUtil.getDbFieldList(settingParameter);
+		var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
 		model.addAttribute("dbFieldList", dbFieldList);
 		
 		var page = useService.find(settingParameter, pageable, paramMap);

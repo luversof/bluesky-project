@@ -1,8 +1,8 @@
 <div
 	id="content"
 	data-th-with="
-		thymeleafUseUtil = ${T(net.luversof.web.dynamiccrud.use.util.ThymeleafUseUtil)},
-		targetSubMenu = ${thymeleafUseUtil.getSubMenu(adminProjectId, projectId, mainMenuId, subMenuId)}"
+		settingUtil = ${T(net.luversof.web.dynamiccrud.setting.util.SettingUtil)},
+		targetSubMenu = ${settingUtil.getSubMenu(adminProjectId, projectId, mainMenuId, subMenuId)}"
 >
 	<script data-th-inline="javascript">
 		/*<![CDATA[*/
@@ -19,7 +19,7 @@
 		</div>
 		<div>
 			<button class="btn btn-sm exportButton" 
-				data-th-if="${thymeleafUseUtil.isAdminMenu(adminProjectId)}"
+				data-th-if="${settingUtil.isAdminMenu(adminProjectId)}"
 				data-th-hx-get="@{/{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/modalBulkForm/export(adminProjectId=${adminProjectId},projectId=${projectId},mainMenuId=${mainMenuId},subMenuId=${subMenuId})}"
 				hx-target="#fragmentArea"
 			>
@@ -29,7 +29,7 @@
 				[[#{button.text.export}]]
 			</button>
 			<button class="btn btn-sm importButton"
-				data-th-if="${thymeleafUseUtil.isAdminMenu(adminProjectId)}"
+				data-th-if="${settingUtil.isAdminMenu(adminProjectId)}"
 				data-th-hx-get="@{/{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/modalBulkForm/import(adminProjectId=${adminProjectId},projectId=${projectId},mainMenuId=${mainMenuId},subMenuId=${subMenuId})}"
 				hx-target="#fragmentArea"
 			>
