@@ -303,7 +303,7 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					DbQuerySqlCommandType.INSERT,
 					"""
 					INSERT INTO DbField 
-					(adminProjectId, projectId, mainMenuId, subMenuId, columnId, columnName, columnType, columnPreset, columnFormat, columnValidation, columnVisible, enableSearch, enableEdit, formSize, formOrder, writer, createDate, updasteDate) 
+					(adminProjectId, projectId, mainMenuId, subMenuId, columnId, columnName, columnType, columnPreset, columnFormat, columnValidation, columnVisible, enableSearch, enableEdit, formSize, formOrder, writer, createDate, updateDate) 
 					VALUES (:adminProjectId, :projectId, :mainMenuId, :subMenuId, :columnId, :columnName, :columnType, :columnPreset, :columnFormat, :columnValidation, :columnVisible, :enableSearch, :enableEdit, :formSize, :formOrder, :writer, NOW(), NOW())
 					""",
 					DATASOURCE_NAME

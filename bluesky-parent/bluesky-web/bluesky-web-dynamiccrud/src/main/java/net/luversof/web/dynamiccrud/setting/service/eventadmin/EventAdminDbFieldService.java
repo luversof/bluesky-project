@@ -273,7 +273,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setProjectId(KEY_PROJECT);
 			field.setMainMenuId(KEY_MAINMENU);
 			field.setSubMenuId(KEY_SUBMENU5_DBFIELD);
-			field.setColumnId("column");
+			field.setColumnId("columnId");
 			field.setColumnName("컬럼");
 			field.setColumnType(DbFieldColumnType.STRING);
 			field.setColumnVisible(true);
@@ -288,7 +288,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setProjectId(KEY_PROJECT);
 			field.setMainMenuId(KEY_MAINMENU);
 			field.setSubMenuId(KEY_SUBMENU5_DBFIELD);
-			field.setColumnId("name");
+			field.setColumnId("columnName");
 			field.setColumnName("컬럼명");
 			field.setColumnType(DbFieldColumnType.STRING);
 			field.setColumnVisible(true);
@@ -303,7 +303,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setProjectId(KEY_PROJECT);
 			field.setMainMenuId(KEY_MAINMENU);
 			field.setSubMenuId(KEY_SUBMENU5_DBFIELD);
-			field.setColumnId("type");
+			field.setColumnId("columnType");
 			field.setColumnName("컬럼타입");
 			field.setColumnType(DbFieldColumnType.STRING);
 			field.setColumnPreset("BOOLEAN|DATE|INT|LINK|LONG|STRING|TEXT|SPEL");
@@ -319,7 +319,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setProjectId(KEY_PROJECT);
 			field.setMainMenuId(KEY_MAINMENU);
 			field.setSubMenuId(KEY_SUBMENU5_DBFIELD);
-			field.setColumnId("preset");
+			field.setColumnId("columnPreset");
 			field.setColumnName("프리셋");
 			field.setColumnType(DbFieldColumnType.STRING);
 			field.setColumnVisible(true);
@@ -334,7 +334,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setProjectId(KEY_PROJECT);
 			field.setMainMenuId(KEY_MAINMENU);
 			field.setSubMenuId(KEY_SUBMENU5_DBFIELD);
-			field.setColumnId("format");
+			field.setColumnId("columnFormat");
 			field.setColumnName("포맷");
 			field.setColumnType(DbFieldColumnType.STRING);
 			field.setColumnVisible(true);
@@ -349,7 +349,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setProjectId(KEY_PROJECT);
 			field.setMainMenuId(KEY_MAINMENU);
 			field.setSubMenuId(KEY_SUBMENU5_DBFIELD);
-			field.setColumnId("validation");
+			field.setColumnId("columnValidation");
 			field.setColumnName("검증");
 			field.setColumnType(DbFieldColumnType.STRING);
 			field.setColumnVisible(true);
@@ -364,7 +364,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setProjectId(KEY_PROJECT);
 			field.setMainMenuId(KEY_MAINMENU);
 			field.setSubMenuId(KEY_SUBMENU5_DBFIELD);
-			field.setColumnId("visible");
+			field.setColumnId("columnVisible");
 			field.setColumnName("표시여부");
 			field.setColumnType(DbFieldColumnType.BOOLEAN);
 			field.setColumnVisible(true);
