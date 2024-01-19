@@ -62,7 +62,7 @@ public class DbField extends Setting {
 	private Short formSize;
 	
 	@Column
-	private Short formOrder;
+	private Short formOrder;	// 입력 폼 순서를 지정하면서 동시에 목록의 순서로도 사용됨
 	
 	public boolean isEnableSearch() {
 		return DbFieldEnable.ENABLED.equals(enableSearch) || DbFieldEnable.REQUIRED.equals(enableSearch);

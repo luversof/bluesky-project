@@ -1,6 +1,7 @@
 package net.luversof.web.dynamiccrud.use.domain;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,28 +63,27 @@ public class ContentInfo {
 		
 		firstContent.keySet().forEach(key -> {
 			if (fieldList == null || fieldList.isEmpty()) {
-				contentKeyList.add(new ContentKey(key, key, DbFieldColumnType.STRING));
+				contentKeyList.add(new ContentKey(key, key, Short.MAX_VALUE, DbFieldColumnType.STRING));
 				return;
 			}
 			
 			var targetField = fieldList.stream().filter(x -> x.getColumnId().equals(key)).findAny().orElseGet(() -> null);
 			if (targetField == null) {
-				contentKeyList.add(new ContentKey(key, key, DbFieldColumnType.STRING));
+				contentKeyList.add(new ContentKey(key, key, Short.MAX_VALUE, DbFieldColumnType.STRING));
 				return;
 			}
 			
 			if (targetField.isColumnVisible()) {
-				contentKeyList.add(new ContentKey(targetField.getColumnId(), targetField.getColumnName(), targetField.getColumnType()));
+				contentKeyList.add(new ContentKey(targetField.getColumnId(), targetField.getColumnName(), targetField.getFormOrder(), targetField.getColumnType()));
 			}
 		});
 		
-		// SPEL 타입의 key도 추가해야 함
+		// SPEL 타입은 DB에서 획득한 컬럼이 아니기 때문에 별도로 추가해야 함
 		fieldList.stream().filter(x -> x.getColumnType().equals(DbFieldColumnType.SPEL)).forEach(field -> {
-			contentKeyList.add(new ContentKey(field.getColumnId(), field.getColumnName(), field.getColumnType()));
+			contentKeyList.add(new ContentKey(field.getColumnId(), field.getColumnName(), field.getFormOrder(), field.getColumnType()));
 		});
 		
-		// TODO Collections.swap(listCountries, 1, 5); 과 같이 사용하여 contentKeyList 순서를 정렬해야 함
-		
+		contentKeyList.sort(Comparator.comparing(ContentKey::getDisplayOrder));
 		
 		// 계산된 contentKeyList를 기준으로 processedContentMapList를 만든다.
 		var expressionParser = new SpelExpressionParser();
@@ -131,6 +131,7 @@ public class ContentInfo {
 		
 		private String originKey;
 		private String key;
+		private Short displayOrder;
 		private DbFieldColumnType type;
 		
 	}

@@ -511,6 +511,21 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setProjectId(projectId);
 			field.setMainMenuId(mainMenuId);
 			field.setSubMenuId(subMenuId);
+			field.setColumnId("idx");
+			field.setColumnName("#");
+			field.setColumnType(DbFieldColumnType.LONG);
+			field.setColumnVisible(false);
+			field.setEnableSearch(DbFieldEnable.DISABLED);
+			field.setEnableEdit(DbFieldEnable.DISABLED);
+			field.setFormOrder(Short.MAX_VALUE);
+			dbFieldList.add(field);
+		}
+		{
+			var field = new DbField();
+			field.setAdminProjectId(adminProjectId);
+			field.setProjectId(projectId);
+			field.setMainMenuId(mainMenuId);
+			field.setSubMenuId(subMenuId);
 			field.setColumnId("writer");
 			field.setColumnName("최종 수정자");
 			field.setColumnType(DbFieldColumnType.STRING);
