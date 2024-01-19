@@ -59,6 +59,10 @@
 
 		<!-- (s) jdbc -->
 		<dependency>
+			<groupId>com.microsoft.sqlserver</groupId>
+			<artifactId>mssql-jdbc</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>org.mariadb.jdbc</groupId>
 			<artifactId>mariadb-java-client</artifactId>
 		</dependency>
@@ -78,7 +82,7 @@
 			<artifactId>thymeleaf-extras-data-attribute</artifactId>
 		</dependency>
 		<!-- (e) thymeleaf -->
-		
+
 		<!-- (s) poi -->
 		<dependency>
 			<groupId>org.apache.poi</groupId>
@@ -86,6 +90,7 @@
 			<version>5.2.5</version>
 		</dependency>
 		<!-- (e) poi -->
+
 	</dependencies>
 
 	<build>

@@ -3,6 +3,9 @@ package net.luversof.web.dynamiccrud.use;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +22,8 @@ import net.luversof.GeneralTest;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuerySqlCommandType;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
+import net.luversof.web.dynamiccrud.setting.util.StringMapper;
+import net.luversof.web.dynamiccrud.setting.util.SettingStringUtil;
 import net.luversof.web.dynamiccrud.use.domain.ContentInfo;
 import net.luversof.web.dynamiccrud.use.service.UseServiceDecorator;
 
@@ -66,7 +71,7 @@ public class UseTest implements GeneralTest {
 	}
 
 	@Test
-	void messageFormatTest() {
+	void customSpelTest() {
 		
 		var expressionParser = new SpelExpressionParser();
 
@@ -77,5 +82,57 @@ public class UseTest implements GeneralTest {
 		String result = (String) expression.getValue(evaluationContext);
 		
 		log.debug("test : {}", result);
+	}
+	
+	@Test
+	void messageFormatTest() {
+//		String sqlTemplate = "select *, ${nonExistValue} From ${table} ${whereClause}";
+		String sqlTemplate = """
+				select 
+					*, 
+					${nonExistValue} 
+				From ${table} 
+				${whereClause}
+				""";
+		var param = new HashMap<String, String>();
+		param.put("table", "users");
+		param.put("whereClause", "where a = :aa and b = :bb");
+		String result = SettingStringUtil.format(sqlTemplate, param);
+		System.out.println(result);
+	}
+	
+	@Test
+	void tableNameFromQueryTest() {
+//		String sql = "SELECT * FROM TET WHERE A = A";
+		String sql2 = """
+				SELECT 
+					*
+				FROM 
+				
+				dbo.TET 
+				
+				WHERE A = A
+				""";
+		String sql = "SELECT * FROM table ORDER BY column1 ASC, column2 DESC LIMIT 10";
+        System.out.println(SettingStringUtil.getTableName(sql));
+	}
+	
+	@Test
+	void isCustomQueryTest() {
+		String sql = "SELECT * FROM TET where A = A";
+		System.out.println(SettingStringUtil.isCustomQuery(sql));
+	}
+	
+	@Test
+	void orderClauseFromQueryTest() {
+//		String sql = "SELECT * FROM table ORDER BY column1 ASC, column2 DESC LIMIT 10";
+//		String sql = "SELECT * FROM table LIMIT 10";
+		String sql = """
+				SELECT * FROM dbo.BongInCancelRequest
+				ORDER BY nYear ASC
+				""";
+		System.out.println("----");
+		System.out.println(SettingStringUtil.getOrderClause(sql));
+		System.out.println("----");
 	}
 }

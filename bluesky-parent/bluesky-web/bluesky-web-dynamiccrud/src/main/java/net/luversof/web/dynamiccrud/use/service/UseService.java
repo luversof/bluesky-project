@@ -7,8 +7,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.util.MultiValueMap;
 
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
+import net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType;
 
 public interface UseService {
+	
+	SubMenuDbType getSupportDbType();
 	
 	Page<Map<String, Object>> find(SettingParameter settingParameter, Pageable pageable, Map<String, String> dataMap);
 	

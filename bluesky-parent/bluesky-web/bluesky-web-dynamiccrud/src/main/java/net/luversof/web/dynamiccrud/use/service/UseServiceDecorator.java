@@ -17,15 +17,19 @@ public class UseServiceDecorator implements UseService {
 	
 	@Autowired
 	private Map<String, UseService> useServiceMap;
+	
+	@Override
+	public SubMenuDbType getSupportDbType() {
+		return null;
+	}
 
 	@Override
 	public Page<Map<String, Object>> find(SettingParameter settingParameter, Pageable pageable, Map<String, String> dataMap) {
 		var subMenu = SettingUtil.getSubMenu(settingParameter);
-		if (subMenu.getDbType().equals(SubMenuDbType.MySql)) {
-			UseService useService = useServiceMap.get("mariadbUseService");
-			
-			// query 기준으로 결과 반환 해야 하는데..
-			return useService.find(settingParameter, pageable, dataMap);
+		for (var useService : useServiceMap.values()) {
+			if (subMenu.getDbType().equals(useService.getSupportDbType())) {
+				return useService.find(settingParameter, pageable, dataMap);
+			}
 		}
 		return null;
 	}
@@ -33,10 +37,10 @@ public class UseServiceDecorator implements UseService {
 	@Override
 	public Object create(SettingParameter settingParameter, Map<String, String> dataMap) {
 		var subMenu = SettingUtil.getSubMenu(settingParameter);
-		if (subMenu.getDbType().equals(SubMenuDbType.MySql)) {
-			UseService useService = useServiceMap.get("mariadbUseService");
-			
-			return useService.create(settingParameter, dataMap);
+		for (var useService : useServiceMap.values()) {
+			if (subMenu.getDbType().equals(useService.getSupportDbType())) {
+				return useService.create(settingParameter, dataMap);
+			}
 		}
 		return null;
 	}
@@ -44,10 +48,10 @@ public class UseServiceDecorator implements UseService {
 	@Override
 	public Object update(SettingParameter settingParameter, Map<String, String> dataMap) {
 		var subMenu = SettingUtil.getSubMenu(settingParameter);
-		if (subMenu.getDbType().equals(SubMenuDbType.MySql)) {
-			UseService useService = useServiceMap.get("mariadbUseService");
-			
-			return useService.update(settingParameter, dataMap);
+		for (var useService : useServiceMap.values()) {
+			if (subMenu.getDbType().equals(useService.getSupportDbType())) {
+				return useService.update(settingParameter, dataMap);	
+			}
 		}
 		return null;
 	}
@@ -55,11 +59,13 @@ public class UseServiceDecorator implements UseService {
 	@Override
 	public Object delete(SettingParameter settingParameter, MultiValueMap<String, String> dataMap) {
 		var subMenu = SettingUtil.getSubMenu(settingParameter);
-		if (subMenu.getDbType().equals(SubMenuDbType.MySql)) {
-			UseService useService = useServiceMap.get("mariadbUseService");
-			
-			return useService.delete(settingParameter, dataMap);
+		for (var useService : useServiceMap.values()) {
+			if (subMenu.getDbType().equals(useService.getSupportDbType())) {
+				return useService.delete(settingParameter, dataMap);
+			}
 		}
 		return null;
 	}
+
+
 }

@@ -21,4 +21,20 @@ class SimpleTest {
 		log.debug("result : {}", Pattern.compile(" fRom ", Pattern.CASE_INSENSITIVE).split(a).length);
 	}
 	
+	
+//	@Test
+//	void jooqTest() {
+//		DSLContext dslContext = DSL.using(SQLDialect.MARIADB);
+//		
+//		dslContext.selectFrom("SELECT * FROM TABLEAA");
+//		
+//		var result = dslContext
+//			.select()
+//			.from("TABLENAME")
+//			.where("asdf = :ASdf")
+//			.getQuery();
+//			;
+//		System.out.println("result ----");
+//		System.out.println(result.getSQL());
+//	}
 }
