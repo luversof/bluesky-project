@@ -1,6 +1,8 @@
 <div
 	id="content"
 	data-th-with="
+		map = ${T(java.util.Map)},
+		thymeleafUtil = ${T(net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil)},
 		settingUtil = ${T(net.luversof.web.dynamiccrud.setting.util.SettingUtil)},
 		targetSubMenu = ${settingUtil.getSubMenu(adminProjectId, projectId, mainMenuId, subMenuId)}"
 >
@@ -20,7 +22,7 @@
 		<div>
 			<button class="btn btn-sm exportButton" 
 				data-th-if="${settingUtil.isAdminMenu(adminProjectId)}"
-				data-th-hx-get="@{/{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/modalBulkForm/export(adminProjectId=${adminProjectId},projectId=${projectId},mainMenuId=${mainMenuId},subMenuId=${subMenuId})}"
+				data-th-hx-get="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_BULK_FORM',map.of('modalMode','export'))}}"
 				hx-target="#fragmentArea"
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -30,7 +32,7 @@
 			</button>
 			<button class="btn btn-sm importButton"
 				data-th-if="${settingUtil.isAdminMenu(adminProjectId)}"
-				data-th-hx-get="@{/{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/modalBulkForm/import(adminProjectId=${adminProjectId},projectId=${projectId},mainMenuId=${mainMenuId},subMenuId=${subMenuId})}"
+				data-th-hx-get="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_BULK_FORM',map.of('modalMode','import'))}}"
 				hx-target="#fragmentArea"
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -40,7 +42,7 @@
 			</button>
 			<a
 				data-th-if="${targetSubMenu.enableExcel}"
-				data-th-href="@{/{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/excel(adminProjectId=${adminProjectId},projectId=${projectId},mainMenuId=${mainMenuId},subMenuId=${subMenuId})}"
+				data-th-href="@{${thymeleafUtil.getUrl('FRAGMENT_EXCEL')}}"
 				download
 				target="_blank"
 			>
@@ -85,7 +87,7 @@
 				<td data-th-each="contentKey : ${contentInfo.contentKeyList}" data-th-utext="${content.get(contentKey.key)}"></td>
 				<td data-th-if="${targetSubMenu.enableUpdate}">
 					<button class="btn btn-sm"
-						data-th-hx-get="@{/{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/modalForm/update(adminProjectId=${adminProjectId},projectId=${projectId},mainMenuId=${mainMenuId},subMenuId=${subMenuId})}"
+						data-th-hx-get="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_FORM',map.of('modalMode','update'))}}"
 						hx-target="#fragmentArea"
 					>
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -111,7 +113,7 @@
 		<div>
 			<button class="btn btn-sm"
 				data-th-if="${targetSubMenu.enableInsert}" 
-				data-th-hx-get="@{/{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/modalForm/create(adminProjectId=${adminProjectId},projectId=${projectId},mainMenuId=${mainMenuId},subMenuId=${subMenuId})}"
+				data-th-hx-get="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_FORM',map.of('modalMode','create'))}}"
 				hx-target="#fragmentArea"
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -121,7 +123,7 @@
 			</button>
 			<button class="btn btn-sm deleteButton"
 				data-th-if="${targetSubMenu.enableDelete}"
-				data-th-hx-post="@{/{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/modalForm/delete(adminProjectId=${adminProjectId},projectId=${projectId},mainMenuId=${mainMenuId},subMenuId=${subMenuId})}"
+				data-th-hx-post="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_FORM', map.of('modalMode','delete'))}}"
 				hx-include="#contentTable tr:has(input[name=contentDataCheck]:checked) .contentData input"
 				hx-target="#fragmentArea"
 			>

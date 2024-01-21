@@ -1,13 +1,13 @@
 package net.luversof.web.dynamiccrud.setting.service.eventadmin;
 
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_ADMIN_PROJECT;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_MAINMENU;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_PROJECT;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU1_PROJECT;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU2_MAINMENU;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU3_SUBMENU;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU4_DBQUERY;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU5_DBFIELD;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.ADMIN_PROJECT_ID_VALUE;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.MAINMENU_ID_VALUE;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.PROJECT_ID_VALUE;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_PROJECT;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_MAINMENU;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_SUBMENU;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_DBQUERY;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_DBFIELD;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,10 +34,10 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 		subMenuList = new ArrayList<>();
 		{
 			var subMenu = new SubMenu(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU1_PROJECT,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_PROJECT,
 					"Project",
 					SubMenuDbType.MySql,
 					(short) 1,
@@ -52,10 +52,10 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 
 		{
 			var subMenu = new SubMenu(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU2_MAINMENU,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_MAINMENU,
 					"MainMenu",
 					SubMenuDbType.MySql,
 					(short) 2,
@@ -70,10 +70,10 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 
 		{
 			var subMenu = new SubMenu(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU3_SUBMENU,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_SUBMENU,
 					"SubMenu",
 					SubMenuDbType.MySql,
 					(short) 3,
@@ -88,10 +88,10 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 
 		{
 			var subMenu = new SubMenu(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU4_DBQUERY,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_DBQUERY,
 					"Query",
 					SubMenuDbType.MySql,
 					(short) 4,
@@ -106,10 +106,10 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 
 		{
 			var subMenu = new SubMenu(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU5_DBFIELD,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_DBFIELD,
 					"Field",
 					SubMenuDbType.MySql,
 					(short) 5,

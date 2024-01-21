@@ -137,7 +137,7 @@ public class SettingTest implements GeneralTest {
 	
 	@Test
 	void fieldServiceFind() {
-		var fieldPage = fieldService.findList(new SettingParameter(EventAdminConstant.KEY_ADMIN_PROJECT, EventAdminConstant.KEY_PROJECT, EventAdminConstant.KEY_MAINMENU, EventAdminConstant.KEY_SUBMENU1_PROJECT));
+		var fieldPage = fieldService.findList(new SettingParameter(EventAdminConstant.ADMIN_PROJECT_ID_VALUE, EventAdminConstant.PROJECT_ID_VALUE, EventAdminConstant.MAINMENU_ID_VALUE, EventAdminConstant.SUBMENU_ID_VALUE_PROJECT));
 		log.debug("fieldPage : {}", fieldPage);
 	}
 	

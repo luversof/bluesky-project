@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html data-layout-decorate="~{_layout/defaultLayout}" data-th-with="
+	thymeleafUtil = ${T(net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil)},
 	settingUtil = ${T(net.luversof.web.dynamiccrud.setting.util.SettingUtil)},
 	navibarTitle=${settingUtil.getMainMenu(adminProjectId, projectId, mainMenuId).mainMenuName}">
 
@@ -14,9 +15,8 @@
 	<div data-layout-fragment="content">
 		
 		<div data-th-replace="~{use/_components/searchArea}" />
-		
 		<div
-			data-th-attr="hx-get=@{/{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/list(adminProjectId=${adminProjectId},projectId=${projectId},mainMenuId=${mainMenuId},subMenuId=${subMenuId})}"
+			data-th-attr="hx-get=@{${thymeleafUtil.getUrl('FRAGMENT_LIST')}}"
 			hx-vals="js:{'page' : param.getRequestPage()}"
 			hx-include="#searchArea .searchinput"
 			hx-boost="true"

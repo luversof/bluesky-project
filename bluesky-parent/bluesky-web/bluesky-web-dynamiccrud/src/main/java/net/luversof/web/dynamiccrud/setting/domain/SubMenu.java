@@ -58,7 +58,7 @@ public class SubMenu extends Setting {
 	private boolean enableDelete;
 	
 	public String getUrl() {
-		if (SettingConstant.KEY_ADMIN_PROJECT.equals(getAdminProjectId())) {
+		if (SettingConstant.ADMIN_PROJECT_ID_VALUE.equals(getAdminProjectId())) {
 			return String.format("/%s/setting/%s/%s", getProjectId(), getMainMenuId(), getSubMenuId());
 		} else {
 			return String.format("/%s/use/%s/%s/%s", getAdminProjectId(), getProjectId(), getMainMenuId(), getSubMenuId());

@@ -20,8 +20,8 @@ public class EventAdminProjectService implements SettingServiceSupplier<Project>
 	
 	private void loadData() {
 		project = new Project(
-			KEY_ADMIN_PROJECT,
-			KEY_PROJECT,
+			ADMIN_PROJECT_ID_VALUE,
+			PROJECT_ID_VALUE,
 			"Event Admin"
 		); 
 	}

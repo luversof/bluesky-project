@@ -1,13 +1,13 @@
 package net.luversof.web.dynamiccrud.setting.service.eventadmin;
 
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_ADMIN_PROJECT;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_MAINMENU;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_PROJECT;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU1_PROJECT;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU2_MAINMENU;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU3_SUBMENU;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU4_DBQUERY;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU5_DBFIELD;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.ADMIN_PROJECT_ID_VALUE;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.MAINMENU_ID_VALUE;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.PROJECT_ID_VALUE;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_PROJECT;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_MAINMENU;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_SUBMENU;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_DBQUERY;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_DBFIELD;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -34,13 +34,13 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 	private void loadData() {
 		dbFieldList = new ArrayList<>();
 		
-		addProjectField(KEY_ADMIN_PROJECT, KEY_PROJECT, KEY_MAINMENU, KEY_SUBMENU1_PROJECT);
+		addProjectField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_PROJECT);
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU1_PROJECT);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_PROJECT);
 			field.setColumnId("projectName");
 			field.setColumnName("프로젝트 이름");
 			field.setColumnType(DbFieldColumnType.STRING);
@@ -50,16 +50,16 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setFormOrder((short) 2);
 			dbFieldList.add(field);
 		}
-		addDefaultField(KEY_ADMIN_PROJECT, KEY_PROJECT, KEY_MAINMENU, KEY_SUBMENU1_PROJECT);
+		addDefaultField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_PROJECT);
 		
-		addProjectField(KEY_ADMIN_PROJECT, KEY_PROJECT, KEY_MAINMENU, KEY_SUBMENU2_MAINMENU);
-		addMainMenuField(KEY_ADMIN_PROJECT, KEY_PROJECT, KEY_MAINMENU, KEY_SUBMENU2_MAINMENU);
+		addProjectField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_MAINMENU);
+		addMainMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_MAINMENU);
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU2_MAINMENU);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_MAINMENU);
 			field.setColumnId("mainMenuName");
 			field.setColumnName("메인메뉴 명");
 			field.setColumnType(DbFieldColumnType.STRING);
@@ -69,17 +69,17 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setFormOrder((short) 3);
 			dbFieldList.add(field);
 		}
-		addDefaultField(KEY_ADMIN_PROJECT, KEY_PROJECT, KEY_MAINMENU, KEY_SUBMENU2_MAINMENU);
+		addDefaultField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_MAINMENU);
 		
-		addProjectField(KEY_ADMIN_PROJECT, KEY_PROJECT, KEY_MAINMENU, KEY_SUBMENU3_SUBMENU);
-		addMainMenuField(KEY_ADMIN_PROJECT, KEY_PROJECT, KEY_MAINMENU, KEY_SUBMENU3_SUBMENU);
-		addSubMenuField(KEY_ADMIN_PROJECT, KEY_PROJECT, KEY_MAINMENU, KEY_SUBMENU3_SUBMENU);
+		addProjectField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_SUBMENU);
+		addMainMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_SUBMENU);
+		addSubMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_SUBMENU);
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU3_SUBMENU);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_SUBMENU);
 			field.setColumnId("subMenuName");
 			field.setColumnName("서브메뉴 명");
 			field.setColumnType(DbFieldColumnType.STRING);
@@ -91,10 +91,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU3_SUBMENU);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_SUBMENU);
 			field.setColumnId("dbType");
 			field.setColumnName("DB 타입");
 			field.setColumnType(DbFieldColumnType.STRING);
@@ -107,10 +107,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU3_SUBMENU);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_SUBMENU);
 			field.setColumnId("displayOrder");
 			field.setColumnName("순서");
 			field.setColumnType(DbFieldColumnType.INT);
@@ -122,10 +122,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU3_SUBMENU);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_SUBMENU);
 			field.setColumnId("pageSize");
 			field.setColumnName("페이지크기");
 			field.setColumnType(DbFieldColumnType.INT);
@@ -137,10 +137,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU3_SUBMENU);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_SUBMENU);
 			field.setColumnId("enableExcel");
 			field.setColumnName("엑셀");
 			field.setColumnType(DbFieldColumnType.BOOLEAN);
@@ -152,10 +152,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU3_SUBMENU);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_SUBMENU);
 			field.setColumnId("enableInsert");
 			field.setColumnName("입력");
 			field.setColumnType(DbFieldColumnType.BOOLEAN);
@@ -167,10 +167,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU3_SUBMENU);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_SUBMENU);
 			field.setColumnId("enableUpdate");
 			field.setColumnName("수정");
 			field.setColumnType(DbFieldColumnType.BOOLEAN);
@@ -182,10 +182,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU3_SUBMENU);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_SUBMENU);
 			field.setColumnId("enableDelete");
 			field.setColumnName("삭제");
 			field.setColumnType(DbFieldColumnType.BOOLEAN);
@@ -197,10 +197,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU3_SUBMENU);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_SUBMENU);
 			field.setColumnId("link");
 			field.setColumnName("링크");
 			field.setColumnType(DbFieldColumnType.SPEL);
@@ -211,17 +211,17 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setFormOrder((short) 15);
 			dbFieldList.add(field);
 		}
-		addDefaultField(KEY_ADMIN_PROJECT, KEY_PROJECT, KEY_MAINMENU, KEY_SUBMENU3_SUBMENU);
+		addDefaultField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_SUBMENU);
 		
-		addProjectField(KEY_ADMIN_PROJECT, KEY_PROJECT, KEY_MAINMENU, KEY_SUBMENU4_DBQUERY);
-		addMainMenuField(KEY_ADMIN_PROJECT, KEY_PROJECT, KEY_MAINMENU, KEY_SUBMENU4_DBQUERY);
-		addSubMenuField(KEY_ADMIN_PROJECT, KEY_PROJECT, KEY_MAINMENU, KEY_SUBMENU4_DBQUERY);
+		addProjectField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBQUERY);
+		addMainMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBQUERY);
+		addSubMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBQUERY);
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU4_DBQUERY);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_DBQUERY);
 			field.setColumnId("sqlCommandType");
 			field.setColumnName("쿼리 타입");
 			field.setColumnType(DbFieldColumnType.STRING);
@@ -234,10 +234,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU4_DBQUERY);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_DBQUERY);
 			field.setColumnId("dataSourceName");
 			field.setColumnName("데이터소스 명");
 			field.setColumnType(DbFieldColumnType.STRING);
@@ -249,10 +249,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU4_DBQUERY);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_DBQUERY);
 			field.setColumnId("queryString");
 			field.setColumnName("쿼리");
 			field.setColumnType(DbFieldColumnType.TEXT);
@@ -262,17 +262,17 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setFormOrder((short) 7);
 			dbFieldList.add(field);
 		}
-		addDefaultField(KEY_ADMIN_PROJECT, KEY_PROJECT, KEY_MAINMENU, KEY_SUBMENU4_DBQUERY);
+		addDefaultField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBQUERY);
 		
-		addProjectField(KEY_ADMIN_PROJECT, KEY_PROJECT, KEY_MAINMENU, KEY_SUBMENU5_DBFIELD);
-		addMainMenuField(KEY_ADMIN_PROJECT, KEY_PROJECT, KEY_MAINMENU, KEY_SUBMENU5_DBFIELD);
-		addSubMenuField(KEY_ADMIN_PROJECT, KEY_PROJECT, KEY_MAINMENU, KEY_SUBMENU5_DBFIELD);
+		addProjectField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBFIELD);
+		addMainMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBFIELD);
+		addSubMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBFIELD);
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU5_DBFIELD);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
 			field.setColumnId("columnId");
 			field.setColumnName("컬럼");
 			field.setColumnType(DbFieldColumnType.STRING);
@@ -284,10 +284,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU5_DBFIELD);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
 			field.setColumnId("columnName");
 			field.setColumnName("컬럼명");
 			field.setColumnType(DbFieldColumnType.STRING);
@@ -299,10 +299,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU5_DBFIELD);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
 			field.setColumnId("columnType");
 			field.setColumnName("컬럼타입");
 			field.setColumnType(DbFieldColumnType.STRING);
@@ -315,10 +315,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU5_DBFIELD);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
 			field.setColumnId("columnPreset");
 			field.setColumnName("프리셋");
 			field.setColumnType(DbFieldColumnType.STRING);
@@ -330,10 +330,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU5_DBFIELD);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
 			field.setColumnId("columnFormat");
 			field.setColumnName("포맷");
 			field.setColumnType(DbFieldColumnType.STRING);
@@ -345,10 +345,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU5_DBFIELD);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
 			field.setColumnId("columnValidation");
 			field.setColumnName("검증");
 			field.setColumnType(DbFieldColumnType.STRING);
@@ -360,10 +360,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU5_DBFIELD);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
 			field.setColumnId("columnVisible");
 			field.setColumnName("표시여부");
 			field.setColumnType(DbFieldColumnType.BOOLEAN);
@@ -375,10 +375,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU5_DBFIELD);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
 			field.setColumnId("enableSearch");
 			field.setColumnName("검색");
 			field.setColumnType(DbFieldColumnType.STRING);
@@ -391,10 +391,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU5_DBFIELD);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
 			field.setColumnId("enableEdit");
 			field.setColumnName("입력");
 			field.setColumnType(DbFieldColumnType.STRING);
@@ -407,10 +407,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU5_DBFIELD);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
 			field.setColumnId("formSize");
 			field.setColumnName("폼크기");
 			field.setColumnType(DbFieldColumnType.INT);
@@ -422,10 +422,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
-			field.setProjectId(KEY_PROJECT);
-			field.setMainMenuId(KEY_MAINMENU);
-			field.setSubMenuId(KEY_SUBMENU5_DBFIELD);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
 			field.setColumnId("formOrder");
 			field.setColumnName("폼순서");
 			field.setColumnType(DbFieldColumnType.INT);
@@ -435,7 +435,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setFormOrder((short) 14);
 			dbFieldList.add(field);
 		}
-		addDefaultField(KEY_ADMIN_PROJECT, KEY_PROJECT, KEY_MAINMENU, KEY_SUBMENU5_DBFIELD);
+		addDefaultField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBFIELD);
 	}
 	
 	private void addProjectField(String adminProjectId, String projectId, String mainMenuId, String subMenuId) {
@@ -448,7 +448,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnId("adminProjectId");
 			field.setColumnName("어드민 프로젝트 ID");
 			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnPreset(KEY_PROJECT);
+			field.setColumnPreset(PROJECT_ID_VALUE);
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.REQUIRED);
@@ -538,7 +538,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
 			field.setProjectId(projectId);
 			field.setMainMenuId(mainMenuId);
 			field.setSubMenuId(subMenuId);
@@ -554,7 +554,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		
 		{
 			var field = new DbField();
-			field.setAdminProjectId(KEY_ADMIN_PROJECT);
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
 			field.setProjectId(projectId);
 			field.setMainMenuId(mainMenuId);
 			field.setSubMenuId(subMenuId);

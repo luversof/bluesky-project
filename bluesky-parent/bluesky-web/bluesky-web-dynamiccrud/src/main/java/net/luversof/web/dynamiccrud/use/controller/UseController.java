@@ -35,19 +35,19 @@ public class UseController extends AbstractSettingViewController {
 	}
 
 	@GetMapping(UrlConstant.PATH_USE_VIEW_INDEX)
-	public String view(
+	public String useView(
 			@PathVariable String adminProjectId,
 			@PathVariable String projectId, 
 			@PathVariable String mainMenuId, 
 			@PathVariable String subMenuId,
 			Model model) {
-		return viewInternal(adminProjectId, projectId, mainMenuId, subMenuId, model);
+		return view(adminProjectId, projectId, mainMenuId, subMenuId, model);
 	}
 
 
 	@Override
 	protected void checkPathVariable(String adminProjectId, String projectId, String mainMenuId, String subMenuId) {
-		if (SettingConstant.KEY_ADMIN_PROJECT.equals(adminProjectId)) {
+		if (SettingConstant.ADMIN_PROJECT_ID_VALUE.equals(adminProjectId)) {
 			throw new BlueskyException("INVALID ACCESS");
 		}
 	}

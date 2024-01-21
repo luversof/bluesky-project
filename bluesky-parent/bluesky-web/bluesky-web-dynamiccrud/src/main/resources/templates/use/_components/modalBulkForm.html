@@ -1,5 +1,8 @@
 <form id="modalBulkForm"
-	data-th-hx-post="@{/{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/modalBulkForm/{modalMode}(adminProjectId=${adminProjectId},projectId=${projectId},mainMenuId=${mainMenuId},subMenuId=${subMenuId},modalMode=${modalMode})}"
+	data-th-with="
+		map = ${T(java.util.Map)},
+		thymeleafUtil = ${T(net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil)}"
+	data-th-hx-post="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_BULK_FORM', map.of('modalMode',modalMode))}}"
 	hx-target="#fragmentArea"
 >
 	<div class="w-full m-1">

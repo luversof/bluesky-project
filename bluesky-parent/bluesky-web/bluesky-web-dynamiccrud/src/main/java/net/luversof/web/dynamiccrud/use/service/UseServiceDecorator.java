@@ -25,43 +25,33 @@ public class UseServiceDecorator implements UseService {
 
 	@Override
 	public Page<Map<String, Object>> find(SettingParameter settingParameter, Pageable pageable, Map<String, String> dataMap) {
-		var subMenu = SettingUtil.getSubMenu(settingParameter);
-		for (var useService : useServiceMap.values()) {
-			if (subMenu.getDbType().equals(useService.getSupportDbType())) {
-				return useService.find(settingParameter, pageable, dataMap);
-			}
-		}
-		return null;
+		var useService = getUseService(settingParameter);
+		return useService == null ? null : useService.find(settingParameter, pageable, dataMap);
 	}
 	
 	@Override
 	public Object create(SettingParameter settingParameter, Map<String, String> dataMap) {
-		var subMenu = SettingUtil.getSubMenu(settingParameter);
-		for (var useService : useServiceMap.values()) {
-			if (subMenu.getDbType().equals(useService.getSupportDbType())) {
-				return useService.create(settingParameter, dataMap);
-			}
-		}
-		return null;
+		var useService = getUseService(settingParameter);
+		return useService == null ? null : useService.create(settingParameter, dataMap);
 	}
 
 	@Override
 	public Object update(SettingParameter settingParameter, Map<String, String> dataMap) {
-		var subMenu = SettingUtil.getSubMenu(settingParameter);
-		for (var useService : useServiceMap.values()) {
-			if (subMenu.getDbType().equals(useService.getSupportDbType())) {
-				return useService.update(settingParameter, dataMap);	
-			}
-		}
-		return null;
+		var useService = getUseService(settingParameter);
+		return useService == null ? null : useService.update(settingParameter, dataMap);
 	}
 
 	@Override
 	public Object delete(SettingParameter settingParameter, MultiValueMap<String, String> dataMap) {
+		var useService = getUseService(settingParameter);
+		return useService == null ? null : useService.delete(settingParameter, dataMap);
+	}
+	
+	private UseService getUseService(SettingParameter settingParameter) {
 		var subMenu = SettingUtil.getSubMenu(settingParameter);
 		for (var useService : useServiceMap.values()) {
 			if (subMenu.getDbType().equals(useService.getSupportDbType())) {
-				return useService.delete(settingParameter, dataMap);
+				return useService;
 			}
 		}
 		return null;

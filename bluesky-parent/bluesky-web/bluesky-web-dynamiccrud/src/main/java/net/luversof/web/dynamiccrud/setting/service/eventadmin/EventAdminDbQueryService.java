@@ -1,14 +1,14 @@
 package net.luversof.web.dynamiccrud.setting.service.eventadmin;
 
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.DATASOURCE_NAME;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_ADMIN_PROJECT;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_MAINMENU;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_PROJECT;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU1_PROJECT;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU2_MAINMENU;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU3_SUBMENU;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU4_DBQUERY;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.KEY_SUBMENU5_DBFIELD;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.ADMIN_PROJECT_ID_VALUE;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.MAINMENU_ID_VALUE;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.PROJECT_ID_VALUE;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_PROJECT;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_MAINMENU;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_SUBMENU;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_DBQUERY;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_DBFIELD;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,10 +34,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		dbQueryList = new ArrayList<>();
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU1_PROJECT,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_PROJECT,
 					DbQuerySqlCommandType.SELECT,
 					"SELECT * FROM Project",
 					DATASOURCE_NAME
@@ -47,10 +47,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU1_PROJECT,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_PROJECT,
 					DbQuerySqlCommandType.INSERT,
 					"""
 					INSERT INTO Project 
@@ -64,10 +64,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU1_PROJECT,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_PROJECT,
 					DbQuerySqlCommandType.UPDATE,
 					"""
 					UPDATE Project 
@@ -81,10 +81,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU1_PROJECT,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_PROJECT,
 					DbQuerySqlCommandType.DELETE,
 					"DELETE FROM Project WHERE adminProjectId = :adminProjectId AND projectId = :projectId",
 					DATASOURCE_NAME
@@ -94,10 +94,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU2_MAINMENU,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_MAINMENU,
 					DbQuerySqlCommandType.SELECT,
 					"SELECT * FROM MainMenu",
 					DATASOURCE_NAME
@@ -107,10 +107,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU2_MAINMENU,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_MAINMENU,
 					DbQuerySqlCommandType.INSERT,
 					"""
 					INSERT INTO MainMenu 
@@ -124,10 +124,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU2_MAINMENU,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_MAINMENU,
 					DbQuerySqlCommandType.UPDATE,
 					"""
 					UPDATE MainMenu 
@@ -141,10 +141,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU2_MAINMENU,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_MAINMENU,
 					DbQuerySqlCommandType.DELETE,
 					"""
 					DELETE FROM MainMenu
@@ -157,10 +157,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU3_SUBMENU,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_SUBMENU,
 					DbQuerySqlCommandType.SELECT,
 					"SELECT * FROM SubMenu",
 					DATASOURCE_NAME
@@ -170,10 +170,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU3_SUBMENU,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_SUBMENU,
 					DbQuerySqlCommandType.INSERT,
 					"""
 					INSERT INTO SubMenu 
@@ -187,10 +187,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU3_SUBMENU,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_SUBMENU,
 					DbQuerySqlCommandType.UPDATE,
 					"""
 					UPDATE SubMenu
@@ -204,10 +204,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU3_SUBMENU,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_SUBMENU,
 					DbQuerySqlCommandType.DELETE,
 					"""
 					DELETE FROM SubMenu 
@@ -220,10 +220,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU4_DBQUERY,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_DBQUERY,
 					DbQuerySqlCommandType.SELECT,
 					"SELECT * FROM DbQuery",
 					DATASOURCE_NAME
@@ -233,10 +233,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU4_DBQUERY,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_DBQUERY,
 					DbQuerySqlCommandType.INSERT,
 					"""
 					INSERT INTO DbQuery 
@@ -250,10 +250,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU4_DBQUERY,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_DBQUERY,
 					DbQuerySqlCommandType.UPDATE,
 					"""
 					UPDATE DbQuery
@@ -267,10 +267,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU4_DBQUERY,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_DBQUERY,
 					DbQuerySqlCommandType.DELETE,
 					"""
 					DELETE FROM DbQuery 
@@ -283,10 +283,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU5_DBFIELD,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_DBFIELD,
 					DbQuerySqlCommandType.SELECT,
 					"SELECT * FROM DbField",
 					DATASOURCE_NAME
@@ -296,10 +296,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU5_DBFIELD,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_DBFIELD,
 					DbQuerySqlCommandType.INSERT,
 					"""
 					INSERT INTO DbField 
@@ -313,10 +313,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU5_DBFIELD,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_DBFIELD,
 					DbQuerySqlCommandType.UPDATE,
 					"""
 					UPDATE DbField 
@@ -330,10 +330,10 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 		
 		{
 			var query = new DbQuery(
-					KEY_ADMIN_PROJECT,
-					KEY_PROJECT,
-					KEY_MAINMENU,
-					KEY_SUBMENU5_DBFIELD,
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_DBFIELD,
 					DbQuerySqlCommandType.DELETE,
 					"""
 					DELETE FROM DbField 

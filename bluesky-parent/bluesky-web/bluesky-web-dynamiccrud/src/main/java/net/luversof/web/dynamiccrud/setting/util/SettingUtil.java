@@ -32,7 +32,7 @@ public class SettingUtil extends RequestAttributeUtil {
 	private static final String DBFIELD_LIST = "__dbFieldList_{0}_{1}_{2}_{3}";
 	
 	public static boolean isAdminMenu(String adminProjectId) {
-		return SettingConstant.KEY_ADMIN_PROJECT.equals(adminProjectId);
+		return SettingConstant.ADMIN_PROJECT_ID_VALUE.equals(adminProjectId);
 	}
 	
 	public static MainMenu getMainMenu(String adminProjectId, String projectId, String mainMenuId) {

@@ -12,13 +12,13 @@ import net.luversof.web.dynamiccrud.thymeleaf.constant.UrlConstant;
 public class SettingViewController extends AbstractSettingViewController {
 	
 	@GetMapping(UrlConstant.PATH_SETTING_VIEW_INDEX)
-	public String view(
+	public String settingView(
 			@PathVariable String projectId, 
 			@PathVariable String mainMenuId, 
 			@PathVariable String subMenuId,
 			Model model) {
-		model.addAttribute("adminProjectId", SettingConstant.KEY_ADMIN_PROJECT);
-		return viewInternal(SettingConstant.KEY_ADMIN_PROJECT, projectId, mainMenuId, subMenuId, model);
+		model.addAttribute(SettingConstant.ADMIN_PROJECT_ID, SettingConstant.ADMIN_PROJECT_ID_VALUE);
+		return view(SettingConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, model);
 	}
 
 	@Override

@@ -1,9 +1,10 @@
 <form id="modalForm"
 	data-th-with="
+		map = ${T(java.util.Map)},
 		dbFieldList = ${dbFieldList},
-		dbFieldColumnType = ${T(net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType)}
-	"
-	data-th-hx-post="@{/{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/modalForm/{modalMode}(adminProjectId=${adminProjectId},projectId=${projectId},mainMenuId=${mainMenuId},subMenuId=${subMenuId},modalMode=${modalMode})}"
+		dbFieldColumnType = ${T(net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType)},
+		thymeleafUtil = ${T(net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil)}"
+	data-th-hx-post="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_FORM',map.of('modalMode',modalMode))}}"
 	hx-target="#fragmentArea"
 >
 	<div class="join w-full m-1" data-th-each="dbField : ${dbFieldList}" data-th-if="${dbField.isEnableEdit()}">

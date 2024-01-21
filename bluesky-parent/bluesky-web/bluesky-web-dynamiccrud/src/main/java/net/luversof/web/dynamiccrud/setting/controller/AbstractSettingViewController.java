@@ -16,7 +16,7 @@ import net.luversof.web.dynamiccrud.thymeleaf.domain.Menu;
 /**
  * 동일 기능을 path 분기하여 사용하기 위해 제공된은 abstract class
  */
-public abstract class AbstractSettingViewController {
+public abstract class AbstractSettingViewController implements SettingViewControllerInterface {
 
 	/**
 	 * 동일 기능에 대해 path 분기 처리를 하기
@@ -27,7 +27,8 @@ public abstract class AbstractSettingViewController {
 	 */
 	protected abstract void checkPathVariable(String adminProjectId, String projectId, String mainMenuId, String subMenuId);
 	
-	public String viewInternal(
+	@Override
+	public String view(
 			@PathVariable String adminProjectId,
 			@PathVariable String projectId, 
 			@PathVariable String mainMenuId, 
