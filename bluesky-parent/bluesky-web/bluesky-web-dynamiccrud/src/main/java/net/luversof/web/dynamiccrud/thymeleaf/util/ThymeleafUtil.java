@@ -13,6 +13,10 @@ import org.springframework.web.context.request.RequestContextHolder;
 import io.github.luversof.boot.util.ApplicationContextUtil;
 import lombok.experimental.UtilityClass;
 import net.luversof.web.dynamiccrud.setting.constant.SettingConstant;
+import net.luversof.web.dynamiccrud.setting.domain.DbField;
+import net.luversof.web.dynamiccrud.setting.domain.MainMenu;
+import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
+import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 import net.luversof.web.dynamiccrud.thymeleaf.config.DynamicCrudThymeleafProperties;
 import net.luversof.web.dynamiccrud.thymeleaf.constant.UrlConstant;
 import net.luversof.web.dynamiccrud.thymeleaf.domain.Menu;
@@ -35,9 +39,13 @@ public class ThymeleafUtil {
 		return getUrl(target, null);
 	}
 	
+	private String getAttribute(String key) {
+		return (String) RequestContextHolder.getRequestAttributes().getAttribute(key, RequestAttributes.SCOPE_REQUEST);
+	}
+	
 	private void putRequestParameterToMap(Map<String, String> map, String key) {
 		if(!map.containsKey(key)) {
-			map.put(key, (String) RequestContextHolder.getRequestAttributes().getAttribute(key, RequestAttributes.SCOPE_REQUEST));
+			map.put(key, getAttribute(key));
 		}
 	}
 	
@@ -62,4 +70,32 @@ public class ThymeleafUtil {
 		}
 		return replaceUrl;
 	}
+	
+	public static boolean isAdminMenu() {
+		return SettingUtil.isAdminMenu(getAttribute(SettingConstant.ADMIN_PROJECT_ID));
+	}
+	
+	public static MainMenu getMainMenu() {
+		return SettingUtil.getMainMenu(
+			getAttribute(SettingConstant.ADMIN_PROJECT_ID),
+			getAttribute(SettingConstant.PROJECT_ID),
+			getAttribute(SettingConstant.MAINMENU_ID));
+	}
+	
+	public static SubMenu getSubMenu() {
+		return SettingUtil.getSubMenu(
+			getAttribute(SettingConstant.ADMIN_PROJECT_ID),
+			getAttribute(SettingConstant.PROJECT_ID),
+			getAttribute(SettingConstant.MAINMENU_ID),
+			getAttribute(SettingConstant.SUBMENU_ID));
+	}
+	
+	public static List<DbField> getDbFieldList() {
+		return SettingUtil.getDbFieldList(
+			getAttribute(SettingConstant.ADMIN_PROJECT_ID),
+			getAttribute(SettingConstant.PROJECT_ID),
+			getAttribute(SettingConstant.MAINMENU_ID),
+			getAttribute(SettingConstant.SUBMENU_ID));
+	}
+
 }

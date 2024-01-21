@@ -3,8 +3,7 @@
 	data-th-with="
 		map = ${T(java.util.Map)},
 		thymeleafUtil = ${T(net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil)},
-		settingUtil = ${T(net.luversof.web.dynamiccrud.setting.util.SettingUtil)},
-		targetSubMenu = ${settingUtil.getSubMenu(adminProjectId, projectId, mainMenuId, subMenuId)}"
+		targetSubMenu = ${thymeleafUtil.getSubMenu()}"
 >
 	<script data-th-inline="javascript">
 		/*<![CDATA[*/
@@ -21,7 +20,7 @@
 		</div>
 		<div>
 			<button class="btn btn-sm exportButton" 
-				data-th-if="${settingUtil.isAdminMenu(adminProjectId)}"
+				data-th-if="${thymeleafUtil.isAdminMenu()}"
 				data-th-hx-get="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_BULK_FORM',map.of('modalMode','export'))}}"
 				hx-target="#fragmentArea"
 			>
@@ -31,7 +30,7 @@
 				[[#{button.text.export}]]
 			</button>
 			<button class="btn btn-sm importButton"
-				data-th-if="${settingUtil.isAdminMenu(adminProjectId)}"
+				data-th-if="${thymeleafUtil.isAdminMenu()}"
 				data-th-hx-get="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_BULK_FORM',map.of('modalMode','import'))}}"
 				hx-target="#fragmentArea"
 			>
