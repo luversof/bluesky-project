@@ -1,7 +1,5 @@
 package net.luversof.web.dynamiccrud.thymeleaf.constant;
 
-import java.util.Map;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.UtilityClass;
@@ -110,16 +108,14 @@ public class UrlConstant {
 		public static String getUrl(String target, String adminProjectId) {
 			var urlResolver = valueOf(target);
 			return adminProjectId.equals(SettingConstant.ADMIN_PROJECT_ID_VALUE) ? urlResolver.getSettingUrl() : urlResolver.getUseUrl();
-			// thymeleaf에서는 spel의 :뒤의 값을 처리하지 못함
-			// return targetUrl.replaceAll(":[\\w\\|]+", "");
 		}
 		
-		public static String getUrl(String target, Map<String, String> data) {
-			var adminProjectId = "admin";
-			var urlResolver = valueOf(target);
-			var targetUrl = adminProjectId.equals(SettingConstant.ADMIN_PROJECT_ID_VALUE) ? urlResolver.getSettingUrl() : urlResolver.getUseUrl();
-			// thymeleaf에서는 spel의 :뒤의 값을 처리하지 못함
-			return targetUrl.replaceAll(":[\\w\\|]+", "");
-		}
+//		public static String getUrl(String target, Map<String, String> data) {
+//			var adminProjectId = "admin";
+//			var urlResolver = valueOf(target);
+//			var targetUrl = adminProjectId.equals(SettingConstant.ADMIN_PROJECT_ID_VALUE) ? urlResolver.getSettingUrl() : urlResolver.getUseUrl();
+//			// thymeleaf에서는 spel의 :뒤의 값을 처리하지 못함
+//			return targetUrl.replaceAll(":[\\w\\|]+", "");
+//		}
 	}
 }

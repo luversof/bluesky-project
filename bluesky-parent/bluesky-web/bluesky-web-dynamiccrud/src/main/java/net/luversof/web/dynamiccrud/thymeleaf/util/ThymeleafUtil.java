@@ -1,5 +1,7 @@
 package net.luversof.web.dynamiccrud.thymeleaf.util;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,14 +12,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
-import io.github.luversof.boot.util.ApplicationContextUtil;
 import lombok.experimental.UtilityClass;
 import net.luversof.web.dynamiccrud.setting.constant.SettingConstant;
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.MainMenu;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
+import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant;
 import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
-import net.luversof.web.dynamiccrud.thymeleaf.config.DynamicCrudThymeleafProperties;
 import net.luversof.web.dynamiccrud.thymeleaf.constant.UrlConstant;
 import net.luversof.web.dynamiccrud.thymeleaf.domain.Menu;
 import net.luversof.web.dynamiccrud.thymeleaf.domain.Pagination;
@@ -27,8 +28,28 @@ public class ThymeleafUtil {
 	
 	private static final String URL_PATTERN = "(\\{)([\\w\\d]*)([\\:\\w\\|]*)(})";
 
-	public static List<Menu> getMenuList(String key) {
-		return ApplicationContextUtil.getApplicationContext().getBean(DynamicCrudThymeleafProperties.class).menu().get(key);
+	public static List<Menu> getMenuList(String adminProjectId, String projectId, String mainMenuId) {
+		var subMenuList = SettingUtil.getSubMenuList(adminProjectId, projectId, mainMenuId);
+		subMenuList.sort(Comparator.comparing(SubMenu::getDisplayOrder));
+		var menuList = new ArrayList<Menu>();
+		subMenuList.forEach(x -> {
+			var menu = new Menu();
+			menu.setUrl(x.getUrl());
+			menu.setMessageCode(x.getSubMenuName());
+			menuList.add(menu);
+		});
+		return menuList;
+	}
+	
+	/**
+	 * layout에서 처리하는 menu호출이 null인 경우 기본 menu를 호출 처리
+	 * @return
+	 */
+	public static List<Menu> getDefaultMenuList() {
+		return getMenuList(
+				EventAdminConstant.ADMIN_PROJECT_ID_VALUE,
+				EventAdminConstant.PROJECT_ID_VALUE,
+				EventAdminConstant.MAINMENU_ID_VALUE);
 	}
 	
 	public static Pagination getPagination(@SuppressWarnings("rawtypes") Page page) {

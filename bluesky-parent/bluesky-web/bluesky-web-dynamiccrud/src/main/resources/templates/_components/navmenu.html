@@ -3,8 +3,7 @@
 <ul class="menu"
 	data-th-with="
 	thymeleafUtil = ${T(net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil)},
-	menu=${menu},
-	menuList = ${menuList?: thymeleafUtil.getMenuList(menu)},
+	menuList = ${menuList?: thymeleafUtil.getDefaultMenuList()},
 	isCurrentMenu = ${isCurrentMenu?:false},
 	classAppend = ${classAppend}
 	"

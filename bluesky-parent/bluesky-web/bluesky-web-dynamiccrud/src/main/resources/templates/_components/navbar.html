@@ -8,12 +8,12 @@
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
 				</svg>
 			</label>
-			<div data-th-replace="~{_components/navmenu (menu = 'setting', classAppend = 'menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52')}" />
+			<div data-th-replace="~{_components/navmenu (classAppend = 'menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52')}" />
 		</div>
 		<a class="btn btn-ghost text-xl" data-th-text="${navibarTitle?:'Event Admin Setting'}" data-th-href="@{/}"></a>
 	</div>
 	<div class="navbar-center hidden lg:flex">
-		<div data-th-replace="~{_components/navmenu (menu = 'setting', classAppend = 'menu-horizontal px-1')}" />
+		<div data-th-replace="~{_components/navmenu (classAppend = 'menu-horizontal px-1')}" />
 	</div>
 	<div class="navbar-end">
 		

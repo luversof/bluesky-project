@@ -15,7 +15,7 @@ public class Menu {
 	
 	public boolean isCurrentMenu() {
 		var requestUri = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest().getRequestURI();
-		return ("/".equals(url)) ? requestUri.equals(url) : requestUri.contains(url);
+		return requestUri.equals(url);
 	}
 
 	public String getName() {
