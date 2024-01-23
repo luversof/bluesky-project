@@ -47,6 +47,11 @@ public class DbField extends Setting {
 	
 	private String columnValidation;
 	
+	private String columnHelpText;
+	
+	@Column(length = 20)
+	private String columnPlaceholder;
+	
 	@Column(nullable = false)
 	private boolean columnVisible;
 	

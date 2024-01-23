@@ -23,6 +23,8 @@ public class DbFieldRowMapper extends SettingRowMapper<DbField> {
 			rs.getString("columnPreset"),
 			rs.getString("columnFormat"),
 			rs.getString("columnValidation"),
+			rs.getString("columnHelpText"),
+			rs.getString("columnPlaceholder"),
 			rs.getBoolean("columnVisible"),
 			DbFieldEnable.valueOf(rs.getString("enableSearch")),
 			DbFieldEnable.valueOf(rs.getString("enableEdit")),

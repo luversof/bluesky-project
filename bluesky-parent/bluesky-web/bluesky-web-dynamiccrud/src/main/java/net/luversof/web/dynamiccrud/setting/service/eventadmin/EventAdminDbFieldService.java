@@ -364,13 +364,45 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setProjectId(PROJECT_ID_VALUE);
 			field.setMainMenuId(MAINMENU_ID_VALUE);
 			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
+			field.setColumnId("columnHelpText");
+			field.setColumnName("컬럼 도움말");
+			field.setColumnType(DbFieldColumnType.STRING);
+			field.setColumnHelpText("컬럼을 입력하는데 필요한 도움말을 tooltip 형태로 제공합니다. 지금 보고 있는 부분이 tooltip 입니다.");
+			field.setColumnVisible(true);
+			field.setEnableSearch(DbFieldEnable.DISABLED);
+			field.setEnableEdit(DbFieldEnable.ENABLED);
+			field.setFormOrder((short) 10);
+			dbFieldList.add(field);
+		}
+		{
+			var field = new DbField();
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
+			field.setColumnId("columnPlaceholder");
+			field.setColumnName("컬럼 Placeholder");
+			field.setColumnType(DbFieldColumnType.STRING);
+			field.setColumnPlaceholder("20자 이내 간략한 설명을 제공합니다");
+			field.setColumnVisible(true);
+			field.setEnableSearch(DbFieldEnable.DISABLED);
+			field.setEnableEdit(DbFieldEnable.ENABLED);
+			field.setFormOrder((short) 11);
+			dbFieldList.add(field);
+		}
+		{
+			var field = new DbField();
+			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
+			field.setProjectId(PROJECT_ID_VALUE);
+			field.setMainMenuId(MAINMENU_ID_VALUE);
+			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
 			field.setColumnId("columnVisible");
 			field.setColumnName("표시여부");
 			field.setColumnType(DbFieldColumnType.BOOLEAN);
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.REQUIRED);
-			field.setFormOrder((short) 10);
+			field.setFormOrder((short) 12);
 			dbFieldList.add(field);
 		}
 		{
@@ -386,7 +418,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.REQUIRED);
-			field.setFormOrder((short) 11);
+			field.setFormOrder((short) 13);
 			dbFieldList.add(field);
 		}
 		{
@@ -402,7 +434,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.REQUIRED);
-			field.setFormOrder((short) 12);
+			field.setFormOrder((short) 14);
 			dbFieldList.add(field);
 		}
 		{
@@ -412,12 +444,12 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setMainMenuId(MAINMENU_ID_VALUE);
 			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
 			field.setColumnId("formSize");
-			field.setColumnName("폼크기");
+			field.setColumnName("form 크기");
 			field.setColumnType(DbFieldColumnType.INT);
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormOrder((short) 13);
+			field.setFormOrder((short) 15);
 			dbFieldList.add(field);
 		}
 		{
@@ -427,12 +459,13 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setMainMenuId(MAINMENU_ID_VALUE);
 			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
 			field.setColumnId("formOrder");
-			field.setColumnName("폼순서");
+			field.setColumnName("form 순서");
 			field.setColumnType(DbFieldColumnType.INT);
+			field.setColumnHelpText("입력 form 목록에 보이는 form 순서 뿐만 아니라 조회 목록 화면의 컬럼명 순서도 같이 지정합니다.");
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.REQUIRED);
-			field.setFormOrder((short) 14);
+			field.setFormOrder((short) 16);
 			dbFieldList.add(field);
 		}
 		addDefaultField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBFIELD);
@@ -446,9 +479,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setMainMenuId(mainMenuId);
 			field.setSubMenuId(subMenuId);
 			field.setColumnId("adminProjectId");
-			field.setColumnName("어드민 프로젝트 ID");
+			field.setColumnName("어드민 프로젝트 Id");
 			field.setColumnType(DbFieldColumnType.STRING);
 			field.setColumnPreset(PROJECT_ID_VALUE);
+			field.setColumnHelpText("종속될 adminProject를 지정합니다.");
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.REQUIRED);
@@ -462,8 +496,9 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setMainMenuId(mainMenuId);
 			field.setSubMenuId(subMenuId);
 			field.setColumnId("projectId");
-			field.setColumnName("프로젝트 ID");
+			field.setColumnName("프로젝트 Id");
 			field.setColumnType(DbFieldColumnType.STRING);
+			field.setColumnPlaceholder("대상 프로젝트 Id");
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.ENABLED);
 			field.setEnableEdit(DbFieldEnable.REQUIRED);
@@ -479,8 +514,9 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		field.setMainMenuId(mainMenuId);
 		field.setSubMenuId(subMenuId);
 		field.setColumnId("mainMenuId");
-		field.setColumnName("메인메뉴 ID");
+		field.setColumnName("메인메뉴 Id");
 		field.setColumnType(DbFieldColumnType.STRING);
+		field.setColumnPlaceholder("대상 메인메뉴 Id");
 		field.setColumnVisible(true);
 		field.setEnableSearch(DbFieldEnable.ENABLED);
 		field.setEnableEdit(DbFieldEnable.REQUIRED);
@@ -495,8 +531,9 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		field.setMainMenuId(mainMenuId);
 		field.setSubMenuId(subMenuId);
 		field.setColumnId("subMenuId");
-		field.setColumnName("서브메뉴 ID");
+		field.setColumnName("서브메뉴 Id");
 		field.setColumnType(DbFieldColumnType.STRING);
+		field.setColumnPlaceholder("대상 서브메뉴 Id");
 		field.setColumnVisible(true);
 		field.setEnableSearch(DbFieldEnable.ENABLED);
 		field.setEnableEdit(DbFieldEnable.REQUIRED);
