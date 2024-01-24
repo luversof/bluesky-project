@@ -39,8 +39,8 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_PROJECT,
 					DbQuerySqlCommandType.SELECT,
-					"SELECT * FROM Project",
-					DATASOURCE_NAME
+					DATASOURCE_NAME,
+					"SELECT * FROM Project"
 			);
 			dbQueryList.add(query);
 		}
@@ -52,12 +52,12 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_PROJECT,
 					DbQuerySqlCommandType.INSERT,
+					DATASOURCE_NAME,
 					"""
 					INSERT INTO Project 
 					(adminProjectId, projectId, projectName, writer, createDate, updateDate) 
 					VALUES (:adminProjectId, :projectId, :projectName, :writer, NOW(), NOW())
-					""",
-					DATASOURCE_NAME
+					"""
 			);
 			dbQueryList.add(query);
 		}
@@ -69,12 +69,12 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_PROJECT,
 					DbQuerySqlCommandType.UPDATE,
+					DATASOURCE_NAME,
 					"""
 					UPDATE Project 
 					SET adminProjectId = :adminProjectId, projectId = :projectId, projectName = :projectName, writer= :writer, updateDate = NOW() 
 					WHERE adminProjectId = :__org__adminProjectId AND projectId = :__org__projectId
-					""",
-					DATASOURCE_NAME
+					"""
 			);
 			dbQueryList.add(query);
 		}
@@ -86,8 +86,8 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_PROJECT,
 					DbQuerySqlCommandType.DELETE,
-					"DELETE FROM Project WHERE adminProjectId = :adminProjectId AND projectId = :projectId",
-					DATASOURCE_NAME
+					DATASOURCE_NAME,
+					"DELETE FROM Project WHERE adminProjectId = :adminProjectId AND projectId = :projectId"
 			);
 			dbQueryList.add(query);
 		}
@@ -99,8 +99,8 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_MAINMENU,
 					DbQuerySqlCommandType.SELECT,
-					"SELECT * FROM MainMenu",
-					DATASOURCE_NAME
+					DATASOURCE_NAME,
+					"SELECT * FROM MainMenu"
 			);
 			dbQueryList.add(query);
 		}
@@ -112,12 +112,12 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_MAINMENU,
 					DbQuerySqlCommandType.INSERT,
+					DATASOURCE_NAME,
 					"""
 					INSERT INTO MainMenu 
 					(adminProjectId, projectId, mainMenuId, mainMenuName, writer, createDate, updateDate) 
 					VALUES (:adminProjectId, :projectId, :mainMenuId, :mainMenuName, :writer, NOW(), NOW())
-					""",
-					DATASOURCE_NAME
+					"""
 			);
 			dbQueryList.add(query);
 		}
@@ -129,12 +129,12 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_MAINMENU,
 					DbQuerySqlCommandType.UPDATE,
+					DATASOURCE_NAME,
 					"""
 					UPDATE MainMenu 
 					SET adminProjectId = :adminProjectId,  projectId = :projectId, mainMenuId = :mainMenuId, mainMenuName = :mainMenuName, writer = :writer, updateDate = NOW() 
 					WHERE adminProjectId = :__org__adminProjectId AND projectId = :__org__projectId AND mainMenuId = :__org__mainMenuId
-					""",
-					DATASOURCE_NAME
+					"""
 			);
 			dbQueryList.add(query);
 		}
@@ -146,11 +146,11 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_MAINMENU,
 					DbQuerySqlCommandType.DELETE,
+					DATASOURCE_NAME,
 					"""
 					DELETE FROM MainMenu
 					WHERE adminProjectId = :adminProjectId AND projectId = :projectId AND mainMenuId = :mainMenuId
-					""",
-					DATASOURCE_NAME
+					"""
 			);
 			dbQueryList.add(query);
 		}
@@ -162,8 +162,8 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_SUBMENU,
 					DbQuerySqlCommandType.SELECT,
-					"SELECT * FROM SubMenu",
-					DATASOURCE_NAME
+					DATASOURCE_NAME,
+					"SELECT * FROM SubMenu"
 			);
 			dbQueryList.add(query);
 		}
@@ -175,12 +175,12 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_SUBMENU,
 					DbQuerySqlCommandType.INSERT,
+					DATASOURCE_NAME,
 					"""
 					INSERT INTO SubMenu 
 					(adminProjectId, projectId, mainMenuId, subMenuId, subMenuName, dbType, displayOrder, pageSize, enableExcel, enableInsert, enableUpdate, enableDelete, writer, createDate, updateDate) 
 					VALUES (:adminProjectId, :projectId, :mainMenuId, :subMenuId, :subMenuName, :dbType, :displayOrder, :pageSize, :enableExcel, :enableInsert, :enableUpdate, :enableDelete, :writer, NOW(), NOW())
-					""",
-					DATASOURCE_NAME
+					"""
 			);
 			dbQueryList.add(query);
 		}
@@ -192,12 +192,12 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_SUBMENU,
 					DbQuerySqlCommandType.UPDATE,
+					DATASOURCE_NAME,
 					"""
 					UPDATE SubMenu
 					SET adminProjectId = :adminProjectId, projectId = :projectId, mainMenuId = :mainMenuId, subMenuId = :subMenuId, subMenuName = :subMenuName, dbType = :dbType, displayOrder = :displayOrder, pageSize = :pageSize, enableExcel = :enableExcel, enableInsert = :enableInsert, enableUpdate = :enableUpdate, enableDelete = :enableDelete, writer = :writer, updateDate = NOW() 
 					WHERE adminProjectId = :__org__adminProjectId AND projectId = :__org__projectId AND mainMenuId = :__org__mainMenuId AND subMenuId = :__org__subMenuId
-					""",
-					DATASOURCE_NAME
+					"""
 			);
 			dbQueryList.add(query);
 		}
@@ -209,11 +209,11 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_SUBMENU,
 					DbQuerySqlCommandType.DELETE,
+					DATASOURCE_NAME,
 					"""
 					DELETE FROM SubMenu 
 					WHERE adminProjectId = :adminProjectId AND projectId = :projectId AND mainMenuId = :mainMenuId AND subMenuId = :subMenuId
-					""",
-					DATASOURCE_NAME
+					"""
 			);
 			dbQueryList.add(query);
 		}
@@ -225,8 +225,8 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_DBQUERY,
 					DbQuerySqlCommandType.SELECT,
-					"SELECT * FROM DbQuery",
-					DATASOURCE_NAME
+					DATASOURCE_NAME,
+					"SELECT * FROM DbQuery"
 			);
 			dbQueryList.add(query);
 		}
@@ -238,12 +238,12 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_DBQUERY,
 					DbQuerySqlCommandType.INSERT,
+					DATASOURCE_NAME,
 					"""
 					INSERT INTO DbQuery 
 					(adminProjectId, projectId, mainMenuId, subMenuId, sqlCommandType, queryString, dataSourceName, writer, createDate, updateDate) 
 					VALUES (:adminProjectId, :projectId, :mainMenuId, :subMenuId, :sqlCommandType, :queryString, :dataSourceName, :writer, NOW(), NOW())
-					""",
-					DATASOURCE_NAME
+					"""
 			);
 			dbQueryList.add(query);
 		}
@@ -255,12 +255,12 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_DBQUERY,
 					DbQuerySqlCommandType.UPDATE,
+					DATASOURCE_NAME,
 					"""
 					UPDATE DbQuery
 					SET adminProjectId = :adminProjectId, projectId = :projectId, mainMenuId = :mainMenuId, subMenuId = :subMenuId, sqlCommandType = :sqlCommandType, queryString = :queryString, dataSourceName = :dataSourceName, writer = :writer, updateDate = NOW() 
 					WHERE adminProjectId = :__org__adminProjectId AND projectId = :__org__projectId AND mainMenuId = :__org__mainMenuId AND subMenuId = :__org__subMenuId AND sqlCommandType = :__org__sqlCommandType
-					""",
-					DATASOURCE_NAME
+					"""
 			);
 			dbQueryList.add(query);
 		}
@@ -272,11 +272,11 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_DBQUERY,
 					DbQuerySqlCommandType.DELETE,
+					DATASOURCE_NAME,
 					"""
 					DELETE FROM DbQuery 
 					WHERE adminProjectId = :adminProjectId AND projectId = :projectId AND mainMenuId = :mainMenuId AND subMenuId = :subMenuId AND sqlCommandType = :sqlCommandType
-					""",
-					DATASOURCE_NAME
+					"""
 			);
 			dbQueryList.add(query);
 		}
@@ -288,8 +288,8 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_DBFIELD,
 					DbQuerySqlCommandType.SELECT,
-					"SELECT * FROM DbField",
-					DATASOURCE_NAME
+					DATASOURCE_NAME,
+					"SELECT * FROM DbField"
 			);
 			dbQueryList.add(query);
 		}
@@ -301,12 +301,12 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_DBFIELD,
 					DbQuerySqlCommandType.INSERT,
+					DATASOURCE_NAME,
 					"""
 					INSERT INTO DbField 
 					(adminProjectId, projectId, mainMenuId, subMenuId, columnId, columnName, columnType, columnPreset, columnFormat, columnValidation, columnVisible, enableSearch, enableEdit, formSize, formOrder, writer, createDate, updateDate) 
 					VALUES (:adminProjectId, :projectId, :mainMenuId, :subMenuId, :columnId, :columnName, :columnType, :columnPreset, :columnFormat, :columnValidation, :columnVisible, :enableSearch, :enableEdit, :formSize, :formOrder, :writer, NOW(), NOW())
-					""",
-					DATASOURCE_NAME
+					"""
 			);
 			dbQueryList.add(query);
 		}
@@ -318,12 +318,12 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_DBFIELD,
 					DbQuerySqlCommandType.UPDATE,
+					DATASOURCE_NAME,
 					"""
 					UPDATE DbField 
 					SET adminProjectId = :adminProjectId, projectId = :projectId, mainMenuId = :mainMenuId, subMenuId = :subMenuId, columnId = :columnId, columnName = :columnName, columnType = :columnType, columnPreset = :columnPreset, columnFormat = :columnFormat, columnValidation = :columnValidation, columnVisible = :columnVisible, enableSearch = :enableSearch, enableEdit = :enableEdit, formSize = :formSize, formOrder = :formOrder, writer = :writer, updateDate = NOW() 
 					WHERE adminProjectId = :__org__adminProjectId AND projectId = :__org__projectId AND mainMenuId = :__org__mainMenuId AND subMenuId = :__org__subMenuId AND columnId = :__org__columnId
-					""",
-					DATASOURCE_NAME
+					"""
 			);
 			dbQueryList.add(query);
 		}
@@ -335,11 +335,11 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_DBFIELD,
 					DbQuerySqlCommandType.DELETE,
+					DATASOURCE_NAME,
 					"""
 					DELETE FROM DbField 
 					WHERE adminProjectId = :adminProjectId AND projectId = :projectId AND mainMenuId = :mainMenuId AND subMenuId = :subMenuId AND columnId = :columnId
-					""",
-					DATASOURCE_NAME
+					"""
 			);
 			dbQueryList.add(query);
 		}
