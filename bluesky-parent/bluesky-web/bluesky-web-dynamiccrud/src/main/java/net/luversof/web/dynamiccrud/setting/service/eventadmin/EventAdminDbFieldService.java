@@ -47,6 +47,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.ENABLED);
 			field.setEnableEdit(DbFieldEnable.ENABLED);
+			field.setFormSize((short) 40);
 			field.setFormOrder((short) 2);
 			dbFieldList.add(field);
 		}
@@ -66,6 +67,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.ENABLED);
 			field.setEnableEdit(DbFieldEnable.ENABLED);
+			field.setFormSize((short) 40);
 			field.setFormOrder((short) 3);
 			dbFieldList.add(field);
 		}
@@ -86,6 +88,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.ENABLED);
 			field.setEnableEdit(DbFieldEnable.ENABLED);
+			field.setFormSize((short) 40);
 			field.setFormOrder((short) 4);
 			dbFieldList.add(field);
 		}
@@ -102,6 +105,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.ENABLED);
 			field.setEnableEdit(DbFieldEnable.REQUIRED);
+			field.setFormSize((short) 20);
 			field.setFormOrder((short) 5);
 			dbFieldList.add(field);
 		}
@@ -244,6 +248,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.ENABLED);
 			field.setEnableEdit(DbFieldEnable.REQUIRED);
+			field.setFormSize((short) 40);
 			field.setFormOrder((short) 5);
 			dbFieldList.add(field);
 		}
@@ -279,6 +284,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.ENABLED);
 			field.setEnableEdit(DbFieldEnable.REQUIRED);
+			field.setFormSize((short) 40);
 			field.setFormOrder((short) 4);
 			dbFieldList.add(field);
 		}
@@ -294,6 +300,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.ENABLED);
+			field.setFormSize((short) 40);
 			field.setFormOrder((short) 5);
 			dbFieldList.add(field);
 		}
@@ -310,6 +317,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.ENABLED);
 			field.setEnableEdit(DbFieldEnable.REQUIRED);
+			field.setFormSize((short) 20);
 			field.setFormOrder((short) 6);
 			dbFieldList.add(field);
 		}
@@ -325,6 +333,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.ENABLED);
+			field.setFormSize((short) 1000);
 			field.setFormOrder((short) 7);
 			dbFieldList.add(field);
 		}
@@ -340,6 +349,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.ENABLED);
+			field.setFormSize((short) 1000);
 			field.setFormOrder((short) 8);
 			dbFieldList.add(field);
 		}
@@ -355,6 +365,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.ENABLED);
+			field.setFormSize((short) 1000);
 			field.setFormOrder((short) 9);
 			dbFieldList.add(field);
 		}
@@ -371,6 +382,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.ENABLED);
+			field.setFormSize((short) 1000);
 			field.setFormOrder((short) 10);
 			dbFieldList.add(field);
 		}
@@ -387,6 +399,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.ENABLED);
+			field.setFormSize((short) 20);
 			field.setFormOrder((short) 11);
 			dbFieldList.add(field);
 		}
@@ -418,6 +431,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.REQUIRED);
+			field.setFormSize((short) 20);
 			field.setFormOrder((short) 13);
 			dbFieldList.add(field);
 		}
@@ -434,6 +448,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.REQUIRED);
+			field.setFormSize((short) 20);
 			field.setFormOrder((short) 14);
 			dbFieldList.add(field);
 		}
@@ -483,9 +498,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnType(DbFieldColumnType.STRING);
 			field.setColumnPreset(PROJECT_ID_VALUE);
 			field.setColumnHelpText("종속될 adminProject를 지정합니다.");
-			field.setColumnVisible(true);
+			field.setColumnVisible(false);
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.REQUIRED);
+			field.setFormSize((short) 20);
 			field.setFormOrder((short) 1);
 			dbFieldList.add(field);
 		}
@@ -502,6 +518,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.ENABLED);
 			field.setEnableEdit(DbFieldEnable.REQUIRED);
+			field.setFormSize((short) 20);
 			field.setFormOrder((short) 2);
 			dbFieldList.add(field);
 		}
@@ -520,6 +537,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		field.setColumnVisible(true);
 		field.setEnableSearch(DbFieldEnable.ENABLED);
 		field.setEnableEdit(DbFieldEnable.REQUIRED);
+		field.setFormSize((short) 40);
 		field.setFormOrder((short) 3);
 		dbFieldList.add(field);
 	}
@@ -537,6 +555,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		field.setColumnVisible(true);
 		field.setEnableSearch(DbFieldEnable.ENABLED);
 		field.setEnableEdit(DbFieldEnable.REQUIRED);
+		field.setFormSize((short) 40);
 		field.setFormOrder((short) 4);
 		dbFieldList.add(field);
 	}
@@ -569,6 +588,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.DISABLED);
+			field.setFormSize((short) 40);
 			field.setFormOrder((short) 20);
 			dbFieldList.add(field);
 		}

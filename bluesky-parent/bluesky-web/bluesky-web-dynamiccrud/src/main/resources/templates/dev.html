@@ -2,7 +2,7 @@
 <html data-layout-decorate="~{_layout/defaultLayout}">
 
 <head>
-
+	<script data-th-src="@{/js/common.js}"></script>
 </head>
 
 <body>
@@ -106,20 +106,29 @@
 			<h2>Modal Form</h2>
 			<div class="modal-box max-w-xl">
 				<div class="join w-full m-1" >
-					<div class="btn btn-sm join-item w-1/3">Text 테스트</div>
+					<div class="btn btn-sm join-item w-1/3">Text 1 (선택)</div>
 					<input type="text" class="input input-sm input-bordered join-item w-full"
 						 name="inputtext"
 						 required="true"
 						 placeholder="label대신 버튼으로 표현했음.."
+						 maxlength="15"
 					/>
 				</div>
 				<div class="flex w-full m-1">
-					<div class="w-1/3 text-center self-center bg-base-300">input 테스트2</div>						
+					<div class="w-1/3 text-center self-center bg-base-300">Text 2</div>						
 					<input type="text" class="input input-sm input-bordered w-full" placeholder="버튼 방식이 나은듯?"/>
+				</div>
+				<div class="join w-full m-1" >
+					<div class="btn btn-sm join-item w-1/3">Number 1 (선택)</div>
+					<input type="number" class="input input-sm input-bordered join-item w-full invalid:border-red-500"
+						 name="inputnumber"
+						 required="true"
+						 placeholder="label대신 버튼으로 표현했음.."
+					/>
 				</div>
 				<div class="w-full tooltip" data-tip="전체를 tooltip으로 처리하면 select input 활성화(혹은 포커스) 시 툴팁 레이어가 종료되지 않아 문제가 있음">
 					<div class="join w-full m-1">
-							<div class="btn btn-sm join-item w-1/3">ToolTip 테스트</div>
+							<div class="btn btn-sm join-item w-1/3">ToolTip 1</div>
 							<input type="text" class="input input-sm input-bordered join-item w-full"						
 								 name="inputtext"
 								 required="true"
@@ -128,7 +137,7 @@
 					</div>
 				</div>
 				<div class="join w-full m-1" >
-					<div class="btn btn-sm join-item w-1/3">ToolTip 테스트2</div>
+					<div class="btn btn-sm join-item w-1/3">ToolTip 2</div>
 					<input type="text" class="input input-sm input-bordered join-item w-full"
 						 name="inputtext"
 						 required="true"
@@ -142,7 +151,7 @@
 				</div>
 				<div class="join w-full m-1" >
 					<div class="btn btn-sm join-item w-1/3 tooltip tooltip-right" data-tip="툴팁이 길어지면 툴팁 내용이 잘리거나 좌우 스크롤이 생기는 문제가 있고 왜 align-middle이 아닌거지?">
-						ToolTip 테스트3
+						ToolTip 3
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 inline">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
 						</svg>
@@ -154,7 +163,7 @@
 					/>
 				</div>
 				<div class="join w-full m-1" >
-					<div class="btn btn-sm join-item w-1/3">ToolTip 테스트4</div>
+					<div class="btn btn-sm join-item w-1/3">ToolTip 4 (선택)</div>
 					<input type="text" class="input input-sm input-bordered join-item w-full"
 						 name="inputtext"
 						 required="true"
@@ -167,26 +176,26 @@
 					</button>
 				</div>
 				<div class="join w-full m-1">
-					<div class="btn btn-sm join-item w-1/3" >toggle 테스트</div>						
+					<div class="btn btn-sm join-item w-1/3" >Toggle 1</div>						
 					<input type="checkbox" class="toggle toggle-lg toggle-info join-item" name="토글" />
 				</div>
 				<div class="join w-full m-1">
-					<div class="btn btn-sm join-item w-1/3" >toggle 테스트2</div>						
+					<div class="btn btn-sm join-item w-1/3" >Toggle 2 (선택)</div>						
 					<input type="checkbox" class="toggle toggle-lg toggle-info ml-2" name="토글" />
 					오른쪽 여백이 뭔가 허전한데..
 				</div>
 				<div class="join w-full m-1">
-					<div class="btn btn-sm join-item w-1/3" >radio 테스트</div>						
+					<div class="btn btn-sm join-item w-1/3" >Radio 1</div>						
 					<input class="btn btn-sm join-item" type="radio" name="라디오" aria-label="비활성" value="-1" />
   					<input class="btn btn-sm join-item" type="radio" name="라디오" aria-label="활성" value="1" /> 요것도 별로?
 				</div>
 				<div class="join w-full m-1">
-					<div class="btn btn-sm join-item w-1/3" >radio 테스트</div>						
+					<div class="btn btn-sm join-item w-1/3" >Radio 2</div>						
 					<input class="btn btn-sm " type="radio" name="라디오" aria-label="비활성" value="-1" />
   					<input class="btn btn-sm join-item" type="radio" name="라디오" aria-label="활성" value="1" /> 요것도 별로?
 				</div>
 				<div class="join w-full m-1">
-					<div class="btn btn-sm join-item w-1/3" >select 테스트</div>						
+					<div class="btn btn-sm join-item w-1/3" >Select</div>						
 					<select class="select select-sm select-bordered join-item w-full">
 						<option />
 						<option>1</option>
@@ -195,7 +204,7 @@
 					</select>
 				</div>
 				<div class="join w-full m-1" >
-					<div class="btn btn-sm join-item w-1/3 min-h-full">TextArea 테스트</div>
+					<div class="btn btn-sm join-item w-1/3 min-h-full">TextArea</div>
 					<textarea class="textarea textarea-sm textarea-bordered join-item w-full"
 						 name="testname"
 						 required="true"

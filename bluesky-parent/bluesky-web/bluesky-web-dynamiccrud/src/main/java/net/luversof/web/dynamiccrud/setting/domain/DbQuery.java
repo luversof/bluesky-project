@@ -35,10 +35,10 @@ public class DbQuery extends Setting {
 	@Enumerated(EnumType.STRING)
 	private DbQuerySqlCommandType sqlCommandType;	// INSERT, SELECT, UPDATE, DELETE
 	
-	@Column(nullable = false, columnDefinition = "TEXT")
-	private String queryString;
-	
 	@Column(length = 40, nullable = false)
 	private String dataSourceName;
+	
+	@Column(nullable = false, columnDefinition = "TEXT")
+	private String queryString;
 
 }

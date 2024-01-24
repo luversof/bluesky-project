@@ -16,8 +16,8 @@ public class DbQueryRowMapper extends SettingRowMapper<DbQuery> {
 			rs.getString("mainMenuId"),
 			rs.getString("subMenuId"),
 			DbQuerySqlCommandType.valueOf(rs.getString("sqlCommandType")),
-			rs.getString("queryString"),
-			rs.getString("dataSourceName")
+			rs.getString("dataSourceName"),
+			rs.getString("queryString")
 		);
 		setCommon(query, rs);
 		return query;
