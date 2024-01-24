@@ -87,8 +87,11 @@ public abstract class AbstractDbUseService implements UseService {
 		param.put("limitClause", getLimitClause());
 		
 		// mssql은 페이징에 order 절이 필수임
+		// orderClause는 우선 등록된 쿼리에 값이 있으면 해당값을 세팅함.
+		param.put("orderClause", SettingStringUtil.getOrderClause(dbQuery.getQueryString()));
 		// 분기 처리도 해야함
 		// limit 절 모양도 다름
+		
 		
 		paramSource.addValue("limit", pageable.getPageSize());
 		paramSource.addValue("offset", pageable.getOffset());
@@ -166,24 +169,21 @@ public abstract class AbstractDbUseService implements UseService {
 	
 	/**
 	 * jdbcTemplate은 insert, update, delete를  update method로 동일하게 수행
+	 * 전달받은 dataMap을 기준으로 paramSource를 구성
 	 */
 	private Object jdbcTemplateUpdate(DbQuery dbQuery, List<DbField> dbFieldList, Map<String, String> dataMap) {
 		RoutingDataSourceContextHolder.setContext(() -> dbQuery.getDataSourceName());
-		
 		var insertQueryBuilder = new StringBuilder(dbQuery.getQueryString() + " ");
 		var paramSource = new MapSqlParameterSource();
-		var targetFieldList = dbFieldList.stream().filter(x -> (DbFieldEnable.REQUIRED.equals(x.getEnableSearch()) || DbFieldEnable.ENABLED.equals(x.getEnableSearch())) && dataMap.containsKey(x.getColumnId()) && StringUtils.hasText(dataMap.get(x.getColumnId()))).toList();
-		if (!targetFieldList.isEmpty()) {
-			setSqlParameterSourceRegisterSqlType(paramSource, dbFieldList);
-			dataMap.forEach((key, value) -> paramSource.addValue(key, StringUtils.hasText(value) ? value : null));
-		}
+		setSqlParameterSourceRegisterSqlType(paramSource, dbFieldList);
+		dataMap.forEach((key, value) -> paramSource.addValue(key, StringUtils.hasText(value) ? value : null));
 		return dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() -> namedParameterJdbcTemplate.update(insertQueryBuilder.toString(), paramSource));
 	}
 	
-	private void setSqlParameterSourceRegisterSqlType(MapSqlParameterSource paramSource, List<DbField> fieldList) {
-		fieldList.forEach(field -> {
-			if (field.getColumnType().equals(DbFieldColumnType.BOOLEAN)) {
-				paramSource.registerSqlType(field.getColumnId(), JDBCType.BIT.getVendorTypeNumber());
+	private void setSqlParameterSourceRegisterSqlType(MapSqlParameterSource paramSource, List<DbField> dbFieldList) {
+		dbFieldList.forEach(dbField -> {
+			if (dbField.getColumnType().equals(DbFieldColumnType.BOOLEAN)) {
+				paramSource.registerSqlType(dbField.getColumnId(), JDBCType.BIT.getVendorTypeNumber());
 			}
 		});
 	}

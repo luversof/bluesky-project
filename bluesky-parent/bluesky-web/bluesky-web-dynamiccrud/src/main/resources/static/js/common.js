@@ -17,7 +17,6 @@ var param = (() => {
 		},
 		setParam(paramKey, paramValue) {
 			if (paramValue == null || paramValue == '') {
-				console.log("delete param", paramKey)
 				_params.delete(paramKey);
 			} else {
 				_params.set(paramKey, paramValue);
@@ -39,15 +38,20 @@ var param = (() => {
 var modalFormFn = (() => {
 	return {
 		/** modalForm에 field type에 따라 input이 생성됨. type에 따라 알맞게 데이터를 설정 */
+		// contentDataEl의 hidden input을 그대로 복사하여 설정, 동일 이름이 있으면 값을 추가하도록 처리
 		copyContentDataToModalForm(contentDataEl) {
 			var modalTarget = document.querySelector(modalSelector);
 			contentDataEl.querySelectorAll("input[type=hidden]").forEach(el => {
 				var targetInput = modalTarget.querySelector("[name=" + el.name + "]");
-				targetInput.value = el.value;
-				if (!el.name.startsWith("__org__")) {
-					var checkBoxInput = targetInput.closest("div").querySelector("input[type=checkbox]");
-					if (checkBoxInput != null) {
-						checkBoxInput.checked = eval(el.value);
+				if (targetInput === null) {
+					modalTarget.querySelector("#modalForm").appendChild(el.cloneNode(true));
+				} else {
+					targetInput.value = el.value;
+					if (targetInput.type != "hidden") {
+						var checkBoxInput = targetInput.closest("div").querySelector("input[type=checkbox]");
+						if (checkBoxInput != null) {
+							checkBoxInput.checked = eval(el.value);
+						}
 					}
 				}
 			});

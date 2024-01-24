@@ -42,7 +42,7 @@ public class ContentInfo {
 	@Getter
 	private List<Map<String, Object>> processedContentMapList;
 	
-	public ContentInfo(List<Map<String, Object>> contentMapList, List<DbField> fieldList) {
+	public ContentInfo(List<Map<String, Object>> contentMapList, List<DbField> dbFieldList) {
 		
 		// 데이터가 없으면 계산을 할 수 없음.
 		if (contentMapList == null || contentMapList.isEmpty()) {
@@ -62,25 +62,23 @@ public class ContentInfo {
 		var firstContent = contentMapList.get(0);
 		
 		firstContent.keySet().forEach(key -> {
-			if (fieldList == null || fieldList.isEmpty()) {
-				contentKeyList.add(new ContentKey(key, key, Short.MAX_VALUE, DbFieldColumnType.STRING));
+			if (dbFieldList == null || dbFieldList.isEmpty()) {
+				contentKeyList.add(new ContentKey(key, key, Short.MAX_VALUE, DbFieldColumnType.STRING, true));
 				return;
 			}
 			
-			var targetField = fieldList.stream().filter(x -> x.getColumnId().equals(key)).findAny().orElseGet(() -> null);
+			var targetField = dbFieldList.stream().filter(x -> x.getColumnId().equals(key)).findAny().orElseGet(() -> null);
 			if (targetField == null) {
-				contentKeyList.add(new ContentKey(key, key, Short.MAX_VALUE, DbFieldColumnType.STRING));
+				contentKeyList.add(new ContentKey(key, key, Short.MAX_VALUE, DbFieldColumnType.STRING, true));
 				return;
 			}
 			
-			if (targetField.isColumnVisible()) {
-				contentKeyList.add(new ContentKey(targetField.getColumnId(), targetField.getColumnName(), targetField.getFormOrder(), targetField.getColumnType()));
-			}
+			contentKeyList.add(new ContentKey(targetField.getColumnId(), targetField.getColumnName(), targetField.getFormOrder(), targetField.getColumnType(), targetField.isColumnVisible()));
 		});
 		
 		// SPEL 타입은 DB에서 획득한 컬럼이 아니기 때문에 별도로 추가해야 함
-		fieldList.stream().filter(x -> x.getColumnType().equals(DbFieldColumnType.SPEL)).forEach(field -> {
-			contentKeyList.add(new ContentKey(field.getColumnId(), field.getColumnName(), field.getFormOrder(), field.getColumnType()));
+		dbFieldList.stream().filter(x -> x.getColumnType().equals(DbFieldColumnType.SPEL)).forEach(dbField -> {
+			contentKeyList.add(new ContentKey(dbField.getColumnId(), dbField.getColumnName(), dbField.getFormOrder(), dbField.getColumnType(), dbField.isColumnVisible()));
 		});
 		
 		contentKeyList.sort(Comparator.comparing(ContentKey::getDisplayOrder));
@@ -99,7 +97,7 @@ public class ContentInfo {
 				// SPEL의 경우 format의 설정을 기준으로 처리
 				// contentMap에도 SPEL의 value를 추가
 				if (contentKey.getType().equals(DbFieldColumnType.SPEL)) {	
-					var field = fieldList.stream().filter(x -> x.getColumnId().equals(contentKey.getOriginKey())).findAny().orElseGet(() -> null);
+					var field = dbFieldList.stream().filter(x -> x.getColumnId().equals(contentKey.getOriginKey())).findAny().orElseGet(() -> null);
 					if (field.getColumnFormat() == null || field.getColumnFormat().isEmpty()) {
 						processedContentMap.put(contentKey.getKey(), null);	
 						contentMap.put(contentKey.getOriginKey(), null);
@@ -133,6 +131,7 @@ public class ContentInfo {
 		private String key;
 		private Short displayOrder;
 		private DbFieldColumnType type;
+		private boolean visible;
 		
 	}
 }

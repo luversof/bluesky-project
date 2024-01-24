@@ -3,11 +3,11 @@ package net.luversof.web.dynamiccrud.setting.service.eventadmin;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.ADMIN_PROJECT_ID_VALUE;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.MAINMENU_ID_VALUE;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.PROJECT_ID_VALUE;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_PROJECT;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_MAINMENU;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_SUBMENU;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_DBQUERY;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_DBFIELD;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_DBQUERY;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_MAINMENU;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_PROJECT;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_SUBMENU;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -261,6 +261,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			field.setColumnId("queryString");
 			field.setColumnName("쿼리");
 			field.setColumnType(DbFieldColumnType.TEXT);
+			field.setColumnHelpText("MsSql의 경우 SELECT query 등록 시 order by 절이 필수 항목입니다.");
 			field.setColumnVisible(true);
 			field.setEnableSearch(DbFieldEnable.DISABLED);
 			field.setEnableEdit(DbFieldEnable.REQUIRED);

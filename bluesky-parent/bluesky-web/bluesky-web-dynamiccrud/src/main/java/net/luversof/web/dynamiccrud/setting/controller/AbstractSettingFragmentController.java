@@ -47,7 +47,6 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 			Model model) {
 		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
 		var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
-		model.addAttribute("dbFieldList", dbFieldList);
 		
 		var page = useService.find(settingParameter, pageable, paramMap);
 		model.addAttribute("page", page);

@@ -4171,6 +4171,10 @@ html {
   bottom: auto;
 }
 
+.visible {
+  visibility: visible;
+}
+
 .absolute {
   position: absolute;
 }
