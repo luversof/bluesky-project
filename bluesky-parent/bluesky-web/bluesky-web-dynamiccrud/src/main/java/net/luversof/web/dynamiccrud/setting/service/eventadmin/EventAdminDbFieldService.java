@@ -16,6 +16,7 @@ import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdmin
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -913,7 +914,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 						&& x.getMainMenuId().equals(settingParameter.mainMenuId())
 						&& x.getSubMenuId().equals(settingParameter.subMenuId()))
 				.sorted(Comparator.comparing(DbField::getColumnOrder))
-				.toList();
+				.collect(Collectors.toList());
 	}
 
 }

@@ -24,6 +24,11 @@ public class EventAdminMariadbDbQueryService implements SettingServiceListSuppli
 	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 	
 	private static final RowMapper<DbQuery> ROW_MAPPER = new DbQueryRowMapper();
+	
+	@Override
+	public int getOrder() {
+		return Integer.MAX_VALUE;
+	}
 
 	@Override
 	public List<DbQuery> findList(SettingParameter settingParameter) {

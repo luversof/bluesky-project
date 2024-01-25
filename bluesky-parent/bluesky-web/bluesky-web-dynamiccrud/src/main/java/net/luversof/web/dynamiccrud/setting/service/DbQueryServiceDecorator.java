@@ -1,26 +1,32 @@
 package net.luversof.web.dynamiccrud.setting.service;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 
 @Service
-public class DbQueryServiceDecorator implements SettingServiceListSupplier<DbQuery> {
+public class DbQueryServiceDecorator implements SettingServiceListSupplier<DbQuery>, SettingServiceDecorator {
 
-	@Autowired
 	private Map<String, SettingServiceListSupplier<DbQuery>> dbQueryServiceMap;
+	
+	public DbQueryServiceDecorator(Map<String, SettingServiceListSupplier<DbQuery>> dbQueryServiceMap) {
+		this.dbQueryServiceMap = getSortedSettingServiceMap(dbQueryServiceMap);
+	}
 
 	@Override
 	public List<DbQuery> findList(SettingParameter settingParameter) {
-		var list = new ArrayList<DbQuery>();
-		dbQueryServiceMap.forEach((key, value) -> list.addAll(value.findList(settingParameter)));
-		return list;
+		for (var entry : dbQueryServiceMap.entrySet()) {
+			var target = entry.getValue().findList(settingParameter);
+			if (!target.isEmpty()) {
+				return target;
+			}
+		}
+		return Collections.emptyList();
 	}
 	
 

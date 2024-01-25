@@ -22,6 +22,11 @@ public class EventAdminMariadbProjectService implements SettingServiceSupplier<P
 	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 	
 	private static final RowMapper<Project> ROW_MAPPER = new ProjectRowMapper();
+	
+	@Override
+	public int getOrder() {
+		return Integer.MAX_VALUE;
+	}
 
 	@Override
 	public Project findOne(SettingParameter settingParameter) {

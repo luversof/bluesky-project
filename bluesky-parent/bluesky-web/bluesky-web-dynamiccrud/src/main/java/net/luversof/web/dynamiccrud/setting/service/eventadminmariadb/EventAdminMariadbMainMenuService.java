@@ -24,6 +24,11 @@ public class EventAdminMariadbMainMenuService implements SettingServiceSupplier<
 	private static final RowMapper<MainMenu> ROW_MAPPER = new MainMenuRowMapper();
 	
 	@Override
+	public int getOrder() {
+		return Integer.MAX_VALUE;
+	}
+	
+	@Override
 	public MainMenu findOne(SettingParameter settingParameter) {
 		var adminProjectId = settingParameter.adminProjectId();
 		if (!StringUtils.hasText(adminProjectId)) {

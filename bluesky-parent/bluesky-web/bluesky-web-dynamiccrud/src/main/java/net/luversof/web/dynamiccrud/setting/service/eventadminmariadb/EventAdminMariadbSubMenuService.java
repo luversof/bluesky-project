@@ -25,6 +25,10 @@ public class EventAdminMariadbSubMenuService implements SettingServiceListSuppli
 	
 	private static final RowMapper<SubMenu> ROW_MAPPER = new SubMenuRowMapper();
 
+	@Override
+	public int getOrder() {
+		return Integer.MAX_VALUE;
+	}
 	
 	@Override
 	public List<SubMenu> findList(SettingParameter settingParameter) {

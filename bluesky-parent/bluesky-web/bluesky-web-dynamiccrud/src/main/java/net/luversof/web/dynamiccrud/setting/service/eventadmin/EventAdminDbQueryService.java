@@ -12,6 +12,7 @@ import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdmin
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -354,7 +355,7 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 						&& x.getProjectId().equals(settingParameter.projectId())
 						&& x.getMainMenuId().equals(settingParameter.mainMenuId())
 						&& x.getSubMenuId().equals(settingParameter.subMenuId()))
-				.toList();
+				.collect(Collectors.toList());
 	}
 
 }
