@@ -1,6 +1,10 @@
 package net.luversof.web.dynamiccrud.setting.service.eventadmin;
 
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.ADMIN_PROJECT_ID_VALUE;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.DBFIELD_COLUMNTYPE_PRESET_VALUE;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.DBFIELD_ENABLE_PRESET_VALUE;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.DBFIELD_VISIBLE_PRESET_VALUE;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.DBQUERY_SQLCOMMANDTYPE_VALUE_PRESET;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.MAINMENU_ID_VALUE;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.PROJECT_ID_VALUE;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_DBFIELD;
@@ -19,6 +23,7 @@ import lombok.Getter;
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldEnable;
+import net.luversof.web.dynamiccrud.setting.domain.DbFieldVisible;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.service.SettingServiceListSupplier;
 
@@ -36,19 +41,26 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		
 		addProjectField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_PROJECT);
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_PROJECT);
-			field.setColumnId("projectName");
-			field.setColumnName("프로젝트 이름");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.ENABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormSize((short) 40);
-			field.setFormOrder((short) 2);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_PROJECT,
+				"projectName",
+				"프로젝트 이름",
+				DbFieldColumnType.STRING,
+				(short) 40,
+				(short) 10,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		addDefaultField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_PROJECT);
@@ -56,19 +68,26 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		addProjectField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_MAINMENU);
 		addMainMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_MAINMENU);
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_MAINMENU);
-			field.setColumnId("mainMenuName");
-			field.setColumnName("메인메뉴 명");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.ENABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormSize((short) 40);
-			field.setFormOrder((short) 3);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_MAINMENU,
+				"mainMenuName",
+				"메인메뉴 명",
+				DbFieldColumnType.STRING,
+				(short) 40,
+				(short) 11,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		addDefaultField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_MAINMENU);
@@ -77,142 +96,210 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		addMainMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_SUBMENU);
 		addSubMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_SUBMENU);
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_SUBMENU);
-			field.setColumnId("subMenuName");
-			field.setColumnName("서브메뉴 명");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.ENABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormSize((short) 40);
-			field.setFormOrder((short) 4);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_SUBMENU,
+				"subMenuName",
+				"서브메뉴 명",
+				DbFieldColumnType.STRING,
+				(short) 40,
+				(short) 10,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_SUBMENU);
-			field.setColumnId("dbType");
-			field.setColumnName("DB 타입");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnPreset("MsSql|MySql");
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.ENABLED);
-			field.setEnableEdit(DbFieldEnable.REQUIRED);
-			field.setFormSize((short) 20);
-			field.setFormOrder((short) 5);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_SUBMENU,
+				"dbType",
+				"DB 타입",
+				DbFieldColumnType.STRING,
+				(short) 20,
+				(short) 11,
+				"MsSql|MySql",
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.REQUIRED,
+				DbFieldEnable.REQUIRED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_SUBMENU);
-			field.setColumnId("displayOrder");
-			field.setColumnName("순서");
-			field.setColumnType(DbFieldColumnType.INT);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormOrder((short) 6);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_SUBMENU,
+				"displayOrder",
+				"순서",
+				DbFieldColumnType.INT,
+				(short) 20,
+				(short) 12,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_SUBMENU);
-			field.setColumnId("pageSize");
-			field.setColumnName("페이지크기");
-			field.setColumnType(DbFieldColumnType.INT);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormOrder((short) 9);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_SUBMENU,
+				"pageSize",
+				"페이지 크기",
+				DbFieldColumnType.INT,
+				(short) 20,
+				(short) 13,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_SUBMENU);
-			field.setColumnId("enableExcel");
-			field.setColumnName("엑셀");
-			field.setColumnType(DbFieldColumnType.BOOLEAN);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormOrder((short) 11);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_SUBMENU,
+				"enableExcel",
+				"엑셀",
+				DbFieldColumnType.BOOLEAN,
+				(short) 20,
+				(short) 14,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_SUBMENU);
-			field.setColumnId("enableInsert");
-			field.setColumnName("입력");
-			field.setColumnType(DbFieldColumnType.BOOLEAN);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormOrder((short) 12);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_SUBMENU,
+				"enableInsert",
+				"입력",
+				DbFieldColumnType.BOOLEAN,
+				(short) 20,
+				(short) 15,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_SUBMENU);
-			field.setColumnId("enableUpdate");
-			field.setColumnName("수정");
-			field.setColumnType(DbFieldColumnType.BOOLEAN);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormOrder((short) 13);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_SUBMENU,
+				"enableUpdate",
+				"수정",
+				DbFieldColumnType.BOOLEAN,
+				(short) 20,
+				(short) 16,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_SUBMENU);
-			field.setColumnId("enableDelete");
-			field.setColumnName("삭제");
-			field.setColumnType(DbFieldColumnType.BOOLEAN);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormOrder((short) 14);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_SUBMENU,
+				"enableDelete",
+				"삭제",
+				DbFieldColumnType.BOOLEAN,
+				(short) 20,
+				(short) 17,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_SUBMENU);
-			field.setColumnId("link");
-			field.setColumnName("링크");
-			field.setColumnType(DbFieldColumnType.SPEL);
-			field.setColumnFormat("'<a href=\"/' + #adminProjectId + '/use/' + #projectId + '/' + #mainMenuId + '/' + #subMenuId + '\" target=\"_blank\">link</a>'");
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.DISABLED);
-			field.setFormOrder((short) 15);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_SUBMENU,
+				"link",
+				"링크",
+				DbFieldColumnType.SPEL,
+				Short.MAX_VALUE,
+				(short) 18,
+				null,
+				"'<a href=\"/' + #adminProjectId + '/use/' + #projectId + '/' + #mainMenuId + '/' + #subMenuId + '\" target=\"_blank\">link</a>'",
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.DISABLED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		addDefaultField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_SUBMENU);
@@ -221,51 +308,72 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		addMainMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBQUERY);
 		addSubMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBQUERY);
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_DBQUERY);
-			field.setColumnId("sqlCommandType");
-			field.setColumnName("쿼리 타입");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnPreset("INSERT|SELECT|UPDATE|DELETE");
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.ENABLED);
-			field.setEnableEdit(DbFieldEnable.REQUIRED);
-			field.setFormOrder((short) 4);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_DBQUERY,
+				"sqlCommandType",
+				"쿼리 타입",
+				DbFieldColumnType.STRING,
+				(short) 20,
+				(short) 10,
+				DBQUERY_SQLCOMMANDTYPE_VALUE_PRESET,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.REQUIRED,
+				DbFieldEnable.REQUIRED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_DBQUERY);
-			field.setColumnId("dataSourceName");
-			field.setColumnName("데이터소스 명");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.ENABLED);
-			field.setEnableEdit(DbFieldEnable.REQUIRED);
-			field.setFormSize((short) 40);
-			field.setFormOrder((short) 5);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_DBQUERY,
+				"dataSourceName",
+				"데이터소스 이름",
+				DbFieldColumnType.STRING,
+				(short) 40,
+				(short) 11,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.REQUIRED,
+				DbFieldEnable.REQUIRED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_DBQUERY);
-			field.setColumnId("queryString");
-			field.setColumnName("쿼리");
-			field.setColumnType(DbFieldColumnType.TEXT);
-			field.setColumnHelpText("MsSql의 경우 SELECT query 등록 시 order by 절이 필수 항목입니다.");
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.REQUIRED);
-			field.setFormOrder((short) 7);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_DBQUERY,
+				"queryString",
+				"쿼리",
+				DbFieldColumnType.TEXT,
+				Short.MAX_VALUE,
+				(short) 12,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.REQUIRED,
+				DbFieldEnable.REQUIRED,
+				"MsSql의 경우 SELECT query 등록 시 order by 절이 필수 항목입니다.",
+				null
+			);
 			dbFieldList.add(field);
 		}
 		addDefaultField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBQUERY);
@@ -274,214 +382,325 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		addMainMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBFIELD);
 		addSubMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBFIELD);
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
-			field.setColumnId("columnId");
-			field.setColumnName("컬럼");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.ENABLED);
-			field.setEnableEdit(DbFieldEnable.REQUIRED);
-			field.setFormSize((short) 40);
-			field.setFormOrder((short) 4);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_DBFIELD,
+				"columnId",
+				"컬럼 Id",
+				DbFieldColumnType.STRING,
+				(short) 40,
+				(short) 10,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.REQUIRED,
+				DbFieldEnable.REQUIRED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
-			field.setColumnId("columnName");
-			field.setColumnName("컬럼명");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormSize((short) 40);
-			field.setFormOrder((short) 5);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_DBFIELD,
+				"columnName",
+				"컬럼 이름",
+				DbFieldColumnType.STRING,
+				(short) 40,
+				(short) 11,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
-			field.setColumnId("columnType");
-			field.setColumnName("컬럼타입");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnPreset("BOOLEAN|DATE|INT|LINK|LONG|STRING|TEXT|SPEL");
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.ENABLED);
-			field.setEnableEdit(DbFieldEnable.REQUIRED);
-			field.setFormSize((short) 20);
-			field.setFormOrder((short) 6);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_DBFIELD,
+				"columnType",
+				"컬럼 타입",
+				DbFieldColumnType.STRING,
+				(short) 20,
+				(short) 12,
+				DBFIELD_COLUMNTYPE_PRESET_VALUE,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.REQUIRED,
+				DbFieldEnable.REQUIRED,
+				"SPEL의 경우 DB에 저장되는 컬럼이 아닌 목록 화면에 추가가 필요할 때 사용됩니다.",
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
-			field.setColumnId("columnPreset");
-			field.setColumnName("프리셋");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormSize((short) 1000);
-			field.setFormOrder((short) 7);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_DBFIELD,
+				"columnLength",
+				"컬럼 길이",
+				DbFieldColumnType.INT,
+				(short) 40,
+				(short) 13,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
-			field.setColumnId("columnFormat");
-			field.setColumnName("포맷");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormSize((short) 1000);
-			field.setFormOrder((short) 8);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_DBFIELD,
+				"columnOrder",
+				"컬럼 순서",
+				DbFieldColumnType.INT,
+				(short) 40,
+				(short) 14,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.REQUIRED,
+				DbFieldEnable.REQUIRED,
+				"입력 form 목록에 보이는 form 순서 및 조회 목록 화면의 컬럼명 순서를 지정합니다.",
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
-			field.setColumnId("columnValidation");
-			field.setColumnName("검증");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormSize((short) 1000);
-			field.setFormOrder((short) 9);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_DBFIELD,
+				"columnPreset",
+				"프리셋",
+				DbFieldColumnType.STRING,
+				(short) 1000,
+				(short) 15,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
-			field.setColumnId("columnHelpText");
-			field.setColumnName("컬럼 도움말");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnHelpText("컬럼을 입력하는데 필요한 도움말을 tooltip 형태로 제공합니다. 지금 보고 있는 부분이 tooltip 입니다.");
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormSize((short) 1000);
-			field.setFormOrder((short) 10);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_DBFIELD,
+				"columnFormat",
+				"포맷",
+				DbFieldColumnType.STRING,
+				(short) 1000,
+				(short) 16,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
-			field.setColumnId("columnPlaceholder");
-			field.setColumnName("컬럼 Placeholder");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnPlaceholder("20자 이내 간략한 설명을 제공합니다");
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormSize((short) 20);
-			field.setFormOrder((short) 11);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_DBFIELD,
+				"columnValidation",
+				"검증",
+				DbFieldColumnType.STRING,
+				(short) 1000,
+				(short) 17,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
-			field.setColumnId("columnVisible");
-			field.setColumnName("표시여부");
-			field.setColumnType(DbFieldColumnType.BOOLEAN);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.REQUIRED);
-			field.setFormOrder((short) 12);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_DBFIELD,
+				"columnVisible",
+				"표시여부",
+				DbFieldColumnType.STRING,
+				(short) 20,
+				(short) 18,
+				DBFIELD_VISIBLE_PRESET_VALUE,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.REQUIRED,
+				DbFieldEnable.REQUIRED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
-			field.setColumnId("enableSearch");
-			field.setColumnName("검색");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnPreset("DISABLED|ENABLED|REQUIRED");
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.REQUIRED);
-			field.setFormSize((short) 20);
-			field.setFormOrder((short) 13);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_DBFIELD,
+				"enableSearch",
+				"검색",
+				DbFieldColumnType.STRING,
+				(short) 20,
+				(short) 19,
+				DBFIELD_ENABLE_PRESET_VALUE,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.REQUIRED,
+				DbFieldEnable.REQUIRED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
-			field.setColumnId("enableEdit");
-			field.setColumnName("입력");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnPreset("DISABLED|ENABLED|REQUIRED");
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.REQUIRED);
-			field.setFormSize((short) 20);
-			field.setFormOrder((short) 14);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_DBFIELD,
+				"enableInsert",
+				"입력",
+				DbFieldColumnType.STRING,
+				(short) 20,
+				(short) 20,
+				DBFIELD_ENABLE_PRESET_VALUE,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.REQUIRED,
+				DbFieldEnable.REQUIRED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
-			field.setColumnId("formSize");
-			field.setColumnName("form 크기");
-			field.setColumnType(DbFieldColumnType.INT);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.ENABLED);
-			field.setFormOrder((short) 15);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_DBFIELD,
+				"enableUpdate",
+				"수정",
+				DbFieldColumnType.STRING,
+				(short) 20,
+				(short) 21,
+				DBFIELD_ENABLE_PRESET_VALUE,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.REQUIRED,
+				DbFieldEnable.REQUIRED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(PROJECT_ID_VALUE);
-			field.setMainMenuId(MAINMENU_ID_VALUE);
-			field.setSubMenuId(SUBMENU_ID_VALUE_DBFIELD);
-			field.setColumnId("formOrder");
-			field.setColumnName("form 순서");
-			field.setColumnType(DbFieldColumnType.INT);
-			field.setColumnHelpText("입력 form 목록에 보이는 form 순서 뿐만 아니라 조회 목록 화면의 컬럼명 순서도 같이 지정합니다.");
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.REQUIRED);
-			field.setFormOrder((short) 16);
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_DBFIELD,
+				"formHelpText",
+				"폼 도움말",
+				DbFieldColumnType.STRING,
+				(short) 1000,
+				(short) 22,
+				null,
+				null,
+				null,
+				DbFieldVisible.NOT_EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				"컬럼을 입력하는데 필요한 도움말을 tooltip 형태로 제공합니다. 지금 보고 있는 부분이 tooltip 입니다.",
+				null
+			);
+			dbFieldList.add(field);
+		}
+		{
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_DBFIELD,
+				"formPlaceholder",
+				"폼 Placeholder",
+				DbFieldColumnType.STRING,
+				(short) 40,
+				(short) 23,
+				null,
+				null,
+				null,
+				DbFieldVisible.NOT_EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				null,
+				"40자 이내 간략한 설명을 제공합니다"
+			);
 			dbFieldList.add(field);
 		}
 		addDefaultField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBFIELD);
@@ -489,140 +708,198 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 	
 	private void addProjectField(String adminProjectId, String projectId, String mainMenuId, String subMenuId) {
 		{
-			var field = new DbField();
-			field.setAdminProjectId(adminProjectId);
-			field.setProjectId(projectId);
-			field.setMainMenuId(mainMenuId);
-			field.setSubMenuId(subMenuId);
-			field.setColumnId("adminProjectId");
-			field.setColumnName("어드민 프로젝트 Id");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnPreset(PROJECT_ID_VALUE);
-			field.setColumnHelpText("종속될 adminProject를 지정합니다.");
-			field.setColumnVisible(false);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.REQUIRED);
-			field.setFormSize((short) 20);
-			field.setFormOrder((short) 1);
+			var field = new DbField(
+				adminProjectId,
+				projectId,
+				mainMenuId,
+				subMenuId,
+				"adminProjectId",
+				"어드민 프로젝트 Id",
+				DbFieldColumnType.STRING,
+				(short) 20,
+				(short) 1,
+				PROJECT_ID_VALUE,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.REQUIRED,
+				DbFieldEnable.REQUIRED,
+				"종속될 adminProject를 지정합니다.",
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(adminProjectId);
-			field.setProjectId(projectId);
-			field.setMainMenuId(mainMenuId);
-			field.setSubMenuId(subMenuId);
-			field.setColumnId("projectId");
-			field.setColumnName("프로젝트 Id");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnPlaceholder("대상 프로젝트 Id");
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.ENABLED);
-			field.setEnableEdit(DbFieldEnable.REQUIRED);
-			field.setFormSize((short) 20);
-			field.setFormOrder((short) 2);
+			var field = new DbField(
+				adminProjectId,
+				projectId,
+				mainMenuId,
+				subMenuId,
+				"projectId",
+				"프로젝트 Id",
+				DbFieldColumnType.STRING,
+				(short) 20,
+				(short) 2,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.REQUIRED,
+				DbFieldEnable.REQUIRED,
+				null,
+				"대상 프로젝트 Id"
+			);
 			dbFieldList.add(field);
 		}
 	}
 	
 	private void addMainMenuField(String adminProjectId, String projectId, String mainMenuId, String subMenuId) {
-		var field = new DbField();
-		field.setAdminProjectId(adminProjectId);
-		field.setProjectId(projectId);
-		field.setMainMenuId(mainMenuId);
-		field.setSubMenuId(subMenuId);
-		field.setColumnId("mainMenuId");
-		field.setColumnName("메인메뉴 Id");
-		field.setColumnType(DbFieldColumnType.STRING);
-		field.setColumnPlaceholder("대상 메인메뉴 Id");
-		field.setColumnVisible(true);
-		field.setEnableSearch(DbFieldEnable.ENABLED);
-		field.setEnableEdit(DbFieldEnable.REQUIRED);
-		field.setFormSize((short) 40);
-		field.setFormOrder((short) 3);
-		dbFieldList.add(field);
+		{
+			var field = new DbField(
+				adminProjectId,
+				projectId,
+				mainMenuId,
+				subMenuId,
+				"mainMenuId",
+				"메인메뉴 Id",
+				DbFieldColumnType.STRING,
+				(short) 40,
+				(short) 3,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.REQUIRED,
+				DbFieldEnable.REQUIRED,
+				null,
+				"대상 메인메뉴 Id"
+			);
+			dbFieldList.add(field);
+		}
 	}
 	
 	private void addSubMenuField(String adminProjectId, String projectId, String mainMenuId, String subMenuId) {
-		var field = new DbField();
-		field.setAdminProjectId(adminProjectId);
-		field.setProjectId(projectId);
-		field.setMainMenuId(mainMenuId);
-		field.setSubMenuId(subMenuId);
-		field.setColumnId("subMenuId");
-		field.setColumnName("서브메뉴 Id");
-		field.setColumnType(DbFieldColumnType.STRING);
-		field.setColumnPlaceholder("대상 서브메뉴 Id");
-		field.setColumnVisible(true);
-		field.setEnableSearch(DbFieldEnable.ENABLED);
-		field.setEnableEdit(DbFieldEnable.REQUIRED);
-		field.setFormSize((short) 40);
-		field.setFormOrder((short) 4);
-		dbFieldList.add(field);
+		{
+			var field = new DbField(
+				adminProjectId,
+				projectId,
+				mainMenuId,
+				subMenuId,
+				"subMenuId",
+				"서브메뉴 Id",
+				DbFieldColumnType.STRING,
+				(short) 40,
+				(short) 4,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.REQUIRED,
+				DbFieldEnable.REQUIRED,
+				null,
+				"대상 서브메뉴 Id"
+			);
+			dbFieldList.add(field);
+		}
 	}
 	
 	private void addDefaultField(String adminProjectId, String projectId, String mainMenuId, String subMenuId) {
 		{
-			var field = new DbField();
-			field.setAdminProjectId(adminProjectId);
-			field.setProjectId(projectId);
-			field.setMainMenuId(mainMenuId);
-			field.setSubMenuId(subMenuId);
-			field.setColumnId("idx");
-			field.setColumnName("#");
-			field.setColumnType(DbFieldColumnType.LONG);
-			field.setColumnVisible(false);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.DISABLED);
-			field.setFormOrder(Short.MAX_VALUE);
+			var field = new DbField(
+				adminProjectId,
+				projectId,
+				mainMenuId,
+				subMenuId,
+				"idx",
+				"#",
+				DbFieldColumnType.LONG,
+				null,
+				Short.MAX_VALUE,
+				null,
+				null,
+				null,
+				DbFieldVisible.NOT_EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.DISABLED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		{
-			var field = new DbField();
-			field.setAdminProjectId(adminProjectId);
-			field.setProjectId(projectId);
-			field.setMainMenuId(mainMenuId);
-			field.setSubMenuId(subMenuId);
-			field.setColumnId("writer");
-			field.setColumnName("최종 수정자");
-			field.setColumnType(DbFieldColumnType.STRING);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.DISABLED);
-			field.setFormSize((short) 40);
-			field.setFormOrder((short) 20);
+			var field = new DbField(
+				adminProjectId,
+				projectId,
+				mainMenuId,
+				subMenuId,
+				"writer",
+				"최종 수정자",
+				DbFieldColumnType.STRING,
+				(short) 40,
+				(short) 40,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.DISABLED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(projectId);
-			field.setMainMenuId(mainMenuId);
-			field.setSubMenuId(subMenuId);
-			field.setColumnId("createDate");
-			field.setColumnName("생성일");
-			field.setColumnType(DbFieldColumnType.DATE);
-			field.setColumnVisible(false);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.DISABLED);
-			field.setFormOrder((short) 21);
+			var field = new DbField(
+				adminProjectId,
+				projectId,
+				mainMenuId,
+				subMenuId,
+				"createDate",
+				"생성일",
+				DbFieldColumnType.DATE,
+				(short) 40,
+				(short) 41,
+				null,
+				null,
+				null,
+				DbFieldVisible.NOT_EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.DISABLED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		
 		{
-			var field = new DbField();
-			field.setAdminProjectId(ADMIN_PROJECT_ID_VALUE);
-			field.setProjectId(projectId);
-			field.setMainMenuId(mainMenuId);
-			field.setSubMenuId(subMenuId);
-			field.setColumnId("updateDate");
-			field.setColumnName("수정일");
-			field.setColumnType(DbFieldColumnType.DATE);
-			field.setColumnVisible(true);
-			field.setEnableSearch(DbFieldEnable.DISABLED);
-			field.setEnableEdit(DbFieldEnable.DISABLED);
-			field.setFormOrder((short) 22);
+			var field = new DbField(
+				adminProjectId,
+				projectId,
+				mainMenuId,
+				subMenuId,
+				"updateDate",
+				"수정일",
+				DbFieldColumnType.DATE,
+				(short) 40,
+				(short) 42,
+				null,
+				null,
+				null,
+				DbFieldVisible.EXPOSED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.DISABLED,
+				null,
+				null
+			);
 			dbFieldList.add(field);
 		}
 		
@@ -635,7 +912,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 						&& x.getProjectId().equals(settingParameter.projectId())
 						&& x.getMainMenuId().equals(settingParameter.mainMenuId())
 						&& x.getSubMenuId().equals(settingParameter.subMenuId()))
-				.sorted(Comparator.comparing(DbField::getFormOrder))
+				.sorted(Comparator.comparing(DbField::getColumnOrder))
 				.toList();
 	}
 

@@ -39,7 +39,13 @@ public class DbField extends Setting {
 
 	@Column(length = 20, nullable = false)
 	@Enumerated(EnumType.STRING)
-	private DbFieldColumnType columnType;		// BOOLEAN, DATE, INT, LINK, LONG, STRING, TEXT
+	private DbFieldColumnType columnType;
+	
+	@Column
+	private Short columnLength;
+	
+	@Column
+	private Short columnOrder;
 	
 	private String columnPreset;
 	
@@ -47,27 +53,30 @@ public class DbField extends Setting {
 	
 	private String columnValidation;
 	
-	private String columnHelpText;
+	@Column(length = 20, nullable = false)
+	@Enumerated(EnumType.STRING)
+	private DbFieldVisible columnVisible;
+	
+	@Column(length = 20, nullable = false)
+	@Enumerated(EnumType.STRING)
+	private DbFieldEnable enableSearch;
+	
+	@Column(length = 20, nullable = false)
+	@Enumerated(EnumType.STRING)
+	private DbFieldEnable enableInsert;
+	
+	@Column(length = 20, nullable = false)
+	@Enumerated(EnumType.STRING)
+	private DbFieldEnable enableUpdate;
+	
+	private String formHelpText;
 	
 	@Column(length = 20)
-	private String columnPlaceholder;
+	private String formPlaceholder;
 	
-	@Column(nullable = false)
-	private boolean columnVisible;
-	
-	@Column(length = 20, nullable = false)
-	@Enumerated(EnumType.STRING)
-	private DbFieldEnable enableSearch;	// DISABLED, ENABLED, REQUIRED
-	
-	@Column(length = 20, nullable = false)
-	@Enumerated(EnumType.STRING)
-	private DbFieldEnable enableEdit;	// DISABLED, ENABLED, REQUIRED
-	
-	@Column
-	private Short formSize;
-	
-	@Column
-	private Short formOrder;	// 입력 폼 순서를 지정하면서 동시에 목록의 순서로도 사용됨
+	public boolean isColumnVisible() {
+		return DbFieldVisible.EXPOSED.equals(columnVisible);
+	}
 	
 	public boolean isEnableSearch() {
 		return DbFieldEnable.ENABLED.equals(enableSearch) || DbFieldEnable.REQUIRED.equals(enableSearch);
@@ -77,11 +86,41 @@ public class DbField extends Setting {
 		return DbFieldEnable.REQUIRED.equals(enableSearch);
 	}
 	
-	public boolean isEnableEdit() {
-		return DbFieldEnable.ENABLED.equals(enableEdit) || DbFieldEnable.REQUIRED.equals(enableEdit);
+	public boolean isEnableInsert() {
+		return DbFieldEnable.ENABLED.equals(enableInsert) || DbFieldEnable.REQUIRED.equals(enableInsert);
 	}
 	
-	public boolean isEnableEditRequired() {
-		return DbFieldEnable.REQUIRED.equals(enableEdit);
+	public boolean isEnableInsertRequired() {
+		return DbFieldEnable.REQUIRED.equals(enableInsert);
+	}
+	
+	public boolean isEnableUpdate() {
+		return DbFieldEnable.ENABLED.equals(enableUpdate) || DbFieldEnable.REQUIRED.equals(enableUpdate);
+	}
+	
+	public boolean isEnableUpdateRequired() {
+		return DbFieldEnable.REQUIRED.equals(enableUpdate);
+	}
+	
+	public boolean isEnableEdit(String modalMode) {
+		if ("create".equals(modalMode)) {
+			return isEnableInsert();
+		}
+		
+		if ("update".equals(modalMode)) {
+			return isEnableUpdate();
+		}
+		return false;
+	}
+	
+	public boolean isEnableEditRequired(String modalMode) {
+		if ("create".equals(modalMode)) {
+			return isEnableInsertRequired();
+		}
+		
+		if ("update".equals(modalMode)) {
+			return isEnableUpdateRequired();
+		}
+		return false;
 	}
 }

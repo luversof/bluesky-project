@@ -2,6 +2,7 @@ package net.luversof.web.dynamiccrud.setting.util;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import io.github.luversof.boot.devcheck.annotation.DevCheckUtil;
 import io.github.luversof.boot.exception.BlueskyException;
@@ -13,11 +14,13 @@ import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuerySqlCommandType;
 import net.luversof.web.dynamiccrud.setting.domain.MainMenu;
+import net.luversof.web.dynamiccrud.setting.domain.Project;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
 import net.luversof.web.dynamiccrud.setting.service.DbFieldServiceDecorator;
 import net.luversof.web.dynamiccrud.setting.service.DbQueryServiceDecorator;
 import net.luversof.web.dynamiccrud.setting.service.MainMenuServiceDecorator;
+import net.luversof.web.dynamiccrud.setting.service.ProjectServiceDecorator;
 import net.luversof.web.dynamiccrud.setting.service.SubMenuServiceDecorator;
 
 /**
@@ -27,6 +30,8 @@ import net.luversof.web.dynamiccrud.setting.service.SubMenuServiceDecorator;
 @DevCheckUtil
 public class SettingUtil extends RequestAttributeUtil {
 	
+	private static final String PROJECT = "__project_{0}_{1}";
+	private static final String MAINMENU = "__mainMenu_{0}_{1}_{2}";
 	private static final String SUBMENU_LIST = "__subMenuList_{0}_{1}_{2}";
 	private static final String DBQUERY_LIST = "__dbQueryList_{0}_{1}_{2}_{3}";
 	private static final String DBFIELD_LIST = "__dbFieldList_{0}_{1}_{2}_{3}";
@@ -35,8 +40,36 @@ public class SettingUtil extends RequestAttributeUtil {
 		return SettingConstant.ADMIN_PROJECT_ID_VALUE.equals(adminProjectId);
 	}
 	
+	public static Project getProject(SettingParameter settingParameter) {
+		var attributeName = getAttributeName(PROJECT, settingParameter.adminProjectId(), settingParameter.projectId());
+		Optional<Project> projectOptional = getRequestAttribute(attributeName);
+		if (projectOptional != null) {
+			return projectOptional.get();
+		}
+		projectOptional = Optional.ofNullable(ApplicationContextUtil.getApplicationContext().getBean(ProjectServiceDecorator.class).findOne(settingParameter));
+		setRequestAttribute(attributeName, projectOptional);
+		
+		return projectOptional.get();
+	}
+	
+	public static Project getProject(String adminProjectId, String projectId) {
+		return getProject(new SettingParameter(adminProjectId, projectId, null, null));
+	}
+	
+	public static MainMenu getMainMenu(SettingParameter settingParameter) {
+		var attributeName = getAttributeName(MAINMENU, settingParameter.adminProjectId(), settingParameter.projectId(), settingParameter.mainMenuId());
+		Optional<MainMenu> mainMenuOptional = getRequestAttribute(attributeName);
+		if (mainMenuOptional != null) {
+			return mainMenuOptional.get();
+		}
+		mainMenuOptional = Optional.ofNullable(ApplicationContextUtil.getApplicationContext().getBean(MainMenuServiceDecorator.class).findOne(settingParameter));
+		setRequestAttribute(attributeName, mainMenuOptional);
+		
+		return mainMenuOptional.get();
+	}
+	
 	public static MainMenu getMainMenu(String adminProjectId, String projectId, String mainMenuId) {
-		return ApplicationContextUtil.getApplicationContext().getBean(MainMenuServiceDecorator.class).findOne(new SettingParameter(adminProjectId, projectId, mainMenuId, null));
+		return getMainMenu(new SettingParameter(adminProjectId, projectId, mainMenuId, null));
 	}
 	
 	public static List<SubMenu> getSubMenuList(SettingParameter settingParameter) {

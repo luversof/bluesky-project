@@ -12,6 +12,13 @@ public class EventAdminConstant {
 	public static final String SUBMENU_ID_VALUE_SUBMENU = "subMenu";
 	public static final String SUBMENU_ID_VALUE_DBQUERY = "dbQuery";
 	public static final String SUBMENU_ID_VALUE_DBFIELD = "dbField";
-	public static final SubMenuDbType DB_TYPE = SubMenuDbType.MySql; 
+	public static final SubMenuDbType DB_TYPE = SubMenuDbType.MySql;
+	
+	public static final String DBQUERY_SQLCOMMANDTYPE_VALUE_PRESET = "INSERT|SELECT|UPDATE|DELETE";
+	
+	public static final String DBFIELD_COLUMNTYPE_PRESET_VALUE = "BOOLEAN|DATE|INT|LINK|LONG|STRING|TEXT|SPEL";
+	public static final String DBFIELD_VISIBLE_PRESET_VALUE = "EXPOSED|NOT_EXPOSED|NOT_USED";
+	public static final String DBFIELD_ENABLE_PRESET_VALUE = "DISABLED|ENABLED|REQUIRED";
+	
 	public static final String DATASOURCE_NAME = "dynamiccrud";
 }

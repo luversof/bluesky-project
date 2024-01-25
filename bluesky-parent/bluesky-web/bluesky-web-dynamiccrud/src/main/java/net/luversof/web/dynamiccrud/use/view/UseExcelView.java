@@ -57,7 +57,7 @@ public class UseExcelView extends AbstractXlsxView {
 			
 			for (var contentKey : contentInfo.getContentKeyList()) {
 				var cell = row.createCell(cellIdx++);
-				cell.setCellValue(contentKey.getKey());
+				cell.setCellValue(contentKey.key());
 				cell.setCellStyle(headerCellStyle);
 			}
 		}

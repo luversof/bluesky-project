@@ -304,8 +304,8 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					DATASOURCE_NAME,
 					"""
 					INSERT INTO DbField 
-					(adminProjectId, projectId, mainMenuId, subMenuId, columnId, columnName, columnType, columnPreset, columnFormat, columnValidation, columnVisible, enableSearch, enableEdit, formSize, formOrder, writer, createDate, updateDate) 
-					VALUES (:adminProjectId, :projectId, :mainMenuId, :subMenuId, :columnId, :columnName, :columnType, :columnPreset, :columnFormat, :columnValidation, :columnVisible, :enableSearch, :enableEdit, :formSize, :formOrder, :writer, NOW(), NOW())
+					(adminProjectId, projectId, mainMenuId, subMenuId, columnId, columnName, columnType, columnLength, columnOrder, columnPreset, columnFormat, columnValidation, columnVisible, enableSearch, enableInsert, enableUpdate, writer, createDate, updateDate) 
+					VALUES (:adminProjectId, :projectId, :mainMenuId, :subMenuId, :columnId, :columnName, :columnType, :columnLength, :columnOrder, :columnPreset, :columnFormat, :columnValidation, :columnVisible, :enableSearch, :enableInsert, :enableUpdate, :writer, NOW(), NOW())
 					"""
 			);
 			dbQueryList.add(query);
@@ -321,7 +321,9 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					DATASOURCE_NAME,
 					"""
 					UPDATE DbField 
-					SET adminProjectId = :adminProjectId, projectId = :projectId, mainMenuId = :mainMenuId, subMenuId = :subMenuId, columnId = :columnId, columnName = :columnName, columnType = :columnType, columnPreset = :columnPreset, columnFormat = :columnFormat, columnValidation = :columnValidation, columnVisible = :columnVisible, enableSearch = :enableSearch, enableEdit = :enableEdit, formSize = :formSize, formOrder = :formOrder, writer = :writer, updateDate = NOW() 
+					SET adminProjectId = :adminProjectId, projectId = :projectId, mainMenuId = :mainMenuId, subMenuId = :subMenuId, columnId = :columnId, columnName = :columnName, 
+					columnType = :columnType, columnLength = :columnLength, columnOrder = :columnOrder, columnPreset = :columnPreset, columnFormat = :columnFormat, 
+					columnValidation = :columnValidation, columnVisible = :columnVisible, enableSearch = :enableSearch, enableInsert = :enableInsert, enableUpdate = :enableUpdate, writer = :writer, updateDate = NOW() 
 					WHERE adminProjectId = :__org__adminProjectId AND projectId = :__org__projectId AND mainMenuId = :__org__mainMenuId AND subMenuId = :__org__subMenuId AND columnId = :__org__columnId
 					"""
 			);

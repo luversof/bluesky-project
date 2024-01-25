@@ -9,11 +9,10 @@ import java.util.Map;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
+import net.luversof.web.dynamiccrud.setting.domain.DbFieldVisible;
 
 /**
  * 응답할 데이터 목록을 가공한 정보를 담고 있는 객체
@@ -72,16 +71,19 @@ public class ContentInfo {
 				contentKeyList.add(new ContentKey(key, key, Short.MAX_VALUE, DbFieldColumnType.STRING, true));
 				return;
 			}
-			
-			contentKeyList.add(new ContentKey(targetField.getColumnId(), targetField.getColumnName(), targetField.getFormOrder(), targetField.getColumnType(), targetField.isColumnVisible()));
+
+			// 공개 불가 설정된 컬럼은 무조건 제외처리
+			if (!targetField.getColumnVisible().equals(DbFieldVisible.NOT_USED)) {
+				contentKeyList.add(new ContentKey(targetField.getColumnId(), targetField.getColumnName(), targetField.getColumnOrder(), targetField.getColumnType(), targetField.isColumnVisible()));
+			}
 		});
 		
 		// SPEL 타입은 DB에서 획득한 컬럼이 아니기 때문에 별도로 추가해야 함
 		dbFieldList.stream().filter(x -> x.getColumnType().equals(DbFieldColumnType.SPEL)).forEach(dbField -> {
-			contentKeyList.add(new ContentKey(dbField.getColumnId(), dbField.getColumnName(), dbField.getFormOrder(), dbField.getColumnType(), dbField.isColumnVisible()));
+			contentKeyList.add(new ContentKey(dbField.getColumnId(), dbField.getColumnName(), dbField.getColumnOrder(), dbField.getColumnType(), dbField.isColumnVisible()));
 		});
 		
-		contentKeyList.sort(Comparator.comparing(ContentKey::getDisplayOrder));
+		contentKeyList.sort(Comparator.comparing(ContentKey::displayOrder));
 		
 		// 계산된 contentKeyList를 기준으로 processedContentMapList를 만든다.
 		var expressionParser = new SpelExpressionParser();
@@ -96,21 +98,21 @@ public class ContentInfo {
 				// type에 따라 적절하게 값을 처리한다.
 				// SPEL의 경우 format의 설정을 기준으로 처리
 				// contentMap에도 SPEL의 value를 추가
-				if (contentKey.getType().equals(DbFieldColumnType.SPEL)) {	
-					var field = dbFieldList.stream().filter(x -> x.getColumnId().equals(contentKey.getOriginKey())).findAny().orElseGet(() -> null);
+				if (contentKey.type().equals(DbFieldColumnType.SPEL)) {	
+					var field = dbFieldList.stream().filter(x -> x.getColumnId().equals(contentKey.originKey())).findAny().orElseGet(() -> null);
 					if (field.getColumnFormat() == null || field.getColumnFormat().isEmpty()) {
-						processedContentMap.put(contentKey.getKey(), null);	
-						contentMap.put(contentKey.getOriginKey(), null);
+						processedContentMap.put(contentKey.key(), null);	
+						contentMap.put(contentKey.originKey(), null);
 					} else {
 						var expression = expressionParser.parseExpression(field.getColumnFormat());
 						
 						var value = expression.getValue(evaluationContext);
-						contentMap.put(contentKey.getOriginKey(), value);
-						processedContentMap.put(contentKey.getKey(), value);
+						contentMap.put(contentKey.key(), value);
+						processedContentMap.put(contentKey.key(), value);
 						
 					}
 				} else {
-					processedContentMap.put(contentKey.getKey(), contentMap.get(contentKey.getOriginKey()));
+					processedContentMap.put(contentKey.key(), contentMap.get(contentKey.originKey()));
 				}
 			}
 			processedContentMapList.add(processedContentMap);
@@ -123,15 +125,12 @@ public class ContentInfo {
 	 * @param <K> : 원래 key 값
 	 * @param <V> : 보여줄 key 값
 	 */
-	@Data
-	@AllArgsConstructor
-	public class ContentKey {
-		
-		private String originKey;
-		private String key;
-		private Short displayOrder;
-		private DbFieldColumnType type;
-		private boolean visible;
-		
+	public record ContentKey(
+			String originKey,
+			String key,
+			Short displayOrder,
+			DbFieldColumnType type,
+			boolean visible
+			) {
 	}
 }
