@@ -160,7 +160,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				DbFieldEnable.DISABLED,
 				DbFieldEnable.ENABLED,
 				DbFieldEnable.ENABLED,
-				null,
+				"화면 상단에 위치한 메뉴 목록에 보이는 순서를 지정합니다.",
 				null
 			);
 			dbFieldList.add(field);
@@ -326,7 +326,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				DbFieldEnable.ENABLED,
 				DbFieldEnable.REQUIRED,
 				DbFieldEnable.REQUIRED,
-				null,
+				"SubMenu 1개에는 CRUD 쿼리타입 당 1개씩 총 4개까지 등록이 가능합니다.",
 				null
 			);
 			dbFieldList.add(field);
@@ -349,7 +349,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				DbFieldEnable.ENABLED,
 				DbFieldEnable.REQUIRED,
 				DbFieldEnable.REQUIRED,
-				null,
+				"""
+				ConnectionInfo에 등록되어 있는 dataSource Name을 설정하면 미리 DataSource bean을 설정하지 않아도 후처리로 DataSource를 생성하고 등록합니다.
+				다만 잘못설정된 연결 정보를 설정한 경우 connectionInfo lazy load를 불필요하게 계속 호출하는 것을 방지하기 위해 현재 호출 실패시 1시간 동안 재호출을 막아두었습니다.
+				""",
 				null
 			);
 			dbFieldList.add(field);
@@ -372,7 +375,12 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				DbFieldEnable.DISABLED,
 				DbFieldEnable.REQUIRED,
 				DbFieldEnable.REQUIRED,
-				"MsSql의 경우 SELECT query 등록 시 order by 절이 필수 항목입니다.",
+				"""
+				MsSql의 경우 SELECT query 등록 시 order by 절이 필수 항목입니다. (MySql은 선택 항목)
+				예) SELECT * FROM SomeTable Order By idx DESC
+				SELECT 쿼리는 동적으로 페이징/검색 쿼리를 구성합니다. 
+				등록 시 Where 조건을 설정한 경우 동적 쿼리를 구성하지 않으며 연관한 기능들이 제대로 동작하지 않습니다.
+				""",
 				null
 			);
 			dbFieldList.add(field);
@@ -515,7 +523,12 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				DbFieldEnable.DISABLED,
 				DbFieldEnable.ENABLED,
 				DbFieldEnable.ENABLED,
-				null,
+				"""
+				정해진 값 중 선택을 하는 컬럼은 preset을 지정하면 됩니다. '|' 로 각 값을 구분하면 됩니다.
+				예)  Avalue|Bvalue|Cvalue
+				만약 해당 값에 대해 화면의 표시 처리는 다르게 하려는 경우 ','로 각 값의 표시값을 추가할 수 있습니다.
+				예) Avalue,A값|Bvalue,B값|Cvalue,C값
+				""",
 				null
 			);
 			dbFieldList.add(field);
@@ -538,7 +551,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				DbFieldEnable.DISABLED,
 				DbFieldEnable.ENABLED,
 				DbFieldEnable.ENABLED,
-				null,
+				"현재 컬럼타입이 SPEL인 경우에만 사용하도록 구현된 상태입니다.",
 				null
 			);
 			dbFieldList.add(field);
@@ -561,7 +574,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				DbFieldEnable.DISABLED,
 				DbFieldEnable.ENABLED,
 				DbFieldEnable.ENABLED,
-				null,
+				"현재 미구현 상태",
 				null
 			);
 			dbFieldList.add(field);
@@ -729,7 +742,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				DbFieldEnable.DISABLED,
 				DbFieldEnable.REQUIRED,
 				DbFieldEnable.REQUIRED,
-				"종속될 adminProject를 지정합니다.",
+				"종속된 관리툴을 지정합니다. 현재 주소를 기반으로 기본 설정되므로 별도의 설정이 필요없습니다.",
 				null
 			);
 			dbFieldList.add(field);
