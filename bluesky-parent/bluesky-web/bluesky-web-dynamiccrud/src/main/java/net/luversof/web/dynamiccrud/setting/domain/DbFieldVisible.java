@@ -1,7 +1,7 @@
 package net.luversof.web.dynamiccrud.setting.domain;
 
 public enum DbFieldVisible {
-	EXPOSED,
-	NOT_EXPOSED,
+	SHOW,
+	HIDE,
 	NOT_USED
 }

@@ -69,8 +69,8 @@
 					<option data-th-text="${dbField.columnName}" value="" />
 					<option 
 						data-th-each="presetPart : ${#strings.listSplit(dbField.columnPreset,'|')}" 
-						data-th-value="${#strings.contains(presetPart, ',')? #strings.arraySplit(presetPart, ',')[1] : presetPart}" 
-						data-th-text="${#strings.contains(presetPart, ',')? #strings.arraySplit(presetPart, ',')[0] : presetPart}"
+						data-th-value="${#strings.contains(presetPart, ',')? #strings.arraySplit(presetPart, ',')[0] : presetPart}" 
+						data-th-text="${#strings.contains(presetPart, ',')? #strings.arraySplit(presetPart, ',')[1] : presetPart}"
 					/>
 				</select>
 			</th-block>

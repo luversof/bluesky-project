@@ -60,7 +60,7 @@
 		<thead>
 			<tr>
 				<th class="w-0 p-0"></th>
-				<th data-th-each="contentKey : ${contentInfo.contentKeyList}" data-th-if="${contentKey.visible}" data-th-text="${contentKey.key}"></th>
+				<th data-th-each="contentKeyInfo : ${contentInfo.contentKeyInfoList}" data-th-if="${contentKeyInfo.visible}" data-th-text="${contentKeyInfo.key}"></th>
 				<th data-th-if="${targetSubMenu.enableUpdate}" data-th-text="#{use.text.update}"></th>
 				<th data-th-if="${targetSubMenu.enableInsert || targetSubMenu.enableUpdate || targetSubMenu.enableDelete}">
 					<input name="contentDataCheckToggle" type="checkbox" class="checkbox" />
@@ -71,17 +71,17 @@
 			<tr class="hover" data-th-each="content,iterator : ${contentInfo.processedContentMapList}">
 				<td class="w-0 p-0 contentData">
 					<input type="hidden"
-						data-th-each="contentKey : ${contentInfo.contentKeyList}" 
-						data-th-name="${contentKey.originKey}"
-						data-th-value="${contentInfo.contentMapList.get(iterator.index).get(contentKey.originKey)}"
+						data-th-each="contentKeyInfo : ${contentInfo.contentKeyInfoList}" 
+						data-th-name="${contentKeyInfo.originKey}"
+						data-th-value="${contentInfo.contentMapList.get(iterator.index).get(contentKeyInfo.originKey)}"
 					/>
 					<input type="hidden"
-						data-th-each="contentKey : ${contentInfo.contentKeyList}"
-						data-th-name="'\_\_org\_\_' + ${contentKey.originKey}"
-						data-th-value="${contentInfo.contentMapList.get(iterator.index).get(contentKey.originKey)}"
+						data-th-each="contentKeyInfo : ${contentInfo.contentKeyInfoList}"
+						data-th-name="'\_\_org\_\_' + ${contentKeyInfo.originKey}"
+						data-th-value="${contentInfo.contentMapList.get(iterator.index).get(contentKeyInfo.originKey)}"
 					/>
 				</td>
-				<td data-th-each="contentKey : ${contentInfo.contentKeyList}" data-th-if="${contentKey.visible}" data-th-utext="${content.get(contentKey.key)}"></td>
+				<td data-th-each="contentKeyInfo : ${contentInfo.contentKeyInfoList}" data-th-if="${contentKeyInfo.visible}" data-th-utext="${content.get(contentKeyInfo.key)}"></td>
 				<td data-th-if="${targetSubMenu.enableUpdate}">
 					<button class="btn btn-sm"
 						data-th-hx-get="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_FORM',map.of('modalMode','update'))}}"

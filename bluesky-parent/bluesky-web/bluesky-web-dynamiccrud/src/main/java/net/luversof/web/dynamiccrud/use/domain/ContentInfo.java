@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.util.StringUtils;
 
 import lombok.Getter;
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
@@ -24,7 +25,7 @@ public class ContentInfo {
 	 * 키 정보를 담고 있는 맵
 	 */
 	@Getter
-	private List<ContentKey> contentKeyList;
+	private List<ContentKeyInfo> contentKeyInfoList;
 	
 	/**
 	 * view 페이지 input form 처리를 위해 원본 데이터를 같이 전달해야 함.
@@ -50,69 +51,81 @@ public class ContentInfo {
 		
 		this.contentMapList = contentMapList;
 		
-		// contentKeyMap을 만들어보자.
-		// keyMap의 순서 처리는 어떻게 해야 할까?
-		// fieldList가 전체 key를 다 가지고 있지 않음.
-		// fieldList의 순서와 data의 순서를 어떻게 조합하는게 좋을까?
-		// 단순히 content에 있는 값을 기준으로 순서를 정한 후 fieldList의 지정된 순서로 변경이 되나?
-		
-		contentKeyList = new ArrayList<>();
+		contentKeyInfoList = new ArrayList<>();
 		
 		var firstContent = contentMapList.get(0);
 		
+		// 조회한 데이터 목록의 첫번째 데이터의 key 목록을 기준으로 contentKeyList를 생성
 		firstContent.keySet().forEach(key -> {
+			
+			// 저장된 dbField 목록이 없으면 데이터의 key를 그대로 사용
 			if (dbFieldList == null || dbFieldList.isEmpty()) {
-				contentKeyList.add(new ContentKey(key, key, Short.MAX_VALUE, DbFieldColumnType.STRING, true));
+				contentKeyInfoList.add(new ContentKeyInfo(key, key, Short.MAX_VALUE, DbFieldColumnType.STRING, true, null));
 				return;
 			}
 			
+			// 저장된 dbField 목록에 해당 key에 대한 정보가 없으면 데이터의 key를 그대로 사용
 			var targetField = dbFieldList.stream().filter(x -> x.getColumnId().equals(key)).findAny().orElseGet(() -> null);
 			if (targetField == null) {
-				contentKeyList.add(new ContentKey(key, key, Short.MAX_VALUE, DbFieldColumnType.STRING, true));
+				contentKeyInfoList.add(new ContentKeyInfo(key, key, Short.MAX_VALUE, DbFieldColumnType.STRING, true, null));
 				return;
 			}
 
-			// 공개 불가 설정된 컬럼은 무조건 제외처리
+			// 사용 불가 설정된 컬럼은 무조건 제외처리
 			if (!targetField.getColumnVisible().equals(DbFieldVisible.NOT_USED)) {
-				contentKeyList.add(new ContentKey(targetField.getColumnId(), targetField.getColumnName(), targetField.getColumnOrder(), targetField.getColumnType(), targetField.isColumnVisible()));
+				contentKeyInfoList.add(new ContentKeyInfo(targetField.getColumnId(), targetField.getColumnName(), targetField.getColumnOrder(), targetField.getColumnType(), targetField.isColumnVisible(), targetField));
 			}
 		});
 		
 		// SPEL 타입은 DB에서 획득한 컬럼이 아니기 때문에 별도로 추가해야 함
 		dbFieldList.stream().filter(x -> x.getColumnType().equals(DbFieldColumnType.SPEL)).forEach(dbField -> {
-			contentKeyList.add(new ContentKey(dbField.getColumnId(), dbField.getColumnName(), dbField.getColumnOrder(), dbField.getColumnType(), dbField.isColumnVisible()));
+			contentKeyInfoList.add(new ContentKeyInfo(dbField.getColumnId(), dbField.getColumnName(), dbField.getColumnOrder(), dbField.getColumnType(), dbField.isColumnVisible(), dbField));
 		});
 		
-		contentKeyList.sort(Comparator.comparing(ContentKey::displayOrder));
+		contentKeyInfoList.sort(Comparator.comparing(ContentKeyInfo::displayOrder));
 		
-		// 계산된 contentKeyList를 기준으로 processedContentMapList를 만든다.
 		var expressionParser = new SpelExpressionParser();
 		
+		// 계산된 contentKeyList를 기준으로 processedContentMapList를 만든다.
 		processedContentMapList = new ArrayList<>();
 		for (var contentMap : this.contentMapList) {
 			var evaluationContext = new StandardEvaluationContext();
 			evaluationContext.setVariables(contentMap);
 			
 			var processedContentMap = new LinkedHashMap<String, Object>();
-			for (var contentKey : contentKeyList) {
-				// type에 따라 적절하게 값을 처리한다.
+			for (var contentKeyInfo : contentKeyInfoList) {
+				// type에 따라 적절하게 값을 처리
 				// SPEL의 경우 format의 설정을 기준으로 처리
-				// contentMap에도 SPEL의 value를 추가
-				if (contentKey.type().equals(DbFieldColumnType.SPEL)) {	
-					var field = dbFieldList.stream().filter(x -> x.getColumnId().equals(contentKey.originKey())).findAny().orElseGet(() -> null);
-					if (field.getColumnFormat() == null || field.getColumnFormat().isEmpty()) {
-						processedContentMap.put(contentKey.key(), null);	
-						contentMap.put(contentKey.originKey(), null);
-					} else {
-						var expression = expressionParser.parseExpression(field.getColumnFormat());
-						
-						var value = expression.getValue(evaluationContext);
-						contentMap.put(contentKey.key(), value);
-						processedContentMap.put(contentKey.key(), value);
-						
+				// contentMap에도 SPEL의 value를 추가한다. (contentMap은 DB에서 조회한 값이므로 SPEL 컬럼의 값이 없음)
+				var dbField = contentKeyInfo.DbField;
+				if (contentKeyInfo.type().equals(DbFieldColumnType.SPEL)) {	
+					Object value = null;
+					if (StringUtils.hasText(dbField.getColumnFormat())) {
+						var expression = expressionParser.parseExpression(dbField.getColumnFormat());
+						value = expression.getValue(evaluationContext);
+					}
+					contentMap.put(contentKeyInfo.originKey(), value);
+					processedContentMap.put(contentKeyInfo.key(), value);
+				} else if (dbField != null && StringUtils.hasText(dbField.getColumnPreset())) {
+					// preset을 사용하는 경우 preset 대체 문자로 처리
+					String content = (String) contentMap.get(contentKeyInfo.originKey());
+					var presetParts = dbField.getColumnPreset().split("\\|");
+					for (var presetPart : presetParts) {
+						String presetKey;
+						String presetValue;
+						if (presetPart.contains(",")) {
+							presetKey = presetPart.split(",")[0];
+							presetValue = presetPart.split(",")[1];
+						} else {
+							presetKey = presetPart;
+							presetValue = presetPart;
+						}
+						if (presetKey.equals(content)) {
+							processedContentMap.put(contentKeyInfo.key(), presetValue);
+						}
 					}
 				} else {
-					processedContentMap.put(contentKey.key(), contentMap.get(contentKey.originKey()));
+					processedContentMap.put(contentKeyInfo.key(), contentMap.get(contentKeyInfo.originKey()));
 				}
 			}
 			processedContentMapList.add(processedContentMap);
@@ -122,15 +135,14 @@ public class ContentInfo {
 	
 	/**
 	 * key 값을 가공한 정보를 담은 객체 
-	 * @param <K> : 원래 key 값
-	 * @param <V> : 보여줄 key 값
 	 */
-	public record ContentKey(
-			String originKey,
-			String key,
-			Short displayOrder,
+	public record ContentKeyInfo(
+			String originKey,		// 원본 key
+			String key,				// 보여주기 위한 key
+			Short displayOrder,		// 순서
 			DbFieldColumnType type,
-			boolean visible
+			boolean visible,			// 노출 여부
+			DbField DbField
 			) {
 	}
 }

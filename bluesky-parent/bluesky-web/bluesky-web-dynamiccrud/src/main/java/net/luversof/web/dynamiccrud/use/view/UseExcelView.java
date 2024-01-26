@@ -55,9 +55,9 @@ public class UseExcelView extends AbstractXlsxView {
 		
 			int cellIdx = 0;
 			
-			for (var contentKey : contentInfo.getContentKeyList()) {
+			for (var contentKeyInfo : contentInfo.getContentKeyInfoList()) {
 				var cell = row.createCell(cellIdx++);
-				cell.setCellValue(contentKey.key());
+				cell.setCellValue(contentKeyInfo.key());
 				cell.setCellStyle(headerCellStyle);
 			}
 		}
@@ -80,7 +80,7 @@ public class UseExcelView extends AbstractXlsxView {
 		// width 설정 (데이터가 모두 추가된 이후 설정해야 적용됨)
 		{
 			int cellIdx = 0;
-			for (@SuppressWarnings("unused") var contentKey : contentInfo.getContentKeyList()) {
+			for (@SuppressWarnings("unused") var contentKeyInfo : contentInfo.getContentKeyInfoList()) {
 				sheet.autoSizeColumn(cellIdx++);
 			}
 		}

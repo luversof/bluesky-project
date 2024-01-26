@@ -75,7 +75,7 @@ public class DbField extends Setting {
 	private String formPlaceholder;
 	
 	public boolean isColumnVisible() {
-		return DbFieldVisible.EXPOSED.equals(columnVisible);
+		return DbFieldVisible.SHOW.equals(columnVisible);
 	}
 	
 	public boolean isEnableSearch() {
