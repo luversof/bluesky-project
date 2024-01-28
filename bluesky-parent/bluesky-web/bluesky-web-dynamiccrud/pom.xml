@@ -43,6 +43,7 @@
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
 		<!-- (e) spring-cloud -->
+		
 		<!-- (s) boot admin -->
 		<dependency>
 			<groupId>de.codecentric</groupId>
@@ -90,6 +91,13 @@
 			<version>5.2.5</version>
 		</dependency>
 		<!-- (e) poi -->
+		
+		<!-- (s) bluesky -->
+		<dependency>
+			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-client-user</artifactId>
+		</dependency>
+		<!-- (e) bluesky -->
 
 	</dependencies>
 

@@ -20,9 +20,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.feign.board.client.BoardArticleClient;
 import net.luversof.web.gate.feign.board.domain.BoardArticle;
-import net.luversof.web.gate.user.util.UserUtil;
 
 @Slf4j
 @RestController

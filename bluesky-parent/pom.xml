@@ -22,6 +22,7 @@
 		<module>bluesky-web</module>
 		<module>bluesky-test</module>
 		<module>bluesky-api</module>
+		<module>bluesky-client</module>
 	</modules>
 
 	<dependencies>
@@ -70,6 +71,11 @@
 				<artifactId>bluesky-test</artifactId>
 				<version>${project.version}</version>
 				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>net.luversof</groupId>
+				<artifactId>bluesky-client-user</artifactId>
+				<version>${project.version}</version>
 			</dependency>
 			
 			<dependency>

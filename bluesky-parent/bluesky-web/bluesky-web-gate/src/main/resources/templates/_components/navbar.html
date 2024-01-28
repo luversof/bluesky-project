@@ -19,7 +19,7 @@
 	<div class="navbar-center hidden lg:flex">
 		<div data-th-replace="~{_components/navmenu (menu = 'main', classAppend = 'menu-horizontal px-1')}" />
 	</div>
-	<div class="navbar-end" data-th-with="userUtil = ${T(net.luversof.web.gate.user.util.UserUtil)}">
+	<div class="navbar-end" data-th-with="userUtil = ${T(net.luversof.client.user.util.UserUtil)}">
 		<div class="pr-2" data-sec-authorize="isAuthenticated()" data-th-text="${userUtil.getLoginInfo().username}">로그인 된 상태</div>
 		<div class="pr-2" data-sec-authorize="!isAuthenticated()">
 			<a href="/oauth2/authorization/github">github 로그인</a>

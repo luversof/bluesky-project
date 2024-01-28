@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.exception.BlueskyException;
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
+import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.feign.blog.client.BlogArticleCategoryClient;
 import net.luversof.web.gate.feign.blog.client.BlogClient;
 import net.luversof.web.gate.feign.blog.domain.BlogArticleCategory;
-import net.luversof.web.gate.user.util.UserUtil;
 
 @RestController
 @RequestMapping(value = "/json/blog/articleCategory", produces = MediaType.APPLICATION_JSON_VALUE)

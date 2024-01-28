@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
+import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.feign.blog.client.BlogArticleCommentClient;
 import net.luversof.web.gate.feign.blog.domain.BlogArticleComment;
-import net.luversof.web.gate.user.util.UserUtil;
 
 
 @RestController
