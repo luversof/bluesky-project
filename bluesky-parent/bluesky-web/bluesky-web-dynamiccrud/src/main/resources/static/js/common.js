@@ -47,11 +47,10 @@ var modalFormFn = (() => {
 					modalTarget.querySelector("#modalForm").appendChild(el.cloneNode(true));
 				} else {
 					targetInput.value = el.value;
-					if (targetInput.type != "hidden") {
-						var checkBoxInput = targetInput.closest("div").querySelector("input[type=checkbox]");
-						if (checkBoxInput != null) {
-							checkBoxInput.checked = eval(el.value);
-						}
+					// 체크박스는 input과 체크박스 표시가 별도로 존재하여 추가 처리 필요
+					var checkBoxInput = targetInput.parentElement.querySelector("input[type=checkbox]");
+					if (targetInput.parentElement.classList.contains("join") && targetInput.parentElement.querySelector("input[type=checkbox]") != null) {
+						targetInput.parentElement.querySelector("input[type=checkbox]").checked = eval(el.value);
 					}
 				}
 			});

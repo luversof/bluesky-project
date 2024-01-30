@@ -5,6 +5,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.http.server.PathContainer;
+import org.springframework.web.util.ServletRequestPathUtils;
+import org.springframework.web.util.pattern.PathPattern;
+import org.springframework.web.util.pattern.PathPattern.PathMatchInfo;
+import org.springframework.web.util.pattern.PathPatternParser;
 
 public class SimpleTest {
 
@@ -37,5 +42,14 @@ public class SimpleTest {
 			}
 		}
 		System.out.println(replaceUrl);
+	}
+	
+	@Test
+	void pathPatternTest() {
+		var pathPatternParser = new PathPatternParser();
+		PathPattern pathPattern = pathPatternParser.parse("/{projectId}/setting/{mainMenuId}/{subMenuId}");
+		PathContainer path = PathContainer.parsePath( "/eventAdmin/setting/menu/dbQuery");
+		PathMatchInfo matchAndExtract = pathPattern.matchAndExtract(path);
+		System.out.println("test : " + matchAndExtract);
 	}
 }

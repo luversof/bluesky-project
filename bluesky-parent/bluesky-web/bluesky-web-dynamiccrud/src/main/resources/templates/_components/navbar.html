@@ -15,11 +15,11 @@
 	<div class="navbar-center hidden lg:flex">
 		<div data-th-replace="~{_components/navmenu (classAppend = 'menu-horizontal px-1')}" />
 	</div>
-	<div class="navbar-end">
+	<div class="navbar-end" data-th-with="userUtil = ${T(net.luversof.client.user.util.UserUtil)}">
 		<div class="pr-2" data-sec-authorize="isAuthenticated()" data-th-text="${userUtil.getLoginInfo().username}">로그인 된 상태</div>
 		<div class="pr-2" data-sec-authorize="!isAuthenticated()">
 			<a href="/oauth2/authorization/github">github 로그인</a>
-			<a href="/oauth2/authorization/github-local">github local 로그인</a>
+			<a href="/oauth2/authorization/github-local2">github local 로그인</a>
 		</div>
 		
 		<select class="select select-sm select-bordered" data-choose-theme>
