@@ -3,7 +3,7 @@ package net.luversof.web.dynamiccrud.thymeleaf.constant;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.UtilityClass;
-import net.luversof.web.dynamiccrud.setting.constant.SettingConstant;
+import net.luversof.web.dynamiccrud.setting.service.admin.AdminConstant;
 
 @UtilityClass
 public class UrlConstant {
@@ -107,7 +107,7 @@ public class UrlConstant {
 		
 		public static String getUrl(String target, String adminProjectId) {
 			var urlResolver = valueOf(target);
-			return adminProjectId.equals(SettingConstant.ADMIN_PROJECT_ID_VALUE) ? urlResolver.getSettingUrl() : urlResolver.getUseUrl();
+			return adminProjectId.equals(AdminConstant.ADMIN_PROJECT_ID_VALUE) ? urlResolver.getSettingUrl() : urlResolver.getUseUrl();
 		}
 		
 //		public static String getUrl(String target, Map<String, String> data) {

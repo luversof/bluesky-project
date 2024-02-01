@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import net.luversof.web.dynamiccrud.setting.constant.SettingConstant;
+import net.luversof.web.dynamiccrud.setting.service.admin.AdminConstant;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -57,8 +57,11 @@ public class SubMenu extends Setting {
 	@Column(nullable = false)
 	private boolean enableDelete;
 	
+	@Column(length = 20)
+	private String authority;
+	
 	public String getUrl() {
-		if (SettingConstant.ADMIN_PROJECT_ID_VALUE.equals(getAdminProjectId())) {
+		if (AdminConstant.ADMIN_PROJECT_ID_VALUE.equals(getAdminProjectId())) {
 			return String.format("/%s/setting/%s/%s", getProjectId(), getMainMenuId(), getSubMenuId());
 		} else {
 			return String.format("/%s/use/%s/%s/%s", getAdminProjectId(), getProjectId(), getMainMenuId(), getSubMenuId());

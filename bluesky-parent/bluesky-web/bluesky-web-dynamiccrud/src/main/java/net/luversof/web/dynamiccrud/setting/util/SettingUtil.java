@@ -9,7 +9,7 @@ import io.github.luversof.boot.exception.BlueskyException;
 import io.github.luversof.boot.util.ApplicationContextUtil;
 import io.github.luversof.boot.util.RequestAttributeUtil;
 import lombok.experimental.UtilityClass;
-import net.luversof.web.dynamiccrud.setting.constant.SettingConstant;
+import net.luversof.web.dynamiccrud.setting.domain.AdminProject;
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuerySqlCommandType;
@@ -17,11 +17,13 @@ import net.luversof.web.dynamiccrud.setting.domain.MainMenu;
 import net.luversof.web.dynamiccrud.setting.domain.Project;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
+import net.luversof.web.dynamiccrud.setting.service.AdminProjectServiceDecorator;
 import net.luversof.web.dynamiccrud.setting.service.DbFieldServiceDecorator;
 import net.luversof.web.dynamiccrud.setting.service.DbQueryServiceDecorator;
 import net.luversof.web.dynamiccrud.setting.service.MainMenuServiceDecorator;
 import net.luversof.web.dynamiccrud.setting.service.ProjectServiceDecorator;
 import net.luversof.web.dynamiccrud.setting.service.SubMenuServiceDecorator;
+import net.luversof.web.dynamiccrud.setting.service.admin.AdminConstant;
 
 /**
  * 이거 요청별로 캐시 처리
@@ -30,6 +32,7 @@ import net.luversof.web.dynamiccrud.setting.service.SubMenuServiceDecorator;
 @DevCheckUtil
 public class SettingUtil extends RequestAttributeUtil {
 	
+	private static final String ADMINPROJECT = "__adminProject_{0}";
 	private static final String PROJECT = "__project_{0}_{1}";
 	private static final String MAINMENU = "__mainMenu_{0}_{1}_{2}";
 	private static final String SUBMENU_LIST = "__subMenuList_{0}_{1}_{2}";
@@ -37,7 +40,23 @@ public class SettingUtil extends RequestAttributeUtil {
 	private static final String DBFIELD_LIST = "__dbFieldList_{0}_{1}_{2}_{3}";
 	
 	public static boolean isAdminMenu(String adminProjectId) {
-		return SettingConstant.ADMIN_PROJECT_ID_VALUE.equals(adminProjectId);
+		return AdminConstant.ADMIN_PROJECT_ID_VALUE.equals(adminProjectId);
+	}
+	
+	public static AdminProject getAdminProject(SettingParameter settingParameter) {
+		var attributeName = getAttributeName(ADMINPROJECT, settingParameter.adminProjectId());
+		Optional<AdminProject> adminProjectOptional = getRequestAttribute(attributeName);
+		if (adminProjectOptional != null) {
+			return adminProjectOptional.get();
+		}
+		adminProjectOptional = Optional.ofNullable(ApplicationContextUtil.getApplicationContext().getBean(AdminProjectServiceDecorator.class).findOne(settingParameter));
+		setRequestAttribute(attributeName, adminProjectOptional);
+		
+		return adminProjectOptional.get();
+	}
+	
+	public static AdminProject getAdminProject(String adminProjectId) {
+		return getAdminProject(new SettingParameter(adminProjectId, null, null, null));
 	}
 	
 	public static Project getProject(SettingParameter settingParameter) {

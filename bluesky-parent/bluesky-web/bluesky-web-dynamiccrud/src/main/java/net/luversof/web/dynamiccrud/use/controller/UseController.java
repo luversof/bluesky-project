@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 import io.github.luversof.boot.exception.BlueskyException;
-import net.luversof.web.dynamiccrud.setting.constant.SettingConstant;
 import net.luversof.web.dynamiccrud.setting.controller.AbstractSettingViewController;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
+import net.luversof.web.dynamiccrud.setting.service.admin.AdminConstant;
 import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 import net.luversof.web.dynamiccrud.thymeleaf.constant.UrlConstant;
 
@@ -47,7 +47,7 @@ public class UseController extends AbstractSettingViewController {
 
 	@Override
 	protected void checkPathVariable(String adminProjectId, String projectId, String mainMenuId, String subMenuId) {
-		if (SettingConstant.ADMIN_PROJECT_ID_VALUE.equals(adminProjectId)) {
+		if (AdminConstant.ADMIN_PROJECT_ID_VALUE.equals(adminProjectId)) {
 			throw new BlueskyException("INVALID ACCESS");
 		}
 	}

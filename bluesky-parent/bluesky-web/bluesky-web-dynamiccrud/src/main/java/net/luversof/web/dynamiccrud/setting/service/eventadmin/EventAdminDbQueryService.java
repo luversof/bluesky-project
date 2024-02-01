@@ -1,14 +1,15 @@
 package net.luversof.web.dynamiccrud.setting.service.eventadmin;
 
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.DATASOURCE_NAME;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.ADMIN_PROJECT_ID_VALUE;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.DATASOURCE_NAME;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.MAINMENU_ID_VALUE;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.PROJECT_ID_VALUE;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_PROJECT;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_MAINMENU;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_SUBMENU;
-import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_DBQUERY;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_ADMINPROJECT;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_DBFIELD;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_DBQUERY;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_MAINMENU;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_PROJECT;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_SUBMENU;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,65 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 	
 	private void loadData() {
 		dbQueryList = new ArrayList<>();
+		{
+			var query = new DbQuery(
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_ADMINPROJECT,
+					DbQuerySqlCommandType.SELECT,
+					DATASOURCE_NAME,
+					"SELECT * FROM AdminProject"
+			);
+			dbQueryList.add(query);
+		}
+		{
+			var query = new DbQuery(
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_ADMINPROJECT,
+					DbQuerySqlCommandType.INSERT,
+					DATASOURCE_NAME,
+					"""
+					INSERT INTO AdminProject 
+					(adminProjectId, adminProjectName, defaultGrantAuthority, roleHierarchy, writer, createDate, updateDate) 
+					VALUES (:adminProjectId, :adminProjectName, :defaultGrantAuthority, :roleHierarchy, :writer, NOW(), NOW())
+					"""
+			);
+			dbQueryList.add(query);
+		}
+		{
+			var query = new DbQuery(
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_ADMINPROJECT,
+					DbQuerySqlCommandType.UPDATE,
+					DATASOURCE_NAME,
+					"""
+					UPDATE AdminProject 
+					SET adminProjectId = :adminProjectId, adminProjectName = :adminProjectName,
+					defaultGrantAuthority = :defaultGrantAuthority, roleHierarchy = :roleHierarchy, writer= :writer, updateDate = NOW() 
+					WHERE adminProjectId = :__org__adminProjectId
+					"""
+			);
+			dbQueryList.add(query);
+		}
+		
+		{
+			var query = new DbQuery(
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_ADMINPROJECT,
+					DbQuerySqlCommandType.DELETE,
+					DATASOURCE_NAME,
+					"DELETE FROM AdminProject WHERE adminProjectId = :adminProjectId"
+			);
+			dbQueryList.add(query);
+		}
+		
 		{
 			var query = new DbQuery(
 					ADMIN_PROJECT_ID_VALUE,
@@ -179,8 +239,8 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					DATASOURCE_NAME,
 					"""
 					INSERT INTO SubMenu 
-					(adminProjectId, projectId, mainMenuId, subMenuId, subMenuName, dbType, displayOrder, pageSize, enableExcel, enableInsert, enableUpdate, enableDelete, writer, createDate, updateDate) 
-					VALUES (:adminProjectId, :projectId, :mainMenuId, :subMenuId, :subMenuName, :dbType, :displayOrder, :pageSize, :enableExcel, :enableInsert, :enableUpdate, :enableDelete, :writer, NOW(), NOW())
+					(adminProjectId, projectId, mainMenuId, subMenuId, subMenuName, dbType, displayOrder, pageSize, enableExcel, enableInsert, enableUpdate, enableDelete, authority, writer, createDate, updateDate) 
+					VALUES (:adminProjectId, :projectId, :mainMenuId, :subMenuId, :subMenuName, :dbType, :displayOrder, :pageSize, :enableExcel, :enableInsert, :enableUpdate, :enableDelete, :authority, :writer, NOW(), NOW())
 					"""
 			);
 			dbQueryList.add(query);
@@ -196,7 +256,9 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					DATASOURCE_NAME,
 					"""
 					UPDATE SubMenu
-					SET adminProjectId = :adminProjectId, projectId = :projectId, mainMenuId = :mainMenuId, subMenuId = :subMenuId, subMenuName = :subMenuName, dbType = :dbType, displayOrder = :displayOrder, pageSize = :pageSize, enableExcel = :enableExcel, enableInsert = :enableInsert, enableUpdate = :enableUpdate, enableDelete = :enableDelete, writer = :writer, updateDate = NOW() 
+					SET adminProjectId = :adminProjectId, projectId = :projectId, mainMenuId = :mainMenuId, subMenuId = :subMenuId, 
+					subMenuName = :subMenuName, dbType = :dbType, displayOrder = :displayOrder, pageSize = :pageSize, enableExcel = :enableExcel, 
+					enableInsert = :enableInsert, enableUpdate = :enableUpdate, enableDelete = :enableDelete, authority = :authority, writer = :writer, updateDate = NOW() 
 					WHERE adminProjectId = :__org__adminProjectId AND projectId = :__org__projectId AND mainMenuId = :__org__mainMenuId AND subMenuId = :__org__subMenuId
 					"""
 			);
@@ -259,7 +321,8 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					DATASOURCE_NAME,
 					"""
 					UPDATE DbQuery
-					SET adminProjectId = :adminProjectId, projectId = :projectId, mainMenuId = :mainMenuId, subMenuId = :subMenuId, sqlCommandType = :sqlCommandType, queryString = :queryString, dataSourceName = :dataSourceName, writer = :writer, updateDate = NOW() 
+					SET adminProjectId = :adminProjectId, projectId = :projectId, mainMenuId = :mainMenuId, subMenuId = :subMenuId,
+					sqlCommandType = :sqlCommandType, queryString = :queryString, dataSourceName = :dataSourceName, writer = :writer, updateDate = NOW() 
 					WHERE adminProjectId = :__org__adminProjectId AND projectId = :__org__projectId AND mainMenuId = :__org__mainMenuId AND subMenuId = :__org__subMenuId AND sqlCommandType = :__org__sqlCommandType
 					"""
 			);

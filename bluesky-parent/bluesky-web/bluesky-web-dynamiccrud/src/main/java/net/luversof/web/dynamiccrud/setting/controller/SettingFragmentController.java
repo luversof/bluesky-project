@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 
 import jakarta.servlet.http.HttpServletResponse;
 import net.luversof.web.dynamiccrud.setting.constant.SettingConstant;
+import net.luversof.web.dynamiccrud.setting.service.admin.AdminConstant;
 import net.luversof.web.dynamiccrud.thymeleaf.constant.UrlConstant;
 
 @Controller
@@ -32,7 +33,7 @@ public class SettingFragmentController extends AbstractSettingFragmentController
 			HttpServletResponse response,
 			Model model) {
 		addAttribute(model);
-		return list(SettingConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, pageable, paramMap, response, model);
+		return list(AdminConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, pageable, paramMap, response, model);
 	}
 	
 	@GetMapping(UrlConstant.PATH_SETTING_FRAGMENT_MODAL_FORM)
@@ -44,7 +45,7 @@ public class SettingFragmentController extends AbstractSettingFragmentController
 			HttpServletResponse response,
 			Model model) {
 		addAttribute(model);
-		return modalForm(SettingConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, modalMode, response, model);
+		return modalForm(AdminConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, modalMode, response, model);
 	}
 	
 	@PostMapping(UrlConstant.PATH_SETTING_FRAGMENT_MODAL_FORM)
@@ -57,7 +58,7 @@ public class SettingFragmentController extends AbstractSettingFragmentController
 			HttpServletResponse response,
 			Model model) {
 		addAttribute(model);
-		return  createModal(SettingConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, modalMode, dataMap, response, model);
+		return  createModal(AdminConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, modalMode, dataMap, response, model);
 	}
 	
 	@PostMapping(UrlConstant.PATH_SETTING_FRAGMENT_MODAL_FORM_DELETE)
@@ -70,7 +71,7 @@ public class SettingFragmentController extends AbstractSettingFragmentController
 			HttpServletResponse response,
 			Model model) {
 		addAttribute(model);
-		return deleteModal(SettingConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, modalMode, dataMap, response, model);
+		return deleteModal(AdminConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, modalMode, dataMap, response, model);
 	}
 	
 	@GetMapping(UrlConstant.PATH_SETTING_FRAGMENT_MODAL_BULK_FORM)
@@ -82,7 +83,7 @@ public class SettingFragmentController extends AbstractSettingFragmentController
 			HttpServletResponse response,
 			Model model) {
 		addAttribute(model);
-		return modalBulkForm(SettingConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, modalMode, response, model);
+		return modalBulkForm(AdminConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, modalMode, response, model);
 	}
 	
 	@PostMapping(UrlConstant.PATH_SETTING_FRAGMENT_MODAL_BULK_FORM)
@@ -95,7 +96,7 @@ public class SettingFragmentController extends AbstractSettingFragmentController
 			HttpServletResponse response,
 			Model model) throws JsonMappingException, JsonProcessingException {
 		addAttribute(model);
-		return importModalBulk(SettingConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, modalMode, dataMap, response, model);
+		return importModalBulk(AdminConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, modalMode, dataMap, response, model);
 	}
 	
 	@GetMapping(UrlConstant.PATH_SETTING_FRAGMENT_EXCEL)
@@ -107,11 +108,11 @@ public class SettingFragmentController extends AbstractSettingFragmentController
 			HttpServletResponse response,
 			Model model) {
 		addAttribute(model);
-		return excel(SettingConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, paramMap, response, model);
+		return excel(AdminConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, paramMap, response, model);
 	}
 	
 	
 	private void addAttribute(Model model) {
-		model.addAttribute(SettingConstant.ADMIN_PROJECT_ID, SettingConstant.ADMIN_PROJECT_ID_VALUE);
+		model.addAttribute(SettingConstant.ADMIN_PROJECT_ID, AdminConstant.ADMIN_PROJECT_ID_VALUE);
 	}
 }

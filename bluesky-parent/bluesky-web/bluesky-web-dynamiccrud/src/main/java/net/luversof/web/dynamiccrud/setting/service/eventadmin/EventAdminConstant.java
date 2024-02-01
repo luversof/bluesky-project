@@ -1,12 +1,13 @@
 package net.luversof.web.dynamiccrud.setting.service.eventadmin;
 
-import net.luversof.web.dynamiccrud.setting.constant.SettingConstant;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType;
+import net.luversof.web.dynamiccrud.setting.service.admin.AdminConstant;
 
 public class EventAdminConstant {
-	public static final String ADMIN_PROJECT_ID_VALUE = SettingConstant.ADMIN_PROJECT_ID_VALUE;
+	public static final String ADMIN_PROJECT_ID_VALUE = AdminConstant.ADMIN_PROJECT_ID_VALUE;
 	public static final String PROJECT_ID_VALUE = "eventAdmin";
 	public static final String MAINMENU_ID_VALUE = "menu";
+	public static final String SUBMENU_ID_VALUE_ADMINPROJECT = "adminProject";
 	public static final String SUBMENU_ID_VALUE_PROJECT = "project";
 	public static final String SUBMENU_ID_VALUE_MAINMENU = "mainMenu";
 	public static final String SUBMENU_ID_VALUE_SUBMENU = "subMenu";

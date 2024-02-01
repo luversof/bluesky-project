@@ -22,7 +22,8 @@ public class SubMenuRowMapper extends SettingRowMapper<SubMenu> {
 			rs.getBoolean("enableExcel"),
 			rs.getBoolean("enableInsert"),
 			rs.getBoolean("enableUpdate"),
-			rs.getBoolean("enableDelete")
+			rs.getBoolean("enableDelete"),
+			rs.getString("authority")
 		);
 		setCommon(subMenu, rs);
 		return subMenu;

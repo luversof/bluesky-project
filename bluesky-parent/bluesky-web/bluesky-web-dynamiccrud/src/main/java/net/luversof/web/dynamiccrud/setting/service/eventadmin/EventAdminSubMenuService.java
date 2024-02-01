@@ -3,6 +3,7 @@ package net.luversof.web.dynamiccrud.setting.service.eventadmin;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.ADMIN_PROJECT_ID_VALUE;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.MAINMENU_ID_VALUE;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.PROJECT_ID_VALUE;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_ADMINPROJECT;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_DBFIELD;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_DBQUERY;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_MAINMENU;
@@ -39,15 +40,35 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					ADMIN_PROJECT_ID_VALUE,
 					PROJECT_ID_VALUE,
 					MAINMENU_ID_VALUE,
-					SUBMENU_ID_VALUE_PROJECT,
-					"Project",
+					SUBMENU_ID_VALUE_ADMINPROJECT,
+					"AdminProject",
 					SubMenuDbType.MySql,
 					(short) 1,
 					(short) 20,
 					true,
 					true,
 					true,
-					true
+					true,
+					null
+			);
+			subMenuList.add(subMenu);
+		}
+		
+		{
+			var subMenu = new SubMenu(
+					ADMIN_PROJECT_ID_VALUE,
+					PROJECT_ID_VALUE,
+					MAINMENU_ID_VALUE,
+					SUBMENU_ID_VALUE_PROJECT,
+					"Project",
+					SubMenuDbType.MySql,
+					(short) 2,
+					(short) 20,
+					true,
+					true,
+					true,
+					true,
+					null
 			);
 			subMenuList.add(subMenu);
 		}
@@ -60,12 +81,13 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					SUBMENU_ID_VALUE_MAINMENU,
 					"MainMenu",
 					SubMenuDbType.MySql,
-					(short) 2,
+					(short) 3,
 					(short) 20,
 					true,
 					true,
 					true,
-					true
+					true,
+					null
 			);
 			subMenuList.add(subMenu);
 		}
@@ -78,12 +100,13 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					SUBMENU_ID_VALUE_SUBMENU,
 					"SubMenu",
 					SubMenuDbType.MySql,
-					(short) 3,
+					(short) 4,
 					(short) 20,
 					true,
 					true,
 					true,
-					true
+					true,
+					null
 			);
 			subMenuList.add(subMenu);
 		}
@@ -96,12 +119,13 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					SUBMENU_ID_VALUE_DBQUERY,
 					"Query",
 					SubMenuDbType.MySql,
-					(short) 4,
+					(short) 5,
 					(short) 20,
 					true,
 					true,
 					true,
-					true
+					true,
+					null
 			);
 			subMenuList.add(subMenu);
 		}
@@ -114,12 +138,13 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					SUBMENU_ID_VALUE_DBFIELD,
 					"Field",
 					SubMenuDbType.MySql,
-					(short) 5,
+					(short) 6,
 					(short) 20,
 					true,
 					true,
 					true,
-					true
+					true,
+					null
 			);
 			subMenuList.add(subMenu);
 		}

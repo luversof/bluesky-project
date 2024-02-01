@@ -7,6 +7,7 @@ import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdmin
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.DBQUERY_SQLCOMMANDTYPE_VALUE_PRESET;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.MAINMENU_ID_VALUE;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.PROJECT_ID_VALUE;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_ADMINPROJECT;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_DBFIELD;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_DBQUERY;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_MAINMENU;
@@ -40,6 +41,79 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 	private void loadData() {
 		dbFieldList = new ArrayList<>();
 		
+		addAdminProjectField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_ADMINPROJECT);
+		{
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_ADMINPROJECT,
+				"adminProjectName",
+				"관리 프로젝트 이름",
+				DbFieldColumnType.STRING,
+				(short) 40,
+				(short) 10,
+				null,
+				null,
+				null,
+				DbFieldVisible.SHOW,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				null,
+				null
+			);
+			dbFieldList.add(field);
+		}
+		{
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_ADMINPROJECT,
+				"defaultGrantAuthority",
+				"기본 부여 권한",
+				DbFieldColumnType.STRING,
+				(short) 10,
+				(short) 13,
+				null,
+				null,
+				null,
+				DbFieldVisible.SHOW,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				"유저 권한 조회 시 기본 설정 되는 권한 정보입니다. 미 설정 시 DMT 기본 설정을 사용합니다.",
+				null
+			);
+			dbFieldList.add(field);
+		}
+		{
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_ADMINPROJECT,
+				"roleHierarchy",
+				"권한 계층 구조",
+				DbFieldColumnType.STRING,
+				(short) 1000,
+				(short) 14,
+				null,
+				null,
+				null,
+				DbFieldVisible.SHOW,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				"유저 권한 조회 시 설정 되는 권한 계층 구조 정보입니다. 미 설정 시 DMT 기본 설정을 사용합니다.",
+				null
+			);
+			dbFieldList.add(field);
+		}
+		addDefaultField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_ADMINPROJECT);
+		
+		addAdminProjectField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_PROJECT);
 		addProjectField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_PROJECT);
 		{
 			var field = new DbField(
@@ -66,6 +140,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		addDefaultField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_PROJECT);
 		
+		addAdminProjectField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_MAINMENU);
 		addProjectField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_MAINMENU);
 		addMainMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_MAINMENU);
 		{
@@ -93,6 +168,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		addDefaultField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_MAINMENU);
 		
+		addAdminProjectField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_SUBMENU);
 		addProjectField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_SUBMENU);
 		addMainMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_SUBMENU);
 		addSubMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_SUBMENU);
@@ -286,11 +362,34 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				PROJECT_ID_VALUE,
 				MAINMENU_ID_VALUE,
 				SUBMENU_ID_VALUE_SUBMENU,
+				"authority",
+				"접근 권한",
+				DbFieldColumnType.STRING,
+				(short) 20,
+				(short) 18,
+				null,
+				null,
+				null,
+				DbFieldVisible.SHOW,
+				DbFieldEnable.DISABLED,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				"해당 메뉴의 접근 권한을 설정합니다. 미 설정 시 기본 설정을 사용합니다.",
+				null
+			);
+			dbFieldList.add(field);
+		}
+		{
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_SUBMENU,
 				"link",
 				"링크",
 				DbFieldColumnType.SPEL,
 				Short.MAX_VALUE,
-				(short) 18,
+				(short) 19,
 				null,
 				"'<a href=\"/' + #adminProjectId + '/use/' + #projectId + '/' + #mainMenuId + '/' + #subMenuId + '\" target=\"_blank\">link</a>'",
 				null,
@@ -305,6 +404,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		addDefaultField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_SUBMENU);
 		
+		addAdminProjectField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBQUERY);
 		addProjectField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBQUERY);
 		addMainMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBQUERY);
 		addSubMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBQUERY);
@@ -387,6 +487,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		}
 		addDefaultField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBQUERY);
 		
+		addAdminProjectField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBFIELD);
 		addProjectField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBFIELD);
 		addMainMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBFIELD);
 		addSubMenuField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBFIELD);
@@ -723,30 +824,33 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 		addDefaultField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_DBFIELD);
 	}
 	
-	private void addProjectField(String adminProjectId, String projectId, String mainMenuId, String subMenuId) {
+	private void addAdminProjectField(String adminProjectId, String projectId, String mainMenuId, String subMenuId) {
 		{
 			var field = new DbField(
-				adminProjectId,
-				projectId,
-				mainMenuId,
-				subMenuId,
-				"adminProjectId",
-				"어드민 프로젝트 Id",
-				DbFieldColumnType.STRING,
-				(short) 20,
-				(short) 1,
-				PROJECT_ID_VALUE,
-				null,
-				null,
-				DbFieldVisible.SHOW,
-				DbFieldEnable.DISABLED,
-				DbFieldEnable.REQUIRED,
-				DbFieldEnable.REQUIRED,
-				"종속된 관리툴을 지정합니다. 현재 주소를 기반으로 기본 설정되므로 별도의 설정이 필요없습니다.",
-				null
-			);
+					adminProjectId,
+					projectId,
+					mainMenuId,
+					subMenuId,
+					"adminProjectId",
+					"어드민 프로젝트 Id",
+					DbFieldColumnType.STRING,
+					(short) 20,
+					(short) 1,
+					PROJECT_ID_VALUE,
+					null,
+					null,
+					DbFieldVisible.SHOW,
+					DbFieldEnable.DISABLED,
+					DbFieldEnable.REQUIRED,
+					DbFieldEnable.REQUIRED,
+					"종속된 관리툴을 지정합니다. 현재 주소를 기반으로 기본 설정되므로 별도의 설정이 필요없습니다.",
+					null
+					);
 			dbFieldList.add(field);
 		}
+	}
+	
+	private void addProjectField(String adminProjectId, String projectId, String mainMenuId, String subMenuId) {
 		{
 			var field = new DbField(
 				adminProjectId,
