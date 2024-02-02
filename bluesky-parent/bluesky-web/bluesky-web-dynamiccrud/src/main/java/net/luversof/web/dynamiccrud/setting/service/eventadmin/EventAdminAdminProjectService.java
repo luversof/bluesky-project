@@ -9,11 +9,11 @@ import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.service.SettingServiceSupplier;
 
 @Service
-public class AdminAdminProjectService implements SettingServiceSupplier<AdminProject> {
+public class EventAdminAdminProjectService implements SettingServiceSupplier<AdminProject> {
 	
 	private AdminProject adminProject;
 	
-	public AdminAdminProjectService() {
+	public EventAdminAdminProjectService() {
 		loadData();
 	}
 	

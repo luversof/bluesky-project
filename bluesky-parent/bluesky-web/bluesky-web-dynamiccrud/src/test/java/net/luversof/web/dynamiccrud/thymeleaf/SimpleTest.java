@@ -52,4 +52,18 @@ public class SimpleTest {
 		PathMatchInfo matchAndExtract = pathPattern.matchAndExtract(path);
 		System.out.println("test : " + matchAndExtract);
 	}
+	
+	@Test
+	void urlMatchTest() {
+		Pattern pattern = Pattern.compile("(?:\\/[\\w\\d]+)(\\/setting\\/).*");
+		String url = "/test/setting/projectA/mainMenuA";
+		String url2 = "/test/use/projectA/mainMenuA";
+		
+		Matcher matcher = pattern.matcher(url);
+		System.out.println(matcher.matches());
+		
+		Matcher matcher2 = pattern.matcher(url2);
+		System.out.println(matcher2.matches());
+		
+	}
 }

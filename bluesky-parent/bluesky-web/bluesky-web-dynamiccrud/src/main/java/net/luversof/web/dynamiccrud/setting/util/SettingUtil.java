@@ -2,13 +2,23 @@ package net.luversof.web.dynamiccrud.setting.util;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.servlet.HandlerMapping;
 
 import io.github.luversof.boot.devcheck.annotation.DevCheckUtil;
 import io.github.luversof.boot.exception.BlueskyException;
 import io.github.luversof.boot.util.ApplicationContextUtil;
 import io.github.luversof.boot.util.RequestAttributeUtil;
+import io.github.luversof.boot.util.ServletRequestUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.experimental.UtilityClass;
+import net.luversof.web.dynamiccrud.setting.constant.SettingConstant;
 import net.luversof.web.dynamiccrud.setting.domain.AdminProject;
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
@@ -32,18 +42,78 @@ import net.luversof.web.dynamiccrud.setting.service.admin.AdminConstant;
 @DevCheckUtil
 public class SettingUtil extends RequestAttributeUtil {
 	
+	private static final String SETTINGPARAMETER = "__settingParameter";
 	private static final String ADMINPROJECT = "__adminProject_{0}";
 	private static final String PROJECT = "__project_{0}_{1}";
 	private static final String MAINMENU = "__mainMenu_{0}_{1}_{2}";
 	private static final String SUBMENU_LIST = "__subMenuList_{0}_{1}_{2}";
 	private static final String DBQUERY_LIST = "__dbQueryList_{0}_{1}_{2}_{3}";
 	private static final String DBFIELD_LIST = "__dbFieldList_{0}_{1}_{2}_{3}";
+
+	// 두번째 path가 setting인 경우에 해당하는지 체크
+	private static final Pattern pattern = Pattern.compile("(?:\\/[\\w\\d]+)(\\/setting\\/).*");
 	
 	public static boolean isAdminMenu(String adminProjectId) {
 		return AdminConstant.ADMIN_PROJECT_ID_VALUE.equals(adminProjectId);
 	}
 	
+	/**
+	 * setting Parameter의 조회
+	 * 1. attribute에 캐싱된 값 조회
+	 * 2. HandlerMapping의 URI_TEMPLATE_VARIABLES_ATTRIBUTE 값 조회
+	 * 3. filter의 경우 위 2번이 설정되기 전 단계이기 때문에 별도의 ServletRequestUtil로 조회 
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static SettingParameter getSettingParameter() {
+		
+		if (RequestContextHolder.getRequestAttributes() == null) {
+			return null;
+		}
+		
+		var attributeName = getAttributeName(SETTINGPARAMETER);
+		Optional<SettingParameter> settingParameterOptional = getRequestAttribute(attributeName);
+		if (settingParameterOptional != null) {
+			return settingParameterOptional.get();
+		}
+		
+		// 두번째 path가 setting인 경우 adminProjectId는 고정값을 지정해야 함
+		HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+		Matcher matcher = pattern.matcher(request.getRequestURI());
+		boolean isSettingUrl = matcher.matches();
+		
+		Map<String, String> pathVariableMap = null;
+		
+		var uriTemplateVariablesAttribute = getRequestAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+		if (uriTemplateVariablesAttribute != null && uriTemplateVariablesAttribute instanceof Map map) {
+			pathVariableMap = map;
+		} else {
+			pathVariableMap = ServletRequestUtil.getUriVariableMap();
+		}
+		
+		if (pathVariableMap == null) {
+			return null;
+		}
+		
+		settingParameterOptional = Optional.of(
+			new SettingParameter(
+				isSettingUrl ? AdminConstant.ADMIN_PROJECT_ID_VALUE : (String) pathVariableMap.get(SettingConstant.ADMIN_PROJECT_ID),
+				(String) pathVariableMap.get(SettingConstant.PROJECT_ID),
+				(String) pathVariableMap.get(SettingConstant.MAINMENU_ID),
+				(String) pathVariableMap.get(SettingConstant.SUBMENU_ID)
+			)
+		);
+	
+		
+		setRequestAttribute(attributeName, settingParameterOptional);
+		return settingParameterOptional.get();
+	}
+	
 	public static AdminProject getAdminProject(SettingParameter settingParameter) {
+		if (settingParameter == null || settingParameter.adminProjectId() == null) {
+			return null;
+		}
+		
 		var attributeName = getAttributeName(ADMINPROJECT, settingParameter.adminProjectId());
 		Optional<AdminProject> adminProjectOptional = getRequestAttribute(attributeName);
 		if (adminProjectOptional != null) {
@@ -59,7 +129,15 @@ public class SettingUtil extends RequestAttributeUtil {
 		return getAdminProject(new SettingParameter(adminProjectId, null, null, null));
 	}
 	
+	public static AdminProject getAdminProject() {
+		return getAdminProject(getSettingParameter());
+	}
+	
 	public static Project getProject(SettingParameter settingParameter) {
+		if (settingParameter == null || settingParameter.adminProjectId() == null || settingParameter.projectId() == null) {
+			return null;
+		}
+		
 		var attributeName = getAttributeName(PROJECT, settingParameter.adminProjectId(), settingParameter.projectId());
 		Optional<Project> projectOptional = getRequestAttribute(attributeName);
 		if (projectOptional != null) {
@@ -75,7 +153,15 @@ public class SettingUtil extends RequestAttributeUtil {
 		return getProject(new SettingParameter(adminProjectId, projectId, null, null));
 	}
 	
+	public static Project getProject() {
+		return getProject(getSettingParameter());
+	}
+	
 	public static MainMenu getMainMenu(SettingParameter settingParameter) {
+		if (settingParameter == null || settingParameter.adminProjectId() == null || settingParameter.projectId() == null || settingParameter.mainMenuId() == null) {
+			return null;
+		}
+		
 		var attributeName = getAttributeName(MAINMENU, settingParameter.adminProjectId(), settingParameter.projectId(), settingParameter.mainMenuId());
 		Optional<MainMenu> mainMenuOptional = getRequestAttribute(attributeName);
 		if (mainMenuOptional != null) {
@@ -91,7 +177,15 @@ public class SettingUtil extends RequestAttributeUtil {
 		return getMainMenu(new SettingParameter(adminProjectId, projectId, mainMenuId, null));
 	}
 	
+	public static MainMenu getMainMenu() {
+		return getMainMenu(getSettingParameter());
+	}
+	
 	public static List<SubMenu> getSubMenuList(SettingParameter settingParameter) {
+		if (settingParameter == null || settingParameter.adminProjectId() == null || settingParameter.projectId() == null || settingParameter.mainMenuId() == null) {
+			return Collections.emptyList();
+		}
+		
 		var attributeName = getAttributeName(SUBMENU_LIST, settingParameter.adminProjectId(), settingParameter.projectId(), settingParameter.mainMenuId());
 		List<SubMenu> subMenuList = getRequestAttribute(attributeName);
 		if (subMenuList != null) {
@@ -110,6 +204,10 @@ public class SettingUtil extends RequestAttributeUtil {
 		return getSubMenuList(new SettingParameter(adminProjectId, projectId, mainMenuId, null));
 	}
 	
+	public static List<SubMenu> getSubMenuList() {
+		return getSubMenuList(getSettingParameter());
+	}
+	
 	public static SubMenu getSubMenu(SettingParameter settingParameter) {
 		return getSubMenuList(settingParameter).stream().filter(x -> x.getSubMenuId().equals(settingParameter.subMenuId())).findAny().orElseThrow(() -> new BlueskyException("NOT_EXIST_SELECT_SUBMENU"));
 	}
@@ -119,6 +217,10 @@ public class SettingUtil extends RequestAttributeUtil {
 	}
 	
 	public static List<DbQuery> getDbQueryList(SettingParameter settingParameter) {
+		if (settingParameter == null || settingParameter.adminProjectId() == null || settingParameter.projectId() == null || settingParameter.mainMenuId() == null || settingParameter.subMenuId() == null) {
+			return Collections.emptyList();
+		}
+		
 		var attributeName = getAttributeName(DBQUERY_LIST, settingParameter.adminProjectId(), settingParameter.projectId(), settingParameter.mainMenuId(), settingParameter.subMenuId());
 		List<DbQuery> dbQueryList = getRequestAttribute(attributeName);
 		if (dbQueryList != null) {
@@ -138,7 +240,15 @@ public class SettingUtil extends RequestAttributeUtil {
 		return getDbQuery(new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId), sqlCommandType);
 	}
 	
+	public static DbQuery getDbQuery(DbQuerySqlCommandType sqlCommandType) {
+		return getDbQuery(getSettingParameter(), sqlCommandType);
+	}
+	
 	public static List<DbField> getDbFieldList(SettingParameter settingParameter) {
+		if (settingParameter == null  || settingParameter.adminProjectId() == null || settingParameter.projectId() == null || settingParameter.mainMenuId() == null || settingParameter.subMenuId() == null) {
+			return Collections.emptyList();
+		}
+		
 		var attributeName = getAttributeName(DBFIELD_LIST, settingParameter.adminProjectId(), settingParameter.projectId(), settingParameter.mainMenuId(), settingParameter.subMenuId());
 		List<DbField> dbFieldList = getRequestAttribute(attributeName);
 		if (dbFieldList != null) {
@@ -151,6 +261,10 @@ public class SettingUtil extends RequestAttributeUtil {
 
 	public static List<DbField> getDbFieldList(String adminProjectId, String projectId, String mainMenuId, String subMenuId) {
 		return getDbFieldList(new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId));
+	}
+	
+	public static List<DbField> getDbFieldList() {
+		return getDbFieldList(getSettingParameter());
 	}
 
 }
