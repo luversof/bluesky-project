@@ -24,7 +24,7 @@ public class StringMapper {
 
 	private static Cursor find(String source, int offset) {
 		int sid = source.indexOf(MAPPING_PREFIX, offset);
-		int eid = source.indexOf(MAPPING_SUFFIX, offset);
+		int eid = source.indexOf(MAPPING_SUFFIX, sid > 0 ? sid : offset);
 
 		Cursor csr = new Cursor();
 		csr.setS(sid);

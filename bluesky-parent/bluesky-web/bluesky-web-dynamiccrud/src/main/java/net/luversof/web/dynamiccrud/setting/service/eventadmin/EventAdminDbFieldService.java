@@ -27,6 +27,7 @@ import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldEnable;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldVisible;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
+import net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType;
 import net.luversof.web.dynamiccrud.setting.service.SettingServiceListSupplier;
 
 @Service
@@ -74,7 +75,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				"defaultGrantAuthority",
 				"기본 부여 권한",
 				DbFieldColumnType.STRING,
-				(short) 10,
+				(short) 30,
 				(short) 13,
 				null,
 				null,
@@ -206,7 +207,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				DbFieldColumnType.STRING,
 				(short) 20,
 				(short) 11,
-				"MsSql|MySql",
+				SubMenuDbType.toPresetString(),
 				null,
 				null,
 				DbFieldVisible.SHOW,

@@ -46,7 +46,7 @@
 							 data-th-name="${dbField.columnId}"
 							 data-th-required="${dbField.isEnableEditRequired(modalMode)}"
 							 data-th-placeholder="${dbField.formPlaceholder}"
-							 data-th-maxlength="${dbField.columnLength}"
+							 data-th-maxlength="${dbField.columnLength <= 0 ? 524288 : dbField.columnLength}"
 						></textarea>
 					</th-block>
 					<th-block data-th-case="*">
@@ -54,7 +54,7 @@
 							 data-th-name="${dbField.columnId}"
 							 data-th-required="${dbField.isEnableEditRequired(modalMode)}"
 							 data-th-placeholder="${dbField.formPlaceholder}"
-							 data-th-maxlength="${dbField.columnLength}"
+							 data-th-maxlength="${dbField.columnLength <= 0 ? 524288 : dbField.columnLength}"
 						/>
 					</th-block>
 					

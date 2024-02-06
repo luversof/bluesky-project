@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -117,6 +118,12 @@ public class ThymeleafUtil {
 			getAttribute(SettingConstant.PROJECT_ID),
 			getAttribute(SettingConstant.MAINMENU_ID),
 			getAttribute(SettingConstant.SUBMENU_ID));
+	}
+	
+	public static String getRandomTheme(String...themes) {
+		Random random = new Random();
+		var themeList = List.of(themes);
+		return themeList.get(random.nextInt(themeList.size()));
 	}
 
 }

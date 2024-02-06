@@ -1,6 +1,8 @@
 package net.luversof.web.dynamiccrud.setting.service.eventadminmariadb;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
@@ -60,7 +62,8 @@ public class EventAdminMariadbDbFieldService implements SettingServiceListSuppli
 		paramSource.addValue("mainMenuId", mainMenuId);
 		paramSource.addValue("subMenuId", subMenuId);
 		
-		return namedParameterJdbcTemplate.query("SELECT * FROM DbField WHERE adminProjectId = :adminProjectId AND projectId = :projectId AND mainMenuId = :mainMenuId AND subMenuId = :subMenuId", paramSource, ROW_MAPPER);
+		List<DbField> dbFieldList = namedParameterJdbcTemplate.query("SELECT * FROM DbField WHERE adminProjectId = :adminProjectId AND projectId = :projectId AND mainMenuId = :mainMenuId AND subMenuId = :subMenuId", paramSource, ROW_MAPPER);
+		return dbFieldList.stream().sorted(Comparator.comparing(DbField::getColumnOrder)).collect(Collectors.toList());
 	}
 
 }

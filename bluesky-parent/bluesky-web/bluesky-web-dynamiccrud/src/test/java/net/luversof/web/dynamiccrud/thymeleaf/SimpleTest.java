@@ -1,6 +1,10 @@
 package net.luversof.web.dynamiccrud.thymeleaf;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -66,4 +70,14 @@ public class SimpleTest {
 		System.out.println(matcher2.matches());
 		
 	}
+	
+	@Test
+	void listShuppleTest() {
+		Random random = new Random();
+
+		var list = List.of("a", "b", "c");
+		
+		System.out.println(list.get(random.nextInt(list.size())));
+	}
+	
 }

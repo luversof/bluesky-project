@@ -155,7 +155,6 @@ public abstract class AbstractDbUseService implements UseService {
 			for (int i = 0 ; i < value.size() ; i++) {
 				dataMapList.get(i).put(key, value.get(i));
 			}
-			System.out.println("test : " + key);
 		});
 
 		List<Object> resultList = new ArrayList<Object>();

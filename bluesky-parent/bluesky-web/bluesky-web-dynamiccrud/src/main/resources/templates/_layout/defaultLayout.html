@@ -1,5 +1,8 @@
 <!DOCTYPE html>
-<html data-theme="winter">
+<html
+	data-th-with="thymeleafUtil = ${T(net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil)}"
+	data-th-data-theme="${thymeleafUtil.getRandomTheme('light','bumblebee','emerald','corporate','garden','lofi','pastel','fantasy','wireframe','cmyk','automn','acid','winter','nord')}" 
+>
 
 <head>
 	<link data-th-href="@{/main.css}" rel="stylesheet" />
