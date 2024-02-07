@@ -104,10 +104,11 @@
 	</div>
 	
 	<div class="flex justify-between items-center p-2">
+		<div class="w-3/12"></div>
 		<div class="grow">
 			<div data-th-replace="~{use/_components/pagination (page = ${page})}"></div>
 		</div>
-		<div>
+		<div class="w-3/12 text-right">
 			<button class="btn btn-sm"
 				data-th-if="${targetSubMenu.enableInsert}" 
 				data-th-hx-get="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_FORM',map.of('modalMode','create'))}}"
