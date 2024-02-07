@@ -1,6 +1,7 @@
 package net.luversof.web.dynamiccrud.thymeleaf.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +29,41 @@ import net.luversof.web.dynamiccrud.thymeleaf.domain.Pagination;
 public class ThymeleafUtil {
 	
 	private static final String URL_PATTERN = "(\\{)([\\w\\d]*)([\\:\\w\\|]*)(})";
+	
+	private static final String[] THEMES = new String[] {
+			"light",
+			"dark",
+			"cupcake",
+			"bumblebee",
+			"emerald",
+			"corporate",
+			"synthwave",
+			"retro",
+			"cyberpunk",
+			"valentine",
+			"halloween",
+			"garden",
+			"forest",
+			"aqua",
+			"lofi",
+			"pastel",
+			"fantasy",
+			"wireframe",
+			"black",
+			"luxury",
+			"dracula",
+			"cmyk",
+			"autumn",
+			"business",
+			"acid",
+			"lemonade",
+			"night",
+			"coffee",
+			"winter",
+			"dim",
+			"nord",
+			"sunset"
+	};
 
 	public static List<Menu> getMenuList(String adminProjectId, String projectId, String mainMenuId) {
 		var subMenuList = SettingUtil.getSubMenuList(adminProjectId, projectId, mainMenuId);
@@ -124,6 +160,10 @@ public class ThymeleafUtil {
 		Random random = new Random();
 		var themeList = List.of(themes);
 		return themeList.get(random.nextInt(themeList.size()));
+	}
+	
+	public static List<String> getThemeList() {
+		return Arrays.asList(THEMES);
 	}
 
 }

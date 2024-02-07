@@ -15,17 +15,17 @@
 			<div class="badge" data-th-text="${@environment.getProperty('bluesky-boot-profile')}"></div>
 		</div>
 	</div>
-	<div class="navbar-center hidden lg:flex">
+	<div class="navbar-center">
 		<div data-th-replace="~{_components/navmenu (classAppend = 'menu-horizontal')}" />
 	</div>
-	<a class="navbar-end" data-th-with="userUtil = ${T(net.luversof.client.user.util.UserUtil)}">
-		<div class="mx-2 flex" data-sec-authorize="isAuthenticated()">
+	<div class="navbar-end" data-th-with="userUtil = ${T(net.luversof.client.user.util.UserUtil)}">
+		<div data-sec-authorize="isAuthenticated()">
 			<div class="dropdown dropdown-end">
-				<div tabindex="0" role="button" class="btn btn-ghost rounded-none h-16">
+				<div tabindex="0" class="btn btn-ghost rounded-none h-16">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
 					</svg>
-					<div class="pl-0.5" data-th-text="${userUtil.getLoginInfo().username}"></div>
+					<div data-th-text="${userUtil.getLoginInfo().username}"></div>
 				</div>
 				<ul tabindex="0" class="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 w-52">
 					<li>
@@ -39,19 +39,55 @@
 				</ul>
 		    </div>
 		</div>
-		<a class="btn h-16 rounded-none mx-2" data-sec-authorize="!isAuthenticated()" href="/oauth2/authorization/github">
+		<a class="btn h-16 rounded-none" data-sec-authorize="!isAuthenticated()" href="/oauth2/authorization/github">
 			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
 			</svg>
 			github 로그인
 		</a>
-		<a class="btn h-16 rounded-none mx-2" data-sec-authorize="!isAuthenticated()" href="/oauth2/authorization/github-local2">
+		<a class="btn h-16 rounded-none" data-sec-authorize="!isAuthenticated()" href="/oauth2/authorization/github-local2">
 			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
 			</svg>
 			github local 로그인
 		</a>
+
 		
+		<div title="Change Theme" class="dropdown dropdown-end">
+			<div tabindex="0" class="btn btn-ghost h-16 rounded-none">
+				<span>Theme</span>
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3">
+				  <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+				</svg>
+			</div>
+			<div tabindex="0" class="dropdown-content z-[1] bg-base-200 top-px h-[28.6rem] max-h-[calc(100vh-10rem)] w-56 overflow-y-auto mt-16">
+				<div class="grid gap-3 p-3">
+					<button
+						class="text-start"
+						data-th-each="theme : ${thymeleafUtil.getThemeList()}" 
+						data-th-data-set-theme="${theme}" data-act-class="[&amp;_svg]:visible">
+						<span data-th-data-theme="${theme}" class="rounded-btn block w-full font-sans">
+							<span class="grid">
+								<span class="flex gap-2 px-4 py-3">
+									<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="invisible h-3 w-3 shrink-0">
+										<path d="M20.285 2l-11.285 11.567-5.286-5.011-3.714 3.716 9 8.728 15-15.285z"></path>
+									</svg>
+									<span class="flex-grow text-sm" data-th-text="${theme}"></span>
+									<span class="flex h-full gap-1">
+										<span class="bg-primary rounded-badge w-2"></span>
+										<span class="bg-secondary rounded-badge w-2"></span>
+										<span class="bg-accent rounded-badge w-2"></span>
+										<span class="bg-neutral rounded-badge w-2"></span>
+									</span>
+								</span>
+							</span>
+						</span>
+					</button>
+				</div>
+			</div>
+		</div>
+		
+		<!--
 		<select class="select select-sm select-bordered" data-choose-theme>
 			<option value="">Default</option>
 			<option value="light">Light</option>
@@ -87,11 +123,13 @@
 			<option value="nord">Nord</option>
 			<option value="sunset">Sunset</option>
 		</select>
+		-->
 		
 		<a href="/dev" class="m-2">
 			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
 			</svg>
 		</a>
+		
 	</div>
 </div>
