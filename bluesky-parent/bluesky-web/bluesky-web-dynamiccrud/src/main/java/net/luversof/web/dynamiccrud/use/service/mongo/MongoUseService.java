@@ -20,6 +20,7 @@ import com.mongodb.client.MongoClient;
 import io.github.luversof.boot.autoconfigure.connectioninfo.mongo.MongoClientConnectionInfoCollectorDecorator;
 import io.github.luversof.boot.autoconfigure.mongo.MongoProperties;
 import lombok.Getter;
+import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldEnable;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuerySqlCommandType;
@@ -85,7 +86,15 @@ public class MongoUseService implements UseService {
 		Document filter = new Document();
 		if (!targetFieldList.isEmpty()) {
 			for (var targetField : targetFieldList) {
-				filter.put(targetField.getColumnId(), dataMap.get(targetField.getColumnId()));
+				Object value = null;
+				if (targetField.getColumnType().equals(DbFieldColumnType.INT)) {
+					value = Integer.parseInt(dataMap.get(targetField.getColumnId()));
+				} else if (targetField.getColumnType().equals(DbFieldColumnType.LONG)) {
+					value = Long.parseLong(dataMap.get(targetField.getColumnId()));
+				} else {
+					value = dataMap.get(targetField.getColumnId());
+				}
+				filter.put(targetField.getColumnId(), value);
 			}
 			selectCommand.put("filter", filter);
 		}

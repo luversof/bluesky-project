@@ -1,6 +1,6 @@
 <!--/* properties에 설정한 menu를 기준으로 메뉴 목록을 제공 */-->
 
-<ul class="menu"
+<ul class="menu p-0"
 	data-th-with="
 	thymeleafUtil = ${T(net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil)},
 	menuList = ${menuList?: thymeleafUtil.getDefaultMenuList()},
@@ -10,7 +10,7 @@
 	data-th-classappend="${classAppend}">
 	
 	<li data-th-each="menu : ${menuList}">
-		<a data-th-classappend="${menu.isCurrentMenu ? 'active' : ''}" data-th-href="${menu.url}"
+		<a class="font-bold h-14 rounded-none flex" data-th-classappend="${menu.isCurrentMenu ? 'active' : ''}" data-th-href="${menu.url}"
 			data-th-text="${menu.name}">
 		</a>
 	</li>

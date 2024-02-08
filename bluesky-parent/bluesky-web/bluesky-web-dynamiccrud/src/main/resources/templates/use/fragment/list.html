@@ -104,11 +104,12 @@
 	</div>
 	
 	<div class="flex justify-between items-center p-2">
+		<div class="w-3/12"></div>
 		<div class="grow">
 			<div data-th-replace="~{use/_components/pagination (page = ${page})}"></div>
 		</div>
-		<div>
-			<button class="btn btn-sm"
+		<div class="w-3/12 text-right">
+			<button class="btn btn-info btn-sm"
 				data-th-if="${targetSubMenu.enableInsert}" 
 				data-th-hx-get="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_FORM',map.of('modalMode','create'))}}"
 				hx-target="#fragmentArea"
@@ -118,7 +119,7 @@
 				</svg>
 				[[#{button.text.create}]]
 			</button>
-			<button class="btn btn-sm deleteButton"
+			<button class="btn btn-error btn-sm deleteButton"
 				data-th-if="${targetSubMenu.enableDelete}"
 				data-th-hx-post="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_FORM', map.of('modalMode','delete'))}}"
 				hx-include="#contentTable tr:has(input[name=contentDataCheck]:checked) .contentData input"
