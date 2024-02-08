@@ -57,7 +57,7 @@
 	
 	<table class="table table-xs" id="contentTable" data-th-if="${contentInfo.processedContentMapList ne null}">
 		<!-- head -->
-		<thead>
+		<thead class="bg-neutral-700 text-neutral-content">
 			<tr>
 				<th class="w-0 p-0"></th>
 				<th data-th-each="contentKeyInfo : ${contentInfo.contentKeyInfoList}" data-th-if="${contentKeyInfo.visible}" data-th-text="${contentKeyInfo.key}"></th>

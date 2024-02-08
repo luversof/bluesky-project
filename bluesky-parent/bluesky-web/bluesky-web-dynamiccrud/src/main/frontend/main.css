@@ -2,3 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
+.menu li a.active {
+  background-color: rgb(115 115 115 / var(--tw-bg-opacity) )  !important ;
+}

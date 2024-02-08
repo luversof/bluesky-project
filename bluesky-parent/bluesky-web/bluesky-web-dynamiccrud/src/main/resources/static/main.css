@@ -4322,10 +4322,6 @@ html {
   visibility: visible;
 }
 
-.invisible {
-  visibility: hidden;
-}
-
 .absolute {
   position: absolute;
 }
@@ -4394,8 +4390,8 @@ html {
   display: none;
 }
 
-.h-16 {
-  height: 4rem;
+.h-14 {
+  height: 3.5rem;
 }
 
 .h-3 {
@@ -4432,6 +4428,10 @@ html {
 
 .max-h-\[calc\(100vh-10rem\)\] {
   max-height: calc(100vh - 10rem);
+}
+
+.min-h-14 {
+  min-height: 3.5rem;
 }
 
 .min-h-full {
@@ -4579,6 +4579,11 @@ html {
   background-color: var(--fallback-n,oklch(var(--n)/var(--tw-bg-opacity)));
 }
 
+.bg-neutral-700 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(64 64 64 / var(--tw-bg-opacity));
+}
+
 .bg-primary {
   --tw-bg-opacity: 1;
   background-color: var(--fallback-p,oklch(var(--p)/var(--tw-bg-opacity)));
@@ -4667,9 +4672,18 @@ html {
   font-weight: 700;
 }
 
+.capitalize {
+  text-transform: capitalize;
+}
+
 .text-base-content {
   --tw-text-opacity: 1;
   color: var(--fallback-bc,oklch(var(--bc)/var(--tw-text-opacity)));
+}
+
+.text-neutral-content {
+  --tw-text-opacity: 1;
+  color: var(--fallback-nc,oklch(var(--nc)/var(--tw-text-opacity)));
 }
 
 .shadow {
@@ -4678,9 +4692,18 @@ html {
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
 }
 
+.menu li a.active {
+  background-color: rgb(115 115 115 / var(--tw-bg-opacity) )  !important ;
+}
+
 .invalid\:border-red-500:invalid {
   --tw-border-opacity: 1;
   border-color: rgb(239 68 68 / var(--tw-border-opacity));
+}
+
+.hover\:bg-neutral-600:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(82 82 82 / var(--tw-bg-opacity));
 }
 
 @media (min-width: 1024px) {
@@ -4688,4 +4711,3 @@ html {
     display: none;
   }
 }
-

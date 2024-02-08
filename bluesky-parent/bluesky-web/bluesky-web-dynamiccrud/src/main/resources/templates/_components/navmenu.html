@@ -10,7 +10,7 @@
 	data-th-classappend="${classAppend}">
 	
 	<li data-th-each="menu : ${menuList}">
-		<a class="font-bold h-16 rounded-none flex" data-th-classappend="${menu.isCurrentMenu ? 'active' : ''}" data-th-href="${menu.url}"
+		<a class="font-bold h-14 rounded-none flex hover:bg-neutral-600" data-th-classappend="${menu.isCurrentMenu ? 'active' : ''}" data-th-href="${menu.url}"
 			data-th-text="${menu.name}">
 		</a>
 	</li>
