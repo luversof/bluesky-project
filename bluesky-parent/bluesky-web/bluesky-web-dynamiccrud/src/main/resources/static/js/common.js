@@ -202,20 +202,20 @@ var themeUtil = (() => {
 				var theme = document.documentElement.dataset.theme;
 			}
 			return theme;
+		},
+		displaySelectedThemeMenu() {
+			var targetTheme = this.getTheme();
+		 	document.querySelectorAll("[data-set-theme]").forEach(el => {
+				 var isTargetTheme = el.dataset.setTheme == targetTheme;
+				 el.querySelector("svg").classList.remove(isTargetTheme ? "invisible" : "invisible");
+				 el.querySelector("svg").classList.add(isTargetTheme ? "visible" : "invisible");
+			 });
 		}
 	}
 	
 })();
 
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll("[data-set-theme]").forEach(el => {
-	 el.addEventListener("click", (event) => {
-		 //console.log("TEST : ", themeUtil.getTheme());
-	 });
-  });
-});
-
-window.addEventListener('load', () => {
+window.addEventListener('DOMContentLoaded', () => {
 	// 상단 메뉴의 링크에 검색 parameter를 추가 처리
 	document.querySelectorAll(".navbar .menu a").forEach(el => el.addEventListener("click", (event) => {
 		var url = new URL(event.target.href);
@@ -235,4 +235,11 @@ window.addEventListener('load', () => {
 	// 검색 reset 버튼 이벤트
 	document.querySelectorAll("#searchArea .resetbutton").forEach(el => el.addEventListener("click", () => param.resetParam()));
 	
+	// theme change 처리
+	themeUtil.displaySelectedThemeMenu();
+	document.querySelectorAll("[data-set-theme]").forEach(el => {
+	 el.addEventListener("click", () => {
+		 themeUtil.displaySelectedThemeMenu();
+	 });
+  });
 });
