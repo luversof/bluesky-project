@@ -57,7 +57,7 @@
 	
 	<table class="table table-xs" id="contentTable" data-th-if="${contentInfo.processedContentMapList ne null}">
 		<!-- head -->
-		<thead class="bg-neutral-700 text-neutral-content">
+		<thead>
 			<tr>
 				<th class="w-0 p-0"></th>
 				<th data-th-each="contentKeyInfo : ${contentInfo.contentKeyInfoList}" data-th-if="${contentKeyInfo.visible}" data-th-text="${contentKeyInfo.key}"></th>
@@ -109,7 +109,7 @@
 			<div data-th-replace="~{use/_components/pagination (page = ${page})}"></div>
 		</div>
 		<div class="w-3/12 text-right">
-			<button class="btn btn-sm"
+			<button class="btn btn-info btn-sm"
 				data-th-if="${targetSubMenu.enableInsert}" 
 				data-th-hx-get="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_FORM',map.of('modalMode','create'))}}"
 				hx-target="#fragmentArea"
@@ -119,7 +119,7 @@
 				</svg>
 				[[#{button.text.create}]]
 			</button>
-			<button class="btn btn-sm deleteButton"
+			<button class="btn btn-error btn-sm deleteButton"
 				data-th-if="${targetSubMenu.enableDelete}"
 				data-th-hx-post="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_FORM', map.of('modalMode','delete'))}}"
 				hx-include="#contentTable tr:has(input[name=contentDataCheck]:checked) .contentData input"

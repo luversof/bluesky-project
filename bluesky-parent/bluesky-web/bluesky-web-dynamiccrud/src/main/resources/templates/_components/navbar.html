@@ -1,4 +1,4 @@
-<div class="navbar bg-neutral-700 text-neutral-content p-0 min-h-14">
+<div class="navbar bg-base-200 p-0 min-h-14">
 		
 	<div class="navbar-start p-0">
 		<div class="dropdown">
@@ -65,11 +65,15 @@
 					<button
 						class="text-start"
 						data-th-each="theme : ${thymeleafUtil.getThemeList()}"
-						data-th-data-set-theme="${theme}">
+						data-th-data-set-theme="${theme}"
+						data-act-class="[&amp;_svg]:visible">
 						<span data-th-data-theme="${theme}" class="rounded-btn block w-full font-sans">
 							<span class="grid">
 								<span class="flex gap-2 px-4 py-3">
-									<span class="flex-grow text-sm px-4" data-th-text="${theme}"></span>
+									<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="invisible h-3 w-3 shrink-0">
+										<path d="M20.285 2l-11.285 11.567-5.286-5.011-3.714 3.716 9 8.728 15-15.285z"></path>
+									</svg>
+									<span class="flex-grow text-sm" data-th-text="${theme}"></span>
 									<span class="flex h-full gap-1">
 										<span class="bg-primary rounded-badge w-2"></span>
 										<span class="bg-secondary rounded-badge w-2"></span>
