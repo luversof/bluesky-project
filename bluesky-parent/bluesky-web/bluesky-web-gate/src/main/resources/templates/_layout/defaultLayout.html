@@ -1,17 +1,21 @@
 <!DOCTYPE html>
-<html data-theme="winter">
+<html
+	data-th-with="thymeleafUtil = ${T(net.luversof.web.gate.thymeleaf.util.ThymeleafUtil)}"
+	data-th-data-theme="${thymeleafUtil.getRandomTheme('light','bumblebee','emerald','corporate','garden','lofi','pastel','fantasy','wireframe','cmyk','automn','acid','winter','nord')}" 
+>
 
 <head>
 	<link data-th-href="@{/main.css}" rel="stylesheet" />
 	<script src="https://unpkg.com/theme-change"></script>
+	<script src="https://unpkg.com/htmx.org"></script>
 </head>
 
 <body>
-	<div class="container mx-auto">
+	<div class="container-fluid">
 
 		<div data-th-replace="~{_components/navbar}"></div>
 
-		<div data-layout-fragment="content">본문</div>
+		<div data-layout-fragment="content" class="px-2">본문</div>
 
 		<footer class="footer footer-center p-4 bg-base-100 text-base-content">
 			<aside>

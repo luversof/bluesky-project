@@ -12,7 +12,7 @@ import net.luversof.web.gate.feign.board.client.BoardArticleClient;
 import net.luversof.web.gate.feign.board.domain.BoardArticle;
 
 @Controller
-@RequestMapping(value = "/fragment/board", produces = MediaType.TEXT_HTML_VALUE)
+@RequestMapping(value = "/board/fragment", produces = MediaType.TEXT_HTML_VALUE)
 public class BoardFragmentController {
 	
 	@Autowired

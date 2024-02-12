@@ -38,6 +38,23 @@ module.exports = {
 			"dim",
 			"nord",
 			"sunset",
+			{
+				bluesky : {
+					"primary": "#ff00ff",
+					"secondary": "#ffffff",
+					"accent": "#ffffff",
+					"neutral": "#ffffff",
+					"base-100": "#ffffff",
+					"info": "#ffffff",
+					"success": "#00ffff",
+					"warning": "#ffffff",
+					"error": "#ffffff",
+				    "--rounded-box": "0",
+				    "--rounded-btn": "0",
+				    "--rounded-badge": "0",
+				    "--tab-radius": "0",
+				},
+			},
 		],
 	},
 	plugins: [require("@tailwindcss/typography"), require("daisyui")]

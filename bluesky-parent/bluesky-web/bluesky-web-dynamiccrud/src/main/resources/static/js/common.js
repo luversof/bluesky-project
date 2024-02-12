@@ -193,28 +193,6 @@ document.addEventListener('exportModalBulkForm', () => setTimeout(() => {
 // modalForm에 데이터 생성 요청 후 page를 1로 초기화하여 바닥 페이지 데이터 갱신 시 첫 페이지로 이동 처리  
 document.addEventListener('importModalBulk', () => param.setParam("page", 1));
 
-// theme 관련
-var themeUtil = (() => {
-	return {
-		getTheme() {
-			var theme = window.localStorage.getItem("theme");
-			if (theme == null) {
-				var theme = document.documentElement.dataset.theme;
-			}
-			return theme;
-		},
-		displaySelectedThemeMenu() {
-			var targetTheme = this.getTheme();
-		 	document.querySelectorAll("[data-set-theme]").forEach(el => {
-				 var isTargetTheme = el.dataset.setTheme == targetTheme;
-				 el.querySelector("svg").classList.remove(isTargetTheme ? "invisible" : "invisible");
-				 el.querySelector("svg").classList.add(isTargetTheme ? "visible" : "invisible");
-			 });
-		}
-	}
-	
-})();
-
 window.addEventListener('DOMContentLoaded', () => {
 	// 상단 메뉴의 링크에 검색 parameter를 추가 처리
 	document.querySelectorAll(".navbar .menu a").forEach(el => el.addEventListener("click", (event) => {
@@ -234,12 +212,4 @@ window.addEventListener('DOMContentLoaded', () => {
 	
 	// 검색 reset 버튼 이벤트
 	document.querySelectorAll("#searchArea .resetbutton").forEach(el => el.addEventListener("click", () => param.resetParam()));
-	
-	// theme change 처리
-	themeUtil.displaySelectedThemeMenu();
-	document.querySelectorAll("[data-set-theme]").forEach(el => {
-	 el.addEventListener("click", () => {
-		 themeUtil.displaySelectedThemeMenu();
-	 });
-  });
 });

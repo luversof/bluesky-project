@@ -1632,6 +1632,38 @@ html {
   --tab-radius: 0.7rem;
 }
 
+[data-theme=bluesky] {
+  --p: 0.701674 0.322491 328.363418;
+  --b2: 0.93 0 0;
+  --b3: 0.86 0 0;
+  --bc: 0.2 0 0;
+  --pc: 0.140335 0.064498 328.363418;
+  --sc: 0.2 0 0;
+  --ac: 0.2 0 0;
+  --nc: 0.2 0 0;
+  --inc: 0.2 0 0;
+  --suc: 0.18108 0.03091 194.768948;
+  --wac: 0.2 0 0;
+  --erc: 0.2 0 0;
+  --animation-btn: 0.25s;
+  --animation-input: .2s;
+  --btn-focus-scale: 0.95;
+  --border-btn: 1px;
+  --tab-border: 1px;
+  --s: 1 0 0;
+  --a: 1 0 0;
+  --n: 1 0 0;
+  --b1: 1 0 0;
+  --in: 1 0 0;
+  --su: 0.905399 0.15455 194.768948;
+  --wa: 1 0 0;
+  --er: 1 0 0;
+  --rounded-box: 0;
+  --rounded-btn: 0;
+  --rounded-badge: 0;
+  --tab-radius: 0;
+}
+
 *, ::before, ::after {
   --tw-border-spacing-x: 0;
   --tw-border-spacing-y: 0;
@@ -2889,7 +2921,7 @@ html {
   width: 100%;
 }
 
-:where(.navbar > *) {
+:where(.navbar > *:not(script, style)) {
   display: inline-flex;
   align-items: center;
 }
@@ -4772,4 +4804,8 @@ html {
   .lg\:hidden {
     display: none;
   }
+}
+
+.\[\&_svg\]\:visible svg {
+  visibility: visible;
 }

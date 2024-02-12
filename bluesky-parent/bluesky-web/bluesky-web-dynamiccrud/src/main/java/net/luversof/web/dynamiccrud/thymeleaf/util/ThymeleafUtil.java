@@ -31,6 +31,7 @@ public class ThymeleafUtil {
 	private static final String URL_PATTERN = "(\\{)([\\w\\d]*)([\\:\\w\\|]*)(})";
 	
 	private static final String[] THEMES = new String[] {
+			"bluesky",
 			"light",
 			"dark",
 			"cupcake",
