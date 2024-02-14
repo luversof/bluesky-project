@@ -10,14 +10,14 @@
 		"
 >
 	<button 
-		class="join-item btn btn-sm navbutton"
+		class="join-item btn btn-sm navButton"
 		data-th-classappend="!${pagination.firstNav.active} ? btn-disabled"
 		data-th-onclick="'param.setParam(\'page\', ' + ${pagination.firstNav.page} + ')'"
 	>
 		≪
 	</button>
 	<button 
-		class="join-item btn btn-sm navbutton" 
+		class="join-item btn btn-sm navButton" 
 		data-th-classappend="!${pagination.prevNav.active} ? btn-disabled"
 		data-th-onclick="'param.setParam(\'page\', ' + ${pagination.prevNav.page} + ')'"
 	>
@@ -26,7 +26,7 @@
 	
 	<div data-th-each="nav : ${pagination.navList}">
 		<button 
-			class="join-item btn btn-sm navbutton"
+			class="join-item btn btn-sm navButton"
 			data-th-classappend="${nav.active} ? btn-active"
 			data-th-onclick="'param.setParam(\'page\', ' + ${nav.page} + ')'"
 			data-th-text="${nav.page}"
@@ -37,7 +37,7 @@
 	
 	
 	<button 
-		class="join-item btn btn-sm navbutton"
+		class="join-item btn btn-sm navButton"
 		data-th-classappend="!${pagination.nextNav.active} ? btn-disabled"
  		data-th-onclick="'param.setParam(\'page\', ' + ${pagination.nextNav.page} + ')'"
 	>
@@ -45,7 +45,7 @@
 	</button>
 	
 	<button 
-		class="join-item btn btn-sm navbutton"
+		class="join-item btn btn-sm navButton"
 		data-th-classappend="!${pagination.lastNav.active} ? btn-disabled"
  		data-th-onclick="'param.setParam(\'page\', ' + ${pagination.lastNav.page} + ')'"
 	>

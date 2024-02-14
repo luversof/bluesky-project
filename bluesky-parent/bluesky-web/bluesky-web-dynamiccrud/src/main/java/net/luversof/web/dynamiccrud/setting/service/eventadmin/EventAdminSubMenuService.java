@@ -1,6 +1,7 @@
 package net.luversof.web.dynamiccrud.setting.service.eventadmin;
 
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.ADMIN_PROJECT_ID_VALUE;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.DB_TYPE;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.MAINMENU_ID_VALUE;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.PROJECT_ID_VALUE;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.SUBMENU_ID_VALUE_ADMINPROJECT;
@@ -20,7 +21,6 @@ import org.springframework.stereotype.Service;
 import lombok.Getter;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
-import net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType;
 import net.luversof.web.dynamiccrud.setting.service.SettingServiceListSupplier;
 
 @Service
@@ -42,7 +42,7 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_ADMINPROJECT,
 					"AdminProject",
-					SubMenuDbType.MySql,
+					DB_TYPE,
 					(short) 1,
 					(short) 20,
 					true,
@@ -61,7 +61,7 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_PROJECT,
 					"Project",
-					SubMenuDbType.MySql,
+					DB_TYPE,
 					(short) 2,
 					(short) 20,
 					true,
@@ -80,7 +80,7 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_MAINMENU,
 					"MainMenu",
-					SubMenuDbType.MySql,
+					DB_TYPE,
 					(short) 3,
 					(short) 20,
 					true,
@@ -99,7 +99,7 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_SUBMENU,
 					"SubMenu",
-					SubMenuDbType.MySql,
+					DB_TYPE,
 					(short) 4,
 					(short) 20,
 					true,
@@ -118,7 +118,7 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_DBQUERY,
 					"Query",
-					SubMenuDbType.MySql,
+					DB_TYPE,
 					(short) 5,
 					(short) 20,
 					true,
@@ -137,7 +137,7 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					MAINMENU_ID_VALUE,
 					SUBMENU_ID_VALUE_DBFIELD,
 					"Field",
-					SubMenuDbType.MySql,
+					DB_TYPE,
 					(short) 6,
 					(short) 20,
 					true,

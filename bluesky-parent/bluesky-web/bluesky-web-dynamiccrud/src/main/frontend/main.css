@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* 필수 입력 폼 빨간 별 마크 처리 */
+.required:after {
+    content: "*";
+    margin-left: -0.4rem;
+    vertical-align: text-top;
+    @apply text-red-500;
+}

@@ -1,5 +1,5 @@
 /*
-! tailwindcss v3.4.1 | MIT License | https://tailwindcss.com
+! tailwindcss v3.3.5 | MIT License | https://tailwindcss.com
 */
 
 /*
@@ -32,11 +32,9 @@
 4. Use the user's configured `sans` font-family by default.
 5. Use the user's configured `sans` font-feature-settings by default.
 6. Use the user's configured `sans` font-variation-settings by default.
-7. Disable tap highlights on iOS
 */
 
-html,
-:host {
+html {
   line-height: 1.5;
   /* 1 */
   -webkit-text-size-adjust: 100%;
@@ -46,14 +44,12 @@ html,
   -o-tab-size: 4;
      tab-size: 4;
   /* 3 */
-  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   /* 4 */
   font-feature-settings: normal;
   /* 5 */
   font-variation-settings: normal;
   /* 6 */
-  -webkit-tap-highlight-color: transparent;
-  /* 7 */
 }
 
 /*
@@ -125,10 +121,8 @@ strong {
 }
 
 /*
-1. Use the user's configured `mono` font-family by default.
-2. Use the user's configured `mono` font-feature-settings by default.
-3. Use the user's configured `mono` font-variation-settings by default.
-4. Correct the odd `em` font sizing in all browsers.
+1. Use the user's configured `mono` font family by default.
+2. Correct the odd `em` font sizing in all browsers.
 */
 
 code,
@@ -137,12 +131,8 @@ samp,
 pre {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   /* 1 */
-  font-feature-settings: normal;
-  /* 2 */
-  font-variation-settings: normal;
-  /* 3 */
   font-size: 1em;
-  /* 4 */
+  /* 2 */
 }
 
 /*
@@ -509,7 +499,7 @@ html {
 :root {
   color-scheme: light;
   --in: 0.7206 0.191 231.6;
-  --su: 64.8% 0.150 160;
+  --su: 0.7441 0.213 164.75;
   --wa: 0.8471 0.199 83.87;
   --er: 0.7176 0.221 22.18;
   --pc: 0.89824 0.06192 275.75;
@@ -543,7 +533,7 @@ html {
   :root {
     color-scheme: dark;
     --in: 0.7206 0.191 231.6;
-    --su: 64.8% 0.150 160;
+    --su: 0.7441 0.213 164.75;
     --wa: 0.8471 0.199 83.87;
     --er: 0.7176 0.221 22.18;
     --pc: 0.13138 0.0392 275.75;
@@ -577,7 +567,7 @@ html {
 [data-theme=light] {
   color-scheme: light;
   --in: 0.7206 0.191 231.6;
-  --su: 64.8% 0.150 160;
+  --su: 0.7441 0.213 164.75;
   --wa: 0.8471 0.199 83.87;
   --er: 0.7176 0.221 22.18;
   --pc: 0.89824 0.06192 275.75;
@@ -610,7 +600,7 @@ html {
 [data-theme=dark] {
   color-scheme: dark;
   --in: 0.7206 0.191 231.6;
-  --su: 64.8% 0.150 160;
+  --su: 0.7441 0.213 164.75;
   --wa: 0.8471 0.199 83.87;
   --er: 0.7176 0.221 22.18;
   --pc: 0.13138 0.0392 275.75;
@@ -643,7 +633,7 @@ html {
 [data-theme=cupcake] {
   color-scheme: light;
   --in: 0.7206 0.191 231.6;
-  --su: 64.8% 0.150 160;
+  --su: 0.7441 0.213 164.75;
   --wa: 0.8471 0.199 83.87;
   --er: 0.7176 0.221 22.18;
   --pc: 0.152344 0.017892 200.026556;
@@ -678,7 +668,7 @@ html {
   --b2: 0.93 0 0;
   --b3: 0.86 0 0;
   --in: 0.7206 0.191 231.6;
-  --su: 64.8% 0.150 160;
+  --su: 0.7441 0.213 164.75;
   --wa: 0.8471 0.199 83.87;
   --er: 0.7176 0.221 22.18;
   --bc: 0.2 0 0;
@@ -711,7 +701,7 @@ html {
   --b2: 0.93 0 0;
   --b3: 0.86 0 0;
   --in: 0.7206 0.191 231.6;
-  --su: 64.8% 0.150 160;
+  --su: 0.7441 0.213 164.75;
   --wa: 0.8471 0.199 83.87;
   --er: 0.7176 0.221 22.18;
   --inc: 0 0 0;
@@ -744,7 +734,7 @@ html {
   --b2: 0.93 0 0;
   --b3: 0.86 0 0;
   --in: 0.7206 0.191 231.6;
-  --su: 64.8% 0.150 160;
+  --su: 0.7441 0.213 164.75;
   --wa: 0.8471 0.199 83.87;
   --er: 0.7176 0.221 22.18;
   --pc: 0.12078 0.0456 269.1;
@@ -843,7 +833,7 @@ html {
   --b2: 0.878943 0.16647 104.32;
   --b3: 0.812786 0.15394 104.32;
   --in: 0.7206 0.191 231.6;
-  --su: 64.8% 0.150 160;
+  --su: 0.7441 0.213 164.75;
   --wa: 0.8471 0.199 83.87;
   --er: 0.7176 0.221 22.18;
   --bc: 0.18902 0.0358 104.32;
@@ -943,7 +933,7 @@ html {
   --b2: 0.864453 0.002011 17.197414;
   --b3: 0.799386 0.00186 17.197414;
   --in: 0.7206 0.191 231.6;
-  --su: 64.8% 0.150 160;
+  --su: 0.7441 0.213 164.75;
   --wa: 0.8471 0.199 83.87;
   --er: 0.7176 0.221 22.18;
   --sc: 0.89699 0.022197 355.095988;
@@ -976,7 +966,7 @@ html {
   --b2: 0.17522 0.007709 17.911578;
   --b3: 0.162032 0.007129 17.911578;
   --in: 0.7206 0.191 231.6;
-  --su: 64.8% 0.150 160;
+  --su: 0.7441 0.213 164.75;
   --wa: 0.8471 0.199 83.87;
   --er: 0.7176 0.221 22.18;
   --bc: 0.837682 0.001658 17.911578;
@@ -1073,7 +1063,7 @@ html {
 [data-theme=pastel] {
   color-scheme: light;
   --in: 0.7206 0.191 231.6;
-  --su: 64.8% 0.150 160;
+  --su: 0.7441 0.213 164.75;
   --wa: 0.8471 0.199 83.87;
   --er: 0.7176 0.221 22.18;
   --bc: 0.2 0 0;
@@ -1108,7 +1098,7 @@ html {
   --b2: 0.93 0 0;
   --b3: 0.86 0 0;
   --in: 0.7206 0.191 231.6;
-  --su: 64.8% 0.150 160;
+  --su: 0.7441 0.213 164.75;
   --wa: 0.8471 0.199 83.87;
   --er: 0.7176 0.221 22.18;
   --pc: 0.8749 0.0378 325.02;
@@ -1554,11 +1544,11 @@ html {
   --p: 0.861335 0.141656 139.549991;
   --s: 0.733759 0.165904 35.353059;
   --a: 0.742296 0.133641 311.37924;
-  --n: 0.247311 0.020483 264.094728;
+  --n: 0.248091 0.041409 261.79232;
   --nc: 0.829011 0.031335 222.959324;
-  --b1: 0.308577 0.023243 264.149498;
-  --b2: 0.280368 0.01983 264.182074;
-  --b3: 0.263469 0.018403 262.177739;
+  --b1: 0.404748 0.036234 264.044279;
+  --b2: 0.308577 0.023243 264.149498;
+  --b3: 0.271708 0.018257 262.190531;
   --bc: 0.829011 0.031335 222.959324;
   --in: 0.860785 0.142046 206.182959;
   --su: 0.861717 0.142187 166.534048;
@@ -2335,7 +2325,7 @@ html {
   justify-content: center;
   border-radius: var(--rounded-btn, 0.5rem);
   border-color: transparent;
-  border-color: oklch(var(--btn-color, var(--b2)) / var(--tw-border-opacity));
+  border-color: oklch(var(--btn-color, var(--b2)) / var(--tw-border-opacity, 1));
   padding-left: 1rem;
   padding-right: 1rem;
   text-align: center;
@@ -2355,9 +2345,7 @@ html {
   --tw-shadow-colored: 0 1px 2px 0 var(--tw-shadow-color);
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
   outline-color: var(--fallback-bc,oklch(var(--bc)/1));
-  background-color: oklch(var(--btn-color, var(--b2)) / var(--tw-bg-opacity));
-  --tw-bg-opacity: 1;
-  --tw-border-opacity: 1;
+  background-color: oklch(var(--btn-color, var(--b2)) / var(--tw-bg-opacity, 1));
 }
 
 .btn-disabled,
@@ -2465,23 +2453,18 @@ html {
   .btn:hover {
     --tw-border-opacity: 1;
     border-color: var(--fallback-b3,oklch(var(--b3)/var(--tw-border-opacity)));
+    border-color: color-mix(
+          in oklab,
+          oklch(var(--btn-color, var(--b2)) / var(--tw-border-opacity, 1)) 90%,
+          black
+        );
     --tw-bg-opacity: 1;
     background-color: var(--fallback-b3,oklch(var(--b3)/var(--tw-bg-opacity)));
-  }
-
-  @supports (color: color-mix(in oklab, black, black)) {
-    .btn:hover {
-      background-color: color-mix(
-            in oklab,
-            oklch(var(--btn-color, var(--b2)) / var(--tw-bg-opacity, 1)) 90%,
-            black
-          );
-      border-color: color-mix(
-            in oklab,
-            oklch(var(--btn-color, var(--b2)) / var(--tw-border-opacity, 1)) 90%,
-            black
-          );
-    }
+    background-color: color-mix(
+          in oklab,
+          oklch(var(--btn-color, var(--b2)) / var(--tw-bg-opacity, 1)) 90%,
+          black
+        );
   }
 
   @supports not (color: oklch(0 0 0)) {
@@ -2516,11 +2499,9 @@ html {
     --tw-text-opacity: 0.2;
   }
 
-  @supports (color: color-mix(in oklab, black, black)) {
-    .btn:is(input[type="checkbox"]:checked):hover, .btn:is(input[type="radio"]:checked):hover {
-      background-color: color-mix(in oklab, var(--fallback-p,oklch(var(--p)/1)) 90%, black);
-      border-color: color-mix(in oklab, var(--fallback-p,oklch(var(--p)/1)) 90%, black);
-    }
+  .btn:is(input[type="checkbox"]:checked):hover, .btn:is(input[type="radio"]:checked):hover {
+    background-color: color-mix(in oklab, var(--fallback-p,oklch(var(--p)/1)) 90%, black);
+    border-color: color-mix(in oklab, var(--fallback-p,oklch(var(--p)/1)) 90%, black);
   }
 
   .dropdown.dropdown-hover:hover .dropdown-content {
@@ -2531,6 +2512,8 @@ html {
 
   :where(.menu li:not(.menu-title):not(.disabled) > *:not(ul):not(details):not(.menu-title)):not(.active):hover, :where(.menu li:not(.menu-title):not(.disabled) > details > summary:not(.menu-title)):not(.active):hover {
     cursor: pointer;
+    --tw-text-opacity: 1;
+    color: var(--fallback-bc,oklch(var(--bc)/var(--tw-text-opacity)));
     outline: 2px solid transparent;
     outline-offset: 2px;
   }
@@ -2749,7 +2732,7 @@ html {
   width: 100%;
 }
 
-:where(.navbar > *:not(script, style)) {
+:where(.navbar > *) {
   display: inline-flex;
   align-items: center;
 }
@@ -2857,60 +2840,19 @@ html {
     background-color: var(--btn-color, var(--fallback-b2));
     border-color: var(--btn-color, var(--fallback-b2));
   }
-
-  .prose :where(code):not(:where([class~="not-prose"] *, pre *)) {
-    background-color: var(--fallback-b3,oklch(var(--b3)/1));
-  }
 }
 
-@supports (color: color-mix(in oklab, black, black)) {
-  .btn-active {
-    background-color: color-mix(
-          in oklab,
-          oklch(var(--btn-color, var(--b3)) / var(--tw-bg-opacity, 1)) 90%,
-          black
-        );
-    border-color: color-mix(
-          in oklab,
-          oklch(var(--btn-color, var(--b3)) / var(--tw-border-opacity, 1)) 90%,
-          black
-        );
-  }
-
-  .btn-outline.btn-primary.btn-active {
-    background-color: color-mix(in oklab, var(--fallback-p,oklch(var(--p)/1)) 90%, black);
-    border-color: color-mix(in oklab, var(--fallback-p,oklch(var(--p)/1)) 90%, black);
-  }
-
-  .btn-outline.btn-secondary.btn-active {
-    background-color: color-mix(in oklab, var(--fallback-s,oklch(var(--s)/1)) 90%, black);
-    border-color: color-mix(in oklab, var(--fallback-s,oklch(var(--s)/1)) 90%, black);
-  }
-
-  .btn-outline.btn-accent.btn-active {
-    background-color: color-mix(in oklab, var(--fallback-a,oklch(var(--a)/1)) 90%, black);
-    border-color: color-mix(in oklab, var(--fallback-a,oklch(var(--a)/1)) 90%, black);
-  }
-
-  .btn-outline.btn-success.btn-active {
-    background-color: color-mix(in oklab, var(--fallback-su,oklch(var(--su)/1)) 90%, black);
-    border-color: color-mix(in oklab, var(--fallback-su,oklch(var(--su)/1)) 90%, black);
-  }
-
-  .btn-outline.btn-info.btn-active {
-    background-color: color-mix(in oklab, var(--fallback-in,oklch(var(--in)/1)) 90%, black);
-    border-color: color-mix(in oklab, var(--fallback-in,oklch(var(--in)/1)) 90%, black);
-  }
-
-  .btn-outline.btn-warning.btn-active {
-    background-color: color-mix(in oklab, var(--fallback-wa,oklch(var(--wa)/1)) 90%, black);
-    border-color: color-mix(in oklab, var(--fallback-wa,oklch(var(--wa)/1)) 90%, black);
-  }
-
-  .btn-outline.btn-error.btn-active {
-    background-color: color-mix(in oklab, var(--fallback-er,oklch(var(--er)/1)) 90%, black);
-    border-color: color-mix(in oklab, var(--fallback-er,oklch(var(--er)/1)) 90%, black);
-  }
+.btn-active {
+  background-color: color-mix(
+        in oklab,
+        oklch(var(--btn-color, var(--b3)) / var(--tw-bg-opacity, 1)) 90%,
+        black
+      );
+  border-color: color-mix(
+        in oklab,
+        oklch(var(--btn-color, var(--b3)) / var(--tw-border-opacity, 1)) 90%,
+        black
+      );
 }
 
 .btn:focus-visible {
@@ -2965,36 +2907,50 @@ html {
 .btn-outline.btn-primary.btn-active {
   --tw-text-opacity: 1;
   color: var(--fallback-pc,oklch(var(--pc)/var(--tw-text-opacity)));
+  background-color: color-mix(in oklab, var(--fallback-p,oklch(var(--p)/1)) 90%, black);
+  border-color: color-mix(in oklab, var(--fallback-p,oklch(var(--p)/1)) 90%, black);
 }
 
 .btn-outline.btn-secondary.btn-active {
   --tw-text-opacity: 1;
   color: var(--fallback-sc,oklch(var(--sc)/var(--tw-text-opacity)));
+  background-color: color-mix(in oklab, var(--fallback-s,oklch(var(--s)/1)) 90%, black);
+  border-color: color-mix(in oklab, var(--fallback-s,oklch(var(--s)/1)) 90%, black);
 }
 
 .btn-outline.btn-accent.btn-active {
   --tw-text-opacity: 1;
   color: var(--fallback-ac,oklch(var(--ac)/var(--tw-text-opacity)));
+  background-color: color-mix(in oklab, var(--fallback-a,oklch(var(--a)/1)) 90%, black);
+  border-color: color-mix(in oklab, var(--fallback-a,oklch(var(--a)/1)) 90%, black);
 }
 
 .btn-outline.btn-success.btn-active {
   --tw-text-opacity: 1;
   color: var(--fallback-suc,oklch(var(--suc)/var(--tw-text-opacity)));
+  background-color: color-mix(in oklab, var(--fallback-su,oklch(var(--su)/1)) 90%, black);
+  border-color: color-mix(in oklab, var(--fallback-su,oklch(var(--su)/1)) 90%, black);
 }
 
 .btn-outline.btn-info.btn-active {
   --tw-text-opacity: 1;
   color: var(--fallback-inc,oklch(var(--inc)/var(--tw-text-opacity)));
+  background-color: color-mix(in oklab, var(--fallback-in,oklch(var(--in)/1)) 90%, black);
+  border-color: color-mix(in oklab, var(--fallback-in,oklch(var(--in)/1)) 90%, black);
 }
 
 .btn-outline.btn-warning.btn-active {
   --tw-text-opacity: 1;
   color: var(--fallback-wac,oklch(var(--wac)/var(--tw-text-opacity)));
+  background-color: color-mix(in oklab, var(--fallback-wa,oklch(var(--wa)/1)) 90%, black);
+  border-color: color-mix(in oklab, var(--fallback-wa,oklch(var(--wa)/1)) 90%, black);
 }
 
 .btn-outline.btn-error.btn-active {
   --tw-text-opacity: 1;
   color: var(--fallback-erc,oklch(var(--erc)/var(--tw-text-opacity)));
+  background-color: color-mix(in oklab, var(--fallback-er,oklch(var(--er)/1)) 90%, black);
+  border-color: color-mix(in oklab, var(--fallback-er,oklch(var(--er)/1)) 90%, black);
 }
 
 .btn.btn-disabled,
@@ -3078,9 +3034,7 @@ html {
 }
 
 :where(.menu li:empty) {
-  --tw-bg-opacity: 1;
-  background-color: var(--fallback-bc,oklch(var(--bc)/var(--tw-bg-opacity)));
-  opacity: 0.1;
+  background-color: var(--fallback-bc,oklch(var(--bc)/0.1));
   margin: 0.5rem 1rem;
   height: 1px;
 }
@@ -3091,9 +3045,7 @@ html {
   inset-inline-start: 0px;
   top: 0.75rem;
   width: 1px;
-  --tw-bg-opacity: 1;
-  background-color: var(--fallback-bc,oklch(var(--bc)/var(--tw-bg-opacity)));
-  opacity: 0.1;
+  background-color: var(--fallback-bc,oklch(var(--bc)/0.1));
   content: "";
 }
 
@@ -3228,7 +3180,6 @@ html {
   border-color: var(--fallback-b2,oklch(var(--b2)/var(--tw-border-opacity)));
   --tw-bg-opacity: 1;
   background-color: var(--fallback-b2,oklch(var(--b2)/var(--tw-bg-opacity)));
-  color: var(--fallback-bc,oklch(var(--bc)/var(--tw-text-opacity)));
   --tw-text-opacity: 0.2;
 }
 
@@ -3363,15 +3314,14 @@ html {
   --tw-prose-td-borders: var(--fallback-bc,oklch(var(--bc)/0.2));
 }
 
-.prose :where(code):not(:where([class~="not-prose"] *, pre *)) {
-  padding: 1px 8px;
+.prose :where(code):not(:where([class~="not-prose"] *)) {
+  padding: 2px 8px;
   border-radius: var(--rounded-badge);
-  font-weight: initial;
-  background-color: var(--fallback-bc,oklch(var(--bc)/0.1));
 }
 
-.prose :where(code):not(:where([class~="not-prose"], [class~="not-prose"] *))::before, .prose :where(code):not(:where([class~="not-prose"], [class~="not-prose"] *))::after {
-  display: none;
+.prose code:after,
+  .prose code:before {
+  content: none;
 }
 
 .prose pre code {
@@ -3649,10 +3599,6 @@ html {
   max-height: calc(100vh - 10rem);
 }
 
-.min-h-14 {
-  min-height: 3.5rem;
-}
-
 .w-1\/2 {
   width: 50%;
 }
@@ -3845,7 +3791,7 @@ html {
 }
 
 .font-sans {
-  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
 .text-2xl {
