@@ -4,6 +4,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.springframework.util.StringUtils;
+
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
@@ -51,6 +53,6 @@ public class SettingStringUtil {
 	public static boolean isCustomQuery(String query) {
 		Pattern pattern = Pattern.compile("WHERE|HAVING", Pattern.CASE_INSENSITIVE);
 		Matcher matcher = pattern.matcher(query);
-		return matcher.find(); 
+		return matcher.find() || !StringUtils.hasText(getTableName(query)); 
 	}
 }

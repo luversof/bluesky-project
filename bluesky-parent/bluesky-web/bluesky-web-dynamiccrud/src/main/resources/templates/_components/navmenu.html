@@ -5,12 +5,15 @@
 	thymeleafUtil = ${T(net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil)},
 	menuList = ${menuList?: thymeleafUtil.getDefaultMenuList()},
 	isCurrentMenu = ${isCurrentMenu?:false},
+	isDropdown = ${isDropdown?:false},
 	classAppend = ${classAppend}
 	"
 	data-th-classappend="${classAppend}">
 	
-	<li data-th-each="menu : ${menuList}">
-		<a class="font-bold h-14 rounded-none flex" data-th-classappend="${menu.isCurrentMenu ? 'active' : ''}" data-th-href="${menu.url}"
+	<li data-th-each="menu : ${menuList}" data-th-classappend="${isDropdown ? '' : menu.isCurrentMenu ? '' : 'hidden lg:flex'}">
+		<a class="font-bold h-14 rounded-none flex" 
+			data-th-classappend="${menu.isCurrentMenu ? 'active' : ''}"
+			data-th-href="${menu.url}"
 			data-th-text="${menu.name}">
 		</a>
 	</li>

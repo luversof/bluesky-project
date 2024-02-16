@@ -109,13 +109,13 @@ public class ContentInfo {
 				} else if (dbField != null && StringUtils.hasText(dbField.getColumnPreset())) {
 					// preset을 사용하는 경우 preset 대체 문자로 처리
 					String content = (String) contentMap.get(contentKeyInfo.originKey());
-					var presetParts = dbField.getColumnPreset().split("\\|");
+					var presetParts = dbField.getColumnPreset().split(",");
 					for (var presetPart : presetParts) {
 						String presetKey;
 						String presetValue;
-						if (presetPart.contains(",")) {
-							presetKey = presetPart.split(",")[0];
-							presetValue = presetPart.split(",")[1];
+						if (presetPart.contains("|")) {
+							presetKey = presetPart.split("\\|")[0];
+							presetValue = presetPart.split("\\|")[1];
 						} else {
 							presetKey = presetPart;
 							presetValue = presetPart;

@@ -64,7 +64,7 @@ public class MongoUseService implements UseService {
 
 		// 필수 검색 조건이 있는 경우 확인
 		var requiredFieldList = dbFieldList.stream().filter(x -> DbFieldEnable.REQUIRED.equals(x.getEnableSearch())).toList();
-		if (requiredFieldList.stream().anyMatch(x -> !dataMap.containsKey(x.getColumnId()))) {
+		if (requiredFieldList.stream().anyMatch(x -> !dataMap.containsKey(x.getColumnId()) || !StringUtils.hasText(dataMap.get(x.getColumnId())))) {
 			return new PageImpl<>(Collections.emptyList(), pageable, 0);
 		}
 

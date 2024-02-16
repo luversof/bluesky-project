@@ -9,6 +9,6 @@ public enum SubMenuDbType {
 	Mongo;
 	
 	public static String toPresetString() {
-		return String.join("|", Stream.of(SubMenuDbType.values()).map(SubMenuDbType::name).collect(Collectors.toList()));
+		return String.join(",", Stream.of(SubMenuDbType.values()).map(SubMenuDbType::name).collect(Collectors.toList()));
 	}
 }

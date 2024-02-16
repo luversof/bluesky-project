@@ -626,10 +626,10 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				DbFieldEnable.ENABLED,
 				DbFieldEnable.ENABLED,
 				"""
-				정해진 값 중 선택을 하는 컬럼은 preset을 지정하면 됩니다. '|' 로 각 값을 구분하면 됩니다.
-				예)  Avalue|Bvalue|Cvalue
-				만약 해당 값에 대해 화면의 표시 처리는 다르게 하려는 경우 ','로 각 값의 표시값을 추가할 수 있습니다.
-				예) Avalue,A값|Bvalue,B값|Cvalue,C값
+				정해진 값 중 선택을 하는 컬럼은 preset을 지정하면 됩니다. ',' 로 각 값을 구분하면 됩니다.
+				예)  Avalue,Bvalue,Cvalue
+				만약 해당 값에 대해 화면의 표시 처리는 다르게 하려는 경우 '|'로 각 값의 표시값을 추가할 수 있습니다.
+				예) Avalue|A값,Bvalue|B값,Cvalue|C값
 				""",
 				null
 			);
