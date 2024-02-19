@@ -99,17 +99,17 @@ public abstract class AbstractDbUseService implements UseService {
 		
 		// select 쿼리의 where 조건까지 작성되어 있는 경우엔 페이징과 검색 조건 생성을 생략하고 바로 처리한다.
 		if (SettingStringUtil.isCustomQuery(dbQuery.getQueryString())) {
-			List<Map<String, Object>> contentList = namedParameterJdbcTemplate.query(dbQuery.getQueryString(), paramSource, ROW_MAPPER);
+			List<Map<String, Object>> contentList = dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() -> namedParameterJdbcTemplate.query(dbQuery.getQueryString(), paramSource, ROW_MAPPER));
 			return new PageImpl<>(contentList, pageable, contentList.size());
 		}
 		
 		// count query를 먼저 조회
-		int totalCount = namedParameterJdbcTemplate.queryForObject(SettingStringUtil.format(getCountQuery(), param), paramSource, Integer.class);
+		int totalCount = dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() -> namedParameterJdbcTemplate.queryForObject(SettingStringUtil.format(getCountQuery(), param), paramSource, Integer.class));
 		if (totalCount == 0) {
 			return new PageImpl<>(Collections.emptyList(), pageable, totalCount);
 		}
 		
-		List<Map<String, Object>> contentList = namedParameterJdbcTemplate.query(SettingStringUtil.format(getSelectPagingQuery(), param), paramSource, ROW_MAPPER);
+		List<Map<String, Object>> contentList = dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() -> namedParameterJdbcTemplate.query(SettingStringUtil.format(getSelectPagingQuery(), param), paramSource, ROW_MAPPER));
 		
 		return new PageImpl<>(contentList, pageable, totalCount);
 	}

@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,9 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuerySqlCommandType;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
-import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
-import net.luversof.web.dynamiccrud.setting.util.StringMapper;
 import net.luversof.web.dynamiccrud.setting.util.SettingStringUtil;
+import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 import net.luversof.web.dynamiccrud.use.domain.ContentInfo;
 import net.luversof.web.dynamiccrud.use.service.UseServiceDecorator;
 
@@ -135,4 +132,5 @@ public class UseTest implements GeneralTest {
 		System.out.println(SettingStringUtil.getOrderClause(sql));
 		System.out.println("----");
 	}
+	
 }
