@@ -36,7 +36,7 @@ public class SimpleTest {
 	
 	String sqlStr = "select * from dual as a where columnA=?";
 	{
-		sqlStr = "select * from dual as a where columnA=:columnA";
+		sqlStr = "select * from dual as a WITH (NOLOCK) where columnA=:columnA";
 //		sqlStr = "select 1";
 		
 		// spring-jdbc named parameter를 사용하는 경우

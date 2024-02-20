@@ -67,16 +67,16 @@ public abstract class AbstractDbUseService implements UseService {
 		var whereClauseBuilder = new StringBuilder();
 		var targetFieldList = dbFieldList.stream().filter(x -> (DbFieldEnable.REQUIRED.equals(x.getEnableSearch()) || DbFieldEnable.ENABLED.equals(x.getEnableSearch())) && dataMap.containsKey(x.getColumnId()) && StringUtils.hasText(dataMap.get(x.getColumnId()))).toList();
 		if (!targetFieldList.isEmpty()) {
-			boolean checkAlreadwhereClause = false;
+			boolean checkAlreadyHasWhereClause = false;
 			whereClauseBuilder.append("WHERE ");
 			
 			for (var targetField : targetFieldList) {
-				if (checkAlreadwhereClause) {
+				if (checkAlreadyHasWhereClause) {
 					whereClauseBuilder.append("AND ");
 				}
 				whereClauseBuilder.append(String.format("%s = :%s ", targetField.getColumnId(), targetField.getColumnId()));
 				paramSource.addValue(targetField.getColumnId(), dataMap.get(targetField.getColumnId()));
-				checkAlreadwhereClause = true;
+				checkAlreadyHasWhereClause = true;
 			}
 		}
 		

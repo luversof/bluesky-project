@@ -216,6 +216,10 @@ public class SettingUtil extends RequestAttributeUtil {
 		return getSubMenuList(adminProjectId, projectId, mainMenuId).stream().filter(x -> x.getSubMenuId().equals(subMenuId)).findAny().orElseThrow(() -> new BlueskyException("NOT_EXIST_SELECT_SUBMENU"));
 	}
 	
+	public static SubMenu getSubMenu() { 
+		return getSubMenu(getSettingParameter());
+	}
+	
 	public static List<DbQuery> getDbQueryList(SettingParameter settingParameter) {
 		if (settingParameter == null || settingParameter.adminProjectId() == null || settingParameter.projectId() == null || settingParameter.mainMenuId() == null || settingParameter.subMenuId() == null) {
 			return Collections.emptyList();

@@ -7,6 +7,8 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.ui.Model;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,6 +21,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
+import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 import net.luversof.web.dynamiccrud.use.domain.ContentInfo;
@@ -46,6 +49,8 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 			HttpServletResponse response,
 			Model model) {
 		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
+		var subMenu = SettingUtil.getSubMenu();
+		pageable = PageRequest.of(pageable.getPageNumber(), subMenu.getPageSize(), pageable.getSort());
 		var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
 		
 		var page = useService.find(settingParameter, pageable, paramMap);
@@ -88,6 +93,20 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 		
 		// 로그인한 유저 정보 추가 (설정 정보의 경우 필요하여 추가함. 기본 제공 변수 값에 대한 정의가 필요할수도 있음)
 		dataMap.put("writer", "bluesky계정");
+		
+		// DbFieldColumnType이 SPEL_FOR_EDIT인 경우 추가
+		var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
+		if (dbFieldList.stream().anyMatch(dbField -> dbField.getColumnType() == DbFieldColumnType.SPEL_FOR_EDIT)) {
+			var evaluationContext = new StandardEvaluationContext();
+			dataMap.forEach(evaluationContext::setVariable);
+			var expressionParser = new SpelExpressionParser();
+			
+			dbFieldList.stream().filter(dbField -> dbField.getColumnType() == DbFieldColumnType.SPEL_FOR_EDIT).forEach(dbField -> {
+				var expression = expressionParser.parseExpression(dbField.getColumnFormat());
+				Object value = expression.getValue(evaluationContext);
+				dataMap.put(dbField.getColumnId(), String.valueOf(value));
+			});
+		}
 
 		if (modalMode.equals("create")) {
 			useService.create(settingParameter, dataMap);

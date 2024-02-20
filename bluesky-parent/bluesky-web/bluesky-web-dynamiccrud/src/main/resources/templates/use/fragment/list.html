@@ -61,8 +61,8 @@
 			<tr>
 				<th class="w-0 p-0"></th>
 				<th data-th-each="contentKeyInfo : ${contentInfo.contentKeyInfoList}" data-th-if="${contentKeyInfo.visible}" data-th-text="${contentKeyInfo.key}"></th>
-				<th data-th-if="${targetSubMenu.enableUpdate}" data-th-text="#{use.text.update}"></th>
-				<th data-th-if="${targetSubMenu.enableInsert || targetSubMenu.enableUpdate || targetSubMenu.enableDelete}">
+				<th class="w-10" data-th-if="${targetSubMenu.enableUpdate}" data-th-text="#{use.text.update}"></th>
+				<th class="w-10" data-th-if="${targetSubMenu.enableInsert || targetSubMenu.enableUpdate || targetSubMenu.enableDelete}">
 					<input name="contentDataCheckToggle" type="checkbox" class="checkbox" />
 				</th>
 			</tr>

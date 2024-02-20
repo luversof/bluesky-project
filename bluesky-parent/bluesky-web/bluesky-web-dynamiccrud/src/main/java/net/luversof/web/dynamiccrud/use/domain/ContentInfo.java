@@ -97,13 +97,14 @@ public class ContentInfo {
 				// type에 따라 적절하게 값을 처리
 				// SPEL의 경우 format의 설정을 기준으로 처리
 				// contentMap에도 SPEL의 value를 추가한다. (contentMap은 DB에서 조회한 값이므로 SPEL 컬럼의 값이 없음)
-				var dbField = contentKeyInfo.DbField;
+				var dbField = contentKeyInfo.dbField;
 				if (contentKeyInfo.type().equals(DbFieldColumnType.SPEL)) {	
 					Object value = null;
 					if (StringUtils.hasText(dbField.getColumnFormat())) {
 						var expression = expressionParser.parseExpression(dbField.getColumnFormat());
 						value = expression.getValue(evaluationContext);
 					}
+					evaluationContext.setVariable(contentKeyInfo.originKey(), value);
 					contentMap.put(contentKeyInfo.originKey(), value);
 					processedContentMap.put(contentKeyInfo.key(), value);
 				} else if (dbField != null && StringUtils.hasText(dbField.getColumnPreset())) {
@@ -142,7 +143,7 @@ public class ContentInfo {
 			Short displayOrder,		// 순서
 			DbFieldColumnType type,
 			boolean visible,			// 노출 여부
-			DbField DbField
+			DbField dbField
 			) {
 	}
 }
