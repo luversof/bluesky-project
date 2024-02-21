@@ -18,13 +18,14 @@
 			class="px-10"
 			data-th-attr="hx-get=@{${thymeleafUtil.getUrl('FRAGMENT_LIST')}}"
 			hx-vals="js:{'page' : param.getRequestPage()}"
-			hx-include="#searchArea .searchinput"
+			hx-include="#searchArea .searchInput"
 			hx-boost="true"
 			hx-trigger="
 				load delay:0s,
 				click target:.navButton, 
-				change from:(#searchArea .searchinput) delay:0.0001s, 
-				click from:(#searchArea .resetbutton) delay:0.0001s,
+				change from:(#searchArea .searchInput) delay:0.0001s, 
+				click from:(#searchArea .resetButton) delay:0.0001s,
+				click from:(#searchArea .searchButton) delay:0.0001s,
 				createModal from:body delay:0.0001s,
 				updateModal from:body,
 				deleteModal from:body,

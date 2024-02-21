@@ -53,6 +53,8 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 		pageable = PageRequest.of(pageable.getPageNumber(), subMenu.getPageSize(), pageable.getSort());
 		var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
 		
+		addSpelForEditColumnToDataMap(settingParameter, paramMap);
+		
 		var page = useService.find(settingParameter, pageable, paramMap);
 		model.addAttribute("page", page);
 		
@@ -94,19 +96,7 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 		// 로그인한 유저 정보 추가 (설정 정보의 경우 필요하여 추가함. 기본 제공 변수 값에 대한 정의가 필요할수도 있음)
 		dataMap.put("writer", "bluesky계정");
 		
-		// DbFieldColumnType이 SPEL_FOR_EDIT인 경우 추가
-		var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
-		if (dbFieldList.stream().anyMatch(dbField -> dbField.getColumnType() == DbFieldColumnType.SPEL_FOR_EDIT)) {
-			var evaluationContext = new StandardEvaluationContext();
-			dataMap.forEach(evaluationContext::setVariable);
-			var expressionParser = new SpelExpressionParser();
-			
-			dbFieldList.stream().filter(dbField -> dbField.getColumnType() == DbFieldColumnType.SPEL_FOR_EDIT).forEach(dbField -> {
-				var expression = expressionParser.parseExpression(dbField.getColumnFormat());
-				Object value = expression.getValue(evaluationContext);
-				dataMap.put(dbField.getColumnId(), String.valueOf(value));
-			});
-		}
+		addSpelForEditColumnToDataMap(settingParameter, dataMap);
 
 		if (modalMode.equals("create")) {
 			useService.create(settingParameter, dataMap);
@@ -180,5 +170,22 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 		// 다운로드의 페이지 사이즈는 어떻게 처리할지 고민 필요. 일단 기존 호출 방식을 활용
 		list(adminProjectId, projectId, mainMenuId, subMenuId, PageRequest.of(0, 65536), paramMap, response, model);
 		return new UseExcelView();
+	}
+	
+	// DbFieldColumnType이 SPEL_FOR_EDIT인 경우 추가	
+	private void addSpelForEditColumnToDataMap(SettingParameter settingParameter, Map<String, String> dataMap) {
+		var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
+		// DbFieldColumnType이 SPEL_FOR_EDIT인 경우 추가
+		if (dbFieldList.stream().anyMatch(dbField -> dbField.getColumnType() == DbFieldColumnType.SPEL_FOR_EDIT)) {
+			var evaluationContext = new StandardEvaluationContext();
+			dataMap.forEach(evaluationContext::setVariable);
+			var expressionParser = new SpelExpressionParser();
+			
+			dbFieldList.stream().filter(dbField -> dbField.getColumnType() == DbFieldColumnType.SPEL_FOR_EDIT).forEach(dbField -> {
+				var expression = expressionParser.parseExpression(dbField.getColumnFormat());
+				Object value = expression.getValue(evaluationContext);
+				dataMap.put(dbField.getColumnId(), String.valueOf(value));
+			});
+		}
 	}
 }

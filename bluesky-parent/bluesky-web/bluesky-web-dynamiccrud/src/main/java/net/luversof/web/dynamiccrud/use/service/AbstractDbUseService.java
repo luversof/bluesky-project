@@ -65,18 +65,22 @@ public abstract class AbstractDbUseService implements UseService {
 		
 		// 검색 대상 컬럼 목록 추출
 		var whereClauseBuilder = new StringBuilder();
-		var targetFieldList = dbFieldList.stream().filter(x -> (DbFieldEnable.REQUIRED.equals(x.getEnableSearch()) || DbFieldEnable.ENABLED.equals(x.getEnableSearch())) && dataMap.containsKey(x.getColumnId()) && StringUtils.hasText(dataMap.get(x.getColumnId()))).toList();
-		if (!targetFieldList.isEmpty()) {
-			boolean checkAlreadyHasWhereClause = false;
-			whereClauseBuilder.append("WHERE ");
-			
-			for (var targetField : targetFieldList) {
-				if (checkAlreadyHasWhereClause) {
-					whereClauseBuilder.append("AND ");
+		{
+			var targetFieldList = dbFieldList.stream().filter(x -> (DbFieldEnable.REQUIRED.equals(x.getEnableSearch()) || DbFieldEnable.ENABLED.equals(x.getEnableSearch()))
+					&& dataMap.containsKey(x.getColumnId())
+					&& StringUtils.hasText(dataMap.get(x.getColumnId()))).toList();
+			if (!targetFieldList.isEmpty()) {
+				boolean checkAlreadyHasWhereClause = false;
+				whereClauseBuilder.append("WHERE ");
+				
+				for (var targetField : targetFieldList) {
+					if (checkAlreadyHasWhereClause) {
+						whereClauseBuilder.append("AND ");
+					}
+					whereClauseBuilder.append(String.format("%s = :%s ", targetField.getColumnId(), targetField.getColumnId()));
+					paramSource.addValue(targetField.getColumnId(), dataMap.get(targetField.getColumnId()));
+					checkAlreadyHasWhereClause = true;
 				}
-				whereClauseBuilder.append(String.format("%s = :%s ", targetField.getColumnId(), targetField.getColumnId()));
-				paramSource.addValue(targetField.getColumnId(), dataMap.get(targetField.getColumnId()));
-				checkAlreadyHasWhereClause = true;
 			}
 		}
 		
@@ -95,6 +99,8 @@ public abstract class AbstractDbUseService implements UseService {
 		
 		paramSource.addValue("limit", pageable.getPageSize());
 		paramSource.addValue("offset", pageable.getOffset());
+		
+		dataMap.forEach((key, value) -> paramSource.addValue(key, StringUtils.hasText(value) ? value : null));
 		
 		
 		// select 쿼리의 where 조건까지 작성되어 있는 경우엔 페이징과 검색 조건 생성을 생략하고 바로 처리한다.

@@ -24,7 +24,7 @@ var param = (() => {
 			this.refreshUrl();
 		},
 		resetParam() {
-			document.querySelectorAll("#searchArea .searchinput").forEach(el => el.value = "");
+			document.querySelectorAll("#searchArea .searchInput").forEach(el => el.value = "");
 			_params = new URLSearchParams();
 			this.refreshUrl();
 		},
@@ -57,7 +57,7 @@ var modalFormFn = (() => {
 		},
 		/** 검색 내용을 modalForm으로 복사 */
 		copySearchAreaToModalForm(modalTarget) {
-			document.querySelectorAll("#searchArea .searchinput").forEach(el => modalTarget.querySelector("[name=" + el.name  +"]").value = el.value);
+			document.querySelectorAll("#searchArea .searchInput").forEach(el => modalTarget.querySelector("[name=" + el.name  +"]").value = el.value);
 		},
 		/** modalForm 영역에 초기 처리 */
 		initialize() {
@@ -154,6 +154,12 @@ document.addEventListener('showList', () => setTimeout(() => {
 			el.dispatchEvent(new Event("change"));
 		});
 	}));
+	/** 링크에 class="link" 추가 처리 */
+	document.querySelectorAll("#contentTable tbody td a").forEach(el => {
+		el.classList.add("btn");
+		el.classList.add("btn-sm");
+		el.innerHTML = "<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor' class='w-6 h-6'><path stroke-linecap='round' stroke-linejoin='round' d='M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244' /></svg>";
+	});
 }, 1));
 
 
@@ -193,7 +199,7 @@ document.addEventListener('exportModalBulkForm', () => setTimeout(() => {
 // modalForm에 데이터 생성 요청 후 page를 1로 초기화하여 바닥 페이지 데이터 갱신 시 첫 페이지로 이동 처리  
 document.addEventListener('importModalBulk', () => param.setParam("page", 1));
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('load', () => {
 	// 상단 메뉴의 링크에 검색 parameter를 추가 처리
 	document.querySelectorAll(".navbar .menu a").forEach(el => el.addEventListener("click", (event) => {
 		var url = new URL(event.target.href);
@@ -205,11 +211,11 @@ window.addEventListener('DOMContentLoaded', () => {
 	}));
 	
 	// 검색 변경 이벤트, 변경 시 page는 1로 리셋한다.
-	document.querySelectorAll("#searchArea .searchinput").forEach(el => el.addEventListener("change", (event) => {
+	document.querySelectorAll("#searchArea .searchInput").forEach(el => el.addEventListener("change", (event) => {
 		param.setParam("page", 1);
 		param.setParam(event.target.name, event.target.value);
 	}));
 	
 	// 검색 reset 버튼 이벤트
-	document.querySelectorAll("#searchArea .resetbutton").forEach(el => el.addEventListener("click", () => param.resetParam()));
+	document.querySelectorAll("#searchArea .resetButton").forEach(el => el.addEventListener("click", () => param.resetParam()));
 });

@@ -12,32 +12,45 @@
 	data-th-if="${hasSearchField}" 
 	data-th-with="dbFieldList = ${dbFieldList}"
 >
-	<div class="p-1">
+	<div class="flex items-center space-x-1">
 		<th-block
 			data-th-each="dbField : ${dbFieldList}"
 			data-th-if="${dbField.isEnableSearch}">
-			<input type="text" class="input input-bordered input-sm w-48 searchinput"
+			<input type="text" class="input input-bordered input-sm w-48 searchInput"
 				data-th-if="${#strings.isEmpty(dbField.columnPreset)}" 
 				data-th-placeholder="${dbField.columnName}"
 				data-th-name="${dbField.columnId}"
 				data-th-value="${param[dbField.columnId]}"
 			/>
 			
-			<select class="select select-sm select-bordered searchinput"
+			<select class="select select-sm select-bordered searchInput"
 				data-th-unless="${#strings.isEmpty(dbField.columnPreset)}"
 				data-th-name="${dbField.columnId}"
 			>
 				<option data-th-text="${dbField.columnName}" value="" />
 				<option 
 					data-th-each="presetPart : ${#strings.listSplit(dbField.columnPreset,',')}" 
-					data-th-value="${#strings.contains(presetPart, '|')? #strings.arraySplit(presetPart, '|')[0] : presetPart}" 
+					data-th-with="optionValue = ${#strings.contains(presetPart, '|')? #strings.arraySplit(presetPart, '|')[0] : presetPart}"
+					data-th-value="${optionValue}" 
 					data-th-text="${#strings.contains(presetPart, '|')? #strings.arraySplit(presetPart, '|')[1] : presetPart}"
+					data-th-selected="${!#arrays.isEmpty(param[dbField.columnId]) and optionValue == param[dbField.columnId][0]}"
 				/>
 				
 				
 			</select>
 		</th-block>
-		<button class="btn btn-sm resetbutton" data-th-text="#{button.text.reset}" />
+		<button class="btn btn-sm btn-info searchButton">
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+				<path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+			</svg>
+			[[#{button.text.search}]]
+		</button>
+		<button class="btn btn-sm btn-error resetButton">
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+			</svg>
+			[[#{button.text.reset}]]
+		</button>
 	</div>
 	
 </div>
