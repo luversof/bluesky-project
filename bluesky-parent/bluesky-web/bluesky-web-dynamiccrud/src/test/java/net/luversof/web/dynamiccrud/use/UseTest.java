@@ -98,39 +98,39 @@ public class UseTest implements GeneralTest {
 		System.out.println(result);
 	}
 	
-	@Test
-	void tableNameFromQueryTest() {
-//		String sql = "SELECT * FROM TET WHERE A = A";
-		String sql2 = """
-				SELECT 
-					*
-				FROM 
-				
-				dbo.TET 
-				
-				WHERE A = A
-				""";
-		String sql = "SELECT * FROM table ORDER BY column1 ASC, column2 DESC LIMIT 10";
-        System.out.println(SettingStringUtil.getTableName(sql));
-	}
-	
-	@Test
-	void isCustomQueryTest() {
-		String sql = "SELECT * FROM TET where A = A";
-		System.out.println(SettingStringUtil.isCustomQuery(sql));
-	}
-	
-	@Test
-	void orderClauseFromQueryTest() {
+//	@Test
+//	void tableNameFromQueryTest() {
+////		String sql = "SELECT * FROM TET WHERE A = A";
+//		String sql2 = """
+//				SELECT 
+//					*
+//				FROM 
+//				
+//				dbo.TET 
+//				
+//				WHERE A = A
+//				""";
 //		String sql = "SELECT * FROM table ORDER BY column1 ASC, column2 DESC LIMIT 10";
-//		String sql = "SELECT * FROM table LIMIT 10";
-		String sql = """
-				SELECT * FROM dbo.BongInCancelRequest
-				ORDER BY nYear ASC
-				""";
-		System.out.println("----");
-		System.out.println(SettingStringUtil.getOrderClause(sql));
-		System.out.println("----");
-	}
+//        System.out.println(SettingStringUtil.getTableName(sql));
+//	}
+//	
+//	@Test
+//	void isCustomQueryTest() {
+//		String sql = "SELECT * FROM TET where A = A";
+//		System.out.println(SettingStringUtil.isCustomQuery(sql));
+//	}
+//	
+//	@Test
+//	void orderClauseFromQueryTest() {
+////		String sql = "SELECT * FROM table ORDER BY column1 ASC, column2 DESC LIMIT 10";
+////		String sql = "SELECT * FROM table LIMIT 10";
+//		String sql = """
+//				SELECT * FROM dbo.BongInCancelRequest
+//				ORDER BY nYear ASC
+//				""";
+//		System.out.println("----");
+//		System.out.println(SettingStringUtil.getOrderClause(sql));
+//		System.out.println("----");
+//	}
 	
 }

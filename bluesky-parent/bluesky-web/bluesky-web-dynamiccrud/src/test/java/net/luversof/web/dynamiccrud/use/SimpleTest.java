@@ -1,16 +1,10 @@
 package net.luversof.web.dynamiccrud.use;
 
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.parser.SqlParseException;
-import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Frameworks;
-import org.apache.calcite.tools.Planner;
-import org.apache.calcite.tools.RelBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -23,13 +17,18 @@ import org.springframework.jdbc.core.namedparam.ParsedSql;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.expression.BinaryExpression;
+import net.sf.jsqlparser.expression.ExpressionVisitorAdapter;
 import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.JdbcNamedParameter;
 import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
+import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
-import net.sf.jsqlparser.parser.ParseException;
+import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
-import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.AllColumns;
+import net.sf.jsqlparser.statement.select.Fetch;
 import net.sf.jsqlparser.statement.select.Limit;
 import net.sf.jsqlparser.statement.select.Offset;
 import net.sf.jsqlparser.statement.select.PlainSelect;
@@ -44,7 +43,7 @@ public class SimpleTest {
 	
 	String sqlStr = "select * from dual as a where columnA=?";
 	{
-		sqlStr = "select * from dual as a WITH (NOLOCK) where columnA=:columnA";
+		sqlStr = "select * from dual WITH (NOLOCK) where columnA=:columnA";
 //		sqlStr = "select 1";
 		
 		// spring-jdbc named parameter를 사용하는 경우
@@ -98,6 +97,7 @@ public class SimpleTest {
 		// deprecated 됨 DeclaredQuery 를 대신 쓰라고 주석에 달아놓고 왜 public이 아닌것인가...
 		// 다만 count 쿼리 생성을 해주는 점은 괜찮아보이긴 함.
 		// LIMIT OFFSET 뗴고 이거 호출해도 되긴 할 듯?
+		@SuppressWarnings("deprecation")
 		String countQueryFor = QueryUtils.createCountQueryFor(sqlStr);
 		log.debug("countQueryFor : {}", countQueryFor);
 		
@@ -116,15 +116,29 @@ public class SimpleTest {
 	
 	//jsqlparser
 	@Test
-	void jsqlParserTest() throws JSQLParserException {
-		sqlStr = "select count(*) from dual as a where columnA=? limit 10 offset 20";
+	void jSqlParserTest() throws JSQLParserException {
+//		sqlStr = "select count(*) from dual as a where columnA=? limit 10 offset 20";
+		sqlStr = """
+				SELECT 
+				* 
+				FROM dual AS AAA WITH (NOLOCK)  
+				WHERE columnA = :columnA and columnB like :columnB + '%' AND columnC = :columnC
+				ORDER BY AAA ASC
+				OFFSET 11 ROWS
+				FETCH NEXT 22 ROWS ONLY
+				""";
+//		sqlStr = """
+//				SELECT 
+//				* 
+//				FROM dual AS AAA WITH (NOLOCK)  
+//				WHERE columnB like :columnB + '%'
+//				ORDER BY AAA ASC
+//				OFFSET 11 ROWS
+//				FETCH NEXT 22 ROWS ONLY
+//				""";
 		
 		
 		var select = (PlainSelect) CCJSqlParserUtil.parse(sqlStr);
-		
-		SelectItem selectItem =
-		        select.getSelectItems().get(0);
-		log.debug("test : {}", selectItem);
 		
 		Table table = (Table) select.getFromItem();
 		log.debug("table : {}", table);
@@ -141,15 +155,29 @@ public class SimpleTest {
 	
 	@SneakyThrows
 	@ParameterizedTest
-	@EnumSource(value = QueryCase.class)
-	void jsqlParserTest(QueryCase queryCase) {
-		var queryMap = queryCase.getQueryMap();
-		for (var entry : queryMap.entrySet()) {
-				log.debug("targetQuery : {}, {}", entry.getKey(), entry.getValue());
+	@EnumSource(
+			value = QueryCaseEnum.class,
+			names = {
+//					"페이징쿼리"
+					}
+	)
+	void jSqlParserTest(QueryCaseEnum queryCaseEnum) {
+		var queryCaseList = queryCaseEnum.getQueryCaseList();
+		queryCaseList.forEach(queryCase -> {
+			
+		});
+		for (var queryCase : queryCaseEnum.getQueryCaseList()) {
+				log.debug("targetQuery : {}, {}, {}", queryCaseEnum.name(), queryCase.getDbType(), queryCase.getQueryStr());
 				
-				// TODO count Query 생성
+				
+				// 추가 조건 dataMap
+				var whereConditionMap = new LinkedHashMap<String, String>();
+				whereConditionMap.put("addWhereColumnA", "addWhereColumnAValue");
+				whereConditionMap.put("addWhereColumnB", "addWhereColumnBValue");
+				
+				// count Query 생성
 				{
-					var plainSelect = (PlainSelect) CCJSqlParserUtil.parse(entry.getValue());
+					var plainSelect = (PlainSelect) CCJSqlParserUtil.parse(queryCase.getQueryStr());
 					
 					
 					plainSelect.getSelectItems().clear();
@@ -158,18 +186,26 @@ public class SimpleTest {
 					function.setParameters(new AllColumns());
 					plainSelect.getSelectItems().add(new SelectItem<Function>(function));
 					
+					calculateWhereCondition(plainSelect, whereConditionMap);
+					
+					plainSelect.setOrderByElements(null);
+					
 					StringBuilder builder = new StringBuilder();
 					StatementDeParser deParser = new StatementDeParser(builder);
 					deParser.visit(plainSelect);
 //					log.debug("origin query : {}", entry.getValue());
+					
+					// count 쿼리 생성시엔 기존 쿼리에서 몇몇 조건을 체크해서 지워야 할 수도 있음
+					
 					log.debug("generate count query : {}", builder.toString());
 				}
 				
 				
-				// TODO limit offset Query 생성
+				// (s) limit offset Query 생성
+				if (queryCase.getDbType() == QueryCaseDbType.MARIADB)
 				{
 					//이거 재활용 못하나?;;;
-					var plainSelect = (PlainSelect) CCJSqlParserUtil.parse(entry.getValue());
+					var plainSelect = (PlainSelect) CCJSqlParserUtil.parse(queryCase.getQueryStr());
 					var limit = new Limit();
 					limit.setRowCount(new LongValue(10));
 					plainSelect.setLimit(limit);
@@ -178,15 +214,86 @@ public class SimpleTest {
 					offset.setOffset(new LongValue(20));
 					plainSelect.setOffset(offset);
 					
+					calculateWhereCondition(plainSelect, whereConditionMap);
+					
 					StringBuilder builder = new StringBuilder();
 					StatementDeParser deParser = new StatementDeParser(builder);
 					deParser.visit(plainSelect);
 					log.debug("generate paging query : {}", builder.toString());
 				}
+				if (queryCase.getDbType() == QueryCaseDbType.MSSQL)
+				{
+					//이거 재활용 못하나?;;;
+					var plainSelect = (PlainSelect) CCJSqlParserUtil.parse(queryCase.getQueryStr());
+					var fetch = new Fetch();
+					fetch.setExpression(new LongValue(10));
+					fetch.addFetchParameter("ROWS");
+					fetch.addFetchParameter("ONLY");
+					plainSelect.setFetch(fetch);
+					
+					var offset = new Offset();
+					offset.setOffset(new LongValue(20));
+					offset.setOffsetParam("ROWS");
+					plainSelect.setOffset(offset);
+					
+					calculateWhereCondition(plainSelect, whereConditionMap);
+					
+					StringBuilder builder = new StringBuilder();
+					StatementDeParser deParser = new StatementDeParser(builder);
+					deParser.visit(plainSelect);
+					log.debug("generate paging query : {}", builder.toString());
+				}
+				// (e) limit offset Query 생성
+				// 추가 where 조건이 있으면 추가 처리
+				// 단일이면 바로 추가, 복수면 AndExpresion 하위에 계층구조로 추가
 				
 			
 		}
 		
+	}
+	
+	private void calculateWhereCondition(PlainSelect plainSelect, Map<String, String> dataMap) {
+		
+		BinaryExpression targetExpression = (BinaryExpression) plainSelect.getWhere();
+		
+		for (var key : dataMap.keySet()) {
+			var appendExpression = createEqualsToExpression(key, key);
+			if (targetExpression== null) {
+				targetExpression = appendExpression;
+			} else {
+				targetExpression = appendWhereExpression(targetExpression, appendExpression);
+			}
+		}
+		
+		plainSelect.setWhere(targetExpression);
+		
+	}
+	
+	private BinaryExpression appendWhereExpression(BinaryExpression targetExpression, BinaryExpression appendExpression) {
+		Set<Column> set = new HashSet<>();
+		
+		// 기존에 해당 컬럼에 대한 조건이 있으면 추가하지 않음
+		targetExpression.accept(new ExpressionVisitorAdapter() {
+
+			@Override
+			public void visit(Column column) {
+				
+				if (appendExpression.getLeftExpression() instanceof Column appendColumn && column.getColumnName().equals(appendColumn.getColumnName())) {
+					System.out.println("중복 컬럼 있음 " + column.getColumnName());
+					set.add(column);
+				} else {
+					System.out.println("중복 컬럼 없음");
+				}
+				
+			}
+			
+		});
+		
+		return set.isEmpty() ? new AndExpression(targetExpression, appendExpression) : targetExpression;
+	}
+	
+	private BinaryExpression createEqualsToExpression(String key, String value) {
+		return new EqualsTo(new Column(key), new JdbcNamedParameter(value));
 	}
 	
 	
@@ -213,25 +320,25 @@ public class SimpleTest {
 	// 특정 조건으로 만들어 보자.
 	
 	// apache calcite
-	@Test
-	void calciteTest() throws SqlParseException {
-		FrameworkConfig frameworkConfig = Frameworks.newConfigBuilder().build();
-		
-		
-//		RelBuilder relBuilder = RelBuilder.create(frameworkConfig);
+//	@Test
+//	void calciteTest() throws SqlParseException {
+//		FrameworkConfig frameworkConfig = Frameworks.newConfigBuilder().build();
 //		
-//		RelNode relNode = relBuilder. scan("DEPT")
-//        .scan("EMP")
-//        .join(
-//            JoinRelType.ANTI, relBuilder.equals(
-//            		relBuilder.field(2, 1, "DEPTNO"),
-//            		relBuilder.field(2, 0, "DEPTNO")))
-//        .project(relBuilder.field("DEPTNO"))
-//        .build();
-//		log.debug("relNode : {}", relNode);
-		
-		Planner planner = Frameworks.getPlanner(frameworkConfig);
-		SqlNode sqlNode = planner.parse(sqlStr);
-		log.debug("sqlNode : {}", sqlNode.toString());
-	}
+//		
+////		RelBuilder relBuilder = RelBuilder.create(frameworkConfig);
+////		
+////		RelNode relNode = relBuilder. scan("DEPT")
+////        .scan("EMP")
+////        .join(
+////            JoinRelType.ANTI, relBuilder.equals(
+////            		relBuilder.field(2, 1, "DEPTNO"),
+////            		relBuilder.field(2, 0, "DEPTNO")))
+////        .project(relBuilder.field("DEPTNO"))
+////        .build();
+////		log.debug("relNode : {}", relNode);
+//		
+//		Planner planner = Frameworks.getPlanner(frameworkConfig);
+//		SqlNode sqlNode = planner.parse(sqlStr);
+//		log.debug("sqlNode : {}", sqlNode.toString());
+//	}
 }
