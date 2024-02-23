@@ -87,37 +87,28 @@ public abstract class AbstractDbUseService implements UseService {
 			function.setName("count");
 			function.setParameters(new AllColumns());
 			countQuery.getSelectItems().add(new SelectItem<Function>(function));
-			
-			// count query 사용시 지워야하는 조건들이 있을 수 있음 테스트 해보면서 확인해야 할 것 같음.
-			
-			
 		}
 		
 		var paramSource = new MapSqlParameterSource();
 		
-		// 추가해야 할 where 조건을 작성해보자.
-		{
-			// 검색 대상 컬럼 목록 추출
-			dbFieldList
-				.stream()
-				.filter(
-						x -> (DbFieldEnable.REQUIRED.equals(x.getEnableSearch()) || DbFieldEnable.ENABLED.equals(x.getEnableSearch()))
-						&& dataMap.containsKey(x.getColumnId())
-						&& StringUtils.hasText(dataMap.get(x.getColumnId())))
-				.forEach(targetField -> {
-					// 추가 대상 컬럼에 대해 뭔가 좀더 복잡한 조건이 있을 수 있음.
-					
-
-					
-					addWhereCondition(countQuery, targetField.getColumnId());
-					addWhereCondition(selectQuery, targetField.getColumnId());
-					paramSource.addValue(targetField.getColumnId(), dataMap.get(targetField.getColumnId()));
-							
-				});
-			
-		}
+		// SPEL_FOR_EDIT 같이 추가 처리된 값을 설정하기 위해 일괄 처리
+		dataMap.forEach((key, value) -> paramSource.addValue(key, StringUtils.hasText(value) ? value : null));
 		
-		// countQuery 작성시 기존 쿼리에서 제거해야 하는 항목이 어떤게 있을까...
+		// 추가해야 할 where 조건을 작성해보자.
+		// 검색 대상 컬럼 목록 추출
+		dbFieldList
+			.stream()
+			.filter(
+					x -> (DbFieldEnable.REQUIRED.equals(x.getEnableSearch()) || DbFieldEnable.ENABLED.equals(x.getEnableSearch()))
+					&& dataMap.containsKey(x.getColumnId())
+					&& StringUtils.hasText(dataMap.get(x.getColumnId())))
+			.forEach(targetField -> {
+				// 추가 대상 컬럼에 대해 뭔가 좀더 복잡한 조건이 있을 수 있음.
+				addWhereCondition(countQuery, targetField.getColumnId());
+				addWhereCondition(selectQuery, targetField.getColumnId());
+				paramSource.addValue(targetField.getColumnId(), dataMap.get(targetField.getColumnId()));
+			});
+			
 		// countQuery의 경우 order by 절 제거
 		countQuery.setOrderByElements(null);
 		
@@ -126,10 +117,6 @@ public abstract class AbstractDbUseService implements UseService {
 		addPagingCondition(selectQuery, pageable.getPageSize(), pageable.getOffset());
 		paramSource.addValue("limit", pageable.getPageSize());
 		paramSource.addValue("offset", pageable.getOffset());
-		
-
-		// 이거 필요한가?
-//		dataMap.forEach((key, value) -> paramSource.addValue(key, StringUtils.hasText(value) ? value : null));
 		
 		String countQueryStr;
 		{

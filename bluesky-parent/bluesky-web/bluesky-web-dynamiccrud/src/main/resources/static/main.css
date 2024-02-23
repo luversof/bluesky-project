@@ -2922,6 +2922,29 @@ html {
   justify-self: end;
 }
 
+.mockup-code {
+  position: relative;
+  overflow: hidden;
+  overflow-x: auto;
+  min-width: 18rem;
+  border-radius: var(--rounded-box, 1rem);
+  --tw-bg-opacity: 1;
+  background-color: var(--fallback-n,oklch(var(--n)/var(--tw-bg-opacity)));
+  padding-top: 1.25rem;
+  padding-bottom: 1.25rem;
+  --tw-text-opacity: 1;
+  color: var(--fallback-nc,oklch(var(--nc)/var(--tw-text-opacity)));
+  direction: ltr;
+}
+
+.mockup-code pre[data-prefix]:before {
+  content: attr(data-prefix);
+  display: inline-block;
+  text-align: right;
+  width: 2rem;
+  opacity: 0.5;
+}
+
 .modal {
   pointer-events: none;
   position: fixed;
@@ -3137,6 +3160,30 @@ html {
   box-shadow: var(--handleoffsetcalculator) 0 0 2px var(--tglbg) inset,
     0 0 0 2px var(--tglbg) inset,
     var(--togglehandleborder);
+}
+
+.alert-info {
+  border-color: var(--fallback-in,oklch(var(--in)/0.2));
+  --tw-text-opacity: 1;
+  color: var(--fallback-inc,oklch(var(--inc)/var(--tw-text-opacity)));
+  --alert-bg: var(--fallback-in,oklch(var(--in)/1));
+  --alert-bg-mix: var(--fallback-b1,oklch(var(--b1)/1));
+}
+
+.alert-success {
+  border-color: var(--fallback-su,oklch(var(--su)/0.2));
+  --tw-text-opacity: 1;
+  color: var(--fallback-suc,oklch(var(--suc)/var(--tw-text-opacity)));
+  --alert-bg: var(--fallback-su,oklch(var(--su)/1));
+  --alert-bg-mix: var(--fallback-b1,oklch(var(--b1)/1));
+}
+
+.alert-warning {
+  border-color: var(--fallback-wa,oklch(var(--wa)/0.2));
+  --tw-text-opacity: 1;
+  color: var(--fallback-wac,oklch(var(--wac)/var(--tw-text-opacity)));
+  --alert-bg: var(--fallback-wa,oklch(var(--wa)/1));
+  --alert-bg-mix: var(--fallback-b1,oklch(var(--b1)/1));
 }
 
 .alert-error {
@@ -3744,6 +3791,28 @@ html {
 .menu :where(li > .menu-dropdown-toggle.menu-dropdown-show):after {
   transform: rotate(225deg);
   margin-top: 0;
+}
+
+.mockup-code:before {
+  content: "";
+  margin-bottom: 1rem;
+  display: block;
+  height: 0.75rem;
+  width: 0.75rem;
+  border-radius: 9999px;
+  opacity: 0.3;
+  box-shadow: 1.4em 0,
+        2.8em 0,
+        4.2em 0;
+}
+
+.mockup-code pre {
+  padding-right: 1.25rem;
+}
+
+.mockup-code pre:before {
+  content: "";
+  margin-right: 2ch;
 }
 
 .mockup-browser .mockup-browser-toolbar .input {
@@ -5004,6 +5073,12 @@ html {
   --tw-space-x-reverse: 0;
   margin-right: calc(0.25rem * var(--tw-space-x-reverse));
   margin-left: calc(0.25rem * calc(1 - var(--tw-space-x-reverse)));
+}
+
+.space-y-2 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.5rem * var(--tw-space-y-reverse));
 }
 
 .self-center {
