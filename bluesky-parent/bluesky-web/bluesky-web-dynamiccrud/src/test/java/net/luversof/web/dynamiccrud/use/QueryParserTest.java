@@ -18,6 +18,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.BinaryExpression;
+import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.ExpressionVisitorAdapter;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.JdbcNamedParameter;
@@ -37,13 +38,13 @@ import net.sf.jsqlparser.util.TablesNamesFinder;
 import net.sf.jsqlparser.util.deparser.StatementDeParser;
 
 @Slf4j
-public class SimpleTest {
+public class QueryParserTest {
 
 	// jsqlparser 테스트
 	
 	String sqlStr = "select * from dual as a where columnA=?";
 	{
-		sqlStr = "select * from dual WITH (NOLOCK) where columnA=:columnA";
+		sqlStr = "select * from dual WITH (NOLOCK) where columnA=:columnA AND columnB = :columnB AND columnC = :columnC";
 //		sqlStr = "select 1";
 		
 		// spring-jdbc named parameter를 사용하는 경우
@@ -138,19 +139,51 @@ public class SimpleTest {
 //				""";
 		
 		
-		var select = (PlainSelect) CCJSqlParserUtil.parse(sqlStr);
+		var plainSelect = (PlainSelect) CCJSqlParserUtil.parse(sqlStr);
 		
-		Table table = (Table) select.getFromItem();
+		Table table = (Table) plainSelect.getFromItem();
 		log.debug("table : {}", table);
 		log.debug("table : {}", table.getName());
 	
 		
 		StringBuilder builder = new StringBuilder();
 		StatementDeParser deParser = new StatementDeParser(builder);
-		deParser.visit(select);
+		deParser.visit(plainSelect);
 		
 		log.debug("test : {}", builder.toString());
 		
+	}
+	
+	@SneakyThrows
+	@Test
+	void jSqlParserWhereEditTest() {
+		String sqlStr = "select * from dual WITH (NOLOCK) where columnA = :columnA AND columnB = :columnB AND columnC = :columnC";
+		sqlStr = "select * from dual WITH (NOLOCK) where columnA = :columnA";
+		
+		String targetColumn = "columnB";
+		
+		// 대상 컬럼에 대해 처리 작업을 해야 함.
+		// 트리 구조에서 대상 컬럼 탐색 후 처리
+		
+		// 규칙
+		// dbQuery, dbField 양쪽에 해당 컬럼이 선언되어 있는 경우
+		
+		
+		var plainSelect = (PlainSelect) CCJSqlParserUtil.parse(sqlStr);
+		
+		BinaryExpression where = (BinaryExpression) plainSelect.getWhere();
+		BinaryExpression whereLeftExpression = (BinaryExpression) where.getLeftExpression();
+		log.debug("whereLeftExpression : {}", whereLeftExpression);
+		
+		// 
+
+		where.setLeftExpression(whereLeftExpression.getLeftExpression());
+		log.debug("whereLeftExpression : {}", whereLeftExpression);
+		
+		StringBuilder builder = new StringBuilder();
+		StatementDeParser deParser = new StatementDeParser(builder);
+		deParser.visit(plainSelect);
+		log.debug("test : {}", builder.toString());
 	}
 	
 	@SneakyThrows
