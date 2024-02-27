@@ -5,6 +5,7 @@ import java.sql.SQLException;
 
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldEnable;
+import net.luversof.web.dynamiccrud.setting.domain.DbFieldSearchType;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldVisible;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
 
@@ -28,6 +29,7 @@ public class DbFieldRowMapper extends SettingRowMapper<DbField> {
 			rs.getString("columnValidation"),
 			DbFieldVisible.valueOf(rs.getString("columnVisible")),
 			DbFieldEnable.valueOf(rs.getString("enableSearch")),
+			DbFieldSearchType.convertValue(rs.getString("columnSearchType")),
 			DbFieldEnable.valueOf(rs.getString("enableInsert")),
 			DbFieldEnable.valueOf(rs.getString("enableUpdate")),
 			rs.getString("formHelpText"),

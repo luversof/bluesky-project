@@ -11,7 +11,17 @@ import lombok.Getter;
 @AllArgsConstructor
 @Getter
 public enum QueryCaseEnum {
-
+	
+	단순쿼리(QueryCase.of(
+			MARIADB,
+			"""
+			select * from dual as a
+			""",
+			MSSQL,
+			"""
+			select * from dual as a
+			"""
+	)),
 	단순쿼리_PrepareStatement(QueryCase.of(
 			MARIADB,
 			"""
@@ -137,7 +147,85 @@ public enum QueryCaseEnum {
 			OFFSET 11 ROWS
 			FETCH NEXT 22 ROWS ONLY
 			"""
-	)),		
+	)),
+	컬럼삭제케이스예제(QueryCase.of(
+			MARIADB, 
+			"""
+			select * from dual where 
+				columnA = :columnA 
+				AND columnB = :columnB 
+				AND columnC = :columnC
+				AND columnD = :columnD
+				AND columnE = :columnE
+				AND columnF = :columnF
+				AND columnG = :columnG
+				AND columnH = :columnH
+			""",
+			MSSQL,
+			"""
+			select * from dual WITH (NOLOCK) where 
+				columnA = :columnA 
+				AND columnB = :columnB 
+				AND columnC = :columnC
+				AND columnD = :columnD
+				AND columnE = :columnE
+				AND columnF = :columnF
+				AND columnG = :columnG
+				AND columnH = :columnH
+			"""
+		)),
+		컬럼삭제케이스고정값예제(QueryCase.of(
+			MARIADB, 
+			"""
+			select * from dual where 
+				columnA = :columnA 
+				AND columnB = 'columnB' 
+				AND columnC < 123
+				AND columnD > 'columnD'
+				AND columnE = 'columnE'
+				AND columnF = 'columnF'
+				AND columnG = 'columnG'
+				AND columnH = 'columnH'
+			""",
+			MSSQL,
+			"""
+			select * from dual WITH (NOLOCK) where 
+				columnA = :columnA 
+				AND columnB = 'columnB' 
+				AND columnC < 'columnC'
+				AND columnD > 'columnD'
+				AND columnE = 'columnE'
+				AND columnF = 'columnF'
+				AND columnG = 'columnG'
+				AND columnH = 'columnH'
+			"""
+		)),
+		컬럼삭제케이스복합조건예제(QueryCase.of(
+				MARIADB, 
+				"""
+				select * from dual where 
+					columnA = :columnA 
+					AND columnB like :columnB + '%'
+					AND columnC like 'columnC' + '%'
+					AND columnD like :columnD + '%'
+					AND columnE like :columnE + '%'
+					AND columnF like :columnF + '%'
+					AND columnG like :columnG + '%'
+					AND columnH like :columnH + '%'
+				""",
+				MSSQL,
+				"""
+				select * from dual WITH (NOLOCK) where 
+					columnA = :columnA 
+					AND columnB like :columnB + '%'
+					AND columnC like :columnC + '%'
+					AND columnD like :columnD + '%'
+					AND columnE like :columnE + '%'
+					AND columnF like :columnF + '%'
+					AND columnG like :columnG + '%'
+					AND columnH like :columnH + '%'
+				"""
+			)),
 			
 	;
 	

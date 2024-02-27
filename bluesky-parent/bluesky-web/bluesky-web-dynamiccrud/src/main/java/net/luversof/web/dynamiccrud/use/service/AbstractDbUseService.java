@@ -143,14 +143,16 @@ public abstract class AbstractDbUseService implements UseService {
 //			return new PageImpl<>(contentList, customPageable, contentList.size());
 //		}
 		
-		// count query를 먼저 조회
-		int totalCount = dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() -> namedParameterJdbcTemplate.queryForObject(countQueryStr, paramSource, Integer.class));
-		if (totalCount == 0) {
-			return new PageImpl<>(Collections.emptyList(), pageable, totalCount);
-		}
 		
 		List<Map<String, Object>> contentList = dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() -> namedParameterJdbcTemplate.query(selectQueryStr, paramSource, ROW_MAPPER));
 		
+		// 첫페이지 호출에 pageSize보다 결과 값이 적은 경우 count 호출이 불필요함
+		if (pageable.getOffset() == 0 && contentList.size() < pageable.getPageSize()) {
+			return new PageImpl<>(contentList, pageable, contentList.size());
+		}
+		
+		// count query 조회
+		int totalCount = dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() -> namedParameterJdbcTemplate.queryForObject(countQueryStr, paramSource, Integer.class));
 		return new PageImpl<>(contentList, pageable, totalCount);
 	}
 	

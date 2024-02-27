@@ -63,6 +63,10 @@ public class DbField extends Setting {
 	
 	@Column(length = 20, nullable = false)
 	@Enumerated(EnumType.STRING)
+	private DbFieldSearchType columnSearchType;
+	
+	@Column(length = 20, nullable = false)
+	@Enumerated(EnumType.STRING)
 	private DbFieldEnable enableInsert;
 	
 	@Column(length = 20, nullable = false)

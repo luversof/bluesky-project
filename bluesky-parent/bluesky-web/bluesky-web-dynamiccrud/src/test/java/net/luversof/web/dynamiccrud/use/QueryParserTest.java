@@ -1,7 +1,10 @@
 package net.luversof.web.dynamiccrud.use;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -23,6 +26,7 @@ import net.sf.jsqlparser.expression.ExpressionVisitorAdapter;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.JdbcNamedParameter;
 import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
@@ -35,6 +39,8 @@ import net.sf.jsqlparser.statement.select.Offset;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.util.TablesNamesFinder;
+import net.sf.jsqlparser.util.deparser.ExpressionDeParser;
+import net.sf.jsqlparser.util.deparser.SelectDeParser;
 import net.sf.jsqlparser.util.deparser.StatementDeParser;
 
 @Slf4j
@@ -123,7 +129,7 @@ public class QueryParserTest {
 				SELECT 
 				* 
 				FROM dual AS AAA WITH (NOLOCK)  
-				WHERE columnA = :columnA and columnB like :columnB + '%' AND columnC = :columnC
+				WHERE columnA = :columnA and columnB like '%' + :columnB + '%' AND columnC = :columnC
 				ORDER BY AAA ASC
 				OFFSET 11 ROWS
 				FETCH NEXT 22 ROWS ONLY
@@ -154,37 +160,6 @@ public class QueryParserTest {
 		
 	}
 	
-	@SneakyThrows
-	@Test
-	void jSqlParserWhereEditTest() {
-		String sqlStr = "select * from dual WITH (NOLOCK) where columnA = :columnA AND columnB = :columnB AND columnC = :columnC";
-		sqlStr = "select * from dual WITH (NOLOCK) where columnA = :columnA";
-		
-		String targetColumn = "columnB";
-		
-		// 대상 컬럼에 대해 처리 작업을 해야 함.
-		// 트리 구조에서 대상 컬럼 탐색 후 처리
-		
-		// 규칙
-		// dbQuery, dbField 양쪽에 해당 컬럼이 선언되어 있는 경우
-		
-		
-		var plainSelect = (PlainSelect) CCJSqlParserUtil.parse(sqlStr);
-		
-		BinaryExpression where = (BinaryExpression) plainSelect.getWhere();
-		BinaryExpression whereLeftExpression = (BinaryExpression) where.getLeftExpression();
-		log.debug("whereLeftExpression : {}", whereLeftExpression);
-		
-		// 
-
-		where.setLeftExpression(whereLeftExpression.getLeftExpression());
-		log.debug("whereLeftExpression : {}", whereLeftExpression);
-		
-		StringBuilder builder = new StringBuilder();
-		StatementDeParser deParser = new StatementDeParser(builder);
-		deParser.visit(plainSelect);
-		log.debug("test : {}", builder.toString());
-	}
 	
 	@SneakyThrows
 	@ParameterizedTest
@@ -195,10 +170,6 @@ public class QueryParserTest {
 					}
 	)
 	void jSqlParserTest(QueryCaseEnum queryCaseEnum) {
-		var queryCaseList = queryCaseEnum.getQueryCaseList();
-		queryCaseList.forEach(queryCase -> {
-			
-		});
 		for (var queryCase : queryCaseEnum.getQueryCaseList()) {
 				log.debug("targetQuery : {}, {}, {}", queryCaseEnum.name(), queryCase.getDbType(), queryCase.getQueryStr());
 				
@@ -312,10 +283,10 @@ public class QueryParserTest {
 			public void visit(Column column) {
 				
 				if (appendExpression.getLeftExpression() instanceof Column appendColumn && column.getColumnName().equals(appendColumn.getColumnName())) {
-					System.out.println("중복 컬럼 있음 " + column.getColumnName());
+//					System.out.println("중복 컬럼 있음 " + column.getColumnName());
 					set.add(column);
 				} else {
-					System.out.println("중복 컬럼 없음");
+//					System.out.println("중복 컬럼 없음");
 				}
 				
 			}
@@ -327,6 +298,267 @@ public class QueryParserTest {
 	
 	private BinaryExpression createEqualsToExpression(String key, String value) {
 		return new EqualsTo(new Column(key), new JdbcNamedParameter(value));
+	}
+	
+
+	@SneakyThrows
+	@ParameterizedTest
+	@EnumSource(
+			value = QueryCaseEnum.class,
+			names = {
+					"컬럼삭제케이스예제"
+					}
+	)
+	void jSqlParserWhereColumnRemoveTest(QueryCaseEnum queryCaseEnum) {
+		for (var queryCase : queryCaseEnum.getQueryCaseList()) {
+			String sqlStr = queryCase.getQueryStr();
+			
+			String targetColumn = "columnEerer";
+			
+			// 대상 컬럼에 대해 처리 작업을 해야 함.
+			// 트리 구조에서 대상 컬럼 탐색 후 처리
+			var plainSelect = (PlainSelect) CCJSqlParserUtil.parse(sqlStr);
+			
+			// 아래 처럼 처리 하여 조건 제거 되는 부분 확인하였음
+//		where.setLeftExpression(whereLeftExpression.getLeftExpression());
+//		log.debug("whereLeftExpression : {}", whereLeftExpression);
+			
+			// 우선 컬럼 제거 부터 테스트 해보자.
+			removeWhereClauseByColumnName(plainSelect, targetColumn);
+			
+			
+			StringBuilder builder = new StringBuilder();
+			StatementDeParser deParser = new StatementDeParser(builder);
+			deParser.visit(plainSelect);
+			
+			
+			
+			log.debug("Delete Column : {}", targetColumn);
+			log.debug("Query Result : {}", builder.toString());
+		}
+	}
+	
+	/**
+	 * where조건의 column 제거
+	 * @param plainSelect
+	 * @param columnName
+	 */
+	private void removeWhereClauseByColumnName(PlainSelect plainSelect, String columnName) {
+		if (plainSelect.getWhere() == null) {
+			return;
+		}
+		
+		
+		var whereCondition = (BinaryExpression) plainSelect.getWhere();
+		
+		// 바로 하위 자식이 대상인 경우 체크
+		if (whereCondition.getLeftExpression() instanceof Column column
+				&& column.getColumnName().equals(columnName)) {
+			plainSelect.setWhere(null);
+			return;
+		}
+		
+		// rightExpression이 대상인 경우 체크
+		if (whereCondition.getRightExpression() instanceof BinaryExpression rightExpression 
+				&& rightExpression.getLeftExpression() instanceof Column column
+				&& column.getColumnName().equals(columnName)) {
+			plainSelect.setWhere(whereCondition.getLeftExpression());
+			return;
+		}
+		
+		// 위 두 조건이 아니면 하위 자식의 자식을 순환 체크
+		removeWhereClauseByColumnNameNested(whereCondition, columnName);
+		
+	}
+	
+	
+	private void removeWhereClauseByColumnNameNested(BinaryExpression superExpression, String columnName) {
+		if (!(superExpression.getLeftExpression() instanceof BinaryExpression)) {
+			return;
+		}
+		var targetExpression = (BinaryExpression) superExpression.getLeftExpression();
+		
+		//leftExpression이 대상인 경우 rightExpression을 상위 leftExpression으로 올림
+		if (targetExpression.getLeftExpression() instanceof Column column
+				&& column.getColumnName().equals(columnName)) {
+			superExpression.setLeftExpression(targetExpression.getRightExpression());
+			return;
+		}
+		
+		// rightExpression 하위가 대상인 경우 leftExpression을 상위 leftExpression으로 올림
+		if (targetExpression.getRightExpression() instanceof BinaryExpression rightExpression 
+				&& rightExpression.getLeftExpression() instanceof Column column
+				&& column.getColumnName().equals(columnName)) {
+			superExpression.setLeftExpression(targetExpression.getLeftExpression());
+			return;
+		}
+
+		// 아니면 중첩 호출로 leftExpression 탐색
+		removeWhereClauseByColumnNameNested((BinaryExpression) superExpression.getLeftExpression(), columnName);
+		log.debug("test : {}");
+		
+		
+	}
+	
+	@SneakyThrows
+	@ParameterizedTest
+	@EnumSource(
+			value = QueryCaseEnum.class,
+			names = {
+					"컬럼삭제케이스예제",
+					"컬럼삭제케이스고정값예제",
+					"컬럼삭제케이스복합조건예제"
+					}
+	)
+	void jSqlParserWhereRightExpressionConditionTest(QueryCaseEnum queryCaseEnum) {
+		for (var queryCase : queryCaseEnum.getQueryCaseList()) {
+			String sqlStr = queryCase.getQueryStr();
+			
+			List<String> targetColumnList = List.of("columnB", "columnC", "columnD");
+			
+			for (var targetColumn : targetColumnList) {
+				// 대상 컬럼에 대해 처리 작업을 해야 함.
+				// 트리 구조에서 대상 컬럼 탐색 후 처리
+				var plainSelect = (PlainSelect) CCJSqlParserUtil.parse(sqlStr);
+				
+				
+				// 우선 컬럼 제거 부터 테스트 해보자.
+				Expression whereColumnRightExpression = findWhereClauseRightExpression(plainSelect, targetColumn);
+				
+				StringBuilder builder = new StringBuilder();
+				StatementDeParser deParser = new StatementDeParser(builder);
+				deParser.visit(plainSelect);
+				
+				
+				
+				log.debug("Query Result : {}", builder.toString());
+				log.debug("target Column : {}", targetColumn);
+				log.debug("target Column rightExpression : {}, {}", whereColumnRightExpression.getClass(), whereColumnRightExpression);
+			}
+			
+		}
+	}
+	
+	
+	private Expression findWhereClauseRightExpression(PlainSelect plainSelect, String columnName) {
+		if (plainSelect.getWhere() == null) {
+			return null;
+		}
+		
+		
+		var whereCondition = (BinaryExpression) plainSelect.getWhere();
+		
+		// 바로 하위 자식이 대상인 경우 체크
+		if (whereCondition.getLeftExpression() instanceof Column column
+				&& column.getColumnName().equals(columnName)) {
+			return whereCondition.getRightExpression();
+		}
+		
+		// rightExpression이 대상인 경우 체크
+		if (whereCondition.getRightExpression() instanceof BinaryExpression rightExpression 
+				&& rightExpression.getLeftExpression() instanceof Column column
+				&& column.getColumnName().equals(columnName)) {
+			return rightExpression.getRightExpression();
+		}
+		
+		// 아니면 중첩 호출
+		return findWhereClauseRightExpressionNested(whereCondition, columnName);
+	}
+	
+	private Expression findWhereClauseRightExpressionNested(BinaryExpression superExpression, String columnName) {
+		if (!(superExpression.getLeftExpression() instanceof BinaryExpression)) {
+			return null;
+		}
+		var targetExpression = (BinaryExpression) superExpression.getLeftExpression();
+		
+		//leftExpression이 대상인 경우 rightExpression을 반환
+		if (targetExpression.getLeftExpression() instanceof Column column
+				&& column.getColumnName().equals(columnName)) {
+			return targetExpression.getRightExpression();
+		}
+		
+		// rightExpression 하위가 대상인 경우 rightEsxpression 하위의 rightExpression을 반환
+		if (targetExpression.getRightExpression() instanceof BinaryExpression rightExpression 
+				&& rightExpression.getLeftExpression() instanceof Column column
+				&& column.getColumnName().equals(columnName)) {
+			return rightExpression.getRightExpression();
+		}
+		
+		// 아니면 중첩 호출로 leftExpression 탐색
+		return findWhereClauseRightExpressionNested((BinaryExpression) superExpression.getLeftExpression(), columnName);
+	}
+	
+	
+	@SneakyThrows
+	@ParameterizedTest
+	@EnumSource(
+			value = QueryCaseEnum.class,
+			names = {
+					"단순쿼리",
+					"컬럼삭제케이스예제",
+					"컬럼삭제케이스고정값예제",
+					"컬럼삭제케이스복합조건예제"
+					}
+	)
+	void jSqlParserWhereRightExpressionTypeTest(QueryCaseEnum queryCaseEnum) {
+		for (var queryCase : queryCaseEnum.getQueryCaseList()) {
+			String sqlStr = queryCase.getQueryStr();
+			
+			List<String> targetColumnList = List.of("columnB", "columnC", "columnD", "없는값");
+			
+			for (var targetColumn : targetColumnList) {
+				// 대상 컬럼에 대해 처리 작업을 해야 함.
+				// 트리 구조에서 대상 컬럼 탐색 후 처리
+				var plainSelect = (PlainSelect) CCJSqlParserUtil.parse(sqlStr);
+				
+				
+				// 우선 컬럼 제거 부터 테스트 해보자.
+
+				List<String> whereColumnRightExpressionTypeList = findWhereClauseRightExpressionContainsTypeList(plainSelect, targetColumn);
+				
+				StringBuilder builder = new StringBuilder();
+				StatementDeParser deParser = new StatementDeParser(builder);
+				deParser.visit(plainSelect);
+				
+				
+				
+				log.debug("Query Result : {}", builder.toString());
+				log.debug("target Column : {}", targetColumn);
+				log.debug("target Column rightExpression : {}", whereColumnRightExpressionTypeList);
+			}
+			
+		}
+	}
+	
+	
+	private List<String> findWhereClauseRightExpressionContainsTypeList(PlainSelect plainSelect, String columnName) {
+		var rightExpression = findWhereClauseRightExpression(plainSelect, columnName);
+		
+		if (rightExpression == null) {
+			return Collections.emptyList();
+		}
+		
+		var expressionContainsTypeList = new ArrayList<String>();
+		
+		rightExpression.accept(new ExpressionVisitorAdapter() {
+		    @Override
+		    public void visit(JdbcNamedParameter parameter) {
+		    	expressionContainsTypeList.add(parameter.getClass().getSimpleName());
+		    }
+		    
+		    
+		    @Override
+		    public void visit(StringValue value) {
+		    	expressionContainsTypeList.add(value.getClass().getSimpleName());
+		    }
+		    
+		    @Override
+		    public void visit(LongValue value) {
+		    	expressionContainsTypeList.add(value.getClass().getSimpleName());
+		    }
+		});
+		
+		return expressionContainsTypeList;
 	}
 	
 	
