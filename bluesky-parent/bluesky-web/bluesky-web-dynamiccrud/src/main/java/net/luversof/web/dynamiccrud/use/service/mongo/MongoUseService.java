@@ -98,15 +98,22 @@ public class MongoUseService implements UseService {
 			}
 			selectCommand.put("filter", filter);
 		}
-
-		// count 조회
-		long countDocuments = database.getCollection(selectCommand.getString("find")).countDocuments(filter);
-
+		
 		selectCommand.put("limit", pageable.getPageSize());
 		selectCommand.put("skip", pageable.getOffset());
 		var result = database.runCommand(selectCommand);
+		
 		@SuppressWarnings("unchecked")
 		List<Map<String, Object>> list = (List<Map<String, Object>>) result.get("cursor", Document.class).get("firstBatch");
+		
+		// 첫페이지 호출에 pageSize보다 결과 값이 적은 경우 count 호출이 불필요함
+		if (pageable.getOffset() == 0 && list.size() < pageable.getPageSize()) {
+			return new PageImpl<>(list, pageable, list.size());
+		}
+		
+		// count 조회
+		long countDocuments = database.getCollection(selectCommand.getString("find")).countDocuments(filter);
+
 		return new PageImpl<Map<String, Object>>(list, pageable, countDocuments);
 	}
 
