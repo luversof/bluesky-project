@@ -4,10 +4,9 @@ import java.sql.JDBCType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -28,16 +27,11 @@ import net.luversof.web.dynamiccrud.setting.domain.DbFieldEnable;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuerySqlCommandType;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
+import net.luversof.web.dynamiccrud.setting.util.JSqlParserUtil;
 import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 import net.luversof.web.dynamiccrud.support.DynamicCrudSettingTransactionHandler;
-import net.sf.jsqlparser.expression.BinaryExpression;
-import net.sf.jsqlparser.expression.ExpressionVisitorAdapter;
 import net.sf.jsqlparser.expression.Function;
-import net.sf.jsqlparser.expression.JdbcNamedParameter;
-import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
-import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
-import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectItem;
@@ -66,65 +60,86 @@ public abstract class AbstractDbUseService implements UseService {
 		
 		RoutingDataSourceContextHolder.setContext(() -> dbQuery.getDataSourceName());
 		
-		
-		// 필수 검색 조건이 있는 경우 확인
-		if (dbFieldList
-				.stream()
-				.filter(x -> DbFieldEnable.REQUIRED.equals(x.getEnableSearch()))
-				.anyMatch(x -> !dataMap.containsKey(x.getColumnId()) || !StringUtils.hasText(dataMap.get(x.getColumnId())))) {
-			return new PageImpl<>(Collections.emptyList(), pageable, 0);
-		}
-		
-		// 기존 처리를 수정하기 전에 우선 count, paging query를 만들어보자.
-		
-		var countQuery = (PlainSelect) CCJSqlParserUtil.parse(dbQuery.getQueryString());
+		// count, paging query를 만들기 위해 생성
 		var selectQuery = (PlainSelect) CCJSqlParserUtil.parse(dbQuery.getQueryString());
 		
-		// countQuery column 부분 변경
-		{
-			countQuery.getSelectItems().clear();
-			var function = new Function();
-			function.setName("count");
-			function.setParameters(new AllColumns());
-			countQuery.getSelectItems().add(new SelectItem<Function>(function));
+		// 조건에 따라 처리를 하기 위해 3개 조건을 모두 가져와야 함.
+		var dbQueryWhereClauseColumnNameList = JSqlParserUtil.findWhereClauseColumnNameList(selectQuery);
+		var dbQueryWhereClauseNamedParameterNameList = JSqlParserUtil.findWhereClauseNamedParameterNameList(selectQuery);
+		var dbFieldSearchRequiredList = dbFieldList.stream().filter(x -> DbFieldEnable.REQUIRED.equals(x.getEnableSearch())).collect(Collectors.toList());
+		var dbFieldSearchEnabledList = dbFieldList.stream().filter(x -> DbFieldEnable.ENABLED.equals(x.getEnableSearch())).collect(Collectors.toList());
+		var dbFieldSearchDisabledList = dbFieldList.stream().filter(x -> DbFieldEnable.DISABLED.equals(x.getEnableSearch())).collect(Collectors.toList());
+		
+		// dbQuery의 namedParameter에 대해 확인
+		if (!dbQueryWhereClauseNamedParameterNameList.isEmpty()) {
+			for (String namedParameterName : dbQueryWhereClauseNamedParameterNameList) {
+				// parameter에 해당 값이 없으면 빈 값 반환
+				if (!dataMap.containsKey(namedParameterName) || !StringUtils.hasText(dataMap.get(namedParameterName))) {
+					return new PageImpl<>(Collections.emptyList(), pageable, 0);
+				}
+			}
 		}
 		
-		var paramSource = new MapSqlParameterSource();
+		// dbField의 Required의 경우
+		if (!dbFieldSearchRequiredList.isEmpty()) {
+			for (var dbField : dbFieldSearchRequiredList) {
+				// 전달받은 parameter가 없어도 dbQuery에 등록된 where 절에 columnName이 있고 namedParameter가 없으면 고정값으로 간주하고 허용
+				if (dbQueryWhereClauseColumnNameList.contains(dbField.getColumnId()) && !dbQueryWhereClauseNamedParameterNameList.contains(dbField.getColumnId())) {
+					continue;
+				}
+				
+				// parameter에 해당 값이 없으면 빈 값 반환
+				if (!dataMap.containsKey(dbField.getColumnId()) || !StringUtils.hasText(dataMap.get(dbField.getColumnId()))) {
+					return new PageImpl<>(Collections.emptyList(), pageable, 0);
+				}
+				
+				// dbQuery에 해당하는 dbQuery에 등록된 where 절이 없다면 추가
+				if (!dbQueryWhereClauseColumnNameList.contains(dbField.getColumnId())) {
+					var whereClauseAppendExpression = JSqlParserUtil.createWhereClauseAppendExpression(dbField);
+					JSqlParserUtil.appendWhereCondition(selectQuery, whereClauseAppendExpression);
+				}
+			}
+		}
 		
-		// SPEL_FOR_EDIT 같이 추가 처리된 값을 설정하기 위해 일괄 처리
-		dataMap.forEach((key, value) -> paramSource.addValue(key, StringUtils.hasText(value) ? value : null));
+		// dbField Enabled의 경우
+		if (!dbFieldSearchEnabledList.isEmpty()) {
+			for (var dbField : dbFieldSearchEnabledList) {
+				// parameter가 없는데 dbQuery에 해당 namedParameter가 있으면 관련 조건 삭제
+				var hasParameter = dataMap.containsKey(dbField.getColumnId()) && StringUtils.hasText(dataMap.get(dbField.getColumnId())); 
+				if (hasParameter && dbQueryWhereClauseNamedParameterNameList.contains(dbField.getColumnId())) {
+					JSqlParserUtil.removeWhereClauseByNamedParameterName(selectQuery, dbField.getColumnId());
+				}
+				
+				// parameter가 있는데 dbQuery에 해당 namedParameter가 없으면 관련 조건 추가
+				if (hasParameter && !dbQueryWhereClauseNamedParameterNameList.contains(dbField.getColumnId())) {
+					var whereClauseAppendExpression = JSqlParserUtil.createWhereClauseAppendExpression(dbField);
+					JSqlParserUtil.appendWhereCondition(selectQuery, whereClauseAppendExpression);
+				}
+			}
+		}
 		
-		// 추가해야 할 where 조건을 작성해보자.
-		// 검색 대상 컬럼 목록 추출
-		dbFieldList
-			.stream()
-			.filter(
-					x -> (DbFieldEnable.REQUIRED.equals(x.getEnableSearch()) || DbFieldEnable.ENABLED.equals(x.getEnableSearch()))
-					&& dataMap.containsKey(x.getColumnId())
-					&& StringUtils.hasText(dataMap.get(x.getColumnId())))
-			.forEach(targetField -> {
-				// 추가 대상 컬럼에 대해 뭔가 좀더 복잡한 조건이 있을 수 있음.
-				addWhereCondition(countQuery, targetField.getColumnId());
-				addWhereCondition(selectQuery, targetField.getColumnId());
-				paramSource.addValue(targetField.getColumnId(), dataMap.get(targetField.getColumnId()));
-			});
-			
-		// countQuery의 경우 order by 절 제거
-		countQuery.setOrderByElements(null);
+		// dbField가 Disabled인데 dbQuery에 해당 namedParameter가 있으면 관련 조건 삭제
+		if (!dbFieldSearchDisabledList.isEmpty()) {
+			for (var dbField : dbFieldSearchDisabledList) {
+				if (
+					(!dataMap.containsKey(dbField.getColumnId()) || !StringUtils.hasText(dataMap.get(dbField.getColumnId())))
+					&& dbQueryWhereClauseNamedParameterNameList.contains(dbField.getColumnId())
+				) {
+					JSqlParserUtil.removeWhereClauseByNamedParameterName(selectQuery, dbField.getColumnId());
+				}
+			}
+		}
 		
 		// selectQuery는 페이징을 위해 limit offset 설정을 추가한다.
 		// 만약 limit offset이 쿼리에 등록되어 있어도 해당 설정을 지우고 추가함
 		addPagingCondition(selectQuery, pageable.getPageSize(), pageable.getOffset());
+		
+		var paramSource = new MapSqlParameterSource();
 		paramSource.addValue("limit", pageable.getPageSize());
 		paramSource.addValue("offset", pageable.getOffset());
 		
-		String countQueryStr;
-		{
-			StringBuilder builder = new StringBuilder();
-			StatementDeParser deParser = new StatementDeParser(builder);
-			deParser.visit(countQuery);
-			countQueryStr = countQuery.toString();
-		}
+		// SPEL_FOR_EDIT 같이 추가 처리된 값을 설정하기 위해 일괄 처리
+		dataMap.forEach((key, value) -> paramSource.addValue(key, StringUtils.hasText(value) ? value : null));
 		
 		String selectQueryStr;
 		{
@@ -133,7 +148,6 @@ public abstract class AbstractDbUseService implements UseService {
 			deParser.visit(selectQuery);
 			selectQueryStr = selectQuery.toString();
 		}
-		
 		
 		// customQuery 조건에 대해 검토 필요
 		// 이 부분은 일단 주석 처리함
@@ -152,6 +166,28 @@ public abstract class AbstractDbUseService implements UseService {
 		}
 		
 		// count query 조회
+		var countQuery = (PlainSelect) CCJSqlParserUtil.parse(selectQueryStr);
+		
+		// countQuery column 부분 변경
+		{
+			countQuery.getSelectItems().clear();
+			var function = new Function();
+			function.setName("count");
+			function.setParameters(new AllColumns());
+			countQuery.getSelectItems().add(new SelectItem<Function>(function));
+		}
+		
+		// countQuery의 경우 order by 절 제거
+		countQuery.setOrderByElements(null);
+		
+		String countQueryStr;
+		{
+			StringBuilder builder = new StringBuilder();
+			StatementDeParser deParser = new StatementDeParser(builder);
+			deParser.visit(countQuery);
+			countQueryStr = countQuery.toString();
+		}
+		
 		int totalCount = dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() -> namedParameterJdbcTemplate.queryForObject(countQueryStr, paramSource, Integer.class));
 		return new PageImpl<>(contentList, pageable, totalCount);
 	}
@@ -228,33 +264,5 @@ public abstract class AbstractDbUseService implements UseService {
 			}
 		});
 	}
-	
-	
-	public void addWhereCondition(PlainSelect plainSelect, String columnId) {
-		BinaryExpression targetWhereExpression = (BinaryExpression) plainSelect.getWhere();
-		
-		// 현재는 동등 비교 조건만 추가
-		// 이후 기능 확장 가능
-		var appendExpression = new EqualsTo(new Column(columnId), new JdbcNamedParameter(columnId));
-		
-		if (targetWhereExpression == null) {
-			plainSelect.setWhere(appendExpression);
-			return;
-		}
-		
-		Set<Column> set = new HashSet<>();
-		
-		// 기존에 해당 컬럼에 대한 조건이 있으면 추가하지 않음
-		targetWhereExpression.accept(new ExpressionVisitorAdapter() {
-			@Override
-			public void visit(Column column) {
-				if (appendExpression.getLeftExpression() instanceof Column appendColumn && column.getColumnName().equals(appendColumn.getColumnName())) {
-					set.add(column);
-				}
-			}
-		});
-		
-		plainSelect.setWhere(set.isEmpty() ? new AndExpression(targetWhereExpression, appendExpression) : targetWhereExpression);
-		
-	}
+
 }

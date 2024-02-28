@@ -63,7 +63,7 @@ public enum QueryCaseEnum {
 			SELECT 
 			* 
 			FROM `dual` m 
-			WHERE `columnA` = :columnA
+			WHERE columnA = :columnA
 			""",
 			MSSQL,
 			"""
@@ -71,6 +71,57 @@ public enum QueryCaseEnum {
 			* 
 			FROM dual AS AAA WITH (NOLOCK)  
 			WHERE columnA = :columnA
+			ORDER BY columnA ASC
+			"""
+	)),
+	단순쿼리_Where조건추가2(QueryCase.of(
+			MARIADB,
+			"""
+			SELECT 
+			* 
+			FROM `dual` m 
+			WHERE columnA = :columnA AND columnB = :columnB
+			""",
+			MSSQL,
+			"""
+			SELECT 
+			* 
+			FROM dual AS AAA WITH (NOLOCK)  
+			WHERE columnA = :columnA AND columnB = :columnB
+			ORDER BY columnA ASC
+			"""
+	)),
+	단순쿼리_Where조건추가3(QueryCase.of(
+			MARIADB,
+			"""
+			SELECT 
+			* 
+			FROM `dual` m 
+			WHERE columnA = :columnA AND columnB = :columnB And columnC = :columnC
+			""",
+			MSSQL,
+			"""
+			SELECT 
+			* 
+			FROM dual AS AAA WITH (NOLOCK)  
+			WHERE columnA = :columnA AND columnB = :columnB And columnC = :columnC
+			ORDER BY columnA ASC
+			"""
+	)),
+	단순쿼리_Where조건추가4(QueryCase.of(
+			MARIADB,
+			"""
+			SELECT 
+			* 
+			FROM `dual` m 
+			WHERE columnA = :columnA AND columnB = :columnB And columnC = :columnC And columnD = :columnD
+			""",
+			MSSQL,
+			"""
+			SELECT 
+			* 
+			FROM dual AS AAA WITH (NOLOCK)  
+			WHERE columnA = :columnA AND columnB = :columnB And columnC = :columnC And columnD = :columnD
 			ORDER BY columnA ASC
 			"""
 	)),
@@ -149,83 +200,83 @@ public enum QueryCaseEnum {
 			"""
 	)),
 	컬럼삭제케이스예제(QueryCase.of(
-			MARIADB, 
-			"""
-			select * from dual where 
-				columnA = :columnA 
-				AND columnB = :columnB 
-				AND columnC = :columnC
-				AND columnD = :columnD
-				AND columnE = :columnE
-				AND columnF = :columnF
-				AND columnG = :columnG
-				AND columnH = :columnH
-			""",
-			MSSQL,
-			"""
-			select * from dual WITH (NOLOCK) where 
-				columnA = :columnA 
-				AND columnB = :columnB 
-				AND columnC = :columnC
-				AND columnD = :columnD
-				AND columnE = :columnE
-				AND columnF = :columnF
-				AND columnG = :columnG
-				AND columnH = :columnH
-			"""
-		)),
-		컬럼삭제케이스고정값예제(QueryCase.of(
-			MARIADB, 
-			"""
-			select * from dual where 
-				columnA = :columnA 
-				AND columnB = 'columnB' 
-				AND columnC < 123
-				AND columnD > 'columnD'
-				AND columnE = 'columnE'
-				AND columnF = 'columnF'
-				AND columnG = 'columnG'
-				AND columnH = 'columnH'
-			""",
-			MSSQL,
-			"""
-			select * from dual WITH (NOLOCK) where 
-				columnA = :columnA 
-				AND columnB = 'columnB' 
-				AND columnC < 'columnC'
-				AND columnD > 'columnD'
-				AND columnE = 'columnE'
-				AND columnF = 'columnF'
-				AND columnG = 'columnG'
-				AND columnH = 'columnH'
-			"""
-		)),
-		컬럼삭제케이스복합조건예제(QueryCase.of(
-				MARIADB, 
-				"""
-				select * from dual where 
-					columnA = :columnA 
-					AND columnB like :columnB + '%'
-					AND columnC like 'columnC' + '%'
-					AND columnD like :columnD + '%'
-					AND columnE like :columnE + '%'
-					AND columnF like :columnF + '%'
-					AND columnG like :columnG + '%'
-					AND columnH like :columnH + '%'
-				""",
-				MSSQL,
-				"""
-				select * from dual WITH (NOLOCK) where 
-					columnA = :columnA 
-					AND columnB like :columnB + '%'
-					AND columnC like :columnC + '%'
-					AND columnD like :columnD + '%'
-					AND columnE like :columnE + '%'
-					AND columnF like :columnF + '%'
-					AND columnG like :columnG + '%'
-					AND columnH like :columnH + '%'
-				"""
-			)),
+		MARIADB, 
+		"""
+		select * from dual where 
+			columnA = :columnA 
+			AND columnB = :columnB 
+			AND columnC = :columnC
+			AND columnD = :columnD
+			AND columnE = :columnE
+			AND columnF = :columnF
+			AND columnG = :columnG
+			AND columnH = :columnH
+		""",
+		MSSQL,
+		"""
+		select * from dual WITH (NOLOCK) where 
+			columnA = :columnA 
+			AND columnB = :columnB 
+			AND columnC = :columnC
+			AND columnD = :columnD
+			AND columnE = :columnE
+			AND columnF = :columnF
+			AND columnG = :columnG
+			AND columnH = :columnH
+		"""
+	)),
+	컬럼삭제케이스고정값예제(QueryCase.of(
+		MARIADB, 
+		"""
+		select * from dual where 
+			columnA = :columnA 
+			AND columnB = 'columnB' 
+			AND columnC < 123
+			AND columnD > 'columnD'
+			AND columnE = 'columnE'
+			AND columnF = 'columnF'
+			AND columnG = 'columnG'
+			AND columnH = 'columnH'
+		""",
+		MSSQL,
+		"""
+		select * from dual WITH (NOLOCK) where 
+			columnA = :columnA 
+			AND columnB = 'columnB' 
+			AND columnC < 'columnC'
+			AND columnD > 'columnD'
+			AND columnE = 'columnE'
+			AND columnF = 'columnF'
+			AND columnG = 'columnG'
+			AND columnH = 'columnH'
+		"""
+	)),
+	컬럼삭제케이스복합조건예제(QueryCase.of(
+		MARIADB, 
+		"""
+		select * from dual where 
+			columnA = :columnA 
+			AND columnB like :columnB + '%'
+			AND columnC like 'columnC' + '%'
+			AND columnD like :columnD + '%'
+			AND columnE like :columnE + '%'
+			AND columnF like :columnF + '%'
+			AND columnG like :columnG + '%'
+			AND columnH like :columnH + '%'
+		""",
+		MSSQL,
+		"""
+		select * from dual WITH (NOLOCK) where 
+			columnA = :columnA 
+			AND columnB like :columnB + '%'
+			AND columnC like :columnC + '%'
+			AND columnD like :columnD + '%'
+			AND columnE like :columnE + '%'
+			AND columnF like :columnF + '%'
+			AND columnG like :columnG + '%'
+			AND columnH like :columnH + '%'
+		"""
+	)),
 			
 	;
 	
