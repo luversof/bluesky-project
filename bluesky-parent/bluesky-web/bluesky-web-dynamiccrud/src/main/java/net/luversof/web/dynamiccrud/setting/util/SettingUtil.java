@@ -46,6 +46,7 @@ public class SettingUtil extends RequestAttributeUtil {
 	private static final String ADMINPROJECT = "__adminProject_{0}";
 	private static final String PROJECT = "__project_{0}_{1}";
 	private static final String MAINMENU = "__mainMenu_{0}_{1}_{2}";
+	private static final String MAINMENU_LIST = "__mainMenuList_{0}_{1}_{2}";
 	private static final String SUBMENU_LIST = "__subMenuList_{0}_{1}_{2}";
 	private static final String DBQUERY_LIST = "__dbQueryList_{0}_{1}_{2}_{3}";
 	private static final String DBFIELD_LIST = "__dbFieldList_{0}_{1}_{2}_{3}";
@@ -179,6 +180,33 @@ public class SettingUtil extends RequestAttributeUtil {
 	
 	public static MainMenu getMainMenu() {
 		return getMainMenu(getSettingParameter());
+	}
+	
+	public static List<MainMenu> getMainMenuList(SettingParameter settingParameter) {
+		if (settingParameter == null || settingParameter.adminProjectId() == null || settingParameter.projectId() == null) {
+			return Collections.emptyList();
+		}
+
+		var attributeName = getAttributeName(MAINMENU_LIST, settingParameter.adminProjectId(), settingParameter.projectId());
+		List<MainMenu> mainMenuList = getRequestAttribute(attributeName);
+		if (mainMenuList != null) {
+			return mainMenuList;
+		}
+		mainMenuList = ApplicationContextUtil.getApplicationContext().getBean(MainMenuServiceDecorator.class).findList(settingParameter);
+		if (mainMenuList == null) {
+			mainMenuList = Collections.emptyList();
+		}
+		setRequestAttribute(attributeName, mainMenuList);
+
+		return mainMenuList;
+	}
+	
+	public static List<MainMenu> getMainMenuList(String adminProjectId, String projectId) {
+		return getMainMenuList(new SettingParameter(adminProjectId, projectId, null, null));
+	}
+	
+	public static List<MainMenu> getMainMenuList() {
+		return getMainMenuList(getSettingParameter());
 	}
 	
 	public static List<SubMenu> getSubMenuList(SettingParameter settingParameter) {

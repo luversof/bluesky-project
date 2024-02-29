@@ -49,6 +49,7 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					true,
 					true,
 					true,
+					true,
 					null
 			);
 			subMenuList.add(subMenu);
@@ -64,6 +65,7 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					DB_TYPE,
 					(short) 2,
 					(short) 15,
+					true,
 					true,
 					true,
 					true,
@@ -87,6 +89,7 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					true,
 					true,
 					true,
+					true,
 					null
 			);
 			subMenuList.add(subMenu);
@@ -102,6 +105,7 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					DB_TYPE,
 					(short) 4,
 					(short) 15,
+					true,
 					true,
 					true,
 					true,
@@ -125,6 +129,7 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					true,
 					true,
 					true,
+					true,
 					null
 			);
 			subMenuList.add(subMenu);
@@ -140,6 +145,7 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					DB_TYPE,
 					(short) 6,
 					(short) 15,
+					true,
 					true,
 					true,
 					true,

@@ -13,7 +13,8 @@ public class MainMenuRowMapper extends SettingRowMapper<MainMenu> {
 			rs.getString("adminProjectId"),
 			rs.getString("projectId"),
 			rs.getString("mainMenuId"),
-			rs.getString("mainMenuName")
+			rs.getString("mainMenuName"),
+			rs.getBoolean("enableDisplay")
 		);
 		setCommon(mainMenu, rs);
 		return mainMenu;

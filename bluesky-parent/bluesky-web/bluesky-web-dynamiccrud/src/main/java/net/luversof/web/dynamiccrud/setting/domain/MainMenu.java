@@ -28,5 +28,8 @@ public class MainMenu extends Setting {
 	
 	@Column(length = 40, nullable = false)
 	private String mainMenuName;
+	
+	@Column(nullable = false)
+	private boolean enableDisplay;
 
 }

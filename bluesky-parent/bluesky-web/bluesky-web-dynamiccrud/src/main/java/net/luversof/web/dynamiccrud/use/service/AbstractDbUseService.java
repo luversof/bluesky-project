@@ -62,6 +62,7 @@ public abstract class AbstractDbUseService implements UseService {
 		
 		// count, paging query를 만들기 위해 생성
 		var selectQuery = (PlainSelect) CCJSqlParserUtil.parse(dbQuery.getQueryString());
+		var countQuery = (PlainSelect) CCJSqlParserUtil.parse(dbQuery.getQueryString());
 		
 		// 조건에 따라 처리를 하기 위해 3개 조건을 모두 가져와야 함.
 		var dbQueryWhereClauseColumnNameList = JSqlParserUtil.findWhereClauseColumnNameList(selectQuery);
@@ -97,6 +98,7 @@ public abstract class AbstractDbUseService implements UseService {
 				if (!dbQueryWhereClauseColumnNameList.contains(dbField.getColumnId())) {
 					var whereClauseAppendExpression = JSqlParserUtil.createWhereClauseAppendExpression(dbField);
 					JSqlParserUtil.appendWhereCondition(selectQuery, whereClauseAppendExpression);
+					JSqlParserUtil.appendWhereCondition(countQuery, whereClauseAppendExpression);
 				}
 			}
 		}
@@ -108,12 +110,14 @@ public abstract class AbstractDbUseService implements UseService {
 				var hasParameter = dataMap.containsKey(dbField.getColumnId()) && StringUtils.hasText(dataMap.get(dbField.getColumnId())); 
 				if (hasParameter && dbQueryWhereClauseNamedParameterNameList.contains(dbField.getColumnId())) {
 					JSqlParserUtil.removeWhereClauseByNamedParameterName(selectQuery, dbField.getColumnId());
+					JSqlParserUtil.removeWhereClauseByNamedParameterName(countQuery, dbField.getColumnId());
 				}
 				
 				// parameter가 있는데 dbQuery에 해당 namedParameter가 없으면 관련 조건 추가
 				if (hasParameter && !dbQueryWhereClauseNamedParameterNameList.contains(dbField.getColumnId())) {
 					var whereClauseAppendExpression = JSqlParserUtil.createWhereClauseAppendExpression(dbField);
 					JSqlParserUtil.appendWhereCondition(selectQuery, whereClauseAppendExpression);
+					JSqlParserUtil.appendWhereCondition(countQuery, whereClauseAppendExpression);
 				}
 			}
 		}
@@ -126,6 +130,7 @@ public abstract class AbstractDbUseService implements UseService {
 					&& dbQueryWhereClauseNamedParameterNameList.contains(dbField.getColumnId())
 				) {
 					JSqlParserUtil.removeWhereClauseByNamedParameterName(selectQuery, dbField.getColumnId());
+					JSqlParserUtil.removeWhereClauseByNamedParameterName(countQuery, dbField.getColumnId());
 				}
 			}
 		}
@@ -133,7 +138,7 @@ public abstract class AbstractDbUseService implements UseService {
 		// selectQuery는 페이징을 위해 limit offset 설정을 추가한다.
 		// 만약 limit offset이 쿼리에 등록되어 있어도 해당 설정을 지우고 추가함
 		addPagingCondition(selectQuery, pageable.getPageSize(), pageable.getOffset());
-		
+
 		var paramSource = new MapSqlParameterSource();
 		paramSource.addValue("limit", pageable.getPageSize());
 		paramSource.addValue("offset", pageable.getOffset());
@@ -166,8 +171,6 @@ public abstract class AbstractDbUseService implements UseService {
 		}
 		
 		// count query 조회
-		var countQuery = (PlainSelect) CCJSqlParserUtil.parse(selectQueryStr);
-		
 		// countQuery column 부분 변경
 		{
 			countQuery.getSelectItems().clear();
@@ -264,5 +267,5 @@ public abstract class AbstractDbUseService implements UseService {
 			}
 		});
 	}
-
+	
 }

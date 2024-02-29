@@ -23,6 +23,38 @@
 				<!--*/-->
 			</ul>
 		</div>
+		
+		<div class="drawer w-fit" data-th-if="${thymeleafUtil.isEnableMainMenuUI() && !thymeleafUtil.isAdminMenu()}">
+			<input id="mainMenu-drawer" type="checkbox" class="drawer-toggle" />
+			<div class="drawer-content">
+				<!-- Page content here -->
+				<label for="mainMenu-drawer" class="btn btn-ghost drawer-button h-14">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+						<path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+					</svg>
+				</label>
+			</div> 
+			<div class="drawer-side z-[1]">
+				<label for="mainMenu-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+				<div class="menu p-4 w-80 min-h-full bg-base-100 text-base-content">
+					<ul>
+						<!-- Sidebar content here -->
+						<li
+							data-th-each="menu : ${thymeleafUtil.getMainMenuList()}"
+							data-th-if="${menu.isDisplay}"
+						>
+							<a 
+								data-th-href="${menu.url}"
+								data-th-text="${menu.name}"
+								data-th-classappend="${navibarTitle == menu.name ? 'active' : ''}"
+							>
+							</a>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		
 		<div class="btn btn-ghost rounded-none h-14 hidden lg:flex">
 			<div class="text-xl" data-th-text="${navibarTitle?:'Event Admin Setting'}"></div>			
 			<div class="badge" data-th-text="${@environment.getProperty('bluesky-boot-profile')}"></div>

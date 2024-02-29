@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.github.luversof.boot.exception.BlueskyException;
 import jakarta.servlet.http.HttpServletResponse;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
@@ -50,6 +51,16 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 			Model model) {
 		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
 		var subMenu = SettingUtil.getSubMenu();
+		
+		if (subMenu == null) {
+			throw new BlueskyException("NOT_EXIST_SUBMENU");
+		}
+		
+		
+		if (!subMenu.isEnableDisplay()) {
+			throw new BlueskyException("NOT_USE_SUBMENU");
+		}
+		
 		pageable = PageRequest.of(pageable.getPageNumber(), subMenu.getPageSize(), pageable.getSort());
 		var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
 		

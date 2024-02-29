@@ -26,4 +26,7 @@ public class Project extends Setting {
 	@Column(length = 40, nullable = false)
 	private String projectName;
 
+	@Column(nullable = false)
+	private boolean enableMainMenuUI;
+
 }

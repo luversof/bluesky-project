@@ -22,7 +22,8 @@ public class EventAdminProjectService implements SettingServiceSupplier<Project>
 		project = new Project(
 			ADMIN_PROJECT_ID_VALUE,
 			PROJECT_ID_VALUE,
-			"Event Admin"
+			"Event Admin",
+			true
 		); 
 	}
 

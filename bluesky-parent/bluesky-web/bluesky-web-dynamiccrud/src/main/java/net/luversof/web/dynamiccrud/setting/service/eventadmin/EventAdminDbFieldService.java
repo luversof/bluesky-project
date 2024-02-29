@@ -3,6 +3,7 @@ package net.luversof.web.dynamiccrud.setting.service.eventadmin;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.ADMIN_PROJECT_ID_VALUE;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.DBFIELD_COLUMNTYPE_PRESET_VALUE;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.DBFIELD_ENABLE_PRESET_VALUE;
+import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.DBFIELD_SEARCH_TYPE_PRESET_VALUE;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.DBFIELD_VISIBLE_PRESET_VALUE;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.DBQUERY_SQLCOMMANDTYPE_VALUE_PRESET;
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.MAINMENU_ID_VALUE;
@@ -144,6 +145,30 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 			);
 			dbFieldList.add(field);
 		}
+		{
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_PROJECT,
+				"enableMainMenuUI",
+				"enableMainMenuUI",
+				DbFieldColumnType.BOOLEAN,
+				(short) 20,
+				(short) 11,
+				null,
+				null,
+				null,
+				DbFieldVisible.SHOW,
+				DbFieldEnable.ENABLED,
+				null,
+				DbFieldEnable.REQUIRED,
+				DbFieldEnable.REQUIRED,
+				null,
+				null
+			);
+			dbFieldList.add(field);
+		}
 		addDefaultField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_PROJECT);
 		
 		addAdminProjectField(ADMIN_PROJECT_ID_VALUE, PROJECT_ID_VALUE, MAINMENU_ID_VALUE, SUBMENU_ID_VALUE_MAINMENU);
@@ -166,6 +191,30 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				DbFieldVisible.SHOW,
 				DbFieldEnable.ENABLED,
 				DbFieldSearchType.EQUALS,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				null,
+				null
+			);
+			dbFieldList.add(field);
+		}
+		{
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_MAINMENU,
+				"enableDisplay",
+				"화면 노출",
+				DbFieldColumnType.BOOLEAN,
+				null,
+				(short) 12,
+				null,
+				null,
+				null,
+				DbFieldVisible.SHOW,
+				DbFieldEnable.DISABLED,
+				null,
 				DbFieldEnable.ENABLED,
 				DbFieldEnable.ENABLED,
 				null,
@@ -377,11 +426,35 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				PROJECT_ID_VALUE,
 				MAINMENU_ID_VALUE,
 				SUBMENU_ID_VALUE_SUBMENU,
+				"enableDisplay",
+				"화면노출",
+				DbFieldColumnType.BOOLEAN,
+				(short) 20,
+				(short) 18,
+				null,
+				null,
+				null,
+				DbFieldVisible.SHOW,
+				DbFieldEnable.DISABLED,
+				null,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				null,
+				null
+			);
+			dbFieldList.add(field);
+		}
+		{
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_SUBMENU,
 				"authority",
 				"접근 권한",
 				DbFieldColumnType.STRING,
 				(short) 20,
-				(short) 18,
+				(short) 19,
 				null,
 				null,
 				null,
@@ -405,7 +478,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				"링크",
 				DbFieldColumnType.SPEL,
 				Short.MAX_VALUE,
-				(short) 19,
+				(short) 20,
 				null,
 				"'<a href=\"/' + #adminProjectId + '/use/' + #projectId + '/' + #mainMenuId + '/' + #subMenuId + '\" target=\"_blank\">link</a>'",
 				null,
@@ -765,11 +838,38 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				PROJECT_ID_VALUE,
 				MAINMENU_ID_VALUE,
 				SUBMENU_ID_VALUE_DBFIELD,
+				"columnSearchType",
+				"검색 조건 타입",
+				DbFieldColumnType.STRING,
+				(short) 20,
+				(short) 20,
+				DBFIELD_SEARCH_TYPE_PRESET_VALUE,
+				null,
+				null,
+				DbFieldVisible.SHOW,
+				DbFieldEnable.DISABLED,
+				null,
+				DbFieldEnable.ENABLED,
+				DbFieldEnable.ENABLED,
+				"""
+				검색 조건 타입은 해당 컬럼을 검색하는 조건에 대한 설정입니다.
+				검색 조건을 활성화, 필수로 선택하는 경우 같이 선택해야만 합니다. 
+				""",
+				null
+			);
+			dbFieldList.add(field);
+		}
+		{
+			var field = new DbField(
+				ADMIN_PROJECT_ID_VALUE,
+				PROJECT_ID_VALUE,
+				MAINMENU_ID_VALUE,
+				SUBMENU_ID_VALUE_DBFIELD,
 				"enableInsert",
 				"입력",
 				DbFieldColumnType.STRING,
 				(short) 20,
-				(short) 20,
+				(short) 21,
 				DBFIELD_ENABLE_PRESET_VALUE,
 				null,
 				null,
@@ -793,7 +893,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				"수정",
 				DbFieldColumnType.STRING,
 				(short) 20,
-				(short) 21,
+				(short) 22,
 				DBFIELD_ENABLE_PRESET_VALUE,
 				null,
 				null,
@@ -817,7 +917,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				"폼 도움말",
 				DbFieldColumnType.STRING,
 				(short) 1000,
-				(short) 22,
+				(short) 23,
 				null,
 				null,
 				null,
@@ -841,7 +941,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				"폼 Placeholder",
 				DbFieldColumnType.STRING,
 				(short) 40,
-				(short) 23,
+				(short) 24,
 				null,
 				null,
 				null,

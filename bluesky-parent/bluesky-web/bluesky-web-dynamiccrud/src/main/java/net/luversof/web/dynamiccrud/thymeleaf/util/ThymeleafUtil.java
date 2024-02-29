@@ -11,6 +11,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.data.domain.Page;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
@@ -65,29 +66,66 @@ public class ThymeleafUtil {
 			"nord",
 			"sunset"
 	};
+	
+	public static List<Menu> getMainMenuList(String adminProjectId, String projectId) {
+		var mainMenuList = SettingUtil.getMainMenuList(adminProjectId, projectId);
+		return getMenuListFromMainMenuList(mainMenuList);
+	}
 
-	public static List<Menu> getMenuList(String adminProjectId, String projectId, String mainMenuId) {
-		var subMenuList = SettingUtil.getSubMenuList(adminProjectId, projectId, mainMenuId);
-		subMenuList.sort(Comparator.comparing(SubMenu::getDisplayOrder));
+	public static List<Menu> getMainMenuList() {
+		var mainMenuList = SettingUtil.getMainMenuList();
+		return getMenuListFromMainMenuList(mainMenuList);
+	}
+	
+	private static List<Menu> getMenuListFromMainMenuList(List<MainMenu> mainMenuList) {
 		var menuList = new ArrayList<Menu>();
-		subMenuList.forEach(x -> {
-			var menu = new Menu();
-			menu.setUrl(x.getUrl());
-			menu.setMessageCode(x.getSubMenuName());
-			menuList.add(menu);
+		mainMenuList.forEach(mainMenu -> {
+			var subMenuList = SettingUtil.getSubMenuList(mainMenu.getAdminProjectId(), mainMenu.getProjectId(), mainMenu.getMainMenuId());
+			subMenuList.sort(Comparator.comparing(SubMenu::getDisplayOrder));
+			if(!CollectionUtils.isEmpty(subMenuList)) {
+				var menu = new Menu();
+				var targetSubMenu = subMenuList.stream().filter(subMenu -> subMenu.isEnableDisplay()).findFirst().orElseGet(() -> null);
+				menu.setUrl(targetSubMenu == null ? null : targetSubMenu.getUrl());
+				menu.setMessageCode(mainMenu.getMainMenuName());
+				menu.setDisplay(mainMenu.isEnableDisplay());
+				menuList.add(menu);
+			}
 		});
 		return menuList;
+	}
+	
+	public static List<Menu> getSubMenuList(String adminProjectId, String projectId, String mainMenuId) {
+		var subMenuList = SettingUtil.getSubMenuList(adminProjectId, projectId, mainMenuId);
+		return getMenuListFromSubMenuList(subMenuList);
+	}
+	
+	public static List<Menu> getSubMenuList() {
+		var subMenuList = SettingUtil.getSubMenuList();
+		return getMenuListFromSubMenuList(subMenuList);
 	}
 	
 	/**
 	 * layout에서 처리하는 menu호출이 null인 경우 기본 menu를 호출 처리
 	 * @return
 	 */
-	public static List<Menu> getDefaultMenuList() {
-		return getMenuList(
+	public static List<Menu> getDefaultSubMenuList() {
+		return getSubMenuList(
 				EventAdminConstant.ADMIN_PROJECT_ID_VALUE,
 				EventAdminConstant.PROJECT_ID_VALUE,
 				EventAdminConstant.MAINMENU_ID_VALUE);
+	}
+	
+	private static List<Menu> getMenuListFromSubMenuList(List<SubMenu> subMenuList) {
+		subMenuList.sort(Comparator.comparing(SubMenu::getDisplayOrder));
+		var menuList = new ArrayList<Menu>();
+		subMenuList.forEach(subMenu -> {
+			var menu = new Menu();
+			menu.setUrl(subMenu.getUrl());
+			menu.setMessageCode(subMenu.getSubMenuName());
+			menu.setDisplay(subMenu.isEnableDisplay());
+			menuList.add(menu);
+		});
+		return menuList;
 	}
 	
 	public static Pagination getPagination(@SuppressWarnings("rawtypes") Page page) {
@@ -132,6 +170,11 @@ public class ThymeleafUtil {
 	
 	public static boolean isAdminMenu() {
 		return SettingUtil.isAdminMenu(getAttribute(SettingConstant.ADMIN_PROJECT_ID));
+	}
+	
+	public static boolean isEnableMainMenuUI() {
+		var project = SettingUtil.getProject();
+		return project == null ? false : project.isEnableMainMenuUI();
 	}
 	
 	public static MainMenu getMainMenu() {

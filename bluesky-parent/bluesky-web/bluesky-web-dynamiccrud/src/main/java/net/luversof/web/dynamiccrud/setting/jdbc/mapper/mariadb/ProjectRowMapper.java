@@ -12,7 +12,8 @@ public class ProjectRowMapper extends SettingRowMapper<Project> {
 		var project = new Project(
 			rs.getString("adminProjectId"),
 			rs.getString("projectId"),
-			rs.getString("projectName")
+			rs.getString("projectName"),
+			rs.getBoolean("enableMainMenuUI")
 		);
 		setCommon(project, rs);
 		return project;

@@ -11,6 +11,7 @@ public class Menu {
 
 	private String messageCode;
 	private String url;
+	private boolean isDisplay;
 	
 	
 	public boolean isCurrentMenu() {

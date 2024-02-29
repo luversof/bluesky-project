@@ -116,8 +116,8 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					DATASOURCE_NAME,
 					"""
 					INSERT INTO Project 
-					(adminProjectId, projectId, projectName, writer, createDate, updateDate) 
-					VALUES (:adminProjectId, :projectId, :projectName, :writer, NOW(), NOW())
+					(adminProjectId, projectId, projectName, enableMainMenuUI, writer, createDate, updateDate) 
+					VALUES (:adminProjectId, :projectId, :projectName, :enableMainMenuUI, :writer, NOW(), NOW())
 					"""
 			);
 			dbQueryList.add(query);
@@ -133,7 +133,7 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					DATASOURCE_NAME,
 					"""
 					UPDATE Project 
-					SET adminProjectId = :adminProjectId, projectId = :projectId, projectName = :projectName, writer= :writer, updateDate = NOW() 
+					SET adminProjectId = :adminProjectId, projectId = :projectId, projectName = :projectName, enableMainMenuUI = :enableMainMenuUI, writer= :writer, updateDate = NOW() 
 					WHERE adminProjectId = :__org__adminProjectId AND projectId = :__org__projectId
 					"""
 			);
@@ -176,8 +176,8 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					DATASOURCE_NAME,
 					"""
 					INSERT INTO MainMenu 
-					(adminProjectId, projectId, mainMenuId, mainMenuName, writer, createDate, updateDate) 
-					VALUES (:adminProjectId, :projectId, :mainMenuId, :mainMenuName, :writer, NOW(), NOW())
+					(adminProjectId, projectId, mainMenuId, mainMenuName, enableDisplay, writer, createDate, updateDate) 
+					VALUES (:adminProjectId, :projectId, :mainMenuId, :mainMenuName, :enableDisplay, :writer, NOW(), NOW())
 					"""
 			);
 			dbQueryList.add(query);
@@ -193,7 +193,7 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					DATASOURCE_NAME,
 					"""
 					UPDATE MainMenu 
-					SET adminProjectId = :adminProjectId,  projectId = :projectId, mainMenuId = :mainMenuId, mainMenuName = :mainMenuName, writer = :writer, updateDate = NOW() 
+					SET adminProjectId = :adminProjectId,  projectId = :projectId, mainMenuId = :mainMenuId, mainMenuName = :mainMenuName, enableDisplay = :enableDisplay, writer = :writer, updateDate = NOW() 
 					WHERE adminProjectId = :__org__adminProjectId AND projectId = :__org__projectId AND mainMenuId = :__org__mainMenuId
 					"""
 			);
@@ -239,8 +239,8 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					DATASOURCE_NAME,
 					"""
 					INSERT INTO SubMenu 
-					(adminProjectId, projectId, mainMenuId, subMenuId, subMenuName, dbType, displayOrder, pageSize, enableExcel, enableInsert, enableUpdate, enableDelete, authority, writer, createDate, updateDate) 
-					VALUES (:adminProjectId, :projectId, :mainMenuId, :subMenuId, :subMenuName, :dbType, :displayOrder, :pageSize, :enableExcel, :enableInsert, :enableUpdate, :enableDelete, :authority, :writer, NOW(), NOW())
+					(adminProjectId, projectId, mainMenuId, subMenuId, subMenuName, dbType, displayOrder, pageSize, enableExcel, enableInsert, enableUpdate, enableDelete, enableDisplay, authority, writer, createDate, updateDate) 
+					VALUES (:adminProjectId, :projectId, :mainMenuId, :subMenuId, :subMenuName, :dbType, :displayOrder, :pageSize, :enableExcel, :enableInsert, :enableUpdate, :enableDelete, :enableDisplay, :authority, :writer, NOW(), NOW())
 					"""
 			);
 			dbQueryList.add(query);
@@ -258,7 +258,7 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					UPDATE SubMenu
 					SET adminProjectId = :adminProjectId, projectId = :projectId, mainMenuId = :mainMenuId, subMenuId = :subMenuId, 
 					subMenuName = :subMenuName, dbType = :dbType, displayOrder = :displayOrder, pageSize = :pageSize, enableExcel = :enableExcel, 
-					enableInsert = :enableInsert, enableUpdate = :enableUpdate, enableDelete = :enableDelete, authority = :authority, writer = :writer, updateDate = NOW() 
+					enableInsert = :enableInsert, enableUpdate = :enableUpdate, enableDelete = :enableDelete, enableDisplay = :enableDisplay, authority = :authority, writer = :writer, updateDate = NOW() 
 					WHERE adminProjectId = :__org__adminProjectId AND projectId = :__org__projectId AND mainMenuId = :__org__mainMenuId AND subMenuId = :__org__subMenuId
 					"""
 			);

@@ -57,6 +57,9 @@ public class SubMenu extends Setting {
 	@Column(nullable = false)
 	private boolean enableDelete;
 	
+	@Column(nullable = false)
+	private boolean enableDisplay;
+	
 	@Column(length = 20)
 	private String authority;
 	
