@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.springframework.core.ResolvableType;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.HandlerMapping;
@@ -25,14 +26,12 @@ import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuerySqlCommandType;
 import net.luversof.web.dynamiccrud.setting.domain.MainMenu;
 import net.luversof.web.dynamiccrud.setting.domain.Project;
+import net.luversof.web.dynamiccrud.setting.domain.Setting;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
-import net.luversof.web.dynamiccrud.setting.service.AdminProjectServiceDecorator;
-import net.luversof.web.dynamiccrud.setting.service.DbFieldServiceDecorator;
-import net.luversof.web.dynamiccrud.setting.service.DbQueryServiceDecorator;
-import net.luversof.web.dynamiccrud.setting.service.MainMenuServiceDecorator;
-import net.luversof.web.dynamiccrud.setting.service.ProjectServiceDecorator;
-import net.luversof.web.dynamiccrud.setting.service.SubMenuServiceDecorator;
+import net.luversof.web.dynamiccrud.setting.service.SettingServiceDecorator;
+import net.luversof.web.dynamiccrud.setting.service.SettingServiceListSupplier;
+import net.luversof.web.dynamiccrud.setting.service.SettingServiceSupplier;
 import net.luversof.web.dynamiccrud.setting.service.admin.AdminConstant;
 
 /**
@@ -110,6 +109,18 @@ public class SettingUtil extends RequestAttributeUtil {
 		return settingParameterOptional.get();
 	}
 	
+	@SuppressWarnings("unchecked")
+	public static <T extends Setting> SettingServiceSupplier<T> getSettingServiceSupplierDecorator(Class<T> clazz) {
+		ResolvableType type = ResolvableType.forClassWithGenerics(SettingServiceSupplier.class, clazz);
+		return (SettingServiceSupplier<T>) ApplicationContextUtil.getApplicationContext().getBeanProvider(type).stream().filter(x -> x instanceof SettingServiceDecorator).findFirst().orElseGet(() -> null);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static <T extends Setting> SettingServiceListSupplier<T> getSettingServiceListSupplierDecorator(Class<T> clazz) {
+		ResolvableType type = ResolvableType.forClassWithGenerics(SettingServiceListSupplier.class, clazz);
+		return (SettingServiceListSupplier<T>) ApplicationContextUtil.getApplicationContext().getBeanProvider(type).stream().filter(x -> x instanceof SettingServiceDecorator).findFirst().orElseGet(() -> null);
+	}
+	
 	public static AdminProject getAdminProject(SettingParameter settingParameter) {
 		if (settingParameter == null || settingParameter.adminProjectId() == null) {
 			return null;
@@ -120,7 +131,8 @@ public class SettingUtil extends RequestAttributeUtil {
 		if (adminProjectOptional != null) {
 			return adminProjectOptional.get();
 		}
-		adminProjectOptional = Optional.ofNullable(ApplicationContextUtil.getApplicationContext().getBean(AdminProjectServiceDecorator.class).findOne(settingParameter));
+		
+		adminProjectOptional = Optional.ofNullable(getSettingServiceSupplierDecorator(AdminProject.class).findOne(settingParameter));
 		setRequestAttribute(attributeName, adminProjectOptional);
 		
 		return adminProjectOptional.get();
@@ -144,7 +156,7 @@ public class SettingUtil extends RequestAttributeUtil {
 		if (projectOptional != null) {
 			return projectOptional.get();
 		}
-		projectOptional = Optional.ofNullable(ApplicationContextUtil.getApplicationContext().getBean(ProjectServiceDecorator.class).findOne(settingParameter));
+		projectOptional = Optional.ofNullable(getSettingServiceSupplierDecorator(Project.class).findOne(settingParameter));
 		setRequestAttribute(attributeName, projectOptional);
 		
 		return projectOptional.get();
@@ -168,7 +180,7 @@ public class SettingUtil extends RequestAttributeUtil {
 		if (mainMenuOptional != null) {
 			return mainMenuOptional.get();
 		}
-		mainMenuOptional = Optional.ofNullable(ApplicationContextUtil.getApplicationContext().getBean(MainMenuServiceDecorator.class).findOne(settingParameter));
+		mainMenuOptional = Optional.ofNullable(getSettingServiceSupplierDecorator(MainMenu.class).findOne(settingParameter));
 		setRequestAttribute(attributeName, mainMenuOptional);
 		
 		return mainMenuOptional.get();
@@ -192,7 +204,7 @@ public class SettingUtil extends RequestAttributeUtil {
 		if (mainMenuList != null) {
 			return mainMenuList;
 		}
-		mainMenuList = ApplicationContextUtil.getApplicationContext().getBean(MainMenuServiceDecorator.class).findList(settingParameter);
+		mainMenuList = getSettingServiceListSupplierDecorator(MainMenu.class).findList(settingParameter);
 		if (mainMenuList == null) {
 			mainMenuList = Collections.emptyList();
 		}
@@ -219,7 +231,7 @@ public class SettingUtil extends RequestAttributeUtil {
 		if (subMenuList != null) {
 			return subMenuList;
 		}
-		subMenuList = ApplicationContextUtil.getApplicationContext().getBean(SubMenuServiceDecorator.class).findList(settingParameter);
+		subMenuList = getSettingServiceListSupplierDecorator(SubMenu.class).findList(settingParameter);
 		if (subMenuList == null) {
 			subMenuList = Collections.emptyList();
 		}
@@ -258,7 +270,7 @@ public class SettingUtil extends RequestAttributeUtil {
 		if (dbQueryList != null) {
 			return dbQueryList;
 		}
-		dbQueryList = ApplicationContextUtil.getApplicationContext().getBean(DbQueryServiceDecorator.class).findList(settingParameter);
+		dbQueryList = getSettingServiceListSupplierDecorator(DbQuery.class).findList(settingParameter);
 		setRequestAttribute(attributeName, dbQueryList);
 		return dbQueryList;
 	}
@@ -286,7 +298,7 @@ public class SettingUtil extends RequestAttributeUtil {
 		if (dbFieldList != null) {
 			return dbFieldList;
 		}
-		dbFieldList = ApplicationContextUtil.getApplicationContext().getBean(DbFieldServiceDecorator.class).findList(settingParameter);
+		dbFieldList = getSettingServiceListSupplierDecorator(DbField.class).findList(settingParameter);
 		setRequestAttribute(attributeName, dbFieldList);
 		return dbFieldList;
 	}
