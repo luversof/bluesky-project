@@ -48,7 +48,7 @@ var modalFormFn = (() => {
 				} else {
 					targetInput.value = el.value;
 					// 체크박스는 input과 체크박스 표시가 별도로 존재하여 추가 처리 필요
-					var checkBoxInput = targetInput.parentElement.querySelector("input[type=checkbox]");
+					var checkBoxInput = targetInput.parentElement.querySelector("input[type=checkbox][name=" + (targetInput.name + "_checkbox") + "]");
 					if (targetInput.parentElement.classList.contains("join") && checkBoxInput != null) {
 						checkBoxInput.checked = eval(el.value);
 					}
@@ -59,7 +59,7 @@ var modalFormFn = (() => {
 		copySearchAreaToModalForm(modalTarget) {
 			document.querySelectorAll("#searchArea .searchInput").forEach(el => modalTarget.querySelector("[name=" + el.name  +"]").value = el.value);
 		},
-		/** modalForm 영역에 초기 처리 */
+		/** modalForm 영역 초기 처리 */
 		initialize() {
 			var modalTarget = document.querySelector(modalSelector);
 			
@@ -82,7 +82,7 @@ var modalFormFn = (() => {
 			
 			/** (s) modal의 checkBox의 on/off 값 설정 eventListener */
 			modalTarget.querySelectorAll('#modalForm input[type=checkbox]').forEach(el => el.addEventListener("change", (event) =>
-				event.target.closest('div').querySelector("input[type=hidden]").value = event.target.checked ? true : false
+				event.target.closest('div').querySelector("input[type=hidden][name=" + event.target.name.replace('_checkbox', '') + "]").value = event.target.checked ? true : false
 			));
 			/** (e) modal의 checkBox의 on/off 값 설정 eventListener */
 			
@@ -94,6 +94,26 @@ var modalFormFn = (() => {
 				}
 			});
 			/** (e) select 메뉴 중 required 이면서 값이 1개만 있는 경우 해당 값으로 기본 설정 (편의성 제공) */
+			
+			/** (s) group 별 input 목록 취합 */
+			var columnGroupIdList = [];
+			document.querySelectorAll("[data-columngroupid]").forEach(el => columnGroupIdList.push(el.dataset.columngroupid));
+			columnGroupIdList = columnGroupIdList.filter((item, pos) => columnGroupIdList.indexOf(item) === pos);
+			
+			
+			columnGroupIdList.forEach(columnGroupId => {
+				
+				var targetEl;	
+				document.querySelectorAll("[data-columngroupid=" + columnGroupId + "]").forEach((el, index) => {
+					if (index == 0) {
+						targetEl = el;
+					} else {
+						targetEl.appendChild(el.querySelector("label"));
+					}
+				});
+			});
+			
+			/** (e) group 별 input 목록 취합 */
 		}
 	}
 })();
@@ -120,6 +140,31 @@ function checkExportData(event) {
 		event.preventDefault();
 		return;
 	}
+}
+
+
+// 검색 영역 목록 검색, page는 1로 리셋한다.
+function searchList() {
+	var isValid = true;
+	document.querySelectorAll("#searchArea .searchInput").forEach(el => {
+		if (!isValid) {
+			return;
+		}
+		
+		if (!el.checkValidity()) {
+			el.reportValidity();
+			isValid = false;
+			return;
+		}
+	});
+	
+	if (!isValid) {
+		return;
+	}
+	 
+	param.setParam("page", 1);
+	param.setParam(event.target.name, event.target.value);
+	htmx.trigger("#listArea", "searchListTrigger");
 }
 
 // htmx에서 request를 발생하기 전 사전 처리가 필요한 항목들에 대한 설정
@@ -212,8 +257,10 @@ window.addEventListener('load', () => {
 	
 	// 검색 변경 이벤트, 변경 시 page는 1로 리셋한다.
 	document.querySelectorAll("#searchArea .searchInput").forEach(el => el.addEventListener("change", (event) => {
-		param.setParam("page", 1);
-		param.setParam(event.target.name, event.target.value);
+		searchList();
+	}));
+	document.querySelectorAll("#searchArea .searchButton").forEach(el => el.addEventListener("click", (event) => {
+		searchList();
 	}));
 	
 	// 검색 reset 버튼 이벤트

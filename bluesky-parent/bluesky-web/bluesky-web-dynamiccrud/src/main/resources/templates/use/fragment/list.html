@@ -3,7 +3,8 @@
 	data-th-with="
 		map = ${T(java.util.Map)},
 		thymeleafUtil = ${T(net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil)},
-		targetSubMenu = ${thymeleafUtil.getSubMenu()}"
+		targetSubMenu = ${thymeleafUtil.getSubMenu()},
+		urlBuilder=${T(org.springframework.web.servlet.support.ServletUriComponentsBuilder)}"
 >
 	<script data-th-inline="javascript">
 		/*<![CDATA[*/
@@ -41,7 +42,7 @@
 			</button>
 			<a
 				data-th-if="${targetSubMenu.enableExcel}"
-				data-th-href="@{${thymeleafUtil.getUrl('FRAGMENT_EXCEL')}}"
+				data-th-href="${urlBuilder.fromCurrentRequest().replacePath(thymeleafUtil.getUrl('FRAGMENT_EXCEL')).toUriString()}"
 				download
 				target="_blank"
 			>

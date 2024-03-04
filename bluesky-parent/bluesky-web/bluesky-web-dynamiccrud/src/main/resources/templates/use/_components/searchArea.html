@@ -21,11 +21,15 @@
 				data-th-placeholder="${dbField.columnName}"
 				data-th-name="${dbField.columnId}"
 				data-th-value="${param[dbField.columnId]}"
+				data-th-required="${dbField.isEnableSearchRequired()}"
+				data-th-attr="__${dbField.columnSearchValidation ?: 'data-hasColumnSearchValidation=false'}__"
 			/>
 			
 			<select class="select select-sm select-bordered searchInput"
 				data-th-unless="${#strings.isEmpty(dbField.columnPreset)}"
 				data-th-name="${dbField.columnId}"
+				data-th-required="${dbField.isEnableSearchRequired()}"
+				data-th-attr="__${dbField.columnSearchValidation ?: 'data-hasColumnSearchValidation=false'}__"
 			>
 				<option data-th-text="${dbField.columnName}" value="" />
 				<option 

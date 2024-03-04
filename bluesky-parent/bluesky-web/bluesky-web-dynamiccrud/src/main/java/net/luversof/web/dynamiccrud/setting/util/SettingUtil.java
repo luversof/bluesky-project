@@ -125,17 +125,8 @@ public class SettingUtil extends RequestAttributeUtil {
 		if (settingParameter == null || settingParameter.adminProjectId() == null) {
 			return null;
 		}
-		
 		var attributeName = getAttributeName(ADMINPROJECT, settingParameter.adminProjectId());
-		Optional<AdminProject> adminProjectOptional = getRequestAttribute(attributeName);
-		if (adminProjectOptional != null) {
-			return adminProjectOptional.get();
-		}
-		
-		adminProjectOptional = Optional.ofNullable(getSettingServiceSupplierDecorator(AdminProject.class).findOne(settingParameter));
-		setRequestAttribute(attributeName, adminProjectOptional);
-		
-		return adminProjectOptional.get();
+		return getObject(attributeName, () -> getSettingServiceSupplierDecorator(AdminProject.class).findOne(settingParameter));
 	}
 	
 	public static AdminProject getAdminProject(String adminProjectId) {
@@ -152,14 +143,7 @@ public class SettingUtil extends RequestAttributeUtil {
 		}
 		
 		var attributeName = getAttributeName(PROJECT, settingParameter.adminProjectId(), settingParameter.projectId());
-		Optional<Project> projectOptional = getRequestAttribute(attributeName);
-		if (projectOptional != null) {
-			return projectOptional.get();
-		}
-		projectOptional = Optional.ofNullable(getSettingServiceSupplierDecorator(Project.class).findOne(settingParameter));
-		setRequestAttribute(attributeName, projectOptional);
-		
-		return projectOptional.get();
+		return getObject(attributeName, () -> getSettingServiceSupplierDecorator(Project.class).findOne(settingParameter));
 	}
 	
 	public static Project getProject(String adminProjectId, String projectId) {
@@ -176,14 +160,7 @@ public class SettingUtil extends RequestAttributeUtil {
 		}
 		
 		var attributeName = getAttributeName(MAINMENU, settingParameter.adminProjectId(), settingParameter.projectId(), settingParameter.mainMenuId());
-		Optional<MainMenu> mainMenuOptional = getRequestAttribute(attributeName);
-		if (mainMenuOptional != null) {
-			return mainMenuOptional.get();
-		}
-		mainMenuOptional = Optional.ofNullable(getSettingServiceSupplierDecorator(MainMenu.class).findOne(settingParameter));
-		setRequestAttribute(attributeName, mainMenuOptional);
-		
-		return mainMenuOptional.get();
+		return getObject(attributeName, () -> getSettingServiceSupplierDecorator(MainMenu.class).findOne(settingParameter));
 	}
 	
 	public static MainMenu getMainMenu(String adminProjectId, String projectId, String mainMenuId) {
@@ -200,17 +177,7 @@ public class SettingUtil extends RequestAttributeUtil {
 		}
 
 		var attributeName = getAttributeName(MAINMENU_LIST, settingParameter.adminProjectId(), settingParameter.projectId());
-		List<MainMenu> mainMenuList = getRequestAttribute(attributeName);
-		if (mainMenuList != null) {
-			return mainMenuList;
-		}
-		mainMenuList = getSettingServiceListSupplierDecorator(MainMenu.class).findList(settingParameter);
-		if (mainMenuList == null) {
-			mainMenuList = Collections.emptyList();
-		}
-		setRequestAttribute(attributeName, mainMenuList);
-
-		return mainMenuList;
+		return getList(attributeName, () -> getSettingServiceListSupplierDecorator(MainMenu.class).findList(settingParameter));
 	}
 	
 	public static List<MainMenu> getMainMenuList(String adminProjectId, String projectId) {
@@ -227,17 +194,7 @@ public class SettingUtil extends RequestAttributeUtil {
 		}
 		
 		var attributeName = getAttributeName(SUBMENU_LIST, settingParameter.adminProjectId(), settingParameter.projectId(), settingParameter.mainMenuId());
-		List<SubMenu> subMenuList = getRequestAttribute(attributeName);
-		if (subMenuList != null) {
-			return subMenuList;
-		}
-		subMenuList = getSettingServiceListSupplierDecorator(SubMenu.class).findList(settingParameter);
-		if (subMenuList == null) {
-			subMenuList = Collections.emptyList();
-		}
-		setRequestAttribute(attributeName, subMenuList);
-		
-		return subMenuList;
+		return getList(attributeName, () -> getSettingServiceListSupplierDecorator(SubMenu.class).findList(settingParameter));
 	}
 	
 	public static List<SubMenu> getSubMenuList(String adminProjectId, String projectId, String mainMenuId) {
@@ -266,13 +223,7 @@ public class SettingUtil extends RequestAttributeUtil {
 		}
 		
 		var attributeName = getAttributeName(DBQUERY_LIST, settingParameter.adminProjectId(), settingParameter.projectId(), settingParameter.mainMenuId(), settingParameter.subMenuId());
-		List<DbQuery> dbQueryList = getRequestAttribute(attributeName);
-		if (dbQueryList != null) {
-			return dbQueryList;
-		}
-		dbQueryList = getSettingServiceListSupplierDecorator(DbQuery.class).findList(settingParameter);
-		setRequestAttribute(attributeName, dbQueryList);
-		return dbQueryList;
+		return getList(attributeName, () -> getSettingServiceListSupplierDecorator(DbQuery.class).findList(settingParameter));
 	}
 	
 	public static DbQuery getDbQuery(SettingParameter settingParameter, DbQuerySqlCommandType sqlCommandType) {
@@ -294,13 +245,7 @@ public class SettingUtil extends RequestAttributeUtil {
 		}
 		
 		var attributeName = getAttributeName(DBFIELD_LIST, settingParameter.adminProjectId(), settingParameter.projectId(), settingParameter.mainMenuId(), settingParameter.subMenuId());
-		List<DbField> dbFieldList = getRequestAttribute(attributeName);
-		if (dbFieldList != null) {
-			return dbFieldList;
-		}
-		dbFieldList = getSettingServiceListSupplierDecorator(DbField.class).findList(settingParameter);
-		setRequestAttribute(attributeName, dbFieldList);
-		return dbFieldList;
+		return getList(attributeName, () -> getSettingServiceListSupplierDecorator(DbField.class).findList(settingParameter));
 	}
 
 	public static List<DbField> getDbFieldList(String adminProjectId, String projectId, String mainMenuId, String subMenuId) {

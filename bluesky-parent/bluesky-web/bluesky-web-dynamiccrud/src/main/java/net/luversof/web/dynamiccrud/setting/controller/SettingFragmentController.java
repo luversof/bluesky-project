@@ -105,10 +105,11 @@ public class SettingFragmentController extends AbstractSettingFragmentController
 			@PathVariable String mainMenuId, 
 			@PathVariable String subMenuId,
 			@RequestParam Map<String, String> paramMap,
+			Pageable pageable,
 			HttpServletResponse response,
 			Model model) {
 		addAttribute(model);
-		return excel(AdminConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, paramMap, response, model);
+		return excel(AdminConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, paramMap, pageable, response, model);
 	}
 	
 	

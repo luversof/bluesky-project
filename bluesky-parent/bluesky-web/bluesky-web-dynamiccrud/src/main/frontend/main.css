@@ -9,3 +9,8 @@
     vertical-align: text-top;
     @apply text-red-500;
 }
+
+/* moadlForm input 사이 border 겹치도록 처리 */
+.flex .form-control:not(:first-child) {
+	margin-left:-1px;
+}

@@ -23,9 +23,8 @@
 			hx-trigger="
 				load delay:0s,
 				click target:.navButton, 
-				change from:(#searchArea .searchInput) delay:0.0001s, 
+				searchListTrigger, 
 				click from:(#searchArea .resetButton) delay:0.0001s,
-				click from:(#searchArea .searchButton) delay:0.0001s,
 				createModal from:body delay:0.0001s,
 				updateModal from:body,
 				deleteModal from:body,

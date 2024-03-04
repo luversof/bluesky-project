@@ -105,9 +105,10 @@ public class UseFragmentController extends AbstractSettingFragmentController {
 			@PathVariable String mainMenuId, 
 			@PathVariable String subMenuId,
 			@RequestParam Map<String, String> paramMap,
+			Pageable pageable,
 			HttpServletResponse response,
 			Model model) {
-		return excel(adminProjectId, projectId, mainMenuId, subMenuId, paramMap, response, model);
+		return excel(adminProjectId, projectId, mainMenuId, subMenuId, paramMap, pageable, response, model);
 	}
 	
 }

@@ -42,10 +42,12 @@ public class DbField extends Setting {
 	private DbFieldColumnType columnType;
 	
 	@Column
-	private Short columnLength;
-	
-	@Column
 	private Short columnOrder;
+	
+	@Column(length = 40)
+	private String columnGroupId;
+	
+	private String columnDefaultValue;
 	
 	private String columnPreset;
 	
@@ -65,6 +67,8 @@ public class DbField extends Setting {
 	@Enumerated(EnumType.STRING)
 	private DbFieldSearchType columnSearchType;
 	
+	private String columnSearchValidation;
+	
 	@Column(length = 20, nullable = false)
 	@Enumerated(EnumType.STRING)
 	private DbFieldEnable enableInsert;
@@ -75,7 +79,7 @@ public class DbField extends Setting {
 	
 	private String formHelpText;
 	
-	@Column(length = 20)
+	@Column(length = 40)
 	private String formPlaceholder;
 	
 	public boolean isColumnVisible() {

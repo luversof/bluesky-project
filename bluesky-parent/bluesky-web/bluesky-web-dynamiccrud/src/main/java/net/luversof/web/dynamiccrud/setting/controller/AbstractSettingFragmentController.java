@@ -176,10 +176,11 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 			@PathVariable String mainMenuId, 
 			@PathVariable String subMenuId,
 			@RequestParam Map<String, String> paramMap,
+			Pageable pageable,
 			HttpServletResponse response,
 			Model model) {
 		// 다운로드의 페이지 사이즈는 어떻게 처리할지 고민 필요. 일단 기존 호출 방식을 활용
-		list(adminProjectId, projectId, mainMenuId, subMenuId, PageRequest.of(0, 65536), paramMap, response, model);
+		list(adminProjectId, projectId, mainMenuId, subMenuId, pageable, paramMap, response, model);
 		return new UseExcelView();
 	}
 	
