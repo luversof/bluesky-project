@@ -1097,7 +1097,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 					(short) 1,
 					null,
 					PROJECT_ID_VALUE,
-					null,
+					PROJECT_ID_VALUE,
 					null,
 					"maxlength=20",
 					DbFieldVisible.SHOW,

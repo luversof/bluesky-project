@@ -71,7 +71,7 @@ var modalFormFn = (() => {
 					alert("복사할 행을 체크해주세요.");
 					return;
 				}
-				this.copyContentDataToModalForm(checkedList[0].closest("tr").querySelector(".contentData"))
+				this.copyContentDataToModalForm(checkedList[0].closest("tr").querySelector(".contentData"));
 			})
 			/** (e) 데이터 복사 eventListener */
 	
@@ -86,23 +86,11 @@ var modalFormFn = (() => {
 			));
 			/** (e) modal의 checkBox의 on/off 값 설정 eventListener */
 			
-			/** (s) select 메뉴 중 required 이면서 값이 1개만 있는 경우 해당 값으로 기본 설정 (편의성 제공) */
-			modalTarget.querySelectorAll("#modalForm select").forEach(el => {
-				var optionList = el.querySelectorAll("option:not([value=''])");
-				if (el.required == true && optionList.length == 1) {
-					optionList[0].selected = true;
-				}
-			});
-			/** (e) select 메뉴 중 required 이면서 값이 1개만 있는 경우 해당 값으로 기본 설정 (편의성 제공) */
-			
 			/** (s) group 별 input 목록 취합 */
 			var columnGroupIdList = [];
 			document.querySelectorAll("[data-columngroupid]").forEach(el => columnGroupIdList.push(el.dataset.columngroupid));
 			columnGroupIdList = columnGroupIdList.filter((item, pos) => columnGroupIdList.indexOf(item) === pos);
-			
-			
 			columnGroupIdList.forEach(columnGroupId => {
-				
 				var targetEl;	
 				document.querySelectorAll("[data-columngroupid=" + columnGroupId + "]").forEach((el, index) => {
 					if (index == 0) {
@@ -112,14 +100,36 @@ var modalFormFn = (() => {
 					}
 				});
 			});
-			
 			/** (e) group 별 input 목록 취합 */
+			
+			/** (s) input의 tooltip의 위치 설정 */
+			var modalBoxRect = modalTarget.querySelector(".modal-box").getBoundingClientRect();
+			
+			// model 위치
+			var modalBoxXStart = modalBoxRect.x;
+			var modalBoxXEnd = modalBoxRect.x + modalBoxRect.width;
+			var modalBoxYStart = modalBoxRect.y;
+			var modalBoxYEnd = modalBoxRect.y + modalBoxRect.height;
+			
+			modalTarget.querySelectorAll(".modal-box .tooltip").forEach(el => {
+				// tooltip class 위치를 확인하여 tooltip의 방향 설정 class 추가
+				var targetRect = el.getBoundingClientRect();
+				
+				var leftGap = targetRect.x - modalBoxXStart;
+				var rightGap = modalBoxXEnd - targetRect.x;
+				var topGap = targetRect.y - modalBoxYStart;
+				var bottomGap = modalBoxYEnd - targetRect.y;
+				
+				// tooltip의 기본 너비 : 320, 오른쪽 간격이 320 이상이면 오른쪽 배치
+				el.classList.add(rightGap > 320 ? "tooltip-right" : leftGap > 320 ? "tooltip-left" : topGap > bottomGap ? "tooltip-top" : "tooltip-bottom");
+			
+			});
+			/** (e) input의 tooltip의 위치 설정 */
 		}
 	}
 })();
 
 function checkDeleteData(event) {
-	// 삭제 대상이 선택되어 있는지 확인
 	var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
 	if (checkedList.length <= 0) {
 		alert("삭제할 행을 체크해주세요.");
@@ -133,7 +143,6 @@ function checkDeleteData(event) {
 }
 
 function checkExportData(event) {
-	// 삭제 대상이 선택되어 있는지 확인
 	var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
 	if (checkedList.length <= 0) {
 		alert("export할 행을 체크해주세요.");
@@ -224,12 +233,10 @@ document.addEventListener('exportModalBulkForm', () => setTimeout(() => {
 	var targetList = contentList.filter((_el, index) => checkedIds.includes(index));
 	modalTarget.querySelector("textarea").value = JSON.stringify(targetList);
 	
-	// copyButton eventListener
 	/** (s) 데이터 복사 eventListener */
-	// textArea의 데이터를 clipboard로 복사한다.
 	modalTarget.querySelector(".copyDataButton").addEventListener("click", () => {
 		if (navigator.clipboard == undefined) {
-			alert("클립보드 복사가 지원되지 않는 환경입니다.\n직접 복사하여 사용하세요.")
+			alert("클립보드 복사가 지원되지 않는 환경입니다.\n직접 복사하여 사용하세요.");
 		} else {
 			navigator.clipboard.writeText(modalTarget.querySelector("textarea").value).then(() => {
 				alert("데이터를 clipboard에 복사하였습니다.");
@@ -256,10 +263,10 @@ window.addEventListener('load', () => {
 	}));
 	
 	// 검색 변경 이벤트, 변경 시 page는 1로 리셋한다.
-	document.querySelectorAll("#searchArea .searchInput").forEach(el => el.addEventListener("change", (event) => {
+	document.querySelectorAll("#searchArea .searchInput").forEach(el => el.addEventListener("change", () => {
 		searchList();
 	}));
-	document.querySelectorAll("#searchArea .searchButton").forEach(el => el.addEventListener("click", (event) => {
+	document.querySelectorAll("#searchArea .searchButton").forEach(el => el.addEventListener("click", () => {
 		searchList();
 	}));
 	
