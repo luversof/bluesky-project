@@ -71,15 +71,15 @@ public abstract class AbstractDbUseService implements UseService {
 		var dbFieldSearchEnabledList = dbFieldList.stream().filter(x -> DbFieldEnable.ENABLED.equals(x.getEnableSearch())).collect(Collectors.toList());
 		var dbFieldSearchDisabledList = dbFieldList.stream().filter(x -> DbFieldEnable.DISABLED.equals(x.getEnableSearch())).collect(Collectors.toList());
 		
-		// dbQuery의 namedParameter에 대해 확인
-		if (!dbQueryWhereClauseNamedParameterNameList.isEmpty()) {
-			for (String namedParameterName : dbQueryWhereClauseNamedParameterNameList) {
-				// parameter에 해당 값이 없으면 빈 값 반환
-				if (!dataMap.containsKey(namedParameterName) || !StringUtils.hasText(dataMap.get(namedParameterName))) {
-					return new PageImpl<>(Collections.emptyList(), pageable, 0);
-				}
-			}
-		}
+//		// dbQuery의 namedParameter에 대해 확인
+//		if (!dbQueryWhereClauseNamedParameterNameList.isEmpty()) {
+//			for (String namedParameterName : dbQueryWhereClauseNamedParameterNameList) {
+//				// parameter에 해당 값이 없으면 빈 값 반환
+//				if (!dataMap.containsKey(namedParameterName) || !StringUtils.hasText(dataMap.get(namedParameterName))) {
+//					return new PageImpl<>(Collections.emptyList(), pageable, 0);
+//				}
+//			}
+//		}
 		
 		// dbField의 Required의 경우
 		if (!dbFieldSearchRequiredList.isEmpty()) {
@@ -108,7 +108,7 @@ public abstract class AbstractDbUseService implements UseService {
 			for (var dbField : dbFieldSearchEnabledList) {
 				// parameter가 없는데 dbQuery에 해당 namedParameter가 있으면 관련 조건 삭제
 				var hasParameter = dataMap.containsKey(dbField.getColumnId()) && StringUtils.hasText(dataMap.get(dbField.getColumnId())); 
-				if (hasParameter && dbQueryWhereClauseNamedParameterNameList.contains(dbField.getColumnId())) {
+				if (!hasParameter && dbQueryWhereClauseNamedParameterNameList.contains(dbField.getColumnId())) {
 					JSqlParserUtil.removeWhereClauseByNamedParameterName(selectQuery, dbField.getColumnId());
 					JSqlParserUtil.removeWhereClauseByNamedParameterName(countQuery, dbField.getColumnId());
 				}

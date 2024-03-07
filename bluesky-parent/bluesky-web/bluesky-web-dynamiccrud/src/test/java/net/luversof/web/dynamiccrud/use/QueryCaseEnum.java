@@ -277,6 +277,14 @@ public enum QueryCaseEnum {
 			AND columnH like :columnH + '%'
 		"""
 	)),
+	동일NamedParameter중첩사용(QueryCase.of(
+			MARIADB,
+			"""
+			SELECT * FROM someTable 
+			WHERE createDate > CONVERT(DATE, :columnA) AND createDate < DATEADD(DAY, 1, CONVERT(DATE, :columnA))
+			ORDER BY regId DESC
+			"""
+	)),
 			
 	;
 	

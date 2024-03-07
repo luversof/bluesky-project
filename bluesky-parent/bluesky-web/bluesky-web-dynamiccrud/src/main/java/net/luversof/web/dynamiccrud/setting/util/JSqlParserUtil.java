@@ -346,6 +346,7 @@ public class JSqlParserUtil {
 			});
 			if (!namedParameterList.isEmpty()) {
 				plainSelect.setWhere(whereClause.getLeftExpression());
+				removeWhereClauseByNamedParameterName(plainSelect, columnName);
 				return;
 			}
 		}
@@ -365,6 +366,7 @@ public class JSqlParserUtil {
 			});
 			if (!namedParameterList.isEmpty()) {
 				plainSelect.setWhere(whereClause.getRightExpression());
+				removeWhereClauseByNamedParameterName(plainSelect, columnName);
 				return;
 			}
 		}
