@@ -369,11 +369,11 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					"""
 					INSERT INTO DbField 
 					(adminProjectId, projectId, mainMenuId, subMenuId, columnId, columnName, columnType, columnOrder, columnGroupId, columnDefaultValue, 
-					columnPreset, columnFormat, columnValidation, columnVisible, enableSearch, columnSearchType, columnSearchValidation, 
+					columnPreset, columnFormat, columnValidation, columnVisible, enableSearch, columnSearchType, columnSearchDefaultValue, columnSearchValidation, 
 					enableInsert, enableUpdate, formHelpText, formPlaceholder, writer, createDate, updateDate) 
 					VALUES 
 					(:adminProjectId, :projectId, :mainMenuId, :subMenuId, :columnId, :columnName, :columnType, :columnOrder, :columnGroupId, :columnDefaultValue, 
-					:columnPreset, :columnFormat, :columnValidation, :columnVisible, :enableSearch, :columnSearchType, :columnSearchValidation, 
+					:columnPreset, :columnFormat, :columnValidation, :columnVisible, :enableSearch, :columnSearchType, :columnSearchDefaultValue, :columnSearchValidation, 
 					:enableInsert, :enableUpdate, :formHelpText, :formPlaceholder, :writer, NOW(), NOW())
 					"""
 			);
@@ -393,7 +393,7 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
 					SET adminProjectId = :adminProjectId, projectId = :projectId, mainMenuId = :mainMenuId, subMenuId = :subMenuId, columnId = :columnId, 
 					columnName = :columnName, columnType = :columnType, columnOrder = :columnOrder, columnGroupId = :columnGroupId, 
 					columnDefaultValue = :columnDefaultValue, columnPreset = :columnPreset, columnFormat = :columnFormat, columnValidation = :columnValidation, 
-					columnVisible = :columnVisible, enableSearch = :enableSearch, columnSearchType = :columnSearchType, columnSearchValidation = :columnSearchValidation, 
+					columnVisible = :columnVisible, enableSearch = :enableSearch, columnSearchType = :columnSearchType, columnSearchDefaultValue = :columnSearchDefaultValue, columnSearchValidation = :columnSearchValidation, 
 					enableInsert = :enableInsert, enableUpdate = :enableUpdate, formHelpText = :formHelpText, formPlaceholder = :formPlaceholder, writer = :writer, updateDate = NOW() 
 					WHERE adminProjectId = :__org__adminProjectId AND projectId = :__org__projectId AND mainMenuId = :__org__mainMenuId AND subMenuId = :__org__subMenuId AND columnId = :__org__columnId
 					"""

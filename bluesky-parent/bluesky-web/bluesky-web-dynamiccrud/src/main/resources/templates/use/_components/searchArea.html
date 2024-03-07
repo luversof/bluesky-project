@@ -20,7 +20,7 @@
 				data-th-if="${#strings.isEmpty(dbField.columnPreset)}" 
 				data-th-placeholder="${dbField.columnName}"
 				data-th-name="${dbField.columnId}"
-				data-th-value="${param[dbField.columnId]}"
+				data-th-value="${#arrays.isEmpty(param[dbField.columnId]) ? dbField.columnSearchDefaultValue : param[dbField.columnId]}"
 				data-th-required="${dbField.isEnableSearchRequired()}"
 				data-th-attr="__${dbField.columnSearchValidation ?: 'data-hasColumnSearchValidation=false'}__"
 			/>
@@ -37,7 +37,7 @@
 					data-th-with="optionValue = ${#strings.contains(presetPart, '|')? #strings.arraySplit(presetPart, '|')[0] : presetPart}"
 					data-th-value="${optionValue}" 
 					data-th-text="${#strings.contains(presetPart, '|')? #strings.arraySplit(presetPart, '|')[1] : presetPart}"
-					data-th-selected="${!#arrays.isEmpty(param[dbField.columnId]) and optionValue == param[dbField.columnId][0]}"
+					data-th-selected="${optionValue == (#arrays.isEmpty(param[dbField.columnId]) ? dbField.columnSearchDefaultValue : param[dbField.columnId][0])}"
 				/>
 				
 				

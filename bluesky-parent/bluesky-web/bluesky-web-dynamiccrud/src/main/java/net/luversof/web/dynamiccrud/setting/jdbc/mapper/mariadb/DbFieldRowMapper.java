@@ -31,6 +31,7 @@ public class DbFieldRowMapper extends SettingRowMapper<DbField> {
 			DbFieldVisible.valueOf(rs.getString("columnVisible")),
 			DbFieldEnable.valueOf(rs.getString("enableSearch")),
 			DbFieldSearchType.convertValue(rs.getString("columnSearchType")),
+			rs.getString("columnSearchDefaultValue"),
 			rs.getString("columnSearchValidation"),
 			DbFieldEnable.valueOf(rs.getString("enableInsert")),
 			DbFieldEnable.valueOf(rs.getString("enableUpdate")),

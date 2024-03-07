@@ -67,6 +67,8 @@ public class DbField extends Setting {
 	@Enumerated(EnumType.STRING)
 	private DbFieldSearchType columnSearchType;
 	
+	private String columnSearchDefaultValue;
+	
 	private String columnSearchValidation;
 	
 	@Column(length = 20, nullable = false)

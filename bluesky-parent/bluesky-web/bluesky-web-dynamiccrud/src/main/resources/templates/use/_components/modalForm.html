@@ -14,11 +14,11 @@
 			편집 가능한 경우 form 화면 처리
 			아닌 경우 hidden input으로 처리하여 값을 전달
 			<!--*/-->
-			<div class="flex"
+			<div class="flex flex-wrap"
 				data-th-if="${dbField.isEnableEdit(modalMode)}"
 				data-th-data-columnGroupId="${dbField.columnGroupId}"
 			>
-				<label class="form-control w-full">
+				<label class="form-control basis-1/3 grow">
 					<div class="label pb-1">
 						<span class="label-text"
 							data-th-text="${dbField.columnName}"
