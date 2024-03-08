@@ -35,7 +35,6 @@ import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectItem;
-import net.sf.jsqlparser.util.deparser.StatementDeParser;
 
 /**
  * 현재 MySql과 MsSql의 경우 기능이 거의 동일하여 상위 service를 구성함 
@@ -146,14 +145,6 @@ public abstract class AbstractDbUseService implements UseService {
 		// SPEL_FOR_EDIT 같이 추가 처리된 값을 설정하기 위해 일괄 처리
 		dataMap.forEach((key, value) -> paramSource.addValue(key, StringUtils.hasText(value) ? value : null));
 		
-		String selectQueryStr;
-		{
-			StringBuilder builder = new StringBuilder();
-			StatementDeParser deParser = new StatementDeParser(builder);
-			deParser.visit(selectQuery);
-			selectQueryStr = selectQuery.toString();
-		}
-		
 		// customQuery 조건에 대해 검토 필요
 		// 이 부분은 일단 주석 처리함
 //		if (SettingStringUtil.isCustomQuery(dbQuery.getQueryString())) {
@@ -163,7 +154,7 @@ public abstract class AbstractDbUseService implements UseService {
 //		}
 		
 		
-		List<Map<String, Object>> contentList = dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() -> namedParameterJdbcTemplate.query(selectQueryStr, paramSource, ROW_MAPPER));
+		List<Map<String, Object>> contentList = dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() -> namedParameterJdbcTemplate.query(selectQuery.toString(), paramSource, ROW_MAPPER));
 		
 		// 첫페이지 호출에 pageSize보다 결과 값이 적은 경우 count 호출이 불필요함
 		if (pageable.getOffset() == 0 && contentList.size() < pageable.getPageSize()) {
@@ -183,15 +174,7 @@ public abstract class AbstractDbUseService implements UseService {
 		// countQuery의 경우 order by 절 제거
 		countQuery.setOrderByElements(null);
 		
-		String countQueryStr;
-		{
-			StringBuilder builder = new StringBuilder();
-			StatementDeParser deParser = new StatementDeParser(builder);
-			deParser.visit(countQuery);
-			countQueryStr = countQuery.toString();
-		}
-		
-		int totalCount = dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() -> namedParameterJdbcTemplate.queryForObject(countQueryStr, paramSource, Integer.class));
+		int totalCount = dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() -> namedParameterJdbcTemplate.queryForObject(countQuery.toString(), paramSource, Integer.class));
 		return new PageImpl<>(contentList, pageable, totalCount);
 	}
 	

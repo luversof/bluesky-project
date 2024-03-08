@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.hibernate.engine.jdbc.internal.BasicFormatterImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -31,10 +32,9 @@ import net.sf.jsqlparser.statement.select.Limit;
 import net.sf.jsqlparser.statement.select.Offset;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectItem;
-import net.sf.jsqlparser.util.deparser.StatementDeParser;
 
 @Slf4j
-public class QueryParserTest {
+public class JSqlParserTest {
 
 	// jsqlparser 테스트
 	
@@ -158,14 +158,8 @@ public class QueryParserTest {
 			log.debug("where column : {}", column.getFullyQualifiedName());
 			log.debug("where column : {}", column.getFullyQualifiedName());
 		}
-		
 	
-		
-		StringBuilder builder = new StringBuilder();
-		StatementDeParser deParser = new StatementDeParser(builder);
-		deParser.visit(plainSelect);
-		
-		log.debug("test : {}", builder.toString());
+		log.debug("test : {}", plainSelect.toString());
 		
 	}
 	
@@ -203,14 +197,11 @@ public class QueryParserTest {
 					
 					plainSelect.setOrderByElements(null);
 					
-					StringBuilder builder = new StringBuilder();
-					StatementDeParser deParser = new StatementDeParser(builder);
-					deParser.visit(plainSelect);
 //					log.debug("origin query : {}", entry.getValue());
 					
 					// count 쿼리 생성시엔 기존 쿼리에서 몇몇 조건을 체크해서 지워야 할 수도 있음
 					
-					log.debug("generate count query : {}", builder.toString());
+					log.debug("generate count query : {}", plainSelect.toString());
 				}
 				
 				
@@ -229,10 +220,7 @@ public class QueryParserTest {
 					
 					calculatewhereClause(plainSelect, whereClauseMap);
 					
-					StringBuilder builder = new StringBuilder();
-					StatementDeParser deParser = new StatementDeParser(builder);
-					deParser.visit(plainSelect);
-					log.debug("generate paging query : {}", builder.toString());
+					log.debug("generate paging query : {}", plainSelect.toString());
 				}
 				if (queryCase.getDbType() == QueryCaseDbType.MSSQL)
 				{
@@ -251,10 +239,7 @@ public class QueryParserTest {
 					
 					calculatewhereClause(plainSelect, whereClauseMap);
 					
-					StringBuilder builder = new StringBuilder();
-					StatementDeParser deParser = new StatementDeParser(builder);
-					deParser.visit(plainSelect);
-					log.debug("generate paging query : {}", builder.toString());
+					log.debug("generate paging query : {}", plainSelect.toString());
 				}
 				// (e) limit offset Query 생성
 				// 추가 where 조건이 있으면 추가 처리
@@ -327,18 +312,21 @@ public class QueryParserTest {
 			List<String> targetColumnList = List.of("columnA" , "columnB", "columnC",  "columnD", "columnE" );
 			
 			for (var targetColumn : targetColumnList) {
-				
 				var plainSelect = (PlainSelect) CCJSqlParserUtil.parse(sqlStr);
-				
 				JSqlParserUtil.removeWhereClauseByColumnName(plainSelect, targetColumn);
 				
-				StringBuilder builder = new StringBuilder();
-				StatementDeParser deParser = new StatementDeParser(builder);
-				deParser.visit(plainSelect);
-				
-				log.debug("{} : {}", queryCaseEnum.name(), sqlStr);
+				log.debug("""
+						{}
+						{}
+						""",
+						queryCaseEnum.name(), 
+						formatSql(sqlStr));
 				log.debug("Delete Column : {}", targetColumn);
-				log.debug("Query Result : {}", builder.toString());
+				log.debug("""
+						Query Result : 
+						{}
+						""",
+						formatSql(plainSelect.toString()));
 			}
 			
 		}
@@ -349,33 +337,40 @@ public class QueryParserTest {
 	@EnumSource(
 			value = QueryCaseEnum.class,
 			names = {
-					"단순쿼리_Where조건추가4",
+//					"단순쿼리_Where조건추가4",
 //					"컬럼삭제케이스예제",
-					"컬럼삭제케이스고정값예제",
-					"컬럼삭제케이스복합조건예제"
+//					"컬럼삭제케이스고정값예제",
+//					"컬럼삭제케이스복합조건예제",
+//					"동일NamedParameter중첩사용"
 					}
 	)
 	void removeWhereClauseByNamedParameterNameTest(QueryCaseEnum queryCaseEnum) {
 		for (var queryCase : queryCaseEnum.getQueryCaseList()) {
 			String sqlStr = queryCase.getQueryStr();
 			
-			List<String> targetColumnList = List.of("columnA" , "columnB", "columnD");
+			List<String> targetColumnList = List.of(
+					"columnA" 
+//					, "columnB" 
+//					, "columnD"
+			);
 			
 			for (var targetColumn : targetColumnList) {
-				
 				var plainSelect = (PlainSelect) CCJSqlParserUtil.parse(sqlStr);
-				
 				JSqlParserUtil.removeWhereClauseByNamedParameterName(plainSelect, targetColumn);
 				
-				StringBuilder builder = new StringBuilder();
-				StatementDeParser deParser = new StatementDeParser(builder);
-				deParser.visit(plainSelect);
-				
-				log.debug("{} : {}", queryCaseEnum.name(),  sqlStr);
+				log.debug("""
+						{}
+						{}
+						""",
+						queryCaseEnum.name(), 
+						formatSql(sqlStr));
 				log.debug("Delete Column : {}", targetColumn);
-				log.debug("Query Result : {}", builder.toString());
+				log.debug("""
+						Query Result : 
+						{}
+						""",
+						formatSql(plainSelect.toString()));
 			}
-			
 		}
 	}
 	
@@ -398,18 +393,21 @@ public class QueryParserTest {
 			
 			for (var targetColumn : targetColumnList) {
 				var plainSelect = (PlainSelect) CCJSqlParserUtil.parse(sqlStr);
-				
 				Expression whereColumnRightExpression = JSqlParserUtil.findWhereClauseRightExpressionByColumnName(plainSelect, targetColumn);
 				
-				StringBuilder builder = new StringBuilder();
-				StatementDeParser deParser = new StatementDeParser(builder);
-				deParser.visit(plainSelect);
-				
-				
-				
-				log.debug("Query Result : {}", builder.toString());
+				log.debug("""
+						{}
+						{}
+						""",
+						queryCaseEnum.name(), 
+						formatSql(sqlStr));
 				log.debug("target Column : {}", targetColumn);
-				log.debug("target Column rightExpression : {}, {}", whereColumnRightExpression.getClass(), whereColumnRightExpression);
+				log.debug("""
+						target Column rightExpression class : {} 
+						{}
+						""",
+						whereColumnRightExpression.getClass().getSimpleName(),
+						formatSql(whereColumnRightExpression.toString()));
 			}
 			
 		}
@@ -437,13 +435,19 @@ public class QueryParserTest {
 				
 				List<String> whereColumnRightExpressionTypeList = JSqlParserUtil.findWhereClauseRightExpressionContainsTypeListByColumnName(plainSelect, targetColumn);
 				
-				StringBuilder builder = new StringBuilder();
-				StatementDeParser deParser = new StatementDeParser(builder);
-				deParser.visit(plainSelect);
-				
-				log.debug("Query Result : {}", builder.toString());
+				log.debug("""
+						{}
+						{}
+						""",
+						queryCaseEnum.name(), 
+						formatSql(sqlStr));
 				log.debug("target Column : {}", targetColumn);
-				log.debug("target Column rightExpression : {}", whereColumnRightExpressionTypeList);
+				log.debug("""
+						target Column rightExpression class : {}
+						{}
+						""",
+						whereColumnRightExpressionTypeList.getClass().getSimpleName(),
+						formatSql(whereColumnRightExpressionTypeList.toString()));
 			}
 			
 		}
@@ -463,16 +467,15 @@ public class QueryParserTest {
 	void findWhereClauseColumnNameListTest(QueryCaseEnum queryCaseEnum) {
 		for (var queryCase : queryCaseEnum.getQueryCaseList()) {
 			String sqlStr = queryCase.getQueryStr();
-			
 			var plainSelect = (PlainSelect) CCJSqlParserUtil.parse(sqlStr);
-			
 			List<String> whereClauseColumnList = JSqlParserUtil.findWhereClauseColumnNameList(plainSelect);
-			
-			StringBuilder builder = new StringBuilder();
-			StatementDeParser deParser = new StatementDeParser(builder);
-			deParser.visit(plainSelect);
-			
-			log.debug("Query Result : {}", builder.toString());
+
+			log.debug("""
+					{}
+					{}
+					""",
+					queryCaseEnum.name(), 
+					formatSql(sqlStr));
 			log.debug("target whereClauseColumnList : {}", whereClauseColumnList);
 		}
 	}
@@ -491,16 +494,15 @@ public class QueryParserTest {
 	void findWhereClauseNamedParameterNameListTest(QueryCaseEnum queryCaseEnum) {
 		for (var queryCase : queryCaseEnum.getQueryCaseList()) {
 			String sqlStr = queryCase.getQueryStr();
-			
 			var plainSelect = (PlainSelect) CCJSqlParserUtil.parse(sqlStr);
-			
 			List<String> whereClauseNamedParameterNameList = JSqlParserUtil.findWhereClauseNamedParameterNameList(plainSelect);
 			
-			StringBuilder builder = new StringBuilder();
-			StatementDeParser deParser = new StatementDeParser(builder);
-			deParser.visit(plainSelect);
-			
-			log.debug("Query Result : {}", builder.toString());
+			log.debug("""
+					{}
+					{}
+					""",
+					queryCaseEnum.name(), 
+					formatSql(sqlStr));
 			log.debug("target whereClauseNamedParameterNameList : {}", whereClauseNamedParameterNameList);
 		}
 	}
@@ -530,4 +532,8 @@ public class QueryParserTest {
 //		SqlNode sqlNode = planner.parse(sqlStr);
 //		log.debug("sqlNode : {}", sqlNode.toString());
 //	}
+	
+	private String formatSql(String sql) {
+		return new BasicFormatterImpl().format(sql);
+	}
 }

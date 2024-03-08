@@ -20,17 +20,18 @@
 			hx-vals="js:{'page' : param.getRequestPage()}"
 			hx-include="#searchArea .searchInput"
 			hx-boost="true"
+			hx-swap="transition:true"
 			hx-trigger="
 				load delay:0s,
 				click target:.navButton, 
 				searchListTrigger, 
-				click from:(#searchArea .resetButton) delay:0.0001s,
-				createModal from:body delay:0.0001s,
+				click from:(#searchArea .resetButton),
+				createModal from:body,
 				updateModal from:body,
 				deleteModal from:body,
-				importModalBulk from:body delay:0.0001s"
+				importModalBulk from:body"
 		>
-			<div class="text-center">
+			<div class="text-center my-10">
 				<span class="loading loading-ring loading-lg"></span>
 			</div>
 		</div>

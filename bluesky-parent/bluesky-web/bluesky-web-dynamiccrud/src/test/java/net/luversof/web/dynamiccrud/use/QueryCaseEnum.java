@@ -283,6 +283,27 @@ public enum QueryCaseEnum {
 			SELECT * FROM someTable 
 			WHERE createDate > CONVERT(DATE, :columnA) AND createDate < DATEADD(DAY, 1, CONVERT(DATE, :columnA))
 			ORDER BY regId DESC
+			""",
+			MARIADB,
+			"""
+			SELECT
+			 *
+			FROM  someTable
+			WHERE g.columnB=:columnB
+			AND g.columnA > convert(VARCHAR(10), :columnA, 121)
+			AND g.columnA < convert(VARCHAR(10), dateadd(d, +1, :columnA), 121)
+			ORDER BY g.idx ASC
+//			""",
+			MARIADB,
+			"""
+			SELECT
+			 *
+			FROM  someTable
+			WHERE g.columnB=:columnB
+			AND g.columnA > convert(VARCHAR(10), :columnA, 121)
+			AND g.columnA < convert(VARCHAR(10), dateadd(d, +1, :columnA), 121)
+			AND g.columnC LIKE :g.columnC + '%'
+			ORDER BY g.idx ASC
 			"""
 	)),
 			

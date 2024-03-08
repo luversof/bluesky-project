@@ -8,7 +8,6 @@ import java.util.List;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
-import net.luversof.web.dynamiccrud.setting.domain.DbFieldSearchType;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.ExpressionVisitorAdapter;
@@ -40,7 +39,7 @@ public class JSqlParserUtil {
 		case LIKE_RIGHT -> {
 			var likeExpression = new LikeExpression();
 			likeExpression.setLeftExpression(new Column(dbField.getColumnId()));
-			likeExpression.setLikeKeyWord(DbFieldSearchType.convertJsqlKeyword(dbField.getColumnSearchType()));
+			likeExpression.setLikeKeyWord(LikeExpression.KeyWord.LIKE);
 			Addition addExpression = new Addition();
 			addExpression.withLeftExpression(new JdbcNamedParameter(dbField.getColumnId()));
 			addExpression.withRightExpression(new StringValue(PERCENTAGE));
@@ -51,7 +50,7 @@ public class JSqlParserUtil {
 		case LIKE_CONTAINS -> {
 			var likeContainsExpression = new LikeExpression();
 			likeContainsExpression.setLeftExpression(new Column(dbField.getColumnId()));
-			likeContainsExpression.setLikeKeyWord(DbFieldSearchType.convertJsqlKeyword(dbField.getColumnSearchType()));
+			likeContainsExpression.setLikeKeyWord(LikeExpression.KeyWord.LIKE);
 			Addition addExpressionTarget = new Addition();
 			addExpressionTarget.withLeftExpression(new StringValue(PERCENTAGE));
 			addExpressionTarget.withRightExpression(new JdbcNamedParameter(dbField.getColumnId()));
@@ -259,6 +258,7 @@ public class JSqlParserUtil {
 				&& rightExpression.getLeftExpression() instanceof Column column
 				&& column.getColumnName().equals(columnName)) {
 			plainSelect.setWhere(whereClause.getLeftExpression());
+			removeWhereClauseByColumnName(plainSelect, columnName);
 			return;
 		}
 		// leftExpression이 대상인 경우 체크
@@ -266,6 +266,8 @@ public class JSqlParserUtil {
 				&& leftExpression.getLeftExpression() instanceof Column column
 				&& column.getColumnName().equals(columnName)) {
 			plainSelect.setWhere(whereClause.getRightExpression());
+			removeWhereClauseByColumnName(plainSelect, columnName);
+			return;
 		}
 		
 		// 위 두 조건이 아니면 하위 자식의 자식을 순환 체크
@@ -285,6 +287,7 @@ public class JSqlParserUtil {
 				&& rightExpression.getLeftExpression() instanceof Column column
 				&& column.getColumnName().equals(columnName)) {
 			superExpression.setLeftExpression(targetExpression.getLeftExpression());
+			removeWhereClauseByColumnNameNested(superExpression, columnName);
 			return;
 		}
 		
@@ -293,6 +296,7 @@ public class JSqlParserUtil {
 				&& leftExpression.getLeftExpression() instanceof Column column
 				&& column.getColumnName().equals(columnName)) {
 			superExpression.setLeftExpression(targetExpression.getRightExpression());
+			removeWhereClauseByColumnNameNested(superExpression, columnName);
 			return;
 		}
 
@@ -321,7 +325,6 @@ public class JSqlParserUtil {
 					if (parameter.getName().equals(columnName)) {
 						namedParameterList.add(columnName);
 					}
-					
 				}
 			});
 			if (!namedParameterList.isEmpty()) {
@@ -341,7 +344,6 @@ public class JSqlParserUtil {
 					if (parameter.getName().equals(columnName)) {
 						namedParameterList.add(columnName);
 					}
-					
 				}
 			});
 			if (!namedParameterList.isEmpty()) {
@@ -361,7 +363,6 @@ public class JSqlParserUtil {
 					if (parameter.getName().equals(columnName)) {
 						namedParameterList.add(columnName);
 					}
-					
 				}
 			});
 			if (!namedParameterList.isEmpty()) {
@@ -394,11 +395,11 @@ public class JSqlParserUtil {
 					if (parameter.getName().equals(columnName)) {
 						namedParameterList.add(columnName);
 					}
-					
 				}
 			});
 			if (!namedParameterList.isEmpty()) {
 				superExpression.setLeftExpression(targetExpression.getLeftExpression());
+				removeWhereClauseByNamedParameterNameNested(superExpression, columnName);
 				return;
 			}
 		}
@@ -413,11 +414,11 @@ public class JSqlParserUtil {
 					if (parameter.getName().equals(columnName)) {
 						namedParameterList.add(columnName);
 					}
-					
 				}
 			});
 			if (!namedParameterList.isEmpty()) {
 				superExpression.setLeftExpression(targetExpression.getRightExpression());
+				removeWhereClauseByNamedParameterNameNested(superExpression, columnName);
 				return;
 			}
 		}

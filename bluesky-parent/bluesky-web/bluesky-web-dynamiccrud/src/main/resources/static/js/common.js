@@ -1,6 +1,3 @@
-var modalSelector = "#modal";
-var searchAreaSelector = "#searchArea";
-
 // url query parameter 처리
 var param = (() => {
 	var _params = new URLSearchParams(window.location.search);
@@ -52,9 +49,10 @@ var navbarAreaFn = (() => {
 })();
 
 var searchAreaFn = (() => {
-	var _searchInputArea = searchAreaSelector + " .searchInput";
-	var _searchButtonArea = searchAreaSelector + " .searchButton";
-	var _resetButtonArea = searchAreaSelector + " .resetButton";
+	var _searchAreaSelector = "#searchArea";
+	var _searchInputArea = _searchAreaSelector + " .searchInput";
+	var _searchButtonArea = _searchAreaSelector + " .searchButton";
+	var _resetButtonArea = _searchAreaSelector + " .resetButton";
 	
 	return {
 		addEventListener() {
@@ -112,12 +110,15 @@ var searchAreaFn = (() => {
 })();
 
 var listAreaFn = (() => {
+	var _listAreaSelector = "#content";
+	
 	return {
 		// response header로 전달받은 HX-Trigger에 대한 event trigger
 		addEventListener() {
-			document.addEventListener('showList', () => setTimeout(() => {
+			document.addEventListener('showList', () => {
+				var targetArea = document.querySelector(_listAreaSelector);
 				/** 체크박스 선택 처리 */
-				document.querySelectorAll("#contentTable input[name=contentDataCheck]").forEach(el => el.addEventListener("change", (event) => {
+				targetArea.querySelectorAll("#contentTable input[name=contentDataCheck]").forEach(el => el.addEventListener("change", (event) => {
 					if (event.target.checked) {
 						event.target.closest("tr").classList.add("active");
 					} else {
@@ -125,22 +126,76 @@ var listAreaFn = (() => {
 					}
 				}));
 				
-				document.querySelectorAll("#contentTable input[name=contentDataCheckToggle]").forEach(el => el.addEventListener("change", (event) => {
+				targetArea.querySelectorAll("#contentTable input[name=contentDataCheckToggle]").forEach(el => el.addEventListener("change", (event) => {
 					event.target.closest("table").querySelector("tbody").querySelectorAll("input[name=contentDataCheck]").forEach(el => {
 						el.checked = event.target.checked;
 						el.dispatchEvent(new Event("change"));
 					});
 				}));
 				/** 링크에 class="link" 추가 처리 */
-				document.querySelectorAll("#contentTable tbody td a").forEach(el => {
+				targetArea.querySelectorAll("#contentTable tbody td a").forEach(el => {
 					el.classList.add("btn");
 					el.classList.add("btn-sm");
 					el.innerHTML = "<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor' class='w-6 h-6'><path stroke-linecap='round' stroke-linejoin='round' d='M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244' /></svg>";
 				});
-			}, 1));
+				
 			
-			document.addEventListener('exportModalBulkForm', () => setTimeout(() => {
-				var modalTarget = document.querySelector(modalSelector);
+				/** (s) deleteButton 처리 */
+				targetArea.querySelectorAll(".deleteButton").forEach(el => el.addEventListener("click", (event) => this.checkDeleteData(event)));
+				/** (e) deleteButton 처리 */
+				
+				/** (s) exportButton 처리 */
+				targetArea.querySelectorAll(".exportButton").forEach(el => el.addEventListener("click", (event) => this.checkExportData(event)));
+				/** (e) exportButton 처리 */
+			});
+			
+
+		},
+		checkDeleteData(event) {
+			var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
+			if (checkedList.length <= 0) {
+				alert("삭제할 행을 체크해주세요.");
+				event.preventDefault();
+				return;
+			}
+			if (!confirm("선택한 항목을 정말 삭제하시겠습니까?")) {
+				event.preventDefault();
+				return;
+			}
+			htmx.trigger(_listAreaSelector + " .deleteButton", "deleteData");
+		},
+		checkExportData(event) {
+			var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
+			if (checkedList.length <= 0) {
+				alert("export할 행을 체크해주세요");
+				event.preventDefault();
+				return;
+			}
+			htmx.trigger(_listAreaSelector + " .exportButton", "exportData");
+		}
+	}
+})();
+
+
+var modalFormFn = (() => {
+	var _modalAreaSelector = "#modal";
+	
+	return {
+		// response header로 전달받은 HX-Trigger에 대한 event trigger
+		addEventListener() {
+			document.addEventListener('showModalForm', () => document.querySelector(_modalAreaSelector).showModal());
+			document.addEventListener('closeModalForm', () => document.querySelector(_modalAreaSelector).close());
+			document.addEventListener('createModalForm', () => this.initialize());
+			document.addEventListener('updateModalForm', (event) => {
+				this.initialize();
+				this.copyContentDataToModalForm(event.target.closest("tr").querySelector(".contentData"))
+			});
+			
+			// modalForm에 데이터 생성 요청 후 page를 1로 초기화하여 바닥 페이지 데이터 갱신 시 첫 페이지로 이동 처리  
+			document.addEventListener('createModal', () => param.setParam("page", 1));
+			
+			document.addEventListener('exportModalBulkForm', () => {
+				var modalTarget = document.querySelector(_modalAreaSelector);
 				var checkedIds = [...document.querySelectorAll("#contentTable input[name=contentDataCheck]")].filter(el => el.checked).map(el => parseInt(el.value));
 				var targetList = contentList.filter((_el, index) => checkedIds.includes(index));
 				modalTarget.querySelector("textarea").value = JSON.stringify(targetList);
@@ -158,54 +213,15 @@ var listAreaFn = (() => {
 					}
 				});
 				/** (e) 데이터 복사 eventListener */		
-			}, 1));
+			});
 			
 			// modalForm에 데이터 생성 요청 후 page를 1로 초기화하여 바닥 페이지 데이터 갱신 시 첫 페이지로 이동 처리  
 			document.addEventListener('importModalBulk', () => param.setParam("page", 1));
 		},
-		checkDeleteData(event) {
-			var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
-			if (checkedList.length <= 0) {
-				alert("삭제할 행을 체크해주세요.");
-				event.preventDefault();
-				return;
-			}
-			if (!confirm("선택한 항목을 정말 삭제하시겠습니까?")) {
-				event.preventDefault();
-				return;
-			}
-		},
-		checkExportData(event) {
-			var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
-			if (checkedList.length <= 0) {
-				alert("export할 행을 체크해주세요.");
-				event.preventDefault();
-				return;
-			}
-		}
-	}
-})();
-
-
-var modalFormFn = (() => {
-	return {
-		// response header로 전달받은 HX-Trigger에 대한 event trigger
-		addEventListener() {
-			document.addEventListener('showModalForm', () => setTimeout(() => document.querySelector(modalSelector).showModal(), 1));
-			document.addEventListener('closeModalForm', () => setTimeout(() => document.querySelector(modalSelector).close(), 1));
-			document.addEventListener('createModalForm', () => setTimeout(() => modalFormFn.initialize(), 1));
-			document.addEventListener('updateModalForm', (event) => setTimeout(() => {
-				modalFormFn.initialize();
-				modalFormFn.copyContentDataToModalForm(event.target.closest("tr").querySelector(".contentData"))
-			}, 1));
-			
-			// modalForm에 데이터 생성 요청 후 page를 1로 초기화하여 바닥 페이지 데이터 갱신 시 첫 페이지로 이동 처리  
-			document.addEventListener('createModal', () => param.setParam("page", 1));
-		},
 		/** modalForm에 field type에 따라 input이 생성됨. type에 따라 알맞게 데이터를 설정 */
 		// contentDataEl의 hidden input을 그대로 복사하여 설정, 동일 이름이 있으면 값을 추가하도록 처리
 		copyContentDataToModalForm(contentDataEl) {
-			var modalTarget = document.querySelector(modalSelector);
+			var modalTarget = document.querySelector(_modalAreaSelector);
 			contentDataEl.querySelectorAll("input[type=hidden]").forEach(el => {
 				var targetInput = modalTarget.querySelector("[name=" + el.name + "]");
 				if (targetInput === null) {
@@ -226,7 +242,7 @@ var modalFormFn = (() => {
 		},
 		/** modalForm 영역 초기 처리 */
 		initialize() {
-			var modalTarget = document.querySelector(modalSelector);
+			var modalTarget = document.querySelector(_modalAreaSelector);
 			
 			/** (s) 데이터 복사 eventListener */
 			// contentTable 영역에 선택한 체크박스 라인의 데이터를 #modalForm의 input 으로 가져온다.
@@ -296,22 +312,6 @@ var modalFormFn = (() => {
 
 listAreaFn.addEventListener();
 modalFormFn.addEventListener();
-
-// htmx에서 request를 발생하기 전 사전 처리가 필요한 항목들에 대한 설정
-// 더 나은 방법은 없나?
-document.addEventListener('htmx:beforeRequest', (event) => {
-	/** (s) deleteButton 처리 */
-	if (event.target.classList.contains("deleteButton")) {
-		listAreaFn.checkDeleteData(event);
-	}
-	/** (e) deleteButton 처리 */
-	
-	/** (s) exportButton 처리 */
-	if (event.target.classList.contains("exportButton")) {
-		listAreaFn.checkExportData(event);
-	}
-	/** (e) exportButton 처리 */
-});
 
 window.addEventListener('DOMContentLoaded', () => {
 	navbarAreaFn.addEventListener();

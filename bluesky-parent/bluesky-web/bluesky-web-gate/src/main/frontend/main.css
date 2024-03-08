@@ -2,3 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* pagination 비활성화 버튼 배경색 처리 제거 */
+.navButton.btn.btn-disabled {
+	--tw-bg-opacity: 0.0;
+}

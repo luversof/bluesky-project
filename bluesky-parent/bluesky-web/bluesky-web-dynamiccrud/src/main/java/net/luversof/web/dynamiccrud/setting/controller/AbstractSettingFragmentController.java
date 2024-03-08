@@ -37,7 +37,7 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 	@Autowired
 	private ObjectMapper objectMapper;
 	
-	private static final String HX_TRIGGER = "HX-Trigger";
+	private static final String HX_TRIGGER = "HX-Trigger-After-Settle";
 
 	@Override
 	public String list(
