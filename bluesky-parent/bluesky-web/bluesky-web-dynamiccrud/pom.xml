@@ -92,14 +92,12 @@
 		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi-ooxml</artifactId>
-			<version>5.2.5</version>
 		</dependency>
 		<!-- (e) poi -->
 		
 		<dependency>
 			<groupId>com.github.jsqlparser</groupId>
 			<artifactId>jsqlparser</artifactId>
-			<version>4.8</version>
 		</dependency>
 		
 		<!-- (s) bluesky -->
