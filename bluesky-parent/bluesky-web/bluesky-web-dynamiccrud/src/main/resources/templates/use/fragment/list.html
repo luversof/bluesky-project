@@ -3,8 +3,7 @@
 	data-th-with="
 		map = ${T(java.util.Map)},
 		thymeleafUtil = ${T(net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil)},
-		targetSubMenu = ${thymeleafUtil.getSubMenu()},
-		urlBuilder=${T(org.springframework.web.servlet.support.ServletUriComponentsBuilder)}"
+		targetSubMenu = ${thymeleafUtil.getSubMenu()}"
 >
 	<script data-th-inline="javascript">
 		/*<![CDATA[*/
@@ -43,7 +42,7 @@
 			</button>
 			<a
 				data-th-if="${targetSubMenu.enableExcel}"
-				data-th-href="${urlBuilder.fromCurrentRequest().replacePath(thymeleafUtil.getUrl('FRAGMENT_EXCEL')).toUriString()}"
+				data-th-href="${thymeleafUtil.getServletUriComponentsBuilder().replacePath(thymeleafUtil.getUrl('FRAGMENT_EXCEL')).toUriString()}"
 				download
 				target="_blank"
 			>
@@ -125,7 +124,7 @@
 				data-th-if="${targetSubMenu.enableDelete}"
 				data-th-hx-post="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_FORM', map.of('modalMode','delete'))}}"
 				hx-include="#contentTable tr:has(input[name=contentDataCheck]:checked) .contentData input"
-				hx-trigger="deleteData"
+				hx-trigger="deleteModalTrigger"
 				hx-target="#fragmentArea"
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">

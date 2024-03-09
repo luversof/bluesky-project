@@ -69,14 +69,6 @@
 												<li><b>#fragmentArea</b> : fragment 호출 영역 (에러 발생시 에러를 표시되는 영역이기도 함)</li>
 												<li><b>#modal</b> : modal의 id (현재까지 modal이 1종이라 별다른 이름을 만들지 않음)</li>
 											</ul>
-											
-										</li>
-										<li>
-											HX-Trigger (요청 응답 이후 htmx trigger 처리를 위한 설정)
-											<ul>
-												<li><b>showModalForm</b> : 생성 모달 뷰 응답</li>
-												<li><b>closeModalForm</b> : 모달을 닫아야 하는 응답의 경우 (쓰이는 경우가 현재는 없음)</li>
-											</ul>
 										</li>
 									</ul>
 								</li>
@@ -92,14 +84,23 @@
 											</ul>
 										</li>
 										<li>
-											HX-Trigger (요청 응답 이후 htmx trigger 처리를 위한 설정)
+											HX-Trigger 규칙 (htmx 요청 / 응답 trigger 처리를 위한 설정)
 											<ul>
-												<li><b>showList</b> : 페이지 호출 뷰 응답</li>
-												<li><b>createModalForm</b> : 모달 뷰 응답</li>
-												<li><b>updateModalForm</b> : 모달 뷰 응답</li>
-												<li><b>createModal</b> : 생성 요청 응답</li>
-												<li><b>updateModal</b> : 수정 요청 응답</li>
-												<li><b>deleteModal</b> : 삭제 요청 응답</li>
+												<li>요청
+													<ul>
+														<li><b>searchListTrigger</b> : 페이지 검색 뷰 요청</li>
+														<li><b>deleteModalTrigger</b> : 삭제 요청 (모달과 상관없으나 주소 규칙 맞추려고 이름을 이렇게 지었음;;)</li>
+													</ul>
+												</li>
+												<li>응답
+													<ul>
+														<li><b>showListResponseTrigger</b> : 페이지 뷰 응답</li>
+														<li><b>showModalFormResponseTrigger</b> : 모달 뷰 응답</li>
+														<li><b>createModalResponseTrigger</b> : 모달 생성 요청 응답</li>
+														<li><b>updateModalResponseTrigger</b> : 모달 수정 요청 응답</li>
+														<li><b>deleteModalResponseTrigger</b> : 삭제 요청 응답</li>
+													</ul>
+												</li>
 											</ul>
 										</li>
 									</ul>
@@ -115,11 +116,16 @@
 											</ul>
 										</li>
 										<li>
-											HX-Trigger (요청 응답 이후 htmx trigger 처리를 위한 설정)
+											HX-Trigger 규칙 (htmx 요청 / 응답 trigger 처리를 위한 설정)
 											<ul>
-												<li><b>importModalBulkForm</b> : 모달 뷰 응답</li>
-												<li><b>exportModalBulkForm</b> : 모달 뷰 응답</li>
-												<li><b>importModalBulk</b> : 생성 요청 응답</li>
+												<li>요청 (현재 없음)</li>
+												<li>응답
+													<ul>
+														<li><b>importModalBulkFormResponseTrigger</b> : import bulk form 요청 응답 (현재 쓰는 곳 없음)</li>
+														<li><b>exportModalBulkFormResponseTrigger</b> : 모달 뷰 응답</li>
+														<li><b>importModalBulkResponseTrigger</b> : 생성 요청 응답 (현재 쓰는 곳 없음)</li>
+													</ul>
+												</li>
 											</ul>
 										</li>
 									</ul>

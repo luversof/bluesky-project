@@ -115,7 +115,7 @@ var listAreaFn = (() => {
 	return {
 		// response header로 전달받은 HX-Trigger에 대한 event trigger
 		addEventListener() {
-			document.addEventListener('showList', () => {
+			document.addEventListener('showListResponseTrigger', () => {
 				var targetArea = document.querySelector(_listAreaSelector);
 				/** 체크박스 선택 처리 */
 				targetArea.querySelectorAll("#contentTable input[name=contentDataCheck]").forEach(el => el.addEventListener("change", (event) => {
@@ -162,7 +162,7 @@ var listAreaFn = (() => {
 				event.preventDefault();
 				return;
 			}
-			htmx.trigger(_listAreaSelector + " .deleteButton", "deleteData");
+			htmx.trigger(_listAreaSelector + " .deleteButton", "deleteModalTrigger");
 		},
 		checkExportData(event) {
 			var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
@@ -183,18 +183,17 @@ var modalFormFn = (() => {
 	return {
 		// response header로 전달받은 HX-Trigger에 대한 event trigger
 		addEventListener() {
-			document.addEventListener('showModalForm', () => document.querySelector(_modalAreaSelector).showModal());
-			document.addEventListener('closeModalForm', () => document.querySelector(_modalAreaSelector).close());
-			document.addEventListener('createModalForm', () => this.initialize());
-			document.addEventListener('updateModalForm', (event) => {
+			document.addEventListener('showModalFormResponseTrigger', () => document.querySelector(_modalAreaSelector).showModal());
+			document.addEventListener('createModalFormResponseTrigger', () => this.initialize());
+			document.addEventListener('updateModalFormResponseTrigger', (event) => {
 				this.initialize();
 				this.copyContentDataToModalForm(event.target.closest("tr").querySelector(".contentData"))
 			});
 			
 			// modalForm에 데이터 생성 요청 후 page를 1로 초기화하여 바닥 페이지 데이터 갱신 시 첫 페이지로 이동 처리  
-			document.addEventListener('createModal', () => param.setParam("page", 1));
+			document.addEventListener('createModalResponseTrigger', () => param.setParam("page", 1));
 			
-			document.addEventListener('exportModalBulkForm', () => {
+			document.addEventListener('exportModalBulkFormResponseTrigger', () => {
 				var modalTarget = document.querySelector(_modalAreaSelector);
 				var checkedIds = [...document.querySelectorAll("#contentTable input[name=contentDataCheck]")].filter(el => el.checked).map(el => parseInt(el.value));
 				var targetList = contentList.filter((_el, index) => checkedIds.includes(index));
@@ -216,7 +215,7 @@ var modalFormFn = (() => {
 			});
 			
 			// modalForm에 데이터 생성 요청 후 page를 1로 초기화하여 바닥 페이지 데이터 갱신 시 첫 페이지로 이동 처리  
-			document.addEventListener('importModalBulk', () => param.setParam("page", 1));
+			document.addEventListener('importModalBulkResponseTrigger', () => param.setParam("page", 1));
 		},
 		/** modalForm에 field type에 따라 input이 생성됨. type에 따라 알맞게 데이터를 설정 */
 		// contentDataEl의 hidden input을 그대로 복사하여 설정, 동일 이름이 있으면 값을 추가하도록 처리

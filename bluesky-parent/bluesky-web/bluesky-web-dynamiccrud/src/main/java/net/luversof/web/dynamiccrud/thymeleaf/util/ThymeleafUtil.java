@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import lombok.experimental.UtilityClass;
 import net.luversof.web.dynamiccrud.setting.constant.SettingConstant;
@@ -210,4 +211,7 @@ public class ThymeleafUtil {
 		return Arrays.asList(THEMES);
 	}
 
+	public ServletUriComponentsBuilder getServletUriComponentsBuilder() {
+        return ServletUriComponentsBuilder.fromCurrentRequest();
+    }
 }

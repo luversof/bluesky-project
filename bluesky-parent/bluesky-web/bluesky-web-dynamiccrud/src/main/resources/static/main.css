@@ -4679,6 +4679,12 @@ details.collapse summary::-webkit-details-marker {
   }
 }
 
+.no-animation {
+  --btn-focus-scale: 1;
+  --animation-btn: 0;
+  --animation-input: 0;
+}
+
 .btm-nav-xs > *:where(.active) {
   border-top-width: 1px;
 }
@@ -5720,11 +5726,17 @@ html:has(.drawer-toggle:checked) {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* pagination 비활성화 버튼 배경색 처리 제거 */
+
+.navButton.btn.btn-disabled {
+  --tw-bg-opacity: 0.0;
+}
+
 /* 필수 입력 폼 빨간 별 마크 처리 */
 
 .required:after {
   content: "*";
-  margin-left: -0.4rem;
+  margin-left: .05rem;
   vertical-align: text-top;
   --tw-text-opacity: 1;
   color: rgb(239 68 68 / var(--tw-text-opacity));

@@ -2,10 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* pagination 비활성화 버튼 배경색 처리 제거 */
+.navButton.btn.btn-disabled {
+	--tw-bg-opacity: 0.0;
+}
+
 /* 필수 입력 폼 빨간 별 마크 처리 */
 .required:after {
     content: "*";
-    margin-left: -0.4rem;
+    margin-left: .05rem;
     vertical-align: text-top;
     @apply text-red-500;
 }
