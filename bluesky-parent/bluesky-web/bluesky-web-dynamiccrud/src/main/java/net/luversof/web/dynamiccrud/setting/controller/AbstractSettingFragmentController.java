@@ -92,7 +92,7 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 	}
 	
 	@Override
-	public String createModal(
+	public void createModal(
 			@PathVariable String adminProjectId,
 			@PathVariable String projectId, 
 			@PathVariable String mainMenuId, 
@@ -115,11 +115,10 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 			useService.update(settingParameter, dataMap);
 		}
 		response.setHeader(HX_TRIGGER, MessageFormat.format("{0}ModalResponseTrigger", modalMode));	// Htmx 응답 트리거를 위한 설정
-		return "use/fragment/modalForm";
 	}
 	
 	@Override
-	public String deleteModal(
+	public void deleteModal(
 			@PathVariable String adminProjectId,
 			@PathVariable String projectId, 
 			@PathVariable String mainMenuId, 
@@ -132,7 +131,6 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 		useService.delete(settingParameter, dataMap);
 		
 		response.setHeader(HX_TRIGGER, "deleteModalResponseTrigger");	// Htmx 응답 트리거를 위한 설정
-		return "use/fragment/modalForm";
 	}
 	
 	@Override
@@ -149,7 +147,7 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 	}
 	
 	@Override
-	public String importModalBulk(
+	public void importModalBulk(
 			@PathVariable String adminProjectId,
 			@PathVariable String projectId, 
 			@PathVariable String mainMenuId, 
@@ -166,7 +164,6 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 		}
 		
 		response.setHeader(HX_TRIGGER, "importModalBulkResponseTrigger");	// Htmx 응답 트리거를 위한 설정
-		return "use/fragment/modalBulkForm";
 	}
 	
 	@Override

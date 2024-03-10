@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.View;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -48,7 +49,8 @@ public class UseFragmentController extends AbstractSettingFragmentController {
 	}
 	
 	@PostMapping(UrlConstant.PATH_USE_FRAGMENT_MODAL_FORM)
-	public String useCreateModal(
+	@ResponseBody
+	public void useCreateModal(
 			@PathVariable String adminProjectId,
 			@PathVariable String projectId, 
 			@PathVariable String mainMenuId, 
@@ -57,11 +59,12 @@ public class UseFragmentController extends AbstractSettingFragmentController {
 			@RequestParam Map<String, String> dataMap,
 			HttpServletResponse response,
 			Model model) {
-		return  createModal(adminProjectId, projectId, mainMenuId, subMenuId, modalMode, dataMap, response, model);
+		createModal(adminProjectId, projectId, mainMenuId, subMenuId, modalMode, dataMap, response, model);
 	}
 	
 	@PostMapping(UrlConstant.PATH_USE_FRAGMENT_MODAL_FORM_DELETE)
-	public String useDeleteModal(
+	@ResponseBody
+	public void useDeleteModal(
 			@PathVariable String adminProjectId,
 			@PathVariable String projectId, 
 			@PathVariable String mainMenuId, 
@@ -70,7 +73,7 @@ public class UseFragmentController extends AbstractSettingFragmentController {
 			@RequestParam MultiValueMap<String, String> dataMap,
 			HttpServletResponse response,
 			Model model) {
-		return deleteModal(adminProjectId, projectId, mainMenuId, subMenuId, modalMode, dataMap, response, model);
+		deleteModal(adminProjectId, projectId, mainMenuId, subMenuId, modalMode, dataMap, response, model);
 	}
 	
 	@GetMapping(UrlConstant.PATH_USE_FRAGMENT_MODAL_BULK_FORM)
@@ -86,7 +89,8 @@ public class UseFragmentController extends AbstractSettingFragmentController {
 	}
 	
 	@PostMapping(UrlConstant.PATH_USE_FRAGMENT_MODAL_BULK_FORM)
-	public String useImportModalBulk(
+	@ResponseBody
+	public void useImportModalBulk(
 			@PathVariable String adminProjectId,
 			@PathVariable String projectId, 
 			@PathVariable String mainMenuId, 
@@ -95,7 +99,7 @@ public class UseFragmentController extends AbstractSettingFragmentController {
 			@RequestParam Map<String, String> dataMap,
 			HttpServletResponse response,
 			Model model) throws JsonMappingException, JsonProcessingException {
-		return importModalBulk(adminProjectId, projectId, mainMenuId, subMenuId, modalMode, dataMap, response, model);
+		importModalBulk(adminProjectId, projectId, mainMenuId, subMenuId, modalMode, dataMap, response, model);
 	}
 	
 	@GetMapping(UrlConstant.PATH_USE_FRAGMENT_EXCEL)

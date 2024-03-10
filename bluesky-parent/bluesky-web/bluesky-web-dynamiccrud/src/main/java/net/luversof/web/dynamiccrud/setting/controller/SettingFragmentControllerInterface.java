@@ -46,7 +46,7 @@ public interface SettingFragmentControllerInterface {
 	/**
 	 * modal 생성/수정 요청
 	 */
-	String createModal(
+	void createModal(
 			String adminProjectId,
 			String projectId, 
 			String mainMenuId, 
@@ -59,7 +59,7 @@ public interface SettingFragmentControllerInterface {
 	/**
 	 * modal 삭제 요청
 	 */
-	String deleteModal(
+	void deleteModal(
 			String adminProjectId,
 			String projectId, 
 			String mainMenuId, 
@@ -84,7 +84,7 @@ public interface SettingFragmentControllerInterface {
 	/**
 	 * 대량 import 요청
 	 */
-	String importModalBulk(
+	void importModalBulk(
 			String adminProjectId,
 			String projectId, 
 			String mainMenuId, 

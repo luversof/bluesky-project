@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.View;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -24,7 +25,7 @@ import net.luversof.web.dynamiccrud.thymeleaf.constant.UrlConstant;
 public class SettingFragmentController extends AbstractSettingFragmentController {
 
 	@GetMapping(UrlConstant.PATH_SETTING_FRAGMENT_LIST)
-	public String settingList(
+	public String list(
 			@PathVariable String projectId, 
 			@PathVariable String mainMenuId, 
 			@PathVariable String subMenuId,
@@ -49,7 +50,8 @@ public class SettingFragmentController extends AbstractSettingFragmentController
 	}
 	
 	@PostMapping(UrlConstant.PATH_SETTING_FRAGMENT_MODAL_FORM)
-	public String settingCreateModal(
+	@ResponseBody
+	public void settingCreateModal(
 			@PathVariable String projectId, 
 			@PathVariable String mainMenuId, 
 			@PathVariable String subMenuId,
@@ -58,11 +60,12 @@ public class SettingFragmentController extends AbstractSettingFragmentController
 			HttpServletResponse response,
 			Model model) {
 		addAttribute(model);
-		return  createModal(AdminConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, modalMode, dataMap, response, model);
+		createModal(AdminConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, modalMode, dataMap, response, model);
 	}
 	
 	@PostMapping(UrlConstant.PATH_SETTING_FRAGMENT_MODAL_FORM_DELETE)
-	public String settingDeleteModal(
+	@ResponseBody
+	public void settingDeleteModal(
 			@PathVariable String projectId, 
 			@PathVariable String mainMenuId, 
 			@PathVariable String subMenuId,
@@ -71,7 +74,7 @@ public class SettingFragmentController extends AbstractSettingFragmentController
 			HttpServletResponse response,
 			Model model) {
 		addAttribute(model);
-		return deleteModal(AdminConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, modalMode, dataMap, response, model);
+		deleteModal(AdminConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, modalMode, dataMap, response, model);
 	}
 	
 	@GetMapping(UrlConstant.PATH_SETTING_FRAGMENT_MODAL_BULK_FORM)
@@ -87,7 +90,8 @@ public class SettingFragmentController extends AbstractSettingFragmentController
 	}
 	
 	@PostMapping(UrlConstant.PATH_SETTING_FRAGMENT_MODAL_BULK_FORM)
-	public String settingImportModalBulk(
+	@ResponseBody
+	public void settingImportModalBulk(
 			@PathVariable String projectId, 
 			@PathVariable String mainMenuId, 
 			@PathVariable String subMenuId,
@@ -96,7 +100,7 @@ public class SettingFragmentController extends AbstractSettingFragmentController
 			HttpServletResponse response,
 			Model model) throws JsonMappingException, JsonProcessingException {
 		addAttribute(model);
-		return importModalBulk(AdminConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, modalMode, dataMap, response, model);
+		importModalBulk(AdminConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, modalMode, dataMap, response, model);
 	}
 	
 	@GetMapping(UrlConstant.PATH_SETTING_FRAGMENT_EXCEL)
