@@ -4679,12 +4679,6 @@ details.collapse summary::-webkit-details-marker {
   }
 }
 
-.no-animation {
-  --btn-focus-scale: 1;
-  --animation-btn: 0;
-  --animation-input: 0;
-}
-
 .btm-nav-xs > *:where(.active) {
   border-top-width: 1px;
 }
