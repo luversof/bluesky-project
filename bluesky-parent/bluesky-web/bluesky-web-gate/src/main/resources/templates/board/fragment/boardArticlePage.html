@@ -11,7 +11,7 @@
 		<tr class="hover" data-th-each="boardArticle : ${page.content}">
 			<th data-th-text="${boardArticle.id}"></th>
 			<td><a data-th-href="@{view(boardArticleId=${boardArticle.boardArticleId})}" data-th-text="${boardArticle.title}"></a></td>
-			<td data-th-text="${#temporals.format(boardArticle.createdDate)}"></td>
+			<td data-th-text="${#temporals.format(boardArticle.createdDate)}" data-th-data-date="${boardArticle.createdDate}"></td>
 		</tr>
 	</tbody>
 </table>

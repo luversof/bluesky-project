@@ -8,6 +8,17 @@
 	<link data-th-href="@{/main.css}" rel="stylesheet" />
 	<script src="https://unpkg.com/theme-change"></script>
 	<script src="https://unpkg.com/htmx.org"></script>
+	<script src="https://unpkg.com/dayjs"></script>
+	<script src="https://unpkg.com/dayjs/locale/ko"></script>
+	<script>
+		dayjs.locale('ko');
+	</script>
+	<!--<script type="module" src="https://unpkg.com/dayjs/plugin/relativeTime"></script>-->
+	<script>
+		//console.log("TEST : ", relativeTime)
+		//dayjs.extend(relativeTime);
+	</script>
+	<script type="module" data-th-src="@{/js/test.js}"></script>
 	<script data-th-src="@{/js/common.js}"></script>
 </head>
 

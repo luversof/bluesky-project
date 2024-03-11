@@ -1,3 +1,4 @@
+
 // url query parameter 처리
 var param = (() => {
 	var _params = new URLSearchParams(window.location.search);
@@ -32,6 +33,14 @@ var param = (() => {
 	}
 })();
 
+var format = (() => {
+	return {
+		dateFormat(date) {
+			return "";
+		}
+	}	
+})();
+
 var boardArticlePage = (() => {
 	return {
 		addEventListener() {
@@ -42,7 +51,10 @@ var boardArticlePage = (() => {
 				}));
 				
 			});
-		}		
+		},
+		initialize() {
+			
+		}
 	}	
 })();
 

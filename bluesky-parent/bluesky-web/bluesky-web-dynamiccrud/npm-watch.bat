@@ -1,0 +1,1 @@
+call npm run --prefix src/main/frontend watch
