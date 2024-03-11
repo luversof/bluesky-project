@@ -8,6 +8,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import jakarta.servlet.http.HttpServletResponse;
+import static net.luversof.web.gate.constant.GateConstant.HX_TRIGGER;
 import net.luversof.web.gate.feign.board.client.BoardArticleClient;
 import net.luversof.web.gate.feign.board.domain.BoardArticle;
 
@@ -19,7 +21,8 @@ public class BoardFragmentController {
 	private BoardArticleClient boardArticleClient;
 
 	@GetMapping("/boardArticlePage")
-	public Page<BoardArticle> boardArticlePage(String boardAlias, Pageable pageable) {
+	public Page<BoardArticle> boardArticlePage(String boardAlias, Pageable pageable, HttpServletResponse response) {
+		response.setHeader(HX_TRIGGER, "boardArticlePageResponseTrigger");
 		return boardArticleClient.findByBoardAlias(boardAlias, pageable);
 	}
 

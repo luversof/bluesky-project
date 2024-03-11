@@ -6,3 +6,12 @@
 .navButton.btn.btn-disabled {
 	--tw-bg-opacity: 0.0;
 }
+
+.htmx-indicator{
+    opacity: 1 !important;
+    display:none;
+}
+
+.htmx-request.htmx-indicator{
+    display:inline;
+}

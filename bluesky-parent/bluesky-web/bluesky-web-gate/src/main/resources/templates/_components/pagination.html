@@ -7,14 +7,14 @@
 	<button 
 		class="join-item btn btn-sm btn-ghost navButton"
 		data-th-classappend="!${pagination.firstNav.active} ? btn-disabled"
-		data-th-onclick="'page=' + ${pagination.firstNav.page}"
+		data-th-data-page="${pagination.firstNav.page}"
 	>
 		≪
 	</button>
 	<button 
 		class="join-item btn btn-sm btn-ghost navButton" 
 		data-th-classappend="!${pagination.prevNav.active} ? btn-disabled"
-		data-th-onclick="'page=' + ${pagination.prevNav.page}"
+		data-th-data-page="${pagination.prevNav.page}"
 	>
 		＜
 	</button>
@@ -23,7 +23,7 @@
 		<button 
 			class="join-item btn btn-sm btn-ghost navButton"
 			data-th-classappend="${nav.active} ? btn-active"
-			data-th-onclick="'page=' + ${nav.page}"			 
+			data-th-data-page="${nav.page}"
 			data-th-text="${nav.page}"
 		>
 		</button>
@@ -34,7 +34,7 @@
 	<button 
 		class="join-item btn btn-sm btn-ghost navButton"
 		data-th-classappend="!${pagination.nextNav.active} ? btn-disabled"
- 		data-th-onclick="'page=' + ${pagination.nextNav.page}"
+		data-th-data-page="${pagination.nextNav.page}"
 	>
 		＞
 	</button>
@@ -42,7 +42,7 @@
 	<button 
 		class="join-item btn btn-sm btn-ghost navButton"
 		data-th-classappend="!${pagination.lastNav.active} ? btn-disabled"
- 		data-th-onclick="'page=' + ${pagination.lastNav.page}"
+ 		data-th-data-page="${pagination.lastNav.page}"
 	>
 		≫
 	</button>

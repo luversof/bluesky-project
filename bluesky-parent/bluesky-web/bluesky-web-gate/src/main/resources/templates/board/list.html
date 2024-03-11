@@ -2,33 +2,28 @@
 <html data-layout-decorate="~{board/_layout/boardLayout}">
 
 <head>
-	<script>
-		var boardAlias = "free";
-		var page = 1;
-
-		function getPage() {
-			return page - 1;
-		}
+	<script data-th-inline="javascript">
+		/*<![CDATA[*/
+		var boardAlias = /*[[${boardAlias}]]*/ 'boardAlias';
+		/*]]>*/
 	</script>
 </head>
 
 <body>
 	<div data-layout-fragment="content-board">
-		<div class="" id="boardList"
+		<div id="boardList"
 			hx-get="/board/fragment/boardArticlePage"
-			hx-headers='{"Accept":"text/html"}'
-			hx-trigger="load delay:0s, click target:.navButton"
-			hx-vals='js:{ boardAlias : boardAlias, page : getPage() }'>
-
-			<div class="flex flex-col gap-4 w-auto">
-				<div class="skeleton w-auto h-96"></div>
-				<div class="flex justify-between">
-					<div class="skeleton w-1/6 h-8"></div>
-					<div class="skeleton w-1/2 h-8"></div>
-					<div class="skeleton w-1/6 h-8"></div>
-				</div>
-			</div>
+			hx-trigger="load delay:0s, boardArticlePageTrigger"
+			hx-swap="transition:true"
+			hx-indicator="#indicator"
+			hx-vals="js:{
+				'boardAlias' : boardAlias,
+				'page' : param.getRequestPage()
+			}">
 		</div>
+		<span id="indicator" class="text-center my-10 htmx-request htmx-indicator">
+			<span class="loading loading-ring loading-lg"></span>
+		</span>
 	</div>
 </body>
 

@@ -5,15 +5,13 @@
 			<th>id</th>
 			<th>title</th>
 			<th>createdDate</th>
-			<th>Favorite Color</th>
 		</tr>
 	</thead>
 	<tbody>
 		<tr class="hover" data-th-each="boardArticle : ${page.content}">
 			<th data-th-text="${boardArticle.id}"></th>
 			<td><a data-th-href="@{view(boardArticleId=${boardArticle.boardArticleId})}" data-th-text="${boardArticle.title}"></a></td>
-			<td data-th-text="${boardArticle.createdDate}"></td>
-			<td>Blue</td>
+			<td data-th-text="${#temporals.format(boardArticle.createdDate)}"></td>
 		</tr>
 	</tbody>
 </table>

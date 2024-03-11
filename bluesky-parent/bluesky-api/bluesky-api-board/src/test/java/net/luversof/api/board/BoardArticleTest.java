@@ -2,11 +2,11 @@ package net.luversof.api.board;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.RepetitionInfo;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -49,21 +49,24 @@ class BoardArticleTest implements GeneralTest {
 		boardArticleService.create(boardArticle);
 	}
 	
-	@Test
-	void 다량입력() {
+	@RepeatedTest(value = 10000, name = "반복 입력")
+	void 다량입력(RepetitionInfo repetitionInfo) {
 		Board board = boardRepository.getReferenceById((long) 1);
+		
+		int i = repetitionInfo.getCurrentRepetition();
 
-		List<BoardArticle> boardArticleList = new ArrayList<>();
-		for (int i = 0 ; i < 100000 ; i ++) {
+//		List<BoardArticle> boardArticleList = new ArrayList<>();
+//		for (int i = 0 ; i < 100000 ; i ++) {
 			BoardArticle boardArticle = new BoardArticle();
 			boardArticle.setBoardArticleId(UUID.randomUUID().toString());
 			boardArticle.setBoardId(board.getBoardId());
 			boardArticle.setUserId("1");
 			boardArticle.setTitle("테스트" + i);
 			boardArticle.setContent("내용" + i);
-			boardArticleList.add(boardArticle);
-		}
-		boardArticleRepository.saveAll(boardArticleList);
+//			boardArticleList.add(boardArticle);
+//		}
+		boardArticleRepository.save(boardArticle);
+//		boardArticleRepository.saveAll(boardArticleList);
 	}
 	
 	@Test
