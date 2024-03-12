@@ -6,679 +6,751 @@
 </head>
 
 <body>
-	<div data-layout-fragment="content">
+	<div class="prose max-w-none" data-layout-fragment="content">
 
-		<div class="prose max-w-none">
-			
-			<div tabindex="0" class="collapse">
-				<input type="checkbox" /> 
-				<h1 class="collapse-title m-0">
-					FE 관련 개발 설정
-				</h1>
-				<div class="collapse-content"> 
-					<h2 class="m-0">npm 설정</h2>
-					<div>
-						 `src/main/frontend` 위치에서 아래 명령 실행
-						<div class="mockup-code">
-							<pre data-prefix="$"><code>npm install</code></pre>
-						</div>
+		<div tabindex="0" class="collapse">
+			<input type="checkbox" /> 
+			<h1 class="collapse-title m-0">
+				FE 관련 개발 설정
+			</h1>
+			<div class="collapse-content"> 
+				<h2 class="m-0">npm 설정</h2>
+				<div>
+					 `src/main/frontend` 위치에서 아래 명령 실행하면 FE 프로젝트 관련 설정이 설치됩니다.
+					<div class="mockup-code">
+						<pre data-prefix="$"><code>npm install</code></pre>
 					</div>
 				</div>
-			</div>	
-			<div tabindex="0" class="collapse">
-				<input type="checkbox" />
-				<h1 class="collapse-title m-0">
-					BE 개발 관련 dom attribute 설정 정보
-				</h1>
-				<div class="collapse-content"> 
-					tailwindcss나 daisyui의 class 명명 규칙과 별개로 사용하기 위한 값들에 대한 목록
-					<ul>
-						<li>검색 영역 관련
-							<ul>
-								<li><b>#searchArea</b> : 검색 영역 지정</li>
-								<li><b>.searchInput</b> : 검색 영역의 검색 input 지정</li>
-								<li><b>.resetButton</b> : 검색의 reset 버튼</li>
-								<li><b>.searchButton</b> : 검색의 search 버튼</li>
-							</ul>
-						</li>
-						<li>목록 영역 관련
-							<ul>
-								<li><b>#listArea</b> : 목록 영역 지정
-								<li>contentTable 관련
-									<ul>
-										<li><b>#content</b> : content 영역 지정</li>
-										<li><b>#contentTable</b> : content를 보여주는 테이블 지정</li>
-										<li><b>.contentData</b> : list 목록의 input hidden 정보를 담고 있는 영역 지정</li>
-										<li><b>.contentDataCheck</b> : list 목록의 checkbox 영역 지정</li>
-										<li><b>[name=contentDataCheck]</b> : contentTable의 content 목록의 checkBox</li>
-										<li><b>.deleteButton</b> : 삭제 버튼</li>
-										<li><b>.navButton</b> : pagination의 링크 trigger 버튼</li>
-									</ul>
-								</li>
-							</ul>
-						</li>
-						<li>
-							modal 관련
-							<ul>
-								<li>
-									공통 설정
-									<ul>
-										<li>
-											css selector
-											<ul>
-												<li><b>#fragmentArea</b> : fragment 호출 영역 (에러 발생시 에러를 표시되는 영역이기도 함)</li>
-												<li><b>#modal</b> : modal의 id (현재까지 modal이 1종이라 별다른 이름을 만들지 않음)</li>
-											</ul>
-										</li>
-									</ul>
-								</li>
-								<li>
-									form modal 관련 (기본적인 CRUD modal)
-									<ul>
-										<li>
-											css selector
-											<ul>
-												<li><b>#modalForm</b> : modal의 form id. modal내 submit button의 대상 지정을 위해 사용</li>
-												<li><b>.copyDataButton</b> : modal의 데이터 복사 버튼 (바닥 페이지의 선택한 데이터를 form으로 복사)</li>
-												<li><b>.copySearchButton</b> : modal의 검색 복사 버튼</li>
-											</ul>
-										</li>
-										<li>
-											HX-Trigger 규칙 (htmx 요청 / 응답 trigger 처리를 위한 설정)
-											<ul>
-												<li>요청
-													<ul>
-														<li><b>showListTrigger</b> : 페이지 검색 뷰 요청</li>
-														<li><b>deleteModalTrigger</b> : 삭제 요청 (모달과 상관없으나 주소 규칙 맞추려고 이름을 이렇게 지었음;;)</li>
-													</ul>
-												</li>
-												<li>응답
-													<ul>
-														<li><b>showListResponseTrigger</b> : 페이지 뷰 응답</li>
-														<li><b>showModalFormResponseTrigger</b> : 모달 뷰 응답</li>
-														<li><b>createModalResponseTrigger</b> : 모달 생성 요청 응답</li>
-														<li><b>updateModalResponseTrigger</b> : 모달 수정 요청 응답</li>
-														<li><b>deleteModalResponseTrigger</b> : 삭제 요청 응답</li>
-													</ul>
-												</li>
-											</ul>
-										</li>
-									</ul>
-								</li>
-								<li>
-									bulk form modal 관련 (import export)
-									<ul>
-										<li>
-											css selector
-											<ul>
-												<li><b>#modalBulkForm</b> : modal의 form id. modal내 submit buuton의 대상 지정을 위해 사용</li>
-												<li><b>.copyDataButton</b> : modal의 데이터 복사 버튼(bulkform textarea의 데이터를 clipboard로 복사하는 역할)</li>
-											</ul>
-										</li>
-										<li>
-											HX-Trigger 규칙 (htmx 요청 / 응답 trigger 처리를 위한 설정)
-											<ul>
-												<li>요청 (현재 없음)</li>
-												<li>응답
-													<ul>
-														<li><b>importModalBulkFormResponseTrigger</b> : import bulk form 요청 응답 (현재 쓰는 곳 없음)</li>
-														<li><b>exportModalBulkFormResponseTrigger</b> : 모달 뷰 응답</li>
-														<li><b>importModalBulkResponseTrigger</b> : 생성 요청 응답 (현재 쓰는 곳 없음)</li>
-													</ul>
-												</li>
-											</ul>
-										</li>
-									</ul>
-								</li>
-							</ul>
-							
-						</li>
-					</ul>
+				<h2 class="m-0">watch 사용</h2>
+				<div>
+					프로젝트 최상위 위치에 제공되는 `npm-watch.bat`를 실행하거나
+					<div class="mockup-code">
+						<pre data-prefix="$"><code>npm-watch.bat</code></pre>
+					</div>
+					`src/main/frontend` 위치에서 직접 실행하면 개발하는 template 소스의 tailwindcss class 변경이 실시간으로 반영됩니다.
+					<div class="mockup-code">
+						<pre data-prefix="$"><code>npm run watch</code></pre>
+					</div>
 				</div>
 			</div>
-			<div tabindex="0" class="collapse collapse-open">
-				<input type="checkbox" />
-				<h1 class="collapse-title m-0">
-					UI Components
-				</h1>
-				<div class="collapse-content"> 
-					<h2 class="m-0">Modal Form</h2>
-					<div class="modal-box max-w-xl">
-						<div class="join w-full m-1" >
-							<div class="btn btn-sm join-item w-1/3">Text</div>
-							<input type="text" class="input input-sm input-bordered join-item w-full"
-								 name="inputtext"
-								 required="true"
-								 placeholder="placeholder 문구"
-								 maxlength="15"
-							/>
+		</div>	
+		<div tabindex="0" class="collapse">
+			<input type="checkbox" />
+			<h1 class="collapse-title m-0">
+				BE 개발 관련 dom attribute 설정 정보
+			</h1>
+			<div class="collapse-content"> 
+				tailwindcss나 daisyui의 class 명명 규칙과 별개로 사용하기 위한 값들에 대한 목록
+				<ul>
+					<li>검색 영역 관련
+						<ul>
+							<li><b>#searchArea</b> : 검색 영역 지정</li>
+							<li><b>.searchInput</b> : 검색 영역의 검색 input 지정</li>
+							<li><b>.resetButton</b> : 검색의 reset 버튼</li>
+							<li><b>.searchButton</b> : 검색의 search 버튼</li>
+						</ul>
+					</li>
+					<li>목록 영역 관련
+						<ul>
+							<li><b>#listArea</b> : 목록 영역 지정
+							<li>contentTable 관련
+								<ul>
+									<li><b>#content</b> : content 영역 지정</li>
+									<li><b>#contentTable</b> : content를 보여주는 테이블 지정</li>
+									<li><b>.contentData</b> : list 목록의 input hidden 정보를 담고 있는 영역 지정</li>
+									<li><b>.contentDataCheck</b> : list 목록의 checkbox 영역 지정</li>
+									<li><b>[name=contentDataCheck]</b> : contentTable의 content 목록의 checkBox</li>
+									<li><b>.deleteButton</b> : 삭제 버튼</li>
+									<li><b>.navButton</b> : pagination의 링크 trigger 버튼</li>
+								</ul>
+							</li>
+						</ul>
+					</li>
+					<li>
+						modal 관련
+						<ul>
+							<li>
+								공통 설정
+								<ul>
+									<li>
+										css selector
+										<ul>
+											<li><b>#fragmentArea</b> : fragment 호출 영역 (에러 발생시 에러를 표시되는 영역이기도 함)</li>
+											<li><b>#modal</b> : modal의 id (현재까지 modal이 1종이라 별다른 이름을 만들지 않음)</li>
+										</ul>
+									</li>
+								</ul>
+							</li>
+							<li>
+								form modal 관련 (기본적인 CRUD modal)
+								<ul>
+									<li>
+										css selector
+										<ul>
+											<li><b>#modalForm</b> : modal의 form id. modal내 submit button의 대상 지정을 위해 사용</li>
+											<li><b>.copyDataButton</b> : modal의 데이터 복사 버튼 (바닥 페이지의 선택한 데이터를 form으로 복사)</li>
+											<li><b>.copySearchButton</b> : modal의 검색 복사 버튼</li>
+										</ul>
+									</li>
+									<li>
+										HX-Trigger 규칙 (htmx 요청 / 응답 trigger 처리를 위한 설정)
+										<ul>
+											<li>요청
+												<ul>
+													<li><b>listFragmentTrigger</b> : 페이지 검색 뷰 요청</li>
+													<li><b>deleteModalTrigger</b> : 삭제 요청 (모달과 상관없으나 주소 규칙 맞추려고 이름을 이렇게 지었음;;)</li>
+												</ul>
+											</li>
+											<li>응답
+												<ul>
+													<li><b>listFragmentResponseTrigger</b> : 페이지 뷰 응답</li>
+													<li><b>createModalFormFragmentResponseTrigger</b> : 생성 모달 뷰 응답</li>
+													<li><b>updateModalFormFragmentResponseTrigger</b> : 수정 모달 뷰 응답</li>
+													<li><b>showModalFormFragmentResponseTrigger</b> : 모달 뷰 응답</li>
+													<li><b>createModalResponseTrigger</b> : 생성 요청 응답</li>
+													<li><b>updateModalResponseTrigger</b> : 수정 요청 응답</li>
+													<li><b>deleteModalResponseTrigger</b> : 삭제 요청 응답</li>
+												</ul>
+											</li>
+										</ul>
+									</li>
+								</ul>
+							</li>
+							<li>
+								bulk form modal 관련 (import export)
+								<ul>
+									<li>
+										css selector
+										<ul>
+											<li><b>#modalBulkForm</b> : modal의 form id. modal내 submit buuton의 대상 지정을 위해 사용</li>
+											<li><b>.copyDataButton</b> : modal의 데이터 복사 버튼(bulkform textarea의 데이터를 clipboard로 복사하는 역할)</li>
+										</ul>
+									</li>
+									<li>
+										HX-Trigger 규칙 (htmx 요청 / 응답 trigger 처리를 위한 설정)
+										<ul>
+											<li>요청
+												<ul>
+													<li><b>exportModalBulkTrigger</b></li>
+												</ul>
+											</li>
+											<li>응답
+												<ul>
+													<li><b>importModalBulkFormFragmentResponseTrigger</b> : import bulk form 요청 응답 (현재 쓰는 곳 없음)</li>
+													<li><b>exportModalBulkFormFragmentResponseTrigger</b> : 모달 뷰 응답</li>
+													<li><b>importModalBulkResponseTrigger</b> : 생성 요청 응답 (현재 쓰는 곳 없음)</li>
+												</ul>
+											</li>
+										</ul>
+									</li>
+								</ul>
+							</li>
+						</ul>
+						
+					</li>
+				</ul>
+			</div>
+		</div>
+		<div tabindex="0" class="collapse collapse-open">
+			<input type="checkbox" />
+			<h1 class="collapse-title m-0">
+				UI Components
+			</h1>
+			<div class="collapse-content"> 
+				<h2 class="m-0">Modal Form</h2>
+				<div class="modal-box max-w-xl">
+					<div class="join w-full m-1" >
+						<div class="btn btn-sm join-item w-1/3">Text</div>
+						<input type="text" class="input input-sm input-bordered join-item w-full"
+							 name="inputtext"
+							 required="true"
+							 placeholder="placeholder 문구"
+							 maxlength="15"
+						/>
+					</div>
+					<!--/*-->
+					<div class="flex w-full m-1">
+						<div class="w-1/3 text-center self-center bg-base-300">Text</div>						
+						<input type="text" class="input input-sm input-bordered w-full" placeholder="Text 제목 div 형태. 버튼 방식이 나은듯?"/>
+					</div>
+					<!--*/-->
+					<div class="join w-full m-1" >
+						<div class="btn btn-sm join-item w-1/3 required">Number</div>
+						<input type="number" class="input input-sm input-bordered join-item w-full invalid:border-red-500"
+							 name="inputnumber"
+							 required="true"
+							 placeholder="placeholder 문구"
+						/>
+					</div>
+					<!--/*-->
+					<div class="w-full tooltip" data-tip="전체를 tooltip으로 처리하면 select input 활성화(혹은 포커스) 시 툴팁 레이어가 종료되지 않아 문제가 있음">
+						<div class="join w-full m-1">
+								<div class="btn btn-sm join-item w-1/3">ToolTip</div>
+								<input type="text" class="input input-sm input-bordered join-item w-full"						
+									 name="inputtext"
+									 required="true"
+									 placeholder="툴팁 - 전체 영역 지정"
+								/>
 						</div>
-						<!--/*-->
-						<div class="flex w-full m-1">
-							<div class="w-1/3 text-center self-center bg-base-300">Text</div>						
-							<input type="text" class="input input-sm input-bordered w-full" placeholder="Text 제목 div 형태. 버튼 방식이 나은듯?"/>
+					</div>
+					<div class="join w-full m-1" >
+						<div class="btn btn-sm join-item w-1/3">ToolTip</div>
+						<input type="text" class="input input-sm input-bordered join-item w-full"
+							 name="inputtext"
+							 required="true"
+							 placeholder="툴팁 - 맨 끝에 span 지정"
+						/>
+						<span class="ml-2 tooltip tooltip-left" data-tip="툴팁의 내용 줄바꿈 지정이 안되는 문제 있음">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+							</svg>
+						</span>
+					</div>
+					<div class="join w-full m-1" >
+						<div class="btn btn-sm join-item w-1/3 tooltip tooltip-right" data-tip="툴팁이 길어지면 툴팁 내용이 잘리거나 좌우 스크롤이 생기는 문제가 있고 왜 align-middle이 아닌거지?">
+							ToolTip
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 inline">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+							</svg>
 						</div>
-						<!--*/-->
-						<div class="join w-full m-1" >
-							<div class="btn btn-sm join-item w-1/3 required">Number</div>
-							<input type="number" class="input input-sm input-bordered join-item w-full invalid:border-red-500"
-								 name="inputnumber"
-								 required="true"
-								 placeholder="placeholder 문구"
-							/>
-						</div>
-						<!--/*-->
-						<div class="w-full tooltip" data-tip="전체를 tooltip으로 처리하면 select input 활성화(혹은 포커스) 시 툴팁 레이어가 종료되지 않아 문제가 있음">
-							<div class="join w-full m-1">
-									<div class="btn btn-sm join-item w-1/3">ToolTip</div>
-									<input type="text" class="input input-sm input-bordered join-item w-full"						
-										 name="inputtext"
-										 required="true"
-										 placeholder="툴팁 - 전체 영역 지정"
-									/>
-							</div>
-						</div>
-						<div class="join w-full m-1" >
-							<div class="btn btn-sm join-item w-1/3">ToolTip</div>
-							<input type="text" class="input input-sm input-bordered join-item w-full"
-								 name="inputtext"
-								 required="true"
-								 placeholder="툴팁 - 맨 끝에 span 지정"
-							/>
-							<span class="ml-2 tooltip tooltip-left" data-tip="툴팁의 내용 줄바꿈 지정이 안되는 문제 있음">
+						<input type="text" class="input input-sm input-bordered join-item w-full"
+							 name="inputtext"
+							 required="true"
+							 placeholder="툴팁 - 제목 뒤에 지정"
+						/>
+					</div>
+					<!--*/-->
+					<div class="join w-full m-1" >
+						<div class="btn btn-sm join-item w-1/3">ToolTip</div>
+						<input type="text" class="input input-sm input-bordered join-item w-full"
+							 name="inputtext"
+							 required="true"
+							 placeholder="툴팁 테스트"
+						/>
+						<button class="btn btn-sm btn-ghost join-item tooltip tooltip-left" data-tip="툴팁의 내용 줄바꿈 지정이 안되는 문제 있음">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
+							</svg>
+						</button>
+					</div>
+					<!--/*-->
+					<div class="indicator w-full m-1">
+						<span class="indicator-item">
+							<div class="tooltip tooltip-left" data-tip="툴팁의 내용 줄바꿈 지정이 안되는 문제 있음">
 								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
 								</svg>
-							</span>
-						</div>
-						<div class="join w-full m-1" >
-							<div class="btn btn-sm join-item w-1/3 tooltip tooltip-right" data-tip="툴팁이 길어지면 툴팁 내용이 잘리거나 좌우 스크롤이 생기는 문제가 있고 왜 align-middle이 아닌거지?">
-								ToolTip
-								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 inline">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
-								</svg>
 							</div>
-							<input type="text" class="input input-sm input-bordered join-item w-full"
-								 name="inputtext"
-								 required="true"
-								 placeholder="툴팁 - 제목 뒤에 지정"
-							/>
-						</div>
-						<!--*/-->
-						<div class="join w-full m-1" >
+						</span>
+						<div class="join w-full" >
 							<div class="btn btn-sm join-item w-1/3">ToolTip</div>
 							<input type="text" class="input input-sm input-bordered join-item w-full"
 								 name="inputtext"
 								 required="true"
 								 placeholder="툴팁 테스트"
 							/>
-							<button class="btn btn-sm btn-ghost join-item tooltip tooltip-left" data-tip="툴팁의 내용 줄바꿈 지정이 안되는 문제 있음">
-								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
-								</svg>
-							</button>
 						</div>
-						<!--/*-->
-						<div class="indicator w-full m-1">
-							<span class="indicator-item">
-								<div class="tooltip tooltip-left" data-tip="툴팁의 내용 줄바꿈 지정이 안되는 문제 있음">
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-										<path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
-									</svg>
-								</div>
-							</span>
-							<div class="join w-full" >
-								<div class="btn btn-sm join-item w-1/3">ToolTip</div>
-								<input type="text" class="input input-sm input-bordered join-item w-full"
-									 name="inputtext"
-									 required="true"
-									 placeholder="툴팁 테스트"
-								/>
+					</div>
+					
+					<div class="join w-full m-1">
+						<div class="btn btn-sm join-item w-1/3" >Toggle</div>						
+						<input type="checkbox" class="toggle toggle-lg toggle-info join-item" name="토글" />
+					</div>
+					<div class="join w-full m-1">
+						<div class="btn btn-sm join-item w-1/3" >Toggle</div>						
+						<input type="checkbox" class="toggle toggle-lg toggle-info ml-2" name="토글" />
+					</div>
+					<!--*/-->
+					<div class="join w-full m-1">
+						<div class="btn btn-sm join-item w-1/3" >Toggle</div>						
+						<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
+					</div>
+					<!--/*-->
+					<div class="join w-full m-1">
+						<div class="btn btn-sm join-item w-1/3" >Radio 1</div>						
+						<input class="btn btn-sm join-item" type="radio" name="라디오" aria-label="비활성" value="-1" />
+						<input class="btn btn-sm join-item" type="radio" name="라디오" aria-label="활성" value="1" /> 요것도 별로?
+					</div>
+					<div class="join w-full m-1">
+						<div class="btn btn-sm join-item w-1/3" >Radio 2</div>						
+						<input class="btn btn-sm " type="radio" name="라디오" aria-label="비활성" value="-1" />
+						<input class="btn btn-sm join-item" type="radio" name="라디오" aria-label="활성" value="1" /> 요것도 별로?
+					</div>
+					<!--*/-->
+					<div class="join w-full m-1">
+						<div class="btn btn-sm join-item w-1/3" >Select</div>						
+						<select class="select select-sm select-bordered join-item w-full">
+							<option>Select</option>
+							<option>1</option>
+							<option>2</option>
+							<option>3</option>
+						</select>
+					</div>
+					<div class="join w-full m-1" >
+						<div class="btn btn-sm join-item w-1/3 min-h-full">TextArea</div>
+						<textarea class="textarea textarea-sm textarea-bordered join-item w-full"
+							 name="testname"
+							 required="true"
+							 placeholder="textArea는 어떻게 설정하나"
+						></textarea>
+					</div>
+					<div class="join w-full m-1" >
+						<div class="btn btn-sm join-item w-1/3">Text + Text</div>
+						<input type="text" class="input input-sm input-bordered join-item w-full"
+							 name="inputtext"
+							 required="true"
+							 placeholder="placeholder 문구"
+							 maxlength="15"
+						/>
+						<input type="text" class="input input-sm input-bordered join-item w-full"
+							 name="inputtext"
+							 required="true"
+							 placeholder="placeholder 문구"
+							 maxlength="15"
+						/>
+					</div>
+					<div class="join w-full m-1" >
+						<div class="btn btn-sm join-item w-1/3">Text + Select</div>
+						<input type="text" class="input input-sm input-bordered join-item w-full"
+							 name="inputtext"
+							 required="true"
+							 placeholder="placeholder 문구"
+							 maxlength="15"
+						/>
+						<select class="select select-sm select-bordered join-item">
+							<option>Select</option>
+							<option>1</option>
+							<option>2</option>
+							<option>3</option>
+						</select>
+					</div>
+					<div class="join w-full m-1" >
+						<div class="btn btn-sm join-item w-1/3">Text + Toggle</div>
+						<input type="text" class="input input-sm input-bordered join-item w-full"
+							 name="inputtext"
+							 required="true"
+							 placeholder="placeholder 문구"
+							 maxlength="15"
+						/>
+						<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
+					</div>
+					<div class="join w-full m-1" >
+						<div class="btn btn-sm join-item w-1/3">Text + Select + Select</div>
+						<input type="text" class="input input-sm input-bordered join-item w-full"
+							 name="inputtext"
+							 required="true"
+							 placeholder="placeholder 문구"
+							 maxlength="15"
+						/>
+						<select class="select select-sm select-bordered join-item">
+							<option>Select</option>
+							<option>1</option>
+							<option>2</option>
+							<option>3</option>
+						</select>
+						<select class="select select-sm select-bordered join-item">
+							<option>Select</option>
+							<option>1</option>
+							<option>2</option>
+							<option>3</option>
+						</select>
+					</div>
+					<div class="join w-full m-1" >
+						<div class="btn btn-sm join-item w-1/3">Text + Select + Toggle</div>
+						<input type="text" class="input input-sm input-bordered join-item w-full"
+							 name="inputtext"
+							 required="true"
+							 placeholder="placeholder 문구"
+							 maxlength="15"
+						/>
+						<select class="select select-sm select-bordered join-item">
+							<option>Select</option>
+							<option>1</option>
+							<option>2</option>
+							<option>3</option>
+						</select>
+						<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
+					</div>
+					<div class="flex">
+						<label class="form-control w-full">
+							<div class="label">
+								<span class="label-text required">Text</span>
 							</div>
-						</div>
-						
-						<div class="join w-full m-1">
-							<div class="btn btn-sm join-item w-1/3" >Toggle</div>						
-							<input type="checkbox" class="toggle toggle-lg toggle-info join-item" name="토글" />
-						</div>
-						<div class="join w-full m-1">
-							<div class="btn btn-sm join-item w-1/3" >Toggle</div>						
-							<input type="checkbox" class="toggle toggle-lg toggle-info ml-2" name="토글" />
-						</div>
-						<!--*/-->
-						<div class="join w-full m-1">
-							<div class="btn btn-sm join-item w-1/3" >Toggle</div>						
-							<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
-						</div>
-						<!--/*-->
-						<div class="join w-full m-1">
-							<div class="btn btn-sm join-item w-1/3" >Radio 1</div>						
-							<input class="btn btn-sm join-item" type="radio" name="라디오" aria-label="비활성" value="-1" />
-							<input class="btn btn-sm join-item" type="radio" name="라디오" aria-label="활성" value="1" /> 요것도 별로?
-						</div>
-						<div class="join w-full m-1">
-							<div class="btn btn-sm join-item w-1/3" >Radio 2</div>						
-							<input class="btn btn-sm " type="radio" name="라디오" aria-label="비활성" value="-1" />
-							<input class="btn btn-sm join-item" type="radio" name="라디오" aria-label="활성" value="1" /> 요것도 별로?
-						</div>
-						<!--*/-->
-						<div class="join w-full m-1">
-							<div class="btn btn-sm join-item w-1/3" >Select</div>						
-							<select class="select select-sm select-bordered join-item w-full">
-								<option>Select</option>
-								<option>1</option>
-								<option>2</option>
-								<option>3</option>
-							</select>
-						</div>
-						<div class="join w-full m-1" >
-							<div class="btn btn-sm join-item w-1/3 min-h-full">TextArea</div>
-							<textarea class="textarea textarea-sm textarea-bordered join-item w-full"
-								 name="testname"
-								 required="true"
-								 placeholder="textArea는 어떻게 설정하나"
-							></textarea>
-						</div>
-						<div class="join w-full m-1" >
-							<div class="btn btn-sm join-item w-1/3">Text + Text</div>
-							<input type="text" class="input input-sm input-bordered join-item w-full"
-								 name="inputtext"
-								 required="true"
-								 placeholder="placeholder 문구"
-								 maxlength="15"
-							/>
-							<input type="text" class="input input-sm input-bordered join-item w-full"
-								 name="inputtext"
-								 required="true"
-								 placeholder="placeholder 문구"
-								 maxlength="15"
-							/>
-						</div>
-						<div class="join w-full m-1" >
-							<div class="btn btn-sm join-item w-1/3">Text + Select</div>
-							<input type="text" class="input input-sm input-bordered join-item w-full"
-								 name="inputtext"
-								 required="true"
-								 placeholder="placeholder 문구"
-								 maxlength="15"
-							/>
-							<select class="select select-sm select-bordered join-item">
-								<option>Select</option>
-								<option>1</option>
-								<option>2</option>
-								<option>3</option>
-							</select>
-						</div>
-						<div class="join w-full m-1" >
-							<div class="btn btn-sm join-item w-1/3">Text + Toggle</div>
-							<input type="text" class="input input-sm input-bordered join-item w-full"
-								 name="inputtext"
-								 required="true"
-								 placeholder="placeholder 문구"
-								 maxlength="15"
-							/>
-							<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
-						</div>
-						<div class="join w-full m-1" >
-							<div class="btn btn-sm join-item w-1/3">Text + Select + Select</div>
-							<input type="text" class="input input-sm input-bordered join-item w-full"
-								 name="inputtext"
-								 required="true"
-								 placeholder="placeholder 문구"
-								 maxlength="15"
-							/>
-							<select class="select select-sm select-bordered join-item">
-								<option>Select</option>
-								<option>1</option>
-								<option>2</option>
-								<option>3</option>
-							</select>
-							<select class="select select-sm select-bordered join-item">
-								<option>Select</option>
-								<option>1</option>
-								<option>2</option>
-								<option>3</option>
-							</select>
-						</div>
-						<div class="join w-full m-1" >
-							<div class="btn btn-sm join-item w-1/3">Text + Select + Toggle</div>
-							<input type="text" class="input input-sm input-bordered join-item w-full"
-								 name="inputtext"
-								 required="true"
-								 placeholder="placeholder 문구"
-								 maxlength="15"
-							/>
-							<select class="select select-sm select-bordered join-item">
-								<option>Select</option>
-								<option>1</option>
-								<option>2</option>
-								<option>3</option>
-							</select>
-							<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
-						</div>
-						<div class="flex">
-							<label class="form-control w-full">
-								<div class="label">
-									<span class="label-text required">Text</span>
-								</div>
-								<div class="join">
-									<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-								</div>
-							</label>
-						</div>
-						<div class="flex">
-							<label class="form-control w-full">
-								<div class="label">
-									<span class="label-text required">Text</span>
-								</div>
-								<div class="join">
-									<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-								</div>
-							</label>
-							<label class="form-control w-full">
-								<div class="label">
-									<span class="label-text required">Text</span>
-								</div>
-								<div class="join">
-									<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-								</div>
-							</label>
-						</div>
-						<div class="flex">
-							<label class="form-control w-full">
-								<div class="label">
-									<span class="label-text required">Text</span>
-								</div>
-								<div class="join">
-									<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-								</div>
-							</label>
-							<label class="form-control w-full">
-								<div class="label">
-									<span class="label-text required">Select</span>
-								</div>
-								<div class="join">
-									<select class="select select-sm select-bordered join-item w-full">
-										<option>Select</option>
-										<option>1</option>
-										<option>2</option>
-										<option>3</option>
-									</select>
-								</div>
-							</label>
-						</div>
-						<div class="flex">
-							<label class="form-control w-full">
-								<div class="label">
-									<span class="label-text required">Text</span>
-								</div>
-								<div class="join">
-									<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-								</div>
-							</label>
-							<label class="form-control w-full">
-								<div class="label">
-									<span class="label-text required">Toggle</span>
-								</div>
-								<div class="join">
-									<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
-								</div>
-							</label>
-						</div>
-						<div class="flex">
-							<label class="form-control w-full">
-								<div class="label">
-									<span class="label-text required">Text</span>
-								</div>
-								<div class="join">
-									<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-								</div>
-							</label>
-							<label class="form-control w-full">
-								<div class="label">
-									<span class="label-text required">Select</span>
-								</div>
-								<div class="join">
-									<select class="select select-sm select-bordered join-item w-full">
-										<option>Select</option>
-										<option>1</option>
-										<option>2</option>
-										<option>3</option>
-									</select>
-								</div>
-							</label>
-							<label class="form-control w-full">
-								<div class="label">
-									<span class="label-text required">Select</span>
-								</div>
-								<div class="join">
-									<select class="select select-sm select-bordered join-item w-full">
-										<option>Select</option>
-										<option>1</option>
-										<option>2</option>
-										<option>3</option>
-									</select>
-								</div>
-							</label>
-						</div>
-						<div class="flex">
-							<label class="form-control w-full">
-								<div class="label">
-									<span class="label-text required">Text</span>
-								</div>
-								<div class="join">
-									<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-								</div>
-							</label>
-							<label class="form-control w-full">
-								<div class="label">
-									<span class="label-text required">Select</span>
-								</div>
-								<div class="join">
-									<select class="select select-sm select-bordered join-item w-full">
-										<option>Select</option>
-										<option>1</option>
-										<option>2</option>
-										<option>3</option>
-									</select>
-								</div>
-							</label>
-							<label class="form-control w-full">
-								<div class="label">
-									<span class="label-text required">Toggle</span>
-								</div>
-								<div class="join">
-									<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
-								</div>
-							</label>
-						</div>
-						<div class="flex flex-wrap">
-							<label class="form-control basis-1/3 grow">
-								<div class="label">
-									<span class="label-text required">Text</span>
-								</div>
-								<div class="join">
-									<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-								</div>
-							</label>
-							<label class="form-control basis-1/3 grow">
-								<div class="label">
-									<span class="label-text required">Text</span>
-								</div>
-								<div class="join">
-									<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-								</div>
-							</label>
-							<label class="form-control basis-1/3 grow">
-								<div class="label">
-									<span class="label-text required">Text</span>
-								</div>
-								<div class="join">
-									<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-								</div>
-							</label>
-							<label class="form-control basis-1/3 grow">
-								<div class="label">
-									<span class="label-text required">Text</span>
-								</div>
-								<div class="join">
-									<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-								</div>
-							</label>
-							<label class="form-control basis-1/3 grow">
-								<div class="label">
-									<span class="label-text required">Text</span>
-								</div>
-								<div class="join">
-									<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-								</div>
-							</label>
-							<label class="form-control basis-1/3 grow">
-								<div class="label">
-									<span class="label-text required">Text</span>
-								</div>
-								<div class="join">
-									<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-								</div>
-							</label>
-							<label class="form-control basis-1/3 grow">
-								<div class="label">
-									<span class="label-text required">Text</span>
-								</div>
-								<div class="join">
-									<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-								</div>
-							</label>
-							<label class="form-control basis-1/3 grow">
-								<div class="label">
-									<span class="label-text required">Text</span>
-								</div>
-								<div class="join">
-									<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-								</div>
-							</label>
-							<label class="form-control basis-1/3 grow">
-								<div class="label">
-									<span class="label-text required">Text</span>
-								</div>
-								<div class="join">
-									<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-								</div>
-							</label>
-						</div>
+							<div class="join">
+								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
+							</div>
+						</label>
 					</div>
-					<h2>Button</h2>
-					<div>
-						<h3>Buttons with brand colors</h3>
-						<div>
-							<button class="btn">Button</button>
-							<button class="btn btn-neutral">Neutral</button>
-							<button class="btn btn-primary">Primary</button>
-							<button class="btn btn-secondary">Secondary</button>
-							<button class="btn btn-accent">Accent</button>
-							<button class="btn btn-ghost">Ghost</button>
-							<button class="btn btn-link">Link</button>
-						</div>
-						<h3>Buttons with state colors</h3>
-						<div>
-							<button class="btn btn-info">Info</button>
-							<button class="btn btn-success">Success</button>
-							<button class="btn btn-warning">Warning</button>
-							<button class="btn btn-error">Error</button>
-						</div>
-						<h3>Outline buttons</h3>
-						<div>
-							<button class="btn btn-outline">Default</button>
-							<button class="btn btn-outline btn-primary">Primary</button>
-							<button class="btn btn-outline btn-secondary">Secondary</button>
-							<button class="btn btn-outline btn-accent">Accent</button>
-						</div>
-						<h3>Outline buttons with state colors</h3>
-						<div>
-							<button class="btn btn-outline btn-info">Info</button>
-							<button class="btn btn-outline btn-success">Success</button>
-							<button class="btn btn-outline btn-warning">Warning</button>
-							<button class="btn btn-outline btn-error">Error</button>
-						</div>
-						<h3>Button sizes</h3>
-						<div>
-							<button class="btn btn-lg">Large</button>
-							<button class="btn">Normal</button>
-							<button class="btn btn-sm">Small</button>
-							<button class="btn btn-xs">Tiny</button>
-						</div>
+					<div class="flex">
+						<label class="form-control w-full">
+							<div class="label">
+								<span class="label-text required">Text</span>
+							</div>
+							<div class="join">
+								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
+							</div>
+						</label>
+						<label class="form-control w-full">
+							<div class="label">
+								<span class="label-text required">Text</span>
+							</div>
+							<div class="join">
+								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
+							</div>
+						</label>
 					</div>
-					<h2>Checkbox toggle</h2>
-					<div>
-						<h3>Checkboxes with brand colors</h3>
-						<div>
-							<input type="checkbox" class="toggle toggle-primary" checked />
-							<input type="checkbox" class="toggle toggle-secondary" checked />
-							<input type="checkbox" class="toggle toggle-accent" checked />
-						</div>
-						<h3>Checkboxes with state colors</h3>
-						<div>
-							<input type="checkbox" class="toggle toggle-success" checked />
-							<input type="checkbox" class="toggle toggle-warning" checked />
-							<input type="checkbox" class="toggle toggle-info" checked />
-							<input type="checkbox" class="toggle toggle-error" checked />
-						</div>
+					<div class="flex">
+						<label class="form-control w-full">
+							<div class="label">
+								<span class="label-text required">Text</span>
+							</div>
+							<div class="join">
+								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
+							</div>
+						</label>
+						<label class="form-control w-full">
+							<div class="label">
+								<span class="label-text required">Select</span>
+							</div>
+							<div class="join">
+								<select class="select select-sm select-bordered join-item w-full">
+									<option>Select</option>
+									<option>1</option>
+									<option>2</option>
+									<option>3</option>
+								</select>
+							</div>
+						</label>
 					</div>
-					<h2>Alert</h2>
-					<div class="space-y-2">
-						<div role="alert" class="alert alert-info">
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-							<span>alert-info : New software update available.</span>
-						</div>
-						<div role="alert" class="alert alert-success">
-							<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-							<span>alert-success : Your purchase has been confirmed!</span>
-						</div>
-						<div role="alert" class="alert alert-warning">
-							<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-							<span>alert-warning : Invalid email address!</span>
-						</div>
-						<div role="alert" class="alert alert-error">
-							<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-							<span>alert-error : Task failed successfully.</span>
-						</div>
+					<div class="flex">
+						<label class="form-control w-full">
+							<div class="label">
+								<span class="label-text required">Text</span>
+							</div>
+							<div class="join">
+								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
+							</div>
+						</label>
+						<label class="form-control w-full">
+							<div class="label">
+								<span class="label-text required">Toggle</span>
+							</div>
+							<div class="join">
+								<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
+							</div>
+						</label>
 					</div>
-					<h2>Checkbox toggle</h2>
-					<div>
-						<div class="tooltip tooltip-top" data-tip="hello">
-							<button class="btn">Top</button>
-						</div>
-						<div class="tooltip tooltip-bottom" data-tip="hello">
-							<button class="btn">Bottom</button>
-						</div>
-						<div class="tooltip tooltip-left" data-tip="hello">
-							<button class="btn">Left</button>
-						</div>
-						<div class="tooltip tooltip-right" data-tip="hello">
-							<button class="btn">Right</button>
-						</div>
+					<div class="flex">
+						<label class="form-control w-full">
+							<div class="label">
+								<span class="label-text required">Text</span>
+							</div>
+							<div class="join">
+								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
+							</div>
+						</label>
+						<label class="form-control w-full">
+							<div class="label">
+								<span class="label-text required">Select</span>
+							</div>
+							<div class="join">
+								<select class="select select-sm select-bordered join-item w-full">
+									<option>Select</option>
+									<option>1</option>
+									<option>2</option>
+									<option>3</option>
+								</select>
+							</div>
+						</label>
+						<label class="form-control w-full">
+							<div class="label">
+								<span class="label-text required">Select</span>
+							</div>
+							<div class="join">
+								<select class="select select-sm select-bordered join-item w-full">
+									<option>Select</option>
+									<option>1</option>
+									<option>2</option>
+									<option>3</option>
+								</select>
+							</div>
+						</label>
 					</div>
-					<h2>Text test</h2>
-					<div>
-						텍스트 투명 처리 : <span class="bg-neutral-400 text-transparent">텍스트</span>
+					<div class="flex">
+						<label class="form-control w-full">
+							<div class="label">
+								<span class="label-text required">Text</span>
+							</div>
+							<div class="join">
+								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
+							</div>
+						</label>
+						<label class="form-control w-full">
+							<div class="label">
+								<span class="label-text required">Select</span>
+							</div>
+							<div class="join">
+								<select class="select select-sm select-bordered join-item w-full">
+									<option>Select</option>
+									<option>1</option>
+									<option>2</option>
+									<option>3</option>
+								</select>
+							</div>
+						</label>
+						<label class="form-control w-full">
+							<div class="label">
+								<span class="label-text required">Toggle</span>
+							</div>
+							<div class="join">
+								<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
+							</div>
+						</label>
+					</div>
+					<div class="flex flex-wrap">
+						<label class="form-control basis-1/3 grow">
+							<div class="label">
+								<span class="label-text required">Text</span>
+							</div>
+							<div class="join">
+								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
+							</div>
+						</label>
+						<label class="form-control basis-1/3 grow">
+							<div class="label">
+								<span class="label-text required">Text</span>
+							</div>
+							<div class="join">
+								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
+							</div>
+						</label>
+						<label class="form-control basis-1/3 grow">
+							<div class="label">
+								<span class="label-text required">Text</span>
+							</div>
+							<div class="join">
+								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
+							</div>
+						</label>
+						<label class="form-control basis-1/3 grow">
+							<div class="label">
+								<span class="label-text required">Text</span>
+							</div>
+							<div class="join">
+								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
+							</div>
+						</label>
+						<label class="form-control basis-1/3 grow">
+							<div class="label">
+								<span class="label-text required">Text</span>
+							</div>
+							<div class="join">
+								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
+							</div>
+						</label>
+						<label class="form-control basis-1/3 grow">
+							<div class="label">
+								<span class="label-text required">Text</span>
+							</div>
+							<div class="join">
+								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
+							</div>
+						</label>
+						<label class="form-control basis-1/3 grow">
+							<div class="label">
+								<span class="label-text required">Text</span>
+							</div>
+							<div class="join">
+								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
+							</div>
+						</label>
+						<label class="form-control basis-1/3 grow">
+							<div class="label">
+								<span class="label-text required">Text</span>
+							</div>
+							<div class="join">
+								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
+							</div>
+						</label>
+						<label class="form-control basis-1/3 grow">
+							<div class="label">
+								<span class="label-text required">Text</span>
+							</div>
+							<div class="join">
+								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
+							</div>
+						</label>
+					</div>
+					<div class="flex flex-wrap">
+						<label class="form-control basis-1/6 grow">
+							<div class="label">
+								<span class="label-text required">Toggle</span>
+							</div>
+							<div class="join">
+								<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
+							</div>
+						</label>
+						<label class="form-control basis-1/6 grow">
+							<div class="label">
+								<span class="label-text required">Toggle</span>
+							</div>
+							<div class="join">
+								<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
+							</div>
+						</label>
+						<label class="form-control basis-1/6 grow">
+							<div class="label">
+								<span class="label-text required">Toggle</span>
+							</div>
+							<div class="join">
+								<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
+							</div>
+						</label>
+						<label class="form-control basis-1/6 grow">
+							<div class="label">
+								<span class="label-text required">Toggle</span>
+							</div>
+							<div class="join">
+								<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
+							</div>
+						</label>
+						<label class="form-control basis-1/6 grow">
+							<div class="label">
+								<span class="label-text required">Toggle</span>
+							</div>
+							<div class="join">
+								<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
+							</div>
+						</label>
+						<label class="form-control basis-1/6 grow">
+							<div class="label">
+								<span class="label-text required">Toggle</span>
+							</div>
+							<div class="join">
+								<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
+							</div>
+						</label>
+						<label class="form-control basis-1/6 grow">
+							<div class="label">
+								<span class="label-text required">Toggle</span>
+							</div>
+							<div class="join">
+								<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
+							</div>
+						</label>
 					</div>
 				</div>
-			</div>
-			<!--/*-->
-			<div tabindex="0" class="collapse">
-				<h1 class="collapse-title m-0">
-					탭 추가
-				</h1>
-				<div class="collapse-content"> 
-					<h2 class="m-0">첫번째 h2는 m-0 처리</h2>
+				<h2>Button</h2>
+				<div>
+					<h3>Buttons with brand colors</h3>
 					<div>
-						내용내용
+						<button class="btn">Button</button>
+						<button class="btn btn-neutral">Neutral</button>
+						<button class="btn btn-primary">Primary</button>
+						<button class="btn btn-secondary">Secondary</button>
+						<button class="btn btn-accent">Accent</button>
+						<button class="btn btn-ghost">Ghost</button>
+						<button class="btn btn-link">Link</button>
+					</div>
+					<h3>Buttons with state colors</h3>
+					<div>
+						<button class="btn btn-info">Info</button>
+						<button class="btn btn-success">Success</button>
+						<button class="btn btn-warning">Warning</button>
+						<button class="btn btn-error">Error</button>
+					</div>
+					<h3>Outline buttons</h3>
+					<div>
+						<button class="btn btn-outline">Default</button>
+						<button class="btn btn-outline btn-primary">Primary</button>
+						<button class="btn btn-outline btn-secondary">Secondary</button>
+						<button class="btn btn-outline btn-accent">Accent</button>
+					</div>
+					<h3>Outline buttons with state colors</h3>
+					<div>
+						<button class="btn btn-outline btn-info">Info</button>
+						<button class="btn btn-outline btn-success">Success</button>
+						<button class="btn btn-outline btn-warning">Warning</button>
+						<button class="btn btn-outline btn-error">Error</button>
+					</div>
+					<h3>Button sizes</h3>
+					<div>
+						<button class="btn btn-lg">Large</button>
+						<button class="btn">Normal</button>
+						<button class="btn btn-sm">Small</button>
+						<button class="btn btn-xs">Tiny</button>
 					</div>
 				</div>
+				<h2>Checkbox toggle</h2>
+				<div>
+					<h3>Checkboxes with brand colors</h3>
+					<div>
+						<input type="checkbox" class="toggle toggle-primary" checked />
+						<input type="checkbox" class="toggle toggle-secondary" checked />
+						<input type="checkbox" class="toggle toggle-accent" checked />
+					</div>
+					<h3>Checkboxes with state colors</h3>
+					<div>
+						<input type="checkbox" class="toggle toggle-success" checked />
+						<input type="checkbox" class="toggle toggle-warning" checked />
+						<input type="checkbox" class="toggle toggle-info" checked />
+						<input type="checkbox" class="toggle toggle-error" checked />
+					</div>
+				</div>
+				<h2>Alert</h2>
+				<div class="space-y-2">
+					<div role="alert" class="alert alert-info">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+						<span>alert-info : New software update available.</span>
+					</div>
+					<div role="alert" class="alert alert-success">
+						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+						<span>alert-success : Your purchase has been confirmed!</span>
+					</div>
+					<div role="alert" class="alert alert-warning">
+						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+						<span>alert-warning : Invalid email address!</span>
+					</div>
+					<div role="alert" class="alert alert-error">
+						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+						<span>alert-error : Task failed successfully.</span>
+					</div>
+				</div>
+				<h2>Checkbox toggle</h2>
+				<div>
+					<div class="tooltip tooltip-top" data-tip="hello">
+						<button class="btn">Top</button>
+					</div>
+					<div class="tooltip tooltip-bottom" data-tip="hello">
+						<button class="btn">Bottom</button>
+					</div>
+					<div class="tooltip tooltip-left" data-tip="hello">
+						<button class="btn">Left</button>
+					</div>
+					<div class="tooltip tooltip-right" data-tip="hello">
+						<button class="btn">Right</button>
+					</div>
+				</div>
+				<h2>Text test</h2>
+				<div>
+					텍스트 투명 처리 : <span class="bg-neutral-400 text-transparent">텍스트</span>
+				</div>
 			</div>
-			<!--*/-->
-			
 		</div>
+		<!--/*-->
+		<div tabindex="0" class="collapse">
+			<h1 class="collapse-title m-0">
+				탭 추가
+			</h1>
+			<div class="collapse-content"> 
+				<h2 class="m-0">첫번째 h2는 m-0 처리</h2>
+				<div>
+					내용내용
+				</div>
+			</div>
+		</div>
+		<!--*/-->
+			
 	</div>
 	
 

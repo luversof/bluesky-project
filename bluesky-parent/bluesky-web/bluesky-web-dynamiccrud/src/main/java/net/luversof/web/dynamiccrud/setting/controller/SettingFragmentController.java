@@ -25,7 +25,7 @@ import net.luversof.web.dynamiccrud.thymeleaf.constant.UrlConstant;
 public class SettingFragmentController extends AbstractSettingFragmentController {
 
 	@GetMapping(UrlConstant.PATH_SETTING_FRAGMENT_LIST)
-	public String list(
+	public String settingList(
 			@PathVariable String projectId, 
 			@PathVariable String mainMenuId, 
 			@PathVariable String subMenuId,

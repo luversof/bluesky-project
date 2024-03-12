@@ -56,16 +56,12 @@ var searchAreaFn = (() => {
 	
 	return {
 		addEventListener() {
-			// 검색 변경 이벤트, 변경 시 page는 1로 리셋한다.
-			document.querySelectorAll(_searchInputArea).forEach(el => el.addEventListener("change", (event) => {
-				searchAreaFn.searchList(event);
-			}));
-			document.querySelectorAll(_searchButtonArea).forEach(el => el.addEventListener("click", () => {
+			document.querySelectorAll(_searchInputArea).forEach(el => el.addEventListener("change", (event) => searchAreaFn.searchList(event)));
+			document.querySelectorAll(_searchButtonArea).forEach(el => el.addEventListener("click", () => searchAreaFn.searchList()));
+			document.querySelectorAll(_resetButtonArea).forEach(el => el.addEventListener("click", () => {
+				searchAreaFn.reset();
 				searchAreaFn.searchList();
 			}));
-			
-			// 검색 reset 버튼 이벤트
-			document.querySelectorAll(_resetButtonArea).forEach(el => el.addEventListener("click", () => searchAreaFn.reset()));
 			
 		},
 		// 초기화 (페이지 리로드 시 검색 영역과 param 설정 일치 처리)
@@ -101,10 +97,11 @@ var searchAreaFn = (() => {
 			}
 			
 			if (event) {
+				// event가 있는 경우 (input 변경 시 호출의 경우) page를 1로 변경하고 param 값을 추가
 				param.setParam("page", 1);
 				param.setParam(event.target.name, event.target.value);
 			}
-			htmx.trigger("#listArea", "showListTrigger");
+			htmx.trigger("#listArea", "listFragmentTrigger");
 		}
 	}
 })();
@@ -115,7 +112,7 @@ var listAreaFn = (() => {
 	return {
 		// response header로 전달받은 HX-Trigger에 대한 event trigger
 		addEventListener() {
-			document.addEventListener('showListResponseTrigger', () => {
+			document.addEventListener('listFragmentResponseTrigger', () => {
 				var targetArea = document.querySelector(_listAreaSelector);
 				/** 체크박스 선택 처리 */
 				targetArea.querySelectorAll("#contentTable input[name=contentDataCheck]").forEach(el => el.addEventListener("change", (event) => {
@@ -142,7 +139,7 @@ var listAreaFn = (() => {
 				/** (s) navButton 처리 */
 				targetArea.querySelectorAll(".navButton").forEach(el => el.addEventListener("click", (event) => {
 					param.setParam("page", event.target.dataset.page);
-					htmx.trigger("#listArea", "showListTrigger");
+					htmx.trigger("#listArea", "listFragmentTrigger");
 				}));
 				/** (e) navButton 처리 */
 			
@@ -177,7 +174,7 @@ var listAreaFn = (() => {
 				event.preventDefault();
 				return;
 			}
-			htmx.trigger(_listAreaSelector + " .exportButton", "exportData");
+			htmx.trigger(_listAreaSelector + " .exportButton", "exportModalBulkTrigger");
 		}
 	}
 })();
@@ -189,17 +186,17 @@ var modalFormFn = (() => {
 	return {
 		// response header로 전달받은 HX-Trigger에 대한 event trigger
 		addEventListener() {
-			document.addEventListener('showModalFormResponseTrigger', () => document.querySelector(_modalAreaSelector).showModal());
-			document.addEventListener('createModalFormResponseTrigger', () => this.initialize());
-			document.addEventListener('updateModalFormResponseTrigger', (event) => {
+			document.addEventListener('showModalFormFragmentResponseTrigger', () => document.querySelector(_modalAreaSelector).showModal());
+			document.addEventListener('createModalFormFragmentResponseTrigger', () => this.initialize());
+			document.addEventListener('updateModalFormFragmentResponseTrigger', (event) => {
 				this.initialize();
 				this.copyContentDataToModalForm(event.target.closest("tr").querySelector(".contentData"))
 			});
 			
 			// modalForm에 데이터 생성 요청 후 page를 1로 초기화하여 바닥 페이지 데이터 갱신 시 첫 페이지로 이동 처리  
-			document.addEventListener('createModalResponseTrigger', () => param.setParam("page", 1));
+			document.addEventListener('createModalFragmentResponseTrigger', () => param.setParam("page", 1));
 			
-			document.addEventListener('exportModalBulkFormResponseTrigger', () => {
+			document.addEventListener('exportModalBulkFormFragmentResponseTrigger', () => {
 				var modalTarget = document.querySelector(_modalAreaSelector);
 				var checkedIds = [...document.querySelectorAll("#contentTable input[name=contentDataCheck]")].filter(el => el.checked).map(el => parseInt(el.value));
 				var targetList = contentList.filter((_el, index) => checkedIds.includes(index));

@@ -74,7 +74,7 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 		
 		// 여기도 필드 정보 기준으로 출력 처리를 해야 할꺼 같은데?
 		
-		response.setHeader(HX_TRIGGER, "showListResponseTrigger");	// Htmx 응답 트리거를 위한 설정
+		response.setHeader(HX_TRIGGER, "listFragmentResponseTrigger");	// Htmx 응답 트리거를 위한 설정
 		return "use/fragment/list";
 	}
 	
@@ -87,7 +87,7 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 			@PathVariable String modalMode,
 			HttpServletResponse response,
 			Model model) {
-		response.setHeader(HX_TRIGGER, MessageFormat.format("{0}ModalFormResponseTrigger,showModalFormResponseTrigger", modalMode));	// Htmx 응답 트리거를 위한 설정
+		response.setHeader(HX_TRIGGER, MessageFormat.format("{0}ModalFormFragmentResponseTrigger,showModalFormFragmentResponseTrigger", modalMode));	// Htmx 응답 트리거를 위한 설정
 		return "use/fragment/modalForm";
 	}
 	
@@ -142,7 +142,7 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 			@PathVariable String modalMode,
 			HttpServletResponse response,
 			Model model) {
-		response.setHeader(HX_TRIGGER, MessageFormat.format("{0}ModalBulkFormResponseTrigger,showModalFormResponseTrigger", modalMode));	// Htmx 응답 트리거를 위한 설정
+		response.setHeader(HX_TRIGGER, MessageFormat.format("{0}ModalBulkFormFragmentResponseTrigger,showModalFormFragmentResponseTrigger", modalMode));	// Htmx 응답 트리거를 위한 설정
 		return "use/fragment/modalBulkForm";
 	}
 	
