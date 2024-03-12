@@ -8,9 +8,11 @@
 		</tr>
 	</thead>
 	<tbody>
-		<tr class="hover" data-th-each="boardArticle : ${page.content}">
+		<tr class="hover cursor-pointer"
+			data-th-each="boardArticle : ${page.content}"
+			data-th-data-boardArticleId="${boardArticle.boardArticleId}">
 			<th data-th-text="${boardArticle.id}"></th>
-			<td><a data-th-href="@{view(boardArticleId=${boardArticle.boardArticleId})}" data-th-text="${boardArticle.title}"></a></td>
+			<td data-th-text="${boardArticle.title}"></td>
 			<td data-th-text="${#temporals.format(boardArticle.createdDate)}" data-th-data-date="${boardArticle.createdDate}"></td>
 		</tr>
 	</tbody>
@@ -24,7 +26,7 @@
 		<div data-th-replace="~{_components/pagination (pagination = ${pagePagination})}"></div>
 	</div>
 	<div>
-		<a href="write"><button class="btn btn-sm" data-th-text="#{board.button.write}"></button></a>
+		<button class="btn btn-sm writeButton" data-th-text="#{board.button.write}"></button>
 	</div>
 </div>
 

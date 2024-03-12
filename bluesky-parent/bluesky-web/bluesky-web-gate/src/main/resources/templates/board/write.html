@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html data-layout-decorate="~{board/_layout/boardLayout}">
+
+<head>
+	<script src="https://unpkg.com/@toast-ui/editor/dist/toastui-editor"></script>
+	<script data-th-inline="javascript">
+		/*<![CDATA[*/
+		var boardAlias = /*[[${boardAlias}]]*/ 'boardAlias';
+		/*]]>*/
+		
+		document.addEventListener("DOMContentLoaded", () => {
+			//boardList.addEventListener();
+		});
+	</script>
+	<link rel="stylesheet" href="https://unpkg.com/@toast-ui/editor/dist/toastui-editor.css" /> 
+</head>
+
+<body>
+	<div data-layout-fragment="content-board">
+		글쓰기
+		<div id="editor"></div>
+	</div>
+</body>
+
+</html>

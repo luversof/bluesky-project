@@ -14,8 +14,8 @@ public class IndexThymeleafController {
 		return "index";
 	}
 
-	@GetMapping("/ui-components")
-	public void uiComponents() {
+	@GetMapping("/dev")
+	public void dev() {
 	}
 
 }

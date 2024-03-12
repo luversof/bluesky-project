@@ -13,12 +13,10 @@
 	<script>
 		dayjs.locale('ko');
 	</script>
-	<!--<script type="module" src="https://unpkg.com/dayjs/plugin/relativeTime"></script>-->
+	<script src="https://unpkg.com/dayjs/plugin/relativeTime"></script>
 	<script>
-		//console.log("TEST : ", relativeTime)
-		//dayjs.extend(relativeTime);
+		dayjs.extend(window.dayjs_plugin_relativeTime);
 	</script>
-	<script type="module" data-th-src="@{/js/test.js}"></script>
 	<script data-th-src="@{/js/common.js}"></script>
 </head>
 

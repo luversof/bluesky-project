@@ -6,14 +6,18 @@
 		/*<![CDATA[*/
 		var boardAlias = /*[[${boardAlias}]]*/ 'boardAlias';
 		/*]]>*/
+		
+		document.addEventListener("DOMContentLoaded", () => {
+			boardList.addEventListener();
+		});
 	</script>
 </head>
 
 <body>
 	<div data-layout-fragment="content-board">
 		<div id="boardList"
-			hx-get="/board/fragment/boardArticlePage"
-			hx-trigger="load delay:0s, boardArticlePageTrigger"
+			hx-get="/board/fragment/list"
+			hx-trigger="load delay:0s, listFragmentTrigger"
 			hx-swap="transition:true"
 			hx-indicator="#indicator"
 			hx-vals="js:{

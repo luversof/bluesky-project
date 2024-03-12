@@ -2,13 +2,19 @@
 <html data-layout-decorate="~{board/_layout/boardLayout}">
 
 <head>
-	<script>
-		var boardAlias = "free";
+	<script data-th-inline="javascript">
+		/*<![CDATA[*/
+		var boardAlias = /*[[${boardAlias}]]*/ 'boardAlias';
+		/*]]>*/
 		var page = 1;
 
 		function getPage() {
 			return page - 1;
 		}
+		
+		document.addEventListener("DOMContentLoaded", () => {
+			boardView.addEventListener();
+		});
 	</script>
 </head>
 
@@ -18,6 +24,10 @@
 			<h1 data-th-text="${boardArticle.title}"></h1>
 			<p data-th-text="${boardArticle.content}"></p>
 		</article>
+		<div class="flex justify-between items-center">
+			<button class="btn btn-sm listButton" data-th-text="#{board.button.list}"></button>
+			<button class="btn btn-sm writeButton" data-th-text="#{board.button.write}"></button>
+		</div>
 	</div>
 </body>
 

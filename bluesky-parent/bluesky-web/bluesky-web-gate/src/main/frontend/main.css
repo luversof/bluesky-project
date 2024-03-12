@@ -15,3 +15,7 @@
 .htmx-request.htmx-indicator{
     display:inline;
 }
+
+.test {
+	display:none
+}

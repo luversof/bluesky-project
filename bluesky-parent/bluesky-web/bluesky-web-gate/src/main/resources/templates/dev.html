@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html data-layout-decorate="~{_layout/defaultLayout}">
+
+<body>
+	<div class="prose" data-layout-fragment="content">
+		
+		<div tabindex="0" class="collapse">
+			<input type="checkbox" /> 
+			<h1 class="collapse-title m-0">
+				FE 관련 개발 설정
+			</h1>
+			<div class="collapse-content"> 
+				<h2 class="m-0">npm 설정</h2>
+				<div>
+					 `src/main/frontend` 위치에서 아래 명령 실행하면 FE 프로젝트 관련 설정이 설치됩니다.
+					<div class="mockup-code">
+						<pre data-prefix="$"><code>npm install</code></pre>
+					</div>
+				</div>
+				<h2 class="m-0">watch 사용</h2>
+				<div>
+					프로젝트 최상위 위치에 제공되는 `npm-watch.bat`를 실행하거나
+					<div class="mockup-code">
+						<pre data-prefix="$"><code>npm-watch.bat</code></pre>
+					</div>
+					`src/main/frontend` 위치에서 직접 실행하면 개발하는 template 소스의 tailwindcss class 변경이 실시간으로 반영됩니다.
+					<div class="mockup-code">
+						<pre data-prefix="$"><code>npm run watch</code></pre>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<div tabindex="0" class="collapse">
+			<input type="checkbox" /> 
+			<h1 class="collapse-title m-0">
+				BE 개발 관련 dom attribute 설정 정보
+			</h1>
+			<div class="collapse-content"> 
+				tailwindcss나 daisyui의 class 명명 규칙과 별개로 사용하기 위한 값들에 대한 목록
+				<ul>
+					<li>board
+						<ul>
+							<li>css selector
+								<ul>
+									<li><b>.writeButton</b> : 글쓰기 버튼</li>
+									<li><b>.listButton</b> : 글목록 버튼</li>
+								</ul>
+							</li>
+							<li>Htmx trigger
+								<ul>
+									<li>요청
+										<ul>
+											<li><b>showListTrigger</b></li>
+										</ul>
+									</li>
+									<li>응답
+										<ul>
+											<li><b>showListResponseTrigger</b></li>
+										</ul>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</li>
+				</ul>
+			</div>
+		</div>
+		
+		<h1>UI Component 확인</h1>
+
+		<h2>navmenu</h2>
+		<div data-th-replace="~{_components/navmenu (menu = 'main', classAppend = 'menu-horizontal px-1')}" />
+		<br />
+		
+		<h1>h1 확인</h1>
+		<h2>h2 확인</h2>
+		<h3>h3 확인</h3>
+	</div>
+</body>
+
+</html>

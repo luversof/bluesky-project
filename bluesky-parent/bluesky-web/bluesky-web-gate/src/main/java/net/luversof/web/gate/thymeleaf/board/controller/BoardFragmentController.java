@@ -20,9 +20,9 @@ public class BoardFragmentController {
 	@Autowired
 	private BoardArticleClient boardArticleClient;
 
-	@GetMapping("/boardArticlePage")
+	@GetMapping("/list")
 	public Page<BoardArticle> boardArticlePage(String boardAlias, Pageable pageable, HttpServletResponse response) {
-		response.setHeader(HX_TRIGGER, "boardArticlePageResponseTrigger");
+		response.setHeader(HX_TRIGGER, "listFragmentResponseTrigger");
 		return boardArticleClient.findByBoardAlias(boardAlias, pageable);
 	}
 
