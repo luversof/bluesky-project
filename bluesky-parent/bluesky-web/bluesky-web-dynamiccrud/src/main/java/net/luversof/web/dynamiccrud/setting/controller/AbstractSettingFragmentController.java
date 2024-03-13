@@ -1,6 +1,5 @@
 package net.luversof.web.dynamiccrud.setting.controller;
 
-import java.text.MessageFormat;
 import java.util.List;
 import java.util.Map;
 
@@ -21,7 +20,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.github.luversof.boot.exception.BlueskyException;
-import jakarta.servlet.http.HttpServletResponse;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
@@ -37,8 +35,6 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 	@Autowired
 	private ObjectMapper objectMapper;
 	
-	private static final String HX_TRIGGER = "HX-Trigger-After-Settle";
-
 	@Override
 	public String list(
 			@PathVariable String adminProjectId,
@@ -47,7 +43,6 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 			@PathVariable String subMenuId,
 			Pageable pageable, 
 			@RequestParam Map<String, String> paramMap,
-			HttpServletResponse response,
 			Model model) {
 		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
 		var subMenu = SettingUtil.getSubMenu();
@@ -74,7 +69,6 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 		
 		// 여기도 필드 정보 기준으로 출력 처리를 해야 할꺼 같은데?
 		
-		response.setHeader(HX_TRIGGER, "listFragmentResponseTrigger");	// Htmx 응답 트리거를 위한 설정
 		return "use/fragment/list";
 	}
 	
@@ -85,9 +79,7 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 			@PathVariable String mainMenuId, 
 			@PathVariable String subMenuId,
 			@PathVariable String modalMode,
-			HttpServletResponse response,
 			Model model) {
-		response.setHeader(HX_TRIGGER, MessageFormat.format("{0}ModalFormFragmentResponseTrigger,showModalFormFragmentResponseTrigger", modalMode));	// Htmx 응답 트리거를 위한 설정
 		return "use/fragment/modalForm";
 	}
 	
@@ -99,7 +91,6 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 			@PathVariable String subMenuId,
 			@PathVariable String modalMode,
 			@RequestParam Map<String, String> dataMap,
-			HttpServletResponse response,
 			Model model) {
 		
 		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
@@ -114,7 +105,6 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 		} else {
 			useService.update(settingParameter, dataMap);
 		}
-		response.setHeader(HX_TRIGGER, MessageFormat.format("{0}ModalResponseTrigger", modalMode));	// Htmx 응답 트리거를 위한 설정
 	}
 	
 	@Override
@@ -125,12 +115,9 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 			@PathVariable String subMenuId,
 			@PathVariable String modalMode,
 			@RequestParam MultiValueMap<String, String> dataMap,
-			HttpServletResponse response,
 			Model model) {
 		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
 		useService.delete(settingParameter, dataMap);
-		
-		response.setHeader(HX_TRIGGER, "deleteModalResponseTrigger");	// Htmx 응답 트리거를 위한 설정
 	}
 	
 	@Override
@@ -140,9 +127,7 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 			@PathVariable String mainMenuId, 
 			@PathVariable String subMenuId,
 			@PathVariable String modalMode,
-			HttpServletResponse response,
 			Model model) {
-		response.setHeader(HX_TRIGGER, MessageFormat.format("{0}ModalBulkFormFragmentResponseTrigger,showModalFormFragmentResponseTrigger", modalMode));	// Htmx 응답 트리거를 위한 설정
 		return "use/fragment/modalBulkForm";
 	}
 	
@@ -154,7 +139,6 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 			@PathVariable String subMenuId,
 			@PathVariable String modalMode,
 			@RequestParam Map<String, String> dataMap,
-			HttpServletResponse response,
 			Model model) throws JsonMappingException, JsonProcessingException {
 		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
 		var dataMapList = objectMapper.readValue(dataMap.get("bulkData"), new TypeReference<List<Map<String, String>>>() {});
@@ -162,8 +146,6 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 		for (var map : dataMapList) {
 			useService.create(settingParameter, map);
 		}
-		
-		response.setHeader(HX_TRIGGER, "importModalBulkResponseTrigger");	// Htmx 응답 트리거를 위한 설정
 	}
 	
 	@Override
@@ -174,10 +156,9 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 			@PathVariable String subMenuId,
 			@RequestParam Map<String, String> paramMap,
 			Pageable pageable,
-			HttpServletResponse response,
 			Model model) {
 		// 다운로드의 페이지 사이즈는 어떻게 처리할지 고민 필요. 일단 기존 호출 방식을 활용
-		list(adminProjectId, projectId, mainMenuId, subMenuId, pageable, paramMap, response, model);
+		list(adminProjectId, projectId, mainMenuId, subMenuId, pageable, paramMap, model);
 		return new UseExcelView();
 	}
 	

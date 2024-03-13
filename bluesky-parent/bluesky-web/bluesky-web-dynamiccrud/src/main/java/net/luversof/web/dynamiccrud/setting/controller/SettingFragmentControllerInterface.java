@@ -10,8 +10,6 @@ import org.springframework.web.servlet.View;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
-import jakarta.servlet.http.HttpServletResponse;
-
 /**
  * 동일 기능처리를 여러 path로 처리하기 위해 구성한 interface
  * path 별 권한 부여 목적을 위해 분기
@@ -28,7 +26,6 @@ public interface SettingFragmentControllerInterface {
 			String subMenuId,
 			Pageable pageable, 
 			Map<String, String> paramMap,
-			HttpServletResponse response,
 			Model model);
 	
 	/**
@@ -40,7 +37,6 @@ public interface SettingFragmentControllerInterface {
 			String mainMenuId, 
 			String subMenuId,
 			String modalMode,
-			HttpServletResponse response,
 			Model model);
 	
 	/**
@@ -53,7 +49,6 @@ public interface SettingFragmentControllerInterface {
 			String subMenuId,
 			String modalMode,
 			Map<String, String> dataMap,
-			HttpServletResponse response,
 			Model model);
 	
 	/**
@@ -66,7 +61,6 @@ public interface SettingFragmentControllerInterface {
 			String subMenuId,
 			String modalMode,
 			MultiValueMap<String, String> dataMap,
-			HttpServletResponse response,
 			Model model);
 	
 	/**
@@ -78,7 +72,6 @@ public interface SettingFragmentControllerInterface {
 			String mainMenuId, 
 			String subMenuId,
 			String modalMode,
-			HttpServletResponse response,
 			Model model);
 	
 	/**
@@ -91,7 +84,6 @@ public interface SettingFragmentControllerInterface {
 			String subMenuId,
 			String modalMode,
 			Map<String, String> dataMap,
-			HttpServletResponse response,
 			Model model) throws JsonMappingException, JsonProcessingException;
 	
 	/**
@@ -104,6 +96,5 @@ public interface SettingFragmentControllerInterface {
 			String subMenuId,
 			Map<String, String> paramMap,
 			Pageable pageable,
-			HttpServletResponse response,
 			Model model);
 }
