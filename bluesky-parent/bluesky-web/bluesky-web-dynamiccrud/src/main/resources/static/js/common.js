@@ -21,6 +21,9 @@ var param = (() => {
 			}
 			this.refreshUrl();
 		},
+		deleteParam(paramKey) {
+			_params.delete(paramKey);
+		},
 		resetParam() {
 			_params = new URLSearchParams();
 			this.refreshUrl();
@@ -314,6 +317,15 @@ var modalFormFn = (() => {
 
 listAreaFn.addEventListener();
 modalFormFn.addEventListener();
+
+document.addEventListener('htmx:beforeSwap', (event) => {
+	if('hx-indicator' in event.target.attributes) {
+		var indicator = document.querySelector(event.target.getAttribute('hx-indicator')).cloneNode(true);
+		indicator.style.display = "block";
+		event.target.innerHTML = "";
+	    event.target.appendChild(indicator);
+	}
+});
 
 window.addEventListener('DOMContentLoaded', () => {
 	navbarAreaFn.addEventListener();

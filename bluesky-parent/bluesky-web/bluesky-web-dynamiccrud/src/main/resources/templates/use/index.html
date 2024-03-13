@@ -6,13 +6,19 @@
 	<div data-layout-fragment="content">
 		
 		<div data-th-replace="~{use/_components/searchArea}" />
+		
+		<div id="indicator" class="text-center my-10 hidden">
+			<span class="loading loading-ring loading-lg"></span>
+		</div>
+		
 		<div
-			class="px-10"
+			class="px-10 text-center"
 			data-th-attr="hx-get=@{${thymeleafUtil.getUrl('FRAGMENT_LIST')}}"
 			hx-vals="js:{'page' : param.getRequestPage()}"
 			hx-include="#searchArea .searchInput"
 			hx-boost="true"
 			hx-swap="transition:true"
+			hx-indicator="#indicator"
 			hx-trigger="
 				load delay:0s,
 				click target:.navButton, 
@@ -23,9 +29,6 @@
 				deleteModalResponseTrigger from:body,
 				importModalBulkResponseTrigger from:body"
 		>
-			<div class="text-center my-10">
-				<span class="loading loading-ring loading-lg"></span>
-			</div>
 		</div>
 		
 	</div>

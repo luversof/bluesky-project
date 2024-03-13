@@ -7,6 +7,8 @@
 	--tw-bg-opacity: 0.0;
 }
 
+
+/* htmx indicator 설정 */
 .htmx-indicator{
     opacity: 1 !important;
     display:none;
@@ -14,8 +16,4 @@
 
 .htmx-request.htmx-indicator{
     display:inline;
-}
-
-.test {
-	display:none
 }

@@ -15,7 +15,11 @@
 
 <body>
 	<div data-layout-fragment="content-board">
+		<div id="indicator" class="text-center my-10 hidden">
+			<span class="loading loading-ring loading-lg"></span>
+		</div>
 		<div id="boardList"
+			class="text-center"
 			hx-get="/board/fragment/list"
 			hx-trigger="load delay:0s, listFragmentTrigger"
 			hx-swap="transition:true"
@@ -25,9 +29,6 @@
 				'page' : param.getRequestPage()
 			}">
 		</div>
-		<span id="indicator" class="text-center my-10 htmx-request htmx-indicator">
-			<span class="loading loading-ring loading-lg"></span>
-		</span>
 	</div>
 </body>
 

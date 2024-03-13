@@ -79,3 +79,13 @@ var boardView = (() => {
 var boardWrite = (() => {
 	
 })();
+
+
+document.addEventListener('htmx:beforeSwap', (event) => {
+	if('hx-indicator' in event.target.attributes) {
+		var indicator = document.querySelector(event.target.getAttribute('hx-indicator')).cloneNode(true);
+		indicator.style.display = "block";
+		event.target.innerHTML = "";
+	    event.target.appendChild(indicator);
+	}
+});
