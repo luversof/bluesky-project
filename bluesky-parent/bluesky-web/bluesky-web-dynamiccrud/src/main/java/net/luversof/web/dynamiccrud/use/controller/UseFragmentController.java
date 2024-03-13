@@ -24,7 +24,7 @@ import net.luversof.web.dynamiccrud.thymeleaf.constant.UrlConstant;
 public class UseFragmentController extends AbstractSettingFragmentController {
 	
 	@GetMapping(UrlConstant.PATH_USE_FRAGMENT_LIST)
-	@HtmxResponseHeader("listFragmentResponseTrigger")
+	@HtmxResponseHeader("'listFragmentResponseTrigger'")
 	public String useList(
 			@PathVariable String adminProjectId,
 			@PathVariable String projectId, 
@@ -63,7 +63,7 @@ public class UseFragmentController extends AbstractSettingFragmentController {
 	}
 	
 	@PostMapping(UrlConstant.PATH_USE_FRAGMENT_MODAL_FORM_DELETE)
-	@HtmxResponseHeader("deleteModalResponseTrigger")
+	@HtmxResponseHeader("'deleteModalResponseTrigger'")
 	@ResponseBody
 	public void useDeleteModal(
 			@PathVariable String adminProjectId,
@@ -89,7 +89,7 @@ public class UseFragmentController extends AbstractSettingFragmentController {
 	}
 	
 	@PostMapping(UrlConstant.PATH_USE_FRAGMENT_MODAL_BULK_FORM)
-	@HtmxResponseHeader("importModalBulkResponseTrigger")
+	@HtmxResponseHeader("'importModalBulkResponseTrigger'")
 	@ResponseBody
 	public void useImportModalBulk(
 			@PathVariable String adminProjectId,

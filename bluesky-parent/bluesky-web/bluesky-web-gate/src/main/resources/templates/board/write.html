@@ -2,7 +2,12 @@
 <html data-layout-decorate="~{board/_layout/boardLayout}">
 
 <head>
-	<script src="https://unpkg.com/@toast-ui/editor/dist/toastui-editor"></script>
+	<!--<script src="https://unpkg.com/@toast-ui/editor/dist/toastui-editor"></script>-->
+	
+	
+	<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+	<link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+
 	<script data-th-inline="javascript">
 		/*<![CDATA[*/
 		var boardAlias = /*[[${boardAlias}]]*/ 'boardAlias';
@@ -10,6 +15,13 @@
 		
 		document.addEventListener("DOMContentLoaded", () => {
 			//boardList.addEventListener();
+			
+			var editor = new toastui.Editor({
+  				el: document.querySelector('#editor'),
+				height: '500px',
+				initialEditType: 'markdown',
+				previewStyle: 'vertical'
+			});
 		});
 	</script>
 	<link rel="stylesheet" href="https://unpkg.com/@toast-ui/editor/dist/toastui-editor.css" /> 
