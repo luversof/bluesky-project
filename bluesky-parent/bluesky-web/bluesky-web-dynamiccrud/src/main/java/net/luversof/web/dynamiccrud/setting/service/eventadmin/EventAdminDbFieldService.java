@@ -173,12 +173,12 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				null,
 				null,
 				DbFieldVisible.SHOW,
+				DbFieldEnable.DISABLED,
+				null,
+				null,
+				null,
 				DbFieldEnable.ENABLED,
-				null,
-				null,
-				null,
-				DbFieldEnable.REQUIRED,
-				DbFieldEnable.REQUIRED,
+				DbFieldEnable.ENABLED,
 				null,
 				null
 			);

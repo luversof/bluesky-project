@@ -42,7 +42,7 @@
 			</button>
 			<a
 				data-th-if="${targetSubMenu.enableExcel}"
-				data-th-href="${thymeleafUtil.getServletUriComponentsBuilder().replacePath(thymeleafUtil.getUrl('FRAGMENT_EXCEL')).toUriString()}"
+				data-th-href="${thymeleafUtil.getUriComponentsBuilder().replacePath(thymeleafUtil.getUrl('FRAGMENT_EXCEL')).toUriString()}"
 				download
 				target="_blank"
 			>

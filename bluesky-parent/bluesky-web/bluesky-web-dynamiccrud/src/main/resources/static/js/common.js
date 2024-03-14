@@ -318,14 +318,39 @@ var modalFormFn = (() => {
 listAreaFn.addEventListener();
 modalFormFn.addEventListener();
 
-document.addEventListener('htmx:beforeSwap', (event) => {
-	if('hx-indicator' in event.target.attributes) {
-		var indicator = document.querySelector(event.target.getAttribute('hx-indicator')).cloneNode(true);
-		indicator.style.display = "block";
-		event.target.innerHTML = "";
-	    event.target.appendChild(indicator);
+
+var indicatorFn = (() => {
+	var _cloneIndicatorArea = function(target) {
+		return document.querySelector(target.getAttribute("hx-indicator")).cloneNode(true);
 	}
-});
+	
+	var _locateIndicatorArea = function(target) {
+		var indicator = _cloneIndicatorArea(target);
+		indicator.style.display = "block";
+		target.innerHTML = "";
+		target.appendChild(indicator);
+	}
+	
+	return {
+		addEventListener() {
+			document.addEventListener('htmx:beforeSwap', (event) => {
+				if(event.target.hasAttribute("hx-trigger")) {
+					if (event.target.querySelector(event.target.getAttribute("hx-indicator")) != null) {
+						return;
+					}
+					_locateIndicatorArea(event.target);
+				}
+			});
+			
+		},
+		initialize() {	// 초기 화면 indicator 처리
+			document.querySelectorAll("[hx-indicator]").forEach(el => _locateIndicatorArea(el));
+		}
+	}
+})();
+
+indicatorFn.addEventListener();
+
 
 window.addEventListener('DOMContentLoaded', () => {
 	navbarAreaFn.addEventListener();
@@ -333,4 +358,7 @@ window.addEventListener('DOMContentLoaded', () => {
 	// 초기화
 	searchAreaFn.addEventListener();
 	searchAreaFn.initialize();
+	
+	
+	indicatorFn.initialize();
 });
