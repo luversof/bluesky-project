@@ -39,7 +39,7 @@ var navbarAreaFn = (() => {
 	return {
 		addEventListener() {
 			// 상단 메뉴의 링크에 검색 parameter를 추가 처리
-			document.querySelectorAll(".navbar .menu a").forEach(el => el.addEventListener("click", (event) => {
+			document.querySelectorAll(".navbar .navbar-center .menu a").forEach(el => el.addEventListener("click", (event) => {
 				var url = new URL(event.target.href);
 				param.getParams().forEach((value, key) => url.searchParams.set(key, value))
 				// page parameter는 제거
@@ -127,7 +127,7 @@ var listAreaFn = (() => {
 				}));
 				
 				targetArea.querySelectorAll("#contentTable input[name=contentDataCheckToggle]").forEach(el => el.addEventListener("change", (event) => {
-					event.target.closest("table").querySelector("tbody").querySelectorAll("input[name=contentDataCheck]").forEach(el => {
+					event.target.closest("table").querySelectorAll("tbody input[name=contentDataCheck]").forEach(el => {
 						el.checked = event.target.checked;
 						el.dispatchEvent(new Event("change"));
 					});
@@ -158,7 +158,7 @@ var listAreaFn = (() => {
 
 		},
 		checkDeleteData(event) {
-			var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
+			var checkedList = document.querySelectorAll("#contentTable input[name=contentDataCheck]:checked")
 			if (checkedList.length <= 0) {
 				alert("삭제할 행을 체크해주세요.");
 				event.preventDefault();
@@ -171,7 +171,7 @@ var listAreaFn = (() => {
 			htmx.trigger(_listAreaSelector + " .deleteButton", "deleteModalTrigger");
 		},
 		checkExportData(event) {
-			var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
+			var checkedList = document.querySelectorAll("#contentTable input[name=contentDataCheck]:checked")
 			if (checkedList.length <= 0) {
 				alert("export할 행을 체크해주세요");
 				event.preventDefault();
@@ -252,7 +252,7 @@ var modalFormFn = (() => {
 			/** (s) 데이터 복사 eventListener */
 			// contentTable 영역에 선택한 체크박스 라인의 데이터를 #modalForm의 input 으로 가져온다.
 			modalTarget.querySelector(".copyDataButton").addEventListener("click", () => {
-				var checkedList = document.querySelector("#contentTable").querySelectorAll("input[name=contentDataCheck]:checked")
+				var checkedList = document.querySelectorAll("#contentTable input[name=contentDataCheck]:checked")
 				if (checkedList.length <= 0) {
 					alert("복사할 행을 체크해주세요.");
 					return;
