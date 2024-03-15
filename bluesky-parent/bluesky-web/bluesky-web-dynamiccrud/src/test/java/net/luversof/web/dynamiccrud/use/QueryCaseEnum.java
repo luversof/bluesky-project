@@ -281,7 +281,8 @@ public enum QueryCaseEnum {
 			MARIADB,
 			"""
 			SELECT * FROM someTable 
-			WHERE createDate > CONVERT(DATE, :columnA) AND createDate < DATEADD(DAY, 1, CONVERT(DATE, :columnA))
+			WHERE createDate > CONVERT(DATE, :columnA) 
+			AND createDate < DATEADD(DAY, 1, CONVERT(DATE, :columnA))
 			ORDER BY regId DESC
 			""",
 			MARIADB,
@@ -293,7 +294,17 @@ public enum QueryCaseEnum {
 			AND g.columnA > convert(VARCHAR(10), :columnA, 121)
 			AND g.columnA < convert(VARCHAR(10), dateadd(d, +1, :columnA), 121)
 			ORDER BY g.idx ASC
-//			""",
+			""",
+			MARIADB,
+			"""
+			SELECT
+			 *
+			FROM  someTable
+			WHERE g.columnA > convert(VARCHAR(10), :columnA, 121)
+			AND g.columnA < convert(VARCHAR(10), dateadd(d, +1, :columnA), 121)
+			AND g.columnB=:columnB
+			ORDER BY g.idx ASC
+			""",
 			MARIADB,
 			"""
 			SELECT

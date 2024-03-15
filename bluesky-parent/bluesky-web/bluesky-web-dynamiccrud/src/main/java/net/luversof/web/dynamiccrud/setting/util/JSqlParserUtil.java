@@ -314,17 +314,18 @@ public class JSqlParserUtil {
 			return;
 		}
 		
-		var whereClause = (BinaryExpression) plainSelect.getWhere();
+		var superExpression = (BinaryExpression) plainSelect.getWhere();
 		
 		// 바로 하위 자식이 대상인 경우 체크
-		if (whereClause.getLeftExpression() instanceof Column column) {
+		if (superExpression.getLeftExpression() instanceof Column column) {
 			var namedParameterList = new ArrayList<String>();
-			whereClause.getRightExpression().accept(new ExpressionVisitorAdapter() {
+			superExpression.getRightExpression().accept(new ExpressionVisitorAdapter() {
 				@Override
 				public void visit(JdbcNamedParameter parameter) {
 					if (parameter.getName().equals(columnName)) {
 						namedParameterList.add(columnName);
 					}
+					
 				}
 			});
 			if (!namedParameterList.isEmpty()) {
@@ -334,7 +335,7 @@ public class JSqlParserUtil {
 		}
 		
 		// rightExpression이 대상인 경우 체크
-		if (whereClause.getRightExpression() instanceof BinaryExpression rightExpression 
+		if (superExpression.getRightExpression() instanceof BinaryExpression rightExpression 
 				&& rightExpression.getLeftExpression() instanceof Column column) {
 			
 			var namedParameterList = new ArrayList<String>();
@@ -344,17 +345,18 @@ public class JSqlParserUtil {
 					if (parameter.getName().equals(columnName)) {
 						namedParameterList.add(columnName);
 					}
+					
 				}
 			});
 			if (!namedParameterList.isEmpty()) {
-				plainSelect.setWhere(whereClause.getLeftExpression());
+				plainSelect.setWhere(superExpression.getLeftExpression());
 				removeWhereClauseByNamedParameterName(plainSelect, columnName);
 				return;
 			}
 		}
 		
 		// leftExpression이 대상인 경우 체크
-		if (whereClause.getLeftExpression() instanceof BinaryExpression leftExpression
+		if (superExpression.getLeftExpression() instanceof BinaryExpression leftExpression
 				&& leftExpression.getLeftExpression() instanceof Column column) {
 			var namedParameterList = new ArrayList<String>();
 			leftExpression.getRightExpression().accept(new ExpressionVisitorAdapter() {
@@ -363,17 +365,40 @@ public class JSqlParserUtil {
 					if (parameter.getName().equals(columnName)) {
 						namedParameterList.add(columnName);
 					}
+					
 				}
 			});
 			if (!namedParameterList.isEmpty()) {
-				plainSelect.setWhere(whereClause.getRightExpression());
+				plainSelect.setWhere(superExpression.getRightExpression());
 				removeWhereClauseByNamedParameterName(plainSelect, columnName);
 				return;
 			}
 		}
 		
+		// leftExpression.rightExpression이 대상인 경우 체크
+		if (superExpression.getLeftExpression() instanceof BinaryExpression superLeftExpression
+				&& superLeftExpression.getRightExpression() instanceof BinaryExpression rightExpression
+				&& rightExpression.getLeftExpression() instanceof Column column) {
+			var namedParameterList = new ArrayList<String>();
+			rightExpression.getRightExpression().accept(new ExpressionVisitorAdapter() {
+				@Override
+				public void visit(JdbcNamedParameter parameter) {
+					if (parameter.getName().equals(columnName)) {
+						namedParameterList.add(columnName);
+					}
+					
+				}
+			});
+			if (!namedParameterList.isEmpty()) {
+				superExpression.setLeftExpression(superLeftExpression.getLeftExpression());
+				removeWhereClauseByNamedParameterName(plainSelect, columnName);
+				return;
+			}
+		}
+
+
 		// 위 두 조건이 아니면 하위 자식에 대해 순환 체크
-		removeWhereClauseByNamedParameterNameNested(whereClause, columnName);
+		removeWhereClauseByNamedParameterNameNested(superExpression, columnName);
 		
 	}
 	
@@ -395,6 +420,7 @@ public class JSqlParserUtil {
 					if (parameter.getName().equals(columnName)) {
 						namedParameterList.add(columnName);
 					}
+					
 				}
 			});
 			if (!namedParameterList.isEmpty()) {
@@ -414,6 +440,7 @@ public class JSqlParserUtil {
 					if (parameter.getName().equals(columnName)) {
 						namedParameterList.add(columnName);
 					}
+					
 				}
 			});
 			if (!namedParameterList.isEmpty()) {
