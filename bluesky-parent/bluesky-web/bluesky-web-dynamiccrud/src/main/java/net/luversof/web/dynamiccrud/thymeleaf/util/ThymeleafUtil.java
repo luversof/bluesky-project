@@ -18,6 +18,8 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import lombok.experimental.UtilityClass;
+import net.luversof.web.common.menu.domain.Menu;
+import net.luversof.web.common.menu.domain.Pagination;
 import net.luversof.web.dynamiccrud.setting.constant.SettingConstant;
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.MainMenu;
@@ -25,8 +27,6 @@ import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
 import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant;
 import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 import net.luversof.web.dynamiccrud.thymeleaf.constant.UrlConstant;
-import net.luversof.web.dynamiccrud.thymeleaf.domain.Menu;
-import net.luversof.web.dynamiccrud.thymeleaf.domain.Pagination;
 
 @UtilityClass
 public class ThymeleafUtil {

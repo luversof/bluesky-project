@@ -29,15 +29,15 @@ public class BoardThymeleafController {
 		return "board/index";
 	}
 	
-	@GetMapping("/{boardAlias}/list")
-	public String list(@PathVariable String boardAlias, Model model)	{
+	@GetMapping("/{boardAlias}/{boardMode:list}")
+	public String list(@PathVariable String boardAlias, @PathVariable String boardMode, Model model)	{
 		var board = checkBoard(boardAlias);
 		model.addAttribute(board);
 		return "board/list";
 	}
 	
-	@GetMapping("/{boardAlias}/view")
-	public String view(@PathVariable String boardAlias, @RequestParam String boardArticleId, Model model)	{
+	@GetMapping("/{boardAlias}/{boardMode:view}")
+	public String view(@PathVariable String boardAlias, @PathVariable String boardMode, @RequestParam String boardArticleId, Model model)	{
 		var board = checkBoard(boardAlias);
 		model.addAttribute(board);
 		
@@ -47,15 +47,15 @@ public class BoardThymeleafController {
 		return "board/view";
 	}
 	
-	@GetMapping("/{boardAlias}/write")
-	public String write(@PathVariable String boardAlias, Model model)	{
+	@GetMapping("/{boardAlias}/{boardMode:write}")
+	public String write(@PathVariable String boardAlias, @PathVariable String boardMode, Model model)	{
 		var board = checkBoard(boardAlias);
 		model.addAttribute(board);
 		return "board/write";
 	}
 	
-	@GetMapping("/{boardAlias}/modify")
-	public String modify(@PathVariable String boardAlias, @RequestParam String boardArticleId, Model model)	{
+	@GetMapping("/{boardAlias}/{boardMode:modify}")
+	public String modify(@PathVariable String boardAlias, @PathVariable String boardMode, @RequestParam String boardArticleId, Model model)	{
 		var board = checkBoard(boardAlias);
 		model.addAttribute(board);
 		

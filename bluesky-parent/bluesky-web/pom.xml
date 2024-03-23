@@ -13,6 +13,7 @@
 		<module>bluesky-web-gate</module>
 		<module>bluesky-web-swagger-ui</module>
 		<module>bluesky-web-dynamiccrud</module>
+		<module>bluesky-web-common</module>
 	</modules>
 	<dependencies>
 		<dependency>

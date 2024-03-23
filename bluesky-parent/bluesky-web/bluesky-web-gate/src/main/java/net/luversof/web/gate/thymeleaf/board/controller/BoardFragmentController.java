@@ -6,10 +6,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import jakarta.servlet.http.HttpServletResponse;
-import static net.luversof.web.gate.constant.GateConstant.HX_TRIGGER;
+import io.github.luversof.boot.htmx.annotation.HtmxResponseHeader;
 import net.luversof.web.gate.feign.board.client.BoardArticleClient;
 import net.luversof.web.gate.feign.board.domain.BoardArticle;
 
@@ -20,9 +20,9 @@ public class BoardFragmentController {
 	@Autowired
 	private BoardArticleClient boardArticleClient;
 
-	@GetMapping("/list")
-	public Page<BoardArticle> boardArticlePage(String boardAlias, Pageable pageable, HttpServletResponse response) {
-		response.setHeader(HX_TRIGGER, "listFragmentResponseTrigger");
+	@GetMapping("/{boardMode:list}")
+	@HtmxResponseHeader("'listFragmentResponseTrigger'")
+	public Page<BoardArticle> boardArticlePage(@PathVariable String boardMode, String boardAlias, Pageable pageable) {
 		return boardArticleClient.findByBoardAlias(boardAlias, pageable);
 	}
 

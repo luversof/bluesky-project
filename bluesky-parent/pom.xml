@@ -54,6 +54,11 @@
 				<artifactId>bluesky-client-user</artifactId>
 				<version>${project.version}</version>
 			</dependency>
+			<dependency>
+				<groupId>net.luversof</groupId>
+				<artifactId>bluesky-web-common</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
 			<dependency>
 				<groupId>com.github.jsqlparser</groupId>

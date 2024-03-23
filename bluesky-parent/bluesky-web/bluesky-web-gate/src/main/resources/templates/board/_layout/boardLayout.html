@@ -1,12 +1,28 @@
 <!DOCTYPE html>
 <html data-layout-decorate="~{_layout/defaultLayout}">
-
+<head>
+	<script src="https://unpkg.com/dayjs"></script>
+	<script src="https://unpkg.com/dayjs/locale/ko"></script>
+	<script>
+		dayjs.locale('ko');
+	</script>
+	<script src="https://unpkg.com/dayjs/plugin/relativeTime"></script>
+	<script>
+		dayjs.extend(window.dayjs_plugin_relativeTime);
+	</script>
+	<script data-th-inline="javascript">
+	/*<![CDATA[*/
+	var boardAlias = /*[[${boardAlias}]]*/ 'boardAlias';
+	var boardMode =  /*[[${boardMode}]]*/ 'boardMode';
+	/*]]>*/
+</script>
+	<script data-th-src="@{/js/board.js}"></script>
+</head>
 <body>
 	<div data-layout-fragment="content">
 		<div class="flex flex-col lg:flex-row">
 			<div class="grid bg-base-100">
-				<div
-					data-th-replace="~{_components/navmenu (menu = 'board', classAppend = 'bg-base-100 w-56')}" />
+				<div data-th-replace="~{_components/navmenu (menu = 'board', classAppend = 'bg-base-100 w-56')}" />
 			</div>
 			<div class="grid grow bg-base-100" data-layout-fragment="content-board">
 				content

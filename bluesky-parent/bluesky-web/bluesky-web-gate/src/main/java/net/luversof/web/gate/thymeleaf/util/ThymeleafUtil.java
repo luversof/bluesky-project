@@ -4,10 +4,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import io.github.luversof.boot.util.ApplicationContextUtil;
 import lombok.experimental.UtilityClass;
-import net.luversof.web.gate.thymeleaf.config.GateThymeleafProperties;
-import net.luversof.web.gate.thymeleaf.layout.domain.Menu;
+import net.luversof.web.common.menu.domain.Menu;
+import net.luversof.web.common.menu.util.WebCommonUtil;
 
 @UtilityClass
 public class ThymeleafUtil {
@@ -49,7 +48,7 @@ public class ThymeleafUtil {
 	};
 
 	public static List<Menu> getMenuList(String key) {
-		return ApplicationContextUtil.getApplicationContext().getBean(GateThymeleafProperties.class).menu().get(key);
+		return WebCommonUtil.getMenuList(key);
 	}
 	
 	public static String getRandomTheme(String...themes) {
