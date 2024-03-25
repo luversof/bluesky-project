@@ -29,17 +29,22 @@
 
 <body>
 	<div data-layout-fragment="content-board">
-		<h1>
-			글쓰기
-		</h1>
-		<div id="editor"></div>
-		<div class="flex justify-between items-center">
-			<div>
-				
-			</div>
-			<div>
-				<button class="btn btn-sm writeButton" data-th-text="#{board.button.write}"></button>
-				<button class="btn btn-sm cancelButton" data-th-text="#{board.button.cancel}"></button>
+		<div class="">
+			<div class="w-2/3 flex flex-col">
+				<h1>
+					글쓰기
+				</h1>
+				<input type="text" placeholder="Type here" class="input input-bordered w-full max-w-xs" />
+				<div id="editor"></div>
+				<div class="flex justify-between items-center">
+					<div>
+						
+					</div>
+					<div>
+						<button class="btn btn-sm writeButton" data-th-text="#{board.button.write}"></button>
+						<button class="btn btn-sm cancelButton" data-th-text="#{board.button.cancel}"></button>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>

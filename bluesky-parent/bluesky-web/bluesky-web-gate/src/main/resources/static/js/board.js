@@ -26,9 +26,7 @@ var boardList = (() => {
 				
 				event.target.querySelectorAll("[data-date]").forEach(el => el.textContent = dayjs().to(el.dataset.date));
 				
-				event.target.querySelectorAll(".writeButton").forEach(el => el.addEventListener("click", () => {
-					boardAction.moveToWrite();
-				}));
+				event.target.querySelectorAll(".writeButton").forEach(el => el.addEventListener("click", () => boardAction.moveToWrite()));
 				
 				event.target.querySelectorAll("table tr[data-boardArticleId]").forEach(el => el.addEventListener("click", (event) => {
 					var boardArticleId = event.target.closest("tr").dataset.boardarticleid;
@@ -42,13 +40,8 @@ var boardList = (() => {
 var boardView = (() => {
 	return {
 		addEventListener() {
-			document.querySelectorAll(".writeButton").forEach(el => el.addEventListener("click", () => {
-				boardAction.moveToWrite();
-			}));
-			
-			document.querySelectorAll(".listButton").forEach(el => el.addEventListener("click", () => {
-				boardAction.moveToList();
-			}));
+			document.querySelectorAll(".writeButton").forEach(el => el.addEventListener("click", () => boardAction.moveToWrite()));
+			document.querySelectorAll(".listButton").forEach(el => el.addEventListener("click", () => boardAction.moveToList()));
 		}
 	}
 })();
@@ -56,9 +49,12 @@ var boardView = (() => {
 var boardWrite = (() => {
 	return {
 		addEventListener() {
-			document.querySelectorAll(".cancelButton").forEach(el => el.addEventListener("click", () => {
-				boardAction.moveToList();
-			}));
+			document.querySelectorAll(".cancelButton").forEach(el => el.addEventListener("click", () => boardAction.moveToList()));
+			document.querySelectorAll(".writeButton").forEach(el => el.addEventListener("click", () => this.writeAndMoveToView()));
+		},
+		writeAndMoveToView() {
+			alert("글쓰기");
+			
 		}
 	}
 })();

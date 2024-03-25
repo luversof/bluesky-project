@@ -16,7 +16,7 @@ import net.luversof.web.gate.feign.board.domain.Board;
 
 @Controller
 @RequestMapping(value = "/board", produces = MediaType.TEXT_HTML_VALUE)
-public class BoardThymeleafController {
+public class BoardViewController {
 	
 	@Autowired
 	private BoardClient boardClient;

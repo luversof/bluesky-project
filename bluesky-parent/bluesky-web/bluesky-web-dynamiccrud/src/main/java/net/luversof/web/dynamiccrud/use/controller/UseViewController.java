@@ -18,7 +18,7 @@ import net.luversof.web.dynamiccrud.thymeleaf.constant.UrlConstant;
  * 설정된 데이터를 호출하여 화면을 구성
  */
 @Controller
-public class UseController extends AbstractSettingViewController {
+public class UseViewController extends AbstractSettingViewController {
 	
 	@GetMapping("/{adminProjectId}/use/{projectId}/{mainMenuId}")
 	public String redirectView(

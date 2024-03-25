@@ -19,8 +19,8 @@
 			<div class="badge" data-th-text="${@environment.getProperty('bluesky-boot-profile')}"></div>
 		</div>
 	</div>
-	<div class="navbar-center">
-		<div data-th-replace="~{_components/navmenu (menu = 'main', classAppend = 'menu-horizontal px-1')}" />
+	<div class="navbar-center hidden lg:flex">
+		<div data-th-replace="~{_components/navmenu (menu = 'main', classAppend = 'menu-horizontal px-1 h-14 ')}" />
 	</div>
 	<div class="navbar-end" data-th-with="userUtil = ${T(net.luversof.client.user.util.UserUtil)}">
 		<div data-sec-authorize="isAuthenticated()">
