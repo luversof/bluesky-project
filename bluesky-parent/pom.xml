@@ -23,6 +23,7 @@
 		<module>bluesky-test</module>
 		<module>bluesky-api</module>
 		<module>bluesky-client</module>
+		<module>bluesky-batch</module>
 	</modules>
 
 	<dependencies>
