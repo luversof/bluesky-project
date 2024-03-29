@@ -1,4 +1,4 @@
-package net.luversof.batch.example.config;
+package net.luversof.batch.example.job;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
