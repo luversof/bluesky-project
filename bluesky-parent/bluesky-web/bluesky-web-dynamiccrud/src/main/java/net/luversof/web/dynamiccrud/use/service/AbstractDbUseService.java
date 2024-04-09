@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -24,6 +23,7 @@ import lombok.SneakyThrows;
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldEnable;
+import net.luversof.web.dynamiccrud.setting.domain.DbFieldSearchType;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuerySqlCommandType;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
@@ -66,19 +66,9 @@ public abstract class AbstractDbUseService implements UseService {
 		// 조건에 따라 처리를 하기 위해 3개 조건을 모두 가져와야 함.
 		var dbQueryWhereClauseColumnNameList = JSqlParserUtil.findWhereClauseColumnNameList(selectQuery);
 		var dbQueryWhereClauseNamedParameterNameList = JSqlParserUtil.findWhereClauseNamedParameterNameList(selectQuery);
-		var dbFieldSearchRequiredList = dbFieldList.stream().filter(x -> DbFieldEnable.REQUIRED.equals(x.getEnableSearch())).collect(Collectors.toList());
-		var dbFieldSearchEnabledList = dbFieldList.stream().filter(x -> DbFieldEnable.ENABLED.equals(x.getEnableSearch())).collect(Collectors.toList());
-		var dbFieldSearchDisabledList = dbFieldList.stream().filter(x -> DbFieldEnable.DISABLED.equals(x.getEnableSearch())).collect(Collectors.toList());
-		
-//		// dbQuery의 namedParameter에 대해 확인
-//		if (!dbQueryWhereClauseNamedParameterNameList.isEmpty()) {
-//			for (String namedParameterName : dbQueryWhereClauseNamedParameterNameList) {
-//				// parameter에 해당 값이 없으면 빈 값 반환
-//				if (!dataMap.containsKey(namedParameterName) || !StringUtils.hasText(dataMap.get(namedParameterName))) {
-//					return new PageImpl<>(Collections.emptyList(), pageable, 0);
-//				}
-//			}
-//		}
+		var dbFieldSearchRequiredList = dbFieldList.stream().filter(x -> DbFieldEnable.REQUIRED.equals(x.getEnableSearch())).toList();
+		var dbFieldSearchEnabledList = dbFieldList.stream().filter(x -> DbFieldEnable.ENABLED.equals(x.getEnableSearch())).toList();
+		var dbFieldSearchDisabledList = dbFieldList.stream().filter(x -> DbFieldEnable.DISABLED.equals(x.getEnableSearch())).toList();
 		
 		// dbField의 Required의 경우
 		if (!dbFieldSearchRequiredList.isEmpty()) {
@@ -143,7 +133,8 @@ public abstract class AbstractDbUseService implements UseService {
 		paramSource.addValue("offset", pageable.getOffset());
 		
 		// SPEL_FOR_EDIT 같이 추가 처리된 값을 설정하기 위해 일괄 처리
-		dataMap.forEach((key, value) -> paramSource.addValue(key, StringUtils.hasText(value) ? value : null));
+		// 검색 조건이 like인 경우 문자열 처리 추가
+		dataMap.forEach((key, value) -> paramSource.addValue(key, getMapSqlParameterSourceValue(key, value, dbFieldList)));
 		
 		// customQuery 조건에 대해 검토 필요
 		// 이 부분은 일단 주석 처리함
@@ -168,7 +159,7 @@ public abstract class AbstractDbUseService implements UseService {
 			var function = new Function();
 			function.setName("count");
 			function.setParameters(new AllColumns());
-			countQuery.getSelectItems().add(new SelectItem<Function>(function));
+			countQuery.getSelectItems().add(new SelectItem<>(function));
 		}
 		
 		// countQuery의 경우 order by 절 제거
@@ -249,6 +240,33 @@ public abstract class AbstractDbUseService implements UseService {
 				paramSource.registerSqlType(dbField.getColumnId(), JDBCType.BIT.getVendorTypeNumber());
 			}
 		});
+	}
+	
+	/**
+	 * dbFieldList ColumnSearchType이 like Condition인 경우 value의 앞 또는 앞,뒤에 '%'를 붙이는 처리를 추가
+	 * @param key
+	 * @param value
+	 * @param dbFieldList
+	 * @return
+	 */
+	private String getMapSqlParameterSourceValue(String key, String value, List<DbField> dbFieldList) {
+		if (!StringUtils.hasText(value)) {
+			return null;
+		}
+		if (dbFieldList == null) {
+			return value;
+		}
+		for (var dbField : dbFieldList) {
+			if (dbField.getColumnId().equals(key)) {
+				if (DbFieldSearchType.LIKE_RIGHT.equals(dbField.getColumnSearchType())) {
+					return value + "%";
+				} else if (DbFieldSearchType.LIKE_CONTAINS.equals(dbField.getColumnSearchType())) {
+					return '%' + value + "%";
+				}
+			}
+		}
+		
+		return value;
 	}
 	
 }

@@ -14,7 +14,6 @@ import net.sf.jsqlparser.expression.ExpressionVisitorAdapter;
 import net.sf.jsqlparser.expression.JdbcNamedParameter;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.StringValue;
-import net.sf.jsqlparser.expression.operators.arithmetic.Addition;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.expression.operators.relational.GreaterThan;
@@ -27,8 +26,6 @@ import net.sf.jsqlparser.statement.select.PlainSelect;
 @UtilityClass
 public class JSqlParserUtil {
 
-	private static String PERCENTAGE = "%";
-	
 	/**
 	 * DbField의 설정을 기준으로 추가할 Where 절 Expression 계산
 	 * @param dbFieldSearchType
@@ -36,30 +33,13 @@ public class JSqlParserUtil {
 	 */
 	public static BinaryExpression createWhereClauseAppendExpression(DbField dbField) {
 		return switch (dbField.getColumnSearchType()) {
-		case LIKE_RIGHT -> {
+		case LIKE_RIGHT, LIKE_CONTAINS -> {
 			var likeExpression = new LikeExpression();
 			likeExpression.setLeftExpression(new Column(dbField.getColumnId()));
 			likeExpression.setLikeKeyWord(LikeExpression.KeyWord.LIKE);
-			Addition addExpression = new Addition();
-			addExpression.withLeftExpression(new JdbcNamedParameter(dbField.getColumnId()));
-			addExpression.withRightExpression(new StringValue(PERCENTAGE));
-			likeExpression.setRightExpression(addExpression);
+			likeExpression.setRightExpression(new JdbcNamedParameter(dbField.getColumnId()));
 			log.debug("likeExpression, {}",likeExpression);
 			yield likeExpression;
-		}
-		case LIKE_CONTAINS -> {
-			var likeContainsExpression = new LikeExpression();
-			likeContainsExpression.setLeftExpression(new Column(dbField.getColumnId()));
-			likeContainsExpression.setLikeKeyWord(LikeExpression.KeyWord.LIKE);
-			Addition addExpressionTarget = new Addition();
-			addExpressionTarget.withLeftExpression(new StringValue(PERCENTAGE));
-			addExpressionTarget.withRightExpression(new JdbcNamedParameter(dbField.getColumnId()));
-			Addition addExpressionTarget2 = new Addition();
-			addExpressionTarget2.withLeftExpression(addExpressionTarget);
-			addExpressionTarget2.withRightExpression(new StringValue(PERCENTAGE));
-			likeContainsExpression.setRightExpression(addExpressionTarget2);
-			log.debug("likeExpression contains, {}",likeContainsExpression);
-			yield likeContainsExpression;
 		}
 		case MINOR_THAN -> {
 			var minorExpression = new MinorThan();

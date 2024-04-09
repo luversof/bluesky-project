@@ -34,7 +34,7 @@ import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectItem;
 
 @Slf4j
-public class JSqlParserTest {
+class JSqlParserTest {
 
 	// jsqlparser 테스트
 	
@@ -126,7 +126,8 @@ public class JSqlParserTest {
 	void jSqlParserTest() throws JSQLParserException {
 		String sqlStr;
 //		sqlStr = "select count(*) from dual as a where columnA=? limit 10 offset 20";
-		sqlStr = "select count(*) from dual as a where `columnA` = ? limit 10 offset 20";
+//		sqlStr = "select count(*) from dual as a where `columnA` = ? limit 10 offset 20";
+		sqlStr = "select count(*) from dual as a where columnA = :columnA limit 10 offset 20";
 //		sqlStr = """
 //				SELECT 
 //				* 
