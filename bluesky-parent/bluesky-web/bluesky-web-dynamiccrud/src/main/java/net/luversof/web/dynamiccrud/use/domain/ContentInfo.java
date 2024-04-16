@@ -6,10 +6,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.StringUtils;
 
+import io.github.luversof.boot.context.expression.util.SpelParserUtil;
 import lombok.Getter;
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
@@ -34,7 +33,7 @@ public class ContentInfo {
 	 * SPEL의 경우 update가 불가하도록 처리가 필요할 듯 함 
 	 */
 	@Getter
-	private List<Map<String, Object>> contentMapList;
+	private List<Map<String, Object>> originContentMapList;
 	
 	/**
 	 * 가공된 목록을 담고있는 맵 리스트
@@ -42,6 +41,10 @@ public class ContentInfo {
 	@Getter
 	private List<Map<String, Object>> processedContentMapList;
 	
+	/**
+	 * @param contentMapList 대상 데이터 목록
+	 * @param dbFieldList 대상 속성 정의 목록
+	 */
 	public ContentInfo(List<Map<String, Object>> contentMapList, List<DbField> dbFieldList) {
 		
 		// 데이터가 없으면 계산을 할 수 없음.
@@ -49,11 +52,18 @@ public class ContentInfo {
 			return;
 		}
 		
-		this.contentMapList = contentMapList;
+		this.originContentMapList = contentMapList;
 		
+		createContentKeyInfoList(dbFieldList);
+		
+		createProcessedContentMapList();
+	}
+	
+	
+	private void createContentKeyInfoList(List<DbField> dbFieldList) {
 		contentKeyInfoList = new ArrayList<>();
 		
-		var firstContent = contentMapList.get(0);
+		var firstContent = originContentMapList.get(0);
 		
 		// 조회한 데이터 목록의 첫번째 데이터의 key 목록을 기준으로 contentKeyList를 생성
 		firstContent.keySet().forEach(key -> {
@@ -83,15 +93,14 @@ public class ContentInfo {
 		});
 		
 		contentKeyInfoList.sort(Comparator.comparing(ContentKeyInfo::displayOrder));
-		
-		var expressionParser = new SpelExpressionParser();
-		
-		// 계산된 contentKeyList를 기준으로 processedContentMapList를 만든다.
+	}
+	
+	/**
+	 * 계산된 contentKeyList를 기준으로 processedContentMapList를 만든다.
+	 */
+	private void createProcessedContentMapList() {
 		processedContentMapList = new ArrayList<>();
-		for (var contentMap : this.contentMapList) {
-			var evaluationContext = new StandardEvaluationContext();
-			evaluationContext.setVariables(contentMap);
-			
+		for (var originContentMap : this.originContentMapList) {
 			var processedContentMap = new LinkedHashMap<String, Object>();
 			for (var contentKeyInfo : contentKeyInfoList) {
 				// type에 따라 적절하게 값을 처리
@@ -101,36 +110,49 @@ public class ContentInfo {
 				if (contentKeyInfo.type().equals(DbFieldColumnType.SPEL)) {	
 					Object value = null;
 					if (StringUtils.hasText(dbField.getColumnFormat())) {
-						var expression = expressionParser.parseExpression(dbField.getColumnFormat());
-						value = expression.getValue(evaluationContext);
+						value = SpelParserUtil.parse(dbField.getColumnFormat(), originContentMap);
 					}
-					evaluationContext.setVariable(contentKeyInfo.originKey(), value);
-					contentMap.put(contentKeyInfo.originKey(), value);
+					originContentMap.put(contentKeyInfo.originKey(), value);
 					processedContentMap.put(contentKeyInfo.key(), value);
-				} else if (dbField != null && StringUtils.hasText(dbField.getColumnPreset())) {
-					// preset을 사용하는 경우 preset 대체 문자로 처리
-					String content = (String) contentMap.get(contentKeyInfo.originKey());
-					var presetParts = dbField.getColumnPreset().split(",");
-					for (var presetPart : presetParts) {
-						String presetKey;
-						String presetValue;
-						if (presetPart.contains("|")) {
-							presetKey = presetPart.split("\\|")[0];
-							presetValue = presetPart.split("\\|")[1];
-						} else {
-							presetKey = presetPart;
-							presetValue = presetPart;
-						}
-						if (presetKey.equals(content)) {
-							processedContentMap.put(contentKeyInfo.key(), presetValue);
-						}
-					}
 				} else {
-					processedContentMap.put(contentKeyInfo.key(), contentMap.get(contentKeyInfo.originKey()));
+					processedContentMap.put(contentKeyInfo.key(), getProcessedValue(originContentMap.get(contentKeyInfo.originKey()), dbField));
 				}
 			}
 			processedContentMapList.add(processedContentMap);
 		}
+	}
+	
+	/**
+	 * dbField의 columnPreset에 화면 표시 값이 지정되어 있는 경우 originValue를 화면 표시 값으로 변경하여 반환
+	 * @param value
+	 * @param dbField
+	 * @return
+	 */
+	private Object getProcessedValue(Object originValue, DbField dbField) {
+		if (dbField == null) {
+			return originValue;
+		}
+		
+		if (!StringUtils.hasText(dbField.getColumnPreset())) {
+			return originValue;
+		}
+		
+		var presetParts = dbField.getColumnPreset().split(",");
+		for (var presetPart : presetParts) {
+			String presetKey;
+			String presetValue;
+			if (presetPart.contains("|")) {
+				presetKey = presetPart.split("\\|")[0];
+				presetValue = presetPart.split("\\|")[1];
+			} else {
+				presetKey = presetPart;
+				presetValue = presetPart;
+			}
+			if (presetKey.equals(originValue)) {
+				return presetValue;
+			}
+		}
+		return originValue;
 	}
 
 	

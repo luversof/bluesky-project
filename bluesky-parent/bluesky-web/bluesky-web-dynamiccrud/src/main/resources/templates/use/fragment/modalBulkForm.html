@@ -1,11 +1,28 @@
-<dialog id="modal" class="modal">
+<dialog id="modal" class="modal"
+	data-th-with="
+		map = ${T(java.util.Map)},
+		thymeleafUtil = ${T(net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil)}"
+>
 	<div class="modal-box max-w-xl">
 		<form method="dialog">
 			<button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
 		</form>
 		<h3 class="font-bold text-lg" data-th-text="#{use.text.modalBulkForm.__${modalMode}__}"></h3>
 		<div class="m-2">
-			<div data-th-replace="~{use/_components/modalBulkForm}" />
+			<form id="modalBulkForm"
+				data-th-hx-post="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_BULK_FORM', map.of('modalMode',modalMode))}}"
+				hx-target="#fragmentArea"
+			>
+				<div class="w-full m-1">
+					
+					<textarea class="textarea textarea-sm textarea-bordered w-full h-60"
+						name="bulkData"
+						data-th-readonly="${modalMode == 'export'}"
+					></textarea>
+							
+				</div>
+				
+			</form>
 		</div>
 
 		<div class="flex justify-between">

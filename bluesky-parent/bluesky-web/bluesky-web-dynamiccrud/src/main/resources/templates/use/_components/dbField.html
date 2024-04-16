@@ -1,0 +1,71 @@
+<th-block
+	data-th-with="dbField = ${dbField}"
+>
+
+	<th-block data-th-if="${#strings.isEmpty(dbField.columnPreset)}">
+		<!--/*-->
+		preset이 없는 경우 Field의 type에 따라 input을 설정
+		type : boolean, date, int, lonk, long, string, text
+		<!--*/-->
+		
+		<th-block data-th-switch="${dbField.columnType}">
+							
+			<th-block data-th-case="${dbFieldColumnType.BOOLEAN}">
+				<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full"
+					data-th-name="${dbField.columnId} + '_checkbox'" 
+					data-th-checked="${#bools.isTrue(dbField.columnDefaultValue)}"
+				/>
+				<input type="hidden" 
+					data-th-name="${dbField.columnId}" 
+					data-th-value="${#bools.isTrue(dbField.columnDefaultValue)}" 
+				/>
+			</th-block>
+			<th-block data-th-case="${dbFieldColumnType.INT}">
+				<input type="number" class="input input-sm input-bordered join-item w-full"
+					 data-th-name="${dbField.columnId}"
+					 data-th-value="${dbField.columnDefaultValue}"
+					 data-th-required="${dbField.isEnableEditRequired(modalMode)}"
+					 data-th-placeholder="${dbField.formPlaceholder}"
+					 data-th-attr="__${dbField.columnValidation ?: 'data-hasColumnValidation=false'}__"
+				/>
+			</th-block>
+			<th-block data-th-case="${dbFieldColumnType.TEXT}">
+				<textarea class="textarea textarea-sm textarea-bordered join-item w-full h-40"
+					 data-th-name="${dbField.columnId}"
+					 data-th-value="${dbField.columnDefaultValue}"
+					 data-th-required="${dbField.isEnableEditRequired(modalMode)}"
+					 data-th-placeholder="${dbField.formPlaceholder}"
+					 data-th-attr="__${dbField.columnValidation ?: 'data-hasColumnValidation=false'}__"
+				></textarea>
+			</th-block>
+			<th-block data-th-case="*">
+				<input type="text" class="input input-sm input-bordered join-item w-full"
+					 data-th-name="${dbField.columnId}"
+					 data-th-value="${dbField.columnDefaultValue}"
+					 data-th-required="${dbField.isEnableEditRequired(modalMode)}"
+					 data-th-placeholder="${dbField.formPlaceholder}"
+					 data-th-attr="__${dbField.columnValidation ?: 'data-hasColumnValidation=false'}__"
+				/>
+			</th-block>
+			
+		</th-block>
+		
+	</th-block>
+	<th-block data-th-unless="${#strings.isEmpty(dbField.columnPreset)}">
+		<select class="select select-sm select-bordered join-item w-full"
+			data-th-name="${dbField.columnId}"
+			data-th-value="${dbField.columnDefaultValue}"
+			data-th-required="${dbField.isEnableEditRequired(modalMode)}"
+		>
+			<option data-th-text="Select" value="" />
+			<option 
+				data-th-each="presetPart : ${#strings.listSplit(dbField.columnPreset,',')}"
+				data-th-with="optionValue = ${#strings.contains(presetPart, '|') ? #strings.arraySplit(presetPart, '|')[0] : presetPart}" 
+				data-th-value="${optionValue}" 
+				data-th-text="${#strings.contains(presetPart, '|') ? #strings.arraySplit(presetPart, '|')[1] : presetPart}"
+				data-th-selected="${optionValue == dbField.columnDefaultValue}"
+			/>
+		</select>
+	</th-block>
+	
+</th-block>
