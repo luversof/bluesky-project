@@ -56,7 +56,7 @@
 		</div>
 	</div>
 	
-	<table class="table table-xs" id="contentTable" data-th-if="${contentInfo.processedContentMapList ne null}">
+	<table class="table table-xs" id="contentTable" aria-describedby="contentTable" data-th-if="${contentInfo.processedContentMapList ne null}">
 		<!-- head -->
 		<thead>
 			<tr>
@@ -69,34 +69,44 @@
 			</tr>
 		</thead>
 		<tbody>
-			<tr class="hover" data-th-each="content,iterator : ${contentInfo.processedContentMapList}">
-				<td class="w-0 p-0 contentData">
-					<input type="hidden"
-						data-th-each="contentKeyInfo : ${contentInfo.contentKeyInfoList}" 
-						data-th-name="${contentKeyInfo.originKey}"
-						data-th-value="${contentInfo.contentMapList.get(iterator.index).get(contentKeyInfo.originKey)}"
-					/>
-					<input type="hidden"
-						data-th-each="contentKeyInfo : ${contentInfo.contentKeyInfoList}"
-						data-th-name="'\_\_org\_\_' + ${contentKeyInfo.originKey}"
-						data-th-value="${contentInfo.contentMapList.get(iterator.index).get(contentKeyInfo.originKey)}"
-					/>
-				</td>
-				<td data-th-each="contentKeyInfo : ${contentInfo.contentKeyInfoList}" data-th-if="${contentKeyInfo.visible}" data-th-utext="${content.get(contentKeyInfo.key)}"></td>
-				<td data-th-if="${targetSubMenu.enableUpdate}">
-					<button class="btn btn-sm"
-						data-th-hx-get="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_FORM',map.of('modalMode','update'))}}"
-						hx-target="#fragmentArea"
-					>
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-						</svg>
-					</button>
-				</td>
-				<td data-th-if="${targetSubMenu.enableInsert || targetSubMenu.enableUpdate || targetSubMenu.enableDelete}">
-					<input name="contentDataCheck" type="checkbox" class="checkbox" data-th-value="${iterator.index}" />
-				</td>
-			</tr>
+			<th-block data-th-each="content,iterator : ${contentInfo.processedContentMapList}">
+				<tr class="hover">
+					<td class="w-0 p-0 contentData">
+						<input type="hidden"
+							data-th-each="contentKeyInfo : ${contentInfo.contentKeyInfoList}" 
+							data-th-name="${contentKeyInfo.originKey}"
+							data-th-value="${contentInfo.originContentMapList.get(iterator.index).get(contentKeyInfo.originKey)}"
+						/>
+						<input type="hidden"
+							data-th-each="contentKeyInfo : ${contentInfo.contentKeyInfoList}"
+							data-th-name="'\_\_org\_\_' + ${contentKeyInfo.originKey}"
+							data-th-value="${contentInfo.originContentMapList.get(iterator.index).get(contentKeyInfo.originKey)}"
+						/>
+					</td>
+					<td data-th-each="contentKeyInfo : ${contentInfo.contentKeyInfoList}" data-th-if="${contentKeyInfo.visible}" data-th-utext="${content.get(contentKeyInfo.key)}"></td>
+					<td data-th-if="${targetSubMenu.enableUpdate}">
+						<button class="btn btn-sm"
+							data-th-hx-get="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_FORM',map.of('modalMode','update'))}}"
+							hx-target="#fragmentArea"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+							</svg>
+						</button>
+					</td>
+					<td data-th-if="${targetSubMenu.enableInsert || targetSubMenu.enableUpdate || targetSubMenu.enableDelete}">
+						<input name="contentDataCheck" type="checkbox" class="checkbox" data-th-value="${iterator.index}" />
+					</td>
+				</tr>
+				<tr>
+					<td colspan="100%" class="bg-base-200 pl-12">
+						<div class="bg-base-100">
+							<div>제목</div><div>내용</div>
+							<div>제목</div><div>내용</div>
+						</div>
+					</td>
+				</tr>
+			</th-block>
 		</tbody>
 	</table>
 	<div role="alert" class="alert" data-th-unless="${page.totalElements > 0}">

@@ -2,6 +2,7 @@ package net.luversof.api.bookkeeping.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -44,19 +45,19 @@ public class CompositeBookkeepingService implements BookkeepingService {
 		}
 
 		bookkeepingService.create(bookkeeping);
-		List<AssetGroup> assetGroupList = assetGroupService.createInitialData(bookkeeping.getBookkeepingId());
-		assetService.createInitialData(bookkeeping.getBookkeepingId(), assetGroupList);
-		entryGroupService.createInitialData(bookkeeping.getBookkeepingId());
+		List<AssetGroup> assetGroupList = assetGroupService.createInitialData(bookkeeping.getId());
+		assetService.createInitialData(bookkeeping.getId(), assetGroupList);
+		entryGroupService.createInitialData(bookkeeping.getId());
 		return bookkeeping;
 	}
 	
-	public Optional<Bookkeeping> findByBookkeepingId(String bookkeepingId) {
-		return bookkeepingService.findByBookkeepingId(bookkeepingId);
+	@Override
+	public Optional<Bookkeeping> findById(UUID bookkeepingId) {
+		return bookkeepingService.findById(bookkeepingId);
 	}
-	
 
 	@Override
-	public List<Bookkeeping> findByUserId(String userId) {
+	public List<Bookkeeping> findByUserId(UUID userId) {
 		return bookkeepingService.findByUserId(userId);
 	}
 
@@ -76,7 +77,7 @@ public class CompositeBookkeepingService implements BookkeepingService {
 	 */
 	@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
 	public void delete(Bookkeeping bookkeeping) {
-		String bookkeepingId = bookkeeping.getBookkeepingId();
+		var bookkeepingId = bookkeeping.getId();
 		bookkeepingService.delete(bookkeeping);
 		entryService.deleteByBookkeepingId(bookkeepingId);
 		entryGroupService.deleteAllBybookkeepingId(bookkeepingId);

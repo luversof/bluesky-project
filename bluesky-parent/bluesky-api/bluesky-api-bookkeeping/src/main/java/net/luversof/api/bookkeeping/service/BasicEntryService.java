@@ -3,10 +3,10 @@ package net.luversof.api.bookkeeping.service;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.api.bookkeeping.constant.BookkeepingErrorCode;
@@ -32,11 +32,11 @@ public class BasicEntryService implements EntryService {
 	public Entry create(Entry entry) {
 		// 기록 유형 확인
 		EntryGroupType entryGroupType = null;
-		if (StringUtils.hasText(entry.getIncomeAssetId()) && StringUtils.hasText(entry.getExpenseAssetId())) {
+		if (entry.getIncomeAssetId() != null && entry.getExpenseAssetId() != null) {
 			entryGroupType = EntryGroupType.TRANSFER;
-		} else if (StringUtils.hasText(entry.getIncomeAssetId())) {
+		} else if (entry.getIncomeAssetId() != null) {
 			entryGroupType = EntryGroupType.INCOME;
-		} else if (StringUtils.hasText(entry.getExpenseAssetId())) {
+		} else if (entry.getExpenseAssetId() != null) {
 			entryGroupType = EntryGroupType.EXPENSE;
 		} else {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRYGROUPTYPE);
@@ -45,29 +45,29 @@ public class BasicEntryService implements EntryService {
 		
 		// incomeAsset, expenseAsset이 해당 유저의 정보인지 확인
 		if (entryGroupType == EntryGroupType.INCOME || entryGroupType == EntryGroupType.TRANSFER) {
-			assetService.findByAssetId(entry.getIncomeAssetId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_INCOME_ASSET));
+			assetService.findById(entry.getIncomeAssetId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_INCOME_ASSET));
 		}
 		if (entryGroupType == EntryGroupType.INCOME || entryGroupType == EntryGroupType.TRANSFER) {
-			assetService.findByAssetId(entry.getExpenseAssetId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_EXPENSE_ASSET));
+			assetService.findById(entry.getExpenseAssetId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_EXPENSE_ASSET));
 		}
 		return entryRepository.save(entry);
 	}
 
 	@Override
 	public List<Entry> search(EntryRequestParam entryRequestParam) {
-		Bookkeeping targetBookkeeping = bookkeepingService.findByBookkeepingId(entryRequestParam.getBookkeepingId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		return entryRepository.findByBookkeepingIdAndEntryDateBetween(targetBookkeeping.getBookkeepingId(), entryRequestParam.getStartDate(), entryRequestParam.getEndDate());
+		Bookkeeping targetBookkeeping = bookkeepingService.findById(entryRequestParam.getBookkeepingId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		return entryRepository.findByBookkeepingIdAndEntryDateBetween(targetBookkeeping.getId(), entryRequestParam.getStartDate(), entryRequestParam.getEndDate());
 	}
 	
 	@Override
-	public List<Entry> findByBookkeepingIdAndEntryDateBetween(String bookkeepingId, ZonedDateTime startDate, ZonedDateTime endDate) {
+	public List<Entry> findByBookkeepingIdAndEntryDateBetween(UUID bookkeepingId, ZonedDateTime startDate, ZonedDateTime endDate) {
 		return entryRepository.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startDate, endDate);
 	}
 
 	@Override
 	public Entry update(Entry entry) {
-		bookkeepingService.findByBookkeepingId(entry.getBookkeepingId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		Entry targetEntry = entryRepository.findByEntryId(entry.getEntryId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRY));
+		bookkeepingService.findById(entry.getBookkeepingId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		Entry targetEntry = entryRepository.findById(entry.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRY));
 		
 		targetEntry.setAmount(entry.getAmount());
 		targetEntry.setEntryDate(entry.getEntryDate());
@@ -79,14 +79,14 @@ public class BasicEntryService implements EntryService {
 
 	@Override
 	public void delete(Entry entry) {
-		bookkeepingService.findByBookkeepingId(entry.getBookkeepingId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
-		Entry targetEntry = entryRepository.findByEntryId(entry.getEntryId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRY));
+		bookkeepingService.findById(entry.getBookkeepingId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		Entry targetEntry = entryRepository.findById(entry.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRY));
 		entryRepository.delete(targetEntry);
 	}
 
 	
 	@Override
-	public void deleteByBookkeepingId(String bookkeepingId) {
+	public void deleteByBookkeepingId(UUID bookkeepingId) {
 		entryRepository.deleteByBookkeepingId(bookkeepingId);
 	}
 	

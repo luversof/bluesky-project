@@ -47,12 +47,12 @@ class EntryTest implements GeneralTest {
 	// 세이브 테스트
 	@Test
 	void create() {
-		List<EntryGroup> entryGroupList = entryGroupService.findByBookkeepingId(bookkeeping.getBookkeepingId());
+		List<EntryGroup> entryGroupList = entryGroupService.findByBookkeepingId(bookkeeping.getId());
 		
 		Entry entry = new Entry();
-		entry.setBookkeepingId(bookkeeping.getBookkeepingId());
+		entry.setBookkeepingId(bookkeeping.getId());
 		entry.setAmount(123);
-		entry.setEntryGroupId(entryGroupList.stream().findAny().get().getEntryGroupId());
+		entry.setEntryGroupId(entryGroupList.stream().findAny().get().getId());
 		entry.setMemo("test");
 		
 		entryService.create(entry);
@@ -93,13 +93,13 @@ class EntryTest implements GeneralTest {
 	void test5() {
 		ZonedDateTime startDate = ZonedDateTime.parse("2016-05-02"); 
 		ZonedDateTime endDate = ZonedDateTime.parse("2016-05-03");
-		List<Entry> entryList = entryService.findByBookkeepingIdAndEntryDateBetween(bookkeeping.getBookkeepingId(), startDate, endDate);
+		List<Entry> entryList = entryService.findByBookkeepingIdAndEntryDateBetween(bookkeeping.getId(), startDate, endDate);
 		log.debug("entryList : {}", entryList);
 	}
 
 	@Test
 	void deleteByBookkeeping() {
-		entryRepository.deleteByBookkeepingId(bookkeeping.getBookkeepingId());
+		entryRepository.deleteByBookkeepingId(bookkeeping.getId());
 	}
 	
 	@Test

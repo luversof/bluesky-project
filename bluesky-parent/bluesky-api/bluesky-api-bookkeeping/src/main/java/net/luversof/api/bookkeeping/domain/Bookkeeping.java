@@ -1,5 +1,7 @@
 package net.luversof.api.bookkeeping.domain;
 
+import java.util.UUID;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -14,20 +16,18 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(indexes = { @Index(name = "UK_bookkeeping_bookkeepingId", columnList = "bookkeepingId", unique = true), @Index(name = "IDX_bookkeeping_userId", columnList = "user_id") })
+@Table(indexes = { @Index(name = "IDX_bookkeeping_userId", columnList = "user_id") })
 public class Bookkeeping {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private long idx;
-	
 	@NotBlank(groups = { Update.class, Delete.class })
-	@Column(length = 36, nullable = false)
-	private String bookkeepingId;
+	@Id
+	@GeneratedValue(strategy = GenerationType.UUID)
+	private UUID id;
+	
 	
 	@NotBlank(groups = { Create.class, Update.class, Delete.class })
 	@Column(name = "user_id", length = 16)
-	private String userId;
+	private UUID userId;
 	
 	@NotBlank(groups = { Create.class, Update.class })
 	private String name;

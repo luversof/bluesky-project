@@ -1,6 +1,7 @@
 package net.luversof.api.bookkeeping.service;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,7 +15,7 @@ public class CompositeAssetGroupService implements AssetGroupService {
 	private BasicAssetGroupService assetGroupService;
 	
 	@Override
-	public List<AssetGroup> createInitialData(String bookkeepingId) {
+	public List<AssetGroup> createInitialData(UUID bookkeepingId) {
 		return assetGroupService.createInitialData(bookkeepingId);
 	}
 
@@ -24,7 +25,7 @@ public class CompositeAssetGroupService implements AssetGroupService {
 	}
 
 	@Override
-	public List<AssetGroup> findByBookkeepingId(String bookkeepingId) {
+	public List<AssetGroup> findByBookkeepingId(UUID bookkeepingId) {
 		return assetGroupService.findByBookkeepingId(bookkeepingId);
 	}
 
@@ -39,7 +40,7 @@ public class CompositeAssetGroupService implements AssetGroupService {
 	}
 
 	@Override
-	public void deleteAllByBookkeepingId(String bookkeepingId) {
+	public void deleteAllByBookkeepingId(UUID bookkeepingId) {
 		assetGroupService.deleteAllByBookkeepingId(bookkeepingId);
 	}
 

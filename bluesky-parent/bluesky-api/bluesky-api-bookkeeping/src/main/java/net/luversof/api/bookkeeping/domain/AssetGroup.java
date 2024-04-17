@@ -1,5 +1,7 @@
 package net.luversof.api.bookkeeping.domain;
 
+import java.util.UUID;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -24,17 +26,14 @@ import net.luversof.api.bookkeeping.constant.AssetGroupType;
 @Table(indexes = { @Index(name = "UK_assetGroup_assetGroupId", columnList = "assetGroupId", unique = true), @Index(name = "IDX_assetGroup_bookkeepingId", columnList = "bookkeeping_id") })
 public class AssetGroup {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private long idx;
-
 	@NotBlank(groups = { Update.class, Delete.class })
-	@Column(length = 36, nullable = false)
-	private String assetGroupId;
+	@Id
+	@GeneratedValue(strategy = GenerationType.UUID)
+	private UUID id;
 
 	@NotBlank(groups = { Create.class, Update.class })
-	@Column(name = "bookkeeping_id", length = 36, nullable = false)
-	private String bookkeepingId;
+	@Column(name = "bookkeeping_id", nullable = false)
+	private UUID bookkeepingId;
 	
 	@Enumerated(EnumType.STRING)
 	private AssetGroupType assetGroupType;

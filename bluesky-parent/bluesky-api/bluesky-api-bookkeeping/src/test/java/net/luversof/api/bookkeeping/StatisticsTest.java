@@ -46,7 +46,7 @@ class StatisticsTest implements GeneralTest {
 		//2 statisticsSearchInfo 획득
 		StatisticsSearchInfo statisticsSearchInfo = new StatisticsSearchInfo();
 		statisticsSearchInfo.setChronoUnit(ChronoUnit.YEARS);
-		statisticsSearchInfo.setBookkeepingId(bookkeeping.getBookkeepingId());
+		statisticsSearchInfo.setBookkeepingId(bookkeeping.getId());
 		
 		statisticsSearchInfoService.getStatisticsSearchInfo(statisticsSearchInfo);
 		
@@ -66,7 +66,7 @@ class StatisticsTest implements GeneralTest {
 	@Test
 	void test2() {
 		StatisticsSearchInfo statisticsSearchInfo = new StatisticsSearchInfo();
-		statisticsSearchInfo.setBookkeepingId(bookkeeping.getBookkeepingId());
+		statisticsSearchInfo.setBookkeepingId(bookkeeping.getId());
 		statisticsSearchInfo.setChronoUnit(ChronoUnit.YEARS);
 		statisticsSearchInfo.setTargetLocalDate(LocalDate.now());
 		

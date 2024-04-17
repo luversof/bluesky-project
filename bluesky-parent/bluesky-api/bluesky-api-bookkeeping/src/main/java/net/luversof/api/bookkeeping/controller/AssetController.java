@@ -1,6 +1,7 @@
 package net.luversof.api.bookkeeping.controller;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -40,7 +41,7 @@ public class AssetController {
 	 * @return
 	 */
 	@GetMapping
-	public List<Asset> findByBookkeepingId(@RequestParam String bookkeepingId) {
+	public List<Asset> findByBookkeepingId(@RequestParam UUID bookkeepingId) {
 		return assetService.findByBookkeepingId(bookkeepingId);
 	}
 

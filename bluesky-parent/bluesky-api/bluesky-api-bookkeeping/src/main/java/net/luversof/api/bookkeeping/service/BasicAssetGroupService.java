@@ -1,6 +1,7 @@
 package net.luversof.api.bookkeeping.service;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,7 @@ public class BasicAssetGroupService implements AssetGroupService {
 	 * @return
 	 */
 	// @Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
-	public List<AssetGroup> createInitialData(String bookkeepingId) {
+	public List<AssetGroup> createInitialData(UUID bookkeepingId) {
 		return assetGroupRepository.saveAll(AssetGroupInitialData.createAssetGroupList(bookkeepingId));
 	}
 	
@@ -34,25 +35,25 @@ public class BasicAssetGroupService implements AssetGroupService {
 	}
 	
 	@Override
-	public List<AssetGroup> findByBookkeepingId(String bookkeepingId) {
+	public List<AssetGroup> findByBookkeepingId(UUID bookkeepingId) {
 		return assetGroupRepository.findByBookkeepingId(bookkeepingId);
 	}
 	
 	@Override
 	public AssetGroup update(AssetGroup assetGroup) {
-		AssetGroup targetAssetGroup = assetGroupRepository.findByAssetGroupId(assetGroup.getAssetGroupId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ASSETGROUP));
+		AssetGroup targetAssetGroup = assetGroupRepository.findById(assetGroup.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ASSETGROUP));
 		targetAssetGroup.setName(assetGroup.getName());
 		return assetGroupRepository.save(targetAssetGroup);
 	}
 	
 	@Override
 	public void delete(AssetGroup assetGroup) {
-		AssetGroup targetAssetGroup = assetGroupRepository.findByAssetGroupId(assetGroup.getAssetGroupId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ASSETGROUP));
+		AssetGroup targetAssetGroup = assetGroupRepository.findById(assetGroup.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ASSETGROUP));
 		assetGroupRepository.delete(targetAssetGroup);
 	}
 	
 	@Override
-	public void deleteAllByBookkeepingId(String bookkeepingId) {
+	public void deleteAllByBookkeepingId(UUID bookkeepingId) {
 		List<AssetGroup> assetGroupList = assetGroupRepository.findByBookkeepingId(bookkeepingId);
 		assetGroupRepository.deleteAll(assetGroupList);
 	}

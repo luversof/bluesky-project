@@ -2,6 +2,7 @@ package net.luversof.api.bookkeeping.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,7 @@ public class CompositeEntryGroupService implements EntryGroupService {
 	
 	@Override
 	//@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
-	public List<EntryGroup> createInitialData(String bookkeepingId) {
+	public List<EntryGroup> createInitialData(UUID bookkeepingId) {
 		return entryGroupService.createInitialData(bookkeepingId);
 	}
 	
@@ -26,12 +27,12 @@ public class CompositeEntryGroupService implements EntryGroupService {
 	}
 	
 	@Override
-	public Optional<EntryGroup> findByEntryGroupId(String entryGroupId) {
+	public Optional<EntryGroup> findByEntryGroupId(UUID entryGroupId) {
 		return entryGroupService.findByEntryGroupId(entryGroupId);
 	}
 	
 	@Override
-	public List<EntryGroup> findByBookkeepingId(String bookkeepingId) {
+	public List<EntryGroup> findByBookkeepingId(UUID bookkeepingId) {
 		return entryGroupService.findByBookkeepingId(bookkeepingId);
 	}
 	
@@ -46,7 +47,7 @@ public class CompositeEntryGroupService implements EntryGroupService {
 	}
 	
 	@Override
-	public void deleteAllBybookkeepingId(String bookkeepingId) {
+	public void deleteAllBybookkeepingId(UUID bookkeepingId) {
 		entryGroupService.deleteAllBybookkeepingId(bookkeepingId);
 	}
 }

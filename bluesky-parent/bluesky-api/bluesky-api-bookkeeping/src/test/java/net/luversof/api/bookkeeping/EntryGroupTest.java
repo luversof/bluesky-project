@@ -38,13 +38,13 @@ class EntryGroupTest implements GeneralTest {
 	}
 	@Test
 	void initialDataSave() {
-		List<EntryGroup> result = entryGroupService.createInitialData(bookkeeping.getBookkeepingId());
+		List<EntryGroup> result = entryGroupService.createInitialData(bookkeeping.getId());
 		log.debug("defaultSave : {}", result);
 	}
 	
 	@Test
 	void findEntryGroupList() {
-		List<EntryGroup> entryGroupList = entryGroupService.findByBookkeepingId(bookkeeping.getBookkeepingId());
+		List<EntryGroup> entryGroupList = entryGroupService.findByBookkeepingId(bookkeeping.getId());
 		log.debug("entryGroupList : {}", entryGroupList);
 	}
 

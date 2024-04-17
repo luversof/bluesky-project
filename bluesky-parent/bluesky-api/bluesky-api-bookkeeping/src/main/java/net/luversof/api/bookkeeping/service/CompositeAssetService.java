@@ -2,6 +2,7 @@ package net.luversof.api.bookkeeping.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,29 +24,29 @@ public class CompositeAssetService implements AssetService {
 	@Autowired
 	private BasicBookkeepingService bookkeepingService;
 
-	public List<Asset> createInitialData(String bookkeepingId, List<AssetGroup> assetGroupList) {
+	public List<Asset> createInitialData(UUID bookkeepingId, List<AssetGroup> assetGroupList) {
 		return assetService.createInitialData(bookkeepingId, assetGroupList);
 	}
 	
 	@Override
 	public Asset create(Asset asset) {
-		bookkeepingService.findByBookkeepingId(asset.getBookkeepingId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING_ID));
+		bookkeepingService.findById(asset.getBookkeepingId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING_ID));
 		return assetService.create(asset);
 	}
 	
 	@Override
-	public Optional<Asset> findByAssetId(String assetId) {
-		return assetService.findByAssetId(assetId);
+	public Optional<Asset> findById(UUID assetId) {
+		return assetService.findById(assetId);
 	}
 	
 	@Override
-	public List<Asset> findByBookkeepingId(String bookkeepingId) {
+	public List<Asset> findByBookkeepingId(UUID bookkeepingId) {
 		return assetService.findByBookkeepingId(bookkeepingId);
 	}
 
 	@Override
 	public Asset update(Asset asset) {
-		Asset targetAsset = findByAssetId(asset.getAssetId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ASSET));
+		Asset targetAsset = findById(asset.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ASSET));
 		if (!targetAsset.getBookkeepingId().equals(asset.getBookkeepingId())) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ASSET);
 		}
@@ -67,12 +68,12 @@ public class CompositeAssetService implements AssetService {
 	
 	@Override
 	public void delete(Asset asset) {
-		bookkeepingService.findByBookkeepingId(asset.getBookkeepingId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		bookkeepingService.findById(asset.getBookkeepingId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		assetService.delete(asset);
 	}
 
 	@Override
-	public void deleteAllByBookkeepingId(String bookkeepingId) {
+	public void deleteAllByBookkeepingId(UUID bookkeepingId) {
 		assetService.deleteAllByBookkeepingId(bookkeepingId);
 	}
 	

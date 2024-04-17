@@ -1,6 +1,7 @@
 package net.luversof.api.bookkeeping.controller;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -31,7 +32,7 @@ public class BookkeepingController {
 	
 	@Operation(description = "해당 userId의 bookkeeping 목록 조회")
 	@GetMapping
-	public List<Bookkeeping> findByUserId(String userId) {
+	public List<Bookkeeping> findByUserId(UUID userId) {
 		return bookkeepingService.findByUserId(userId);
 	}
 	

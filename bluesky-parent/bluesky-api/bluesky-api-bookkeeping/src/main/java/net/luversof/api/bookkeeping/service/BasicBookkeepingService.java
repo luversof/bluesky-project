@@ -25,24 +25,23 @@ public class BasicBookkeepingService implements BookkeepingService {
 		if (bookkeeping.getUserId() == null) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_EXIST_USER_ID);
 		}
-		bookkeeping.setBookkeepingId(UUID.randomUUID().toString());
 		return bookkeepingRepository.save(bookkeeping);
 	}
 
 	@Override
-	public Optional<Bookkeeping> findByBookkeepingId(String bookkeepingId) {
-		return bookkeepingRepository.findByBookkeepingId(bookkeepingId);
+	public Optional<Bookkeeping> findById(UUID bookkeepingId) {
+		return bookkeepingRepository.findById(bookkeepingId);
 	}
 	
 
 	@Override
-	public List<Bookkeeping> findByUserId(String userId) {
+	public List<Bookkeeping> findByUserId(UUID userId) {
 		return bookkeepingRepository.findByUserId(userId);
 	}
 
 	@Override
 	public Bookkeeping update(Bookkeeping bookkeeping) {
-		Bookkeeping targetBookkeeping = findByBookkeepingId(bookkeeping.getBookkeepingId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		Bookkeeping targetBookkeeping = findById(bookkeeping.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		if (bookkeeping.getBaseDate() > 0) {
 			targetBookkeeping.setBaseDate(bookkeeping.getBaseDate());
 		}
@@ -56,7 +55,7 @@ public class BasicBookkeepingService implements BookkeepingService {
 
 	@Override
 	public void delete(Bookkeeping bookkeeping) {
-		Bookkeeping targetBookkeeping = bookkeepingRepository.findByBookkeepingId(bookkeeping.getBookkeepingId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
+		Bookkeeping targetBookkeeping = bookkeepingRepository.findById(bookkeeping.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING));
 		bookkeepingRepository.delete(targetBookkeeping);
 	}
 

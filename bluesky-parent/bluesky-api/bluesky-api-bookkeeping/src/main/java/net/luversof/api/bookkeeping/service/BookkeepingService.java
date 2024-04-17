@@ -2,6 +2,7 @@ package net.luversof.api.bookkeeping.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import net.luversof.api.bookkeeping.domain.Bookkeeping;
 
@@ -17,9 +18,9 @@ public interface BookkeepingService {
 	 */
 	Bookkeeping create(Bookkeeping bookkeeping);
 	
-	Optional<Bookkeeping> findByBookkeepingId(String bookkeepingId);
+	Optional<Bookkeeping> findById(UUID bookkeepingId);
 	
-	List<Bookkeeping> findByUserId(String userId);
+	List<Bookkeeping> findByUserId(UUID userId);
 	
 	Bookkeeping update(Bookkeeping bookkeeping);
 

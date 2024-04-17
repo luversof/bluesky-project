@@ -29,12 +29,11 @@ public enum AssetGroupInitialData {
 		return MessageUtil.getMessage(MessageFormat.format("constant.bookkeeping.asset-group.{0}.name", getMessageCode()));
 	}
 	
-	public static List<AssetGroup> createAssetGroupList(String bookkeepingId) {
+	public static List<AssetGroup> createAssetGroupList(UUID bookkeepingId) {
 		List<AssetGroup> assetGroupList = new ArrayList<>();
 		
 		Arrays.asList(AssetGroupInitialData.values()).forEach(assetGroupInitialData -> {
 			AssetGroup assetGroup = new AssetGroup();
-			assetGroup.setAssetGroupId(UUID.randomUUID().toString());
 			assetGroup.setBookkeepingId(bookkeepingId);
 			assetGroup.setName(assetGroupInitialData.getName());
 			assetGroup.setAssetGroupType(assetGroupInitialData.getAssetGroupType());
@@ -44,9 +43,8 @@ public enum AssetGroupInitialData {
 		return assetGroupList;
 	}
 	
-	public AssetGroup createAssetGroup(String bookkeepingId) {
+	public AssetGroup createAssetGroup(UUID bookkeepingId) {
 		var assetGroup = new AssetGroup();
-		assetGroup.setAssetGroupId(UUID.randomUUID().toString());
 		assetGroup.setBookkeepingId(bookkeepingId);
 		assetGroup.setAssetGroupType(getAssetGroupType());
 		assetGroup.setName(getName());

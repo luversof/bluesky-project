@@ -2,6 +2,7 @@ package net.luversof.api.bookkeeping.service;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,7 @@ public class CompositeEntryService implements EntryService {
 	}
 
 	@Override
-	public List<Entry> findByBookkeepingIdAndEntryDateBetween(String bookkeepingId, ZonedDateTime startDate, ZonedDateTime endDate) {
+	public List<Entry> findByBookkeepingIdAndEntryDateBetween(UUID bookkeepingId, ZonedDateTime startDate, ZonedDateTime endDate) {
 		return entryService.findByBookkeepingIdAndEntryDateBetween(bookkeepingId, startDate, endDate);
 	}
 
@@ -41,7 +42,7 @@ public class CompositeEntryService implements EntryService {
 	}
 
 	@Override
-	public void deleteByBookkeepingId(String bookkeepingId) {
+	public void deleteByBookkeepingId(UUID bookkeepingId) {
 		entryService.deleteByBookkeepingId(bookkeepingId);
 	}
 

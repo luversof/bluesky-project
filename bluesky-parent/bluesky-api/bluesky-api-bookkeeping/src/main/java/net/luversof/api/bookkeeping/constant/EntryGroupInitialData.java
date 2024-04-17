@@ -44,12 +44,11 @@ public enum EntryGroupInitialData {
 		return MessageUtil.getMessage(MessageFormat.format("constant.bookkeeping.entry-group.{0}.{1}.name", this.getEntryGroupType().name(), this.getMessageCode()));
 	}
 	
-	public static List<EntryGroup> createEntryGroupList(String bookkeepingId) {
+	public static List<EntryGroup> createEntryGroupList(UUID bookkeepingId) {
 		List<EntryGroup> entryGroupList = new ArrayList<>();
 		
 		Arrays.asList(EntryGroupInitialData.values()).forEach(entryGroupInitialData -> {
 			EntryGroup entryGroup = new EntryGroup();
-			entryGroup.setEntryGroupId(UUID.randomUUID().toString());
 			entryGroup.setBookkeepingId(bookkeepingId);
 			entryGroup.setName(entryGroupInitialData.getName());
 			entryGroup.setEntryGroupType(entryGroupInitialData.getEntryGroupType());

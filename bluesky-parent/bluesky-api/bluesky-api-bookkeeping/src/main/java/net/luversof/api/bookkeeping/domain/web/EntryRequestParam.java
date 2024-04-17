@@ -1,6 +1,7 @@
 package net.luversof.api.bookkeeping.domain.web;
 
 import java.time.ZonedDateTime;
+import java.util.UUID;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -17,9 +18,9 @@ public class EntryRequestParam {
 	/**
 	 * user의 bookkeeping table id 값
 	 */
-	private String bookkeepingId;
+	private UUID bookkeepingId;
 	
-	private String userId;
+	private UUID userId;
 	
 	@NotNull(groups = Search.class)
 	private ZonedDateTime startDate;

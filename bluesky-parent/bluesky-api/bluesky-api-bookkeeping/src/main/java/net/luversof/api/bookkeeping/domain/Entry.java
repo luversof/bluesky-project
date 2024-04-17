@@ -2,6 +2,7 @@ package net.luversof.api.bookkeeping.domain;
 
 import java.io.Serializable;
 import java.time.ZonedDateTime;
+import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -24,29 +25,26 @@ public class Entry implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private long idx;
-	
 	@NotBlank(groups = { Update.class, Delete.class })
-	@Column(length = 36, nullable = false)
-	private String entryId;
+	@Id
+	@GeneratedValue(strategy = GenerationType.UUID)
+	private UUID id;
 
-	@Column(name = "bookkeeping_id", length = 36, nullable = false)
-	private String bookkeepingId;
+	@Column(name = "bookkeeping_id", nullable = false)
+	private UUID bookkeepingId;
 	
 	@NotBlank(groups = { Create.class })
 	@Enumerated(EnumType.STRING)
 	private EntryGroupType entryGroupType;
 
 	@Column(name = "incomeAsset_id", length = 36)
-	private String incomeAssetId;
+	private UUID incomeAssetId;
 
 	@Column(name = "expenseAsset_id", length = 36)
-	private String expenseAssetId;
+	private UUID expenseAssetId;
 
 	@Column(name = "entryGroup_id", length = 36, nullable = false)
-	private String entryGroupId;
+	private UUID entryGroupId;
 
 	@Min(value = 1, groups = { Create.class, Update.class })
 	private long amount;

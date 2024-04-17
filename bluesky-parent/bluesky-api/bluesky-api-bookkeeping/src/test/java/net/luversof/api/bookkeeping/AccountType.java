@@ -1,4 +1,4 @@
-package net.luversof.api.bookkeeping.domain;
+package net.luversof.api.bookkeeping;
 
 import java.util.UUID;
 
@@ -13,41 +13,36 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
-import net.luversof.api.bookkeeping.constant.EntryGroupType;
 
-/**
- * 분류 항목
- * 
- * @author bluesky
- *
- */
 @Data
 @Entity
-@Table(indexes = { @Index(name = "IDX_entryGroup_bookkeepingId", columnList = "bookkeeping_id") })
-public class EntryGroup {
-	
-	@NotBlank(groups = { Update.class, Delete.class })
+@Table(indexes = { @Index(name = "IDX_accountType_bookkeepingId", columnList = "bookkeeping_id") })
+public class AccountType {
+
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
-
+	
+	@NotBlank(groups = { Create.class, Update.class })
 	@Column(name = "bookkeeping_id", nullable = false)
 	private UUID bookkeepingId;
 	
-	@NotBlank(groups = { Create.class, Update.class })
 	@Enumerated(EnumType.STRING)
-	private EntryGroupType entryGroupType;
+	private AccountTypeCode accountTypeCode;
 	
-	@NotBlank(groups = { Create.class, Update.class })
 	private String name;
 	
-
-	public interface Create {
+	public static interface Create {
 	}
 
-	public interface Update {
+	public static interface CreateParam {
 	}
 
-	public interface Delete {
+	public static interface Update {
 	}
+
+	public static interface Delete {
+	}
+	
 }

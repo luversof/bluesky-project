@@ -42,7 +42,7 @@ class AssetTest implements GeneralTest {
 			return;
 		}
 		
-		List<Asset> userAssetList = assetService.findByBookkeepingId(bookkeeping.getBookkeepingId());
+		List<Asset> userAssetList = assetService.findByBookkeepingId(bookkeeping.getId());
 		log.debug("assetList : {}", userAssetList);
 	}
 

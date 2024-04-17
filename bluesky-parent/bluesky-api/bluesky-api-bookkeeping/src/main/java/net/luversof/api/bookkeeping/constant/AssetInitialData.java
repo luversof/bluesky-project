@@ -26,18 +26,17 @@ public enum AssetInitialData {
 		return MessageUtil.getMessage(MessageFormat.format("constant.bookkeeping.asset.{0}.name", getMessageCode()));
 	}
 
-	public static List<Asset> createAssetList(String bookkeepingId, List<AssetGroup> assetGroupList) {
+	public static List<Asset> createAssetList(UUID bookkeepingId, List<AssetGroup> assetGroupList) {
 		List<Asset> assetList = new ArrayList<>();
 
 		Arrays.asList(AssetInitialData.values()).forEach(assetInitialData -> {
 			Asset asset = new Asset();
-			asset.setAssetId(UUID.randomUUID().toString());
 			asset.setBookkeepingId(bookkeepingId);
 			asset.setName(assetInitialData.getName());
 			
 			assetGroupList.stream().forEach(assetGroup -> {
 				if (assetGroup.getName().equals(assetInitialData.getAssetGroupInitialData().getName())) {
-					asset.setAssetGroupId(assetGroup.getAssetGroupId());
+					asset.setAssetGroupId(assetGroup.getId());
 				}
 			});
 			assetList.add(asset);

@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 
 import org.springframework.context.i18n.LocaleContextHolder;
 
@@ -23,7 +24,7 @@ import net.luversof.api.bookkeeping.util.BookkeepingUtils;
 @Data
 public class StatisticsSearchInfo {
 
-	private String bookkeepingId;
+	private UUID bookkeepingId;
 
 	private int baseDate = 1;
 	

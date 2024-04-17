@@ -3,6 +3,7 @@ package net.luversof.api.bookkeeping.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,7 +22,7 @@ public class BasicEntryGroupService implements EntryGroupService {
 	
 	@Override
 	//@Transactional(BookkeepingConstants.BOOKKEEPING_TRANSACTIONMANAGER)
-	public List<EntryGroup> createInitialData(String bookkeepingId) {
+	public List<EntryGroup> createInitialData(UUID bookkeepingId) {
 		return entryGroupRepository.saveAll(EntryGroupInitialData.createEntryGroupList(bookkeepingId));
 	}
 	
@@ -31,19 +32,19 @@ public class BasicEntryGroupService implements EntryGroupService {
 	}
 	
 	@Override
-	public Optional<EntryGroup> findByEntryGroupId(String entryGroupId) {
-		return entryGroupRepository.findByEntryGroupId(entryGroupId);
+	public Optional<EntryGroup> findByEntryGroupId(UUID entryGroupId) {
+		return entryGroupRepository.findById(entryGroupId);
 	}
 	
 	@Override
-	public List<EntryGroup> findByBookkeepingId(String bookkeepingId) {
+	public List<EntryGroup> findByBookkeepingId(UUID bookkeepingId) {
 		return entryGroupRepository.findByBookkeepingId(bookkeepingId);
 		
 	}
 	
 	@Override
 	public EntryGroup update(EntryGroup entryGroup) {
-		EntryGroup targetEntryGroup = findByEntryGroupId(entryGroup.getEntryGroupId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRYGROUP));
+		EntryGroup targetEntryGroup = findByEntryGroupId(entryGroup.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRYGROUP));
 		if (targetEntryGroup.getBookkeepingId() != entryGroup.getBookkeepingId()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRYGROUP);
 		}
@@ -52,7 +53,7 @@ public class BasicEntryGroupService implements EntryGroupService {
 
 	@Override
 	public void delete(EntryGroup entryGroup) {
-		EntryGroup targetEntryGroup = findByEntryGroupId(entryGroup.getEntryGroupId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRYGROUP));
+		EntryGroup targetEntryGroup = findByEntryGroupId(entryGroup.getId()).orElseThrow(() -> new BlueskyException(BookkeepingErrorCode.NOT_EXIST_ENTRYGROUP));
 		if (targetEntryGroup.getBookkeepingId() != entryGroup.getBookkeepingId()) {
 			throw new BlueskyException(BookkeepingErrorCode.NOT_OWNER_ENTRYGROUP);
 		}
@@ -60,7 +61,7 @@ public class BasicEntryGroupService implements EntryGroupService {
 	}
 	
 	@Override
-	public void deleteAllBybookkeepingId(String bookkeepingId) {
+	public void deleteAllBybookkeepingId(UUID bookkeepingId) {
 		List<EntryGroup> entryGroupList = entryGroupRepository.findByBookkeepingId(bookkeepingId);
 		entryGroupRepository.deleteAll(entryGroupList);
 	}
