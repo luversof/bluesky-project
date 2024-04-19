@@ -1,6 +1,6 @@
 // url query parameter 처리
-var param = (() => {
-	var _params = new URLSearchParams(window.location.search);
+const param = (() => {
+	let _params = new URLSearchParams(window.location.search);
 
 	return {
 		refreshUrl() {
@@ -29,18 +29,18 @@ var param = (() => {
 			this.refreshUrl();
 		},
 		getRequestPage() {
-			var page = this.getParam("page");
+			let page = this.getParam("page");
 			return (page == null ? 1 : page) - 1;
 		}
 	}
 })();
 
-var navbarAreaFn = (() => {
+const navbarAreaFn = (() => {
 	return {
 		addEventListener() {
 			// 상단 메뉴의 링크에 검색 parameter를 추가 처리
 			document.querySelectorAll(".navbar .navbar-center .menu a").forEach(el => el.addEventListener("click", (event) => {
-				var url = new URL(event.target.href);
+				const url = new URL(event.target.href);
 				param.getParams().forEach((value, key) => url.searchParams.set(key, value))
 				// page parameter는 제거
 				url.searchParams.delete("page");
@@ -51,11 +51,11 @@ var navbarAreaFn = (() => {
 	}
 })();
 
-var searchAreaFn = (() => {
-	var _searchAreaSelector = "#searchArea";
-	var _searchInputArea = _searchAreaSelector + " .searchInput";
-	var _searchButtonArea = _searchAreaSelector + " .searchButton";
-	var _resetButtonArea = _searchAreaSelector + " .resetButton";
+const searchAreaFn = (() => {
+	const _searchAreaSelector = "#searchArea";
+	const _searchInputArea = _searchAreaSelector + " .searchInput";
+	const _searchButtonArea = _searchAreaSelector + " .searchButton";
+	const _resetButtonArea = _searchAreaSelector + " .resetButton";
 	
 	return {
 		addEventListener() {
@@ -82,7 +82,7 @@ var searchAreaFn = (() => {
 		},
 		// 검색 영역 목록 검색, page는 1로 리셋한다.
 		searchList(event) {
-			var isValid = true;
+			let isValid = true;
 			document.querySelectorAll(_searchInputArea).forEach(el => {
 				if (!isValid) {
 					return;
@@ -91,7 +91,6 @@ var searchAreaFn = (() => {
 				if (!el.checkValidity()) {
 					el.reportValidity();
 					isValid = false;
-					return;
 				}
 			});
 			
@@ -109,14 +108,23 @@ var searchAreaFn = (() => {
 	}
 })();
 
-var listAreaFn = (() => {
-	var _listAreaSelector = "#content";
+const listAreaFn = (() => {
+	const _listAreaSelector = "#content";
+	
+	function _getTableCells() {
+		let rows = document.querySelectorAll(_listAreaSelector + " tbody tr");
+		let cells = [];
+		for (let i = 0 ; i < rows.length ; i++) {
+			cells[i] = rows[i].querySelectorAll("td:not(.contentData,.contentDataMenu,.contentDataCheck)");
+		}
+		return cells;
+	}
 	
 	return {
 		// response header로 전달받은 HX-Trigger에 대한 event trigger
 		addEventListener() {
 			document.addEventListener('listFragmentResponseTrigger', () => {
-				var targetArea = document.querySelector(_listAreaSelector);
+				const targetArea = document.querySelector(_listAreaSelector);
 				/** 체크박스 선택 처리 */
 				targetArea.querySelectorAll("#contentTable input[name=contentDataCheck]").forEach(el => el.addEventListener("change", (event) => {
 					if (event.target.checked) {
@@ -126,12 +134,12 @@ var listAreaFn = (() => {
 					}
 				}));
 				
-				targetArea.querySelectorAll("#contentTable input[name=contentDataCheckToggle]").forEach(el => el.addEventListener("change", (event) => {
+				targetArea.querySelectorAll("#contentTable input[name=contentDataCheckToggle]").forEach(el => el.addEventListener("change", (event) => 
 					event.target.closest("table").querySelectorAll("tbody input[name=contentDataCheck]").forEach(el => {
 						el.checked = event.target.checked;
 						el.dispatchEvent(new Event("change"));
-					});
-				}));
+					})
+				));
 				/** 링크에 class="link" 추가 처리 */
 				targetArea.querySelectorAll("#contentTable tbody td a").forEach(el => {
 					el.classList.add("btn");
@@ -153,12 +161,77 @@ var listAreaFn = (() => {
 				/** (s) exportButton 처리 */
 				targetArea.querySelectorAll(".exportButton").forEach(el => el.addEventListener("click", (event) => this.checkExportData(event)));
 				/** (e) exportButton 처리 */
+				
+				/** (s) rowSpan 처리 */
+				targetArea.querySelector("#useListAreaRowSpan").addEventListener("click", () => this.toggleRowSpan());
+				this.setRowSpan(this.getRowSpan());
+				/** (e) rowSpan 처리 */
 			});
 			
 
 		},
+		getRowSpan() {
+			let useListAreaRowSpan = localStorage.getItem("useListAreaRowSpan");
+			return (useListAreaRowSpan != null && useListAreaRowSpan == "true");
+		},
+		toggleRowSpan() {
+			this.setRowSpan(!this.getRowSpan());
+		},
+		setRowSpan(useListAreaRowSpan) {
+			localStorage.setItem("useListAreaRowSpan", useListAreaRowSpan);
+			const useListAreaRowSpanArea = document.querySelector("#useListAreaRowSpan");
+			
+			if (useListAreaRowSpan) {
+				useListAreaRowSpanArea.classList.add("swap-active");
+				this.appendRowSpan();
+			} else {
+				useListAreaRowSpanArea.classList.remove("swap-active");
+				this.removeRowSpan();
+			}
+		},
+		appendRowSpan() {
+			const cells = _getTableCells();
+			// rowspan 적용
+			for (let i = 0; i < cells.length ; i++) {
+				for (let j = 0; j < cells[i].length ; j++) {
+					if (cells[i][j].classList.contains("hidden")) {
+						continue;
+					}
+					
+					let spanCount = 1;
+					let isTarget = true;
+					for (let k = i + 1; k < cells.length ; k++) {
+						if (!isTarget) {
+							break;
+						}
+						if (cells[i][j].textContent == cells[k][j].textContent) {
+							spanCount ++;
+							cells[k][j].classList.add("hidden");
+						} else {
+							isTarget = false;
+						}
+					}
+					
+					if (spanCount > 1) {
+						cells[i][j].setAttribute("rowspan", spanCount);
+					}
+				}
+			}
+		},
+		removeRowSpan() {
+			const cells = _getTableCells();
+			cells.forEach(rows => rows.forEach(element => {
+				if (element.hasAttribute("rowspan")) {
+					element.removeAttribute("rowspan");
+				}
+			
+				if (element.classList.contains("hidden")) {
+					element.classList.remove("hidden");
+				}
+			}));
+		},
 		checkDeleteData(event) {
-			var checkedList = document.querySelectorAll("#contentTable input[name=contentDataCheck]:checked")
+			const checkedList = document.querySelectorAll("#contentTable input[name=contentDataCheck]:checked")
 			if (checkedList.length <= 0) {
 				alert("삭제할 행을 체크해주세요.");
 				event.preventDefault();
@@ -171,7 +244,7 @@ var listAreaFn = (() => {
 			htmx.trigger(_listAreaSelector + " .deleteButton", "deleteModalTrigger");
 		},
 		checkExportData(event) {
-			var checkedList = document.querySelectorAll("#contentTable input[name=contentDataCheck]:checked")
+			const checkedList = document.querySelectorAll("#contentTable input[name=contentDataCheck]:checked")
 			if (checkedList.length <= 0) {
 				alert("export할 행을 체크해주세요");
 				event.preventDefault();
@@ -183,8 +256,8 @@ var listAreaFn = (() => {
 })();
 
 
-var modalFormFn = (() => {
-	var _modalAreaSelector = "#modal";
+const modalFormFn = (() => {
+	const _modalAreaSelector = "#modal";
 	
 	return {
 		// response header로 전달받은 HX-Trigger에 대한 event trigger
@@ -200,9 +273,9 @@ var modalFormFn = (() => {
 			document.addEventListener('createModalFragmentResponseTrigger', () => param.setParam("page", 1));
 			
 			document.addEventListener('exportModalBulkFormFragmentResponseTrigger', () => {
-				var modalTarget = document.querySelector(_modalAreaSelector);
-				var checkedIds = [...document.querySelectorAll("#contentTable input[name=contentDataCheck]")].filter(el => el.checked).map(el => parseInt(el.value));
-				var targetList = contentList.filter((_el, index) => checkedIds.includes(index));
+				const modalTarget = document.querySelector(_modalAreaSelector);
+				const checkedIds = [...document.querySelectorAll("#contentTable input[name=contentDataCheck]")].filter(el => el.checked).map(el => parseInt(el.value));
+				const targetList = contentList.filter((_el, index) => checkedIds.includes(index));
 				modalTarget.querySelector("textarea").value = JSON.stringify(targetList);
 				
 				/** (s) 데이터 복사 eventListener */
@@ -210,11 +283,9 @@ var modalFormFn = (() => {
 					if (navigator.clipboard == undefined) {
 						alert("클립보드 복사가 지원되지 않는 환경입니다.\n직접 복사하여 사용하세요.");
 					} else {
-						navigator.clipboard.writeText(modalTarget.querySelector("textarea").value).then(() => {
-							alert("데이터를 clipboard에 복사하였습니다.");
-					    }).catch(err => {
-					        console.log('클립보드 복사 실패', err);
-					    })
+						navigator.clipboard.writeText(modalTarget.querySelector("textarea").value)
+						.then(() => alert("데이터를 clipboard에 복사하였습니다."))
+						.catch(err => console.log('클립보드 복사 실패', err))
 					}
 				});
 				/** (e) 데이터 복사 eventListener */		
@@ -226,15 +297,15 @@ var modalFormFn = (() => {
 		/** modalForm에 field type에 따라 input이 생성됨. type에 따라 알맞게 데이터를 설정 */
 		// contentDataEl의 hidden input을 그대로 복사하여 설정, 동일 이름이 있으면 값을 추가하도록 처리
 		copyContentDataToModalForm(contentDataEl) {
-			var modalTarget = document.querySelector(_modalAreaSelector);
+			const modalTarget = document.querySelector(_modalAreaSelector);
 			contentDataEl.querySelectorAll("input[type=hidden]").forEach(el => {
-				var targetInput = modalTarget.querySelector("[name=" + el.name + "]");
+				const targetInput = modalTarget.querySelector("[name=" + el.name + "]");
 				if (targetInput === null) {
 					modalTarget.querySelector("#modalForm").appendChild(el.cloneNode(true));
 				} else {
 					targetInput.value = el.value;
 					// 체크박스는 input과 체크박스 표시가 별도로 존재하여 추가 처리 필요
-					var checkBoxInput = targetInput.parentElement.querySelector("input[type=checkbox][name=" + (targetInput.name + "_checkbox") + "]");
+					const checkBoxInput = targetInput.parentElement.querySelector("input[type=checkbox][name=" + (targetInput.name + "_checkbox") + "]");
 					if (targetInput.parentElement.classList.contains("join") && checkBoxInput != null) {
 						checkBoxInput.checked = eval(el.value);
 					}
@@ -247,12 +318,12 @@ var modalFormFn = (() => {
 		},
 		/** modalForm 영역 초기 처리 */
 		initialize() {
-			var modalTarget = document.querySelector(_modalAreaSelector);
+			const modalTarget = document.querySelector(_modalAreaSelector);
 			
 			/** (s) 데이터 복사 eventListener */
 			// contentTable 영역에 선택한 체크박스 라인의 데이터를 #modalForm의 input 으로 가져온다.
 			modalTarget.querySelector(".copyDataButton").addEventListener("click", () => {
-				var checkedList = document.querySelectorAll("#contentTable input[name=contentDataCheck]:checked")
+				const checkedList = document.querySelectorAll("#contentTable input[name=contentDataCheck]:checked")
 				if (checkedList.length <= 0) {
 					alert("복사할 행을 체크해주세요.");
 					return;
@@ -268,16 +339,16 @@ var modalFormFn = (() => {
 			
 			/** (s) modal의 checkBox의 on/off 값 설정 eventListener */
 			modalTarget.querySelectorAll('#modalForm input[type=checkbox]').forEach(el => el.addEventListener("change", (event) =>
-				event.target.closest('div').querySelector("input[type=hidden][name=" + event.target.name.replace('_checkbox', '') + "]").value = event.target.checked ? true : false
+				event.target.closest('div').querySelector("input[type=hidden][name=" + event.target.name.replace('_checkbox', '') + "]").value = event.target.checked
 			));
 			/** (e) modal의 checkBox의 on/off 값 설정 eventListener */
 			
 			/** (s) group 별 input 목록 취합 */
-			var columnGroupIdList = [];
+			let columnGroupIdList = [];
 			document.querySelectorAll("[data-columngroupid]").forEach(el => columnGroupIdList.push(el.dataset.columngroupid));
 			columnGroupIdList = columnGroupIdList.filter((item, pos) => columnGroupIdList.indexOf(item) === pos);
 			columnGroupIdList.forEach(columnGroupId => {
-				var targetEl;	
+				let targetEl;	
 				document.querySelectorAll("[data-columngroupid=" + columnGroupId + "]").forEach((el, index) => {
 					if (index == 0) {
 						targetEl = el;
@@ -289,22 +360,22 @@ var modalFormFn = (() => {
 			/** (e) group 별 input 목록 취합 */
 			
 			/** (s) input의 tooltip의 위치 설정 */
-			var modalBoxRect = modalTarget.querySelector(".modal-box").getBoundingClientRect();
+			let modalBoxRect = modalTarget.querySelector(".modal-box").getBoundingClientRect();
 			
 			// model 위치
-			var modalBoxXStart = modalBoxRect.x;
-			var modalBoxXEnd = modalBoxRect.x + modalBoxRect.width;
-			var modalBoxYStart = modalBoxRect.y;
-			var modalBoxYEnd = modalBoxRect.y + modalBoxRect.height;
+			let modalBoxXStart = modalBoxRect.x;
+			let modalBoxXEnd = modalBoxRect.x + modalBoxRect.width;
+			let modalBoxYStart = modalBoxRect.y;
+			let modalBoxYEnd = modalBoxRect.y + modalBoxRect.height;
 			
 			modalTarget.querySelectorAll(".modal-box .tooltip").forEach(el => {
 				// tooltip class 위치를 확인하여 tooltip의 방향 설정 class 추가
-				var targetRect = el.getBoundingClientRect();
+				let targetRect = el.getBoundingClientRect();
 				
-				var leftGap = targetRect.x - modalBoxXStart;
-				var rightGap = modalBoxXEnd - targetRect.x;
-				var topGap = targetRect.y - modalBoxYStart;
-				var bottomGap = modalBoxYEnd - targetRect.y;
+				let leftGap = targetRect.x - modalBoxXStart;
+				let rightGap = modalBoxXEnd - targetRect.x;
+				let topGap = targetRect.y - modalBoxYStart;
+				let bottomGap = modalBoxYEnd - targetRect.y;
 				
 				// tooltip의 기본 너비 : 320, 오른쪽 간격이 320 이상이면 오른쪽 배치
 				el.classList.add(rightGap > 320 ? "tooltip-right" : leftGap > 320 ? "tooltip-left" : topGap > bottomGap ? "tooltip-top" : "tooltip-bottom");
@@ -319,13 +390,13 @@ listAreaFn.addEventListener();
 modalFormFn.addEventListener();
 
 
-var indicatorFn = (() => {
-	var _cloneIndicatorArea = function(target) {
+const indicatorFn = (() => {
+	let _cloneIndicatorArea = function(target) {
 		return document.querySelector(target.getAttribute("hx-indicator")).cloneNode(true);
 	}
 	
-	var _locateIndicatorArea = function(target) {
-		var indicator = _cloneIndicatorArea(target);
+	let _locateIndicatorArea = function(target) {
+		let indicator = _cloneIndicatorArea(target);
 		indicator.style.display = "block";
 		target.innerHTML = "";
 		target.appendChild(indicator);
