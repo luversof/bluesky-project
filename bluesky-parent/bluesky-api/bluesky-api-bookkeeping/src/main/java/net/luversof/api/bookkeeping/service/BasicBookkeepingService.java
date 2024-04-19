@@ -10,9 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import io.github.luversof.boot.exception.BlueskyException;
+import net.luversof.api.bookkeeping.base.domain.Bookkeeping;
+import net.luversof.api.bookkeeping.base.repository.BookkeepingRepository;
 import net.luversof.api.bookkeeping.constant.BookkeepingErrorCode;
-import net.luversof.api.bookkeeping.domain.Bookkeeping;
-import net.luversof.api.bookkeeping.repository.BookkeepingRepository;
 
 @Service
 public class BasicBookkeepingService implements BookkeepingService {

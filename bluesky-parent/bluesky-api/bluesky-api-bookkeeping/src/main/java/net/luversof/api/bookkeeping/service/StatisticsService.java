@@ -10,7 +10,7 @@ import net.luversof.api.bookkeeping.domain.Statistics;
 import net.luversof.api.bookkeeping.domain.StatisticsSearchInfo;
 import net.luversof.api.bookkeeping.mapper.StatisticsMapper;
 
-@Service
+//@Service
 public class StatisticsService {
 	
 	@Autowired

@@ -1,4 +1,4 @@
-package net.luversof.api.bookkeeping.domain;
+package net.luversof.api.bookkeeping.base.domain;
 
 import java.io.Serializable;
 import java.time.ZonedDateTime;

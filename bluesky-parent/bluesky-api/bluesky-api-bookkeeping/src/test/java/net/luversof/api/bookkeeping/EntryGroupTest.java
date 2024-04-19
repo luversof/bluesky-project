@@ -9,8 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
+import net.luversof.api.bookkeeping.base.domain.Bookkeeping;
+import net.luversof.api.bookkeeping.constant.TestConstant;
 import net.luversof.api.bookkeeping.constant.EntryGroupInitialData;
-import net.luversof.api.bookkeeping.domain.Bookkeeping;
 import net.luversof.api.bookkeeping.domain.EntryGroup;
 import net.luversof.api.bookkeeping.service.BasicBookkeepingService;
 import net.luversof.api.bookkeeping.service.CompositeEntryGroupService;
@@ -29,7 +30,7 @@ class EntryGroupTest implements GeneralTest {
 	
 	@BeforeEach
 	public void before() {
-		bookkeeping = bookkeepingService.findByUserId(BookkeepingTestConstant.USER_ID).stream().findFirst().get();
+		bookkeeping = bookkeepingService.findByUserId(TestConstant.USER_ID).stream().findFirst().get();
 	}
 
 	@Test

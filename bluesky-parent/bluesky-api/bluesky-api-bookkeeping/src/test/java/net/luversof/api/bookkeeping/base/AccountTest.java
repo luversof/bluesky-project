@@ -1,4 +1,4 @@
-package net.luversof.api.bookkeeping;
+package net.luversof.api.bookkeeping.base;
 
 import java.util.List;
 import java.util.UUID;
@@ -8,9 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
-import net.luversof.api.bookkeeping.domain.Account;
-import net.luversof.api.bookkeeping.repository.AccountRepository;
-import net.luversof.api.bookkeeping.service.AccountService;
+import net.luversof.api.bookkeeping.base.domain.Account;
+import net.luversof.api.bookkeeping.base.repository.AccountRepository;
+import net.luversof.api.bookkeeping.base.service.AccountBaseService;
 
 @Slf4j
 class AccountTest implements GeneralTest {
@@ -19,7 +19,7 @@ class AccountTest implements GeneralTest {
 	private AccountRepository accountRepository;
 
 	@Autowired
-	private AccountService accountService;
+	private AccountBaseService accountService;
 	
 	@Test
 	void findAll() {

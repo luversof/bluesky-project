@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import net.luversof.api.bookkeeping.domain.Bookkeeping;
+import net.luversof.api.bookkeeping.base.domain.Bookkeeping;
 
 public interface BookkeepingService {
 

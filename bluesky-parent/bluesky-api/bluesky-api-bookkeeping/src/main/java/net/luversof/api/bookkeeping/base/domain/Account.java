@@ -1,4 +1,4 @@
-package net.luversof.api.bookkeeping.domain;
+package net.luversof.api.bookkeeping.base.domain;
 
 import java.util.UUID;
 
@@ -13,15 +13,18 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(indexes = { @Index(name = "IDX_account_userId", columnList = "user_id") })
+@Table(indexes = { @Index(name = "IDX_account_bookkeepingId", columnList = "bookkeeping_id") })
 public class Account {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 	
-	@Column(name = "user_id")
-	private UUID userId;
+	@Column(name = "bookkeeping_id")
+	private UUID bookkeepingId;
+	
+	@Column(name = "accountType_id")
+	private UUID accountTypeId;
 	
 	private String name;
 

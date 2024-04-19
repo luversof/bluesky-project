@@ -10,7 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
-import net.luversof.api.bookkeeping.domain.Bookkeeping;
+import net.luversof.api.bookkeeping.base.domain.Bookkeeping;
+import net.luversof.api.bookkeeping.constant.TestConstant;
 import net.luversof.api.bookkeeping.domain.Statistics;
 import net.luversof.api.bookkeeping.domain.StatisticsSearchInfo;
 import net.luversof.api.bookkeeping.service.BasicBookkeepingService;
@@ -33,7 +34,7 @@ class StatisticsTest implements GeneralTest {
 
 	@BeforeEach
 	public void before() {
-		bookkeeping = bookkeepingService.findByUserId(BookkeepingTestConstant.USER_ID).stream().findFirst().get();
+		bookkeeping = bookkeepingService.findByUserId(TestConstant.USER_ID).stream().findFirst().get();
 	}
 
 	/**

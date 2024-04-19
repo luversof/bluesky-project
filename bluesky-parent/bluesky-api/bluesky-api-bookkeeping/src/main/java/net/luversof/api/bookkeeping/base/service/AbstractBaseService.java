@@ -1,16 +1,22 @@
-package net.luversof.api.bookkeeping.service;
+package net.luversof.api.bookkeeping.base.service;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public abstract class AbstractCommonService<T, ID> implements CommonService<T, ID> {
+public abstract class AbstractBaseService<T, ID> implements BaseService<T, ID> {
 	
 	public abstract JpaRepository<T, ID> getRepository(); 
 	
 	@Override
-	public T create(T t) {
+	public T save(T t) {
 		return getRepository().save(t);
+	}
+	
+	@Override
+	public List<T> saveAll(Iterable<T> t) {
+		return getRepository().saveAll(t);
 	}
 
 	@Override
