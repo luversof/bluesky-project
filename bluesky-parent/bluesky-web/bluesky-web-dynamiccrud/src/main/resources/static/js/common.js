@@ -194,7 +194,7 @@ const listAreaFn = (() => {
 			// rowspan 적용
 			for (let i = 0; i < cells.length ; i++) {
 				for (let j = 0; j < cells[i].length ; j++) {
-					if (cells[i][j].classList.contains("hidden")) {
+					if (cells[i][j].classList.contains("hidden") || cells[i][j].textContent == "") {
 						continue;
 					}
 					
