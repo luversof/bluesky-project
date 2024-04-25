@@ -13,7 +13,7 @@ import net.luversof.api.bookkeeping.base.domain.AccountTypeCode;
 
 
 /**
- * 기본 생성하여 제공하는 AccountType 데이터
+ * 기본 생성하여 제공하는 AccountType
  */
 @Getter
 @AllArgsConstructor
@@ -31,7 +31,7 @@ public enum AccountTypeInitialData {
 	;
 	private AccountTypeCode code;
 	
-	private String getName() {
+	private String getLocalizedName() {
 		return MessageUtil.getMessage(MessageFormat.format("bookkeeping.constant.account-type.{0}", name()), name());
 	}
 	
@@ -42,7 +42,7 @@ public enum AccountTypeInitialData {
 		for (var accountTypeInitialData : AccountTypeInitialData.values()) {
 			var accountType = new AccountType();
 			accountType.setBookkeepingId(bookkeepingId);
-			accountType.setName(accountTypeInitialData.getName());
+			accountType.setName(accountTypeInitialData.getLocalizedName());
 			accountType.setCode(accountTypeInitialData.getCode());
 			accountTypeList.add(accountType);
 		}

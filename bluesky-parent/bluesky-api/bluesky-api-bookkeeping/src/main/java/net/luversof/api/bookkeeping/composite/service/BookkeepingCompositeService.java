@@ -1,28 +1,26 @@
 package net.luversof.api.bookkeeping.composite.service;
 
-import java.util.List;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import io.github.luversof.boot.exception.BlueskyException;
 import lombok.RequiredArgsConstructor;
 import net.luversof.api.bookkeeping.base.constant.AccountInitialData;
 import net.luversof.api.bookkeeping.base.constant.AccountTypeInitialData;
-import net.luversof.api.bookkeeping.base.domain.Account;
-import net.luversof.api.bookkeeping.base.domain.AccountType;
+import net.luversof.api.bookkeeping.base.constant.EntryTypeInitialData;
 import net.luversof.api.bookkeeping.base.domain.Bookkeeping;
 import net.luversof.api.bookkeeping.base.service.AccountBaseService;
 import net.luversof.api.bookkeeping.base.service.AccountTypeBaseService;
 import net.luversof.api.bookkeeping.base.service.BookkeepingBaseService;
+import net.luversof.api.bookkeeping.base.service.EntryTypeBaseService;
 
-@Service
 @RequiredArgsConstructor
+@Service
 public class BookkeepingCompositeService {
 	
 	private final BookkeepingBaseService bookkeepingBaseService;
 	private final AccountTypeBaseService accountTypeBaseService;
 	private final AccountBaseService accountBaseService;
+	private final EntryTypeBaseService entryTypeBaseService;
 	
 	/**
 	 * 가계부 생성
@@ -37,8 +35,11 @@ public class BookkeepingCompositeService {
 		var accountTypeList = AccountTypeInitialData.getInitialData(bookkeeping.getId());
 		accountTypeBaseService.saveAll(accountTypeList);
 		
-		List<Account> accountList = AccountInitialData.getInitialData(bookkeeping.getId(), accountTypeList);
+		var accountList = AccountInitialData.getInitialData(bookkeeping.getId(), accountTypeList);
 		accountBaseService.saveAll(accountList);
+		
+		var entryTypeList = EntryTypeInitialData.getInitialData(bookkeeping.getId());
+		entryTypeBaseService.saveAll(entryTypeList);
 		
 	}
 }

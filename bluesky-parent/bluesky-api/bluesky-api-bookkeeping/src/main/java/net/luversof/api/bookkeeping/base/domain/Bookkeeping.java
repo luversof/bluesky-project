@@ -1,6 +1,9 @@
 package net.luversof.api.bookkeeping.base.domain;
 
+import java.time.ZonedDateTime;
 import java.util.UUID;
+
+import org.hibernate.annotations.CreationTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,6 +15,8 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 import lombok.Data;
 
 @Data
@@ -19,14 +24,15 @@ import lombok.Data;
 @Table(indexes = { @Index(name = "IDX_bookkeeping_userId", columnList = "user_id") })
 public class Bookkeeping {
 
-	@NotBlank(groups = { Update.class, Delete.class })
+	@Null(groups = Create.class)
+	@NotNull(groups = { Update.class, Delete.class })
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 	
 	
-	@NotBlank(groups = { Create.class, Update.class, Delete.class })
-	@Column(name = "user_id", length = 16)
+	@NotNull(groups = { Create.class, Update.class, Delete.class })
+	@Column(name = "user_id", nullable = false)
 	private UUID userId;
 	
 	@NotBlank(groups = { Create.class, Update.class })
@@ -34,10 +40,14 @@ public class Bookkeeping {
 
 	/**
 	 * 시작일. startDay라고 해야하나?
+	 * 주차 기준을 희망할 경우 설정을 고민해보아야 할듯?
 	 */
 	@Min(value = 1, groups = { Create.class, Update.class })
 	@Max(value = 28, groups = { Create.class, Update.class })
 	private int baseDate = 1;
+	
+	@CreationTimestamp
+	private ZonedDateTime createDate;
 
 	public interface Create {
 	}

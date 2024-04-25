@@ -26,11 +26,16 @@ public class AccountType {
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 	
-	@Column(name = "bookkeeping_id")
+	@Column(name = "bookkeeping_id", nullable = false)
 	private UUID bookkeepingId;
 	
 	@Enumerated(EnumType.STRING)
 	private AccountTypeCode code;
 	
 	private String name;
+	
+	public interface Create {}
+	public interface Update {}
+	public interface Delete {}
+
 }

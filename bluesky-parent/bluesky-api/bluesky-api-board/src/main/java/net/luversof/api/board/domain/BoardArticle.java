@@ -47,7 +47,7 @@ public class BoardArticle {
 	@CreationTimestamp
 	private ZonedDateTime createdDate;
 
-	@Column(updatable = false)
+	@Column
 	@UpdateTimestamp
 	private ZonedDateTime lastModifiedDate;
 

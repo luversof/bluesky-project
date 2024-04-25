@@ -8,9 +8,14 @@ import java.util.UUID;
 import io.github.luversof.boot.context.MessageUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.luversof.api.bookkeeping.base.domain.Account;
 import net.luversof.api.bookkeeping.base.domain.AccountType;
 
+/**
+ * 기본 생성하여 제공하는 Account
+ */
+@Slf4j
 @Getter
 @AllArgsConstructor
 public enum AccountInitialData {
@@ -20,7 +25,7 @@ public enum AccountInitialData {
 	
 	private AccountTypeInitialData  accountTypeInitialData;
 	
-	public String getName() {
+	public String getLocalizedName() {
 		return MessageUtil.getMessage(MessageFormat.format("bookkeeping.constant.account.{0}", name()), name());
 	}
 	
@@ -28,10 +33,15 @@ public enum AccountInitialData {
 		var accountList = new ArrayList<Account>();
 		
 		for (var accountInitialData : AccountInitialData.values()) {
-			var targetAccoutType = accountTypeList.stream().filter(accountType -> accountInitialData.getAccountTypeInitialData().getCode().equals(accountType.getCode())).findFirst().get();
+			var targetAccoutType = accountTypeList.stream().filter(accountType -> accountInitialData.getAccountTypeInitialData().getCode().equals(accountType.getCode())).findFirst().orElseGet(() -> null);
+			if (targetAccoutType == null) {
+				log.debug("targetAccoutType is not exist : {}", accountInitialData.getAccountTypeInitialData());
+				continue;
+			}
+			
 			var account = new Account();
 			account.setBookkeepingId(bookkeepingId);
-			account.setName(accountInitialData.getName());
+			account.setName(accountInitialData.getLocalizedName());
 			account.setAccountTypeId(targetAccoutType.getId());
 			accountList.add(account);
 		}

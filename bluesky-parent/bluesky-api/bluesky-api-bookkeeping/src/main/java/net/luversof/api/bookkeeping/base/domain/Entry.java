@@ -1,55 +1,63 @@
 package net.luversof.api.bookkeeping.base.domain;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
+import org.hibernate.annotations.UuidGenerator;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 import lombok.Data;
-import net.luversof.api.bookkeeping.constant.EntryGroupType;
 
+/**
+ * entry는 대상 account에 대한 credit, debit 정보 중 하나를 저장
+ * 다중 기록을 하며 credit + debit의 총 합은 무조건 0 
+ */
 @Data
 @Entity
-@Table(indexes = { @Index(name = "UK_entry_entryId", columnList = "entryId", unique = true), @Index(name = "IDX_entry_bookkeepingId", columnList = "bookkeeping_id") })
+@Table(indexes = { @Index(name = "IDX_entry_accountId", columnList = "account_id") })
 public class Entry implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	@NotBlank(groups = { Update.class, Delete.class })
+	@Null(groups = Create.class)
+	@NotNull(groups = { Update.class, Delete.class })
 	@Id
-	@GeneratedValue(strategy = GenerationType.UUID)
+//	@GeneratedValue(strategy = GenerationType.UUID)
+	@UuidGenerator(style = UuidGenerator.Style.TIME)
 	private UUID id;
 
-	@Column(name = "bookkeeping_id", nullable = false)
-	private UUID bookkeepingId;
+	@Column(name = "account_id", nullable = false)
+	private UUID accountId;
+
+	@Column(name = "entryType_id", nullable = false)
+	private UUID entryTypeId;
 	
-	@NotBlank(groups = { Create.class })
-	@Enumerated(EnumType.STRING)
-	private EntryGroupType entryGroupType;
+	@Column(name = "entryTransaction_id", nullable = false)
+	private UUID entryTransactionId;
 
-	@Column(name = "incomeAsset_id", length = 36)
-	private UUID incomeAssetId;
-
-	@Column(name = "expenseAsset_id", length = 36)
-	private UUID expenseAssetId;
-
-	@Column(name = "entryGroup_id", length = 36, nullable = false)
-	private UUID entryGroupId;
-
-	@Min(value = 1, groups = { Create.class, Update.class })
-	private long amount;
+	/**
+	 * 차변, 들어오는 돈
+	 */
+	private BigDecimal debit;
+	
+	/**
+	 * 대변 - 나가는 돈
+	 */
+	private BigDecimal credit;
 
 	@NotBlank(groups = { Create.class, Update.class })
+	@Column(nullable = false)
 	private ZonedDateTime entryDate;
 
 	private String memo;

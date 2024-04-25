@@ -5,4 +5,5 @@ public enum EntryTypeCode {
 	INCOME,
 	EXPENSE,
 	TRANSFER
+
 }

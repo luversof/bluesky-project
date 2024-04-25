@@ -15,8 +15,8 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
-@EnableJpaRepositories(basePackages = "net.luversof.api.bookkeeping.**.repository", entityManagerFactoryRef = "bookkeepingEntityManagerFactory", transactionManagerRef = "bookkeepingTransactionManager")
-public class BookkeepingDataJpaConfig {
+@EnableJpaRepositories(basePackages = "net.luversof.api.bookkeeping.**.repository.mariadb", entityManagerFactoryRef = "bookkeepingEntityManagerFactory", transactionManagerRef = "bookkeepingTransactionManager")
+public class BookkeepingMariadbDataJpaConfig {
 
     @Bean(name = "bookkeepingEntityManagerFactory")
     LocalContainerEntityManagerFactoryBean bookkeepingEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("bookkeepingDataSource") DataSource bookkeepingDataSource) {
