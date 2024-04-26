@@ -2,12 +2,13 @@ package net.luversof.api.bookkeeping.base.domain;
 
 import java.util.UUID;
 
+import com.github.f4b6a3.uuid.alt.GUID;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
@@ -21,7 +22,7 @@ public class Account {
 	@Null(groups = Create.class)
 	@NotNull(groups = { Update.class, Delete.class })
 	@Id
-	@GeneratedValue(strategy = GenerationType.UUID)
+//	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 	
 	@NotNull(groups = { Update.class, Delete.class })
@@ -32,6 +33,11 @@ public class Account {
 	private UUID accountTypeId;
 	
 	private String name;
+	
+	@PrePersist
+    public void prePersist() {
+    	id = GUID.v7().toUUID();
+    }
 	
 	public interface Create {}
 	public interface Update {}

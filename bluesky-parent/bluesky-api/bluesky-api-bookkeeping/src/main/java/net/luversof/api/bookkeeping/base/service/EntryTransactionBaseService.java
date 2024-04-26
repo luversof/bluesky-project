@@ -1,6 +1,5 @@
 package net.luversof.api.bookkeeping.base.service;
 
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -16,9 +15,5 @@ public class EntryTransactionBaseService extends AbstractBaseService<EntryTransa
 
 	@Getter
 	private final EntryTransactionRepository repository;
-
-	public List<EntryTransaction> findByBookkeepingId(UUID bookkeepingId) {
-		return repository.findByBookkeepingId(bookkeepingId);
-	}
 
 }

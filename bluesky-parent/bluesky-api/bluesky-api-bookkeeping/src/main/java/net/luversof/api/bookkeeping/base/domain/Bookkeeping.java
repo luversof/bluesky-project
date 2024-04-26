@@ -5,12 +5,13 @@ import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.github.f4b6a3.uuid.alt.GUID;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -27,7 +28,7 @@ public class Bookkeeping {
 	@Null(groups = Create.class)
 	@NotNull(groups = { Update.class, Delete.class })
 	@Id
-	@GeneratedValue(strategy = GenerationType.UUID)
+//	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 	
 	
@@ -48,16 +49,15 @@ public class Bookkeeping {
 	
 	@CreationTimestamp
 	private ZonedDateTime createDate;
-
-	public interface Create {
-	}
-
-	public interface Update {
-	}
 	
-	public interface Delete {
+	@PrePersist
+	public void prePersist() {
+		id = GUID.v7().toUUID();
 	}
 
-	public interface Search {
-	}
+	public interface Create {}
+	public interface Update {}
+	public interface Delete {}
+	public interface Search {}
+
 }

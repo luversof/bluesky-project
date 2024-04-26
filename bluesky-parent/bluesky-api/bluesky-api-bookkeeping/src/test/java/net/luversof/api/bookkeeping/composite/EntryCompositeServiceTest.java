@@ -1,7 +1,8 @@
-package net.luversof.api.bookkeeping.base;
+package net.luversof.api.bookkeeping.composite;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,11 +16,11 @@ import net.luversof.api.bookkeeping.base.repository.mariadb.BookkeepingRepositor
 import net.luversof.api.bookkeeping.base.repository.mariadb.EntryRepository;
 import net.luversof.api.bookkeeping.base.repository.mariadb.EntryTransactionRepository;
 import net.luversof.api.bookkeeping.base.repository.mariadb.EntryTransactionTypeRepository;
+import net.luversof.api.bookkeeping.composite.service.EntryCompositeService;
 import net.luversof.api.bookkeeping.constant.TestConstant;
 
 @Slf4j
-//@Rollback(false)
-class EntryTest implements GeneralTest {
+class EntryCompositeServiceTest  implements GeneralTest {
 	
 	@Autowired
 	private BookkeepingRepository bookkeepingRepository;
@@ -36,25 +37,36 @@ class EntryTest implements GeneralTest {
 	@Autowired
 	private EntryRepository entryRepository;
 	
+	@Autowired
+	private EntryCompositeService entryCompositeService;
+
 	@Test
-	void saveTest() {
+	void serviceSaveTest() {
 		var bookkeeping = bookkeepingRepository.findByUserId(TestConstant.USER_ID).get(0);
 		var account = accountRepository.findByBookkeepingId(bookkeeping.getId()).get(0);
 		var entryTransactionType = entryTransactionTypeRepository.findByBookkeepingId(bookkeeping.getId()).get(0);
 		
-		var entryTransaction = new EntryTransaction();
-		entryTransaction.setTransactionDate(ZonedDateTime.now());
+		var entryList = new ArrayList<Entry>();
+		{
+			var entry = new Entry();
+			entry.setAccountId(account.getId());
+			entry.setCredit(new BigDecimal("123123"));
+			
+			entryList.add(entry);
+		}
+		{
+			var entry = new Entry();
+			entry.setAccountId(account.getId());
+			entry.setDebit(new BigDecimal("123123"));
+			entryList.add(entry);
+		}
+		
+		var  entryTransaction = new EntryTransaction();
 		entryTransaction.setMemo("메모");
-		entryTransactionRepository.save(entryTransaction);
+		entryTransaction.setTransactionDate(ZonedDateTime.now());
+		entryTransaction.setEntryTransactionTypeId(entryTransactionType.getId());
 		
-		var entry = new Entry();
-		entry.setAccountId(account.getId());
-		entry.setEntryTransactionId(entryTransaction.getId());
-		entry.setCredit(new BigDecimal("123123"));
-//		entry.setEntryDate(ZonedDateTime.now());
-//		entry.setMemo("메모");
-		
-		entryRepository.save(entry);
+		entryCompositeService.save(entryTransaction, entryList);
 	}
-	
+
 }

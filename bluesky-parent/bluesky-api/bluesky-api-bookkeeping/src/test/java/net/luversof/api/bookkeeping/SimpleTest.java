@@ -6,12 +6,16 @@ import java.util.Arrays;
 import java.util.TimeZone;
 import java.util.UUID;
 
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.format.datetime.standard.DateTimeContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindException;
 import org.springframework.validation.DefaultMessageCodesResolver;
+
+import com.github.f4b6a3.uuid.UuidCreator;
+import com.github.f4b6a3.uuid.alt.GUID;
 
 import io.github.luversof.boot.exception.BlueskyException;
 import lombok.SneakyThrows;
@@ -20,17 +24,17 @@ import net.luversof.api.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.api.bookkeeping.util.BookkeepingUtils;
 
 @Slf4j
-public class SimpleTest {
+class SimpleTest {
 
 	@Test
-	public void test() {
+	void test() {
 		log.debug("TEST : {}", BookkeepingErrorCode.NOT_EXIST_ASSET.getClass().getSimpleName());
 		log.debug("TEST : {}", String.join(".",  "as", "caa", "hd"));
 	}
 	
 	@Test
 	@SneakyThrows
-	public void errorCodeTest() {
+	void errorCodeTest() {
 		DefaultMessageCodesResolver messageCodesResolver = new DefaultMessageCodesResolver();
 		
 		Exception exception  = new BlueskyException("DDDDD");
@@ -48,7 +52,7 @@ public class SimpleTest {
 	}
 	
 	@Test
-	public void 공백테스트() {
+	void 공백테스트() {
 		String a = "공 백";
 		log.debug("result : {}", StringUtils.containsWhitespace(a));
 		log.debug("result : {}", a.contains(" "));
@@ -56,13 +60,13 @@ public class SimpleTest {
 	
 	
 	@Test
-	public void test2() {
+	void test2() {
 		log.debug("result : {}", BookkeepingUtils.getMonthStartLocalDate(LocalDate.now(), 1));
 		log.debug("result : {}", BookkeepingUtils.getMonthEndLocalDate(LocalDate.now(), 1));
 	}
 	
 	@Test
-	public void localeTest() {
+	void localeTest() {
 		TimeZone timeZone = LocaleContextHolder.getTimeZone();
 		log.debug("result : {}", timeZone.getID());
 		log.debug("result : {}", ZoneId.getAvailableZoneIds());
@@ -70,13 +74,22 @@ public class SimpleTest {
 	}
 	
 	@Test
-	public void zoneIdTest() {
+	void zoneIdTest() {
 		ZoneId timeZone = DateTimeContextHolder.getDateTimeContext().getTimeZone();
 		log.debug("zoneId : {}", timeZone);
 	}
 	
 	@Test
-	public void UUIDTest() {
+	void UUIDTest() {
 		log.debug("result : {}", UUID.fromString("1"));
+		
+	}
+	
+	@RepeatedTest(value = 10)
+	void uuidCreatorTest() {
+//		System.out.println("UUID Version 1: " + UuidCreator.getTimeBased());
+//		System.out.println("UUID Version 6: " + UuidCreator.getTimeOrdered());
+		System.out.println("UUID Version 7: " + UuidCreator.getTimeOrderedEpoch());
+		System.out.println("GUID Version 7: " + GUID.v7().toUUID());
 	}
 }

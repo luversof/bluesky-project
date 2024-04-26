@@ -5,14 +5,13 @@ import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
-import org.hibernate.annotations.UuidGenerator;
+import com.github.f4b6a3.uuid.alt.GUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -34,14 +33,11 @@ public class Entry implements Serializable {
 	@NotNull(groups = { Update.class, Delete.class })
 	@Id
 //	@GeneratedValue(strategy = GenerationType.UUID)
-	@UuidGenerator(style = UuidGenerator.Style.TIME)
+//	@UuidGenerator(style = Style.TIME)
 	private UUID id;
 
 	@Column(name = "account_id", nullable = false)
 	private UUID accountId;
-
-	@Column(name = "entryType_id", nullable = false)
-	private UUID entryTypeId;
 	
 	@Column(name = "entryTransaction_id", nullable = false)
 	private UUID entryTransactionId;
@@ -56,19 +52,13 @@ public class Entry implements Serializable {
 	 */
 	private BigDecimal credit;
 
-	@NotBlank(groups = { Create.class, Update.class })
-	@Column(nullable = false)
-	private ZonedDateTime entryDate;
-
-	private String memo;
-
-	public interface Create {
+	@PrePersist
+	public void prePersist() {
+		id = GUID.v7().toUUID();
 	}
-
-    public interface Update {
-	}
-
-    public interface Delete {
-	}
+	
+	public interface Create {}
+    public interface Update {}
+    public interface Delete {}
 
 }

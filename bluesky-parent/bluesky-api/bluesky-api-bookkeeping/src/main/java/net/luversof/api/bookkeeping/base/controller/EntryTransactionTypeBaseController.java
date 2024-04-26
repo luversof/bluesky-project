@@ -14,28 +14,28 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
-import net.luversof.api.bookkeeping.base.domain.EntryType;
-import net.luversof.api.bookkeeping.base.service.EntryTypeBaseService;
+import net.luversof.api.bookkeeping.base.domain.EntryTransactionType;
+import net.luversof.api.bookkeeping.base.service.EntryTransactionTypeBaseService;
 
 @RequiredArgsConstructor
 @RestController
 @RequestMapping(value = "/api/entryType/base", produces = MediaType.APPLICATION_JSON_VALUE)
-public class EntryTypeBaseController {
+public class EntryTransactionTypeBaseController {
 
-	private final EntryTypeBaseService entryTypeBaseService;
+	private final EntryTransactionTypeBaseService entryTypeBaseService;
 	
 	@PutMapping
-	public EntryType update(@RequestBody @Validated(EntryType.Update.class) EntryType entryType) {
+	public EntryTransactionType update(@RequestBody @Validated(EntryTransactionType.Update.class) EntryTransactionType entryType) {
 		return entryTypeBaseService.update(entryType);
 	}
 
 	@GetMapping("/{id}")
-	public Optional<EntryType> findById(@PathVariable UUID id) {
+	public Optional<EntryTransactionType> findById(@PathVariable UUID id) {
 		return entryTypeBaseService.findById(id);
 	}
 	
 	@GetMapping("/search/findByBookkeepingId/{bookkeepingId}")
-	public List<EntryType> findByBookkeepingId(@PathVariable UUID bookkeepingId) {
+	public List<EntryTransactionType> findByBookkeepingId(@PathVariable UUID bookkeepingId) {
 		return entryTypeBaseService.findByBookkeepingId(bookkeepingId);
 	}
 	

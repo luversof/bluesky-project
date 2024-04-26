@@ -1,6 +1,6 @@
 package net.luversof.api.bookkeeping.base.domain;
 
-public enum EntryTypeCode {
+public enum EntryTransactionTypeCode {
 
 	INCOME,
 	EXPENSE,
