@@ -4,7 +4,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 
-import io.github.luversof.boot.util.ApplicationContextUtil;
+import io.github.luversof.boot.context.ApplicationContextUtil;
 import net.luversof.client.user.openfeign.client.OAuth2AuthorizedClientClient;
 import net.luversof.client.user.openfeign.client.OAuth2AuthorizedClientClient.SaveAuthorizedClientParam;
 

@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import io.github.luversof.boot.context.MessageUtil;
+import io.github.luversof.boot.context.support.MessageUtil;
 import lombok.Data;
 
 @Data
