@@ -11,9 +11,9 @@ import io.github.luversof.boot.devcheck.annotation.DevCheckController;
 @DevCheckController
 public class SecurityDevCheckController {
 	
-	private final String pathPrefix = "/security";
+	private static final String PATH_PREFIX = "/security";
 	
-	@GetMapping(pathPrefix + "/authorities")
+	@GetMapping(PATH_PREFIX + "/authorities")
 	public Collection<? extends GrantedAuthority> authorities() {
 		return SecurityContextHolder.getContext().getAuthentication().getAuthorities();
 	}	

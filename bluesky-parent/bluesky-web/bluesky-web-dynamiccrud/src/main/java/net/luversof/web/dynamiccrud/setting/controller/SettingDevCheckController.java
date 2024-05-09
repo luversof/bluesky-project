@@ -23,7 +23,7 @@ import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminSubMenu
 @DevCheckController
 public class SettingDevCheckController {
 
-	private final String pathPrefix = "/setting";
+	private static final String PATH_PREFIX = "/setting";
 	
 	@Autowired
 	private EventAdminProjectService eventAdminProjectService;
@@ -40,32 +40,32 @@ public class SettingDevCheckController {
 	@Autowired
 	private EventAdminDbFieldService eventAdminFieldService;
 	
-	@GetMapping(pathPrefix + "/project")
+	@GetMapping(PATH_PREFIX + "/project")
 	public Project project() {
 		return eventAdminProjectService.getProject();
 	}
 	
-	@GetMapping(pathPrefix + "/mainMenuList")
+	@GetMapping(PATH_PREFIX + "/mainMenuList")
 	public List<MainMenu> mainMenuList() {
 		return eventAdminMainMenuService.getMainMenuList();
 	}
 	
-	@GetMapping(pathPrefix + "/subMenuList")
+	@GetMapping(PATH_PREFIX + "/subMenuList")
 	public List<SubMenu> subMenuList() {
 		return eventAdminSubMenuService.getSubMenuList();
 	}
 	
-	@GetMapping(pathPrefix + "/dbQueryList")
+	@GetMapping(PATH_PREFIX + "/dbQueryList")
 	public List<DbQuery> dbQueryList() {
 		return eventAdminQueryService.getDbQueryList();
 	}
 	
-	@GetMapping(pathPrefix + "/dbFieldList")
+	@GetMapping(PATH_PREFIX + "/dbFieldList")
 	public List<DbField> dbFieldList() {
 		return eventAdminFieldService.getDbFieldList();
 	}
 	
-	@GetMapping(pathPrefix + "/beanTest")
+	@GetMapping(PATH_PREFIX + "/beanTest")
 	public Object beanTest( ) {
 		ResolvableType type = ResolvableType.forClassWithGenerics(SettingServiceListSupplier.class, DbField.class);
 		String[] beanNamesForType = ApplicationContextUtil.getApplicationContext().getBeanNamesForType(type);
