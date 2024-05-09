@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ResolvableType;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import io.github.luversof.boot.context.ApplicationContextUtil;
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
-import io.github.luversof.boot.util.ApplicationContextUtil;
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
 import net.luversof.web.dynamiccrud.setting.domain.MainMenu;

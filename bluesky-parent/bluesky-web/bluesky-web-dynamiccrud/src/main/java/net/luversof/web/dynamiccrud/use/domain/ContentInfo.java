@@ -8,7 +8,7 @@ import java.util.Map;
 
 import org.springframework.util.StringUtils;
 
-import io.github.luversof.boot.context.expression.util.SpelParserUtil;
+import io.github.luversof.boot.expression.SpelParserUtil;
 import lombok.Getter;
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;

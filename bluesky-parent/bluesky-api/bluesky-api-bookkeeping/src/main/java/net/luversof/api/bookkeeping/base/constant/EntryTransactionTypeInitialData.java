@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import io.github.luversof.boot.context.MessageUtil;
+import io.github.luversof.boot.context.support.MessageUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import net.luversof.api.bookkeeping.base.domain.EntryTransactionType;

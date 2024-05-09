@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.context.ApplicationContext;
 
-import io.github.luversof.boot.util.RequestAttributeUtil;
+import io.github.luversof.boot.web.util.RequestAttributeUtil;
 import lombok.Setter;
 import net.luversof.api.blog.domain.mariadb.Blog;
 import net.luversof.api.blog.service.BlogArticleService;
