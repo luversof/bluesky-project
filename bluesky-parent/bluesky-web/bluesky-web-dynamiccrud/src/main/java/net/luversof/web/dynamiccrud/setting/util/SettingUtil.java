@@ -97,10 +97,10 @@ public class SettingUtil extends RequestAttributeUtil {
 		
 		settingParameterOptional = Optional.of(
 			new SettingParameter(
-				isSettingUrl ? AdminConstant.ADMIN_PROJECT_ID_VALUE : (String) pathVariableMap.get(SettingConstant.ADMIN_PROJECT_ID),
-				(String) pathVariableMap.get(SettingConstant.PROJECT_ID),
-				(String) pathVariableMap.get(SettingConstant.MAINMENU_ID),
-				(String) pathVariableMap.get(SettingConstant.SUBMENU_ID)
+				isSettingUrl ? AdminConstant.ADMIN_PROJECT_ID_VALUE : pathVariableMap.get(SettingConstant.ADMIN_PROJECT_ID),
+				pathVariableMap.get(SettingConstant.PROJECT_ID),
+				pathVariableMap.get(SettingConstant.MAINMENU_ID),
+				pathVariableMap.get(SettingConstant.SUBMENU_ID)
 			)
 		);
 	
@@ -228,7 +228,7 @@ public class SettingUtil extends RequestAttributeUtil {
 	
 	public static DbQuery getDbQuery(SettingParameter settingParameter, DbQuerySqlCommandType sqlCommandType) {
 		List<DbQuery> queryList = getDbQueryList(settingParameter);
-		return queryList.stream().filter(x -> x.getSqlCommandType().equals(sqlCommandType)).findAny().orElseThrow(() -> new BlueskyException("NOT_EXIST_QUERY_TYPE").setErrorMessageArgs(sqlCommandType.toString()));
+		return queryList.stream().filter(x -> x.getSqlCommandType().equals(sqlCommandType)).findAny().orElseThrow(() -> new BlueskyException("NOT_EXIST_QUERY_TYPE", sqlCommandType.toString()));
 	}
 	
 	public static DbQuery getDbQuery(String adminProjectId, String projectId, String mainMenuId, String subMenuId, DbQuerySqlCommandType sqlCommandType) {
