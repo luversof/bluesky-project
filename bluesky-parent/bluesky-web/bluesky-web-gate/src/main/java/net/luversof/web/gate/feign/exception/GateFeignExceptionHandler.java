@@ -12,7 +12,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import feign.FeignException;
-import io.github.luversof.boot.autoconfigure.exception.util.ExceptionUtil;
+import io.github.luversof.boot.autoconfigure.web.util.ExceptionUtil;
 
 @ControllerAdvice
 public class GateFeignExceptionHandler {
