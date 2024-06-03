@@ -5,10 +5,10 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import net.luversof.api.bookkeeping.base.domain.Entry;
+import net.luversof.api.bookkeeping.base.domain.Asset;
 
-public interface EntryRepository extends JpaRepository<Entry, UUID> {
-	
-	List<Entry> findByAccountId(UUID accountId);
+public interface AssetRepository extends JpaRepository<Asset, UUID> {
+
+	List<Asset> findByLedgerId(UUID ledgerId);
 
 }

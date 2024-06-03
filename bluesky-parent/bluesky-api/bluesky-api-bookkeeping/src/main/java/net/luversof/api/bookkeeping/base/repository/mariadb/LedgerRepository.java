@@ -6,11 +6,11 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
-import net.luversof.api.bookkeeping.base.domain.Bookkeeping;
+import net.luversof.api.bookkeeping.base.domain.Ledger;
 
 @Transactional(readOnly = true)
-public interface BookkeepingRepository extends JpaRepository<Bookkeeping, UUID> {
+public interface LedgerRepository extends JpaRepository<Ledger, UUID> {
 	
-	List<Bookkeeping> findByUserId(UUID userId);
+	List<Ledger> findByUserId(UUID userId);
 
 }

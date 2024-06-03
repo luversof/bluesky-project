@@ -22,8 +22,8 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(indexes = { @Index(name = "IDX_bookkeeping_userId", columnList = "user_id") })
-public class Bookkeeping {
+@Table(indexes = { @Index(name = "IDX_ledger_userId", columnList = "user_id") })
+public class Ledger {
 
 	@Null(groups = Create.class)
 	@NotNull(groups = { Update.class, Delete.class })

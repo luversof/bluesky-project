@@ -12,26 +12,24 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Null;
 import lombok.Data;
 
-/**
- * 계좌 유형 정의
- * 유저 별로 따로 정의하여 사용할 수 있음
- */
 @Data
 @Entity
-@Table(indexes = { @Index(name = "IDX_accountType_bookkeepingId", columnList = "bookkeeping_id") })
-public class AccountType {
+@Table(indexes = { @Index(name = "IDX_transactionType_ledgerId", columnList = "ledger_id") })
+public class TransactionType {
 
+	@Null(groups = Create.class)
 	@Id
 //	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 	
-	@Column(name = "bookkeeping_id", nullable = false)
-	private UUID bookkeepingId;
+	@Column(name = "ledger_id", nullable = false)
+	private UUID ledgerId;
 	
 	@Enumerated(EnumType.STRING)
-	private AccountTypeCode code;
+	private TransactionTypeCode code;
 	
 	private String name;
 	
@@ -41,7 +39,7 @@ public class AccountType {
     }
 	
 	public interface Create {}
-	public interface Update {}
+	public interface Update {} 
 	public interface Delete {}
 
 }

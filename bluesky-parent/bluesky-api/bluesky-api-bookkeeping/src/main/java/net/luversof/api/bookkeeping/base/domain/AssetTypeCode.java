@@ -1,6 +1,6 @@
 package net.luversof.api.bookkeeping.base.domain;
 
-public enum AccountTypeCode {
+public enum AssetTypeCode {
 	
 	CONTRA_ACCOUNT,	// 내부적으로만 사용되는 계정, 내부 용에 대한 구분값이 필요할지도?
 	CASH,			// 현금

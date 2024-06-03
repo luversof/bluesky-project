@@ -14,29 +14,29 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
-import net.luversof.api.bookkeeping.base.domain.Bookkeeping;
-import net.luversof.api.bookkeeping.base.service.BookkeepingBaseService;
+import net.luversof.api.bookkeeping.base.domain.Ledger;
+import net.luversof.api.bookkeeping.base.service.LedgerService;
 
 @RequiredArgsConstructor
 @RestController
 @RequestMapping(value = "/api/bookkeeping/base", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BookkeepingBaseController {
 
-	private final BookkeepingBaseService bookkeepingBaseService;
+	private final LedgerService bookkeepingBaseService;
 	
 	
 	@PutMapping
-	public Bookkeeping update(@RequestBody @Validated(Bookkeeping.Update.class) Bookkeeping bookkeeping) {
+	public Ledger update(@RequestBody @Validated(Ledger.Update.class) Ledger bookkeeping) {
 		return bookkeepingBaseService.update(bookkeeping);
 	}
 	
 	@GetMapping("/{id}")
-	public Optional<Bookkeeping> findById(@PathVariable UUID id) {
+	public Optional<Ledger> findById(@PathVariable UUID id) {
 		return bookkeepingBaseService.findById(id);
 	}
 	
 	@GetMapping("/search/findByUserId/{userId}")
-	public List<Bookkeeping> findByUserId(@PathVariable UUID userId) {
+	public List<Ledger> findByUserId(@PathVariable UUID userId) {
 		return bookkeepingBaseService.findByUserId(userId);
 	}
 }

@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
-import net.luversof.api.bookkeeping.base.domain.Bookkeeping;
+import net.luversof.api.bookkeeping.base.domain.Ledger;
 import net.luversof.api.bookkeeping.composite.service.BookkeepingCompositeService;
 import net.luversof.api.bookkeeping.constant.TestConstant;
 
@@ -17,7 +17,7 @@ class BookkeepingCompositeServiceTest implements GeneralTest {
 	
 	@Test
 	void create() {
-		var bookeeping = new Bookkeeping();
+		var bookeeping = new Ledger();
 		bookeeping.setUserId(TestConstant.USER_ID);
 		
 		bookkeepingCompositeService.create(bookeeping);

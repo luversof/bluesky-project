@@ -13,7 +13,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import lombok.Data;
@@ -24,8 +23,12 @@ import lombok.Data;
  */
 @Data
 @Entity
-@Table(indexes = { @Index(name = "IDX_entry_accountId", columnList = "account_id") })
-public class Entry implements Serializable {
+@Table(indexes = { 
+		@Index(name = "IDX_transactionRecord_assetId", columnList = "asset_id"),
+		@Index(name = "IDX_transactionRecord_transactionGroupId", columnList = "transactionGroupId"),
+		@Index(name = "IDX_transactionRecord_transactionTypeId", columnList = "transactionType_id")
+})
+public class TransactionRecord implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
@@ -35,13 +38,19 @@ public class Entry implements Serializable {
 //	@GeneratedValue(strategy = GenerationType.UUID)
 //	@UuidGenerator(style = Style.TIME)
 	private UUID id;
-
-	@Column(name = "account_id", nullable = false)
-	private UUID accountId;
 	
-	@Column(name = "entryTransaction_id", nullable = false)
-	private UUID entryTransactionId;
+	@Column(nullable = false)
+	private UUID transactionGroupId;
+	
+	@Column(name = "transactionType_id", nullable = false)
+	private UUID transactionTypeId;
+	
+	@Column(name = "asset_id", nullable = false)
+	private UUID assetId;
 
+	@Column(nullable = false)
+	private ZonedDateTime transactionDate;
+	
 	/**
 	 * 차변, 들어오는 돈
 	 */
@@ -51,6 +60,8 @@ public class Entry implements Serializable {
 	 * 대변 - 나가는 돈
 	 */
 	private BigDecimal credit;
+	
+	private String memo;
 
 	@PrePersist
 	public void prePersist() {

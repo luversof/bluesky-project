@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
-import net.luversof.api.bookkeeping.base.domain.Bookkeeping;
+import net.luversof.api.bookkeeping.base.domain.Ledger;
 import net.luversof.api.bookkeeping.composite.service.BookkeepingCompositeService;
 
 @RequiredArgsConstructor
@@ -20,7 +20,7 @@ public class BookkeepingCompositeController {
 	
 
 	@PostMapping
-	public Bookkeeping create(@RequestBody @Validated(Bookkeeping.Create.class) Bookkeeping bookkeeping) {
+	public Ledger create(@RequestBody @Validated(Ledger.Create.class) Ledger bookkeeping) {
 		bookkeepingCompositeService.create(bookkeeping);
 		return bookkeeping;
 	}

@@ -9,64 +9,58 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
-import net.luversof.api.bookkeeping.base.domain.Entry;
-import net.luversof.api.bookkeeping.base.domain.EntryTransaction;
-import net.luversof.api.bookkeeping.base.repository.mariadb.AccountRepository;
-import net.luversof.api.bookkeeping.base.repository.mariadb.BookkeepingRepository;
-import net.luversof.api.bookkeeping.base.repository.mariadb.EntryRepository;
-import net.luversof.api.bookkeeping.base.repository.mariadb.EntryTransactionRepository;
-import net.luversof.api.bookkeeping.base.repository.mariadb.EntryTransactionTypeRepository;
-import net.luversof.api.bookkeeping.composite.service.EntryCompositeService;
+import net.luversof.api.bookkeeping.base.domain.TransactionRecord;
+import net.luversof.api.bookkeeping.base.repository.mariadb.AssetRepository;
+import net.luversof.api.bookkeeping.base.repository.mariadb.LedgerRepository;
+import net.luversof.api.bookkeeping.base.repository.mariadb.TransactionRecordRepository;
+import net.luversof.api.bookkeeping.base.repository.mariadb.TransactionTypeRepository;
+import net.luversof.api.bookkeeping.composite.service.TransactionRecordCompositeService;
 import net.luversof.api.bookkeeping.constant.TestConstant;
 
 @Slf4j
 class EntryCompositeServiceTest  implements GeneralTest {
 	
 	@Autowired
-	private BookkeepingRepository bookkeepingRepository;
+	private LedgerRepository ledgerRepository;
 	
 	@Autowired
-	private AccountRepository accountRepository;
+	private AssetRepository assetRepository;
 	
 	@Autowired
-	private EntryTransactionTypeRepository entryTransactionTypeRepository;
+	private TransactionTypeRepository transactionTypeRepository;
 	
 	@Autowired
-	private EntryTransactionRepository entryTransactionRepository;
-
-	@Autowired
-	private EntryRepository entryRepository;
+	private TransactionRecordRepository transactionRecordRepository;
 	
 	@Autowired
-	private EntryCompositeService entryCompositeService;
+	private TransactionRecordCompositeService entryCompositeService;
 
 	@Test
 	void serviceSaveTest() {
-		var bookkeeping = bookkeepingRepository.findByUserId(TestConstant.USER_ID).get(0);
-		var account = accountRepository.findByBookkeepingId(bookkeeping.getId()).get(0);
-		var entryTransactionType = entryTransactionTypeRepository.findByBookkeepingId(bookkeeping.getId()).get(0);
+		var bookkeeping = ledgerRepository.findByUserId(TestConstant.USER_ID).get(0);
+		var account = assetRepository.findByLedgerId(bookkeeping.getId()).get(0);
+		var transactionType = transactionTypeRepository.findByLedgerId(bookkeeping.getId()).get(0);
 		
-		var entryList = new ArrayList<Entry>();
+		var entryList = new ArrayList<TransactionRecord>();
 		{
-			var entry = new Entry();
-			entry.setAccountId(account.getId());
+			var entry = new TransactionRecord();
+			entry.setAssetId(account.getId());
 			entry.setCredit(new BigDecimal("123123"));
-			
+			entry.setTransactionTypeId(transactionType.getId());
+			entry.setTransactionDate(ZonedDateTime.now());
 			entryList.add(entry);
 		}
 		{
-			var entry = new Entry();
-			entry.setAccountId(account.getId());
+			var entry = new TransactionRecord();
+			entry.setAssetId(account.getId());
+			entry.setTransactionTypeId(transactionType.getId());
 			entry.setDebit(new BigDecimal("123123"));
+			entry.setTransactionDate(ZonedDateTime.now());
 			entryList.add(entry);
 		}
 		
-		var  entryTransaction = new EntryTransaction();
-		entryTransaction.setMemo("메모");
-		entryTransaction.setTransactionDate(ZonedDateTime.now());
-		entryTransaction.setEntryTransactionTypeId(entryTransactionType.getId());
 		
-		entryCompositeService.save(entryTransaction, entryList);
+		entryCompositeService.save(entryList);
 	}
 
 }

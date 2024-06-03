@@ -6,31 +6,32 @@ import com.github.f4b6a3.uuid.alt.GUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Null;
 import lombok.Data;
 
+/**
+ * 계좌 유형 정의
+ * 유저 별로 따로 정의하여 사용할 수 있음
+ */
 @Data
 @Entity
-@Table(indexes = { @Index(name = "IDX_account_bookkeepingId", columnList = "bookkeeping_id") })
-public class Account {
+@Table(indexes = { @Index(name = "IDX_accountType_bookkeepingId", columnList = "bookkeeping_id") })
+public class AssetType {
 
-	@Null(groups = Create.class)
-	@NotNull(groups = { Update.class, Delete.class })
 	@Id
 //	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 	
-	@NotNull(groups = { Update.class, Delete.class })
 	@Column(name = "bookkeeping_id", nullable = false)
 	private UUID bookkeepingId;
 	
-	@Column(name = "accountType_id", nullable = false)
-	private UUID accountTypeId;
+	@Enumerated(EnumType.STRING)
+	private AssetTypeCode code;
 	
 	private String name;
 	

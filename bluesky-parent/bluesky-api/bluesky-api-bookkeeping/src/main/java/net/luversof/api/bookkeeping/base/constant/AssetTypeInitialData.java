@@ -8,8 +8,8 @@ import java.util.UUID;
 import io.github.luversof.boot.context.support.MessageUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import net.luversof.api.bookkeeping.base.domain.AccountType;
-import net.luversof.api.bookkeeping.base.domain.AccountTypeCode;
+import net.luversof.api.bookkeeping.base.domain.AssetType;
+import net.luversof.api.bookkeeping.base.domain.AssetTypeCode;
 
 
 /**
@@ -17,30 +17,30 @@ import net.luversof.api.bookkeeping.base.domain.AccountTypeCode;
  */
 @Getter
 @AllArgsConstructor
-public enum AccountTypeInitialData {
+public enum AssetTypeInitialData {
 	
-	CONTRA_ACCOUNT(AccountTypeCode.CONTRA_ACCOUNT),
-	CASH(AccountTypeCode.CASH),
-	BANK(AccountTypeCode.BANK),
-	CREDITCARD(AccountTypeCode.CREDITCARD),
-	CHECKCARD(AccountTypeCode.CHECKCARD),
-	INVESTMENT(AccountTypeCode.INVESTMENT),
-	LOAN(AccountTypeCode.LOAN),
-	INSURANCE(AccountTypeCode.INSURANCE),
-	ETC(AccountTypeCode.ETC),
+	CONTRA_ACCOUNT(AssetTypeCode.CONTRA_ACCOUNT),
+	CASH(AssetTypeCode.CASH),
+	BANK(AssetTypeCode.BANK),
+	CREDITCARD(AssetTypeCode.CREDITCARD),
+	CHECKCARD(AssetTypeCode.CHECKCARD),
+	INVESTMENT(AssetTypeCode.INVESTMENT),
+	LOAN(AssetTypeCode.LOAN),
+	INSURANCE(AssetTypeCode.INSURANCE),
+	ETC(AssetTypeCode.ETC),
 	;
-	private AccountTypeCode code;
+	private AssetTypeCode code;
 	
 	private String getLocalizedName() {
 		return MessageUtil.getMessage(MessageFormat.format("bookkeeping.constant.account-type.{0}", name()), name());
 	}
 	
 	
-	public static List<AccountType> getInitialData(UUID bookkeepingId) {
-		var accountTypeList = new ArrayList<AccountType>();
+	public static List<AssetType> getInitialData(UUID bookkeepingId) {
+		var accountTypeList = new ArrayList<AssetType>();
 		
-		for (var accountTypeInitialData : AccountTypeInitialData.values()) {
-			var accountType = new AccountType();
+		for (var accountTypeInitialData : AssetTypeInitialData.values()) {
+			var accountType = new AssetType();
 			accountType.setBookkeepingId(bookkeepingId);
 			accountType.setName(accountTypeInitialData.getLocalizedName());
 			accountType.setCode(accountTypeInitialData.getCode());
