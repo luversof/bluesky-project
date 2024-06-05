@@ -20,15 +20,15 @@ import lombok.Data;
  */
 @Data
 @Entity
-@Table(indexes = { @Index(name = "IDX_accountType_bookkeepingId", columnList = "bookkeeping_id") })
+@Table(indexes = { @Index(name = "IDX_accountType_ledgerId", columnList = "ledger_id") })
 public class AssetType {
 
 	@Id
 //	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 	
-	@Column(name = "bookkeeping_id", nullable = false)
-	private UUID bookkeepingId;
+	@Column(name = "ledger_id", nullable = false)
+	private UUID ledgerId;
 	
 	@Enumerated(EnumType.STRING)
 	private AssetTypeCode code;

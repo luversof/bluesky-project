@@ -36,12 +36,12 @@ public enum AssetTypeInitialData {
 	}
 	
 	
-	public static List<AssetType> getInitialData(UUID bookkeepingId) {
+	public static List<AssetType> getInitialData(UUID ledgerId) {
 		var accountTypeList = new ArrayList<AssetType>();
 		
 		for (var accountTypeInitialData : AssetTypeInitialData.values()) {
 			var accountType = new AssetType();
-			accountType.setBookkeepingId(bookkeepingId);
+			accountType.setLedgerId(ledgerId);
 			accountType.setName(accountTypeInitialData.getLocalizedName());
 			accountType.setCode(accountTypeInitialData.getCode());
 			accountTypeList.add(accountType);

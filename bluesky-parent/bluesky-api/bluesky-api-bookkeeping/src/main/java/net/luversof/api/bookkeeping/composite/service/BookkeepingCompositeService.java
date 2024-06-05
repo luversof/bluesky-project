@@ -28,17 +28,17 @@ public class BookkeepingCompositeService {
 	 * 2. 기본적인 데이터 (Bookkeeping, Account, AccountType, EntryTransactionType) 생성
 	 */
 	@Transactional
-	public void create(Ledger bookkeeping) {
+	public void create(Ledger ledger) {
 		
-		bookkeepingBaseService.save(bookkeeping);
+		bookkeepingBaseService.save(ledger);
 		
-		var accountTypeList = AssetTypeInitialData.getInitialData(bookkeeping.getId());
+		var accountTypeList = AssetTypeInitialData.getInitialData(ledger.getId());
 		accountTypeBaseService.saveAll(accountTypeList);
 		
-		var accountList = AssetInitialData.getInitialData(bookkeeping.getId(), accountTypeList);
+		var accountList = AssetInitialData.getInitialData(ledger.getId(), accountTypeList);
 		accountBaseService.saveAll(accountList);
 		
-		var entryTransactionTypeList = TransactionTypeInitialData.getInitialData(bookkeeping.getId());
+		var entryTransactionTypeList = TransactionTypeInitialData.getInitialData(ledger.getId());
 		entryTransactionTypeBaseService.saveAll(entryTransactionTypeList);
 		
 	}
