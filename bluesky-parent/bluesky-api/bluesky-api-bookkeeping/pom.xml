@@ -75,6 +75,14 @@
 			<version>5.3.7</version>
 		</dependency>
 		<!-- (e) test -->
+		
+		
+		<!-- (s) bluesky-boot -->
+		<dependency>
+			<groupId>io.github.luversof</groupId>
+			<artifactId>bluesky-boot-properties-migrator</artifactId>
+		</dependency>
+		<!-- (e) bluesky-boot -->
 	</dependencies>
 	<build>
 		<plugins>
