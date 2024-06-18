@@ -11,17 +11,16 @@
 			<span class="loading loading-ring loading-lg"></span>
 		</div>
 		
-		<div
+		<div id="listArea"
 			class="px-10 text-center"
 			data-th-attr="hx-get=@{${thymeleafUtil.getUrl('FRAGMENT_LIST')}}"
 			hx-vals="js:{'page' : param.getRequestPage()}"
 			hx-include="#searchArea .searchInput"
-			hx-boost="true"
 			hx-swap="transition:true"
 			hx-indicator="#indicator"
 			hx-trigger="
 				load delay:0s,
-				listFragmentTrigger, 
+				listFragmentTrigger,
 				createModalResponseTrigger from:body,
 				updateModalResponseTrigger from:body,
 				deleteModalResponseTrigger from:body,

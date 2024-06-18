@@ -21,6 +21,7 @@
 					<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
 				</svg>
 			</label>
+			
 			총 [[${page.totalElements}]] 건
 		</div>
 		<div>
@@ -48,8 +49,8 @@
 			<a
 				data-th-if="${targetSubMenu.enableExcel}"
 				data-th-href="${thymeleafUtil.getUriComponentsBuilder().replacePath(thymeleafUtil.getUrl('FRAGMENT_EXCEL')).toUriString()}"
-				download
 				target="_blank"
+				download
 			>
 				<button class="btn btn-sm excelButton">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -103,14 +104,14 @@
 						<input name="contentDataCheck" type="checkbox" class="checkbox" data-th-value="${iterator.index}" />
 					</td>
 				</tr>
-				<tr>
+				<!--<tr>
 					<td colspan="100%" class="bg-base-200 pl-12">
 						<div class="bg-base-100">
 							<div>제목</div><div>내용</div>
 							<div>제목</div><div>내용</div>
 						</div>
 					</td>
-				</tr>
+				</tr>-->
 			</th-block>
 		</tbody>
 	</table>
