@@ -9,13 +9,12 @@
 	<parent>
 		<groupId>io.github.luversof</groupId>
 		<artifactId>bluesky-boot-parent</artifactId>
-		<version>3.2.0-SNAPSHOT</version>
+		<version>3.3.0-SNAPSHOT</version>
 	</parent>
 
 	<properties>
 		<bluesky-project.version>0.0.1-SNAPSHOT</bluesky-project.version>
 		<poi-ooxml.version>5.2.5</poi-ooxml.version>
-		<jsqlparser.version>4.8</jsqlparser.version>
 	</properties>
 
 	<modules>
@@ -61,11 +60,6 @@
 				<version>${project.version}</version>
 			</dependency>
 
-			<dependency>
-				<groupId>com.github.jsqlparser</groupId>
-				<artifactId>jsqlparser</artifactId>
-				<version>${jsqlparser.version}</version>
-			</dependency>
 			<dependency>
 				<groupId>org.apache.poi</groupId>
 				<artifactId>poi-ooxml</artifactId>
