@@ -1,19 +1,22 @@
 package net.luversof.api.board.domain;
 
 import java.time.ZonedDateTime;
+import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.github.f4b6a3.uuid.alt.GUID;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 import lombok.Data;
 
 @Data
@@ -22,20 +25,16 @@ import lombok.Data;
 public class BoardArticle {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Null(groups = Create.class)
 	@NotNull(groups = { Get.class })
-	private long id;
-
-	@NotBlank(groups = Delete.class)
-	@Column(length = 36, nullable = false)
-	private String boardArticleId;
+	private UUID id;
 
 	@NotBlank(groups = { Create.class, Modify.class, Delete.class })
 	@Column(name = "user_id", length = 36, nullable = false)
 	private String userId;
 
-	@Column(name = "board_id", length = 36, nullable = false)
-	private String boardId;
+	@Column(name = "board_id", nullable = false)
+	private UUID boardId;
 
 	@NotBlank(groups = { Create.class, Modify.class })
 	private String title;
@@ -50,6 +49,11 @@ public class BoardArticle {
 	@Column
 	@UpdateTimestamp
 	private ZonedDateTime lastModifiedDate;
+	
+	@PrePersist
+    public void prePersist() {
+    	id = GUID.v7().toUUID();
+    }
 
 	public interface Create {}
 

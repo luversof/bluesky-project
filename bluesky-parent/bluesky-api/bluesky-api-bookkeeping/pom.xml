@@ -68,14 +68,10 @@
 			<artifactId>opentelemetry-exporter-zipkin</artifactId>
 		</dependency>
 		
-		<!-- (s) test -->
 		<dependency>
 			<groupId>com.github.f4b6a3</groupId>
 			<artifactId>uuid-creator</artifactId>
-			<version>5.3.7</version>
 		</dependency>
-		<!-- (e) test -->
-		
 		
 		<!-- (s) bluesky-boot -->
 		<dependency>

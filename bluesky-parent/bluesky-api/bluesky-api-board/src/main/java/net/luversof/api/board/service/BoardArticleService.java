@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import io.github.luversof.boot.exception.BlueskyException;
+import lombok.Setter;
 import net.luversof.api.board.constant.BoardErrorCode;
 import net.luversof.api.board.domain.Board;
 import net.luversof.api.board.domain.BoardArticle;
@@ -18,19 +19,18 @@ import net.luversof.api.board.repository.BoardArticleRepository;
 @Service
 public class BoardArticleService {
 	
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private BoardService boardService;
 
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private BoardArticleRepository boardArticleRepository;
 	
 	public BoardArticle create(BoardArticle boardArticle) {
-		boardArticle.setBoardArticleId(UUID.randomUUID().toString());
 		return boardArticleRepository.save(boardArticle);
 	}
 	
 	public BoardArticle modify(BoardArticle boardArticle) {
-		var targetBoardArticle = boardArticleRepository.findByBoardArticleId(boardArticle.getBoardArticleId()).orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARDARTICLE));
+		var targetBoardArticle = boardArticleRepository.findById(boardArticle.getId()).orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARDARTICLE));
 
 		if (!targetBoardArticle.getUserId().equals(boardArticle.getUserId())) {
 			throw new BlueskyException(BoardErrorCode.NOT_OWNER_BOARDARTICLE);
@@ -44,16 +44,16 @@ public class BoardArticleService {
 	
 	public Page<BoardArticle> findByAlias(String boardAlias, Pageable pageable) {
 		Board board = boardService.findByAlias(boardAlias);
-		return boardArticleRepository.findByBoardId(board.getBoardId(), pageable);
+		return boardArticleRepository.findByBoardId(board.getId(), pageable);
 	}
 	
-	public Optional<BoardArticle> findByBoardArticleId(String boardArticleId) {
-		return boardArticleRepository.findByBoardArticleId(boardArticleId);
+	public Optional<BoardArticle> findById(UUID id) {
+		return boardArticleRepository.findById(id);
 	}
 
 	// 삭제 처리는 어떻게? 
 	public void delete(BoardArticle boardArticle) {
-		var targetBoardArticle = boardArticleRepository.findByBoardArticleId(boardArticle.getBoardArticleId()).orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARDARTICLE));
+		var targetBoardArticle = boardArticleRepository.findById(boardArticle.getId()).orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARDARTICLE));
 		
 		if (!targetBoardArticle.getUserId().equals(boardArticle.getUserId())) {
 			throw new BlueskyException(BoardErrorCode.NOT_OWNER_BOARDARTICLE);

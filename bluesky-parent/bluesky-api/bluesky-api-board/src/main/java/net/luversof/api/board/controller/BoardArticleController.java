@@ -1,6 +1,7 @@
 package net.luversof.api.board.controller;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -40,9 +41,9 @@ public class BoardArticleController {
 		return boardArticleService.findByAlias(boardAlias, pageable);
 	}
 
-	@GetMapping("/findByBoardArticleId")
-	public Optional<BoardArticle> findByBoardArticleId(@RequestParam String boardArticleId) {
-		return boardArticleService.findByBoardArticleId(boardArticleId);
+	@GetMapping("/findById")
+	public Optional<BoardArticle> findByBoardArticleId(@RequestParam UUID id) {
+		return boardArticleService.findById(id);
 	}
 
 	@PutMapping

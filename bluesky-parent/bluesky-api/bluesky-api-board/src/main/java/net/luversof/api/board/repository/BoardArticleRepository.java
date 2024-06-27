@@ -1,6 +1,6 @@
 package net.luversof.api.board.repository;
 
-import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -8,12 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import net.luversof.api.board.domain.BoardArticle;
 
-public interface BoardArticleRepository extends JpaRepository<BoardArticle, Long> {
+public interface BoardArticleRepository extends JpaRepository<BoardArticle, UUID> {
 	
-	Optional<BoardArticle> findByBoardArticleId(String boardArticleId);
+	Page<BoardArticle> findByBoardId(UUID boardId, Pageable pageable);
 	
-	Page<BoardArticle> findByBoardId(String boardId, Pageable pageable);
-	
-	void deleteByBoardArticleId(String boardArticleId);
-
 }

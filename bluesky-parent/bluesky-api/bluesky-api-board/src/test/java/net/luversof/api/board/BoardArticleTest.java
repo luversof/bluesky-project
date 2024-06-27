@@ -20,8 +20,8 @@ import net.luversof.GeneralTest;
 import net.luversof.api.board.domain.Board;
 import net.luversof.api.board.domain.BoardArticle;
 import net.luversof.api.board.repository.BoardArticleRepository;
-import net.luversof.api.board.repository.BoardRepository;
 import net.luversof.api.board.service.BoardArticleService;
+import net.luversof.api.board.service.BoardService;
 
 @Slf4j
 @Transactional
@@ -32,7 +32,7 @@ class BoardArticleTest implements GeneralTest {
 	private BoardArticleRepository boardArticleRepository;
 	
 	@Autowired
-	private BoardRepository boardRepository;
+	private BoardService boardService;
 	
 	@Autowired
 	private BoardArticleService boardArticleService;
@@ -40,9 +40,10 @@ class BoardArticleTest implements GeneralTest {
 	@Test
 	@DisplayName("게시글 생성")
 	void create() {
-		Board board = boardRepository.getReferenceById((long) 1);
+		
+		Board board = boardService.findByAlias("free");
 		BoardArticle boardArticle = new BoardArticle();
-		boardArticle.setBoardId(board.getBoardId());
+		boardArticle.setBoardId(board.getId());
 		boardArticle.setUserId("1");
 		boardArticle.setTitle("테스트");
 		boardArticle.setContent("내용");
@@ -51,15 +52,14 @@ class BoardArticleTest implements GeneralTest {
 	
 	@RepeatedTest(value = 10000, name = "반복 입력")
 	void 다량입력(RepetitionInfo repetitionInfo) {
-		Board board = boardRepository.getReferenceById((long) 1);
+		Board board = boardService.findByAlias("free");
 		
 		int i = repetitionInfo.getCurrentRepetition();
 
 //		List<BoardArticle> boardArticleList = new ArrayList<>();
 //		for (int i = 0 ; i < 100000 ; i ++) {
 			BoardArticle boardArticle = new BoardArticle();
-			boardArticle.setBoardArticleId(UUID.randomUUID().toString());
-			boardArticle.setBoardId(board.getBoardId());
+			boardArticle.setBoardId(board.getId());
 			boardArticle.setUserId("1");
 			boardArticle.setTitle("테스트" + i);
 			boardArticle.setContent("내용" + i);
@@ -79,13 +79,14 @@ class BoardArticleTest implements GeneralTest {
 	@Test
 	@DisplayName("게시글 조회")
 	void findByBoardArticleId() {
-		var boardArticleOptional = boardArticleRepository.findByBoardArticleId("4a699a6e-dfb7-4749-b0c4-eb969714e59f");
+		var boardArticleOptional = boardArticleRepository.findById(UUID.fromString("4a699a6e-dfb7-4749-b0c4-eb969714e59f"));
 		assertThat(boardArticleOptional).isNotEmpty();
 	}
 	
 	@Test
 	void 페이징테스트() {
-		Page<BoardArticle> boardArticleList = boardArticleRepository.findByBoardId("free", PageRequest.of(0, 20, Sort.by("id").descending()));
+		Board board = boardService.findByAlias("free");
+		Page<BoardArticle> boardArticleList = boardArticleRepository.findByBoardId(board.getId(), PageRequest.of(0, 20, Sort.by("id").descending()));
 		log.debug("result : {}", boardArticleList.getContent());
 		
 	}
