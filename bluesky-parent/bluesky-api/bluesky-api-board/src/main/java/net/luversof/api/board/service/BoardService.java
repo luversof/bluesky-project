@@ -31,10 +31,7 @@ public class BoardService {
 	
 	public Board update(Board board) {
 		var targetBoard = findByAlias(board.getAlias());
-		targetBoard.setBoardActivated(board.isBoardActivated());
-		targetBoard.setArticleActivated(board.isArticleActivated());
-		targetBoard.setReplyActivated(board.isReplyActivated());
-		targetBoard.setCommentActivated(board.isCommentActivated());
+		targetBoard.setBitConfig(board.getBitConfig());
 		return boardRepository.save(targetBoard);
 	}
 }
