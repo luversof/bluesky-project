@@ -1,6 +1,9 @@
 package net.luversof.api.board;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyMap;
+
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +25,13 @@ class BoardTest implements GeneralTest {
 		Board board = new Board();
 		board.setAlias("free");
 		board.setBitConfig(BoardBitConfig.getBitConfig());
+		
+//		var jsonConfig = Map.of("key1", "value1", "key2", "value2");
+		var jsonConfig = new Board.JsonConfig();
+		jsonConfig.setKey1("value1");
+		jsonConfig.setKey2("value2");
+		board.setJsonConfig(jsonConfig);
+		
 		boardService.create(board);
 		log.debug("board : {}", board);
 	}
@@ -33,10 +43,21 @@ class BoardTest implements GeneralTest {
 	void update() {
 		Board board = boardService.findByAlias("free");
 		board.getBitConfig().set(bitIndex, true);
-		board.setBitConfig(BoardBitConfig.getBitConfig());
+		
+		if (board.getJsonConfig() == null) {
+//			var jsonConfig = Map.of("key3", "value3");
+			var jsonConfig = new Board.JsonConfig();
+//			jsonConfig.setKey3("value3");
+			board.setJsonConfig(jsonConfig);
+		} else {
+//			board.getJsonConfig().put("key3", "value3");
+//			board.getJsonConfig().setKey3("key3");
+		}
+		
 		var result = boardService.update(board);
 		assertThat(result).isNotNull();
 		log.debug("bitIndex : {}", result.getBitConfig().get(bitIndex));
+		log.debug("jsonConfig : {}", result.getJsonConfig());
 	}
 	
 	@Test
@@ -45,6 +66,9 @@ class BoardTest implements GeneralTest {
 		log.debug("bitIndex : {}", board.getBitConfig().get(bitIndex));
 		log.debug("bitIndex : {}", board.getBitConfig().get(bitIndex - 10));
 		log.debug("bitIndex : {}", board.getBitConfig());
+		log.debug("jsonConfig : {}", board.getJsonConfig());
+//		log.debug("jsonConfig : {}", board.getJsonConfig().get("key1"));
+		log.debug("jsonConfig : {}", board.getJsonConfig().getKey1());
 	}
 	
 	@Test

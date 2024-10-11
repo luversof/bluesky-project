@@ -30,8 +30,6 @@ public class BoardService {
 	}
 	
 	public Board update(Board board) {
-		var targetBoard = findByAlias(board.getAlias());
-		targetBoard.setBitConfig(board.getBitConfig());
-		return boardRepository.save(targetBoard);
+		return boardRepository.save(board);
 	}
 }

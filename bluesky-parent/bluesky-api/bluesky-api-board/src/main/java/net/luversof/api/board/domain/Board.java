@@ -1,7 +1,11 @@
 package net.luversof.api.board.domain;
 
 import java.util.BitSet;
+import java.util.Map;
 import java.util.UUID;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -30,7 +34,19 @@ public class Board {
 	
 	private BitSet bitConfig;
 	
+	@JdbcTypeCode(SqlTypes.JSON)
+//	private Map<String, String> jsonConfig;
+	private JsonConfig jsonConfig;
+	
 	public interface Create {}
 	public interface Update {}
+	
+	
+	@Data
+	public static class JsonConfig {
+		String key1;
+		String key2;
+		String key3;
+	}
 	
 }
