@@ -1,13 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE configuration>
 <configuration>
-	<include resource="net/luversof/core/logging/logback/base.xml" />
-
-
-	<springProfile name="!live">
-		<logger name="org.springframework.graphql"
-			level="DEBUG" />
-		<logger name="graphql"
-			level="DEBUG" />
-	</springProfile>
+	<include resource="io/github/luversof/boot/logging/logback/base.xml"/>
+	<logger name="net.luversof" level="${PROJECT_ACTIVE_LOG_LEVEL}" />
+	<root level="info" />
 </configuration>

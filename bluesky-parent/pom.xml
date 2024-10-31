@@ -24,6 +24,7 @@
 		<module>bluesky-api</module>
 		<module>bluesky-client</module>
 		<module>bluesky-batch</module>
+		<module>bluesky-app</module>
 	</modules>
 
 	<dependencies>

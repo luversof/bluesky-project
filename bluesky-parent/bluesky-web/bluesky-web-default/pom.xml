@@ -24,7 +24,15 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
+		<!-- (s) spring-boot -->
+		
+		<!-- (s) spring-cloud -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-config</artifactId>
+		</dependency>
 		<!-- (e) spring-cloud -->
+		
 		<!-- (s) spring cloud stream test -->
 		<!-- <dependency> <groupId>net.luversof</groupId> <artifactId>bluesky-opensource-integration</artifactId> 
 			</dependency> <dependency> <groupId>org.springframework.cloud</groupId> <artifactId>spring-cloud-stream</artifactId> 
