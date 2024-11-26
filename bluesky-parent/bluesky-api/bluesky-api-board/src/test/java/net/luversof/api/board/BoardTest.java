@@ -23,7 +23,7 @@ class BoardTest implements GeneralTest {
 	@Test
 	void create() {
 		Board board = new Board();
-		board.setAlias("free");
+		board.setAlias("free2");
 		board.setBitConfig(BoardBitConfig.getBitConfig());
 		
 //		var jsonConfig = Map.of("key1", "value1", "key2", "value2");
