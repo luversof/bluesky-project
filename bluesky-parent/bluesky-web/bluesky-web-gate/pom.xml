@@ -98,19 +98,25 @@
 			<groupId>io.github.openfeign</groupId>
 			<artifactId>feign-micrometer</artifactId>
 		</dependency>
+		<!-- (e) observability -->
+		
+		<!-- (s) micrometer metrics -->
 		<dependency>
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-registry-prometheus</artifactId>
 		</dependency>
+		<!-- (e) micrometer metrics -->
+		
+		<!-- (s) micrometer traces -->
 		<dependency>
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-tracing-bridge-otel</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>io.opentelemetry</groupId>
-			<artifactId>opentelemetry-exporter-zipkin</artifactId>
+			<artifactId>opentelemetry-exporter-otlp</artifactId>
 		</dependency>
-		<!-- (e) observability -->
+		<!-- (e) micrometer traces -->
 
 		<!-- (s) bluesky -->
 		<dependency>

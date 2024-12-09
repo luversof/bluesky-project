@@ -60,14 +60,14 @@
 			<artifactId>mariadb-java-client</artifactId>
 		</dependency>
 		
-		<!-- (s) metrics -->
+		<!-- (s) micrometer metrics -->
 		<dependency>
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-registry-prometheus</artifactId>
 		</dependency>
-		<!-- (e) metrics -->
+		<!-- (e) micrometer metrics -->
 		
-		<!-- (s) tracing -->
+		<!-- (s) micrometer traces -->
 		<dependency>
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-tracing-bridge-otel</artifactId>
@@ -76,7 +76,7 @@
 			<groupId>io.opentelemetry</groupId>
 			<artifactId>opentelemetry-exporter-otlp</artifactId>
 		</dependency>
-		<!-- (e) tracing -->
+		<!-- (e) micrometer traces -->
 
 	</dependencies>
 	<build>
