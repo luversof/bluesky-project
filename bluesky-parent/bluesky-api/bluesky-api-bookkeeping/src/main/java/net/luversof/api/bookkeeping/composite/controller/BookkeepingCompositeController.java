@@ -8,20 +8,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
-import net.luversof.api.bookkeeping.base.domain.Ledger;
-import net.luversof.api.bookkeeping.composite.service.BookkeepingCompositeService;
+import net.luversof.api.bookkeeping.domain.Bookkeeping;
+import net.luversof.api.bookkeeping.service.CompositeService;
 
 @RequiredArgsConstructor
 @RestController
 @RequestMapping(value = "/api/bookkeeping/composite", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BookkeepingCompositeController {
 	
-	private final BookkeepingCompositeService bookkeepingCompositeService;
+	private final CompositeService bookkeepingCompositeService;
 	
 
 	@PostMapping
-	public Ledger create(@RequestBody @Validated(Ledger.Create.class) Ledger bookkeeping) {
-		bookkeepingCompositeService.create(bookkeeping);
+	public Bookkeeping create(@RequestBody @Validated(Bookkeeping.Create.class) Bookkeeping bookkeeping) {
+		bookkeepingCompositeService.initDataSetup(bookkeeping);
 		return bookkeeping;
 	}
 	

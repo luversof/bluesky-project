@@ -14,29 +14,29 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
-import net.luversof.api.bookkeeping.domain.Asset;
-import net.luversof.api.bookkeeping.service.AssetService;
+import net.luversof.api.bookkeeping.domain.AssetType;
+import net.luversof.api.bookkeeping.service.AssetTypeService;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping(value = "/api/asset/base", produces = MediaType.APPLICATION_JSON_VALUE)
-public class AssetController {
+@RequestMapping(value = "/api/accountType/base", produces = MediaType.APPLICATION_JSON_VALUE)
+public class AssetTypeController {
 
-	private final AssetService assetService;
+	private final AssetTypeService assetTypeService;
 	
 	@PutMapping
-	public Asset update(@RequestBody @Validated(Asset.Update.class) Asset asset) {
-		return assetService.update(asset);
+	public AssetType update(@RequestBody @Validated(AssetType.Update.class) AssetType accountType) {
+		return assetTypeService.update(accountType);
 	}
 	
 	@GetMapping("/{id}")
-	public Optional<Asset> findById(@PathVariable UUID id) {
-		return assetService.findById(id);
+	public Optional<AssetType> findById(@PathVariable UUID id) {
+		return assetTypeService.findById(id);
 	}
 	
 	@GetMapping("/search/findByBookkeepingId/{bookkeepingId}")
-	public List<Asset> findByBookkeepingId(@PathVariable UUID bookkeepingId) {
-		return assetService.findByBookkeepingId(bookkeepingId);
+	public List<AssetType> findByBookkeepingId(@PathVariable UUID bookkeepingId) {
+		return assetTypeService.findByBookkeepingId(bookkeepingId);
 	}
 
 }

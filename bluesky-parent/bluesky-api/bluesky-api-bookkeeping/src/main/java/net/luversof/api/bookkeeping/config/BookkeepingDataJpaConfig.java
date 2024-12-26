@@ -1,8 +1,5 @@
 package net.luversof.api.bookkeeping.config;
 
-import java.util.HashMap;
-import java.util.Properties;
-
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -20,7 +17,7 @@ public class BookkeepingDataJpaConfig {
 
 	@Configuration
 	@EnableJpaRepositories(basePackages = "net.luversof.api.bookkeeping.**.repository.mariadb", entityManagerFactoryRef = "bookkeepingEntityManagerFactory", transactionManagerRef = "bookkeepingTransactionManager")
-	public class BookkeepingMariadbDataJpaConfig {
+	public class BookkeepingDataJpaMariadbConfig {
 
 	    @Bean
 	    LocalContainerEntityManagerFactoryBean bookkeepingEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("bookkeepingDataSource") DataSource dataSource) {
@@ -37,30 +34,30 @@ public class BookkeepingDataJpaConfig {
 	    }
 	}
 	
-	@Configuration
-	@EnableJpaRepositories(basePackages = "net.luversof.api.bookkeeping.**.repository.postgresql", entityManagerFactoryRef = "bookkeepingPostgresqlEntityManagerFactory", transactionManagerRef = "bookkeepingPostgresqlTransactionManager")
-	public class BookkeepingPostgresqlDataJpaConfig {
-		
-		@Bean
-	    LocalContainerEntityManagerFactoryBean bookkeepingPostgresqlEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("bookkeepingPostgresqlDataSource") DataSource dataSource) {
-			
-			var hibernateProperties = new HashMap<String, String>();
-//			hibernateProperties.put("hibernate.jdbc.lob.non_contextual_creation", "true");
-//			hibernateProperties.put("hibernate.temp.use_jdbc_metadata_defaults", "false");
-			hibernateProperties.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
-			
-	        return builder
-	                .dataSource(dataSource)
-	                .persistenceUnit("bookkeepingPostgresqlPersistenceUnit")
-	                .packages(Jsr310JpaConverters.class)
-	                .properties(hibernateProperties)
-	                .packages("net.luversof.api.bookkeeping.**.domain").build();
-	    }
-	    
-	    @Bean
-	    PlatformTransactionManager bookkeepingPostgresqlTransactionManager(@Qualifier("bookkeepingPostgresqlEntityManagerFactory") LocalContainerEntityManagerFactoryBean entityManagerFactory) {
-	        return new JpaTransactionManager(entityManagerFactory.getObject());
-	    }
-
-	}
+//	@Configuration
+//	@EnableJpaRepositories(basePackages = "net.luversof.api.bookkeeping.**.repository.postgresql", entityManagerFactoryRef = "bookkeepingPostgresqlEntityManagerFactory", transactionManagerRef = "bookkeepingPostgresqlTransactionManager")
+//	public class BookkeepingDataJpaPostgresqlConfig {
+//		
+//		@Bean
+//	    LocalContainerEntityManagerFactoryBean bookkeepingPostgresqlEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("bookkeepingPostgresqlDataSource") DataSource dataSource) {
+//			
+//			var hibernateProperties = new HashMap<String, String>();
+////			hibernateProperties.put("hibernate.jdbc.lob.non_contextual_creation", "true");
+////			hibernateProperties.put("hibernate.temp.use_jdbc_metadata_defaults", "false");
+//			hibernateProperties.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
+//			
+//	        return builder
+//	                .dataSource(dataSource)
+//	                .persistenceUnit("bookkeepingPostgresqlPersistenceUnit")
+//	                .packages(Jsr310JpaConverters.class)
+//	                .properties(hibernateProperties)
+//	                .packages("net.luversof.api.bookkeeping.**.domain").build();
+//	    }
+//	    
+//	    @Bean
+//	    PlatformTransactionManager bookkeepingPostgresqlTransactionManager(@Qualifier("bookkeepingPostgresqlEntityManagerFactory") LocalContainerEntityManagerFactoryBean entityManagerFactory) {
+//	        return new JpaTransactionManager(entityManagerFactory.getObject());
+//	    }
+//
+//	}
 }

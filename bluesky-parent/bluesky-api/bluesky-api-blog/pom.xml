@@ -77,6 +77,12 @@
 			<artifactId>opentelemetry-exporter-otlp</artifactId>
 		</dependency>
 		<!-- (e) micrometer traces -->
+		
+		<dependency>
+		    <groupId>io.opentelemetry.instrumentation</groupId>
+		    <artifactId>opentelemetry-logback-appender-1.0</artifactId>
+		    <version>2.10.0-alpha</version>
+		</dependency>
 
 	</dependencies>
 	<build>

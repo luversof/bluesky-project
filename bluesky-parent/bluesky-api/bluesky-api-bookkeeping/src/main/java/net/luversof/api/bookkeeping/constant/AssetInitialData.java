@@ -1,47 +1,52 @@
-//package net.luversof.api.bookkeeping.constant;
-//
-//import java.text.MessageFormat;
-//import java.util.ArrayList;
-//import java.util.Arrays;
-//import java.util.List;
-//import java.util.UUID;
-//
-//import io.github.luversof.boot.context.MessageUtil;
-//import lombok.AccessLevel;
-//import lombok.AllArgsConstructor;
-//import lombok.Getter;
-//import net.luversof.api.bookkeeping.domain.Asset;
-//import net.luversof.api.bookkeeping.domain.AssetGroup;
-//
-//@Getter
-//@AllArgsConstructor(access = AccessLevel.PRIVATE)
-//public enum AssetInitialData {
-//	// 초기 추가 데이터의 경우 assetGroup 별 1개만 저장하는 것을 전제조건으로 함
-//	WALLET("wallet", AssetGroupInitialData.WALLET);
-//
-//	private String messageCode;
-//	private AssetGroupInitialData assetGroupInitialData;
-//
-//	public String getName() {
-//		return MessageUtil.getMessage(MessageFormat.format("constant.bookkeeping.asset.{0}.name", getMessageCode()));
-//	}
-//
-//	public static List<Asset> createAssetList(UUID bookkeepingId, List<AssetGroup> assetGroupList) {
-//		List<Asset> assetList = new ArrayList<>();
-//
-//		Arrays.asList(AssetInitialData.values()).forEach(assetInitialData -> {
-//			Asset asset = new Asset();
-//			asset.setBookkeepingId(bookkeepingId);
-//			asset.setName(assetInitialData.getName());
-//			
-//			assetGroupList.stream().forEach(assetGroup -> {
-//				if (assetGroup.getName().equals(assetInitialData.getAssetGroupInitialData().getName())) {
-//					asset.setAssetGroupId(assetGroup.getId());
-//				}
-//			});
-//			assetList.add(asset);
-//		});
-//
-//		return assetList;
-//	}
-//}
+package net.luversof.api.bookkeeping.constant;
+
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import io.github.luversof.boot.context.support.MessageUtil;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import net.luversof.api.bookkeeping.domain.Asset;
+import net.luversof.api.bookkeeping.domain.AssetType;
+import net.luversof.api.bookkeeping.domain.Bookkeeping;
+
+/**
+ * 기본 생성하여 제공하는 Account
+ */
+@Slf4j
+@Getter
+@AllArgsConstructor
+public enum AssetInitialData {
+
+	WALLET(AssetTypeInitialData.CASH)
+	;
+	
+	private AssetTypeInitialData  assetTypeInitialData;
+	
+	public String getLocalizedName() {
+		return MessageUtil.getMessage(MessageFormat.format("bookkeeping.constant.account.{0}", name()), name());
+	}
+	
+	public static List<Asset> getInitialData(Bookkeeping bookkeeping, List<AssetType> assetTypeList) {
+		var assetList = new ArrayList<Asset>();
+		
+		for (var assetInitialData : AssetInitialData.values()) {
+			var targetAssetType = assetTypeList.stream().filter(accountType -> assetInitialData.getAssetTypeInitialData().getCode().equals(accountType.getCode())).findFirst().orElseGet(() -> null);
+			if (targetAssetType == null) {
+				log.debug("targetAccoutType is not exist : {}", assetInitialData.getAssetTypeInitialData());
+				continue;
+			}
+			
+			var asset = new Asset();
+			asset.setBookkeeping(bookkeeping);
+			asset.setName(assetInitialData.getLocalizedName());
+			asset.setAssetTypeId(targetAssetType.getId());
+			assetList.add(asset);
+		}
+		
+		return assetList;
+	}
+}

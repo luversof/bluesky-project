@@ -1,55 +1,49 @@
-//package net.luversof.api.bookkeeping;
-//
-//import static org.assertj.core.api.Assertions.assertThat;
-//
-//import org.junit.jupiter.api.DisplayName;
-//import org.junit.jupiter.api.Test;
-//import org.springframework.beans.factory.annotation.Autowired;
-//
-//import lombok.extern.slf4j.Slf4j;
-//import net.luversof.GeneralTest;
-//import net.luversof.api.bookkeeping.base.domain.Bookkeeping;
-//import net.luversof.api.bookkeeping.constant.TestConstant;
-//import net.luversof.api.bookkeeping.service.CompositeBookkeepingService;
-//
-//@Slf4j
-//class BookkeepingTest implements GeneralTest {
-//
-//    @Autowired
-//    private CompositeBookkeepingService bookkeepingService;
-//
-//    @Test
-//    @DisplayName("Bookkeeping 생성")
-//    void create() {
-//        Bookkeeping bookkeeping = new Bookkeeping();
-//        bookkeeping.setName("testName");
-//        bookkeeping.setUserId(TestConstant.USER_ID);
-//        log.debug("bookkeeping : {}", bookkeeping);
-//        Bookkeeping result = bookkeepingService.create(bookkeeping);
-//        assertThat(result).isNotNull();
-//        log.debug("bookkeeping : {}", bookkeeping);
-//        log.debug("result : {}", result);
-//    }
-//    
-//    @Test
-//    void findByUserId() {
-//    	var bookkeepingList = bookkeepingService.findByUserId(TestConstant.USER_ID);
-//    	assertThat(bookkeepingList).isNotEmpty();
-//    	log.debug("bookkeepingList : {}", bookkeepingList);
-//    }
-//
-//    @Test
-//    void update() {
-//    	var bookkeeping = bookkeepingService.findByUserId(TestConstant.USER_ID).stream().findFirst().get();
-//        bookkeeping.setUserId(TestConstant.USER_ID);
-//        bookkeeping.setBaseDate(11);
-//        Bookkeeping updateBookkeeping = bookkeepingService.update(bookkeeping);
-//        log.debug("bookkeeping : {}", updateBookkeeping);
-//    }
-//
-//    @Test
-//    void delete() {
-//    	var bookkeeping = bookkeepingService.findByUserId(TestConstant.USER_ID).stream().findFirst().get();
-//        bookkeepingService.delete(bookkeeping);
-//    }
-//}
+package net.luversof.api.bookkeeping;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.extern.slf4j.Slf4j;
+import net.luversof.GeneralTest;
+import net.luversof.api.bookkeeping.constant.TestConstant;
+import net.luversof.api.bookkeeping.domain.Bookkeeping;
+import net.luversof.api.bookkeeping.repository.mariadb.BookkeepingRepository;
+
+@Slf4j
+class BookkeepingTest implements GeneralTest {
+	
+	@Autowired
+	private BookkeepingRepository bookkeepingRepository;
+
+	@Test
+	@DisplayName("저장 테스트")
+	void createBookeeping() {
+		var userId = TestConstant.USER_ID;
+		// 대상이 없으면 새로 만들어서 저장
+		List<Bookkeeping> bookkeepingList = bookkeepingRepository.findByUserId(userId);
+		if (!bookkeepingList.isEmpty()) {
+			log.debug("already create bookkeeping for {}", userId);
+			return;
+		}
+		
+		var bookkeeping = new Bookkeeping();
+		bookkeeping.setUserId(userId);
+		bookkeeping.setName("bookkeeping of " + userId);
+		
+		Bookkeeping save = bookkeepingRepository.save(bookkeeping);
+		assertThat(save).isNotNull();
+	}
+	
+	
+	@Test
+	void test() {
+		List<Bookkeeping> bookkeepingList = bookkeepingRepository.findByUserId(TestConstant.USER_ID);
+		log.debug("bookkeepingList : {}", bookkeepingList);
+	}
+	
+}

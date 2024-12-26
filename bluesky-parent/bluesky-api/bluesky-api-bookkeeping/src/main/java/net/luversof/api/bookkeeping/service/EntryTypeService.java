@@ -8,18 +8,18 @@ import org.springframework.stereotype.Service;
 
 import lombok.Getter;
 import lombok.Setter;
-import net.luversof.api.bookkeeping.domain.Asset;
-import net.luversof.api.bookkeeping.repository.mariadb.AssetRepository;
+import net.luversof.api.bookkeeping.domain.EntryType;
+import net.luversof.api.bookkeeping.repository.mariadb.EntryTypeRepository;
 
 @Service
-public class AssetService implements BasicCrudService<Asset, UUID> {
+public class EntryTypeService implements BasicCrudService<EntryType, UUID> {
 
 	@Getter
 	@Setter(onMethod_ = @Autowired)
-	private AssetRepository repository;
-	
-	public List<Asset> findByBookkeepingId(UUID bookkeepingId) {
+	private EntryTypeRepository repository;
+
+	public List<EntryType> findByBookkeepingId(UUID bookkeepingId) {
 		return repository.findByBookkeepingId(bookkeepingId);
 	}
-	
+
 }

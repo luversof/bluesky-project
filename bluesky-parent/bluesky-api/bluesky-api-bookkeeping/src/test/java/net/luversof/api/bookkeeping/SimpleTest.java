@@ -1,6 +1,5 @@
 package net.luversof.api.bookkeeping;
 
-import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.TimeZone;
@@ -20,18 +19,10 @@ import com.github.f4b6a3.uuid.alt.GUID;
 import io.github.luversof.boot.exception.BlueskyException;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.api.bookkeeping.constant.BookkeepingErrorCode;
-import net.luversof.api.bookkeeping.util.BookkeepingUtils;
 
 @Slf4j
 class SimpleTest {
 
-	@Test
-	void test() {
-		log.debug("TEST : {}", BookkeepingErrorCode.NOT_EXIST_ASSET.getClass().getSimpleName());
-		log.debug("TEST : {}", String.join(".",  "as", "caa", "hd"));
-	}
-	
 	@Test
 	@SneakyThrows
 	void errorCodeTest() {
@@ -58,12 +49,6 @@ class SimpleTest {
 		log.debug("result : {}", a.contains(" "));
 	}
 	
-	
-	@Test
-	void test2() {
-		log.debug("result : {}", BookkeepingUtils.getMonthStartLocalDate(LocalDate.now(), 1));
-		log.debug("result : {}", BookkeepingUtils.getMonthEndLocalDate(LocalDate.now(), 1));
-	}
 	
 	@Test
 	void localeTest() {

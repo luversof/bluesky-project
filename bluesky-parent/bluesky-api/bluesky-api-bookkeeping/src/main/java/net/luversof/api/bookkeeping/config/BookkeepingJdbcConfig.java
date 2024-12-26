@@ -22,15 +22,15 @@ public class BookkeepingJdbcConfig {
     }
     
     
-    @Bean
-    @ConfigurationProperties("datasource.bookkeeping-postgresql")
-    DataSourceProperties bookkeepingPostgresqlDataSourceProperties() {
-        return new DataSourceProperties();
-    }
-
-    @Bean
-    DataSource bookkeepingPostgresqlDataSource() {
-        return bookkeepingPostgresqlDataSourceProperties().initializeDataSourceBuilder().build();
-    }
+//    @Bean
+//    @ConfigurationProperties("datasource.bookkeeping-postgresql")
+//    DataSourceProperties bookkeepingPostgresqlDataSourceProperties() {
+//        return new DataSourceProperties();
+//    }
+//
+//    @Bean
+//    DataSource bookkeepingPostgresqlDataSource() {
+//        return bookkeepingPostgresqlDataSourceProperties().initializeDataSourceBuilder().build();
+//    }
 }
 
