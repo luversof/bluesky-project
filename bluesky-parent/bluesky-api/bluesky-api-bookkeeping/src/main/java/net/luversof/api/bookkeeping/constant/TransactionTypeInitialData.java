@@ -9,7 +9,6 @@ import io.github.luversof.boot.context.support.MessageUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import net.luversof.api.bookkeeping.domain.EntryType;
-import net.luversof.api.bookkeeping.domain.EntryTypeCode;
 
 /**
  * 기본 생성하여 제공하는 EntryType

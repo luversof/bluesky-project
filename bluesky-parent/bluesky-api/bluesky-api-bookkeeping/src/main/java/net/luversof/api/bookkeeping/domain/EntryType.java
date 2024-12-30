@@ -14,6 +14,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Null;
 import lombok.Data;
+import net.luversof.api.bookkeeping.constant.EntryTypeCode;
 
 @Data
 @Entity

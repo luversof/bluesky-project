@@ -1,5 +1,6 @@
 package net.luversof.api.bookkeeping.domain;
 
+import java.util.BitSet;
 import java.util.UUID;
 
 import com.github.f4b6a3.uuid.alt.GUID;
@@ -36,6 +37,8 @@ public class Asset {
 	@Column(name = "assetType_id", nullable = false)
 	private UUID assetTypeId;
 	
+	private BitSet bitConfig;
+	
 	private String name;
 	
 	@PrePersist
@@ -46,5 +49,9 @@ public class Asset {
 	public interface Create {}
 	public interface Update {}
 	public interface Delete {}
+	
+	@Data
+	public static class AssetConfig {
+	}
 
 }

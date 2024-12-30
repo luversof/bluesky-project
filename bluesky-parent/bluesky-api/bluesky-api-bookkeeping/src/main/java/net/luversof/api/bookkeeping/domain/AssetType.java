@@ -13,6 +13,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.Data;
+import net.luversof.api.bookkeeping.constant.AssetTypeCode;
 
 /**
  * 계좌 유형 정의

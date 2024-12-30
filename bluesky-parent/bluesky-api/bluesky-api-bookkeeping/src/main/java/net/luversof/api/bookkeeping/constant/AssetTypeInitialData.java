@@ -9,7 +9,6 @@ import io.github.luversof.boot.context.support.MessageUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import net.luversof.api.bookkeeping.domain.AssetType;
-import net.luversof.api.bookkeeping.domain.AssetTypeCode;
 
 
 /**
@@ -19,7 +18,7 @@ import net.luversof.api.bookkeeping.domain.AssetTypeCode;
 @AllArgsConstructor
 public enum AssetTypeInitialData {
 	
-	CONTRA_ACCOUNT(AssetTypeCode.CONTRA_ASSET),
+	CONTRA_ASSET(AssetTypeCode.CONTRA_ASSET),
 	CASH(AssetTypeCode.CASH),
 	BANK(AssetTypeCode.BANK),
 	CREDITCARD(AssetTypeCode.CREDITCARD),

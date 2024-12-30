@@ -2,8 +2,8 @@ package net.luversof.api.bookkeeping.constant;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
-import java.util.UUID;
 
 import io.github.luversof.boot.context.support.MessageUtil;
 import lombok.AllArgsConstructor;
@@ -21,10 +21,12 @@ import net.luversof.api.bookkeeping.domain.Bookkeeping;
 @AllArgsConstructor
 public enum AssetInitialData {
 
-	WALLET(AssetTypeInitialData.CASH)
+	CONTRA_ASSET(AssetTypeInitialData.CONTRA_ASSET, getBitSet()),
+	WALLET(AssetTypeInitialData.CASH, null)
 	;
 	
 	private AssetTypeInitialData  assetTypeInitialData;
+	private BitSet bitConfig;
 	
 	public String getLocalizedName() {
 		return MessageUtil.getMessage(MessageFormat.format("bookkeeping.constant.account.{0}", name()), name());
@@ -44,9 +46,16 @@ public enum AssetInitialData {
 			asset.setBookkeeping(bookkeeping);
 			asset.setName(assetInitialData.getLocalizedName());
 			asset.setAssetTypeId(targetAssetType.getId());
+			asset.setBitConfig(AssetBitConfig.getInitialData());
 			assetList.add(asset);
 		}
 		
 		return assetList;
+	}
+	
+	private static BitSet getBitSet() {
+		var bitSet =  new BitSet();
+		bitSet.set(AssetBitConfig.ENABLE_DISPLAY.getBitIndex());
+		return bitSet;
 	}
 }

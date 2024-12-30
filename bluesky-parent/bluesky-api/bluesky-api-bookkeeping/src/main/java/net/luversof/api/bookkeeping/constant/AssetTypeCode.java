@@ -1,4 +1,4 @@
-package net.luversof.api.bookkeeping.domain;
+package net.luversof.api.bookkeeping.constant;
 
 public enum AssetTypeCode {
 	
