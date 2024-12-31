@@ -12,6 +12,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import net.luversof.api.bookkeeping.constant.AssetTypeCode;
 
@@ -21,21 +23,21 @@ import net.luversof.api.bookkeeping.constant.AssetTypeCode;
  */
 @Data
 @Entity
-@Table(
-		name = "AssetType",
-		indexes = { @Index(name = "IX_assetType", columnList = "bookkeeping_id") }
-		)
+@Table(name = "AssetType", indexes = { @Index(name = "IX_assetType", columnList = "bookkeeping_id") })
 public class AssetType {
 
 	@Id
 	private UUID id;
 	
+	@NotNull(groups = { Create.class , Update.class })
 	@Column(name = "bookkeeping_id", nullable = false)
 	private UUID bookkeepingId;
 	
+	@NotNull(groups = { Create.class , Update.class })
 	@Enumerated(EnumType.STRING)
 	private AssetTypeCode code;
 	
+	@NotBlank(groups = { Create.class , Update.class })
 	private String name;
 	
 	@PrePersist

@@ -1,4 +1,4 @@
-package net.luversof.api.bookkeeping.service;
+package net.luversof.api.bookkeeping.service.base;
 
 import java.util.List;
 import java.util.UUID;
@@ -12,7 +12,7 @@ import net.luversof.api.bookkeeping.domain.Entry;
 import net.luversof.api.bookkeeping.repository.mariadb.EntryRepository;
 
 @Service
-public class EntryService  implements BasicCrudService<Entry, UUID> {
+public class EntryBaseService  implements BaseService<Entry, UUID> {
 
 	@Getter
 	@Setter(onMethod_ = @Autowired)

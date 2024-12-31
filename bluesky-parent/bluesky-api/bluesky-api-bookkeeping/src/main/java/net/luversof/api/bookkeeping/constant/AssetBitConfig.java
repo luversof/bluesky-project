@@ -1,7 +1,5 @@
 package net.luversof.api.bookkeeping.constant;
 
-import java.util.BitSet;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -15,13 +13,5 @@ public enum AssetBitConfig {
 	;
 	
 	private int bitIndex;
-
-	public static BitSet getInitialData() {
-		var bitSet =  new BitSet();
-		for (var boardBitConfig : AssetBitConfig.values()) {
-			bitSet.set(boardBitConfig.getBitIndex());
-		}
-		return bitSet;
-	}
 
 }

@@ -1,4 +1,4 @@
-package net.luversof.api.bookkeeping.service;
+package net.luversof.api.bookkeeping.service.base;
 
 import java.util.List;
 import java.util.Optional;
@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * 반복 코드를 줄이려고 만들어봄
  * @param <T>
  */
-public interface BasicCrudService<T, ID> {
+public interface BaseService<T, ID> {
 	
 	JpaRepository<T, ID> getRepository();
 

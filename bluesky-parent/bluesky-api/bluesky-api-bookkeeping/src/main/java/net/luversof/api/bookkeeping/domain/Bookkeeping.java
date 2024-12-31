@@ -9,6 +9,7 @@ import org.hibernate.type.SqlTypes;
 
 import com.github.f4b6a3.uuid.alt.GUID;
 
+import io.github.luversof.boot.context.ApplicationContextUtil;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -49,6 +50,9 @@ public class Bookkeeping {
 	
 	@PrePersist
 	public void prePersist() {
+		if (ApplicationContextUtil.getApplicationContext().getEnvironment().matchesProfiles("localdev") && id != null) {
+			return;
+		}
 		id = GUID.v7().toUUID();
 	}
 

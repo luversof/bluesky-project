@@ -2,48 +2,43 @@ package net.luversof.api.bookkeeping;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.api.bookkeeping.constant.TestConstant;
 import net.luversof.api.bookkeeping.domain.Bookkeeping;
-import net.luversof.api.bookkeeping.repository.mariadb.BookkeepingRepository;
+import net.luversof.api.bookkeeping.service.BookkeepingService;
 
 @Slf4j
 class BookkeepingTest implements GeneralTest {
 	
-	@Autowired
-	private BookkeepingRepository bookkeepingRepository;
-
+	@Setter(onMethod_ = @Autowired)
+	private BookkeepingService bookkeepingService;
+	
+	private UUID userId = TestConstant.USER_ID;
+	private UUID bookkeepingId = TestConstant.BOOKKEEPING_ID;
+	
 	@Test
-	@DisplayName("저장 테스트")
-	void createBookeeping() {
-		var userId = TestConstant.USER_ID;
-		// 대상이 없으면 새로 만들어서 저장
-		List<Bookkeeping> bookkeepingList = bookkeepingRepository.findByUserId(userId);
-		if (!bookkeepingList.isEmpty()) {
-			log.debug("already create bookkeeping for {}", userId);
-			return;
-		}
+	@DisplayName("초기 데이터 생성")
+	void createBookkeeping() {
 		
 		var bookkeeping = new Bookkeeping();
 		bookkeeping.setUserId(userId);
-		bookkeeping.setName("bookkeeping of " + userId);
-		
-		Bookkeeping save = bookkeepingRepository.save(bookkeeping);
-		assertThat(save).isNotNull();
+		bookkeeping.setId(bookkeepingId);
+		var bookkeepingResult = bookkeepingService.createBookkeeping(bookkeeping);
+		log.debug("bookkeepingResult : {}", bookkeepingResult);
+		assertThat(bookkeepingResult).isNotNull();
 	}
-	
-	
+
 	@Test
-	void test() {
-		List<Bookkeeping> bookkeepingList = bookkeepingRepository.findByUserId(TestConstant.USER_ID);
-		log.debug("bookkeepingList : {}", bookkeepingList);
+	@DisplayName("해당 유저의 가계부 데이터 일괄 삭제")
+	void deleteBookkeepingByUserId() {
+		bookkeepingService.deleteBookkeepingByUserId(userId);
 	}
-	
 }

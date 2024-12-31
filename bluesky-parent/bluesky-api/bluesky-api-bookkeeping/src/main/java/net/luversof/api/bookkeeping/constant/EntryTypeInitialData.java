@@ -15,7 +15,7 @@ import net.luversof.api.bookkeeping.domain.EntryType;
  */
 @Getter
 @AllArgsConstructor
-public enum TransactionTypeInitialData {
+public enum EntryTypeInitialData {
 	
 	INCOME_SALARY(EntryTypeCode.INCOME),
 	INCOME_BONUS(EntryTypeCode.INCOME),
@@ -40,7 +40,7 @@ public enum TransactionTypeInitialData {
 	public static List<EntryType> getInitialData(UUID bookkeepingId) {
 		var entryTransactionTypeList = new ArrayList<EntryType>();
 		
-		for (var transactionTypeInitialData : TransactionTypeInitialData.values()) {
+		for (var transactionTypeInitialData : EntryTypeInitialData.values()) {
 			var transactionType = new EntryType();
 			transactionType.setBookkeepingId(bookkeepingId);
 			transactionType.setName(transactionTypeInitialData.getLocalizedName());

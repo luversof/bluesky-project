@@ -5,7 +5,6 @@ import java.util.UUID;
 
 import com.github.f4b6a3.uuid.alt.GUID;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Id;
@@ -31,11 +30,11 @@ public class Asset {
 	
 	@ManyToOne
 	@JoinColumn(name = "bookkeeping_id", nullable = false, foreignKey = @ForeignKey(name = "FK_asset"))
-//	@Column(name = "bookkeeping_id", nullable = false)
 	private Bookkeeping bookkeeping;
 	
-	@Column(name = "assetType_id", nullable = false)
-	private UUID assetTypeId;
+	@ManyToOne
+	@JoinColumn(name = "assetType_id", nullable = false, foreignKey = @ForeignKey(name = "FK_asset2"))
+	private AssetType assetType;
 	
 	private BitSet bitConfig;
 	

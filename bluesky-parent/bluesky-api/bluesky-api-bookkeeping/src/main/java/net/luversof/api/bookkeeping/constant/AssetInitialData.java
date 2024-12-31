@@ -21,11 +21,11 @@ import net.luversof.api.bookkeeping.domain.Bookkeeping;
 @AllArgsConstructor
 public enum AssetInitialData {
 
-	CONTRA_ASSET(AssetTypeInitialData.CONTRA_ASSET, getBitSet()),
-	WALLET(AssetTypeInitialData.CASH, null)
+	CONTRA_ASSET(AssetTypeInitialData.CONTRA_ASSET, getContraBitSet()),
+	WALLET(AssetTypeInitialData.CASH, getNormalBitSet())
 	;
 	
-	private AssetTypeInitialData  assetTypeInitialData;
+	private AssetTypeInitialData assetTypeInitialData;
 	private BitSet bitConfig;
 	
 	public String getLocalizedName() {
@@ -45,15 +45,19 @@ public enum AssetInitialData {
 			var asset = new Asset();
 			asset.setBookkeeping(bookkeeping);
 			asset.setName(assetInitialData.getLocalizedName());
-			asset.setAssetTypeId(targetAssetType.getId());
-			asset.setBitConfig(AssetBitConfig.getInitialData());
+			asset.setAssetType(targetAssetType);
+			asset.setBitConfig(assetInitialData.getBitConfig());
 			assetList.add(asset);
 		}
 		
 		return assetList;
 	}
 	
-	private static BitSet getBitSet() {
+	private static BitSet getContraBitSet() {
+		return new BitSet();
+	}
+	
+	public static BitSet getNormalBitSet() {
 		var bitSet =  new BitSet();
 		bitSet.set(AssetBitConfig.ENABLE_DISPLAY.getBitIndex());
 		return bitSet;
