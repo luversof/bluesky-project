@@ -2,7 +2,7 @@ package net.luversof.api.bookkeeping.constant;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.BitSet;
+import java.util.Collections;
 import java.util.List;
 
 import io.github.luversof.boot.context.support.MessageUtil;
@@ -21,12 +21,12 @@ import net.luversof.api.bookkeeping.domain.Bookkeeping;
 @AllArgsConstructor
 public enum AssetInitialData {
 
-	CONTRA_ASSET(AssetTypeInitialData.CONTRA_ASSET, getContraBitSet()),
-	WALLET(AssetTypeInitialData.CASH, getNormalBitSet())
+	CONTRA_ASSET(AssetTypeInitialData.CONTRA_ASSET, getContraBitConfigIndexList()),
+	WALLET(AssetTypeInitialData.CASH, getNormalBitConfigIndexList())
 	;
 	
 	private AssetTypeInitialData assetTypeInitialData;
-	private BitSet bitConfig;
+	private List<Integer> bitConfigIndexList;
 	
 	public String getLocalizedName() {
 		return MessageUtil.getMessage(MessageFormat.format("bookkeeping.constant.account.{0}", name()), name());
@@ -46,20 +46,21 @@ public enum AssetInitialData {
 			asset.setBookkeeping(bookkeeping);
 			asset.setName(assetInitialData.getLocalizedName());
 			asset.setAssetType(targetAssetType);
-			asset.setBitConfig(assetInitialData.getBitConfig());
+			asset.setBitConfigIndexList(assetInitialData.getBitConfigIndexList());
 			assetList.add(asset);
 		}
 		
 		return assetList;
 	}
 	
-	private static BitSet getContraBitSet() {
-		return new BitSet();
+	private static List<Integer> getContraBitConfigIndexList() {
+		return Collections.emptyList();
 	}
 	
-	public static BitSet getNormalBitSet() {
-		var bitSet =  new BitSet();
-		bitSet.set(AssetBitConfig.ENABLE_DISPLAY.getBitIndex());
-		return bitSet;
+	public static List<Integer> getNormalBitConfigIndexList() {
+		var list = new ArrayList<Integer>();
+		list.add(AssetBitConfigIndex.ENABLE_DELETE.getBitIndex());
+		list.add(AssetBitConfigIndex.ENABLE_DISPLAY.getBitIndex());
+		return list;
 	}
 }

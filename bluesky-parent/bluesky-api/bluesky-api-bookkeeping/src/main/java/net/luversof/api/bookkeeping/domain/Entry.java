@@ -47,6 +47,7 @@ public class Entry implements Serializable {
 //	@UuidGenerator(style = Style.TIME)
 	private UUID id;
 	
+	@NotNull(groups = { Create.class, Update.class })
 	@Column(name = "bookkeeping_id", nullable = false)
 	private UUID bookkeepingId;
 	
@@ -55,15 +56,19 @@ public class Entry implements Serializable {
 //	@Column(name = "entryType_id", nullable = false)
 	private EntryType entryType;
 
+	@NotNull(groups = { Create.class, Update.class })
 	@Column(nullable = false)
 	private ZonedDateTime entryDate;
 	
+	@NotNull(groups = { Create.class, Update.class })
 	@Column(name = "incomeAsset_id", nullable = false)
 	private UUID incomeAssetId;
 	
+	@NotNull(groups = { Create.class, Update.class })
 	@Column(name = "outgoingAsset_id", nullable = false)
 	private UUID outgoingAssetId;
 	
+	@NotNull(groups = { Create.class, Update.class })
 	private BigDecimal amount;
 	
 	@JdbcTypeCode(SqlTypes.JSON)
@@ -79,8 +84,11 @@ public class Entry implements Serializable {
     public interface Delete {}
     
     @Data
-    public static class EntryExtraData {
-    	private String memo;
+    public static class EntryExtraData implements Serializable {
+
+    	private static final long serialVersionUID = 1L;
+    	
+		private String memo;
     }
 
 }

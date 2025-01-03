@@ -1,10 +1,11 @@
 package net.luversof.api.bookkeeping.domain;
 
-import java.util.BitSet;
+import java.util.List;
 import java.util.UUID;
 
 import com.github.f4b6a3.uuid.alt.GUID;
 
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Id;
@@ -15,6 +16,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import lombok.Data;
+import net.luversof.api.bookkeeping.converter.IntegerListConverter;
 
 @Data
 @Entity
@@ -35,8 +37,10 @@ public class Asset {
 	@ManyToOne
 	@JoinColumn(name = "assetType_id", nullable = false, foreignKey = @ForeignKey(name = "FK_asset2"))
 	private AssetType assetType;
-	
-	private BitSet bitConfig;
+
+//	@Convert(converter = BitSetConverter.class)
+	@Convert(converter = IntegerListConverter.class)
+	private List<Integer> bitConfigIndexList;
 	
 	private String name;
 	
@@ -51,6 +55,7 @@ public class Asset {
 	
 	@Data
 	public static class AssetConfig {
+		
 	}
 
 }

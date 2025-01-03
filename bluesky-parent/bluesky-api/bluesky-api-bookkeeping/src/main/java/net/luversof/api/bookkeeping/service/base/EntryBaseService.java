@@ -12,13 +12,14 @@ import net.luversof.api.bookkeeping.domain.Entry;
 import net.luversof.api.bookkeeping.repository.mariadb.EntryRepository;
 
 @Service
-public class EntryBaseService  implements BaseService<Entry, UUID> {
+public class EntryBaseService implements BaseService<Entry, UUID> {
 
 	@Getter
 	@Setter(onMethod_ = @Autowired)
 	private EntryRepository repository;
-
-	public List<Entry> findByIncomeAssetId(UUID incomeAssetId) {
-		return repository.findByIncomeAssetId(incomeAssetId);
+	
+	public List<Entry> findByBookkeepingId(UUID bookkeepingId) {
+		return repository.findByBookkeepingId(bookkeepingId);
 	}
+
 }

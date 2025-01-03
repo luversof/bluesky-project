@@ -10,6 +10,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import net.luversof.api.bookkeeping.domain.EntryType;
 
+import static net.luversof.api.bookkeeping.constant.EntryTypeCode.*;
+
 /**
  * 기본 생성하여 제공하는 EntryType
  */
@@ -17,21 +19,21 @@ import net.luversof.api.bookkeeping.domain.EntryType;
 @AllArgsConstructor
 public enum EntryTypeInitialData {
 	
-	INCOME_SALARY(EntryTypeCode.INCOME),
-	INCOME_BONUS(EntryTypeCode.INCOME),
-	INCOME_INTEREST(EntryTypeCode.INCOME),
-	INCOME_ETC(EntryTypeCode.INCOME),
-	EXPENSE_FOOD(EntryTypeCode.EXPENSE),
-	EXPENSE_TRANSFORTATION(EntryTypeCode.EXPENSE),
-	EXPENSE_LIVING(EntryTypeCode.EXPENSE),
-	EXPENSE_STUDY(EntryTypeCode.EXPENSE),
-	EXPENSE_CULTURE(EntryTypeCode.EXPENSE),
-	EXPENSE_SOCIAL(EntryTypeCode.EXPENSE),
-	EXPENSE_MANAGEMENTFEE(EntryTypeCode.EXPENSE),
-	EXPENSE_ETC(EntryTypeCode.EXPENSE),
+	INCOME_SALARY(INCOME),
+	INCOME_BONUS(INCOME),
+	INCOME_INTEREST(INCOME),
+	INCOME_ETC(INCOME),
+	EXPENSE_FOOD(OUTGOING),
+	EXPENSE_TRANSFORTATION(OUTGOING),
+	EXPENSE_LIVING(OUTGOING),
+	EXPENSE_STUDY(OUTGOING),
+	EXPENSE_CULTURE(OUTGOING),
+	EXPENSE_SOCIAL(OUTGOING),
+	EXPENSE_MANAGEMENTFEE(OUTGOING),
+	EXPENSE_ETC(OUTGOING),
 	;
 	
-	private EntryTypeCode transactionTypeCode;
+	private EntryTypeCode entryTypeCode;
 	
 	public String getLocalizedName() {
 		return MessageUtil.getMessage(MessageFormat.format("bookkeeping.constant.entry-transaction-type.{0}", name()), name());
@@ -44,7 +46,7 @@ public enum EntryTypeInitialData {
 			var transactionType = new EntryType();
 			transactionType.setBookkeepingId(bookkeepingId);
 			transactionType.setName(transactionTypeInitialData.getLocalizedName());
-			transactionType.setCode(transactionTypeInitialData.getTransactionTypeCode());
+			transactionType.setCode(transactionTypeInitialData.getEntryTypeCode());
 			entryTransactionTypeList.add(transactionType);
 		}
 		

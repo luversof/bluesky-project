@@ -52,14 +52,14 @@ public class BookkeepingService {
 		
 		var bookkeepingResult = bookkeepingBaseService.save(bookkeeping);
 		
-		var accountTypeList = AssetTypeInitialData.getInitialData(bookkeepingResult.getId());
-		assetTypeBaseService.saveAll(accountTypeList);
+		var assetTypeList = AssetTypeInitialData.getInitialData(bookkeepingResult.getId());
+		assetTypeBaseService.saveAll(assetTypeList);
 		
-		var accountList = AssetInitialData.getInitialData(bookkeepingResult, accountTypeList);
-		assetBaseService.saveAll(accountList);
+		var assetList = AssetInitialData.getInitialData(bookkeepingResult, assetTypeList);
+		assetBaseService.saveAll(assetList);
 		
-		var entryTransactionTypeList = EntryTypeInitialData.getInitialData(bookkeepingResult.getId());
-		entryTypeBaseService.saveAll(entryTransactionTypeList);
+		var entryTypeList = EntryTypeInitialData.getInitialData(bookkeepingResult.getId());
+		entryTypeBaseService.saveAll(entryTypeList);
 		
 		return bookkeepingResult;
 	}
@@ -97,7 +97,7 @@ public class BookkeepingService {
 		// delete assetType
 		var assetTypeCount = assetTypeBaseService.getRepository().deleteByBookkeepingId(bookkeepingId);
 		
-		bookkeepingBaseService.getRepository().deleteById(bookkeepingId);
+		bookkeepingBaseService.deleteById(bookkeepingId);
 		
 		log.debug("""
 				

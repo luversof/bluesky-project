@@ -34,6 +34,11 @@ class BookkeepingTest implements GeneralTest {
 		var bookkeepingResult = bookkeepingService.createBookkeeping(bookkeeping);
 		log.debug("bookkeepingResult : {}", bookkeepingResult);
 		assertThat(bookkeepingResult).isNotNull();
+		
+		
+		// assetId를 테스트 id로 변경하고 싶은데...
+		
+		
 	}
 
 	@Test

@@ -9,8 +9,11 @@ import net.luversof.api.bookkeeping.domain.Entry;
 
 public interface EntryRepository extends JpaRepository<Entry, UUID> {
 	
+	List<Entry> findByBookkeepingId(UUID bookkeepingId);
+	
+	/** (s) test **/
 	List<Entry> findByIncomeAssetId(UUID incomeAssetId);
 	List<Entry> findByOutgoingAssetId(UUID outgoingAssetId);
-	
 	long deleteByBookkeepingId(UUID bookkeepingId);
+	/** (e) test **/
 }

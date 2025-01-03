@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /** 
- * 반복 코드를 줄이려고 만들어봄
+ * 개발시 데이터 확인을 위해 제공하는 기초적인 호출을 제공
  * @param <T>
  */
 public interface BaseService<T, ID> {
@@ -31,6 +31,10 @@ public interface BaseService<T, ID> {
 	
 	default void delete(T t) {
 		getRepository().delete(t);
+	}
+	
+	default void deleteById(ID id) {
+		getRepository().deleteById(id);
 	}
 
 }

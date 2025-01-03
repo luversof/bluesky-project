@@ -9,16 +9,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import lombok.Getter;
 import lombok.Setter;
-import net.luversof.api.bookkeeping.domain.Asset;
-import net.luversof.api.bookkeeping.service.base.AssetBaseService;
-
+import net.luversof.api.bookkeeping.domain.Entry;
+import net.luversof.api.bookkeeping.service.base.EntryBaseService;
 
 @RestController
-@RequestMapping(value = "/api/asset/base", produces = MediaType.APPLICATION_JSON_VALUE)
-public class AssetBaseController implements BaseController<Asset, UUID> {
+@RequestMapping(value = "/api/entry/base", produces = MediaType.APPLICATION_JSON_VALUE)
+public class EntryBaseController implements BaseController<Entry, UUID> {
 
 	@Setter(onMethod_ = @Autowired)
 	@Getter
-	private AssetBaseService service;
-
+	private EntryBaseService service;
+	
 }

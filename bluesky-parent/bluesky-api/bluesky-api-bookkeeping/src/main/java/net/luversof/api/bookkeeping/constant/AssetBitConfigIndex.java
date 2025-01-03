@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public enum AssetBitConfig {
+public enum AssetBitConfigIndex {
 	
 	ENABLE_DELETE(0),	// asset 삭제 가능
 	ENABLE_DISPLAY(1),	// 외부 노출 가능

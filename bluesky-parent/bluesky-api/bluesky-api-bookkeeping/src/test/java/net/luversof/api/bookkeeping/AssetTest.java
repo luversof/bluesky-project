@@ -48,4 +48,13 @@ class AssetTest implements GeneralTest {
 		var result = assetService.createAsset(asset);
 		log.debug("result : {}", result);
 	}
+	
+	@Test
+	void updateAsset() {
+		var assetList = assetService.findByBookkeepingId(bookkeepingId);
+		assetList.get(0);
+		
+		
+		
+	}
 }
