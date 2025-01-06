@@ -20,7 +20,7 @@ public class GateWebMvcConfig implements WebMvcConfigurer {
 	@Override
 	public void addCorsMappings(CorsRegistry registry) {
 		registry.addMapping("/**")
-			.allowedOriginPatterns("http://*.bluesky.local:[*]")
+			.allowedOriginPatterns("http://*.bluesky.local:[*]", "https://*.bluesky.local:[*]")
 			.allowedHeaders(CorsConfiguration.ALL)
 			.allowedMethods(CorsConfiguration.ALL)
 			.allowCredentials(true);

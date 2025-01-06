@@ -15,7 +15,7 @@ import net.luversof.api.bookkeeping.domain.Bookkeeping;
 import net.luversof.api.bookkeeping.service.BookkeepingService;
 
 @RestController
-@RequestMapping(value = "/api/bookkeeping", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/bookkeepings", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BookkeepingController {
 
 	@Setter(onMethod_ = @Autowired)
@@ -26,12 +26,12 @@ public class BookkeepingController {
 		return bookkeepingService.createBookkeeping(bookkeeping);
 	}
 	
-	@DeleteMapping("/deleteByUserId")
+	@DeleteMapping("/byUserId")
 	public void deleteBookkeepingByUserId(UUID userId) {
 		bookkeepingService.deleteBookkeepingByUserId(userId);
 	}
 	
-	@DeleteMapping("/deleteByBookkeepingId")
+	@DeleteMapping("/byBookkeepingId")
 	public void deleteBookkeepingByBookkeepingId(UUID bookkeepingId) {
 		bookkeepingService.deleteBookkeepingByBookkeepingId(bookkeepingId);
 	}

@@ -7,17 +7,23 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.Getter;
 import lombok.Setter;
 import net.luversof.api.bookkeeping.domain.Entry;
 import net.luversof.api.bookkeeping.service.base.EntryBaseService;
 
 @RestController
-@RequestMapping(value = "/api/entry/base", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/entries/base", produces = MediaType.APPLICATION_JSON_VALUE)
 public class EntryBaseController implements BaseController<Entry, UUID> {
 
 	@Setter(onMethod_ = @Autowired)
 	@Getter
 	private EntryBaseService service;
+	
+	@Setter(onMethod_ = @Autowired)
+	@Getter
+	private ObjectMapper objectMapper;
 	
 }

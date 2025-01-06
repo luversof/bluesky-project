@@ -16,7 +16,7 @@ import net.luversof.api.bookkeeping.domain.Asset;
 import net.luversof.api.bookkeeping.service.AssetService;
 
 @RestController
-@RequestMapping(value = "/api/asset", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/assets", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AssetController {
 
 	@Setter(onMethod_ = @Autowired)
@@ -32,7 +32,7 @@ public class AssetController {
 		return assetService.updateAsset(asset);
 	}
 	
-	@GetMapping("/findByBookkeepingId")
+	@GetMapping("/search/findByBookkeepingId")
 	public List<Asset> findByBookkeepingId(UUID bookkeepingId) {
 		return assetService.findByBookkeepingId(bookkeepingId);
 	}

@@ -15,7 +15,7 @@ import net.luversof.api.bookkeeping.domain.Entry;
 import net.luversof.api.bookkeeping.service.EntryService;
 
 @RestController
-@RequestMapping(value = "/api/entry", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/entries", produces = MediaType.APPLICATION_JSON_VALUE)
 public class EntryController {
 
 	@Setter(onMethod_ = @Autowired)
