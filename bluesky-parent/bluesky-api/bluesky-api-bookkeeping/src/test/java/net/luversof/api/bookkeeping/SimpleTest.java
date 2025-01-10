@@ -82,7 +82,7 @@ class SimpleTest {
 	
 	@Test
 	void bitSetTest() {
-		var bitSetIndexList =  AssetInitialData.getNormalBitConfigIndexList();
+		var bitSetIndexList =  AssetInitialData.getNormalBitConfigList();
 		
 		var bitSet = new BitSet();
 		bitSetIndexList.forEach(bitSet::set);

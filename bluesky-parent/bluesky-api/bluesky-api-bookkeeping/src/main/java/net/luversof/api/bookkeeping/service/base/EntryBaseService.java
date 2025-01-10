@@ -22,4 +22,12 @@ public class EntryBaseService implements BaseService<Entry, UUID> {
 		return repository.findByBookkeepingId(bookkeepingId);
 	}
 
+	public List<Entry> findByIncomeAssetId(UUID incomeAssetId) {
+		return repository.findByIncomeAssetId(incomeAssetId);
+	}
+	
+	public List<Entry> findByOutgoingAssetId(UUID outgoingAssetId) {
+		return repository.findByOutgoingAssetId(outgoingAssetId);
+	}
+
 }

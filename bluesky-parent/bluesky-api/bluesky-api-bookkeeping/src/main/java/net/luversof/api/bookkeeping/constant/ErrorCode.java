@@ -8,6 +8,8 @@ import lombok.Getter;
 @Getter
 public enum ErrorCode {
 	
+	INVALID_REQUEST("bookkeeping.INVALID_REQUEST"),
+	
 	ALREADY_EXIST_BOOKKEEPING("bookkeeping.ALREADY_EXIST_BOOKKEEPING"),
 	NOT_EXIST_BOOKKEEPING("bookkeeping.NOT_EXIST_BOOKKEEPING"),
 	
@@ -15,6 +17,7 @@ public enum ErrorCode {
 	INVALID_BOOKKEEPING_ID("bookkeeping.INVALID_BOOKKEEPING_ID"),
 	
 	NOT_EXIST_ASSET("bookkeeping.NOT_EXIST_ASSET"),
+	UNABLE_DELETE_ASSET("bookkeeping.UNABLE_DELETE_ASSET"),
 	
 	INVALID_ASSET_ID("bookkeeping.INVALID_ASSET_ID"),
 	

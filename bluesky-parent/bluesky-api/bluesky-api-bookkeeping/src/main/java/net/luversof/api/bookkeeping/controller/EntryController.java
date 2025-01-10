@@ -1,12 +1,11 @@
 package net.luversof.api.bookkeeping.controller;
 
-import java.util.UUID;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,18 +21,22 @@ public class EntryController {
 	private EntryService entryService;
 	
 	@PostMapping
-	public Entry createEntry(Entry entry) {
+	public Entry createEntry(@RequestBody Entry entry) {
 		return entryService.createEntry(entry);
 	}
 	
 	@PutMapping
-	public Entry updateEntry(Entry entry) {
+	public Entry updateEntry(@RequestBody Entry entry) {
 		return entryService.updateEntry(entry);
 	}
 	
+	/**
+	 * 이거 요청이 많다면 putMapping의 requestBody를 고려해야 할 수도 있음
+	 * @param entry
+	 */
 	@DeleteMapping
-	public void deleteEntry(UUID id) {
-		entryService.deleteEntry(id);
+	public void deleteEntry(Entry entry) {
+		entryService.deleteEntry(entry);
 	}
 
 }

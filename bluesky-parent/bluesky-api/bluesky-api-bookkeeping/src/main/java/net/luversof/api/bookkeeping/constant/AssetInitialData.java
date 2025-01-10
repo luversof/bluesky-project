@@ -21,8 +21,8 @@ import net.luversof.api.bookkeeping.domain.Bookkeeping;
 @AllArgsConstructor
 public enum AssetInitialData {
 
-	CONTRA_ASSET(AssetTypeInitialData.CONTRA_ASSET, getContraBitConfigIndexList()),
-	WALLET(AssetTypeInitialData.CASH, getNormalBitConfigIndexList())
+	CONTRA_ASSET(AssetTypeInitialData.CONTRA_ASSET, getContraBitConfigList()),
+	WALLET(AssetTypeInitialData.CASH, getNormalBitConfigList())
 	;
 	
 	private AssetTypeInitialData assetTypeInitialData;
@@ -53,14 +53,15 @@ public enum AssetInitialData {
 		return assetList;
 	}
 	
-	private static List<Integer> getContraBitConfigIndexList() {
+	private static List<Integer> getContraBitConfigList() {
 		return Collections.emptyList();
 	}
 	
-	public static List<Integer> getNormalBitConfigIndexList() {
+	public static List<Integer> getNormalBitConfigList() {
 		var list = new ArrayList<Integer>();
-		list.add(AssetBitConfigIndex.ENABLE_DELETE.getBitIndex());
-		list.add(AssetBitConfigIndex.ENABLE_DISPLAY.getBitIndex());
+		list.add(AssetBitConfig.ENABLE_DELETE.getIndex());
+		list.add(AssetBitConfig.ENABLE_UPDATE.getIndex());
+		list.add(AssetBitConfig.ENABLE_DISPLAY.getIndex());
 		return list;
 	}
 }

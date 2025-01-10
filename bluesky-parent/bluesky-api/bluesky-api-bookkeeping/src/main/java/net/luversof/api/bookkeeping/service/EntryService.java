@@ -38,6 +38,10 @@ public class EntryService {
 		return entryBaseService.save(entry);
 	}
 	
+	public List<Entry> findByBookkeepingId(UUID bookkeepingId) {
+		return entryBaseService.findByBookkeepingId(bookkeepingId);
+	}
+	
 	public Entry updateEntry(Entry entry) {
 		// 대상 entry를 먼저 조회하여 있는지 확인한 후 update 할 항목들을 반영
 		var targetEntry = entryBaseService.findById(entry.getId()).orElseThrow(ErrorCode.NOT_EXIST_ENTRY::exception);
@@ -63,13 +67,11 @@ public class EntryService {
 		return entryBaseService.update(entry);
 	}
 	
-	public void deleteEntry(UUID id) {
-		entryBaseService.deleteById(id);
+	public void deleteEntry(Entry entry) {
+		// 삭제 해도 되는지 확인
+		entryBaseService.deleteById(entry.getId());
 	}
-	
-	public List<Entry> findByBookkeepingId(UUID bookkeepingId) {
-		return entryBaseService.findByBookkeepingId(bookkeepingId);
-	}
+
 	
 	// 기간별 검색도 있어야 할지도?
 	// 혹은 통계 검색은 별도로 구성

@@ -1,5 +1,7 @@
 package net.luversof.api.bookkeeping;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -8,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
+import net.luversof.api.bookkeeping.constant.AssetBitConfig;
 import net.luversof.api.bookkeeping.constant.TestConstant;
 import net.luversof.api.bookkeeping.domain.Asset;
 import net.luversof.api.bookkeeping.service.AssetService;
@@ -47,14 +50,18 @@ class AssetTest implements GeneralTest {
 		
 		var result = assetService.createAsset(asset);
 		log.debug("result : {}", result);
+		assertThat(result).isNotNull();
 	}
 	
 	@Test
 	void updateAsset() {
 		var assetList = assetService.findByBookkeepingId(bookkeepingId);
-		assetList.get(0);
+		var targetAsset = assetList.stream().filter(asset -> asset.getBitConfigIndexList().contains(AssetBitConfig.ENABLE_UPDATE.getIndex())).findAny().get();
 		
+		targetAsset.setName(targetAsset.getName() + " 수정");
 		
-		
+		var result = assetService.updateAsset(targetAsset);
+		assertThat(result).isNotNull();
 	}
+
 }
