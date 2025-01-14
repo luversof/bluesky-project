@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import lombok.Setter;
 import net.luversof.api.bookkeeping.constant.AssetBitConfig;
 import net.luversof.api.bookkeeping.constant.AssetInitialData;
-import net.luversof.api.bookkeeping.constant.ErrorCode;
+import net.luversof.api.bookkeeping.constant.BookkeepingError;
 import net.luversof.api.bookkeeping.domain.Asset;
 import net.luversof.api.bookkeeping.service.base.AssetBaseService;
 import net.luversof.api.bookkeeping.service.base.AssetTypeBaseService;
@@ -50,9 +50,9 @@ public class AssetService {
 	
 	public Asset updateAsset(Asset asset) {
 		
-		var targetAsset = assetBaseService.findById(asset.getId()).orElseThrow(ErrorCode.NOT_EXIST_ASSET::exception);
+		var targetAsset = assetBaseService.findById(asset.getId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
 		if (!targetAsset.getBookkeeping().getId().equals(asset.getBookkeeping().getId())) {
-			ErrorCode.INVALID_BOOKKEEPING_ID.throwException();
+			BookkeepingError.INVALID_BOOKKEEPING_ID.throwException();
 		}
 		
 		// bitConfig 체크를 해야 하는 경우는 어떻게 처리를 해야 할까?
@@ -60,7 +60,7 @@ public class AssetService {
 		
 		
 		if (!AssetBitConfig.ENABLE_UPDATE.hasIndexFromIndexList(bitConfigIndexList)) {
-			ErrorCode.INVALID_REQUEST.throwException();
+			BookkeepingError.INVALID_REQUEST.throwException();
 		}
 		
 		checkAsset(asset);
@@ -75,7 +75,7 @@ public class AssetService {
 	 */
 	public void deleteAsset(Asset asset) {
 		// 삭제 전 데이터가 올바른지 확인
-		var targetAsset = assetBaseService.findById(asset.getId()).orElseThrow(ErrorCode.NOT_EXIST_ASSET::exception);
+		var targetAsset = assetBaseService.findById(asset.getId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
 		// TODO bookkeeping.id, bookkeeping.userId를 전달받아 올바른지 체크
 		
 		// 해당 asset을 사용한 entry가 있는지 확인
@@ -84,7 +84,7 @@ public class AssetService {
 		// asset을 비노출 처리 하려면 entry에 대한 처리를 먼저 결정해야함.
 		// 일단 삭제 불가 에러 처리를 하려고 함
 		if (!isEnableDelete) {
-			ErrorCode.UNABLE_DELETE_ASSET.throwException();
+			BookkeepingError.UNABLE_DELETE_ASSET.throwException();
 		}
 		assetBaseService.delete(targetAsset);
 	}
@@ -97,15 +97,15 @@ public class AssetService {
 	 * @param asset
 	 */
 	private void checkAsset(Asset asset) {
-		var targetBookkeeping = bookkeepingBaseService.findById(asset.getBookkeeping().getId()).orElseThrow(ErrorCode.NOT_EXIST_BOOKKEEPING_ID::exception);
+		var targetBookkeeping = bookkeepingBaseService.findById(asset.getBookkeeping().getId()).orElseThrow(BookkeepingError.NOT_EXIST_BOOKKEEPING_ID::exception);
 		
 		if (asset.getAssetType() == null || asset.getAssetType().getId() == null) {
-			ErrorCode.NOT_EXIST_ASSETTYPE_ID.throwException();
+			BookkeepingError.NOT_EXIST_ASSETTYPE_ID.throwException();
 		}
 		
-		var targetAssetType = assetTypeBaseService.findById(asset.getAssetType().getId()).orElseThrow(ErrorCode.INVALID_ASSETTYPE_ID::exception);
+		var targetAssetType = assetTypeBaseService.findById(asset.getAssetType().getId()).orElseThrow(BookkeepingError.INVALID_ASSETTYPE_ID::exception);
 		if (!targetAssetType.getBookkeepingId().equals(targetBookkeeping.getId())) {
-			ErrorCode.INVALID_ASSETTYPE_ID.throwException();
+			BookkeepingError.INVALID_ASSETTYPE_ID.throwException();
 		}
 		
 	}

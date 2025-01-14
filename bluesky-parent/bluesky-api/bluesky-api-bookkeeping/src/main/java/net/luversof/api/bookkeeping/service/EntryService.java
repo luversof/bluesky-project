@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import lombok.Setter;
 import net.luversof.api.bookkeeping.constant.AssetTypeCode;
 import net.luversof.api.bookkeeping.constant.EntryTypeCode;
-import net.luversof.api.bookkeeping.constant.ErrorCode;
+import net.luversof.api.bookkeeping.constant.BookkeepingError;
 import net.luversof.api.bookkeeping.domain.Entry;
 import net.luversof.api.bookkeeping.service.base.AssetBaseService;
 import net.luversof.api.bookkeeping.service.base.BookkeepingBaseService;
@@ -44,11 +44,11 @@ public class EntryService {
 	
 	public Entry updateEntry(Entry entry) {
 		// 대상 entry를 먼저 조회하여 있는지 확인한 후 update 할 항목들을 반영
-		var targetEntry = entryBaseService.findById(entry.getId()).orElseThrow(ErrorCode.NOT_EXIST_ENTRY::exception);
+		var targetEntry = entryBaseService.findById(entry.getId()).orElseThrow(BookkeepingError.NOT_EXIST_ENTRY::exception);
 		
 		// update 요청의 경우 해당 entry의 정보가 변조되었는지 확인해야 함.
 		if (!targetEntry.getBookkeepingId().equals(entry.getBookkeepingId())) {
-			ErrorCode.INVALID_BOOKKEEPING_ID.throwException();
+			BookkeepingError.INVALID_BOOKKEEPING_ID.throwException();
 		}
 		
 		// 변경 가능 항목들을 모두 설정
@@ -83,19 +83,19 @@ public class EntryService {
 	private void checkEntry(Entry entry) {
 		// 요청 값이 올바른지 확인
 		// 1. bookkeeping이 올바른지 확인
-		var bookkeeping = bookkeepingBaseService.findById(entry.getBookkeepingId()).orElseThrow(ErrorCode.NOT_EXIST_BOOKKEEPING::exception);
+		var bookkeeping = bookkeepingBaseService.findById(entry.getBookkeepingId()).orElseThrow(BookkeepingError.NOT_EXIST_BOOKKEEPING::exception);
 		
 		// 2. incomeAsset 확인
-		var incomeAsset = assetBaseService.findById(entry.getIncomeAssetId()).orElseThrow(ErrorCode.NOT_EXIST_ASSET::exception);
+		var incomeAsset = assetBaseService.findById(entry.getIncomeAssetId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
 		if (!incomeAsset.getBookkeeping().equals(bookkeeping)) {
-			ErrorCode.INVALID_ASSET_ID.throwException();
+			BookkeepingError.INVALID_ASSET_ID.throwException();
 		}
 		
 		
 		// 3. outgoingAsset 확인 
-		var outgoingAsset = assetBaseService.findById(entry.getOutgoingAssetId()).orElseThrow(ErrorCode.NOT_EXIST_ASSET::exception);
+		var outgoingAsset = assetBaseService.findById(entry.getOutgoingAssetId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
 		if (!outgoingAsset.getBookkeeping().equals(bookkeeping)) {
-			ErrorCode.INVALID_ASSET_ID.throwException();
+			BookkeepingError.INVALID_ASSET_ID.throwException();
 		}
 
 		// 4. entryType 확인
@@ -103,23 +103,23 @@ public class EntryService {
 		// 수입/지출의 경우엔 entryType이 있는지, 있으면 올바른 type인지 확인해야함
 		boolean isTransfer = outgoingAsset.getAssetType().getCode() != AssetTypeCode.CONTRA_ASSET && incomeAsset.getAssetType().getCode() != AssetTypeCode.CONTRA_ASSET;
 		if (!isTransfer	&& (entry.getEntryType() == null || entry.getEntryType().getId() == null)) {
-			ErrorCode.NOT_EXIST_ENTRYTYPE.throwException();
+			BookkeepingError.NOT_EXIST_ENTRYTYPE.throwException();
 		}
 
 
 		if (!isTransfer) {
 			
-			var entryType = entryTypeBaseService.findById(entry.getEntryType().getId()).orElseThrow(ErrorCode.NOT_EXIST_ENTRYTYPE::exception);
+			var entryType = entryTypeBaseService.findById(entry.getEntryType().getId()).orElseThrow(BookkeepingError.NOT_EXIST_ENTRYTYPE::exception);
 
 			if (!entryType.getBookkeepingId().equals(bookkeeping.getId())) {
-				ErrorCode.INVALID_ENTRYTYPE.throwException();
+				BookkeepingError.INVALID_ENTRYTYPE.throwException();
 			}
 			
 			if (
 				(outgoingAsset.getAssetType().getCode() == AssetTypeCode.CONTRA_ASSET && entryType.getCode() != EntryTypeCode.INCOME) // 수입인 경우 entryType이 수입 관련 코드인지 확인
 				|| (incomeAsset.getAssetType().getCode() == AssetTypeCode.CONTRA_ASSET && entryType.getCode() != EntryTypeCode.OUTGOING) // 지출인 경우 entryType이 지출 관련 코드인지 확인
 			) {
-				ErrorCode.INVALID_ENTRYTYPECODE.throwException();
+				BookkeepingError.INVALID_ENTRYTYPECODE.throwException();
 			}
 		}
 	}

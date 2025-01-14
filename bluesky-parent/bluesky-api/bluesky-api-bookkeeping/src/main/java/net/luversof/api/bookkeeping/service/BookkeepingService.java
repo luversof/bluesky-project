@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.luversof.api.bookkeeping.constant.AssetInitialData;
 import net.luversof.api.bookkeeping.constant.AssetTypeInitialData;
 import net.luversof.api.bookkeeping.constant.EntryTypeInitialData;
-import net.luversof.api.bookkeeping.constant.ErrorCode;
+import net.luversof.api.bookkeeping.constant.BookkeepingError;
 import net.luversof.api.bookkeeping.domain.Bookkeeping;
 import net.luversof.api.bookkeeping.service.base.AssetBaseService;
 import net.luversof.api.bookkeeping.service.base.AssetTypeBaseService;
@@ -47,7 +47,7 @@ public class BookkeepingService {
 		
 		
 		if (!bookkeepingBaseService.findByUserId(bookkeeping.getUserId()).isEmpty()) {
-			ErrorCode.ALREADY_EXIST_BOOKKEEPING.throwException();
+			BookkeepingError.ALREADY_EXIST_BOOKKEEPING.throwException();
 		}
 		
 		var bookkeepingResult = bookkeepingBaseService.save(bookkeeping);
@@ -82,7 +82,7 @@ public class BookkeepingService {
 	public void deleteBookkeepingByBookkeepingId(UUID bookkeepingId) {
 		
 		if (bookkeepingBaseService.findById(bookkeepingId).isEmpty()) {
-			ErrorCode.NOT_EXIST_BOOKKEEPING.throwException();
+			BookkeepingError.NOT_EXIST_BOOKKEEPING.throwException();
 		}
 		
 		// delete entry

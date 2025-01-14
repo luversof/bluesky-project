@@ -21,6 +21,7 @@ import io.github.luversof.boot.exception.BlueskyException;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.api.bookkeeping.constant.AssetInitialData;
+import net.luversof.api.bookkeeping.constant.BookkeepingError;
 
 @Slf4j
 class SimpleTest {
@@ -124,5 +125,10 @@ class SimpleTest {
 			}
 		}
 		
+	}
+	
+	@Test
+	void errorCodeTest2() {
+		log.debug("error : {}", BookkeepingError.ALREADY_EXIST_BOOKKEEPING.getClass().getSimpleName()); 
 	}
 }
