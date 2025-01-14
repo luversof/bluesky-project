@@ -1,4 +1,4 @@
-package net.luversof.web.gate.feign.bookkeeping.client;
+package net.luversof.web.gate.bookkeeping.openfeign;
 
 import java.util.List;
 
@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-import net.luversof.web.gate.feign.bookkeeping.domain.Entry;
-import net.luversof.web.gate.feign.bookkeeping.domain.EntryRequestParam;
+import net.luversof.web.gate.bookkeeping.domain.Entry;
+import net.luversof.web.gate.bookkeeping.domain.EntryRequestParam;
 
 
 @FeignClient(value = "bluesky-api-bookkeeping", contextId = "api-bookkeeping-entry", path = "/api/bookkeeping/entry", url = "${gate.feign-client.url.bookkeeping:}")

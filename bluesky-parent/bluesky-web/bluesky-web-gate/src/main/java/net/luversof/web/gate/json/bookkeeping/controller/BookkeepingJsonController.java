@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
-import net.luversof.web.gate.feign.bookkeeping.client.BookkeepingClient;
-import net.luversof.web.gate.feign.bookkeeping.domain.Bookkeeping;
+import net.luversof.web.gate.bookkeeping.domain.Bookkeeping;
+import net.luversof.web.gate.bookkeeping.openfeign.BookkeepingClient;
 
 @RestController
 @RequestMapping(value = "/json/bookkeeping", produces = MediaType.APPLICATION_JSON_VALUE)

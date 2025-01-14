@@ -1,4 +1,4 @@
-package net.luversof.web.gate.feign.bookkeeping.client;
+package net.luversof.web.gate.bookkeeping.openfeign;
 
 import java.util.List;
 
@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import net.luversof.web.gate.feign.bookkeeping.domain.AssetGroup;
+import net.luversof.web.gate.bookkeeping.domain.AssetGroup;
 
 
 @FeignClient(value = "bluesky-api-bookkeeping", contextId = "api-bookkeeping-assetGroup", path = "/api/bookkeeping/assetGroup", url = "${gate.feign-client.url.bookkeeping:}")

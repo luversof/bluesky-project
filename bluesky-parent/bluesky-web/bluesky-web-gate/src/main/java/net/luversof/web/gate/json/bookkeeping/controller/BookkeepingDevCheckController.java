@@ -7,8 +7,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
-import net.luversof.web.gate.feign.bookkeeping.client.BookkeepingClient;
-import net.luversof.web.gate.feign.bookkeeping.domain.Bookkeeping;
+import net.luversof.web.gate.bookkeeping.domain.Bookkeeping;
+import net.luversof.web.gate.bookkeeping.openfeign.BookkeepingClient;
 
 @DevCheckController
 public class BookkeepingDevCheckController {

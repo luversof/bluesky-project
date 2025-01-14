@@ -1,4 +1,4 @@
-package net.luversof.web.gate.feign.bookkeeping.domain;
+package net.luversof.web.gate.bookkeeping.domain;
 
 import lombok.Builder;
 import net.luversof.web.gate.bookkeeping.constant.AssetGroupType;
