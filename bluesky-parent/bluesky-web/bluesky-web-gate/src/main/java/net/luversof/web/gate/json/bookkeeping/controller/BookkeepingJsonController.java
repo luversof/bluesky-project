@@ -1,6 +1,7 @@
 package net.luversof.web.gate.json.bookkeeping.controller;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -28,8 +29,11 @@ public class BookkeepingJsonController {
 	@BlueskyPreAuthorize
 	@PostMapping
 	public Bookkeeping create(@RequestBody Bookkeeping bookkeeping) {
-		bookkeeping.setUserId(UserUtil.getUserId());
-		return bookkeepingClient.create(bookkeeping);
+		return bookkeepingClient.create(
+			bookkeeping.toBuilder()
+				.userId(UUID.fromString(UserUtil.getUserId()))
+				.build()
+		);
 	}
 	
 	@GetMapping
@@ -40,14 +44,20 @@ public class BookkeepingJsonController {
 	@BlueskyPreAuthorize
 	@PutMapping
 	public Bookkeeping update(@RequestBody Bookkeeping bookkeeping) {
-		bookkeeping.setUserId(UserUtil.getUserId());
-		return bookkeepingClient.update(bookkeeping);
+		return bookkeepingClient.update(
+			bookkeeping.toBuilder()
+				.userId(UUID.fromString(UserUtil.getUserId()))
+				.build()
+		);
 	}
 	
 	@BlueskyPreAuthorize
 	@DeleteMapping
 	public void delete(@RequestBody Bookkeeping bookkeeping) {
-		bookkeeping.setUserId(UserUtil.getUserId());
-		bookkeepingClient.delete(bookkeeping);
+		bookkeepingClient.delete(
+			bookkeeping.toBuilder()
+				.userId(UUID.fromString(UserUtil.getUserId()))
+				.build()
+		);
 	}
 }

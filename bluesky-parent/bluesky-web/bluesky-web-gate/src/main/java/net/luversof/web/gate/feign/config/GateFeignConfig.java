@@ -4,6 +4,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.http.HttpHeaders;
 
 import feign.Feign;
 import feign.RequestInterceptor;
@@ -19,11 +20,13 @@ public class GateFeignConfig {
 	 */
 	@Bean
 	RequestInterceptor acceptLanguageHeaderRequestInterceptor () {
-		 return restTemplate -> restTemplate.header("Accept-Language", new String[]{ LocaleContextHolder.getLocale().toLanguageTag() });
+		 return restTemplate -> restTemplate.header(HttpHeaders.ACCEPT_LANGUAGE, new String[]{ LocaleContextHolder.getLocale().toLanguageTag() });
 	}
 	
 	@Bean
 	Feign.Builder feignBuilder(MeterRegistry meterRegistry) {
-		return Feign.builder().addCapability(new MicrometerCapability(meterRegistry));
+		return Feign
+				.builder()
+				.addCapability(new MicrometerCapability(meterRegistry));
 	}
 }

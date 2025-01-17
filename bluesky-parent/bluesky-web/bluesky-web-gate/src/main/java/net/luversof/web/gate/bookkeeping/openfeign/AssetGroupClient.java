@@ -10,22 +10,22 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import net.luversof.web.gate.bookkeeping.domain.AssetGroup;
+import net.luversof.web.gate.bookkeeping.domain.AssetType;
 
 
 @FeignClient(value = "bluesky-api-bookkeeping", contextId = "api-bookkeeping-assetGroup", path = "/api/bookkeeping/assetGroup", url = "${gate.feign-client.url.bookkeeping:}")
 public interface AssetGroupClient {
 
 	@PostMapping
-	AssetGroup create(@RequestBody AssetGroup assetGroup);
+	AssetType create(@RequestBody AssetType assetGroup);
 	
 	@GetMapping
-	List<AssetGroup> findByBookkeepingId(@RequestParam String bookkeepingId);
+	List<AssetType> findByBookkeepingId(@RequestParam String bookkeepingId);
 	
 	@PutMapping
-	AssetGroup update(@RequestBody AssetGroup assetGroup);
+	AssetType update(@RequestBody AssetType assetGroup);
 	
 	@DeleteMapping
-	void delete(@RequestBody AssetGroup assetGroup);
+	void delete(@RequestBody AssetType assetGroup);
 
 }
