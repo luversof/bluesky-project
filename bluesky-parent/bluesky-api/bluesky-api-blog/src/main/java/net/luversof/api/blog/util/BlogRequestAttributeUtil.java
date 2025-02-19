@@ -32,14 +32,7 @@ public class BlogRequestAttributeUtil extends RequestAttributeUtil {
 	
 	public static List<Blog> getBlogListByUserId(String userId) {
 		var attributeName = getAttributeName(BLOGLIST_BY_USERID, userId);
-		List<Blog> blogList = getRequestAttribute(attributeName);
-		if (blogList != null) {
-			return blogList;
-		}
-		
-		blogList = getBlogService().findByUserId(userId);
-		setRequestAttribute(BLOGLIST_BY_USERID, blogList);
-		return blogList;
+		return getList(attributeName, () -> getBlogService().findByUserId(userId));
 	}
 	
 }
