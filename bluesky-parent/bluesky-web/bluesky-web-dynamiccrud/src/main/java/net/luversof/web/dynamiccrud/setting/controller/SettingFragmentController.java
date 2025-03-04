@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.View;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 
 import io.github.luversof.boot.htmx.annotation.HtmxResponseHeader;
 import net.luversof.web.dynamiccrud.setting.constant.SettingConstant;
@@ -98,7 +97,7 @@ public class SettingFragmentController extends AbstractSettingFragmentController
 			@PathVariable String subMenuId,
 			@PathVariable String modalMode,
 			@RequestParam Map<String, String> dataMap,
-			Model model) throws JsonMappingException, JsonProcessingException {
+			Model model) throws JsonProcessingException {
 		addAttribute(model);
 		importModalBulk(AdminConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, modalMode, dataMap, model);
 	}

@@ -84,15 +84,14 @@ public class JSqlParserUtil {
 		if (plainSelect.getWhere() == null) {
 			return Collections.emptyList();
 		}
-		var whereClause = (BinaryExpression) plainSelect.getWhere();
-		
+
 		var columnList = new ArrayList<String>();
 		
-		whereClause.accept(new ExpressionVisitorAdapter() {
+		plainSelect.getWhere().accept(new ExpressionVisitorAdapter<Void>() {
 			@Override
-		    public void visit(Column column) {
+			public void visit(Column column) {
 				columnList.add(column.getColumnName());
-		    }
+			}
 		});
 		
 		return columnList;
@@ -107,15 +106,14 @@ public class JSqlParserUtil {
 		if (plainSelect.getWhere() == null) {
 			return Collections.emptyList();
 		}
-		var whereClause = (BinaryExpression) plainSelect.getWhere();
-		
+
 		var namedParameterNameList = new ArrayList<String>();
 		
-		whereClause.accept(new ExpressionVisitorAdapter() {
+		plainSelect.getWhere().accept(new ExpressionVisitorAdapter<Void>() {
 			@Override
-		    public void visit(JdbcNamedParameter parameter) {
+			public void visit(JdbcNamedParameter parameter) {
 				namedParameterNameList.add(parameter.getName());
-		    }
+			}
 		});
 		
 		return namedParameterNameList;
@@ -136,23 +134,23 @@ public class JSqlParserUtil {
 		
 		var expressionContainsTypeList = new ArrayList<String>();
 		
-		rightExpression.accept(new ExpressionVisitorAdapter() {
-		    
+		rightExpression.accept(new ExpressionVisitorAdapter<Void>() {
+			
 			@Override
-		    public void visit(JdbcNamedParameter parameter) {
-		    	expressionContainsTypeList.add("jdbcNamedParameter");
-		    }
-		    
-		    
-		    @Override
-		    public void visit(StringValue value) {
-		    	expressionContainsTypeList.add("StringValue");
-		    }
-		    
-		    @Override
-		    public void visit(LongValue value) {
-		    	expressionContainsTypeList.add("LongValue");
-		    }
+			public void visit(JdbcNamedParameter parameter) {
+				expressionContainsTypeList.add("jdbcNamedParameter");
+			}
+			
+			
+			@Override
+			public void visit(StringValue value) {
+				expressionContainsTypeList.add("StringValue");
+			}
+			
+			@Override
+			public void visit(LongValue value) {
+				expressionContainsTypeList.add("LongValue");
+			}
 		
 		});
 		
@@ -173,8 +171,7 @@ public class JSqlParserUtil {
 		var whereClause = (BinaryExpression) plainSelect.getWhere();
 		
 		// 바로 하위 자식이 대상인 경우 체크
-		if (whereClause.getLeftExpression() instanceof Column column
-				&& column.getColumnName().equals(columnName)) {
+		if (whereClause.getLeftExpression() instanceof Column column && column.getColumnName().equals(columnName)) {
 			return whereClause.getRightExpression();
 		}
 		
@@ -297,9 +294,9 @@ public class JSqlParserUtil {
 		var superExpression = (BinaryExpression) plainSelect.getWhere();
 		
 		// 바로 하위 자식이 대상인 경우 체크
-		if (superExpression.getLeftExpression() instanceof Column column) {
+		if (superExpression.getLeftExpression() instanceof Column) {
 			var namedParameterList = new ArrayList<String>();
-			superExpression.getRightExpression().accept(new ExpressionVisitorAdapter() {
+			superExpression.getRightExpression().accept(new ExpressionVisitorAdapter<Void>() {
 				@Override
 				public void visit(JdbcNamedParameter parameter) {
 					if (parameter.getName().equals(columnName)) {
@@ -316,10 +313,10 @@ public class JSqlParserUtil {
 		
 		// rightExpression이 대상인 경우 체크
 		if (superExpression.getRightExpression() instanceof BinaryExpression rightExpression 
-				&& rightExpression.getLeftExpression() instanceof Column column) {
+				&& rightExpression.getLeftExpression() instanceof Column) {
 			
 			var namedParameterList = new ArrayList<String>();
-			rightExpression.getRightExpression().accept(new ExpressionVisitorAdapter() {
+			rightExpression.getRightExpression().accept(new ExpressionVisitorAdapter<Void>() {
 				@Override
 				public void visit(JdbcNamedParameter parameter) {
 					if (parameter.getName().equals(columnName)) {
@@ -337,9 +334,9 @@ public class JSqlParserUtil {
 		
 		// leftExpression이 대상인 경우 체크
 		if (superExpression.getLeftExpression() instanceof BinaryExpression leftExpression
-				&& leftExpression.getLeftExpression() instanceof Column column) {
+				&& leftExpression.getLeftExpression() instanceof Column) {
 			var namedParameterList = new ArrayList<String>();
-			leftExpression.getRightExpression().accept(new ExpressionVisitorAdapter() {
+			leftExpression.getRightExpression().accept(new ExpressionVisitorAdapter<Void>() {
 				@Override
 				public void visit(JdbcNamedParameter parameter) {
 					if (parameter.getName().equals(columnName)) {
@@ -358,9 +355,9 @@ public class JSqlParserUtil {
 		// leftExpression.rightExpression이 대상인 경우 체크
 		if (superExpression.getLeftExpression() instanceof BinaryExpression superLeftExpression
 				&& superLeftExpression.getRightExpression() instanceof BinaryExpression rightExpression
-				&& rightExpression.getLeftExpression() instanceof Column column) {
+				&& rightExpression.getLeftExpression() instanceof Column) {
 			var namedParameterList = new ArrayList<String>();
-			rightExpression.getRightExpression().accept(new ExpressionVisitorAdapter() {
+			rightExpression.getRightExpression().accept(new ExpressionVisitorAdapter<Void>() {
 				@Override
 				public void visit(JdbcNamedParameter parameter) {
 					if (parameter.getName().equals(columnName)) {
@@ -391,10 +388,10 @@ public class JSqlParserUtil {
 		
 		// rightExpression이 대상인 경우 체크하고  LeftExpression을 상위로 올림
 		if (targetExpression.getRightExpression() instanceof BinaryExpression rightExpression 
-				&& rightExpression.getLeftExpression() instanceof Column column) {
+				&& rightExpression.getLeftExpression() instanceof Column) {
 			
 			var namedParameterList = new ArrayList<String>();
-			rightExpression.getRightExpression().accept(new ExpressionVisitorAdapter() {
+			rightExpression.getRightExpression().accept(new ExpressionVisitorAdapter<Void>() {
 				@Override
 				public void visit(JdbcNamedParameter parameter) {
 					if (parameter.getName().equals(columnName)) {
@@ -412,9 +409,9 @@ public class JSqlParserUtil {
 		
 		// leftExpression이 대상인 경우 rightExpression을 상위 leftExpression으로 올림
 		if (targetExpression.getLeftExpression() instanceof BinaryExpression leftExpression
-				&& leftExpression.getLeftExpression() instanceof Column column) {
+				&& leftExpression.getLeftExpression() instanceof Column) {
 			var namedParameterList = new ArrayList<String>();
-			leftExpression.getRightExpression().accept(new ExpressionVisitorAdapter() {
+			leftExpression.getRightExpression().accept(new ExpressionVisitorAdapter<Void>() {
 				@Override
 				public void visit(JdbcNamedParameter parameter) {
 					if (parameter.getName().equals(columnName)) {

@@ -270,7 +270,7 @@ class JSqlParserTest {
 		Set<Column> set = new HashSet<>();
 		
 		// 기존에 해당 컬럼에 대한 조건이 있으면 추가하지 않음
-		targetExpression.accept(new ExpressionVisitorAdapter() {
+		targetExpression.accept(new ExpressionVisitorAdapter<Void>() {
 
 			@Override
 			public void visit(Column column) {

@@ -10,13 +10,10 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.ui.Model;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.View;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.github.luversof.boot.exception.BlueskyException;
@@ -37,12 +34,12 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 	
 	@Override
 	public String list(
-			@PathVariable String adminProjectId,
-			@PathVariable String projectId, 
-			@PathVariable String mainMenuId, 
-			@PathVariable String subMenuId,
+			String adminProjectId,
+			String projectId, 
+			String mainMenuId, 
+			String subMenuId,
 			Pageable pageable, 
-			@RequestParam Map<String, String> paramMap,
+			Map<String, String> paramMap,
 			Model model) {
 		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
 		var subMenu = SettingUtil.getSubMenu();
@@ -74,23 +71,23 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 	
 	@Override
 	public String modalForm(
-			@PathVariable String adminProjectId,
-			@PathVariable String projectId, 
-			@PathVariable String mainMenuId, 
-			@PathVariable String subMenuId,
-			@PathVariable String modalMode,
+			String adminProjectId,
+			String projectId, 
+			String mainMenuId, 
+			String subMenuId,
+			String modalMode,
 			Model model) {
 		return "use/fragment/modalForm";
 	}
 	
 	@Override
 	public void createModal(
-			@PathVariable String adminProjectId,
-			@PathVariable String projectId, 
-			@PathVariable String mainMenuId, 
-			@PathVariable String subMenuId,
-			@PathVariable String modalMode,
-			@RequestParam Map<String, String> dataMap,
+			String adminProjectId,
+			String projectId, 
+			String mainMenuId, 
+			String subMenuId,
+			String modalMode,
+			Map<String, String> dataMap,
 			Model model) {
 		
 		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
@@ -109,12 +106,12 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 	
 	@Override
 	public void deleteModal(
-			@PathVariable String adminProjectId,
-			@PathVariable String projectId, 
-			@PathVariable String mainMenuId, 
-			@PathVariable String subMenuId,
-			@PathVariable String modalMode,
-			@RequestParam MultiValueMap<String, String> dataMap,
+			String adminProjectId,
+			String projectId, 
+			String mainMenuId, 
+			String subMenuId,
+			String modalMode,
+			MultiValueMap<String, String> dataMap,
 			Model model) {
 		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
 		useService.delete(settingParameter, dataMap);
@@ -122,24 +119,24 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 	
 	@Override
 	public String modalBulkForm(
-			@PathVariable String adminProjectId,
-			@PathVariable String projectId, 
-			@PathVariable String mainMenuId, 
-			@PathVariable String subMenuId,
-			@PathVariable String modalMode,
+			String adminProjectId,
+			String projectId, 
+			String mainMenuId, 
+			String subMenuId,
+			String modalMode,
 			Model model) {
 		return "use/fragment/modalBulkForm";
 	}
 	
 	@Override
 	public void importModalBulk(
-			@PathVariable String adminProjectId,
-			@PathVariable String projectId, 
-			@PathVariable String mainMenuId, 
-			@PathVariable String subMenuId,
-			@PathVariable String modalMode,
-			@RequestParam Map<String, String> dataMap,
-			Model model) throws JsonMappingException, JsonProcessingException {
+			String adminProjectId,
+			String projectId, 
+			String mainMenuId, 
+			String subMenuId,
+			String modalMode,
+			Map<String, String> dataMap,
+			Model model) throws JsonProcessingException {
 		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
 		var dataMapList = objectMapper.readValue(dataMap.get("bulkData"), new TypeReference<List<Map<String, String>>>() {});
 		
@@ -150,11 +147,11 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 	
 	@Override
 	public View excel(
-			@PathVariable String adminProjectId,
-			@PathVariable String projectId, 
-			@PathVariable String mainMenuId, 
-			@PathVariable String subMenuId,
-			@RequestParam Map<String, String> paramMap,
+			String adminProjectId,
+			String projectId, 
+			String mainMenuId, 
+			String subMenuId,
+			Map<String, String> paramMap,
 			Pageable pageable,
 			Model model) {
 		// 다운로드의 페이지 사이즈는 어떻게 처리할지 고민 필요. 일단 기존 호출 방식을 활용

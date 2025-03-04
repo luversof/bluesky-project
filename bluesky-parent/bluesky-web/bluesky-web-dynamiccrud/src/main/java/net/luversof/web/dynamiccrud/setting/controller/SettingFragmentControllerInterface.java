@@ -8,7 +8,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.servlet.View;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 
 /**
  * 동일 기능처리를 여러 path로 처리하기 위해 구성한 interface
@@ -84,7 +83,7 @@ public interface SettingFragmentControllerInterface {
 			String subMenuId,
 			String modalMode,
 			Map<String, String> dataMap,
-			Model model) throws JsonMappingException, JsonProcessingException;
+			Model model) throws JsonProcessingException;
 	
 	/**
 	 * 엑셀 다운로드
