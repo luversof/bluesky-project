@@ -3,7 +3,6 @@ package net.luversof.web.dynamiccrud.setting.controller;
 import java.util.List;
 
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
@@ -25,10 +24,10 @@ public abstract class AbstractSettingViewController implements SettingViewContro
 	
 	@Override
 	public String view(
-			@PathVariable String adminProjectId,
-			@PathVariable String projectId, 
-			@PathVariable String mainMenuId, 
-			@PathVariable String subMenuId,
+			String adminProjectId,
+			String projectId, 
+			String mainMenuId, 
+			String subMenuId,
 			Model model) {
 		
 		checkPathVariable(adminProjectId, projectId, mainMenuId, subMenuId);
