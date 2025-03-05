@@ -22,9 +22,4 @@ public class SettingViewController extends AbstractSettingViewController {
 		return view(AdminConstant.ADMIN_PROJECT_ID_VALUE, projectId, mainMenuId, subMenuId, model);
 	}
 
-	@Override
-	protected void checkPathVariable(String adminProjectId, String projectId, String mainMenuId, String subMenuId) {
-		
-	}
-			
 }

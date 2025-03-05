@@ -51,6 +51,8 @@ public class UseTest implements GeneralTest {
 
 		var fieldList = SettingUtil.getDbFieldList(adminProjectId, projectId, mainMenuId, subMenuId);
 		assertThat(fieldList).isNotEmpty();
+		
+		var subMenu = SettingUtil.getSubMenu(adminProjectId, projectId, mainMenuId, subMenuId);
 
 		var pageable = PageRequest.of(0, 20);
 
@@ -58,7 +60,7 @@ public class UseTest implements GeneralTest {
 
 		var page = useService.find(settingParameter, pageable, paramMap);
 
-		var contentInfo = new ContentInfo(page.getContent(), fieldList);
+		var contentInfo = new ContentInfo(subMenu.getDbType(), page.getContent(), fieldList);
 		assertThat(contentInfo).isNotNull();
 
 		log.debug("contentInfo processedContentMapList : {}",

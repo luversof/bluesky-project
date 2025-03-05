@@ -62,7 +62,7 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 		model.addAttribute("page", page);
 		
 		// 응답 데이터 목록 관리 객체
-		model.addAttribute("contentInfo", new ContentInfo(page.getContent(), dbFieldList));
+		model.addAttribute("contentInfo", new ContentInfo(subMenu.getDbType(), page.getContent(), dbFieldList));
 		
 		// 여기도 필드 정보 기준으로 출력 처리를 해야 할꺼 같은데?
 		

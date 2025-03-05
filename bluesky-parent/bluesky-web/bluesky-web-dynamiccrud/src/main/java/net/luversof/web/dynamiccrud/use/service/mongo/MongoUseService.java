@@ -77,13 +77,13 @@ public class MongoUseService implements UseService {
 		if (selectCommand.containsKey("filter")) {
 			var result = database.runCommand(selectCommand);
 			@SuppressWarnings("unchecked")
-			List<Map<String, Object>> list = (List<Map<String, Object>>) ((Document) result.get("cursor")).get("firstBatch");
+			var list = (List<Map<String, Object>>) ((Document) result.get("cursor")).get("firstBatch");
 			return new PageImpl<>(list, pageable, list.size());
 		}
 
 		// 검색 조건 추가
 		var targetFieldList = dbFieldList.stream().filter(x -> (DbFieldEnable.REQUIRED.equals(x.getEnableSearch()) || DbFieldEnable.ENABLED.equals(x.getEnableSearch())) && dataMap.containsKey(x.getColumnId()) && StringUtils.hasText(dataMap.get(x.getColumnId()))).toList();
-		Document filter = new Document();
+		var filter = new Document();
 		if (!targetFieldList.isEmpty()) {
 			for (var targetField : targetFieldList) {
 				Object value = null;
@@ -104,7 +104,7 @@ public class MongoUseService implements UseService {
 		var result = database.runCommand(selectCommand);
 		
 		@SuppressWarnings("unchecked")
-		List<Map<String, Object>> list = (List<Map<String, Object>>) result.get("cursor", Document.class).get("firstBatch");
+		var list = (List<Map<String, Object>>) result.get("cursor", Document.class).get("firstBatch");
 		
 		// 첫페이지 호출에 pageSize보다 결과 값이 적은 경우 count 호출이 불필요함
 		if (pageable.getOffset() == 0 && list.size() < pageable.getPageSize()) {
@@ -114,7 +114,7 @@ public class MongoUseService implements UseService {
 		// count 조회
 		long countDocuments = database.getCollection(selectCommand.getString("find")).countDocuments(filter);
 
-		return new PageImpl<Map<String, Object>>(list, pageable, countDocuments);
+		return new PageImpl<>(list, pageable, countDocuments);
 	}
 
 	@Override
@@ -133,13 +133,13 @@ public class MongoUseService implements UseService {
 	public Object delete(SettingParameter settingParameter, MultiValueMap<String, String> dataMap) {
 		var dbQuery = SettingUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.DELETE);
 		
-		List<Map<String, String>> dataMapList = new ArrayList<>();
+		var dataMapList = new ArrayList<Map<String, String>>();
 		
 		dataMap.forEach((key, value) -> {
 			// 갯수 만큼 맵을 추가한다.
 			if (dataMapList.isEmpty()) {
 				for (int i = 0; i < value.size() ; i++) {
-					dataMapList.add(new HashMap<String, String>());
+					dataMapList.add(new HashMap<>());
 				}
 			}
 			
@@ -148,7 +148,7 @@ public class MongoUseService implements UseService {
 			}
 		});
 		
-		List<Object> resultList = new ArrayList<Object>();
+		var resultList = new ArrayList<Object>();
 		dataMapList.forEach(map -> {
 			Object result = runCommand(dbQuery, map);
 			resultList.add(result);
@@ -162,8 +162,7 @@ public class MongoUseService implements UseService {
 		// 등록된 queryString 문자열 변환 처리
 		var formattedQueryString = SettingStringUtil.format(dbQuery.getQueryString(), dataMap);
 		var command = Document.parse(formattedQueryString);
-		Document result = database.runCommand(command);
-		return result;
+		return database.runCommand(command);
 	}
 
 }

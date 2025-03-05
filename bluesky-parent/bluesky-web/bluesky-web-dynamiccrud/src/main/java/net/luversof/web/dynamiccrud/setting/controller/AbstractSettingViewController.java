@@ -14,13 +14,13 @@ import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 public abstract class AbstractSettingViewController implements SettingViewControllerInterface {
 
 	/**
-	 * 동일 기능에 대해 path 분기 처리를 하기
+	 * path 체크
 	 * @param adminProjectId
 	 * @param projectId
 	 * @param mainMenuId
 	 * @param subMenuId
 	 */
-	protected abstract void checkPathVariable(String adminProjectId, String projectId, String mainMenuId, String subMenuId);
+	protected void checkPathVariable(String adminProjectId, String projectId, String mainMenuId, String subMenuId) {};
 	
 	@Override
 	public String view(

@@ -848,7 +848,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				MAINMENU_ID_VALUE,
 				SUBMENU_ID_VALUE_DBFIELD,
 				"columnFormat",
-				"포맷",
+				"포맷 (Spel Expression)",
 				DbFieldColumnType.STRING,
 				(short) 17,
 				"columnGroup3",
@@ -863,7 +863,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				null,
 				DbFieldEnable.ENABLED,
 				DbFieldEnable.ENABLED,
-				"현재 컬럼타입이 SPEL인 경우에만 사용하도록 구현된 상태입니다.",
+				"컬럼타입이 SPEL인 경우 화면 처리를 위해 사용되는 값입니다.",
 				null
 			);
 			dbFieldList.add(field);

@@ -202,8 +202,8 @@ public class ThymeleafUtil {
 			getAttribute(SettingConstant.SUBMENU_ID));
 	}
 	
+	private Random random = new Random();
 	public static String getRandomTheme(String...themes) {
-		Random random = new Random();
 		var themeList = List.of(themes);
 		return themeList.get(random.nextInt(themeList.size()));
 	}
@@ -213,9 +213,6 @@ public class ThymeleafUtil {
 	}
 
 	public UriComponentsBuilder getUriComponentsBuilder() {
-        return ServletUriComponentsBuilder
-        		.fromCurrentRequest()
-        		.host(null)
-        		.scheme(null);
-    }
+		return ServletUriComponentsBuilder.fromCurrentRequest().host(null).scheme(null);
+	}
 }

@@ -1,11 +1,14 @@
 package net.luversof.web.dynamiccrud.use.domain;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.util.StringUtils;
 
 import io.github.luversof.boot.expression.SpelParserUtil;
@@ -13,12 +16,18 @@ import lombok.Getter;
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldVisible;
+import net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType;
 
 /**
  * 응답할 데이터 목록을 가공한 정보를 담고 있는 객체
  * 적당한 이름이 생각나지 않네...
  */
 public class ContentInfo {
+	
+	/**
+	 * 데이터 storage 정보
+	 */
+	private SubMenuDbType dbType;
 	
 	/**
 	 * 키 정보를 담고 있는 맵
@@ -45,7 +54,9 @@ public class ContentInfo {
 	 * @param contentMapList 대상 데이터 목록
 	 * @param dbFieldList 대상 속성 정의 목록
 	 */
-	public ContentInfo(List<Map<String, Object>> contentMapList, List<DbField> dbFieldList) {
+	public ContentInfo(SubMenuDbType dbType, List<Map<String, Object>> contentMapList, List<DbField> dbFieldList) {
+		
+		this.dbType = dbType;
 		
 		// 데이터가 없으면 계산을 할 수 없음.
 		if (contentMapList == null || contentMapList.isEmpty()) {
@@ -115,7 +126,7 @@ public class ContentInfo {
 					originContentMap.put(contentKeyInfo.originKey(), value);
 					processedContentMap.put(contentKeyInfo.key(), value);
 				} else {
-					processedContentMap.put(contentKeyInfo.key(), getProcessedValue(originContentMap.get(contentKeyInfo.originKey()), dbField));
+					processedContentMap.put(contentKeyInfo.key(), getProcessedValue(originContentMap, contentKeyInfo.originKey(), dbField));
 				}
 			}
 			processedContentMapList.add(processedContentMap);
@@ -128,9 +139,21 @@ public class ContentInfo {
 	 * @param dbField
 	 * @return
 	 */
-	private Object getProcessedValue(Object originValue, DbField dbField) {
+	private Object getProcessedValue(Map<String, Object> originContentMap, String originKey, DbField dbField) {
+		var originValue = originContentMap.get(originKey);
 		if (dbField == null) {
 			return originValue;
+		}
+		
+		/**
+		 * mongoDB의 Date 값의 경우 ISODate 로 반환되는데 화면 처리를 위해 dateFormat을 한 후 원본 값도 수정
+		 */
+		if (dbType == SubMenuDbType.Mongo && dbField.getColumnType() == DbFieldColumnType.DATE && originValue instanceof Date date) {
+			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+			dateFormat.setTimeZone(LocaleContextHolder.getTimeZone());
+			var formattedVvalue = dateFormat.format(date);
+			originContentMap.put(originKey, formattedVvalue);
+			return formattedVvalue;
 		}
 		
 		if (!StringUtils.hasText(dbField.getColumnPreset())) {

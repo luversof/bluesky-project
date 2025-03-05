@@ -6,8 +6,10 @@
 <dialog id="modal" class="modal"
 	data-th-with="
 		thymeleafUtil = ${T(net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil)},
+		subMenu = ${thymeleafUtil.getSubMenu()},
 		dbFieldList = ${thymeleafUtil.getDbFieldList()},
 		map = ${T(java.util.Map)},
+		subMenuDbType = ${T(net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType)},
 		dbFieldColumnType = ${T(net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType)}
 	">
 	<div class="modal-box max-w-xl">
