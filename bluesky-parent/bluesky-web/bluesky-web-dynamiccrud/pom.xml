@@ -113,7 +113,7 @@
 		<dependency>
 			<groupId>org.webjars.npm</groupId>
 			<artifactId>htmx.org</artifactId>
-			<version>1.9.12</version>
+			<version>2.0.4</version>
 		</dependency>
 		<!-- (e) webjars -->
 		

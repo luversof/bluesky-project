@@ -848,7 +848,7 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
 				MAINMENU_ID_VALUE,
 				SUBMENU_ID_VALUE_DBFIELD,
 				"columnFormat",
-				"포맷 (Spel Expression)",
+				"포맷 (Spel 표현식)",
 				DbFieldColumnType.STRING,
 				(short) 17,
 				"columnGroup3",
