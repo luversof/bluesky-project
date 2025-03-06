@@ -158,10 +158,10 @@
 			</h1>
 			<div class="collapse-content"> 
 				<h2 class="m-0">Modal Form</h2>
-				<div class="modal-box max-w-xl">
+				<div class="modal-box max-w-xl opacity-100">
 					<div class="join w-full m-1" >
 						<div class="btn btn-sm join-item w-1/3">Text</div>
-						<input type="text" class="input input-sm input-bordered join-item w-full"
+						<input type="text" class="input input-sm join-item"
 							 name="inputtext"
 							 required="true"
 							 placeholder="placeholder 문구"
@@ -171,12 +171,12 @@
 					<!--/*-->
 					<div class="flex w-full m-1">
 						<div class="w-1/3 text-center self-center bg-base-300">Text</div>						
-						<input type="text" class="input input-sm input-bordered w-full" placeholder="Text 제목 div 형태. 버튼 방식이 나은듯?"/>
+						<input type="text" class="input input-sm" placeholder="Text 제목 div 형태. 버튼 방식이 나은듯?"/>
 					</div>
 					<!--*/-->
 					<div class="join w-full m-1" >
 						<div class="btn btn-sm join-item w-1/3 required">Number</div>
-						<input type="number" class="input input-sm input-bordered join-item w-full invalid:border-red-500"
+						<input type="number" class="input input-sm join-item invalid:border-red-500"
 							 name="inputnumber"
 							 required="true"
 							 placeholder="placeholder 문구"
@@ -186,7 +186,7 @@
 					<div class="w-full tooltip" data-tip="전체를 tooltip으로 처리하면 select input 활성화(혹은 포커스) 시 툴팁 레이어가 종료되지 않아 문제가 있음">
 						<div class="join w-full m-1">
 								<div class="btn btn-sm join-item w-1/3">ToolTip</div>
-								<input type="text" class="input input-sm input-bordered join-item w-full"						
+								<input type="text" class="input input-sm join-item"						
 									 name="inputtext"
 									 required="true"
 									 placeholder="툴팁 - 전체 영역 지정"
@@ -195,25 +195,21 @@
 					</div>
 					<div class="join w-full m-1" >
 						<div class="btn btn-sm join-item w-1/3">ToolTip</div>
-						<input type="text" class="input input-sm input-bordered join-item w-full"
+						<input type="text" class="input input-sm join-item"
 							 name="inputtext"
 							 required="true"
 							 placeholder="툴팁 - 맨 끝에 span 지정"
 						/>
 						<span class="ml-2 tooltip tooltip-left" data-tip="툴팁의 내용 줄바꿈 지정이 안되는 문제 있음">
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
-							</svg>
+							<th-block data-th-replace="~{_components/icon :: help}" />
 						</span>
 					</div>
 					<div class="join w-full m-1" >
 						<div class="btn btn-sm join-item w-1/3 tooltip tooltip-right" data-tip="툴팁이 길어지면 툴팁 내용이 잘리거나 좌우 스크롤이 생기는 문제가 있고 왜 align-middle이 아닌거지?">
 							ToolTip
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 inline">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
-							</svg>
+							<th-block data-th-replace="~{_components/icon :: help}" />
 						</div>
-						<input type="text" class="input input-sm input-bordered join-item w-full"
+						<input type="text" class="input input-sm join-item"
 							 name="inputtext"
 							 required="true"
 							 placeholder="툴팁 - 제목 뒤에 지정"
@@ -222,29 +218,25 @@
 					<!--*/-->
 					<div class="join w-full m-1" >
 						<div class="btn btn-sm join-item w-1/3">ToolTip</div>
-						<input type="text" class="input input-sm input-bordered join-item w-full"
+						<input type="text" class="input input-sm join-item"
 							 name="inputtext"
 							 required="true"
 							 placeholder="툴팁 테스트"
 						/>
 						<button class="btn btn-sm btn-ghost join-item tooltip tooltip-left" data-tip="툴팁의 내용 줄바꿈 지정이 안되는 문제 있음">
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
-							</svg>
+							<th-block data-th-replace="~{_components/icon :: help (size='24px')}" />
 						</button>
 					</div>
 					<!--/*-->
 					<div class="indicator w-full m-1">
 						<span class="indicator-item">
 							<div class="tooltip tooltip-left" data-tip="툴팁의 내용 줄바꿈 지정이 안되는 문제 있음">
-								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
-								</svg>
+								<th-block data-th-replace="~{_components/icon :: help (size='24px')}" />
 							</div>
 						</span>
 						<div class="join w-full" >
 							<div class="btn btn-sm join-item w-1/3">ToolTip</div>
-							<input type="text" class="input input-sm input-bordered join-item w-full"
+							<input type="text" class="input input-sm join-item"
 								 name="inputtext"
 								 required="true"
 								 placeholder="툴팁 테스트"
@@ -263,7 +255,7 @@
 					<!--*/-->
 					<div class="join w-full m-1">
 						<div class="btn btn-sm join-item w-1/3" >Toggle</div>						
-						<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
+						<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2" name="토글" />
 					</div>
 					<!--/*-->
 					<div class="join w-full m-1">
@@ -279,7 +271,7 @@
 					<!--*/-->
 					<div class="join w-full m-1">
 						<div class="btn btn-sm join-item w-1/3" >Select</div>						
-						<select class="select select-sm select-bordered join-item w-full">
+						<select class="select select-sm join-item">
 							<option>Select</option>
 							<option>1</option>
 							<option>2</option>
@@ -288,7 +280,7 @@
 					</div>
 					<div class="join w-full m-1" >
 						<div class="btn btn-sm join-item w-1/3 min-h-full">TextArea</div>
-						<textarea class="textarea textarea-sm textarea-bordered join-item w-full"
+						<textarea class="textarea textarea-sm join-item"
 							 name="testname"
 							 required="true"
 							 placeholder="textArea는 어떻게 설정하나"
@@ -296,13 +288,13 @@
 					</div>
 					<div class="join w-full m-1" >
 						<div class="btn btn-sm join-item w-1/3">Text + Text</div>
-						<input type="text" class="input input-sm input-bordered join-item w-full"
+						<input type="text" class="input input-sm join-item"
 							 name="inputtext"
 							 required="true"
 							 placeholder="placeholder 문구"
 							 maxlength="15"
 						/>
-						<input type="text" class="input input-sm input-bordered join-item w-full"
+						<input type="text" class="input input-sm join-item"
 							 name="inputtext"
 							 required="true"
 							 placeholder="placeholder 문구"
@@ -311,13 +303,13 @@
 					</div>
 					<div class="join w-full m-1" >
 						<div class="btn btn-sm join-item w-1/3">Text + Select</div>
-						<input type="text" class="input input-sm input-bordered join-item w-full"
+						<input type="text" class="input input-sm join-item"
 							 name="inputtext"
 							 required="true"
 							 placeholder="placeholder 문구"
 							 maxlength="15"
 						/>
-						<select class="select select-sm select-bordered join-item">
+						<select class="select select-sm join-item">
 							<option>Select</option>
 							<option>1</option>
 							<option>2</option>
@@ -326,29 +318,29 @@
 					</div>
 					<div class="join w-full m-1" >
 						<div class="btn btn-sm join-item w-1/3">Text + Toggle</div>
-						<input type="text" class="input input-sm input-bordered join-item w-full"
+						<input type="text" class="input input-sm join-item"
 							 name="inputtext"
 							 required="true"
 							 placeholder="placeholder 문구"
 							 maxlength="15"
 						/>
-						<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
+						<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2" name="토글" />
 					</div>
 					<div class="join w-full m-1" >
 						<div class="btn btn-sm join-item w-1/3">Text + Select + Select</div>
-						<input type="text" class="input input-sm input-bordered join-item w-full"
+						<input type="text" class="input input-sm join-item"
 							 name="inputtext"
 							 required="true"
 							 placeholder="placeholder 문구"
 							 maxlength="15"
 						/>
-						<select class="select select-sm select-bordered join-item">
+						<select class="select select-sm join-item">
 							<option>Select</option>
 							<option>1</option>
 							<option>2</option>
 							<option>3</option>
 						</select>
-						<select class="select select-sm select-bordered join-item">
+						<select class="select select-sm join-item">
 							<option>Select</option>
 							<option>1</option>
 							<option>2</option>
@@ -357,287 +349,172 @@
 					</div>
 					<div class="join w-full m-1" >
 						<div class="btn btn-sm join-item w-1/3">Text + Select + Toggle</div>
-						<input type="text" class="input input-sm input-bordered join-item w-full"
+						<input type="text" class="input input-sm join-item"
 							 name="inputtext"
 							 required="true"
 							 placeholder="placeholder 문구"
 							 maxlength="15"
 						/>
-						<select class="select select-sm select-bordered join-item">
+						<select class="select select-sm join-item">
 							<option>Select</option>
 							<option>1</option>
 							<option>2</option>
 							<option>3</option>
 						</select>
-						<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
+						<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2" name="토글" />
 					</div>
 					<div class="flex">
-						<label class="form-control w-full">
-							<div class="label">
-								<span class="label-text required">Text</span>
-							</div>
-							<div class="join">
-								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-							</div>
-						</label>
+						<fieldset class="fieldset w-full">
+							<legend class="fieldset-legend">Text</legend>
+							<input type="text" placeholder="Type here" class="input input-sm w-full" />
+						</fieldset>
 					</div>
 					<div class="flex">
-						<label class="form-control w-full">
-							<div class="label">
-								<span class="label-text required">Text</span>
-							</div>
-							<div class="join">
-								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-							</div>
-						</label>
-						<label class="form-control w-full">
-							<div class="label">
-								<span class="label-text required">Text</span>
-							</div>
-							<div class="join">
-								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-							</div>
-						</label>
+						<fieldset class="fieldset w-full">
+							<legend class="fieldset-legend">Text</legend>
+							<input type="text" placeholder="Type here" class="input input-sm" />
+						</fieldset>
+						<fieldset class="fieldset w-full">
+							<legend class="fieldset-legend">Text</legend>
+							<input type="text" placeholder="Type here" class="input input-sm" />
+						</fieldset>
 					</div>
 					<div class="flex">
-						<label class="form-control w-full">
-							<div class="label">
-								<span class="label-text required">Text</span>
-							</div>
-							<div class="join">
-								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-							</div>
-						</label>
-						<label class="form-control w-full">
-							<div class="label">
-								<span class="label-text required">Select</span>
-							</div>
-							<div class="join">
-								<select class="select select-sm select-bordered join-item w-full">
-									<option>Select</option>
-									<option>1</option>
-									<option>2</option>
-									<option>3</option>
-								</select>
-							</div>
-						</label>
+						<fieldset class="fieldset w-full">
+							<legend class="fieldset-legend">Text</legend>
+							<input type="text" placeholder="Type here" class="input input-sm" />
+						</fieldset>
+						<fieldset class="fieldset w-full">
+							<legend class="fieldset-legend">Select</legend>
+							<select class="select select-sm">
+								<option>Select</option>
+								<option>1</option>
+								<option>2</option>
+								<option>3</option>
+							</select>
+						</fieldset>
 					</div>
 					<div class="flex">
-						<label class="form-control w-full">
-							<div class="label">
-								<span class="label-text required">Text</span>
-							</div>
-							<div class="join">
-								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-							</div>
-						</label>
-						<label class="form-control w-full">
-							<div class="label">
-								<span class="label-text required">Toggle</span>
-							</div>
-							<div class="join">
-								<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
-							</div>
-						</label>
+						<fieldset class="fieldset w-full">
+							<legend class="fieldset-legend">Text</legend>
+							<input type="text" placeholder="Type here" class="input input-sm" />
+						</fieldset>
+						<fieldset class="fieldset w-full">
+							<legend class="fieldset-legend">Toggle</legend>
+							<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2" name="토글" />
+						</fieldset>
 					</div>
 					<div class="flex">
-						<label class="form-control w-full">
-							<div class="label">
-								<span class="label-text required">Text</span>
-							</div>
-							<div class="join">
-								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-							</div>
-						</label>
-						<label class="form-control w-full">
-							<div class="label">
-								<span class="label-text required">Select</span>
-							</div>
-							<div class="join">
-								<select class="select select-sm select-bordered join-item w-full">
-									<option>Select</option>
-									<option>1</option>
-									<option>2</option>
-									<option>3</option>
-								</select>
-							</div>
-						</label>
-						<label class="form-control w-full">
-							<div class="label">
-								<span class="label-text required">Select</span>
-							</div>
-							<div class="join">
-								<select class="select select-sm select-bordered join-item w-full">
-									<option>Select</option>
-									<option>1</option>
-									<option>2</option>
-									<option>3</option>
-								</select>
-							</div>
-						</label>
+						<fieldset class="fieldset w-full">
+							<legend class="fieldset-legend">Text</legend>
+							<input type="text" placeholder="Type here" class="input input-sm" />
+						</fieldset>
+						<fieldset class="fieldset w-full">
+							<legend class="fieldset-legend">Select</legend>
+							<select class="select select-sm">
+								<option>Select</option>
+								<option>1</option>
+								<option>2</option>
+								<option>3</option>
+							</select>
+						</fieldset>
+						<fieldset class="fieldset w-full">
+							<legend class="fieldset-legend">Select</legend>
+							<select class="select select-sm">
+								<option>Select</option>
+								<option>1</option>
+								<option>2</option>
+								<option>3</option>
+							</select>
+						</fieldset>
 					</div>
 					<div class="flex">
-						<label class="form-control w-full">
-							<div class="label">
-								<span class="label-text required">Text</span>
-							</div>
-							<div class="join">
-								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-							</div>
-						</label>
-						<label class="form-control w-full">
-							<div class="label">
-								<span class="label-text required">Select</span>
-							</div>
-							<div class="join">
-								<select class="select select-sm select-bordered join-item w-full">
-									<option>Select</option>
-									<option>1</option>
-									<option>2</option>
-									<option>3</option>
-								</select>
-							</div>
-						</label>
-						<label class="form-control w-full">
-							<div class="label">
-								<span class="label-text required">Toggle</span>
-							</div>
-							<div class="join">
-								<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
-							</div>
-						</label>
+						<fieldset class="fieldset w-full">
+							<legend class="fieldset-legend">Text</legend>
+							<input type="text" placeholder="Type here" class="input input-sm" />
+						</fieldset>
+						<fieldset class="fieldset w-full">
+							<legend class="fieldset-legend">Select</legend>
+							<select class="select select-sm">
+								<option>Select</option>
+								<option>1</option>
+								<option>2</option>
+								<option>3</option>
+							</select>
+						</fieldset>
+						<fieldset class="fieldset w-full">
+							<legend class="fieldset-legend">Toggle</legend>
+							<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2" name="토글" />
+						</fieldset>
 					</div>
 					<div class="flex flex-wrap">
-						<label class="form-control basis-1/3 grow">
-							<div class="label">
-								<span class="label-text required">Text</span>
-							</div>
-							<div class="join">
-								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-							</div>
-						</label>
-						<label class="form-control basis-1/3 grow">
-							<div class="label">
-								<span class="label-text required">Text</span>
-							</div>
-							<div class="join">
-								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-							</div>
-						</label>
-						<label class="form-control basis-1/3 grow">
-							<div class="label">
-								<span class="label-text required">Text</span>
-							</div>
-							<div class="join">
-								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-							</div>
-						</label>
-						<label class="form-control basis-1/3 grow">
-							<div class="label">
-								<span class="label-text required">Text</span>
-							</div>
-							<div class="join">
-								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-							</div>
-						</label>
-						<label class="form-control basis-1/3 grow">
-							<div class="label">
-								<span class="label-text required">Text</span>
-							</div>
-							<div class="join">
-								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-							</div>
-						</label>
-						<label class="form-control basis-1/3 grow">
-							<div class="label">
-								<span class="label-text required">Text</span>
-							</div>
-							<div class="join">
-								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-							</div>
-						</label>
-						<label class="form-control basis-1/3 grow">
-							<div class="label">
-								<span class="label-text required">Text</span>
-							</div>
-							<div class="join">
-								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-							</div>
-						</label>
-						<label class="form-control basis-1/3 grow">
-							<div class="label">
-								<span class="label-text required">Text</span>
-							</div>
-							<div class="join">
-								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-							</div>
-						</label>
-						<label class="form-control basis-1/3 grow">
-							<div class="label">
-								<span class="label-text required">Text</span>
-							</div>
-							<div class="join">
-								<input type="text" placeholder="Type here" class="input input-sm join-item input-bordered w-full" />
-							</div>
-						</label>
+						<fieldset class="fieldset basis-1/3 grow">
+							<legend class="fieldset-legend">Text</legend>
+							<input type="text" placeholder="Type here" class="input input-sm" />
+						</fieldset>
+						<fieldset class="fieldset basis-1/3 grow">
+							<legend class="fieldset-legend">Text</legend>
+							<input type="text" placeholder="Type here" class="input input-sm" />
+						</fieldset>
+						<fieldset class="fieldset basis-1/3 grow">
+							<legend class="fieldset-legend">Text</legend>
+							<input type="text" placeholder="Type here" class="input input-sm" />
+						</fieldset>
+						<fieldset class="fieldset basis-1/3 grow">
+							<legend class="fieldset-legend">Text</legend>
+							<input type="text" placeholder="Type here" class="input input-sm" />
+						</fieldset>
+						<fieldset class="fieldset basis-1/3 grow">
+							<legend class="fieldset-legend">Text</legend>
+							<input type="text" placeholder="Type here" class="input input-sm" />
+						</fieldset>
+						<fieldset class="fieldset basis-1/3 grow">
+							<legend class="fieldset-legend">Text</legend>
+							<input type="text" placeholder="Type here" class="input input-sm" />
+						</fieldset>
+						<fieldset class="fieldset basis-1/3 grow">
+							<legend class="fieldset-legend">Text</legend>
+							<input type="text" placeholder="Type here" class="input input-sm" />
+						</fieldset>
+						<fieldset class="fieldset basis-1/3 grow">
+							<legend class="fieldset-legend">Text</legend>
+							<input type="text" placeholder="Type here" class="input input-sm" />
+						</fieldset>
+						<fieldset class="fieldset basis-1/3 grow">
+							<legend class="fieldset-legend">Text</legend>
+							<input type="text" placeholder="Type here" class="input input-sm" />
+						</fieldset>
+						
 					</div>
 					<div class="flex flex-wrap">
-						<label class="form-control basis-1/6 grow">
-							<div class="label">
-								<span class="label-text required">Toggle</span>
-							</div>
-							<div class="join">
-								<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
-							</div>
-						</label>
-						<label class="form-control basis-1/6 grow">
-							<div class="label">
-								<span class="label-text required">Toggle</span>
-							</div>
-							<div class="join">
-								<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
-							</div>
-						</label>
-						<label class="form-control basis-1/6 grow">
-							<div class="label">
-								<span class="label-text required">Toggle</span>
-							</div>
-							<div class="join">
-								<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
-							</div>
-						</label>
-						<label class="form-control basis-1/6 grow">
-							<div class="label">
-								<span class="label-text required">Toggle</span>
-							</div>
-							<div class="join">
-								<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
-							</div>
-						</label>
-						<label class="form-control basis-1/6 grow">
-							<div class="label">
-								<span class="label-text required">Toggle</span>
-							</div>
-							<div class="join">
-								<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
-							</div>
-						</label>
-						<label class="form-control basis-1/6 grow">
-							<div class="label">
-								<span class="label-text required">Toggle</span>
-							</div>
-							<div class="join">
-								<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
-							</div>
-						</label>
-						<label class="form-control basis-1/6 grow">
-							<div class="label">
-								<span class="label-text required">Toggle</span>
-							</div>
-							<div class="join">
-								<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2 rounded-full" name="토글" />
-							</div>
-						</label>
+						<fieldset class="fieldset basis-1/6 grow">
+							<legend class="fieldset-legend">Toggle</legend>
+							<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2" name="토글" />
+						</fieldset>
+						<fieldset class="fieldset basis-1/6 grow">
+							<legend class="fieldset-legend">Toggle</legend>
+							<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2" name="토글" />
+						</fieldset>
+						<fieldset class="fieldset basis-1/6 grow">
+							<legend class="fieldset-legend">Toggle</legend>
+							<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2" name="토글" />
+						</fieldset>
+						<fieldset class="fieldset basis-1/6 grow">
+							<legend class="fieldset-legend">Toggle</legend>
+							<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2" name="토글" />
+						</fieldset>
+						<fieldset class="fieldset basis-1/6 grow">
+							<legend class="fieldset-legend">Toggle</legend>
+							<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2" name="토글" />
+						</fieldset>
+						<fieldset class="fieldset basis-1/6 grow">
+							<legend class="fieldset-legend">Toggle</legend>
+							<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2" name="토글" />
+						</fieldset>
+						<fieldset class="fieldset basis-1/6 grow">
+							<legend class="fieldset-legend">Toggle</legend>
+							<input type="checkbox" class="toggle toggle-lg toggle-primary ml-2" name="토글" />
+						</fieldset>
 					</div>
 				</div>
 				<h2>Button</h2>
@@ -700,19 +577,19 @@
 				<h2>Alert</h2>
 				<div class="space-y-2">
 					<div role="alert" class="alert alert-info">
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+						<th-block data-th-replace="~{_components/icon :: alert-info}" />
 						<span>alert-info : New software update available.</span>
 					</div>
 					<div role="alert" class="alert alert-success">
-						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+						<th-block data-th-replace="~{_components/icon :: alert-success}" />
 						<span>alert-success : Your purchase has been confirmed!</span>
 					</div>
 					<div role="alert" class="alert alert-warning">
-						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+						<th-block data-th-replace="~{_components/icon :: alert-warning}" />
 						<span>alert-warning : Invalid email address!</span>
 					</div>
 					<div role="alert" class="alert alert-error">
-						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+						<th-block data-th-replace="~{_components/icon :: alert-error}" />
 						<span>alert-error : Task failed successfully.</span>
 					</div>
 				</div>

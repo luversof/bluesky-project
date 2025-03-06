@@ -1,69 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-	content: ["../resources/templates/**/*.{html,js}"], // it will be explained later
+//	content: ["../resources/templates/**/*.{html,js}"], // it will be explained later
 	theme: {
 		extend: {},
 	},
-	daisyui: {
-		themes: [
-			"light",
-			"dark",
-			"cupcake",
-			"bumblebee",
-			"emerald",
-			"corporate",
-			"synthwave",
-			"retro",
-			"cyberpunk",
-			"valentine",
-			"halloween",
-			"garden",
-			"forest",
-			"aqua",
-			"lofi",
-			"pastel",
-			"fantasy",
-			"wireframe",
-			"black",
-			"luxury",
-			"dracula",
-			"cmyk",
-			"autumn",
-			"business",
-			"acid",
-			"lemonade",
-			"night",
-			"coffee",
-			"winter",
-			"dim",
-			"nord",
-			"sunset",
-			{
-				bluesky : {
-					"color-scheme": "light",
-					"fontFamily": "'Inter','Noto Sans KR','Noto Sans JP','Microsoft YaHei','Microsoft JhengHei','Segoe UI','Roboto','Arial','sans-serif','Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol','Noto Color Emoji'",
-					"primary": "#3e6cdf",
-					"primary-content": "#ffffff",
-					"secondary": "#4b5563",
-					"secondary-content": "#ffffff",
-					"accent": "#ffffff",
-					"neutral": "#111827",
-					"neutral-content": "#ffffff",
-					"base-100": "#ffffff",
-					"info": "#e3f1fa",
-					"info-content": "#2062ab",
-					"success": "#d0fbca",
-					"success-content": "#008a00",
-					"warning": "#fffac3",
-					"warning-content": "#e07303",
-					"error": "#ffebee",
-					"error-content": "#c30115",
-				    "--rounded-box": "0",
-				    "--rounded-btn": "0",
-				    "--tab-radius": "0",
-				},
-			},
-		]
-	},
-	plugins: [require("@tailwindcss/typography"), require("daisyui")]
+	plugins: []
 }

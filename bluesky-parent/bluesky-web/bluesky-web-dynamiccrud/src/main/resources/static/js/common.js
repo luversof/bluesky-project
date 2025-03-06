@@ -306,7 +306,7 @@ const modalFormFn = (() => {
 					targetInput.value = el.value;
 					// 체크박스는 input과 체크박스 표시가 별도로 존재하여 추가 처리 필요
 					const checkBoxInput = targetInput.parentElement.querySelector("input[type=checkbox][name=" + (targetInput.name + "_checkbox") + "]");
-					if (targetInput.parentElement.classList.contains("join") && checkBoxInput != null) {
+					if (targetInput.parentElement.classList.contains("fieldset") && checkBoxInput != null) {
 						checkBoxInput.checked = eval(el.value);
 					}
 				}
@@ -348,12 +348,12 @@ const modalFormFn = (() => {
 			document.querySelectorAll("[data-columngroupid]").forEach(el => columnGroupIdList.push(el.dataset.columngroupid));
 			columnGroupIdList = columnGroupIdList.filter((item, pos) => columnGroupIdList.indexOf(item) === pos);
 			columnGroupIdList.forEach(columnGroupId => {
-				let targetEl;	
+				let targetEl;
 				document.querySelectorAll("[data-columngroupid=" + columnGroupId + "]").forEach((el, index) => {
 					if (index == 0) {
 						targetEl = el;
 					} else {
-						targetEl.appendChild(el.querySelector("label"));
+						targetEl.appendChild(el.querySelector("fieldset"));
 					}
 				});
 			});

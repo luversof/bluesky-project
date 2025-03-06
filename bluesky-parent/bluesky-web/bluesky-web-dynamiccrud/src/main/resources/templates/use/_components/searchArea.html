@@ -7,7 +7,7 @@
    date는 좀더 고민해보자.
 <!--*/-->
 
-<div class="flex items-center h-16 px-10 sticky top-14 z-[1] bg-base-100 bg-opacity-80"
+<div class="flex items-center h-16 px-10 sticky top-14 z-1 bg-base-100 bg-opacity-80"
 	id="searchArea"
 	data-th-if="${hasSearchField}" 
 	data-th-with="dbFieldList = ${dbFieldList},
@@ -18,28 +18,23 @@
 			data-th-each="dbField : ${dbFieldList}"
 			data-th-if="${dbField.isEnableSearch}">
 			
-			<label class="form-control">
-				<div class="label pb-1">
-					<span class="label-text text-gray-600"
-						data-th-text="${dbField.columnName}"
-						data-th-classappend="${dbField.isEnableSearchRequired() ? 'required' : ''}"
-					>
-					</span>
+			<fieldset class="fieldset py-0">
+				<legend class="fieldset-legend text-gray-600"
+					data-th-classappend="${dbField.isEnableSearchRequired() ? 'required' : ''}"
+				>
+					[[${dbField.columnName}]]
 					<th-block 
 						data-th-if="${!#strings.isEmpty(dbField.columnSearchType) && dbField.columnSearchType != dbFieldSearchType.EQUALS}"
 					>
 						<span
-							class="label-text-alt text-gray-600 cursor-pointer tooltip tooltip-right"
+							class="text-gray-600 cursor-pointer tooltip tooltip-right"
 							data-th-data-tip="#{'use.text.columnSearchType.' + __${dbField.columnSearchType}__}"
 						>
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
-							</svg>
+							<div data-th-replace="~{_components/icon :: help}" />
 						</span>
 					</th-block>
-				</div>
-			
-				<input type="text" class="input input-bordered input-sm w-48 searchInput"
+				</legend>
+				<input type="text" class="input input-sm w-48 searchInput"
 					data-th-if="${#strings.isEmpty(dbField.columnPreset)}" 
 					data-th-placeholder="${dbField.formPlaceholder}"
 					data-th-name="${dbField.columnId}"
@@ -48,7 +43,7 @@
 					data-th-attr="__${dbField.columnSearchValidation ?: 'data-hasColumnSearchValidation=false'}__"
 				/>
 				
-				<select class="select select-sm select-bordered searchInput"
+				<select class="select select-sm searchInput"
 					data-th-unless="${#strings.isEmpty(dbField.columnPreset)}"
 					data-th-name="${dbField.columnId}"
 					data-th-required="${dbField.isEnableSearchRequired()}"
@@ -62,20 +57,15 @@
 						data-th-selected="${optionValue == (#arrays.isEmpty(param[dbField.columnId]) ? dbField.columnSearchDefaultValue : param[dbField.columnId][0])}"
 					/>
 				</select>
-			
-			</label>
+			</fieldset>
 		</th-block>
 		
 		<button class="btn btn-sm btn-info self-end searchButton">
-			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-				<path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-			</svg>
+			<th-block data-th-replace="~{_components/icon :: search}" />
 			[[#{button.text.search}]]
 		</button>
 		<button class="btn btn-sm self-end resetButton">
-			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-				<path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-			</svg>
+			<th-block data-th-replace="~{_components/icon :: reset}" />
 			[[#{button.text.reset}]]
 		</button>
 		<!--/*-->
