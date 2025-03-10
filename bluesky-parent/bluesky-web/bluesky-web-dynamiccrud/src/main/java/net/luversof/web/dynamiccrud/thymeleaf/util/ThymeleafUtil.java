@@ -66,7 +66,10 @@ public class ThymeleafUtil {
 			"winter",
 			"dim",
 			"nord",
-			"sunset"
+			"sunset",
+			"caramellatte",
+			"abyss",
+			"silk"
 	};
 	
 	public static List<Menu> getMainMenuList(String adminProjectId, String projectId) {
@@ -86,7 +89,7 @@ public class ThymeleafUtil {
 			subMenuList.sort(Comparator.comparing(SubMenu::getDisplayOrder));
 			if(!CollectionUtils.isEmpty(subMenuList)) {
 				var menu = new Menu();
-				var targetSubMenu = subMenuList.stream().filter(subMenu -> subMenu.isEnableDisplay()).findFirst().orElseGet(() -> null);
+				var targetSubMenu = subMenuList.stream().filter(SubMenu::isEnableDisplay).findFirst().orElseGet(() -> null);
 				menu.setUrl(targetSubMenu == null ? null : targetSubMenu.getUrl());
 				menu.setMessageCode(mainMenu.getMainMenuName());
 				menu.setDisplay(mainMenu.isEnableDisplay());
@@ -176,7 +179,7 @@ public class ThymeleafUtil {
 	
 	public static boolean isEnableMainMenuUI() {
 		var project = SettingUtil.getProject();
-		return project == null ? false : project.isEnableMainMenuUI();
+		return project != null && project.isEnableMainMenuUI();
 	}
 	
 	public static MainMenu getMainMenu() {
@@ -204,7 +207,7 @@ public class ThymeleafUtil {
 	
 	private Random random = new Random();
 	public static String getRandomTheme(String...themes) {
-		var themeList = List.of(themes);
+		var themeList = List.of(themes.length == 0 ? THEMES : themes);
 		return themeList.get(random.nextInt(themeList.size()));
 	}
 	

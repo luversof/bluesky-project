@@ -1,7 +1,9 @@
 @import "tailwindcss";
 @source "../resources/templates";
 @plugin "@tailwindcss/typography";
-@plugin "daisyui";
+@plugin "daisyui" {
+	themes: all;
+}
 @plugin "daisyui/theme" {
 	name: "bluesky";
 	default: true;	/* set as default */

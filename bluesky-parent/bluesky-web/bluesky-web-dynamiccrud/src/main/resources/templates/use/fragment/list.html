@@ -25,7 +25,7 @@
 			총 [[${page.totalElements}]] 건
 		</div>
 		<div>
-			<button class="btn btn-sm exportButton" 
+			<button class="btn btn-outline btn-sm exportButton" 
 				data-th-if="${thymeleafUtil.isAdminMenu()}"
 				data-th-hx-get="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_BULK_FORM',map.of('modalMode','export'))}}"
 				hx-trigger="exportModalBulkTrigger"
@@ -36,7 +36,7 @@
 				</svg>
 				[[#{button.text.export}]]
 			</button>
-			<button class="btn btn-sm importButton"
+			<button class="btn btn-outline btn-sm importButton"
 				data-th-if="${thymeleafUtil.isAdminMenu()}"
 				data-th-hx-get="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_BULK_FORM',map.of('modalMode','import'))}}"
 				hx-target="#fragmentArea"
@@ -52,7 +52,7 @@
 				target="_blank"
 				download
 			>
-				<button class="btn btn-sm excelButton">
+				<button class="btn btn-outline btn-sm excelButton">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
 					  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25M9 16.5v.75m3-3v3M15 12v5.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
 					</svg>
@@ -126,7 +126,7 @@
 			<div data-th-replace="~{use/_components/pagination (page = ${page})}"></div>
 		</div>
 		<div class="w-3/12 text-right">
-			<button class="btn btn-info btn-sm"
+			<button class="btn btn-outline btn-info btn-sm"
 				data-th-if="${targetSubMenu.enableInsert}" 
 				data-th-hx-get="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_FORM',map.of('modalMode','create'))}}"
 				hx-target="#fragmentArea"
@@ -136,7 +136,7 @@
 				</svg>
 				[[#{button.text.create}]]
 			</button>
-			<button class="btn btn-error btn-sm deleteButton"
+			<button class="btn btn-outline btn-error btn-sm deleteButton"
 				data-th-if="${targetSubMenu.enableDelete}"
 				data-th-hx-post="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_FORM', map.of('modalMode','delete'))}}"
 				hx-include="#contentTable tr:has(input[name=contentDataCheck]:checked) .contentData input"
