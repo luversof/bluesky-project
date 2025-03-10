@@ -1,7 +1,6 @@
 package net.luversof.api.board.domain;
 
 import java.util.BitSet;
-import java.util.Map;
 import java.util.UUID;
 
 import org.hibernate.annotations.JdbcTypeCode;

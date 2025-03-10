@@ -2,8 +2,6 @@ package net.luversof.batch.example.config;
 
 import javax.sql.DataSource;
 
-import org.springframework.batch.core.configuration.JobRegistry;
-import org.springframework.batch.core.configuration.support.JobRegistryBeanPostProcessor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.batch.BatchDataSource;
 import org.springframework.context.annotation.Bean;
@@ -29,10 +27,4 @@ public class BatchExampleConfig {
 		return new JdbcTransactionManager(batchDataSource);
 	}
 	
-	@Bean
-	JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor(JobRegistry jobRegistry) {
-		JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor = new JobRegistryBeanPostProcessor();
-		jobRegistryBeanPostProcessor.setJobRegistry(jobRegistry);
-		return jobRegistryBeanPostProcessor;
-	}
 }

@@ -6,6 +6,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HttpBasicConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,39 +20,37 @@ import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuc
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
-	
+
 	@Bean
-    @ConditionalOnMissingBean
-    PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+	@ConditionalOnMissingBean
+	PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
 
-    @Bean
-    SecurityFilterChain blueskySecurityFilterchain(HttpSecurity http, UserDetailsService userDetailsService, PasswordEncoder passwordEncoder)
-            throws Exception {
+	@Bean
+	SecurityFilterChain blueskySecurityFilterchain(HttpSecurity http, UserDetailsService userDetailsService,
+			PasswordEncoder passwordEncoder) throws Exception {
 
-        http.userDetailsService(userDetailsService);
+		http.userDetailsService(userDetailsService);
 
-        var logoutSuccessHandler = new SimpleUrlLogoutSuccessHandler();
-        logoutSuccessHandler.setUseReferer(true);
+		var logoutSuccessHandler = new SimpleUrlLogoutSuccessHandler();
+		logoutSuccessHandler.setUseReferer(true);
 
-        var authenticationSuccessHandler = new SimpleUrlAuthenticationSuccessHandler();
-        authenticationSuccessHandler.setUseReferer(true);
-
-        http
-                .headers().frameOptions().sameOrigin().and()
-//                .exceptionHandling().authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)).and()
-                .logout().logoutSuccessHandler(logoutSuccessHandler).and()
-                .formLogin()
-//                	.loginPage("/login")
-                	.successHandler(authenticationSuccessHandler)
-                .and()
-                .rememberMe().and()
-                .httpBasic().disable()
-                .csrf().disable()
-        ;
-
-        return http.build();
-    }
+		var authenticationSuccessHandler = new SimpleUrlAuthenticationSuccessHandler();
+		authenticationSuccessHandler.setUseReferer(true);
+		
+		return http
+			.authorizeHttpRequests(requests -> requests.anyRequest().permitAll())
+			.formLogin(config -> config
+				.permitAll()
+				.successHandler(authenticationSuccessHandler))
+			.logout(config -> config.logoutSuccessHandler(logoutSuccessHandler))
+			.headers(config -> config.frameOptions(FrameOptionsConfig::sameOrigin))
+			.rememberMe(config -> config.alwaysRemember(true))
+			.csrf(CsrfConfigurer::disable)
+			.httpBasic(HttpBasicConfigurer::disable)
+			.build();
+		
+	}
 
 }

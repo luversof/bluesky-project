@@ -1,7 +1,5 @@
 package net.luversof.app.statemachine.config;
 
-import java.util.EnumSet;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.statemachine.config.EnableStateMachine;

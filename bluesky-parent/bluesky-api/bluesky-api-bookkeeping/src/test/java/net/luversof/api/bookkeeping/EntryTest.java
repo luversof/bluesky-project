@@ -10,8 +10,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.github.f4b6a3.uuid.alt.GUID;
-
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.api.bookkeeping.constant.AssetTypeCode;
@@ -19,8 +17,6 @@ import net.luversof.api.bookkeeping.constant.EntryTypeCode;
 import net.luversof.api.bookkeeping.constant.TestConstant;
 import net.luversof.api.bookkeeping.domain.Entry;
 import net.luversof.api.bookkeeping.repository.mariadb.AssetRepository;
-import net.luversof.api.bookkeeping.repository.mariadb.BookkeepingRepository;
-import net.luversof.api.bookkeeping.repository.mariadb.EntryRepository;
 import net.luversof.api.bookkeeping.repository.mariadb.EntryTypeRepository;
 import net.luversof.api.bookkeeping.service.EntryService;
 import net.luversof.api.bookkeeping.service.base.EntryBaseService;
