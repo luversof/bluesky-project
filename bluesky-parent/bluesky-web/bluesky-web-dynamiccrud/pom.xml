@@ -61,6 +61,27 @@
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 		</dependency>
 		<!-- (e) springdoc-openapi -->
+		
+		<!-- (e) bluesky boot connectioninfo -->
+		<dependency>
+			<groupId>io.github.luversof</groupId>
+			<artifactId>bluesky-boot-autoconfigure-connectioninfo-jdbc</artifactId>
+		</dependency>
+		<!-- (e) bluesky boot connectioninfo -->
+		
+		<!-- (s) bluesky boot crypto -->
+		<dependency>
+			<groupId>io.github.luversof</groupId>
+			<artifactId>bluesky-boot-crypto</artifactId>
+		</dependency>
+		<!-- (e) bluesky boot crypto -->
+		
+		<!-- (e) bluesky boot devcheck-->
+		<dependency>
+			<groupId>io.github.luversof</groupId>
+			<artifactId>bluesky-boot-autoconfigure-devcheck</artifactId>
+		</dependency>
+		<!-- (e) bluesky boot devcheck-->
 
 		<!-- (s) jdbc -->
 		<dependency>

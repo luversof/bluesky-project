@@ -43,6 +43,14 @@
 			</dependency> <dependency> <groupId>org.springframework.cloud</groupId> <artifactId>spring-cloud-stream-binder-rabbit</artifactId> 
 			</dependency> -->
 		<!-- (e) spring cloud stream test -->
+		
+		<!-- (s) bluesky boot devcheck-->
+		<dependency>
+			<groupId>io.github.luversof</groupId>
+			<artifactId>bluesky-boot-autoconfigure-devcheck</artifactId>
+		</dependency>
+		<!-- (e) bluesky boot devcheck-->
+		
 		<!-- (s) test -->
 		<dependency>
 			<groupId>io.github.luversof</groupId>

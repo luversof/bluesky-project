@@ -21,6 +21,7 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 		<!-- (e) spring-boot -->
+		
 		<!-- (s) spring-cloud -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
@@ -31,18 +32,22 @@
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
 		<!-- (e) spring-cloud -->
+		
 		<!-- (s) boot admin -->
 		<dependency>
 			<groupId>de.codecentric</groupId>
 			<artifactId>spring-boot-admin-starter-client</artifactId>
 		</dependency>
 		<!-- (e) boot admin -->
+		
 		<!-- (s) springdoc-openapi -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 		</dependency>
 		<!-- (e) springdoc-openapi -->
+		
+		
 		<dependency>
 			<groupId>org.hibernate.validator</groupId>
 			<artifactId>hibernate-validator</artifactId>
@@ -51,7 +56,28 @@
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-access</artifactId>
 		</dependency>-->
+		
+		<!-- (e) bluesky boot connectioninfo -->
+		<dependency>
+			<groupId>io.github.luversof</groupId>
+			<artifactId>bluesky-boot-autoconfigure-connectioninfo-jdbc</artifactId>
+		</dependency>
+		<!-- (e) bluesky boot connectioninfo -->
 
+		<!-- (s) bluesky boot crypto -->
+		<dependency>
+			<groupId>io.github.luversof</groupId>
+			<artifactId>bluesky-boot-crypto</artifactId>
+		</dependency>
+		<!-- (e) bluesky boot crypto -->
+		
+		<!-- (s) bluesky boot devcheck-->
+		<dependency>
+			<groupId>io.github.luversof</groupId>
+			<artifactId>bluesky-boot-autoconfigure-devcheck</artifactId>
+		</dependency>
+		<!-- (e) bluesky boot devcheck-->
+		
 		<!-- (s) micrometer metrics -->
 		<dependency>
 			<groupId>io.micrometer</groupId>

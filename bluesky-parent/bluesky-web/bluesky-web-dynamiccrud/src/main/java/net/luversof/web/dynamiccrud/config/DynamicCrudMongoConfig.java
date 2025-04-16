@@ -8,8 +8,8 @@ import org.springframework.context.annotation.PropertySource;
 
 import com.mongodb.client.MongoClient;
 
-import io.github.luversof.boot.connectioninfo.ConnectionInfoCollector;
-import io.github.luversof.boot.security.crypto.env.DecryptPropertySourceFactory;
+import io.github.luversof.boot.connectioninfo.ConnectionInfoRegistry;
+import io.github.luversof.boot.security.crypto.support.DecryptPropertySourceFactory;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,10 +19,10 @@ import lombok.extern.slf4j.Slf4j;
 public class DynamicCrudMongoConfig {
 
 	@Autowired(required = false)
-	private Map<String, ConnectionInfoCollector<MongoClient>> mongoClientConnectionInfoCollectorMap;
+	private Map<String, ConnectionInfoRegistry<MongoClient>> mongoClientConnectionRegistry;
 	
 	@PostConstruct
 	public void postConstruct() {
-		log.debug("Test : {}", mongoClientConnectionInfoCollectorMap);
+		log.debug("Test : {}", mongoClientConnectionRegistry);
 	}
 }

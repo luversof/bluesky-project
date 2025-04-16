@@ -23,6 +23,13 @@
 		</dependency>
 		<!-- (e) spring-cloud -->
 		
+		<!-- (s) bluesky boot connectioninfo -->
+		<dependency>
+			<groupId>io.github.luversof</groupId>
+			<artifactId>bluesky-boot-autoconfigure-connectioninfo-jdbc</artifactId>
+		</dependency>
+		<!-- (e) bluesky boot connectioninfo -->
+		
 		<dependency>
 			<groupId>org.mariadb.jdbc</groupId>
 			<artifactId>mariadb-java-client</artifactId>

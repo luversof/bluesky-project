@@ -17,8 +17,8 @@ import org.springframework.util.StringUtils;
 
 import com.mongodb.client.MongoClient;
 
-import io.github.luversof.boot.autoconfigure.connectioninfo.mongo.MongoClientConnectionInfoCollectorDecorator;
 import io.github.luversof.boot.autoconfigure.mongo.MongoProperties;
+import io.github.luversof.boot.connectioninfo.ConnectionInfoRegistry;
 import lombok.Getter;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldEnable;
@@ -34,11 +34,11 @@ import net.luversof.web.dynamiccrud.use.service.UseService;
 public class MongoUseService implements UseService {
 
 	@Getter
-	private MongoClientConnectionInfoCollectorDecorator mongoClientConnectionInfoCollectorDecorator;
+	private ConnectionInfoRegistry<MongoClient> mongoClientConnectionInfoRegistry;
 	private MongoProperties mongoProperties;
 
-	public MongoUseService(@Nullable MongoClientConnectionInfoCollectorDecorator mongoClientConnectionInfoCollectorDecorator, MongoProperties mongoProperties) {
-		this.mongoClientConnectionInfoCollectorDecorator = mongoClientConnectionInfoCollectorDecorator;
+	public MongoUseService(@Nullable ConnectionInfoRegistry<MongoClient> mongoClientConnectionInfoRegistry, MongoProperties mongoProperties) {
+		this.mongoClientConnectionInfoRegistry = mongoClientConnectionInfoRegistry;
 		this.mongoProperties = mongoProperties;
 	}
 
@@ -48,7 +48,7 @@ public class MongoUseService implements UseService {
 	}
 
 	private MongoClient getMongoClient(String connection) {
-		return mongoClientConnectionInfoCollectorDecorator.getConnectionInfo(connection);
+		return mongoClientConnectionInfoRegistry.getConnectionInfoList().stream().filter(x -> x.getKey().connectionKey().equals(connection)).findAny().orElseThrow().getConnection();
 	}
 
 	private String getMongoDataBase(String connection) {

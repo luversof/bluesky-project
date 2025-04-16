@@ -73,6 +73,13 @@
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 		</dependency>
 		<!-- (e) springdoc-openapi -->
+		
+		<!-- (e) bluesky boot devcheck-->
+		<dependency>
+			<groupId>io.github.luversof</groupId>
+			<artifactId>bluesky-boot-autoconfigure-devcheck</artifactId>
+		</dependency>
+		<!-- (e) bluesky boot devcheck-->
 
 		<!-- (s) thymeleaf -->
 		<dependency>

@@ -1,5 +1,7 @@
 package net.luversof.batch.example.config;
 
+import java.util.NoSuchElementException;
+
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -10,15 +12,20 @@ import org.springframework.jdbc.support.JdbcTransactionManager;
 
 import com.zaxxer.hikari.HikariDataSource;
 
-import io.github.luversof.boot.connectioninfo.ConnectionInfoCollector;
+import io.github.luversof.boot.connectioninfo.ConnectionInfoRegistry;
 
 @Configuration
 public class BatchExampleConfig {
 
 	@Bean
 	@BatchDataSource
-	DataSource batchDataSource(ConnectionInfoCollector<HikariDataSource> mariaDbDataSourceConnectionInfoCollector) {
-		return mariaDbDataSourceConnectionInfoCollector.getConnectionInfoMap().get("spring_batch");
+	DataSource batchDataSource(ConnectionInfoRegistry<HikariDataSource> connectionInfoRegistry) {
+		var target = connectionInfoRegistry.getConnectionInfoList().stream().filter(x -> x.getKey().connectionKey().equals("spring_batch")).findFirst();
+		if (target.isEmpty()) {
+			throw new NoSuchElementException("No value present");
+		}
+		
+		return target.get().getConnection();
 	}
 	
 
