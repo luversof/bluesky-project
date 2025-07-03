@@ -26,7 +26,7 @@
 		</div>
 		<div>
 			<button class="btn btn-outline btn-sm exportButton" 
-				data-th-if="${thymeleafUtil.isAdminMenu()}"
+				data-th-if="${targetSubMenu.enableExport}"
 				data-th-hx-get="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_BULK_FORM',map.of('modalMode','export'))}}"
 				hx-trigger="exportModalBulkTrigger"
 				hx-target="#fragmentArea"
@@ -37,7 +37,7 @@
 				[[#{button.text.export}]]
 			</button>
 			<button class="btn btn-outline btn-sm importButton"
-				data-th-if="${thymeleafUtil.isAdminMenu()}"
+				data-th-if="${targetSubMenu.enableImport}"
 				data-th-hx-get="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_BULK_FORM',map.of('modalMode','import'))}}"
 				hx-target="#fragmentArea"
 			>

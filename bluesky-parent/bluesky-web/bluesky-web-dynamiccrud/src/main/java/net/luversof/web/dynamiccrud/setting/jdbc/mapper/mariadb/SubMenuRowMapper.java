@@ -24,6 +24,8 @@ public class SubMenuRowMapper extends SettingRowMapper<SubMenu> {
 			rs.getBoolean("enableUpdate"),
 			rs.getBoolean("enableDelete"),
 			rs.getBoolean("enableDisplay"),
+			true,
+			true,
 			rs.getString("authority")
 		);
 		setCommon(subMenu, rs);

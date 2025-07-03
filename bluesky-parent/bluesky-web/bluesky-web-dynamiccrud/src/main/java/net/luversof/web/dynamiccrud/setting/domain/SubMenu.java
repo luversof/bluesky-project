@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -59,6 +60,12 @@ public class SubMenu extends Setting {
 	
 	@Column(nullable = false)
 	private boolean enableDisplay;
+	
+	@Transient
+	private boolean enableImport;
+	
+	@Transient
+	private boolean enableExport;
 	
 	@Column(length = 20)
 	private String authority;
