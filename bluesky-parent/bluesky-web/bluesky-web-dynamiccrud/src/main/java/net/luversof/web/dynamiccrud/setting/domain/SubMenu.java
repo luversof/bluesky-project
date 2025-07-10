@@ -77,5 +77,22 @@ public class SubMenu extends Setting {
 			return String.format("/%s/use/%s/%s/%s", getAdminProjectId(), getProjectId(), getMainMenuId(), getSubMenuId());
 		}
 	}
+	
+	public boolean isShowImportButton() {
+		return (enableImport && enableInsert);
+	}
+	
+	public boolean isShowExportButton() {
+		return dbType != SubMenuDbType.Mongo && (enableExport && enableInsert);
+	}
+	
+	/**
+	 * Row CheckBox 표시 여부
+	 * @return
+	 */
+	public boolean isShowRowCheckBox() {
+		return dbType != SubMenuDbType.Mongo && (enableInsert && enableExport) || enableDelete;
+	}
+
 
 }

@@ -26,7 +26,7 @@
 		</div>
 		<div>
 			<button class="btn btn-outline btn-sm exportButton" 
-				data-th-if="${targetSubMenu.enableExport}"
+				data-th-if="${targetSubMenu.isShowExportButton}"
 				data-th-hx-get="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_BULK_FORM',map.of('modalMode','export'))}}"
 				hx-trigger="exportModalBulkTrigger"
 				hx-target="#fragmentArea"
@@ -37,7 +37,7 @@
 				[[#{button.text.export}]]
 			</button>
 			<button class="btn btn-outline btn-sm importButton"
-				data-th-if="${targetSubMenu.enableImport}"
+				data-th-if="${targetSubMenu.isShowImportButton}"
 				data-th-hx-get="@{${thymeleafUtil.getUrl('FRAGMENT_MODAL_BULK_FORM',map.of('modalMode','import'))}}"
 				hx-target="#fragmentArea"
 			>
@@ -69,7 +69,7 @@
 				<th class="w-0 p-0"></th>
 				<th data-th-each="contentKeyInfo : ${contentInfo.contentKeyInfoList}" data-th-if="${contentKeyInfo.visible}" data-th-text="${contentKeyInfo.key}"></th>
 				<th class="w-10" data-th-if="${targetSubMenu.enableUpdate}" data-th-text="#{use.text.update}"></th>
-				<th class="w-10" data-th-if="${targetSubMenu.enableInsert || targetSubMenu.enableUpdate || targetSubMenu.enableDelete}">
+				<th class="w-10" data-th-if="${targetSubMenu.isShowRowCheckBox}">
 					<input name="contentDataCheckToggle" type="checkbox" class="checkbox" />
 				</th>
 			</tr>
@@ -100,7 +100,7 @@
 							</svg>
 						</button>
 					</td>
-					<td class="contentDataCheck" data-th-if="${targetSubMenu.enableInsert || targetSubMenu.enableUpdate || targetSubMenu.enableDelete}">
+					<td class="contentDataCheck" data-th-if="${targetSubMenu.isShowRowCheckBox}">
 						<input name="contentDataCheck" type="checkbox" class="checkbox" data-th-value="${iterator.index}" />
 					</td>
 				</tr>

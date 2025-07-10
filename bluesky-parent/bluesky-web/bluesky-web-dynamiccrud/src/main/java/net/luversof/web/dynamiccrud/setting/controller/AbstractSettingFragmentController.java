@@ -1,5 +1,8 @@
 package net.luversof.web.dynamiccrud.setting.controller;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -139,6 +142,32 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 			Model model) throws JsonProcessingException {
 		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
 		var dataMapList = objectMapper.readValue(dataMap.get("bulkData"), new TypeReference<List<Map<String, String>>>() {});
+		
+		// dataMapList 중 date 타입 field의 경우 ISO-8601 형식을 toString으로 변환하여 전달.
+		var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
+		for (var dbField : dbFieldList) {
+			if (dbField.getColumnType() == DbFieldColumnType.DATE) {
+				for (var map : dataMapList) {
+					if (map.containsKey(dbField.getColumnId())) {
+						var dateValue = map.get(dbField.getColumnId());
+						
+						// dataValue를 Date type 으로 변환 한 후 toString 처리
+						
+						if (dateValue != null && !dateValue.isEmpty()) {
+							try {
+								var date = ZonedDateTime.parse(dateValue);
+								var zoneDate = date.withZoneSameInstant(ZoneId.systemDefault());
+								DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S");
+								map.put(dbField.getColumnId(), zoneDate.format(formatter));
+							} catch (Exception e) {
+								// 날짜 형식이 잘못된 경우 예외 처리
+								throw  new BlueskyException("INVALID_DATE_FORMAT", dbField.getColumnId(), dateValue);
+							}
+						}
+					}
+				}
+			}
+		}
 		
 		for (var map : dataMapList) {
 			useService.create(settingParameter, map);

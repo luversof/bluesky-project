@@ -171,7 +171,7 @@ public class ContentInfo {
 				presetKey = presetPart;
 				presetValue = presetPart;
 			}
-			if (presetKey.equals(originValue)) {
+			if (presetKey.equals(String.valueOf(originValue))) {
 				return presetValue;
 			}
 		}
