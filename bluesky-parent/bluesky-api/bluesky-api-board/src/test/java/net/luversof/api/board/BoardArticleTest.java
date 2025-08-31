@@ -80,6 +80,7 @@ class BoardArticleTest implements GeneralTest {
 	@DisplayName("게시글 목록 조회")
 	void findByAlias() {
 		var boardArticlePage = boardArticleService.findByAlias("free", PageRequest.of(0, 20, Sort.by("id").descending()));
+		log.debug("articleList : {}", boardArticlePage.getContent());
 		assertThat(boardArticlePage).isNotEmpty();
 	}
 	
@@ -96,5 +97,21 @@ class BoardArticleTest implements GeneralTest {
 		Page<BoardArticle> boardArticleList = boardArticleRepository.findByBoardId(board.getId(), PageRequest.of(0, 20, Sort.by("id").descending()));
 		log.debug("result : {}", boardArticleList.getContent());
 		
+	}
+	
+	@Test
+	@DisplayName("게시글 수정")
+	void modify() {
+		var boardArticlePage = boardArticleService.findByAlias("free", PageRequest.of(0, 20, Sort.by("id").descending()));
+		assertThat(boardArticlePage).isNotEmpty();
+		
+		var boardArticle = boardArticlePage.getContent().get(0);
+		boardArticle.setTitle("수정된 제목");
+		boardArticle.setContent("수정된 내용");
+		
+		var result = boardArticleService.modify(boardArticle);
+		assertThat(result).isNotNull();
+		assertThat(result.getTitle()).isEqualTo("수정된 제목");
+		assertThat(result.getContent()).isEqualTo("수정된 내용");
 	}
 }

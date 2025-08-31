@@ -11,11 +11,11 @@ CREATE TABLE `Board` (
 CREATE TABLE `BoardArticle` (
 	`id` UUID NOT NULL,
 	`board_id` UUID NOT NULL,
-	`content` VARCHAR(255) NULL DEFAULT NULL,
-	`createdDate` DATETIME(6) NULL DEFAULT NULL,
-	`lastModifiedDate` DATETIME(6) NULL DEFAULT NULL,
-	`title` VARCHAR(255) NULL DEFAULT NULL,
 	`user_id` VARCHAR(36) NOT NULL,
+	`title` VARCHAR(255) NULL DEFAULT NULL,
+	`content` VARCHAR(255) NULL DEFAULT NULL,
+	`createdDate` TIMESTAMP NULL DEFAULT NULL,
+	`lastModifiedDate` TIMESTAMP NULL DEFAULT NULL,
 	PRIMARY KEY (`id`),
 	INDEX `IDX_article_boardId` (`board_id`),
 	INDEX `IDX_article_userId` (`user_id`)

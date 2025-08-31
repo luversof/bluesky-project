@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
-import net.luversof.api.board.constant.BoardBitConfig;
 import net.luversof.api.board.domain.Board;
 import net.luversof.api.board.service.BoardService;
 
@@ -33,7 +32,7 @@ class BoardTest implements GeneralTest {
 		board.setAlias("free");
 		
 //		var jsonConfig = Map.of("key1", "value1", "key2", "value2");
-		var jsonConfig = new HashMap<String, String>();
+		var jsonConfig = new HashMap<String, Object>();
 		jsonConfig.put("key1", "value1");
 		jsonConfig.put("key2", "value2");
 		board.setJsonConfig(jsonConfig);
@@ -50,7 +49,7 @@ class BoardTest implements GeneralTest {
 		Board board = boardService.findByAlias("free");
 		
 		if (board.getJsonConfig() == null) {
-			var jsonConfig = Map.of("key3", "value3");
+			Map<String, Object> jsonConfig = Map.of("key3", "value3");
 			board.setJsonConfig(jsonConfig);
 		} else {
 //			board.getJsonConfig().put("key3", "value3");

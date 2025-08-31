@@ -26,7 +26,7 @@ public class Board {
 	
 //	@JdbcTypeCode(SqlTypes.JSON)
 	@Column("jsonConfig")
-	private Map<String, String> jsonConfig;
+	private Map<String, Object> jsonConfig;
 //	private JsonConfig jsonConfig;
 	
 	public interface Create {}
