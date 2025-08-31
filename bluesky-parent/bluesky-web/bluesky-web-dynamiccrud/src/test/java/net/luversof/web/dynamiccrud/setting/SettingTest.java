@@ -38,7 +38,7 @@ public class SettingTest implements GeneralTest {
 	private DbFieldServiceDecorator fieldService;
 	
 	@BeforeAll
-	public static void beforeAll() {
+	static void beforeAll() {
 		RoutingDataSourceContextHolder.setContext(() -> "dynamiccrud");
 	}
 	

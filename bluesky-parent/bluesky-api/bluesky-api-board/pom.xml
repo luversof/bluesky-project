@@ -48,10 +48,10 @@
 		<!-- (e) springdoc-openapi -->
 		
 		
-		<dependency>
+		<!--<dependency>
 			<groupId>org.hibernate.validator</groupId>
 			<artifactId>hibernate-validator</artifactId>
-		</dependency>
+		</dependency>-->
 		<!--<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-access</artifactId>
