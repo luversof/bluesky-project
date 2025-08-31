@@ -4,11 +4,11 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.CrudRepository;
 
 import net.luversof.api.board.domain.BoardArticle;
 
-public interface BoardArticleRepository extends JpaRepository<BoardArticle, UUID> {
+public interface BoardArticleRepository extends CrudRepository<BoardArticle, UUID> {
 	
 	Page<BoardArticle> findByBoardId(UUID boardId, Pageable pageable);
 	

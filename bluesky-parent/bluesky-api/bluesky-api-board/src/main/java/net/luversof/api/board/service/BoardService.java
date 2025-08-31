@@ -1,11 +1,10 @@
 package net.luversof.api.board.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import io.github.luversof.boot.exception.BlueskyException;
+import io.github.luversof.boot.uuid.UuidGeneratorUtil;
 import lombok.Setter;
 import net.luversof.api.board.constant.BoardErrorCode;
 import net.luversof.api.board.domain.Board;
@@ -17,11 +16,12 @@ public class BoardService {
 	@Setter(onMethod_ = @Autowired)
 	private BoardRepository boardRepository;
 	
-	public Page<Board> findAll(Pageable pageable) {
-		return boardRepository.findAll(pageable);
+	public Iterable<Board> findAll() {
+		return boardRepository.findAll();
 	}
 	
 	public Board create(Board board) {
+		board.setId(UuidGeneratorUtil.getUuid());
 		return boardRepository.save(board);
 	}
 	
