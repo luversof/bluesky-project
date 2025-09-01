@@ -8,6 +8,9 @@ import org.springframework.data.convert.WritingConverter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * MariaDB JSON 컬럼 처리를 위한 Map to String Converter
+ */
 @WritingConverter
 public class MapToStringConverter implements Converter<Map<String, Object>, String> {
 

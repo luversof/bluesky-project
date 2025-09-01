@@ -11,7 +11,7 @@ public class ZonedDateTimeToTimestampConverter implements Converter<ZonedDateTim
 	
 	@Override
 	public Timestamp convert(ZonedDateTime source) {
-		return Timestamp.from(source.toInstant()); // UTC 기준으로 저장
+		return source == null ? null : Timestamp.from(source.toInstant()); // UTC 기준으로 저장
 	}
 
 }

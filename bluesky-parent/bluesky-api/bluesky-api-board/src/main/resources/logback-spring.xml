@@ -4,4 +4,7 @@
 	<include resource="io/github/luversof/boot/logging/logback/base.xml"/>
 	
 	<logger name="net.luversof" level="${PROJECT_ACTIVE_LOG_LEVEL}" />
+	
+	<logger name="org.springframework.jdbc.core" level="DEBUG" />
+	<logger name="org.springframework.data.relational.core" level="DEBUG" />
 </configuration>

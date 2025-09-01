@@ -12,8 +12,8 @@ public class TimestampToZonedDateTimeConverter implements Converter<Timestamp, Z
 	
 	@Override
 	public ZonedDateTime convert(Timestamp source) {
-		return ZonedDateTime.ofInstant(source.toInstant(), ZoneId.systemDefault());
-		// 또는 원하는 ZoneId로 고정 가능
+//		return source == null ? null : ZonedDateTime.ofInstant(source.toInstant(), ZoneId.systemDefault());
+		return source == null ? null : source.toInstant().atZone(ZoneId.systemDefault());
 	}
 
 }

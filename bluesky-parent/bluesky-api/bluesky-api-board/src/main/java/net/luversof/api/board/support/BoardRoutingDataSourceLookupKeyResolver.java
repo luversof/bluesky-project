@@ -9,7 +9,7 @@ public class BoardRoutingDataSourceLookupKeyResolver implements RoutingDataSourc
 
 	@Override
 	public String getLookupKey() {
-		return "board";
+		return "board_postgresql";
 	}
 
 }

@@ -3,9 +3,7 @@ package net.luversof.api.board.domain;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -13,6 +11,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import lombok.Data;
+import net.luversof.api.board.annotation.CreatedDate;
+import net.luversof.api.board.annotation.LastModifiedDate;
 
 @Data
 @Table(name = "BoardArticle")

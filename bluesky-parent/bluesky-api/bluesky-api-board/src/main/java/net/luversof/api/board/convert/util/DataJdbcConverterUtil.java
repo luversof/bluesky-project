@@ -4,13 +4,13 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.util.ReflectionUtils;
 
 import io.github.luversof.boot.uuid.UuidGeneratorUtil;
 import lombok.experimental.UtilityClass;
+import net.luversof.api.board.annotation.CreatedDate;
+import net.luversof.api.board.annotation.LastModifiedDate;
 
 @UtilityClass
 public class DataJdbcConverterUtil {

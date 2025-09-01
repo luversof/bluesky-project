@@ -9,6 +9,9 @@ import org.springframework.data.convert.ReadingConverter;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * MariaDB JSON 컬럼 처리를 위한 String to Map Converter
+ */
 @ReadingConverter
 public class StringToMapConverter implements Converter<String, Map<String, Object>> {
 	
