@@ -41,7 +41,7 @@ class BoardArticleTest implements GeneralTest {
 	
 	@BeforeAll
 	static void beforeAll() {
-		RoutingDataSourceContextHolder.setContext(() -> "board");
+		RoutingDataSourceContextHolder.setContext(() -> "board_postgresql");
 	}
 	
 	@Test
