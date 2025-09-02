@@ -12,7 +12,7 @@ import jakarta.validation.constraints.Null;
 import lombok.Data;
 
 @Data
-@Table(name = "Board")
+@Table("Board")
 public class Board {
 
 	@Null(groups = Create.class)

@@ -46,7 +46,7 @@ public enum AssetInitialData {
 			asset.setBookkeeping(bookkeeping);
 			asset.setName(assetInitialData.getLocalizedName());
 			asset.setAssetType(targetAssetType);
-			asset.setBitConfigIndexList(assetInitialData.getBitConfigIndexList());
+//			asset.setBitConfigIndexList(assetInitialData.getBitConfigIndexList());
 			assetList.add(asset);
 		}
 		

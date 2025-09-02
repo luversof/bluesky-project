@@ -1,21 +1,13 @@
 package net.luversof.api.bookkeeping.domain;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
-import com.github.f4b6a3.uuid.alt.GUID;
-
-import io.github.luversof.boot.context.ApplicationContextUtil;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -24,8 +16,7 @@ import jakarta.validation.constraints.Null;
 import lombok.Data;
 
 @Data
-@Entity
-@Table(name = "Bookkeeping", indexes = { @Index(name = "IX_bookkeeping", columnList = "user_id") })
+@Table("Bookkeeping")
 public class Bookkeeping {
 
 	@Null(groups = Create.class)
@@ -35,27 +26,18 @@ public class Bookkeeping {
 	
 	
 	@NotNull(groups = { Create.class, Update.class, Delete.class })
-	@Column(name = "user_id", nullable = false)
+	@Column("user_id")
 	private UUID userId;
 	
 	@NotBlank(groups = { Create.class, Update.class })
 	private String name;
 
-	@CreationTimestamp
-	private ZonedDateTime createDate;
+	@CreatedDate
+	@Column("createdDate")
+	private OffsetDateTime createDate;
 	
-	@JdbcTypeCode(SqlTypes.JSON)
 	private BookeepingExtraData extraData = new BookeepingExtraData();
 	
-	
-	@PrePersist
-	public void prePersist() {
-		if (ApplicationContextUtil.getApplicationContext().getEnvironment().matchesProfiles("localdev") && id != null) {
-			return;
-		}
-		id = GUID.v7().toUUID();
-	}
-
 	public interface Create {}
 	public interface Update {}
 	public interface Delete {}

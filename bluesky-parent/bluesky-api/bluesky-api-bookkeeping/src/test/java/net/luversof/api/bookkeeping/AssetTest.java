@@ -56,7 +56,9 @@ class AssetTest implements GeneralTest {
 	@Test
 	void updateAsset() {
 		var assetList = assetService.findByBookkeepingId(bookkeepingId);
-		var targetAsset = assetList.stream().filter(asset -> asset.getBitConfigIndexList().contains(AssetBitConfig.ENABLE_UPDATE.getIndex())).findAny().get();
+		var targetAsset = assetList.stream()
+//				.filter(asset -> asset.getBitConfigIndexList().contains(AssetBitConfig.ENABLE_UPDATE.getIndex()))
+				.findAny().get();
 		
 		targetAsset.setName(targetAsset.getName() + " 수정");
 		

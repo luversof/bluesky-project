@@ -1,9 +1,8 @@
 package net.luversof.api.bookkeeping.service.base;
 
-import java.util.List;
 import java.util.Optional;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.CrudRepository;
 
 /** 
  * 개발시 데이터 확인을 위해 제공하는 기초적인 호출을 제공
@@ -11,13 +10,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 public interface BaseService<T, ID> {
 	
-	JpaRepository<T, ID> getRepository();
+	CrudRepository<T, ID> getRepository();
 
 	default T save(T t) {
 		return getRepository().save(t);
 	}
 	
-	default List<T> saveAll(Iterable<T> list) {
+	default Iterable<T> saveAll(Iterable<T> list) {
 		return getRepository().saveAll(list);
 	}
 	

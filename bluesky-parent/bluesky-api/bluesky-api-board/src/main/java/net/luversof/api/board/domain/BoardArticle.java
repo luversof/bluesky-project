@@ -15,7 +15,7 @@ import jakarta.validation.constraints.Null;
 import lombok.Data;
 
 @Data
-@Table(name = "BoardArticle")
+@Table("BoardArticle")
 public class BoardArticle {
 
 	@Id

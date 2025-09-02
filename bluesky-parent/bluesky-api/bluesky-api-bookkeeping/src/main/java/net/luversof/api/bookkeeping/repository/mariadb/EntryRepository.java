@@ -3,11 +3,11 @@ package net.luversof.api.bookkeeping.repository.mariadb;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.CrudRepository;
 
 import net.luversof.api.bookkeeping.domain.Entry;
 
-public interface EntryRepository extends JpaRepository<Entry, UUID> {
+public interface EntryRepository extends CrudRepository<Entry, UUID> {
 	
 	List<Entry> findByBookkeepingId(UUID bookkeepingId);
 	

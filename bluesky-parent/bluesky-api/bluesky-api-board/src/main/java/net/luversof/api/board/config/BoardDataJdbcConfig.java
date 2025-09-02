@@ -51,7 +51,6 @@ public class BoardDataJdbcConfig {
 		return DataJdbcConverterUtil::prepareEntity;
 	}
 	
-	// mariadb 사용시 converter 등록
 	@Bean
 	JdbcCustomConversions boardjdbcCustomConversions() {
 		return new JdbcCustomConversions(List.of(

@@ -1,61 +1,39 @@
 package net.luversof.api.bookkeeping.domain;
 
-import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
-import com.github.f4b6a3.uuid.alt.GUID;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
-import jakarta.persistence.Convert;
-import jakarta.persistence.Entity;
-import jakarta.persistence.ForeignKey;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import lombok.Data;
-import net.luversof.api.bookkeeping.converter.IntegerListConverter;
 
 @Data
-@Entity
-@Table(name = "Asset")
+@Table("Asset")
 public class Asset {
 
 	@Null(groups = Create.class)
 	@NotNull(groups = { Update.class, Delete.class })
 	@Id
+	@Column("id")
 	private UUID id;
-	
+
+	@Column("bookkeeping_id")
 	@NotNull(groups = { Update.class, Delete.class })
-	
-	@ManyToOne
-	@JoinColumn(name = "bookkeeping_id", nullable = false, foreignKey = @ForeignKey(name = "FK_asset"))
 	private Bookkeeping bookkeeping;
 	
-	@ManyToOne
-	@JoinColumn(name = "assetType_id", nullable = false, foreignKey = @ForeignKey(name = "FK_asset2"))
+	@Column("assetType_id")
 	private AssetType assetType;
 
-//	@Convert(converter = BitSetConverter.class)
-	@Convert(converter = IntegerListConverter.class)
-	private List<Integer> bitConfigIndexList;
+	private Map<String, Object> jsonConfig;
 	
 	private String name;
-	
-	@PrePersist
-    public void prePersist() {
-    	id = GUID.v7().toUUID();
-    }
 	
 	public interface Create {}
 	public interface Update {}
 	public interface Delete {}
-	
-	@Data
-	public static class AssetConfig {
-		
-	}
 
 }

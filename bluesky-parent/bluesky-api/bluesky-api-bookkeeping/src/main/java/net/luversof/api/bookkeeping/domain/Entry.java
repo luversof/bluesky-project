@@ -2,22 +2,13 @@ package net.luversof.api.bookkeeping.domain;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
-import com.github.f4b6a3.uuid.alt.GUID;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import lombok.Data;
@@ -27,15 +18,7 @@ import lombok.Data;
  * 다중 기록을 하며 credit + debit의 총 합은 무조건 0 
  */
 @Data
-@Entity
-@Table(
-	name = "Entry",
-	indexes = {
-		@Index(name = "IX_entry", columnList = "incomeAsset_id"),
-		@Index(name = "IX_entry2", columnList = "outgoingAsset_id"),
-		@Index(name = "IX_entry3", columnList = "entryType_id")
-	}
-)
+@Table("Entry")
 public class Entry implements Serializable {
 
 	private static final long serialVersionUID = 1L;
@@ -48,47 +31,41 @@ public class Entry implements Serializable {
 	private UUID id;
 	
 	@NotNull(groups = { Create.class, Update.class })
-	@Column(name = "bookkeeping_id", nullable = false)
+	@Column("bookkeeping_id")
 	private UUID bookkeepingId;
 	
-	@ManyToOne
-	@JoinColumn(name = "entryType_id", nullable = false)
-//	@Column(name = "entryType_id", nullable = false)
+	@Column("entryType_id")
 	private EntryType entryType;
 
 	@NotNull(groups = { Create.class, Update.class })
-	@Column(nullable = false)
-	private ZonedDateTime entryDate;
+	@Column("entryDate")
+	private OffsetDateTime entryDate;
 	
 	@NotNull(groups = { Create.class, Update.class })
-	@Column(name = "incomeAsset_id", nullable = false)
+	@Column("incomeAsset_id")
 	private UUID incomeAssetId;
 	
 	@NotNull(groups = { Create.class, Update.class })
-	@Column(name = "outgoingAsset_id", nullable = false)
+	@Column("outgoingAsset_id")
 	private UUID outgoingAssetId;
 	
 	@NotNull(groups = { Create.class, Update.class })
 	private BigDecimal amount;
 	
-	@JdbcTypeCode(SqlTypes.JSON)
 	private EntryExtraData extraData;
-
-	@PrePersist
-	public void prePersist() {
-		id = GUID.v7().toUUID();
-	}
 	
 	public interface Create {}
-    public interface Update {}
-    public interface Delete {}
-    
-    @Data
-    public static class EntryExtraData implements Serializable {
 
-    	private static final long serialVersionUID = 1L;
-    	
+	public interface Update {}
+
+	public interface Delete {}
+
+	@Data
+	public static class EntryExtraData implements Serializable {
+
+		private static final long serialVersionUID = 1L;
+
 		private String memo;
-    }
+	}
 
 }

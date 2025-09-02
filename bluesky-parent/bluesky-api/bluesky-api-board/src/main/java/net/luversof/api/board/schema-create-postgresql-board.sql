@@ -11,10 +11,10 @@ CREATE TABLE "BoardArticle" (
 	"id" UUID NOT NULL PRIMARY KEY,
 	"board_id" UUID NOT NULL,
 	"user_id" VARCHAR(36) NOT NULL,
-	"title" VARCHAR(255),
-	"content" TEXT,
-	"createdDate" TIMESTAMPZ,
-	"lastModifiedDate" TIMESTAMPZ
+	"title" VARCHAR(255) NOT NULL,
+	"content" TEXT NOT NULL,
+	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL,
+	"lastModifiedDate" TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
 -- 인덱스 생성

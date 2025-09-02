@@ -37,9 +37,9 @@ public class AssetService {
 		checkAsset(asset);
 		
 		// bitConfig set
-		if (asset.getBitConfigIndexList() == null) {
-			asset.setBitConfigIndexList(AssetInitialData.getNormalBitConfigList());
-		}
+//		if (asset.getBitConfigIndexList() == null) {
+//			asset.setBitConfigIndexList(AssetInitialData.getNormalBitConfigList());
+//		}
 
 		return assetBaseService.save(asset);
 	}
@@ -55,13 +55,13 @@ public class AssetService {
 			BookkeepingError.INVALID_BOOKKEEPING_ID.throwException();
 		}
 		
-		// bitConfig 체크를 해야 하는 경우는 어떻게 처리를 해야 할까?
-		var bitConfigIndexList = targetAsset.getBitConfigIndexList();
-		
-		
-		if (!AssetBitConfig.ENABLE_UPDATE.hasIndexFromIndexList(bitConfigIndexList)) {
-			BookkeepingError.INVALID_REQUEST.throwException();
-		}
+//		// bitConfig 체크를 해야 하는 경우는 어떻게 처리를 해야 할까?
+//		var bitConfigIndexList = targetAsset.getBitConfigIndexList();
+//		
+//		
+//		if (!AssetBitConfig.ENABLE_UPDATE.hasIndexFromIndexList(bitConfigIndexList)) {
+//			BookkeepingError.INVALID_REQUEST.throwException();
+//		}
 		
 		checkAsset(asset);
 		
