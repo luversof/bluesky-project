@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jdbc.core.mapping.AggregateReference;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
@@ -43,7 +44,7 @@ class AssetTest implements GeneralTest {
 		var assetType = assetTypeBaseService.findByBookkeepingId(bookkeepingId).get(0);
 		
 		var asset = new Asset();
-		asset.setBookkeeping(bookkeeping);
+		asset.setBookkeepingId(AggregateReference.to(bookkeeping.getId()));
 		asset.setAssetType(assetType);
 		asset.setName("테스트자산");
 		

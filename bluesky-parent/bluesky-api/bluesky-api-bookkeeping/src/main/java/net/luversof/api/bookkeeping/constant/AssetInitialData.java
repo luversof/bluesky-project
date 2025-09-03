@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.springframework.data.jdbc.core.mapping.AggregateReference;
+
 import io.github.luversof.boot.context.support.MessageUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -43,7 +45,8 @@ public enum AssetInitialData {
 			}
 			
 			var asset = new Asset();
-			asset.setBookkeeping(bookkeeping);
+			asset.setBookkeepingId(AggregateReference.to(bookkeeping.getId()));
+//			asset.setBookkeeping(bookkeeping);
 			asset.setName(assetInitialData.getLocalizedName());
 			asset.setAssetType(targetAssetType);
 //			asset.setBitConfigIndexList(assetInitialData.getBitConfigIndexList());

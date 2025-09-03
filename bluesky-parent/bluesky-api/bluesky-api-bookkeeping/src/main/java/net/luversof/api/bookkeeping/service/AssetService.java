@@ -51,7 +51,7 @@ public class AssetService {
 	public Asset updateAsset(Asset asset) {
 		
 		var targetAsset = assetBaseService.findById(asset.getId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
-		if (!targetAsset.getBookkeeping().getId().equals(asset.getBookkeeping().getId())) {
+		if (!targetAsset.getBookkeepingId().getId().equals(asset.getBookkeepingId().getId())) {
 			BookkeepingError.INVALID_BOOKKEEPING_ID.throwException();
 		}
 		
@@ -97,7 +97,7 @@ public class AssetService {
 	 * @param asset
 	 */
 	private void checkAsset(Asset asset) {
-		var targetBookkeeping = bookkeepingBaseService.findById(asset.getBookkeeping().getId()).orElseThrow(BookkeepingError.NOT_EXIST_BOOKKEEPING_ID::exception);
+		var targetBookkeeping = bookkeepingBaseService.findById(asset.getBookkeepingId().getId()).orElseThrow(BookkeepingError.NOT_EXIST_BOOKKEEPING_ID::exception);
 		
 		if (asset.getAssetType() == null || asset.getAssetType().getId() == null) {
 			BookkeepingError.NOT_EXIST_ASSETTYPE_ID.throwException();

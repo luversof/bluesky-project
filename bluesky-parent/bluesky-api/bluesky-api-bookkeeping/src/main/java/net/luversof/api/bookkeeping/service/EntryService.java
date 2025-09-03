@@ -87,14 +87,14 @@ public class EntryService {
 		
 		// 2. incomeAsset 확인
 		var incomeAsset = assetBaseService.findById(entry.getIncomeAssetId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
-		if (!incomeAsset.getBookkeeping().equals(bookkeeping)) {
+		if (!incomeAsset.getBookkeepingId().getId().equals(bookkeeping)) {
 			BookkeepingError.INVALID_ASSET_ID.throwException();
 		}
 		
 		
 		// 3. outgoingAsset 확인 
 		var outgoingAsset = assetBaseService.findById(entry.getOutgoingAssetId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
-		if (!outgoingAsset.getBookkeeping().equals(bookkeeping)) {
+		if (!outgoingAsset.getBookkeepingId().getId().equals(bookkeeping)) {
 			BookkeepingError.INVALID_ASSET_ID.throwException();
 		}
 
