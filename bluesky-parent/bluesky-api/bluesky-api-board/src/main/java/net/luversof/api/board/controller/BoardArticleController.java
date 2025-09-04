@@ -32,7 +32,7 @@ public class BoardArticleController {
 
 	@PostMapping
 	public BoardArticle create(@Validated(BoardArticle.Create.class) @RequestBody BoardArticle boardArticle) {
-		return boardArticleService.create(boardArticle);
+		return boardArticleService.save(boardArticle);
 	}
 
 	@GetMapping("/findByBoardAlias")
@@ -48,7 +48,7 @@ public class BoardArticleController {
 
 	@PutMapping
 	public BoardArticle modify(@Validated(BoardArticle.Modify.class) @RequestBody BoardArticle boardArticle) {
-		return boardArticleService.modify(boardArticle);
+		return boardArticleService.update(boardArticle);
 	}
 
 	@DeleteMapping

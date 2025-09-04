@@ -25,11 +25,11 @@ public class BoardArticleService {
 	@Setter(onMethod_ = @Autowired)
 	private BoardArticleRepository boardArticleRepository;
 	
-	public BoardArticle create(BoardArticle boardArticle) {
+	public BoardArticle save(BoardArticle boardArticle) {
 		return boardArticleRepository.save(boardArticle);
 	}
 	
-	public BoardArticle modify(BoardArticle boardArticle) {
+	public BoardArticle update(BoardArticle boardArticle) {
 		var targetBoardArticle = boardArticleRepository.findById(boardArticle.getId()).orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARDARTICLE));
 
 		if (!targetBoardArticle.getUserId().equals(boardArticle.getUserId())) {

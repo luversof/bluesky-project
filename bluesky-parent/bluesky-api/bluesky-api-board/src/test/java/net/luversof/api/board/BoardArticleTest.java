@@ -54,7 +54,7 @@ class BoardArticleTest implements GeneralTest {
 		boardArticle.setUserId("1");
 		boardArticle.setTitle("테스트");
 		boardArticle.setContent("내용");
-		boardArticleService.create(boardArticle);
+		boardArticleService.save(boardArticle);
 	}
 	
 	@RepeatedTest(value = 10000, name = "반복 입력")
@@ -109,7 +109,7 @@ class BoardArticleTest implements GeneralTest {
 		boardArticle.setTitle("수정된 제목");
 		boardArticle.setContent("수정된 내용");
 		
-		var result = boardArticleService.modify(boardArticle);
+		var result = boardArticleService.update(boardArticle);
 		assertThat(result).isNotNull();
 		assertThat(result.getTitle()).isEqualTo("수정된 제목");
 		assertThat(result.getContent()).isEqualTo("수정된 내용");
