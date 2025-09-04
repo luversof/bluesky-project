@@ -11,22 +11,22 @@ import net.luversof.client.user.domain.LoginInfo;
 @UtilityClass
 public class UserUtil {
 	
-	private static LoginInfo NOT_LOGIN_USER = new LoginInfo();
+	private static final LoginInfo NOT_LOGIN_USER = new LoginInfo();
 	
 	public static LoginInfo getLoginInfo() {
 		var securityContext = SecurityContextHolder.getContext();
 		
+		var loginInfo = NOT_LOGIN_USER;
+		
 		if (securityContext == null) {
-			return NOT_LOGIN_USER;
+			return loginInfo;
 		}
 		
 		var authentication = securityContext.getAuthentication();
 		
 		if (securityContext.getAuthentication() instanceof AnonymousAuthenticationToken) {
-			return NOT_LOGIN_USER;
+			return loginInfo;
 		}
-		
-		LoginInfo loginInfo = null;
 		
 		if (authentication instanceof UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken) {
 			loginInfo = new LoginInfo(usernamePasswordAuthenticationToken);

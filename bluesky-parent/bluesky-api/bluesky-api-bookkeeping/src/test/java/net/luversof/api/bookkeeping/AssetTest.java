@@ -11,7 +11,6 @@ import org.springframework.data.jdbc.core.mapping.AggregateReference;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
-import net.luversof.api.bookkeeping.constant.AssetBitConfig;
 import net.luversof.api.bookkeeping.constant.TestConstant;
 import net.luversof.api.bookkeeping.domain.Asset;
 import net.luversof.api.bookkeeping.service.AssetService;

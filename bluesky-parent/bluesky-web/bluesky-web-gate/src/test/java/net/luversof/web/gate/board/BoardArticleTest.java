@@ -2,6 +2,8 @@ package net.luversof.web.gate.board;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.UUID;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,9 +13,9 @@ import org.springframework.data.domain.Sort.Order;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralWebTest;
-import net.luversof.web.gate.feign.board.client.BoardArticleClient;
-import net.luversof.web.gate.feign.board.client.BoardClient;
-import net.luversof.web.gate.feign.board.domain.BoardArticle;
+import net.luversof.web.gate.board.domain.BoardArticle;
+import net.luversof.web.gate.board.openfeign.BoardArticleClient;
+import net.luversof.web.gate.board.openfeign.BoardClient;
 
 @Slf4j
 class BoardArticleTest implements GeneralWebTest {
@@ -28,11 +30,12 @@ class BoardArticleTest implements GeneralWebTest {
 	@DisplayName("게시글 생성")
 	void create() {
 		var board = boardClient.findByAlias("free");
-		var boardArticle = new BoardArticle();
-		boardArticle.setBoardId(board.boardId());
-		boardArticle.setUserId("userId");
-		boardArticle.setTitle("title");
-		boardArticle.setContent("content");
+		var boardArticle = BoardArticle.builder()
+			.boardId(board.id())
+			.userId("userId")
+			.title("title")
+			.content("content")
+			.build();
 		var resultBoardArticle = boardArticleClient.create(boardArticle);
 		assertThat(resultBoardArticle).isNotNull();
 	}
@@ -48,7 +51,7 @@ class BoardArticleTest implements GeneralWebTest {
 	
 	@Test
 	void findByBoardArticleId() {
-		var boardArticle = boardArticleClient.findByBoardArticleId("208e94d0-2560-4517-8ff5-1892d9f5f4df");
+		var boardArticle = boardArticleClient.findById(UUID.fromString("208e94d0-2560-4517-8ff5-1892d9f5f4df"));
 		log.debug("boardArticle : {}", boardArticle);
 		assertThat(boardArticle).isNotNull();
 	}

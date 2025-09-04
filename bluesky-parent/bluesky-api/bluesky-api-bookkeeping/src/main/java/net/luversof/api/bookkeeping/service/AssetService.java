@@ -7,8 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import lombok.Setter;
-import net.luversof.api.bookkeeping.constant.AssetBitConfig;
-import net.luversof.api.bookkeeping.constant.AssetInitialData;
 import net.luversof.api.bookkeeping.constant.BookkeepingError;
 import net.luversof.api.bookkeeping.domain.Asset;
 import net.luversof.api.bookkeeping.service.base.AssetBaseService;
