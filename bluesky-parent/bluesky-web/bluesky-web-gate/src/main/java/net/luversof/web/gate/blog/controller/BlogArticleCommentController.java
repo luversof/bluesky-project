@@ -22,8 +22,8 @@ import net.luversof.web.gate.blog.openfeign.BlogArticleCommentClient;
 
 
 @RestController
-@RequestMapping(value = "/json/blog/articleComment", produces = MediaType.APPLICATION_JSON_VALUE)
-public class BlogArticleCommentJsonController {
+@RequestMapping(value = "/api/blog/articleComment", produces = MediaType.APPLICATION_JSON_VALUE)
+public class BlogArticleCommentController {
 
 	@Autowired
 	private BlogArticleCommentClient blogArticleCommentClient;

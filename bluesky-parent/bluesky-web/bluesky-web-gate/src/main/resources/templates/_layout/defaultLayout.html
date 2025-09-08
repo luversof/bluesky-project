@@ -4,17 +4,13 @@
 	data-th-data-theme="${thymeleafUtil.getRandomTheme('light','bumblebee','emerald','corporate','garden','lofi','pastel','fantasy','wireframe','cmyk','automn','acid','winter','nord')}" 
 >
 
-<head>
-	<link data-th-href="@{/main.css}" rel="stylesheet" />
-	<script src="https://unpkg.com/theme-change"></script>
-	<script src="https://unpkg.com/htmx.org"></script>
-	<script data-th-src="@{/js/common.js}"></script>
-</head>
+<head data-th-replace="~{_components/head :: headCommon}"></head>
 
 <body>
-	<div class="container-fluid">
 
-		<div data-th-replace="~{_components/navbar}"></div>
+	<div data-th-replace="~{_components/navbar}"></div>
+
+	<div>
 
 		<div data-layout-fragment="content" class="px-2">본문</div>
 

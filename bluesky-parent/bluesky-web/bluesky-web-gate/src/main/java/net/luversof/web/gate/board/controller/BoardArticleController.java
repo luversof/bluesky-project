@@ -27,8 +27,8 @@ import net.luversof.web.gate.board.openfeign.BoardArticleClient;
 
 @Slf4j
 @RestController
-@RequestMapping(value = "/json/boardArticle", produces = MediaType.APPLICATION_JSON_VALUE)
-public class BoardArticleJsonController {
+@RequestMapping(value = "/api/board/article", produces = MediaType.APPLICATION_JSON_VALUE)
+public class BoardArticleController {
 
 	@Autowired
 	private BoardArticleClient boardArticleClient;

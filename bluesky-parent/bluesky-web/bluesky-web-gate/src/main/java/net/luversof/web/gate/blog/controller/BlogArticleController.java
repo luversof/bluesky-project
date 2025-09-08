@@ -21,8 +21,8 @@ import net.luversof.web.gate.blog.domain.BlogArticle;
 import net.luversof.web.gate.blog.openfeign.BlogArticleClient;
 
 @RestController
-@RequestMapping(value = "/json/blog/article", produces = MediaType.APPLICATION_JSON_VALUE)
-public class BlogArticleJsonController {
+@RequestMapping(value = "/api/blog/article", produces = MediaType.APPLICATION_JSON_VALUE)
+public class BlogArticleController {
 
 	@Autowired
 	private BlogArticleClient blogArticleClient;

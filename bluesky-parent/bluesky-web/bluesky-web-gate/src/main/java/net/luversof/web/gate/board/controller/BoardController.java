@@ -11,8 +11,8 @@ import net.luversof.web.gate.board.domain.Board;
 import net.luversof.web.gate.board.openfeign.BoardClient;
 
 @RestController
-@RequestMapping(value = "/json/board", produces = MediaType.APPLICATION_JSON_VALUE)
-public class BoardJsonController {
+@RequestMapping(value = "/api/board", produces = MediaType.APPLICATION_JSON_VALUE)
+public class BoardController {
 	
 	@Autowired
 	private BoardClient boardClient;

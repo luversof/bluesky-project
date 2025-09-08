@@ -20,8 +20,8 @@ import net.luversof.web.gate.bookkeeping.domain.Bookkeeping;
 import net.luversof.web.gate.bookkeeping.openfeign.BookkeepingClient;
 
 @RestController
-@RequestMapping(value = "/json/bookkeeping", produces = MediaType.APPLICATION_JSON_VALUE)
-public class BookkeepingJsonController {
+@RequestMapping(value = "/api/bookkeeping", produces = MediaType.APPLICATION_JSON_VALUE)
+public class BookkeepingController {
 
 	@Autowired
 	private BookkeepingClient bookkeepingClient;

@@ -9,8 +9,8 @@ import net.luversof.client.user.domain.LoginInfo;
 import net.luversof.client.user.util.UserUtil;
 
 @RestController
-@RequestMapping(value= "/json/user/loginInfo", produces = MediaType.APPLICATION_JSON_VALUE)
-public class LoginInfoJsonController {
+@RequestMapping(value= "/api/user/loginInfo", produces = MediaType.APPLICATION_JSON_VALUE)
+public class LoginInfoController {
 	
 	@GetMapping
 	public LoginInfo loginInfo() {

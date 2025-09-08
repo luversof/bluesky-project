@@ -21,8 +21,8 @@ import net.luversof.web.gate.blog.openfeign.BlogArticleCategoryClient;
 import net.luversof.web.gate.blog.openfeign.BlogClient;
 
 @RestController
-@RequestMapping(value = "/json/blog/articleCategory", produces = MediaType.APPLICATION_JSON_VALUE)
-public class BlogArticleCategoryJsonController {
+@RequestMapping(value = "/api/blog/articleCategory", produces = MediaType.APPLICATION_JSON_VALUE)
+public class BlogArticleCategoryController {
 
 	@Autowired
 	private BlogArticleCategoryClient blogArticleCategoryClient;

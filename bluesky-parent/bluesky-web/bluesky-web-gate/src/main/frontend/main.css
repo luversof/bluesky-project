@@ -1,6 +1,39 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@source "../resources/templates";
+@plugin "@tailwindcss/typography";
+@plugin "daisyui" {
+	themes: all;
+}
+@plugin "daisyui/theme" {
+	name: "bluesky";
+	default: true;	/* set as default */
+	prefersdark: false;	/* set as default dark mode (prefers-color-scheme:dark) */
+	color-scheme: light;	/* color of browser-provided UI */
+	--font-family: "'Inter','Noto Sans KR','Noto Sans JP','Microsoft YaHei','Microsoft JhengHei','Segoe UI','Roboto','Arial','sans-serif','Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol','Noto Color Emoji'";
+	--color-primary: "#3e6cdf";
+	--color-primary-content: "#ffffff";
+	--color-secondary: "#4b5563";
+	--color-secondary-content: "#ffffff";
+	--color-accent: "#ffffff";
+	--color-neutral: "#111827";
+	--color-neutral-content: "#ffffff";
+	--color-base-100: "#ffffff";
+	--color-info: "#e3f1fa";
+	--color-info-content: "#2062ab";
+	--color-success: "#d0fbca";
+	--color-success-content: "#008a00";
+	--color-warning: "#fffac3";
+	--color-warning-content: "#e07303";
+	--color-error: "#ffebee";
+	--color-error-content: "#c30115";
+	--radius-selector: 0rem;
+	--radius-field: 0rem;
+	--radius-box: 0rem;
+	--tab-radius: "0";
+	--animation-btn: "0";
+	--animation-input: "0";
+	--btn-focus-scale: "1";
+}
 
 /* pagination 비활성화 버튼 배경색 처리 제거 */
 .navButton.btn.btn-disabled {
