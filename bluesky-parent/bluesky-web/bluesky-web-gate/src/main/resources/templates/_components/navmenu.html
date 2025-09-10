@@ -2,10 +2,10 @@
 
 <ul class="menu p-0"
 	data-th-with="
-	menu=${menu},
-	menuList = ${thymeleafUtil.getMenuList(menu)},
-	isCurrentMenu = ${isCurrentMenu?:false},
-	classAppend = ${classAppend}
+		menu=${menu},
+		menuList = ${thymeleafUtil.getMenuList(menu)},
+		isCurrentMenu = ${isCurrentMenu?:false},
+		classAppend = ${classAppend}
 	"
 	data-th-classappend="${classAppend}">
 	<li data-th-each="menu : ${menuList}">

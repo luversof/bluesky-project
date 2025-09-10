@@ -44,11 +44,18 @@ public class ThymeleafUtil {
 			"winter",
 			"dim",
 			"nord",
-			"sunset"
+			"sunset",
+			"caramellatte",
+			"abyss",
+			"silk"
 	};
 
 	public static List<Menu> getMenuList(String key) {
 		return WebCommonUtil.getMenuList(key);
+	}
+	
+	public static String getRandomTheme() {
+		return getRandomTheme(THEMES);
 	}
 	
 	public static String getRandomTheme(String...themes) {

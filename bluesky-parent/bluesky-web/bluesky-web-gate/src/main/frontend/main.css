@@ -1,14 +1,19 @@
 @import "tailwindcss";
 @source "../resources/templates";
 @plugin "@tailwindcss/typography";
+
 @plugin "daisyui" {
 	themes: all;
 }
+
 @plugin "daisyui/theme" {
 	name: "bluesky";
-	default: true;	/* set as default */
-	prefersdark: false;	/* set as default dark mode (prefers-color-scheme:dark) */
-	color-scheme: light;	/* color of browser-provided UI */
+	default: true;
+	/* set as default */
+	prefersdark: false;
+	/* set as default dark mode (prefers-color-scheme:dark) */
+	color-scheme: light;
+	/* color of browser-provided UI */
 	--font-family: "'Inter','Noto Sans KR','Noto Sans JP','Microsoft YaHei','Microsoft JhengHei','Segoe UI','Roboto','Arial','sans-serif','Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol','Noto Color Emoji'";
 	--color-primary: "#3e6cdf";
 	--color-primary-content: "#ffffff";
@@ -42,11 +47,11 @@
 
 
 /* htmx indicator 설정 */
-.htmx-indicator{
-    opacity: 1 !important;
-    display:none;
+.htmx-indicator {
+	opacity: 1 !important;
+	display: none;
 }
 
-.htmx-request.htmx-indicator{
-    display:inline;
+.htmx-request.htmx-indicator {
+	display: inline;
 }

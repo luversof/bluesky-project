@@ -1,26 +1,17 @@
 <!DOCTYPE html>
 <html
 	data-th-with="thymeleafUtil = ${T(net.luversof.web.gate.util.ThymeleafUtil)}"
-	data-th-data-theme="${thymeleafUtil.getRandomTheme('light','bumblebee','emerald','corporate','garden','lofi','pastel','fantasy','wireframe','cmyk','automn','acid','winter','nord')}" 
+	data-th-data-theme="${thymeleafUtil.getRandomTheme()}" 
 >
-
-<head data-th-replace="~{_components/head :: headCommon}"></head>
+<head data-th-replace="~{_components/head/head :: headCommon}" />
 
 <body>
 
-	<div data-th-replace="~{_components/navbar}"></div>
+	<div data-th-replace="~{_components/body/navbar/navbar}" />
 
-	<div>
+	<div data-layout-fragment="content" class="px-2" />
+	
+	<footer data-th-replace="~{_components/body/footer}" />
 
-		<div data-layout-fragment="content" class="px-2">본문</div>
-
-		<footer class="footer footer-center p-4 bg-base-100 text-base-content">
-			<aside>
-				<p>Copyright © 2023 - All right reserved by Bluesky</p>
-			</aside>
-		</footer>
-
-	</div>
 </body>
-
 </html>
