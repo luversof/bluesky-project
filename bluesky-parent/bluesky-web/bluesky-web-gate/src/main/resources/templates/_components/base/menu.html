@@ -1,0 +1,36 @@
+<!--/*
+	properties에 설정한 menu를 기준으로 메뉴 목록을 제공
+	dropdown의 navmenu와 navbar-center의 navmenu의 submenu ui 구성이 다르기 때문에 fragment로 나누었음. 
+	다만 현재는 submenu를 사용하지는 않음.
+*/-->
+
+
+<ul
+	data-th-fragment="navbar-dropdown"
+	data-th-with="
+		menuList = ${thymeleafUtil.getMenuList('main')}
+	"
+	class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow"
+>
+	<li data-th-each="menu : ${menuList}">
+		<a
+			data-th-if="${menu.display}"
+			data-th-classappend="${menu.isCurrentMenu ? 'menu-active' : ''}" data-th-href="${menu.url}"
+			data-th-text="#{${menu.messageCode}}" />
+	</li>
+</ul>
+
+<ul
+	data-th-fragment="navbar-center"
+	data-th-with="
+		menuList = ${thymeleafUtil.getMenuList('main')}
+	"
+	class="menu menu-horizontal px-1"
+>
+	<li data-th-each="menu : ${menuList}">
+		<a
+			data-th-if="${menu.display}"
+			data-th-classappend="${menu.isCurrentMenu ? 'menu-active' : ''}" data-th-href="${menu.url}"
+			data-th-text="#{${menu.messageCode}}" />
+	</li>
+</ul>

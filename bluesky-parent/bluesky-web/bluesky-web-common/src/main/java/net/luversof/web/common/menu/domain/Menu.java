@@ -13,7 +13,7 @@ public class Menu {
 	private String messageCode;
 	private String url;
 	private String activeUrlPattern;
-	private boolean isDisplay;
+	private boolean isDisplay = true;
 	
 	
 	public boolean isCurrentMenu() {

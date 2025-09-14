@@ -6,7 +6,7 @@ import java.util.Random;
 
 import lombok.experimental.UtilityClass;
 import net.luversof.web.common.menu.domain.Menu;
-import net.luversof.web.common.menu.util.WebCommonUtil;
+import net.luversof.web.common.util.WebCommonUtil;
 
 @UtilityClass
 public class ThymeleafUtil {
@@ -49,6 +49,8 @@ public class ThymeleafUtil {
 			"abyss",
 			"silk"
 	};
+	
+	private static final Random RANDOM = new Random();
 
 	public static List<Menu> getMenuList(String key) {
 		return WebCommonUtil.getMenuList(key);
@@ -59,9 +61,8 @@ public class ThymeleafUtil {
 	}
 	
 	public static String getRandomTheme(String...themes) {
-		Random random = new Random();
 		var themeList = List.of(themes);
-		return themeList.get(random.nextInt(themeList.size()));
+		return themeList.get(RANDOM.nextInt(themeList.size()));
 	}
 	
 	public static List<String> getThemeList() {

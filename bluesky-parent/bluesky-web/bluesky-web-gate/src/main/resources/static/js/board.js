@@ -62,6 +62,7 @@ var boardWrite = (() => {
 
 document.addEventListener("DOMContentLoaded", () => {
 	if (boardMode == "list") {
+		console.log("TEST")
 		boardList.addEventListener();
 	}
 	if (boardMode == "write") {

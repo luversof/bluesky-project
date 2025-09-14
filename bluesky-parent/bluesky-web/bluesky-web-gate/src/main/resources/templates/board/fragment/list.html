@@ -3,33 +3,31 @@
 	<thead>
 		<tr>
 			<th>id</th>
-			<th>title</th>
-			<th>createdDate</th>
+			<th data-th-text="#{boardArticle.title}" />
+			<th data-th-text="#{boardArticle.createdDate}" />
 		</tr>
 	</thead>
 	<tbody>
 		<tr class="hover cursor-pointer"
 			data-th-each="boardArticle : ${page.content}"
 			data-th-data-boardArticleId="${boardArticle.boardArticleId}">
-			<th data-th-text="${boardArticle.id}"></th>
-			<td data-th-text="${boardArticle.title}"></td>
-			<td data-th-text="${#temporals.format(boardArticle.createdDate)}" data-th-data-date="${boardArticle.createdDate}"></td>
+			<td data-th-text="${boardArticle.id}" />
+			<td data-th-text="${boardArticle.title}" />
+			<td data-th-text="${#temporals.format(boardArticle.createdDate)}" data-th-data-date="${boardArticle.createdDate}" />
+		</tr>
+		<tr data-th-if="${page.content.isEmpty()}">
+			<td colspan="3" class="text-center" data-th-text="#{boardArticle.noData}" />
 		</tr>
 	</tbody>
 </table>
-
 
 <div class="flex justify-between items-center">
 	<div>
 	</div>
 	<div>
-		<div data-th-replace="~{_components/pagination (pagination = ${pagePagination})}"></div>
+		<div data-th-replace="~{_components/pagination (pagination = ${pagePagination})}" />
 	</div>
 	<div>
-		<button class="btn btn-sm writeButton" data-th-text="#{board.button.write}"></button>
+		<button class="btn btn-sm writeButton" data-th-text="#{board.button.write}" />
 	</div>
 </div>
-
-
-
-

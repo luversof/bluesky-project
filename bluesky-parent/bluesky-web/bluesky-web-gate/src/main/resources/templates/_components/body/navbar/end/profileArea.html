@@ -1,0 +1,31 @@
+<div data-sec-authorize="isAuthenticated()">
+	<div class="dropdown dropdown-end">
+		<div tabindex="0" class="btn btn-ghost">
+			<svg data-th-replace="~{__${path_icons}__ :: profile}" />
+			<div data-th-text="${T(net.luversof.client.user.util.UserUtil).getLoginInfo().username}"></div>
+		</div>
+		<ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
+			<li>
+				<form th:action="@{/logout}" method="post">
+					<button type="submit" class="flex items-center">
+						<svg data-th-replace="~{__${path_icons}__ :: logout}" /> 로그아웃
+					</button>
+				</form>
+			</li>
+		</ul>
+	</div>
+</div>
+<a 
+	data-sec-authorize="!isAuthenticated()"
+	class="btn btn-ghost h-14 rounded-none"
+	href="/oauth2/authorization/github"
+>
+	<svg data-th-replace="~{__${path_icons}__ :: login}" /> github 로그인
+</a>
+<a
+	data-sec-authorize="!isAuthenticated()"
+	class="btn btn-ghost h-14 rounded-none"
+	href="/oauth2/authorization/github-local"
+>
+	<svg data-th-replace="~{__${path_icons}__ :: login}" /> github local 로그인
+</a>

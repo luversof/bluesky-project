@@ -55,3 +55,8 @@
 .htmx-request.htmx-indicator {
 	display: inline;
 }
+
+/* theme class 설정 */
+.rounded-btn {
+	border-radius: var(--radius-box, .5rem);
+}

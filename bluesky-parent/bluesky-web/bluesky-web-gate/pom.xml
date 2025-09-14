@@ -31,6 +31,10 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-aop</artifactId>
+		</dependency>
 		<!-- (e) spring-boot -->
 
 		<!-- (s) spring-session -->
@@ -73,7 +77,7 @@
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 		</dependency>
 		<!-- (e) springdoc-openapi -->
-		
+
 		<!-- (e) bluesky boot devcheck-->
 		<dependency>
 			<groupId>io.github.luversof</groupId>
@@ -106,14 +110,14 @@
 			<artifactId>feign-micrometer</artifactId>
 		</dependency>
 		<!-- (e) observability -->
-		
+
 		<!-- (s) micrometer metrics -->
 		<dependency>
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-registry-prometheus</artifactId>
 		</dependency>
 		<!-- (e) micrometer metrics -->
-		
+
 		<!-- (s) micrometer traces -->
 		<dependency>
 			<groupId>io.micrometer</groupId>
