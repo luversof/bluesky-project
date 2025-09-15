@@ -42,6 +42,6 @@ document.addEventListener('htmx:beforeSwap', (event) => {
 		var indicator = document.querySelector(event.target.getAttribute('hx-indicator')).cloneNode(true);
 		indicator.style.display = "block";
 		event.target.innerHTML = "";
-	    event.target.appendChild(indicator);
+		event.target.appendChild(indicator);
 	}
 });

@@ -18,7 +18,7 @@ import net.luversof.web.gate.board.domain.BoardArticle;
 /**
  * 게시글 관련 API를 호출하는 OpenFeign 클라이언트 (bluesky-api-board 호출)
  */
-@FeignClient(name = "bluesky-api-board", contextId="api-board-boardArticle", path = "/api/board/article", url = "${gate.feign-client.url.board:}")
+@FeignClient(name = "bluesky-api-board", contextId="api-board-boardArticle", path = "/api/boardArticle", url = "${gate.feign-client.url.board:}")
 public interface BoardArticleClient {
 
 	/**

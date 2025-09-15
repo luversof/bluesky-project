@@ -16,9 +16,9 @@ import net.luversof.web.gate.board.domain.BoardArticle;
 import net.luversof.web.gate.board.openfeign.BoardArticleClient;
 
 @Controller
-@RequestMapping(value = "/board/fragment", produces = MediaType.TEXT_HTML_VALUE)
-@HtmxResponseHeader("#{boardMode}FragmentResponseTrigger")
-public class BoardFragmentController {
+@RequestMapping(value = "/htmx/board", produces = MediaType.TEXT_HTML_VALUE)
+@HtmxResponseHeader("#{boardMode}HtmxResponseTrigger")
+public class BoardHtmxController {
 	
 	@Autowired
 	private BoardArticleClient boardArticleClient;

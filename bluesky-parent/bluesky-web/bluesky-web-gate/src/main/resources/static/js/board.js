@@ -18,10 +18,10 @@ var boardAction = (() => {
 var boardList = (() => {
 	return {
 		addEventListener() {
-			document.addEventListener("listFragmentResponseTrigger", (event) => {
+			document.addEventListener("listHtmxResponseTrigger", (event) => {
 				event.target.querySelectorAll(".navButton").forEach(el => el.addEventListener("click", (event) => {
 					param.setParam("page", event.target.dataset.page);
-					htmx.trigger("#boardList", "listFragmentTrigger");
+					htmx.trigger("#boardList", "listHtmxTrigger");
 				}));
 				
 				event.target.querySelectorAll("[data-date]").forEach(el => el.textContent = dayjs().to(el.dataset.date));

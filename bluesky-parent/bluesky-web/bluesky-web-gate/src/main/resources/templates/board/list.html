@@ -11,8 +11,8 @@
 		</div>
 		<div id="boardList"
 			class="text-center"
-			hx-get="/board/fragment/list"
-			hx-trigger="load delay:0s, listFragmentTrigger"
+			hx-get="/htmx/board/list"
+			hx-trigger="load delay:0s, listHtmxTrigger"
 			hx-swap="transition:true"
 			hx-indicator="#indicator"
 			hx-vals="js:{
