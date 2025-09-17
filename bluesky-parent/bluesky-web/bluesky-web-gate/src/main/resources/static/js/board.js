@@ -46,7 +46,7 @@ var boardView = (() => {
 	}
 })();
 
-var boardWrite = (() => {
+const boardWrite = (() => {
 	return {
 		addEventListener() {
 			document.querySelectorAll(".cancelButton").forEach(el => el.addEventListener("click", () => boardAction.moveToList()));

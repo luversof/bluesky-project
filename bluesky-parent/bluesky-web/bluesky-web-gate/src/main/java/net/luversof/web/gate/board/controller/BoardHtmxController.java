@@ -16,7 +16,7 @@ import net.luversof.web.gate.board.domain.BoardArticle;
 import net.luversof.web.gate.board.openfeign.BoardArticleClient;
 
 @Controller
-@RequestMapping(value = "/htmx/board", produces = MediaType.TEXT_HTML_VALUE)
+@RequestMapping(value = "/board/htmx", produces = MediaType.TEXT_HTML_VALUE)
 @HtmxResponseHeader("#{boardMode}HtmxResponseTrigger")
 public class BoardHtmxController {
 	

@@ -10,7 +10,7 @@
 	<tbody>
 		<tr class="hover cursor-pointer"
 			data-th-each="boardArticle : ${page.content}"
-			data-th-data-boardArticleId="${boardArticle.boardArticleId}">
+			data-th-data-boardArticleId="${boardArticle.id}">
 			<td data-th-text="${boardArticle.id}" />
 			<td data-th-text="${boardArticle.title}" />
 			<td data-th-text="${#temporals.format(boardArticle.createdDate)}" data-th-data-date="${boardArticle.createdDate}" />

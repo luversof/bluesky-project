@@ -5,8 +5,8 @@
 	<!--<script src="https://unpkg.com/@toast-ui/editor/dist/toastui-editor"></script>-->
 	
 	
-	<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
-	<link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css" />
+	<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
 
 	<script data-th-inline="javascript">
 		/*<![CDATA[*/
@@ -16,15 +16,11 @@
 		document.addEventListener("DOMContentLoaded", () => {
 			//boardList.addEventListener();
 			
-			var editor = new toastui.Editor({
-  				el: document.querySelector('#editor'),
-				height: '500px',
-				initialEditType: 'markdown',
-				previewStyle: 'vertical'
+			const easymde = new EasyMDE({
+				element: document.getElementById('editor'),
 			});
 		});
 	</script>
-	<link rel="stylesheet" href="https://unpkg.com/@toast-ui/editor/dist/toastui-editor.css" /> 
 </head>
 
 <body>
@@ -35,7 +31,7 @@
 					글쓰기
 				</h1>
 				<input type="text" placeholder="Type here" class="input input-bordered w-full max-w-xs" />
-				<div id="editor"></div>
+				<textarea id="editor"></textarea>
 				<div class="flex justify-between items-center">
 					<div>
 						
