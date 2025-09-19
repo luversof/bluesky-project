@@ -24,23 +24,17 @@
 </head>
 
 <body>
-	<div data-layout-fragment="content-board">
-		<div class="">
-			<div class="w-2/3 flex flex-col">
-				<h1>
-					글쓰기
-				</h1>
-				<input type="text" placeholder="Type here" class="input input-bordered w-full max-w-xs" />
-				<textarea id="editor"></textarea>
-				<div class="flex justify-between items-center">
-					<div>
-						
-					</div>
-					<div>
-						<button class="btn btn-sm writeButton" data-th-text="#{board.button.write}"></button>
-						<button class="btn btn-sm cancelButton" data-th-text="#{board.button.cancel}"></button>
-					</div>
-				</div>
+	<div data-layout-fragment="content-board" class="prose">
+		<h1>글쓰기</h1>
+		<input type="text" placeholder="Type here" class="input" />
+		<textarea id="editor"></textarea>
+		<div class="flex justify-between items-center">
+			<div>
+				
+			</div>
+			<div>
+				<button class="btn btn-sm writeButton" data-th-text="#{board.button.write}"></button>
+				<button class="btn btn-sm cancelButton" data-th-text="#{board.button.cancel}"></button>
 			</div>
 		</div>
 	</div>

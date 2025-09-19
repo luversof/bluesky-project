@@ -24,20 +24,10 @@ public class Board {
 	@Column("alias")
 	private String alias;
 	
-//	@JdbcTypeCode(SqlTypes.JSON)
 	@Column("jsonConfig")
 	private Map<String, Object> jsonConfig;
-//	private JsonConfig jsonConfig;
 	
 	public interface Create {}
 	public interface Update {}
-	
-	
-	@Data
-	public static class JsonConfig {
-		String key1;
-		String key2;
-		String key3;
-	}
-	
+
 }

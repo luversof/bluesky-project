@@ -23,6 +23,7 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 		<!-- (e) spring-boot -->
+		
 		<!-- (s) spring-cloud -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
@@ -33,28 +34,31 @@
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
 		<!-- (e) spring-cloud -->
+		
 		<!-- (s) boot admin -->
 		<dependency>
 			<groupId>de.codecentric</groupId>
 			<artifactId>spring-boot-admin-starter-client</artifactId>
 		</dependency>
 		<!-- (e) boot admin -->
+		
 		<!-- (s) springdoc-openapi -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 		</dependency>
 		<!-- (e) springdoc-openapi -->
+		
 		<!--<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-access</artifactId>
 		</dependency>-->
 		
 		<!-- (s) jdbc driver -->
-		<dependency>
+		<!--<dependency>
 			<groupId>org.mariadb.jdbc</groupId>
 			<artifactId>mariadb-java-client</artifactId>
-		</dependency>
+		</dependency>-->
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
@@ -90,6 +94,13 @@
 			<artifactId>bluesky-boot-properties-migrator</artifactId>
 		</dependency>
 		<!-- (e) bluesky-boot -->
+		
+		<!-- (e) bluesky boot connectioninfo -->
+		<dependency>
+			<groupId>io.github.luversof</groupId>
+			<artifactId>bluesky-boot-autoconfigure-connectioninfo-jdbc</artifactId>
+		</dependency>
+		<!-- (e) bluesky boot connectioninfo -->
 		
 		<!-- (s) bluesky boot devcheck-->
 		<dependency>

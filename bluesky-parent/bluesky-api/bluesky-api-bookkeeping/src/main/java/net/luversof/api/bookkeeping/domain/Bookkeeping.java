@@ -1,6 +1,7 @@
 package net.luversof.api.bookkeeping.domain;
 
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.data.annotation.CreatedDate;
@@ -34,9 +35,10 @@ public class Bookkeeping {
 
 	@CreatedDate
 	@Column("createdDate")
-	private OffsetDateTime createDate;
+	private OffsetDateTime createdDate;
 	
-	private BookeepingExtraData extraData = new BookeepingExtraData();
+	@Column("jsonConfig")
+	private Map<String, Object>  jsonConfig;
 	
 	public interface Create {}
 	public interface Update {}
@@ -45,7 +47,7 @@ public class Bookkeeping {
 	
 	
 	@Data
-	public static class BookeepingExtraData {
+	public static class BookeepingJsonConfig {
 		
 		/**
 		 * 시작일. startDay라고 해야하나?

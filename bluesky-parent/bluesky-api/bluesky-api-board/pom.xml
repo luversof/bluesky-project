@@ -53,6 +53,44 @@
 			<artifactId>logback-access</artifactId>
 		</dependency>-->
 		
+		<!-- (s) micrometer metrics -->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+		</dependency>
+		<!-- (e) micrometer metrics -->
+		
+		<!-- (s) micrometer traces -->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-tracing-bridge-otel</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.opentelemetry</groupId>
+			<artifactId>opentelemetry-exporter-otlp</artifactId>
+		</dependency>
+		<!-- (e) micrometer traces -->
+
+		<!-- (s) jdbc -->
+		<!--<dependency>
+			<groupId>org.mariadb.jdbc</groupId>
+			<artifactId>mariadb-java-client</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.microsoft.sqlserver</groupId>
+			<artifactId>mssql-jdbc</artifactId>
+		</dependency>-->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+		</dependency>
+		<!-- (e) jdbc -->
+		
+		<dependency>
+			<groupId>com.github.f4b6a3</groupId>
+			<artifactId>uuid-creator</artifactId>
+		</dependency>
+
 		<!-- (e) bluesky boot connectioninfo -->
 		<dependency>
 			<groupId>io.github.luversof</groupId>
@@ -73,45 +111,6 @@
 			<artifactId>bluesky-boot-autoconfigure-devcheck</artifactId>
 		</dependency>
 		<!-- (e) bluesky boot devcheck-->
-		
-		<!-- (s) micrometer metrics -->
-		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-registry-prometheus</artifactId>
-		</dependency>
-		<!-- (e) micrometer metrics -->
-		
-		<!-- (s) micrometer traces -->
-		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-tracing-bridge-otel</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.opentelemetry</groupId>
-			<artifactId>opentelemetry-exporter-otlp</artifactId>
-		</dependency>
-		<!-- (e) micrometer traces -->
-
-		<!-- (s) jdbc -->
-		<dependency>
-			<groupId>org.mariadb.jdbc</groupId>
-			<artifactId>mariadb-java-client</artifactId>
-		</dependency>
-		<!--<dependency>
-			<groupId>com.microsoft.sqlserver</groupId>
-			<artifactId>mssql-jdbc</artifactId>
-		</dependency>-->
-		<dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
-		</dependency>
-		<!-- (e) jdbc -->
-		
-		<dependency>
-			<groupId>com.github.f4b6a3</groupId>
-			<artifactId>uuid-creator</artifactId>
-		</dependency>
-
 	</dependencies>
 	<build>
 		<plugins>

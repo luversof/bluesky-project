@@ -24,7 +24,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import io.github.luversof.boot.data.convert.MapToPGobjectConverter;
 import io.github.luversof.boot.data.convert.PGobjectToMapConverter;
 import io.github.luversof.boot.data.convert.TimestampToOffsetDateTimeConverter;
-import net.luversof.api.board.convert.util.DataJdbcConverterUtil;
+import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
 
 @Configuration
 @EnableJdbcAuditing(dateTimeProviderRef = "auditingDateTimeProvider")

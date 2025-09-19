@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.UUID;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
@@ -24,13 +26,17 @@ class BookkeepingTest implements GeneralTest {
 	private UUID userId = TestConstant.USER_ID;
 	private UUID bookkeepingId = TestConstant.BOOKKEEPING_ID;
 	
+	@BeforeAll
+	static void beforeAll() {
+		RoutingDataSourceContextHolder.setContext(() -> "bookkeeping_postgresql");
+	}
+	
 	@Test
 	@DisplayName("초기 데이터 생성")
 	void createBookkeeping() {
 		
 		var bookkeeping = new Bookkeeping();
 		bookkeeping.setUserId(userId);
-		bookkeeping.setId(bookkeepingId);
 		var bookkeepingResult = bookkeepingService.createBookkeeping(bookkeeping);
 		log.debug("bookkeepingResult : {}", bookkeepingResult);
 		assertThat(bookkeepingResult).isNotNull();

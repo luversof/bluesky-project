@@ -13,18 +13,21 @@ import org.springframework.data.auditing.DateTimeProvider;
 import org.springframework.data.jdbc.core.convert.JdbcCustomConversions;
 import org.springframework.data.jdbc.repository.config.EnableJdbcAuditing;
 import org.springframework.data.jdbc.repository.config.EnableJdbcRepositories;
+import org.springframework.data.relational.core.mapping.event.BeforeConvertCallback;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import io.github.luversof.boot.data.convert.MapToStringConverter;
-import io.github.luversof.boot.data.convert.StringToMapConverter;
+import io.github.luversof.boot.data.convert.MapToPGobjectConverter;
+import io.github.luversof.boot.data.convert.PGobjectToMapConverter;
+import io.github.luversof.boot.data.convert.TimestampToOffsetDateTimeConverter;
+import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
 
 @Configuration
 @EnableJdbcAuditing(dateTimeProviderRef = "auditingDateTimeProvider")
 @EnableJdbcRepositories(basePackages = "net.luversof.api.bookkeeping.**.repository", jdbcOperationsRef = "bookkeepingNamedParameterJdbcOperations", transactionManagerRef = "bookkeepingTransactionManager")
-public class BookkeepingDataJpaConfig {
+public class BookkeepingDataJdbcConfig {
 	
 	@Bean
 	DateTimeProvider auditingDateTimeProvider() {
@@ -42,12 +45,18 @@ public class BookkeepingDataJpaConfig {
 	}
 	
 	@Bean
+	<T> BeforeConvertCallback<T> boardBeforeConvertCallback() {
+		return DataJdbcConverterUtil::prepareEntity;
+	}
+	
+	@Bean
 	JdbcCustomConversions boardjdbcCustomConversions() {
 		return new JdbcCustomConversions(List.of(
-			new MapToStringConverter(),
-			new StringToMapConverter()
-//			new MapToPGobjectConverter(),
-//			new PGobjectToMapConverter()
+//			new MapToStringConverter(),
+//			new StringToMapConverter()
+			new MapToPGobjectConverter(),
+			new PGobjectToMapConverter(),
+			new TimestampToOffsetDateTimeConverter()
 		));
 	}
 
