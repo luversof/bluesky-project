@@ -7,24 +7,23 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jdbc.core.mapping.AggregateReference;
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.api.bookkeeping.constant.TestConstant;
 import net.luversof.api.bookkeeping.domain.Asset;
+import net.luversof.api.bookkeeping.repository.mariadb.AssetTypeRepository;
+import net.luversof.api.bookkeeping.repository.mariadb.BookkeepingRepository;
 import net.luversof.api.bookkeeping.service.AssetService;
-import net.luversof.api.bookkeeping.service.base.AssetTypeBaseService;
-import net.luversof.api.bookkeeping.service.base.BookkeepingBaseService;
 
 @Slf4j
 class AssetTest implements GeneralTest {
 	
 	@Autowired
-	private BookkeepingBaseService bookkeepingService;
+	private BookkeepingRepository bookkeepingRepository;
 	
 	@Autowired
-	private AssetTypeBaseService assetTypeBaseService;
+	private AssetTypeRepository assetTypeRepository;
 
 	@Autowired
 	private AssetService assetService;
@@ -39,12 +38,12 @@ class AssetTest implements GeneralTest {
 	@Test
 	void createAsset() {
 		
-		var bookkeeping = bookkeepingService.findById(bookkeepingId).orElseThrow();
-		var assetType = assetTypeBaseService.findByBookkeepingId(bookkeepingId).get(0);
+		var bookkeeping = bookkeepingRepository.findById(bookkeepingId).orElseThrow();
+		var assetType = assetTypeRepository.findByBookkeepingId(bookkeepingId).get(0);
 		
 		var asset = new Asset();
-		asset.setBookkeepingId(AggregateReference.to(bookkeeping.getId()));
-		asset.setAssetType(assetType);
+		asset.setBookkeepingId(bookkeeping.getId());
+		asset.setAssetTypeId(assetType.getId());
 		asset.setName("테스트자산");
 		
 		

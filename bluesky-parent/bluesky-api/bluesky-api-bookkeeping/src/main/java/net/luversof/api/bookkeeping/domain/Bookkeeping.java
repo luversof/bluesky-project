@@ -38,7 +38,7 @@ public class Bookkeeping {
 	private OffsetDateTime createdDate;
 	
 	@Column("jsonConfig")
-	private Map<String, Object>  jsonConfig;
+	private Map<String, Object> jsonConfig;
 	
 	public interface Create {}
 	public interface Update {}

@@ -1,6 +1,5 @@
 package net.luversof.api.bookkeeping.domain;
 
-import java.io.Serializable;
 import java.util.UUID;
 
 import org.springframework.data.annotation.Id;
@@ -13,9 +12,7 @@ import net.luversof.api.bookkeeping.constant.EntryTypeCode;
 
 @Data
 @Table("EntryType")
-public class EntryType implements Serializable {
-
-	private static final long serialVersionUID = 1L;
+public class EntryType {
 
 	@Null(groups = Create.class)
 	@Id

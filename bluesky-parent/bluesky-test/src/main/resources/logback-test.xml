@@ -10,6 +10,7 @@
 	
 	<logger name="org.springframework.jdbc.core" level="DEBUG" />
 	<logger name="org.springframework.data" level="DEBUG" />
+	<logger name="org.springframework.jdbc.core.StatementCreatorUtils" level="TRACE" />
 	
 	<!-- <logger name="org.hibernate" level="debug" /> -->
 	<!-- <logger name="org.springframework.integration" level="debug" /> -->

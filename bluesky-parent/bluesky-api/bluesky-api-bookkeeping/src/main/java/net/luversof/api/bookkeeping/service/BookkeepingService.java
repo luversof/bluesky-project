@@ -1,6 +1,7 @@
 package net.luversof.api.bookkeeping.service;
 
 import java.util.UUID;
+import java.util.stream.StreamSupport;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -10,33 +11,33 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.api.bookkeeping.constant.AssetInitialData;
 import net.luversof.api.bookkeeping.constant.AssetTypeInitialData;
-import net.luversof.api.bookkeeping.constant.EntryTypeInitialData;
 import net.luversof.api.bookkeeping.constant.BookkeepingError;
+import net.luversof.api.bookkeeping.constant.EntryTypeInitialData;
 import net.luversof.api.bookkeeping.domain.Bookkeeping;
-import net.luversof.api.bookkeeping.service.base.AssetBaseService;
-import net.luversof.api.bookkeeping.service.base.AssetTypeBaseService;
-import net.luversof.api.bookkeeping.service.base.BookkeepingBaseService;
-import net.luversof.api.bookkeeping.service.base.EntryBaseService;
-import net.luversof.api.bookkeeping.service.base.EntryTypeBaseService;
+import net.luversof.api.bookkeeping.repository.mariadb.AssetRepository;
+import net.luversof.api.bookkeeping.repository.mariadb.AssetTypeRepository;
+import net.luversof.api.bookkeeping.repository.mariadb.BookkeepingRepository;
+import net.luversof.api.bookkeeping.repository.mariadb.EntryRepository;
+import net.luversof.api.bookkeeping.repository.mariadb.EntryTypeRepository;
 
 @Slf4j
 @Service
 public class BookkeepingService {
 	
 	@Setter(onMethod_ = @Autowired)
-	private BookkeepingBaseService bookkeepingBaseService;
+	private BookkeepingRepository bookkeepingRepository;
 	
 	@Setter(onMethod_ = @Autowired)
-	private AssetTypeBaseService assetTypeBaseService;
+	private AssetTypeRepository assetTypeRepository;
 	
 	@Setter(onMethod_ = @Autowired)
-	private AssetBaseService assetBaseService;
+	private AssetRepository assetRepository;
 	
 	@Setter(onMethod_ = @Autowired)
-	private EntryTypeBaseService entryTypeBaseService;
+	private EntryTypeRepository entryTypeRepository;
 	
 	@Setter(onMethod_ = @Autowired)
-	private EntryBaseService entryBaseService;
+	private EntryRepository entryRepository;
 	
 	
 	/**
@@ -46,20 +47,18 @@ public class BookkeepingService {
 	public Bookkeeping createBookkeeping(Bookkeeping bookkeeping) {
 		
 		
-		if (!bookkeepingBaseService.findByUserId(bookkeeping.getUserId()).isEmpty()) {
+		if (!bookkeepingRepository.findByUserId(bookkeeping.getUserId()).isEmpty()) {
 			BookkeepingError.ALREADY_EXIST_BOOKKEEPING.throwException();
 		}
 		
-		var bookkeepingResult = bookkeepingBaseService.save(bookkeeping);
+		var bookkeepingResult = bookkeepingRepository.save(bookkeeping);
 		
-		var assetTypeList = AssetTypeInitialData.getInitialData(bookkeepingResult.getId());
-		assetTypeBaseService.saveAll(assetTypeList);
+		// 자산 유형 
+		var assetTypeList = StreamSupport.stream(assetTypeRepository.saveAll(AssetTypeInitialData.getInitialData(bookkeepingResult.getId())).spliterator(), false).toList();
 		
-		var assetList = AssetInitialData.getInitialData(bookkeepingResult, assetTypeList);
-		assetBaseService.saveAll(assetList);
+		assetRepository.saveAll(AssetInitialData.getInitialData(bookkeepingResult, assetTypeList));
 		
-		var entryTypeList = EntryTypeInitialData.getInitialData(bookkeepingResult.getId());
-		entryTypeBaseService.saveAll(entryTypeList);
+		entryTypeRepository.saveAll(EntryTypeInitialData.getInitialData(bookkeepingResult.getId()));
 		
 		return bookkeepingResult;
 	}
@@ -71,7 +70,7 @@ public class BookkeepingService {
 	@Transactional
 	public void deleteBookkeepingByUserId(UUID userId) {
 		var target = this;
-		bookkeepingBaseService.findByUserId(userId).forEach(bookkeeping -> target.deleteBookkeepingByBookkeepingId(bookkeeping.getId()));
+		bookkeepingRepository.findByUserId(userId).forEach(bookkeeping -> target.deleteBookkeepingByBookkeepingId(bookkeeping.getId()));
 	}
 	
 	/**
@@ -81,23 +80,23 @@ public class BookkeepingService {
 	@Transactional
 	public void deleteBookkeepingByBookkeepingId(UUID bookkeepingId) {
 		
-		if (bookkeepingBaseService.findById(bookkeepingId).isEmpty()) {
+		if (bookkeepingRepository.findById(bookkeepingId).isEmpty()) {
 			BookkeepingError.NOT_EXIST_BOOKKEEPING.throwException();
 		}
 		
 		// delete entry
-		var entryCount = entryBaseService.getRepository().deleteByBookkeepingId(bookkeepingId);
+		var entryCount = entryRepository.deleteByBookkeepingId(bookkeepingId);
 		
 		// delete entryType
-		var entryTypeCount = entryTypeBaseService.getRepository().deleteByBookkeepingId(bookkeepingId);
+		var entryTypeCount = entryTypeRepository.deleteByBookkeepingId(bookkeepingId);
 		
 		// delete asset
-		var assetCount = assetBaseService.getRepository().deleteByBookkeepingId(bookkeepingId);
+		var assetCount = assetRepository.deleteByBookkeepingId(bookkeepingId);
 		
 		// delete assetType
-		var assetTypeCount = assetTypeBaseService.getRepository().deleteByBookkeepingId(bookkeepingId);
+		var assetTypeCount = assetTypeRepository.deleteByBookkeepingId(bookkeepingId);
 		
-		bookkeepingBaseService.deleteById(bookkeepingId);
+		bookkeepingRepository.deleteById(bookkeepingId);
 		
 		log.debug("""
 				

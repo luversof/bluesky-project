@@ -9,25 +9,25 @@ import org.springframework.stereotype.Service;
 import lombok.Setter;
 import net.luversof.api.bookkeeping.constant.BookkeepingError;
 import net.luversof.api.bookkeeping.domain.Asset;
-import net.luversof.api.bookkeeping.service.base.AssetBaseService;
-import net.luversof.api.bookkeeping.service.base.AssetTypeBaseService;
-import net.luversof.api.bookkeeping.service.base.BookkeepingBaseService;
-import net.luversof.api.bookkeeping.service.base.EntryBaseService;
+import net.luversof.api.bookkeeping.repository.mariadb.AssetRepository;
+import net.luversof.api.bookkeeping.repository.mariadb.AssetTypeRepository;
+import net.luversof.api.bookkeeping.repository.mariadb.BookkeepingRepository;
+import net.luversof.api.bookkeeping.repository.mariadb.EntryRepository;
 
 @Service
 public class AssetService {
 	
 	@Setter(onMethod_ = @Autowired)
-	private BookkeepingBaseService bookkeepingBaseService;
+	private BookkeepingRepository bookkeepingRepository;
 	
 	@Setter(onMethod_ = @Autowired)
-	private AssetBaseService assetBaseService;
+	private AssetRepository assetRepository;
 	
 	@Setter(onMethod_ = @Autowired)
-	private EntryBaseService entryBaseService;
+	private EntryRepository entryRepository;
 	
 	@Setter(onMethod_ = @Autowired)
-	private AssetTypeBaseService assetTypeBaseService;
+	private AssetTypeRepository assetTypeRepository;
 	
 	
 	public Asset createAsset(Asset asset) {
@@ -39,17 +39,17 @@ public class AssetService {
 //			asset.setBitConfigIndexList(AssetInitialData.getNormalBitConfigList());
 //		}
 
-		return assetBaseService.save(asset);
+		return assetRepository.save(asset);
 	}
 	
 	public List<Asset> findByBookkeepingId(UUID bookkeepingId) {
-		return assetBaseService.findByBookkeepingId(bookkeepingId);
+		return assetRepository.findByBookkeepingId(bookkeepingId);
 	}
 	
 	public Asset updateAsset(Asset asset) {
 		
-		var targetAsset = assetBaseService.findById(asset.getId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
-		if (!targetAsset.getBookkeepingId().getId().equals(asset.getBookkeepingId().getId())) {
+		var targetAsset = assetRepository.findById(asset.getId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
+		if (!targetAsset.getBookkeepingId().equals(asset.getBookkeepingId())) {
 			BookkeepingError.INVALID_BOOKKEEPING_ID.throwException();
 		}
 		
@@ -63,7 +63,7 @@ public class AssetService {
 		
 		checkAsset(asset);
 		
-		return assetBaseService.update(asset);
+		return assetRepository.save(asset);
 	}
 	
 	/**
@@ -73,18 +73,18 @@ public class AssetService {
 	 */
 	public void deleteAsset(Asset asset) {
 		// 삭제 전 데이터가 올바른지 확인
-		var targetAsset = assetBaseService.findById(asset.getId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
+		var targetAsset = assetRepository.findById(asset.getId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
 		// TODO bookkeeping.id, bookkeeping.userId를 전달받아 올바른지 체크
 		
 		// 해당 asset을 사용한 entry가 있는지 확인
-		boolean isEnableDelete = entryBaseService.findByIncomeAssetId(asset.getId()).isEmpty() && entryBaseService.findByOutgoingAssetId(asset.getId()).isEmpty();
+		boolean isEnableDelete = entryRepository.findByIncomeAssetId(asset.getId()).isEmpty() && entryRepository.findByOutgoingAssetId(asset.getId()).isEmpty();
 		
 		// asset을 비노출 처리 하려면 entry에 대한 처리를 먼저 결정해야함.
 		// 일단 삭제 불가 에러 처리를 하려고 함
 		if (!isEnableDelete) {
 			BookkeepingError.UNABLE_DELETE_ASSET.throwException();
 		}
-		assetBaseService.delete(targetAsset);
+		assetRepository.delete(targetAsset);
 	}
 
 	/**
@@ -95,13 +95,13 @@ public class AssetService {
 	 * @param asset
 	 */
 	private void checkAsset(Asset asset) {
-		var targetBookkeeping = bookkeepingBaseService.findById(asset.getBookkeepingId().getId()).orElseThrow(BookkeepingError.NOT_EXIST_BOOKKEEPING_ID::exception);
+		var targetBookkeeping = bookkeepingRepository.findById(asset.getBookkeepingId()).orElseThrow(BookkeepingError.NOT_EXIST_BOOKKEEPING_ID::exception);
 		
-		if (asset.getAssetType() == null || asset.getAssetType().getId() == null) {
+		if (asset.getAssetTypeId() == null || asset.getAssetTypeId() == null) {
 			BookkeepingError.NOT_EXIST_ASSETTYPE_ID.throwException();
 		}
 		
-		var targetAssetType = assetTypeBaseService.findById(asset.getAssetType().getId()).orElseThrow(BookkeepingError.INVALID_ASSETTYPE_ID::exception);
+		var targetAssetType = assetTypeRepository.findById(asset.getAssetTypeId()).orElseThrow(BookkeepingError.INVALID_ASSETTYPE_ID::exception);
 		if (!targetAssetType.getBookkeepingId().equals(targetBookkeeping.getId())) {
 			BookkeepingError.INVALID_ASSETTYPE_ID.throwException();
 		}

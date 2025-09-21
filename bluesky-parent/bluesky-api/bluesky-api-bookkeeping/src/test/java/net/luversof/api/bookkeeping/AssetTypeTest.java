@@ -10,6 +10,7 @@ import net.luversof.GeneralTest;
 import net.luversof.api.bookkeeping.constant.AssetTypeCode;
 import net.luversof.api.bookkeeping.constant.TestConstant;
 import net.luversof.api.bookkeeping.domain.AssetType;
+import net.luversof.api.bookkeeping.repository.mariadb.AssetTypeRepository;
 import net.luversof.api.bookkeeping.service.AssetTypeService;
 
 @Slf4j
@@ -18,7 +19,10 @@ class AssetTypeTest implements GeneralTest {
 	@Autowired
 	AssetTypeService assetTypeService;
 	
-	private UUID bookkeepingId = TestConstant.BOOKKEEPING_ID;
+	@Autowired
+	AssetTypeRepository assetTypeRepository;
+	
+	UUID bookkeepingId = TestConstant.BOOKKEEPING_ID;
 	
 	@Test
 	void createAssetType() {
@@ -28,5 +32,11 @@ class AssetTypeTest implements GeneralTest {
 		assetType.setName("연금저축");
 		var result = assetTypeService.createAssetType(assetType);
 		log.debug("result : {}", result);
+	}
+	
+	@Test
+	void selectAssetType() {
+		var assetTypeList = assetTypeRepository.findByBookkeepingId(bookkeepingId);
+		assetTypeList.forEach(assetType -> log.debug("assetType : {}", assetType));
 	}
 }

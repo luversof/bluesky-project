@@ -8,43 +8,48 @@ import org.springframework.stereotype.Service;
 
 import lombok.Setter;
 import net.luversof.api.bookkeeping.constant.AssetTypeCode;
-import net.luversof.api.bookkeeping.constant.EntryTypeCode;
 import net.luversof.api.bookkeeping.constant.BookkeepingError;
+import net.luversof.api.bookkeeping.constant.EntryTypeCode;
+import net.luversof.api.bookkeeping.domain.AssetType;
 import net.luversof.api.bookkeeping.domain.Entry;
-import net.luversof.api.bookkeeping.service.base.AssetBaseService;
-import net.luversof.api.bookkeeping.service.base.BookkeepingBaseService;
-import net.luversof.api.bookkeeping.service.base.EntryBaseService;
-import net.luversof.api.bookkeeping.service.base.EntryTypeBaseService;
+import net.luversof.api.bookkeeping.repository.mariadb.AssetRepository;
+import net.luversof.api.bookkeeping.repository.mariadb.AssetTypeRepository;
+import net.luversof.api.bookkeeping.repository.mariadb.BookkeepingRepository;
+import net.luversof.api.bookkeeping.repository.mariadb.EntryRepository;
+import net.luversof.api.bookkeeping.repository.mariadb.EntryTypeRepository;
 
 @Service
 public class EntryService {
 	
 	@Setter(onMethod_ = @Autowired)
-	private BookkeepingBaseService bookkeepingBaseService;
+	private BookkeepingRepository bookkeepingRepository;
 	
 	@Setter(onMethod_ = @Autowired)
-	private AssetBaseService assetBaseService;
+	private AssetRepository assetRepository;
 	
 	@Setter(onMethod_ = @Autowired)
-	private EntryTypeBaseService entryTypeBaseService;
+	private AssetTypeRepository assetTypeRepository;
 	
 	@Setter(onMethod_ = @Autowired)
-	private EntryBaseService entryBaseService;
+	private EntryTypeRepository entryTypeRepository;
+	
+	@Setter(onMethod_ = @Autowired)
+	private EntryRepository entryRepository;
 	
 	public Entry createEntry(Entry entry) {
 		
 		checkEntry(entry);
 		
-		return entryBaseService.save(entry);
+		return entryRepository.save(entry);
 	}
 	
 	public List<Entry> findByBookkeepingId(UUID bookkeepingId) {
-		return entryBaseService.findByBookkeepingId(bookkeepingId);
+		return entryRepository.findByBookkeepingId(bookkeepingId);
 	}
 	
 	public Entry updateEntry(Entry entry) {
 		// 대상 entry를 먼저 조회하여 있는지 확인한 후 update 할 항목들을 반영
-		var targetEntry = entryBaseService.findById(entry.getId()).orElseThrow(BookkeepingError.NOT_EXIST_ENTRY::exception);
+		var targetEntry = entryRepository.findById(entry.getId()).orElseThrow(BookkeepingError.NOT_EXIST_ENTRY::exception);
 		
 		// update 요청의 경우 해당 entry의 정보가 변조되었는지 확인해야 함.
 		if (!targetEntry.getBookkeepingId().equals(entry.getBookkeepingId())) {
@@ -64,12 +69,12 @@ public class EntryService {
 		
 		checkEntry(entry);
 		
-		return entryBaseService.update(entry);
+		return entryRepository.save(entry);
 	}
 	
 	public void deleteEntry(Entry entry) {
 		// 삭제 해도 되는지 확인
-		entryBaseService.deleteById(entry.getId());
+		entryRepository.deleteById(entry.getId());
 	}
 
 	
@@ -83,45 +88,52 @@ public class EntryService {
 	private void checkEntry(Entry entry) {
 		// 요청 값이 올바른지 확인
 		// 1. bookkeeping이 올바른지 확인
-		var bookkeeping = bookkeepingBaseService.findById(entry.getBookkeepingId()).orElseThrow(BookkeepingError.NOT_EXIST_BOOKKEEPING::exception);
+		var bookkeeping = bookkeepingRepository.findById(entry.getBookkeepingId()).orElseThrow(BookkeepingError.NOT_EXIST_BOOKKEEPING::exception);
 		
 		// 2. incomeAsset 확인
-		var incomeAsset = assetBaseService.findById(entry.getIncomeAssetId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
-		if (!incomeAsset.getBookkeepingId().getId().equals(bookkeeping)) {
+		var incomeAsset = assetRepository.findById(entry.getIncomeAssetId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
+		if (!incomeAsset.getBookkeepingId().equals(bookkeeping)) {
 			BookkeepingError.INVALID_ASSET_ID.throwException();
 		}
 		
 		
 		// 3. outgoingAsset 확인 
-		var outgoingAsset = assetBaseService.findById(entry.getOutgoingAssetId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
-		if (!outgoingAsset.getBookkeepingId().getId().equals(bookkeeping)) {
+		var outgoingAsset = assetRepository.findById(entry.getOutgoingAssetId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
+		if (!outgoingAsset.getBookkeepingId().equals(bookkeeping)) {
 			BookkeepingError.INVALID_ASSET_ID.throwException();
 		}
 
 		// 4. entryType 확인
 		// 이체의 경우엔 entryType이 필요없음
 		// 수입/지출의 경우엔 entryType이 있는지, 있으면 올바른 type인지 확인해야함
-		boolean isTransfer = outgoingAsset.getAssetType().getCode() != AssetTypeCode.CONTRA_ASSET && incomeAsset.getAssetType().getCode() != AssetTypeCode.CONTRA_ASSET;
-		if (!isTransfer	&& (entry.getEntryType() == null || entry.getEntryType().getId() == null)) {
+		var outgoingAssetType = getAssetType(outgoingAsset.getAssetTypeId());
+		var incomeAssetType = getAssetType(incomeAsset.getAssetTypeId());
+		
+		boolean isTransfer = outgoingAssetType.getCode() != AssetTypeCode.CONTRA_ASSET && incomeAssetType.getCode() != AssetTypeCode.CONTRA_ASSET;
+		if (!isTransfer	&& entry.getEntryTypeId() == null) {
 			BookkeepingError.NOT_EXIST_ENTRYTYPE.throwException();
 		}
 
 
 		if (!isTransfer) {
-			
-			var entryType = entryTypeBaseService.findById(entry.getEntryType().getId()).orElseThrow(BookkeepingError.NOT_EXIST_ENTRYTYPE::exception);
+			var entryType = entryTypeRepository.findById(entry.getEntryTypeId()).orElseThrow(BookkeepingError.NOT_EXIST_ENTRYTYPE::exception);
 
 			if (!entryType.getBookkeepingId().equals(bookkeeping.getId())) {
 				BookkeepingError.INVALID_ENTRYTYPE.throwException();
 			}
 			
 			if (
-				(outgoingAsset.getAssetType().getCode() == AssetTypeCode.CONTRA_ASSET && entryType.getCode() != EntryTypeCode.INCOME) // 수입인 경우 entryType이 수입 관련 코드인지 확인
-				|| (incomeAsset.getAssetType().getCode() == AssetTypeCode.CONTRA_ASSET && entryType.getCode() != EntryTypeCode.OUTGOING) // 지출인 경우 entryType이 지출 관련 코드인지 확인
+				(outgoingAssetType.getCode() == AssetTypeCode.CONTRA_ASSET && entryType.getCode() != EntryTypeCode.INCOME) // 수입인 경우 entryType이 수입 관련 코드인지 확인
+				|| (incomeAssetType.getCode() == AssetTypeCode.CONTRA_ASSET && entryType.getCode() != EntryTypeCode.OUTGOING) // 지출인 경우 entryType이 지출 관련 코드인지 확인
 			) {
 				BookkeepingError.INVALID_ENTRYTYPECODE.throwException();
 			}
 		}
+	}
+	
+	
+	private AssetType getAssetType(UUID id) {
+		return assetTypeRepository.findById(id).orElseThrow();
 	}
 
 }

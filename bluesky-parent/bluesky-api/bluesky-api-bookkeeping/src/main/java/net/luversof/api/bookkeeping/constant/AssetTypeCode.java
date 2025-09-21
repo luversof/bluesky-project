@@ -3,6 +3,10 @@ package net.luversof.api.bookkeeping.constant;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * AssetType은 사용자가 자유롭게 정의해서 추가할 수 있음
+ * 다만 통계를 위해서 모든 사용자의 AssetType은 정해진 AssetTypeCode 중 하나를 반드시 가져야 함
+ */
 @AllArgsConstructor
 @Getter
 public enum AssetTypeCode {

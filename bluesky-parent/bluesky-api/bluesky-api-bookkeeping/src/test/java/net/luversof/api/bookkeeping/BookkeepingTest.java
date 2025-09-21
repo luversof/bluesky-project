@@ -37,6 +37,7 @@ class BookkeepingTest implements GeneralTest {
 		
 		var bookkeeping = new Bookkeeping();
 		bookkeeping.setUserId(userId);
+		bookkeeping.setName("테스트 가계부");
 		var bookkeepingResult = bookkeepingService.createBookkeeping(bookkeeping);
 		log.debug("bookkeepingResult : {}", bookkeepingResult);
 		assertThat(bookkeepingResult).isNotNull();

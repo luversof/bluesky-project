@@ -5,16 +5,16 @@ import org.springframework.stereotype.Service;
 
 import lombok.Setter;
 import net.luversof.api.bookkeeping.domain.AssetType;
-import net.luversof.api.bookkeeping.service.base.AssetTypeBaseService;
+import net.luversof.api.bookkeeping.repository.mariadb.AssetTypeRepository;
 
 @Service
 public class AssetTypeService {
 
 	@Setter(onMethod_ = @Autowired)
-	private AssetTypeBaseService assetTypeBaseService;
+	private AssetTypeRepository assetTypeRepository;
 	
 	public AssetType createAssetType(AssetType assetType) {
-		return assetTypeBaseService.save(assetType);
+		return assetTypeRepository.save(assetType);
 	}
 
 }

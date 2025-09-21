@@ -3,6 +3,7 @@ package net.luversof.api.bookkeeping.domain;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.data.annotation.Id;
@@ -19,9 +20,7 @@ import lombok.Data;
  */
 @Data
 @Table("Entry")
-public class Entry implements Serializable {
-
-	private static final long serialVersionUID = 1L;
+public class Entry {
 
 	@Null(groups = Create.class)
 	@NotNull(groups = { Update.class, Delete.class })
@@ -35,11 +34,7 @@ public class Entry implements Serializable {
 	private UUID bookkeepingId;
 	
 	@Column("entryType_id")
-	private EntryType entryType;
-
-	@NotNull(groups = { Create.class, Update.class })
-	@Column("entryDate")
-	private OffsetDateTime entryDate;
+	private UUID entryTypeId;
 	
 	@NotNull(groups = { Create.class, Update.class })
 	@Column("incomeAsset_id")
@@ -50,9 +45,14 @@ public class Entry implements Serializable {
 	private UUID outgoingAssetId;
 	
 	@NotNull(groups = { Create.class, Update.class })
+	@Column("entryDate")
+	private OffsetDateTime entryDate;
+	
+	@NotNull(groups = { Create.class, Update.class })
 	private BigDecimal amount;
 	
-	private EntryExtraData extraData;
+	@Column("extraData")
+	private Map<String, Object> extraData;
 	
 	public interface Create {}
 

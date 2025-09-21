@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.jdbc.core.mapping.AggregateReference;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -24,14 +23,15 @@ public class Asset {
 
 	@Column("bookkeeping_id")
 	@NotNull(groups = { Update.class, Delete.class })
-	private AggregateReference<Bookkeeping, UUID> bookkeepingId;
+	private UUID bookkeepingId;
 	
 	@Column("assetType_id")
-	private AssetType assetType;
-
-	private Map<String, Object> jsonConfig;
+	private UUID assetTypeId;
 	
 	private String name;
+	
+	@Column("jsonConfig")
+	private Map<String, Object> jsonConfig;
 	
 	public interface Create {}
 	public interface Update {}

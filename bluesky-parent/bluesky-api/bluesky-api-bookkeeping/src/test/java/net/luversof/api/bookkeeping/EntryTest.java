@@ -15,11 +15,13 @@ import net.luversof.GeneralTest;
 import net.luversof.api.bookkeeping.constant.AssetTypeCode;
 import net.luversof.api.bookkeeping.constant.EntryTypeCode;
 import net.luversof.api.bookkeeping.constant.TestConstant;
+import net.luversof.api.bookkeeping.domain.AssetType;
 import net.luversof.api.bookkeeping.domain.Entry;
 import net.luversof.api.bookkeeping.repository.mariadb.AssetRepository;
+import net.luversof.api.bookkeeping.repository.mariadb.AssetTypeRepository;
+import net.luversof.api.bookkeeping.repository.mariadb.EntryRepository;
 import net.luversof.api.bookkeeping.repository.mariadb.EntryTypeRepository;
 import net.luversof.api.bookkeeping.service.EntryService;
-import net.luversof.api.bookkeeping.service.base.EntryBaseService;
 
 @Slf4j
 //@Rollback(false)
@@ -29,10 +31,13 @@ class EntryTest implements GeneralTest {
 	private AssetRepository assetRepository;
 	
 	@Autowired
+	private AssetTypeRepository assetTypeRepository;
+	
+	@Autowired
 	private EntryTypeRepository entryTypeRepository;
 	
 	@Autowired
-	private EntryBaseService entryBaseService;
+	private EntryRepository entryRepository;
 	
 	@Autowired
 	private EntryService entryService;
@@ -45,8 +50,8 @@ class EntryTest implements GeneralTest {
 		var assetList = assetRepository.findByBookkeepingId(bookkeepingId);
 		var entryTypeList = entryTypeRepository.findByBookkeepingId(bookkeepingId);
 		
-		var contraAsset = assetList.stream().filter(asset -> asset.getAssetType().getCode() == AssetTypeCode.CONTRA_ASSET).findAny().get();
-		var cashAsset = assetList.stream().filter(asset -> asset.getAssetType().getCode() == AssetTypeCode.CASH).findAny().get();
+		var contraAsset = assetList.stream().filter(asset -> getAssetType(asset.getAssetTypeId()).getCode() == AssetTypeCode.CONTRA_ASSET).findAny().get();
+		var cashAsset = assetList.stream().filter(asset -> getAssetType(asset.getAssetTypeId()).getCode() == AssetTypeCode.CASH).findAny().get();
 		var incomeEntryType = entryTypeList.stream().filter(entryType -> entryType.getCode() == EntryTypeCode.INCOME).findAny().get();
 		var outgoingEntryType = entryTypeList.stream().filter(entryType -> entryType.getCode() == EntryTypeCode.OUTGOING).findAny().get();
 		
@@ -56,7 +61,7 @@ class EntryTest implements GeneralTest {
 			entry.setBookkeepingId(bookkeepingId);
 			entry.setOutgoingAssetId(contraAsset.getId());
 			entry.setIncomeAssetId(cashAsset.getId());
-			entry.setEntryType(incomeEntryType);
+			entry.setEntryTypeId(incomeEntryType.getId());
 			entry.setAmount(BigDecimal.valueOf(1234));
 			entry.setEntryDate(OffsetDateTime.now());
 			
@@ -71,7 +76,7 @@ class EntryTest implements GeneralTest {
 			entry.setBookkeepingId(bookkeepingId);
 			entry.setOutgoingAssetId(cashAsset.getId());
 			entry.setIncomeAssetId(contraAsset.getId());
-			entry.setEntryType(outgoingEntryType);
+			entry.setEntryTypeId(outgoingEntryType.getId());
 			entry.setAmount(BigDecimal.valueOf(123));
 			entry.setEntryDate(OffsetDateTime.now());
 
@@ -81,10 +86,14 @@ class EntryTest implements GeneralTest {
 		
 	}
 	
+	private AssetType getAssetType(UUID id) {
+		return assetTypeRepository.findById(id).orElseThrow();
+	}
+	
 	@Test
 	@DisplayName("수정 테스트")
 	void updateEntry() {
-		var entryList = entryBaseService.findByBookkeepingId(bookkeepingId);
+		var entryList = entryRepository.findByBookkeepingId(bookkeepingId);
 		var entry = entryList.get(0);
 		entry.setAmount(entry.getAmount().add(BigDecimal.valueOf(1)));
 		
