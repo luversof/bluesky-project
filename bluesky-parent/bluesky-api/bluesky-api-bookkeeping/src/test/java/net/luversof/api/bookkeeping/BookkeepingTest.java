@@ -21,10 +21,10 @@ import net.luversof.api.bookkeeping.service.BookkeepingService;
 class BookkeepingTest implements GeneralTest {
 	
 	@Setter(onMethod_ = @Autowired)
-	private BookkeepingService bookkeepingService;
+	BookkeepingService bookkeepingService;
 	
-	private UUID userId = TestConstant.USER_ID;
-	private UUID bookkeepingId = TestConstant.BOOKKEEPING_ID;
+	UUID userId = TestConstant.USER_ID;
+	UUID bookkeepingId = TestConstant.BOOKKEEPING_ID;
 	
 	@BeforeAll
 	static void beforeAll() {

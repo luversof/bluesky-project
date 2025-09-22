@@ -21,7 +21,6 @@ CREATE TABLE "Asset" (
 	"id" UUID NOT NULL PRIMARY KEY,
 	"bookkeeping_id" UUID NOT NULL,
 	"assetType_id" UUID NOT NULL,
-	"assetTypeCode" VARCHAR(20) NOT NULL,
 	"name" VARCHAR(100) NOT NULL,
 	"jsonConfig" JSONB
 );
@@ -50,4 +49,7 @@ CREATE TABLE "Entry" (
 	"name" VARCHAR(100) NOT NULL
 );
 
-CREATE INDEX idx_entryType_bookkeepingId ON "EntryType" ("bookkeeping_id");
+CREATE INDEX idx_entry_bookkeepingId ON "Entry" ("bookkeeping_id");
+CREATE INDEX idx_entry_entryTypeId ON "Entry" ("entryType_id");
+CREATE INDEX idx_entry_incomeAssetId ON "Entry" ("incomeAsset_id");
+CREATE INDEX idx_entry_outgoingAssetId ON "Entry" ("outgoingAsset_id");
