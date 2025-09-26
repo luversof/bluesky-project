@@ -12,20 +12,18 @@ import net.luversof.api.bookkeeping.constant.BookkeepingError;
 import net.luversof.api.bookkeeping.constant.EntryTypeCode;
 import net.luversof.api.bookkeeping.domain.AssetType;
 import net.luversof.api.bookkeeping.domain.Entry;
-import net.luversof.api.bookkeeping.repository.mariadb.AssetRepository;
-import net.luversof.api.bookkeeping.repository.mariadb.AssetTypeRepository;
-import net.luversof.api.bookkeeping.repository.mariadb.BookkeepingRepository;
-import net.luversof.api.bookkeeping.repository.mariadb.EntryRepository;
-import net.luversof.api.bookkeeping.repository.mariadb.EntryTypeRepository;
+import net.luversof.api.bookkeeping.repository.AssetTypeRepository;
+import net.luversof.api.bookkeeping.repository.EntryRepository;
+import net.luversof.api.bookkeeping.repository.EntryTypeRepository;
 
 @Service
 public class EntryService {
 	
 	@Setter(onMethod_ = @Autowired)
-	private BookkeepingRepository bookkeepingRepository;
+	private BookkeepingService bookkeepingService;
 	
 	@Setter(onMethod_ = @Autowired)
-	private AssetRepository assetRepository;
+	private AssetService assetService;
 	
 	@Setter(onMethod_ = @Autowired)
 	private AssetTypeRepository assetTypeRepository;
@@ -88,17 +86,17 @@ public class EntryService {
 	private void checkEntry(Entry entry) {
 		// 요청 값이 올바른지 확인
 		// 1. bookkeeping이 올바른지 확인
-		var bookkeeping = bookkeepingRepository.findById(entry.getBookkeepingId()).orElseThrow(BookkeepingError.NOT_EXIST_BOOKKEEPING::exception);
+		var bookkeeping = bookkeepingService.findById(entry.getBookkeepingId()).orElseThrow(BookkeepingError.NOT_EXIST_BOOKKEEPING::exception);
 		
 		// 2. incomeAsset 확인
-		var incomeAsset = assetRepository.findById(entry.getIncomeAssetId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
+		var incomeAsset = assetService.findById(entry.getIncomeAssetId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
 		if (!incomeAsset.getBookkeepingId().equals(bookkeeping)) {
 			BookkeepingError.INVALID_ASSET_ID.throwException();
 		}
 		
 		
 		// 3. outgoingAsset 확인 
-		var outgoingAsset = assetRepository.findById(entry.getOutgoingAssetId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
+		var outgoingAsset = assetService.findById(entry.getOutgoingAssetId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
 		if (!outgoingAsset.getBookkeepingId().equals(bookkeeping)) {
 			BookkeepingError.INVALID_ASSET_ID.throwException();
 		}

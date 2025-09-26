@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.api.bookkeeping.constant.TestConstant;
@@ -20,7 +19,7 @@ import net.luversof.api.bookkeeping.service.BookkeepingService;
 @Slf4j
 class BookkeepingTest implements GeneralTest {
 	
-	@Setter(onMethod_ = @Autowired)
+	@Autowired
 	BookkeepingService bookkeepingService;
 	
 	UUID userId = TestConstant.USER_ID;
@@ -52,5 +51,6 @@ class BookkeepingTest implements GeneralTest {
 	@DisplayName("해당 유저의 가계부 데이터 일괄 삭제")
 	void deleteBookkeepingByUserId() {
 		bookkeepingService.deleteBookkeepingByUserId(userId);
+		log.debug("삭제 완료 : {}", userId);
 	}
 }

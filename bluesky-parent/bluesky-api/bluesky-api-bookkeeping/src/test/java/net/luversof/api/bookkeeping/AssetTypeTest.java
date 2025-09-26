@@ -10,7 +10,7 @@ import net.luversof.GeneralTest;
 import net.luversof.api.bookkeeping.constant.AssetTypeCode;
 import net.luversof.api.bookkeeping.constant.TestConstant;
 import net.luversof.api.bookkeeping.domain.AssetType;
-import net.luversof.api.bookkeeping.repository.mariadb.AssetTypeRepository;
+import net.luversof.api.bookkeeping.repository.AssetTypeRepository;
 import net.luversof.api.bookkeeping.service.AssetTypeService;
 
 @Slf4j

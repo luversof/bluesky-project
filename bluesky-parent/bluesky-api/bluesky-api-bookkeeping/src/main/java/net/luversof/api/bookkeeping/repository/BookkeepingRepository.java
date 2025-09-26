@@ -1,4 +1,4 @@
-package net.luversof.api.bookkeeping.repository.mariadb;
+package net.luversof.api.bookkeeping.repository;
 
 import java.util.List;
 import java.util.UUID;

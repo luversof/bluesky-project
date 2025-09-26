@@ -26,8 +26,10 @@ public class Asset {
 	private UUID bookkeepingId;
 	
 	@Column("assetType_id")
+	@NotNull(groups = { Update.class })
 	private UUID assetTypeId;
 	
+	@NotNull(groups = { Update.class })
 	private String name;
 	
 	@Column("jsonConfig")

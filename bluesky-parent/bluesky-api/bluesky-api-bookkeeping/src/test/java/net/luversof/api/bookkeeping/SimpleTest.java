@@ -2,7 +2,6 @@ package net.luversof.api.bookkeeping;
 
 import java.time.ZoneId;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.TimeZone;
 import java.util.UUID;
 
@@ -20,7 +19,6 @@ import com.github.f4b6a3.uuid.alt.GUID;
 import io.github.luversof.boot.exception.BlueskyException;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.api.bookkeeping.constant.AssetInitialData;
 import net.luversof.api.bookkeeping.constant.BookkeepingError;
 
 @Slf4j
@@ -79,52 +77,6 @@ class SimpleTest {
 //		System.out.println("UUID Version 6: " + UuidCreator.getTimeOrdered());
 		System.out.println("UUID Version 7: " + UuidCreator.getTimeOrderedEpoch());
 		System.out.println("GUID Version 7: " + GUID.v7().toUUID());
-	}
-	
-	@Test
-	void bitSetTest() {
-		var bitSetIndexList =  AssetInitialData.getNormalBitConfigList();
-		
-		var bitSet = new BitSet();
-		bitSetIndexList.forEach(bitSet::set);
-		bitSet.set(5);
-		bitSet.set(15, false);
-		bitSet.set(24);
-		bitSet.set(61);
-		bitSet.set(63);
-		bitSet.set(64);
-		
-		log.debug("test1 : {}", bitSet.toString());
-		log.debug("test2 : {}", bitSet.toByteArray());
-		log.debug("test3 : {}", BitSet.valueOf(bitSet.toByteArray())); 
-		log.debug("test4 : {}", bitSet.toLongArray());
-		log.debug("test5 : {}", BitSet.valueOf(bitSet.toLongArray()));
-		
-		long bitMask = 0;
-		bitSet.stream().forEach(index -> {
-//			log.debug("bit : {}", index);
-//			bitMask |= (1L << index);
-		});
-		
-		log.debug("bitset size : {}", bitSet.stream().toArray());
-		for (var index : bitSet.stream().toArray()) { 
-			log.debug("bit index : {}", index);
-			bitMask |= (1L << index);
-		}
-		
-		log.debug("test6 : {}", Long.toBinaryString(bitMask));	// 2진수 출력
-		log.debug("test6 : {}", bitMask);	// 10진수 출력
-		
-		log.debug("bitCount : {}", Long.bitCount(bitMask));
-		
-		// long 값이 64bit 크기이기 때문에 64이상의 bit index를 처리하지 못함
-		int index = 0;
-		for (int i = 0; i < 64; i++) {
-			if ((bitMask & (1L << i)) != 0) {
-				log.debug("bit index : {}, {}", i, index++);
-			}
-		}
-		
 	}
 	
 	@Test

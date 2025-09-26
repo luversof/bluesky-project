@@ -2,8 +2,8 @@ package net.luversof.api.bookkeeping.constant;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import io.github.luversof.boot.context.support.MessageUtil;
 import lombok.AllArgsConstructor;
@@ -21,12 +21,12 @@ import net.luversof.api.bookkeeping.domain.Bookkeeping;
 @AllArgsConstructor
 public enum AssetInitialData {
 
-	CONTRA_ASSET(AssetTypeInitialData.CONTRA_ASSET, getContraBitConfigList()),
-	WALLET(AssetTypeInitialData.CASH, getNormalBitConfigList())
+	CONTRA_ASSET(AssetTypeInitialData.CONTRA_ASSET.getCode(), AssetJsonConfigConstant.getImmutableConfigList()),
+	WALLET(AssetTypeInitialData.CASH.getCode(), AssetJsonConfigConstant.getCustomConfigList())
 	;
 	
-	private AssetTypeInitialData assetTypeInitialData;
-	private List<Integer> bitConfigIndexList;
+	private AssetTypeCode assetTypeCode;
+	private Map<String, Object> jsonConfig;
 	
 	public String getLocalizedName() {
 		return MessageUtil.getMessage(MessageFormat.format("bookkeeping.constant.account.{0}", name()), name());
@@ -36,33 +36,21 @@ public enum AssetInitialData {
 		var assetList = new ArrayList<Asset>();
 		
 		for (var assetInitialData : AssetInitialData.values()) {
-			var targetAssetType = assetTypeList.stream().filter(accountType -> assetInitialData.getAssetTypeInitialData().getCode().equals(accountType.getCode())).findFirst().orElseGet(() -> null);
+			var targetAssetType = assetTypeList.stream().filter(accountType -> assetInitialData.assetTypeCode.equals(accountType.getCode())).findFirst().orElseGet(() -> null);
 			if (targetAssetType == null) {
-				log.debug("targetAccoutType is not exist : {}", assetInitialData.getAssetTypeInitialData());
+				log.debug("targetAccoutType is not exist : {}", assetInitialData.assetTypeCode);
 				continue;
 			}
 			
 			var asset = new Asset();
 			asset.setBookkeepingId(bookkeeping.getId());
-//			asset.setBookkeeping(bookkeeping);
 			asset.setName(assetInitialData.getLocalizedName());
 			asset.setAssetTypeId(targetAssetType.getId());
-//			asset.setBitConfigIndexList(assetInitialData.getBitConfigIndexList());
+			asset.setJsonConfig(assetInitialData.getJsonConfig());
 			assetList.add(asset);
 		}
 		
 		return assetList;
 	}
 	
-	private static List<Integer> getContraBitConfigList() {
-		return Collections.emptyList();
-	}
-	
-	public static List<Integer> getNormalBitConfigList() {
-		var list = new ArrayList<Integer>();
-		list.add(AssetBitConfig.ENABLE_DELETE.getIndex());
-		list.add(AssetBitConfig.ENABLE_UPDATE.getIndex());
-		list.add(AssetBitConfig.ENABLE_DISPLAY.getIndex());
-		return list;
-	}
 }

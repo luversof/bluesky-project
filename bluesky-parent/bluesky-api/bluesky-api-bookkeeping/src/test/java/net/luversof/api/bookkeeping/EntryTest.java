@@ -17,10 +17,10 @@ import net.luversof.api.bookkeeping.constant.EntryTypeCode;
 import net.luversof.api.bookkeeping.constant.TestConstant;
 import net.luversof.api.bookkeeping.domain.AssetType;
 import net.luversof.api.bookkeeping.domain.Entry;
-import net.luversof.api.bookkeeping.repository.mariadb.AssetRepository;
-import net.luversof.api.bookkeeping.repository.mariadb.AssetTypeRepository;
-import net.luversof.api.bookkeeping.repository.mariadb.EntryRepository;
-import net.luversof.api.bookkeeping.repository.mariadb.EntryTypeRepository;
+import net.luversof.api.bookkeeping.repository.AssetRepository;
+import net.luversof.api.bookkeeping.repository.AssetTypeRepository;
+import net.luversof.api.bookkeeping.repository.EntryRepository;
+import net.luversof.api.bookkeeping.repository.EntryTypeRepository;
 import net.luversof.api.bookkeeping.service.EntryService;
 
 @Slf4j

@@ -1,5 +1,7 @@
 package net.luversof.api.bookkeeping.service;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.StreamSupport;
 
@@ -14,11 +16,11 @@ import net.luversof.api.bookkeeping.constant.AssetTypeInitialData;
 import net.luversof.api.bookkeeping.constant.BookkeepingError;
 import net.luversof.api.bookkeeping.constant.EntryTypeInitialData;
 import net.luversof.api.bookkeeping.domain.Bookkeeping;
-import net.luversof.api.bookkeeping.repository.mariadb.AssetRepository;
-import net.luversof.api.bookkeeping.repository.mariadb.AssetTypeRepository;
-import net.luversof.api.bookkeeping.repository.mariadb.BookkeepingRepository;
-import net.luversof.api.bookkeeping.repository.mariadb.EntryRepository;
-import net.luversof.api.bookkeeping.repository.mariadb.EntryTypeRepository;
+import net.luversof.api.bookkeeping.repository.AssetRepository;
+import net.luversof.api.bookkeeping.repository.AssetTypeRepository;
+import net.luversof.api.bookkeeping.repository.BookkeepingRepository;
+import net.luversof.api.bookkeeping.repository.EntryRepository;
+import net.luversof.api.bookkeeping.repository.EntryTypeRepository;
 
 @Slf4j
 @Service
@@ -63,6 +65,14 @@ public class BookkeepingService {
 		return bookkeepingResult;
 	}
 	
+	public Optional<Bookkeeping> findById(UUID id) {
+		return bookkeepingRepository.findById(id);
+	}
+	
+	public List<Bookkeeping> findByUserId(UUID userId) {
+		return bookkeepingRepository.findByUserId(userId);
+	}
+	
 	/**
 	 * 유저의 가계부 데이터 일괄 삭제
 	 * @param userId
@@ -70,7 +80,7 @@ public class BookkeepingService {
 	@Transactional
 	public void deleteBookkeepingByUserId(UUID userId) {
 		var target = this;
-		bookkeepingRepository.findByUserId(userId).forEach(bookkeeping -> target.deleteBookkeepingByBookkeepingId(bookkeeping.getId()));
+		findByUserId(userId).forEach(bookkeeping -> target.deleteBookkeepingByBookkeepingId(bookkeeping.getId()));
 	}
 	
 	/**
