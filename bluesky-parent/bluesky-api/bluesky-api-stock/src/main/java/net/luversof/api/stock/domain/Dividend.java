@@ -21,6 +21,9 @@ public class Dividend {
 	@Column("id")
 	private UUID id;
 	
+	@Column("account_id")
+	private UUID accountId;
+	
 	@Column("stockItem_id")
 	private UUID stockItemid;
 	

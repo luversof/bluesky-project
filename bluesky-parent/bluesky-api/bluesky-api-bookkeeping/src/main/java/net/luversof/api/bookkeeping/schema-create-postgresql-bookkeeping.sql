@@ -45,8 +45,8 @@ CREATE TABLE "Entry" (
 	"incomeAsset_id" UUID NOT NULL,
 	"outgoingAsset_id" UUID NOT NULL,
 	"entryDate" TIMESTAMP WITH TIME ZONE NOT NULL,
-	"code" VARCHAR(100) NOT NULL,
-	"name" VARCHAR(100) NOT NULL
+	"amount" NUMERIC NOT NULL,
+	"extraData" JSONB
 );
 
 CREATE INDEX idx_entry_bookkeepingId ON "Entry" ("bookkeeping_id");
