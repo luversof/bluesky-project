@@ -45,12 +45,12 @@ public class BookkeepingDataJdbcConfig {
 	}
 	
 	@Bean
-	<T> BeforeConvertCallback<T> boardBeforeConvertCallback() {
+	<T> BeforeConvertCallback<T> bookkeepingBeforeConvertCallback() {
 		return DataJdbcConverterUtil::prepareEntity;
 	}
 	
 	@Bean
-	JdbcCustomConversions boardjdbcCustomConversions() {
+	JdbcCustomConversions bookkeepingJdbcCustomConversions() {
 		return new JdbcCustomConversions(List.of(
 //			new MapToStringConverter(),
 //			new StringToMapConverter()

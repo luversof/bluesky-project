@@ -26,7 +26,7 @@ import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
 
 @Configuration
 @EnableJdbcAuditing(dateTimeProviderRef = "auditingDateTimeProvider")
-@EnableJdbcRepositories(basePackages = "net.luversof.api.bookkeeping.**.repository", jdbcOperationsRef = "bookkeepingNamedParameterJdbcOperations", transactionManagerRef = "bookkeepingTransactionManager")
+@EnableJdbcRepositories(basePackages = "net.luversof.api.stock.**.repository", jdbcOperationsRef = "stockNamedParameterJdbcOperations", transactionManagerRef = "stockTransactionManager")
 public class StockDataJdbcConfig {
 	
 	@Bean
@@ -35,22 +35,22 @@ public class StockDataJdbcConfig {
 	}
 	
 	@Bean
-	NamedParameterJdbcOperations bookkeepingNamedParameterJdbcOperations(@Qualifier("routingDataSource") DataSource routingDataSource) {
+	NamedParameterJdbcOperations stockNamedParameterJdbcOperations(@Qualifier("routingDataSource") DataSource routingDataSource) {
 		return new NamedParameterJdbcTemplate(routingDataSource);
 	}
 
 	@Bean
-	PlatformTransactionManager bookkeepingTransactionManager(@Qualifier("routingDataSource") DataSource routingDataSource) {
+	PlatformTransactionManager stockTransactionManager(@Qualifier("routingDataSource") DataSource routingDataSource) {
 		return new DataSourceTransactionManager(routingDataSource);
 	}
 	
 	@Bean
-	<T> BeforeConvertCallback<T> boardBeforeConvertCallback() {
+	<T> BeforeConvertCallback<T> stockBeforeConvertCallback() {
 		return DataJdbcConverterUtil::prepareEntity;
 	}
 	
 	@Bean
-	JdbcCustomConversions boardjdbcCustomConversions() {
+	JdbcCustomConversions stockJdbcCustomConversions() {
 		return new JdbcCustomConversions(List.of(
 //			new MapToStringConverter(),
 //			new StringToMapConverter()
