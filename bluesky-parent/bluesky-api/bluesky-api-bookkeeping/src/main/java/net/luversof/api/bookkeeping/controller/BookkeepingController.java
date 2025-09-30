@@ -28,12 +28,12 @@ public class BookkeepingController {
 	
 	@DeleteMapping("/byUserId")
 	public void deleteBookkeepingByUserId(UUID userId) {
-		bookkeepingService.deleteBookkeepingByUserId(userId);
+		bookkeepingService.deleteAllByUserId(userId);
 	}
 	
 	@DeleteMapping("/byBookkeepingId")
 	public void deleteBookkeepingByBookkeepingId(UUID bookkeepingId) {
-		bookkeepingService.deleteBookkeepingByBookkeepingId(bookkeepingId);
+		bookkeepingService.deleteAllByBookkeepingId(bookkeepingId);
 	}
 	
 	

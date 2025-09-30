@@ -8,4 +8,6 @@ import net.luversof.api.stock.domain.Dividend;
 
 public interface DividendRepository extends CrudRepository<Dividend, UUID> {
 
+	long deleteByAccountId(UUID accountId);
+
 }

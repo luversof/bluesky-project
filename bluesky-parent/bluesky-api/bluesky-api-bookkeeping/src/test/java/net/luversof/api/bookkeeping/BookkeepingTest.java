@@ -50,7 +50,7 @@ class BookkeepingTest implements GeneralTest {
 	@Test
 	@DisplayName("해당 유저의 가계부 데이터 일괄 삭제")
 	void deleteBookkeepingByUserId() {
-		bookkeepingService.deleteBookkeepingByUserId(userId);
+		bookkeepingService.deleteAllByUserId(userId);
 		log.debug("삭제 완료 : {}", userId);
 	}
 }

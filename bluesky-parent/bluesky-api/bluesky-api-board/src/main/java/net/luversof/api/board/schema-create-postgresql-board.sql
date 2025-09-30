@@ -2,9 +2,10 @@ CREATE TABLE "Board" (
 	"id" UUID NOT NULL PRIMARY KEY,
 	"alias" VARCHAR(15) NOT NULL,
 	"bitConfig" BYTEA,
-	"jsonConfig" JSONB,
-	CONSTRAINT uk_board_alias UNIQUE ("alias")
+	"jsonConfig" JSONB
 );
+
+CREATE UNIQUE INDEX uidx_board_alias ON "Board" ("alias");
 
 -- BoardArticle 테이블
 CREATE TABLE "BoardArticle" (

@@ -15,6 +15,8 @@ CREATE TABLE "StockItem" (
 	"market" VARCHAR(50) NOT NULL
 );
 
+CREATE UNIQUE INDEX uidx_stockitem_ticker ON "StockItem" ("ticker");
+
 CREATE TABLE "Trade" (
 	"id" UUID NOT NULL PRIMARY KEY,
 	"account_id" UUID NOT NULL,
@@ -30,7 +32,7 @@ CREATE TABLE "Trade" (
 CREATE INDEX idx_trade_accountId ON "Trade" ("account_id");
 CREATE INDEX idx_trade_stockItemId ON "Trade" ("stockItem_id");
 
-CREATE TABLE "Devidend" (
+CREATE TABLE "Dividend" (
 	"id" UUID NOT NULL PRIMARY KEY,
 	"account_id" UUID NOT NULL,
 	"stockItem_id" UUID NOT NULL,
@@ -42,5 +44,5 @@ CREATE TABLE "Devidend" (
 	"tradeDate" TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
-CREATE INDEX idx_devidend_accountId ON "Devidend" ("account_id");
-CREATE INDEX idx_devidend_stockItemId ON "Devidend" ("stockItem_id");
+CREATE INDEX idx_dividend_accountId ON "Dividend" ("account_id");
+CREATE INDEX idx_dividend_stockItemId ON "Dividend" ("stockItem_id");

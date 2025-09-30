@@ -78,9 +78,9 @@ public class BookkeepingService {
 	 * @param userId
 	 */
 	@Transactional
-	public void deleteBookkeepingByUserId(UUID userId) {
+	public void deleteAllByUserId(UUID userId) {
 		var target = this;
-		findByUserId(userId).forEach(bookkeeping -> target.deleteBookkeepingByBookkeepingId(bookkeeping.getId()));
+		findByUserId(userId).forEach(bookkeeping -> target.deleteAllByBookkeepingId(bookkeeping.getId()));
 	}
 	
 	/**
@@ -88,7 +88,7 @@ public class BookkeepingService {
 	 * @param bookkeepingId
 	 */
 	@Transactional
-	public void deleteBookkeepingByBookkeepingId(UUID bookkeepingId) {
+	public void deleteAllByBookkeepingId(UUID bookkeepingId) {
 		
 		if (bookkeepingRepository.findById(bookkeepingId).isEmpty()) {
 			BookkeepingError.NOT_EXIST_BOOKKEEPING.throwException();
