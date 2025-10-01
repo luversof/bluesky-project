@@ -6,6 +6,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.Data;
 
 /**
@@ -14,7 +16,8 @@ import lombok.Data;
 @Data
 @Table("StockItem")
 public class StockItem {
-	
+
+	@JsonIgnore
 	@Id
 	@Column("id")
 	private UUID id;
