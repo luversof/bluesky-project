@@ -81,7 +81,7 @@ class StockItemTest implements GeneralTest {
 				.readValues(new ClassPathResource("data/stockItem.csv").getInputStream())
 				;
 		
-		List<StockItem> stockItemList = it.readAll();
+		var stockItemList = it.readAll();
 		log.debug("items : {}", stockItemList.size());
 		return stockItemList;
 	}
