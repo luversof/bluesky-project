@@ -26,7 +26,7 @@ public class Trade {
 	private UUID accountId;
 	
 	@Column("stockItem_id")
-	private UUID stockItemid;
+	private UUID stockItemId;
 	
 	private TradeType type;
 	
