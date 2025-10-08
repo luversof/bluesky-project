@@ -1,5 +1,6 @@
 package net.luversof.api.stock.service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -33,7 +34,7 @@ public class AccountService {
 		return accountRepository.findById(id);
 	}
 	
-	public Iterable<Account> findByUserId(UUID userId) {
+	public List<Account> findByUserId(UUID userId) {
 		return accountRepository.findByUserId(userId);
 	}
 	

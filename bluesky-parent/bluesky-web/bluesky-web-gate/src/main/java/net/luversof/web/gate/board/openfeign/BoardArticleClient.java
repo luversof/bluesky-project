@@ -8,10 +8,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import net.luversof.web.gate.board.domain.BoardArticle;
 
@@ -30,14 +30,14 @@ public interface BoardArticleClient {
 	/**
 	 * 게시판 alias로 게시글 목록 조회 (페이지네이션)
 	 */
-	@GetMapping("/findByBoardAlias")
-	Page<BoardArticle> findByBoardAlias(@RequestParam String boardAlias, Pageable pageable);
+	@GetMapping("/findByBoardAlias/{boardAlias}")
+	Page<BoardArticle> findByBoardAlias(@PathVariable String boardAlias, Pageable pageable);
 
 	/**
 	 * ID로 특정 게시글 조회
 	 */
-	@GetMapping("/findById")
-	Optional<BoardArticle> findById(@RequestParam UUID id);
+	@GetMapping("/{id}")
+	Optional<BoardArticle> findById(@PathVariable UUID id);
 
 	/**
 	 * 게시글 수정

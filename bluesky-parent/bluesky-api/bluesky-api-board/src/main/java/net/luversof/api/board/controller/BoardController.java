@@ -3,11 +3,11 @@ package net.luversof.api.board.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.extern.slf4j.Slf4j;
@@ -29,8 +29,8 @@ public class BoardController {
 		return boardService.create(board);
 	}
 	
-	@GetMapping("/findByAlias")
-	public Board findByAlias(@RequestParam String alias) {
+	@GetMapping("/findByAlias/{alias}")
+	public Board findByAlias(@PathVariable String alias) {
 		var a =  boardService.findByAlias(alias);
 		log.debug("test : {}", a);
 //		var b = boardService.findByAlias2(alias);

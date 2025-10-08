@@ -22,5 +22,9 @@ public class TradeService {
 	
 	public List<Trade> findByAccountId(UUID accountId) {
 		return tradeRepository.findByAccountId(accountId);
-	} 
+	}
+	
+	public List<Trade> findByAccountIdAndStockItemId(UUID accountId, UUID stockItemId) {
+		return tradeRepository.findByAccountIdAndStockItemId(accountId, stockItemId);
+	}
 }

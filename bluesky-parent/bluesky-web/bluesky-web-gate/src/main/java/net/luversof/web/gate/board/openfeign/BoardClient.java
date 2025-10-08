@@ -2,10 +2,10 @@ package net.luversof.web.gate.board.openfeign;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import net.luversof.web.gate.board.domain.Board;
 
@@ -24,8 +24,8 @@ public interface BoardClient {
 	/**
 	 * 게시판 alias로 조회
 	 */
-	@GetMapping("/findByAlias")
-	Board findByAlias(@RequestParam String alias);
+	@GetMapping("/findByAlias/{alias}")
+	Board findByAlias(@PathVariable String alias);
 
 	/**
 	 * 모든 게시판 목록 조회

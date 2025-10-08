@@ -23,8 +23,8 @@ public class BoardHtmxController {
 	@Autowired
 	private BoardArticleClient boardArticleClient;
 
-	@GetMapping("/{boardMode:list}")
-	public Page<BoardArticle> boardArticlePage(@PathVariable String boardMode, String boardAlias, Pageable pageable) {
+	@GetMapping("/{boardAlias}/{boardMode:list}")
+	public Page<BoardArticle> boardArticlePage(@PathVariable String boardMode, @PathVariable String boardAlias, Pageable pageable) {
 		return boardArticleClient.findByBoardAlias(boardAlias, pageable);
 	}
 

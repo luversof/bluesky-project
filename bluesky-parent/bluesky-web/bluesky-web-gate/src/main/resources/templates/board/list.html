@@ -11,12 +11,11 @@
 		</div>
 		<div id="boardList"
 			class="text-center"
-			hx-get="/board/htmx/list"
+			hx-get="/board/htmx/${boardAlias}/list"
 			hx-trigger="load delay:0s, listHtmxTrigger"
 			hx-swap="transition:true"
 			hx-indicator="#indicator"
 			hx-vals="js:{
-				'boardAlias' : boardAlias,
 				'page' : param.getRequestPage()
 			}">
 		</div>

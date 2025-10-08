@@ -16,5 +16,9 @@ public class StockItemService {
 	public StockItem createStockItem(StockItem stockItem) {
 		return stockItemRepository.save(stockItem);
 	}
+	
+	public StockItem findByName(String name) {
+		return stockItemRepository.findByName(name);
+	}
 
 }

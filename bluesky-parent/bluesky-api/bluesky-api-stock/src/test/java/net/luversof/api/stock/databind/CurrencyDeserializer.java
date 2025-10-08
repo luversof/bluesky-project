@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
 public class CurrencyDeserializer extends JsonDeserializer<BigDecimal> {
+	
 	@Override
 	public BigDecimal deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
 		String value = p.getText();
@@ -20,4 +21,5 @@ public class CurrencyDeserializer extends JsonDeserializer<BigDecimal> {
 			return null;
 		}
 	}
+
 }

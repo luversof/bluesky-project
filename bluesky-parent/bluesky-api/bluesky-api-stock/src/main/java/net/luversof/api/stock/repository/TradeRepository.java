@@ -10,6 +10,8 @@ import net.luversof.api.stock.domain.Trade;
 public interface TradeRepository extends CrudRepository<Trade, UUID> {
 	
 	List<Trade> findByAccountId(UUID accountId);
+	
+	List<Trade> findByAccountIdAndStockItemId(UUID accountId, UUID stockItemId); 
 
 	long deleteByAccountId(UUID accountId);
 

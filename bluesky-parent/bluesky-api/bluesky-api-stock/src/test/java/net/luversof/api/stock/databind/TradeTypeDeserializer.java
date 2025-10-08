@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import net.luversof.api.stock.constant.TradeType;
 
 public class TradeTypeDeserializer extends JsonDeserializer<TradeType> {
+	
 	@Override
 	public TradeType deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
 		String value = p.getText();
@@ -21,4 +22,5 @@ public class TradeTypeDeserializer extends JsonDeserializer<TradeType> {
 			throw new IllegalArgumentException("Unknown TradeType: " + value);
 		}
 	}
+
 }
