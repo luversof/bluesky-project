@@ -1,18 +1,16 @@
 package net.luversof.web.gate.board.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 import io.github.luversof.boot.htmx.annotation.HtmxResponseHeader;
-import net.luversof.web.gate.board.domain.BoardArticle;
+import lombok.Setter;
 import net.luversof.web.gate.board.openfeign.BoardArticleClient;
 
 @Controller
@@ -20,17 +18,18 @@ import net.luversof.web.gate.board.openfeign.BoardArticleClient;
 @HtmxResponseHeader("#{boardMode}HtmxResponseTrigger")
 public class BoardHtmxController {
 	
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private BoardArticleClient boardArticleClient;
 
 	@GetMapping("/{boardAlias}/{boardMode:list}")
-	public Page<BoardArticle> boardArticlePage(@PathVariable String boardMode, @PathVariable String boardAlias, Pageable pageable) {
-		return boardArticleClient.findByBoardAlias(boardAlias, pageable);
+	public String boardArticlePage( @PathVariable String boardAlias, @PathVariable String boardMode, Pageable pageable, Model model) {
+		model.addAttribute("page", boardArticleClient.findByBoardAlias(boardAlias, pageable));
+		return "board/htmx/list";
 	}
 
-	@PostMapping("/{boardMode:write}")
-	@ResponseBody
-	public BoardArticle write(@PathVariable String boardMode) {
-		return null;
-	}
+//	@PostMapping("/{boardAlias}/{boardMode:write}")
+//	@ResponseBody
+//	public String write(@PathVariable String boardMode) {
+//		return "board/htmx/write";
+//	}
 }

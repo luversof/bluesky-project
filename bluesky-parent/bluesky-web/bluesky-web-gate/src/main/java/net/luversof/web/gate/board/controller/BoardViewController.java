@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.exception.BlueskyException;
+import lombok.Setter;
 import net.luversof.web.gate.board.domain.Board;
 import net.luversof.web.gate.board.openfeign.BoardArticleClient;
 import net.luversof.web.gate.board.openfeign.BoardClient;
@@ -20,10 +21,10 @@ import net.luversof.web.gate.board.openfeign.BoardClient;
 @RequestMapping(value = "/board", produces = MediaType.TEXT_HTML_VALUE)
 public class BoardViewController {
 
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private BoardClient boardClient;
 
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private BoardArticleClient boardArticleClient;
 
 	@GetMapping

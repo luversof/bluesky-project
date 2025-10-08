@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
@@ -29,7 +28,7 @@ import net.luversof.web.gate.board.openfeign.BoardArticleClient;
 @Slf4j
 @RestController
 @RequestMapping(value = "/api/boardArticle", produces = MediaType.APPLICATION_JSON_VALUE)
-public class BoardArticleController {
+public class BoardArticleApiController {
 
 	@Autowired
 	private BoardArticleClient boardArticleClient;
@@ -53,9 +52,9 @@ public class BoardArticleController {
 		return boardArticleClient.findByBoardAlias(boardAlias, pageable);
 	}
 	
-	@GetMapping("/findById")
-	public Optional<BoardArticle> findById(@RequestParam UUID boardArticleId) {
-		return boardArticleClient.findById(boardArticleId);
+	@GetMapping("/{id}")
+	public Optional<BoardArticle> findById(@PathVariable UUID id) {
+		return boardArticleClient.findById(id);
 	}
 	
 	@BlueskyPreAuthorize

@@ -6,12 +6,13 @@
 
 <body>
 	<div data-layout-fragment="content-board">
+		[[${boardAlias}]]
 		<div id="indicator" class="text-center my-10 hidden">
 			<span class="loading loading-ring loading-lg"></span>
 		</div>
 		<div id="boardList"
 			class="text-center"
-			hx-get="/board/htmx/${boardAlias}/list"
+			data-th-attr="hx-get=@{/board/htmx/{boardAlias}/list(boardAlias=${boardAlias})}"
 			hx-trigger="load delay:0s, listHtmxTrigger"
 			hx-swap="transition:true"
 			hx-indicator="#indicator"
