@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.api.board.controller.swagger.BoardControllerOperation;
 import net.luversof.api.board.domain.Board;
@@ -20,7 +21,7 @@ import net.luversof.api.board.service.BoardService;
 @RequestMapping(value = "/api/board", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BoardController {
 	
-	@Autowired
+	@Setter(onMethod_ =  @Autowired)
 	private BoardService boardService;
 	
 	@PostMapping
@@ -29,16 +30,12 @@ public class BoardController {
 		return boardService.create(board);
 	}
 	
-	@GetMapping("/findByAlias/{alias}")
+	@GetMapping("/search/findByAlias/{alias}")
 	public Board findByAlias(@PathVariable String alias) {
-		var a =  boardService.findByAlias(alias);
-		log.debug("test : {}", a);
-//		var b = boardService.findByAlias2(alias);
-//		log.debug("test222 : {}", b);
-		return a;
+		return boardService.findByAlias(alias);
 	}
 	
-	@GetMapping("/findAll")
+	@GetMapping("/search/findAll")
 	public Iterable<Board> findAll() {
 		return boardService.findAll();
 	}

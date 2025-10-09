@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.Setter;
 import net.luversof.web.gate.board.domain.Board;
 import net.luversof.web.gate.board.openfeign.BoardClient;
 
@@ -14,10 +15,10 @@ import net.luversof.web.gate.board.openfeign.BoardClient;
 @RequestMapping(value = "/api/board", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BoardApiController {
 	
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private BoardClient boardClient;
 
-	@GetMapping("/findByAlias/{alias}")
+	@GetMapping("/search/findByAlias/{alias}")
 	public Board findByAlias(@PathVariable String alias) {
 		return boardClient.findByAlias(alias);
 	}

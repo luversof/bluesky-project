@@ -30,7 +30,7 @@ public interface BoardArticleClient {
 	/**
 	 * 게시판 alias로 게시글 목록 조회 (페이지네이션)
 	 */
-	@GetMapping("/findByBoardAlias/{boardAlias}")
+	@GetMapping("/search/findByBoardAlias/{boardAlias}")
 	Page<BoardArticle> findByBoardAlias(@PathVariable String boardAlias, Pageable pageable);
 
 	/**

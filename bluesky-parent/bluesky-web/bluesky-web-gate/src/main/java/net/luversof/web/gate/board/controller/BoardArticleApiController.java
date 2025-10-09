@@ -46,7 +46,7 @@ public class BoardArticleApiController {
 	 * @param pageable
 	 * @return
 	 */
-	@GetMapping("/findByBoardAlias/{boardAlias}")
+	@GetMapping("/search/findByBoardAlias/{boardAlias}")
 	public Page<BoardArticle> findByBoardAlias(@PathVariable String boardAlias, @PageableDefault(size = 20) @SortDefault(sort = "id", direction = Direction.DESC) Pageable pageable) {
 		log.debug("findByBoardAlias boardAlias : {}", boardAlias);
 		return boardArticleClient.findByBoardAlias(boardAlias, pageable);

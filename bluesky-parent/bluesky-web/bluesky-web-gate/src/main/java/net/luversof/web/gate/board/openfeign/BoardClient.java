@@ -24,13 +24,13 @@ public interface BoardClient {
 	/**
 	 * 게시판 alias로 조회
 	 */
-	@GetMapping("/findByAlias/{alias}")
+	@GetMapping("/search/findByAlias/{alias}")
 	Board findByAlias(@PathVariable String alias);
 
 	/**
 	 * 모든 게시판 목록 조회
 	 */
-	@GetMapping("/findAll")
+	@GetMapping("/search/findAll")
 	Iterable<Board> findAll();
 
 	/**
