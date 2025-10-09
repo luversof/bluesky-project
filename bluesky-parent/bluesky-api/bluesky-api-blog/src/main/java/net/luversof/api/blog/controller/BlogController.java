@@ -7,12 +7,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.Setter;
 import net.luversof.api.blog.controller.swagger.BlogControllerOperation;
 import net.luversof.api.blog.domain.mariadb.Blog;
 import net.luversof.api.blog.service.BlogService;
@@ -21,7 +22,7 @@ import net.luversof.api.blog.service.BlogService;
 @RequestMapping(value = "/api/blog", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BlogController {
 
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private BlogService blogService;
 	
 	@PostMapping
@@ -30,13 +31,13 @@ public class BlogController {
 		return blogService.create(blog);
 	}
 	
-	@GetMapping("/findByBlogId")
-	public Optional<Blog> findByBlogId(@RequestParam String blogId) {
+	@GetMapping("/search/findByBlogId/{blogId}")
+	public Optional<Blog> findByBlogId(@PathVariable String blogId) {
 		return blogService.findByBlogId(blogId);
 	}
 	
-	@GetMapping("/findByUserId")
-	public List<Blog> findByUserId(@RequestParam String userId) {
+	@GetMapping("/search/findByUserId/{userId}")
+	public List<Blog> findByUserId(@PathVariable String userId) {
 		return blogService.findByUserId(userId);
 	}
 

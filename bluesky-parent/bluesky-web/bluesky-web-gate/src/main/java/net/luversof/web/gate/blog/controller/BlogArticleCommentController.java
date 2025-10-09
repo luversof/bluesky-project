@@ -8,24 +8,25 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
+import lombok.Setter;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.blog.domain.BlogArticleComment;
 import net.luversof.web.gate.blog.openfeign.BlogArticleCommentClient;
 
 
 @RestController
-@RequestMapping(value = "/api/blog/articleComment", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/blogArticleComment", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BlogArticleCommentController {
 
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private BlogArticleCommentClient blogArticleCommentClient;
 	
 	@BlueskyPreAuthorize
@@ -34,18 +35,18 @@ public class BlogArticleCommentController {
 		return blogArticleCommentClient.create(blogArticleComment.toBuilder().userId(UserUtil.getUserId()).build());
 	}
 	
-	@GetMapping("/findByBlogArticleId")
-	public Page<BlogArticleComment> findByBlogArticleId(@RequestParam String blogArticleId, Pageable pageable) {
+	@GetMapping("/search/findByBlogArticleId/{blogArticleId}")
+	public Page<BlogArticleComment> findByBlogArticleId(@PathVariable String blogArticleId, Pageable pageable) {
 		return blogArticleCommentClient.findByBlogArticleId(blogArticleId, pageable);
 	}
 	
-	@GetMapping("/findByBlogArticleCommentId")
-	public Optional<BlogArticleComment> findByBlogArticleCommentId(@RequestParam String blogArticleCommentId) {
+	@GetMapping("/search/findByBlogArticleCommentId/{blogArticleCommentId}")
+	public Optional<BlogArticleComment> findByBlogArticleCommentId(@PathVariable String blogArticleCommentId) {
 		return blogArticleCommentClient.findByBlogArticleCommentId(blogArticleCommentId);
 	}
 	
-	@GetMapping("/countByBlogArticleId")
-	public long countByBlogArticleId(@RequestParam String blogArticleId) {
+	@GetMapping("/search/countByBlogArticleId/{blogArticleId}")
+	public long countByBlogArticleId(@PathVariable String blogArticleId) {
 		return blogArticleCommentClient.countByBlogArticleId(blogArticleId);
 	}
 	

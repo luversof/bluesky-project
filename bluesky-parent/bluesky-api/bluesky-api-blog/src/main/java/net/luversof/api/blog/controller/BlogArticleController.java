@@ -9,21 +9,22 @@ import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.Setter;
 import net.luversof.api.blog.domain.mariadb.BlogArticle;
 import net.luversof.api.blog.service.BlogArticleService;
 
 @RestController
-@RequestMapping(value = "/api/blog/article", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/blogArticle", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BlogArticleController {
 
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private BlogArticleService blogArticleService;
 	
 	@PostMapping
@@ -31,13 +32,13 @@ public class BlogArticleController {
 		return blogArticleService.create(blogArticle);
 	}
 	
-	@GetMapping("/findByBlogId")
-	public Page<BlogArticle> findByBlogId(@RequestParam String blogId, Pageable pageable) {
+	@GetMapping("/search/findByBlogId/{blogId}")
+	public Page<BlogArticle> findByBlogId(@PathVariable String blogId, Pageable pageable) {
 		return blogArticleService.findByBlogId(blogId, pageable);
 	}
 	
-	@GetMapping("/findByBlogArticleId")
-	public Optional<BlogArticle> findByBlogArticleId(@RequestParam String blogArticleId) {
+	@GetMapping("/search/findByBlogArticleId/{blogArticleId}")
+	public Optional<BlogArticle> findByBlogArticleId(@PathVariable String blogArticleId) {
 		return blogArticleService.findByBlogArticleId(blogArticleId);
 	}
 	

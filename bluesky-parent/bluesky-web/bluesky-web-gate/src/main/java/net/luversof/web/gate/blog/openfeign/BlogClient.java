@@ -5,9 +5,9 @@ import java.util.Optional;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import net.luversof.web.gate.blog.domain.Blog;
 
@@ -17,10 +17,10 @@ public interface BlogClient {
 	@PostMapping
 	Blog create(@RequestBody Blog blog);
 	
-	@GetMapping("/findByBlogId")
-	Optional<Blog> findByBlogId(@RequestParam String blogId);
+	@GetMapping("/search/findByBlogId/{blogId}")
+	Optional<Blog> findByBlogId(@PathVariable String blogId);
 	
-	@GetMapping("/findByUserId")
-	List<Blog> findByUserId(@RequestParam String userId);
+	@GetMapping("/search/findByUserId/{userId}")
+	List<Blog> findByUserId(@PathVariable String userId);
 
 }

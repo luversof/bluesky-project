@@ -7,28 +7,28 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import net.luversof.web.gate.blog.domain.BlogArticleComment;
 
 
-@FeignClient(value = "bluesky-api-blog", contextId = "api-blog-articleComment", path = "/api/blog/articleComment", url = "${gate.feign-client.url.blog:}")
+@FeignClient(value = "bluesky-api-blog", contextId = "api-blog-articleComment", path = "/api/blogArticleComment", url = "${gate.feign-client.url.blog:}")
 public interface BlogArticleCommentClient {
 	
 	@PostMapping
 	BlogArticleComment create(@RequestBody BlogArticleComment blogArticleComment);
 	
-	@GetMapping("/findByBlogArticleId")
-	Page<BlogArticleComment> findByBlogArticleId(@RequestParam String blogArticleId, Pageable pageable);
+	@GetMapping("/search/findByBlogArticleId/{blogArticleId}")
+	Page<BlogArticleComment> findByBlogArticleId(@PathVariable String blogArticleId, Pageable pageable);
 	
-	@GetMapping("/findByBlogArticleCommentId")
-	Optional<BlogArticleComment> findByBlogArticleCommentId(@RequestParam String blogArticleCommentId);
+	@GetMapping("/search/findByBlogArticleCommentId/{blogArticleCommentId}")
+	Optional<BlogArticleComment> findByBlogArticleCommentId(@PathVariable String blogArticleCommentId);
 	
-	@GetMapping("/countByBlogArticleId")
-	long countByBlogArticleId(@RequestParam String blogArticleId);
+	@GetMapping("/search/countByBlogArticleId/{blogArticleId}")
+	long countByBlogArticleId(@PathVariable String blogArticleId);
 	
 	@PutMapping
 	BlogArticleComment update(@RequestBody BlogArticleComment blogArticleComment);

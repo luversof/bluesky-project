@@ -6,15 +6,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.exception.BlueskyException;
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
+import lombok.Setter;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.blog.domain.BlogArticleCategory;
 import net.luversof.web.gate.blog.openfeign.BlogArticleCategoryClient;
@@ -24,10 +25,10 @@ import net.luversof.web.gate.blog.openfeign.BlogClient;
 @RequestMapping(value = "/api/blog/articleCategory", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BlogArticleCategoryController {
 
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private BlogArticleCategoryClient blogArticleCategoryClient;
 	
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private BlogClient blogClient;
 	
 	@BlueskyPreAuthorize
@@ -37,8 +38,8 @@ public class BlogArticleCategoryController {
 		return blogArticleCategoryClient.create(blogArticleCategory);
 	}
 	
-	@GetMapping("/findByBlogId")
-	public List<BlogArticleCategory> findByBlogId(@RequestParam String blogId) {
+	@GetMapping("/search/findByBlogId/{blogId}")
+	public List<BlogArticleCategory> findByBlogId(@PathVariable String blogId) {
 		return blogArticleCategoryClient.findByBlogId(blogId);
 	}
 
