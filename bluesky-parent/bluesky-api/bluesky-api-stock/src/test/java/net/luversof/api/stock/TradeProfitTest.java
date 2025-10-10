@@ -32,7 +32,7 @@ class TradeProfitTest implements GeneralTest {
 		
 		var stockItem = stockItemService.findByName("현대차");
 		var tradeList = tradeRepository.findByAccountIdAndStockItemId(account.getId(), stockItem.getId());
-		var tradeProfitList = tradeProfitService.calculateStockProfitByStock(tradeList);
+		var tradeProfitList = tradeProfitService.calculateProfitByStock(tradeList);
 		log.debug("tradeProfitList : {}", tradeProfitList);
 	}
 

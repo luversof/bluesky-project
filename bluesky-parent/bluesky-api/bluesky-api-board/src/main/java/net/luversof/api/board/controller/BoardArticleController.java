@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.Setter;
 import net.luversof.api.board.domain.BoardArticle;
 import net.luversof.api.board.service.BoardArticleService;
 
@@ -27,7 +28,7 @@ import net.luversof.api.board.service.BoardArticleService;
 @RequestMapping(value = "/api/boardArticle", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BoardArticleController {
 
-	@Autowired
+	@Setter(onMethod_ =  @Autowired)
 	private BoardArticleService boardArticleService;
 
 	@PostMapping

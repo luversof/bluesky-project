@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.Setter;
 import net.luversof.api.stock.domain.Account;
 import net.luversof.api.stock.service.AccountService;
 
@@ -19,7 +20,7 @@ import net.luversof.api.stock.service.AccountService;
 @RequestMapping("/api/account")
 public class AccountController {
 	
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private AccountService accountService;
 	
 	@PostMapping
@@ -32,7 +33,7 @@ public class AccountController {
 		return accountService.findById(id);
 	}
 	
-	@GetMapping("/findByUserId/{userId}")
+	@GetMapping("/search/findByUserId/{userId}")
 	public List<Account> getAccountsByUserId(@PathVariable UUID userId) {
 		return accountService.findByUserId(userId);
 	}
