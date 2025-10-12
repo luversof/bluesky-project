@@ -3,6 +3,7 @@ package net.luversof.api.stock.service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -13,7 +14,8 @@ import org.springframework.stereotype.Service;
 
 import lombok.Setter;
 import net.luversof.api.stock.constant.TradeType;
-import net.luversof.api.stock.domain.StockProfit;
+import net.luversof.api.stock.domain.TradeProfit;
+import net.luversof.api.stock.web.dto.request.TradeProfitRequest;
 import net.luversof.api.stock.domain.Trade;
 
 /**
@@ -25,21 +27,29 @@ public class TradeProfitService {
 	
 	@Setter(onMethod_ = @Autowired)
 	private StockPriceService stockPriceService;
-
+	
+	
+	public List<TradeProfit> calculateProfit(TradeProfitRequest request) {
+		// 요청 기준으로 tradeList를 조회한 후 계산 로직 호출
+		
+		
+		return Collections.emptyList();
+	}
+	
 	/**
 	 * accountId+stockItemId별 통합 손익 통계 (실현손익 + 미실현손익)
 	 */
-	public List<StockProfit> calculateProfitByAccountAndStock(List<Trade> tradeList) {
+	public List<TradeProfit> calculateProfitByAccountAndStock(List<Trade> tradeList) {
 		Map<String, List<Trade>> grouped = tradeList.stream()
 				.collect(Collectors.groupingBy(t -> t.getAccountId() + "-" + t.getStockItemId()));
-		List<StockProfit> result = new ArrayList<>();
+		List<TradeProfit> result = new ArrayList<>();
 		
 		for (List<Trade> group : grouped.values()) {
 			Trade first = group.get(0);
 			UUID accountId = first.getAccountId();
 			UUID stockItemId = first.getStockItemId();
 			
-			StockProfit profit = calculateStockProfit(group, accountId, stockItemId);
+			TradeProfit profit = calculateStockProfit(group, accountId, stockItemId);
 			result.add(profit);
 		}
 		return result;
@@ -48,16 +58,16 @@ public class TradeProfitService {
 	/**
 	 * stockItemId별 통합 손익 통계 (accountId 무시, 실현손익 + 미실현손익)
 	 */
-	public List<StockProfit> calculateProfitByStock(List<Trade> tradeList) {
+	public List<TradeProfit> calculateProfitByStock(List<Trade> tradeList) {
 		Map<UUID, List<Trade>> grouped = tradeList.stream()
 				.collect(Collectors.groupingBy(Trade::getStockItemId));
-		List<StockProfit> result = new ArrayList<>();
+		List<TradeProfit> result = new ArrayList<>();
 		
 		for (Map.Entry<UUID, List<Trade>> entry : grouped.entrySet()) {
 			UUID stockItemId = entry.getKey();
 			List<Trade> group = entry.getValue();
 			
-			StockProfit profit = calculateStockProfit(group, null, stockItemId);
+			TradeProfit profit = calculateStockProfit(group, null, stockItemId);
 			result.add(profit);
 		}
 		return result;
@@ -66,7 +76,7 @@ public class TradeProfitService {
 	/**
 	 * 개별 그룹에 대한 통합 손익 계산
 	 */
-	private StockProfit calculateStockProfit(List<Trade> trades, UUID accountId, UUID stockItemId) {
+	private TradeProfit calculateStockProfit(List<Trade> trades, UUID accountId, UUID stockItemId) {
 		// 매수 관련 계산
 		int totalBuyQuantity = trades.stream().filter(t -> t.getType() == TradeType.BUY).mapToInt(Trade::getQuantity).sum();
 		BigDecimal totalBuyAmount = trades.stream()
@@ -95,7 +105,7 @@ public class TradeProfitService {
 		// 총 손익 계산 (실현 + 미실현)
 		BigDecimal totalProfit = realizedProfit.add(evaluationProfit);
 		
-		StockProfit profit = new StockProfit();
+		TradeProfit profit = new TradeProfit();
 		profit.setStockItemId(stockItemId);
 		profit.setAccountId(accountId);
 		profit.setTotalBuyAmount(totalBuyAmount);

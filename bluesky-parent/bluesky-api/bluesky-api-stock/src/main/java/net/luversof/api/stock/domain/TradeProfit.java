@@ -5,7 +5,7 @@ import java.util.UUID;
 import lombok.Data;
 
 @Data
-public class StockProfit {
+public class TradeProfit {
 	
 	private UUID stockItemId;
 	private UUID accountId;

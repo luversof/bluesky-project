@@ -1,4 +1,4 @@
-package net.luversof.api.stock.controller;
+package net.luversof.api.stock.web.controller;
 
 import java.util.List;
 import java.util.Optional;
