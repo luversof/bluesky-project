@@ -30,7 +30,7 @@ CREATE TABLE "Trade" (
 );
 
 CREATE INDEX idx_trade_accountId ON "Trade" ("account_id");
-CREATE INDEX idx_trade_stockItemId ON "Trade" ("stockItem_id");
+CREATE INDEX idx_trade_accountId_stockItemId ON "Trade" ("account_id", "stockItem_id");
 
 CREATE TABLE "Dividend" (
 	"id" UUID NOT NULL PRIMARY KEY,
@@ -45,4 +45,4 @@ CREATE TABLE "Dividend" (
 );
 
 CREATE INDEX idx_dividend_accountId ON "Dividend" ("account_id");
-CREATE INDEX idx_dividend_stockItemId ON "Dividend" ("stockItem_id");
+CREATE INDEX idx_dividend_accountId_stockItemId ON "Dividend" ("account_id", "stockItem_id");
