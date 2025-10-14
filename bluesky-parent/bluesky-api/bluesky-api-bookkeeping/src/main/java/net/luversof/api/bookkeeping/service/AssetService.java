@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 import lombok.Setter;
 import net.luversof.api.bookkeeping.constant.AssetJsonConfigConstant;
-import net.luversof.api.bookkeeping.constant.BookkeepingError;
+import net.luversof.api.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.api.bookkeeping.domain.Asset;
 import net.luversof.api.bookkeeping.repository.AssetRepository;
 import net.luversof.api.bookkeeping.repository.EntryRepository;
@@ -52,14 +52,14 @@ public class AssetService {
 		
 		checkAsset(asset);
 		
-		var targetAsset = assetRepository.findById(asset.getId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
+		var targetAsset = assetRepository.findById(asset.getId()).orElseThrow(BookkeepingErrorCode.NOT_EXIST_ASSET::exception);
 		if (!targetAsset.getBookkeepingId().equals(asset.getBookkeepingId())) {
-			BookkeepingError.INVALID_BOOKKEEPING_ID.throwException();
+			BookkeepingErrorCode.INVALID_BOOKKEEPING_ID.throwException();
 		}
 		
 		var enableUpdate = targetAsset.getJsonConfig().getOrDefault(AssetJsonConfigConstant.ENABLE_UPDATE, Boolean.FALSE);
 		if (!enableUpdate.equals(Boolean.TRUE)) {
-			BookkeepingError.UNABLE_UPDATE_ASSET.throwException();
+			BookkeepingErrorCode.UNABLE_UPDATE_ASSET.throwException();
 		}
 		
 		// update 가능한 값들에 대해서만 처리
@@ -79,14 +79,14 @@ public class AssetService {
 		checkAsset(asset);
 		
 		// 삭제 대상 확인
-		var targetAsset = assetRepository.findById(asset.getId()).orElseThrow(BookkeepingError.NOT_EXIST_ASSET::exception);
+		var targetAsset = assetRepository.findById(asset.getId()).orElseThrow(BookkeepingErrorCode.NOT_EXIST_ASSET::exception);
 		
 		// 대상 asset의 entry가 있는지 확인
 		boolean isEnableDelete = entryRepository.findByIncomeAssetId(asset.getId()).isEmpty() && entryRepository.findByOutgoingAssetId(asset.getId()).isEmpty();
 		
 		// entry 가 있으면 삭제 불가
 		if (!isEnableDelete) {
-			BookkeepingError.UNABLE_DELETE_ASSET.throwException();
+			BookkeepingErrorCode.UNABLE_DELETE_ASSET.throwException();
 		}
 		assetRepository.delete(targetAsset);
 	}
@@ -97,12 +97,12 @@ public class AssetService {
 	 * 2. assetTypeId가 있으면 해당 assetType의 bookkeepingId가 asset의 bookkeepingId와 같은지 체크
 	 */
 	private void checkAsset(Asset asset) {
-		var targetBookkeeping = bookkeepingService.findById(asset.getBookkeepingId()).orElseThrow(BookkeepingError.NOT_EXIST_BOOKKEEPING_ID::exception);
+		var targetBookkeeping = bookkeepingService.findById(asset.getBookkeepingId()).orElseThrow(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING_ID::exception);
 		
 		if (asset.getAssetTypeId() != null) {
-			var targetAssetType = assetTypeService.findById(asset.getAssetTypeId()).orElseThrow(BookkeepingError.INVALID_ASSETTYPE_ID::exception);
+			var targetAssetType = assetTypeService.findById(asset.getAssetTypeId()).orElseThrow(BookkeepingErrorCode.INVALID_ASSETTYPE_ID::exception);
 			if (!targetAssetType.getBookkeepingId().equals(targetBookkeeping.getId())) {
-				BookkeepingError.INVALID_ASSETTYPE_ID.throwException();
+				BookkeepingErrorCode.INVALID_ASSETTYPE_ID.throwException();
 			}
 		}
 		

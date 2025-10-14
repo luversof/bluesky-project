@@ -1,5 +1,7 @@
 package net.luversof.api.stock;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -31,7 +33,7 @@ class TradeProfitTest implements GeneralTest {
 		var account = accountService.findByUserId(TestConstant.USER_ID).get(0);
 		
 		var stockItem = stockItemService.findByName("현대차");
-		var tradeList = tradeRepository.findByAccountIdAndStockItemId(account.getId(), stockItem.getId());
+		var tradeList = tradeRepository.findByAccountIdInAndStockItemIdIn(List.of(account.getId()), List.of(stockItem.getId()));
 		var tradeProfitList = tradeProfitService.calculateProfitByStock(tradeList);
 		log.debug("tradeProfitList : {}", tradeProfitList);
 	}

@@ -34,6 +34,10 @@ public class AccountService {
 		return accountRepository.findById(id);
 	}
 	
+	public List<Account> findByIdIn(List<UUID> idList) {
+		return accountRepository.findByIdIn(idList);
+	}
+	
 	public List<Account> findByUserId(UUID userId) {
 		return accountRepository.findByUserId(userId);
 	}

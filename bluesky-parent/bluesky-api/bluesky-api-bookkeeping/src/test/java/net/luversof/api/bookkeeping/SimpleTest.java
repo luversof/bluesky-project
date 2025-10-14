@@ -19,7 +19,7 @@ import com.github.f4b6a3.uuid.alt.GUID;
 import io.github.luversof.boot.exception.BlueskyException;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.api.bookkeeping.constant.BookkeepingError;
+import net.luversof.api.bookkeeping.constant.BookkeepingErrorCode;
 
 @Slf4j
 class SimpleTest {
@@ -81,6 +81,6 @@ class SimpleTest {
 	
 	@Test
 	void errorCodeTest2() {
-		log.debug("error : {}", BookkeepingError.ALREADY_EXIST_BOOKKEEPING.getClass().getSimpleName()); 
+		log.debug("error : {}", BookkeepingErrorCode.ALREADY_EXIST_BOOKKEEPING.getClass().getSimpleName()); 
 	}
 }

@@ -8,7 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import io.github.luversof.boot.exception.BlueskyException;
+import lombok.Setter;
 import net.luversof.api.blog.constant.BlogErrorCode;
 import net.luversof.api.blog.domain.mariadb.BlogArticle;
 import net.luversof.api.blog.repository.mariadb.BlogArticleCategoryRepository;
@@ -17,18 +17,18 @@ import net.luversof.api.blog.repository.mariadb.BlogArticleRepository;
 @Service
 public class BlogArticleService {
 
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private BlogArticleRepository blogArticleRepository;
 	
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private BlogArticleCategoryRepository blogArticleCategoryRepository;
 	
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private BlogService blogService;
 	
 	public BlogArticle create(BlogArticle blogArticle) {
 		// 존재하는 blog인지 확인
-		blogService.findByBlogId(blogArticle.getBlogId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOG));
+		blogService.findByBlogId(blogArticle.getBlogId()).orElseThrow(BlogErrorCode.NOT_EXIST_BLOG::exception);
 		blogArticle.setBlogArticleId(UUID.randomUUID().toString());
 		
 		checkBlogArtcieCategory(blogArticle);
@@ -45,9 +45,9 @@ public class BlogArticleService {
 	}
 	
 	public BlogArticle update(BlogArticle blogArticle) {
-		var targetBlogArticle = blogArticleRepository.findByBlogArticleId(blogArticle.getBlogArticleId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
+		var targetBlogArticle = blogArticleRepository.findByBlogArticleId(blogArticle.getBlogArticleId()).orElseThrow(BlogErrorCode.NOT_EXIST_BLOGARTICLE::exception);
 		if (!targetBlogArticle.getUserId().equals(blogArticle.getUserId())) {
-			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLE);
+			BlogErrorCode.NOT_USER_BLOGARTICLE.throwException();
 		}
 		
 		targetBlogArticle.setTitle(blogArticle.getTitle());
@@ -60,9 +60,9 @@ public class BlogArticleService {
 	
 	
 	public void delete(BlogArticle blogArticle) {
-		var targetBlogArticle = blogArticleRepository.findByBlogArticleId(blogArticle.getBlogArticleId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLE));
+		var targetBlogArticle = blogArticleRepository.findByBlogArticleId(blogArticle.getBlogArticleId()).orElseThrow(BlogErrorCode.NOT_EXIST_BLOGARTICLE::exception);
 		if (!targetBlogArticle.getUserId().equals(blogArticle.getUserId())) {
-			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGARTICLE);
+			BlogErrorCode.NOT_USER_BLOGARTICLE.throwException();;
 		}
 		blogArticleRepository.delete(targetBlogArticle);
 	}
@@ -76,9 +76,9 @@ public class BlogArticleService {
 			return;
 		}
 		
-		var blogArticleCategory = blogArticleCategoryRepository.findByBlogArticleCategoryId(blogArticle.getBlogArticleCategory().getBlogArticleCategoryId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGARTICLECATEGORY));
+		var blogArticleCategory = blogArticleCategoryRepository.findByBlogArticleCategoryId(blogArticle.getBlogArticleCategory().getBlogArticleCategoryId()).orElseThrow(BlogErrorCode.NOT_EXIST_BLOGARTICLECATEGORY::exception);
 		if (!blogArticleCategory.getBlogId().equals(blogArticle.getBlogId())) {
-			throw new BlueskyException(BlogErrorCode.NOT_TARGET_BLOGARTICLECATEGORY);
+			BlogErrorCode.NOT_TARGET_BLOGARTICLECATEGORY.throwException();
 		}
 		
 		blogArticle.setBlogArticleCategory(blogArticleCategory);

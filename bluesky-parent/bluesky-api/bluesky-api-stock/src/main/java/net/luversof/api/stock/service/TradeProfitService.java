@@ -13,10 +13,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import lombok.Setter;
+import net.luversof.api.stock.constant.StockErrorCode;
 import net.luversof.api.stock.constant.TradeType;
+import net.luversof.api.stock.domain.Account;
+import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.domain.TradeProfit;
 import net.luversof.api.stock.web.dto.request.TradeProfitRequest;
-import net.luversof.api.stock.domain.Trade;
 
 /**
  * 통합 주식 손익 계산 서비스
@@ -26,12 +28,65 @@ import net.luversof.api.stock.domain.Trade;
 public class TradeProfitService {
 	
 	@Setter(onMethod_ = @Autowired)
-	private StockPriceService stockPriceService;
+	private AccountService accountService;
 	
+	@Setter(onMethod_ = @Autowired)
+	private TradeService tradeService;
+
+	@Setter(onMethod_ = @Autowired)
+	private StockPriceService stockPriceService;
 	
 	public List<TradeProfit> calculateProfit(TradeProfitRequest request) {
 		// 요청 기준으로 tradeList를 조회한 후 계산 로직 호출
+		List<Trade> tradeList = switch (request.getRequestType()) {
+			case USER -> {
+				var accountList = accountService.findByUserId(request.userId());
+				if (accountList.isEmpty()) {
+					StockErrorCode.NOT_EXIST_USER_ACCOUNT.throwException();;
+				}
+				yield request.hasDateRange()
+					? tradeService.findByAccountIdInAndTradeDateBetween(accountList.stream().map(Account::getId).toList(), request.startDate(), request.endDate())
+					: tradeService.findByAccountIdIn(accountList.stream().map(Account::getId).toList());
+			}
+			case USER_ACCOUNT -> {
+				var accountList = accountService.findByIdIn(request.accountIdList());
+				if (accountList.isEmpty()) {
+					StockErrorCode.NOT_EXIST_USER_ACCOUNT.throwException();;
+				}
+				
+				accountList.stream().forEach(account -> {
+					if (!account.getUserId().equals(request.userId())) {
+						StockErrorCode.NOT_USER_ACCOUNT.throwException(request.userId(), account.getId());
+					}
+				});
+				
+				yield request.hasDateRange()
+					? tradeService.findByAccountIdInAndTradeDateBetween(request.accountIdList(), request.startDate(), request.endDate())
+					: tradeService.findByAccountIdIn(request.accountIdList());
+			}
+			case USER_STOCKITEM -> {
+				var accountList = accountService.findByUserId(request.userId());
+				if (accountList.isEmpty()) {
+					StockErrorCode.NOT_EXIST_USER_ACCOUNT.throwException();;
+				}
+				
+				accountList.stream().forEach(x -> {
+					if (!x.getUserId().equals(request.userId())) {
+						StockErrorCode.NOT_USER_ACCOUNT.throwException();
+					}
+				});
+				
+				yield request.hasDateRange()
+					? tradeService.findByAccountIdInAndStockItemIdInAndTradeDateBetween(request.accountIdList(), request.stockItemIdList(), request.startDate(), request.endDate())
+					: tradeService.findByAccountIdInAndStockItemIdIn(request.accountIdList(), request.stockItemIdList());
+			}
+			case USER_ACCOUNT_STOCKITEM -> {
+					yield Collections.emptyList();
+			}
+		};
 		
+		
+		tradeList.forEach(t -> System.out.println(t));
 		
 		return Collections.emptyList();
 	}

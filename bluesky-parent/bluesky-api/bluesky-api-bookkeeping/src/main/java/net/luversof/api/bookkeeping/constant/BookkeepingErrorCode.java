@@ -1,12 +1,12 @@
 package net.luversof.api.bookkeeping.constant;
 
-import io.github.luversof.boot.exception.BlueskyException;
+import io.github.luversof.boot.exception.BlueskyErrorCode;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public enum BookkeepingError {
+public enum BookkeepingErrorCode implements BlueskyErrorCode<BookkeepingErrorCode> {
 	
 	INVALID_REQUEST,
 	
@@ -39,11 +39,4 @@ public enum BookkeepingError {
 	
 	;
 	
-	public BlueskyException exception() {
-		return new BlueskyException(this);
-	}
-	
-	public void throwException() throws BlueskyException {
-		throw exception();
-	}
 }

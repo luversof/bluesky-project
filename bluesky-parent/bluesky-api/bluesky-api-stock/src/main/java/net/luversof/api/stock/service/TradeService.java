@@ -1,5 +1,6 @@
 package net.luversof.api.stock.service;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,7 +25,20 @@ public class TradeService {
 		return tradeRepository.findByAccountId(accountId);
 	}
 	
-	public List<Trade> findByAccountIdAndStockItemId(UUID accountId, UUID stockItemId) {
-		return tradeRepository.findByAccountIdAndStockItemId(accountId, stockItemId);
+	public List<Trade> findByAccountIdIn(List<UUID> accountIdList) {
+		return tradeRepository.findByAccountIdIn(accountIdList);
 	}
+	
+	public List<Trade> findByAccountIdInAndTradeDateBetween(List<UUID> accountIdList, OffsetDateTime startDate, OffsetDateTime endDate) {
+		return tradeRepository.findByAccountIdInAndTradeDateBetween(accountIdList, startDate, endDate);
+	}
+	
+	public List<Trade> findByAccountIdInAndStockItemIdIn(List<UUID> accountIdList, List<UUID> stockItemIdList) {
+		return tradeRepository.findByAccountIdInAndStockItemIdIn(accountIdList, stockItemIdList);
+	}
+	
+	public List<Trade> findByAccountIdInAndStockItemIdInAndTradeDateBetween(List<UUID> accountIdList, List<UUID> stockItemIdList, OffsetDateTime startDate, OffsetDateTime endDate) {
+		return tradeRepository.findByAccountIdInAndStockItemIdInAndTradeDateBetween(accountIdList, stockItemIdList, startDate, endDate);
+	}
+
 }

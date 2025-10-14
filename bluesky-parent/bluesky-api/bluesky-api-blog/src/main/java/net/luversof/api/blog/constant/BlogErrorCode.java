@@ -1,6 +1,8 @@
 package net.luversof.api.blog.constant;
 
-public enum BlogErrorCode {
+import io.github.luversof.boot.exception.BlueskyErrorCode;
+
+public enum BlogErrorCode implements BlueskyErrorCode<BlogErrorCode> {
 	NOT_USER_BLOG,
 	NOT_USER_BLOGARTICLE,
 	NOT_TARGET_BLOGARTICLECATEGORY,

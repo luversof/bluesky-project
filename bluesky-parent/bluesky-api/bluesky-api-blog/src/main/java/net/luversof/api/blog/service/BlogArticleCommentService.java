@@ -9,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import io.github.luversof.boot.exception.BlueskyException;
+import lombok.Setter;
 import net.luversof.api.blog.constant.BlogErrorCode;
 import net.luversof.api.blog.domain.mariadb.BlogArticleComment;
 import net.luversof.api.blog.repository.mariadb.BlogArticleCommentRepository;
@@ -18,12 +18,12 @@ import net.luversof.api.blog.util.BlogRequestAttributeUtil;
 @Service
 public class BlogArticleCommentService {
 
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private BlogArticleCommentRepository blogCommentRepository;
 	
 	public BlogArticleComment create(BlogArticleComment blogArticleComment) {
 		if (!StringUtils.hasText(blogArticleComment.getBlogArticleId())) {
-			throw new BlueskyException(BlogErrorCode.NOT_EXIST_PARAMETER_BLOGARTICLE_ID);
+			BlogErrorCode.NOT_EXIST_PARAMETER_BLOGARTICLE_ID.throwException();
 		}
 		
 		BlogRequestAttributeUtil.getBlogArticleService().findByBlogArticleId(blogArticleComment.getBlogArticleId());
@@ -45,9 +45,9 @@ public class BlogArticleCommentService {
 	}
 	
 	public BlogArticleComment update(BlogArticleComment blogArticleComment) {
-		var targetBlogComment = blogCommentRepository.findByBlogArticleCommentId(blogArticleComment.getBlogArticleCommentId()).orElseThrow(() -> new BlueskyException(BlogErrorCode.NOT_EXIST_BLOGCOMMENT));
+		var targetBlogComment = blogCommentRepository.findByBlogArticleCommentId(blogArticleComment.getBlogArticleCommentId()).orElseThrow(BlogErrorCode.NOT_EXIST_BLOGCOMMENT::exception);
 		if (!targetBlogComment.getUserId().equals(blogArticleComment.getUserId())) {
-			throw new BlueskyException(BlogErrorCode.NOT_USER_BLOGCOMMENT);
+			BlogErrorCode.NOT_USER_BLOGCOMMENT.throwException();;
 		}
 		
 		targetBlogComment.setComment(blogArticleComment.getComment());
