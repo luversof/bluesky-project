@@ -3,7 +3,6 @@ package net.luversof.api.stock.service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -42,7 +41,7 @@ public class TradeProfitService {
 			case USER -> {
 				var accountList = accountService.findByUserId(request.userId());
 				if (accountList.isEmpty()) {
-					StockErrorCode.NOT_EXIST_USER_ACCOUNT.throwException();;
+					StockErrorCode.INVALID_USER_ID.throwException();
 				}
 				yield request.hasDateRange()
 					? tradeService.findByAccountIdInAndTradeDateBetween(accountList.stream().map(Account::getId).toList(), request.startDate(), request.endDate())
@@ -51,12 +50,12 @@ public class TradeProfitService {
 			case USER_ACCOUNT -> {
 				var accountList = accountService.findByIdIn(request.accountIdList());
 				if (accountList.isEmpty()) {
-					StockErrorCode.NOT_EXIST_USER_ACCOUNT.throwException();;
+					StockErrorCode.INVALID_USER_ID.throwException();
 				}
 				
 				accountList.stream().forEach(account -> {
 					if (!account.getUserId().equals(request.userId())) {
-						StockErrorCode.NOT_USER_ACCOUNT.throwException(request.userId(), account.getId());
+						StockErrorCode.INVALID_USER_ID.throwException(request.userId(), account.getId());
 					}
 				});
 				
@@ -67,12 +66,12 @@ public class TradeProfitService {
 			case USER_STOCKITEM -> {
 				var accountList = accountService.findByUserId(request.userId());
 				if (accountList.isEmpty()) {
-					StockErrorCode.NOT_EXIST_USER_ACCOUNT.throwException();;
+					StockErrorCode.INVALID_USER_ID.throwException();
 				}
 				
 				accountList.stream().forEach(x -> {
 					if (!x.getUserId().equals(request.userId())) {
-						StockErrorCode.NOT_USER_ACCOUNT.throwException();
+						StockErrorCode.INVALID_USER_ID.throwException();
 					}
 				});
 				
@@ -81,14 +80,27 @@ public class TradeProfitService {
 					: tradeService.findByAccountIdInAndStockItemIdIn(request.accountIdList(), request.stockItemIdList());
 			}
 			case USER_ACCOUNT_STOCKITEM -> {
-					yield Collections.emptyList();
+				var accountList = accountService.findByIdIn(request.accountIdList());
+				if (accountList.isEmpty()) {
+					StockErrorCode.INVALID_USER_ID.throwException();
+				}
+				
+				accountList.stream().forEach(account -> {
+					if (!account.getUserId().equals(request.userId())) {
+						StockErrorCode.INVALID_USER_ID.throwException(request.userId(), account.getId());
+					}
+				});
+				
+				yield request.hasDateRange()
+					? tradeService.findByAccountIdInAndStockItemIdInAndTradeDateBetween(request.accountIdList(), request.stockItemIdList(), request.startDate(), request.endDate())
+					: tradeService.findByAccountIdInAndStockItemIdIn(request.accountIdList(), request.stockItemIdList());
 			}
 		};
 		
-		
-		tradeList.forEach(t -> System.out.println(t));
-		
-		return Collections.emptyList();
+		return switch (request.groupBy()) {
+			case ACCOUNT_AND_STOCKITEM -> calculateProfitByAccountAndStock(tradeList);
+			case STOCKITEM -> calculateProfitByStock(tradeList);
+		};
 	}
 	
 	/**

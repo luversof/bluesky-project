@@ -6,6 +6,8 @@ import java.util.UUID;
 
 import org.springframework.util.CollectionUtils;
 
+import net.luversof.api.stock.constant.StockErrorCode;
+
 /**
  * 주식 손익 계산 요청 DTO
  * 조회 기준 조합
@@ -30,12 +32,19 @@ public record TradeProfitRequest(
 	List<UUID> accountIdList,
 	List<UUID> stockItemIdList,
 	OffsetDateTime startDate,
-	OffsetDateTime endDate
+	OffsetDateTime endDate,
+	TradeProfitRequestGroup groupBy
 	) {
+	
+	public TradeProfitRequest {
+		if (groupBy == null) {
+			groupBy = TradeProfitRequestGroup.ACCOUNT_AND_STOCKITEM;
+		}
+	}
 	
 	public TradeProfitRequestType getRequestType() {
 		if (userId == null) {
-			throw new IllegalArgumentException("userId is required");
+			StockErrorCode.NOT_EXIST_USER_ID.throwException();
 		}
 		
 		if (accountIdList == null) {
