@@ -3,7 +3,8 @@ package net.luversof.web.gate.stock.domain;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-public record StockProfit(
+public record TradeProfit(
+		
 	UUID stockItemId,
 	UUID accountId,
 	
@@ -25,6 +26,5 @@ public record StockProfit(
 	
 	// 총 손익 (실현 + 미실현)
 	BigDecimal totalProfit
-	) {
-
+) {
 }
