@@ -11,7 +11,7 @@ CREATE UNIQUE INDEX uidx_board_alias ON "Board" ("alias");
 CREATE TABLE "BoardArticle" (
 	"id" UUID NOT NULL PRIMARY KEY,
 	"board_id" UUID NOT NULL,
-	"user_id" VARCHAR(36) NOT NULL,
+	"user_id" UUID NOT NULL,
 	"title" VARCHAR(255) NOT NULL,
 	"content" TEXT NOT NULL,
 	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL,

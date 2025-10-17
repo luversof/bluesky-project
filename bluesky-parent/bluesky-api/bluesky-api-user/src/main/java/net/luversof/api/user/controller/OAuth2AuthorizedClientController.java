@@ -13,11 +13,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.Setter;
+
 @RestController
-@RequestMapping(value = "/api/user/oAuth2AuthorizedClient", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/oAuth2AuthorizedClient", produces = MediaType.APPLICATION_JSON_VALUE)
 public class OAuth2AuthorizedClientController {
 
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private JdbcOAuth2AuthorizedClientService oAuth2AuthorizedClientService;
 	
 	@GetMapping

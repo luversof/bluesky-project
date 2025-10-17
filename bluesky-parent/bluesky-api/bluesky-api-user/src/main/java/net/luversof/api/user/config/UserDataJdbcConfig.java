@@ -1,6 +1,4 @@
-package net.luversof.api.board.config;
-
-
+package net.luversof.api.user.config;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -28,8 +26,8 @@ import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
 
 @Configuration
 @EnableJdbcAuditing(dateTimeProviderRef = "auditingDateTimeProvider")
-@EnableJdbcRepositories(basePackages = "net.luversof.api.board.**.repository", jdbcOperationsRef = "boardNamedParameterJdbcOperations", transactionManagerRef = "boardTransactionManager")
-public class BoardDataJdbcConfig {
+@EnableJdbcRepositories(basePackages = "net.luversof.api.user.**.repository", jdbcOperationsRef = "userNamedParameterJdbcOperations", transactionManagerRef = "boardTransactionManager")
+public class UserDataJdbcConfig {
 	
 	@Bean
 	DateTimeProvider auditingDateTimeProvider() {
@@ -37,23 +35,23 @@ public class BoardDataJdbcConfig {
 	}
 
 	@Bean
-	NamedParameterJdbcOperations boardNamedParameterJdbcOperations(@Qualifier("routingDataSource") DataSource routingDataSource) {
+	NamedParameterJdbcOperations userNamedParameterJdbcOperations(@Qualifier("routingDataSource") DataSource routingDataSource) {
 		return new NamedParameterJdbcTemplate(routingDataSource);
 	}
 
 	@Bean
-	PlatformTransactionManager boardTransactionManager(@Qualifier("routingDataSource") DataSource routingDataSource) {
+	PlatformTransactionManager userTransactionManager(@Qualifier("routingDataSource") DataSource routingDataSource) {
 		return new DataSourceTransactionManager(routingDataSource);
 	}
 	
 	
 	@Bean
-	<T> BeforeConvertCallback<T> boardBeforeConvertCallback() {
+	<T> BeforeConvertCallback<T> userBeforeConvertCallback() {
 		return DataJdbcConverterUtil::prepareEntity;
 	}
 	
 	@Bean
-	JdbcCustomConversions boardJdbcCustomConversions() {
+	JdbcCustomConversions userJdbcCustomConversions() {
 		return new JdbcCustomConversions(List.of(
 //			new MapToStringConverter(),
 //			new StringToMapConverter()
@@ -62,7 +60,17 @@ public class BoardDataJdbcConfig {
 			new TimestampToOffsetDateTimeConverter()
 		));
 	}
-	
-	
 
+	
+//	@Bean
+//	JdbcTemplate jdbcTemplate(@Qualifier("userDataSource") DataSource dataSource, JdbcProperties properties) {
+//		JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+//		JdbcProperties.Template template = properties.getTemplate();
+//		jdbcTemplate.setFetchSize(template.getFetchSize());
+//		jdbcTemplate.setMaxRows(template.getMaxRows());
+//		if (template.getQueryTimeout() != null) {
+//			jdbcTemplate.setQueryTimeout((int) template.getQueryTimeout().getSeconds());
+//		}
+//		return jdbcTemplate;
+//	}
 }

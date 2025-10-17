@@ -1,4 +1,4 @@
-package net.luversof.client.user.openfeign.config;
+package net.luversof.client.user.config;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,19 +24,20 @@ import feign.codec.Decoder;
 import feign.codec.Encoder;
 import feign.form.spring.SpringFormEncoder;
 import feign.optionals.OptionalDecoder;
+import lombok.Setter;
 
 /**
  * UserClient에서 사용하기 위한 FeignConfig
  */
 public class UserClientFeignConfig {
 	
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private Jackson2ObjectMapperBuilder builder;
 	
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private ObjectProvider<HttpMessageConverter<?>> converters;
 	
-	@Autowired(required = false) 
+	@Setter(onMethod_ = @Autowired(required = false))
 	private FeignEncoderProperties encoderProperties;
 	
 	@Bean

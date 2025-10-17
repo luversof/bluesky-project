@@ -14,7 +14,7 @@ import net.luversof.web.gate.stock.openfeign.StockItemClient;
 
 @RestController
 @RequestMapping("/api/stock/stockItem")
-public class StockItemGateController {
+public class StockItemApiController {
 
 	@Setter(onMethod_ = @Autowired)
 	private StockItemClient stockItemClient;

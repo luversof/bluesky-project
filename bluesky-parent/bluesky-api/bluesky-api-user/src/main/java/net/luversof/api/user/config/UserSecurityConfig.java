@@ -8,10 +8,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.jackson2.SecurityJackson2Modules;
 import org.springframework.security.oauth2.client.JdbcOAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.provisioning.UserDetailsManager;
@@ -20,12 +23,15 @@ import org.springframework.security.web.SecurityFilterChain;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.annotation.PostConstruct;
+import lombok.Setter;
+import net.luversof.api.user.domain.UserInfo;
+import net.luversof.api.user.service.UserInfoService;
 
 
 @Configuration
 public class UserSecurityConfig {
 	
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private ObjectMapper objectMapper;
 	
 	@PostConstruct
@@ -33,11 +39,31 @@ public class UserSecurityConfig {
 		objectMapper.registerModules(SecurityJackson2Modules.getModules(getClass().getClassLoader()));
 	}
 
-    @Bean
-    JdbcOAuth2AuthorizedClientService jdbcOAuth2AuthorizedClientService(JdbcOperations jdbcOperations, ClientRegistrationRepository clientRegistrationRepository) {
-        return new JdbcOAuth2AuthorizedClientService(jdbcOperations, clientRegistrationRepository);
-    }
-    
+	@Bean
+	OAuth2AuthorizedClientService jdbcOAuth2AuthorizedClientService(JdbcOperations jdbcOperations, ClientRegistrationRepository clientRegistrationRepository, UserInfoService userInfoService) {
+		return new JdbcOAuth2AuthorizedClientService(jdbcOperations, clientRegistrationRepository) {
+
+			@Override
+			public void saveAuthorizedClient(OAuth2AuthorizedClient authorizedClient, Authentication principal) {
+				super.saveAuthorizedClient(authorizedClient, principal);
+				var userName = makeUsername(authorizedClient);
+				if (userInfoService.findByUsername(userName).isEmpty()) {
+					var userInfo = new UserInfo();
+					userInfo.setUsername(userName);
+					userInfoService.save(userInfo);
+				};
+			}
+			
+		};
+	}
+	
+	private String makeUsername(OAuth2AuthorizedClient authorizedClient) {
+		return authorizedClient.getClientRegistration().getClientId()
+				.replace("-local", "")
+				.replace("-local2", "")
+				+ ":" + authorizedClient.getPrincipalName();
+	}
+
 	@Bean
 	SecurityFilterChain userSecurityFilterChain(HttpSecurity http) throws Exception {
 		http
@@ -46,10 +72,10 @@ public class UserSecurityConfig {
 		return http.build();
 	}
 	
-    @Bean
-    PasswordEncoder passwordEncoder() {
-    	return PasswordEncoderFactories.createDelegatingPasswordEncoder();
-    }
+	@Bean
+	PasswordEncoder passwordEncoder() {
+		return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+	}
 
 	@Bean
 	UserDetailsManager userDetailsManager(@Qualifier("userDataSource") DataSource userDataSource) {

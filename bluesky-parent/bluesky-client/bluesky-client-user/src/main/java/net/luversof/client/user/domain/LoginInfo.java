@@ -35,7 +35,15 @@ public class LoginInfo {
 		// username은 authorizedClientRegistrationId + ":" + principalName으로 하려고 함
 
 		
-		username = oAuth2AuthenticationToken.getAuthorizedClientRegistrationId().replace("-local", "") + ":" + oAuth2AuthenticationToken.getName();
+		username = makeUsername(oAuth2AuthenticationToken);
+	}
+	
+	private String makeUsername(OAuth2AuthenticationToken oAuth2AuthenticationToken) {
+		return oAuth2AuthenticationToken
+				.getAuthorizedClientRegistrationId()
+				.replace("-local", "")
+				.replace("-local2", "")
+				+ ":" + oAuth2AuthenticationToken.getName();
 	}
 	
 	private final boolean isLogin;

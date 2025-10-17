@@ -15,7 +15,7 @@ CREATE TABLE "StockItem" (
 	"market" VARCHAR(50) NOT NULL
 );
 
-CREATE UNIQUE INDEX uidx_stockitem_ticker ON "StockItem" ("ticker");
+CREATE UNIQUE INDEX uk_stockItem_ticker ON "StockItem" ("ticker");
 
 CREATE TABLE "Trade" (
 	"id" UUID NOT NULL PRIMARY KEY,

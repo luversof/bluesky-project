@@ -22,7 +22,7 @@ public class BoardHtmxController {
 	private BoardArticleClient boardArticleClient;
 
 	@GetMapping("/{boardAlias}/{boardMode:list}")
-	public String boardArticlePage( @PathVariable String boardAlias, @PathVariable String boardMode, Pageable pageable, Model model) {
+	public String boardArticlePage(@PathVariable String boardAlias, @PathVariable String boardMode, Pageable pageable, Model model) {
 		model.addAttribute("page", boardArticleClient.findByBoardAlias(boardAlias, pageable));
 		return "board/htmx/list";
 	}

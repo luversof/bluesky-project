@@ -13,11 +13,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.Setter;
+
 @RestController
-@RequestMapping(value = "/api/user/userDetails", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/userDetails", produces = MediaType.APPLICATION_JSON_VALUE)
 public class UserDetailsController {
 
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private UserDetailsManager userDetailsManager;
 	
 	@GetMapping("/search/loadUserByUsername")

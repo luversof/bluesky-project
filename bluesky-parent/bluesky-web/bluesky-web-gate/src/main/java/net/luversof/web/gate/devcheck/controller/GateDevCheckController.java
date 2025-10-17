@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import io.github.luversof.boot.context.support.BlueskyReloadableResourceBundleMessageSource;
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
 import io.github.luversof.boot.devcheck.annotation.DevCheckDescription;
+import net.luversof.client.user.domain.LoginInfo;
+import net.luversof.client.user.util.UserUtil;
 
 @DevCheckController
 @RequestMapping(value = "/gate", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -71,6 +73,11 @@ public class GateDevCheckController {
 	public Authentication testSecurityHasRole() {
 		SecurityContext context = SecurityContextHolder.getContext();
 		return context.getAuthentication();
+	}
+	
+	@GetMapping("/loginInfo")
+	public LoginInfo loginInfo() {
+		return UserUtil.getLoginInfo();
 	}
 	
 	@GetMapping("/property")

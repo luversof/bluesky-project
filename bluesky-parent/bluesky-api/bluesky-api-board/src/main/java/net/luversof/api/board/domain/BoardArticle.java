@@ -26,7 +26,7 @@ public class BoardArticle {
 
 	@NotBlank(groups = { Create.class, Modify.class, Delete.class })
 	@Column("user_id")
-	private String userId;
+	private UUID userId;
 
 	@Column("board_id")
 	private UUID boardId;

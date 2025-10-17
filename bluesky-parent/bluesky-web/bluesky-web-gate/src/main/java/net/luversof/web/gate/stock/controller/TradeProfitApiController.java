@@ -14,7 +14,7 @@ import net.luversof.web.gate.stock.openfeign.TradeProfitClient;
 
 @RestController
 @RequestMapping("/api/stock/tradeProfit")
-public class TradeProfitGateController {
+public class TradeProfitApiController {
 
 	@Setter(onMethod_ = @Autowired)
 	private TradeProfitClient tradeProfitClient;

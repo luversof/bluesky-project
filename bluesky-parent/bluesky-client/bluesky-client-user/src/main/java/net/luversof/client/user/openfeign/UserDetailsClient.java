@@ -1,4 +1,4 @@
-package net.luversof.client.user.openfeign.client;
+package net.luversof.client.user.openfeign;
 
 import java.util.Optional;
 
@@ -12,10 +12,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import net.luversof.client.user.openfeign.config.UserClientFeignConfig;
+import net.luversof.client.user.config.UserClientFeignConfig;
 
 
-@FeignClient(value = "bluesky-api-user", contextId = "api-user-userDetails", path = "/api/user/userDetails", url = "${gate.feign-client.url.user:}", configuration = UserClientFeignConfig.class)
+@FeignClient(value = "bluesky-api-user", contextId = "api-user-userDetails", path = "/api/userDetails", url = "${gate.feign-client.url.user:}", configuration = UserClientFeignConfig.class)
 public interface UserDetailsClient {
 
 	@GetMapping("/search/loadUserByUsername")

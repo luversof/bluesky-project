@@ -32,7 +32,7 @@ class BoardArticleTest implements GeneralWebTest {
 		var board = boardClient.findByAlias("free");
 		var boardArticle = BoardArticle.builder()
 			.boardId(board.id())
-			.userId("userId")
+			.userId(UUID.randomUUID())
 			.title("title")
 			.content("content")
 			.build();

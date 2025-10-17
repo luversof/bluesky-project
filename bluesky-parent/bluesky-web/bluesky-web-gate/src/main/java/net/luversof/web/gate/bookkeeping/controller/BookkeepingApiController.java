@@ -1,7 +1,6 @@
 package net.luversof.web.gate.bookkeeping.controller;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -15,15 +14,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
+import lombok.Setter;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.bookkeeping.domain.Bookkeeping;
 import net.luversof.web.gate.bookkeeping.openfeign.BookkeepingClient;
 
 @RestController
 @RequestMapping(value = "/api/bookkeeping", produces = MediaType.APPLICATION_JSON_VALUE)
-public class BookkeepingController {
+public class BookkeepingApiController {
 
-	@Autowired
+	@Setter(onMethod_ = @Autowired)
 	private BookkeepingClient bookkeepingClient;
 	
 	@BlueskyPreAuthorize
@@ -31,7 +31,7 @@ public class BookkeepingController {
 	public Bookkeeping create(@RequestBody Bookkeeping bookkeeping) {
 		return bookkeepingClient.create(
 			bookkeeping.toBuilder()
-				.userId(UUID.fromString(UserUtil.getUserId()))
+				.userId(UserUtil.getUserId())
 				.build()
 		);
 	}
@@ -46,7 +46,7 @@ public class BookkeepingController {
 	public Bookkeeping update(@RequestBody Bookkeeping bookkeeping) {
 		return bookkeepingClient.update(
 			bookkeeping.toBuilder()
-				.userId(UUID.fromString(UserUtil.getUserId()))
+				.userId(UserUtil.getUserId())
 				.build()
 		);
 	}
@@ -56,7 +56,7 @@ public class BookkeepingController {
 	public void delete(@RequestBody Bookkeeping bookkeeping) {
 		bookkeepingClient.delete(
 			bookkeeping.toBuilder()
-				.userId(UUID.fromString(UserUtil.getUserId()))
+				.userId(UserUtil.getUserId())
 				.build()
 		);
 	}

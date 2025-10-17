@@ -1,4 +1,4 @@
-package net.luversof.client.user.openfeign.client;
+package net.luversof.client.user.openfeign;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.security.core.Authentication;
@@ -9,10 +9,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import net.luversof.client.user.openfeign.config.UserClientFeignConfig;
+import net.luversof.client.user.config.UserClientFeignConfig;
 
 
-@FeignClient(value = "bluesky-api-user", contextId = "api-user-oauth2AuthorizedClient", path = "/api/user/oAuth2AuthorizedClient", url = "${gate.feign-client.url.user:}", configuration = UserClientFeignConfig.class)
+@FeignClient(value = "bluesky-api-user", contextId = "api-user-oauth2AuthorizedClient", path = "/api/oAuth2AuthorizedClient", url = "${gate.feign-client.url.user:}", configuration = UserClientFeignConfig.class)
 public interface OAuth2AuthorizedClientClient {
 
 	@GetMapping

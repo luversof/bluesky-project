@@ -27,7 +27,7 @@ public class BlogController {
 	@BlueskyPreAuthorize
 	@PostMapping
 	public Blog create() {
-		return blogClient.create(Blog.builder().userId(UserUtil.getUserId()).build());
+		return blogClient.create(Blog.builder().userId(UserUtil.getUserId().toString()).build());
 	}
 	
 	@GetMapping("/search/findByBlogId/{blogId}")

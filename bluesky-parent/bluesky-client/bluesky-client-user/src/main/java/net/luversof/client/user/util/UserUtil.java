@@ -1,12 +1,16 @@
 package net.luversof.client.user.util;
 
+import java.util.UUID;
+
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 
+import io.github.luversof.boot.context.ApplicationContextUtil;
 import lombok.experimental.UtilityClass;
 import net.luversof.client.user.domain.LoginInfo;
+import net.luversof.client.user.openfeign.UserInfoClient;
 
 @UtilityClass
 public class UserUtil {
@@ -38,9 +42,10 @@ public class UserUtil {
 		
 		return loginInfo;
 	}
-
 	
-	public static String getUserId() {
-		return getLoginInfo().getUsername();
+	public static UUID getUserId() {
+		var loginInfo = getLoginInfo();
+		var userInfoOptional = ApplicationContextUtil.getApplicationContext().getBean(UserInfoClient.class).findByUsername(loginInfo.getUsername());
+		return userInfoOptional.isPresent() ? userInfoOptional.get().id() : null;
 	}
 }

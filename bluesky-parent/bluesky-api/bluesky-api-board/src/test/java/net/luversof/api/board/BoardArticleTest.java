@@ -51,7 +51,7 @@ class BoardArticleTest implements GeneralTest {
 		Board board = boardService.findByAlias("free");
 		BoardArticle boardArticle = new BoardArticle();
 		boardArticle.setBoardId(board.getId());
-		boardArticle.setUserId("1");
+		boardArticle.setUserId(UUID.randomUUID());
 		boardArticle.setTitle("테스트");
 		boardArticle.setContent("내용");
 		boardArticleService.save(boardArticle);
@@ -67,7 +67,7 @@ class BoardArticleTest implements GeneralTest {
 //		for (int i = 0 ; i < 100000 ; i ++) {
 			BoardArticle boardArticle = new BoardArticle();
 			boardArticle.setBoardId(board.getId());
-			boardArticle.setUserId("1");
+			boardArticle.setUserId(UUID.randomUUID());
 			boardArticle.setTitle("테스트" + i);
 			boardArticle.setContent("내용" + i);
 //			boardArticleList.add(boardArticle);
