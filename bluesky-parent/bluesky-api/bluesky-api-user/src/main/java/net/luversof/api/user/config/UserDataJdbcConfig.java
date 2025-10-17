@@ -26,7 +26,7 @@ import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
 
 @Configuration
 @EnableJdbcAuditing(dateTimeProviderRef = "auditingDateTimeProvider")
-@EnableJdbcRepositories(basePackages = "net.luversof.api.user.**.repository", jdbcOperationsRef = "userNamedParameterJdbcOperations", transactionManagerRef = "boardTransactionManager")
+@EnableJdbcRepositories(basePackages = "net.luversof.api.user.**.repository", jdbcOperationsRef = "userNamedParameterJdbcOperations", transactionManagerRef = "userTransactionManager")
 public class UserDataJdbcConfig {
 	
 	@Bean
@@ -61,16 +61,4 @@ public class UserDataJdbcConfig {
 		));
 	}
 
-	
-//	@Bean
-//	JdbcTemplate jdbcTemplate(@Qualifier("userDataSource") DataSource dataSource, JdbcProperties properties) {
-//		JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-//		JdbcProperties.Template template = properties.getTemplate();
-//		jdbcTemplate.setFetchSize(template.getFetchSize());
-//		jdbcTemplate.setMaxRows(template.getMaxRows());
-//		if (template.getQueryTimeout() != null) {
-//			jdbcTemplate.setQueryTimeout((int) template.getQueryTimeout().getSeconds());
-//		}
-//		return jdbcTemplate;
-//	}
 }
