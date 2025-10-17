@@ -79,6 +79,13 @@
 			<artifactId>opentelemetry-exporter-otlp</artifactId>
 		</dependency>
 		<!-- (e) micrometer traces -->
+		
+		<!-- (e) bluesky boot connectioninfo -->
+		<dependency>
+			<groupId>io.github.luversof</groupId>
+			<artifactId>bluesky-boot-autoconfigure-connectioninfo-jdbc</artifactId>
+		</dependency>
+		<!-- (e) bluesky boot connectioninfo -->
 	</dependencies>
 	<build>
 		<plugins>

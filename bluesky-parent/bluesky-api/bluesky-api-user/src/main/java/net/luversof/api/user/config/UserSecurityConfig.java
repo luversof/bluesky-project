@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.jdbc.core.JdbcOperations;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
@@ -14,7 +14,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.jackson2.SecurityJackson2Modules;
 import org.springframework.security.oauth2.client.JdbcOAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.provisioning.UserDetailsManager;
@@ -40,8 +39,11 @@ public class UserSecurityConfig {
 	}
 
 	@Bean
-	OAuth2AuthorizedClientService jdbcOAuth2AuthorizedClientService(JdbcOperations jdbcOperations, ClientRegistrationRepository clientRegistrationRepository, UserInfoService userInfoService) {
-		return new JdbcOAuth2AuthorizedClientService(jdbcOperations, clientRegistrationRepository) {
+	JdbcOAuth2AuthorizedClientService jdbcOAuth2AuthorizedClientService(
+			NamedParameterJdbcOperations namedParameterJdbcOperations, 
+			ClientRegistrationRepository clientRegistrationRepository, 
+			UserInfoService userInfoService) {
+		return new JdbcOAuth2AuthorizedClientService(namedParameterJdbcOperations.getJdbcOperations(), clientRegistrationRepository) {
 
 			@Override
 			public void saveAuthorizedClient(OAuth2AuthorizedClient authorizedClient, Authentication principal) {
@@ -78,8 +80,8 @@ public class UserSecurityConfig {
 	}
 
 	@Bean
-	UserDetailsManager userDetailsManager(@Qualifier("userDataSource") DataSource userDataSource) {
-		return new JdbcUserDetailsManager(userDataSource);
+	UserDetailsManager userDetailsManager(@Qualifier("routingDataSource") DataSource routingDataSource) {
+		return new JdbcUserDetailsManager(routingDataSource);
 	}
 
 }
