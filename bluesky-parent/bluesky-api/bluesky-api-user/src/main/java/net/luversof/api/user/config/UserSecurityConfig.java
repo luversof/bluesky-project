@@ -32,28 +32,28 @@ import net.luversof.api.user.service.UserInfoService;
 @Configuration
 public class UserSecurityConfig {
 	
-	@Setter(onMethod_ = @Autowired)
-	private ObjectMapper objectMapper;
-	
-	@PostConstruct
-	public void postConstruct() {
-		objectMapper.registerModules(SecurityJackson2Modules.getModules(getClass().getClassLoader()));
-	}
-	
-	@Bean
-	RestTemplateCustomizer disableDefaultTypingForRestTemplate() {
-		return restTemplate -> {
-			restTemplate.getMessageConverters().stream()
-				.filter(MappingJackson2HttpMessageConverter.class::isInstance)
-				.map(c -> (MappingJackson2HttpMessageConverter) c)
-				.forEach(converter -> {
-					ObjectMapper copy = converter.getObjectMapper().copy();
-					// remove any global default typing so plain JSON (no '@class') can be read
-					copy.setDefaultTyping(null);
-					converter.setObjectMapper(copy);
-				});
-		};
-	}
+//	@Setter(onMethod_ = @Autowired)
+//	private ObjectMapper objectMapper;
+//	
+//	@PostConstruct
+//	public void postConstruct() {
+//		objectMapper.registerModules(SecurityJackson2Modules.getModules(getClass().getClassLoader()));
+//	}
+//	
+//	@Bean
+//	RestTemplateCustomizer disableDefaultTypingForRestTemplate() {
+//		return restTemplate -> {
+//			restTemplate.getMessageConverters().stream()
+//				.filter(MappingJackson2HttpMessageConverter.class::isInstance)
+//				.map(c -> (MappingJackson2HttpMessageConverter) c)
+//				.forEach(converter -> {
+//					ObjectMapper copy = converter.getObjectMapper().copy();
+//					// remove any global default typing so plain JSON (no '@class') can be read
+//					copy.setDefaultTyping(null);
+//					converter.setObjectMapper(copy);
+//				});
+//		};
+//	}
 
 	@Bean
 	JdbcOAuth2AuthorizedClientService jdbcOAuth2AuthorizedClientService(
