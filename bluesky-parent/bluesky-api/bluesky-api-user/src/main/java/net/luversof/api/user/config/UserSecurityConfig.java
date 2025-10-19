@@ -4,8 +4,10 @@ import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.web.client.RestTemplateCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.Authentication;
@@ -36,6 +38,21 @@ public class UserSecurityConfig {
 	@PostConstruct
 	public void postConstruct() {
 		objectMapper.registerModules(SecurityJackson2Modules.getModules(getClass().getClassLoader()));
+	}
+	
+	@Bean
+	RestTemplateCustomizer disableDefaultTypingForRestTemplate() {
+		return restTemplate -> {
+			restTemplate.getMessageConverters().stream()
+				.filter(MappingJackson2HttpMessageConverter.class::isInstance)
+				.map(c -> (MappingJackson2HttpMessageConverter) c)
+				.forEach(converter -> {
+					ObjectMapper copy = converter.getObjectMapper().copy();
+					// remove any global default typing so plain JSON (no '@class') can be read
+					copy.setDefaultTyping(null);
+					converter.setObjectMapper(copy);
+				});
+		};
 	}
 
 	@Bean
