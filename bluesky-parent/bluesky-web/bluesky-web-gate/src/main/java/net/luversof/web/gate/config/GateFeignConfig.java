@@ -7,6 +7,7 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpHeaders;
 
 import feign.Feign;
+import feign.Logger.Level;
 import feign.RequestInterceptor;
 import feign.micrometer.MicrometerCapability;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -27,6 +28,7 @@ public class GateFeignConfig {
 	Feign.Builder feignBuilder(MeterRegistry meterRegistry) {
 		return Feign
 				.builder()
+				.logLevel(Level.FULL)
 				.addCapability(new MicrometerCapability(meterRegistry));
 	}
 }
