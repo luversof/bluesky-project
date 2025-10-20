@@ -1,7 +1,7 @@
 package net.luversof.api.stock.domain;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.data.annotation.Id;
@@ -39,6 +39,6 @@ public class Trade {
 	private BigDecimal tax;
 	
 	@Column("tradeDate")
-	private OffsetDateTime tradeDate;
+	private Instant tradeDate;
 
 }

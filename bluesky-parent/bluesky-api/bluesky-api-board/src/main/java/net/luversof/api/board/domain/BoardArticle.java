@@ -1,6 +1,6 @@
 package net.luversof.api.board.domain;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.data.annotation.CreatedDate;
@@ -41,11 +41,11 @@ public class BoardArticle {
 
 	@CreatedDate
 	@Column("createdDate")
-	private OffsetDateTime createdDate;
+	private Instant createdDate;
 
 	@LastModifiedDate
 	@Column("lastModifiedDate")
-	private OffsetDateTime lastModifiedDate;
+	private Instant lastModifiedDate;
 	
 	public interface Create {}
 

@@ -78,7 +78,7 @@ public class TradeCsvRecord {
 		
 		var formatter = DateTimeFormatter.ofPattern("yyyy. M. d");
 		var localDate = LocalDate.parse(날짜, formatter);
-		var offsetDateTime = localDate.atStartOfDay().atOffset(ZoneOffset.ofHours(9));
+		var offsetDateTime = localDate.atStartOfDay().toInstant(ZoneOffset.ofHours(9));
 		
 		trade.setTradeDate(offsetDateTime);
 		return trade;

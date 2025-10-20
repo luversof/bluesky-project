@@ -1,7 +1,7 @@
 package net.luversof.web.gate.stock.domain;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import net.luversof.web.gate.stock.constant.TradeType;
@@ -15,7 +15,7 @@ public record Trade(
 	BigDecimal price,
 	BigDecimal fee,
 	BigDecimal tax,
-	OffsetDateTime tradeDate
+	Instant tradeDate
 	) {
 
 }

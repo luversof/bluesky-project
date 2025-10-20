@@ -1,6 +1,6 @@
 package net.luversof.api.bookkeeping.domain;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
@@ -9,8 +9,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
@@ -35,7 +33,7 @@ public class Bookkeeping {
 
 	@CreatedDate
 	@Column("createdDate")
-	private OffsetDateTime createdDate;
+	private Instant createdDate;
 	
 	@Column("jsonConfig")
 	private Map<String, Object> jsonConfig;
@@ -46,17 +44,17 @@ public class Bookkeeping {
 	public interface Search {}
 	
 	
-	@Data
-	public static class BookeepingJsonConfig {
-		
-		/**
-		 * 시작일. startDay라고 해야하나?
-		 * 주차 기준을 희망할 경우 설정을 고민해보아야 할듯?
-		 */
-		@Min(value = 1, groups = { Create.class, Update.class })
-		@Max(value = 28, groups = { Create.class, Update.class })
-		private int baseDate = 1;
-	
-	}
+//	@Data
+//	public static class BookeepingJsonConfig {
+//		
+//		/**
+//		 * 시작일. startDay라고 해야하나?
+//		 * 주차 기준을 희망할 경우 설정을 고민해보아야 할듯?
+//		 */
+//		@Min(value = 1, groups = { Create.class, Update.class })
+//		@Max(value = 28, groups = { Create.class, Update.class })
+//		private int baseDate = 1;
+//	
+//	}
 
 }

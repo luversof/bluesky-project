@@ -3,7 +3,7 @@ package net.luversof.api.bookkeeping;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
@@ -63,7 +63,7 @@ class EntryTest implements GeneralTest {
 			entry.setIncomeAssetId(cashAsset.getId());
 			entry.setEntryTypeId(incomeEntryType.getId());
 			entry.setAmount(BigDecimal.valueOf(1234));
-			entry.setEntryDate(OffsetDateTime.now());
+			entry.setEntryDate(Instant.now());
 			
 			var result =  entryService.createEntry(entry);
 			assertThat(result).isNotNull();
@@ -78,7 +78,7 @@ class EntryTest implements GeneralTest {
 			entry.setIncomeAssetId(contraAsset.getId());
 			entry.setEntryTypeId(outgoingEntryType.getId());
 			entry.setAmount(BigDecimal.valueOf(123));
-			entry.setEntryDate(OffsetDateTime.now());
+			entry.setEntryDate(Instant.now());
 
 			var result =  entryService.createEntry(entry);
 			assertThat(result).isNotNull();

@@ -2,7 +2,7 @@ package net.luversof.api.bookkeeping.domain;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
@@ -46,7 +46,7 @@ public class Entry {
 	
 	@NotNull(groups = { Create.class, Update.class })
 	@Column("entryDate")
-	private OffsetDateTime entryDate;
+	private Instant entryDate;
 	
 	@NotNull(groups = { Create.class, Update.class })
 	private BigDecimal amount;

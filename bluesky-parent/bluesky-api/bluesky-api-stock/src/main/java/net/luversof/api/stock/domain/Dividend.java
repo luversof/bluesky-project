@@ -1,7 +1,7 @@
 package net.luversof.api.stock.domain;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.data.annotation.Id;
@@ -32,9 +32,9 @@ public class Dividend {
 	private BigDecimal tax;
 	
 	@Column("payDate")
-	private OffsetDateTime recordDate;	// 배당기준일
+	private Instant recordDate;	// 배당기준일
 	
 	@Column("payDate")
-	private OffsetDateTime payDate;		// 배당지급일
+	private Instant payDate;		// 배당지급일
 
 }

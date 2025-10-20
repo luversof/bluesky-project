@@ -1,6 +1,6 @@
 package net.luversof.api.stock.domain;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
@@ -35,7 +35,7 @@ public class Account {
 	
 	@CreatedDate
 	@Column("createdDate")
-	private OffsetDateTime createdDate;
+	private Instant createdDate;
 	
 	@Column("jsonConfig")
 	private Map<String, Object> jsonConfig;

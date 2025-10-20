@@ -1,6 +1,6 @@
 package net.luversof.api.stock.web.dto.request;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,8 +31,8 @@ public record TradeProfitRequest(
 	UUID userId,
 	List<UUID> accountIdList,
 	List<UUID> stockItemIdList,
-	OffsetDateTime startDate,
-	OffsetDateTime endDate,
+	Instant startDate,
+	Instant endDate,
 	TradeProfitRequestGroup groupBy
 	) {
 	

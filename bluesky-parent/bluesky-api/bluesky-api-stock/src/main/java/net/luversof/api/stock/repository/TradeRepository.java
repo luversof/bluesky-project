@@ -1,6 +1,6 @@
 package net.luversof.api.stock.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,11 +14,11 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
 	
 	List<Trade> findByAccountIdIn(List<UUID> accountIdList);
 	
-	List<Trade> findByAccountIdInAndTradeDateBetween(List<UUID> accountIdList, OffsetDateTime startDate, OffsetDateTime endDate);
+	List<Trade> findByAccountIdInAndTradeDateBetween(List<UUID> accountIdList, Instant startDate, Instant endDate);
 	
 	List<Trade> findByAccountIdInAndStockItemIdIn(List<UUID> accountIdList, List<UUID> stockItemIdList);
 	
-	List<Trade> findByAccountIdInAndStockItemIdInAndTradeDateBetween(List<UUID> accountIdList, List<UUID> stockItemIdList, OffsetDateTime startDate, OffsetDateTime endDate);
+	List<Trade> findByAccountIdInAndStockItemIdInAndTradeDateBetween(List<UUID> accountIdList, List<UUID> stockItemIdList, Instant startDate, Instant endDate);
 
 	long deleteByAccountId(UUID accountId);
 
