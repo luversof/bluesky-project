@@ -3,8 +3,7 @@ package net.luversof.web.gate.stock.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,8 +19,8 @@ public class TradeProfitApiController {
 	@Setter(onMethod_ = @Autowired)
 	private TradeProfitClient tradeProfitClient;
 	
-	@PostMapping("/calculateProfit")
-	public List<TradeProfit> calculateProfit(@RequestBody TradeProfitRequest request) {
+	@GetMapping("/calculateProfit")
+	public List<TradeProfit> calculateProfit(TradeProfitRequest request) {
 		return tradeProfitClient.calculateProfit(request);
 	}
 	

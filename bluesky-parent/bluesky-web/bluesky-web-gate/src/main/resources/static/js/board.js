@@ -1,5 +1,5 @@
 
-var boardAction = (() => {
+const boardAction = (() => {
 	return {
 		moveToList() {
 			param.deleteParam("boardArticleId");
@@ -15,33 +15,45 @@ var boardAction = (() => {
 	}
 })();
 
-var boardList = (() => {
+const boardList = (() => {
 	return {
 		addEventListener() {
-			document.addEventListener("listHtmxResponseTrigger", (event) => {
-				event.target.querySelectorAll(".navButton").forEach(el => el.addEventListener("click", (event) => {
-					param.setParam("page", event.target.dataset.page);
-					htmx.trigger("#boardList", "listHtmxTrigger");
-				}));
+			document.addEventListener("listHtmxResponseTrigger", event => {
+				for (const el of event.target.querySelectorAll(".navButton")) {
+					el.addEventListener("click", event => {
+						param.setParam("page", event.target.dataset.page);
+						htmx.trigger("#boardList", "listHtmxTrigger");
+					});
+				}
 				
-				event.target.querySelectorAll("[data-date]").forEach(el => el.textContent = dayjs().to(el.dataset.date));
+				for (const el of event.target.querySelectorAll("[data-date]")) {
+					el.textContent = dayjs().to(el.dataset.date);
+				}
 				
-				event.target.querySelectorAll(".writeButton").forEach(el => el.addEventListener("click", () => boardAction.moveToWrite()));
+				for (const el of event.target.querySelectorAll(".writeButton")) {
+					el.addEventListener("click", () => boardAction.moveToWrite());
+				}
 				
-				event.target.querySelectorAll("table tr[data-boardArticleId]").forEach(el => el.addEventListener("click", (event) => {
-					var boardArticleId = event.target.closest("tr").dataset.boardarticleid;
-					boardAction.moveToView(boardArticleId);
-				}));
+				for (const el of event.target.querySelectorAll("table tr[data-boardArticleId]")) {
+					el.addEventListener("click", event => {
+						let boardArticleId = event.target.closest("tr").dataset.boardarticleid;
+						boardAction.moveToView(boardArticleId);
+					});
+				}
 			});
 		}
 	}	
 })();
 
-var boardView = (() => {
+const boardView = (() => {
 	return {
 		addEventListener() {
-			document.querySelectorAll(".writeButton").forEach(el => el.addEventListener("click", () => boardAction.moveToWrite()));
-			document.querySelectorAll(".listButton").forEach(el => el.addEventListener("click", () => boardAction.moveToList()));
+			for (const el of document.querySelectorAll(".writeButton")) {
+				el.addEventListener("click", () => boardAction.moveToWrite());
+			}
+			for (const el of document.querySelectorAll(".listButton")) {
+				el.addEventListener("click", () => boardAction.moveToList());
+			}
 		}
 	}
 })();
@@ -49,8 +61,12 @@ var boardView = (() => {
 const boardWrite = (() => {
 	return {
 		addEventListener() {
-			document.querySelectorAll(".cancelButton").forEach(el => el.addEventListener("click", () => boardAction.moveToList()));
-			document.querySelectorAll(".writeButton").forEach(el => el.addEventListener("click", () => this.writeAndMoveToView()));
+			for (const el of document.querySelectorAll(".cancelButton")) {
+				el.addEventListener("click", () => boardAction.moveToList());
+			}
+			for (const el of document.querySelectorAll(".writeButton")) {
+				el.addEventListener("click", () => this.writeAndMoveToView());
+			}
 		},
 		writeAndMoveToView() {
 			alert("글쓰기");

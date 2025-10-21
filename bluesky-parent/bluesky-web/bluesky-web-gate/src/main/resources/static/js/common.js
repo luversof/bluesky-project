@@ -1,11 +1,11 @@
 
 // url query parameter 처리
-var param = (() => {
-	var _params = new URLSearchParams(window.location.search);
+const param = (() => {
+	let _params = new URLSearchParams(globalThis.location.search);
 
 	return {
 		refreshUrl() {
-			window.history.replaceState(null, null, "?" + _params.toString());
+			globalThis.history.replaceState(null, null, "?" + _params.toString());
 		},
 		getParams() {
 			return _params;
@@ -30,7 +30,7 @@ var param = (() => {
 			this.refreshUrl();
 		},
 		getRequestPage() {
-			var page = this.getParam("page");
+			let page = this.getParam("page");
 			return (page == null ? 1 : page) - 1;
 		}
 	}
@@ -39,7 +39,7 @@ var param = (() => {
 
 document.addEventListener('htmx:beforeSwap', (event) => {
 	if('hx-indicator' in event.target.attributes) {
-		var indicator = document.querySelector(event.target.getAttribute('hx-indicator')).cloneNode(true);
+		let indicator = document.querySelector(event.target.getAttribute('hx-indicator')).cloneNode(true);
 		indicator.style.display = "block";
 		event.target.innerHTML = "";
 		event.target.appendChild(indicator);

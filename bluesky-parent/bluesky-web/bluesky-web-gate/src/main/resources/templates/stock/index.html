@@ -5,13 +5,18 @@
 	<div data-layout-fragment="content-stock">
 		stock index
 
-		<!-- HTMX 전용 JSON POST form -->
-		<form id="tradeProfitForm" class="form" hx-post="/stock/htmx/calculateProfit" hx-target="#tradeProfitResult"
-			hx-swap="innerHTML" hx-ext="json-enc">
+		<h2>Trade Profit (HTMX Test)</h2>
+
+		<form
+			id="tradeProfitForm"
+			class="form"
+			hx-get="/stock/htmx/calculateProfit"
+			hx-target="#tradeProfitResult"
+			hx-swap="innerHTML">
+
 			<div class="form-group">
 				<label for="userId">User ID (UUID) <span style="color:red">*</span></label>
-				<input type="text" id="userId" name="userId" placeholder="e.g. 123e4567-e89b-12d3-a456-426614174000"
-					required class="form-control" />
+				<input type="text" id="userId" name="userId" placeholder="e.g. 123e4567-e89b-12d3-a456-426614174000" required class="form-control" />
 			</div>
 
 			<div class="form-group">
@@ -22,6 +27,7 @@
 				</select>
 			</div>
 
+			<!-- Optional: comma-separated UUIDs. You can leave them empty for a quick test. -->
 			<div class="form-group">
 				<label for="accountIds">Account IDs (comma-separated UUIDs)</label>
 				<input type="text" id="accountIds" name="accountIds" placeholder="uuid1, uuid2" class="form-control" />
@@ -29,38 +35,31 @@
 
 			<div class="form-group">
 				<label for="stockItemIds">Stock Item IDs (comma-separated UUIDs)</label>
-				<input type="text" id="stockItemIds" name="stockItemIds" placeholder="uuid1, uuid2"
-					class="form-control" />
+				<input type="text" id="stockItemIds" name="stockItemIds" placeholder="uuid1, uuid2" class="form-control" />
 			</div>
 
+			<!-- Optional ISO-8601 with offset like 2025-01-01T00:00:00+09:00 -->
 			<div class="form-group">
 				<label for="startDate">Start Date (ISO-8601 with offset)</label>
-				<input type="text" id="startDate" name="startDate" placeholder="2025-01-01T00:00:00+09:00"
-					class="form-control" />
+				<input type="text" id="startDate" name="startDate" placeholder="2025-01-01T00:00:00+09:00" class="form-control" />
 			</div>
-
 			<div class="form-group">
 				<label for="endDate">End Date (ISO-8601 with offset)</label>
-				<input type="text" id="endDate" name="endDate" placeholder="2025-01-31T23:59:59+09:00"
-					class="form-control" />
+				<input type="text" id="endDate" name="endDate" placeholder="2025-01-31T23:59:59+09:00" class="form-control" />
 			</div>
 
 			<div class="form-group" style="margin-top: 8px;">
 				<button type="submit" class="btn btn-primary">Calculate</button>
-				<button type="reset" class="btn btn-secondary"
-					hx-on:click="document.getElementById('tradeProfitResult').innerHTML=''">
-					Reset
-				</button>
+				<button type="reset" class="btn btn-secondary" hx-on:click="document.getElementById('tradeProfitResult').innerHTML='';">Reset</button>
 			</div>
 		</form>
 
 		<hr />
 
 		<div id="tradeProfitResult" th:fragment="result">
+			<!-- HTMX response will replace this content -->
 			<p style="color: #888;">Enter parameters and click Calculate to view results.</p>
 		</div>
-
-
 
 	</div>
 
