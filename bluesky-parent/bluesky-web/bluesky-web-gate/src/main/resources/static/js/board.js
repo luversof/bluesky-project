@@ -71,6 +71,9 @@ const boardWrite = (() => {
 		writeAndMoveToView() {
 			alert("글쓰기");
 			
+			document.getElementById("title").value
+			document.getElementById("content").value
+			
 		}
 	}
 })();

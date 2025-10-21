@@ -17,7 +17,7 @@
 			//boardList.addEventListener();
 			
 			const easymde = new EasyMDE({
-				element: document.getElementById('editor'),
+				element: document.getElementById('content'),
 			});
 		});
 	</script>
@@ -26,8 +26,8 @@
 <body>
 	<div data-layout-fragment="content-board" class="prose">
 		<h1>글쓰기</h1>
-		<input type="text" placeholder="Type here" class="input w-full" />
-		<textarea id="editor" class="textarea"></textarea>
+		<input type="text" id="title" placeholder="Type here" class="input w-full" />
+		<textarea id="content" class="textarea"></textarea>
 		<div class="flex justify-between items-center">
 			<div>
 				
