@@ -59,7 +59,13 @@ const boardView = (() => {
 })();
 
 const boardWrite = (() => {
+	let easymde;
 	return {
+		loadEasyMDE() {
+			easymde = new EasyMDE({
+				element: document.getElementById('content'),
+			});
+		},
 		addEventListener() {
 			for (const el of document.querySelectorAll(".cancelButton")) {
 				el.addEventListener("click", () => boardAction.moveToList());
@@ -68,11 +74,28 @@ const boardWrite = (() => {
 				el.addEventListener("click", () => this.writeAndMoveToView());
 			}
 		},
+		
 		writeAndMoveToView() {
-			alert("글쓰기");
+			console.log("title:", document.getElementById("title").value);
+			console.log("content:", easymde.value());
 			
-			document.getElementById("title").value
-			document.getElementById("content").value
+			fetch("/api/boardArticle", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify({
+					title: document.getElementById("title").value,
+					content: easymde.value()
+				})
+			})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error("Network response was not ok");
+				}
+				console.log(response)
+				//boardAction.moveToView();
+			});
 			
 		}
 	}
@@ -81,10 +104,10 @@ const boardWrite = (() => {
 
 document.addEventListener("DOMContentLoaded", () => {
 	if (boardMode == "list") {
-		console.log("TEST")
 		boardList.addEventListener();
 	}
 	if (boardMode == "write") {
+		boardWrite.loadEasyMDE();
 		boardWrite.addEventListener();
 	}
 });

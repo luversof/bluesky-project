@@ -145,33 +145,6 @@
 
 	<build>
 		<plugins>
-			<!--<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>exec-maven-plugin</artifactId>
-				<version>3.1.0</version>
-				<executions>
-					<execution>
-						<id>exec-npm-build</id>
-						<phase>generate-sources</phase>
-
-						<goals>
-							<goal>exec</goal>
-						</goals>
-
-						<configuration>
-							<executable>npm</executable>
-							<arguments>
-								<argument>run</argument>
-								<argument>build</argument>
-							</arguments>
-							<workingDirectory>${basedir}/src/main/frontend</workingDirectory>
-							<async>true</async>
-						</configuration>
-
-					</execution>
-				</executions>
-			</plugin>-->
-
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
@@ -180,24 +153,6 @@
 				<groupId>com.google.cloud.tools</groupId>
 				<artifactId>jib-maven-plugin</artifactId>
 			</plugin>
-			<!--<plugin>
-				<groupId>com.vaadin</groupId>
-				<artifactId>vaadin-maven-plugin</artifactId>
-				<version>${vaadin.version}</version>
-				<executions>
-					<execution>
-						<goals>
-							<goal>prepare-frontend</goal>
-							<goal>build-frontend</goal>
-						</goals>
-						<phase>compile</phase>
-					</execution>
-				</executions>
-				<configuration>
-					<forceProductionBuild>true</forceProductionBuild>
-					<ciBuild>true</ciBuild>
-				</configuration>
-			</plugin>-->
 		</plugins>
 	</build>
 </project>
