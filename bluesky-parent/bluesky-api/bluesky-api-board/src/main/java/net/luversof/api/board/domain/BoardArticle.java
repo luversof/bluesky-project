@@ -19,15 +19,16 @@ import lombok.Data;
 public class BoardArticle {
 
 	@Id
+	@Column("id")
 	@Null(groups = Create.class)
 	@NotNull(groups = { Get.class })
-	@Column("id")
 	private UUID id;
 
-	@NotBlank(groups = { Create.class, Modify.class, Delete.class })
+	@NotNull(groups = { Create.class, Modify.class, Delete.class })
 	@Column("user_id")
 	private UUID userId;
 
+	@NotNull(groups = { Create.class })
 	@Column("board_id")
 	private UUID boardId;
 

@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.board.domain.BoardArticle;
@@ -30,7 +31,7 @@ import net.luversof.web.gate.board.openfeign.BoardArticleClient;
 @RequestMapping(value = "/api/boardArticle", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BoardArticleApiController {
 
-	@Autowired
+	@Setter(onMethod_ =  @Autowired)
 	private BoardArticleClient boardArticleClient;
 	
 	@BlueskyPreAuthorize

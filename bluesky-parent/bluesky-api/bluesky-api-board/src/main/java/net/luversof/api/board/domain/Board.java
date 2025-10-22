@@ -15,10 +15,10 @@ import lombok.Data;
 @Table("Board")
 public class Board {
 
-	@Null(groups = Create.class)
-	@NotNull(groups = Update.class)
 	@Id
 	@Column("id")
+	@Null(groups = Create.class)
+	@NotNull(groups = Update.class)
 	private UUID id;
 	
 	@Column("alias")

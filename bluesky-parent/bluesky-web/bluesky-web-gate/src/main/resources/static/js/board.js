@@ -1,3 +1,30 @@
+const boardData = (() => {
+	let boardAlias;
+	let boardMode;
+	let boardId;
+	return {
+		setBoardAlias(alias) {
+			boardAlias = alias;
+		},
+		getBoardAlias() {
+			return boardAlias;
+		},
+		setBoardMode(mode) {
+			boardMode = mode;
+		},
+		getBoardMode() {
+			return boardMode;
+		},
+		setBoardId(id) {
+			boardId = id;
+		},
+		getBoardId() {
+			return boardId;
+		}
+	};
+
+})();
+
 
 const boardAction = (() => {
 	return {
@@ -85,6 +112,7 @@ const boardWrite = (() => {
 					"Content-Type": "application/json"
 				},
 				body: JSON.stringify({
+					boardId: boardData.getBoardId(),
 					title: document.getElementById("title").value,
 					content: easymde.value()
 				})
@@ -103,10 +131,10 @@ const boardWrite = (() => {
 
 
 document.addEventListener("DOMContentLoaded", () => {
-	if (boardMode == "list") {
+	if (boardData.getBoardMode() == "list") {
 		boardList.addEventListener();
 	}
-	if (boardMode == "write") {
+	if (boardData.getBoardMode() == "write") {
 		boardWrite.loadEasyMDE();
 		boardWrite.addEventListener();
 	}
