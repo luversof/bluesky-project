@@ -13,11 +13,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import feign.FeignException;
 import io.github.luversof.boot.autoconfigure.web.util.ExceptionUtil;
+import lombok.Setter;
 
 @ControllerAdvice
 public class GateFeignExceptionHandler {
 	
-	@Autowired
+	@Setter(onMethod_ = {@Autowired})
 	private ObjectMapper objectMapper;
 
 	@ExceptionHandler
