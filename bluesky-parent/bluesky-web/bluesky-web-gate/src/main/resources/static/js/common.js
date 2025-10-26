@@ -36,6 +36,20 @@ const param = (() => {
 	}
 })();
 
+// 공통 에러 처리? 에러 발생 시 노출 가능 여부에 따라 노출을 어떻게 할지 처리
+const errorHandler = (() => {
+	return {
+		handle(response) {
+			
+			if (response.ok) {
+				return response;
+			}
+			
+			console.log("response error : {}", response.json())
+		}
+	}
+})();
+
 
 document.addEventListener('htmx:beforeSwap', (event) => {
 	if('hx-indicator' in event.target.attributes) {

@@ -85,6 +85,8 @@ const boardView = (() => {
 	}
 })();
 
+var a;
+
 const boardWrite = (() => {
 	let easymde;
 	return {
@@ -117,13 +119,8 @@ const boardWrite = (() => {
 					content: easymde.value()
 				})
 			})
-			.then(response => {
-				if (!response.ok) {
-					throw new Error("Network response was not ok");
-				}
-				console.log(response)
-				//boardAction.moveToView();
-			});
+			.then(response => errorHandler.handle(response))
+			;
 			
 		}
 	}
