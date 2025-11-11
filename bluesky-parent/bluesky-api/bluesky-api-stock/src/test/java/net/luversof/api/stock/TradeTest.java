@@ -66,34 +66,34 @@ class TradeTest implements GeneralTest {
 		var stockItemList = StreamSupport.stream(stockItemRepository.findAll().spliterator(), false).toList();
 
 		var tradeCsvRecordList = loadTradeCsvRecordList();
-		
+
 		// 계좌 이름별로 계좌 찾기 또는 생성
 		var accountMap = new java.util.HashMap<String, UUID>();
 		var existingAccounts = accountRepository.findByUserId(userId);
-		
+
 		// 기존 계좌 맵에 추가
 		existingAccounts.forEach(account -> accountMap.put(account.getName(), account.getId()));
-		
+
 		// CSV에서 새로운 계좌 이름 찾기
 		tradeCsvRecordList.stream()
-			.map(TradeCsvRecord::get계좌)
-			.filter(accountName -> accountName != null && !accountName.isBlank())
-			.distinct()
-			.filter(accountName -> !accountMap.containsKey(accountName))
-			.forEach(accountName -> {
-				// 새 계좌 생성
-				var newAccount = new net.luversof.api.stock.domain.Account();
-				newAccount.setUserId(userId);
-				newAccount.setName(accountName);
-				var savedAccount = accountRepository.save(newAccount);
-				accountMap.put(accountName, savedAccount.getId());
-				log.debug("Created new account: {} with id: {}", accountName, savedAccount.getId());
-			});
-		
+				.map(TradeCsvRecord::get계좌)
+				.filter(accountName -> accountName != null && !accountName.isBlank())
+				.distinct()
+				.filter(accountName -> !accountMap.containsKey(accountName))
+				.forEach(accountName -> {
+					// 새 계좌 생성
+					var newAccount = new net.luversof.api.stock.domain.Account();
+					newAccount.setUserId(userId);
+					newAccount.setName(accountName);
+					var savedAccount = accountRepository.save(newAccount);
+					accountMap.put(accountName, savedAccount.getId());
+					log.debug("Created new account: {} with id: {}", accountName, savedAccount.getId());
+				});
+
 		// tradeCsvRecordList를 trade로 변환
 		var tradeList = tradeCsvRecordList.stream().map(t -> {
 			var trade = t.toTrade();
-			
+
 			// 계좌 이름으로 accountId 설정
 			String accountName = t.get계좌();
 			if (accountName != null && !accountName.isBlank()) {
@@ -104,7 +104,7 @@ class TradeTest implements GeneralTest {
 					log.warn("Account not found for name: {}", accountName);
 				}
 			}
-			
+
 			var stockItem = stockItemList.stream()
 					.filter(s -> s.getName().equals(t.get종목()))
 					.findFirst()
@@ -124,8 +124,8 @@ class TradeTest implements GeneralTest {
 
 			return trade;
 		})
-		.filter(trade -> trade != null) // null 제거
-		.toList();
+				.filter(trade -> trade != null) // null 제거
+				.toList();
 		log.debug("tradeList : {}", tradeList);
 
 		var result = tradeRepository.saveAll(tradeList);

@@ -43,7 +43,7 @@ public class StockHtmxController {
 			model.addAttribute("error", "로그인이 필요합니다.");
 			return "stock/htmx/error";
 		}
-		
+
 		// request에 userId 설정
 		request.setUserId(userId);
 
@@ -111,10 +111,10 @@ public class StockHtmxController {
 			model.addAttribute("error", "로그인이 필요합니다.");
 			return "stock/htmx/error";
 		}
-		
+
 		// request에 userId 설정
 		request.setUserId(userId);
-		
+
 		// calculateProfit와 동일한 로직으로 데이터 조회 및 enrichment
 		List<TradeProfit> tradeProfitList = tradeProfitClient.calculateProfit(request);
 
@@ -167,18 +167,18 @@ public class StockHtmxController {
 				.toList();
 
 		model.addAttribute("tradeProfitList", enrichedList);
-		
+
 		// 계좌별 그룹화
 		Map<String, List<TradeProfit>> byAccount = enrichedList.stream()
 				.filter(tp -> tp.accountName() != null)
 				.collect(Collectors.groupingBy(TradeProfit::accountName));
 		model.addAttribute("tradeProfitByAccount", byAccount);
-		
+
 		// 종목별 그룹화
 		Map<String, List<TradeProfit>> byStock = enrichedList.stream()
 				.collect(Collectors.groupingBy(TradeProfit::stockItemName));
 		model.addAttribute("tradeProfitByStock", byStock);
-		
+
 		return "stock/htmx/dashboard";
 	}
 

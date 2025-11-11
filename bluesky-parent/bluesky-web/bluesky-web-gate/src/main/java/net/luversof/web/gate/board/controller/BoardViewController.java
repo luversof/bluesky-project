@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.exception.BlueskyException;
 import lombok.Setter;
+import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.board.domain.Board;
 import net.luversof.web.gate.board.openfeign.BoardArticleClient;
 import net.luversof.web.gate.board.openfeign.BoardClient;
@@ -47,7 +48,19 @@ public class BoardViewController {
 
 		var boardArticle = boardArticleClient.findById(boardArticleId)
 				.orElseThrow(() -> new BlueskyException("board.NOT_EXIST_BOARD_ARTICLE"));
-		model.addAttribute(boardArticle);
+
+		// 작성자 username 조회
+		var usernames = UserUtil.getUsernames(java.util.List.of(boardArticle.userId()));
+		var enrichedArticle = boardArticle.toBuilder()
+				.username(usernames.getOrDefault(boardArticle.userId(), "알 수 없음"))
+				.build();
+
+		model.addAttribute("boardArticle", enrichedArticle);
+
+		// 현재 로그인한 사용자가 작성자인지 확인
+		UUID currentUserId = UserUtil.getUserId();
+		boolean isOwner = currentUserId != null && currentUserId.equals(boardArticle.userId());
+		model.addAttribute("isOwner", isOwner);
 
 		return "board/view";
 	}

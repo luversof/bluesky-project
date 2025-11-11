@@ -5,21 +5,23 @@
 			<tr>
 				<th class="w-20">번호</th>
 				<th data-th-text="#{boardArticle.title}">제목</th>
+				<th class="w-32 text-center">작성자</th>
 				<th class="w-32 text-center" data-th-text="#{boardArticle.createdDate}">작성일</th>
 			</tr>
 		</thead>
 		<tbody>
 			<tr class="hover cursor-pointer transition-colors"
-				data-th-each="boardArticle, iterStat : ${page.content}"
+				data-th-each="boardArticle, iterStat : ${enrichedContent}"
 				data-th-data-boardArticleId="${boardArticle.id}">
 				<td class="text-center" data-th-text="${page.totalElements - (page.number * page.size) - iterStat.index}">1</td>
 				<td>
 					<div class="font-medium" data-th-text="${boardArticle.title}">제목</div>
 				</td>
+				<td class="text-center text-sm" data-th-text="${boardArticle.username}">작성자</td>
 				<td class="text-center text-sm" data-th-text="${#temporals.format(boardArticle.createdDate)}" data-th-data-date="${boardArticle.createdDate}">2025-01-01</td>
 			</tr>
-			<tr data-th-if="${page.content.isEmpty()}">
-				<td colspan="3" class="text-center py-10">
+			<tr data-th-if="${enrichedContent.isEmpty()}">
+				<td colspan="4" class="text-center py-10">
 					<div class="flex flex-col items-center gap-2">
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
