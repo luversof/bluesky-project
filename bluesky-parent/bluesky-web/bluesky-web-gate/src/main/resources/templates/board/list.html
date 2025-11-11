@@ -4,19 +4,28 @@
 <head>
 </head>
 
-<body>
-	<div data-layout-fragment="content-board">
+<body data-board-mode="list" data-th-attr="data-board-alias=${board.alias}">
+	<div data-layout-fragment="content-board" class="container mx-auto px-4 py-8">
+		<!-- 헤더 -->
+		<div class="mb-6">
+			<h1 class="text-3xl font-bold" data-th-text="${board.jsonConfig['name']}">게시판</h1>
+			<p class="text-gray-600 mt-2" data-th-text="${board.jsonConfig['description']}">게시판 설명</p>
+		</div>
+		
+		<!-- 로딩 인디케이터 -->
 		<div id="indicator" class="text-center my-10 hidden">
 			<span class="loading loading-ring loading-lg"></span>
 		</div>
+		
+		<!-- 게시글 목록 -->
 		<div id="boardList"
-			class="text-center"
-			data-th-attr="hx-get=@{/board/htmx/{boardAlias}/list(boardAlias=${boardAlias})}"
+			class="bg-base-100 rounded-lg shadow-xl"
+			data-th-attr="hx-get=@{/board/htmx/{boardAlias}/list(boardAlias=${board.alias})}"
 			hx-trigger="load delay:0s, listHtmxTrigger"
 			hx-swap="transition:true"
 			hx-indicator="#indicator"
 			hx-vals="js:{
-				'page' : param.getRequestPage()
+				'page': param.getRequestPage()
 			}">
 		</div>
 	</div>

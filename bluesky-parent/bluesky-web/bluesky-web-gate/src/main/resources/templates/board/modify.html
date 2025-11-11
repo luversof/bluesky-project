@@ -6,24 +6,27 @@
 	<script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
 </head>
 
-<body data-board-mode="write" data-th-attr="data-board-id=${board.id},data-board-alias=${board.alias}">
+<body data-board-mode="modify" data-th-attr="data-board-id=${board.id},data-board-alias=${board.alias}">
 	<div data-layout-fragment="content-board" class="container mx-auto px-4 py-8">
 		<div class="max-w-4xl mx-auto">
 			<!-- 헤더 -->
 			<div class="mb-6">
-				<h1 class="text-3xl font-bold">글쓰기</h1>
-				<p class="text-gray-600 mt-2">새로운 글을 작성해주세요</p>
+				<h1 class="text-3xl font-bold">글 수정</h1>
+				<p class="text-gray-600 mt-2">게시글을 수정해주세요</p>
 			</div>
 			
-			<!-- 작성 폼 -->
+			<!-- 수정 폼 -->
 			<div class="bg-base-100 rounded-lg shadow-xl p-6">
+				<input type="hidden" id="boardArticleId" data-th-value="${boardArticle.id}" />
+				
 				<div class="form-control mb-6">
 					<label class="label">
 						<span class="label-text font-semibold">제목</span>
 						<span class="label-text-alt text-error">*</span>
 					</label>
 					<input type="text" id="title" placeholder="제목을 입력하세요" 
-						class="input input-bordered w-full" maxlength="200" />
+						class="input input-bordered w-full" maxlength="200" 
+						data-th-value="${boardArticle.title}" />
 				</div>
 				
 				<div class="form-control mb-6">
@@ -32,7 +35,7 @@
 						<span class="label-text-alt text-error">*</span>
 					</label>
 					<textarea id="content" class="textarea textarea-bordered" rows="15" 
-						placeholder="내용을 입력하세요"></textarea>
+						placeholder="내용을 입력하세요" data-th-text="${boardArticle.content}"></textarea>
 				</div>
 				
 				<div class="flex justify-between items-center pt-4 border-t">
@@ -49,11 +52,11 @@
 							</svg>
 							<span data-th-text="#{board.button.cancel}">취소</span>
 						</button>
-						<button class="btn btn-primary writeButton">
+						<button class="btn btn-primary modifyButton">
 							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 							</svg>
-							<span data-th-text="#{board.button.write}">작성하기</span>
+							<span data-th-text="#{board.button.modify}">수정하기</span>
 						</button>
 					</div>
 				</div>

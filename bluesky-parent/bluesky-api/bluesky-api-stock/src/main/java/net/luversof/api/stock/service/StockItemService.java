@@ -1,5 +1,8 @@
 package net.luversof.api.stock.service;
 
+import java.util.Optional;
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,11 +15,15 @@ public class StockItemService {
 
 	@Setter(onMethod_ = @Autowired)
 	private StockItemRepository stockItemRepository;
-	
+
 	public StockItem createStockItem(StockItem stockItem) {
 		return stockItemRepository.save(stockItem);
 	}
-	
+
+	public Optional<StockItem> findById(UUID id) {
+		return stockItemRepository.findById(id);
+	}
+
 	public StockItem findByName(String name) {
 		return stockItemRepository.findByName(name);
 	}

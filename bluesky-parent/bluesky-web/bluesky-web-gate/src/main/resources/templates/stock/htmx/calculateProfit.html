@@ -1,5 +1,93 @@
-<div>
-	응답값 처리
-	
-	[[${tradeProfitList}]]
+<div data-th-if="${tradeProfitList == null || tradeProfitList.isEmpty()}" class="alert alert-info">
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+	</svg>
+	<span>조회된 데이터가 없습니다.</span>
+</div>
+
+<div data-th-if="${tradeProfitList != null && !tradeProfitList.isEmpty()}">
+	<!-- 통계 카드 -->
+	<div class="stats stats-vertical lg:stats-horizontal shadow w-full mb-6">
+		<div class="stat">
+			<div class="stat-title">총 종목 수</div>
+			<div class="stat-value" data-th-text="${tradeProfitList.size()}">0</div>
+		</div>
+		
+		<div class="stat">
+			<div class="stat-title">총 실현손익 (NET)</div>
+			<div class="stat-value text-primary" 
+				 data-th-text="${#numbers.formatDecimal(#aggregates.sum(tradeProfitList.![realizedProfitNet]), 0, 'COMMA', 2, 'POINT')}"
+				 data-th-classappend="${#aggregates.sum(tradeProfitList.![realizedProfitNet]) >= 0 ? 'text-success' : 'text-error'}">
+				0
+			</div>
+		</div>
+		
+		<div class="stat">
+			<div class="stat-title">총 평가손익 (NET)</div>
+			<div class="stat-value text-secondary"
+				 data-th-text="${#numbers.formatDecimal(#aggregates.sum(tradeProfitList.![evaluationProfitNet]), 0, 'COMMA', 2, 'POINT')}"
+				 data-th-classappend="${#aggregates.sum(tradeProfitList.![evaluationProfitNet]) >= 0 ? 'text-success' : 'text-error'}">
+				0
+			</div>
+		</div>
+		
+		<div class="stat">
+			<div class="stat-title">총 손익 (NET)</div>
+			<div class="stat-value"
+				 data-th-text="${#numbers.formatDecimal(#aggregates.sum(tradeProfitList.![totalProfitNet]), 0, 'COMMA', 2, 'POINT')}"
+				 data-th-classappend="${#aggregates.sum(tradeProfitList.![totalProfitNet]) >= 0 ? 'text-success' : 'text-error'}">
+				0
+			</div>
+		</div>
+	</div>
+
+	<!-- 테이블 -->
+	<div class="overflow-x-auto">
+		<table class="table table-zebra w-full">
+			<thead>
+				<tr>
+					<th data-th-if="${tradeProfitList[0].accountId() != null}">계좌</th>
+					<th>종목</th>
+					<th class="text-right">현재가</th>
+					<th class="text-right">평균매수가 (NET)</th>
+					<th class="text-right">보유수량</th>
+					<th class="text-right">평가금액</th>
+					<th class="text-right">평가손익 (NET)</th>
+					<th class="text-right">실현손익 (NET)</th>
+					<th class="text-right">총손익 (NET)</th>
+					<th class="text-right">수수료</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr data-th-each="profit : ${tradeProfitList}">
+					<td data-th-if="${profit.accountId() != null}" data-th-text="${profit.accountName()}">-</td>
+					<td data-th-text="${profit.stockItemName()}">-</td>
+					<td class="text-right" data-th-text="${#numbers.formatDecimal(profit.currentPrice(), 0, 'COMMA', 2, 'POINT')}">0</td>
+					<td class="text-right" data-th-text="${#numbers.formatDecimal(profit.averageBuyPriceNet(), 0, 'COMMA', 2, 'POINT')}">0</td>
+					<td class="text-right" data-th-text="${#numbers.formatInteger(profit.holdingQuantity(), 0, 'COMMA')}">0</td>
+					<td class="text-right font-semibold" data-th-text="${#numbers.formatDecimal(profit.evaluationAmount(), 0, 'COMMA', 0, 'POINT')}">0</td>
+					<td class="text-right font-semibold" 
+						data-th-text="${#numbers.formatDecimal(profit.evaluationProfitNet(), 0, 'COMMA', 2, 'POINT')}"
+						data-th-classappend="${profit.evaluationProfitNet() >= 0 ? 'text-success' : 'text-error'}">
+						0
+					</td>
+					<td class="text-right font-semibold"
+						data-th-text="${#numbers.formatDecimal(profit.realizedProfitNet(), 0, 'COMMA', 2, 'POINT')}"
+						data-th-classappend="${profit.realizedProfitNet() >= 0 ? 'text-success' : 'text-error'}">
+						0
+					</td>
+					<td class="text-right font-bold"
+						data-th-text="${#numbers.formatDecimal(profit.totalProfitNet(), 0, 'COMMA', 2, 'POINT')}"
+						data-th-classappend="${profit.totalProfitNet() >= 0 ? 'text-success' : 'text-error'}">
+						0
+					</td>
+					<td class="text-right text-sm">
+						<div class="tooltip" data-th-attr="data-tip='매수: ' + ${#numbers.formatDecimal(profit.totalBuyFee(), 0, 'COMMA', 2, 'POINT')} + ' / 매도: ' + ${#numbers.formatDecimal(profit.totalSellFee(), 0, 'COMMA', 2, 'POINT')} + ' / 세금: ' + ${#numbers.formatDecimal(profit.totalSellTax(), 0, 'COMMA', 2, 'POINT')}">
+							<span data-th-text="${#numbers.formatDecimal(profit.totalBuyFee() + profit.totalSellFee() + profit.totalSellTax(), 0, 'COMMA', 2, 'POINT')}">0</span>
+						</div>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
 </div>

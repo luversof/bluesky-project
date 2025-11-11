@@ -35,16 +35,18 @@ public class BoardViewController {
 	@GetMapping("/{boardAlias}/{boardMode:list}")
 	public String list(@PathVariable String boardAlias, @PathVariable String boardMode, Model model) {
 		var board = checkBoard(boardAlias);
-		model.addAttribute(board);
+		model.addAttribute("board", board);
 		return "board/list";
 	}
 
 	@GetMapping("/{boardAlias}/{boardMode:view}")
-	public String view(@PathVariable String boardAlias, @PathVariable String boardMode, @RequestParam UUID boardArticleId, Model model) {
+	public String view(@PathVariable String boardAlias, @PathVariable String boardMode,
+			@RequestParam UUID boardArticleId, Model model) {
 		var board = checkBoard(boardAlias);
-		model.addAttribute(board);
+		model.addAttribute("board", board);
 
-		var boardArticle = boardArticleClient.findById(boardArticleId).orElseThrow(() -> new BlueskyException("board.NOT_EXIST_BOARD_ARTICLE"));
+		var boardArticle = boardArticleClient.findById(boardArticleId)
+				.orElseThrow(() -> new BlueskyException("board.NOT_EXIST_BOARD_ARTICLE"));
 		model.addAttribute(boardArticle);
 
 		return "board/view";
@@ -53,16 +55,18 @@ public class BoardViewController {
 	@GetMapping("/{boardAlias}/{boardMode:write}")
 	public String write(@PathVariable String boardAlias, @PathVariable String boardMode, Model model) {
 		var board = checkBoard(boardAlias);
-		model.addAttribute(board);
+		model.addAttribute("board", board);
 		return "board/write";
 	}
 
 	@GetMapping("/{boardAlias}/{boardMode:modify}")
-	public String modify(@PathVariable String boardAlias, @PathVariable String boardMode, @RequestParam UUID boardArticleId, Model model) {
+	public String modify(@PathVariable String boardAlias, @PathVariable String boardMode,
+			@RequestParam UUID boardArticleId, Model model) {
 		var board = checkBoard(boardAlias);
-		model.addAttribute(board);
+		model.addAttribute("board", board);
 
-		var boardArticle = boardArticleClient.findById(boardArticleId).orElseThrow(() -> new BlueskyException("board.NOT_EXIST_BOARD_ARTICLE"));
+		var boardArticle = boardArticleClient.findById(boardArticleId)
+				.orElseThrow(() -> new BlueskyException("board.NOT_EXIST_BOARD_ARTICLE"));
 		model.addAttribute(boardArticle);
 		return "board/modify";
 	}

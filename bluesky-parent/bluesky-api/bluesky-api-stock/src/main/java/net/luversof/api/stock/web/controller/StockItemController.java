@@ -1,5 +1,8 @@
 package net.luversof.api.stock.web.controller;
 
+import java.util.Optional;
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,12 +21,17 @@ public class StockItemController {
 
 	@Setter(onMethod_ = @Autowired)
 	private StockItemService stockItemService;
-	
+
 	@PostMapping
 	public StockItem createStockItem(@RequestBody StockItem stockItem) {
 		return stockItemService.createStockItem(stockItem);
 	}
-	
+
+	@GetMapping("/{id}")
+	public Optional<StockItem> getStockItemById(@PathVariable UUID id) {
+		return stockItemService.findById(id);
+	}
+
 	@GetMapping("/search/findByName/{name}")
 	public StockItem findByName(@PathVariable String name) {
 		return stockItemService.findByName(name);

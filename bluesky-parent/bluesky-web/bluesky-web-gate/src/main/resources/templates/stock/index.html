@@ -1,68 +1,156 @@
 <!DOCTYPE html>
-<html data-layout-decorate="~{_components/layout/stockLayout}">
+<html lang="ko" data-layout-decorate="~{_components/layout/stockLayout}">
+
+<head>
+	<title>주식 손익 통계</title>
+	<script data-th-src="@{/js/stock/tradeProfit.js}" defer></script>
+</head>
 
 <body>
 	<div data-layout-fragment="content-stock">
-		stock index
-
-		<h2>Trade Profit (HTMX Test)</h2>
-
-		<form
-			id="tradeProfitForm"
-			class="form"
-			hx-get="/stock/htmx/calculateProfit"
-			hx-target="#tradeProfitResult"
-			hx-swap="innerHTML">
-
-			<div class="form-group">
-				<label for="userId">User ID (UUID) <span style="color:red">*</span></label>
-				<input type="text" id="userId" name="userId" placeholder="e.g. 123e4567-e89b-12d3-a456-426614174000" required class="form-control" />
+		<div class="container mx-auto px-4 py-8 max-w-7xl">
+			<!-- 로그인 필요 메시지 -->
+			<div data-th-if="${requireLogin}" class="alert alert-warning mb-6">
+				<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none"
+					viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+						d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+				</svg>
+				<div>
+					<h3 class="font-bold">로그인이 필요합니다</h3>
+					<div class="text-xs">주식 손익 통계를 조회하려면 먼저 로그인해주세요.</div>
+				</div>
 			</div>
 
-			<div class="form-group">
-				<label for="groupBy">Group By</label>
-				<select id="groupBy" name="groupBy" class="form-control">
-					<option value="ACCOUNT_AND_STOCKITEM" selected>ACCOUNT_AND_STOCKITEM</option>
-					<option value="STOCKITEM">STOCKITEM</option>
-				</select>
+			<!-- 페이지 헤더 -->
+			<div class="mb-8">
+				<h1 class="text-4xl font-bold mb-2">주식 손익 통계</h1>
+				<p class="text-base-content/70">수수료와 세금을 반영한 실제 손익을 확인하세요</p>
 			</div>
 
-			<!-- Optional: comma-separated UUIDs. You can leave them empty for a quick test. -->
-			<div class="form-group">
-				<label for="accountIds">Account IDs (comma-separated UUIDs)</label>
-				<input type="text" id="accountIds" name="accountIds" placeholder="uuid1, uuid2" class="form-control" />
+			<!-- 필터 폼 -->
+			<div class="card bg-base-100 shadow-xl mb-6">
+				<div class="card-body">
+					<h2 class="card-title text-2xl mb-4">
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+						</svg>
+						조회 조건
+					</h2>
+					
+					<form
+						id="tradeProfitForm"
+						hx-get="/stock/htmx/calculateProfit"
+						hx-target="#tradeProfitResult"
+						hx-swap="innerHTML"
+						hx-indicator="#loading"
+						class="space-y-4">
+
+						<!-- 그룹화 기준 -->
+						<div class="form-control">
+							<label class="label" for="groupBy">
+								<span class="label-text font-semibold">그룹화 기준</span>
+							</label>
+							<select id="groupBy" name="groupBy" class="select select-bordered w-full">
+								<option value="ACCOUNT_AND_STOCKITEM">계좌 + 종목별</option>
+								<option value="STOCKITEM">종목별만</option>
+							</select>
+							<label class="label">
+								<span class="label-text-alt">손익을 어떻게 그룹화할지 선택하세요</span>
+							</label>
+						</div>
+
+						<!-- 계좌 및 종목 ID -->
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div class="form-control">
+								<label class="label" for="accountIdList">
+									<span class="label-text font-semibold">계좌 ID (선택)</span>
+								</label>
+								<input 
+									type="text" 
+									id="accountIdList" 
+									name="accountIdList" 
+									placeholder="uuid1, uuid2" 
+									class="input input-bordered w-full font-mono text-sm" />
+								<label class="label">
+									<span class="label-text-alt">쉼표로 구분하여 여러 계좌 입력 가능</span>
+								</label>
+							</div>
+
+							<div class="form-control">
+								<label class="label" for="stockItemIdList">
+									<span class="label-text font-semibold">종목 ID (선택)</span>
+								</label>
+								<input 
+									type="text" 
+									id="stockItemIdList" 
+									name="stockItemIdList" 
+									placeholder="uuid1, uuid2" 
+									class="input input-bordered w-full font-mono text-sm" />
+								<label class="label">
+									<span class="label-text-alt">쉼표로 구분하여 여러 종목 입력 가능</span>
+								</label>
+							</div>
+						</div>
+
+						<!-- 날짜 범위 -->
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div class="form-control">
+								<label class="label" for="startDate">
+									<span class="label-text font-semibold">시작일 (선택)</span>
+								</label>
+								<input 
+									type="datetime-local" 
+									id="startDate" 
+									name="startDate" 
+									class="input input-bordered w-full" />
+								<label class="label">
+									<span class="label-text-alt">거래 조회 시작 날짜</span>
+								</label>
+							</div>
+
+							<div class="form-control">
+								<label class="label" for="endDate">
+									<span class="label-text font-semibold">종료일 (선택)</span>
+								</label>
+								<input 
+									type="datetime-local" 
+									id="endDate" 
+									name="endDate" 
+									class="input input-bordered w-full" />
+								<label class="label">
+									<span class="label-text-alt">거래 조회 종료 날짜</span>
+								</label>
+							</div>
+						</div>
+
+						<!-- 제출 버튼 -->
+						<div class="card-actions justify-end pt-4">
+							<button type="submit" class="btn btn-primary btn-lg gap-2">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+								</svg>
+								손익 조회
+							</button>
+						</div>
+					</form>
+				</div>
 			</div>
 
-			<div class="form-group">
-				<label for="stockItemIds">Stock Item IDs (comma-separated UUIDs)</label>
-				<input type="text" id="stockItemIds" name="stockItemIds" placeholder="uuid1, uuid2" class="form-control" />
+			<!-- 로딩 인디케이터 -->
+			<div id="loading" class="htmx-indicator flex justify-center items-center py-12">
+				<div class="text-center">
+					<span class="loading loading-spinner loading-lg text-primary"></span>
+					<p class="mt-4 text-base-content/70">데이터를 불러오는 중...</p>
+				</div>
 			</div>
 
-			<!-- Optional ISO-8601 with offset like 2025-01-01T00:00:00+09:00 -->
-			<div class="form-group">
-				<label for="startDate">Start Date (ISO-8601 with offset)</label>
-				<input type="text" id="startDate" name="startDate" placeholder="2025-01-01T00:00:00+09:00" class="form-control" />
+			<!-- 결과 영역 -->
+			<div id="tradeProfitResult" class="space-y-4">
+				<!-- HTMX로 로드될 결과 -->
 			</div>
-			<div class="form-group">
-				<label for="endDate">End Date (ISO-8601 with offset)</label>
-				<input type="text" id="endDate" name="endDate" placeholder="2025-01-31T23:59:59+09:00" class="form-control" />
-			</div>
-
-			<div class="form-group" style="margin-top: 8px;">
-				<button type="submit" class="btn btn-primary">Calculate</button>
-				<button type="reset" class="btn btn-secondary" hx-on:click="document.getElementById('tradeProfitResult').innerHTML='';">Reset</button>
-			</div>
-		</form>
-
-		<hr />
-
-		<div id="tradeProfitResult" th:fragment="result">
-			<!-- HTMX response will replace this content -->
-			<p style="color: #888;">Enter parameters and click Calculate to view results.</p>
 		</div>
-
 	</div>
-
 </body>
 
 </html>

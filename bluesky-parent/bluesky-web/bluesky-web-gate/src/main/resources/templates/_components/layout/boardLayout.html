@@ -10,13 +10,7 @@
 	<script>
 		dayjs.extend(window.dayjs_plugin_relativeTime);
 	</script>
-	<script data-th-src="@{/js/board.js}"></script>
-	<script data-th-inline="javascript">
-		/*<![CDATA[*/
-		boardData.setBoardAlias(/*[[${boardAlias}]]*/ 'boardAlias');
-		boardData.setBoardMode(/*[[${boardMode}]]*/ 'boardMode');
-		/*]]>*/
-	</script>
+	<script type="module" data-th-src="@{/js/board/board.js}"></script>
 </head>
 <body>
 	<div data-layout-fragment="content" class="flex flex-col lg:flex-row">

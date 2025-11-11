@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
@@ -13,7 +14,9 @@ import net.luversof.api.stock.constant.TradeType;
 import net.luversof.api.stock.databind.CurrencyDeserializer;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class TradeCsvRecord {
+	
 	@JsonProperty("날짜")
 	private String 날짜;
 
@@ -40,33 +43,24 @@ public class TradeCsvRecord {
 	@JsonProperty("거래세")
 	@JsonDeserialize(using = CurrencyDeserializer.class)
 	private BigDecimal 거래세;
+	
+	@JsonProperty("매수 수량")
+	private Integer 매수_수량;
 
 	@JsonProperty("매수 금액")
 	@JsonDeserialize(using = CurrencyDeserializer.class)
 	private BigDecimal 매수_금액;
-
-	@JsonProperty("매수 수량")
-	private Integer 매수_수량;
-
-	@JsonProperty("매수 실 금액")
-	@JsonDeserialize(using = CurrencyDeserializer.class)
-	private BigDecimal 매수_실_금액;
-
+	
+	@JsonProperty("매도 수량")
+	private Integer 매도_수량;
+	
 	@JsonProperty("매도 금액")
 	@JsonDeserialize(using = CurrencyDeserializer.class)
 	private BigDecimal 매도_금액;
-
-	@JsonProperty("매도 수량")
-	private Integer 매도_수량;
-
-	@JsonProperty("매도 실 금액")
+	
+	@JsonProperty("현재가")
 	@JsonDeserialize(using = CurrencyDeserializer.class)
-	private BigDecimal 매도_실_금액;
-
-	@JsonProperty("1열")
-	private String 일_열;
-	
-	
+	private BigDecimal 현재가;
 	
 	public Trade toTrade() {
 		Trade trade = new Trade();

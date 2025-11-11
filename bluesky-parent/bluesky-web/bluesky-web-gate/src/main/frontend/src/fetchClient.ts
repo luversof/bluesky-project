@@ -172,3 +172,43 @@ export async function postJson<T = any, U = any>(
 
 	return fetchJson<T>(url, init);
 }
+
+export async function putJson<T = any, U = any>(
+	url: string,
+	body: U,
+	options: FetchOptions = {},
+): Promise<T> {
+	const headers = {
+		"Content-Type": "application/json",
+		...((options.headers || {}) as Record<string, string>),
+	};
+
+	const init: FetchOptions = {
+		method: "PUT",
+		headers,
+		body: JSON.stringify(body),
+		...options,
+	};
+
+	return fetchJson<T>(url, init);
+}
+
+export async function deleteJson<T = any, U = any>(
+	url: string,
+	body: U,
+	options: FetchOptions = {},
+): Promise<T> {
+	const headers = {
+		"Content-Type": "application/json",
+		...((options.headers || {}) as Record<string, string>),
+	};
+
+	const init: FetchOptions = {
+		method: "DELETE",
+		headers,
+		body: JSON.stringify(body),
+		...options,
+	};
+
+	return fetchJson<T>(url, init);
+}

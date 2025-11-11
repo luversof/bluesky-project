@@ -1,15 +1,12 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleApiError = handleApiError;
-const fetchClient_1 = require("./fetchClient");
+import { ApiError, NetworkError, ParseError, } from "./fetchClient.js";
 /**
  * 중앙화된 API 에러 핸들러
  * - isDisplayableMessage가 true인 경우 onDisplayableMessage로 전달 (없으면 alert)
  * - 아닌 경우 onNonDisplayable (있으면 전달) 또는 console.error
  */
-function handleApiError(err, { onDisplayableMessage, onNonDisplayable, } = {}) {
+export function handleApiError(err, { onDisplayableMessage, onNonDisplayable, } = {}) {
     var _a;
-    if (err instanceof fetchClient_1.ApiError) {
+    if (err instanceof ApiError) {
         const body = err.body;
         // 서버에서 BlueskyErrorMessage 형태로 보낸 경우
         if (body && body.isDisplayableMessage) {
@@ -32,14 +29,14 @@ function handleApiError(err, { onDisplayableMessage, onNonDisplayable, } = {}) {
         }
         return;
     }
-    if (err instanceof fetchClient_1.NetworkError) {
+    if (err instanceof NetworkError) {
         if (onNonDisplayable)
             onNonDisplayable(err);
         else
             alert("네트워크 오류가 발생했습니다. 인터넷 연결을 확인하세요.");
         return;
     }
-    if (err instanceof fetchClient_1.ParseError) {
+    if (err instanceof ParseError) {
         if (onNonDisplayable)
             onNonDisplayable(err);
         else

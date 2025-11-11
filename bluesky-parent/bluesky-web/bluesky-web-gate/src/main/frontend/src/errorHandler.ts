@@ -3,7 +3,7 @@ import {
 	NetworkError,
 	ParseError,
 	BlueskyErrorMessage,
-} from "./fetchClient";
+} from "./fetchClient.js";
 
 export type DisplayHandler = (
 	message: string,
