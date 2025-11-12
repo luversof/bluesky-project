@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import lombok.Setter;
-import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.gate.util.UserUtil;
 import net.luversof.web.gate.bookkeeping.domain.Bookkeeping;
 import net.luversof.web.gate.bookkeeping.openfeign.BookkeepingClient;
 
@@ -25,39 +25,36 @@ public class BookkeepingApiController {
 
 	@Setter(onMethod_ = @Autowired)
 	private BookkeepingClient bookkeepingClient;
-	
+
 	@BlueskyPreAuthorize
 	@PostMapping
 	public Bookkeeping create(@RequestBody Bookkeeping bookkeeping) {
 		return bookkeepingClient.create(
-			bookkeeping.toBuilder()
-				.userId(UserUtil.getUserId())
-				.build()
-		);
+				bookkeeping.toBuilder()
+						.userId(UserUtil.getUserId())
+						.build());
 	}
-	
+
 	@GetMapping
 	public List<Bookkeeping> findByUserId(@RequestParam String userId) {
 		return bookkeepingClient.findByUserId(userId);
 	}
-	
+
 	@BlueskyPreAuthorize
 	@PutMapping
 	public Bookkeeping update(@RequestBody Bookkeeping bookkeeping) {
 		return bookkeepingClient.update(
-			bookkeeping.toBuilder()
-				.userId(UserUtil.getUserId())
-				.build()
-		);
+				bookkeeping.toBuilder()
+						.userId(UserUtil.getUserId())
+						.build());
 	}
-	
+
 	@BlueskyPreAuthorize
 	@DeleteMapping
 	public void delete(@RequestBody Bookkeeping bookkeeping) {
 		bookkeepingClient.delete(
-			bookkeeping.toBuilder()
-				.userId(UserUtil.getUserId())
-				.build()
-		);
+				bookkeeping.toBuilder()
+						.userId(UserUtil.getUserId())
+						.build());
 	}
 }

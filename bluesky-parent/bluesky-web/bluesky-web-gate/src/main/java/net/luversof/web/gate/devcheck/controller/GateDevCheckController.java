@@ -22,74 +22,81 @@ import io.github.luversof.boot.context.support.BlueskyReloadableResourceBundleMe
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
 import io.github.luversof.boot.devcheck.annotation.DevCheckDescription;
 import lombok.Setter;
-import net.luversof.client.user.domain.LoginInfo;
-import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.gate.util.UserUtil;
 
 @DevCheckController
 @RequestMapping(value = "/gate", produces = MediaType.APPLICATION_JSON_VALUE)
 public class GateDevCheckController {
-	
+
 	@Setter(onMethod_ = @Autowired)
 	private BlueskyReloadableResourceBundleMessageSource messageSource;
-	
+
 	@Setter(onMethod_ = @Autowired)
 	private Environment environment;
 
-//	@GetMapping(pathPrefix + "/messageSource")
+	// @GetMapping(pathPrefix + "/messageSource")
 	public MessageSource messageSource() {
 		return messageSource;
 	}
-	
+
 	@DevCheckDescription("다국어 메세지 전체 목록 조회")
 	@GetMapping("/messageSources")
 	public Map<Object, Object> getMessageSources(@RequestParam(required = false) String searchKeyword) {
 		Map<Object, Object> map = new LinkedHashMap<>();
 		List<Object> keyList = messageSource.getProperties().keySet().stream()
-				.filter(key -> searchKeyword == null || searchKeyword.isEmpty() || String.valueOf(key).toLowerCase().contains(searchKeyword.toLowerCase()))
+				.filter(key -> searchKeyword == null || searchKeyword.isEmpty()
+						|| String.valueOf(key).toLowerCase().contains(searchKeyword.toLowerCase()))
 				.sorted().toList();
 		keyList.forEach(key -> map.put(key, messageSource.getProperties().get(key)));
 		return map;
 	}
-	
+
 	@DevCheckDescription("다국어 메세지 Locale별 전체 목록 조회")
 	@GetMapping("/messageSourcesByLocale")
-	public Map<Object, Object> getMessageSourcesByLocale(@RequestParam(required = false) Locale locale, @RequestParam(required = false) String searchKeyword) {
+	public Map<Object, Object> getMessageSourcesByLocale(@RequestParam(required = false) Locale locale,
+			@RequestParam(required = false) String searchKeyword) {
 		final Locale targetLocale = (locale == null) ? LocaleContextHolder.getLocale() : locale;
 		Map<Object, Object> map = new LinkedHashMap<>();
 		List<Object> keyList = messageSource.getProperties().keySet().stream()
-				.filter(key -> searchKeyword == null || searchKeyword.isEmpty() || String.valueOf(key).toLowerCase().contains(searchKeyword.toLowerCase()))
+				.filter(key -> searchKeyword == null || searchKeyword.isEmpty()
+						|| String.valueOf(key).toLowerCase().contains(searchKeyword.toLowerCase()))
 				.sorted().toList();
-		
+
 		keyList.forEach(key -> map.put(key, messageSource.getMessage(String.valueOf(key), null, targetLocale)));
 		return map;
 	}
-	
-//	@DevCheckDescription("다국어 메세지 Locale별 전체 목록 조회")
-//	@GetMapping("/messageSourcesByLocale")
-//	public String getMessageSourcesByLocale(@RequestParam(required = false) Locale locale, @RequestParam(required = false) String searchKeyword) {
-//		final Locale targetLocale = (locale == null) ? LocaleContextHolder.getLocale() : locale;
-//		return messageSource.getMessage(searchKeyword, null, targetLocale);
-//	}
-	
+
+	// @DevCheckDescription("다국어 메세지 Locale별 전체 목록 조회")
+	// @GetMapping("/messageSourcesByLocale")
+	// public String getMessageSourcesByLocale(@RequestParam(required = false)
+	// Locale locale, @RequestParam(required = false) String searchKeyword) {
+	// final Locale targetLocale = (locale == null) ?
+	// LocaleContextHolder.getLocale() : locale;
+	// return messageSource.getMessage(searchKeyword, null, targetLocale);
+	// }
+
 	@GetMapping("/authentication")
 	public Authentication testSecurityHasRole() {
 		SecurityContext context = SecurityContextHolder.getContext();
 		return context.getAuthentication();
 	}
-	
+
 	@GetMapping("/loginInfo")
-	public LoginInfo loginInfo() {
-		return UserUtil.getLoginInfo();
+	public Map<String, Object> loginInfo() {
+		return Map.of(
+				"authenticated", UserUtil.isAuthenticated(),
+				"userId", UserUtil.getUserId() != null ? UserUtil.getUserId().toString() : "",
+				"username", UserUtil.getUsername() != null ? UserUtil.getUsername() : "");
 	}
-	
+
 	@GetMapping("/property")
 	public String property(String key) {
 		return environment.getProperty(key);
 	}
-	
+
 	@Setter(onMethod_ = @Autowired)
 	private ServerProperties serverProperties;
-	
+
 	@GetMapping("/serverProperties")
 	public ServerProperties getServerProperties() {
 		return serverProperties;

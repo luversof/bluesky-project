@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import lombok.Setter;
-import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.gate.util.UserUtil;
 import net.luversof.web.gate.stock.domain.Account;
 import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.domain.TradeProfit;

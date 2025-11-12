@@ -1,73 +1,103 @@
 package net.luversof.api.user.config;
 
-import javax.sql.DataSource;
+import java.util.HashSet;
+import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
+import org.springframework.core.annotation.Order;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.JdbcOAuth2AuthorizedClientService;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.provisioning.JdbcUserDetailsManager;
-import org.springframework.security.provisioning.UserDetailsManager;
+import org.springframework.security.oauth2.core.user.OAuth2UserAuthority;
 import org.springframework.security.web.SecurityFilterChain;
 
-import net.luversof.api.user.domain.UserInfo;
-import net.luversof.api.user.service.UserInfoService;
-
+import lombok.Setter;
+import net.luversof.api.user.repository.UserInfoRepository;
 
 @Configuration
 public class UserSecurityConfig {
-	
-	@Bean
-	JdbcOAuth2AuthorizedClientService jdbcOAuth2AuthorizedClientService(
-			NamedParameterJdbcOperations namedParameterJdbcOperations, 
-			ClientRegistrationRepository clientRegistrationRepository, 
-			UserInfoService userInfoService) {
-		return new JdbcOAuth2AuthorizedClientService(namedParameterJdbcOperations.getJdbcOperations(), clientRegistrationRepository) {
 
-			@Override
-			public void saveAuthorizedClient(OAuth2AuthorizedClient authorizedClient, Authentication principal) {
-				super.saveAuthorizedClient(authorizedClient, principal);
-				var userName = makeUsername(authorizedClient);
-				if (userInfoService.findByUsername(userName).isEmpty()) {
-					var userInfo = new UserInfo();
-					userInfo.setUsername(userName);
-					userInfoService.save(userInfo);
-				};
-			}
-			
-		};
-	}
-	
-	private String makeUsername(OAuth2AuthorizedClient authorizedClient) {
-		return authorizedClient.getClientRegistration().getRegistrationId()
-				.replace("-local", "")
-				.replace("-local2", "")
-				+ ":" + authorizedClient.getPrincipalName();
-	}
+	@Setter(onMethod_ = @Autowired)
+	private UserInfoRepository userInfoRepository;
 
 	@Bean
-	SecurityFilterChain userSecurityFilterChain(HttpSecurity http) throws Exception {
+	@Order(3)
+	SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
 		http
-		.authorizeHttpRequests(request -> request.anyRequest().permitAll())
-		.csrf(csrf -> csrf.disable());
+				.authorizeHttpRequests(authorize -> authorize
+						.requestMatchers("/assets/**", "/error", "/actuator/**").permitAll()
+						.anyRequest().authenticated())
+				.formLogin(formLogin -> formLogin
+						.loginPage("/login")
+						.permitAll())
+				.oauth2Login(oauth2Login -> oauth2Login
+						.loginPage("/login")
+						.userInfoEndpoint(userInfo -> userInfo
+								.userAuthoritiesMapper(grantedAuthoritiesMapper())))
+				.logout(logout -> logout
+						.logoutSuccessUrl("/")
+						.permitAll())
+				.csrf(Customizer.withDefaults());
+
 		return http.build();
 	}
-	
+
+	@Bean
+	UserDetailsService userDetailsService() {
+		return username -> {
+			// UserInfo 조회
+			var userInfo = userInfoRepository.findByUsername(username)
+					.orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+
+			// UserDetails 생성
+			return User.builder()
+					.username(userInfo.getUsername())
+					.password(userInfo.getPassword() != null ? userInfo.getPassword() : "{noop}password")
+					.authorities("ROLE_USER")
+					.build();
+		};
+	}
+
+	@Bean
+	GrantedAuthoritiesMapper grantedAuthoritiesMapper() {
+		return authorities -> {
+			Set<GrantedAuthority> mappedAuthorities = new HashSet<>();
+			mappedAuthorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+
+			// OAuth2 provider별 추가 권한 매핑
+			authorities.forEach(authority -> {
+				if (authority instanceof OAuth2UserAuthority oauth2UserAuthority) {
+					// 필요시 추가 권한 매핑
+				}
+			});
+
+			return mappedAuthorities;
+		};
+	}
+
 	@Bean
 	PasswordEncoder passwordEncoder() {
 		return PasswordEncoderFactories.createDelegatingPasswordEncoder();
 	}
 
 	@Bean
-	UserDetailsManager userDetailsManager(@Qualifier("routingDataSource") DataSource routingDataSource) {
-		return new JdbcUserDetailsManager(routingDataSource);
+	OAuth2AuthorizedClientService authorizedClientService(
+			JdbcTemplate jdbcTemplate,
+			ClientRegistrationRepository clientRegistrationRepository) {
+		return new JdbcOAuth2AuthorizedClientService(jdbcTemplate, clientRegistrationRepository);
 	}
 
 }

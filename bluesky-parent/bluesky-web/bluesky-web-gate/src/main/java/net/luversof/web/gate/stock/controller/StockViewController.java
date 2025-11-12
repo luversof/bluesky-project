@@ -6,7 +6,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.gate.util.UserUtil;
 
 @Controller
 @RequestMapping(value = "/stock", produces = MediaType.TEXT_HTML_VALUE)

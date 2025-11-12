@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.exception.BlueskyException;
 import lombok.Setter;
-import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.gate.util.UserUtil;
 import net.luversof.web.gate.board.domain.Board;
 import net.luversof.web.gate.board.openfeign.BoardArticleClient;
 import net.luversof.web.gate.board.openfeign.BoardClient;
@@ -49,10 +49,10 @@ public class BoardViewController {
 		var boardArticle = boardArticleClient.findById(boardArticleId)
 				.orElseThrow(() -> new BlueskyException("board.NOT_EXIST_BOARD_ARTICLE"));
 
-		// 작성자 username 조회
-		var usernames = UserUtil.getUsernames(java.util.List.of(boardArticle.userId()));
+		// TODO: 작성자 username 조회 구현 필요 (Token Exchange 이후)
+		// 현재는 userId를 그대로 username으로 사용
 		var enrichedArticle = boardArticle.toBuilder()
-				.username(usernames.getOrDefault(boardArticle.userId(), "알 수 없음"))
+				.username(boardArticle.userId() != null ? boardArticle.userId().toString() : "익명")
 				.build();
 
 		model.addAttribute("boardArticle", enrichedArticle);

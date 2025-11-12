@@ -4,6 +4,7 @@ import java.util.Locale;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.lang.NonNull;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -18,16 +19,16 @@ import net.luversof.web.gate.interceptor.PaginationInterceptor;
 public class GateWebMvcConfig implements WebMvcConfigurer {
 
 	@Override
-	public void addCorsMappings(CorsRegistry registry) {
+	public void addCorsMappings(@NonNull CorsRegistry registry) {
 		registry.addMapping("/**")
-			.allowedOriginPatterns("http://*.bluesky.local:[*]", "https://*.bluesky.local:[*]")
-			.allowedHeaders(CorsConfiguration.ALL)
-			.allowedMethods(CorsConfiguration.ALL)
-			.allowCredentials(true);
+				.allowedOriginPatterns("http://*.bluesky.local:[*]", "https://*.bluesky.local:[*]")
+				.allowedHeaders(CorsConfiguration.ALL)
+				.allowedMethods(CorsConfiguration.ALL)
+				.allowCredentials(true);
 	}
-	
+
 	@Override
-	public void addInterceptors(InterceptorRegistry registry) {
+	public void addInterceptors(@NonNull InterceptorRegistry registry) {
 		registry.addInterceptor(new LocaleChangeInterceptor());
 		registry.addWebRequestInterceptor(new PaginationInterceptor());
 	}
@@ -38,5 +39,5 @@ public class GateWebMvcConfig implements WebMvcConfigurer {
 		localeResolver.setDefaultLocale(Locale.KOREA);
 		return localeResolver;
 	}
-	
+
 }

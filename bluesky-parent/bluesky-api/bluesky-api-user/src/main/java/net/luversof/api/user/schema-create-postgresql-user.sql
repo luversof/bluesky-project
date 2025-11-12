@@ -33,7 +33,8 @@ CREATE TABLE oauth2_authorized_client (
 -- 개별 사용 테이블 
 CREATE TABLE "UserInfo" (
 	"id" UUID NOT NULL PRIMARY KEY,
-	"username" VARCHAR(50) NOT NULL
+	"username" VARCHAR(50) NOT NULL,
+	"password" VARCHAR(200)
 );
 
 CREATE UNIQUE INDEX uk_userInfo_username ON "UserInfo" ("username");

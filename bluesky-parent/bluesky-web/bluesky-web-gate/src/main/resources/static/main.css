@@ -1781,26 +1781,6 @@
   .z-\[1\] {
     z-index: 1;
   }
-  .tab-content {
-    @layer daisyui.component {
-      order: var(--tabcontent-order);
-      display: none;
-      border-color: transparent;
-      --tabcontent-radius-ss: var(--radius-box);
-      --tabcontent-radius-se: var(--radius-box);
-      --tabcontent-radius-es: var(--radius-box);
-      --tabcontent-radius-ee: var(--radius-box);
-      --tabcontent-order: 1;
-      width: 100%;
-      height: calc(100% - var(--tab-height) + var(--border));
-      margin: var(--tabcontent-margin);
-      border-width: var(--border);
-      border-start-start-radius: var(--tabcontent-radius-ss);
-      border-start-end-radius: var(--tabcontent-radius-se);
-      border-end-start-radius: var(--tabcontent-radius-es);
-      border-end-end-radius: var(--tabcontent-radius-ee);
-    }
-  }
   .stat-figure {
     @layer daisyui.component {
       grid-column-start: 2;
@@ -2367,9 +2347,6 @@
   }
   .mb-8 {
     margin-bottom: calc(var(--spacing) * 8);
-  }
-  .ml-1 {
-    margin-left: calc(var(--spacing) * 1);
   }
   .status {
     @layer daisyui.component {
@@ -3004,13 +2981,6 @@
       }
     }
   }
-  .badge-sm {
-    @layer daisyui.modifier {
-      --size: calc(var(--size-selector, 0.25rem) * 5);
-      font-size: 0.75rem;
-      padding-inline: calc(0.25rem * 2.5 - var(--border));
-    }
-  }
   .px-1 {
     padding-inline: calc(var(--spacing) * 1);
   }
@@ -3212,12 +3182,6 @@
       --fontsize: 0.75rem;
       --btn-p: 0.75rem;
       --size: calc(var(--size-field, 0.25rem) * 8);
-    }
-  }
-  .badge-error {
-    @layer daisyui.modifier {
-      --badge-color: var(--color-error);
-      --badge-fg: var(--color-error-content);
     }
   }
   .btn-error {

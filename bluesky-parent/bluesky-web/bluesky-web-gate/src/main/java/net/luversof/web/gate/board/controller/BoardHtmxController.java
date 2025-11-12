@@ -27,17 +27,11 @@ public class BoardHtmxController {
 			Model model) {
 		var page = boardArticleClient.findByBoardAlias(boardAlias, pageable);
 
-		// 사용자 정보 조회하여 username 추가
-		var userIds = page.getContent().stream()
-				.map(BoardArticle::userId)
-				.distinct()
-				.toList();
-
-		var usernames = net.luversof.client.user.util.UserUtil.getUsernames(userIds);
-
+		// TODO: 사용자 정보 조회 구현 필요 (Token Exchange 이후)
+		// 현재는 userId를 그대로 username으로 사용
 		var enrichedContent = page.getContent().stream()
 				.map(article -> article.toBuilder()
-						.username(usernames.getOrDefault(article.userId(), "알 수 없음"))
+						.username(article.userId() != null ? article.userId().toString() : "익명")
 						.build())
 				.toList();
 

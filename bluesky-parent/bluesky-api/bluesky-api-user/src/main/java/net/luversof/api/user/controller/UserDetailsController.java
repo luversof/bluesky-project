@@ -1,6 +1,7 @@
 package net.luversof.api.user.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,28 +18,29 @@ import lombok.Setter;
 
 @RestController
 @RequestMapping(value = "/api/userDetails", produces = MediaType.APPLICATION_JSON_VALUE)
+@ConditionalOnBean(UserDetailsManager.class)
 public class UserDetailsController {
 
 	@Setter(onMethod_ = @Autowired)
 	private UserDetailsManager userDetailsManager;
-	
+
 	@GetMapping("/search/loadUserByUsername")
 	public UserDetails loadUserByUsername(String username) {
 		return userDetailsManager.loadUserByUsername(username);
 	}
-	
+
 	@PostMapping
 	public UserDetails createUser(@RequestBody User user) {
 		userDetailsManager.createUser(user);
 		return user;
 	}
-	
+
 	@PutMapping
 	public UserDetails updateUser(@RequestBody User user) {
 		userDetailsManager.updateUser(user);
 		return user;
 	}
-	
+
 	@DeleteMapping
 	public void deleteUser(String username) {
 		userDetailsManager.deleteUser(username);

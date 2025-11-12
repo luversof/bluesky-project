@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.github.luversof.boot.exception.BlueskyException;
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import lombok.Setter;
-import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.gate.util.UserUtil;
 import net.luversof.web.gate.blog.domain.BlogArticleCategory;
 import net.luversof.web.gate.blog.openfeign.BlogArticleCategoryClient;
 import net.luversof.web.gate.blog.openfeign.BlogClient;
@@ -27,17 +27,17 @@ public class BlogArticleCategoryController {
 
 	@Setter(onMethod_ = @Autowired)
 	private BlogArticleCategoryClient blogArticleCategoryClient;
-	
+
 	@Setter(onMethod_ = @Autowired)
 	private BlogClient blogClient;
-	
+
 	@BlueskyPreAuthorize
 	@PostMapping
 	public BlogArticleCategory create(@RequestBody BlogArticleCategory blogArticleCategory) {
 		checkUserBlog(blogArticleCategory);
 		return blogArticleCategoryClient.create(blogArticleCategory);
 	}
-	
+
 	@GetMapping("/search/findByBlogId/{blogId}")
 	public List<BlogArticleCategory> findByBlogId(@PathVariable String blogId) {
 		return blogArticleCategoryClient.findByBlogId(blogId);
@@ -49,7 +49,7 @@ public class BlogArticleCategoryController {
 		checkUserBlog(blogArticleCategory);
 		return blogArticleCategoryClient.update(blogArticleCategory);
 	}
-	
+
 	@BlueskyPreAuthorize
 	@DeleteMapping
 	public void delete(@RequestBody BlogArticleCategory blogArticleCategory) {

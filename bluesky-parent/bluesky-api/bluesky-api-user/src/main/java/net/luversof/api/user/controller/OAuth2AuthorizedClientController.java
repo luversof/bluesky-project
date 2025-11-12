@@ -1,6 +1,7 @@
 package net.luversof.api.user.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.security.jackson2.SecurityJackson2Modules;
@@ -21,37 +22,41 @@ import lombok.Setter;
 
 @RestController
 @RequestMapping(value = "/api/oAuth2AuthorizedClient", produces = MediaType.APPLICATION_JSON_VALUE)
+@ConditionalOnBean(JdbcOAuth2AuthorizedClientService.class)
 public class OAuth2AuthorizedClientController {
 
 	@Setter(onMethod_ = @Autowired)
 	private JdbcOAuth2AuthorizedClientService oAuth2AuthorizedClientService;
-	
+
 	private ObjectMapper objectMapper;
-	
+
 	OAuth2AuthorizedClientController(Jackson2ObjectMapperBuilder builder) {
 		this.objectMapper = builder.createXmlMapper(false).build();
 		this.objectMapper.registerModules(SecurityJackson2Modules.getModules(getClass().getClassLoader()));
 	}
-	
+
 	@GetMapping
-	public OAuth2AuthorizedClient loadAuthorizedClient(@RequestParam String clientRegistrationId, @RequestParam String principalName) {
+	public OAuth2AuthorizedClient loadAuthorizedClient(@RequestParam String clientRegistrationId,
+			@RequestParam String principalName) {
 		return oAuth2AuthorizedClientService.loadAuthorizedClient(clientRegistrationId, principalName);
 	}
-	
+
 	@PostMapping
 	public void saveAuthorizedClient() {
-		var saveAuthorizedClientParam = ServletRequestDataBinderUtil.getRequestBodyObject(objectMapper, SaveAuthorizedClientParam.class);
-		oAuth2AuthorizedClientService.saveAuthorizedClient(saveAuthorizedClientParam.authorizedClient(), saveAuthorizedClientParam.principal());
+		var saveAuthorizedClientParam = ServletRequestDataBinderUtil.getRequestBodyObject(objectMapper,
+				SaveAuthorizedClientParam.class);
+		oAuth2AuthorizedClientService.saveAuthorizedClient(saveAuthorizedClientParam.authorizedClient(),
+				saveAuthorizedClientParam.principal());
 	}
-	
+
 	@DeleteMapping
 	public void removeAuthorizedClient(@RequestParam String clientRegistrationId, @RequestParam String principalName) {
 		oAuth2AuthorizedClientService.removeAuthorizedClient(clientRegistrationId, principalName);
 	}
 
-	
-	private static record SaveAuthorizedClientParam(OAuth2AuthorizedClient authorizedClient, OAuth2AuthenticationToken principal) {
-		
+	private static record SaveAuthorizedClientParam(OAuth2AuthorizedClient authorizedClient,
+			OAuth2AuthenticationToken principal) {
+
 	}
-	
+
 }

@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import lombok.Setter;
-import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.gate.util.UserUtil;
 import net.luversof.web.gate.blog.domain.Blog;
 import net.luversof.web.gate.blog.openfeign.BlogClient;
 
@@ -23,18 +23,18 @@ public class BlogController {
 
 	@Setter(onMethod_ = @Autowired)
 	private BlogClient blogClient;
-	
+
 	@BlueskyPreAuthorize
 	@PostMapping
 	public Blog create() {
 		return blogClient.create(Blog.builder().userId(UserUtil.getUserId().toString()).build());
 	}
-	
+
 	@GetMapping("/search/findByBlogId/{blogId}")
 	public Optional<Blog> findByBlogId(@PathVariable String blogId) {
 		return blogClient.findByBlogId(blogId);
 	}
-	
+
 	@GetMapping("/search/findByUserId/{userId}")
 	public List<Blog> findByUserId(@PathVariable String userId) {
 		return blogClient.findByUserId(userId);

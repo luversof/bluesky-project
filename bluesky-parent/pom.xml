@@ -22,7 +22,6 @@
 		<module>bluesky-web</module>
 		<module>bluesky-test</module>
 		<module>bluesky-api</module>
-		<module>bluesky-client</module>
 		<module>bluesky-batch</module>
 		<module>bluesky-app</module>
 	</modules>

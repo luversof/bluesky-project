@@ -49,6 +49,17 @@
 		</dependency>
 		<!-- (e) spring-session -->
 
+		<!-- (s) spring-security -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-client</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+		</dependency>
+		<!-- (e) spring-security -->
+
 		<!-- (s) spring-cloud -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
@@ -130,10 +141,6 @@
 		<!-- (e) micrometer traces -->
 
 		<!-- (s) bluesky -->
-		<dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-client-user</artifactId>
-		</dependency>
 		<dependency>
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-web-common</artifactId>

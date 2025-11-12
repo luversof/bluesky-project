@@ -19,7 +19,9 @@ public class UserInfo {
 	@Id
 	@Column("id")
 	private UUID id;
-	
+
 	private String username;
-	
+
+	private String password;
+
 }

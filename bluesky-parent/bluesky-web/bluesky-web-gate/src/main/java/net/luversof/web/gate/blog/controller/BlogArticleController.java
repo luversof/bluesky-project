@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
-import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.gate.util.UserUtil;
 import net.luversof.web.gate.blog.domain.BlogArticle;
 import net.luversof.web.gate.blog.openfeign.BlogArticleClient;
 
@@ -26,29 +26,29 @@ public class BlogArticleController {
 
 	@Autowired
 	private BlogArticleClient blogArticleClient;
-	
+
 	@BlueskyPreAuthorize
 	@PostMapping
 	public BlogArticle create(@RequestBody BlogArticle blogArticle) {
 		return blogArticleClient.create(blogArticle.toBuilder().userId(UserUtil.getUserId().toString()).build());
 	}
-	
+
 	@GetMapping("/search/findByBlogId/{blogId}")
 	public Page<BlogArticle> findByBlogId(@PathVariable String blogId, Pageable pageable) {
 		return blogArticleClient.findByBlogId(blogId, pageable);
 	}
-	
+
 	@GetMapping("/search/findByBlogArticleId/{blogArticleId}")
 	public Optional<BlogArticle> findByBlogArticleId(@PathVariable String blogArticleId) {
 		return blogArticleClient.findByBlogArticleId(blogArticleId);
 	}
-	
+
 	@BlueskyPreAuthorize
 	@PutMapping
 	public BlogArticle update(@RequestBody BlogArticle blogArticle) {
 		return blogArticleClient.update(blogArticle.toBuilder().userId(UserUtil.getUserId().toString()).build());
 	}
-	
+
 	@BlueskyPreAuthorize
 	@DeleteMapping
 	public void delete(@RequestBody BlogArticle blogArticle) {
