@@ -7,6 +7,8 @@ import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
 import java.util.UUID;
 
+import java.util.Arrays;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -52,148 +54,159 @@ import com.nimbusds.jose.proc.SecurityContext;
 @Configuration
 public class AuthorizationServerConfig {
 
-    @Bean
-    @Order(1)
-    SecurityFilterChain authorizationServerSecurityFilterChain(
-            HttpSecurity http,
-            OAuth2TokenExchangeGrantAuthenticationProvider tokenExchangeProvider) throws Exception {
-        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = OAuth2AuthorizationServerConfigurer
-                .authorizationServer();
+	@Bean
+	@Order(1)
+	SecurityFilterChain authorizationServerSecurityFilterChain(
+			HttpSecurity http,
+			OAuth2TokenExchangeGrantAuthenticationProvider tokenExchangeProvider) throws Exception {
+		OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = OAuth2AuthorizationServerConfigurer
+			.authorizationServer();
 
-        http
-                .securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
-                .with(authorizationServerConfigurer, configurer -> configurer
-                        .tokenEndpoint(tokenEndpoint -> tokenEndpoint
-                                .accessTokenRequestConverter(new OAuth2TokenExchangeGrantAuthenticationConverter())
-                                .authenticationProvider(tokenExchangeProvider))
-                        .oidc(Customizer.withDefaults()) // OpenID Connect 1.0 지원
-                )
-                .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().authenticated())
-                .exceptionHandling(exceptions -> exceptions
-                        .defaultAuthenticationEntryPointFor(
-                                new LoginUrlAuthenticationEntryPoint("/login"),
-                                new MediaTypeRequestMatcher(MediaType.TEXT_HTML)))
-                .oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()));
+		http
+			.securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
+			.with(authorizationServerConfigurer, configurer -> configurer
+				.tokenEndpoint(tokenEndpoint -> tokenEndpoint
+					.accessTokenRequestConverter(new OAuth2TokenExchangeGrantAuthenticationConverter())
+					.authenticationProvider(tokenExchangeProvider))
+				.oidc(Customizer.withDefaults()))
+			.authorizeHttpRequests(authorize -> authorize
+				.anyRequest().authenticated())
+			.exceptionHandling(exceptions -> exceptions
+				.defaultAuthenticationEntryPointFor(
+					new LoginUrlAuthenticationEntryPoint("/login"),
+					new MediaTypeRequestMatcher(MediaType.TEXT_HTML)))
+			.oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()));
 
-        return http.build();
-    }
+		return http.build();
+	}
 
-    @Bean
-    RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate) {
-        JdbcRegisteredClientRepository repository = new JdbcRegisteredClientRepository(jdbcTemplate);
+	@Value("${bluesky.oauth2.registered-client.web-gate.redirect-uris}")
+	private String redirectUris;
 
-        // bluesky-web-gate 클라이언트 등록 (이미 존재하면 skip)
-        try {
-            RegisteredClient existingClient = repository.findByClientId("bluesky-web-gate");
-            if (existingClient == null) {
-                RegisteredClient webGateClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                        .clientId("bluesky-web-gate")
-                        .clientSecret("{noop}secret") // 개발용, 운영환경에서는 암호화 필요
-                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
-                        .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                        .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                        .authorizationGrantType(
-                                new AuthorizationGrantType("urn:ietf:params:oauth:grant-type:token-exchange"))
-                        .redirectUri("https://dev.bluesky.local:30122/login/oauth2/code/bluesky")
-                        .redirectUri("https://dev.bluesky.local:40122/login/oauth2/code/bluesky")
-                        .redirectUri("http://localhost:30122/login/oauth2/code/bluesky")
-                        .postLogoutRedirectUri("https://dev.bluesky.local:30122/")
-                        .postLogoutRedirectUri("https://dev.bluesky.local:40122/")
-                        .postLogoutRedirectUri("http://localhost:30122/")
-                        .scope(OidcScopes.OPENID)
-                        .scope(OidcScopes.PROFILE)
-                        .scope(OidcScopes.EMAIL)
-                        .scope("board.read")
-                        .scope("board.write")
-                        .scope("stock.read")
-                        .scope("stock.write")
-                        .clientSettings(ClientSettings.builder()
-                                .requireAuthorizationConsent(false)
-                                .build())
-                        .tokenSettings(TokenSettings.builder()
-                                .accessTokenTimeToLive(Duration.ofHours(2))
-                                .refreshTokenTimeToLive(Duration.ofDays(30))
-                                .reuseRefreshTokens(false)
-                                .build())
-                        .build();
+	@Value("${bluesky.oauth2.registered-client.web-gate.post-logout-redirect-uris}")
+	private String postLogoutRedirectUris;
 
-                repository.save(webGateClient);
-            }
-        } catch (Exception e) {
-            // 테이블이 없거나 다른 오류 발생 시 무시 (초기 실행 시)
-        }
+	@Bean
+	RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate) {
+		JdbcRegisteredClientRepository repository = new JdbcRegisteredClientRepository(jdbcTemplate);
 
-        return repository;
-    }
+		// bluesky-web-gate 클라이언트 등록 (이미 존재하면 skip)
+		try {
+			RegisteredClient existingClient = repository.findByClientId("bluesky-web-gate");
+			if (existingClient == null) {
+				var builder = RegisteredClient.withId(UUID.randomUUID().toString())
+					.clientId("bluesky-web-gate")
+					.clientSecret("{noop}secret")
+					.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+					.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+					.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+					.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+					.authorizationGrantType(
+						new AuthorizationGrantType("urn:ietf:params:oauth:grant-type:token-exchange"));
+				
+				// Redirect URIs from properties
+				Arrays.stream(redirectUris.split(","))
+					.map(String::trim)
+					.forEach(builder::redirectUri);
+				
+				// Post Logout Redirect URIs from properties
+				Arrays.stream(postLogoutRedirectUris.split(","))
+					.map(String::trim)
+					.forEach(builder::postLogoutRedirectUri);
+				
+				RegisteredClient webGateClient = builder
+					.scope(OidcScopes.OPENID)
+					.scope(OidcScopes.PROFILE)
+					.scope(OidcScopes.EMAIL)
+					.scope("board.read")
+					.scope("board.write")
+					.scope("stock.read")
+					.scope("stock.write")
+					.clientSettings(ClientSettings.builder()
+						.requireAuthorizationConsent(false)
+						.build())
+					.tokenSettings(TokenSettings.builder()
+						.accessTokenTimeToLive(Duration.ofHours(2))
+						.refreshTokenTimeToLive(Duration.ofDays(30))
+						.reuseRefreshTokens(false)
+						.build())
+					.build();
 
-    @Bean
-    OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate,
-            RegisteredClientRepository registeredClientRepository) {
-        return new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
-    }
+				repository.save(webGateClient);
+			}
+		} catch (Exception e) {
+			// 테이블이 없거나 다른 오류 발생 시 무시 (초기 실행 시)
+		}
 
-    @Bean
-    OAuth2AuthorizationConsentService authorizationConsentService(JdbcTemplate jdbcTemplate,
-            RegisteredClientRepository registeredClientRepository) {
-        return new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, registeredClientRepository);
-    }
+		return repository;
+	}
 
-    @Bean
-    JWKSource<SecurityContext> jwkSource() {
-        KeyPair keyPair = generateRsaKey();
-        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
+	@Bean
+	OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate,
+			RegisteredClientRepository registeredClientRepository) {
+		return new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
+	}
 
-        RSAKey rsaKey = new RSAKey.Builder(publicKey)
-                .privateKey(privateKey)
-                .keyID(UUID.randomUUID().toString())
-                .build();
+	@Bean
+	OAuth2AuthorizationConsentService authorizationConsentService(JdbcTemplate jdbcTemplate,
+			RegisteredClientRepository registeredClientRepository) {
+		return new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, registeredClientRepository);
+	}
 
-        JWKSet jwkSet = new JWKSet(rsaKey);
-        return new ImmutableJWKSet<>(jwkSet);
-    }
+	@Bean
+	JWKSource<SecurityContext> jwkSource() {
+		KeyPair keyPair = generateRsaKey();
+		RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
+		RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
 
-    private static KeyPair generateRsaKey() {
-        KeyPair keyPair;
-        try {
-            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-            keyPairGenerator.initialize(2048);
-            keyPair = keyPairGenerator.generateKeyPair();
-        } catch (Exception ex) {
-            throw new IllegalStateException(ex);
-        }
-        return keyPair;
-    }
+		RSAKey rsaKey = new RSAKey.Builder(publicKey)
+			.privateKey(privateKey)
+			.keyID(UUID.randomUUID().toString())
+			.build();
 
-    @Bean
-    JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource) {
-        return OAuth2AuthorizationServerConfiguration.jwtDecoder(jwkSource);
-    }
+		JWKSet jwkSet = new JWKSet(rsaKey);
+		return new ImmutableJWKSet<>(jwkSet);
+	}
 
-    @Bean
-    OAuth2TokenGenerator<?> tokenGenerator(JWKSource<SecurityContext> jwkSource,
-            OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer) {
-        JwtGenerator jwtGenerator = new JwtGenerator(new NimbusJwtEncoder(jwkSource));
-        jwtGenerator.setJwtCustomizer(jwtCustomizer);
-        OAuth2AccessTokenGenerator accessTokenGenerator = new OAuth2AccessTokenGenerator();
-        OAuth2RefreshTokenGenerator refreshTokenGenerator = new OAuth2RefreshTokenGenerator();
-        return new DelegatingOAuth2TokenGenerator(
-                jwtGenerator, accessTokenGenerator, refreshTokenGenerator);
-    }
+	private static KeyPair generateRsaKey() {
+		KeyPair keyPair;
+		try {
+			KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+			keyPairGenerator.initialize(2048);
+			keyPair = keyPairGenerator.generateKeyPair();
+		} catch (Exception ex) {
+			throw new IllegalStateException(ex);
+		}
+		return keyPair;
+	}
 
-    @Bean
-    OAuth2TokenExchangeGrantAuthenticationProvider tokenExchangeProvider() {
-        return new OAuth2TokenExchangeGrantAuthenticationProvider();
-    }
+	@Bean
+	JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource) {
+		return OAuth2AuthorizationServerConfiguration.jwtDecoder(jwkSource);
+	}
 
-    @Bean
-    AuthorizationServerSettings authorizationServerSettings(
-            @Value("${spring.security.oauth2.authorizationserver.issuer}") String issuer) {
-        return AuthorizationServerSettings.builder()
-                .issuer(issuer)
-                .build();
-    }
+	@Bean
+	OAuth2TokenGenerator<?> tokenGenerator(JWKSource<SecurityContext> jwkSource,
+			OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer) {
+		JwtGenerator jwtGenerator = new JwtGenerator(new NimbusJwtEncoder(jwkSource));
+		jwtGenerator.setJwtCustomizer(jwtCustomizer);
+		OAuth2AccessTokenGenerator accessTokenGenerator = new OAuth2AccessTokenGenerator();
+		OAuth2RefreshTokenGenerator refreshTokenGenerator = new OAuth2RefreshTokenGenerator();
+		return new DelegatingOAuth2TokenGenerator(
+			jwtGenerator, accessTokenGenerator, refreshTokenGenerator);
+	}
+
+	@Bean
+	OAuth2TokenExchangeGrantAuthenticationProvider tokenExchangeProvider() {
+		return new OAuth2TokenExchangeGrantAuthenticationProvider();
+	}
+
+	@Bean
+	AuthorizationServerSettings authorizationServerSettings(
+			@Value("${spring.security.oauth2.authorizationserver.issuer}") String issuer) {
+		return AuthorizationServerSettings.builder()
+			.issuer(issuer)
+			.build();
+	}
 
 }

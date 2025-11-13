@@ -20,28 +20,26 @@ import lombok.Setter;
 @EnableWebSecurity
 public class GateSecurityConfig {
 
-	@Setter(onMethod_ = @Autowired)
-	private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
-		
 	@Bean
-	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+	SecurityFilterChain securityFilterChain(
+			HttpSecurity http,
+			OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler) throws Exception {
 		http
-				.authorizeHttpRequests(authorize -> authorize
-						.requestMatchers("/", "/login", "/*.css", "/*.js", "/js/**", "/assets/**", "/error",
-								"/actuator/**", "/frontend/**")
-						.permitAll()
-						.requestMatchers("/dev/**").permitAll() // 개발용
-						.anyRequest().authenticated())
-				.oauth2Login(oauth2 -> oauth2
-						.loginPage("/login")
-						.successHandler(oAuth2LoginSuccessHandler)
-						.defaultSuccessUrl("/", true))
-				.oauth2Client(Customizer.withDefaults())
-				.logout(logout -> logout
-						.logoutSuccessUrl("/")
-						.invalidateHttpSession(true)
-						.clearAuthentication(true))
-				.csrf(Customizer.withDefaults());
+			.authorizeHttpRequests(authorize -> authorize
+				.requestMatchers("/", "/login", "/*.css", "/*.js", "/js/**", "/assets/**", "/error",
+					"/actuator/**", "/frontend/**")
+				.permitAll()
+				.requestMatchers("/dev/**").permitAll()
+				.requestMatchers("/board/**", "/blog/**", "/bookkeeping/**", "/stock/**").permitAll()
+				.anyRequest().authenticated())
+			.oauth2Login(oauth2 -> oauth2
+				.loginPage("/login")
+				.successHandler(oAuth2LoginSuccessHandler))
+			.oauth2Client(Customizer.withDefaults())
+			.logout(logout -> logout
+				.logoutSuccessUrl("/")
+				.invalidateHttpSession(true)
+				.clearAuthentication(true));
 
 		return http.build();
 	}

@@ -148,22 +148,23 @@ public class OAuth2TokenExchangeGrantAuthenticationProvider implements Authentic
     }
 
     /**
-     * GitHub token으로 사용자 정보 조회/생성
-     * 실제 구현에서는 GitHub API를 호출하여 사용자 정보를 가져와야 함
+     * GitHub token으로 사용자 정보 조회
+     * 
+     * 중요: 이 메서드는 UserInfo를 생성하지 않습니다.
+     * OAuth2LoginSuccessHandler에서 이미 UserInfo가 생성되어 있어야 합니다.
+     * 
+     * TODO: GitHub API를 호출하여 provider+providerId로 UserInfo 조회
+     * 현재는 임시로 예외를 던집니다.
      */
     private UserInfo getUserInfoFromGitHubToken(String subjectToken) {
-        // TODO: GitHub API 호출하여 사용자 정보 가져오기
-        // 현재는 임시로 token을 username으로 처리
-
-        // 임시 구현: subject_token에서 username 추출 (실제로는 GitHub API 호출 필요)
-        String username = "github_user_" + subjectToken.hashCode();
-
-        return userInfoRepository.findByUsername(username)
-                .orElseGet(() -> {
-                    UserInfo newUser = new UserInfo();
-                    newUser.setUsername(username);
-                    newUser.setPassword("{noop}password"); // OAuth 사용자는 비밀번호 불필요
-                    return userInfoRepository.save(newUser);
-                });
+        // 실제 구현에서는:
+        // 1. GitHub API 호출하여 사용자 정보 가져오기
+        // 2. provider="github", providerId=GitHub의 id로 UserInfo 조회
+        // 3. UserInfo가 없으면 에러 (Token Exchange는 이미 로그인된 사용자만 사용 가능)
+        
+        throw new OAuth2AuthenticationException(
+            new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST,
+                "Token Exchange는 아직 구현되지 않았습니다. OAuth2 로그인을 사용하세요.", 
+                ERROR_URI));
     }
 }

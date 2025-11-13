@@ -2769,6 +2769,24 @@
   .grow {
     flex-grow: 1;
   }
+  .link {
+    @layer daisyui.component {
+      cursor: pointer;
+      text-decoration-line: underline;
+      &:focus {
+        --tw-outline-style: none;
+        outline-style: none;
+        @media (forced-colors: active) {
+          outline: 2px solid transparent;
+          outline-offset: 2px;
+        }
+      }
+      &:focus-visible {
+        outline: 2px solid currentColor;
+        outline-offset: 2px;
+      }
+    }
+  }
   .cursor-pointer {
     cursor: pointer;
   }
@@ -3086,6 +3104,19 @@
       color: var(--color-warning-content);
       --alert-border-color: var(--color-warning);
       --alert-color: var(--color-warning);
+    }
+  }
+  .link-primary {
+    @layer daisyui.modifier {
+      color: var(--color-primary);
+      @media (hover: hover) {
+        &:hover {
+          color: var(--color-primary);
+          @supports (color: color-mix(in lab, red, red)) {
+            color: color-mix(in oklab, var(--color-primary) 80%, #000);
+          }
+        }
+      }
     }
   }
   .text-base-content {

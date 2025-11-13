@@ -34,7 +34,12 @@ CREATE TABLE oauth2_authorized_client (
 CREATE TABLE "UserInfo" (
 	"id" UUID NOT NULL PRIMARY KEY,
 	"username" VARCHAR(50) NOT NULL,
-	"password" VARCHAR(200)
+	"password" VARCHAR(200),
+	"provider" VARCHAR(20),
+	"provider_id" VARCHAR(100),
+	"email" VARCHAR(100),
+	"avatar_url" VARCHAR(500)
 );
 
 CREATE UNIQUE INDEX uk_userInfo_username ON "UserInfo" ("username");
+CREATE UNIQUE INDEX uk_userInfo_provider_providerId ON "UserInfo" ("provider", "provider_id");

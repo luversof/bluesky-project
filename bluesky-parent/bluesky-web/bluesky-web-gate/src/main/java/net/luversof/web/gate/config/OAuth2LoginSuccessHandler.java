@@ -2,105 +2,132 @@ package net.luversof.web.gate.config;
 
 import java.io.IOException;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestTemplate;
-
-import com.fasterxml.jackson.databind.JsonNode;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.Setter;
 
 /**
- * GitHub OAuth 로그인 성공 후 Token Exchange 처리
+ * GitHub OAuth 로그인 성공 후 UserInfo 저장 처리
  */
 @Component
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-    @Value("${spring.security.oauth2.client.provider.bluesky.token-uri:https://dev.bluesky.local:40131/oauth2/token}")
-    private String tokenUri;
+	@Setter(onMethod_ = @Autowired)
+	private OAuth2AuthorizedClientRepository authorizedClientRepository;
 
-    @Value("${spring.security.oauth2.client.registration.bluesky.client-id:bluesky-web-gate}")
-    private String clientId;
+	@Setter(onMethod_ = @Autowired)
+	private net.luversof.web.gate.user.openfeign.UserApiClient userApiClient;
 
-    @Value("${spring.security.oauth2.client.registration.bluesky.client-secret:secret}")
-    private String clientSecret;
+	public OAuth2LoginSuccessHandler() {
+		setDefaultTargetUrl("/");
+		setAlwaysUseDefaultTargetUrl(true);
+	}
 
-    private final RestTemplate restTemplate = new RestTemplate();
+	@Override
+	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+			Authentication authentication) throws IOException, ServletException {
 
-    public OAuth2LoginSuccessHandler() {
-        setDefaultTargetUrl("/");
-        setAlwaysUseDefaultTargetUrl(true);
-    }
+		System.out.println("=== OAuth2LoginSuccessHandler.onAuthenticationSuccess 호출됨 ===");
+		System.out.println("Authentication type: " + authentication.getClass().getName());
 
-    @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-            Authentication authentication) throws IOException, ServletException {
+		if (authentication instanceof OAuth2AuthenticationToken oauthToken) {
+			String registrationId = oauthToken.getAuthorizedClientRegistrationId();
+			String provider = normalizeProvider(registrationId);
+			System.out.println("Provider: " + registrationId + " (normalized: " + provider + ")");
 
-        if (authentication instanceof OAuth2AuthenticationToken oauthToken) {
-            String provider = oauthToken.getAuthorizedClientRegistrationId();
+			// GitHub/Kakao에서 받은 OAuth2AuthorizedClient 로드
+			OAuth2AuthorizedClient authorizedClient = authorizedClientRepository.loadAuthorizedClient(
+				registrationId,
+				authentication,
+				request);
 
-            // GitHub에서 받은 access token 추출
-            String githubAccessToken = extractAccessToken(request, provider);
+			System.out.println("AuthorizedClient: " + (authorizedClient != null ? "존재" : "null"));
 
-            if (githubAccessToken != null) {
-                // Token Exchange 요청
-                String jwtToken = exchangeToken(githubAccessToken);
+			if (authorizedClient != null) {
+				// GitHub 사용자 정보를 UserInfo 테이블에 저장
+				System.out.println("=== UserInfo 저장 시작 (provider: " + provider + ") ===");
+				saveUserInfo(oauthToken, provider);
+				System.out.println("=== UserInfo 저장 완료 ===");
 
-                if (jwtToken != null) {
-                    // JWT를 세션이나 쿠키에 저장
-                    request.getSession().setAttribute("JWT_TOKEN", jwtToken);
-                    // 또는 response에 쿠키로 설정
-                    // Cookie cookie = new Cookie("JWT_TOKEN", jwtToken);
-                    // cookie.setHttpOnly(true);
-                    // cookie.setSecure(true);
-                    // cookie.setPath("/");
-                    // response.addCookie(cookie);
-                }
-            }
-        }
+				// TODO: Token Exchange는 필요시 별도 엔드포인트에서 호출
+				// 로그인 성공 시에는 UserInfo 저장만 수행
+			}
+		}
 
-        super.onAuthenticationSuccess(request, response, authentication);
-    }
+		super.onAuthenticationSuccess(request, response, authentication);
+	}
 
-    private String extractAccessToken(HttpServletRequest request, String provider) {
-        // OAuth2AuthorizedClient에서 access token 추출
-        // 실제 구현에서는 OAuth2AuthorizedClientService를 사용해야 함
-        // 여기서는 간단히 null 반환
-        return "github_access_token_placeholder";
-    }
+	private void saveUserInfo(OAuth2AuthenticationToken oauthToken, String provider) {
+		try {
+			var principal = oauthToken.getPrincipal();
+			
+			// GitHub OAuth2User 속성에서 사용자 정보 추출
+			Object idAttr = principal.getAttribute("id");
+			String providerId = idAttr != null ? idAttr.toString() : null;
+			String username = principal.getAttribute("login");
+			String email = principal.getAttribute("email");
+			String avatarUrl = principal.getAttribute("avatar_url");
+			
+			System.out.println("=== GitHub 사용자 정보 추출 ===");
+			System.out.println("  - provider: " + provider);
+			System.out.println("  - providerId: " + providerId);
+			System.out.println("  - username (login): " + username);
+			System.out.println("  - email: " + email);
+			System.out.println("  - avatarUrl: " + avatarUrl);
+			
+			// username이 null인 경우 체크
+			if (username == null || username.trim().isEmpty()) {
+				System.err.println("경고: GitHub login 속성이 null입니다. OAuth2User 전체 속성:");
+				principal.getAttributes().forEach((key, value) -> 
+					System.out.println("    " + key + " = " + value));
+				return;
+			}
+			
+			// api-user에 사용자 정보 저장하고 UserInfo ID 반환 받기
+			var request = new net.luversof.web.gate.user.openfeign.UserApiClient.SaveOAuth2UserRequest(
+				provider,
+				providerId,
+				username,
+				email,
+				avatarUrl
+			);
+			
+			var userInfo = userApiClient.saveOAuth2User(request);
+			if (userInfo != null && userInfo.id() != null) {
+				System.out.println("UserInfo 저장 성공! ID: " + userInfo.id());
+			} else {
+				System.err.println("UserInfo 저장 실패: ID가 null");
+			}
+		} catch (Exception e) {
+			System.err.println("UserInfo 저장 중 에러 발생: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
 
-    private String exchangeToken(String subjectToken) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-            headers.setBasicAuth(clientId, clientSecret);
-
-            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-            body.add("grant_type", "urn:ietf:params:oauth:grant-type:token-exchange");
-            body.add("subject_token", subjectToken);
-            body.add("subject_token_type", "urn:ietf:params:oauth:token-type:access_token");
-
-            HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(body, headers);
-
-            JsonNode response = restTemplate.postForObject(tokenUri, requestEntity, JsonNode.class);
-
-            if (response != null && response.has("access_token")) {
-                return response.get("access_token").asText();
-            }
-        } catch (Exception e) {
-            // 로깅
-            e.printStackTrace();
-        }
-        return null;
-    }
+	/**
+	 * Provider 이름을 정규화 (github-local → github)
+	 */
+	private String normalizeProvider(String provider) {
+		if (provider == null) {
+			return null;
+		}
+		// github-local, github-dev 등을 모두 github로 통일
+		if (provider.startsWith("github")) {
+			return "github";
+		}
+		// kakao-local, kakao-dev 등을 모두 kakao로 통일
+		if (provider.startsWith("kakao")) {
+			return "kakao";
+		}
+		return provider;
+	}
 }

@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,5 +39,31 @@ public class UserInfoController {
 	public Optional<UserInfo> findByUsername(@PathVariable String userName) {
 		return userInfoService.findByUsername(userName);
 	}
+
+	@GetMapping("/search/findByProvider")
+	public Optional<UserInfo> findByProviderAndProviderId(
+			@RequestParam("provider") String provider,
+			@RequestParam("providerId") String providerId) {
+		return userInfoService.findByProviderAndProviderId(provider, providerId);
+	}
+
+	@PostMapping("/oauth2")
+	public UserInfo saveOAuth2User(@RequestBody OAuth2UserRequest request) {
+		return userInfoService.saveOAuth2User(
+			request.provider(),
+			request.providerId(),
+			request.username(),
+			request.email(),
+			request.avatarUrl()
+		);
+	}
+
+	record OAuth2UserRequest(
+		String provider,
+		String providerId,
+		String username,
+		String email,
+		String avatarUrl
+	) {}
 
 }

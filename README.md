@@ -1,64 +1,55 @@
 # [BlueskyProject]
 
-## 아키텍처 개선 - Spring Authorization Server 도입
+## 아키텍처 - OAuth2 소셜 로그인
 
-프로젝트에 Spring Authorization Server를 도입하여 표준 OAuth 2.0 / OpenID Connect 인증 구조로 전환했습니다.
+GitHub, Kakao 등의 OAuth2 Provider를 통한 소셜 로그인을 지원합니다.
 
 ### 모듈 구조
 
-- **bluesky-authorization-server**: 중앙 인증 서버 (포트 30140/40140)
-  - OAuth 2.0 Authorization Server
-  - OpenID Connect Provider
-  - JWT 토큰 발급
-  - 소셜 로그인 통합 (Google, GitHub)
+- **bluesky-api-user**: 사용자 인증 및 토큰 관리
+  - OAuth2 Client (GitHub, Kakao 로그인)
+  - Token Exchange Grant (GitHub 토큰 → JWT 변환)
+  - 사용자 정보 관리
 
-- **bluesky-web-gate**: OAuth2 Client (포트 30122)
-  - Authorization Code Flow
-  - JWT 기반 인증
+- **bluesky-web-gate**: 공용 Gateway (포트 30122)
+  - OAuth2 Login 페이지
+  - 정적 리소스 제공
 
-- **bluesky-api-***: Resource Server
+- **bluesky-api-***: API 서버
   - JWT 토큰 검증
-  - Scope 기반 권한 제어
+  - 권한 기반 접근 제어
 
 ### 실행 방법
 
 1. **데이터베이스 스키마 생성**
    ```sql
-   -- oauth2-authorization-server-schema.sql 실행
-   psql -U postgres -d bluesky -f oauth2-authorization-server-schema.sql
+   -- OAuth2 Client 토큰 저장용 테이블
+   psql -U postgres -d bluesky -f bluesky-parent/bluesky-api/bluesky-api-user/src/main/java/net/luversof/api/user/schema-create-postgresql-user.sql
    ```
 
-2. **Authorization Server 실행**
-   ```bash
-   run-authorization-server.bat
-   ```
-   접속: https://auth.bluesky.local:40140
-
-3. **Web Gateway 실행**
+2. **애플리케이션 실행**
    ```bash
    run-bluesky-web-default.bat
    ```
+   접속: http://localhost:30122
 
-### 인증 흐름
+### OAuth2 로그인 흐름
 
-1. 사용자가 bluesky-web-gate 접속
-2. 인증 필요 시 Authorization Server로 리다이렉트
-3. 로그인 (폼 로그인 or 소셜 로그인)
-4. Authorization Code 발급
-5. Web Gateway가 Code를 Token으로 교환
-6. JWT Access Token 획득
-7. API 호출 시 Token 전달
-8. Resource Server가 Token 검증
+1. 사용자가 로그인 페이지 접속
+2. GitHub/Kakao 버튼 클릭
+3. OAuth2 Provider로 리다이렉트
+4. 사용자 인증 및 권한 동의
+5. Authorization Code 발급
+6. Access Token 교환 및 DB 저장 (oauth2_authorized_client 테이블)
+7. 로그인 완료
 
-### 주요 변경사항
+### 주요 기능
 
-- ✅ Spring Authorization Server 기반 중앙 인증
-- ✅ JWT 기반 stateless 인증
-- ✅ OAuth 2.0 / OpenID Connect 표준 준수
-- ✅ 소셜 로그인 통합 (Google, GitHub)
-- ✅ Scope 기반 권한 제어
-- 🔄 Resource Server 전환 (진행 중)
-- 🔄 기존 세션 기반 인증 마이그레이션 (진행 중)
+- ✅ OAuth2 소셜 로그인 (GitHub, Kakao)
+- ✅ Token Exchange Grant (GitHub 토큰 → JWT)
+- ✅ 로그인 토큰 DB 저장 (oauth2_authorized_client)
+- ✅ JWT 기반 API 인증
+- 🔄 게시판 작성자 정보 연동 (진행 중)
 
 자세한 내용은 [ARCHITECTURE_IMPROVEMENT_PLAN.md](ARCHITECTURE_IMPROVEMENT_PLAN.md) 참조
 

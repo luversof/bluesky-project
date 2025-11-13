@@ -22,6 +22,8 @@ public class ResourceServerConfig {
                 .securityMatcher("/api/**")
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/api/oAuth2AuthorizedClient/**").permitAll()
+                        .requestMatchers("/api/userInfo/oauth2", "/api/userInfo/search/findByProvider").permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
                 .oauth2ResourceServer(oauth2 -> oauth2
