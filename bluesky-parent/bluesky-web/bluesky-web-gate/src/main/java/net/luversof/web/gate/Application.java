@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
-@EnableFeignClients(basePackages = { "net.luversof.web.gate" })
+@EnableFeignClients(basePackages = { "net.luversof.web.gate", "net.luversof.client.user.openfeign" })
 public class Application {
 
 	public static void main(String[] args) throws Throwable {

@@ -12,7 +12,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.web.gate.config.ApplicationContextProvider;
-import net.luversof.web.gate.user.openfeign.UserApiClient;
+import net.luversof.client.user.openfeign.UserApiClient;
 
 /**
  * 사용자 정보를 가져오는 유틸리티 클래스

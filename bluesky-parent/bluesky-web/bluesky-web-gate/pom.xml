@@ -143,6 +143,10 @@
 		<!-- (s) bluesky -->
 		<dependency>
 			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-client-user</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-web-common</artifactId>
 		</dependency>
 		<!-- (e) bluesky -->

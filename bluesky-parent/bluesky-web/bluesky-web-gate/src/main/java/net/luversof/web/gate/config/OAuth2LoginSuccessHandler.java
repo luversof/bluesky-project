@@ -14,6 +14,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.Setter;
+import net.luversof.client.user.openfeign.UserApiClient;
 
 /**
  * GitHub OAuth 로그인 성공 후 UserInfo 저장 처리
@@ -25,7 +26,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 	private OAuth2AuthorizedClientRepository authorizedClientRepository;
 
 	@Setter(onMethod_ = @Autowired)
-	private net.luversof.web.gate.user.openfeign.UserApiClient userApiClient;
+	private UserApiClient userApiClient;
 
 	public OAuth2LoginSuccessHandler() {
 		setDefaultTargetUrl("/");
@@ -93,7 +94,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 			}
 			
 			// api-user에 사용자 정보 저장하고 UserInfo ID 반환 받기
-			var request = new net.luversof.web.gate.user.openfeign.UserApiClient.SaveOAuth2UserRequest(
+			var request = new UserApiClient.SaveOAuth2UserRequest(
 				provider,
 				providerId,
 				username,

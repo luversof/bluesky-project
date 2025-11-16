@@ -19,6 +19,7 @@
 	</properties>
 
 	<modules>
+		<module>bluesky-client</module>
 		<module>bluesky-web</module>
 		<module>bluesky-test</module>
 		<module>bluesky-api</module>

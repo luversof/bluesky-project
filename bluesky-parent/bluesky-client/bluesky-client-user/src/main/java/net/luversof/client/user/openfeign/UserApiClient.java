@@ -1,4 +1,4 @@
-package net.luversof.web.gate.user.openfeign;
+package net.luversof.client.user.openfeign;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
@@ -8,9 +8,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 /**
- * bluesky-api-user 서비스 Feign Client
+ * bluesky-api-user service Feign Client
+ * Common client for all bluesky-web-* modules
  */
-@FeignClient(name = "bluesky-api-user", contextId = "api-user", url = "${gate.feign-client.url.user:}")
+@FeignClient(name = "bluesky-api-user", contextId = "api-user", url = "${client.user.feign-client.url:}")
 public interface UserApiClient {
 
 	@PostMapping(path = "/api/userInfo/oauth2", consumes = MediaType.APPLICATION_JSON_VALUE)
