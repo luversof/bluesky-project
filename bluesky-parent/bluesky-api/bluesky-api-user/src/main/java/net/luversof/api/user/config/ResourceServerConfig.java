@@ -30,15 +30,17 @@ public class ResourceServerConfig {
 				.csrf(csrf -> csrf.disable());
 
 		return http.build();
-	}    @Bean
-    JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        grantedAuthoritiesConverter.setAuthoritiesClaimName("scope");
-        grantedAuthoritiesConverter.setAuthorityPrefix("SCOPE_");
+	}
 
-        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
+	@Bean
+	JwtAuthenticationConverter jwtAuthenticationConverter() {
+		JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
+		grantedAuthoritiesConverter.setAuthoritiesClaimName("scope");
+		grantedAuthoritiesConverter.setAuthorityPrefix("SCOPE_");
 
-        return jwtAuthenticationConverter;
-    }
+		JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+		jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
+
+		return jwtAuthenticationConverter;
+	}
 }

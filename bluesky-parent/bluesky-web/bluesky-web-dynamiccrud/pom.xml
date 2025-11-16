@@ -67,6 +67,10 @@
 			<groupId>io.github.luversof</groupId>
 			<artifactId>bluesky-boot-autoconfigure-connectioninfo-jdbc</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>io.github.luversof</groupId>
+			<artifactId>bluesky-boot-autoconfigure-connectioninfo-mongodb</artifactId>
+		</dependency>
 		<!-- (e) bluesky boot connectioninfo -->
 		
 		<!-- (s) bluesky boot crypto -->

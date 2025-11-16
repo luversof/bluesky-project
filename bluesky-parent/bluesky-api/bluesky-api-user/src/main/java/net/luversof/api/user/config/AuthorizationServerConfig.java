@@ -82,42 +82,42 @@ public class AuthorizationServerConfig {
 			RegisteredClient existingClient = repository.findByClientId("bluesky-web-gate");
 			if (existingClient == null) {
 				var builder = RegisteredClient.withId(UUID.randomUUID().toString())
-					.clientId("bluesky-web-gate")
-					.clientSecret("{noop}secret")
-					.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-					.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
-					.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-					.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-					.authorizationGrantType(
-						new AuthorizationGrantType("urn:ietf:params:oauth:grant-type:token-exchange"));
-				
+						.clientId("bluesky-web-gate")
+						.clientSecret("{noop}secret")
+						.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+						.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+						.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+						.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+						.authorizationGrantType(
+								new AuthorizationGrantType("urn:ietf:params:oauth:grant-type:token-exchange"));
+
 				// Redirect URIs from properties
 				Arrays.stream(redirectUris.split(","))
-					.map(String::trim)
-					.forEach(builder::redirectUri);
-				
+						.map(String::trim)
+						.forEach(builder::redirectUri);
+
 				// Post Logout Redirect URIs from properties
 				Arrays.stream(postLogoutRedirectUris.split(","))
-					.map(String::trim)
-					.forEach(builder::postLogoutRedirectUri);
-				
+						.map(String::trim)
+						.forEach(builder::postLogoutRedirectUri);
+
 				RegisteredClient webGateClient = builder
-					.scope(OidcScopes.OPENID)
-					.scope(OidcScopes.PROFILE)
-					.scope(OidcScopes.EMAIL)
-					.scope("board.read")
-					.scope("board.write")
-					.scope("stock.read")
-					.scope("stock.write")
-					.clientSettings(ClientSettings.builder()
-						.requireAuthorizationConsent(false)
-						.build())
-					.tokenSettings(TokenSettings.builder()
-						.accessTokenTimeToLive(Duration.ofHours(2))
-						.refreshTokenTimeToLive(Duration.ofDays(30))
-						.reuseRefreshTokens(false)
-						.build())
-					.build();
+						.scope(OidcScopes.OPENID)
+						.scope(OidcScopes.PROFILE)
+						.scope(OidcScopes.EMAIL)
+						.scope("board.read")
+						.scope("board.write")
+						.scope("stock.read")
+						.scope("stock.write")
+						.clientSettings(ClientSettings.builder()
+								.requireAuthorizationConsent(false)
+								.build())
+						.tokenSettings(TokenSettings.builder()
+								.accessTokenTimeToLive(Duration.ofHours(2))
+								.refreshTokenTimeToLive(Duration.ofDays(30))
+								.reuseRefreshTokens(false)
+								.build())
+						.build();
 
 				repository.save(webGateClient);
 			}
@@ -147,9 +147,9 @@ public class AuthorizationServerConfig {
 		RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
 
 		RSAKey rsaKey = new RSAKey.Builder(publicKey)
-			.privateKey(privateKey)
-			.keyID(UUID.randomUUID().toString())
-			.build();
+				.privateKey(privateKey)
+				.keyID(UUID.randomUUID().toString())
+				.build();
 
 		JWKSet jwkSet = new JWKSet(rsaKey);
 		return new ImmutableJWKSet<>(jwkSet);
@@ -180,15 +180,15 @@ public class AuthorizationServerConfig {
 		OAuth2AccessTokenGenerator accessTokenGenerator = new OAuth2AccessTokenGenerator();
 		OAuth2RefreshTokenGenerator refreshTokenGenerator = new OAuth2RefreshTokenGenerator();
 		return new DelegatingOAuth2TokenGenerator(
-			jwtGenerator, accessTokenGenerator, refreshTokenGenerator);
+				jwtGenerator, accessTokenGenerator, refreshTokenGenerator);
 	}
 
 	@Bean
 	AuthorizationServerSettings authorizationServerSettings(
 			@Value("${spring.security.oauth2.authorizationserver.issuer}") String issuer) {
 		return AuthorizationServerSettings.builder()
-			.issuer(issuer)
-			.build();
+				.issuer(issuer)
+				.build();
 	}
 
 }

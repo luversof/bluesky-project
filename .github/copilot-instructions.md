@@ -222,18 +222,20 @@ CREATE TABLE "UserInfo" (
 ### ❌ 하지 말아야 할 것
 
 1. Gate나 다른 웹 모듈에서 직접 OAuth2 토큰을 DB에 저장
-2. 스페이스로 들여쓰기
-3. 불필요한 기본 설정 추가
-4. api-user를 외부에 노출
-5. 도메인별 패키지 구조를 무시하고 client 패키지에 모든 Feign Client 모음
+2. **스페이스로 들여쓰기** (반드시 탭 사용)
+3. **properties 파일에 한글 주석** (인코딩 깨짐)
+4. 불필요한 기본 설정 추가
+5. api-user를 외부에 노출
+6. 도메인별 패키지 구조를 무시하고 client 패키지에 모든 Feign Client 모음
 
 ### ✅ 해야 할 것
 
 1. 모든 OAuth2 토큰 저장은 api-user에서 처리
-2. 탭으로 들여쓰기
-3. 필수 설정만 명시
-4. Feign Client는 `{domain}/openfeign/` 패키지에 위치
-5. Gate에서 로그인 성공 시 UserApiClient를 통해 api-user에 토큰 저장 요청
+2. **반드시 탭(Tab)으로 들여쓰기**
+3. **properties 파일은 영어 주석만 사용**
+4. 필수 설정만 명시
+5. Feign Client는 `{domain}/openfeign/` 패키지에 위치
+6. Gate에서 로그인 성공 시 UserApiClient를 통해 api-user에 토큰 저장 요청
 
 ## Token Exchange Grant
 
