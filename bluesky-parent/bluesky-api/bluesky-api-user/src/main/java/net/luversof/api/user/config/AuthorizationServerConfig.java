@@ -6,14 +6,12 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
 import java.util.UUID;
-
 import java.util.Arrays;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -42,8 +40,6 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
-import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
@@ -56,26 +52,17 @@ public class AuthorizationServerConfig {
 
 	@Bean
 	@Order(1)
-	SecurityFilterChain authorizationServerSecurityFilterChain(
-			HttpSecurity http,
-			OAuth2TokenExchangeGrantAuthenticationProvider tokenExchangeProvider) throws Exception {
+	SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
 		OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = OAuth2AuthorizationServerConfigurer
-			.authorizationServer();
+				.authorizationServer();
 
 		http
-			.securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
-			.with(authorizationServerConfigurer, configurer -> configurer
-				.tokenEndpoint(tokenEndpoint -> tokenEndpoint
-					.accessTokenRequestConverter(new OAuth2TokenExchangeGrantAuthenticationConverter())
-					.authenticationProvider(tokenExchangeProvider))
-				.oidc(Customizer.withDefaults()))
-			.authorizeHttpRequests(authorize -> authorize
-				.anyRequest().authenticated())
-			.exceptionHandling(exceptions -> exceptions
-				.defaultAuthenticationEntryPointFor(
-					new LoginUrlAuthenticationEntryPoint("/login"),
-					new MediaTypeRequestMatcher(MediaType.TEXT_HTML)))
-			.oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()));
+				.securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
+				.with(authorizationServerConfigurer, configurer -> configurer
+						.oidc(Customizer.withDefaults()))
+				.authorizeHttpRequests(authorize -> authorize
+						.anyRequest().authenticated())
+				.oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()));
 
 		return http.build();
 	}
@@ -194,11 +181,6 @@ public class AuthorizationServerConfig {
 		OAuth2RefreshTokenGenerator refreshTokenGenerator = new OAuth2RefreshTokenGenerator();
 		return new DelegatingOAuth2TokenGenerator(
 			jwtGenerator, accessTokenGenerator, refreshTokenGenerator);
-	}
-
-	@Bean
-	OAuth2TokenExchangeGrantAuthenticationProvider tokenExchangeProvider() {
-		return new OAuth2TokenExchangeGrantAuthenticationProvider();
 	}
 
 	@Bean

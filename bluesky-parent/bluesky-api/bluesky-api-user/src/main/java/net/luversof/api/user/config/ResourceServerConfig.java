@@ -15,26 +15,22 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity(prePostEnabled = true)
 public class ResourceServerConfig {
 
-    @Bean
-    @Order(2)
-    SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .securityMatcher("/api/**")
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/actuator/**").permitAll()
-                        .requestMatchers("/api/oAuth2AuthorizedClient/**").permitAll()
-                        .requestMatchers("/api/userInfo/oauth2", "/api/userInfo/search/findByProvider").permitAll()
-                        .requestMatchers("/api/**").authenticated()
-                        .anyRequest().permitAll())
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt
-                                .jwtAuthenticationConverter(jwtAuthenticationConverter())))
-                .csrf(csrf -> csrf.disable());
+	@Bean
+	@Order(2)
+	SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http) throws Exception {
+		http
+				.securityMatcher("/api/**")
+				.authorizeHttpRequests(authorize -> authorize
+						.requestMatchers("/api/oAuth2AuthorizedClient/**").permitAll()
+						.requestMatchers("/api/userInfo/oauth2", "/api/userInfo/search/findByProvider").permitAll()
+						.anyRequest().authenticated())
+				.oauth2ResourceServer(oauth2 -> oauth2
+						.jwt(jwt -> jwt
+								.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+				.csrf(csrf -> csrf.disable());
 
-        return http.build();
-    }
-
-    @Bean
+		return http.build();
+	}    @Bean
     JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
         grantedAuthoritiesConverter.setAuthoritiesClaimName("scope");
