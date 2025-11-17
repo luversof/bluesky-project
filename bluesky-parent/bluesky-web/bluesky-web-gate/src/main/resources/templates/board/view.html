@@ -5,7 +5,8 @@
 	<title>게시글 보기</title>
 </head>
 
-<body data-board-mode="view" data-th-attr="data-board-id=${board.id},data-board-alias=${board.alias}">
+<body data-board-mode="view"
+	data-th-attr="data-board-id=${board.id},data-board-alias=${board.alias},data-board-article-id=${boardArticleId},data-is-authenticated=${isAuthenticated},data-current-user-id=${currentUserId != null ? currentUserId : ''},data-comment-delete-label=#{board.comment.delete},data-comment-delete-confirm=#{board.comment.deleteConfirm},data-comment-required=#{board.comment.required},data-comment-create-success=#{board.comment.createSuccess},data-comment-delete-success=#{board.comment.deleteSuccess}">
 	<div data-layout-fragment="content-board" class="container mx-auto px-4 py-8">
 		<div class="max-w-4xl mx-auto">
 			<!-- 게시글 헤더 -->
@@ -35,6 +36,34 @@
 				<article class="prose max-w-none">
 					<div data-th-utext="${boardArticle.content}">내용</div>
 				</article>
+			</div>
+			<!-- 댓글 영역 -->
+			<div class="bg-base-100 rounded-lg shadow-xl p-6 mb-6" id="commentSection">
+				<div class="flex items-center justify-between mb-4">
+					<h2 class="text-2xl font-bold" data-th-text="#{board.comment.title}">댓글</h2>
+					<div class="text-sm text-gray-500">
+						<span data-th-text="#{board.comment.countPrefix}">
+							댓글
+						</span>
+						<span id="commentCount" class="font-semibold">0</span>
+					</div>
+				</div>
+				<div id="commentList" class="space-y-4" data-th-attr="data-empty-text=#{board.comment.empty}">
+					<p class="text-sm text-gray-500" data-th-text="#{board.comment.empty}">아직 댓글이 없습니다.</p>
+				</div>
+				<button id="commentLoadMore" type="button" class="btn btn-ghost w-full mt-4 hidden" data-th-text="#{board.comment.loadMore}">더 보기</button>
+				<div class="mt-6" data-th-if="${isAuthenticated}">
+					<form id="commentForm" class="space-y-3">
+						<label class="block text-sm font-medium" for="commentContent" data-th-text="#{board.comment.placeholder}">댓글을 입력하세요.</label>
+						<textarea id="commentContent" class="textarea textarea-bordered w-full" rows="4"
+							data-th-attr="placeholder=#{board.comment.placeholder}"></textarea>
+						<div class="flex justify-end gap-2">
+							<button type="button" class="btn btn-primary commentSubmitButton"
+								data-th-text="#{board.comment.submit}">등록</button>
+						</div>
+					</form>
+				</div>
+				<div class="mt-6 text-sm text-gray-500" data-th-unless="${isAuthenticated}" data-th-text="#{board.comment.loginRequired}">댓글을 작성하려면 로그인이 필요합니다.</div>
 			</div>
 			
 			<!-- 액션 버튼 -->

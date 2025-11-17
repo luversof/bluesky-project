@@ -20,3 +20,15 @@ CREATE TABLE `BoardArticle` (
 	INDEX `IDX_article_boardId` (`board_id`),
 	INDEX `IDX_article_userId` (`user_id`)
 );
+
+CREATE TABLE `BoardArticleComment` (
+	`id` UUID NOT NULL,
+	`board_article_id` UUID NOT NULL,
+	`user_id` VARCHAR(36) NOT NULL,
+	`content` TEXT NOT NULL,
+	`createdDate` TIMESTAMP NOT NULL,
+	`lastModifiedDate` TIMESTAMP NOT NULL,
+	PRIMARY KEY (`id`),
+	INDEX `IDX_comment_boardArticleId` (`board_article_id`),
+	INDEX `IDX_comment_userId` (`user_id`)
+);

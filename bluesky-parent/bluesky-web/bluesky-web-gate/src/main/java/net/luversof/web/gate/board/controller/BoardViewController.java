@@ -45,12 +45,12 @@ public class BoardViewController {
 			@RequestParam UUID boardArticleId, Model model) {
 		var board = checkBoard(boardAlias);
 		model.addAttribute("board", board);
+		model.addAttribute("boardArticleId", boardArticleId);
 
 		var boardArticle = boardArticleClient.findById(boardArticleId)
 				.orElseThrow(() -> new BlueskyException("board.NOT_EXIST_BOARD_ARTICLE"));
 
-		// TODO: 작성자 username 조회 구현 필요 (Token Exchange 이후)
-		// 현재는 userId를 그대로 username으로 사용
+		// Token Exchange 구현 전까지는 userId를 그대로 username으로 사용한다.
 		var enrichedArticle = boardArticle.toBuilder()
 				.username(boardArticle.userId() != null ? boardArticle.userId().toString() : "익명")
 				.build();
@@ -61,6 +61,8 @@ public class BoardViewController {
 		UUID currentUserId = UserUtil.getUserId();
 		boolean isOwner = currentUserId != null && currentUserId.equals(boardArticle.userId());
 		model.addAttribute("isOwner", isOwner);
+		model.addAttribute("isAuthenticated", currentUserId != null);
+		model.addAttribute("currentUserId", currentUserId);
 
 		return "board/view";
 	}

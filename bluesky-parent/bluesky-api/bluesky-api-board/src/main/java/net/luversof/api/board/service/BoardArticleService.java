@@ -13,53 +13,58 @@ import lombok.Setter;
 import net.luversof.api.board.constant.BoardErrorCode;
 import net.luversof.api.board.domain.Board;
 import net.luversof.api.board.domain.BoardArticle;
+import net.luversof.api.board.repository.BoardArticleCommentRepository;
 import net.luversof.api.board.repository.BoardArticleRepository;
-
 
 @Service
 public class BoardArticleService {
-	
+
 	@Setter(onMethod_ = @Autowired)
 	private BoardService boardService;
 
 	@Setter(onMethod_ = @Autowired)
 	private BoardArticleRepository boardArticleRepository;
-	
+
+	@Setter(onMethod_ = @Autowired)
+	private BoardArticleCommentRepository boardArticleCommentRepository;
+
 	public BoardArticle save(BoardArticle boardArticle) {
 		return boardArticleRepository.save(boardArticle);
 	}
-	
+
 	public BoardArticle update(BoardArticle boardArticle) {
-		var targetBoardArticle = boardArticleRepository.findById(boardArticle.getId()).orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARDARTICLE));
+		var targetBoardArticle = boardArticleRepository.findById(boardArticle.getId())
+				.orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARDARTICLE));
 
 		if (!targetBoardArticle.getUserId().equals(boardArticle.getUserId())) {
 			throw new BlueskyException(BoardErrorCode.NOT_OWNER_BOARDARTICLE);
 		}
-		
+
 		targetBoardArticle.setTitle(boardArticle.getTitle());
 		targetBoardArticle.setContent(boardArticle.getContent());
 		return boardArticleRepository.save(targetBoardArticle);
-		
+
 	}
-	
+
 	public Page<BoardArticle> findByAlias(String boardAlias, Pageable pageable) {
 		Board board = boardService.findByAlias(boardAlias);
 		return boardArticleRepository.findByBoardId(board.getId(), pageable);
 	}
-	
+
 	public Optional<BoardArticle> findById(UUID id) {
 		return boardArticleRepository.findById(id);
 	}
 
-	// 삭제 처리는 어떻게? 
 	public void delete(BoardArticle boardArticle) {
-		var targetBoardArticle = boardArticleRepository.findById(boardArticle.getId()).orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARDARTICLE));
-		
+		var targetBoardArticle = boardArticleRepository.findById(boardArticle.getId())
+				.orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARDARTICLE));
+
 		if (!targetBoardArticle.getUserId().equals(boardArticle.getUserId())) {
 			throw new BlueskyException(BoardErrorCode.NOT_OWNER_BOARDARTICLE);
 		}
-		
+
+		boardArticleCommentRepository.deleteByBoardArticleId(targetBoardArticle.getId());
 		boardArticleRepository.delete(targetBoardArticle);
 	}
-	
+
 }
