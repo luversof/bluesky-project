@@ -63,14 +63,14 @@ public class UserUtil {
 		OAuth2User principal = oauth2Auth.getPrincipal();
 		String registrationId = oauth2Auth.getAuthorizedClientRegistrationId();
 		String provider = normalizeProvider(registrationId);
-		
+
 		// GitHub의 id는 Integer 타입
 		Object idAttr = principal.getAttribute("id");
 		if (idAttr == null) {
 			log.warn("id attribute is null for provider: {}", provider);
 			return null;
 		}
-		
+
 		String providerId = idAttr.toString();
 
 		try {

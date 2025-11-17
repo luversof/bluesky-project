@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html data-layout-decorate="~{_components/layout/boardLayout}">
+<html lang="ko" data-layout-decorate="~{_layout/boardLayout}">
 
 <head>
+	<title>게시판 글쓰기</title>
 	<link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
 	<script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
 </head>
@@ -18,7 +19,7 @@
 			<!-- 작성 폼 -->
 			<div class="bg-base-100 rounded-lg shadow-xl p-6">
 				<div class="form-control mb-6">
-					<label class="label">
+					<label class="label" for="title">
 						<span class="label-text font-semibold">제목</span>
 						<span class="label-text-alt text-error">*</span>
 					</label>
@@ -27,7 +28,7 @@
 				</div>
 				
 				<div class="form-control mb-6">
-					<label class="label">
+					<label class="label" for="content">
 						<span class="label-text font-semibold">내용</span>
 						<span class="label-text-alt text-error">*</span>
 					</label>

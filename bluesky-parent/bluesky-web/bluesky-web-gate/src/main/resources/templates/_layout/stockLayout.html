@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html data-layout-decorate="~{_components/layout/defaultLayout}">
+<html lang="ko" data-layout-decorate="~{_layout/defaultLayout}">
 <head>
+	<title>Bluesky Stock</title>
 </head>
 <body>
 	<div data-layout-fragment="content" class="flex flex-col lg:flex-row">
 		<div class="grid bg-base-100">
-			<div data-th-replace="~{_components/navmenu (menu = 'stock', classAppend = 'bg-base-100 w-56')}" />
+			<div data-th-replace="~{_components/navmenu (menu = 'stock', classAppend = 'bg-base-100 w-56')}"></div>
 		</div>
 		<div class="grid grow mx-4" data-layout-fragment="content-stock">
 			content
 		</div>
 	</div>
 </body>
-
 </html>

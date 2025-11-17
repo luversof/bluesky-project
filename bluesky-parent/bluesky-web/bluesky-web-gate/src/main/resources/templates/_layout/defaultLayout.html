@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html
+	lang="ko"
 	data-th-data-theme="${thymeleafUtil.getRandomTheme()}" 
 	data-th-with="
 		thymeleafUtil = ${T(net.luversof.web.gate.util.ThymeleafUtil)},
@@ -7,10 +8,10 @@
 	"
 >
 <head>
+	<title>Bluesky</title>
 	<link data-th-href="@{/main.css}" rel="stylesheet" />
 	<script src="https://unpkg.com/theme-change"></script>
 	<script src="https://unpkg.com/htmx.org"></script>
-	<!--<script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>-->
 	<script src="https://unpkg.com/htmx-ext-json-enc/json-enc.js"></script>
 	<script data-th-src="@{/js/common.js}"></script>
 </head>

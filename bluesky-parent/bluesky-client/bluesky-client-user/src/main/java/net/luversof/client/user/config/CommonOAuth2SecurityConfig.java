@@ -1,11 +1,12 @@
-package net.luversof.web.gate.config;
+package net.luversof.client.user.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
@@ -16,34 +17,49 @@ import org.springframework.security.web.SecurityFilterChain;
 
 import lombok.Setter;
 
+/**
+ * Common OAuth2 Security Configuration for all bluesky-web modules
+ * 
+ * Provides:
+ * - OAuth2 Login with GitHub/Kakao
+ * - Common logout configuration
+ * - CSRF disabled (for REST APIs)
+ * - OAuth2 Client Manager
+ */
 @Configuration
 @EnableWebSecurity
-public class GateSecurityConfig {
+public class CommonOAuth2SecurityConfig {
 
+	/**
+	 * Configure SecurityFilterChain for OAuth2 Login
+	 * All requests are permitted by default
+	 * Authentication can be enforced at controller or page level
+	 * 
+	 * Note: exceptionHandling with empty authenticationEntryPoint prevents automatic redirect to /login
+	 * OAuth2 login will only trigger when user explicitly clicks login button (/oauth2/authorization/{provider})
+	 */
 	@Bean
-	SecurityFilterChain securityFilterChain(
-			HttpSecurity http,
-			OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler) throws Exception {
-		http
+	SecurityFilterChain securityFilterChain(HttpSecurity http, 
+			ObjectProvider<OAuth2LoginSuccessHandler> successHandlerProvider) throws Exception {
+		return http
+			.csrf(CsrfConfigurer::disable)
 			.authorizeHttpRequests(authorize -> authorize
-				.requestMatchers("/", "/login", "/*.css", "/*.js", "/js/**", "/assets/**", "/error",
-					"/actuator/**", "/frontend/**")
-				.permitAll()
-				.requestMatchers("/dev/**").permitAll()
-				.requestMatchers("/board/**", "/blog/**", "/bookkeeping/**", "/stock/**").permitAll()
-				.anyRequest().authenticated())
+				.anyRequest().permitAll())
 			.oauth2Login(oauth2 -> oauth2
-				.loginPage("/login")
-				.successHandler(oAuth2LoginSuccessHandler))
+				.successHandler(successHandlerProvider.getObject()))
 			.oauth2Client(Customizer.withDefaults())
 			.logout(logout -> logout
+				.logoutUrl("/logout")
 				.logoutSuccessUrl("/")
 				.invalidateHttpSession(true)
-				.clearAuthentication(true));
-
-		return http.build();
+				.clearAuthentication(true))
+			.build();
 	}
 
+	/**
+	 * OAuth2 Authorized Client Manager
+	 * Supports authorization_code and refresh_token grant types
+	 */
 	@Bean
 	OAuth2AuthorizedClientManager authorizedClientManager(
 			ClientRegistrationRepository clientRegistrationRepository,
@@ -61,5 +77,4 @@ public class GateSecurityConfig {
 
 		return authorizedClientManager;
 	}
-
 }

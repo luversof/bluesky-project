@@ -22,13 +22,6 @@
 		</dependency>
 		<!-- (e) spring-boot -->
 		
-		<!-- (s) spring-security -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
-		</dependency>
-		<!-- (e) spring-security -->
-		
 		<!-- (s) spring-cloud -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
