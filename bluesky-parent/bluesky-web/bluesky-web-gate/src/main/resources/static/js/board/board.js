@@ -417,9 +417,6 @@ const boardComment = (() => {
         content,
       });
       textareaEl.value = "";
-      if (dataset.commentCreateSuccess) {
-        alert(dataset.commentCreateSuccess);
-      }
       await loadComments({ reset: true });
     } catch (err) {
       handleApiError(err, {
@@ -538,7 +535,6 @@ const boardWrite = (() => {
           boardAction.moveToView(result.id);
         } else {
           console.log("No id in result, moving to list");
-          alert("게시글이 등록되었습니다.");
           boardAction.moveToList();
         }
       } catch (err) {

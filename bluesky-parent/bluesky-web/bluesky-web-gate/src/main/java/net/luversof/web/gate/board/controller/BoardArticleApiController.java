@@ -22,9 +22,10 @@ import org.springframework.web.bind.annotation.RestController;
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.web.gate.util.UserUtil;
 import net.luversof.web.gate.board.domain.BoardArticle;
 import net.luversof.web.gate.board.openfeign.BoardArticleClient;
+import net.luversof.web.gate.board.service.BoardUserInfoService;
+import net.luversof.web.gate.util.UserUtil;
 
 @Slf4j
 @RestController
@@ -34,10 +35,14 @@ public class BoardArticleApiController {
 	@Setter(onMethod_ = @Autowired)
 	private BoardArticleClient boardArticleClient;
 
+	@Setter(onMethod_ = @Autowired)
+	private BoardUserInfoService boardUserInfoService;
+
 	@BlueskyPreAuthorize
 	@PostMapping
 	public BoardArticle create(@RequestBody BoardArticle boardArticle) {
-		return boardArticleClient.create(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
+		var createdArticle = boardArticleClient.create(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
+		return boardUserInfoService.enrich(createdArticle);
 	}
 
 	/**
@@ -52,18 +57,20 @@ public class BoardArticleApiController {
 	public Page<BoardArticle> findByBoardAlias(@PathVariable String boardAlias,
 			@PageableDefault(size = 20) @SortDefault(sort = "id", direction = Direction.DESC) Pageable pageable) {
 		log.debug("findByBoardAlias boardAlias : {}", boardAlias);
-		return boardArticleClient.findByBoardAlias(boardAlias, pageable);
+		var page = boardArticleClient.findByBoardAlias(boardAlias, pageable);
+		return boardUserInfoService.enrich(page);
 	}
 
 	@GetMapping("/{id}")
 	public Optional<BoardArticle> findById(@PathVariable UUID id) {
-		return boardArticleClient.findById(id);
+		return boardArticleClient.findById(id).map(boardUserInfoService::enrich);
 	}
 
 	@BlueskyPreAuthorize
 	@PutMapping
 	public BoardArticle modify(@RequestBody BoardArticle boardArticle) {
-		return boardArticleClient.modify(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
+		var updatedArticle = boardArticleClient.modify(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
+		return boardUserInfoService.enrich(updatedArticle);
 	}
 
 	@BlueskyPreAuthorize

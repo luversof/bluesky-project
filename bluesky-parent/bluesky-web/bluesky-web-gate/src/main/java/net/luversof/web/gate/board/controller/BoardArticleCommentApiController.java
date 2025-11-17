@@ -20,9 +20,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import lombok.Setter;
-import net.luversof.web.gate.util.UserUtil;
 import net.luversof.web.gate.board.domain.BoardArticleComment;
 import net.luversof.web.gate.board.openfeign.BoardArticleCommentClient;
+import net.luversof.web.gate.board.service.BoardUserInfoService;
+import net.luversof.web.gate.util.UserUtil;
 
 @RestController
 @RequestMapping(value = "/api/boardArticleComment", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -31,16 +32,22 @@ public class BoardArticleCommentApiController {
 	@Setter(onMethod_ = @Autowired)
 	private BoardArticleCommentClient boardArticleCommentClient;
 
+	@Setter(onMethod_ = @Autowired)
+	private BoardUserInfoService boardUserInfoService;
+
 	@BlueskyPreAuthorize
 	@PostMapping
 	public BoardArticleComment create(@RequestBody BoardArticleComment boardArticleComment) {
-		return boardArticleCommentClient.create(boardArticleComment.toBuilder().userId(UserUtil.getUserId()).build());
+		var createdComment = boardArticleCommentClient
+				.create(boardArticleComment.toBuilder().userId(UserUtil.getUserId()).build());
+		return boardUserInfoService.enrich(createdComment);
 	}
 
 	@GetMapping("/search/findByBoardArticleId/{boardArticleId}")
 	public Page<BoardArticleComment> findByBoardArticleId(@PathVariable UUID boardArticleId,
 			@PageableDefault(size = 10) @SortDefault(sort = "createdDate", direction = Direction.ASC) Pageable pageable) {
-		return boardArticleCommentClient.findByBoardArticleId(boardArticleId, pageable);
+		var page = boardArticleCommentClient.findByBoardArticleId(boardArticleId, pageable);
+		return boardUserInfoService.enrichComments(page);
 	}
 
 	@GetMapping("/search/countByBoardArticleId/{boardArticleId}")
@@ -51,7 +58,9 @@ public class BoardArticleCommentApiController {
 	@BlueskyPreAuthorize
 	@PutMapping
 	public BoardArticleComment modify(@RequestBody BoardArticleComment boardArticleComment) {
-		return boardArticleCommentClient.modify(boardArticleComment.toBuilder().userId(UserUtil.getUserId()).build());
+		var updatedComment = boardArticleCommentClient
+				.modify(boardArticleComment.toBuilder().userId(UserUtil.getUserId()).build());
+		return boardUserInfoService.enrich(updatedComment);
 	}
 
 	@BlueskyPreAuthorize

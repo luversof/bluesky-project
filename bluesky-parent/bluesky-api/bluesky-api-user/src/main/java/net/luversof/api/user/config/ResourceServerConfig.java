@@ -22,7 +22,10 @@ public class ResourceServerConfig {
 				.securityMatcher("/api/**")
 				.authorizeHttpRequests(authorize -> authorize
 						.requestMatchers("/api/oAuth2AuthorizedClient/**").permitAll()
-						.requestMatchers("/api/userInfo/oauth2", "/api/userInfo/search/findByProvider").permitAll()
+						.requestMatchers(
+								"/api/userInfo/oauth2",
+								"/api/userInfo/search/findByProvider",
+								"/api/userInfo/search/findByIdIn").permitAll()
 						.anyRequest().authenticated())
 				.oauth2ResourceServer(oauth2 -> oauth2
 						.jwt(jwt -> jwt

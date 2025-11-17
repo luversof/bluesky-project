@@ -1,5 +1,8 @@
 package net.luversof.client.user.openfeign;
 
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +24,9 @@ public interface UserApiClient {
 	UserInfoResponse findUserByProvider(
 			@RequestParam("provider") String provider,
 			@RequestParam("providerId") String providerId);
+
+	@GetMapping(path = "/api/userInfo/search/findByIdIn")
+	List<UserInfoResponse> findByIdIn(@RequestParam("ids") List<UUID> ids);
 
 	record SaveOAuth2UserRequest(
 		String provider,

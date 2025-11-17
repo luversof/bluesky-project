@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import io.github.luversof.boot.htmx.annotation.HtmxResponseHeader;
 import lombok.Setter;
-import net.luversof.web.gate.board.domain.BoardArticle;
 import net.luversof.web.gate.board.openfeign.BoardArticleClient;
+import net.luversof.web.gate.board.service.BoardUserInfoService;
 
 @Controller
 @RequestMapping(value = "/board/htmx", produces = MediaType.TEXT_HTML_VALUE)
@@ -22,27 +22,16 @@ public class BoardHtmxController {
 	@Setter(onMethod_ = @Autowired)
 	private BoardArticleClient boardArticleClient;
 
+	@Setter(onMethod_ = @Autowired)
+	private BoardUserInfoService boardUserInfoService;
+
 	@GetMapping("/{boardAlias}/{boardMode:list}")
 	public String boardArticlePage(@PathVariable String boardAlias, @PathVariable String boardMode, Pageable pageable,
 			Model model) {
-		var page = boardArticleClient.findByBoardAlias(boardAlias, pageable);
-
-		// TODO: 사용자 정보 조회 구현 필요 (Token Exchange 이후)
-		// 현재는 userId를 그대로 username으로 사용
-		var enrichedContent = page.getContent().stream()
-				.map(article -> article.toBuilder()
-						.username(article.userId() != null ? article.userId().toString() : "익명")
-						.build())
-				.toList();
-
+		var page = boardUserInfoService.enrich(boardArticleClient.findByBoardAlias(boardAlias, pageable));
 		model.addAttribute("page", page);
-		model.addAttribute("enrichedContent", enrichedContent);
+		model.addAttribute("enrichedContent", page.getContent());
 		return "board/htmx/list";
 	}
 
-	// @PostMapping("/{boardAlias}/{boardMode:write}")
-	// @ResponseBody
-	// public String write(@PathVariable String boardMode) {
-	// return "board/htmx/write";
-	// }
 }
