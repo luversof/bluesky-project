@@ -16,25 +16,36 @@ import lombok.Data;
 @Data
 @Table("Dividend")
 public class Dividend {
-	
+
 	@Id
 	@Column("id")
 	private UUID id;
-	
+
 	@Column("account_id")
 	private UUID accountId;
-	
+
 	@Column("stockItem_id")
 	private UUID stockItemid;
-	
+
+	@Column("type")
+	private String type;
+
+	@Column("quantity")
+	private Integer quantity;
+
+	@Column("price")
 	private BigDecimal price;
-	
+
+	@Column("fee")
+	private BigDecimal fee;
+
+	@Column("tax")
 	private BigDecimal tax;
-	
+
+	@Column("recordDate")
+	private Instant recordDate; // 배당기준일
+
 	@Column("payDate")
-	private Instant recordDate;	// 배당기준일
-	
-	@Column("payDate")
-	private Instant payDate;		// 배당지급일
+	private Instant payDate; // 배당지급일
 
 }

@@ -15,29 +15,34 @@ import net.luversof.api.stock.constant.TradeType;
  * 주식 매매 내역
  */
 @Data
-@Table("Trade")	
+@Table("Trade")
 public class Trade {
 
 	@Id
 	@Column("id")
 	private UUID id;
-	
+
 	@Column("account_id")
 	private UUID accountId;
-	
+
 	@Column("stockItem_id")
 	private UUID stockItemId;
-	
+
+	@Column("type")
 	private TradeType type;
-	
+
+	@Column("quantity")
 	private int quantity;
-	
+
+	@Column("price")
 	private BigDecimal price;
-	
+
+	@Column("fee")
 	private BigDecimal fee;
-	
+
+	@Column("tax")
 	private BigDecimal tax;
-	
+
 	@Column("tradeDate")
 	private Instant tradeDate;
 

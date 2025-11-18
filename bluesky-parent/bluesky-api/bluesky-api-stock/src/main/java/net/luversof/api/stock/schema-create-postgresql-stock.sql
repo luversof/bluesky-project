@@ -41,7 +41,8 @@ CREATE TABLE "Dividend" (
 	"price" NUMERIC NOT NULL,
 	"fee" NUMERIC NOT NULL,
 	"tax" NUMERIC NOT NULL,
-	"tradeDate" TIMESTAMP WITH TIME ZONE NOT NULL
+	"recordDate" TIMESTAMP WITH TIME ZONE,
+	"payDate" TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_dividend_accountId ON "Dividend" ("account_id");

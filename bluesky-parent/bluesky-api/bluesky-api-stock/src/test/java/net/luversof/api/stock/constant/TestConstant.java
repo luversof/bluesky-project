@@ -7,6 +7,6 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class TestConstant {
 
-	public static final UUID USER_ID = UUID.fromString("019a7022-9c04-77c0-8459-f78040940267");
+	public static final UUID USER_ID = UUID.fromString("019a8bd2-3602-78f6-ba7a-48ec45364b61");
 
 }

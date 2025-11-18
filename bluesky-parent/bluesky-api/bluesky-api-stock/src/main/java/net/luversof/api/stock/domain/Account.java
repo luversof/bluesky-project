@@ -24,23 +24,30 @@ public class Account {
 	@Null(groups = Create.class)
 	@NotNull(groups = { Update.class, Delete.class })
 	@Id
+	@Column("id")
 	private UUID id;
-	
+
 	@NotNull(groups = { Create.class, Update.class, Delete.class })
 	@Column("user_id")
 	UUID userId;
-	
+
 	@NotBlank(groups = { Create.class, Update.class })
+	@Column("name")
 	private String name;
-	
+
 	@CreatedDate
 	@Column("createdDate")
 	private Instant createdDate;
-	
+
 	@Column("jsonConfig")
 	private Map<String, Object> jsonConfig;
-	
-	public interface Create {}
-	public interface Update {}
-	public interface Delete {}
+
+	public interface Create {
+	}
+
+	public interface Update {
+	}
+
+	public interface Delete {
+	}
 }

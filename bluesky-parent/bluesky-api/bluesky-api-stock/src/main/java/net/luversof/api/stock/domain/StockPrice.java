@@ -20,28 +20,30 @@ import lombok.Data;
 @Table("StockPrice")
 public class StockPrice {
 
-    @Null(groups = Create.class)
-    @NotNull(groups = { Update.class, Delete.class })
-    @Id
-    private UUID id;
+	@Null(groups = Create.class)
+	@NotNull(groups = { Update.class, Delete.class })
+	@Id
+	@Column("id")
+	private UUID id;
 
-    @NotNull(groups = { Create.class, Update.class })
-    @Column("stockItem_id")
-    private UUID stockItemId;
+	@NotNull(groups = { Create.class, Update.class })
+	@Column("stockItem_id")
+	private UUID stockItemId;
 
-    @NotNull(groups = { Create.class, Update.class })
-    private BigDecimal price;
+	@NotNull(groups = { Create.class, Update.class })
+	@Column("price")
+	private BigDecimal price;
 
-    @LastModifiedDate
-    @Column("updatedDate")
-    private Instant updatedDate;
+	@LastModifiedDate
+	@Column("updatedDate")
+	private Instant updatedDate;
 
-    public interface Create {
-    }
+	public interface Create {
+	}
 
-    public interface Update {
-    }
+	public interface Update {
+	}
 
-    public interface Delete {
-    }
+	public interface Delete {
+	}
 }

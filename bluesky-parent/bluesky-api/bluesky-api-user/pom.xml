@@ -107,15 +107,6 @@
 			<artifactId>bluesky-boot-autoconfigure-connectioninfo-jdbc</artifactId>
 		</dependency>
 		<!-- (e) bluesky boot connectioninfo -->
-
-		<!-- (s) test utilities -->
-		<dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-test</artifactId>
-			<version>${project.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<!-- (e) test utilities -->
 	</dependencies>
 	<build>
 		<plugins>

@@ -19,10 +19,13 @@ public class StockItem {
 	@Column("id")
 	private UUID id;
 
+	@Column("ticker")
 	private String ticker;
-	
+
+	@Column("name")
 	private String name;
-	
+
+	@Column("market")
 	private String market;
 
 }

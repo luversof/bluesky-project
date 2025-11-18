@@ -217,6 +217,19 @@ CREATE TABLE "UserInfo" (
 - Gate: http://localhost:30122
 - api-user: https://user.api.bluesky.local:30131 (내부 API)
 
+## 테스트 실행 메모
+
+- `bluesky-api-stock`의 `DividendTest`처럼 실제 데이터소스/Config Server를 그대로 쓰는 통합 테스트는 **항상 `SPRING_PROFILES_ACTIVE=localdev`** 로 구동한다.
+- Powershell 예시:
+
+```powershell
+$env:SPRING_PROFILES_ACTIVE='localdev'
+mvn -q -pl bluesky-api/bluesky-api-stock -DskipITs test -Dtest=DividendTest
+Remove-Item Env:SPRING_PROFILES_ACTIVE
+```
+
+- 테스트 리소스(`src/test/resources`)에 `application.properties`나 `application.yml`을 추가해 Config Server 호출을 우회하지 않는다. 프로덕션과 동일하게 Config Server에서 연결 정보를 내려받는 것을 기본 원칙으로 한다.
+
 ## 자주하는 실수 방지
 
 ### ❌ 하지 말아야 할 것

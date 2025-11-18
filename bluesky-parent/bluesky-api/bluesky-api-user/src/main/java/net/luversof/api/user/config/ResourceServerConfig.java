@@ -25,7 +25,8 @@ public class ResourceServerConfig {
 						.requestMatchers(
 								"/api/userInfo/oauth2",
 								"/api/userInfo/search/findByProvider",
-								"/api/userInfo/search/findByIdIn").permitAll()
+								"/api/userInfo/search/findByIdIn")
+						.permitAll()
 						.anyRequest().authenticated())
 				.oauth2ResourceServer(oauth2 -> oauth2
 						.jwt(jwt -> jwt
