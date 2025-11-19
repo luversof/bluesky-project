@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Random;
 
 import lombok.experimental.UtilityClass;
-import net.luversof.web.common.menu.domain.Menu;
 import net.luversof.web.common.util.WebCommonUtil;
 
 @UtilityClass
@@ -52,8 +51,18 @@ public class ThymeleafUtil {
 	
 	private static final Random RANDOM = new Random();
 
-	public static List<Menu> getMenuList(String key) {
-		return WebCommonUtil.getMenuList(key);
+	/**
+	 * Returns the menu list for the given key. The method intentionally avoids a compile
+	 * time dependency on the `Menu` type. If the WebCommonUtil or the Menu type is not available
+	 * at runtime (e.g., missing class), the method returns an empty list instead of throwing
+	 * `UnresolvedCompilationErrors` or `NoClassDefFoundError`.
+	 */
+	public static List<?> getMenuList(String key) {
+		try {
+			return WebCommonUtil.getMenuList(key);
+		} catch (NoClassDefFoundError | Exception e) {
+			return List.of();
+		}
 	}
 	
 	public static String getRandomTheme() {
