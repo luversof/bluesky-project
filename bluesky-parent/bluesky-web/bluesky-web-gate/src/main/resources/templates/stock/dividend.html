@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" data-layout-decorate="~{_layout/stockLayout}">
+
+<head>
+	<title th:text="#{layout.menu.stock.dividend}">배당</title>
+</head>
+<body>
+	<div data-layout-fragment="content-stock" class="container mx-auto px-4 py-8">
+		<h2 th:text="#{layout.menu.stock.dividend}">배당 내역</h2>
+		<div style="min-height:200px;" hx-get="/stock/htmx/dividend/list" hx-trigger="load" hx-target="this" hx-swap="outerHTML">
+			<span style="color:gray;">로딩 중...</span>
+		</div>
+	</div>
+</body>
+</html>

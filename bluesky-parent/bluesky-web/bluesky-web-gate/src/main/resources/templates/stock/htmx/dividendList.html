@@ -1,0 +1,24 @@
+<table class="table">
+    <thead>
+        <tr>
+            <th>계좌</th>
+            <th>종목</th>
+            <th>금액</th>
+            <th>세금</th>
+            <th>실수령액</th>
+            <th>기록일</th>
+            <th>지급일</th>
+        </tr>
+    </thead>
+    <tbody>
+    <tr th:each="dividend : ${dividendList}">
+        <td th:text="${dividend.accountName}"></td>
+        <td th:text="${dividend.stockItemName}"></td>
+        <td th:text="${#numbers.formatDecimal(dividend.price, 0, 'COMMA', 0, 'POINT')}"></td>
+        <td th:text="${#numbers.formatDecimal(dividend.tax, 0, 'COMMA', 0, 'POINT')}"></td>
+        <td th:text="${#numbers.formatDecimal(dividend.netAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+        <td th:text="${#temporals.format(dividend.recordDate, 'yyyy-MM-dd')}"></td>
+        <td th:text="${#temporals.format(dividend.payDate, 'yyyy-MM-dd')}"></td>
+    </tr>
+    </tbody>
+</table>

@@ -1,0 +1,21 @@
+package net.luversof.api.stock.web.dto.response;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.UUID;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record DividendView(
+    UUID id,
+    UUID accountId,
+    String accountName,
+    UUID stockItemId,
+    String stockItemName,
+    BigDecimal price,
+    BigDecimal tax,
+    BigDecimal netAmount,
+    Instant recordDate,
+    Instant payDate
+) {}
