@@ -1,7 +1,12 @@
+
 package net.luversof.web.gate.stock.controller;
 
+import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -15,16 +20,25 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import lombok.Setter;
 import net.luversof.web.gate.util.UserUtil;
 import net.luversof.web.gate.stock.domain.Account;
+import net.luversof.api.stock.web.dto.response.DividendResponse;
 import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.domain.TradeProfit;
+import net.luversof.web.gate.stock.dto.request.DividendRequest;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
 import net.luversof.web.gate.stock.openfeign.AccountClient;
+import net.luversof.web.gate.stock.openfeign.DividendClient;
 import net.luversof.web.gate.stock.openfeign.StockItemClient;
 import net.luversof.web.gate.stock.openfeign.TradeProfitClient;
+import net.luversof.api.stock.web.dto.response.DividendView;
 
 @Controller
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
 public class StockHtmxController {
+
+	private static final String ERROR_ATTRIBUTE = "error";
+	private static final String LOGIN_REQUIRED_MESSAGE = "로그인이 필요합니다.";
+	private static final String ERROR_VIEW = "stock/htmx/error";
+	private static final String UNKNOWN_LABEL = "종목 정보 없음";
 
 	@Setter(onMethod_ = @Autowired)
 	private TradeProfitClient tradeProfitClient;
@@ -35,13 +49,16 @@ public class StockHtmxController {
 	@Setter(onMethod_ = @Autowired)
 	private StockItemClient stockItemClient;
 
+	@Setter(onMethod_ = @Autowired)
+	private DividendClient dividendClient;
+
 	@GetMapping("/calculateProfit")
 	public String calculateProfit(TradeProfitRequest request, Model model) {
 		// 로그인한 유저의 userId 설정
 		UUID userId = UserUtil.getUserId();
 		if (userId == null) {
-			model.addAttribute("error", "로그인이 필요합니다.");
-			return "stock/htmx/error";
+			model.addAttribute(ERROR_ATTRIBUTE, LOGIN_REQUIRED_MESSAGE);
+			return ERROR_VIEW;
 		}
 
 		// request에 userId 설정
@@ -52,13 +69,13 @@ public class StockHtmxController {
 		// Account와 StockItem 이름 정보 조회
 		Map<UUID, String> accountNames = tradeProfitList.stream()
 				.map(TradeProfit::accountId)
-				.filter(id -> id != null)
+				.filter(Objects::nonNull)
 				.distinct()
 				.collect(Collectors.toMap(
 						id -> id,
 						id -> accountClient.getAccountById(id)
 								.map(Account::name)
-								.orElse("알 수 없음")));
+								.orElse(UNKNOWN_LABEL)));
 
 		Map<UUID, String> stockItemNames = tradeProfitList.stream()
 				.map(TradeProfit::stockItemId)
@@ -67,7 +84,7 @@ public class StockHtmxController {
 						id -> id,
 						id -> stockItemClient.getStockItemById(id)
 								.map(StockItem::name)
-								.orElse("알 수 없음")));
+								.orElse(UNKNOWN_LABEL)));
 
 		// TradeProfit에 이름 정보 추가
 		List<TradeProfit> enrichedList = tradeProfitList.stream()
@@ -108,8 +125,8 @@ public class StockHtmxController {
 		// 로그인한 유저의 userId 설정
 		UUID userId = UserUtil.getUserId();
 		if (userId == null) {
-			model.addAttribute("error", "로그인이 필요합니다.");
-			return "stock/htmx/error";
+			model.addAttribute(ERROR_ATTRIBUTE, LOGIN_REQUIRED_MESSAGE);
+			return ERROR_VIEW;
 		}
 
 		// request에 userId 설정
@@ -120,13 +137,13 @@ public class StockHtmxController {
 
 		Map<UUID, String> accountNames = tradeProfitList.stream()
 				.map(TradeProfit::accountId)
-				.filter(id -> id != null)
+				.filter(Objects::nonNull)
 				.distinct()
 				.collect(Collectors.toMap(
 						id -> id,
 						id -> accountClient.getAccountById(id)
 								.map(Account::name)
-								.orElse("알 수 없음")));
+								.orElse(UNKNOWN_LABEL)));
 
 		Map<UUID, String> stockItemNames = tradeProfitList.stream()
 				.map(TradeProfit::stockItemId)
@@ -135,7 +152,7 @@ public class StockHtmxController {
 						id -> id,
 						id -> stockItemClient.getStockItemById(id)
 								.map(StockItem::name)
-								.orElse("알 수 없음")));
+								.orElse(UNKNOWN_LABEL)));
 
 		List<TradeProfit> enrichedList = tradeProfitList.stream()
 				.map(profit -> new TradeProfit(
@@ -180,6 +197,59 @@ public class StockHtmxController {
 		model.addAttribute("tradeProfitByStock", byStock);
 
 		return "stock/htmx/dashboard";
+	}
+
+	@GetMapping("/dividend/list")
+	public String dividendList(DividendRequest request, Model model) {
+		UUID userId = UserUtil.getUserId();
+		if (userId == null) {
+			model.addAttribute(ERROR_ATTRIBUTE, LOGIN_REQUIRED_MESSAGE);
+			return ERROR_VIEW;
+		}
+
+		request.setUserId(userId);
+
+		List<DividendResponse> dividends = dividendClient.findDividends(request);
+
+		Map<UUID, String> accountNames = accountClient.getAccountsByUserId(userId).stream()
+				.collect(Collectors.toMap(Account::id, Account::name, (left, right) -> left, LinkedHashMap::new));
+
+		// 모든 stockItemId 수집 및 이름 조회
+		Map<UUID, String> stockItemNames = dividends.stream()
+				.map(DividendResponse::stockItemId)
+				.filter(Objects::nonNull)
+				.distinct()
+				.collect(Collectors.toMap(
+						id -> id,
+						id -> stockItemClient.getStockItemById(id)
+								.map(StockItem::name)
+								.orElse(UNKNOWN_LABEL)));
+
+		List<DividendView> viewList = dividends.stream()
+				.map(dividend -> {
+					String accountName = accountNames.getOrDefault(dividend.accountId(), UNKNOWN_LABEL);
+					    String stockItemName = Optional.ofNullable(dividend.stockItemName())
+						    .orElse(Optional.ofNullable(dividend.stockItemId())
+							    .map(id -> stockItemNames.getOrDefault(id, UNKNOWN_LABEL))
+							    .orElse(UNKNOWN_LABEL));
+					    BigDecimal price = Optional.ofNullable(dividend.price()).orElse(BigDecimal.ZERO);
+					    BigDecimal tax = Optional.ofNullable(dividend.tax()).orElse(BigDecimal.ZERO);
+					return new DividendView(
+						    dividend.id(),
+						    dividend.accountId(),
+						    accountName,
+						    dividend.stockItemId(),
+						    stockItemName,
+						    price,
+						    tax,
+						    price.subtract(tax),
+						    dividend.recordDate(),
+						    dividend.payDate());
+				})
+				.toList();
+
+		model.addAttribute("dividendList", viewList);
+		return "stock/htmx/dividendList";
 	}
 
 }

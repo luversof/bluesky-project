@@ -19,6 +19,7 @@
 	</properties>
 
 	<modules>
+        <module>bluesky-api-dto</module>
 		<module>bluesky-client</module>
 		<module>bluesky-web</module>
 		<module>bluesky-test</module>
@@ -72,6 +73,11 @@
 				<groupId>com.github.f4b6a3</groupId>
 				<artifactId>uuid-creator</artifactId>
 				<version>${uuid-creator.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.luversof</groupId>
+				<artifactId>bluesky-api-dto</artifactId>
+				<version>${bluesky-project.version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

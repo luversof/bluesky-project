@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -25,7 +26,10 @@ public class Dividend {
 	private UUID accountId;
 
 	@Column("stockItem_id")
-	private UUID stockItemid;
+	private UUID stockItemId;
+
+	@Transient
+	private String stockItemName;
 
 	@Column("type")
 	private String type;

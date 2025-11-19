@@ -18,4 +18,9 @@ public class StockViewController {
 	public String dashboard() {
 		return "stock/dashboard";
 	}
+
+	@GetMapping("/dividend")
+	public String dividendPage() {
+		return "stock/dividend";
+	}
 }

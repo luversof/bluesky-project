@@ -280,3 +280,20 @@ grant_type=urn:ietf:params:oauth:grant-type:token-exchange
 
 - ARCHITECTURE_IMPROVEMENT_PLAN.md: 상세 아키텍처 개선 계획
 - README.md: 프로젝트 개요 및 실행 방법
+
+## Dividend 리스트 변경사항 및 Copilot 지침 (2025-11-19)
+
+- 목적: `bluesky-web-gate`의 Dividend 목록을 `tradeProfit`와 유사하게 UI에 노출, UI/컨트롤러/API/도메인/테스트를 모두 정리합니다.
+- 주요 변경점:
+  - Web UI: `DividendView` 레코드를 `bluesky-web-gate`의 `stock.view` 패키지에 추가하여 `stockItemId`, `stockItemName` 등을 포함합니다.
+  - Controller: `StockHtmxController.dividendList()`에서 반환된 Dividend 목록을 보여주며, `stockItemName`이 누락된 경우 `stockItemId`의 집합을 모아 한 번만 `StockItemClient`로 이름을 조회합니다.
+  - API: `bluesky-api-stock`의 `DividendService.findDividends()`를 LEFT JOIN `StockItem` 하여 `si.name AS "stockItemName"`을 반환하도록 수정했습니다. SQL 컬럼 별칭을 도메인 필드에 맞도록 조정해야 합니다.
+  - 도메인: `Dividend` 도메인에 `stockItemName`을 추가하되, Spring Data JDBC 매핑 문제를 피하기 위해 `@Transient`를 적용했습니다.
+  - 테스트: `DividendTest`에 `selectAllDividends()`와 CSV import/데이터 무결성 테스트를 추가해 `stock_item_id`가 NULL인 행이 있는지 점검합니다.
+- Copilot/개발자 지침:
+  1. UI는 `dividend.stockItemName`을 우선 사용하고, 없으면 `stockItemId`로 조회한 값으로 대체하세요.
+  2. 도메인에 로컬(비영속) 필드를 추가할 때는 `@Transient`를 사용해 DB 매핑 오류를 방지하세요.
+  3. SQL을 변경할 때는 컬럼별칭(`AS`)을 도메인 필드에 맞도록 유지하세요.
+  4. `StockHtmxController`는 N+1 호출을 피하도록 `stockItemId`의 유니크 집합을 한 번만 요청하는 방식을 사용하세요.
+  5. 데이터 무결성을 확보하세요: `stock_item_id`가 NULL인 기존 row에 대한 마이그레이션 계획을 세우고, import 파이프라인에서 `stockItemId`가 반드시 채워지도록 검증 로직을 추가하세요.
+  6. 통합 테스트는 `localdev` 프로파일로 실행하세요. 예: `mvn -Dspring.profiles.active=localdev -Dtest=net.luversof.api.stock.DividendTest#selectAllDividends test`.

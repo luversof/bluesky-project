@@ -28,12 +28,15 @@ import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.api.stock.constant.TestConstant;
 import net.luversof.api.stock.domain.Account;
-import net.luversof.api.stock.domain.Dividend;
+//import net.luversof.api.stock.domain.Dividend;
 import net.luversof.api.stock.domain.DividendCsvRecord;
+import net.luversof.api.stock.domain.Dividend;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.repository.AccountRepository;
 import net.luversof.api.stock.repository.DividendRepository;
 import net.luversof.api.stock.repository.StockItemRepository;
+import net.luversof.api.stock.service.DividendService;
+import net.luversof.api.stock.web.dto.request.DividendSearchRequest;
 
 @Slf4j
 class DividendTest implements GeneralTest {
@@ -52,6 +55,9 @@ class DividendTest implements GeneralTest {
 
 	@Autowired
 	StockItemRepository stockItemRepository;
+
+	@Autowired
+	DividendService dividendService;
 
 	UUID userId = TestConstant.USER_ID;
 
@@ -74,6 +80,13 @@ class DividendTest implements GeneralTest {
 
 		var savedDividends = StreamSupport.stream(dividendRepository.saveAll(dividends).spliterator(), false).toList();
 		assertThat(savedDividends).hasSize(dividends.size());
+
+		// Ensure service.findDividends returns stockItemId populated
+		DividendSearchRequest request = new DividendSearchRequest();
+		request.setUserId(userId);
+		List<Dividend> found = dividendService.findDividends(request);
+		assertThat(found).isNotEmpty();
+		found.forEach(d -> assertThat(d.getStockItemId()).isNotNull());
 	}
 
 	private Map<String, UUID> prepareAccountMap(List<DividendCsvRecord> records) {
@@ -149,7 +162,7 @@ class DividendTest implements GeneralTest {
 
 		var dividend = new Dividend();
 		dividend.setAccountId(accountId);
-		dividend.setStockItemid(stockItemId);
+		dividend.setStockItemId(stockItemId);
 		dividend.setPrice(csvRecord.get배당금() == null ? BigDecimal.ZERO : csvRecord.get배당금());
 		dividend.setTax(csvRecord.get세금() == null ? BigDecimal.ZERO : csvRecord.get세금());
 		dividend.setType("DIVIDEND");
@@ -186,6 +199,15 @@ class DividendTest implements GeneralTest {
 		var records = iterator.readAll();
 		log.debug("Loaded {} dividend rows", records.size());
 		return records;
+	}
+
+	@Test
+	void selectAllDividends() {
+		var all = StreamSupport.stream(dividendRepository.findAll().spliterator(), false).toList();
+		log.info("Total dividends in DB: {}", all.size());
+		all.forEach(d -> log.info("Dividend id={}, accountId={}, stockItemId={}, stockItemName={}",
+				d.getId(), d.getAccountId(), d.getStockItemId(), d.getStockItemName()));
+		assertThat(all).isNotNull();
 	}
 
 }
