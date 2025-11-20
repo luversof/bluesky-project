@@ -25,7 +25,7 @@ public class BoardArticleComment {
 	private UUID id;
 
 	@NotNull(groups = { Create.class })
-	@Column("board_article_id")
+	@Column("boardArticle_id")
 	private UUID boardArticleId;
 
 	@NotNull(groups = { Create.class, Modify.class, Delete.class })

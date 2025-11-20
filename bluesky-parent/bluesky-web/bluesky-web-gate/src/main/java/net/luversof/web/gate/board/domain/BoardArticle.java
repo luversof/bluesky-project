@@ -10,5 +10,5 @@ import lombok.Builder;
  */
 @Builder(toBuilder = true)
 public record BoardArticle(UUID id, UUID userId, String username, UUID boardId, String title, String content,
-        Instant createdDate, Instant lastModifiedDate) {
+        Instant createdDate, Instant lastModifiedDate, long commentCount) {
 }

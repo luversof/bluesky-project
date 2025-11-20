@@ -78,10 +78,12 @@ const boardComment = (() => {
             const header = document.createElement("div");
             header.className = "flex justify-between items-start";
             const author = document.createElement("div");
-            author.innerHTML = `<b>${c.username || ((_a = c.user) === null || _a === void 0 ? void 0 : _a.username) || ''}</b> <small class=\"text-gray-500\">${window.dayjs ? window.dayjs(c.createdDate).fromNow() : c.createdDate}</small>`;
+            author.innerHTML = `<b>${c.username || ((_a = c.user) === null || _a === void 0 ? void 0 : _a.username) || ""}</b> <small class=\"text-gray-500\">${window.dayjs ? window.dayjs(c.createdDate).fromNow() : c.createdDate}</small>`;
             header.appendChild(author);
             const actions = document.createElement("div");
-            if (boardData.getCurrentUserId && boardData.getCurrentUserId() && boardData.getCurrentUserId() === (c.userId || (c.user && c.user.id))) {
+            if (boardData.getCurrentUserId &&
+                boardData.getCurrentUserId() &&
+                boardData.getCurrentUserId() === (c.userId || (c.user && c.user.id))) {
                 const mod = document.createElement("button");
                 mod.className = "btn btn-sm btn-ghost modifyCommentButton";
                 mod.textContent = "수정";
@@ -110,11 +112,17 @@ const boardComment = (() => {
                 if (!confirm("댓글을 삭제하시겠습니까?"))
                     return;
                 try {
-                    await deleteJson("/api/boardArticleComment", { id, boardArticleId: boardData.getBoardArticleId() });
+                    await deleteJson("/api/boardArticleComment", {
+                        id,
+                        boardArticleId: boardData.getBoardArticleId(),
+                    });
                     load();
                 }
                 catch (err) {
-                    handleApiError(err, { onDisplayableMessage: (msg) => alert(msg), onNonDisplayable: (e) => console.error(e) });
+                    handleApiError(err, {
+                        onDisplayableMessage: (msg) => alert(msg),
+                        onNonDisplayable: (e) => console.error(e),
+                    });
                 }
             });
         });
@@ -138,11 +146,18 @@ const boardComment = (() => {
                 save.textContent = "저장";
                 save.addEventListener("click", async () => {
                     try {
-                        await putJson("/api/boardArticleComment", { id, content: ta.value, boardArticleId: boardData.getBoardArticleId() });
+                        await putJson("/api/boardArticleComment", {
+                            id,
+                            content: ta.value,
+                            boardArticleId: boardData.getBoardArticleId(),
+                        });
                         load();
                     }
                     catch (err) {
-                        handleApiError(err, { onDisplayableMessage: (msg) => alert(msg), onNonDisplayable: (e) => console.error(e) });
+                        handleApiError(err, {
+                            onDisplayableMessage: (msg) => alert(msg),
+                            onNonDisplayable: (e) => console.error(e),
+                        });
                     }
                 });
                 body.appendChild(save);
@@ -154,7 +169,7 @@ const boardComment = (() => {
         if (!id)
             return;
         try {
-            const resp = await fetch(`/api/boardArticleComment/search/findByBoardArticleId/${id}?page=${page}`, { headers: { 'Accept': 'application/json' } });
+            const resp = await fetch(`/api/boardArticleComment/search/findByBoardArticleId/${id}?page=${page}`, { headers: { Accept: "application/json" } });
             if (!resp.ok)
                 throw resp;
             const data = await resp.json();
@@ -179,12 +194,18 @@ const boardComment = (() => {
                 return;
             }
             try {
-                await postJson("/api/boardArticleComment", { boardArticleId: boardData.getBoardArticleId(), content: comment });
+                await postJson("/api/boardArticleComment", {
+                    boardArticleId: boardData.getBoardArticleId(),
+                    content: comment,
+                });
                 textarea.value = "";
                 load();
             }
             catch (err) {
-                handleApiError(err, { onDisplayableMessage: (msg) => alert(msg), onNonDisplayable: (e) => console.error(e) });
+                handleApiError(err, {
+                    onDisplayableMessage: (msg) => alert(msg),
+                    onNonDisplayable: (e) => console.error(e),
+                });
             }
         });
     };

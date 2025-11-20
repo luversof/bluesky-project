@@ -32,6 +32,7 @@ public class BoardUserInfoService {
 	private static final String ANONYMOUS = "익명";
 
 	private final UserApiClient userApiClient;
+	private final net.luversof.web.gate.board.openfeign.BoardArticleCommentClient boardArticleCommentClient;
 
 	public BoardArticle enrich(BoardArticle boardArticle) {
 		if (boardArticle == null) {
@@ -49,7 +50,47 @@ public class BoardUserInfoService {
 				.map(BoardArticle::userId)
 				.collect(Collectors.toList());
 		var usernameMap = fetchUsernames(userIds);
-		return page.map(article -> applyUsername(article, usernameMap));
+		// also fetch comment counts and apply
+		var articleIds = page.getContent().stream().map(BoardArticle::id).collect(Collectors.toList());
+		Map<java.util.UUID, Long> commentCountMap = fetchCommentCounts(articleIds);
+		return page.map(article -> applyUsernameAndCommentCount(article, usernameMap, commentCountMap));
+	}
+
+	private Map<java.util.UUID, Long> fetchCommentCounts(Collection<java.util.UUID> articleIds) {
+		if (articleIds == null || articleIds.isEmpty()) {
+			return Collections.emptyMap();
+		}
+		try {
+			var distinctIds = articleIds.stream().filter(Objects::nonNull).collect(Collectors.toCollection(LinkedHashSet::new));
+			if (distinctIds.isEmpty()) return Collections.emptyMap();
+			var responses = boardArticleCommentClient.countByBoardArticleIds(List.copyOf(distinctIds));
+			if (responses == null || responses.isEmpty()) return Collections.emptyMap();
+			Map<java.util.UUID, Long> result = new HashMap<>();
+			for (var r : responses) {
+				if (r == null || r.boardArticleId() == null) continue;
+				result.put(r.boardArticleId(), r.count());
+			}
+			// ensure all requested ids have an entry
+			for (var id : distinctIds) {
+				result.putIfAbsent(id, 0L);
+			}
+			return result;
+		} catch (Exception ex) {
+			log.warn("Failed to fetch comment counts for {} : {}", articleIds, ex.getMessage());
+			return Collections.emptyMap();
+		}
+	}
+
+	private BoardArticle applyUsernameAndCommentCount(BoardArticle article, Map<UUID, String> usernameMap, Map<java.util.UUID, Long> commentCountMap) {
+		if (article == null) return null;
+		long count = 0L;
+		if (commentCountMap != null && commentCountMap.containsKey(article.id())) {
+			count = commentCountMap.get(article.id());
+		}
+		return article.toBuilder()
+				.username(resolveUsername(article.userId(), article.username(), usernameMap))
+				.commentCount(count)
+				.build();
 	}
 
 	public BoardArticleComment enrich(BoardArticleComment comment) {

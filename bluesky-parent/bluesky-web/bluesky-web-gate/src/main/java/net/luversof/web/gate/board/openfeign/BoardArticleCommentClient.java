@@ -26,6 +26,9 @@ public interface BoardArticleCommentClient {
 	@GetMapping("/search/countByBoardArticleId/{boardArticleId}")
 	long countByBoardArticleId(@PathVariable UUID boardArticleId);
 
+	@PostMapping("/search/countByBoardArticleIds")
+	java.util.List<net.luversof.web.gate.board.domain.BoardArticleCommentCount> countByBoardArticleIds(@RequestBody java.util.List<UUID> boardArticleIds);
+
 	@PutMapping
 	BoardArticleComment modify(@RequestBody BoardArticleComment boardArticleComment);
 

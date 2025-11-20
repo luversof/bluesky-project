@@ -15,7 +15,10 @@
 				data-th-data-boardArticleId="${boardArticle.id}">
 				<td class="text-center" data-th-text="${page.totalElements - (page.number * page.size) - iterStat.index}">1</td>
 				<td>
-					<div class="font-medium" data-th-text="${boardArticle.title}">제목</div>
+					<div class="font-medium">
+						<span data-th-text="${boardArticle.title}">제목</span>
+						<span class="ml-2 text-xs text-gray-500" data-th-if="${boardArticle.commentCount > 0}" data-th-text="'(' + ${boardArticle.commentCount} + ')'">(0)</span>
+					</div>
 				</td>
 				<td class="text-center text-sm" data-th-text="${boardArticle.username}">작성자</td>
 				<td class="text-center text-sm" data-th-text="${#temporals.format(boardArticle.createdDate)}" data-th-data-date="${boardArticle.createdDate}">2025-01-01</td>

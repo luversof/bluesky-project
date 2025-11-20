@@ -1,5 +1,5 @@
 // Debug: indicate that the timeSeriesChart module was loaded
-console.debug('[timeSeriesChart] module loaded');
+console.debug("[timeSeriesChart] module loaded");
 async function fetchTimeSeries(params = {}) {
     const qs = new URLSearchParams();
     for (const [k, v] of Object.entries(params || {})) {
@@ -26,7 +26,7 @@ function toChartData(series) {
 }
 export async function renderTimeSeriesChart(chartId, params = {}) {
     try {
-        console.debug('[timeSeriesChart] renderTimeSeriesChart called, params:', params);
+        console.debug("[timeSeriesChart] renderTimeSeriesChart called, params:", params);
         const series = await fetchTimeSeries(params);
         const canvas = document.getElementById(chartId);
         if (!canvas)

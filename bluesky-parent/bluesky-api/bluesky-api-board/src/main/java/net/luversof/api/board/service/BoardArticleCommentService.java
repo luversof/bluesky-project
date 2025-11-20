@@ -1,6 +1,8 @@
 package net.luversof.api.board.service;
 
 import java.util.UUID;
+import java.util.Collection;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -13,6 +15,7 @@ import net.luversof.api.board.constant.BoardErrorCode;
 import net.luversof.api.board.domain.BoardArticleComment;
 import net.luversof.api.board.repository.BoardArticleCommentRepository;
 import net.luversof.api.board.repository.BoardArticleRepository;
+import net.luversof.api.board.domain.BoardArticleCommentCount;
 
 @Service
 public class BoardArticleCommentService {
@@ -47,6 +50,13 @@ public class BoardArticleCommentService {
 
 	public long countByBoardArticleId(UUID boardArticleId) {
 		return boardArticleCommentRepository.countByBoardArticleId(boardArticleId);
+	}
+
+	public List<BoardArticleCommentCount> countByBoardArticleIds(Collection<UUID> ids) {
+		if (ids == null || ids.isEmpty()) {
+			return List.of();
+		}
+		return boardArticleCommentRepository.countByBoardArticleIds(ids);
 	}
 
 	public void delete(BoardArticleComment boardArticleComment) {

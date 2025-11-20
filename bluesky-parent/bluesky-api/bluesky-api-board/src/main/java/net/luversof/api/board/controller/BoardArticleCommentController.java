@@ -1,6 +1,7 @@
 package net.luversof.api.board.controller;
 
 import java.util.UUID;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import lombok.Setter;
 import net.luversof.api.board.domain.BoardArticleComment;
 import net.luversof.api.board.service.BoardArticleCommentService;
+import net.luversof.api.board.domain.BoardArticleCommentCount;
 
 @RestController
 @RequestMapping(value = "/api/boardArticleComment", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -45,6 +47,11 @@ public class BoardArticleCommentController {
 	@GetMapping("/search/countByBoardArticleId/{boardArticleId}")
 	public long countByBoardArticleId(@PathVariable UUID boardArticleId) {
 		return boardArticleCommentService.countByBoardArticleId(boardArticleId);
+	}
+
+	@PostMapping("/search/countByBoardArticleIds")
+	public List<BoardArticleCommentCount> countByBoardArticleIds(@RequestBody List<UUID> boardArticleIds) {
+		return boardArticleCommentService.countByBoardArticleIds(boardArticleIds);
 	}
 
 	@PutMapping
