@@ -8,6 +8,9 @@ const boardData = (() => {
 	let boardAlias: string;
 	let boardMode: string;
 	let boardId: string;
+	let boardArticleId: string | undefined;
+	let currentUserId: string | undefined;
+	let isAuthenticated: boolean = false;
 
 	return {
 		setBoardAlias(alias: string) {
@@ -28,6 +31,192 @@ const boardData = (() => {
 		getBoardId(): string {
 			return boardId;
 		},
+		setBoardArticleId(id: string | undefined) {
+			boardArticleId = id;
+		},
+		getBoardArticleId(): string | undefined {
+			return boardArticleId;
+		},
+		setCurrentUserId(id: string | undefined) {
+			currentUserId = id;
+		},
+		getCurrentUserId(): string | undefined {
+			return currentUserId;
+		},
+		setIsAuthenticated(flag: boolean) {
+			isAuthenticated = flag;
+		},
+		getIsAuthenticated(): boolean {
+			return isAuthenticated;
+		},
+	};
+})();
+
+/**
+ * BoardComment - 댓글 관리
+ */
+const boardComment = (() => {
+	const commentListElId = "commentList";
+	const commentFormId = "commentForm";
+
+	const renderEmpty = (emptyText: string) => {
+		const el = document.getElementById(commentListElId);
+		if (el)
+			el.innerHTML = `<div class="text-sm text-gray-500">${emptyText}</div>`;
+	};
+
+	const renderComments = (pageData: any) => {
+		const el = document.getElementById(commentListElId);
+		if (!el) return;
+		const content = (pageData && pageData.content) || [];
+		if (!content.length) {
+			const emptyText = el.dataset.emptyText || "No comments";
+			renderEmpty(emptyText);
+			return;
+		}
+		el.innerHTML = "";
+		content.forEach((c: any) => {
+			const wrapper = document.createElement("div");
+			wrapper.className = "border p-2 rounded";
+			const header = document.createElement("div");
+			header.className = "flex justify-between items-start";
+			const author = document.createElement("div");
+			author.innerHTML = `<b>${c.username || c.user?.username || ""}</b> <small class=\"text-gray-500\">${(window as any).dayjs ? (window as any).dayjs(c.createdDate).fromNow() : c.createdDate}</small>`;
+			header.appendChild(author);
+			const actions = document.createElement("div");
+			if (
+				boardData.getCurrentUserId &&
+				boardData.getCurrentUserId() &&
+				boardData.getCurrentUserId() === (c.userId || (c.user && c.user.id))
+			) {
+				const mod = document.createElement("button");
+				mod.className = "btn btn-sm btn-ghost modifyCommentButton";
+				mod.textContent = "수정";
+				mod.dataset.commentId = c.id;
+				actions.appendChild(mod);
+				const del = document.createElement("button");
+				del.className = "btn btn-sm btn-error deleteCommentButton ml-2";
+				del.textContent = "삭제";
+				del.dataset.commentId = c.id;
+				actions.appendChild(del);
+			}
+			header.appendChild(actions);
+			const body = document.createElement("div");
+			body.className = "mt-2 comment-body";
+			body.textContent = c.comment || c.content || "";
+			wrapper.appendChild(header);
+			wrapper.appendChild(body);
+			el.appendChild(wrapper);
+		});
+		// wire up action buttons
+		el.querySelectorAll(".deleteCommentButton").forEach((btn) => {
+			btn.addEventListener("click", async (e) => {
+				const id = (e.currentTarget as HTMLElement).dataset.commentId;
+				if (!id) return;
+				if (!confirm("댓글을 삭제하시겠습니까?")) return;
+				try {
+					await deleteJson("/api/boardArticleComment", {
+						id,
+						boardArticleId: boardData.getBoardArticleId(),
+					});
+					load();
+				} catch (err) {
+					handleApiError(err, {
+						onDisplayableMessage: (msg: any) => alert(msg),
+						onNonDisplayable: (e: any) => console.error(e),
+					});
+				}
+			});
+		});
+		el.querySelectorAll(".modifyCommentButton").forEach((btn) => {
+			btn.addEventListener("click", (e) => {
+				const id = (e.currentTarget as HTMLElement).dataset.commentId;
+				if (!id) return;
+				const parent = (e.currentTarget as HTMLElement).closest("div.border");
+				if (!parent) return;
+				const body = parent.querySelector(".comment-body") as HTMLElement;
+				const original = body.textContent || "";
+				const ta = document.createElement("textarea");
+				ta.className = "w-full border p-1";
+				ta.value = original;
+				body.innerHTML = "";
+				body.appendChild(ta);
+				const save = document.createElement("button");
+				save.className = "btn btn-sm btn-primary mt-2";
+				save.textContent = "저장";
+				save.addEventListener("click", async () => {
+					try {
+						await putJson("/api/boardArticleComment", {
+							id,
+							content: ta.value,
+							boardArticleId: boardData.getBoardArticleId(),
+						});
+						load();
+					} catch (err) {
+						handleApiError(err, {
+							onDisplayableMessage: (msg: any) => alert(msg),
+							onNonDisplayable: (e: any) => console.error(e),
+						});
+					}
+				});
+				body.appendChild(save);
+			});
+		});
+	};
+
+	const load = async (page = 0) => {
+		const id = boardData.getBoardArticleId();
+		if (!id) return;
+		try {
+			const resp = await fetch(
+				`/api/boardArticleComment/search/findByBoardArticleId/${id}?page=${page}`,
+				{ headers: { Accept: "application/json" } },
+			);
+			if (!resp.ok) throw resp;
+			const data = await resp.json();
+			renderComments(data);
+		} catch (err) {
+			console.error("Load comments error", err);
+			renderEmpty("댓글을 불러올 수 없습니다.");
+		}
+	};
+
+	const addEventListener = () => {
+		// Template uses a textarea with id 'commentContent' and a button '.commentSubmitButton'
+		const textarea = document.getElementById(
+			"commentContent",
+		) as HTMLTextAreaElement | null;
+		const submitBtn = document.querySelector(
+			".commentSubmitButton",
+		) as HTMLButtonElement | null;
+		if (!submitBtn || !textarea) return;
+		submitBtn.addEventListener("click", async (e) => {
+			e.preventDefault();
+			const comment = textarea.value.trim();
+			if (!comment) {
+				alert("댓글을 입력해주세요.");
+				return;
+			}
+			try {
+				await postJson("/api/boardArticleComment", {
+					boardArticleId: boardData.getBoardArticleId(),
+					content: comment,
+				});
+				textarea.value = "";
+				load();
+			} catch (err) {
+				handleApiError(err, {
+					onDisplayableMessage: (msg: any) => alert(msg),
+					onNonDisplayable: (e: any) => console.error(e),
+				});
+			}
+		});
+	};
+
+	return {
+		load,
+		renderComments,
+		addEventListener,
 	};
 })();
 
@@ -374,6 +563,7 @@ const boardModify = (() => {
 (window as any).boardView = boardView;
 (window as any).boardWrite = boardWrite;
 (window as any).boardModify = boardModify;
+(window as any).boardComment = boardComment;
 
 // DOM 로드 후 자동 초기화
 document.addEventListener("DOMContentLoaded", () => {
@@ -382,6 +572,9 @@ document.addEventListener("DOMContentLoaded", () => {
 	const boardMode = body.dataset.boardMode;
 	const boardAlias = body.dataset.boardAlias;
 	const boardId = body.dataset.boardId;
+	const boardArticleId = body.dataset.boardArticleId;
+	const isAuthenticated = body.dataset.isAuthenticated;
+	const currentUserId = body.dataset.currentUserId;
 
 	// boardData에 값 설정
 	if (boardMode) {
@@ -393,6 +586,17 @@ document.addEventListener("DOMContentLoaded", () => {
 	if (boardId) {
 		boardData.setBoardId(boardId);
 	}
+	if (boardArticleId) {
+		boardData.setBoardArticleId(boardArticleId);
+	}
+	if (typeof isAuthenticated !== "undefined") {
+		boardData.setIsAuthenticated(
+			isAuthenticated === "true" || isAuthenticated === "1",
+		);
+	}
+	if (currentUserId) {
+		boardData.setCurrentUserId(currentUserId);
+	}
 
 	// 모드별 초기화
 	if (boardMode === "list") {
@@ -402,6 +606,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		boardWrite.addEventListener();
 	} else if (boardMode === "view") {
 		boardView.addEventListener();
+		// 댓글 초기화
+		if ((window as any).boardComment) {
+			(window as any).boardComment.addEventListener();
+			(window as any).boardComment.load();
+		}
 	} else if (boardMode === "modify") {
 		const contentEl = document.getElementById("content") as HTMLTextAreaElement;
 		const initialContent = contentEl ? contentEl.value : "";

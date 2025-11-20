@@ -28,4 +28,10 @@ public class StockItemService {
 		return stockItemRepository.findByName(name);
 	}
 
+	public java.util.List<StockItem> findAll() {
+		java.util.List<StockItem> list = new java.util.ArrayList<>();
+		stockItemRepository.findAll().forEach(list::add);
+		return list;
+	}
+
 }

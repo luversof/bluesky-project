@@ -4,6 +4,9 @@
 <head>
 	<title>주식 손익 통계</title>
 	<script data-th-src="@{/js/stock/tradeProfit.js}" defer></script>
+	<!-- Chart.js CDN -->
+	<script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+	<script type="module" data-th-src="@{/js/stock/timeSeriesChart.js}" defer></script>
 </head>
 
 <body>
@@ -64,31 +67,27 @@
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div class="form-control">
 								<label class="label" for="accountIdList">
-									<span class="label-text font-semibold">계좌 ID (선택)</span>
+									<span class="label-text font-semibold">계좌 선택 (다중 선택 가능)</span>
 								</label>
-								<input 
-									type="text" 
-									id="accountIdList" 
-									name="accountIdList" 
-									placeholder="uuid1, uuid2" 
-									class="input input-bordered w-full font-mono text-sm" />
-								<label class="label">
-									<span class="label-text-alt">쉼표로 구분하여 여러 계좌 입력 가능</span>
+								<select id="accountIdList" name="accountIdList" multiple class="select select-bordered w-full">
+									<option value="">선택 안함</option>
+									<option th:each="acc : ${accounts}" th:value="${acc.id}" th:text="${acc.name}"></option>
+								</select>
+								<label class="label" for="accountIdList-help">
+									<span id="accountIdList-help" class="label-text-alt">Ctrl(또는 Shift) 클릭으로 여러 계좌 선택 가능</span>
 								</label>
 							</div>
 
 							<div class="form-control">
 								<label class="label" for="stockItemIdList">
-									<span class="label-text font-semibold">종목 ID (선택)</span>
+									<span class="label-text font-semibold">종목 선택 (다중 선택 가능)</span>
 								</label>
-								<input 
-									type="text" 
-									id="stockItemIdList" 
-									name="stockItemIdList" 
-									placeholder="uuid1, uuid2" 
-									class="input input-bordered w-full font-mono text-sm" />
-								<label class="label">
-									<span class="label-text-alt">쉼표로 구분하여 여러 종목 입력 가능</span>
+								<select id="stockItemIdList" name="stockItemIdList" multiple class="select select-bordered w-full">
+									<option value="">선택 안함</option>
+									<option th:each="s : ${stockItems}" th:value="${s.id}" th:text="${s.name + ' (' + s.ticker + ')'}"></option>
+								</select>
+								<label class="label" for="stockItemIdList-help">
+									<span id="stockItemIdList-help" class="label-text-alt">Ctrl(또는 Shift) 클릭으로 여러 종목 선택 가능</span>
 								</label>
 							</div>
 						</div>
@@ -147,10 +146,61 @@
 
 			<!-- 결과 영역 -->
 			<div id="tradeProfitResult" class="space-y-4">
+				<!-- Time-series chart -->
+				<div class="card bg-base-100 shadow mb-4 p-4">
+					<h3 class="font-semibold mb-2">포트폴리오 시계열</h3>
+					<canvas id="timeSeriesChart" width="800" height="320"></canvas>
+				</div>
 				<!-- HTMX로 로드될 결과 -->
 			</div>
 		</div>
 	</div>
-</body>
+		<script>
+			// wire form submit to update chart as well as HTMX result
+			(function(){
+				function collectParams() {
+					const params = {};
+					const groupBy = document.getElementById('groupBy').value;
+					params.groupBy = groupBy;
+
+					const accountSel = document.getElementById('accountIdList');
+					const accounts = Array.from(accountSel.selectedOptions).map(o => o.value).filter(v => v);
+					if (accounts.length) params.accountIdList = accounts;
+
+					const stockSel = document.getElementById('stockItemIdList');
+					const stocks = Array.from(stockSel.selectedOptions).map(o => o.value).filter(v => v);
+					if (stocks.length) params.stockItemIdList = stocks;
+
+					const start = document.getElementById('startDate').value;
+					const end = document.getElementById('endDate').value;
+					if (start) params.startDate = new Date(start).toISOString();
+					if (end) params.endDate = new Date(end).toISOString();
+
+					return params;
+				}
+
+				const form = document.getElementById('tradeProfitForm');
+				if (form) {
+					form.addEventListener('submit', function(e){
+						// allow HTMX to proceed; also trigger chart update
+						const params = collectParams();
+						// small delay so HTMX starts
+						setTimeout(() => {
+							if (window.renderTimeSeriesChart) {
+								window.renderTimeSeriesChart('timeSeriesChart', params);
+							}
+						}, 50);
+					});
+				}
+
+				document.addEventListener('DOMContentLoaded', function(){
+					// initial chart render with empty params
+					if (window.renderTimeSeriesChart) {
+						window.renderTimeSeriesChart('timeSeriesChart', collectParams());
+					}
+				});
+			})();
+		</script>
+	</body>
 
 </html>

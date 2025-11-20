@@ -15,6 +15,11 @@
 		<a role="tab" class="tab" data-tab="table">상세 테이블</a>
 	</div>
 
+		<!-- 평가 시세 데이터가 없을 때 사용자 안내 -->
+		<div class="alert alert-info mb-4">
+			<span class="text-sm">평가 데이터 없음(시세 미보유) — 현재가/평가 관련 항목은 숨겨져 있습니다.</span>
+		</div>
+
 	<!-- Overview 탭 -->
 	<div id="tab-overview" class="dashboard-tab-pane">
 		<!-- 전체 요약 카드 -->
@@ -56,12 +61,7 @@
 						</path>
 					</svg>
 				</div>
-				<div class="stat-title">평가손익 (NET)</div>
-				<div class="stat-value text-2xl"
-					data-th-text="${#numbers.formatDecimal(#aggregates.sum(tradeProfitList.![evaluationProfitNet]), 0, 'COMMA', 0, 'POINT')}"
-					data-th-classappend="${#aggregates.sum(tradeProfitList.![evaluationProfitNet]) >= 0 ? 'text-success' : 'text-error'}">
-					0
-				</div>
+				<!-- 평가손익 관련 통계는 시세 데이터가 없을 때 정확하지 않아 숨김 -->
 			</div>
 
 			<div class="stat bg-base-100 shadow-xl rounded-lg">
@@ -126,7 +126,7 @@
 				<div class="card-body">
 					<h2 class="card-title text-2xl mb-4" data-th-text="${accountEntry.key}">계좌명</h2>
 
-					<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
 						<div class="stat bg-base-200 rounded-lg">
 							<div class="stat-title">보유 종목</div>
 							<div class="stat-value text-primary" data-th-text="${accountEntry.value.size()}">0</div>
@@ -139,14 +139,14 @@
 								0
 							</div>
 						</div>
-						<div class="stat bg-base-200 rounded-lg">
-							<div class="stat-title">총손익</div>
-							<div class="stat-value text-xl"
-								data-th-text="${#numbers.formatDecimal(#aggregates.sum(accountEntry.value.![totalProfitNet]), 0, 'COMMA', 0, 'POINT')}"
-								data-th-classappend="${#aggregates.sum(accountEntry.value.![totalProfitNet]) >= 0 ? 'text-success' : 'text-error'}">
-								0
+							<div class="stat bg-base-200 rounded-lg">
+								<div class="stat-title">총손익</div>
+								<div class="stat-value text-xl"
+									data-th-text="${#numbers.formatDecimal(#aggregates.sum(accountEntry.value.![totalProfitNet]), 0, 'COMMA', 0, 'POINT')}"
+									data-th-classappend="${#aggregates.sum(accountEntry.value.![totalProfitNet]) >= 0 ? 'text-success' : 'text-error'}">
+									0
+								</div>
 							</div>
-						</div>
 					</div>
 
 					<div class="overflow-x-auto">
@@ -155,7 +155,7 @@
 								<tr>
 									<th>종목</th>
 									<th class="text-right">보유수량</th>
-									<th class="text-right">평가금액</th>
+									<!-- 평가금액 숨김 (시세 없음) -->
 									<th class="text-right">총손익</th>
 								</tr>
 							</thead>
@@ -165,9 +165,7 @@
 									<td class="text-right"
 										data-th-text="${#numbers.formatInteger(profit.holdingQuantity(), 0, 'COMMA')}">0
 									</td>
-									<td class="text-right"
-										data-th-text="${#numbers.formatDecimal(profit.evaluationAmount(), 0, 'COMMA', 0, 'POINT')}">
-										0</td>
+									<!-- 평가금액 숨김 (시세 없음) -->
 									<td class="text-right font-semibold"
 										data-th-text="${#numbers.formatDecimal(profit.totalProfitNet(), 0, 'COMMA', 0, 'POINT')}"
 										data-th-classappend="${profit.totalProfitNet() >= 0 ? 'text-success' : 'text-error'}">
@@ -189,33 +187,21 @@
 				<div class="card-body">
 					<h2 class="card-title text-2xl mb-4" data-th-text="${stockEntry.key}">종목명</h2>
 
-					<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-						<div class="stat bg-base-200 rounded-lg">
-							<div class="stat-title">현재가</div>
-							<div class="stat-value text-lg"
-								data-th-text="${#numbers.formatDecimal(stockEntry.value[0].currentPrice(), 0, 'COMMA', 2, 'POINT')}">
-								0</div>
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+							<div class="stat bg-base-200 rounded-lg">
+								<div class="stat-title">총 보유수량</div>
+								<div class="stat-value text-lg"
+									data-th-text="${#numbers.formatInteger(#aggregates.sum(stockEntry.value.![holdingQuantity]), 0, 'COMMA')}">
+									0</div>
+							</div>
+							<div class="stat bg-base-200 rounded-lg">
+								<div class="stat-title">총손익</div>
+								<div class="stat-value text-lg"
+									data-th-text="${#numbers.formatDecimal(#aggregates.sum(stockEntry.value.![totalProfitNet]), 0, 'COMMA', 0, 'POINT')}"
+									data-th-classappend="${#aggregates.sum(stockEntry.value.![totalProfitNet]) >= 0 ? 'text-success' : 'text-error'}">
+									0</div>
+							</div>
 						</div>
-						<div class="stat bg-base-200 rounded-lg">
-							<div class="stat-title">총 보유수량</div>
-							<div class="stat-value text-lg"
-								data-th-text="${#numbers.formatInteger(#aggregates.sum(stockEntry.value.![holdingQuantity]), 0, 'COMMA')}">
-								0</div>
-						</div>
-						<div class="stat bg-base-200 rounded-lg">
-							<div class="stat-title">평가금액</div>
-							<div class="stat-value text-lg"
-								data-th-text="${#numbers.formatDecimal(#aggregates.sum(stockEntry.value.![evaluationAmount]), 0, 'COMMA', 0, 'POINT')}">
-								0</div>
-						</div>
-						<div class="stat bg-base-200 rounded-lg">
-							<div class="stat-title">총손익</div>
-							<div class="stat-value text-lg"
-								data-th-text="${#numbers.formatDecimal(#aggregates.sum(stockEntry.value.![totalProfitNet]), 0, 'COMMA', 0, 'POINT')}"
-								data-th-classappend="${#aggregates.sum(stockEntry.value.![totalProfitNet]) >= 0 ? 'text-success' : 'text-error'}">
-								0</div>
-						</div>
-					</div>
 
 					<div data-th-if="${stockEntry.value.size() > 1}" class="overflow-x-auto">
 						<p class="text-sm text-gray-600 mb-2">계좌별 상세</p>
@@ -225,7 +211,6 @@
 									<th>계좌</th>
 									<th class="text-right">보유수량</th>
 									<th class="text-right">평균매수가</th>
-									<th class="text-right">평가손익</th>
 									<th class="text-right">총손익</th>
 								</tr>
 							</thead>
@@ -237,10 +222,6 @@
 									</td>
 									<td class="text-right"
 										data-th-text="${#numbers.formatDecimal(profit.averageBuyPriceNet(), 0, 'COMMA', 2, 'POINT')}">
-										0</td>
-									<td class="text-right"
-										data-th-text="${#numbers.formatDecimal(profit.evaluationProfitNet(), 0, 'COMMA', 0, 'POINT')}"
-										data-th-classappend="${profit.evaluationProfitNet() >= 0 ? 'text-success' : 'text-error'}">
 										0</td>
 									<td class="text-right font-semibold"
 										data-th-text="${#numbers.formatDecimal(profit.totalProfitNet(), 0, 'COMMA', 0, 'POINT')}"
@@ -270,8 +251,8 @@
 			console.log('Dashboard loaded, profitData length:', profitData.length);
 
 			// 탭 전환 기능
-			document.querySelectorAll('[role="tab"]').forEach(tab => {
-				tab.addEventListener('click', (e) => {
+			document.querySelectorAll('[role="tab"]').forEach(function(tab) {
+				tab.addEventListener('click', function(e) {
 					e.preventDefault();
 					const targetTab = tab.dataset.tab;
 
@@ -281,10 +262,10 @@
 
 					// 선택된 탭 활성화
 					tab.classList.add('tab-active');
-					document.getElementById(`tab-${targetTab}`).classList.remove('hidden');
-				});
-			});
-			
+						document.getElementById('tab-' + targetTab).classList.remove('hidden');
+						});
+					});
+					
 			// 데이터가 없으면 차트 초기화 생략
 			if (!profitData || profitData.length === 0) {
 				console.warn('No profit data available for charts');
@@ -304,47 +285,45 @@
 				return;
 			}
 			
-			const totalRealized = profitData.reduce((sum, p) => sum + p.realizedProfitNet, 0);
-			const totalEvaluation = profitData.reduce((sum, p) => sum + p.evaluationProfitNet, 0);
+						const totalRealized = profitData.reduce(function(sum, p) { return sum + (p.realizedProfitNet || 0); }, 0);
 
-			new Chart(profitCompositionCanvas, {
-				type: 'doughnut',
-				data: {
-					labels: ['실현손익', '평가손익'],
-					datasets: [{
-						data: [totalRealized, totalEvaluation],
-						backgroundColor: [
-							totalRealized >= 0 ? '#10b981' : '#ef4444',
-							totalEvaluation >= 0 ? '#3b82f6' : '#f97316'
-						]
-					}]
-				},
-				options: {
-					responsive: true,
-					plugins: {
-						legend: { position: 'bottom' },
-						tooltip: {
-							callbacks: {
-								label: (context) => {
-									const value = context.parsed;
-									return `${context.label}: ${value.toLocaleString('ko-KR')}원`;
+						var profitConfig = {
+							type: 'doughnut',
+							data: {
+								labels: ['실현손익'],
+								datasets: [{
+									data: [totalRealized],
+									backgroundColor: [ totalRealized >= 0 ? '#10b981' : '#ef4444' ]
+								}]
+							},
+							options: {
+								responsive: true,
+								plugins: {
+									legend: { position: 'bottom' },
+									tooltip: {
+										callbacks: {
+											label: function(context) {
+												var value = context.parsed;
+												return (context.label || '') + ': ' + (value != null ? value.toLocaleString('ko-KR') : '') + '원';
+											}
+										}
+									}
 								}
 							}
-						}
-					}
-				}
-			});
 
-			// 2. 종목별 총손익 TOP 10
-			const sortedByProfit = [...profitData].sort((a, b) => b.totalProfitNet - a.totalProfitNet).slice(0, 10);
+							};
+
+							new Chart(profitCompositionCanvas, profitConfig);
+				// 2. 종목별 총손익 TOP 10
+			const sortedByProfit = [...profitData].sort(function(a, b) { return b.totalProfitNet - a.totalProfitNet; }).slice(0, 10);
 			new Chart(document.getElementById('stockProfitChart'), {
 				type: 'bar',
 				data: {
-					labels: sortedByProfit.map(p => p.stockItemName),
+					labels: sortedByProfit.map(function(p) { return p.stockItemName; }),
 					datasets: [{
 						label: '총손익 (NET)',
-						data: sortedByProfit.map(p => p.totalProfitNet),
-						backgroundColor: sortedByProfit.map(p => p.totalProfitNet >= 0 ? '#10b981' : '#ef4444')
+						data: sortedByProfit.map(function(p) { return p.totalProfitNet; }),
+						backgroundColor: sortedByProfit.map(function(p) { return p.totalProfitNet >= 0 ? '#10b981' : '#ef4444'; })
 					}]
 				},
 				options: {
@@ -354,14 +333,14 @@
 						legend: { display: false },
 						tooltip: {
 							callbacks: {
-								label: (context) => `${context.parsed.x.toLocaleString('ko-KR')}원`
+								label: function(context) { return context.parsed.x.toLocaleString('ko-KR') + '원'; }
 							}
 						}
 					},
 					scales: {
 						x: {
 							ticks: {
-								callback: (value) => value.toLocaleString('ko-KR')
+								callback: function(value) { return value.toLocaleString('ko-KR'); }
 							}
 						}
 					}
@@ -371,7 +350,7 @@
 			// 3. 계좌별 차트 (계좌 정보가 있는 경우만)
 			if (profitData[0]?.accountId) {
 				const accountMap = {};
-				profitData.forEach(p => {
+				profitData.forEach(function(p) {
 					if (!accountMap[p.accountName]) {
 						accountMap[p.accountName] = { totalProfit: 0, count: 0 };
 					}
@@ -380,8 +359,8 @@
 				});
 
 				const accountNames = Object.keys(accountMap);
-				const accountProfits = accountNames.map(name => accountMap[name].totalProfit);
-				const accountCounts = accountNames.map(name => accountMap[name].count);
+				const accountProfits = accountNames.map(function(name) { return accountMap[name].totalProfit; });
+				const accountCounts = accountNames.map(function(name) { return accountMap[name].count; });
 
 				// 계좌별 총손익
 				new Chart(document.getElementById('accountProfitChart'), {
@@ -391,7 +370,7 @@
 						datasets: [{
 							label: '총손익 (NET)',
 							data: accountProfits,
-							backgroundColor: accountProfits.map(p => p >= 0 ? '#10b981' : '#ef4444')
+							backgroundColor: accountProfits.map(function(p) { return p >= 0 ? '#10b981' : '#ef4444'; })
 						}]
 					},
 					options: {
@@ -400,14 +379,14 @@
 							legend: { display: false },
 							tooltip: {
 								callbacks: {
-									label: (context) => `${context.parsed.y.toLocaleString('ko-KR')}원`
+									label: function(context) { return context.parsed.y.toLocaleString('ko-KR') + '원'; }
 								}
 							}
 						},
 						scales: {
 							y: {
 								ticks: {
-									callback: (value) => value.toLocaleString('ko-KR')
+									callback: function(value) { return value.toLocaleString('ko-KR'); }
 								}
 							}
 						}

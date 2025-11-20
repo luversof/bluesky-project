@@ -37,4 +37,9 @@ public class StockItemController {
 		return stockItemService.findByName(name);
 	}
 
+	@GetMapping("/search/findAll")
+	public java.util.List<net.luversof.api.stock.domain.StockItem> findAll() {
+		return stockItemService.findAll();
+	}
+
 }

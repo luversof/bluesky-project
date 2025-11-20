@@ -3,7 +3,7 @@
  */
 
 // DOM 로드 완료 후 초기화
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
 	initializeTradeProfitForm();
 });
 
@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
  * 손익 조회 폼 초기화
  */
 function initializeTradeProfitForm() {
-	const form = document.getElementById('tradeProfitForm') as HTMLFormElement;
+	const form = document.getElementById("tradeProfitForm") as HTMLFormElement;
 	if (!form) return;
 
 	// HTMX 이벤트 리스너
@@ -27,7 +27,7 @@ function formatDateTimeLocal(date: Date): string {
 	const day = padZero(date.getDate());
 	const hours = padZero(date.getHours());
 	const minutes = padZero(date.getMinutes());
-	
+
 	return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
@@ -35,7 +35,7 @@ function formatDateTimeLocal(date: Date): string {
  * 숫자를 2자리 문자열로 변환
  */
 function padZero(num: number): string {
-	return num < 10 ? '0' + num : String(num);
+	return num < 10 ? "0" + num : String(num);
 }
 
 /**
@@ -43,16 +43,23 @@ function padZero(num: number): string {
  */
 function setupHtmxEventListeners() {
 	// HTMX 요청 전 처리
-	document.body.addEventListener('htmx:configRequest', (event: any) => {
+	document.body.addEventListener("htmx:configRequest", (event: any) => {
 		const detail = event.detail;
-		
-		// 쉼표로 구분된 UUID 리스트를 배열로 변환
+
+		// accountIdList: 쉼표로 구분된 문자열 또는 배열 둘 다 처리
 		if (detail.parameters.accountIdList) {
-			const accountIds = detail.parameters.accountIdList
-				.split(',')
-				.map((id: string) => id.trim())
-				.filter((id: string) => id.length > 0);
-			
+			let accountIds: string[] | any = detail.parameters.accountIdList;
+			if (Array.isArray(accountIds)) {
+				// HTMX may provide repeated params as an array already
+				accountIds = accountIds
+					.map((id: any) => String(id).trim())
+					.filter((id: string) => id.length > 0);
+			} else {
+				accountIds = String(accountIds)
+					.split(",")
+					.map((id: string) => id.trim())
+					.filter((id: string) => id.length > 0);
+			}
 			if (accountIds.length > 0) {
 				// 배열을 다시 서버가 이해할 수 있는 형식으로 변환
 				delete detail.parameters.accountIdList;
@@ -64,12 +71,19 @@ function setupHtmxEventListeners() {
 			}
 		}
 
+		// stockItemIdList: 쉼표 문자열 또는 배열 처리
 		if (detail.parameters.stockItemIdList) {
-			const stockItemIds = detail.parameters.stockItemIdList
-				.split(',')
-				.map((id: string) => id.trim())
-				.filter((id: string) => id.length > 0);
-			
+			let stockItemIds: string[] | any = detail.parameters.stockItemIdList;
+			if (Array.isArray(stockItemIds)) {
+				stockItemIds = stockItemIds
+					.map((id: any) => String(id).trim())
+					.filter((id: string) => id.length > 0);
+			} else {
+				stockItemIds = String(stockItemIds)
+					.split(",")
+					.map((id: string) => id.trim())
+					.filter((id: string) => id.length > 0);
+			}
 			if (stockItemIds.length > 0) {
 				delete detail.parameters.stockItemIdList;
 				for (let index = 0; index < stockItemIds.length; index++) {
@@ -82,22 +96,26 @@ function setupHtmxEventListeners() {
 
 		// datetime-local을 ISO-8601 형식으로 변환
 		if (detail.parameters.startDate) {
-			detail.parameters.startDate = convertToIsoWithOffset(detail.parameters.startDate);
+			detail.parameters.startDate = convertToIsoWithOffset(
+				detail.parameters.startDate,
+			);
 		}
 		if (detail.parameters.endDate) {
-			detail.parameters.endDate = convertToIsoWithOffset(detail.parameters.endDate);
+			detail.parameters.endDate = convertToIsoWithOffset(
+				detail.parameters.endDate,
+			);
 		}
 	});
 
 	// HTMX 요청 성공 후 처리
-	document.body.addEventListener('htmx:afterSwap', (event: any) => {
-		console.log('Trade profit data loaded successfully');
+	document.body.addEventListener("htmx:afterSwap", (event: any) => {
+		console.log("Trade profit data loaded successfully");
 	});
 
 	// HTMX 요청 실패 시 처리
-	document.body.addEventListener('htmx:responseError', (event: any) => {
-		console.error('Failed to load trade profit data', event.detail);
-		showError('데이터 조회 중 오류가 발생했습니다.');
+	document.body.addEventListener("htmx:responseError", (event: any) => {
+		console.error("Failed to load trade profit data", event.detail);
+		showError("데이터 조회 중 오류가 발생했습니다.");
 	});
 }
 
@@ -105,13 +123,13 @@ function setupHtmxEventListeners() {
  * datetime-local 값을 ISO-8601 형식 (with offset)으로 변환
  */
 function convertToIsoWithOffset(dateTimeLocal: string): string {
-	if (!dateTimeLocal) return '';
-	
+	if (!dateTimeLocal) return "";
+
 	const date = new Date(dateTimeLocal);
-	
+
 	// 한국 시간대 오프셋 (+09:00)
-	const offset = '+09:00';
-	
+	const offset = "+09:00";
+
 	// ISO 문자열 생성
 	const year = date.getFullYear();
 	const month = padZero(date.getMonth() + 1);
@@ -119,7 +137,7 @@ function convertToIsoWithOffset(dateTimeLocal: string): string {
 	const hours = padZero(date.getHours());
 	const minutes = padZero(date.getMinutes());
 	const seconds = padZero(date.getSeconds());
-	
+
 	return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${offset}`;
 }
 
@@ -127,7 +145,7 @@ function convertToIsoWithOffset(dateTimeLocal: string): string {
  * 에러 메시지 표시
  */
 function showError(message: string) {
-	const resultDiv = document.getElementById('tradeProfitResult');
+	const resultDiv = document.getElementById("tradeProfitResult");
 	if (!resultDiv) return;
 
 	resultDiv.innerHTML = `

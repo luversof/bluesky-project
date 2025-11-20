@@ -23,4 +23,7 @@ public interface StockItemClient {
 	@GetMapping("/search/findByName/{name}")
 	StockItem findByName(@PathVariable String name);
 
+	@GetMapping("/search/findAll")
+	java.util.List<StockItem> getStockItems();
+
 }

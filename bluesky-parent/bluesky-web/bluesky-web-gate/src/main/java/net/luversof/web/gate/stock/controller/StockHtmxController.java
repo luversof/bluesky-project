@@ -228,23 +228,23 @@ public class StockHtmxController {
 		List<DividendView> viewList = dividends.stream()
 				.map(dividend -> {
 					String accountName = accountNames.getOrDefault(dividend.accountId(), UNKNOWN_LABEL);
-					    String stockItemName = Optional.ofNullable(dividend.stockItemName())
-						    .orElse(Optional.ofNullable(dividend.stockItemId())
-							    .map(id -> stockItemNames.getOrDefault(id, UNKNOWN_LABEL))
-							    .orElse(UNKNOWN_LABEL));
-					    BigDecimal price = Optional.ofNullable(dividend.price()).orElse(BigDecimal.ZERO);
-					    BigDecimal tax = Optional.ofNullable(dividend.tax()).orElse(BigDecimal.ZERO);
+					String stockItemName = Optional.ofNullable(dividend.stockItemName())
+							.orElse(Optional.ofNullable(dividend.stockItemId())
+									.map(id -> stockItemNames.getOrDefault(id, UNKNOWN_LABEL))
+									.orElse(UNKNOWN_LABEL));
+					BigDecimal price = Optional.ofNullable(dividend.price()).orElse(BigDecimal.ZERO);
+					BigDecimal tax = Optional.ofNullable(dividend.tax()).orElse(BigDecimal.ZERO);
 					return new DividendView(
-						    dividend.id(),
-						    dividend.accountId(),
-						    accountName,
-						    dividend.stockItemId(),
-						    stockItemName,
-						    price,
-						    tax,
-						    price.subtract(tax),
-						    dividend.recordDate(),
-						    dividend.payDate());
+							dividend.id(),
+							dividend.accountId(),
+							accountName,
+							dividend.stockItemId(),
+							stockItemName,
+							price,
+							tax,
+							price.subtract(tax),
+							dividend.recordDate(),
+							dividend.payDate());
 				})
 				.toList();
 

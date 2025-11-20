@@ -9,7 +9,7 @@ import net.luversof.web.common.util.WebCommonUtil;
 
 @UtilityClass
 public class ThymeleafUtil {
-	
+
 	private static final String[] THEMES = new String[] {
 			"bluesky",
 			"light",
@@ -48,13 +48,16 @@ public class ThymeleafUtil {
 			"abyss",
 			"silk"
 	};
-	
+
 	private static final Random RANDOM = new Random();
 
 	/**
-	 * Returns the menu list for the given key. The method intentionally avoids a compile
-	 * time dependency on the `Menu` type. If the WebCommonUtil or the Menu type is not available
-	 * at runtime (e.g., missing class), the method returns an empty list instead of throwing
+	 * Returns the menu list for the given key. The method intentionally avoids a
+	 * compile
+	 * time dependency on the `Menu` type. If the WebCommonUtil or the Menu type is
+	 * not available
+	 * at runtime (e.g., missing class), the method returns an empty list instead of
+	 * throwing
 	 * `UnresolvedCompilationErrors` or `NoClassDefFoundError`.
 	 */
 	public static List<?> getMenuList(String key) {
@@ -64,16 +67,16 @@ public class ThymeleafUtil {
 			return List.of();
 		}
 	}
-	
+
 	public static String getRandomTheme() {
 		return getRandomTheme(THEMES);
 	}
-	
-	public static String getRandomTheme(String...themes) {
+
+	public static String getRandomTheme(String... themes) {
 		var themeList = List.of(themes);
 		return themeList.get(RANDOM.nextInt(themeList.size()));
 	}
-	
+
 	public static List<String> getThemeList() {
 		return Arrays.asList(THEMES);
 	}

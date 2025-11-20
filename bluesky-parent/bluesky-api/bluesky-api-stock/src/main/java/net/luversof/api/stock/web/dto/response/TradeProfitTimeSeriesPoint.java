@@ -1,0 +1,13 @@
+package net.luversof.api.stock.web.dto.response;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+
+public record TradeProfitTimeSeriesPoint(
+        Instant timestamp,
+        BigDecimal cumulativeRealizedProfit,
+        BigDecimal dailyRealizedProfit,
+        long tradeCount,
+        long tradeVolume
+) {
+}
