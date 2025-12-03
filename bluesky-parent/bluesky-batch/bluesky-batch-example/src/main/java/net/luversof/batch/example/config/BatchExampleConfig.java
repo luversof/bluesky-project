@@ -5,7 +5,6 @@ import java.util.NoSuchElementException;
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.batch.BatchDataSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.support.JdbcTransactionManager;
@@ -18,7 +17,6 @@ import io.github.luversof.boot.connectioninfo.ConnectionInfoRegistry;
 public class BatchExampleConfig {
 
 	@Bean
-	@BatchDataSource
 	DataSource batchDataSource(ConnectionInfoRegistry<HikariDataSource> connectionInfoRegistry) {
 		var target = connectionInfoRegistry.getConnectionInfoList().stream().filter(x -> x.getKey().connectionKey().equals("spring_batch")).findFirst();
 		if (target.isEmpty()) {

@@ -1,5 +1,6 @@
 package net.luversof.web.dynamiccrud.use;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,15 +27,55 @@ import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.Fetch;
 import net.sf.jsqlparser.statement.select.Limit;
 import net.sf.jsqlparser.statement.select.Offset;
+import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.PlainSelect;
+import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectItem;
 
 @Slf4j
 class JSqlParserTest {
+	
+	@Test
+	void sqlParserTest() throws JSQLParserException {
+		{
+			String sql = "SELECT * FROM table ORDER BY column1 ASC, column2 DESC LIMIT 10";
+			Statement statement = CCJSqlParserUtil.parse(sql);
+			Select select = (Select) statement;
+			PlainSelect plainSelect = select.getPlainSelect();
+			Table table = (Table) plainSelect.getFromItem();
+			log.debug("table Name : {}", table.getName());
+			
+			
+			log.debug("getOrderByElements : {}", plainSelect.getOrderByElements().toString());
+		}
+		{
+			var whereExpression = new EqualsTo().withLeftExpression(new Column("columnA")).withRightExpression(new Column("columnAValue"));
+			
+		
+			List<OrderByElement> orderByElementList = new ArrayList<>();
+			{
+				var element = new OrderByElement();
+				element.setExpression(new Column("columnA"));
+				orderByElementList.add(element);
+			}
+			
+		
+			var select = new PlainSelect()
+					.addSelectItems(new AllColumns())
+					.withFromItem(new Table("testTable"))
+					.withWhere(whereExpression)
+					.withOrderByElements(orderByElementList);
+			
+			log.debug("TEST : {}", select.toString());
+			
+		}
+		
+	}
 
 	// jsqlparser 테스트
 	

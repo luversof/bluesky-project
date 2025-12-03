@@ -10,15 +10,14 @@ import org.bson.Document;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 
 import com.mongodb.client.MongoClient;
 
-import io.github.luversof.boot.autoconfigure.mongo.MongoProperties;
 import io.github.luversof.boot.connectioninfo.ConnectionInfoRegistry;
+import io.github.luversof.boot.connectioninfo.mongodb.MongoDbConnectionMapProperties;
 import lombok.Getter;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldEnable;
@@ -35,11 +34,11 @@ public class MongoUseService implements UseService {
 
 	@Getter
 	private ConnectionInfoRegistry<MongoClient> mongoClientConnectionInfoRegistry;
-	private MongoProperties mongoProperties;
+	private MongoDbConnectionMapProperties mongoDbConnectionMapProperties;
 
-	public MongoUseService(@Nullable ConnectionInfoRegistry<MongoClient> mongoClientConnectionInfoRegistry, MongoProperties mongoProperties) {
+	public MongoUseService(ConnectionInfoRegistry<MongoClient> mongoClientConnectionInfoRegistry, MongoDbConnectionMapProperties mongoDbConnectionMapProperties) {
 		this.mongoClientConnectionInfoRegistry = mongoClientConnectionInfoRegistry;
-		this.mongoProperties = mongoProperties;
+		this.mongoDbConnectionMapProperties = mongoDbConnectionMapProperties;
 	}
 
 	@Override
@@ -52,7 +51,7 @@ public class MongoUseService implements UseService {
 	}
 
 	private String getMongoDataBase(String connection) {
-		return mongoProperties.getConnectionMap().get(connection).getDatabase();
+		return mongoDbConnectionMapProperties.getConnectionMap().get(connection).getDatabase();
 	}
 
 	@Override

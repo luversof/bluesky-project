@@ -84,13 +84,6 @@
 			<artifactId>uuid-creator</artifactId>
 		</dependency>
 		
-		<!-- (s) bluesky api dto -->
-		<dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-api-dto</artifactId>
-		</dependency>
-		<!-- (e) bluesky api dto -->
-
 		<dependency>
 			<groupId>com.fasterxml.jackson.dataformat</groupId>
 			<artifactId>jackson-dataformat-csv</artifactId>

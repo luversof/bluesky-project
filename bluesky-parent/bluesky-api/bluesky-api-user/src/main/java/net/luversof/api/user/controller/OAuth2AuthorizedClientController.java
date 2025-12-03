@@ -3,8 +3,7 @@ package net.luversof.api.user.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.MediaType;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-import org.springframework.security.jackson2.SecurityJackson2Modules;
+import org.springframework.security.jackson.SecurityJacksonModules;
 import org.springframework.security.oauth2.client.JdbcOAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -15,10 +14,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.github.luversof.boot.web.servlet.util.ServletRequestDataBinderUtil;
 import lombok.Setter;
+import tools.jackson.databind.json.JsonMapper;
 
 @RestController
 @RequestMapping(value = "/api/oAuth2AuthorizedClient", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -28,11 +26,19 @@ public class OAuth2AuthorizedClientController {
 	@Setter(onMethod_ = @Autowired)
 	private JdbcOAuth2AuthorizedClientService oAuth2AuthorizedClientService;
 
-	private ObjectMapper objectMapper;
+	private JsonMapper jsonMapper;
 
-	OAuth2AuthorizedClientController(Jackson2ObjectMapperBuilder builder) {
-		this.objectMapper = builder.createXmlMapper(false).build();
-		this.objectMapper.registerModules(SecurityJackson2Modules.getModules(getClass().getClassLoader()));
+	OAuth2AuthorizedClientController() {
+		// Jackson 3 에서는 JsonMapper.builder() 사용
+		var builder = JsonMapper.builder();
+
+		// 기존 SecurityJackson2Modules 등록 (Jackson 3에서도 동일)
+		for (var module : SecurityJacksonModules.getModules(getClass().getClassLoader())) {
+			builder.addModule(module);
+		}
+
+		// XML 비활성화: createXmlMapper(false) → JSON 전용 JsonMapper 이므로 기본적으로 XML 없음
+		this.jsonMapper = builder.build();
 	}
 
 	@GetMapping
@@ -43,7 +49,7 @@ public class OAuth2AuthorizedClientController {
 
 	@PostMapping
 	public void saveAuthorizedClient() {
-		var saveAuthorizedClientParam = ServletRequestDataBinderUtil.getRequestBodyObject(objectMapper,
+		var saveAuthorizedClientParam = ServletRequestDataBinderUtil.getRequestBodyObject(jsonMapper,
 				SaveAuthorizedClientParam.class);
 		oAuth2AuthorizedClientService.saveAuthorizedClient(saveAuthorizedClientParam.authorizedClient(),
 				saveAuthorizedClientParam.principal());

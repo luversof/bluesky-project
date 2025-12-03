@@ -18,18 +18,18 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import lombok.Setter;
-import net.luversof.web.gate.util.UserUtil;
 import net.luversof.web.gate.stock.domain.Account;
-import net.luversof.api.stock.web.dto.response.DividendResponse;
 import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.domain.TradeProfit;
 import net.luversof.web.gate.stock.dto.request.DividendRequest;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
+import net.luversof.web.gate.stock.dto.response.DividendResponse;
+import net.luversof.web.gate.stock.dto.response.DividendView;
 import net.luversof.web.gate.stock.openfeign.AccountClient;
 import net.luversof.web.gate.stock.openfeign.DividendClient;
 import net.luversof.web.gate.stock.openfeign.StockItemClient;
 import net.luversof.web.gate.stock.openfeign.TradeProfitClient;
-import net.luversof.api.stock.web.dto.response.DividendView;
+import net.luversof.web.gate.util.UserUtil;
 
 @Controller
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
