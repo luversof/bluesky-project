@@ -3,14 +3,13 @@ package net.luversof.client.user.config;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cloud.openfeign.FeignAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 
 import net.luversof.client.user.openfeign.UserApiClient;
 
-@AutoConfiguration(after = FeignAutoConfiguration.class)
+@AutoConfiguration
 @ConditionalOnClass(name = "org.springframework.security.oauth2.client.registration.ClientRegistrationRepository")
 @EnableConfigurationProperties(ClientUserFeignProperties.class)
 @Import(CommonOAuth2SecurityConfig.class)

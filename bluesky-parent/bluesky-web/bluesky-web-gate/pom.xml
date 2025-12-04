@@ -38,7 +38,6 @@
 		<!-- (e) spring-boot -->
 
 		<!-- (s) spring-session -->
-		<!-- vaadin과 같이 사용 하지 못함 -->
 		<dependency>
 			<groupId>org.springframework.session</groupId>
 			<artifactId>spring-session-data-redis</artifactId>
@@ -69,10 +68,10 @@
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
-		<dependency>
+		<!--<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-openfeign</artifactId>
-		</dependency>
+		</dependency>-->
 		<!-- (e) spring-cloud -->
 
 		<!-- (s) boot admin -->
@@ -116,10 +115,10 @@
 			<groupId>io.lettuce</groupId>
 			<artifactId>lettuce-core</artifactId>
 		</dependency>
-		<dependency>
+		<!--<dependency>
 			<groupId>io.github.openfeign</groupId>
 			<artifactId>feign-micrometer</artifactId>
-		</dependency>
+		</dependency>-->
 		<!-- (e) observability -->
 
 		<!-- (s) micrometer metrics -->
