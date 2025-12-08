@@ -23,7 +23,7 @@ import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.luversof.web.gate.board.domain.BoardArticle;
-import net.luversof.web.gate.board.openfeign.BoardArticleClient;
+import net.luversof.web.gate.board.httpexchange.BoardArticleClient;
 import net.luversof.web.gate.board.service.BoardUserInfoService;
 import net.luversof.web.gate.util.UserUtil;
 

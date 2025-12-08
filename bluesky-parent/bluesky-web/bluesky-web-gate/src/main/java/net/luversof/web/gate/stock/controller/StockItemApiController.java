@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import lombok.Setter;
 import net.luversof.web.gate.stock.domain.StockItem;
-import net.luversof.web.gate.stock.openfeign.StockItemClient;
+import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 
 @RestController
 @RequestMapping("/api/stock/stockItem")

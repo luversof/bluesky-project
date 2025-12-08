@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import lombok.Setter;
 import net.luversof.web.gate.stock.domain.TradeProfit;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
-import net.luversof.web.gate.stock.openfeign.TradeProfitClient;
+import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 
 @RestController
 @RequestMapping("/api/stock/tradeProfit")

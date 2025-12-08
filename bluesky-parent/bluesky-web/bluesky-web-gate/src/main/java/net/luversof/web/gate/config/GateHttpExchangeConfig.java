@@ -1,26 +1,16 @@
 //package net.luversof.web.gate.config;
 //
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.boot.context.properties.EnableConfigurationProperties;
-//import org.springframework.context.annotation.Bean;
 //import org.springframework.context.annotation.Configuration;
-//import org.springframework.http.HttpHeaders;
-//import org.springframework.http.MediaType;
-//import org.springframework.security.core.Authentication;
-//import org.springframework.security.core.context.SecurityContextHolder;
-//import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
-//import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
-//import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+//import org.springframework.web.service.registry.ImportHttpServices;
 //
-//import feign.Feign;
-//import feign.Logger.Level;
-//import feign.RequestInterceptor;
-//import io.micrometer.core.instrument.MeterRegistry;
-//import lombok.Setter;
+//import net.luversof.web.gate.blog.httpexchange.BlogArticleCategoryClient;
+//import net.luversof.web.gate.blog.httpexchange.BlogArticleClient;
+//import net.luversof.web.gate.blog.httpexchange.BlogArticleCommentClient;
+//import net.luversof.web.gate.blog.httpexchange.BlogClient;
 //
 //@Configuration
-//@EnableConfigurationProperties(GateFeignProperties.class)
-//public class GateFeignConfig {
+//public class GateHttpExchangeConfig {
+//	
 //
 //	@Setter(onMethod_ = @Autowired)
 //	private OAuth2AuthorizedClientManager authorizedClientManager;
@@ -56,10 +46,4 @@
 //		};
 //	}
 //
-//	@Bean
-//	Feign.Builder feignBuilder(MeterRegistry meterRegistry) {
-//		return Feign
-//				.builder()
-//				.logLevel(Level.FULL);
-//	}
 //}

@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import io.github.luversof.boot.htmx.annotation.HtmxResponseHeader;
 import lombok.Setter;
-import net.luversof.web.gate.board.openfeign.BoardArticleClient;
+import net.luversof.web.gate.board.httpexchange.BoardArticleClient;
 import net.luversof.web.gate.board.service.BoardUserInfoService;
 
 @Controller

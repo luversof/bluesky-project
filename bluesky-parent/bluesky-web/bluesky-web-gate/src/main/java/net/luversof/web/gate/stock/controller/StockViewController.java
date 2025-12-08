@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import lombok.Setter;
+import net.luversof.web.gate.stock.httpexchange.AccountClient;
+import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.util.UserUtil;
-import net.luversof.web.gate.stock.openfeign.AccountClient;
-import net.luversof.web.gate.stock.openfeign.StockItemClient;
 
 @Controller
 @RequestMapping(value = "/stock", produces = MediaType.TEXT_HTML_VALUE)

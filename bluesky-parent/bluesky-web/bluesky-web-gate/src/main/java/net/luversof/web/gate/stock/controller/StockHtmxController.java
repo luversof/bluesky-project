@@ -25,10 +25,10 @@ import net.luversof.web.gate.stock.dto.request.DividendRequest;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
 import net.luversof.web.gate.stock.dto.response.DividendResponse;
 import net.luversof.web.gate.stock.dto.response.DividendView;
-import net.luversof.web.gate.stock.openfeign.AccountClient;
-import net.luversof.web.gate.stock.openfeign.DividendClient;
-import net.luversof.web.gate.stock.openfeign.StockItemClient;
-import net.luversof.web.gate.stock.openfeign.TradeProfitClient;
+import net.luversof.web.gate.stock.httpexchange.AccountClient;
+import net.luversof.web.gate.stock.httpexchange.DividendClient;
+import net.luversof.web.gate.stock.httpexchange.StockItemClient;
+import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 import net.luversof.web.gate.util.UserUtil;
 
 @Controller

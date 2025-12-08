@@ -12,27 +12,27 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import lombok.Setter;
-import net.luversof.web.gate.util.UserUtil;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
 import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint;
-import net.luversof.web.gate.stock.openfeign.TradeProfitClient;
+import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
+import net.luversof.web.gate.util.UserUtil;
 
 @Controller
 @RequestMapping(value = "/stock/api")
 public class StockApiController {
 
-    @Setter(onMethod_ = @Autowired)
-    private TradeProfitClient tradeProfitClient;
+	@Setter(onMethod_ = @Autowired)
+	private TradeProfitClient tradeProfitClient;
 
-    @GetMapping(value = "/timeSeries", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
-    public ResponseEntity<List<TradeProfitTimeSeriesPoint>> timeSeries(TradeProfitRequest request) {
-        UUID userId = UserUtil.getUserId();
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
-        request.setUserId(userId);
-        List<TradeProfitTimeSeriesPoint> series = tradeProfitClient.timeSeries(request);
-        return ResponseEntity.ok(series);
-    }
+	@GetMapping(value = "/timeSeries", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ResponseBody
+	public ResponseEntity<List<TradeProfitTimeSeriesPoint>> timeSeries(TradeProfitRequest request) {
+		UUID userId = UserUtil.getUserId();
+		if (userId == null) {
+			return ResponseEntity.status(401).build();
+		}
+		request.setUserId(userId);
+		List<TradeProfitTimeSeriesPoint> series = tradeProfitClient.timeSeries(request);
+		return ResponseEntity.ok(series);
+	}
 }

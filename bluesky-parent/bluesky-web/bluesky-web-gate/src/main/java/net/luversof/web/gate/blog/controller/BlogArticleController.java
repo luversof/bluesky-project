@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
-import net.luversof.web.gate.util.UserUtil;
 import net.luversof.web.gate.blog.domain.BlogArticle;
-import net.luversof.web.gate.blog.openfeign.BlogArticleClient;
+import net.luversof.web.gate.blog.httpexchange.BlogArticleClient;
+import net.luversof.web.gate.util.UserUtil;
 
 @RestController
 @RequestMapping(value = "/api/blogArticle", produces = MediaType.APPLICATION_JSON_VALUE)

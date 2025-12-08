@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
 import lombok.Setter;
 import net.luversof.web.gate.bookkeeping.domain.Bookkeeping;
-import net.luversof.web.gate.bookkeeping.openfeign.BookkeepingClient;
+import net.luversof.web.gate.bookkeeping.httpexchange.BookkeepingClient;
 
 @DevCheckController
 @RequestMapping(value = "/bookkeeping", produces = MediaType.APPLICATION_JSON_VALUE)

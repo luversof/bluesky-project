@@ -11,8 +11,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import lombok.extern.slf4j.Slf4j;
+import net.luversof.client.user.httpexchange.UserInfoApiClient;
 import net.luversof.web.gate.config.ApplicationContextProvider;
-import net.luversof.client.user.openfeign.UserApiClient;
 
 /**
  * 사용자 정보를 가져오는 유틸리티 클래스
@@ -74,8 +74,8 @@ public class UserUtil {
 		String providerId = idAttr.toString();
 
 		try {
-			UserApiClient userApiClient = ApplicationContextProvider.getBean(UserApiClient.class);
-			UserApiClient.UserInfoResponse userInfo = userApiClient.findUserByProvider(provider, providerId);
+			var userApiClient = ApplicationContextProvider.getBean(UserInfoApiClient.class);
+			UserInfoApiClient.UserInfoResponse userInfo = userApiClient.findByProviderAndProviderId(provider, providerId);
 
 			if (userInfo == null || userInfo.id() == null) {
 				log.warn("UserInfo not found: provider={}, providerId={}", provider, providerId);

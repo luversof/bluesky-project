@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import io.github.luversof.boot.exception.BlueskyException;
 import lombok.Setter;
 import net.luversof.web.gate.board.domain.Board;
-import net.luversof.web.gate.board.openfeign.BoardArticleClient;
-import net.luversof.web.gate.board.openfeign.BoardClient;
+import net.luversof.web.gate.board.httpexchange.BoardArticleClient;
+import net.luversof.web.gate.board.httpexchange.BoardClient;
 import net.luversof.web.gate.board.service.BoardUserInfoService;
 import net.luversof.web.gate.util.UserUtil;
 

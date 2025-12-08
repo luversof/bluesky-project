@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import net.luversof.GeneralWebTest;
 import net.luversof.web.gate.blog.domain.BlogArticle;
-import net.luversof.web.gate.blog.openfeign.BlogArticleClient;
+import net.luversof.web.gate.blog.httpexchange.BlogArticleClient;
 
 class BlogArticleTest implements GeneralWebTest {
 

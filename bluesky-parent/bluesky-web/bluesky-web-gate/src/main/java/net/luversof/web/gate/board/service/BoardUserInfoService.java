@@ -16,9 +16,10 @@ import org.springframework.util.StringUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.luversof.client.user.openfeign.UserApiClient;
+import net.luversof.client.user.httpexchange.UserInfoApiClient;
 import net.luversof.web.gate.board.domain.BoardArticle;
 import net.luversof.web.gate.board.domain.BoardArticleComment;
+import net.luversof.web.gate.board.httpexchange.BoardArticleCommentClient;
 
 /**
  * Helper service that enriches board resources with human readable usernames
@@ -31,8 +32,8 @@ public class BoardUserInfoService {
 
 	private static final String ANONYMOUS = "익명";
 
-	private final UserApiClient userApiClient;
-	private final net.luversof.web.gate.board.openfeign.BoardArticleCommentClient boardArticleCommentClient;
+	private final UserInfoApiClient userInfoApiClient;
+	private final BoardArticleCommentClient boardArticleCommentClient;
 
 	public BoardArticle enrich(BoardArticle boardArticle) {
 		if (boardArticle == null) {
@@ -123,7 +124,7 @@ public class BoardUserInfoService {
 			return Collections.emptyMap();
 		}
 		try {
-			var responses = userApiClient.findByIdIn(List.copyOf(distinctIds));
+			var responses = userInfoApiClient.findByIdIn(List.copyOf(distinctIds));
 			if (responses == null || responses.isEmpty()) {
 				return Collections.emptyMap();
 			}

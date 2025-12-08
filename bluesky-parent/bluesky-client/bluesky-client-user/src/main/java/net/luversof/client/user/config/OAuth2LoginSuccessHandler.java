@@ -13,7 +13,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.Setter;
-import net.luversof.client.user.openfeign.UserApiClient;
+import net.luversof.client.user.httpexchange.UserInfoApiClient;
 
 /**
  * Common OAuth2 Login Success Handler for all bluesky-web modules
@@ -25,7 +25,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 	private OAuth2AuthorizedClientRepository authorizedClientRepository;
 
 	@Setter(onMethod_ = @Autowired)
-	private UserApiClient userApiClient;
+	private UserInfoApiClient userInfoApiClient;
 
 	public OAuth2LoginSuccessHandler() {
 		setDefaultTargetUrl("/");
@@ -69,7 +69,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 			}
 			
 			// Save user info to bluesky-api-user
-			var request = new UserApiClient.SaveOAuth2UserRequest(
+			var request = new UserInfoApiClient.SaveOAuth2UserRequest(
 				provider,
 				providerId,
 				username,
@@ -77,7 +77,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 				avatarUrl
 			);
 			
-			userApiClient.saveOAuth2User(request);
+			userInfoApiClient.saveOAuth2User(request);
 		} catch (Exception e) {
 			// Log error but allow login to proceed
 			e.printStackTrace();
