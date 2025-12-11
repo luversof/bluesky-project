@@ -2,6 +2,7 @@ package net.luversof.api.stock.domain;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.data.annotation.Id;
@@ -11,12 +12,10 @@ import org.springframework.data.relational.core.mapping.Table;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
-import lombok.Data;
 
 /**
  * 주식 현재가 정보
  */
-@Data
 @Table("StockPrice")
 public class StockPrice {
 
@@ -45,5 +44,61 @@ public class StockPrice {
 	}
 
 	public interface Delete {
+	}
+
+	public UUID getId() {
+		return id;
+	}
+
+	public void setId(UUID id) {
+		this.id = id;
+	}
+
+	public UUID getStockItemId() {
+		return stockItemId;
+	}
+
+	public void setStockItemId(UUID stockItemId) {
+		this.stockItemId = stockItemId;
+	}
+
+	public BigDecimal getPrice() {
+		return price;
+	}
+
+	public void setPrice(BigDecimal price) {
+		this.price = price;
+	}
+
+	public Instant getUpdatedDate() {
+		return updatedDate;
+	}
+
+	public void setUpdatedDate(Instant updatedDate) {
+		this.updatedDate = updatedDate;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		StockPrice other = (StockPrice) obj;
+		return Objects.equals(id, other.id) && Objects.equals(price, other.price)
+				&& Objects.equals(stockItemId, other.stockItemId) && Objects.equals(updatedDate, other.updatedDate);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(id, price, stockItemId, updatedDate);
+	}
+
+	@Override
+	public String toString() {
+		return "StockPrice [id=" + id + ", stockItemId=" + stockItemId + ", price=" + price + ", updatedDate="
+				+ updatedDate + "]";
 	}
 }

@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.web.servlet.util.ServletRequestDataBinderUtil;
-import lombok.Setter;
 import tools.jackson.databind.json.JsonMapper;
 
 @RestController
@@ -23,8 +22,12 @@ import tools.jackson.databind.json.JsonMapper;
 @ConditionalOnBean(JdbcOAuth2AuthorizedClientService.class)
 public class OAuth2AuthorizedClientController {
 
-	@Setter(onMethod_ = @Autowired)
 	private JdbcOAuth2AuthorizedClientService oAuth2AuthorizedClientService;
+
+	@Autowired
+	public void setOAuth2AuthorizedClientService(JdbcOAuth2AuthorizedClientService oAuth2AuthorizedClientService) {
+		this.oAuth2AuthorizedClientService = oAuth2AuthorizedClientService;
+	}
 
 	private JsonMapper jsonMapper;
 

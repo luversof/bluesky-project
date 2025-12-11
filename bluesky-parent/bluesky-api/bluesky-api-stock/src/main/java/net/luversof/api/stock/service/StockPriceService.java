@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import lombok.Setter;
 import net.luversof.api.stock.domain.StockPrice;
 import net.luversof.api.stock.domain.StockPriceHistory;
 import net.luversof.api.stock.repository.StockPriceHistoryRepository;
@@ -16,11 +15,19 @@ import java.time.Instant;
 @Service
 public class StockPriceService {
 
-	@Setter(onMethod_ = @Autowired)
+	@Autowired
 	private StockPriceRepository stockPriceRepository;
 
-	@Setter(onMethod_ = @Autowired)
+	@Autowired
 	private StockPriceHistoryRepository stockPriceHistoryRepository;
+
+	public void setStockPriceRepository(StockPriceRepository stockPriceRepository) {
+		this.stockPriceRepository = stockPriceRepository;
+	}
+
+	public void setStockPriceHistoryRepository(StockPriceHistoryRepository stockPriceHistoryRepository) {
+		this.stockPriceHistoryRepository = stockPriceHistoryRepository;
+	}
 
 	/**
 	 * 종목의 현재가 조회
@@ -39,7 +46,8 @@ public class StockPriceService {
 	 * 히스토리가 없으면 현재가로 폴백합니다.
 	 */
 	public BigDecimal getPriceAt(UUID stockItemId, Instant at) {
-		if (at == null) return getCurrentPrice(stockItemId);
+		if (at == null)
+			return getCurrentPrice(stockItemId);
 		return stockPriceHistoryRepository
 				.findTopByStockItemIdAndPriceDateLessThanEqualOrderByPriceDateDesc(stockItemId, at)
 				.map(StockPriceHistory::getPrice)

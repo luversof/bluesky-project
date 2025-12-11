@@ -2,6 +2,7 @@ package net.luversof.api.stock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -15,6 +16,8 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.StringUtils;
@@ -23,14 +26,12 @@ import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.api.stock.constant.TestConstant;
 import net.luversof.api.stock.domain.Account;
+import net.luversof.api.stock.domain.Dividend;
 //import net.luversof.api.stock.domain.Dividend;
 import net.luversof.api.stock.domain.DividendCsvRecord;
-import net.luversof.api.stock.domain.Dividend;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.repository.AccountRepository;
 import net.luversof.api.stock.repository.DividendRepository;
@@ -38,8 +39,9 @@ import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.service.DividendService;
 import net.luversof.api.stock.web.dto.request.DividendSearchRequest;
 
-@Slf4j
 class DividendTest implements GeneralTest {
+
+	private static final Logger log = LoggerFactory.getLogger(DividendTest.class);
 
 	private static final ZoneOffset KST = ZoneOffset.ofHours(9);
 	private static final List<DateTimeFormatter> DATE_FORMATTERS = List.of(
@@ -62,7 +64,7 @@ class DividendTest implements GeneralTest {
 	UUID userId = TestConstant.USER_ID;
 
 	@Test
-	void dividendBulkInsert() {
+	void dividendBulkInsert() throws IOException {
 		dividendRepository.deleteAll();
 
 		var dividendCsvRecordList = loadDividendCsvRecordList();
@@ -189,8 +191,7 @@ class DividendTest implements GeneralTest {
 		return null;
 	}
 
-	@SneakyThrows
-	List<DividendCsvRecord> loadDividendCsvRecordList() {
+	List<DividendCsvRecord> loadDividendCsvRecordList() throws IOException {
 		var mapper = new CsvMapper();
 		MappingIterator<DividendCsvRecord> iterator = mapper
 				.readerFor(DividendCsvRecord.class)

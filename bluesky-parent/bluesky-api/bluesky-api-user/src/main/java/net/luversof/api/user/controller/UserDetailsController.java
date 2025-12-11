@@ -14,15 +14,17 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import lombok.Setter;
-
 @RestController
 @RequestMapping(value = "/api/userDetails", produces = MediaType.APPLICATION_JSON_VALUE)
 @ConditionalOnBean(UserDetailsManager.class)
 public class UserDetailsController {
 
-	@Setter(onMethod_ = @Autowired)
 	private UserDetailsManager userDetailsManager;
+
+	@Autowired
+	public void setUserDetailsManager(UserDetailsManager userDetailsManager) {
+		this.userDetailsManager = userDetailsManager;
+	}
 
 	@GetMapping("/search/loadUserByUsername")
 	public UserDetails loadUserByUsername(String username) {

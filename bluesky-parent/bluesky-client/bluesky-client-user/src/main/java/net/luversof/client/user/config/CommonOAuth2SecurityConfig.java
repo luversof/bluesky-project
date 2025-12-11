@@ -15,8 +15,6 @@ import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedCli
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.web.SecurityFilterChain;
 
-import lombok.Setter;
-
 /**
  * Common OAuth2 Security Configuration for all bluesky-web modules
  * 
@@ -35,25 +33,27 @@ public class CommonOAuth2SecurityConfig {
 	 * All requests are permitted by default
 	 * Authentication can be enforced at controller or page level
 	 * 
-	 * Note: exceptionHandling with empty authenticationEntryPoint prevents automatic redirect to /login
-	 * OAuth2 login will only trigger when user explicitly clicks login button (/oauth2/authorization/{provider})
+	 * Note: exceptionHandling with empty authenticationEntryPoint prevents
+	 * automatic redirect to /login
+	 * OAuth2 login will only trigger when user explicitly clicks login button
+	 * (/oauth2/authorization/{provider})
 	 */
 	@Bean
-	SecurityFilterChain securityFilterChain(HttpSecurity http, 
+	SecurityFilterChain securityFilterChain(HttpSecurity http,
 			ObjectProvider<OAuth2LoginSuccessHandler> successHandlerProvider) throws Exception {
 		return http
-			.csrf(CsrfConfigurer::disable)
-			.authorizeHttpRequests(authorize -> authorize
-				.anyRequest().permitAll())
-			.oauth2Login(oauth2 -> oauth2
-				.successHandler(successHandlerProvider.getObject()))
-			.oauth2Client(Customizer.withDefaults())
-			.logout(logout -> logout
-				.logoutUrl("/logout")
-				.logoutSuccessUrl("/")
-				.invalidateHttpSession(true)
-				.clearAuthentication(true))
-			.build();
+				.csrf(CsrfConfigurer::disable)
+				.authorizeHttpRequests(authorize -> authorize
+						.anyRequest().permitAll())
+				.oauth2Login(oauth2 -> oauth2
+						.successHandler(successHandlerProvider.getObject()))
+				.oauth2Client(Customizer.withDefaults())
+				.logout(logout -> logout
+						.logoutUrl("/logout")
+						.logoutSuccessUrl("/")
+						.invalidateHttpSession(true)
+						.clearAuthentication(true))
+				.build();
 	}
 
 	/**

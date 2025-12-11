@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import lombok.Setter;
 import net.luversof.api.board.domain.BoardArticleComment;
 import net.luversof.api.board.service.BoardArticleCommentService;
 import net.luversof.api.board.domain.BoardArticleCommentCount;
@@ -29,8 +28,12 @@ import net.luversof.api.board.domain.BoardArticleCommentCount;
 @RequestMapping(value = "/api/boardArticleComment", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BoardArticleCommentController {
 
-	@Setter(onMethod_ = @Autowired)
 	private BoardArticleCommentService boardArticleCommentService;
+
+	@Autowired
+	public void setBoardArticleCommentService(BoardArticleCommentService boardArticleCommentService) {
+		this.boardArticleCommentService = boardArticleCommentService;
+	}
 
 	@PostMapping
 	public BoardArticleComment create(

@@ -17,7 +17,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import lombok.Setter;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.stock.domain.Account;
 import net.luversof.web.gate.stock.domain.StockItem;
@@ -40,14 +39,26 @@ public class StockHtmxController {
 	private static final String ERROR_VIEW = "stock/htmx/error";
 	private static final String UNKNOWN_LABEL = "종목 정보 없음";
 
-	@Setter(onMethod_ = @Autowired)
 	private TradeProfitClient tradeProfitClient;
 
-	@Setter(onMethod_ = @Autowired)
 	private AccountClient accountClient;
 
-	@Setter(onMethod_ = @Autowired)
 	private StockItemClient stockItemClient;
+
+	@Autowired
+	public void setTradeProfitClient(TradeProfitClient tradeProfitClient) {
+		this.tradeProfitClient = tradeProfitClient;
+	}
+
+	@Autowired
+	public void setAccountClient(AccountClient accountClient) {
+		this.accountClient = accountClient;
+	}
+
+	@Autowired
+	public void setStockItemClient(StockItemClient stockItemClient) {
+		this.stockItemClient = stockItemClient;
+	}
 
 	@Setter(onMethod_ = @Autowired)
 	private DividendClient dividendClient;

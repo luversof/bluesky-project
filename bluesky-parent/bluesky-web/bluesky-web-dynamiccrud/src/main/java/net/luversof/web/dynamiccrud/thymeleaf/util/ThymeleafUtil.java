@@ -17,7 +17,6 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import lombok.experimental.UtilityClass;
 import net.luversof.web.common.menu.domain.Menu;
 import net.luversof.web.common.menu.domain.Pagination;
 import net.luversof.web.dynamiccrud.setting.constant.SettingConstant;
@@ -28,11 +27,13 @@ import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstan
 import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 import net.luversof.web.dynamiccrud.thymeleaf.constant.UrlConstant;
 
-@UtilityClass
-public class ThymeleafUtil {
-	
+public final class ThymeleafUtil {
+
+	private ThymeleafUtil() {
+	}
+
 	private static final String URL_PATTERN = "(\\{)([\\w\\d]*)([\\:\\w\\|]*)(})";
-	
+
 	private static final String[] THEMES = new String[] {
 			"bluesky",
 			"light",
@@ -71,7 +72,7 @@ public class ThymeleafUtil {
 			"abyss",
 			"silk"
 	};
-	
+
 	public static List<Menu> getMainMenuList(String adminProjectId, String projectId) {
 		var mainMenuList = SettingUtil.getMainMenuList(adminProjectId, projectId);
 		return getMenuListFromMainMenuList(mainMenuList);
@@ -81,15 +82,17 @@ public class ThymeleafUtil {
 		var mainMenuList = SettingUtil.getMainMenuList();
 		return getMenuListFromMainMenuList(mainMenuList);
 	}
-	
+
 	private static List<Menu> getMenuListFromMainMenuList(List<MainMenu> mainMenuList) {
 		var menuList = new ArrayList<Menu>();
 		mainMenuList.forEach(mainMenu -> {
-			var subMenuList = SettingUtil.getSubMenuList(mainMenu.getAdminProjectId(), mainMenu.getProjectId(), mainMenu.getMainMenuId());
+			var subMenuList = SettingUtil.getSubMenuList(mainMenu.getAdminProjectId(), mainMenu.getProjectId(),
+					mainMenu.getMainMenuId());
 			subMenuList.sort(Comparator.comparing(SubMenu::getDisplayOrder));
-			if(!CollectionUtils.isEmpty(subMenuList)) {
+			if (!CollectionUtils.isEmpty(subMenuList)) {
 				var menu = new Menu();
-				var targetSubMenu = subMenuList.stream().filter(SubMenu::isEnableDisplay).findFirst().orElseGet(() -> null);
+				var targetSubMenu = subMenuList.stream().filter(SubMenu::isEnableDisplay).findFirst()
+						.orElseGet(() -> null);
 				menu.setUrl(targetSubMenu == null ? null : targetSubMenu.getUrl());
 				menu.setMessageCode(mainMenu.getMainMenuName());
 				menu.setDisplay(mainMenu.isEnableDisplay());
@@ -98,19 +101,20 @@ public class ThymeleafUtil {
 		});
 		return menuList;
 	}
-	
+
 	public static List<Menu> getSubMenuList(String adminProjectId, String projectId, String mainMenuId) {
 		var subMenuList = SettingUtil.getSubMenuList(adminProjectId, projectId, mainMenuId);
 		return getMenuListFromSubMenuList(subMenuList);
 	}
-	
+
 	public static List<Menu> getSubMenuList() {
 		var subMenuList = SettingUtil.getSubMenuList();
 		return getMenuListFromSubMenuList(subMenuList);
 	}
-	
+
 	/**
 	 * layout에서 처리하는 menu호출이 null인 경우 기본 menu를 호출 처리
+	 * 
 	 * @return
 	 */
 	public static List<Menu> getDefaultSubMenuList() {
@@ -119,7 +123,7 @@ public class ThymeleafUtil {
 				EventAdminConstant.PROJECT_ID_VALUE,
 				EventAdminConstant.MAINMENU_ID_VALUE);
 	}
-	
+
 	private static List<Menu> getMenuListFromSubMenuList(List<SubMenu> subMenuList) {
 		subMenuList.sort(Comparator.comparing(SubMenu::getDisplayOrder));
 		var menuList = new ArrayList<Menu>();
@@ -132,25 +136,25 @@ public class ThymeleafUtil {
 		});
 		return menuList;
 	}
-	
+
 	public static Pagination getPagination(@SuppressWarnings("rawtypes") Page page) {
 		return new Pagination(page);
 	}
-	
+
 	public static String getUrl(String target) {
 		return getUrl(target, null);
 	}
-	
-	private String getAttribute(String key) {
+
+	private static String getAttribute(String key) {
 		return (String) RequestContextHolder.getRequestAttributes().getAttribute(key, RequestAttributes.SCOPE_REQUEST);
 	}
-	
-	private void putRequestParameterToMap(Map<String, String> map, String key) {
-		if(!map.containsKey(key)) {
+
+	private static void putRequestParameterToMap(Map<String, String> map, String key) {
+		if (!map.containsKey(key)) {
 			map.put(key, getAttribute(key));
 		}
 	}
-	
+
 	public static String getUrl(String target, Map<String, String> map) {
 		var targetMap = map == null ? new HashMap<String, String>() : new HashMap<String, String>(map);
 		putRequestParameterToMap(targetMap, SettingConstant.ADMIN_PROJECT_ID);
@@ -159,10 +163,10 @@ public class ThymeleafUtil {
 		putRequestParameterToMap(targetMap, SettingConstant.SUBMENU_ID);
 
 		var url = UrlConstant.UrlResolver.getUrl(target, targetMap.get(SettingConstant.ADMIN_PROJECT_ID));
-		
+
 		Pattern pattern = Pattern.compile(URL_PATTERN);
 		Matcher matcher = pattern.matcher(url);
-		
+
 		var replaceUrl = url;
 		while (matcher.find()) {
 			String key = matcher.group(2);
@@ -172,45 +176,46 @@ public class ThymeleafUtil {
 		}
 		return replaceUrl;
 	}
-	
+
 	public static boolean isAdminMenu() {
 		return SettingUtil.isAdminMenu(getAttribute(SettingConstant.ADMIN_PROJECT_ID));
 	}
-	
+
 	public static boolean isEnableMainMenuUI() {
 		var project = SettingUtil.getProject();
 		return project != null && project.isEnableMainMenuUI();
 	}
-	
+
 	public static MainMenu getMainMenu() {
 		return SettingUtil.getMainMenu(
-			getAttribute(SettingConstant.ADMIN_PROJECT_ID),
-			getAttribute(SettingConstant.PROJECT_ID),
-			getAttribute(SettingConstant.MAINMENU_ID));
+				getAttribute(SettingConstant.ADMIN_PROJECT_ID),
+				getAttribute(SettingConstant.PROJECT_ID),
+				getAttribute(SettingConstant.MAINMENU_ID));
 	}
-	
+
 	public static SubMenu getSubMenu() {
 		return SettingUtil.getSubMenu(
-			getAttribute(SettingConstant.ADMIN_PROJECT_ID),
-			getAttribute(SettingConstant.PROJECT_ID),
-			getAttribute(SettingConstant.MAINMENU_ID),
-			getAttribute(SettingConstant.SUBMENU_ID));
+				getAttribute(SettingConstant.ADMIN_PROJECT_ID),
+				getAttribute(SettingConstant.PROJECT_ID),
+				getAttribute(SettingConstant.MAINMENU_ID),
+				getAttribute(SettingConstant.SUBMENU_ID));
 	}
-	
+
 	public static List<DbField> getDbFieldList() {
 		return SettingUtil.getDbFieldList(
-			getAttribute(SettingConstant.ADMIN_PROJECT_ID),
-			getAttribute(SettingConstant.PROJECT_ID),
-			getAttribute(SettingConstant.MAINMENU_ID),
-			getAttribute(SettingConstant.SUBMENU_ID));
+				getAttribute(SettingConstant.ADMIN_PROJECT_ID),
+				getAttribute(SettingConstant.PROJECT_ID),
+				getAttribute(SettingConstant.MAINMENU_ID),
+				getAttribute(SettingConstant.SUBMENU_ID));
 	}
-	
-	private Random random = new Random();
-	public static String getRandomTheme(String...themes) {
+
+	private static Random random = new Random();
+
+	public static String getRandomTheme(String... themes) {
 		var themeList = List.of(themes.length == 0 ? THEMES : themes);
 		return themeList.get(random.nextInt(themeList.size()));
 	}
-	
+
 	public static List<String> getThemeList() {
 		return Arrays.asList(THEMES);
 	}

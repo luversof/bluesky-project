@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import lombok.Setter;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
 import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint;
@@ -21,8 +20,12 @@ import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 @RequestMapping(value = "/stock/api")
 public class StockApiController {
 
-	@Setter(onMethod_ = @Autowired)
 	private TradeProfitClient tradeProfitClient;
+
+	@Autowired
+	public void setTradeProfitClient(TradeProfitClient tradeProfitClient) {
+		this.tradeProfitClient = tradeProfitClient;
+	}
 
 	@GetMapping(value = "/timeSeries", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseBody

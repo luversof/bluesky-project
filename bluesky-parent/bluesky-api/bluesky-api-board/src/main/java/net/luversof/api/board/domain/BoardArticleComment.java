@@ -1,6 +1,7 @@
 package net.luversof.api.board.domain;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.data.annotation.CreatedDate;
@@ -12,9 +13,7 @@ import org.springframework.data.relational.core.mapping.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
-import lombok.Data;
 
-@Data
 @Table("BoardArticleComment")
 public class BoardArticleComment {
 
@@ -51,5 +50,79 @@ public class BoardArticleComment {
 	}
 
 	public interface Delete {
+	}
+
+	public UUID getId() {
+		return id;
+	}
+
+	public void setId(UUID id) {
+		this.id = id;
+	}
+
+	public UUID getBoardArticleId() {
+		return boardArticleId;
+	}
+
+	public void setBoardArticleId(UUID boardArticleId) {
+		this.boardArticleId = boardArticleId;
+	}
+
+	public UUID getUserId() {
+		return userId;
+	}
+
+	public void setUserId(UUID userId) {
+		this.userId = userId;
+	}
+
+	public String getContent() {
+		return content;
+	}
+
+	public void setContent(String content) {
+		this.content = content;
+	}
+
+	public Instant getCreatedDate() {
+		return createdDate;
+	}
+
+	public void setCreatedDate(Instant createdDate) {
+		this.createdDate = createdDate;
+	}
+
+	public Instant getLastModifiedDate() {
+		return lastModifiedDate;
+	}
+
+	public void setLastModifiedDate(Instant lastModifiedDate) {
+		this.lastModifiedDate = lastModifiedDate;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		BoardArticleComment other = (BoardArticleComment) obj;
+		return Objects.equals(boardArticleId, other.boardArticleId) && Objects.equals(content, other.content)
+				&& Objects.equals(createdDate, other.createdDate) && Objects.equals(id, other.id)
+				&& Objects.equals(lastModifiedDate, other.lastModifiedDate) && Objects.equals(userId, other.userId);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(boardArticleId, content, createdDate, id, lastModifiedDate, userId);
+	}
+
+	@Override
+	public String toString() {
+		return "BoardArticleComment [id=" + id + ", boardArticleId=" + boardArticleId + ", userId=" + userId
+				+ ", content=" + content + ", createdDate=" + createdDate + ", lastModifiedDate=" + lastModifiedDate
+				+ "]";
 	}
 }

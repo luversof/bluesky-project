@@ -10,7 +10,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import io.github.luversof.boot.exception.BlueskyException;
-import lombok.Setter;
 import net.luversof.api.board.constant.BoardErrorCode;
 import net.luversof.api.board.domain.BoardArticleComment;
 import net.luversof.api.board.repository.BoardArticleCommentRepository;
@@ -20,10 +19,10 @@ import net.luversof.api.board.domain.BoardArticleCommentCount;
 @Service
 public class BoardArticleCommentService {
 
-	@Setter(onMethod_ = @Autowired)
+	@Autowired
 	private BoardArticleRepository boardArticleRepository;
 
-	@Setter(onMethod_ = @Autowired)
+	@Autowired
 	private BoardArticleCommentRepository boardArticleCommentRepository;
 
 	public BoardArticleComment save(BoardArticleComment boardArticleComment) {

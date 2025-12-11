@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.exception.BlueskyException;
-import lombok.Setter;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.board.domain.Board;
 import net.luversof.web.gate.board.httpexchange.BoardArticleClient;
@@ -23,14 +22,26 @@ import net.luversof.web.gate.board.service.BoardUserInfoService;
 @RequestMapping(value = "/board", produces = MediaType.TEXT_HTML_VALUE)
 public class BoardViewController {
 
-	@Setter(onMethod_ = @Autowired)
 	private BoardClient boardClient;
 
-	@Setter(onMethod_ = @Autowired)
 	private BoardArticleClient boardArticleClient;
 
-	@Setter(onMethod_ = @Autowired)
 	private BoardUserInfoService boardUserInfoService;
+
+	@Autowired
+	public void setBoardClient(BoardClient boardClient) {
+		this.boardClient = boardClient;
+	}
+
+	@Autowired
+	public void setBoardArticleClient(BoardArticleClient boardArticleClient) {
+		this.boardArticleClient = boardArticleClient;
+	}
+
+	@Autowired
+	public void setBoardUserInfoService(BoardUserInfoService boardUserInfoService) {
+		this.boardUserInfoService = boardUserInfoService;
+	}
 
 	@GetMapping
 	public String index() {

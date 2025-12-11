@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import lombok.Setter;
 import net.luversof.api.bookkeeping.domain.Bookkeeping;
 import net.luversof.api.bookkeeping.service.BookkeepingService;
 
@@ -18,23 +17,22 @@ import net.luversof.api.bookkeeping.service.BookkeepingService;
 @RequestMapping(value = "/api/bookkeepings", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BookkeepingController {
 
-	@Setter(onMethod_ = @Autowired)
+	@Autowired
 	private BookkeepingService bookkeepingService;
-	
+
 	@PostMapping
 	public Bookkeeping createBookkeeping(@RequestBody Bookkeeping bookkeeping) {
 		return bookkeepingService.createBookkeeping(bookkeeping);
 	}
-	
+
 	@DeleteMapping("/byUserId")
 	public void deleteBookkeepingByUserId(UUID userId) {
 		bookkeepingService.deleteAllByUserId(userId);
 	}
-	
+
 	@DeleteMapping("/byBookkeepingId")
 	public void deleteBookkeepingByBookkeepingId(UUID bookkeepingId) {
 		bookkeepingService.deleteAllByBookkeepingId(bookkeepingId);
 	}
-	
-	
+
 }

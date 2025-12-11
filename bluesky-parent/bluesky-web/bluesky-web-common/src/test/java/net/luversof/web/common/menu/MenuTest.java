@@ -3,13 +3,15 @@ package net.luversof.web.common.menu;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import lombok.extern.slf4j.Slf4j;
 import net.luversof.web.common.menu.domain.Menu;
 
-@Slf4j
 public class MenuTest {
-	
+
+	private static final Logger log = LoggerFactory.getLogger(MenuTest.class);
+
 	@Test
 	void patternTest() {
 		var url = "/board/free/list";

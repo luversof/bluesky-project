@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import lombok.Setter;
 import net.luversof.api.stock.constant.StockErrorCode;
 import net.luversof.api.stock.constant.TradeType;
 import net.luversof.api.stock.domain.Account;
@@ -34,14 +33,26 @@ import java.util.TreeMap;
 @Service
 public class TradeProfitService {
 
-	@Setter(onMethod_ = @Autowired)
+	@Autowired
 	private AccountService accountService;
 
-	@Setter(onMethod_ = @Autowired)
+	@Autowired
 	private TradeService tradeService;
 
-	@Setter(onMethod_ = @Autowired)
+	@Autowired
 	private StockPriceService stockPriceService;
+
+	public void setAccountService(AccountService accountService) {
+		this.accountService = accountService;
+	}
+
+	public void setTradeService(TradeService tradeService) {
+		this.tradeService = tradeService;
+	}
+
+	public void setStockPriceService(StockPriceService stockPriceService) {
+		this.stockPriceService = stockPriceService;
+	}
 
 	public List<TradeProfit> calculateProfit(TradeProfitRequest request) {
 		// 요청 기준으로 tradeList를 조회
@@ -310,10 +321,10 @@ public class TradeProfitService {
 		return v == null ? BigDecimal.ZERO : v;
 	}
 
-
 	/**
 	 * 시간 시계열 집계: start ~ end (inclusive) 일별 포트폴리오 가치(실현 + 미실현) 스냅샷을 반환합니다.
-	 * 현재의 제약: 과거 일별 시세가 없으므로 미실현 평가액은 현재가(`stockPriceService.getCurrentPrice`)를 사용한 근사치입니다.
+	 * 현재의 제약: 과거 일별 시세가 없으므로 미실현 평가액은 현재가(`stockPriceService.getCurrentPrice`)를 사용한
+	 * 근사치입니다.
 	 */
 	public List<TradeProfitTimeSeriesPoint> aggregateTimeSeries(TradeProfitRequest request, String granularity) {
 		Instant end = request.endDate() != null ? request.endDate() : Instant.now();
@@ -340,14 +351,16 @@ public class TradeProfitService {
 				if (accountList.isEmpty()) {
 					StockErrorCode.INVALID_USER_ID.throwException();
 				}
-				yield tradeService.findByAccountIdInAndStockItemIdIn(accountList.stream().map(Account::getId).toList(), request.stockItemIdList());
+				yield tradeService.findByAccountIdInAndStockItemIdIn(accountList.stream().map(Account::getId).toList(),
+						request.stockItemIdList());
 			}
 			case USER_ACCOUNT_STOCKITEM -> {
 				var accountList = accountService.findByIdIn(request.accountIdList());
 				if (accountList.isEmpty()) {
 					StockErrorCode.INVALID_USER_ID.throwException();
 				}
-				yield tradeService.findByAccountIdInAndStockItemIdIn(request.accountIdList(), request.stockItemIdList());
+				yield tradeService.findByAccountIdInAndStockItemIdIn(request.accountIdList(),
+						request.stockItemIdList());
 			}
 		};
 
@@ -355,7 +368,8 @@ public class TradeProfitService {
 		allTrades.sort(Comparator.comparing(Trade::getTradeDate));
 
 		// 누적 상태를 관리: 종목별 누적 합계
-		record Cumul(long buyQty, long sellQty, java.math.BigDecimal buyAmount, java.math.BigDecimal sellAmount) {}
+		record Cumul(long buyQty, long sellQty, java.math.BigDecimal buyAmount, java.math.BigDecimal sellAmount) {
+		}
 
 		Map<java.util.UUID, Cumul> cumulMap = new TreeMap<>();
 
@@ -374,12 +388,16 @@ public class TradeProfitService {
 			while (nextTrade != null && !nextTrade.getTradeDate().isAfter(cur)) {
 				java.util.UUID sid = nextTrade.getStockItemId();
 				Cumul c = cumulMap.get(sid);
-				if (c == null) c = new Cumul(0L, 0L, java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO);
+				if (c == null)
+					c = new Cumul(0L, 0L, java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO);
 
 				if (nextTrade.getType() == TradeType.BUY) {
-					c = new Cumul(c.buyQty + nextTrade.getQuantity(), c.sellQty, c.buyAmount.add(nz(nextTrade.getPrice().multiply(java.math.BigDecimal.valueOf(nextTrade.getQuantity())))), c.sellAmount);
+					c = new Cumul(c.buyQty + nextTrade.getQuantity(), c.sellQty, c.buyAmount.add(
+							nz(nextTrade.getPrice().multiply(java.math.BigDecimal.valueOf(nextTrade.getQuantity())))),
+							c.sellAmount);
 				} else {
-					c = new Cumul(c.buyQty, c.sellQty + nextTrade.getQuantity(), c.buyAmount, c.sellAmount.add(nz(nextTrade.getPrice().multiply(java.math.BigDecimal.valueOf(nextTrade.getQuantity())))));
+					c = new Cumul(c.buyQty, c.sellQty + nextTrade.getQuantity(), c.buyAmount, c.sellAmount.add(
+							nz(nextTrade.getPrice().multiply(java.math.BigDecimal.valueOf(nextTrade.getQuantity())))));
 				}
 				cumulMap.put(sid, c);
 				tradesCountForDay++;
@@ -398,7 +416,8 @@ public class TradeProfitService {
 			java.math.BigDecimal dailyRealized = prevCumulativeRealized == null ? java.math.BigDecimal.ZERO
 					: cumulativeRealized.subtract(prevCumulativeRealized);
 
-			series.add(new TradeProfitTimeSeriesPoint(cur, cumulativeRealized, dailyRealized, tradesCountForDay, tradesVolumeForDay));
+			series.add(new TradeProfitTimeSeriesPoint(cur, cumulativeRealized, dailyRealized, tradesCountForDay,
+					tradesVolumeForDay));
 
 			prevCumulativeRealized = cumulativeRealized;
 			cur = cur.plus(1, ChronoUnit.DAYS);

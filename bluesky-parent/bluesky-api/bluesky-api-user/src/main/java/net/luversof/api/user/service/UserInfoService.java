@@ -7,15 +7,18 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import lombok.Setter;
 import net.luversof.api.user.domain.UserInfo;
 import net.luversof.api.user.repository.UserInfoRepository;
 
 @Service
 public class UserInfoService {
 
-	@Setter(onMethod_ = @Autowired)
 	private UserInfoRepository userInfoRepository;
+
+	@Autowired
+	public void setUserInfoRepository(UserInfoRepository userInfoRepository) {
+		this.userInfoRepository = userInfoRepository;
+	}
 
 	public UserInfo save(UserInfo userInfo) {
 		return userInfoRepository.save(userInfo);
@@ -58,15 +61,18 @@ public class UserInfoService {
 	/**
 	 * OAuth2 로그인 사용자 정보 저장 (신규 생성 또는 업데이트)
 	 */
-	public UserInfo saveOAuth2User(String provider, String providerId, String username, String email, String avatarUrl) {
+	public UserInfo saveOAuth2User(String provider, String providerId, String username, String email,
+			String avatarUrl) {
 		// Provider 정규화 (github-local → github)
 		provider = normalizeProvider(provider);
-		System.out.println("saveOAuth2User 호출: provider=" + provider + ", providerId=" + providerId + ", username=" + username);
-		
+		System.out.println(
+				"saveOAuth2User 호출: provider=" + provider + ", providerId=" + providerId + ", username=" + username);
+
 		// 기존 사용자 확인
 		Optional<UserInfo> existingUser = findByProviderAndProviderId(provider, providerId);
-		System.out.println("기존 사용자 조회 결과: " + (existingUser.isPresent() ? "존재 (id=" + existingUser.get().getId() + ")" : "없음"));
-		
+		System.out.println(
+				"기존 사용자 조회 결과: " + (existingUser.isPresent() ? "존재 (id=" + existingUser.get().getId() + ")" : "없음"));
+
 		if (existingUser.isPresent()) {
 			// 기존 사용자 업데이트 - email과 avatarUrl만 갱신
 			UserInfo userInfo = existingUser.get();
@@ -75,16 +81,16 @@ public class UserInfoService {
 			System.out.println("기존 사용자 업데이트: id=" + userInfo.getId() + ", username=" + userInfo.getUsername());
 			return save(userInfo);
 		}
-		
+
 		// 신규 사용자 생성 - username을 provider와 결합하여 유니크하게
 		String uniqueUsername = username + "_" + provider;
-		
+
 		// 중복 확인 후 번호 추가
 		Optional<UserInfo> duplicateCheck = findByUsername(uniqueUsername);
 		if (duplicateCheck.isPresent()) {
 			uniqueUsername = username + "_" + provider + "_" + providerId;
 		}
-		
+
 		UserInfo userInfo = new UserInfo();
 		// setId()를 호출하지 않음 - BeforeConvertCallback이 자동으로 UUID 생성
 		userInfo.setProvider(provider);
@@ -92,7 +98,7 @@ public class UserInfoService {
 		userInfo.setUsername(uniqueUsername);
 		userInfo.setEmail(email);
 		userInfo.setAvatarUrl(avatarUrl);
-		
+
 		System.out.println("신규 사용자 생성 시도: username=" + uniqueUsername);
 		UserInfo saved = save(userInfo);
 		System.out.println("저장 완료: id=" + saved.getId());

@@ -9,7 +9,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import io.github.luversof.boot.exception.BlueskyException;
-import lombok.Setter;
 import net.luversof.api.board.constant.BoardErrorCode;
 import net.luversof.api.board.domain.Board;
 import net.luversof.api.board.domain.BoardArticle;
@@ -19,13 +18,13 @@ import net.luversof.api.board.repository.BoardArticleRepository;
 @Service
 public class BoardArticleService {
 
-	@Setter(onMethod_ = @Autowired)
+	@Autowired
 	private BoardService boardService;
 
-	@Setter(onMethod_ = @Autowired)
+	@Autowired
 	private BoardArticleRepository boardArticleRepository;
 
-	@Setter(onMethod_ = @Autowired)
+	@Autowired
 	private BoardArticleCommentRepository boardArticleCommentRepository;
 
 	public BoardArticle save(BoardArticle boardArticle) {

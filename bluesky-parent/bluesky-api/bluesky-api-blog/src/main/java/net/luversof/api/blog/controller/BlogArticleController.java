@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import lombok.Setter;
 import net.luversof.api.blog.domain.mariadb.BlogArticle;
 import net.luversof.api.blog.service.BlogArticleService;
 
@@ -24,32 +23,32 @@ import net.luversof.api.blog.service.BlogArticleService;
 @RequestMapping(value = "/api/blogArticle", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BlogArticleController {
 
-	@Setter(onMethod_ = @Autowired)
+	@Autowired
 	private BlogArticleService blogArticleService;
-	
+
 	@PostMapping
 	public BlogArticle create(@Validated(BlogArticle.Create.class) @RequestBody BlogArticle blogArticle) {
 		return blogArticleService.create(blogArticle);
 	}
-	
+
 	@GetMapping("/search/findByBlogId/{blogId}")
 	public Page<BlogArticle> findByBlogId(@PathVariable String blogId, Pageable pageable) {
 		return blogArticleService.findByBlogId(blogId, pageable);
 	}
-	
+
 	@GetMapping("/search/findByBlogArticleId/{blogArticleId}")
 	public Optional<BlogArticle> findByBlogArticleId(@PathVariable String blogArticleId) {
 		return blogArticleService.findByBlogArticleId(blogArticleId);
 	}
-	
+
 	@PutMapping
 	public BlogArticle update(@Validated(BlogArticle.Update.class) @RequestBody BlogArticle blogArticle) {
 		return blogArticleService.update(blogArticle);
 	}
-	
+
 	@DeleteMapping
 	public void delete(@Validated(BlogArticle.Delete.class) @RequestBody BlogArticle blogArticle) {
 		blogArticleService.delete(blogArticle);
 	}
-	
+
 }

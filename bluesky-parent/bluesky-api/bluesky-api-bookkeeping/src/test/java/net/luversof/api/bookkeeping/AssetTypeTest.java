@@ -5,7 +5,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.luversof.GeneralTest;
 import net.luversof.api.bookkeeping.constant.AssetTypeCode;
 import net.luversof.api.bookkeeping.constant.TestConstant;
@@ -13,17 +15,18 @@ import net.luversof.api.bookkeeping.domain.AssetType;
 import net.luversof.api.bookkeeping.repository.AssetTypeRepository;
 import net.luversof.api.bookkeeping.service.AssetTypeService;
 
-@Slf4j
 class AssetTypeTest implements GeneralTest {
+
+	private static final Logger log = LoggerFactory.getLogger(AssetTypeTest.class);
 
 	@Autowired
 	AssetTypeService assetTypeService;
-	
+
 	@Autowired
 	AssetTypeRepository assetTypeRepository;
-	
+
 	UUID bookkeepingId = TestConstant.BOOKKEEPING_ID;
-	
+
 	@Test
 	void createAssetType() {
 		var assetType = new AssetType();
@@ -33,7 +36,7 @@ class AssetTypeTest implements GeneralTest {
 		var result = assetTypeService.createAssetType(assetType);
 		log.debug("result : {}", result);
 	}
-	
+
 	@Test
 	void selectAssetType() {
 		var assetTypeList = assetTypeRepository.findByBookkeepingId(bookkeepingId);

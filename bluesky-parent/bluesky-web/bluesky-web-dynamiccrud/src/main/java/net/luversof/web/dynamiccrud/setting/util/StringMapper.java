@@ -1,10 +1,9 @@
 package net.luversof.web.dynamiccrud.setting.util;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import lombok.Data;
 
 /**
  * 문자열의 placeholder를 교체하는 방법을 찾지 못해 따로 구성
@@ -16,10 +15,47 @@ public class StringMapper {
 	public static final String EMPTY_STRING = "";
 	public static final String MAPPING_PATTERN = "(\\$\\{)([a-zA-Z0-9]*)(})";
 
-	@Data
 	static class Cursor {
 		private int s;
 		private int e;
+
+		public int getS() {
+			return s;
+		}
+
+		public void setS(int s) {
+			this.s = s;
+		}
+
+		public int getE() {
+			return e;
+		}
+
+		public void setE(int e) {
+			this.e = e;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			Cursor other = (Cursor) obj;
+			return e == other.e && s == other.s;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(e, s);
+		}
+
+		@Override
+		public String toString() {
+			return "Cursor [s=" + s + ", e=" + e + "]";
+		}
 	}
 
 	private static Cursor find(String source, int offset) {

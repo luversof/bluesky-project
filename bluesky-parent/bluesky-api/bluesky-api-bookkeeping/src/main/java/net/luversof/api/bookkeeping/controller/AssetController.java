@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import lombok.Setter;
 import net.luversof.api.bookkeeping.domain.Asset;
 import net.luversof.api.bookkeeping.service.AssetService;
 
@@ -22,8 +21,12 @@ import net.luversof.api.bookkeeping.service.AssetService;
 @RequestMapping(value = "/api/asset", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AssetController {
 
-	@Setter(onMethod_ = @Autowired)
+	@Autowired
 	private AssetService assetService;
+
+	public void setAssetService(AssetService assetService) {
+		this.assetService = assetService;
+	}
 
 	@PostMapping
 	public Asset createAsset(@RequestBody Asset asset) {

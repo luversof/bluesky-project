@@ -2,11 +2,14 @@ package net.luversof.api.stock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.StreamSupport;
 
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -16,8 +19,6 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.api.stock.constant.TestConstant;
 import net.luversof.api.stock.constant.TradeType;
@@ -29,8 +30,9 @@ import net.luversof.api.stock.repository.TradeRepository;
 import net.luversof.api.stock.service.StockPriceService;
 import net.luversof.api.stock.service.TradeService;
 
-@Slf4j
 class TradeTest implements GeneralTest {
+
+	private static final Logger log = LoggerFactory.getLogger(TradeTest.class);
 
 	@Autowired
 	TradeService tradeService;
@@ -60,7 +62,7 @@ class TradeTest implements GeneralTest {
 
 	// excel csv로 대량 insert 예제
 	@Test
-	void tradeBulkInsert() {
+	void tradeBulkInsert() throws IOException {
 		tradeRepository.deleteAll();
 
 		var stockItemList = StreamSupport.stream(stockItemRepository.findAll().spliterator(), false).toList();
@@ -133,13 +135,12 @@ class TradeTest implements GeneralTest {
 	}
 
 	@Test
-	void loadTest() {
+	void loadTest() throws IOException {
 		var tradeCsvRecordList = loadTradeCsvRecordList();
 		assertThat(tradeCsvRecordList.size() > 0);
 	}
 
-	@SneakyThrows
-	List<TradeCsvRecord> loadTradeCsvRecordList() {
+	List<TradeCsvRecord> loadTradeCsvRecordList() throws IOException {
 
 		var mapper = new CsvMapper();
 

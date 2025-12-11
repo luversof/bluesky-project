@@ -9,7 +9,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import lombok.Setter;
 import net.luversof.api.blog.constant.BlogErrorCode;
 import net.luversof.api.blog.domain.mariadb.BlogArticleComment;
 import net.luversof.api.blog.repository.mariadb.BlogArticleCommentRepository;
@@ -18,45 +17,48 @@ import net.luversof.api.blog.util.BlogRequestAttributeUtil;
 @Service
 public class BlogArticleCommentService {
 
-	@Setter(onMethod_ = @Autowired)
+	@Autowired
 	private BlogArticleCommentRepository blogCommentRepository;
-	
+
 	public BlogArticleComment create(BlogArticleComment blogArticleComment) {
 		if (!StringUtils.hasText(blogArticleComment.getBlogArticleId())) {
 			BlogErrorCode.NOT_EXIST_PARAMETER_BLOGARTICLE_ID.throwException();
 		}
-		
+
 		BlogRequestAttributeUtil.getBlogArticleService().findByBlogArticleId(blogArticleComment.getBlogArticleId());
 		blogArticleComment.setBlogArticleCommentId(UUID.randomUUID().toString());
-		
+
 		return blogCommentRepository.save(blogArticleComment);
 	}
-	
+
 	public Page<BlogArticleComment> findByBlogArticleId(String blogArticleId, Pageable pageable) {
 		return blogCommentRepository.findByBlogArticleId(blogArticleId, pageable);
 	}
-	
+
 	public Optional<BlogArticleComment> findByBlogArticleCommentId(String blogArticleCommentId) {
 		return blogCommentRepository.findByBlogArticleCommentId(blogArticleCommentId);
 	}
-	
+
 	public long countByBlogArticleId(String blogArticleId) {
 		return blogCommentRepository.countByBlogArticleId(blogArticleId);
 	}
-	
+
 	public BlogArticleComment update(BlogArticleComment blogArticleComment) {
-		var targetBlogComment = blogCommentRepository.findByBlogArticleCommentId(blogArticleComment.getBlogArticleCommentId()).orElseThrow(BlogErrorCode.NOT_EXIST_BLOGCOMMENT::exception);
+		var targetBlogComment = blogCommentRepository
+				.findByBlogArticleCommentId(blogArticleComment.getBlogArticleCommentId())
+				.orElseThrow(BlogErrorCode.NOT_EXIST_BLOGCOMMENT::exception);
 		if (!targetBlogComment.getUserId().equals(blogArticleComment.getUserId())) {
-			BlogErrorCode.NOT_USER_BLOGCOMMENT.throwException();;
+			BlogErrorCode.NOT_USER_BLOGCOMMENT.throwException();
+			;
 		}
-		
+
 		targetBlogComment.setComment(blogArticleComment.getComment());
-		
+
 		return blogCommentRepository.save(targetBlogComment);
 	}
-	
+
 	public void delete(BlogArticleComment blogArticleComment) {
 		blogCommentRepository.deleteByBlogArticleCommentId(blogArticleComment.getBlogArticleCommentId());
 	}
-	
+
 }

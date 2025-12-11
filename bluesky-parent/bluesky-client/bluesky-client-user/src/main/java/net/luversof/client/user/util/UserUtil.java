@@ -7,13 +7,16 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import io.github.luversof.boot.context.ApplicationContextUtil;
-import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
 import net.luversof.client.user.httpexchange.UserInfoApiClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Slf4j
-@UtilityClass
-public class UserUtil {
+public final class UserUtil {
+
+	private static final Logger log = LoggerFactory.getLogger(UserUtil.class);
+
+	private UserUtil() {
+	}
 
 	public static UUID getUserId() {
 		var authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -29,7 +32,7 @@ public class UserUtil {
 
 		return null;
 	}
-	
+
 	private static UUID getUserIdFromUserInfo(OAuth2AuthenticationToken oauth2Auth) {
 		OAuth2User principal = oauth2Auth.getPrincipal();
 		String registrationId = oauth2Auth.getAuthorizedClientRegistrationId();
@@ -45,9 +48,10 @@ public class UserUtil {
 		String providerId = idAttr.toString();
 
 		try {
-			
+
 			var userApiClient = ApplicationContextUtil.getApplicationContext().getBean(UserInfoApiClient.class);
-			UserInfoApiClient.UserInfoResponse userInfo = userApiClient.findByProviderAndProviderId(provider, providerId);
+			UserInfoApiClient.UserInfoResponse userInfo = userApiClient.findByProviderAndProviderId(provider,
+					providerId);
 
 			if (userInfo == null || userInfo.id() == null) {
 				log.warn("UserInfo not found: provider={}, providerId={}", provider, providerId);
@@ -61,7 +65,7 @@ public class UserUtil {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * Provider 이름을 정규화 (github-local → github)
 	 */

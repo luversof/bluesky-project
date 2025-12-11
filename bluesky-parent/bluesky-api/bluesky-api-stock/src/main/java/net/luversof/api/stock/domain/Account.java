@@ -2,6 +2,7 @@ package net.luversof.api.stock.domain;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.data.annotation.CreatedDate;
@@ -12,12 +13,10 @@ import org.springframework.data.relational.core.mapping.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
-import lombok.Data;
 
 /**
  * 계좌
  */
-@Data
 @Table("Account")
 public class Account {
 
@@ -49,5 +48,70 @@ public class Account {
 	}
 
 	public interface Delete {
+	}
+
+	public UUID getId() {
+		return id;
+	}
+
+	public void setId(UUID id) {
+		this.id = id;
+	}
+
+	public UUID getUserId() {
+		return userId;
+	}
+
+	public void setUserId(UUID userId) {
+		this.userId = userId;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public Instant getCreatedDate() {
+		return createdDate;
+	}
+
+	public void setCreatedDate(Instant createdDate) {
+		this.createdDate = createdDate;
+	}
+
+	public Map<String, Object> getJsonConfig() {
+		return jsonConfig;
+	}
+
+	public void setJsonConfig(Map<String, Object> jsonConfig) {
+		this.jsonConfig = jsonConfig;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Account other = (Account) obj;
+		return Objects.equals(createdDate, other.createdDate) && Objects.equals(id, other.id)
+				&& Objects.equals(jsonConfig, other.jsonConfig) && Objects.equals(name, other.name)
+				&& Objects.equals(userId, other.userId);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(createdDate, id, jsonConfig, name, userId);
+	}
+
+	@Override
+	public String toString() {
+		return "Account [id=" + id + ", userId=" + userId + ", name=" + name + ", createdDate=" + createdDate
+				+ ", jsonConfig=" + jsonConfig + "]";
 	}
 }

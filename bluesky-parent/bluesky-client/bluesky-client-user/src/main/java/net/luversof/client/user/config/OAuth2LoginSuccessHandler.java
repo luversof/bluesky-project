@@ -12,7 +12,6 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.Setter;
 import net.luversof.client.user.httpexchange.UserInfoApiClient;
 
 /**
@@ -21,11 +20,19 @@ import net.luversof.client.user.httpexchange.UserInfoApiClient;
  */
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-	@Setter(onMethod_ = @Autowired)
 	private OAuth2AuthorizedClientRepository authorizedClientRepository;
 
-	@Setter(onMethod_ = @Autowired)
 	private UserInfoApiClient userInfoApiClient;
+
+	@Autowired
+	public void setAuthorizedClientRepository(OAuth2AuthorizedClientRepository authorizedClientRepository) {
+		this.authorizedClientRepository = authorizedClientRepository;
+	}
+
+	@Autowired
+	public void setUserInfoApiClient(UserInfoApiClient userInfoApiClient) {
+		this.userInfoApiClient = userInfoApiClient;
+	}
 
 	public OAuth2LoginSuccessHandler() {
 		setDefaultTargetUrl("/");
@@ -41,9 +48,9 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 			String provider = normalizeProvider(registrationId);
 
 			OAuth2AuthorizedClient authorizedClient = authorizedClientRepository.loadAuthorizedClient(
-				registrationId,
-				authentication,
-				request);
+					registrationId,
+					authentication,
+					request);
 
 			if (authorizedClient != null) {
 				saveUserInfo(oauthToken, provider);
@@ -56,27 +63,26 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 	private void saveUserInfo(OAuth2AuthenticationToken oauthToken, String provider) {
 		try {
 			var principal = oauthToken.getPrincipal();
-			
+
 			// GitHub/Kakao OAuth2User attributes
 			Object idAttr = principal.getAttribute("id");
 			String providerId = idAttr != null ? idAttr.toString() : null;
 			String username = principal.getAttribute("login");
 			String email = principal.getAttribute("email");
 			String avatarUrl = principal.getAttribute("avatar_url");
-			
+
 			if (username == null || username.trim().isEmpty()) {
 				return;
 			}
-			
+
 			// Save user info to bluesky-api-user
 			var request = new UserInfoApiClient.SaveOAuth2UserRequest(
-				provider,
-				providerId,
-				username,
-				email,
-				avatarUrl
-			);
-			
+					provider,
+					providerId,
+					username,
+					email,
+					avatarUrl);
+
 			userInfoApiClient.saveOAuth2User(request);
 		} catch (Exception e) {
 			// Log error but allow login to proceed

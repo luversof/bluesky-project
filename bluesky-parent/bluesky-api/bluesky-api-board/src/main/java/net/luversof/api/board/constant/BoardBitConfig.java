@@ -12,20 +12,15 @@ import static net.luversof.api.board.constant.BoardRole.USER;
 
 import java.util.BitSet;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
 /**
  * Board 설정값
  * 유저 별로 다른 권한은 어떻게 처리해야 할까?
  * 아래 처럼 하면 Role 별로 전부 정의해야 하는 문제가 있는데 더 좋은 방법은 없을까?
  */
-@Getter
-@AllArgsConstructor
 public enum BoardBitConfig {
-	
+
 	ENABLE_BOARD(0, true, null, null, null),
-	
+
 	ENABLE_ADMIN_ARTICLE_CREATE(101, true, ADMIN, ARTICLE, CREATE),
 	ENABLE_ADMIN_ARTICLE_READ(102, true, ADMIN, ARTICLE, READ),
 	ENABLE_ADMIN_ARTICLE_UPDATE(103, true, ADMIN, ARTICLE, UPDATE),
@@ -51,19 +46,47 @@ public enum BoardBitConfig {
 	ENABLE_USER_COMMENT_UPDATE(211, true, USER, COMMENT, UPDATE),
 	ENABLE_USER_COMMENT_DELETE(212, true, USER, COMMENT, DELETE),
 	;
-	
+
 	private int bitIndex;
 	private boolean value;
 	private BoardRole role;
 	private BoardActionGroup actionGroup;
 	private BoardAction action;
-	
+
+	BoardBitConfig(int bitIndex, boolean value, BoardRole role, BoardActionGroup actionGroup, BoardAction action) {
+		this.bitIndex = bitIndex;
+		this.value = value;
+		this.role = role;
+		this.actionGroup = actionGroup;
+		this.action = action;
+	}
+
+	public int getBitIndex() {
+		return bitIndex;
+	}
+
+	public boolean isValue() {
+		return value;
+	}
+
+	public BoardRole getRole() {
+		return role;
+	}
+
+	public BoardActionGroup getActionGroup() {
+		return actionGroup;
+	}
+
+	public BoardAction getAction() {
+		return action;
+	}
+
 	public static BitSet getBitConfig() {
-		var bitSet =  new BitSet();
+		var bitSet = new BitSet();
 		for (var boardBitConfig : BoardBitConfig.values()) {
 			bitSet.set(boardBitConfig.getBitIndex(), boardBitConfig.isValue());
 		}
 		return bitSet;
 	}
-	
+
 }

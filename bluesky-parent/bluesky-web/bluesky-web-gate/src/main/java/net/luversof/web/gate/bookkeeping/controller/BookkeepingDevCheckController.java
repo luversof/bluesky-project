@@ -9,20 +9,23 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
-import lombok.Setter;
 import net.luversof.web.gate.bookkeeping.domain.Bookkeeping;
 import net.luversof.web.gate.bookkeeping.httpexchange.BookkeepingClient;
 
 @DevCheckController
 @RequestMapping(value = "/bookkeeping", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BookkeepingDevCheckController {
-	
-	@Setter(onMethod_ = @Autowired)
+
 	private BookkeepingClient bookkeepingClient;
-	
+
+	@Autowired
+	public void setBookkeepingClient(BookkeepingClient bookkeepingClient) {
+		this.bookkeepingClient = bookkeepingClient;
+	}
+
 	@GetMapping("/findByUserId")
 	public List<Bookkeeping> findByUserId(@RequestParam String userId) {
 		return bookkeepingClient.findByUserId(userId);
 	}
-	
+
 }

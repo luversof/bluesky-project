@@ -1,9 +1,9 @@
 package net.luversof.web.gate.constant;
 
-import lombok.experimental.UtilityClass;
+public final class GateConstant {
 
-@UtilityClass
-public class GateConstant {
+	private GateConstant() {
+	}
 
 	public static final String HX_TRIGGER = "HX-Trigger-After-Settle";
 

@@ -7,20 +7,22 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import lombok.Setter;
 import net.luversof.api.stock.domain.TradeProfit;
 import net.luversof.api.stock.service.TradeProfitService;
 import net.luversof.api.stock.web.dto.request.TradeProfitRequest;
 import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesPoint;
 
-
 @RestController
 @RequestMapping("/api/tradeProfit")
 public class TradeProfitController {
 
-	@Setter(onMethod_ = @Autowired)
+	@Autowired
 	private TradeProfitService stockProfitService;
-	
+
+	public void setStockProfitService(TradeProfitService stockProfitService) {
+		this.stockProfitService = stockProfitService;
+	}
+
 	@GetMapping("/calculateProfit")
 	public List<TradeProfit> calculateProfit(TradeProfitRequest request) {
 		return stockProfitService.calculateProfit(request);
@@ -31,5 +33,5 @@ public class TradeProfitController {
 		// Delegate to service-level efficient aggregation
 		return stockProfitService.aggregateTimeSeries(request, granularity);
 	}
-	
+
 }

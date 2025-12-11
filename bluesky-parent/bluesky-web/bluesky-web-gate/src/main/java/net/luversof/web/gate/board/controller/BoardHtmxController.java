@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import io.github.luversof.boot.htmx.annotation.HtmxResponseHeader;
-import lombok.Setter;
 import net.luversof.web.gate.board.httpexchange.BoardArticleClient;
 import net.luversof.web.gate.board.service.BoardUserInfoService;
 
@@ -19,11 +18,19 @@ import net.luversof.web.gate.board.service.BoardUserInfoService;
 @HtmxResponseHeader("#{boardMode}HtmxResponseTrigger")
 public class BoardHtmxController {
 
-	@Setter(onMethod_ = @Autowired)
 	private BoardArticleClient boardArticleClient;
 
-	@Setter(onMethod_ = @Autowired)
 	private BoardUserInfoService boardUserInfoService;
+
+	@Autowired
+	public void setBoardArticleClient(BoardArticleClient boardArticleClient) {
+		this.boardArticleClient = boardArticleClient;
+	}
+
+	@Autowired
+	public void setBoardUserInfoService(BoardUserInfoService boardUserInfoService) {
+		this.boardUserInfoService = boardUserInfoService;
+	}
 
 	@GetMapping("/{boardAlias}/{boardMode:list}")
 	public String boardArticlePage(@PathVariable String boardAlias, @PathVariable String boardMode, Pageable pageable,

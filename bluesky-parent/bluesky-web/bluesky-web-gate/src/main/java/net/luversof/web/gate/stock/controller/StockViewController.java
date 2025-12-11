@@ -9,7 +9,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import lombok.Setter;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
@@ -18,11 +17,19 @@ import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 @RequestMapping(value = "/stock", produces = MediaType.TEXT_HTML_VALUE)
 public class StockViewController {
 
-	@Setter(onMethod_ = @Autowired)
 	private AccountClient accountClient;
 
-	@Setter(onMethod_ = @Autowired)
 	private StockItemClient stockItemClient;
+
+	@Autowired
+	public void setAccountClient(AccountClient accountClient) {
+		this.accountClient = accountClient;
+	}
+
+	@Autowired
+	public void setStockItemClient(StockItemClient stockItemClient) {
+		this.stockItemClient = stockItemClient;
+	}
 
 	@GetMapping
 	public String index(Model model) {

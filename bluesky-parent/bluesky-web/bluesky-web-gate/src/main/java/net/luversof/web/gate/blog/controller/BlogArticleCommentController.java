@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
-import lombok.Setter;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.blog.domain.BlogArticleComment;
 import net.luversof.web.gate.blog.httpexchange.BlogArticleCommentClient;
@@ -25,8 +24,12 @@ import net.luversof.web.gate.blog.httpexchange.BlogArticleCommentClient;
 @RequestMapping(value = "/api/blogArticleComment", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BlogArticleCommentController {
 
-	@Setter(onMethod_ = @Autowired)
 	private BlogArticleCommentClient blogArticleCommentClient;
+
+	@Autowired
+	public void setBlogArticleCommentClient(BlogArticleCommentClient blogArticleCommentClient) {
+		this.blogArticleCommentClient = blogArticleCommentClient;
+	}
 
 	@BlueskyPreAuthorize
 	@PostMapping

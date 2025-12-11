@@ -21,18 +21,25 @@ import org.springframework.web.bind.annotation.RequestParam;
 import io.github.luversof.boot.context.support.BlueskyReloadableResourceBundleMessageSource;
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
 import io.github.luversof.boot.devcheck.annotation.DevCheckDescription;
-import lombok.Setter;
 import net.luversof.client.user.util.UserUtil;
 
 @DevCheckController
 @RequestMapping(value = "/gate", produces = MediaType.APPLICATION_JSON_VALUE)
 public class GateDevCheckController {
 
-	@Setter(onMethod_ = @Autowired)
 	private BlueskyReloadableResourceBundleMessageSource messageSource;
 
-	@Setter(onMethod_ = @Autowired)
 	private Environment environment;
+
+	@Autowired
+	public void setMessageSource(BlueskyReloadableResourceBundleMessageSource messageSource) {
+		this.messageSource = messageSource;
+	}
+
+	@Autowired
+	public void setEnvironment(Environment environment) {
+		this.environment = environment;
+	}
 
 	// @GetMapping(pathPrefix + "/messageSource")
 	public MessageSource messageSource() {
@@ -94,8 +101,12 @@ public class GateDevCheckController {
 		return environment.getProperty(key);
 	}
 
-	@Setter(onMethod_ = @Autowired)
 	private ServerProperties serverProperties;
+
+	@Autowired
+	public void setServerProperties(ServerProperties serverProperties) {
+		this.serverProperties = serverProperties;
+	}
 
 	@GetMapping("/serverProperties")
 	public ServerProperties getServerProperties() {

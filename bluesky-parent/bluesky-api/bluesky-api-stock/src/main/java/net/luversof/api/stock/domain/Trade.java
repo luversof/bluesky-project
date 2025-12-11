@@ -2,19 +2,18 @@ package net.luversof.api.stock.domain;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
-import lombok.Data;
 import net.luversof.api.stock.constant.TradeType;
 
 /**
  * 주식 매매 내역
  */
-@Data
 @Table("Trade")
 public class Trade {
 
@@ -46,4 +45,108 @@ public class Trade {
 	@Column("tradeDate")
 	private Instant tradeDate;
 
+	public UUID getId() {
+		return id;
+	}
+
+	public void setId(UUID id) {
+		this.id = id;
+	}
+
+	public UUID getAccountId() {
+		return accountId;
+	}
+
+	public void setAccountId(UUID accountId) {
+		this.accountId = accountId;
+	}
+
+	public UUID getStockItemId() {
+		return stockItemId;
+	}
+
+	public void setStockItemId(UUID stockItemId) {
+		this.stockItemId = stockItemId;
+	}
+
+	public TradeType getType() {
+		return type;
+	}
+
+	public void setType(TradeType type) {
+		this.type = type;
+	}
+
+	public int getQuantity() {
+		return quantity;
+	}
+
+	public void setQuantity(int quantity) {
+		this.quantity = quantity;
+	}
+
+	public BigDecimal getPrice() {
+		return price;
+	}
+
+	public void setPrice(BigDecimal price) {
+		this.price = price;
+	}
+
+	public BigDecimal getFee() {
+		return fee;
+	}
+
+	public void setFee(BigDecimal fee) {
+		this.fee = fee;
+	}
+
+	public BigDecimal getTax() {
+		return tax;
+	}
+
+	public void setTax(BigDecimal tax) {
+		this.tax = tax;
+	}
+
+	public Instant getTradeDate() {
+		return tradeDate;
+	}
+
+	public void setTradeDate(Instant tradeDate) {
+		this.tradeDate = tradeDate;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+		Trade trade = (Trade) o;
+		return quantity == trade.quantity && Objects.equals(id, trade.id) && Objects.equals(accountId, trade.accountId)
+				&& Objects.equals(stockItemId, trade.stockItemId) && type == trade.type
+				&& Objects.equals(price, trade.price) && Objects.equals(fee, trade.fee)
+				&& Objects.equals(tax, trade.tax) && Objects.equals(tradeDate, trade.tradeDate);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(id, accountId, stockItemId, type, quantity, price, fee, tax, tradeDate);
+	}
+
+	@Override
+	public String toString() {
+		return "Trade{" +
+				"id=" + id +
+				", accountId=" + accountId +
+				", stockItemId=" + stockItemId +
+				", type=" + type +
+				", quantity=" + quantity +
+				", price=" + price +
+				", fee=" + fee +
+				", tax=" + tax +
+				", tradeDate=" + tradeDate +
+				'}';
+	}
 }

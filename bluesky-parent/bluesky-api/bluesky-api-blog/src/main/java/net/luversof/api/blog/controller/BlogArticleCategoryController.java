@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import lombok.Setter;
 import net.luversof.api.blog.domain.mariadb.BlogArticleCategory;
 import net.luversof.api.blog.service.BlogArticleCategoryService;
 
@@ -22,26 +21,29 @@ import net.luversof.api.blog.service.BlogArticleCategoryService;
 @RequestMapping(value = "/api/blogArticleCategory", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BlogArticleCategoryController {
 
-	@Setter(onMethod_ = @Autowired)
+	@Autowired
 	private BlogArticleCategoryService blogArticleCategoryService;
-	
+
 	@PostMapping
-	public BlogArticleCategory create(@Validated(BlogArticleCategory.Create.class) @RequestBody BlogArticleCategory blogArticleCategory) {
+	public BlogArticleCategory create(
+			@Validated(BlogArticleCategory.Create.class) @RequestBody BlogArticleCategory blogArticleCategory) {
 		return blogArticleCategoryService.create(blogArticleCategory);
 	}
-	
+
 	@GetMapping("/search/findByBlogId/{blogId}")
 	public List<BlogArticleCategory> findByBlogId(@PathVariable String blogId) {
 		return blogArticleCategoryService.findByBlogId(blogId);
 	}
 
 	@PutMapping
-	public BlogArticleCategory update(@Validated(BlogArticleCategory.Update.class) @RequestBody BlogArticleCategory blogArticleCategory) {
+	public BlogArticleCategory update(
+			@Validated(BlogArticleCategory.Update.class) @RequestBody BlogArticleCategory blogArticleCategory) {
 		return blogArticleCategoryService.update(blogArticleCategory);
 	}
-	
+
 	@DeleteMapping
-	public void delete(@Validated(BlogArticleCategory.Delete.class) @RequestBody BlogArticleCategory blogArticleCategory) {
+	public void delete(
+			@Validated(BlogArticleCategory.Delete.class) @RequestBody BlogArticleCategory blogArticleCategory) {
 		blogArticleCategoryService.delete(blogArticleCategory);
 	}
 

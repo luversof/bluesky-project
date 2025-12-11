@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import lombok.Setter;
 import net.luversof.api.board.domain.BoardArticle;
 import net.luversof.api.board.service.BoardArticleService;
 
@@ -28,8 +27,12 @@ import net.luversof.api.board.service.BoardArticleService;
 @RequestMapping(value = "/api/boardArticle", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BoardArticleController {
 
-	@Setter(onMethod_ =  @Autowired)
 	private BoardArticleService boardArticleService;
+
+	@Autowired
+	public void setBoardArticleService(BoardArticleService boardArticleService) {
+		this.boardArticleService = boardArticleService;
+	}
 
 	@PostMapping
 	public BoardArticle create(@Validated(BoardArticle.Create.class) @RequestBody BoardArticle boardArticle) {
@@ -37,7 +40,8 @@ public class BoardArticleController {
 	}
 
 	@GetMapping("/search/findByBoardAlias/{boardAlias}")
-	public Page<BoardArticle> findByBoardAlias(@PathVariable String boardAlias, @PageableDefault(size = 20) @SortDefault(sort = "id", direction = Direction.DESC) Pageable pageable) {
+	public Page<BoardArticle> findByBoardAlias(@PathVariable String boardAlias,
+			@PageableDefault(size = 20) @SortDefault(sort = "id", direction = Direction.DESC) Pageable pageable) {
 		return boardArticleService.findByAlias(boardAlias, pageable);
 	}
 

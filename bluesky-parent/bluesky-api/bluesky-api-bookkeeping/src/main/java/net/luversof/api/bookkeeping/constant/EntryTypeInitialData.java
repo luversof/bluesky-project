@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.UUID;
 
 import io.github.luversof.boot.context.support.MessageUtil;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import net.luversof.api.bookkeeping.domain.EntryType;
 
 import static net.luversof.api.bookkeeping.constant.EntryTypeCode.*;
@@ -15,10 +13,8 @@ import static net.luversof.api.bookkeeping.constant.EntryTypeCode.*;
 /**
  * 기본 생성하여 제공하는 EntryType
  */
-@Getter
-@AllArgsConstructor
 public enum EntryTypeInitialData {
-	
+
 	INCOME_SALARY(INCOME),
 	INCOME_BONUS(INCOME),
 	INCOME_INTEREST(INCOME),
@@ -32,16 +28,25 @@ public enum EntryTypeInitialData {
 	EXPENSE_MANAGEMENTFEE(OUTGOING),
 	EXPENSE_ETC(OUTGOING),
 	;
-	
+
 	private EntryTypeCode entryTypeCode;
-	
-	public String getLocalizedName() {
-		return MessageUtil.getMessage(MessageFormat.format("bookkeeping.constant.entry-transaction-type.{0}", name()), name());
+
+	EntryTypeInitialData(EntryTypeCode entryTypeCode) {
+		this.entryTypeCode = entryTypeCode;
 	}
-	
+
+	public EntryTypeCode getEntryTypeCode() {
+		return entryTypeCode;
+	}
+
+	public String getLocalizedName() {
+		return MessageUtil.getMessage(MessageFormat.format("bookkeeping.constant.entry-transaction-type.{0}", name()),
+				name());
+	}
+
 	public static List<EntryType> getInitialData(UUID bookkeepingId) {
 		var entryTransactionTypeList = new ArrayList<EntryType>();
-		
+
 		for (var transactionTypeInitialData : EntryTypeInitialData.values()) {
 			var transactionType = new EntryType();
 			transactionType.setBookkeepingId(bookkeepingId);
@@ -49,7 +54,7 @@ public enum EntryTypeInitialData {
 			transactionType.setCode(transactionTypeInitialData.getEntryTypeCode());
 			entryTransactionTypeList.add(transactionType);
 		}
-		
+
 		return entryTransactionTypeList;
 	}
 }

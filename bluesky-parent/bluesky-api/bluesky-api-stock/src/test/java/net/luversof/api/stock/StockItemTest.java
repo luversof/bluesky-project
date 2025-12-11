@@ -1,48 +1,51 @@
 package net.luversof.api.stock;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 
 import io.github.luversof.boot.uuid.UuidGeneratorUtil;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import net.luversof.GeneralTest;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.service.StockItemService;
 
-@Slf4j
 class StockItemTest implements GeneralTest {
-	
+
+	private static final Logger log = LoggerFactory.getLogger(StockItemTest.class);
+
 	@Autowired
 	StockItemService stockItemService;
-	
+
 	@Autowired
 	JdbcTemplate jdbcTemplate;
-	
+
 	@Test
 	void createStockItem() {
 		var stockItem = new StockItem();
 		stockItem.setTicker("161510");
 		stockItem.setName("PLUS 고배당주");
 		stockItem.setMarket("KOSDAQ");
-		
+
 		var result = stockItemService.createStockItem(stockItem);
 		log.debug("result : {}", result);
 	}
-	
-	
+
 	@Test
-	void stockItemBulkInsert() {
+	void stockItemBulkInsert() throws IOException {
 		String sql = """
 				INSERT INTO "StockItem" (id, ticker, name, market)
 				VALUES (?, ?, ?, ?)
@@ -51,8 +54,8 @@ class StockItemTest implements GeneralTest {
 					name   = EXCLUDED.name,
 					market = EXCLUDED.market
 				""";
-		
-		var stockItemList = loadCsvStockItemList(); 
+
+		var stockItemList = loadCsvStockItemList();
 
 		jdbcTemplate.batchUpdate(sql, stockItemList, stockItemList.size(), (ps, item) -> {
 			item.setId(UuidGeneratorUtil.getUuid());
@@ -62,25 +65,24 @@ class StockItemTest implements GeneralTest {
 			ps.setString(4, item.getMarket());
 		});
 	}
-	
-	@SneakyThrows
-	List<StockItem> loadJsonStockItemList() {
+
+	List<StockItem> loadJsonStockItemList() throws StreamReadException, DatabindException, IOException {
 		ObjectMapper mapper = new ObjectMapper();
-		var stockItemList = mapper.readValue(new ClassPathResource("data/stockItem.json").getInputStream(), new TypeReference<List<StockItem>>() {});
-		
+		var stockItemList = mapper.readValue(new ClassPathResource("data/stockItem.json").getInputStream(),
+				new TypeReference<List<StockItem>>() {
+				});
+
 		log.debug("items : {}", stockItemList.size());
 		return stockItemList;
 	}
-	
-	@SneakyThrows
-	List<StockItem> loadCsvStockItemList() {
+
+	List<StockItem> loadCsvStockItemList() throws IOException {
 		var mapper = new CsvMapper();
 		MappingIterator<StockItem> it = mapper
 				.readerFor(StockItem.class)
 				.with(CsvSchema.emptySchema().withHeader())
-				.readValues(new ClassPathResource("data/stockItem.csv").getInputStream())
-				;
-		
+				.readValues(new ClassPathResource("data/stockItem.csv").getInputStream());
+
 		var stockItemList = it.readAll();
 		log.debug("items : {}", stockItemList.size());
 		return stockItemList;

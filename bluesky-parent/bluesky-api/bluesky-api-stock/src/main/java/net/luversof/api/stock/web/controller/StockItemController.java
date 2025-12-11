@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import lombok.Setter;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.service.StockItemService;
 
@@ -19,8 +18,12 @@ import net.luversof.api.stock.service.StockItemService;
 @RequestMapping("/api/stockItem")
 public class StockItemController {
 
-	@Setter(onMethod_ = @Autowired)
+	@Autowired
 	private StockItemService stockItemService;
+
+	public void setStockItemService(StockItemService stockItemService) {
+		this.stockItemService = stockItemService;
+	}
 
 	@PostMapping
 	public StockItem createStockItem(@RequestBody StockItem stockItem) {

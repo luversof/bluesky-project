@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import lombok.Getter;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
 import net.luversof.web.dynamiccrud.setting.service.SettingServiceListSupplier;
@@ -26,9 +25,12 @@ import net.luversof.web.dynamiccrud.setting.service.SettingServiceListSupplier;
 @Service
 public class EventAdminSubMenuService implements SettingServiceListSupplier<SubMenu> {
 
-	@Getter
 	private List<SubMenu> subMenuList;
-	
+
+	public List<SubMenu> getSubMenuList() {
+		return subMenuList;
+	}
+
 	public EventAdminSubMenuService() {
 		loadData();
 	}
@@ -52,11 +54,10 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					true,
 					true,
 					true,
-					null
-			);
+					null);
 			subMenuList.add(subMenu);
 		}
-		
+
 		{
 			var subMenu = new SubMenu(
 					ADMIN_PROJECT_ID_VALUE,
@@ -74,8 +75,7 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					true,
 					true,
 					true,
-					null
-			);
+					null);
 			subMenuList.add(subMenu);
 		}
 
@@ -96,8 +96,7 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					true,
 					true,
 					true,
-					null
-			);
+					null);
 			subMenuList.add(subMenu);
 		}
 
@@ -118,8 +117,7 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					true,
 					true,
 					true,
-					null
-			);
+					null);
 			subMenuList.add(subMenu);
 		}
 
@@ -140,8 +138,7 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					true,
 					true,
 					true,
-					null
-			);
+					null);
 			subMenuList.add(subMenu);
 		}
 
@@ -162,8 +159,7 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
 					true,
 					true,
 					true,
-					null
-			);
+					null);
 			subMenuList.add(subMenu);
 		}
 	}

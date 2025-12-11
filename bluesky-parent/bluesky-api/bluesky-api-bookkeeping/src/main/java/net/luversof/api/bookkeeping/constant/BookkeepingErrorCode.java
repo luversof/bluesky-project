@@ -1,42 +1,37 @@
 package net.luversof.api.bookkeeping.constant;
 
 import io.github.luversof.boot.exception.BlueskyErrorCode;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 
-@AllArgsConstructor
-@Getter
 public enum BookkeepingErrorCode implements BlueskyErrorCode<BookkeepingErrorCode> {
-	
+
 	INVALID_REQUEST,
-	
+
 	ALREADY_EXIST_BOOKKEEPING,
 	NOT_EXIST_BOOKKEEPING,
-	
+
 	NOT_EXIST_BOOKKEEPING_ID,
 	INVALID_BOOKKEEPING_ID,
-	
+
 	NOT_EXIST_ASSET,
 	UNABLE_UPDATE_ASSET,
 	UNABLE_DELETE_ASSET,
-	
+
 	INVALID_ASSET_ID,
-	
+
 	NOT_EXIST_ASSETTYPE_ID,
 	INVALID_ASSETTYPE_ID,
-	
+
 	NOT_EXIST_ASSETTYPE,
-	
+
 	NOT_EXIST_ASSETTYPECODE,
-	
+
 	NOT_EXIST_ENTRY,
-	
+
 	NOT_EXIST_ENTRYTYPE,
 	INVALID_ENTRYTYPE,
-	
-	
+
 	INVALID_ENTRYTYPECODE,
-	
+
 	;
-	
+
 }

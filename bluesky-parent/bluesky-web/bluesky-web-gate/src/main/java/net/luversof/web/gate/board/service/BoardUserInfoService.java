@@ -10,12 +10,12 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import net.luversof.client.user.httpexchange.UserInfoApiClient;
 import net.luversof.web.gate.board.domain.BoardArticle;
 import net.luversof.web.gate.board.domain.BoardArticleComment;
@@ -25,15 +25,21 @@ import net.luversof.web.gate.board.httpexchange.BoardArticleCommentClient;
  * Helper service that enriches board resources with human readable usernames
  * fetched from bluesky-api-user.
  */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class BoardUserInfoService {
+
+	private static final Logger log = LoggerFactory.getLogger(BoardUserInfoService.class);
 
 	private static final String ANONYMOUS = "익명";
 
 	private final UserInfoApiClient userInfoApiClient;
 	private final BoardArticleCommentClient boardArticleCommentClient;
+
+	public BoardUserInfoService(UserInfoApiClient userInfoApiClient,
+			BoardArticleCommentClient boardArticleCommentClient) {
+		this.userInfoApiClient = userInfoApiClient;
+		this.boardArticleCommentClient = boardArticleCommentClient;
+	}
 
 	public BoardArticle enrich(BoardArticle boardArticle) {
 		if (boardArticle == null) {
@@ -62,13 +68,17 @@ public class BoardUserInfoService {
 			return Collections.emptyMap();
 		}
 		try {
-			var distinctIds = articleIds.stream().filter(Objects::nonNull).collect(Collectors.toCollection(LinkedHashSet::new));
-			if (distinctIds.isEmpty()) return Collections.emptyMap();
+			var distinctIds = articleIds.stream().filter(Objects::nonNull)
+					.collect(Collectors.toCollection(LinkedHashSet::new));
+			if (distinctIds.isEmpty())
+				return Collections.emptyMap();
 			var responses = boardArticleCommentClient.countByBoardArticleIds(List.copyOf(distinctIds));
-			if (responses == null || responses.isEmpty()) return Collections.emptyMap();
+			if (responses == null || responses.isEmpty())
+				return Collections.emptyMap();
 			Map<java.util.UUID, Long> result = new HashMap<>();
 			for (var r : responses) {
-				if (r == null || r.boardArticleId() == null) continue;
+				if (r == null || r.boardArticleId() == null)
+					continue;
 				result.put(r.boardArticleId(), r.count());
 			}
 			// ensure all requested ids have an entry
@@ -82,8 +92,10 @@ public class BoardUserInfoService {
 		}
 	}
 
-	private BoardArticle applyUsernameAndCommentCount(BoardArticle article, Map<UUID, String> usernameMap, Map<java.util.UUID, Long> commentCountMap) {
-		if (article == null) return null;
+	private BoardArticle applyUsernameAndCommentCount(BoardArticle article, Map<UUID, String> usernameMap,
+			Map<java.util.UUID, Long> commentCountMap) {
+		if (article == null)
+			return null;
 		long count = 0L;
 		if (commentCountMap != null && commentCountMap.containsKey(article.id())) {
 			count = commentCountMap.get(article.id());

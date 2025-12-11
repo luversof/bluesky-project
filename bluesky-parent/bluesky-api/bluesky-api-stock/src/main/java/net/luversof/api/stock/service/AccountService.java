@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import lombok.Setter;
 import net.luversof.api.stock.domain.Account;
 import net.luversof.api.stock.repository.AccountRepository;
 import net.luversof.api.stock.repository.DividendRepository;
@@ -17,33 +16,46 @@ import net.luversof.api.stock.repository.TradeRepository;
 @Service
 public class AccountService {
 
-	@Setter(onMethod_ = @Autowired)
+	@Autowired
 	private AccountRepository accountRepository;
-	
-	@Setter(onMethod_ = @Autowired)
+
+	@Autowired
 	private DividendRepository dividendRepository;
-	
-	@Setter(onMethod_ = @Autowired)
+
+	@Autowired
 	private TradeRepository tradeRepository;
-	
+
+	public void setAccountRepository(AccountRepository accountRepository) {
+		this.accountRepository = accountRepository;
+	}
+
+	public void setDividendRepository(DividendRepository dividendRepository) {
+		this.dividendRepository = dividendRepository;
+	}
+
+	public void setTradeRepository(TradeRepository tradeRepository) {
+		this.tradeRepository = tradeRepository;
+	}
+
 	public Account createAccount(Account account) {
 		return accountRepository.save(account);
 	}
-	
+
 	public Optional<Account> findById(UUID id) {
 		return accountRepository.findById(id);
 	}
-	
+
 	public List<Account> findByIdIn(List<UUID> idList) {
 		return accountRepository.findByIdIn(idList);
 	}
-	
+
 	public List<Account> findByUserId(UUID userId) {
 		return accountRepository.findByUserId(userId);
 	}
-	
+
 	/**
 	 * UserId 기준 데이터 일괄 삭제
+	 * 
 	 * @param userId
 	 */
 	@Transactional

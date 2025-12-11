@@ -12,30 +12,33 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import lombok.Setter;
 import net.luversof.api.stock.domain.Account;
 import net.luversof.api.stock.service.AccountService;
 
 @RestController
 @RequestMapping("/api/account")
 public class AccountController {
-	
-	@Setter(onMethod_ = @Autowired)
+
+	@Autowired
 	private AccountService accountService;
-	
+
+	public void setAccountService(AccountService accountService) {
+		this.accountService = accountService;
+	}
+
 	@PostMapping
 	public Account createAccount(@RequestBody Account account) {
 		return accountService.createAccount(account);
 	}
-	
+
 	@GetMapping("/{id}")
 	public Optional<Account> getAccountById(@PathVariable UUID id) {
 		return accountService.findById(id);
 	}
-	
+
 	@GetMapping("/search/findByUserId/{userId}")
 	public List<Account> getAccountsByUserId(@PathVariable UUID userId) {
 		return accountService.findByUserId(userId);
 	}
-	
+
 }

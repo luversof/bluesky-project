@@ -1,12 +1,12 @@
 package net.luversof.web.dynamiccrud.setting.util;
 
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
@@ -22,45 +22,50 @@ import net.sf.jsqlparser.expression.operators.relational.MinorThan;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 
-@Slf4j
-@UtilityClass
-public class JSqlParserUtil {
+public final class JSqlParserUtil {
+
+	private static final Logger log = LoggerFactory.getLogger(JSqlParserUtil.class);
+
+	private JSqlParserUtil() {
+	}
 
 	/**
 	 * DbField의 설정을 기준으로 추가할 Where 절 Expression 계산
+	 * 
 	 * @param dbFieldSearchType
 	 * @return
 	 */
 	public static BinaryExpression createWhereClauseAppendExpression(DbField dbField) {
 		return switch (dbField.getColumnSearchType()) {
-		case LIKE_RIGHT, LIKE_CONTAINS -> {
-			var likeExpression = new LikeExpression();
-			likeExpression.setLeftExpression(new Column(dbField.getColumnId()));
-			likeExpression.setLikeKeyWord(LikeExpression.KeyWord.LIKE);
-			likeExpression.setRightExpression(new JdbcNamedParameter(dbField.getColumnId()));
-			log.debug("likeExpression, {}",likeExpression);
-			yield likeExpression;
-		}
-		case MINOR_THAN -> {
-			var minorExpression = new MinorThan();
-			minorExpression.setLeftExpression(new Column(dbField.getColumnId()));
-			minorExpression.setRightExpression(new JdbcNamedParameter(dbField.getColumnId()));
-			log.debug("minorExpression, {}",minorExpression);
-			yield minorExpression;
-		}
-		case GREATER_THAN -> {
-			var greaterExpression = new GreaterThan();
-			greaterExpression.setLeftExpression(new Column(dbField.getColumnId()));
-			greaterExpression.setRightExpression(new JdbcNamedParameter(dbField.getColumnId()));
-			log.debug("greaterExpression, {}",greaterExpression);
-			yield greaterExpression;
-		}
-		default -> new EqualsTo(new Column(dbField.getColumnId()), new JdbcNamedParameter(dbField.getColumnId()));
+			case LIKE_RIGHT, LIKE_CONTAINS -> {
+				var likeExpression = new LikeExpression();
+				likeExpression.setLeftExpression(new Column(dbField.getColumnId()));
+				likeExpression.setLikeKeyWord(LikeExpression.KeyWord.LIKE);
+				likeExpression.setRightExpression(new JdbcNamedParameter(dbField.getColumnId()));
+				log.debug("likeExpression, {}", likeExpression);
+				yield likeExpression;
+			}
+			case MINOR_THAN -> {
+				var minorExpression = new MinorThan();
+				minorExpression.setLeftExpression(new Column(dbField.getColumnId()));
+				minorExpression.setRightExpression(new JdbcNamedParameter(dbField.getColumnId()));
+				log.debug("minorExpression, {}", minorExpression);
+				yield minorExpression;
+			}
+			case GREATER_THAN -> {
+				var greaterExpression = new GreaterThan();
+				greaterExpression.setLeftExpression(new Column(dbField.getColumnId()));
+				greaterExpression.setRightExpression(new JdbcNamedParameter(dbField.getColumnId()));
+				log.debug("greaterExpression, {}", greaterExpression);
+				yield greaterExpression;
+			}
+			default -> new EqualsTo(new Column(dbField.getColumnId()), new JdbcNamedParameter(dbField.getColumnId()));
 		};
 	}
-	
+
 	/**
 	 * Where 절에 조건 추가
+	 * 
 	 * @param plainSelect
 	 * @param whereClauseAppendExpression
 	 */
@@ -71,12 +76,13 @@ public class JSqlParserUtil {
 			plainSelect.setWhere(whereClauseAppendExpression);
 			return;
 		}
-		
+
 		plainSelect.setWhere(new AndExpression(targetWhereExpression, whereClauseAppendExpression));
 	}
-	
+
 	/**
 	 * Where 절의 columnName 목록 반환
+	 * 
 	 * @param plainSelect
 	 * @return
 	 */
@@ -86,19 +92,20 @@ public class JSqlParserUtil {
 		}
 
 		var columnList = new ArrayList<String>();
-		
+
 		plainSelect.getWhere().accept(new ExpressionVisitorAdapter<Void>() {
 			@Override
 			public void visit(Column column) {
 				columnList.add(column.getColumnName());
 			}
 		});
-		
+
 		return columnList;
 	}
-	
+
 	/**
 	 * Where 절의 NamedParameterName 목록 반환
+	 * 
 	 * @param plainSelect
 	 * @return
 	 */
@@ -108,57 +115,59 @@ public class JSqlParserUtil {
 		}
 
 		var namedParameterNameList = new ArrayList<String>();
-		
+
 		plainSelect.getWhere().accept(new ExpressionVisitorAdapter<Void>() {
 			@Override
 			public void visit(JdbcNamedParameter parameter) {
 				namedParameterNameList.add(parameter.getName());
 			}
 		});
-		
+
 		return namedParameterNameList;
 	}
-	
+
 	/**
 	 * Where 절에서 해당 컬럼명으로 지정된 타입 검색
+	 * 
 	 * @param plainSelect
 	 * @param columnName
 	 * @return
 	 */
-	public static List<String> findWhereClauseRightExpressionContainsTypeListByColumnName(PlainSelect plainSelect, String columnName) {
+	public static List<String> findWhereClauseRightExpressionContainsTypeListByColumnName(PlainSelect plainSelect,
+			String columnName) {
 		var rightExpression = findWhereClauseRightExpressionByColumnName(plainSelect, columnName);
-		
+
 		if (rightExpression == null) {
 			return Collections.emptyList();
 		}
-		
+
 		var expressionContainsTypeList = new ArrayList<String>();
-		
+
 		rightExpression.accept(new ExpressionVisitorAdapter<Void>() {
-			
+
 			@Override
 			public void visit(JdbcNamedParameter parameter) {
 				expressionContainsTypeList.add("jdbcNamedParameter");
 			}
-			
-			
+
 			@Override
 			public void visit(StringValue value) {
 				expressionContainsTypeList.add("StringValue");
 			}
-			
+
 			@Override
 			public void visit(LongValue value) {
 				expressionContainsTypeList.add("LongValue");
 			}
-		
+
 		});
-		
+
 		return expressionContainsTypeList;
 	}
-	
+
 	/**
 	 * Where 절에서 해당 컬럼에 대한 rightExpression 검색
+	 * 
 	 * @param plainSelect
 	 * @param columnName
 	 * @return
@@ -167,51 +176,53 @@ public class JSqlParserUtil {
 		if (plainSelect.getWhere() == null) {
 			return null;
 		}
-		
+
 		var whereClause = (BinaryExpression) plainSelect.getWhere();
-		
+
 		// 바로 하위 자식이 대상인 경우 체크
 		if (whereClause.getLeftExpression() instanceof Column column && column.getColumnName().equals(columnName)) {
 			return whereClause.getRightExpression();
 		}
-		
+
 		// rightExpression이 대상인 경우 체크
-		if (whereClause.getRightExpression() instanceof BinaryExpression rightExpression 
+		if (whereClause.getRightExpression() instanceof BinaryExpression rightExpression
 				&& rightExpression.getLeftExpression() instanceof Column column
 				&& column.getColumnName().equals(columnName)) {
 			return rightExpression.getRightExpression();
 		}
-		
+
 		// 아니면 중첩 호출
 		return findWhereClauseRightExpressionByColumnNameNested(whereClause, columnName);
 	}
-	
-	private static Expression findWhereClauseRightExpressionByColumnNameNested(BinaryExpression superExpression, String columnName) {
+
+	private static Expression findWhereClauseRightExpressionByColumnNameNested(BinaryExpression superExpression,
+			String columnName) {
 		if (!(superExpression.getLeftExpression() instanceof BinaryExpression)) {
 			return null;
 		}
 		var targetExpression = (BinaryExpression) superExpression.getLeftExpression();
-		
-		//leftExpression이 대상인 경우 rightExpression을 반환
+
+		// leftExpression이 대상인 경우 rightExpression을 반환
 		if (targetExpression.getLeftExpression() instanceof Column column
 				&& column.getColumnName().equals(columnName)) {
 			return targetExpression.getRightExpression();
 		}
-		
+
 		// rightExpression 하위가 대상인 경우 rightEsxpression 하위의 rightExpression을 반환
-		if (targetExpression.getRightExpression() instanceof BinaryExpression rightExpression 
+		if (targetExpression.getRightExpression() instanceof BinaryExpression rightExpression
 				&& rightExpression.getLeftExpression() instanceof Column column
 				&& column.getColumnName().equals(columnName)) {
 			return rightExpression.getRightExpression();
 		}
-		
+
 		// 아니면 중첩 호출로 leftExpression 탐색
-		return findWhereClauseRightExpressionByColumnNameNested((BinaryExpression) superExpression.getLeftExpression(), columnName);
+		return findWhereClauseRightExpressionByColumnNameNested((BinaryExpression) superExpression.getLeftExpression(),
+				columnName);
 	}
-	
-	
+
 	/**
 	 * where 절에서 leftExpression Column이 columnName인 경우 제거
+	 * 
 	 * @param plainSelect
 	 * @param columnName
 	 */
@@ -219,19 +230,18 @@ public class JSqlParserUtil {
 		if (plainSelect.getWhere() == null) {
 			return;
 		}
-		
-		
+
 		var whereClause = (BinaryExpression) plainSelect.getWhere();
-		
+
 		// 바로 하위 자식이 대상인 경우 체크
 		if (whereClause.getLeftExpression() instanceof Column column
 				&& column.getColumnName().equals(columnName)) {
 			plainSelect.setWhere(null);
 			return;
 		}
-		
+
 		// rightExpression이 대상인 경우 체크
-		if (whereClause.getRightExpression() instanceof BinaryExpression rightExpression 
+		if (whereClause.getRightExpression() instanceof BinaryExpression rightExpression
 				&& rightExpression.getLeftExpression() instanceof Column column
 				&& column.getColumnName().equals(columnName)) {
 			plainSelect.setWhere(whereClause.getLeftExpression());
@@ -246,29 +256,28 @@ public class JSqlParserUtil {
 			removeWhereClauseByColumnName(plainSelect, columnName);
 			return;
 		}
-		
+
 		// 위 두 조건이 아니면 하위 자식의 자식을 순환 체크
 		removeWhereClauseByColumnNameNested(whereClause, columnName);
-		
+
 	}
-	
-	
+
 	private static void removeWhereClauseByColumnNameNested(BinaryExpression superExpression, String columnName) {
 		if (!(superExpression.getLeftExpression() instanceof BinaryExpression)) {
 			return;
 		}
 		var targetExpression = (BinaryExpression) superExpression.getLeftExpression();
-		
+
 		// rightExpression 하위가 대상인 경우 leftExpression을 상위 leftExpression으로 올림
-		if (targetExpression.getRightExpression() instanceof BinaryExpression rightExpression 
+		if (targetExpression.getRightExpression() instanceof BinaryExpression rightExpression
 				&& rightExpression.getLeftExpression() instanceof Column column
 				&& column.getColumnName().equals(columnName)) {
 			superExpression.setLeftExpression(targetExpression.getLeftExpression());
 			removeWhereClauseByColumnNameNested(superExpression, columnName);
 			return;
 		}
-		
-		//leftExpression이 대상인 경우 rightExpression을 상위 leftExpression으로 올림
+
+		// leftExpression이 대상인 경우 rightExpression을 상위 leftExpression으로 올림
 		if (targetExpression.getLeftExpression() instanceof BinaryExpression leftExpression
 				&& leftExpression.getLeftExpression() instanceof Column column
 				&& column.getColumnName().equals(columnName)) {
@@ -280,9 +289,10 @@ public class JSqlParserUtil {
 		// 아니면 중첩 호출로 leftExpression 탐색
 		removeWhereClauseByColumnNameNested((BinaryExpression) superExpression.getLeftExpression(), columnName);
 	}
-	
+
 	/**
 	 * where 절에서 rightExpression에 NamedParameter가 존재하고 columnName인 경우 제거
+	 * 
 	 * @param plainSelect
 	 * @param columnName
 	 */
@@ -290,9 +300,9 @@ public class JSqlParserUtil {
 		if (plainSelect.getWhere() == null) {
 			return;
 		}
-		
+
 		var superExpression = (BinaryExpression) plainSelect.getWhere();
-		
+
 		// 바로 하위 자식이 대상인 경우 체크
 		if (superExpression.getLeftExpression() instanceof Column) {
 			var namedParameterList = new ArrayList<String>();
@@ -302,7 +312,7 @@ public class JSqlParserUtil {
 					if (parameter.getName().equals(columnName)) {
 						namedParameterList.add(columnName);
 					}
-					
+
 				}
 			});
 			if (!namedParameterList.isEmpty()) {
@@ -310,11 +320,11 @@ public class JSqlParserUtil {
 				return;
 			}
 		}
-		
+
 		// rightExpression이 대상인 경우 체크
-		if (superExpression.getRightExpression() instanceof BinaryExpression rightExpression 
+		if (superExpression.getRightExpression() instanceof BinaryExpression rightExpression
 				&& rightExpression.getLeftExpression() instanceof Column) {
-			
+
 			var namedParameterList = new ArrayList<String>();
 			rightExpression.getRightExpression().accept(new ExpressionVisitorAdapter<Void>() {
 				@Override
@@ -322,7 +332,7 @@ public class JSqlParserUtil {
 					if (parameter.getName().equals(columnName)) {
 						namedParameterList.add(columnName);
 					}
-					
+
 				}
 			});
 			if (!namedParameterList.isEmpty()) {
@@ -331,7 +341,7 @@ public class JSqlParserUtil {
 				return;
 			}
 		}
-		
+
 		// leftExpression이 대상인 경우 체크
 		if (superExpression.getLeftExpression() instanceof BinaryExpression leftExpression
 				&& leftExpression.getLeftExpression() instanceof Column) {
@@ -342,7 +352,7 @@ public class JSqlParserUtil {
 					if (parameter.getName().equals(columnName)) {
 						namedParameterList.add(columnName);
 					}
-					
+
 				}
 			});
 			if (!namedParameterList.isEmpty()) {
@@ -351,7 +361,7 @@ public class JSqlParserUtil {
 				return;
 			}
 		}
-		
+
 		// leftExpression.rightExpression이 대상인 경우 체크
 		if (superExpression.getLeftExpression() instanceof BinaryExpression superLeftExpression
 				&& superLeftExpression.getRightExpression() instanceof BinaryExpression rightExpression
@@ -363,7 +373,7 @@ public class JSqlParserUtil {
 					if (parameter.getName().equals(columnName)) {
 						namedParameterList.add(columnName);
 					}
-					
+
 				}
 			});
 			if (!namedParameterList.isEmpty()) {
@@ -373,23 +383,23 @@ public class JSqlParserUtil {
 			}
 		}
 
-
 		// 위 두 조건이 아니면 하위 자식에 대해 순환 체크
 		removeWhereClauseByNamedParameterNameNested(superExpression, columnName);
-		
+
 	}
-	
-	private static void removeWhereClauseByNamedParameterNameNested(BinaryExpression superExpression, String columnName) {
+
+	private static void removeWhereClauseByNamedParameterNameNested(BinaryExpression superExpression,
+			String columnName) {
 		if (!(superExpression.getLeftExpression() instanceof BinaryExpression)) {
 			return;
 		}
-		
+
 		var targetExpression = (BinaryExpression) superExpression.getLeftExpression();
-		
-		// rightExpression이 대상인 경우 체크하고  LeftExpression을 상위로 올림
-		if (targetExpression.getRightExpression() instanceof BinaryExpression rightExpression 
+
+		// rightExpression이 대상인 경우 체크하고 LeftExpression을 상위로 올림
+		if (targetExpression.getRightExpression() instanceof BinaryExpression rightExpression
 				&& rightExpression.getLeftExpression() instanceof Column) {
-			
+
 			var namedParameterList = new ArrayList<String>();
 			rightExpression.getRightExpression().accept(new ExpressionVisitorAdapter<Void>() {
 				@Override
@@ -397,7 +407,7 @@ public class JSqlParserUtil {
 					if (parameter.getName().equals(columnName)) {
 						namedParameterList.add(columnName);
 					}
-					
+
 				}
 			});
 			if (!namedParameterList.isEmpty()) {
@@ -406,7 +416,7 @@ public class JSqlParserUtil {
 				return;
 			}
 		}
-		
+
 		// leftExpression이 대상인 경우 rightExpression을 상위 leftExpression으로 올림
 		if (targetExpression.getLeftExpression() instanceof BinaryExpression leftExpression
 				&& leftExpression.getLeftExpression() instanceof Column) {
@@ -417,7 +427,7 @@ public class JSqlParserUtil {
 					if (parameter.getName().equals(columnName)) {
 						namedParameterList.add(columnName);
 					}
-					
+
 				}
 			});
 			if (!namedParameterList.isEmpty()) {
@@ -430,5 +440,5 @@ public class JSqlParserUtil {
 		// 아니면 중첩 호출로 leftExpression 탐색
 		removeWhereClauseByNamedParameterNameNested((BinaryExpression) superExpression.getLeftExpression(), columnName);
 	}
-	
+
 }

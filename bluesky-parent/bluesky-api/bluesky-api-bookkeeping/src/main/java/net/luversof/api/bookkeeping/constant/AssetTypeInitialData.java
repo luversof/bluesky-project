@@ -6,18 +6,13 @@ import java.util.List;
 import java.util.UUID;
 
 import io.github.luversof.boot.context.support.MessageUtil;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import net.luversof.api.bookkeeping.domain.AssetType;
-
 
 /**
  * 기본 생성하여 제공하는 AccountType
  */
-@Getter
-@AllArgsConstructor
 public enum AssetTypeInitialData {
-	
+
 	CONTRA_ASSET(AssetTypeCode.CONTRA_ASSET),
 	CASH(AssetTypeCode.CASH),
 	BANK(AssetTypeCode.BANK),
@@ -28,16 +23,24 @@ public enum AssetTypeInitialData {
 	INSURANCE(AssetTypeCode.INSURANCE),
 	ETC(AssetTypeCode.ETC),
 	;
+
 	private AssetTypeCode code;
-	
+
+	AssetTypeInitialData(AssetTypeCode code) {
+		this.code = code;
+	}
+
+	public AssetTypeCode getCode() {
+		return code;
+	}
+
 	private String getLocalizedName() {
 		return MessageUtil.getMessage(MessageFormat.format("bookkeeping.constant.account-type.{0}", name()), name());
 	}
-	
-	
+
 	public static List<AssetType> getInitialData(UUID bookkeepingId) {
 		var accountTypeList = new ArrayList<AssetType>();
-		
+
 		for (var accountTypeInitialData : AssetTypeInitialData.values()) {
 			var accountType = new AssetType();
 			accountType.setBookkeepingId(bookkeepingId);
@@ -45,7 +48,7 @@ public enum AssetTypeInitialData {
 			accountType.setCode(accountTypeInitialData.getCode());
 			accountTypeList.add(accountType);
 		}
-		
+
 		return accountTypeList;
 	}
 }

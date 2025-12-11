@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import lombok.Setter;
 import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 
@@ -16,14 +15,18 @@ import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 @RequestMapping("/api/stock/stockItem")
 public class StockItemApiController {
 
-	@Setter(onMethod_ = @Autowired)
 	private StockItemClient stockItemClient;
-	
+
+	@Autowired
+	public void setStockItemClient(StockItemClient stockItemClient) {
+		this.stockItemClient = stockItemClient;
+	}
+
 	@PostMapping
 	public StockItem createStockItem(@RequestBody StockItem stockItem) {
 		return stockItemClient.createStockItem(stockItem);
 	}
-	
+
 	@GetMapping("/search/findByName/{name}")
 	public StockItem findByName(@PathVariable String name) {
 		return stockItemClient.findByName(name);

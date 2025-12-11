@@ -4,11 +4,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import lombok.experimental.UtilityClass;
 import net.luversof.web.common.util.WebCommonUtil;
 
-@UtilityClass
-public class ThymeleafUtil {
+public final class ThymeleafUtil {
+
+	private ThymeleafUtil() {
+	}
 
 	private static final String[] THEMES = new String[] {
 			"bluesky",

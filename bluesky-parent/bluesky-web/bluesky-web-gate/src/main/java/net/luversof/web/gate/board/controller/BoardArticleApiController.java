@@ -3,6 +3,8 @@ package net.luversof.web.gate.board.controller;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,23 +22,30 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.board.domain.BoardArticle;
 import net.luversof.web.gate.board.httpexchange.BoardArticleClient;
 import net.luversof.web.gate.board.service.BoardUserInfoService;
 
-@Slf4j
 @RestController
 @RequestMapping(value = "/api/boardArticle", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BoardArticleApiController {
 
-	@Setter(onMethod_ = @Autowired)
+	private static final Logger log = LoggerFactory.getLogger(BoardArticleApiController.class);
+
 	private BoardArticleClient boardArticleClient;
 
-	@Setter(onMethod_ = @Autowired)
 	private BoardUserInfoService boardUserInfoService;
+
+	@Autowired
+	public void setBoardArticleClient(BoardArticleClient boardArticleClient) {
+		this.boardArticleClient = boardArticleClient;
+	}
+
+	@Autowired
+	public void setBoardUserInfoService(BoardUserInfoService boardUserInfoService) {
+		this.boardUserInfoService = boardUserInfoService;
+	}
 
 	@BlueskyPreAuthorize
 	@PostMapping
