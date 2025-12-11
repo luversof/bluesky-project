@@ -13,11 +13,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.exception.BlueskyException;
 import lombok.Setter;
+import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.board.domain.Board;
 import net.luversof.web.gate.board.httpexchange.BoardArticleClient;
 import net.luversof.web.gate.board.httpexchange.BoardClient;
 import net.luversof.web.gate.board.service.BoardUserInfoService;
-import net.luversof.web.gate.util.UserUtil;
 
 @Controller
 @RequestMapping(value = "/board", produces = MediaType.TEXT_HTML_VALUE)

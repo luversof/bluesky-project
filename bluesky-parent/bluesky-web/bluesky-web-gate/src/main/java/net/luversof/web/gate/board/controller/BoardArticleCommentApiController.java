@@ -20,10 +20,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import lombok.Setter;
+import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.board.domain.BoardArticleComment;
 import net.luversof.web.gate.board.httpexchange.BoardArticleCommentClient;
 import net.luversof.web.gate.board.service.BoardUserInfoService;
-import net.luversof.web.gate.util.UserUtil;
 
 @RestController
 @RequestMapping(value = "/api/boardArticleComment", produces = MediaType.APPLICATION_JSON_VALUE)

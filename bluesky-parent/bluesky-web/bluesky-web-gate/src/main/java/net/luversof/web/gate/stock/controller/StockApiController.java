@@ -12,10 +12,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import lombok.Setter;
+import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
 import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
-import net.luversof.web.gate.util.UserUtil;
 
 @Controller
 @RequestMapping(value = "/stock/api")

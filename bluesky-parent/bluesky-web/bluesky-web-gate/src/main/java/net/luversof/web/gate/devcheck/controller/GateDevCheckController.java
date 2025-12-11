@@ -22,7 +22,7 @@ import io.github.luversof.boot.context.support.BlueskyReloadableResourceBundleMe
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
 import io.github.luversof.boot.devcheck.annotation.DevCheckDescription;
 import lombok.Setter;
-import net.luversof.web.gate.util.UserUtil;
+import net.luversof.client.user.util.UserUtil;
 
 @DevCheckController
 @RequestMapping(value = "/gate", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -84,7 +84,7 @@ public class GateDevCheckController {
 	@GetMapping("/loginInfo")
 	public Map<String, Object> loginInfo() {
 		return Map.of(
-				"authenticated", UserUtil.isAuthenticated(),
+				"authenticated", SecurityContextHolder.getContext().getAuthentication().isAuthenticated(),
 				"userId", UserUtil.getUserId() != null ? UserUtil.getUserId().toString() : "",
 				"username", UserUtil.getUsername() != null ? UserUtil.getUsername() : "");
 	}

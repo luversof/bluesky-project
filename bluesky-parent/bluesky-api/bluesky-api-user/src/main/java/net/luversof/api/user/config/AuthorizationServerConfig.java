@@ -64,14 +64,6 @@ public class AuthorizationServerConfig {
 				.build();
 	}
 
-	@Bean
-	@Order(2)
-	SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http) throws Exception {
-		return http
-				.oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()))
-				.build();
-	}
-
 	@Value("${bluesky.oauth2.registered-client.web-gate.redirect-uris}")
 	private String redirectUris;
 
