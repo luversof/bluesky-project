@@ -39,28 +39,16 @@ public class StockHtmxController {
 	private static final String ERROR_VIEW = "stock/htmx/error";
 	private static final String UNKNOWN_LABEL = "종목 정보 없음";
 
+	@Autowired
 	private TradeProfitClient tradeProfitClient;
 
+	@Autowired
 	private AccountClient accountClient;
 
+	@Autowired
 	private StockItemClient stockItemClient;
 
 	@Autowired
-	public void setTradeProfitClient(TradeProfitClient tradeProfitClient) {
-		this.tradeProfitClient = tradeProfitClient;
-	}
-
-	@Autowired
-	public void setAccountClient(AccountClient accountClient) {
-		this.accountClient = accountClient;
-	}
-
-	@Autowired
-	public void setStockItemClient(StockItemClient stockItemClient) {
-		this.stockItemClient = stockItemClient;
-	}
-
-	@Setter(onMethod_ = @Autowired)
 	private DividendClient dividendClient;
 
 	@GetMapping("/calculateProfit")
