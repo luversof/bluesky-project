@@ -35,24 +35,12 @@
 		</dependency>
 		<!-- (e) spring-cloud -->
 
-		<!-- (s) boot admin -->
-		<dependency>
-			<groupId>de.codecentric</groupId>
-			<artifactId>spring-boot-admin-starter-client</artifactId>
-		</dependency>
-		<!-- (e) boot admin -->
-
 		<!-- (s) springdoc-openapi -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 		</dependency>
 		<!-- (e) springdoc-openapi -->
-
-		<!--<dependency>
-			<groupId>ch.qos.logback</groupId>
-			<artifactId>logback-access</artifactId>
-		</dependency>-->
 
 		<!-- (s) jdbc driver -->
 		<dependency>
@@ -88,7 +76,6 @@
 			<groupId>com.fasterxml.jackson.dataformat</groupId>
 			<artifactId>jackson-dataformat-csv</artifactId>
 		</dependency>
-
 
 		<!-- (s) bluesky-boot -->
 		<dependency>

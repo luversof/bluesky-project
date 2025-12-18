@@ -25,6 +25,7 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 		<!-- (e) spring-boot -->
+		
 		<!-- (s) spring-security -->
 		<dependency>
 			<groupId>org.springframework.security</groupId>
@@ -43,6 +44,7 @@
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
 		</dependency>
 		<!-- (e) spring-security -->
+		
 		<!-- (s) spring-cloud -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
@@ -53,22 +55,14 @@
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
 		<!-- (e) spring-cloud -->
-		<!-- (s) boot admin -->
-		<dependency>
-			<groupId>de.codecentric</groupId>
-			<artifactId>spring-boot-admin-starter-client</artifactId>
-		</dependency>
-		<!-- (e) boot admin -->
+
 		<!-- (s) springdoc-openapi -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 		</dependency>
 		<!-- (e) springdoc-openapi -->
-		<!--<dependency>
-			<groupId>ch.qos.logback</groupId>
-			<artifactId>logback-access</artifactId>
-		</dependency>-->
+		
 		<!-- (s) jdbc -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
@@ -98,8 +92,6 @@
 			<artifactId>opentelemetry-exporter-otlp</artifactId>
 		</dependency>
 		<!-- (e) micrometer traces -->
-		
-		<!-- (e) bluesky modules -->
 		
 		<!-- (e) bluesky boot connectioninfo -->
 		<dependency>

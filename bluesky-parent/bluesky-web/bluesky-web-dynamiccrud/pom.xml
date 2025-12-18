@@ -37,6 +37,7 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 		<!-- (e) spring-boot -->
+		
 		<!-- (s) spring-cloud -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
@@ -47,13 +48,6 @@
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
 		<!-- (e) spring-cloud -->
-		
-		<!-- (s) boot admin -->
-		<dependency>
-			<groupId>de.codecentric</groupId>
-			<artifactId>spring-boot-admin-starter-client</artifactId>
-		</dependency>
-		<!-- (e) boot admin -->
 
 		<!-- (s) springdoc-openapi -->
 		<dependency>

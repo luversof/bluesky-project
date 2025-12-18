@@ -45,15 +45,6 @@
 		</dependency>
 		<!-- (e) spring-boot -->
 
-		<!-- (s) spring-session -->
-		<!--<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-session-data-redis</artifactId>
-		</dependency>-->
-		<!-- (e) spring-session -->
-
-
-
 		<!-- (s) spring-cloud -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
@@ -64,13 +55,6 @@
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
 		<!-- (e) spring-cloud -->
-
-		<!-- (s) boot admin -->
-		<dependency>
-			<groupId>de.codecentric</groupId>
-			<artifactId>spring-boot-admin-starter-client</artifactId>
-		</dependency>
-		<!-- (e) boot admin -->
 
 		<!-- (s) springdoc-openapi -->
 		<dependency>
@@ -136,8 +120,6 @@
 			<artifactId>bluesky-web-common</artifactId>
 		</dependency>
 		<!-- (e) bluesky -->
-
-
 	</dependencies>
 
 	<build>

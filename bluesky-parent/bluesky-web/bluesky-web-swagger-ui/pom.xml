@@ -17,6 +17,7 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 		<!-- (e) spring-boot -->
+		
 		<!-- (s) spring-cloud -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
@@ -27,12 +28,6 @@
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
 		<!-- (e) spring-cloud -->
-		<!-- (s) boot admin -->
-		<dependency>
-			<groupId>de.codecentric</groupId>
-			<artifactId>spring-boot-admin-starter-client</artifactId>
-		</dependency>
-		<!-- (e) boot admin -->
 
 		<!-- (s) webjars -->
 		<dependency>
@@ -46,11 +41,6 @@
 		</dependency>
 		<!-- (e) webjars -->
 
-		<!--<dependency>
-			<groupId>ch.qos.logback</groupId>
-			<artifactId>logback-access</artifactId>
-		</dependency>-->
-		
 		<!-- (s) micrometer metrics -->
 		<dependency>
 			<groupId>io.micrometer</groupId>
