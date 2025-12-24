@@ -9,5 +9,6 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>bluesky-client-user</module>
+		<module>bluesky-client-common</module>
 	</modules>
 </project>

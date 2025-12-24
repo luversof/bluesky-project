@@ -1,5 +1,6 @@
 package net.luversof.client.user.config;
 
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.PropertySource;
@@ -9,9 +10,9 @@ import org.springframework.session.data.redis.config.annotation.web.http.EnableR
  * Shared Redis-backed Spring Session configuration for bluesky-web-* modules.
  * Uses Redis host/profile settings provided via properties.
  */
-@Configuration(proxyBeanMethods = false)
+@AutoConfiguration
 @EnableRedisIndexedHttpSession
-public class CommonSessionConfig {
+public class ClientUserCommonSessionAutoConfiguration {
 
 	@Configuration(proxyBeanMethods = false)
 	@Profile("k8sdev")

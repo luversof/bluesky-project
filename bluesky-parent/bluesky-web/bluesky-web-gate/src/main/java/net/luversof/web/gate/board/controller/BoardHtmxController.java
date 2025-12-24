@@ -35,9 +35,8 @@ public class BoardHtmxController {
 	@GetMapping("/{boardAlias}/{boardMode:list}")
 	public String boardArticlePage(@PathVariable String boardAlias, @PathVariable String boardMode, Pageable pageable,
 			Model model) {
-		var page = boardUserInfoService.enrich(boardArticleClient.findByBoardAlias(boardAlias, pageable));
-		model.addAttribute("page", page);
-		model.addAttribute("enrichedContent", page.getContent());
+		var pageResponse = boardUserInfoService.enrich(boardArticleClient.findByBoardAlias(boardAlias, pageable));
+		model.addAttribute("page", pageResponse.toPage());
 		return "board/htmx/list";
 	}
 

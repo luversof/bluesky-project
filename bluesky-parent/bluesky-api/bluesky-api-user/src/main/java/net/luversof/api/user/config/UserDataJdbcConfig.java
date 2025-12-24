@@ -14,8 +14,7 @@ import org.springframework.data.jdbc.core.convert.JdbcCustomConversions;
 import org.springframework.data.jdbc.repository.config.EnableJdbcAuditing;
 import org.springframework.data.jdbc.repository.config.EnableJdbcRepositories;
 import org.springframework.data.relational.core.mapping.event.BeforeConvertCallback;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -26,39 +25,37 @@ import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
 
 @Configuration
 @EnableJdbcAuditing(dateTimeProviderRef = "auditingDateTimeProvider")
-@EnableJdbcRepositories(basePackages = "net.luversof.api.user.**.repository", jdbcOperationsRef = "userNamedParameterJdbcOperations", transactionManagerRef = "userTransactionManager")
+@EnableJdbcRepositories(basePackages = "net.luversof.api.user.**.repository", transactionManagerRef = "userTransactionManager")
 public class UserDataJdbcConfig {
-	
+
 	@Bean
 	DateTimeProvider auditingDateTimeProvider() {
 		return () -> Optional.of(OffsetDateTime.now());
 	}
 
 	@Bean
-	NamedParameterJdbcOperations userNamedParameterJdbcOperations(@Qualifier("routingDataSource") DataSource routingDataSource) {
-		return new NamedParameterJdbcTemplate(routingDataSource);
+	JdbcClient userJdbcClient(@Qualifier("routingDataSource") DataSource routingDataSource) {
+		return JdbcClient.create(routingDataSource);
 	}
 
 	@Bean
 	PlatformTransactionManager userTransactionManager(@Qualifier("routingDataSource") DataSource routingDataSource) {
 		return new DataSourceTransactionManager(routingDataSource);
 	}
-	
-	
+
 	@Bean
 	<T> BeforeConvertCallback<T> userBeforeConvertCallback() {
 		return DataJdbcConverterUtil::prepareEntity;
 	}
-	
+
 	@Bean
 	JdbcCustomConversions userJdbcCustomConversions() {
 		return new JdbcCustomConversions(List.of(
-//			new MapToStringConverter(),
-//			new StringToMapConverter()
-			new MapToPGobjectConverter(),
-			new PGobjectToMapConverter(),
-			new TimestampToOffsetDateTimeConverter()
-		));
+				// new MapToStringConverter(),
+				// new StringToMapConverter()
+				new MapToPGobjectConverter(),
+				new PGobjectToMapConverter(),
+				new TimestampToOffsetDateTimeConverter()));
 	}
 
 }

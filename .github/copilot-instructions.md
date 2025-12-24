@@ -1,5 +1,8 @@
 # Bluesky Project - GitHub Copilot Instructions
 
+1. 모든 답변은 현재 프로젝트의 버전을 기준으로 합니다.
+2. 모든 답변은 한국어로 합니다.
+
 이 문서는 GitHub Copilot이 프로젝트의 아키텍처와 코딩 규칙을 이해하고 일관된 코드를 생성하도록 돕습니다.
 
 ## 프로젝트 개요

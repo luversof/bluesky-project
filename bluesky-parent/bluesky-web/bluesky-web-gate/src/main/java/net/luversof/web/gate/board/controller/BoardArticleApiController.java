@@ -67,7 +67,7 @@ public class BoardArticleApiController {
 			@PageableDefault(size = 20) @SortDefault(sort = "id", direction = Direction.DESC) Pageable pageable) {
 		log.debug("findByBoardAlias boardAlias : {}", boardAlias);
 		var page = boardArticleClient.findByBoardAlias(boardAlias, pageable);
-		return boardUserInfoService.enrich(page);
+		return boardUserInfoService.enrich(page).toPage();
 	}
 
 	@GetMapping("/{id}")

@@ -1,6 +1,7 @@
 package net.luversof.api.board;
 
-import org.springframework.lang.Nullable;
+
+import org.jspecify.annotations.Nullable;
 
 import io.github.luversof.boot.devcheck.annotation.DevCheckDescription;
 import io.github.luversof.boot.devcheck.annotation.DevCheckUtil;

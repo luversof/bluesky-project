@@ -1,6 +1,5 @@
 package net.luversof.web.gate.board.service;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -16,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import io.github.luversof.boot.data.domain.PageResponse;
 import net.luversof.client.user.httpexchange.UserInfoApiClient;
 import net.luversof.web.gate.board.domain.BoardArticle;
 import net.luversof.web.gate.board.domain.BoardArticleComment;
@@ -40,70 +40,29 @@ public class BoardUserInfoService {
 		this.userInfoApiClient = userInfoApiClient;
 		this.boardArticleCommentClient = boardArticleCommentClient;
 	}
+	
+	public PageResponse<BoardArticle> enrich(PageResponse<BoardArticle> pageResponse) {
+		if (pageResponse == null || pageResponse.empty()) {
+			return pageResponse;
+		}
+		var boardArticleList = pageResponse.content();
+		var userIdList = boardArticleList.stream()
+				.map(BoardArticle::userId)
+				.collect(Collectors.toList());
+		var usernameMap = fetchUsernames(userIdList);
+		for (int i = 0; i < pageResponse.content().size(); i++) {
+			var boardArticle = boardArticleList.get(i);
+			boardArticleList.set(i, applyUsername(boardArticle, usernameMap));
+		}
+		return pageResponse;
+	}
 
 	public BoardArticle enrich(BoardArticle boardArticle) {
 		if (boardArticle == null) {
-			return null;
+			return boardArticle;
 		}
-		var usernameMap = fetchUsernames(Collections.singletonList(boardArticle.userId()));
+		var usernameMap = fetchUsernames(List.of(boardArticle.userId()));
 		return applyUsername(boardArticle, usernameMap);
-	}
-
-	public Page<BoardArticle> enrich(Page<BoardArticle> page) {
-		if (page == null || page.isEmpty()) {
-			return page;
-		}
-		var userIds = page.getContent().stream()
-				.map(BoardArticle::userId)
-				.collect(Collectors.toList());
-		var usernameMap = fetchUsernames(userIds);
-		// also fetch comment counts and apply
-		var articleIds = page.getContent().stream().map(BoardArticle::id).collect(Collectors.toList());
-		Map<java.util.UUID, Long> commentCountMap = fetchCommentCounts(articleIds);
-		return page.map(article -> applyUsernameAndCommentCount(article, usernameMap, commentCountMap));
-	}
-
-	private Map<java.util.UUID, Long> fetchCommentCounts(Collection<java.util.UUID> articleIds) {
-		if (articleIds == null || articleIds.isEmpty()) {
-			return Collections.emptyMap();
-		}
-		try {
-			var distinctIds = articleIds.stream().filter(Objects::nonNull)
-					.collect(Collectors.toCollection(LinkedHashSet::new));
-			if (distinctIds.isEmpty())
-				return Collections.emptyMap();
-			var responses = boardArticleCommentClient.countByBoardArticleIds(List.copyOf(distinctIds));
-			if (responses == null || responses.isEmpty())
-				return Collections.emptyMap();
-			Map<java.util.UUID, Long> result = new HashMap<>();
-			for (var r : responses) {
-				if (r == null || r.boardArticleId() == null)
-					continue;
-				result.put(r.boardArticleId(), r.count());
-			}
-			// ensure all requested ids have an entry
-			for (var id : distinctIds) {
-				result.putIfAbsent(id, 0L);
-			}
-			return result;
-		} catch (Exception ex) {
-			log.warn("Failed to fetch comment counts for {} : {}", articleIds, ex.getMessage());
-			return Collections.emptyMap();
-		}
-	}
-
-	private BoardArticle applyUsernameAndCommentCount(BoardArticle article, Map<UUID, String> usernameMap,
-			Map<java.util.UUID, Long> commentCountMap) {
-		if (article == null)
-			return null;
-		long count = 0L;
-		if (commentCountMap != null && commentCountMap.containsKey(article.id())) {
-			count = commentCountMap.get(article.id());
-		}
-		return article.toBuilder()
-				.username(resolveUsername(article.userId(), article.username(), usernameMap))
-				.commentCount(count)
-				.build();
 	}
 
 	public BoardArticleComment enrich(BoardArticleComment comment) {
@@ -125,11 +84,11 @@ public class BoardUserInfoService {
 		return page.map(comment -> applyUsername(comment, usernameMap));
 	}
 
-	private Map<UUID, String> fetchUsernames(Collection<UUID> userIds) {
-		if (userIds == null || userIds.isEmpty()) {
+	private Map<UUID, String> fetchUsernames(List<UUID> userIdList) {
+		if (userIdList == null || userIdList.isEmpty()) {
 			return Collections.emptyMap();
 		}
-		var distinctIds = userIds.stream()
+		var distinctIds = userIdList.stream()
 				.filter(Objects::nonNull)
 				.collect(Collectors.toCollection(LinkedHashSet::new));
 		if (distinctIds.isEmpty()) {

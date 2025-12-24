@@ -3,7 +3,6 @@ package net.luversof.web.gate.board.httpexchange;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,6 +13,7 @@ import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
 import org.springframework.web.service.annotation.PutExchange;
 
+import io.github.luversof.boot.data.domain.PageResponse;
 import net.luversof.web.gate.board.domain.BoardArticle;
 
 /**
@@ -32,7 +32,7 @@ public interface BoardArticleClient {
 	 * 게시판 alias로 게시글 목록 조회 (페이지네이션)
 	 */
 	@GetExchange("/search/findByBoardAlias/{boardAlias}")
-	Page<BoardArticle> findByBoardAlias(@PathVariable String boardAlias, Pageable pageable);
+	PageResponse<BoardArticle> findByBoardAlias(@PathVariable String boardAlias, Pageable pageable);
 
 	/**
 	 * ID로 특정 게시글 조회

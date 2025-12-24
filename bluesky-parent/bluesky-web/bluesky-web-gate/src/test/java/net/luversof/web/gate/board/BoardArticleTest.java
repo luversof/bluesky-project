@@ -47,8 +47,8 @@ class BoardArticleTest implements GeneralWebTest {
 	void findByBoardAlias() {
 		var pageRequest = PageRequest.of(0, 20).withSort(Sort.by(Order.desc("id"), Order.asc("boardId")));
 		var boardArticlePage = boardArticleClient.findByBoardAlias("free", pageRequest);
-		log.debug("boardArticlePage.getContent() : {}", boardArticlePage.getContent());
-		assertThat(boardArticlePage).isNotEmpty();
+		log.debug("boardArticlePage.getContent() : {}", boardArticlePage.content());
+		assertThat(boardArticlePage).isNotNull();
 	}
 
 	@Test

@@ -103,6 +103,38 @@ public class PaginationInterceptor implements WebRequestInterceptor {
 		private Nav prevNav;
 		private Nav nextNav;
 		private Nav lastNav;
+		
+		public Nav getFirstNav() {
+			return firstNav;
+		}
+
+		public void setFirstNav(Nav firstNav) {
+			this.firstNav = firstNav;
+		}
+
+		public Nav getPrevNav() {
+			return prevNav;
+		}
+
+		public void setPrevNav(Nav prevNav) {
+			this.prevNav = prevNav;
+		}
+
+		public Nav getNextNav() {
+			return nextNav;
+		}
+
+		public void setNextNav(Nav nextNav) {
+			this.nextNav = nextNav;
+		}
+
+		public Nav getLastNav() {
+			return lastNav;
+		}
+
+		public void setLastNav(Nav lastNav) {
+			this.lastNav = lastNav;
+		}
 
 		Pagination(Page<?> page) {
 			currentPage = page.getPageable().getPageNumber();
