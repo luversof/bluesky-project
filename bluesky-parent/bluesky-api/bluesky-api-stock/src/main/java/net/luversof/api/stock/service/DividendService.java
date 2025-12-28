@@ -4,9 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -19,17 +17,13 @@ import net.luversof.api.stock.web.dto.request.DividendSearchRequest;
 @Service
 public class DividendService {
 
-	private final NamedParameterJdbcOperations jdbcOperations;
+	private final JdbcClient jdbcClient;
 	private final StockItemService stockItemService;
 
-	public DividendService(
-			@Qualifier("stockNamedParameterJdbcOperations") NamedParameterJdbcOperations jdbcOperations,
-			StockItemService stockItemService) {
-		this.jdbcOperations = jdbcOperations;
+	public DividendService(JdbcClient jdbcClient, StockItemService stockItemService) {
+		this.jdbcClient = jdbcClient;
 		this.stockItemService = stockItemService;
 	}
-
-	private static final BeanPropertyRowMapper<Dividend> ROW_MAPPER = new BeanPropertyRowMapper<>(Dividend.class);
 
 	@Transactional(readOnly = true)
 	public List<Dividend> findDividends(DividendSearchRequest request) {
@@ -70,7 +64,7 @@ public class DividendService {
 
 		sql.append(" ORDER BY d.\"payDate\" DESC, d.\"id\" DESC");
 
-		var result = jdbcOperations.query(sql.toString(), params, ROW_MAPPER);
+		var result = jdbcClient.sql(sql.toString()).params(params).query(Dividend.class).list();
 
 		// Fill missing stockItemId by looking up StockItem by name
 		for (var dividend : result) {
