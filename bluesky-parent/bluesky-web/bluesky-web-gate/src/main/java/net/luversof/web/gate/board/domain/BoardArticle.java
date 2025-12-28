@@ -7,7 +7,7 @@ import java.util.UUID;
  * 게시글 정보를 나타내는 domain 클래스 (bluesky-api-board와 매핑)
  */
 public record BoardArticle(UUID id, UUID userId, String username, UUID boardId, String title, String content,
-		Instant createdDate, Instant lastModifiedDate, long commentCount) {
+		Instant createdDate, Instant lastModifiedDate, Long commentCount) {
 
 	public static Builder builder() {
 		return new Builder();
@@ -26,7 +26,7 @@ public record BoardArticle(UUID id, UUID userId, String username, UUID boardId, 
 		private String content;
 		private Instant createdDate;
 		private Instant lastModifiedDate;
-		private long commentCount;
+		private Long commentCount;
 
 		public Builder() {
 		}
@@ -83,7 +83,7 @@ public record BoardArticle(UUID id, UUID userId, String username, UUID boardId, 
 			return this;
 		}
 
-		public Builder commentCount(long commentCount) {
+		public Builder commentCount(Long commentCount) {
 			this.commentCount = commentCount;
 			return this;
 		}
