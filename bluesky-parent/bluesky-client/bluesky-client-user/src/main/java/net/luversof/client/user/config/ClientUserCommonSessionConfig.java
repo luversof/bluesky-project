@@ -12,7 +12,7 @@ import org.springframework.session.data.redis.config.annotation.web.http.EnableR
  */
 @AutoConfiguration
 @EnableRedisIndexedHttpSession
-public class ClientUserCommonSessionAutoConfiguration {
+public class ClientUserCommonSessionConfig {
 
 	@Configuration(proxyBeanMethods = false)
 	@Profile("k8sdev")

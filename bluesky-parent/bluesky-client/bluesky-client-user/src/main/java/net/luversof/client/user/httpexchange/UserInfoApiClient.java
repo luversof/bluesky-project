@@ -1,5 +1,6 @@
 package net.luversof.client.user.httpexchange;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,7 +31,7 @@ public interface UserInfoApiClient {
 		String username,
 		String email,
 		String avatarUrl
-	) {}
+	) implements Serializable {}
 
 	record UserInfoResponse(
 		String id,
@@ -39,6 +40,6 @@ public interface UserInfoApiClient {
 		String providerId,
 		String email,
 		String avatarUrl
-	) {}
+	) implements Serializable {}
 	
 }

@@ -1,35 +1,25 @@
 package net.luversof.web.gate.blog.config;
 
+import java.util.function.Function;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
-import org.springframework.web.service.registry.ImportHttpServices;
 
-import io.github.luversof.boot.web.service.invoker.PageableHttpServiceArgumentResolver;
 import net.luversof.web.gate.blog.httpexchange.BlogArticleCategoryClient;
 import net.luversof.web.gate.blog.httpexchange.BlogArticleClient;
 import net.luversof.web.gate.blog.httpexchange.BlogArticleCommentClient;
 import net.luversof.web.gate.blog.httpexchange.BlogClient;
 
 @Configuration
-@ImportHttpServices(group = "client-blog", types = {
-		BlogArticleCategoryClient.class,
-		BlogArticleClient.class,
-		BlogArticleCommentClient.class,
-		BlogClient.class,
-})
 public class GateBlogConfig {
 
 	@Bean
-	HttpServiceProxyFactory blogHttpServiceProxyFactory(RestClient.Builder builder,
+	HttpServiceProxyFactory blogHttpServiceProxyFactory(
+			Function<String, HttpServiceProxyFactory> httpServiceProxyFactoryBuilder,
 			@Value("${spring.http.serviceclient.client-blog.base-url:}") String baseUrl) {
-		RestClient restClient = builder.baseUrl(baseUrl).build();
-		return HttpServiceProxyFactory.builderFor(RestClientAdapter.create(restClient))
-				.customArgumentResolver(new PageableHttpServiceArgumentResolver())
-				.build();
+		return httpServiceProxyFactoryBuilder.apply(baseUrl);
 	}
 
 	@Bean

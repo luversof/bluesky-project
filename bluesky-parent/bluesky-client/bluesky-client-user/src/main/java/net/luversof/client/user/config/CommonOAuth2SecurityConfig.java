@@ -40,13 +40,16 @@ public class CommonOAuth2SecurityConfig {
 	 */
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http,
-			ObjectProvider<OAuth2LoginSuccessHandler> successHandlerProvider) throws Exception {
+			ObjectProvider<OAuth2LoginSuccessHandler> successHandlerProvider,
+			ObjectProvider<CustomOAuth2UserService> customOAuth2UserServiceProvider) throws Exception {
 		return http
 				.csrf(CsrfConfigurer::disable)
 				.authorizeHttpRequests(authorize -> authorize
 						.anyRequest().permitAll())
 				.oauth2Login(oauth2 -> oauth2
-						.successHandler(successHandlerProvider.getObject()))
+						.successHandler(successHandlerProvider.getObject())
+						.userInfoEndpoint(
+								userInfo -> userInfo.userService(customOAuth2UserServiceProvider.getObject())))
 				.oauth2Client(Customizer.withDefaults())
 				.logout(logout -> logout
 						.logoutUrl("/logout")

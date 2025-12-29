@@ -1,5 +1,7 @@
 package net.luversof.client.common.config;
 
+import java.util.function.Function;
+
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.restclient.RestClientCustomizer;
@@ -14,26 +16,45 @@ import tools.jackson.databind.json.JsonMapper;
 
 @AutoConfiguration
 public class ClientCommonAutoConfiguration {
-	
+
 	@Bean
 	@ConditionalOnMissingBean
 	RestClient restClient(RestClient.Builder builder) {
 		return builder.build();
 	}
-	
+
 	@Bean
 	RestClientCustomizer clientCommonRestClientCustomizer(JsonMapper jsonMapper) {
 		return (builder) -> {
 			builder.defaultStatusHandler(new BlueskyClientResponseErrorHandler(jsonMapper));
 		};
 	}
-	
+
 	@Bean
-	HttpServiceProxyFactory clientCommonHttpServiceProxyFactory(RestClient restClient) {
+	@ConditionalOnMissingBean
+	PageableHttpServiceArgumentResolver pageableHttpServiceArgumentResolver() {
+		return new PageableHttpServiceArgumentResolver();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	Function<String, HttpServiceProxyFactory> httpServiceProxyFactoryBuilder(RestClient.Builder builder,
+			PageableHttpServiceArgumentResolver pageableHttpServiceArgumentResolver) {
+		return baseUrl -> {
+			RestClient restClient = builder.baseUrl(baseUrl).build();
+			return HttpServiceProxyFactory.builderFor(RestClientAdapter.create(restClient))
+					.customArgumentResolver(pageableHttpServiceArgumentResolver)
+					.build();
+		};
+	}
+
+	@Bean
+	HttpServiceProxyFactory clientCommonHttpServiceProxyFactory(RestClient restClient,
+			PageableHttpServiceArgumentResolver pageableHttpServiceArgumentResolver) {
 		return HttpServiceProxyFactory
 				.builderFor(RestClientAdapter.create(restClient))
-				.customArgumentResolver(new PageableHttpServiceArgumentResolver())
+				.customArgumentResolver(pageableHttpServiceArgumentResolver)
 				.build();
 	}
-	
+
 }

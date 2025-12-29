@@ -54,7 +54,7 @@ public class BoardArticleCommentApiController {
 	public Page<BoardArticleComment> findByBoardArticleId(@PathVariable UUID boardArticleId,
 			@PageableDefault(size = 10) @SortDefault(sort = "createdDate", direction = Direction.ASC) Pageable pageable) {
 		var page = boardArticleCommentClient.findByBoardArticleId(boardArticleId, pageable);
-		return boardUserInfoService.enrichComments(page);
+		return boardUserInfoService.enrichComments(page).toPage();
 	}
 
 	@GetMapping("/search/countByBoardArticleId/{boardArticleId}")

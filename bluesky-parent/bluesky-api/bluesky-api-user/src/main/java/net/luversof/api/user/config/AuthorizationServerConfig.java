@@ -60,7 +60,7 @@ public class AuthorizationServerConfig {
 				.with(authorizationServerConfigurer, configurer -> 
 					configurer.oidc(Customizer.withDefaults()))
 				.authorizeHttpRequests(authorize -> 
-					authorize.anyRequest().authenticated())
+					authorize.anyRequest().permitAll())
 				.build();
 	}
 

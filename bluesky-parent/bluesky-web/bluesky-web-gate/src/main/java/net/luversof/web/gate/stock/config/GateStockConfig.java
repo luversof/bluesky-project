@@ -1,7 +1,11 @@
 package net.luversof.web.gate.stock.config;
 
+import java.util.function.Function;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.service.registry.ImportHttpServices;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
@@ -9,12 +13,33 @@ import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 
 @Configuration
-@ImportHttpServices(group = "client-stock", types = { 
-		AccountClient.class,
-		DividendClient.class,
-		StockItemClient.class,
-		TradeProfitClient.class
-})
 public class GateStockConfig {
+
+	@Bean
+	HttpServiceProxyFactory stockHttpServiceProxyFactory(
+			Function<String, HttpServiceProxyFactory> httpServiceProxyFactoryBuilder,
+			@Value("${spring.http.serviceclient.client-stock.base-url:}") String baseUrl) {
+		return httpServiceProxyFactoryBuilder.apply(baseUrl);
+	}
+
+	@Bean
+	AccountClient accountClient(HttpServiceProxyFactory stockHttpServiceProxyFactory) {
+		return stockHttpServiceProxyFactory.createClient(AccountClient.class);
+	}
+
+	@Bean
+	DividendClient dividendClient(HttpServiceProxyFactory stockHttpServiceProxyFactory) {
+		return stockHttpServiceProxyFactory.createClient(DividendClient.class);
+	}
+
+	@Bean
+	StockItemClient stockItemClient(HttpServiceProxyFactory stockHttpServiceProxyFactory) {
+		return stockHttpServiceProxyFactory.createClient(StockItemClient.class);
+	}
+
+	@Bean
+	TradeProfitClient tradeProfitClient(HttpServiceProxyFactory stockHttpServiceProxyFactory) {
+		return stockHttpServiceProxyFactory.createClient(TradeProfitClient.class);
+	}
 
 }

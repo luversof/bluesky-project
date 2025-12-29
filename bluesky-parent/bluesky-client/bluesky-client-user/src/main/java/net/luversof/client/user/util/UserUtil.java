@@ -8,6 +8,8 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import io.github.luversof.boot.context.ApplicationContextUtil;
 import net.luversof.client.user.httpexchange.UserInfoApiClient;
+import net.luversof.client.user.httpexchange.UserInfoApiClient.UserInfoResponse;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +29,10 @@ public final class UserUtil {
 
 		// OAuth2 로그인인 경우 UserInfo 테이블 조회
 		if (authentication instanceof OAuth2AuthenticationToken oauth2Auth) {
+			OAuth2User principal = oauth2Auth.getPrincipal();
+			if (principal.getAttribute("userInfo") instanceof UserInfoResponse userInfo) {
+				return userInfo.id() != null ? UUID.fromString(userInfo.id()) : null;
+			}
 			return getUserIdFromUserInfo(oauth2Auth);
 		}
 
@@ -94,6 +100,10 @@ public final class UserUtil {
 		// OAuth2 로그인
 		if (authentication instanceof OAuth2AuthenticationToken oauth2Auth) {
 			OAuth2User principal = oauth2Auth.getPrincipal();
+			if (principal.getAttribute("userInfo") instanceof UserInfoResponse userInfo) {
+				return userInfo.username();
+			}
+
 			String username = principal.getAttribute("preferred_username");
 			if (username == null) {
 				username = principal.getAttribute("name");

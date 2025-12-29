@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -19,7 +18,6 @@ import io.github.luversof.boot.data.domain.PageResponse;
 import net.luversof.client.user.httpexchange.UserInfoApiClient;
 import net.luversof.web.gate.board.domain.BoardArticle;
 import net.luversof.web.gate.board.domain.BoardArticleComment;
-import net.luversof.web.gate.board.httpexchange.BoardArticleCommentClient;
 
 /**
  * Helper service that enriches board resources with human readable usernames
@@ -33,12 +31,9 @@ public class BoardUserInfoService {
 	private static final String ANONYMOUS = "익명";
 
 	private final UserInfoApiClient userInfoApiClient;
-	private final BoardArticleCommentClient boardArticleCommentClient;
 
-	public BoardUserInfoService(UserInfoApiClient userInfoApiClient,
-			BoardArticleCommentClient boardArticleCommentClient) {
+	public BoardUserInfoService(UserInfoApiClient userInfoApiClient) {
 		this.userInfoApiClient = userInfoApiClient;
-		this.boardArticleCommentClient = boardArticleCommentClient;
 	}
 	
 	public PageResponse<BoardArticle> enrich(PageResponse<BoardArticle> pageResponse) {
@@ -73,15 +68,19 @@ public class BoardUserInfoService {
 		return applyUsername(comment, usernameMap);
 	}
 
-	public Page<BoardArticleComment> enrichComments(Page<BoardArticleComment> page) {
-		if (page == null || page.isEmpty()) {
+	public PageResponse<BoardArticleComment> enrichComments(PageResponse<BoardArticleComment> page) {
+		if (page == null || page.empty()) {
 			return page;
 		}
-		var userIds = page.getContent().stream()
+		var userIds = page.content().stream()
 				.map(BoardArticleComment::userId)
 				.collect(Collectors.toList());
 		var usernameMap = fetchUsernames(userIds);
-		return page.map(comment -> applyUsername(comment, usernameMap));
+		for (int i = 0; i < page.content().size(); i++) {
+			var comment = page.content().get(i);
+			page.content().set(i, applyUsername(comment, usernameMap));
+		}
+		return page;
 	}
 
 	private Map<UUID, String> fetchUsernames(List<UUID> userIdList) {
