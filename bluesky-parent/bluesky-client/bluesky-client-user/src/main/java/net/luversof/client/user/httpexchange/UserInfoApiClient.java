@@ -22,24 +22,24 @@ public interface UserInfoApiClient {
 			@RequestParam("provider") String provider,
 			@RequestParam("providerId") String providerId);
 
-	@GetExchange("/api/userInfo/search/findByIdIn")
+	@GetExchange("/search/findByIdIn")
 	List<UserInfoResponse> findByIdIn(@RequestParam("ids") List<UUID> ids);
 
 	record SaveOAuth2UserRequest(
-		String provider,
-		String providerId,
-		String username,
-		String email,
-		String avatarUrl
-	) implements Serializable {}
+			String provider,
+			String providerId,
+			String username,
+			String email,
+			String avatarUrl) implements Serializable {
+	}
 
 	record UserInfoResponse(
-		String id,
-		String username,
-		String provider,
-		String providerId,
-		String email,
-		String avatarUrl
-	) implements Serializable {}
-	
+			String id,
+			String username,
+			String provider,
+			String providerId,
+			String email,
+			String avatarUrl) implements Serializable {
+	}
+
 }
