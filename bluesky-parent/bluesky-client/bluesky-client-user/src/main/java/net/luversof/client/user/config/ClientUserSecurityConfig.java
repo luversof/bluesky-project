@@ -1,6 +1,6 @@
 package net.luversof.client.user.config;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,10 +14,10 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 @Configuration
 @EnableWebSecurity
 @EnableConfigurationProperties(ClientUserProperties.class)
-@ConditionalOnProperty(prefix = "bluesky.client.user.security", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class ClientUserSecurityConfig {
 
 	@Bean
+	@ConditionalOnMissingBean(SecurityFilterChain.class)
 	SecurityFilterChain clientUserSecurityFilterChain(HttpSecurity http, ClientUserProperties clientUserProperties)
 			throws Exception {
 		return http
