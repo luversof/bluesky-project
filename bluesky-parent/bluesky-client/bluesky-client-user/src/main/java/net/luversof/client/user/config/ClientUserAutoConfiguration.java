@@ -10,10 +10,9 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
 @AutoConfiguration
 @ConditionalOnClass(name = "org.springframework.security.oauth2.client.registration.ClientRegistrationRepository")
 @Import({
-		ClientUserCommonSessionConfig.class,
-		CommonOAuth2SecurityConfig.class,
 		ClientUserHttpExchangeConfig.class,
-		CustomOAuth2UserService.class
+		CustomOAuth2UserService.class,
+		ClientUserSecurityConfig.class
 })
 @PropertySource("classpath:clientUser.properties")
 public class ClientUserAutoConfiguration {

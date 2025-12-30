@@ -14,6 +14,7 @@
 		<module>bluesky-web-swagger-ui</module>
 		<module>bluesky-web-dynamiccrud</module>
 		<module>bluesky-web-common</module>
+		<module>bluesky-web-user</module>
 	</modules>
 	<dependencies>
 		<dependency>

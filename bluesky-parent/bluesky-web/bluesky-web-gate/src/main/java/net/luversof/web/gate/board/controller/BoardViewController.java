@@ -52,6 +52,7 @@ public class BoardViewController {
 	public String list(@PathVariable String boardAlias, @PathVariable String boardMode, Model model) {
 		var board = checkBoard(boardAlias);
 		model.addAttribute("board", board);
+		model.addAttribute("isAuthenticated", UserUtil.getUserId() != null);
 		return "board/list";
 	}
 
