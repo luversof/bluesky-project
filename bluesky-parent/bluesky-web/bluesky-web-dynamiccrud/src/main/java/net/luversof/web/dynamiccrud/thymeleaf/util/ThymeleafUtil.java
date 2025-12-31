@@ -221,6 +221,6 @@ public final class ThymeleafUtil {
 	}
 
 	public UriComponentsBuilder getUriComponentsBuilder() {
-		return ServletUriComponentsBuilder.fromCurrentRequest().host(null).scheme(null);
+		return ServletUriComponentsBuilder.fromCurrentRequestUri();
 	}
 }

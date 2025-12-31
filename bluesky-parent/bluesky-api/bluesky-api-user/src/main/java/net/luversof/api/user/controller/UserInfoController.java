@@ -1,7 +1,5 @@
 package net.luversof.api.user.controller;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -143,7 +141,6 @@ public class UserInfoController {
 		return session.getId();
 	}
 
-	@SuppressWarnings("unchecked")
 	@PostMapping("/delete-session")
 	public void deleteSession(@RequestBody DeleteSessionRequest request) {
 		sessionRepository.deleteById(request.sessionId());

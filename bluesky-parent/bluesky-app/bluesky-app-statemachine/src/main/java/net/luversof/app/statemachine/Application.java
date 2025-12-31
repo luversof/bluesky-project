@@ -1,5 +1,6 @@
 package net.luversof.app.statemachine;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -14,15 +15,15 @@ import reactor.core.publisher.Mono;
 @SpringBootApplication
 public class Application implements CommandLineRunner {
 
-    public static void main(String[] args) {
-        SpringApplication.run(Application.class, args);
-    }
-    
-    @Autowired
-    private StateMachine<States, Events> stateMachine;
+	public static void main(String[] args) {
+		SpringApplication.run(Application.class, args);
+	}
+
+	@Autowired
+	private StateMachine<States, Events> stateMachine;
 
 	@Override
-	public void run(String... args) throws Exception {
+	public void run(@Nullable String... args) throws Exception {
 		
 //		Scanner scanner = new Scanner(System.in);
 //		while (true) {
@@ -36,8 +37,8 @@ public class Application implements CommandLineRunner {
 		stateMachine.sendEvent(Mono.just(MessageBuilder.withPayload(Events.A_USER_ACT).build())).subscribe();
 		stateMachine.sendEvent(Mono.just(MessageBuilder.withPayload(Events.B_USER_ACT).build())).subscribe();
 //		stateMachine.sendEvent(Events.START);
-//	    stateMachine.sendEvent(Events.A_USER_ACT);
-//	    stateMachine.sendEvent(Events.B_USER_ACT);
+//		stateMachine.sendEvent(Events.A_USER_ACT);
+//		stateMachine.sendEvent(Events.B_USER_ACT);
 	}
 
 }  

@@ -33,7 +33,7 @@ public class SimpleJob2Config {
 	@Bean
 	Step sampleJob2Step(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
 		return new StepBuilder("sampleJob2Step", jobRepository)
-				.tasklet((StepContribution contribution, ChunkContext chunkContext) -> {
+				.tasklet((StepContribution _, ChunkContext _) -> {
 					log.debug("sampleJob2Step");
 					return RepeatStatus.FINISHED;
 				}, transactionManager).build();

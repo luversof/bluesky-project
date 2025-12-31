@@ -68,7 +68,7 @@ public class DividendService {
 
 		// Fill missing stockItemId by looking up StockItem by name
 		for (var dividend : result) {
-			if (dividend.getStockItemId() == null && dividend.getStockItemName() != null) {
+			if (dividend != null && dividend.getStockItemId() == null && dividend.getStockItemName() != null) {
 				try {
 					StockItem si = stockItemService.findByName(dividend.getStockItemName());
 					if (si != null && si.getId() != null) {

@@ -3,13 +3,15 @@ package net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.jspecify.annotations.NonNull;
+
 import net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
 
 public class SubMenuRowMapper extends SettingRowMapper<SubMenu> {
 
 	@Override
-	public SubMenu mapRow(ResultSet rs, int rowNum) throws SQLException {
+	public @NonNull SubMenu mapRow(@NonNull ResultSet rs, int rowNum) throws SQLException {
 		var subMenu = new SubMenu(
 			rs.getString("adminProjectId"),
 			rs.getString("projectId"),

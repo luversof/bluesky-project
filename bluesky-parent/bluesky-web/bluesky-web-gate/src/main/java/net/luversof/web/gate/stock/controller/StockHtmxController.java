@@ -211,7 +211,7 @@ public class StockHtmxController {
 		List<DividendResponse> dividends = dividendClient.findDividends(request);
 
 		Map<UUID, String> accountNames = accountClient.getAccountsByUserId(userId).stream()
-				.collect(Collectors.toMap(Account::id, Account::name, (left, right) -> left, LinkedHashMap::new));
+				.collect(Collectors.toMap(Account::id, Account::name, (left, _) -> left, LinkedHashMap::new));
 
 		// 모든 stockItemId 수집 및 이름 조회
 		Map<UUID, String> stockItemNames = dividends.stream()

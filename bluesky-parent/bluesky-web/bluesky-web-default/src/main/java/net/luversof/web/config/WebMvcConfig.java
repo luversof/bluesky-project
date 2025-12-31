@@ -1,5 +1,6 @@
 package net.luversof.web.config;
 
+import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.format.datetime.standard.DateTimeFormatterRegistrar;
@@ -12,17 +13,16 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
 	// request date conversion 처리
 	@Override
-	public void addFormatters(FormatterRegistry registry) {
+	public void addFormatters(@NonNull FormatterRegistry registry) {
 		DateTimeFormatterRegistrar registrar = new DateTimeFormatterRegistrar();
 		registrar.setUseIsoFormat(true);
 		registrar.registerFormatters(registry);
 	}
 	
 	@Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedMethods("*");
-    }
+	public void addCorsMappings(@NonNull CorsRegistry registry) {
+		registry.addMapping("/**").allowedMethods("*");
+	}
 	
 //	@Override
 //	public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
@@ -30,7 +30,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 //	}
 	
 	@Override
-	public void addViewControllers(ViewControllerRegistry registry) {
+	public void addViewControllers(@NonNull ViewControllerRegistry registry) {
 		registry.addViewController("/").setViewName("forward:/index.html");
 		registry.addViewController("/blog/**").setViewName("forward:/index.html");
 	}

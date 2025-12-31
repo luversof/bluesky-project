@@ -1,6 +1,7 @@
 package net.luversof.web.config;
 
 import org.apache.catalina.connector.Connector;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.tomcat.TomcatConnectorCustomizer;
 import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
@@ -19,12 +20,12 @@ public class BlueskyEmbeddedServletContainerCustomizer implements WebServerFacto
 	private String profile;
 
 	@Override
-	public void customize(TomcatServletWebServerFactory server) {
+	public void customize(@NonNull TomcatServletWebServerFactory server) {
 //		container.setPort(8082);
 		
 		server.addConnectorCustomizers(new TomcatConnectorCustomizer() {
 			@Override
-			public void customize(Connector connector) {
+			public void customize(@NonNull Connector connector) {
 				connector.setProperty("maxKeepAliveRequests", "1");
 				connector.setProperty("connectionTimeout", "20000");
 				connector.setProperty("keepAliveTimeout", "1");

@@ -7,10 +7,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import net.luversof.api.stock.domain.Dividend;
-import net.luversof.api.stock.web.dto.response.DividendResponse;
 import net.luversof.api.stock.service.DividendService;
 import net.luversof.api.stock.web.dto.request.DividendSearchRequest;
+import net.luversof.api.stock.web.dto.response.DividendResponse;
 
 @RestController
 @RequestMapping("/api/dividend")
@@ -18,10 +17,6 @@ public class DividendController {
 
 	@Autowired
 	private DividendService dividendService;
-
-	public void setDividendService(DividendService dividendService) {
-		this.dividendService = dividendService;
-	}
 
 	@GetMapping
 	public List<DividendResponse> findDividends(DividendSearchRequest request) {

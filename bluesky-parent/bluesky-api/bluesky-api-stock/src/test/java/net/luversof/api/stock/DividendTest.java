@@ -93,7 +93,7 @@ class DividendTest implements GeneralTest {
 
 	private Map<String, UUID> prepareAccountMap(List<DividendCsvRecord> records) {
 		var accountMap = accountRepository.findByUserId(userId).stream()
-				.collect(Collectors.toMap(Account::getName, Account::getId, (left, right) -> left,
+				.collect(Collectors.toMap(Account::getName, Account::getId, (left, _) -> left,
 						java.util.LinkedHashMap::new));
 
 		records.stream()
@@ -114,7 +114,7 @@ class DividendTest implements GeneralTest {
 
 	private Map<String, UUID> prepareStockItemMap(List<DividendCsvRecord> records) {
 		var stockItemMap = StreamSupport.stream(stockItemRepository.findAll().spliterator(), false)
-				.collect(Collectors.toMap(StockItem::getName, StockItem::getId, (left, right) -> left,
+				.collect(Collectors.toMap(StockItem::getName, StockItem::getId, (left, _) -> left,
 						java.util.LinkedHashMap::new));
 
 		records.stream()

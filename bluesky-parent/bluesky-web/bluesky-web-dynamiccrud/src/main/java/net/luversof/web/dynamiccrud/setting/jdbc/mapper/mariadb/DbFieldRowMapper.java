@@ -3,6 +3,8 @@ package net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.jspecify.annotations.NonNull;
+
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldEnable;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldSearchType;
@@ -12,7 +14,7 @@ import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
 public class DbFieldRowMapper extends SettingRowMapper<DbField> {
 
 	@Override
-	public DbField mapRow(ResultSet rs, int rowNum) throws SQLException {
+	public @NonNull DbField mapRow(@NonNull ResultSet rs, int rowNum) throws SQLException {
 		
 		var field = new DbField(
 			rs.getString("adminProjectId"),

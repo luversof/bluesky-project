@@ -23,6 +23,6 @@ public interface SettingServiceDecorator {
 				.entrySet()
 				.stream()
 				.sorted(Comparator.comparing(e -> e.getValue().getOrder()))
-				.collect(Collectors.toMap(Entry::getKey, Entry::getValue, (x, y) -> y, LinkedHashMap::new));
+				.collect(Collectors.toMap(Entry::getKey, Entry::getValue, (_, y) -> y, LinkedHashMap::new));
 	}
 }

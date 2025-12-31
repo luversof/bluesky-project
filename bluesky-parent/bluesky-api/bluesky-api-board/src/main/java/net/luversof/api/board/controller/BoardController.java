@@ -1,7 +1,5 @@
 package net.luversof.api.board.controller;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,8 +17,6 @@ import net.luversof.api.board.service.BoardService;
 @RestController
 @RequestMapping(value = "/api/board", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BoardController {
-
-	private static final Logger log = LoggerFactory.getLogger(BoardController.class);
 
 	private BoardService boardService;
 
