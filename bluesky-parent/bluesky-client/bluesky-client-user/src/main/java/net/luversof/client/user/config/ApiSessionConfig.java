@@ -14,7 +14,7 @@ import net.luversof.client.user.session.ApiSessionRepository;
 public class ApiSessionConfig {
 
 	@Bean
-	public ApiSessionRepository sessionRepository(UserInfoApiClient userInfoApiClient) {
+	ApiSessionRepository sessionRepository(UserInfoApiClient userInfoApiClient) {
 		return new ApiSessionRepository(userInfoApiClient);
 	}
 }
