@@ -69,10 +69,6 @@ public final class SettingUtil extends RequestAttributeUtil {
 	@SuppressWarnings("unchecked")
 	public static SettingParameter getSettingParameter() {
 
-		if (RequestContextHolder.getRequestAttributes() == null) {
-			return null;
-		}
-
 		var attributeName = getAttributeName(SETTINGPARAMETER);
 		Optional<SettingParameter> settingParameterOptional = getRequestAttribute(attributeName);
 		if (settingParameterOptional != null) {

@@ -88,24 +88,6 @@
 			<artifactId>uuid-creator</artifactId>
 		</dependency>
 		
-		<!-- (s) micrometer metrics -->
-		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-registry-prometheus</artifactId>
-		</dependency>
-		<!-- (e) micrometer metrics -->
-		
-		<!-- (s) micrometer traces -->
-		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-tracing-bridge-otel</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.opentelemetry</groupId>
-			<artifactId>opentelemetry-exporter-otlp</artifactId>
-		</dependency>
-		<!-- (e) micrometer traces -->
-		
 		<!-- (e) bluesky boot connectioninfo -->
 		<dependency>
 			<groupId>io.github.luversof</groupId>

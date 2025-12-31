@@ -59,24 +59,6 @@
 			<scope>test</scope>
 		</dependency>
 		<!-- (e) test -->
-		
-		<!-- (s) micrometer metrics -->
-		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-registry-prometheus</artifactId>
-		</dependency>
-		<!-- (e) micrometer metrics -->
-		
-		<!-- (s) micrometer traces -->
-		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-tracing-bridge-otel</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.opentelemetry</groupId>
-			<artifactId>opentelemetry-exporter-otlp</artifactId>
-		</dependency>
-		<!-- (e) micrometer traces -->
 	</dependencies>
 	<profiles>
 		<profile>
