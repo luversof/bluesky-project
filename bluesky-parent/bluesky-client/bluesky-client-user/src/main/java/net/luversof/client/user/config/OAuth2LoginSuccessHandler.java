@@ -27,7 +27,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
 	public OAuth2LoginSuccessHandler() {
 		setDefaultTargetUrl("/");
-		setAlwaysUseDefaultTargetUrl(true);
+		setAlwaysUseDefaultTargetUrl(false);
 	}
 
 	@Override
@@ -41,6 +41,15 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 					registrationId,
 					authentication,
 					request);
+		}
+
+		if (request.getSession() != null) {
+			String redirectUrl = (String) request.getSession().getAttribute("redirectUrl");
+			if (redirectUrl != null) {
+				request.getSession().removeAttribute("redirectUrl");
+				getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+				return;
+			}
 		}
 
 		super.onAuthenticationSuccess(request, response, authentication);

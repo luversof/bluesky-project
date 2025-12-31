@@ -195,7 +195,12 @@ CREATE TABLE "UserInfo" (
 
 - Tailwind CSS 4.1.17
 - daisyUI 5.4.7
-- 빌드: `npm run build` (bluesky-web-gate/src/main/frontend)
+- CSS 빌드: `npm run build` (bluesky-web-gate/src/main/frontend)
+
+### TypeScript
+
+- 빌드: `npx tsc` (bluesky-web-gate/src/main/frontend)
+- `tsconfig.json`에 설정된 대로 `src/`의 TS 파일을 `../resources/static/js/`로 컴파일합니다.
 
 ### HTMX
 

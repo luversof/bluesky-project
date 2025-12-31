@@ -5,7 +5,7 @@
 	<title>게시판 목록</title>
 </head>
 
-<body data-board-mode="list" data-th-attr="data-board-alias=${board.alias}">
+<body data-board-mode="list" data-th-attr="data-board-alias=${board.alias},data-is-authenticated=${isAuthenticated}">
 	<div data-layout-fragment="content-board" class="container mx-auto px-4 py-8">
 		<!-- 헤더 -->
 		<div class="mb-6">

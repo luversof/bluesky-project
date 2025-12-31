@@ -10,6 +10,7 @@ const boardData = (() => {
     let boardArticleId;
     let currentUserId;
     let isAuthenticated = false;
+    let loginUrl = "/login";
     return {
         setBoardAlias(alias) {
             boardAlias = alias;
@@ -46,6 +47,12 @@ const boardData = (() => {
         },
         getIsAuthenticated() {
             return isAuthenticated;
+        },
+        setLoginUrl(url) {
+            loginUrl = url;
+        },
+        getLoginUrl() {
+            return loginUrl;
         },
     };
 })();
@@ -236,7 +243,15 @@ const boardAction = (() => {
             const params = getUrlParams();
             const queryString = params.toString();
             const path = boardAlias ? `/board/${boardAlias}/write` : "write";
-            window.location.href = `${path}${queryString ? "?" + queryString : ""}`;
+            const targetUrl = `${path}${queryString ? "?" + queryString : ""}`;
+            if (!boardData.getIsAuthenticated()) {
+                if (confirm("로그인이 필요한 서비스입니다. 로그인 페이지로 이동하시겠습니까?")) {
+                    window.location.href =
+                        boardData.getLoginUrl() + "?redirectUrl=" + encodeURIComponent(targetUrl);
+                }
+                return;
+            }
+            window.location.href = targetUrl;
         },
         moveToView(boardArticleId) {
             const boardAlias = boardData.getBoardAlias();
@@ -252,7 +267,15 @@ const boardAction = (() => {
             const params = getUrlParams();
             params.set("boardArticleId", boardArticleId);
             const path = boardAlias ? `/board/${boardAlias}/modify` : "modify";
-            window.location.href = `${path}?${params.toString()}`;
+            const targetUrl = `${path}?${params.toString()}`;
+            if (!boardData.getIsAuthenticated()) {
+                if (confirm("로그인이 필요한 서비스입니다. 로그인 페이지로 이동하시겠습니까?")) {
+                    window.location.href =
+                        boardData.getLoginUrl() + "?redirectUrl=" + encodeURIComponent(targetUrl);
+                }
+                return;
+            }
+            window.location.href = targetUrl;
         },
     };
 })();
@@ -525,6 +548,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const boardArticleId = body.dataset.boardArticleId;
     const isAuthenticated = body.dataset.isAuthenticated;
     const currentUserId = body.dataset.currentUserId;
+    const appConfig = document.getElementById("app-config");
+    if (appConfig && appConfig.dataset.loginUrl) {
+        boardData.setLoginUrl(appConfig.dataset.loginUrl);
+    }
     // boardData에 값 설정
     if (boardMode) {
         boardData.setBoardMode(boardMode);
