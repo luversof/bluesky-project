@@ -13,10 +13,6 @@
 	<description>bluesky-web-user</description>
 	<dependencies>
 		<dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-client-user</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
@@ -24,10 +20,17 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-oauth2-client</artifactId>
 		</dependency>
+		
+		<!-- (s) bluesky -->
 		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-config</artifactId>
+			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-client-user</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-web-common</artifactId>
+		</dependency>
+		<!-- (e) bluesky -->
 	</dependencies>
 	<build>
 		<plugins>

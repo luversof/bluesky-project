@@ -14,17 +14,6 @@
 		</dependency>
 		<!-- (e) spring-boot -->
 		
-		<!-- (s) spring-cloud -->
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-config</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
-		</dependency>
-		<!-- (e) spring-cloud -->
-
 		<!-- (s) webjars -->
 		<dependency>
 			<groupId>org.webjars</groupId>
@@ -36,6 +25,17 @@
 			<version>5.9.0</version>
 		</dependency>
 		<!-- (e) webjars -->
+		
+		<!-- (s) bluesky -->
+		<dependency>
+			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-client-user</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-web-common</artifactId>
+		</dependency>
+		<!-- (e) bluesky -->
 
 	</dependencies>
 	<build>
