@@ -13,8 +13,12 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 
 @Configuration
 @EnableWebSecurity
-@EnableConfigurationProperties(ClientUserProperties.class)
 public class ClientUserSecurityConfig {
+
+	@Bean
+	public ClientUserProperties clientUserProperties() {
+		return new ClientUserProperties();
+	}
 
 	@Bean
 	@ConditionalOnMissingBean(SecurityFilterChain.class)

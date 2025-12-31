@@ -12,7 +12,8 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
 @Import({
 		ClientUserHttpExchangeConfig.class,
 		CustomOAuth2UserService.class,
-		ClientUserSecurityConfig.class
+		ClientUserSecurityConfig.class,
+		ApiSessionConfig.class
 })
 @PropertySource("classpath:clientUser.properties")
 public class ClientUserAutoConfiguration {

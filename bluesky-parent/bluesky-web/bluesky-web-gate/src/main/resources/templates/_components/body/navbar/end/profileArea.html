@@ -18,14 +18,7 @@
 <a 
 	data-sec-authorize="!isAuthenticated()"
 	class="btn btn-ghost"
-	href="/oauth2/authorization/github"
+	data-th-href="${@clientUserProperties.loginUrl}"
 >
-	<svg data-th-replace="~{__${path_icons}__ :: login}" /> github 로그인
-</a>
-<a
-	data-sec-authorize="!isAuthenticated()"
-	class="btn btn-ghost"
-	href="/oauth2/authorization/github-local"
->
-	<svg data-th-replace="~{__${path_icons}__ :: login}" /> github local 로그인
+	<svg data-th-replace="~{__${path_icons}__ :: login}" /> 로그인
 </a>

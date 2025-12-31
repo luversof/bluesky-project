@@ -90,10 +90,10 @@
 		<!-- (e) thymeleaf -->
 
 		<!-- (s) observability -->
-		<dependency>
+		<!--<dependency>
 			<groupId>io.lettuce</groupId>
 			<artifactId>lettuce-core</artifactId>
-		</dependency>
+		</dependency>-->
 		<!-- (e) observability -->
 
 		<!-- (s) micrometer metrics -->

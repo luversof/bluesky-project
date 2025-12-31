@@ -25,6 +25,18 @@ public interface UserInfoApiClient {
 	@GetExchange("/search/findByIdIn")
 	List<UserInfoResponse> findByIdIn(@RequestParam("ids") List<UUID> ids);
 
+	@GetExchange("/validate-session")
+	UserInfoResponse validateSession(@RequestParam("sessionId") String sessionId);
+
+	@PostExchange("/create-session")
+	void createSession(@RequestBody CreateSessionRequest request);
+
+	@PostExchange("/create-new-session")
+	String createNewSession();
+
+	@PostExchange("/delete-session")
+	void deleteSession(@RequestBody DeleteSessionRequest request);
+
 	record SaveOAuth2UserRequest(
 			String provider,
 			String providerId,
@@ -33,13 +45,23 @@ public interface UserInfoApiClient {
 			String avatarUrl) implements Serializable {
 	}
 
+	record CreateSessionRequest(
+			String sessionId,
+			UserInfoResponse userInfo) implements Serializable {
+	}
+
+	record DeleteSessionRequest(
+			String sessionId) implements Serializable {
+	}
+
 	record UserInfoResponse(
 			String id,
 			String username,
 			String provider,
 			String providerId,
 			String email,
-			String avatarUrl) implements Serializable {
+			String avatarUrl,
+			List<String> authorities) implements Serializable {
 	}
 
 }
