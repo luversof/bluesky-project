@@ -9,6 +9,7 @@ import org.springframework.boot.restclient.RestClientCustomizer;
 import org.springframework.boot.restclient.autoconfigure.RestClientBuilderConfigurer;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Scope;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
@@ -25,6 +26,14 @@ public class ClientCommonAutoConfiguration {
 	@ConditionalOnMissingBean
 	RestClient restClient(RestClient.Builder builder) {
 		return builder.build();
+	}
+
+	@Bean
+	@Scope("prototype")
+	@ConditionalOnMissingBean
+	@Primary
+	RestClient.Builder restClientBuilder(RestClientBuilderConfigurer restClientBuilderConfigurer) {
+		return restClientBuilderConfigurer.configure(RestClient.builder());
 	}
 
 	@Bean
