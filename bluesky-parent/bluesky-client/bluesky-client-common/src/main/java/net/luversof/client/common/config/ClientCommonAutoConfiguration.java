@@ -2,6 +2,7 @@ package net.luversof.client.common.config;
 
 import java.util.function.Function;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.restclient.RestClientCustomizer;
@@ -38,10 +39,10 @@ public class ClientCommonAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	Function<String, HttpServiceProxyFactory> httpServiceProxyFactoryBuilder(RestClient.Builder builder,
+	Function<String, HttpServiceProxyFactory> httpServiceProxyFactoryBuilder(ObjectProvider<RestClient.Builder> builderProvider,
 			PageableHttpServiceArgumentResolver pageableHttpServiceArgumentResolver) {
 		return baseUrl -> {
-			RestClient restClient = builder.baseUrl(baseUrl).build();
+			RestClient restClient = builderProvider.getObject().baseUrl(baseUrl).build();
 			return HttpServiceProxyFactory.builderFor(RestClientAdapter.create(restClient))
 					.customArgumentResolver(pageableHttpServiceArgumentResolver)
 					.build();
