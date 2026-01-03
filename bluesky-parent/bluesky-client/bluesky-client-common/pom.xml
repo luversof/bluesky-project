@@ -19,5 +19,12 @@
 			<artifactId>spring-data-commons</artifactId>
 		</dependency>
 		<!-- (e) spring-boot -->
+
+		<!-- (s) spring-cloud -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-loadbalancer</artifactId>
+		</dependency>
+		<!-- (e) spring-cloud -->
 	</dependencies>
 </project>

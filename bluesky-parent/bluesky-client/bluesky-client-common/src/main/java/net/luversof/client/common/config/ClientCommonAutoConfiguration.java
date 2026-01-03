@@ -6,7 +6,10 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.restclient.RestClientCustomizer;
+import org.springframework.boot.restclient.autoconfigure.RestClientBuilderConfigurer;
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Scope;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
@@ -25,6 +28,13 @@ public class ClientCommonAutoConfiguration {
 	}
 
 	@Bean
+	@Scope("prototype")
+	@LoadBalanced
+	RestClient.Builder blueskyRestClientBuilder(RestClientBuilderConfigurer restClientBuilderConfigurer) {
+		return restClientBuilderConfigurer.configure(RestClient.builder());
+	}
+
+	@Bean
 	RestClientCustomizer clientCommonRestClientCustomizer(JsonMapper jsonMapper) {
 		return (builder) -> {
 			builder.defaultStatusHandler(new BlueskyClientResponseErrorHandler(jsonMapper));
@@ -39,7 +49,8 @@ public class ClientCommonAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	Function<String, HttpServiceProxyFactory> httpServiceProxyFactoryBuilder(ObjectProvider<RestClient.Builder> builderProvider,
+	Function<String, HttpServiceProxyFactory> httpServiceProxyFactoryBuilder(
+			@LoadBalanced ObjectProvider<RestClient.Builder> builderProvider,
 			PageableHttpServiceArgumentResolver pageableHttpServiceArgumentResolver) {
 		return baseUrl -> {
 			RestClient restClient = builderProvider.getObject().baseUrl(baseUrl).build();
