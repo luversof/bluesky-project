@@ -67,13 +67,6 @@
 		</dependency>
 		<!-- (e) bluesky boot connectioninfo -->
 
-		<!-- (s) bluesky boot devcheck-->
-		<dependency>
-			<groupId>io.github.luversof</groupId>
-			<artifactId>bluesky-boot-autoconfigure-devcheck</artifactId>
-		</dependency>
-		<!-- (e) bluesky boot devcheck-->
-		
 		<!-- (s) google -->
 		<dependency>
 			<groupId>com.google.api-client</groupId>

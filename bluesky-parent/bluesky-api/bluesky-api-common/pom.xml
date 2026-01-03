@@ -48,5 +48,10 @@
 			<artifactId>opentelemetry-exporter-otlp</artifactId>
 		</dependency>
 		<!-- (e) observability -->
+		
+		<dependency>
+			<groupId>io.github.luversof</groupId>
+			<artifactId>bluesky-boot-autoconfigure-devcheck</artifactId>
+		</dependency>
 	</dependencies>
 </project>
