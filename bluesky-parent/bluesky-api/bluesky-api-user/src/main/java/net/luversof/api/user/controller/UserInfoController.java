@@ -50,6 +50,7 @@ public class UserInfoController {
 	public void createSession(@RequestBody CreateSessionRequest request) {
 		Session session = sessionRepository.findById(request.sessionId());
 		if (session == null) {
+			System.err.println("UserInfoController.createSession session is null. sessionId: " + request.sessionId());
 			return;
 		}
 
@@ -63,6 +64,7 @@ public class UserInfoController {
 	@PostMapping("/create-new-session")
 	public String createNewSession() {
 		Session session = sessionRepository.createSession();
+		sessionRepository.save(session);
 		return session.getId();
 	}
 
@@ -97,7 +99,7 @@ public class UserInfoController {
 		if (session == null) {
 			return null;
 		}
-		
+
 		Map<String, Object> sessionAttributes = new HashMap<>();
 		session.getAttributeNames().forEach(name -> sessionAttributes.put(name, session.getAttribute(name)));
 

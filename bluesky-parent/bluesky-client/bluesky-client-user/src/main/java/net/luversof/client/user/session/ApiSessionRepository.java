@@ -37,9 +37,14 @@ public class ApiSessionRepository implements SessionRepository<MapSession> {
 		Map<String, Object> attributes = new HashMap<>();
 		session.getAttributeNames().forEach(name -> {
 			Object value = session.getAttribute(name);
-			attributes.put(name, serialize(value));
+			Object serialized = serialize(value);
+			if (value != null && serialized == null) {
+				System.err
+						.println("ApiSessionRepository.save serialization failed. key: " + name + ", value: " + value);
+			}
+			attributes.put(name, serialized);
 		});
-		
+
 		userInfoApiClient.createSession(new CreateSessionRequest(session.getId(), attributes));
 	}
 
@@ -48,6 +53,7 @@ public class ApiSessionRepository implements SessionRepository<MapSession> {
 		try {
 			var userInfo = userInfoApiClient.validateSession(id);
 			if (userInfo == null) {
+				System.err.println("ApiSessionRepository.findById failed. userInfo is null. id: " + id);
 				return null;
 			}
 
@@ -57,12 +63,13 @@ public class ApiSessionRepository implements SessionRepository<MapSession> {
 					session.setAttribute(k, deserialize(v));
 				});
 			}
-			
+
 			session.setLastAccessedTime(Instant.now());
 			session.setMaxInactiveInterval(Duration.ofMinutes(30));
 
 			return session;
 		} catch (Exception e) {
+			e.printStackTrace();
 			return null;
 		}
 	}
@@ -71,13 +78,15 @@ public class ApiSessionRepository implements SessionRepository<MapSession> {
 	public void deleteById(String id) {
 		userInfoApiClient.deleteSession(new DeleteSessionRequest(id));
 	}
-	
+
 	private Object serialize(Object object) {
 		try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
 				ObjectOutputStream out = new ObjectOutputStream(bos)) {
 			out.writeObject(object);
 			return Base64.getEncoder().encodeToString(bos.toByteArray());
 		} catch (IOException e) {
+			System.err.println("Failed to serialize object: " + object.getClass().getName());
+			e.printStackTrace();
 			return null;
 		}
 	}
@@ -88,6 +97,8 @@ public class ApiSessionRepository implements SessionRepository<MapSession> {
 					ObjectInputStream in = new ObjectInputStream(bis)) {
 				return in.readObject();
 			} catch (IOException | ClassNotFoundException e) {
+				System.err.println("Failed to deserialize object: " + object);
+				e.printStackTrace();
 				return null;
 			}
 		}
