@@ -14,6 +14,7 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 
 import net.luversof.client.user.config.CustomOAuth2UserService;
 import net.luversof.client.user.config.OAuth2LoginSuccessHandler;
@@ -32,6 +33,16 @@ public class WebUserSecurityConfig {
 						.anyRequest().permitAll())
 				.oauth2Login(oauth2 -> oauth2
 						.successHandler(successHandlerProvider.getObject())
+						.failureHandler(new SimpleUrlAuthenticationFailureHandler() {
+							@Override
+							public void onAuthenticationFailure(jakarta.servlet.http.HttpServletRequest request,
+									jakarta.servlet.http.HttpServletResponse response,
+									org.springframework.security.core.AuthenticationException exception)
+									throws java.io.IOException, jakarta.servlet.ServletException {
+								exception.printStackTrace();
+								super.onAuthenticationFailure(request, response, exception);
+							}
+						})
 						.userInfoEndpoint(
 								userInfo -> userInfo.userService(customOAuth2UserServiceProvider.getObject())))
 				.oauth2Client(Customizer.withDefaults())
