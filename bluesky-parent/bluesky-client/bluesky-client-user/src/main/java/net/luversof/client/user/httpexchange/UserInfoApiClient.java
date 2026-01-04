@@ -2,6 +2,7 @@ package net.luversof.client.user.httpexchange;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.http.MediaType;
@@ -47,7 +48,7 @@ public interface UserInfoApiClient {
 
 	record CreateSessionRequest(
 			String sessionId,
-			UserInfoResponse userInfo) implements Serializable {
+			Map<String, Object> sessionAttributes) implements Serializable {
 	}
 
 	record DeleteSessionRequest(
@@ -61,7 +62,8 @@ public interface UserInfoApiClient {
 			String providerId,
 			String email,
 			String avatarUrl,
-			List<String> authorities) implements Serializable {
+			List<String> authorities,
+			Map<String, Object> sessionAttributes) implements Serializable {
 	}
 
 }
