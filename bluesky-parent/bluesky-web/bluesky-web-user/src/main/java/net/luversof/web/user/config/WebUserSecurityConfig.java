@@ -15,11 +15,9 @@ import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedCli
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
-import org.springframework.security.web.authentication.ui.DefaultLoginPageGeneratingFilter;
 
 import net.luversof.client.user.config.CustomOAuth2UserService;
 import net.luversof.client.user.config.OAuth2LoginSuccessHandler;
-import net.luversof.web.user.filter.LoginRedirectUrlFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -31,7 +29,6 @@ public class WebUserSecurityConfig {
 			ObjectProvider<CustomOAuth2UserService> customOAuth2UserServiceProvider) throws Exception {
 		return http
 				.csrf(CsrfConfigurer::disable)
-				.addFilterBefore(new LoginRedirectUrlFilter(), DefaultLoginPageGeneratingFilter.class)
 				.authorizeHttpRequests(authorize -> authorize
 						.anyRequest().permitAll())
 				.oauth2Login(oauth2 -> oauth2
