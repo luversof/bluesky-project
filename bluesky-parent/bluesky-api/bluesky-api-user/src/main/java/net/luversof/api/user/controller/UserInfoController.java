@@ -97,6 +97,7 @@ public class UserInfoController {
 	public UserInfoResponse validateSession(@RequestParam("sessionId") String sessionId) {
 		Session session = sessionRepository.findById(sessionId);
 		if (session == null) {
+			System.err.println("UserInfoController.validateSession session is null. sessionId: " + sessionId);
 			return null;
 		}
 
