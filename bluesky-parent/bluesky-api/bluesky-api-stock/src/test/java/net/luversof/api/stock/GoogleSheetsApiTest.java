@@ -1,5 +1,7 @@
 package net.luversof.api.stock;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
@@ -20,7 +22,7 @@ import net.luversof.GeneralTest;
 import net.luversof.api.stock.provider.InputStreamProvider;
 import net.luversof.api.stock.service.GoogleSheetsApiService;
 
-public class GoogleSheetsApiTest implements GeneralTest {
+class GoogleSheetsApiTest implements GeneralTest {
 
 	@Autowired
 	private GoogleSheetsApiService googleSheetsApiService;
@@ -30,17 +32,15 @@ public class GoogleSheetsApiTest implements GeneralTest {
 
 	private static final Logger log = LoggerFactory.getLogger(GoogleSheetsApiTest.class);
 
-	private static final String CREDENTIALS_FILE_PATH = "file:/D:/dev/credentials.json";
-	private static final String SPREADSHEET_ID_PATH = "file:/D:/dev/spreadsheet_id.txt";
-	
 	@Test
 	void getSpreadsheetIdTest() throws IOException {
 		String spreadsheetId = getSpreadsheetId();
+		assertNotNull(spreadsheetId);
 		log.debug("spreadsheetId: {}", spreadsheetId);
 	}
 	
 	String getSpreadsheetId() throws IOException {
-		InputStream credentialsStream = inputStreamProvider.open(SPREADSHEET_ID_PATH);
+		InputStream credentialsStream = inputStreamProvider.open(GoogleSheetsApiCase.SPREADSHEET_ID_PATH);
 		return new String(credentialsStream.readAllBytes()).trim();
 	}
 
@@ -53,11 +53,12 @@ public class GoogleSheetsApiTest implements GeneralTest {
 		
 		String spreadsheetId = getSpreadsheetId();
 		var resultList = googleSheetsApiService.getSpreadsheetValues(
-				CREDENTIALS_FILE_PATH,
+				GoogleSheetsApiCase.CREDENTIALS_FILE_PATH,
 				spreadsheetId,
 				googleSheetsApiCase.getRange(),
 				googleSheetsApiCase.getType());
 
+		assertNotNull(resultList);
 		if (resultList == null || resultList.isEmpty()) {
 			log.debug("No data found.");
 		} else {

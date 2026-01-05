@@ -4,6 +4,7 @@ import net.luversof.api.stock.domain.GoogleSheetsBaseStockItem;
 import net.luversof.api.stock.domain.GoogleSheetsDividendItem;
 
 public enum GoogleSheetsApiCase {
+	
 	GoogleSheetsBaseStockItem(0, "주식 검색!A1:E", GoogleSheetsBaseStockItem.class),
 	GoogleSheetsDividendItem(1, "주식 배당 기록!A1:J", GoogleSheetsDividendItem.class)
 	
@@ -30,5 +31,7 @@ public enum GoogleSheetsApiCase {
 	public Class<?> getType() {
 		return type;
 	}
-	
+
+	public static final String CREDENTIALS_FILE_PATH = "file:/D:/dev/credentials.json";
+	public static final String SPREADSHEET_ID_PATH = "file:/D:/dev/spreadsheet_id.txt";
 }

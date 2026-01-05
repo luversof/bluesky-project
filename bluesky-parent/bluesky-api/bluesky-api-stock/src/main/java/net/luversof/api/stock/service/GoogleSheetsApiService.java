@@ -1,6 +1,5 @@
 package net.luversof.api.stock.service;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
@@ -11,9 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
@@ -25,24 +24,23 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 
 import net.luversof.api.stock.provider.InputStreamProvider;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class GoogleSheetsApiService {
 
-	@Autowired
 	private InputStreamProvider inputStreamProvider;
 
-	@Autowired
 	private ObjectMapper objectMapper;
+	
+	public GoogleSheetsApiService(InputStreamProvider inputStreamProvider, ObjectMapper objectMapper) {
+		this.inputStreamProvider = inputStreamProvider;
+		this.objectMapper = objectMapper;
+	}
 
 	private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 
 	private GoogleCredentials getCredentials(String credentialJsonLocation) throws IOException {
 		InputStream credentialsStream = inputStreamProvider.open(credentialJsonLocation);
-		if (credentialsStream == null) {
-			throw new FileNotFoundException("Resource not found: " + credentialJsonLocation);
-		}
 		ServiceAccountCredentials serviceAccountCredentials = ServiceAccountCredentials.fromStream(credentialsStream);
 
 		return serviceAccountCredentials.createScoped(SheetsScopes.SPREADSHEETS_READONLY);
