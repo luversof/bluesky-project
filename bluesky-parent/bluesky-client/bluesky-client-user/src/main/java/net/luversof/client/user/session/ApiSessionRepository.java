@@ -18,7 +18,7 @@ import net.luversof.client.user.httpexchange.UserInfoApiClient;
 import net.luversof.client.user.httpexchange.UserInfoApiClient.CreateSessionRequest;
 import net.luversof.client.user.httpexchange.UserInfoApiClient.DeleteSessionRequest;
 
-public class ApiSessionRepository implements SessionRepository<MapSession> {
+public class ApiSessionRepository implements SessionRepository<ApiSession> {
 
 	private final UserInfoApiClient userInfoApiClient;
 
@@ -27,13 +27,13 @@ public class ApiSessionRepository implements SessionRepository<MapSession> {
 	}
 
 	@Override
-	public MapSession createSession() {
+	public ApiSession createSession() {
 		String sessionId = userInfoApiClient.createNewSession();
-		return new MapSession(sessionId);
+		return new ApiSession(sessionId, userInfoApiClient);
 	}
 
 	@Override
-	public void save(MapSession session) {
+	public void save(ApiSession session) {
 		Map<String, Object> attributes = new HashMap<>();
 		session.getAttributeNames().forEach(name -> {
 			Object value = session.getAttribute(name);
@@ -49,7 +49,7 @@ public class ApiSessionRepository implements SessionRepository<MapSession> {
 	}
 
 	@Override
-	public MapSession findById(String id) {
+	public ApiSession findById(String id) {
 		try {
 			var userInfo = userInfoApiClient.validateSession(id);
 			if (userInfo == null) {
@@ -67,7 +67,7 @@ public class ApiSessionRepository implements SessionRepository<MapSession> {
 			session.setLastAccessedTime(Instant.now());
 			session.setMaxInactiveInterval(Duration.ofMinutes(30));
 
-			return session;
+			return new ApiSession(session, userInfoApiClient);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
