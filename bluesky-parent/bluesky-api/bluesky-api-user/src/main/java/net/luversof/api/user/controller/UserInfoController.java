@@ -97,6 +97,14 @@ public class UserInfoController {
 		sessionRepository.save(session);
 	}
 
+	@SuppressWarnings("unchecked")
+	@PostMapping("/create-new-session")
+	public String createNewSession() {
+		Session session = sessionRepository.createSession();
+		sessionRepository.save(session);
+		return session.getId();
+	}
+
 	@PostMapping("/delete-session")
 	public void deleteSession(@RequestBody DeleteSessionRequest request) {
 		sessionRepository.deleteById(request.sessionId());
