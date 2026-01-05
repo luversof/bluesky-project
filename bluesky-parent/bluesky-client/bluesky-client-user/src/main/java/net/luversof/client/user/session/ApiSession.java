@@ -13,7 +13,7 @@ import net.luversof.client.user.httpexchange.UserInfoApiClient;
 public class ApiSession implements Session, Serializable {
 
 	private static final long serialVersionUID = 1L;
-	
+
 	private final MapSession delegate;
 	private final UserInfoApiClient userInfoApiClient;
 
@@ -21,7 +21,7 @@ public class ApiSession implements Session, Serializable {
 		this.delegate = new MapSession(id);
 		this.userInfoApiClient = userInfoApiClient;
 	}
-	
+
 	public ApiSession(MapSession session, UserInfoApiClient userInfoApiClient) {
 		this.delegate = session;
 		this.userInfoApiClient = userInfoApiClient;

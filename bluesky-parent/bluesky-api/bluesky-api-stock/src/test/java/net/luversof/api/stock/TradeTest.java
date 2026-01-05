@@ -14,11 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import com.fasterxml.jackson.databind.MappingIterator;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import com.fasterxml.jackson.dataformat.csv.CsvSchema;
-
 import net.luversof.GeneralTest;
 import net.luversof.api.stock.constant.TestConstant;
 import net.luversof.api.stock.constant.TradeType;
@@ -29,6 +24,10 @@ import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.repository.TradeRepository;
 import net.luversof.api.stock.service.StockPriceService;
 import net.luversof.api.stock.service.TradeService;
+import tools.jackson.databind.MappingIterator;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.dataformat.csv.CsvMapper;
+import tools.jackson.dataformat.csv.CsvSchema;
 
 class TradeTest implements GeneralTest {
 
@@ -146,7 +145,7 @@ class TradeTest implements GeneralTest {
 
 		SimpleModule module = new SimpleModule();
 		module.addDeserializer(TradeType.class, new TradeTypeDeserializer());
-		mapper.registerModule(module);
+		mapper.registeredModules().add(module);
 
 		MappingIterator<TradeCsvRecord> it = mapper
 				.readerFor(TradeCsvRecord.class)

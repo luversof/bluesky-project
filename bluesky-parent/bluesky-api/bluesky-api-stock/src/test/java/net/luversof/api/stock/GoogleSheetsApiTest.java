@@ -1,11 +1,13 @@
 package net.luversof.api.stock;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.slf4j.Logger;
@@ -15,21 +17,41 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
 import net.luversof.GeneralTest;
+import net.luversof.api.stock.provider.InputStreamProvider;
 import net.luversof.api.stock.service.GoogleSheetsApiService;
 
 public class GoogleSheetsApiTest implements GeneralTest {
 
 	@Autowired
 	private GoogleSheetsApiService googleSheetsApiService;
+	
+	@Autowired
+	private InputStreamProvider inputStreamProvider;
 
 	private static final Logger log = LoggerFactory.getLogger(GoogleSheetsApiTest.class);
 
-	private static final String CREDENTIALS_FILE_PATH = "file:/C:/Users/bluesky/Downloads/credentials.json";
+	private static final String CREDENTIALS_FILE_PATH = "file:/D:/dev/credentials.json";
+	private static final String SPREADSHEET_ID_PATH = "file:/D:/dev/spreadsheet_id.txt";
+	
+	@Test
+	void getSpreadsheetIdTest() throws IOException {
+		String spreadsheetId = getSpreadsheetId();
+		log.debug("spreadsheetId: {}", spreadsheetId);
+	}
+	
+	String getSpreadsheetId() throws IOException {
+		InputStream credentialsStream = inputStreamProvider.open(SPREADSHEET_ID_PATH);
+		return new String(credentialsStream.readAllBytes()).trim();
+	}
 
 	@ParameterizedTest
 	@EnumSource(GoogleSheetsApiCase.class)
 	void googleSheetsApiTest(GoogleSheetsApiCase googleSheetsApiCase) throws IOException, GeneralSecurityException {
-		final String spreadsheetId = "";
+		if (!googleSheetsApiCase.isEnabled()) {
+			return;
+		}
+		
+		String spreadsheetId = getSpreadsheetId();
 		var resultList = googleSheetsApiService.getSpreadsheetValues(
 				CREDENTIALS_FILE_PATH,
 				spreadsheetId,
@@ -39,7 +61,7 @@ public class GoogleSheetsApiTest implements GeneralTest {
 		if (resultList == null || resultList.isEmpty()) {
 			log.debug("No data found.");
 		} else {
-			log.debug("{}", resultList);
+			resultList.forEach(item -> log.debug("{}", item) );
 		}
 	}
 

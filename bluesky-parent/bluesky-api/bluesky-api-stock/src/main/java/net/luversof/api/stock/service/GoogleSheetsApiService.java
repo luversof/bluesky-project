@@ -25,7 +25,7 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 
 import net.luversof.api.stock.provider.InputStreamProvider;
-import tools.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class GoogleSheetsApiService {
@@ -34,7 +34,7 @@ public class GoogleSheetsApiService {
 	private InputStreamProvider inputStreamProvider;
 
 	@Autowired
-	private JsonMapper jsonMapper;
+	private ObjectMapper objectMapper;
 
 	private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 
@@ -91,7 +91,7 @@ public class GoogleSheetsApiService {
 					map.put(String.valueOf(header.get(j)), row.get(j));
 				}
 			}
-			result.add(jsonMapper.convertValue(map, type));
+			result.add(objectMapper.convertValue(map, type));
 		}
 
 		return result;

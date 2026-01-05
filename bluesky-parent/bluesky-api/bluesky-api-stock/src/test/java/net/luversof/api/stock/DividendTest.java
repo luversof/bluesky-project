@@ -22,22 +22,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.StringUtils;
 
-import com.fasterxml.jackson.databind.MappingIterator;
-import com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import com.fasterxml.jackson.dataformat.csv.CsvSchema;
-
 import net.luversof.GeneralTest;
 import net.luversof.api.stock.constant.TestConstant;
 import net.luversof.api.stock.domain.Account;
 import net.luversof.api.stock.domain.Dividend;
 //import net.luversof.api.stock.domain.Dividend;
-import net.luversof.api.stock.domain.DividendCsvRecord;
+import net.luversof.api.stock.domain.GoogleSheetsDividendItem;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.repository.AccountRepository;
 import net.luversof.api.stock.repository.DividendRepository;
 import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.service.DividendService;
 import net.luversof.api.stock.web.dto.request.DividendSearchRequest;
+import tools.jackson.databind.MappingIterator;
+import tools.jackson.dataformat.csv.CsvMapper;
+import tools.jackson.dataformat.csv.CsvSchema;
 
 class DividendTest implements GeneralTest {
 
@@ -91,13 +90,13 @@ class DividendTest implements GeneralTest {
 		found.forEach(d -> assertThat(d.getStockItemId()).isNotNull());
 	}
 
-	private Map<String, UUID> prepareAccountMap(List<DividendCsvRecord> records) {
+	private Map<String, UUID> prepareAccountMap(List<GoogleSheetsDividendItem> records) {
 		var accountMap = accountRepository.findByUserId(userId).stream()
 				.collect(Collectors.toMap(Account::getName, Account::getId, (left, _) -> left,
 						java.util.LinkedHashMap::new));
 
 		records.stream()
-				.map(DividendCsvRecord::get계좌)
+				.map(GoogleSheetsDividendItem::get계좌)
 				.filter(StringUtils::hasText)
 				.map(String::trim)
 				.forEach(accountName -> accountMap.computeIfAbsent(accountName, name -> {
@@ -112,13 +111,13 @@ class DividendTest implements GeneralTest {
 		return accountMap;
 	}
 
-	private Map<String, UUID> prepareStockItemMap(List<DividendCsvRecord> records) {
+	private Map<String, UUID> prepareStockItemMap(List<GoogleSheetsDividendItem> records) {
 		var stockItemMap = StreamSupport.stream(stockItemRepository.findAll().spliterator(), false)
 				.collect(Collectors.toMap(StockItem::getName, StockItem::getId, (left, _) -> left,
 						java.util.LinkedHashMap::new));
 
 		records.stream()
-				.map(DividendCsvRecord::get종목)
+				.map(GoogleSheetsDividendItem::get종목)
 				.filter(StringUtils::hasText)
 				.map(String::trim)
 				.forEach(stockName -> stockItemMap.computeIfAbsent(stockName, name -> {
@@ -144,7 +143,7 @@ class DividendTest implements GeneralTest {
 		return candidate.substring(0, Math.min(candidate.length(), 12));
 	}
 
-	private Dividend toDividend(DividendCsvRecord csvRecord, Map<String, UUID> accountMap,
+	private Dividend toDividend(GoogleSheetsDividendItem csvRecord, Map<String, UUID> accountMap,
 			Map<String, UUID> stockItemMap) {
 		var accountName = csvRecord.get계좌();
 		var stockName = csvRecord.get종목();
@@ -191,10 +190,10 @@ class DividendTest implements GeneralTest {
 		return null;
 	}
 
-	List<DividendCsvRecord> loadDividendCsvRecordList() throws IOException {
+	List<GoogleSheetsDividendItem> loadDividendCsvRecordList() throws IOException {
 		var mapper = new CsvMapper();
-		MappingIterator<DividendCsvRecord> iterator = mapper
-				.readerFor(DividendCsvRecord.class)
+		MappingIterator<GoogleSheetsDividendItem> iterator = mapper
+				.readerFor(GoogleSheetsDividendItem.class)
 				.with(CsvSchema.emptySchema().withHeader())
 				.readValues(new ClassPathResource("data/divedend.csv").getInputStream());
 		var records = iterator.readAll();

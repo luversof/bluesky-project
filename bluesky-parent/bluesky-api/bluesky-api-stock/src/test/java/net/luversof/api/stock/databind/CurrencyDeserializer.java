@@ -8,13 +8,15 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
 public class CurrencyDeserializer extends JsonDeserializer<BigDecimal> {
-	
+
 	@Override
 	public BigDecimal deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
 		String value = p.getText();
-		if (value == null || value.isBlank()) return null;
+		if (value == null || value.isBlank())
+			return null;
 		value = value.replace("₩", "").replace(",", "").trim();
-		if (value.isEmpty()) return null;
+		if (value.isEmpty())
+			return null;
 		try {
 			return new BigDecimal(value);
 		} catch (NumberFormatException e) {

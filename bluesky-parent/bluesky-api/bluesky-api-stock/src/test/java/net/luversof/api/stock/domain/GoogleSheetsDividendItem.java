@@ -1,7 +1,6 @@
 package net.luversof.api.stock.domain;
 
 import java.math.BigDecimal;
-import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -10,7 +9,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import net.luversof.api.stock.databind.CurrencyDeserializer;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DividendCsvRecord {
+public class GoogleSheetsDividendItem {
 
 	@JsonProperty("지급일")
 	private String 지급일;
@@ -20,6 +19,17 @@ public class DividendCsvRecord {
 
 	@JsonProperty("계좌")
 	private String 계좌;
+
+	@JsonProperty("주식 수")
+	private int 주식수;
+
+	@JsonProperty("분배금액")
+	@JsonDeserialize(using = CurrencyDeserializer.class)
+	private BigDecimal 분배금액;
+
+	@JsonProperty("주당과세표준액")
+	@JsonDeserialize(using = CurrencyDeserializer.class)
+	private BigDecimal 주당과세표준액;
 
 	@JsonProperty("배당금")
 	@JsonDeserialize(using = CurrencyDeserializer.class)
@@ -32,6 +42,10 @@ public class DividendCsvRecord {
 	@JsonProperty("실지급")
 	@JsonDeserialize(using = CurrencyDeserializer.class)
 	private BigDecimal 실지급;
+
+	@JsonProperty("과세금액")
+	@JsonDeserialize(using = CurrencyDeserializer.class)
+	private BigDecimal 과세금액;
 
 	public String get지급일() {
 		return 지급일;
@@ -55,6 +69,30 @@ public class DividendCsvRecord {
 
 	public void set계좌(String 계좌) {
 		this.계좌 = 계좌;
+	}
+
+	public int get주식수() {
+		return 주식수;
+	}
+
+	public void set주식수(int 주식수) {
+		this.주식수 = 주식수;
+	}
+
+	public BigDecimal get분배금액() {
+		return 분배금액;
+	}
+
+	public void set분배금액(BigDecimal 분배금액) {
+		this.분배금액 = 분배금액;
+	}
+
+	public BigDecimal get주당과세표준액() {
+		return 주당과세표준액;
+	}
+
+	public void set주당과세표준액(BigDecimal 주당과세표준액) {
+		this.주당과세표준액 = 주당과세표준액;
 	}
 
 	public BigDecimal get배당금() {
@@ -81,27 +119,19 @@ public class DividendCsvRecord {
 		this.실지급 = 실지급;
 	}
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		DividendCsvRecord other = (DividendCsvRecord) obj;
-		return Objects.equals(계좌, other.계좌) && Objects.equals(배당금, other.배당금) && Objects.equals(세금, other.세금)
-				&& Objects.equals(실지급, other.실지급) && Objects.equals(종목, other.종목) && Objects.equals(지급일, other.지급일);
+	public BigDecimal get과세금액() {
+		return 과세금액;
 	}
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(계좌, 배당금, 세금, 실지급, 종목, 지급일);
+	public void set과세금액(BigDecimal 과세금액) {
+		this.과세금액 = 과세금액;
 	}
 
 	@Override
 	public String toString() {
-		return "DividendCsvRecord [지급일=" + 지급일 + ", 종목=" + 종목 + ", 계좌=" + 계좌 + ", 배당금=" + 배당금 + ", 세금=" + 세금 + ", 실지급="
-				+ 실지급 + "]";
+		return "GoogleSheetsDividendItem [지급일=" + 지급일 + ", 종목=" + 종목 + ", 계좌=" + 계좌 + ", 주식수=" + 주식수 + ", 분배금액=" + 분배금액
+				+ ", 주당과세표준액=" + 주당과세표준액 + ", 배당금=" + 배당금 + ", 세금=" + 세금
+				+ ", 실지급=" + 실지급 + ", 과세금액=" + 과세금액 + "]";
 	}
+
 }
