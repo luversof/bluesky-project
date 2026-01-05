@@ -25,7 +25,7 @@ import net.luversof.api.stock.constant.StockErrorCode;
  * 유저간 비교 같은? (이건 적용 가능성이 낮음)
  * 복수 계좌 조회는 있을 수 있을 거 같음.
  * 
- * stockITemId 기준 처리가 맞을까? ticker가 기준이 되는게 더 나을지도?
+ * stockITemId 기준 처리가 맞을까? symbol이 기준이 되는게 더 나을지도?
  */
 public record TradeProfitRequest(
 	UUID userId,

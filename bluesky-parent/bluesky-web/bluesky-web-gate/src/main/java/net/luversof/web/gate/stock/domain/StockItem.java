@@ -4,7 +4,7 @@ import java.util.UUID;
 
 public record StockItem(
 	UUID id,
-	String ticker,
+	String symbol,
 	String name,
 	String market) {
 

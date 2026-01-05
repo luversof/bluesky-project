@@ -84,7 +84,7 @@
 								</label>
 								<select id="stockItemIdList" name="stockItemIdList" multiple class="select select-bordered w-full">
 									<option value="">선택 안함</option>
-									<option th:each="s : ${stockItems}" th:value="${s.id}" th:text="${s.name + ' (' + s.ticker + ')'}"></option>
+									<option th:each="s : ${stockItems}" th:value="${s.id}" th:text="${s.name + ' (' + s.symbol + ')'}"></option>
 								</select>
 								<label class="label" for="stockItemIdList-help">
 									<span id="stockItemIdList-help" class="label-text-alt">Ctrl(또는 Shift) 클릭으로 여러 종목 선택 가능</span>
