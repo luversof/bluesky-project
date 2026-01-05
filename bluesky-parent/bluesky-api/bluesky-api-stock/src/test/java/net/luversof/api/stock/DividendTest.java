@@ -3,12 +3,6 @@ package net.luversof.api.stock;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -27,26 +21,24 @@ import net.luversof.api.stock.constant.TestConstant;
 import net.luversof.api.stock.domain.Account;
 import net.luversof.api.stock.domain.Dividend;
 //import net.luversof.api.stock.domain.Dividend;
-import net.luversof.api.stock.domain.GoogleSheetsDividendItem;
+import net.luversof.api.stock.domain.GoogleSheetsDividend;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.repository.AccountRepository;
 import net.luversof.api.stock.repository.DividendRepository;
 import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.service.DividendService;
+import net.luversof.api.stock.service.GoogleSheetsTestService;
 import net.luversof.api.stock.web.dto.request.DividendSearchRequest;
 import tools.jackson.databind.MappingIterator;
 import tools.jackson.dataformat.csv.CsvMapper;
 import tools.jackson.dataformat.csv.CsvSchema;
 
 class DividendTest implements GeneralTest {
-
+	
 	private static final Logger log = LoggerFactory.getLogger(DividendTest.class);
 
-	private static final ZoneOffset KST = ZoneOffset.ofHours(9);
-	private static final List<DateTimeFormatter> DATE_FORMATTERS = List.of(
-			DateTimeFormatter.ofPattern("yyyy. M. d"),
-			DateTimeFormatter.ofPattern("yyyy-M-d"),
-			DateTimeFormatter.ISO_LOCAL_DATE);
+	@Autowired
+	GoogleSheetsTestService googleSheetsTestService;
 
 	@Autowired
 	DividendRepository dividendRepository;
@@ -66,14 +58,14 @@ class DividendTest implements GeneralTest {
 	void dividendBulkInsert() throws IOException {
 		dividendRepository.deleteAll();
 
-		var dividendCsvRecordList = loadDividendCsvRecordList();
-		assertThat(dividendCsvRecordList).isNotEmpty();
+		var googleSheetsDividendList = loadGoogleSheetsDividendList();
+		assertThat(googleSheetsDividendList).isNotEmpty();
 
-		var accountMap = prepareAccountMap(dividendCsvRecordList);
-		var stockItemMap = prepareStockItemMap(dividendCsvRecordList);
+		var accountMap = prepareAccountMap(googleSheetsDividendList);
+		var stockItemMap = prepareStockItemMap(googleSheetsDividendList);
 
-		var dividends = dividendCsvRecordList.stream()
-				.map(csvRecord -> toDividend(csvRecord, accountMap, stockItemMap))
+		var dividends = googleSheetsDividendList.stream()
+				.map(googleSheetsDividend -> googleSheetsDividend.toDividend( accountMap, stockItemMap))
 				.filter(java.util.Objects::nonNull)
 				.toList();
 
@@ -90,13 +82,13 @@ class DividendTest implements GeneralTest {
 		found.forEach(d -> assertThat(d.getStockItemId()).isNotNull());
 	}
 
-	private Map<String, UUID> prepareAccountMap(List<GoogleSheetsDividendItem> records) {
+	private Map<String, UUID> prepareAccountMap(List<GoogleSheetsDividend> records) {
 		var accountMap = accountRepository.findByUserId(userId).stream()
 				.collect(Collectors.toMap(Account::getName, Account::getId, (left, _) -> left,
 						java.util.LinkedHashMap::new));
 
 		records.stream()
-				.map(GoogleSheetsDividendItem::get계좌)
+				.map(GoogleSheetsDividend::get계좌)
 				.filter(StringUtils::hasText)
 				.map(String::trim)
 				.forEach(accountName -> accountMap.computeIfAbsent(accountName, name -> {
@@ -111,20 +103,20 @@ class DividendTest implements GeneralTest {
 		return accountMap;
 	}
 
-	private Map<String, UUID> prepareStockItemMap(List<GoogleSheetsDividendItem> records) {
+	private Map<String, UUID> prepareStockItemMap(List<GoogleSheetsDividend> records) {
 		var stockItemMap = StreamSupport.stream(stockItemRepository.findAll().spliterator(), false)
 				.collect(Collectors.toMap(StockItem::getName, StockItem::getId, (left, _) -> left,
 						java.util.LinkedHashMap::new));
 
 		records.stream()
-				.map(GoogleSheetsDividendItem::get종목)
+				.map(GoogleSheetsDividend::get종목)
 				.filter(StringUtils::hasText)
 				.map(String::trim)
 				.forEach(stockName -> stockItemMap.computeIfAbsent(stockName, name -> {
 					var newStockItem = new StockItem();
 					newStockItem.setName(name);
 					newStockItem.setMarket("KOSPI");
-					newStockItem.setTicker(generateTicker(name));
+					newStockItem.setSymbol(generateSymbol(name));
 					var savedStockItem = stockItemRepository.save(newStockItem);
 					log.debug("Created stock item for dividend import: {}", name);
 					return savedStockItem.getId();
@@ -133,7 +125,7 @@ class DividendTest implements GeneralTest {
 		return stockItemMap;
 	}
 
-	private String generateTicker(String baseName) {
+	private String generateSymbol(String baseName) {
 		var alphanumeric = baseName == null ? "" : baseName.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
 		if (!StringUtils.hasText(alphanumeric)) {
 			alphanumeric = "DIV";
@@ -143,57 +135,15 @@ class DividendTest implements GeneralTest {
 		return candidate.substring(0, Math.min(candidate.length(), 12));
 	}
 
-	private Dividend toDividend(GoogleSheetsDividendItem csvRecord, Map<String, UUID> accountMap,
-			Map<String, UUID> stockItemMap) {
-		var accountName = csvRecord.get계좌();
-		var stockName = csvRecord.get종목();
-
-		if (!StringUtils.hasText(accountName) || !StringUtils.hasText(stockName)) {
-			return null;
-		}
-
-		var accountId = accountMap.get(accountName.trim());
-		var stockItemId = stockItemMap.get(stockName.trim());
-		var payDate = parsePayDate(csvRecord.get지급일());
-
-		if (accountId == null || stockItemId == null || payDate == null) {
-			log.warn("Skip dividend row. accountId: {}, stockItemId: {}, payDate: {}", accountId, stockItemId, payDate);
-			return null;
-		}
-
-		var dividend = new Dividend();
-		dividend.setAccountId(accountId);
-		dividend.setStockItemId(stockItemId);
-		dividend.setPrice(csvRecord.get배당금() == null ? BigDecimal.ZERO : csvRecord.get배당금());
-		dividend.setTax(csvRecord.get세금() == null ? BigDecimal.ZERO : csvRecord.get세금());
-		dividend.setType("DIVIDEND");
-		dividend.setQuantity(0);
-		dividend.setFee(BigDecimal.ZERO);
-		dividend.setRecordDate(payDate);
-		dividend.setPayDate(payDate);
-		return dividend;
+	
+	List<GoogleSheetsDividend> loadGoogleSheetsDividendList() {
+		return googleSheetsTestService.getList(GoogleSheetsApiCase.GoogleSheetsDividend);
 	}
 
-	private Instant parsePayDate(String value) {
-		if (!StringUtils.hasText(value)) {
-			return null;
-		}
-		var trimmed = value.trim();
-		for (var formatter : DATE_FORMATTERS) {
-			try {
-				return LocalDate.parse(trimmed, formatter).atStartOfDay().toInstant(KST);
-			} catch (DateTimeParseException ignored) {
-				// try next pattern
-			}
-		}
-		log.warn("Unable to parse dividend pay date: {}", value);
-		return null;
-	}
-
-	List<GoogleSheetsDividendItem> loadDividendCsvRecordList() throws IOException {
+	List<GoogleSheetsDividend> loadDividendCsvRecordList() throws IOException {
 		var mapper = new CsvMapper();
-		MappingIterator<GoogleSheetsDividendItem> iterator = mapper
-				.readerFor(GoogleSheetsDividendItem.class)
+		MappingIterator<GoogleSheetsDividend> iterator = mapper
+				.readerFor(GoogleSheetsDividend.class)
 				.with(CsvSchema.emptySchema().withHeader())
 				.readValues(new ClassPathResource("data/divedend.csv").getInputStream());
 		var records = iterator.readAll();

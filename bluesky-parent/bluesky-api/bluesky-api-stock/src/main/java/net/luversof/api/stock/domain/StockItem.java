@@ -17,15 +17,21 @@ public class StockItem {
 	@Column("id")
 	private UUID id;
 
-	@Column("ticker")
-	private String ticker;
-
-	@Column("name")
-	private String name;
-
+	/**
+	 * KRX, NASDAQ, NYSE 등
+	 */
 	@Column("market")
 	private String market;
 
+	/**
+	 * KRX : 005930, NASDAQ : AAPL 등
+	 */
+	@Column("symbol")
+	private String symbol;
+	
+	@Column("name")
+	private String name;
+	
 	public UUID getId() {
 		return id;
 	}
@@ -34,12 +40,20 @@ public class StockItem {
 		this.id = id;
 	}
 
-	public String getTicker() {
-		return ticker;
+	public String getMarket() {
+		return market;
 	}
 
-	public void setTicker(String ticker) {
-		this.ticker = ticker;
+	public void setMarket(String market) {
+		this.market = market;
+	}
+	
+	public String getSymbol() {
+		return symbol;
+	}
+
+	public void setSymbol(String symbol) {
+		this.symbol = symbol;
 	}
 
 	public String getName() {
@@ -48,14 +62,6 @@ public class StockItem {
 
 	public void setName(String name) {
 		this.name = name;
-	}
-
-	public String getMarket() {
-		return market;
-	}
-
-	public void setMarket(String market) {
-		this.market = market;
 	}
 
 	@Override
@@ -68,16 +74,16 @@ public class StockItem {
 			return false;
 		StockItem other = (StockItem) obj;
 		return Objects.equals(id, other.id) && Objects.equals(market, other.market) && Objects.equals(name, other.name)
-				&& Objects.equals(ticker, other.ticker);
+				&& Objects.equals(symbol, other.symbol);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(id, market, name, ticker);
+		return Objects.hash(id, market, name, symbol);
 	}
 
 	@Override
 	public String toString() {
-		return "StockItem [id=" + id + ", ticker=" + ticker + ", name=" + name + ", market=" + market + "]";
+		return "StockItem [id=" + id + ", symbol=" + symbol + ", name=" + name + ", market=" + market + "]";
 	}
 }

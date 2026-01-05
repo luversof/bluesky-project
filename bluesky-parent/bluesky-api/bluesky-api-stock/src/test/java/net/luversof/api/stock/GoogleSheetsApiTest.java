@@ -3,8 +3,6 @@ package net.luversof.api.stock;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
@@ -19,44 +17,30 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
 import net.luversof.GeneralTest;
-import net.luversof.api.stock.provider.InputStreamProvider;
-import net.luversof.api.stock.service.GoogleSheetsApiService;
+import net.luversof.api.stock.service.GoogleSheetsTestService;
 
 class GoogleSheetsApiTest implements GeneralTest {
 
-	@Autowired
-	private GoogleSheetsApiService googleSheetsApiService;
-	
-	@Autowired
-	private InputStreamProvider inputStreamProvider;
-
 	private static final Logger log = LoggerFactory.getLogger(GoogleSheetsApiTest.class);
+
+	@Autowired
+	GoogleSheetsTestService googleSheetsTestService;
 
 	@Test
 	void getSpreadsheetIdTest() throws IOException {
-		String spreadsheetId = getSpreadsheetId();
+		String spreadsheetId = googleSheetsTestService.getSpreadsheetId();
 		assertNotNull(spreadsheetId);
 		log.debug("spreadsheetId: {}", spreadsheetId);
-	}
-	
-	String getSpreadsheetId() throws IOException {
-		InputStream credentialsStream = inputStreamProvider.open(GoogleSheetsApiCase.SPREADSHEET_ID_PATH);
-		return new String(credentialsStream.readAllBytes()).trim();
 	}
 
 	@ParameterizedTest
 	@EnumSource(GoogleSheetsApiCase.class)
-	void googleSheetsApiTest(GoogleSheetsApiCase googleSheetsApiCase) throws IOException, GeneralSecurityException {
+	void googleSheetsApiTest(GoogleSheetsApiCase googleSheetsApiCase) {
 		if (!googleSheetsApiCase.isEnabled()) {
 			return;
 		}
 		
-		String spreadsheetId = getSpreadsheetId();
-		var resultList = googleSheetsApiService.getSpreadsheetValues(
-				GoogleSheetsApiCase.CREDENTIALS_FILE_PATH,
-				spreadsheetId,
-				googleSheetsApiCase.getRange(),
-				googleSheetsApiCase.getType());
+		var resultList = googleSheetsTestService.getList(googleSheetsApiCase);
 
 		assertNotNull(resultList);
 		if (resultList == null || resultList.isEmpty()) {

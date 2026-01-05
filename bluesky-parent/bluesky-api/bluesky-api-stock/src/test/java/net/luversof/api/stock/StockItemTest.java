@@ -12,7 +12,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import io.github.luversof.boot.uuid.UuidGeneratorUtil;
 import net.luversof.GeneralTest;
+import net.luversof.api.stock.domain.GoogleSheetsStockItem;
 import net.luversof.api.stock.domain.StockItem;
+import net.luversof.api.stock.service.GoogleSheetsTestService;
 import net.luversof.api.stock.service.StockItemService;
 import tools.jackson.core.exc.StreamReadException;
 import tools.jackson.core.type.TypeReference;
@@ -28,6 +30,9 @@ class StockItemTest implements GeneralTest {
 
 	@Autowired
 	StockItemService stockItemService;
+	
+	@Autowired
+	private GoogleSheetsTestService googleSheetsTestService;
 
 	@Autowired
 	JdbcTemplate jdbcTemplate;
@@ -35,34 +40,39 @@ class StockItemTest implements GeneralTest {
 	@Test
 	void createStockItem() {
 		var stockItem = new StockItem();
-		stockItem.setTicker("161510");
+		stockItem.setSymbol("161510");
 		stockItem.setName("PLUS 고배당주");
-		stockItem.setMarket("KOSDAQ");
+		stockItem.setMarket("KRX");
 
 		var result = stockItemService.createStockItem(stockItem);
 		log.debug("result : {}", result);
 	}
 
 	@Test
-	void stockItemBulkInsert() throws IOException {
+	void stockItemBulkInsert() {
 		String sql = """
-				INSERT INTO "StockItem" (id, ticker, name, market)
+				INSERT INTO "StockItem" (id, symbol, name, market)
 				VALUES (?, ?, ?, ?)
-				ON CONFLICT (ticker)
+				ON CONFLICT (symbol)
 				DO UPDATE SET
 					name   = EXCLUDED.name,
 					market = EXCLUDED.market
 				""";
 
-		var stockItemList = loadCsvStockItemList();
+		var stockItemList = loadSpreadSheetStockItemList();
 
 		jdbcTemplate.batchUpdate(sql, stockItemList, stockItemList.size(), (ps, item) -> {
 			item.setId(UuidGeneratorUtil.getUuid());
 			ps.setObject(1, item.getId());
-			ps.setString(2, item.getTicker());
+			ps.setString(2, item.getSymbol());
 			ps.setString(3, item.getName());
 			ps.setString(4, item.getMarket());
 		});
+	}
+	
+	List<StockItem> loadSpreadSheetStockItemList() {
+		List<GoogleSheetsStockItem> stockItemList = googleSheetsTestService.getList(GoogleSheetsApiCase.GoogleSheetsStockItem);
+		return stockItemList.stream().map(x -> x.toStockItem()).toList();
 	}
 
 	List<StockItem> loadJsonStockItemList() throws StreamReadException, DatabindException, IOException {

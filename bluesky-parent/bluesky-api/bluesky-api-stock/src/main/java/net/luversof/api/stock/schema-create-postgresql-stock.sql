@@ -10,9 +10,9 @@ CREATE INDEX idx_account_userId ON "Account" ("user_id");
 
 CREATE TABLE "StockItem" (
 	"id" UUID NOT NULL PRIMARY KEY,
-	"ticker" VARCHAR(20) NOT NULL,
-	"name" VARCHAR(100) NOT NULL,
-	"market" VARCHAR(50) NOT NULL
+	"market" VARCHAR(10) NOT NULL,
+	"symbol" VARCHAR(20) NOT NULL,
+	"name" VARCHAR(100) NOT NULL
 );
 
 CREATE UNIQUE INDEX uk_stockItem_ticker ON "StockItem" ("ticker");
