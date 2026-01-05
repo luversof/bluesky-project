@@ -39,6 +39,12 @@ public class UserInfoController {
 	@Autowired
 	@SuppressWarnings("rawtypes")
 	private SessionRepository sessionRepository;
+	
+	@Autowired
+	private org.springframework.data.redis.core.StringRedisTemplate stringRedisTemplate;
+	
+	@org.springframework.beans.factory.annotation.Value("${spring.session.redis.namespace:spring:session}")
+	private String redisNamespace;
 
 	@Autowired
 	public void setUserInfoService(UserInfoService userInfoService) {
@@ -50,15 +56,22 @@ public class UserInfoController {
 	public void createSession(@RequestBody CreateSessionRequest request) {
 		Session session = sessionRepository.findById(request.sessionId());
 		if (session == null) {
-			System.err.println("UserInfoController.createSession session is null. sessionId: " + request.sessionId());
-			return;
+			// 클라이언트에서 session id를 변경한 경우(로그인 등) 서버에는 해당 세션이 없을 수 있음
+			// 이 경우 강제로 redis에 세션 키를 생성해준다.
+			String key = redisNamespace + ":sessions:" + request.sessionId();
+			Map<String, String> map = new HashMap<>();
+			map.put("creationTime", String.valueOf(System.currentTimeMillis()));
+			map.put("lastAccessedTime", String.valueOf(System.currentTimeMillis()));
+			map.put("maxInactiveInterval", "1800");
+			stringRedisTemplate.opsForHash().putAll(key, map);
+			
+			session = sessionRepository.findById(request.sessionId());
 		}
 
-		if (request.sessionAttributes() != null) {
+		if (session != null && request.sessionAttributes() != null) {
 			request.sessionAttributes().forEach(session::setAttribute);
+			sessionRepository.save(session);
 		}
-
-		sessionRepository.save(session);
 	}
 
 	@PostMapping("/create-new-session")
