@@ -4,7 +4,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
 
 @Configuration
-@EnableRedisHttpSession
+@EnableRedisHttpSession(redisNamespace = "${spring.session.redis.namespace:spring:session}")
 public class RedisSessionConfig {
 
 }

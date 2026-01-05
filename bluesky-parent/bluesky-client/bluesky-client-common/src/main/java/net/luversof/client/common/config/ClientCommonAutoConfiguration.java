@@ -59,10 +59,18 @@ public class ClientCommonAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	Function<String, HttpServiceProxyFactory> httpServiceProxyFactoryBuilder(
-			@LoadBalanced ObjectProvider<RestClient.Builder> builderProvider,
+			@LoadBalanced ObjectProvider<RestClient.Builder> loadBalancedRestClientBuilderProvider,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			PageableHttpServiceArgumentResolver pageableHttpServiceArgumentResolver) {
 		return baseUrl -> {
-			RestClient restClient = builderProvider.getObject().baseUrl(baseUrl).build();
+			RestClient.Builder builder;
+			if (baseUrl.startsWith("lb://")) {
+				builder = loadBalancedRestClientBuilderProvider.getObject();
+			} else {
+				builder = restClientBuilderProvider.getObject();
+			}
+
+			RestClient restClient = builder.baseUrl(baseUrl).build();
 			return HttpServiceProxyFactory.builderFor(RestClientAdapter.create(restClient))
 					.customArgumentResolver(pageableHttpServiceArgumentResolver)
 					.build();
