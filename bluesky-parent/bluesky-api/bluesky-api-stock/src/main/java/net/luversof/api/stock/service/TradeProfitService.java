@@ -170,8 +170,10 @@ public class TradeProfitService {
 		sortedTrades.sort(Comparator.comparing(Trade::getTradeDate));
 
 		// 2. FIFO Queue for tracking cost basis
-		// Stores: Price, Remaining Quantity, Fee per share (to preserve precision as much as possible)
-		record BuyBlock(BigDecimal price, int quantity, BigDecimal feePerShare) {}
+		// Stores: Price, Remaining Quantity, Fee per share (to preserve precision as
+		// much as possible)
+		record BuyBlock(BigDecimal price, int quantity, BigDecimal feePerShare) {
+		}
 		java.util.Deque<BuyBlock> inventory = new java.util.ArrayDeque<>();
 
 		// 3. Period accumulators for "Period" stats
@@ -183,17 +185,19 @@ public class TradeProfitService {
 		BigDecimal periodTotalSellFee = BigDecimal.ZERO;
 		BigDecimal periodTotalSellTax = BigDecimal.ZERO;
 
-		BigDecimal periodRealizedProfit = BigDecimal.ZERO;    // Gross
+		BigDecimal periodRealizedProfit = BigDecimal.ZERO; // Gross
 		BigDecimal periodRealizedProfitNet = BigDecimal.ZERO; // Net
 
 		// Date filter helpers
 		Instant start = request.startDate();
 		Instant end = request.endDate();
-		
+
 		for (Trade trade : sortedTrades) {
 			boolean inPeriod = true;
-			if (start != null && trade.getTradeDate().isBefore(start)) inPeriod = false;
-			if (end != null && trade.getTradeDate().isAfter(end)) inPeriod = false;
+			if (start != null && trade.getTradeDate().isBefore(start))
+				inPeriod = false;
+			if (end != null && trade.getTradeDate().isAfter(end))
+				inPeriod = false;
 
 			BigDecimal fee = nz(trade.getFee());
 			BigDecimal tax = nz(trade.getTax());
@@ -206,7 +210,7 @@ public class TradeProfitService {
 					BigDecimal feePerShare = fee.divide(BigDecimal.valueOf(q), 10, RoundingMode.HALF_UP);
 					inventory.addLast(new BuyBlock(price, q, feePerShare));
 				}
-				
+
 				if (inPeriod) {
 					periodTotalBuyAmount = periodTotalBuyAmount.add(price.multiply(BigDecimal.valueOf(q)));
 					periodTotalBuyFee = periodTotalBuyFee.add(fee);
@@ -244,17 +248,19 @@ public class TradeProfitService {
 					} else {
 						// Partially consumed, replace head with remaining
 						inventory.pollFirst();
-						inventory.addFirst(new BuyBlock(block.price(), block.quantity() - matchQty, block.feePerShare()));
+						inventory.addFirst(
+								new BuyBlock(block.price(), block.quantity() - matchQty, block.feePerShare()));
 					}
 				}
-				
+
 				// Calculate Realized Profit if in period
 				if (inPeriod) {
 					// Gross Realized Profit
 					BigDecimal tradeProfit = tradeSellAmount.subtract(tradeCost);
 					periodRealizedProfit = periodRealizedProfit.add(tradeProfit);
 
-					// Net Realized Profit = (SellAmount - SellFee - SellTax) - (BuyCost + BuyFeePart)
+					// Net Realized Profit = (SellAmount - SellFee - SellTax) - (BuyCost +
+					// BuyFeePart)
 					BigDecimal tradeProceedsNet = tradeSellAmount.subtract(fee).subtract(tax);
 					BigDecimal tradeProfitNet = tradeProceedsNet.subtract(tradeCostNet);
 					periodRealizedProfitNet = periodRealizedProfitNet.add(tradeProfitNet);
@@ -286,7 +292,7 @@ public class TradeProfitService {
 		// 5. Current Evaluation
 		BigDecimal currentPrice = stockPriceService.getCurrentPrice(stockItemId);
 		BigDecimal evaluationAmount = currentPrice.multiply(BigDecimal.valueOf(holdingQuantity));
-		
+
 		// Profit on Holdings
 		BigDecimal evaluationProfit = evaluationAmount.subtract(holdingTotalCost);
 		BigDecimal evaluationProfitNet = evaluationAmount.subtract(holdingTotalCostNet);
@@ -296,7 +302,8 @@ public class TradeProfitService {
 				? periodTotalSellAmount.divide(BigDecimal.valueOf(periodTotalSellQuantity), 2, RoundingMode.HALF_UP)
 				: BigDecimal.ZERO;
 
-		BigDecimal periodTotalSellProceeds = periodTotalSellAmount.subtract(periodTotalSellFee).subtract(periodTotalSellTax);
+		BigDecimal periodTotalSellProceeds = periodTotalSellAmount.subtract(periodTotalSellFee)
+				.subtract(periodTotalSellTax);
 		BigDecimal averageSellPriceNet = periodTotalSellQuantity > 0
 				? periodTotalSellProceeds.divide(BigDecimal.valueOf(periodTotalSellQuantity), 2, RoundingMode.HALF_UP)
 				: BigDecimal.ZERO;
@@ -310,7 +317,7 @@ public class TradeProfitService {
 		TradeProfit profit = new TradeProfit();
 		profit.setStockItemId(stockItemId);
 		profit.setAccountId(accountId);
-		
+
 		// Base Fields
 		profit.setTotalBuyAmount(periodTotalBuyAmount);
 		profit.setAverageBuyPrice(averageBuyPrice); // Average Cost of Holdings

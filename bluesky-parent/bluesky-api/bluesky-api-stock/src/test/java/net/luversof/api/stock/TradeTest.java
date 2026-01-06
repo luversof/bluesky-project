@@ -71,7 +71,7 @@ class TradeTest implements GeneralTest {
 
 		var stockItemList = StreamSupport.stream(stockItemRepository.findAll().spliterator(), false).toList();
 
-		var tradeCsvRecordList = loadGoogleSheetsTradeList();
+		var googleSheetsTradeList = loadGoogleSheetsTradeList();
 
 		// 계좌 이름별로 계좌 찾기 또는 생성
 		var accountMap = new HashMap<String, UUID>();
@@ -81,7 +81,7 @@ class TradeTest implements GeneralTest {
 		existingAccounts.forEach(account -> accountMap.put(account.getName(), account.getId()));
 
 		// CSV에서 새로운 계좌 이름 찾기
-		tradeCsvRecordList.stream()
+		googleSheetsTradeList.stream()
 				.map(GoogleSheetsTrade::get계좌)
 				.filter(accountName -> accountName != null && !accountName.isBlank())
 				.distinct()
@@ -97,7 +97,7 @@ class TradeTest implements GeneralTest {
 				});
 
 		// tradeCsvRecordList를 trade로 변환
-		var tradeList = tradeCsvRecordList
+		var tradeList = googleSheetsTradeList
 				.stream()
 				.map(t -> {
 					var trade = t.toTrade(accountMap, stockItemList);
