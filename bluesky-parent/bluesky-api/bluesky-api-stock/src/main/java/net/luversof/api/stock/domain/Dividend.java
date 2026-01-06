@@ -52,7 +52,7 @@ public class Dividend {
 	 */
 	@Column("grossAmount")
 	private BigDecimal grossAmount;
-	
+
 	/**
 	 * 세금 총액 ( = quantity * taxPerShare, 원단위 절사 등 고려하여 별도 저장 추천)
 	 */
@@ -213,7 +213,8 @@ public class Dividend {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(accountId, fee, id, payDate, amountPerShare, taxPerShare, grossAmount, quantity, recordDate, stockItemId, stockItemName, tax,
+		return Objects.hash(accountId, fee, id, payDate, amountPerShare, taxPerShare, grossAmount, quantity, recordDate,
+				stockItemId, stockItemName, tax,
 				type);
 	}
 

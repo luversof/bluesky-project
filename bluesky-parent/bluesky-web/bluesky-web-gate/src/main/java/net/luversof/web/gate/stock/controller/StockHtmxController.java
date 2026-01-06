@@ -97,10 +97,10 @@ public class StockHtmxController {
 		List<String> labels = new ArrayList<>();
 		List<ChartDataset> datasets = new ArrayList<>();
 		String keyLabel = "";
-		String subKeyLabel = ""; 
+		String subKeyLabel = "";
 		String value1Label = "";
 		String value2Label = "";
-		
+
 		String chartType = "bar";
 		String chartTitle = "";
 
@@ -121,7 +121,7 @@ public class StockHtmxController {
 				chartTitle = year + "년 월별 손익 추이";
 				keyLabel = "월";
 				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
-				
+
 				chartType = "line";
 				for (int i = 1; i <= 12; i++)
 					labels.add(i + "월");
@@ -164,53 +164,59 @@ public class StockHtmxController {
 				for (String series : topSeries) {
 					List<BigDecimal> realizedPoints = new ArrayList<>();
 					List<BigDecimal> unrealizedPoints = new ArrayList<>();
-					
+
 					for (int m = 1; m <= 12; m++) {
 						List<TradeProfit> profitList = monthData.get(m);
 						BigDecimal realizedSum = BigDecimal.ZERO;
 						BigDecimal unrealizedSum = BigDecimal.ZERO;
-						
-						for(TradeProfit p : profitList) {
+
+						for (TradeProfit p : profitList) {
 							String name = "ACCOUNT".equals(groupBy)
 									? (p.accountName() != null ? p.accountName() : "Unknown")
 									: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
-							if(series.equals(name)) {
-								realizedSum = realizedSum.add(p.realizedProfit() != null ? p.realizedProfit() : BigDecimal.ZERO);
-								unrealizedSum = unrealizedSum.add(p.evaluationProfit() != null ? p.evaluationProfit() : BigDecimal.ZERO);
+							if (series.equals(name)) {
+								realizedSum = realizedSum
+										.add(p.realizedProfit() != null ? p.realizedProfit() : BigDecimal.ZERO);
+								unrealizedSum = unrealizedSum
+										.add(p.evaluationProfit() != null ? p.evaluationProfit() : BigDecimal.ZERO);
 							}
 						}
 						realizedPoints.add(realizedSum);
 						unrealizedPoints.add(unrealizedSum);
 					}
 					String baseColor = palette.get(colorIdx++ % palette.size());
-					datasets.add(new ChartDataset(series + " (실현)", realizedPoints, baseColor, baseColor, 2, List.of())); 
-					datasets.add(new ChartDataset(series + " (보유)", unrealizedPoints, baseColor, baseColor, 2, List.of(5, 5)));
+					datasets.add(
+							new ChartDataset(series + " (실현)", realizedPoints, baseColor, baseColor, 2, List.of()));
+					datasets.add(new ChartDataset(series + " (보유)", unrealizedPoints, baseColor, baseColor, 2,
+							List.of(5, 5)));
 				}
 
 				// 4. Build Table Rows
 				for (int m = 1; m <= 12; m++) {
-					String timeLabel = labels.get(m-1);
+					String timeLabel = labels.get(m - 1);
 					List<TradeProfit> profitList = monthData.get(m);
 					Map<String, BigDecimal> rMap = new HashMap<>();
 					Map<String, BigDecimal> uMap = new HashMap<>();
-					
-					for(TradeProfit p : profitList) {
+
+					for (TradeProfit p : profitList) {
 						String name = "ACCOUNT".equals(groupBy)
 								? (p.accountName() != null ? p.accountName() : "Unknown")
 								: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
-						rMap.merge(name, p.realizedProfit() != null ? p.realizedProfit() : BigDecimal.ZERO, BigDecimal::add);
-						uMap.merge(name, p.evaluationProfit() != null ? p.evaluationProfit() : BigDecimal.ZERO, BigDecimal::add);
+						rMap.merge(name, p.realizedProfit() != null ? p.realizedProfit() : BigDecimal.ZERO,
+								BigDecimal::add);
+						uMap.merge(name, p.evaluationProfit() != null ? p.evaluationProfit() : BigDecimal.ZERO,
+								BigDecimal::add);
 					}
-					
+
 					java.util.Set<String> allKeys = new java.util.HashSet<>();
 					allKeys.addAll(rMap.keySet());
 					allKeys.addAll(uMap.keySet());
-					
-					for(String name : allKeys) {
+
+					for (String name : allKeys) {
 						BigDecimal r = rMap.getOrDefault(name, BigDecimal.ZERO);
 						BigDecimal u = uMap.getOrDefault(name, BigDecimal.ZERO);
 						BigDecimal total = r.add(u);
-						if(total.abs().compareTo(BigDecimal.ZERO) > 0) {
+						if (total.abs().compareTo(BigDecimal.ZERO) > 0) {
 							rows.add(new AnalyticsRow(timeLabel, name, r, u, total));
 						}
 					}
@@ -263,27 +269,31 @@ public class StockHtmxController {
 				for (String series : topSeries) {
 					List<BigDecimal> realizedPoints = new ArrayList<>();
 					List<BigDecimal> unrealizedPoints = new ArrayList<>();
-					
+
 					for (int y = year - 4; y <= year; y++) {
 						List<TradeProfit> profitList = yearData.get(y);
 						BigDecimal realizedSum = BigDecimal.ZERO;
 						BigDecimal unrealizedSum = BigDecimal.ZERO;
-						
-						for(TradeProfit p : profitList) {
+
+						for (TradeProfit p : profitList) {
 							String name = "ACCOUNT".equals(groupBy)
 									? (p.accountName() != null ? p.accountName() : "Unknown")
 									: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
-							if(series.equals(name)) {
-								realizedSum = realizedSum.add(p.realizedProfit() != null ? p.realizedProfit() : BigDecimal.ZERO);
-								unrealizedSum = unrealizedSum.add(p.evaluationProfit() != null ? p.evaluationProfit() : BigDecimal.ZERO);
+							if (series.equals(name)) {
+								realizedSum = realizedSum
+										.add(p.realizedProfit() != null ? p.realizedProfit() : BigDecimal.ZERO);
+								unrealizedSum = unrealizedSum
+										.add(p.evaluationProfit() != null ? p.evaluationProfit() : BigDecimal.ZERO);
 							}
 						}
 						realizedPoints.add(realizedSum);
 						unrealizedPoints.add(unrealizedSum);
 					}
 					String baseColor = palette.get(colorIdx++ % palette.size());
-					datasets.add(new ChartDataset(series + " (실현)", realizedPoints, baseColor, baseColor, 2, List.of()));
-					datasets.add(new ChartDataset(series + " (보유)", unrealizedPoints, baseColor, baseColor, 2, List.of(5, 5)));
+					datasets.add(
+							new ChartDataset(series + " (실현)", realizedPoints, baseColor, baseColor, 2, List.of()));
+					datasets.add(new ChartDataset(series + " (보유)", unrealizedPoints, baseColor, baseColor, 2,
+							List.of(5, 5)));
 				}
 
 				// Table Rows
@@ -292,24 +302,26 @@ public class StockHtmxController {
 					List<TradeProfit> profitList = yearData.get(i);
 					Map<String, BigDecimal> rMap = new HashMap<>();
 					Map<String, BigDecimal> uMap = new HashMap<>();
-					
-					for(TradeProfit p : profitList) {
+
+					for (TradeProfit p : profitList) {
 						String name = "ACCOUNT".equals(groupBy)
 								? (p.accountName() != null ? p.accountName() : "Unknown")
 								: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
-						rMap.merge(name, p.realizedProfit() != null ? p.realizedProfit() : BigDecimal.ZERO, BigDecimal::add);
-						uMap.merge(name, p.evaluationProfit() != null ? p.evaluationProfit() : BigDecimal.ZERO, BigDecimal::add);
+						rMap.merge(name, p.realizedProfit() != null ? p.realizedProfit() : BigDecimal.ZERO,
+								BigDecimal::add);
+						uMap.merge(name, p.evaluationProfit() != null ? p.evaluationProfit() : BigDecimal.ZERO,
+								BigDecimal::add);
 					}
-					
+
 					java.util.Set<String> allKeys = new java.util.HashSet<>();
 					allKeys.addAll(rMap.keySet());
 					allKeys.addAll(uMap.keySet());
-					
-					for(String name : allKeys) {
+
+					for (String name : allKeys) {
 						BigDecimal r = rMap.getOrDefault(name, BigDecimal.ZERO);
 						BigDecimal u = uMap.getOrDefault(name, BigDecimal.ZERO);
 						BigDecimal total = r.add(u);
-						if(total.abs().compareTo(BigDecimal.ZERO) > 0) {
+						if (total.abs().compareTo(BigDecimal.ZERO) > 0) {
 							rows.add(new AnalyticsRow(timeLabel, name, r, u, total));
 						}
 					}
@@ -319,17 +331,19 @@ public class StockHtmxController {
 				// TOTAL: Snapshot (Default)
 				List<TradeProfit> profits = getEnrichedTradeProfits(request);
 				chartTitle = "매매/보유 손익 (" + (groupBy.equals("ACCOUNT") ? "계좌별" : "종목별") + ")";
-				keyLabel = "TOTAL"; 
+				keyLabel = "TOTAL";
 				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
 
 				Map<String, BigDecimal> realizedMap = new HashMap<>();
 				Map<String, BigDecimal> unrealizedMap = new HashMap<>();
-				
+
 				profits.forEach(p -> {
 					String name = "ACCOUNT".equals(groupBy) ? (p.accountName() != null ? p.accountName() : "Unknown")
 							: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
-					realizedMap.merge(name, p.realizedProfit() != null ? p.realizedProfit() : BigDecimal.ZERO, BigDecimal::add);
-					unrealizedMap.merge(name, p.evaluationProfit() != null ? p.evaluationProfit() : BigDecimal.ZERO, BigDecimal::add);
+					realizedMap.merge(name, p.realizedProfit() != null ? p.realizedProfit() : BigDecimal.ZERO,
+							BigDecimal::add);
+					unrealizedMap.merge(name, p.evaluationProfit() != null ? p.evaluationProfit() : BigDecimal.ZERO,
+							BigDecimal::add);
 				});
 
 				rows.addAll(realizedMap.keySet().stream()
@@ -341,11 +355,11 @@ public class StockHtmxController {
 						.sorted((a, b) -> b.total().compareTo(a.total()))
 						.limit(20)
 						.toList());
-				
+
 				labels = rows.stream().map(AnalyticsRow::subKey).toList();
 				List<BigDecimal> rData = rows.stream().map(AnalyticsRow::value1).toList();
 				List<BigDecimal> uData = rows.stream().map(AnalyticsRow::value2).toList();
-				
+
 				datasets.add(new ChartDataset("실현 손익", rData, "#4e79a7", "#4e79a7", 1, List.of()));
 				datasets.add(new ChartDataset("보유 손익", uData, "#f28e2b", "#f28e2b", 1, List.of()));
 			}
@@ -390,13 +404,13 @@ public class StockHtmxController {
 			} else {
 				// TOTAL
 				keyLabel = "전체";
-				chartTitle = "누적 배당 총합"; 
+				chartTitle = "누적 배당 총합";
 				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
 			}
 
 			List<DividendResponse> dividends = Optional.ofNullable(dividendClient.findDividends(request.toParams()))
 					.orElse(new ArrayList<>());
-			
+
 			// Resolve Names
 			final Map<UUID, String> stockNames = new HashMap<>();
 			final Map<UUID, String> accountNames = new HashMap<>();
@@ -452,7 +466,8 @@ public class StockHtmxController {
 						} else {
 							int m = Integer.parseInt(label.replace("월", ""));
 							pointSum = seriesData.stream()
-									.filter(d -> d.payDate().atZone(java.time.ZoneId.systemDefault()).getMonthValue() == m)
+									.filter(d -> d.payDate().atZone(java.time.ZoneId.systemDefault())
+											.getMonthValue() == m)
 									.map(d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO)
 									.reduce(BigDecimal.ZERO, BigDecimal::add);
 						}
@@ -461,29 +476,34 @@ public class StockHtmxController {
 					String color = palette.get(colorIdx++ % palette.size());
 					datasets.add(new ChartDataset(series, dataPoints, color, color, 2, List.of()));
 				}
-				
+
 				// Table Rows
-				for(int i=0; i<labels.size(); i++) {
+				for (int i = 0; i < labels.size(); i++) {
 					String timeLabel = labels.get(i);
 					Map<String, BigDecimal> periodMap = new HashMap<>();
-					
-					for(DividendResponse d : dividends) {
-						if(d.payDate() == null) continue;
+
+					for (DividendResponse d : dividends) {
+						if (d.payDate() == null)
+							continue;
 						boolean match = false;
 						if ("YEARLY".equals(timeScale)) {
-							if(d.payDate().atZone(java.time.ZoneId.systemDefault()).getYear() == Integer.parseInt(timeLabel)) match = true;
+							if (d.payDate().atZone(java.time.ZoneId.systemDefault()).getYear() == Integer
+									.parseInt(timeLabel))
+								match = true;
 						} else {
 							int m = Integer.parseInt(timeLabel.replace("월", ""));
-							if(d.payDate().atZone(java.time.ZoneId.systemDefault()).getMonthValue() == m) match = true;
+							if (d.payDate().atZone(java.time.ZoneId.systemDefault()).getMonthValue() == m)
+								match = true;
 						}
-						if(match) {
+						if (match) {
 							String sName = getSeriesName.apply(d);
-							periodMap.merge(sName, d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO, BigDecimal::add);
+							periodMap.merge(sName, d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO,
+									BigDecimal::add);
 						}
 					}
-					
+
 					periodMap.forEach((name, amount) -> {
-						if(amount.compareTo(BigDecimal.ZERO) > 0)
+						if (amount.compareTo(BigDecimal.ZERO) > 0)
 							rows.add(new AnalyticsRow(timeLabel, name, amount, BigDecimal.ZERO, amount));
 					});
 				}
@@ -494,7 +514,8 @@ public class StockHtmxController {
 						.collect(Collectors.groupingBy(
 								getSeriesName,
 								Collectors.reducing(BigDecimal.ZERO,
-										d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO, BigDecimal::add)));
+										d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO,
+										BigDecimal::add)));
 
 				rows.addAll(aggregated.entrySet().stream()
 						.map(e -> new AnalyticsRow("전체", e.getKey(), e.getValue(), BigDecimal.ZERO, e.getValue()))
@@ -536,11 +557,12 @@ public class StockHtmxController {
 
 		BigDecimal totalAsset = profitList.stream().map(TradeProfit::evaluationAmount).filter(Objects::nonNull)
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
-		
+
 		// Use NET Profit (after fees/tax)
 		BigDecimal totalRealizedVal = profitList.stream().map(TradeProfit::realizedProfitNet).filter(Objects::nonNull)
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
-		BigDecimal totalUnrealizedVal = profitList.stream().map(TradeProfit::evaluationProfitNet).filter(Objects::nonNull)
+		BigDecimal totalUnrealizedVal = profitList.stream().map(TradeProfit::evaluationProfitNet)
+				.filter(Objects::nonNull)
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
 
 		// Win Rate (Percentage of items with positive total profit)
@@ -553,7 +575,7 @@ public class StockHtmxController {
 		DividendRequest dividendRequest = new DividendRequest();
 		dividendRequest.setUserId(userId);
 		List<DividendResponse> dividendList = dividendClient.findDividends(dividendRequest.toParams());
-		
+
 		// Fill names for dividends
 		final Map<UUID, String> stockNames = new HashMap<>();
 		final Map<UUID, String> accountNames = new HashMap<>();
@@ -562,9 +584,11 @@ public class StockHtmxController {
 					.forEach(id -> stockNames.put(id,
 							stockItemClient.getStockItemById(id).map(StockItem::name).orElse(UNKNOWN_LABEL)));
 		}
-		// DividendResponse does not have accountName, and we group by Stock for Top List mostly.
+		// DividendResponse does not have accountName, and we group by Stock for Top
+		// List mostly.
 		// If we needed account names, we would just fetch them all for the user.
-		// accountClient.getAccountsByUserId(userId).forEach(a -> accountNames.put(a.id(), a.name()));
+		// accountClient.getAccountsByUserId(userId).forEach(a ->
+		// accountNames.put(a.id(), a.name()));
 
 		BigDecimal totalDividendVal = dividendList.stream().map(DividendResponse::grossAmount).filter(Objects::nonNull)
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -572,39 +596,39 @@ public class StockHtmxController {
 		// 3. Top Lists
 		// Top Buy (Purchase Amount - Net Cost)
 		List<TradeProfit> topBuying = profitList.stream()
-			.filter(p -> p.totalBuyCost() != null)
-			.sorted((p1, p2) -> p2.totalBuyCost().compareTo(p1.totalBuyCost()))
-			.limit(3)
-			.toList();
+				.filter(p -> p.totalBuyCost() != null)
+				.sorted((p1, p2) -> p2.totalBuyCost().compareTo(p1.totalBuyCost()))
+				.limit(3)
+				.toList();
 
 		// Top Realized Profit (Net)
 		List<TradeProfit> topRealized = profitList.stream()
-			.filter(p -> p.realizedProfitNet() != null)
-			.sorted((p1, p2) -> p2.realizedProfitNet().compareTo(p1.realizedProfitNet()))
-			.limit(3)
-			.toList();
+				.filter(p -> p.realizedProfitNet() != null)
+				.sorted((p1, p2) -> p2.realizedProfitNet().compareTo(p1.realizedProfitNet()))
+				.limit(3)
+				.toList();
 
-		// Top Dividend (Gross) - Need to aggregate by Stock/Account first? 
+		// Top Dividend (Gross) - Need to aggregate by Stock/Account first?
 		// Usually "Top Dividend Stocks". Group by Series Name.
 		Map<String, BigDecimal> dividendBySeries = new HashMap<>();
 		dividendList.forEach(d -> {
 			String name = d.stockItemName(); // Prefer stock name if available
-			if (name == null) name = stockNames.getOrDefault(d.stockItemId(), UNKNOWN_LABEL);
+			if (name == null)
+				name = stockNames.getOrDefault(d.stockItemId(), UNKNOWN_LABEL);
 			dividendBySeries.merge(name, d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO, BigDecimal::add);
 		});
-		
-		List<Map.Entry<String, BigDecimal>> topDividend = dividendBySeries.entrySet().stream()
-			.sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
-			.limit(3)
-			.toList();
 
+		List<Map.Entry<String, BigDecimal>> topDividend = dividendBySeries.entrySet().stream()
+				.sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
+				.limit(3)
+				.toList();
 
 		model.addAttribute("totalAsset", totalAsset);
 		model.addAttribute("totalRealizedProfit", totalRealizedVal);
 		model.addAttribute("totalUnrealizedProfit", totalUnrealizedVal);
 		model.addAttribute("totalDividend", totalDividendVal);
 		model.addAttribute("winRate", winRate);
-		
+
 		model.addAttribute("topBuying", topBuying);
 		model.addAttribute("topRealized", topRealized);
 		model.addAttribute("topDividend", topDividend);
@@ -761,7 +785,7 @@ public class StockHtmxController {
 					BigDecimal grossAmount = Optional.ofNullable(dividend.grossAmount()).orElse(BigDecimal.ZERO);
 					BigDecimal tax = Optional.ofNullable(dividend.tax()).orElse(BigDecimal.ZERO);
 					BigDecimal netAmount = Optional.ofNullable(dividend.netAmount()).orElse(grossAmount.subtract(tax));
-					
+
 					return new DividendView(
 							dividend.id(),
 							dividend.accountId(),
