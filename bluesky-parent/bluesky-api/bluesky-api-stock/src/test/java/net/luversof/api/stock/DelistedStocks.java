@@ -9,19 +9,19 @@ public enum DelistedStocks {
 	;
 	
 	private String market;
-	private String stockCode;
+	private String symbol;
 	
-	DelistedStocks(String market, String stockCode) {
+	DelistedStocks(String market, String symbol) {
 		this.market = market;
-		this.stockCode = stockCode;
+		this.symbol = symbol;
 	}
 	
 	public String getMarket() {
 		return market;
 	}
 	
-	public String getStockCode() {
-		return stockCode;
+	public String getSymbol() {
+		return symbol;
 	}
 
 }

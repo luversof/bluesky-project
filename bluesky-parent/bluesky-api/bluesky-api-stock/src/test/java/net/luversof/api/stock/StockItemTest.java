@@ -2,6 +2,7 @@ package net.luversof.api.stock;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -61,6 +62,16 @@ class StockItemTest implements GeneralTest {
 
 		var stockItemList = loadSpreadSheetStockItemList();
 
+		// 상장폐지종목 추가
+		for (var delistedStock : DelistedStocks.values()) {
+			var stockItem = new StockItem();
+			stockItem.setMarket(delistedStock.getMarket());
+			stockItem.setSymbol(delistedStock.getSymbol());
+			stockItem.setName(delistedStock.name());
+			
+			stockItemList.add(stockItem);
+		};
+
 		jdbcTemplate.batchUpdate(sql, stockItemList, stockItemList.size(), (ps, item) -> {
 			item.setId(UuidGeneratorUtil.getUuid());
 			ps.setObject(1, item.getId());
@@ -72,7 +83,7 @@ class StockItemTest implements GeneralTest {
 	
 	List<StockItem> loadSpreadSheetStockItemList() {
 		List<GoogleSheetsStockItem> stockItemList = googleSheetsTestService.getList(GoogleSheetsApiCase.GoogleSheetsStockItem);
-		return stockItemList.stream().map(x -> x.toStockItem()).toList();
+		return stockItemList.stream().map(x -> x.toStockItem()).collect(Collectors.toList());
 	}
 
 	List<StockItem> loadJsonStockItemList() throws StreamReadException, DatabindException, IOException {
