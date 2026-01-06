@@ -43,7 +43,7 @@ public class StockViewController {
 		// 종목 목록은 사용자와 무관하게 전체 리스트를 제공
 		var stockItems = stockItemClient.getStockItems();
 		model.addAttribute("stockItems", stockItems);
-		return "stock/index";
+		return "stock/htmx/dashboard";
 	}
 
 	@GetMapping("/dashboard")

@@ -51,152 +51,149 @@ public class StockHtmxController {
 	@Autowired
 	private DividendClient dividendClient;
 
-	@GetMapping("/calculateProfit")
-	public String calculateProfit(TradeProfitRequest request, Model model) {
-		// 로그인한 유저의 userId 설정
-		UUID userId = UserUtil.getUserId();
-		if (userId == null) {
-			model.addAttribute(ERROR_ATTRIBUTE, LOGIN_REQUIRED_MESSAGE);
-			return ERROR_VIEW;
-		}
-
-		// request에 userId 설정
-		request.setUserId(userId);
-
-		List<TradeProfit> tradeProfitList = tradeProfitClient.calculateProfit(request.toParams());
-
-		// Account와 StockItem 이름 정보 조회
-		Map<UUID, String> accountNames = tradeProfitList.stream()
-				.map(TradeProfit::accountId)
-				.filter(Objects::nonNull)
-				.distinct()
-				.collect(Collectors.toMap(
-						id -> id,
-						id -> accountClient.getAccountById(id)
-								.map(Account::name)
-								.orElse(UNKNOWN_LABEL)));
-
-		Map<UUID, String> stockItemNames = tradeProfitList.stream()
-				.map(TradeProfit::stockItemId)
-				.distinct()
-				.collect(Collectors.toMap(
-						id -> id,
-						id -> stockItemClient.getStockItemById(id)
-								.map(StockItem::name)
-								.orElse(UNKNOWN_LABEL)));
-
-		// TradeProfit에 이름 정보 추가
-		List<TradeProfit> enrichedList = tradeProfitList.stream()
-				.map(profit -> new TradeProfit(
-						profit.stockItemId(),
-						stockItemNames.get(profit.stockItemId()),
-						profit.accountId(),
-						profit.accountId() != null ? accountNames.get(profit.accountId()) : null,
-						profit.totalBuyAmount(),
-						profit.averageBuyPrice(),
-						profit.totalSellQuantity(),
-						profit.averageSellPrice(),
-						profit.totalSellAmount(),
-						profit.realizedProfit(),
-						profit.holdingQuantity(),
-						profit.currentPrice(),
-						profit.evaluationAmount(),
-						profit.evaluationProfit(),
-						profit.totalProfit(),
-						profit.totalBuyFee(),
-						profit.totalSellFee(),
-						profit.totalSellTax(),
-						profit.totalBuyCost(),
-						profit.totalSellProceeds(),
-						profit.averageBuyPriceNet(),
-						profit.averageSellPriceNet(),
-						profit.realizedProfitNet(),
-						profit.evaluationProfitNet(),
-						profit.totalProfitNet()))
-				.toList();
-
-		model.addAttribute("tradeProfitList", enrichedList);
-		return "stock/htmx/calculateProfit";
-	}
-
 	@GetMapping("/dashboard")
-	public String dashboard(TradeProfitRequest request, Model model) {
-		// 로그인한 유저의 userId 설정
-		UUID userId = UserUtil.getUserId();
-		if (userId == null) {
-			model.addAttribute(ERROR_ATTRIBUTE, LOGIN_REQUIRED_MESSAGE);
-			return ERROR_VIEW;
-		}
-
-		// request에 userId 설정
-		request.setUserId(userId);
-
-		// calculateProfit와 동일한 로직으로 데이터 조회 및 enrichment
-		List<TradeProfit> tradeProfitList = tradeProfitClient.calculateProfit(request.toParams());
-
-		Map<UUID, String> accountNames = tradeProfitList.stream()
-				.map(TradeProfit::accountId)
-				.filter(Objects::nonNull)
-				.distinct()
-				.collect(Collectors.toMap(
-						id -> id,
-						id -> accountClient.getAccountById(id)
-								.map(Account::name)
-								.orElse(UNKNOWN_LABEL)));
-
-		Map<UUID, String> stockItemNames = tradeProfitList.stream()
-				.map(TradeProfit::stockItemId)
-				.distinct()
-				.collect(Collectors.toMap(
-						id -> id,
-						id -> stockItemClient.getStockItemById(id)
-								.map(StockItem::name)
-								.orElse(UNKNOWN_LABEL)));
-
-		List<TradeProfit> enrichedList = tradeProfitList.stream()
-				.map(profit -> new TradeProfit(
-						profit.stockItemId(),
-						stockItemNames.get(profit.stockItemId()),
-						profit.accountId(),
-						profit.accountId() != null ? accountNames.get(profit.accountId()) : null,
-						profit.totalBuyAmount(),
-						profit.averageBuyPrice(),
-						profit.totalSellQuantity(),
-						profit.averageSellPrice(),
-						profit.totalSellAmount(),
-						profit.realizedProfit(),
-						profit.holdingQuantity(),
-						profit.currentPrice(),
-						profit.evaluationAmount(),
-						profit.evaluationProfit(),
-						profit.totalProfit(),
-						profit.totalBuyFee(),
-						profit.totalSellFee(),
-						profit.totalSellTax(),
-						profit.totalBuyCost(),
-						profit.totalSellProceeds(),
-						profit.averageBuyPriceNet(),
-						profit.averageSellPriceNet(),
-						profit.realizedProfitNet(),
-						profit.evaluationProfitNet(),
-						profit.totalProfitNet()))
-				.toList();
-
-		model.addAttribute("tradeProfitList", enrichedList);
-
-		// 계좌별 그룹화
-		Map<String, List<TradeProfit>> byAccount = enrichedList.stream()
-				.filter(tp -> tp.accountName() != null)
-				.collect(Collectors.groupingBy(TradeProfit::accountName));
-		model.addAttribute("tradeProfitByAccount", byAccount);
-
-		// 종목별 그룹화
-		Map<String, List<TradeProfit>> byStock = enrichedList.stream()
-				.collect(Collectors.groupingBy(TradeProfit::stockItemName));
-		model.addAttribute("tradeProfitByStock", byStock);
-
+	public String dashboard() {
 		return "stock/htmx/dashboard";
 	}
+
+	@GetMapping("/summary")
+	public String summary(TradeProfitRequest request, Model model) {
+		UUID userId = UserUtil.getUserId();
+		if (userId == null) return ERROR_VIEW;
+		request.setUserId(userId);
+
+		// 1. 자산/손익 데이터
+		List<TradeProfit> profitList = tradeProfitClient.calculateProfit(request.toParams());
+		BigDecimal totalAsset = profitList.stream().map(TradeProfit::evaluationAmount).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal totalRealizedVal = profitList.stream().map(TradeProfit::realizedProfit).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal totalUnrealizedVal = profitList.stream().map(TradeProfit::evaluationProfit).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+		// 2. 배당 데이터 (전체 기간 조회라 가정 - 필요시 날짜 필터링)
+		// DividendRequest 사용하여 전체 조회
+		DividendRequest dividendRequest = new DividendRequest();
+		dividendRequest.setUserId(userId);
+		List<DividendResponse> dividendList = dividendClient.findDividends(dividendRequest.toParams());
+		BigDecimal totalDividendVal = dividendList.stream().map(DividendResponse::price).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+		model.addAttribute("totalAsset", totalAsset);
+		model.addAttribute("totalRealizedProfit", totalRealizedVal);
+		model.addAttribute("totalUnrealizedProfit", totalUnrealizedVal);
+		model.addAttribute("totalDividend", totalDividendVal);
+
+		return "stock/htmx/fragments/summary :: summary";
+	}
+
+	@GetMapping("/charts/allocation")
+	public String allocationChart(TradeProfitRequest request, Model model) {
+		UUID userId = UserUtil.getUserId();
+		if (userId == null) return ERROR_VIEW;
+		request.setUserId(userId);
+
+		List<TradeProfit> profitList = getEnrichedTradeProfits(request);
+		
+		// 종목별 비중 (Top 5 + Others)
+		Map<String, BigDecimal> allocation = profitList.stream()
+			.filter(p -> p.evaluationAmount() != null)
+			.collect(Collectors.toMap(
+				p -> p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL,
+				TradeProfit::evaluationAmount,
+				BigDecimal::add
+			));
+		
+		model.addAttribute("allocation", allocation);
+		
+		return "stock/htmx/fragments/charts :: allocation";
+	}
+
+	@GetMapping("/charts/dividend")
+	public String dividendChart(Model model) {
+		UUID userId = UserUtil.getUserId();
+		if (userId == null) return ERROR_VIEW;
+		
+		DividendRequest request = new DividendRequest();
+		request.setUserId(userId);
+		List<DividendResponse> dividends = dividendClient.findDividends(request.toParams());
+
+		// 월별 그룹화 (최근 12개월 or 전체) - 여기서는 전체 월별 합계
+		Map<String, BigDecimal> monthly = dividends.stream()
+			.filter(d -> d.payDate() != null)
+			.collect(Collectors.groupingBy(
+				d -> d.payDate().atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM")),
+				Collectors.reducing(BigDecimal.ZERO, d -> d.price() != null ? d.price() : BigDecimal.ZERO, BigDecimal::add)
+			));
+		
+		// Map을 Key(년월) 순으로 정렬
+		Map<String, BigDecimal> sortedMonthly = new java.util.TreeMap<>(monthly);
+
+		model.addAttribute("monthlyDividends", sortedMonthly);
+		return "stock/htmx/fragments/charts :: dividend";
+	}
+	
+	@GetMapping("/portfolio")
+	public String portfolio(TradeProfitRequest request, Model model) {
+		UUID userId = UserUtil.getUserId();
+		if (userId == null) {
+			model.addAttribute(ERROR_ATTRIBUTE, LOGIN_REQUIRED_MESSAGE);
+			return ERROR_VIEW;
+		}
+		request.setUserId(userId);
+		List<TradeProfit> enrichedList = getEnrichedTradeProfits(request);
+		model.addAttribute("tradeProfitList", enrichedList);
+		return "stock/htmx/fragments/tabs :: portfolio";
+	}
+
+
+	// Helper to get enriched data
+	private List<TradeProfit> getEnrichedTradeProfits(TradeProfitRequest request) {
+		List<TradeProfit> tradeProfitList = tradeProfitClient.calculateProfit(request.toParams());
+
+		Map<UUID, String> accountNames = tradeProfitList.stream()
+				.map(TradeProfit::accountId)
+				.filter(Objects::nonNull)
+				.distinct()
+				.collect(Collectors.toMap(
+						id -> id,
+						id -> accountClient.getAccountById(id).map(Account::name).orElse(UNKNOWN_LABEL),
+						(a, b) -> a)); // duplicate handling
+
+		Map<UUID, String> stockItemNames = tradeProfitList.stream()
+				.map(TradeProfit::stockItemId)
+				.distinct()
+				.collect(Collectors.toMap(
+						id -> id,
+						id -> stockItemClient.getStockItemById(id).map(StockItem::name).orElse(UNKNOWN_LABEL),
+						(a, b) -> a)); // duplicate handling
+
+		return tradeProfitList.stream()
+				.map(profit -> new TradeProfit(
+						profit.stockItemId(),
+						stockItemNames.get(profit.stockItemId()),
+						profit.accountId(),
+						profit.accountId() != null ? accountNames.get(profit.accountId()) : null,
+						profit.totalBuyAmount(),
+						profit.averageBuyPrice(),
+						profit.totalSellQuantity(),
+						profit.averageSellPrice(),
+						profit.totalSellAmount(),
+						profit.realizedProfit(),
+						profit.holdingQuantity(),
+						profit.currentPrice(),
+						profit.evaluationAmount(),
+						profit.evaluationProfit(),
+						profit.totalProfit(),
+						profit.totalBuyFee(),
+						profit.totalSellFee(),
+						profit.totalSellTax(),
+						profit.totalBuyCost(),
+						profit.totalSellProceeds(),
+						profit.averageBuyPriceNet(),
+						profit.averageSellPriceNet(),
+						profit.realizedProfitNet(),
+						profit.evaluationProfitNet(),
+						profit.totalProfitNet()))
+				.toList();
+	}
+
 
 	@GetMapping("/dividend/list")
 	public String dividendList(DividendRequest request, Model model) {
@@ -248,7 +245,7 @@ public class StockHtmxController {
 				.toList();
 
 		model.addAttribute("dividendList", viewList);
-		return "stock/htmx/dividendList";
+		return "stock/htmx/fragments/tabs :: dividendHistory";
 	}
 
 }

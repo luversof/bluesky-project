@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="summary">
+    <div class="stats stats-vertical lg:stats-horizontal shadow w-full">
+        <div class="stat">
+            <div class="stat-title">Total Asset</div>
+            <div class="stat-value" th:text="${#numbers.formatDecimal(totalAsset, 0, 'COMMA', 0, 'POINT')}"></div>
+            <div class="stat-desc">Evaluation Amount</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-title">Realized Profit</div>
+            <div class="stat-value" th:classappend="${totalRealizedProfit >= 0} ? 'text-success' : 'text-error'"
+                 th:text="${#numbers.formatDecimal(totalRealizedProfit, 0, 'COMMA', 0, 'POINT')}"></div>
+            <div class="stat-desc">Sold Gains</div>
+        </div>
+        
+        <div class="stat">
+            <div class="stat-title">Unrealized Profit</div>
+             <div class="stat-value" th:classappend="${totalUnrealizedProfit >= 0} ? 'text-success' : 'text-error'"
+                 th:text="${#numbers.formatDecimal(totalUnrealizedProfit, 0, 'COMMA', 0, 'POINT')}"></div>
+            <div class="stat-desc">Current Holdings</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-title">Total Dividend</div>
+             <div class="stat-value text-info"
+                 th:text="${#numbers.formatDecimal(totalDividend, 0, 'COMMA', 0, 'POINT')}"></div>
+            <div class="stat-desc">Cumulative</div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

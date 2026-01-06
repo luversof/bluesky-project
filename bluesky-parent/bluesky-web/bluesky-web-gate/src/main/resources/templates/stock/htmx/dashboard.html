@@ -1,419 +1,59 @@
-<div data-th-if="${tradeProfitList == null || tradeProfitList.isEmpty()}" class="alert alert-warning">
-	<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-			d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-	</svg>
-	<span>조회된 데이터가 없습니다. 조건을 변경해보세요.</span>
+﻿<!DOCTYPE html>
+<html lang="ko" data-layout-decorate="~{_layout/stockLayout}">
+<head>
+    <title>Stock Dashboard</title>
+</head>
+<body>
+<div data-layout-fragment="content-stock">
+    <!-- Dashboard Layout -->
+    <div class="container mx-auto p-4 space-y-6">
+        
+        <!-- 1. Summary Cards (Lazy Load) -->
+        <div hx-get="/stock/htmx/summary" hx-trigger="load" hx-swap="innerHTML">
+            <div class="flex justify-center p-4">
+                <span class="loading loading-spinner loading-lg"></span>
+            </div>
+        </div>
+
+        <!-- 2. Charts (Lazy Load) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div hx-get="/stock/htmx/charts/allocation" hx-trigger="load" hx-swap="outerHTML">
+                <div class="skeleton h-64 w-full"></div>
+            </div>
+            <div hx-get="/stock/htmx/charts/dividend" hx-trigger="load" hx-swap="outerHTML">
+                <div class="skeleton h-64 w-full"></div>
+            </div>
+        </div>
+
+        <!-- 3. Details Tabs -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <div role="tablist" class="tabs tabs-boxed mb-4">
+                    <a role="tab" class="tab tab-active" 
+                    hx-get="/stock/htmx/portfolio" 
+                    hx-target="#tab-content" 
+                    hx-swap="innerHTML"
+                    onclick="document.querySelectorAll('.tab').forEach(t => t.classList.remove('tab-active')); this.classList.add('tab-active');">
+                    Portfolio
+                    </a>
+                    <a role="tab" class="tab" 
+                    hx-get="/stock/htmx/dividend/list" 
+                    hx-target="#tab-content" 
+                    hx-swap="innerHTML"
+                    onclick="document.querySelectorAll('.tab').forEach(t => t.classList.remove('tab-active')); this.classList.add('tab-active');">
+                    Dividend History
+                    </a>
+                </div>
+                
+                <div id="tab-content" hx-get="/stock/htmx/portfolio" hx-trigger="load">
+                    <div class="flex justify-center p-10">
+                        <span class="loading loading-dots loading-lg"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
 </div>
-
-<div data-th-if="${tradeProfitList != null && !tradeProfitList.isEmpty()}">
-	<!-- 탭 메뉴 -->
-	<div role="tablist" class="tabs tabs-boxed mb-6">
-		<a role="tab" class="tab tab-active" data-tab="overview">개요</a>
-		<a role="tab" class="tab" data-tab="account" data-th-if="${tradeProfitList[0].accountId() != null}">계좌별 분석</a>
-		<a role="tab" class="tab" data-tab="stock">종목별 분석</a>
-		<a role="tab" class="tab" data-tab="table">상세 테이블</a>
-	</div>
-
-		<!-- 평가 시세 데이터가 없을 때 사용자 안내 -->
-		<div class="alert alert-info mb-4">
-			<span class="text-sm">평가 데이터 없음(시세 미보유) — 현재가/평가 관련 항목은 숨겨져 있습니다.</span>
-		</div>
-
-	<!-- Overview 탭 -->
-	<div id="tab-overview" class="dashboard-tab-pane">
-		<!-- 전체 요약 카드 -->
-		<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-			<div class="stat bg-base-100 shadow-xl rounded-lg">
-				<div class="stat-figure text-primary">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-						class="inline-block w-8 h-8 stroke-current">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-							d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-					</svg>
-				</div>
-				<div class="stat-title">보유 종목 수</div>
-				<div class="stat-value text-primary" data-th-text="${tradeProfitList.size()}">0</div>
-			</div>
-
-			<div class="stat bg-base-100 shadow-xl rounded-lg">
-				<div class="stat-figure text-success">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-						class="inline-block w-8 h-8 stroke-current">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-							d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-					</svg>
-				</div>
-				<div class="stat-title">실현손익 (NET)</div>
-				<div class="stat-value text-2xl"
-					data-th-text="${#numbers.formatDecimal(#aggregates.sum(tradeProfitList.![realizedProfitNet]), 0, 'COMMA', 0, 'POINT')}"
-					data-th-classappend="${#aggregates.sum(tradeProfitList.![realizedProfitNet]) >= 0 ? 'text-success' : 'text-error'}">
-					0
-				</div>
-			</div>
-
-			<div class="stat bg-base-100 shadow-xl rounded-lg">
-				<div class="stat-figure text-info">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-						class="inline-block w-8 h-8 stroke-current">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-							d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
-						</path>
-					</svg>
-				</div>
-				<!-- 평가손익 관련 통계는 시세 데이터가 없을 때 정확하지 않아 숨김 -->
-			</div>
-
-			<div class="stat bg-base-100 shadow-xl rounded-lg">
-				<div class="stat-figure text-secondary">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-						class="inline-block w-8 h-8 stroke-current">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-							d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
-					</svg>
-				</div>
-				<div class="stat-title">총손익 (NET)</div>
-				<div class="stat-value text-2xl"
-					data-th-text="${#numbers.formatDecimal(#aggregates.sum(tradeProfitList.![totalProfitNet]), 0, 'COMMA', 0, 'POINT')}"
-					data-th-classappend="${#aggregates.sum(tradeProfitList.![totalProfitNet]) >= 0 ? 'text-success' : 'text-error'}">
-					0
-				</div>
-			</div>
-		</div>
-
-		<!-- 차트 영역 -->
-		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-			<!-- 손익 구성 파이차트 -->
-			<div class="card bg-base-100 shadow-xl">
-				<div class="card-body">
-					<h2 class="card-title">손익 구성</h2>
-					<canvas id="profitCompositionChart"></canvas>
-				</div>
-			</div>
-
-			<!-- 종목별 수익률 바차트 -->
-			<div class="card bg-base-100 shadow-xl">
-				<div class="card-body">
-					<h2 class="card-title">종목별 총손익 TOP 10</h2>
-					<canvas id="stockProfitChart"></canvas>
-				</div>
-			</div>
-		</div>
-
-		<!-- 계좌별 차트 (계좌별 그룹화인 경우만) -->
-		<div data-th-if="${tradeProfitList[0].accountId() != null}" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-			<div class="card bg-base-100 shadow-xl">
-				<div class="card-body">
-					<h2 class="card-title">계좌별 총손익</h2>
-					<canvas id="accountProfitChart"></canvas>
-				</div>
-			</div>
-
-			<div class="card bg-base-100 shadow-xl">
-				<div class="card-body">
-					<h2 class="card-title">계좌별 보유 종목 수</h2>
-					<canvas id="accountStockCountChart"></canvas>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<!-- 계좌별 분석 탭 -->
-	<div id="tab-account" class="dashboard-tab-pane hidden" data-th-if="${tradeProfitList[0].accountId() != null}">
-		<div class="space-y-6">
-			<div data-th-each="accountEntry : ${tradeProfitByAccount}"
-				class="card bg-base-100 shadow-xl">
-				<div class="card-body">
-					<h2 class="card-title text-2xl mb-4" data-th-text="${accountEntry.key}">계좌명</h2>
-
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-						<div class="stat bg-base-200 rounded-lg">
-							<div class="stat-title">보유 종목</div>
-							<div class="stat-value text-primary" data-th-text="${accountEntry.value.size()}">0</div>
-						</div>
-						<div class="stat bg-base-200 rounded-lg">
-							<div class="stat-title">실현손익</div>
-							<div class="stat-value text-xl"
-								data-th-text="${#numbers.formatDecimal(#aggregates.sum(accountEntry.value.![realizedProfitNet]), 0, 'COMMA', 0, 'POINT')}"
-								data-th-classappend="${#aggregates.sum(accountEntry.value.![realizedProfitNet]) >= 0 ? 'text-success' : 'text-error'}">
-								0
-							</div>
-						</div>
-							<div class="stat bg-base-200 rounded-lg">
-								<div class="stat-title">총손익</div>
-								<div class="stat-value text-xl"
-									data-th-text="${#numbers.formatDecimal(#aggregates.sum(accountEntry.value.![totalProfitNet]), 0, 'COMMA', 0, 'POINT')}"
-									data-th-classappend="${#aggregates.sum(accountEntry.value.![totalProfitNet]) >= 0 ? 'text-success' : 'text-error'}">
-									0
-								</div>
-							</div>
-					</div>
-
-					<div class="overflow-x-auto">
-						<table class="table table-sm">
-							<thead>
-								<tr>
-									<th>종목</th>
-									<th class="text-right">보유수량</th>
-									<!-- 평가금액 숨김 (시세 없음) -->
-									<th class="text-right">총손익</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr data-th-each="profit : ${accountEntry.value}">
-									<td data-th-text="${profit.stockItemName()}">-</td>
-									<td class="text-right"
-										data-th-text="${#numbers.formatInteger(profit.holdingQuantity(), 0, 'COMMA')}">0
-									</td>
-									<!-- 평가금액 숨김 (시세 없음) -->
-									<td class="text-right font-semibold"
-										data-th-text="${#numbers.formatDecimal(profit.totalProfitNet(), 0, 'COMMA', 0, 'POINT')}"
-										data-th-classappend="${profit.totalProfitNet() >= 0 ? 'text-success' : 'text-error'}">
-										0</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<!-- 종목별 분석 탭 -->
-	<div id="tab-stock" class="dashboard-tab-pane hidden">
-		<div class="space-y-6">
-			<div data-th-each="stockEntry : ${tradeProfitByStock}"
-				class="card bg-base-100 shadow-xl">
-				<div class="card-body">
-					<h2 class="card-title text-2xl mb-4" data-th-text="${stockEntry.key}">종목명</h2>
-
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-							<div class="stat bg-base-200 rounded-lg">
-								<div class="stat-title">총 보유수량</div>
-								<div class="stat-value text-lg"
-									data-th-text="${#numbers.formatInteger(#aggregates.sum(stockEntry.value.![holdingQuantity]), 0, 'COMMA')}">
-									0</div>
-							</div>
-							<div class="stat bg-base-200 rounded-lg">
-								<div class="stat-title">총손익</div>
-								<div class="stat-value text-lg"
-									data-th-text="${#numbers.formatDecimal(#aggregates.sum(stockEntry.value.![totalProfitNet]), 0, 'COMMA', 0, 'POINT')}"
-									data-th-classappend="${#aggregates.sum(stockEntry.value.![totalProfitNet]) >= 0 ? 'text-success' : 'text-error'}">
-									0</div>
-							</div>
-						</div>
-
-					<div data-th-if="${stockEntry.value.size() > 1}" class="overflow-x-auto">
-						<p class="text-sm text-gray-600 mb-2">계좌별 상세</p>
-						<table class="table table-sm">
-							<thead>
-								<tr>
-									<th>계좌</th>
-									<th class="text-right">보유수량</th>
-									<th class="text-right">평균매수가</th>
-									<th class="text-right">총손익</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr data-th-each="profit : ${stockEntry.value}">
-									<td data-th-text="${profit.accountName()}">-</td>
-									<td class="text-right"
-										data-th-text="${#numbers.formatInteger(profit.holdingQuantity(), 0, 'COMMA')}">0
-									</td>
-									<td class="text-right"
-										data-th-text="${#numbers.formatDecimal(profit.averageBuyPriceNet(), 0, 'COMMA', 2, 'POINT')}">
-										0</td>
-									<td class="text-right font-semibold"
-										data-th-text="${#numbers.formatDecimal(profit.totalProfitNet(), 0, 'COMMA', 0, 'POINT')}"
-										data-th-classappend="${profit.totalProfitNet() >= 0 ? 'text-success' : 'text-error'}">
-										0</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<!-- 상세 테이블 탭 -->
-	<div id="tab-table" class="dashboard-tab-pane hidden">
-		<div data-th-insert="~{stock/htmx/calculateProfit}"></div>
-	</div>
-
-	<!-- 차트 초기화 스크립트 -->
-	<script data-th-inline="javascript">
-		/*<![CDATA[*/
-		// HTMX로 로드된 콘텐츠이므로 즉시 실행
-		(function() {
-			const profitData = /*[[${tradeProfitList}]]*/ [];
-			
-			console.log('Dashboard loaded, profitData length:', profitData.length);
-
-			// 탭 전환 기능
-			document.querySelectorAll('[role="tab"]').forEach(function(tab) {
-				tab.addEventListener('click', function(e) {
-					e.preventDefault();
-					const targetTab = tab.dataset.tab;
-
-					// 모든 탭 비활성화
-					document.querySelectorAll('[role="tab"]').forEach(t => t.classList.remove('tab-active'));
-					document.querySelectorAll('.dashboard-tab-pane').forEach(c => c.classList.add('hidden'));
-
-					// 선택된 탭 활성화
-					tab.classList.add('tab-active');
-						document.getElementById('tab-' + targetTab).classList.remove('hidden');
-						});
-					});
-					
-			// 데이터가 없으면 차트 초기화 생략
-			if (!profitData || profitData.length === 0) {
-				console.warn('No profit data available for charts');
-				return;
-			}
-			
-			// Chart.js 로드 확인
-			if (typeof Chart === 'undefined') {
-				console.error('Chart.js is not loaded');
-				return;
-			}
-
-			// 1. 손익 구성 파이차트
-			const profitCompositionCanvas = document.getElementById('profitCompositionChart');
-			if (!profitCompositionCanvas) {
-				console.error('profitCompositionChart canvas not found');
-				return;
-			}
-			
-						const totalRealized = profitData.reduce(function(sum, p) { return sum + (p.realizedProfitNet || 0); }, 0);
-
-						var profitConfig = {
-							type: 'doughnut',
-							data: {
-								labels: ['실현손익'],
-								datasets: [{
-									data: [totalRealized],
-									backgroundColor: [ totalRealized >= 0 ? '#10b981' : '#ef4444' ]
-								}]
-							},
-							options: {
-								responsive: true,
-								plugins: {
-									legend: { position: 'bottom' },
-									tooltip: {
-										callbacks: {
-											label: function(context) {
-												var value = context.parsed;
-												return (context.label || '') + ': ' + (value != null ? value.toLocaleString('ko-KR') : '') + '원';
-											}
-										}
-									}
-								}
-							}
-
-							};
-
-							new Chart(profitCompositionCanvas, profitConfig);
-				// 2. 종목별 총손익 TOP 10
-			const sortedByProfit = [...profitData].sort(function(a, b) { return b.totalProfitNet - a.totalProfitNet; }).slice(0, 10);
-			new Chart(document.getElementById('stockProfitChart'), {
-				type: 'bar',
-				data: {
-					labels: sortedByProfit.map(function(p) { return p.stockItemName; }),
-					datasets: [{
-						label: '총손익 (NET)',
-						data: sortedByProfit.map(function(p) { return p.totalProfitNet; }),
-						backgroundColor: sortedByProfit.map(function(p) { return p.totalProfitNet >= 0 ? '#10b981' : '#ef4444'; })
-					}]
-				},
-				options: {
-					responsive: true,
-					indexAxis: 'y',
-					plugins: {
-						legend: { display: false },
-						tooltip: {
-							callbacks: {
-								label: function(context) { return context.parsed.x.toLocaleString('ko-KR') + '원'; }
-							}
-						}
-					},
-					scales: {
-						x: {
-							ticks: {
-								callback: function(value) { return value.toLocaleString('ko-KR'); }
-							}
-						}
-					}
-				}
-			});
-
-			// 3. 계좌별 차트 (계좌 정보가 있는 경우만)
-			if (profitData[0]?.accountId) {
-				const accountMap = {};
-				profitData.forEach(function(p) {
-					if (!accountMap[p.accountName]) {
-						accountMap[p.accountName] = { totalProfit: 0, count: 0 };
-					}
-					accountMap[p.accountName].totalProfit += p.totalProfitNet;
-					accountMap[p.accountName].count++;
-				});
-
-				const accountNames = Object.keys(accountMap);
-				const accountProfits = accountNames.map(function(name) { return accountMap[name].totalProfit; });
-				const accountCounts = accountNames.map(function(name) { return accountMap[name].count; });
-
-				// 계좌별 총손익
-				new Chart(document.getElementById('accountProfitChart'), {
-					type: 'bar',
-					data: {
-						labels: accountNames,
-						datasets: [{
-							label: '총손익 (NET)',
-							data: accountProfits,
-							backgroundColor: accountProfits.map(function(p) { return p >= 0 ? '#10b981' : '#ef4444'; })
-						}]
-					},
-					options: {
-						responsive: true,
-						plugins: {
-							legend: { display: false },
-							tooltip: {
-								callbacks: {
-									label: function(context) { return context.parsed.y.toLocaleString('ko-KR') + '원'; }
-								}
-							}
-						},
-						scales: {
-							y: {
-								ticks: {
-									callback: function(value) { return value.toLocaleString('ko-KR'); }
-								}
-							}
-						}
-					}
-				});
-
-				// 계좌별 보유 종목 수
-				new Chart(document.getElementById('accountStockCountChart'), {
-					type: 'pie',
-					data: {
-						labels: accountNames,
-						datasets: [{
-							data: accountCounts,
-							backgroundColor: [
-								'#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'
-							]
-						}]
-					},
-					options: {
-						responsive: true,
-						plugins: {
-							legend: { position: 'bottom' }
-						}
-					}
-				});
-			}
-		})(); // IIFE 종료
-		/*]]>*/
-	</script>
-</div>
+</body>
+</html>
