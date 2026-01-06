@@ -175,10 +175,12 @@ public class GoogleSheetsDividend {
 		var dividend = new Dividend();
 		dividend.setAccountId(accountId);
 		dividend.setStockItemId(stockItemId);
-		dividend.setPrice(get배당금() == null ? BigDecimal.ZERO : get배당금());
-		dividend.setTax(get세금() == null ? BigDecimal.ZERO : get세금());
 		dividend.setType("DIVIDEND");
 		dividend.setQuantity(0);
+		dividend.setAmountPerShare(배당금);
+		dividend.setTaxPerShare(주당과세표준액);
+		dividend.setGrossAmount(get배당금() == null ? BigDecimal.ZERO : get배당금());
+		dividend.setTax(get세금() == null ? BigDecimal.ZERO : get세금());
 		dividend.setFee(BigDecimal.ZERO);
 		dividend.setRecordDate(payDate);
 		dividend.setPayDate(payDate);

@@ -7,6 +7,7 @@ import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record DividendResponse(UUID id, UUID accountId, UUID stockItemId, String stockItemName, String type, Integer quantity, BigDecimal price, BigDecimal fee, BigDecimal tax,
+public record DividendResponse(UUID id, UUID accountId, UUID stockItemId, String stockItemName, String type, Integer quantity,
+		BigDecimal amountPerShare, BigDecimal taxPerShare, BigDecimal grossAmount, BigDecimal fee, BigDecimal tax,
 		Instant recordDate, Instant payDate) {
 }

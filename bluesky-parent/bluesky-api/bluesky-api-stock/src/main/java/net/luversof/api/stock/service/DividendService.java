@@ -32,7 +32,8 @@ public class DividendService {
 		}
 
 		StringBuilder sql = new StringBuilder()
-				.append("SELECT d.\"id\" as \"id\", d.\"account_id\" as \"accountId\", d.\"stockItem_id\" as \"stockItemId\", si.\"name\" as \"stockItemName\", d.\"type\" as \"type\", d.\"quantity\" as \"quantity\", d.\"price\" as \"price\", ")
+				.append("SELECT d.\"id\" as \"id\", d.\"account_id\" as \"accountId\", d.\"stockItem_id\" as \"stockItemId\", si.\"name\" as \"stockItemName\", d.\"type\" as \"type\", d.\"quantity\" as \"quantity\", ")
+				.append("d.\"amountPerShare\" as \"amountPerShare\", d.\"taxPerShare\" as \"taxPerShare\", d.\"grossAmount\" as \"grossAmount\", ")
 				.append("d.\"fee\" as \"fee\", d.\"tax\" as \"tax\", d.\"recordDate\" as \"recordDate\", d.\"payDate\" as \"payDate\" ")
 				.append("FROM \"Dividend\" d ")
 				.append("JOIN \"Account\" a ON d.\"account_id\" = a.\"id\" ")

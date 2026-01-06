@@ -3,9 +3,7 @@ package net.luversof.web.gate.stock.controller;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +11,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -280,9 +277,9 @@ public class StockHtmxController {
 				}
 
 				// Build Single Dataset for Profit
-				// labels = rows.stream().map(AnalyticsRow::key).toList();
-				// List<BigDecimal> data = rows.stream().map(AnalyticsRow::value).toList();
-				// datasets.add(new ChartDataset("손익", data, null, null, null));
+				labels = rows.stream().map(AnalyticsRow::key).toList();
+				List<BigDecimal> data = rows.stream().map(AnalyticsRow::value).toList();
+				datasets.add(new ChartDataset("손익", data, null, null, null));
 			}
 
 			// --- 2. DIVIDEND LOGIC ---
@@ -363,10 +360,10 @@ public class StockHtmxController {
 				List<String> topSeries = bySeries.entrySet().stream()
 						.sorted((a, b) -> {
 							BigDecimal sumA = a.getValue().stream()
-									.map(d -> d.price() != null ? d.price() : BigDecimal.ZERO)
+									.map(d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO)
 									.reduce(BigDecimal.ZERO, BigDecimal::add);
 							BigDecimal sumB = b.getValue().stream()
-									.map(d -> d.price() != null ? d.price() : BigDecimal.ZERO)
+									.map(d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO)
 									.reduce(BigDecimal.ZERO, BigDecimal::add);
 							return sumB.compareTo(sumA);
 						})
@@ -387,7 +384,7 @@ public class StockHtmxController {
 							int y = Integer.parseInt(label);
 							pointSum = seriesData.stream()
 									.filter(d -> d.payDate().atZone(java.time.ZoneId.systemDefault()).getYear() == y)
-									.map(d -> d.price() != null ? d.price() : BigDecimal.ZERO)
+									.map(d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO)
 									.reduce(BigDecimal.ZERO, BigDecimal::add);
 						} else {
 							// Label is Month String "1월"
@@ -395,7 +392,7 @@ public class StockHtmxController {
 							pointSum = seriesData.stream()
 									.filter(d -> d.payDate().atZone(java.time.ZoneId.systemDefault())
 											.getMonthValue() == m)
-									.map(d -> d.price() != null ? d.price() : BigDecimal.ZERO)
+									.map(d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO)
 									.reduce(BigDecimal.ZERO, BigDecimal::add);
 						}
 						dataPoints.add(pointSum);
@@ -422,7 +419,7 @@ public class StockHtmxController {
 						.collect(Collectors.groupingBy(
 								getSeriesName,
 								Collectors.reducing(BigDecimal.ZERO,
-										d -> d.price() != null ? d.price() : BigDecimal.ZERO, BigDecimal::add)));
+										d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO, BigDecimal::add)));
 
 				rows = aggregated.entrySet().stream()
 						.map(e -> new AnalyticsRow(e.getKey(), e.getValue()))
@@ -485,7 +482,7 @@ public class StockHtmxController {
 		DividendRequest dividendRequest = new DividendRequest();
 		dividendRequest.setUserId(userId);
 		List<DividendResponse> dividendList = dividendClient.findDividends(dividendRequest.toParams());
-		BigDecimal totalDividendVal = dividendList.stream().map(DividendResponse::price).filter(Objects::nonNull)
+		BigDecimal totalDividendVal = dividendList.stream().map(DividendResponse::grossAmount).filter(Objects::nonNull)
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
 
 		model.addAttribute("totalAsset", totalAsset);
@@ -536,7 +533,7 @@ public class StockHtmxController {
 				.collect(Collectors.groupingBy(
 						d -> d.payDate().atZone(java.time.ZoneId.systemDefault())
 								.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM")),
-						Collectors.reducing(BigDecimal.ZERO, d -> d.price() != null ? d.price() : BigDecimal.ZERO,
+						Collectors.reducing(BigDecimal.ZERO, d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO,
 								BigDecimal::add)));
 
 		// Map을 Key(년월) 순으로 정렬
@@ -570,7 +567,7 @@ public class StockHtmxController {
 				.collect(Collectors.toMap(
 						id -> id,
 						id -> accountClient.getAccountById(id).map(Account::name).orElse(UNKNOWN_LABEL),
-						(a, b) -> a)); // duplicate handling
+						(a, _) -> a)); // duplicate handling
 
 		Map<UUID, String> stockItemNames = tradeProfitList.stream()
 				.map(TradeProfit::stockItemId)
@@ -578,7 +575,7 @@ public class StockHtmxController {
 				.collect(Collectors.toMap(
 						id -> id,
 						id -> stockItemClient.getStockItemById(id).map(StockItem::name).orElse(UNKNOWN_LABEL),
-						(a, b) -> a)); // duplicate handling
+						(a, _) -> a)); // duplicate handling
 
 		return tradeProfitList.stream()
 				.map(profit -> new TradeProfit(
@@ -643,7 +640,7 @@ public class StockHtmxController {
 							.orElse(Optional.ofNullable(dividend.stockItemId())
 									.map(id -> stockItemNames.getOrDefault(id, UNKNOWN_LABEL))
 									.orElse(UNKNOWN_LABEL));
-					BigDecimal price = Optional.ofNullable(dividend.price()).orElse(BigDecimal.ZERO);
+					BigDecimal grossAmount = Optional.ofNullable(dividend.grossAmount()).orElse(BigDecimal.ZERO);
 					BigDecimal tax = Optional.ofNullable(dividend.tax()).orElse(BigDecimal.ZERO);
 					return new DividendView(
 							dividend.id(),
@@ -651,9 +648,9 @@ public class StockHtmxController {
 							accountName,
 							dividend.stockItemId(),
 							stockItemName,
-							price,
+							grossAmount,
 							tax,
-							price.subtract(tax),
+							grossAmount.subtract(tax),
 							dividend.recordDate(),
 							dividend.payDate());
 				})

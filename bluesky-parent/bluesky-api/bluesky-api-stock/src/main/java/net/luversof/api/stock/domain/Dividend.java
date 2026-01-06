@@ -35,14 +35,20 @@ public class Dividend {
 	@Column("quantity")
 	private Integer quantity;
 
-	@Column("price")
-	private BigDecimal price;
+	@Column("amountPerShare")
+	private BigDecimal amountPerShare;	// 주당 배당금 (예: 100원)
+
+	@Column("taxPerShare")
+	private BigDecimal taxPerShare;		// 주당 과세금 (예: 15.4원)
+
+	@Column("grossAmount")
+	private BigDecimal grossAmount;		// 세전 배당금 총액 ( = quantity * amountPerShare )
+	
+	@Column("tax")
+	private BigDecimal tax;				// 세금 총액 ( = quantity * taxPerShare, 원단위 절사 등 고려하여 별도 저장 추천)
 
 	@Column("fee")
-	private BigDecimal fee;
-
-	@Column("tax")
-	private BigDecimal tax;
+	private BigDecimal fee;				// 기타 수수료
 
 	@Column("recordDate")
 	private Instant recordDate; // 배당기준일
@@ -98,12 +104,28 @@ public class Dividend {
 		this.quantity = quantity;
 	}
 
-	public BigDecimal getPrice() {
-		return price;
+	public BigDecimal getAmountPerShare() {
+		return amountPerShare;
 	}
 
-	public void setPrice(BigDecimal price) {
-		this.price = price;
+	public void setAmountPerShare(BigDecimal amountPerShare) {
+		this.amountPerShare = amountPerShare;
+	}
+
+	public BigDecimal getTaxPerShare() {
+		return taxPerShare;
+	}
+
+	public void setTaxPerShare(BigDecimal taxPerShare) {
+		this.taxPerShare = taxPerShare;
+	}
+
+	public BigDecimal getGrossAmount() {
+		return grossAmount;
+	}
+
+	public void setGrossAmount(BigDecimal grossAmount) {
+		this.grossAmount = grossAmount;
 	}
 
 	public BigDecimal getFee() {
@@ -149,7 +171,10 @@ public class Dividend {
 		Dividend other = (Dividend) obj;
 		return Objects.equals(accountId, other.accountId) && Objects.equals(fee, other.fee)
 				&& Objects.equals(id, other.id) && Objects.equals(payDate, other.payDate)
-				&& Objects.equals(price, other.price) && Objects.equals(quantity, other.quantity)
+				&& Objects.equals(amountPerShare, other.amountPerShare)
+				&& Objects.equals(taxPerShare, other.taxPerShare)
+				&& Objects.equals(grossAmount, other.grossAmount)
+				&& Objects.equals(quantity, other.quantity)
 				&& Objects.equals(recordDate, other.recordDate) && Objects.equals(stockItemId, other.stockItemId)
 				&& Objects.equals(stockItemName, other.stockItemName) && Objects.equals(tax, other.tax)
 				&& Objects.equals(type, other.type);
@@ -157,14 +182,15 @@ public class Dividend {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(accountId, fee, id, payDate, price, quantity, recordDate, stockItemId, stockItemName, tax,
+		return Objects.hash(accountId, fee, id, payDate, amountPerShare, taxPerShare, grossAmount, quantity, recordDate, stockItemId, stockItemName, tax,
 				type);
 	}
 
 	@Override
 	public String toString() {
 		return "Dividend [id=" + id + ", accountId=" + accountId + ", stockItemId=" + stockItemId + ", stockItemName="
-				+ stockItemName + ", type=" + type + ", quantity=" + quantity + ", price=" + price + ", fee=" + fee
+				+ stockItemName + ", type=" + type + ", quantity=" + quantity + ", amountPerShare=" + amountPerShare
+				+ ", taxPerShare=" + taxPerShare + ", grossAmount=" + grossAmount + ", fee=" + fee
 				+ ", tax=" + tax + ", recordDate=" + recordDate + ", payDate=" + payDate + "]";
 	}
 }

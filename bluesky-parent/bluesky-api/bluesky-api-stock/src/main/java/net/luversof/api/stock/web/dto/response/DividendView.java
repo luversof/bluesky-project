@@ -13,7 +13,7 @@ public record DividendView(
     String accountName,
     UUID stockItemId,
     String stockItemName,
-    BigDecimal price,
+    BigDecimal grossAmount,
     BigDecimal tax,
     BigDecimal netAmount,
     Instant recordDate,
