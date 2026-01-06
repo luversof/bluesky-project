@@ -12,61 +12,54 @@
                   hx-get="/stock/htmx/analytics/data" 
                   hx-target="#analytics-content" 
                   hx-trigger="submit, change delay:200ms, load"
-                  class="flex flex-col gap-4">
+                  class="flex flex-col gap-3">
 
-                <!-- Level 1: Main Category (Tab Style) -->
-                <div class="tabs tabs-boxed w-full grid grid-cols-2">
-                    <input type="radio" name="type" value="PROFIT" class="tab col-span-1" aria-label="매매/보유 손익" checked 
-                           onclick="document.getElementById('period-monthly').disabled = false;"/>
-                    <input type="radio" name="type" value="DIVIDEND" class="tab col-span-1" aria-label="배당 내역"
-                           onclick="document.getElementById('period-monthly').disabled = false;"/>
-                </div>
-
-                <!-- Level 2 & 3 Container -->
-                <div class="flex flex-wrap gap-4 items-center justify-between bg-base-200 p-3 rounded-lg">
+                <!-- Top Control Panel -->
+                <div class="flex flex-col xl:flex-row items-center justify-between gap-4 p-4 bg-base-200 rounded-box shadow-sm">
                     
-                    <!-- Level 2: Time Period -->
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-bold opacity-60 ml-1">기간 기준</span>
-                        <div class="join">
-                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="TOTAL" aria-label="누적(전체)" checked 
-                                   onclick="updateAnalyticsFilters()"/>
-                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="YEARLY" aria-label="연도별" 
-                                   onclick="updateAnalyticsFilters()"/>
-                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="MONTHLY" id="period-monthly" aria-label="월별" 
-                                   onclick="updateAnalyticsFilters()"/>
+                    <!-- Left: Type & Period -->
+                    <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-4 w-full xl:w-auto">
+                        <!-- Type -->
+                        <div class="join shadow-sm">
+                            <input class="join-item btn btn-sm" type="radio" name="type" value="PROFIT" aria-label="매매/보유 손익" checked onclick="updateAnalyticsFilters()"/>
+                            <input class="join-item btn btn-sm" type="radio" name="type" value="DIVIDEND" aria-label="배당 내역" onclick="updateAnalyticsFilters()"/>
+                        </div>
+                        
+                        <!-- Separator (Visual) -->
+                        <div class="hidden sm:block w-px h-6 bg-base-content/20"></div>
+
+                        <!-- Period -->
+                        <div class="join shadow-sm">
+                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="TOTAL" aria-label="누적(전체)" checked onclick="updateAnalyticsFilters()"/>
+                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="YEARLY" aria-label="연도별" onclick="updateAnalyticsFilters()"/>
+                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="MONTHLY" id="period-monthly" aria-label="월별" onclick="updateAnalyticsFilters()"/>
                         </div>
                     </div>
 
-                    <!-- Level 3: Grouping -->
-                    <div class="flex flex-col gap-1">
-                        <span class="text-xs font-bold opacity-60 ml-1">보기 기준</span>
-                        <div class="join">
-                            <input class="join-item btn btn-sm" type="radio" name="groupBy" value="STOCK" aria-label="종목별" checked 
-                                   onclick="updateAnalyticsFilters()"/>
-                            <input class="join-item btn btn-sm" type="radio" name="groupBy" value="ACCOUNT" aria-label="계좌별" 
-                                   onclick="updateAnalyticsFilters()"/>
+                    <!-- Right: Grouping & Selects -->
+                    <div class="flex flex-wrap items-center justify-center gap-2 w-full xl:w-auto">
+                        <!-- Grouping -->
+                        <div class="join shadow-sm mr-2">
+                            <input class="join-item btn btn-sm" type="radio" name="groupBy" value="STOCK" aria-label="종목별" checked onclick="updateAnalyticsFilters()"/>
+                            <input class="join-item btn btn-sm" type="radio" name="groupBy" value="ACCOUNT" aria-label="계좌별" onclick="updateAnalyticsFilters()"/>
                         </div>
+
+                        <!-- Year Filter -->
+                        <select name="year" id="filter-year" class="select select-bordered select-sm w-24" style="display:none;" onchange="updateAnalyticsFilters()">
+                            <option value="2026">2026년</option>
+                            <option value="2025" selected>2025년</option>
+                            <option value="2024">2024년</option>
+                        </select>
+
+                        <!-- Account Filter -->
+                        <select name="accountId" id="filter-account" class="select select-bordered select-sm w-full sm:w-auto max-w-xs" onchange="updateAnalyticsFilters()">
+                            <option value="">전체 계좌</option>
+                            <option th:each="acc : ${accounts}" 
+                                    th:value="${acc.id}" 
+                                    th:text="${acc.name}">계좌명</option>
+                        </select>
                     </div>
 
-                </div>
-
-                <!-- Additional Options: Year & Specific Account Filter -->
-                <div class="flex flex-wrap gap-2 items-center justify-end text-sm">
-                    <!-- Year: Active only when Monthly/Yearly is related, but good to keep as scope -->
-                    <select name="year" id="filter-year" class="select select-bordered select-xs" style="display:none;">
-                        <option value="2026">2026년</option>
-                        <option value="2025" selected>2025년</option>
-                        <option value="2024">2024년</option>
-                    </select>
-
-                    <!-- Account Filter -->
-                    <select name="accountId" id="filter-account" class="select select-bordered select-xs max-w-xs">
-                        <option value="">전체 계좌 포함</option>
-                        <option th:each="acc : ${accounts}" 
-                                th:value="${acc.id}" 
-                                th:text="${acc.name}">계좌명</option>
-                    </select>
                 </div>
 
                 <script>
@@ -134,7 +127,9 @@
                         <th th:if="${subKeyLabel != null}" th:text="${subKeyLabel}">세부</th>
                         <th class="text-right" th:text="${value1Label}">금액1</th>
                         <th class="text-right" th:if="${value2Label != null && !value2Label.isEmpty()}" th:text="${value2Label}">금액2</th>
-                        <th class="text-right">합계</th>
+                        <th class="text-right" th:if="${value3Label != null && !value3Label.isEmpty()}" th:text="${value3Label}">금액3</th>
+                        <th class="text-right" th:if="${value4Label != null && !value4Label.isEmpty()}" th:text="${value4Label}">금액4</th>
+                        <th class="text-right" th:if="${totalLabel != null && !totalLabel.isEmpty()}" th:text="${totalLabel}">합계</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -157,15 +152,31 @@
                             0
                         </td>
 
-                        <!-- Total -->
+                        <!-- Value 3 (Optional) -->
+                       <td class="text-right font-mono" 
+                            th:if="${value3Label != null && !value3Label.isEmpty()}" 
+                            th:text="${#numbers.formatDecimal(row.value3, 0, 'COMMA', 0, 'POINT')}"
+                            th:classappend="${row.value3 >= 0} ? 'text-accent' : 'text-error'">
+                            0
+                        </td>
+
+                        <!-- Value 4 (Optional) -->
+                       <td class="text-right font-mono" 
+                            th:if="${value4Label != null && !value4Label.isEmpty()}" 
+                            th:text="${#numbers.formatDecimal(row.value4, 0, 'COMMA', 0, 'POINT')}">
+                            0
+                        </td>
+
+                        <!-- Total (Conditional) -->
                         <td class="text-right font-bold text-base-content" 
-                             th:text="${#numbers.formatDecimal(row.total, 0, 'COMMA', 0, 'POINT')}"
-                              th:classappend="${row.total >= 0} ? 'text-success' : 'text-error'">
+                             th:if="${totalLabel != null && !totalLabel.isEmpty()}"
+                             th:text="${#numbers.formatDecimal(row.value4 != null ? row.value2 : (row.total != null ? row.total : 0), 0, 'COMMA', 0, 'POINT')}"
+                              th:classappend="${(row.value4 != null ? row.value2 : (row.total != null ? row.total : 0)) >= 0 ? 'text-success' : 'text-error'}">
                              0
                         </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(tableData)}">
-                        <td colspan="5" class="text-center py-10 text-base-content/50">
+                        <td colspan="7" class="text-center py-10 text-base-content/50">
                             <div>데이터가 없습니다.</div>
                             <div class="text-xs mt-1">기간이나 조건을 변경해보세요.</div>
                         </td>
@@ -176,9 +187,9 @@
                     <tr class="bg-base-200 font-bold">
                         <td th:colspan="${subKeyLabel != null ? 2 : 1}">합계</td>
                         
-                        <!-- Total Value 1 -->
-                        <td class="text-right text-primary" 
-                            th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value1]), 0, 'COMMA', 0, 'POINT')}">
+                         <!-- Total Value 1 -->
+                         <td class="text-right text-primary" 
+                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value1]), 0, 'COMMA', 0, 'POINT')}">
                         </td>
 
                          <!-- Total Value 2 -->
@@ -187,8 +198,21 @@
                              th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value2]), 0, 'COMMA', 0, 'POINT')}">
                         </td>
 
-                        <!-- Grand Total -->
-                        <td class="text-right text-base-content" 
+                         <!-- Total Value 3 -->
+                         <td class="text-right text-accent" 
+                             th:if="${value3Label != null && !value3Label.isEmpty()}"
+                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value3]), 0, 'COMMA', 0, 'POINT')}">
+                        </td>
+
+                         <!-- Total Value 4 -->
+                         <td class="text-right" 
+                             th:if="${value4Label != null && !value4Label.isEmpty()}"
+                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value4]), 0, 'COMMA', 0, 'POINT')}">
+                        </td>
+
+                        <!-- Grand Total (Conditional) -->
+                        <td class="text-right text-base-content font-bold" 
+                            th:if="${totalLabel != null && !totalLabel.isEmpty()}"
                             th:text="${#numbers.formatDecimal(totalValue, 0, 'COMMA', 0, 'POINT')}"
                             th:classappend="${totalValue >= 0} ? 'text-success' : 'text-error'">
                         </td>

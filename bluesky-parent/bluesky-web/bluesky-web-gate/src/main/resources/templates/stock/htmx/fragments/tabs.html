@@ -43,9 +43,10 @@
                 <th>지급일</th>
                 <th>계좌</th>
                 <th>종목명</th>
-                <th class="text-right">세전금액</th>
+                <th class="text-right">배당금(세전)</th>
+                <th class="text-right">배당금(세후)</th>
                 <th class="text-right">세금</th>
-                <th class="text-right">세후금액</th>
+                <th class="text-right">과세금액</th>
             </tr>
             </thead>
             <tbody>
@@ -54,8 +55,9 @@
                 <td th:text="${item.accountName}"></td>
                 <td class="font-bold" th:text="${item.stockItemName}"></td>
                 <td class="text-right" th:text="${#numbers.formatDecimal(item.grossAmount, 0, 'COMMA', 0, 'POINT')}"></td>
-                <td class="text-right" th:text="${#numbers.formatDecimal(item.tax, 0, 'COMMA', 0, 'POINT')}"></td>
                 <td class="text-right text-primary font-bold" th:text="${#numbers.formatDecimal(item.netAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+                <td class="text-right" th:text="${#numbers.formatDecimal(item.tax, 0, 'COMMA', 0, 'POINT')}"></td>
+                <td class="text-right" th:text="${#numbers.formatDecimal(item.taxableAmount, 0, 'COMMA', 0, 'POINT')}"></td>
             </tr>
             </tbody>
         </table>

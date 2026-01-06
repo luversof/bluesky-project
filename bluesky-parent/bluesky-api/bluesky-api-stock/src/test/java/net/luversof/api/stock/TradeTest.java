@@ -96,7 +96,7 @@ class TradeTest implements GeneralTest {
 					log.debug("Created new account: {} with id: {}", accountName, savedAccount.getId());
 				});
 
-		// tradeCsvRecordList를 trade로 변환
+		// googleSheetsTradeList를 tradeList로 변환
 		var tradeList = googleSheetsTradeList
 				.stream()
 				.map(t -> {

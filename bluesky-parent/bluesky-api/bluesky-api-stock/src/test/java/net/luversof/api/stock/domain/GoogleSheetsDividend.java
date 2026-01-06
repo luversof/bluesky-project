@@ -176,7 +176,7 @@ public class GoogleSheetsDividend {
 		dividend.setAccountId(accountId);
 		dividend.setStockItemId(stockItemId);
 		dividend.setType("DIVIDEND");
-		dividend.setQuantity(0);
+		dividend.setQuantity(주식수);
 		dividend.setAmountPerShare(배당금);
 		dividend.setTaxPerShare(주당과세표준액);
 		dividend.setGrossAmount(get배당금() == null ? BigDecimal.ZERO : get배당금());

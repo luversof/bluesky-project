@@ -15,6 +15,7 @@ import io.github.luversof.boot.uuid.UuidGeneratorUtil;
 import net.luversof.GeneralTest;
 import net.luversof.api.stock.domain.GoogleSheetsStockItem;
 import net.luversof.api.stock.domain.StockItem;
+import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.service.GoogleSheetsTestService;
 import net.luversof.api.stock.service.StockItemService;
 import tools.jackson.core.exc.StreamReadException;
@@ -31,6 +32,9 @@ class StockItemTest implements GeneralTest {
 
 	@Autowired
 	StockItemService stockItemService;
+	
+	@Autowired
+	StockItemRepository stockItemRepository;
 	
 	@Autowired
 	private GoogleSheetsTestService googleSheetsTestService;
@@ -51,6 +55,8 @@ class StockItemTest implements GeneralTest {
 
 	@Test
 	void stockItemBulkInsert() {
+		stockItemRepository.deleteAll();
+		
 		String sql = """
 				INSERT INTO "StockItem" (id, symbol, name, market)
 				VALUES (?, ?, ?, ?)

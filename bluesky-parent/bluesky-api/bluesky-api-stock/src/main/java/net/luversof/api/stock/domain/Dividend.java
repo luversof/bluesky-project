@@ -54,7 +54,7 @@ public class Dividend {
 	private BigDecimal grossAmount;
 
 	/**
-	 * 세금 총액 ( = quantity * taxPerShare, 원단위 절사 등 고려하여 별도 저장 추천)
+	 * 세금 총액
 	 */
 	@Column("tax")
 	private BigDecimal tax;

@@ -56,7 +56,8 @@ public class StockHtmxController {
 	@Autowired
 	private DividendClient dividendClient;
 
-	private record AnalyticsRow(String key, String subKey, BigDecimal value1, BigDecimal value2, BigDecimal total) {
+	private record AnalyticsRow(String key, String subKey, BigDecimal value1, BigDecimal value2, BigDecimal value3,
+			BigDecimal value4) {
 	}
 
 	private record ChartDataset(String label, List<BigDecimal> data, String backgroundColor, String borderColor,
@@ -96,13 +97,17 @@ public class StockHtmxController {
 		List<AnalyticsRow> rows = new ArrayList<>();
 		List<String> labels = new ArrayList<>();
 		List<ChartDataset> datasets = new ArrayList<>();
+		// Common Variables
+		String chartTitle = "";
 		String keyLabel = "";
-		String subKeyLabel = "";
-		String value1Label = "";
-		String value2Label = "";
+		String subKeyLabel = null;
+		String value1Label = "거래손익"; // Default
+		String value2Label = "평가손익"; // Default
+		String value3Label = null;
+		String value4Label = null;
+		String totalLabel = "합계";
 
 		String chartType = "bar";
-		String chartTitle = "";
 
 		List<String> palette = List.of("#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f", "#edc948", "#b07aa1",
 				"#ff9da7", "#9c755f", "#bab0ac");
@@ -111,6 +116,9 @@ public class StockHtmxController {
 		if ("PROFIT".equals(type)) {
 			value1Label = "실현 손익";
 			value2Label = "보유 손익";
+			value3Label = "평가 금액"; // New Label
+			totalLabel = null; // Hide Total for Profit view
+
 			TradeProfitRequest request = new TradeProfitRequest();
 			request.setUserId(userId);
 			if (accountId != null)
@@ -143,13 +151,13 @@ public class StockHtmxController {
 									return getEnrichedTradeProfits(subReq);
 								}));
 
-				// 2. Identify Top Series (by Total Profit sum)
+				// 2. Identify Top Series (by Total Net Profit sum)
 				Map<String, BigDecimal> seriesTotals = new HashMap<>();
 				monthData.values().stream().flatMap(List::stream).forEach(p -> {
 					String name = "ACCOUNT".equals(groupBy) ? (p.accountName() != null ? p.accountName() : "Unknown")
 							: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
-					BigDecimal total = (p.realizedProfit() != null ? p.realizedProfit() : BigDecimal.ZERO)
-							.add(p.evaluationProfit() != null ? p.evaluationProfit() : BigDecimal.ZERO);
+					BigDecimal total = (p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO)
+							.add(p.evaluationProfitNet() != null ? p.evaluationProfitNet() : BigDecimal.ZERO);
 					seriesTotals.merge(name, total, BigDecimal::add);
 				});
 
@@ -176,9 +184,10 @@ public class StockHtmxController {
 									: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
 							if (series.equals(name)) {
 								realizedSum = realizedSum
-										.add(p.realizedProfit() != null ? p.realizedProfit() : BigDecimal.ZERO);
+										.add(p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO);
 								unrealizedSum = unrealizedSum
-										.add(p.evaluationProfit() != null ? p.evaluationProfit() : BigDecimal.ZERO);
+										.add(p.evaluationProfitNet() != null ? p.evaluationProfitNet()
+												: BigDecimal.ZERO);
 							}
 						}
 						realizedPoints.add(realizedSum);
@@ -197,14 +206,17 @@ public class StockHtmxController {
 					List<TradeProfit> profitList = monthData.get(m);
 					Map<String, BigDecimal> rMap = new HashMap<>();
 					Map<String, BigDecimal> uMap = new HashMap<>();
+					Map<String, BigDecimal> eMap = new HashMap<>();
 
 					for (TradeProfit p : profitList) {
 						String name = "ACCOUNT".equals(groupBy)
 								? (p.accountName() != null ? p.accountName() : "Unknown")
 								: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
-						rMap.merge(name, p.realizedProfit() != null ? p.realizedProfit() : BigDecimal.ZERO,
+						rMap.merge(name, p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO,
 								BigDecimal::add);
-						uMap.merge(name, p.evaluationProfit() != null ? p.evaluationProfit() : BigDecimal.ZERO,
+						uMap.merge(name, p.evaluationProfitNet() != null ? p.evaluationProfitNet() : BigDecimal.ZERO,
+								BigDecimal::add);
+						eMap.merge(name, p.evaluationAmount() != null ? p.evaluationAmount() : BigDecimal.ZERO,
 								BigDecimal::add);
 					}
 
@@ -215,9 +227,10 @@ public class StockHtmxController {
 					for (String name : allKeys) {
 						BigDecimal r = rMap.getOrDefault(name, BigDecimal.ZERO);
 						BigDecimal u = uMap.getOrDefault(name, BigDecimal.ZERO);
+						BigDecimal e = eMap.getOrDefault(name, BigDecimal.ZERO);
 						BigDecimal total = r.add(u);
-						if (total.abs().compareTo(BigDecimal.ZERO) > 0) {
-							rows.add(new AnalyticsRow(timeLabel, name, r, u, total));
+						if (total.abs().compareTo(BigDecimal.ZERO) > 0 || e.compareTo(BigDecimal.ZERO) > 0) {
+							rows.add(new AnalyticsRow(timeLabel, name, r, u, e, null));
 						}
 					}
 				}
@@ -253,8 +266,8 @@ public class StockHtmxController {
 				yearData.values().stream().flatMap(List::stream).forEach(p -> {
 					String name = "ACCOUNT".equals(groupBy) ? (p.accountName() != null ? p.accountName() : "Unknown")
 							: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
-					BigDecimal total = (p.realizedProfit() != null ? p.realizedProfit() : BigDecimal.ZERO)
-							.add(p.evaluationProfit() != null ? p.evaluationProfit() : BigDecimal.ZERO);
+					BigDecimal total = (p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO)
+							.add(p.evaluationProfitNet() != null ? p.evaluationProfitNet() : BigDecimal.ZERO);
 					seriesTotals.merge(name, total, BigDecimal::add);
 				});
 
@@ -281,9 +294,10 @@ public class StockHtmxController {
 									: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
 							if (series.equals(name)) {
 								realizedSum = realizedSum
-										.add(p.realizedProfit() != null ? p.realizedProfit() : BigDecimal.ZERO);
+										.add(p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO);
 								unrealizedSum = unrealizedSum
-										.add(p.evaluationProfit() != null ? p.evaluationProfit() : BigDecimal.ZERO);
+										.add(p.evaluationProfitNet() != null ? p.evaluationProfitNet()
+												: BigDecimal.ZERO);
 							}
 						}
 						realizedPoints.add(realizedSum);
@@ -302,14 +316,17 @@ public class StockHtmxController {
 					List<TradeProfit> profitList = yearData.get(i);
 					Map<String, BigDecimal> rMap = new HashMap<>();
 					Map<String, BigDecimal> uMap = new HashMap<>();
+					Map<String, BigDecimal> eMap = new HashMap<>();
 
 					for (TradeProfit p : profitList) {
 						String name = "ACCOUNT".equals(groupBy)
 								? (p.accountName() != null ? p.accountName() : "Unknown")
 								: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
-						rMap.merge(name, p.realizedProfit() != null ? p.realizedProfit() : BigDecimal.ZERO,
+						rMap.merge(name, p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO,
 								BigDecimal::add);
-						uMap.merge(name, p.evaluationProfit() != null ? p.evaluationProfit() : BigDecimal.ZERO,
+						uMap.merge(name, p.evaluationProfitNet() != null ? p.evaluationProfitNet() : BigDecimal.ZERO,
+								BigDecimal::add);
+						eMap.merge(name, p.evaluationAmount() != null ? p.evaluationAmount() : BigDecimal.ZERO,
 								BigDecimal::add);
 					}
 
@@ -320,9 +337,10 @@ public class StockHtmxController {
 					for (String name : allKeys) {
 						BigDecimal r = rMap.getOrDefault(name, BigDecimal.ZERO);
 						BigDecimal u = uMap.getOrDefault(name, BigDecimal.ZERO);
+						BigDecimal e = eMap.getOrDefault(name, BigDecimal.ZERO);
 						BigDecimal total = r.add(u);
-						if (total.abs().compareTo(BigDecimal.ZERO) > 0) {
-							rows.add(new AnalyticsRow(timeLabel, name, r, u, total));
+						if (total.abs().compareTo(BigDecimal.ZERO) > 0 || e.compareTo(BigDecimal.ZERO) > 0) {
+							rows.add(new AnalyticsRow(timeLabel, name, r, u, e, null));
 						}
 					}
 				}
@@ -336,23 +354,49 @@ public class StockHtmxController {
 
 				Map<String, BigDecimal> realizedMap = new HashMap<>();
 				Map<String, BigDecimal> unrealizedMap = new HashMap<>();
+				Map<String, BigDecimal> evaluationAmountMap = new HashMap<>();
 
 				profits.forEach(p -> {
 					String name = "ACCOUNT".equals(groupBy) ? (p.accountName() != null ? p.accountName() : "Unknown")
 							: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
-					realizedMap.merge(name, p.realizedProfit() != null ? p.realizedProfit() : BigDecimal.ZERO,
+					realizedMap.merge(name, p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO,
 							BigDecimal::add);
-					unrealizedMap.merge(name, p.evaluationProfit() != null ? p.evaluationProfit() : BigDecimal.ZERO,
+					unrealizedMap.merge(name,
+							p.evaluationProfitNet() != null ? p.evaluationProfitNet() : BigDecimal.ZERO,
 							BigDecimal::add);
+
+					BigDecimal evalAmt = BigDecimal.ZERO;
+					if (p.currentPrice() != null) {
+						// Assuming currentPrice is available in TradeProfit.
+						// Wait, TradeProfit record definition needed?
+						// It matches TradeProfit domain.
+						// If evaluationAmount is already there, use it.
+						// If not, p.holdingQuantity() * p.currentPrice()
+						// Let's use evaluationAmount() if available, assuming it is total evaluation
+						// amt.
+						// p.evaluationAmount() typically exists in such DTOs.
+						// Checking TradeProfit domain might be safer if not sure.
+						// But for now let's assume evaluationAmount() exists or calculate.
+						if (p.evaluationAmount() != null) {
+							evalAmt = p.evaluationAmount();
+						}
+					}
+					evaluationAmountMap.merge(name, evalAmt, BigDecimal::add);
 				});
 
-				rows.addAll(realizedMap.keySet().stream()
+				// Collect all keys to ensure we don't miss any negative profit items
+				java.util.Set<String> allKeys = new java.util.HashSet<>();
+				allKeys.addAll(realizedMap.keySet());
+				allKeys.addAll(unrealizedMap.keySet());
+
+				rows.addAll(allKeys.stream()
 						.map(name -> {
-							BigDecimal r = realizedMap.get(name);
+							BigDecimal r = realizedMap.getOrDefault(name, BigDecimal.ZERO);
 							BigDecimal u = unrealizedMap.getOrDefault(name, BigDecimal.ZERO);
-							return new AnalyticsRow("전체", name, r, u, r.add(u));
+							BigDecimal e = evaluationAmountMap.getOrDefault(name, BigDecimal.ZERO);
+							return new AnalyticsRow("전체", name, r, u, e, null);
 						})
-						.sorted((a, b) -> b.total().compareTo(a.total()))
+						.sorted((a, b) -> b.value1().compareTo(a.value1())) // Sort by Realized Profit (value1)
 						.limit(20)
 						.toList());
 
@@ -366,8 +410,12 @@ public class StockHtmxController {
 
 			// --- 2. DIVIDEND LOGIC ---
 		} else {
-			value1Label = "배당금";
-			value2Label = ""; // Hidden
+			value1Label = "배당금(세전)"; // value1
+			value2Label = "배당금(세후)"; // value2 (Net Payment)
+			value3Label = "세금"; // value3 (Gross - Net)
+			value4Label = "과세금액"; // value4 (quantity * taxPerShare)
+
+			totalLabel = null;
 
 			DividendRequest request = new DividendRequest();
 			request.setUserId(userId);
@@ -480,7 +528,9 @@ public class StockHtmxController {
 				// Table Rows
 				for (int i = 0; i < labels.size(); i++) {
 					String timeLabel = labels.get(i);
-					Map<String, BigDecimal> periodMap = new HashMap<>();
+					Map<String, BigDecimal> periodGrossMap = new HashMap<>();
+					Map<String, BigDecimal> periodTaxMap = new HashMap<>();
+					Map<String, BigDecimal> periodTaxableMap = new HashMap<>();
 
 					for (DividendResponse d : dividends) {
 						if (d.payDate() == null)
@@ -497,45 +547,91 @@ public class StockHtmxController {
 						}
 						if (match) {
 							String sName = getSeriesName.apply(d);
-							periodMap.merge(sName, d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO,
+							periodGrossMap.merge(sName, d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO,
 									BigDecimal::add);
+							periodTaxMap.merge(sName, d.tax() != null ? d.tax() : BigDecimal.ZERO, BigDecimal::add);
+
+							BigDecimal taxable = BigDecimal.ZERO;
+							if (d.taxPerShare() != null && d.quantity() != null) {
+								taxable = d.taxPerShare().multiply(BigDecimal.valueOf(d.quantity()));
+							}
+							periodTaxableMap.merge(sName, taxable, BigDecimal::add);
+
 						}
 					}
 
-					periodMap.forEach((name, amount) -> {
-						if (amount.compareTo(BigDecimal.ZERO) > 0)
-							rows.add(new AnalyticsRow(timeLabel, name, amount, BigDecimal.ZERO, amount));
-					});
-				}
+					java.util.Set<String> allSeries = new java.util.HashSet<>();
+					allSeries.addAll(periodGrossMap.keySet());
 
+					for (String name : allSeries) {
+						BigDecimal g = periodGrossMap.getOrDefault(name, BigDecimal.ZERO);
+						BigDecimal t = periodTaxMap.getOrDefault(name, BigDecimal.ZERO);
+						BigDecimal taxable = periodTaxableMap.getOrDefault(name, BigDecimal.ZERO);
+						BigDecimal net = g.subtract(t);
+						if (g.compareTo(BigDecimal.ZERO) > 0)
+							rows.add(new AnalyticsRow(timeLabel, name, g, net, t, taxable));
+					}
+				}
 			} else {
 				// TOTAL
-				Map<String, BigDecimal> aggregated = dividends.stream()
+				rows.addAll(dividends.stream()
 						.collect(Collectors.groupingBy(
 								getSeriesName,
-								Collectors.reducing(BigDecimal.ZERO,
-										d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO,
-										BigDecimal::add)));
-
-				rows.addAll(aggregated.entrySet().stream()
-						.map(e -> new AnalyticsRow("전체", e.getKey(), e.getValue(), BigDecimal.ZERO, e.getValue()))
-						.sorted((a, b) -> b.total().compareTo(a.total()))
+								Collectors.collectingAndThen(
+										Collectors.toList(),
+										list -> {
+											BigDecimal g = list.stream()
+													.map(d -> d.grossAmount() != null ? d.grossAmount()
+															: BigDecimal.ZERO)
+													.reduce(BigDecimal.ZERO, BigDecimal::add);
+											BigDecimal t = list.stream()
+													.map(d -> d.tax() != null ? d.tax() : BigDecimal.ZERO)
+													.reduce(BigDecimal.ZERO, BigDecimal::add);
+											BigDecimal taxable = list.stream()
+													.map(d -> {
+														if (d.taxPerShare() != null && d.quantity() != null) {
+															return d.taxPerShare()
+																	.multiply(BigDecimal.valueOf(d.quantity()));
+														}
+														return BigDecimal.ZERO;
+													})
+													.reduce(BigDecimal.ZERO, BigDecimal::add);
+											return new java.math.BigDecimal[] { g, t, taxable };
+										})))
+						.entrySet().stream()
+						.map(e -> {
+							BigDecimal g = e.getValue()[0];
+							BigDecimal t = e.getValue()[1];
+							BigDecimal taxable = e.getValue()[2];
+							BigDecimal net = g.subtract(t);
+							return new AnalyticsRow("전체", e.getKey(), g, net, t, taxable);
+						})
+						.sorted((a, b) -> b.value1().compareTo(a.value1())) // Sort by Gross
 						.limit(20)
 						.toList());
 
 				labels = rows.stream().map(AnalyticsRow::subKey).toList();
 				List<BigDecimal> data = rows.stream().map(AnalyticsRow::value1).toList();
-				datasets.add(new ChartDataset("배당금", data, null, null, null, List.of()));
+				datasets.add(new ChartDataset("배당금 (세전)", data, null, null, null, List.of()));
 			}
 		}
 
-		BigDecimal totalValue = rows.stream().map(AnalyticsRow::total).reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal totalValue = BigDecimal.ZERO;
+		if (totalLabel != null) {
+			totalValue = rows.stream()
+					.map(AnalyticsRow::value4) // value4 is used for totals in Dividend (Net) or just use logic
+					.filter(Objects::nonNull)
+					.reduce(BigDecimal.ZERO, BigDecimal::add);
+		}
 
 		model.addAttribute("chartTitle", chartTitle);
 		model.addAttribute("keyLabel", keyLabel);
 		model.addAttribute("subKeyLabel", subKeyLabel);
 		model.addAttribute("value1Label", value1Label);
 		model.addAttribute("value2Label", value2Label);
+		model.addAttribute("value3Label", value3Label);
+		model.addAttribute("value4Label", value4Label);
+		model.addAttribute("totalLabel", totalLabel);
 		model.addAttribute("tableData", rows);
 		model.addAttribute("totalValue", totalValue);
 		model.addAttribute("chartType", chartType);
@@ -601,11 +697,42 @@ public class StockHtmxController {
 				.limit(3)
 				.toList();
 
-		// Top Realized Profit (Net)
-		List<TradeProfit> topRealized = profitList.stream()
+		// Top Realized Profit (Net) - Aggregated by Stock Item
+		Map<String, BigDecimal> realizedByStock = profitList.stream()
 				.filter(p -> p.realizedProfitNet() != null)
-				.sorted((p1, p2) -> p2.realizedProfitNet().compareTo(p1.realizedProfitNet()))
+				.collect(Collectors.groupingBy(
+						p -> p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL,
+						Collectors.reducing(BigDecimal.ZERO, TradeProfit::realizedProfitNet, BigDecimal::add)));
+
+		List<TradeProfit> topRealized = realizedByStock.entrySet().stream()
+				.sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
 				.limit(3)
+				.map(e -> new TradeProfit(
+						null,
+						e.getKey(),
+						null,
+						null,
+						null,
+						null,
+						0,
+						null,
+						null,
+						null,
+						0,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						null,
+						e.getValue(),
+						null,
+						null))
 				.toList();
 
 		// Top Dividend (Gross) - Need to aggregate by Stock/Account first?
@@ -786,6 +913,11 @@ public class StockHtmxController {
 					BigDecimal tax = Optional.ofNullable(dividend.tax()).orElse(BigDecimal.ZERO);
 					BigDecimal netAmount = Optional.ofNullable(dividend.netAmount()).orElse(grossAmount.subtract(tax));
 
+					BigDecimal taxableAmount = BigDecimal.ZERO;
+					if (dividend.taxPerShare() != null && dividend.quantity() != null) {
+						taxableAmount = dividend.taxPerShare().multiply(BigDecimal.valueOf(dividend.quantity()));
+					}
+
 					return new DividendView(
 							dividend.id(),
 							dividend.accountId(),
@@ -794,6 +926,7 @@ public class StockHtmxController {
 							stockItemName,
 							grossAmount,
 							tax,
+							taxableAmount,
 							netAmount,
 							dividend.recordDate(),
 							dividend.payDate());
