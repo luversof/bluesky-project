@@ -13,6 +13,7 @@ import net.luversof.api.stock.repository.TradeRepository;
 import net.luversof.api.stock.service.AccountService;
 import net.luversof.api.stock.service.StockItemService;
 import net.luversof.api.stock.service.TradeProfitService;
+import net.luversof.api.stock.web.dto.request.TradeProfitRequest;
 
 class TradeProfitTest implements GeneralTest {
 
@@ -37,7 +38,8 @@ class TradeProfitTest implements GeneralTest {
 		var stockItem = stockItemService.findByName("현대차");
 		var tradeList = tradeRepository.findByAccountIdInAndStockItemIdIn(List.of(account.getId()),
 				List.of(stockItem.getId()));
-		var tradeProfitList = tradeProfitService.calculateProfitByStock(tradeList);
+		var request = new TradeProfitRequest(TestConstant.USER_ID, List.of(account.getId()), List.of(stockItem.getId()), null, null, null);
+		var tradeProfitList = tradeProfitService.calculateProfitByStock(tradeList, request);
 		log.debug("tradeProfitList : {}", tradeProfitList);
 	}
 

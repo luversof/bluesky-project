@@ -56,17 +56,14 @@ public class TradeProfitService {
 
 	public List<TradeProfit> calculateProfit(TradeProfitRequest request) {
 		// 요청 기준으로 tradeList를 조회
+		// 기간 요청이 있더라도 평단가 계산을 위해 전체 데이터를 조회해야 함
 		List<Trade> tradeList = switch (request.getRequestType()) {
 			case USER -> {
 				var accountList = accountService.findByUserId(request.userId());
 				if (accountList.isEmpty()) {
 					StockErrorCode.INVALID_USER_ID.throwException();
 				}
-				yield request.hasDateRange()
-						? tradeService.findByAccountIdInAndTradeDateBetween(
-								accountList.stream().map(Account::getId).toList(), request.startDate(),
-								request.endDate())
-						: tradeService.findByAccountIdIn(accountList.stream().map(Account::getId).toList());
+				yield tradeService.findByAccountIdIn(accountList.stream().map(Account::getId).toList());
 			}
 			case USER_ACCOUNT -> {
 				var accountList = accountService.findByIdIn(request.accountIdList());
@@ -80,10 +77,7 @@ public class TradeProfitService {
 					}
 				});
 
-				yield request.hasDateRange()
-						? tradeService.findByAccountIdInAndTradeDateBetween(request.accountIdList(),
-								request.startDate(), request.endDate())
-						: tradeService.findByAccountIdIn(request.accountIdList());
+				yield tradeService.findByAccountIdIn(request.accountIdList());
 			}
 			case USER_STOCKITEM -> {
 				var accountList = accountService.findByUserId(request.userId());
@@ -97,11 +91,8 @@ public class TradeProfitService {
 					}
 				});
 
-				yield request.hasDateRange()
-						? tradeService.findByAccountIdInAndStockItemIdInAndTradeDateBetween(request.accountIdList(),
-								request.stockItemIdList(), request.startDate(), request.endDate())
-						: tradeService.findByAccountIdInAndStockItemIdIn(request.accountIdList(),
-								request.stockItemIdList());
+				yield tradeService.findByAccountIdInAndStockItemIdIn(request.accountIdList(),
+						request.stockItemIdList());
 			}
 			case USER_ACCOUNT_STOCKITEM -> {
 				var accountList = accountService.findByIdIn(request.accountIdList());
@@ -115,18 +106,15 @@ public class TradeProfitService {
 					}
 				});
 
-				yield request.hasDateRange()
-						? tradeService.findByAccountIdInAndStockItemIdInAndTradeDateBetween(request.accountIdList(),
-								request.stockItemIdList(), request.startDate(), request.endDate())
-						: tradeService.findByAccountIdInAndStockItemIdIn(request.accountIdList(),
-								request.stockItemIdList());
+				yield tradeService.findByAccountIdInAndStockItemIdIn(request.accountIdList(),
+						request.stockItemIdList());
 			}
 		};
 
 		// 그룹별로 기본 손익 계산
 		List<TradeProfit> base = switch (request.groupBy()) {
-			case ACCOUNT_AND_STOCKITEM -> calculateProfitByAccountAndStock(tradeList);
-			case STOCKITEM -> calculateProfitByStock(tradeList);
+			case ACCOUNT_AND_STOCKITEM -> calculateProfitByAccountAndStock(tradeList, request);
+			case STOCKITEM -> calculateProfitByStock(tradeList, request);
 		};
 
 		if (base.isEmpty())
@@ -150,7 +138,7 @@ public class TradeProfitService {
 			} else {
 				tradesForRow = byStock.getOrDefault(p.getStockItemId(), List.of());
 			}
-			enrichWithNet(tradesForRow, p);
+			enrichWithNet(tradesForRow, p, request);
 			enriched.add(p);
 		}
 		return enriched;
@@ -159,7 +147,7 @@ public class TradeProfitService {
 	/**
 	 * accountId+stockItemId별 통합 손익 통계 (실현손익 + 미실현손익)
 	 */
-	public List<TradeProfit> calculateProfitByAccountAndStock(List<Trade> tradeList) {
+	public List<TradeProfit> calculateProfitByAccountAndStock(List<Trade> tradeList, TradeProfitRequest request) {
 		Map<String, List<Trade>> grouped = tradeList.stream()
 				.collect(Collectors.groupingBy(t -> t.getAccountId() + "-" + t.getStockItemId()));
 		List<TradeProfit> result = new ArrayList<>();
@@ -169,7 +157,7 @@ public class TradeProfitService {
 			UUID accountId = first.getAccountId();
 			UUID stockItemId = first.getStockItemId();
 
-			TradeProfit profit = calculateStockProfit(group, accountId, stockItemId);
+			TradeProfit profit = calculateStockProfit(group, accountId, stockItemId, request);
 			result.add(profit);
 		}
 		return result;
@@ -178,7 +166,7 @@ public class TradeProfitService {
 	/**
 	 * stockItemId별 통합 손익 통계 (accountId 무시, 실현손익 + 미실현손익)
 	 */
-	public List<TradeProfit> calculateProfitByStock(List<Trade> tradeList) {
+	public List<TradeProfit> calculateProfitByStock(List<Trade> tradeList, TradeProfitRequest request) {
 		Map<UUID, List<Trade>> grouped = tradeList.stream()
 				.collect(Collectors.groupingBy(Trade::getStockItemId));
 		List<TradeProfit> result = new ArrayList<>();
@@ -187,7 +175,7 @@ public class TradeProfitService {
 			UUID stockItemId = entry.getKey();
 			List<Trade> group = entry.getValue();
 
-			TradeProfit profit = calculateStockProfit(group, null, stockItemId);
+			TradeProfit profit = calculateStockProfit(group, null, stockItemId, request);
 			result.add(profit);
 		}
 		return result;
@@ -196,54 +184,76 @@ public class TradeProfitService {
 	/**
 	 * 개별 그룹에 대한 통합 손익 계산
 	 */
-	private TradeProfit calculateStockProfit(List<Trade> trades, UUID accountId, UUID stockItemId) {
-		// 매수 관련 계산
-		int totalBuyQuantity = trades.stream().filter(t -> t.getType() == TradeType.BUY).mapToInt(Trade::getQuantity)
+	private TradeProfit calculateStockProfit(List<Trade> trades, UUID accountId, UUID stockItemId, TradeProfitRequest request) {
+		// 1. 전체 기간 통계 (평단가 계산용 - Cost Basis)
+		int globalTotalBuyQuantity = trades.stream().filter(t -> t.getType() == TradeType.BUY).mapToInt(Trade::getQuantity)
 				.sum();
-		BigDecimal totalBuyAmount = trades.stream()
+		BigDecimal globalTotalBuyAmount = trades.stream()
 				.filter(t -> t.getType() == TradeType.BUY)
 				.map(t -> t.getPrice().multiply(BigDecimal.valueOf(t.getQuantity())))
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
-		BigDecimal averageBuyPrice = totalBuyQuantity > 0
-				? totalBuyAmount.divide(BigDecimal.valueOf(totalBuyQuantity), 2, RoundingMode.HALF_UP)
+		BigDecimal globalAverageBuyPrice = globalTotalBuyQuantity > 0
+				? globalTotalBuyAmount.divide(BigDecimal.valueOf(globalTotalBuyQuantity), 2, RoundingMode.HALF_UP)
 				: BigDecimal.ZERO;
 
-		// 매도 관련 계산 (실현 손익)
-		int totalSellQuantity = trades.stream().filter(t -> t.getType() == TradeType.SELL).mapToInt(Trade::getQuantity)
+		int globalTotalSellQuantity = trades.stream().filter(t -> t.getType() == TradeType.SELL).mapToInt(Trade::getQuantity)
 				.sum();
-		BigDecimal totalSellAmount = trades.stream()
+
+		// 2. 조회 기간 필터링
+		List<Trade> periodTrades = trades;
+		if (request.hasDateRange()) {
+			periodTrades = trades.stream().filter(t -> {
+				boolean afterStart = (request.startDate() == null) || !t.getTradeDate().isBefore(request.startDate());
+				boolean beforeEnd = (request.endDate() == null) || !t.getTradeDate().isAfter(request.endDate());
+				return afterStart && beforeEnd;
+			}).toList();
+		}
+
+		// 3. 조회 기간 통계 (표시용 매수, 매도 합계)
+		int totalBuyQuantity = periodTrades.stream().filter(t -> t.getType() == TradeType.BUY).mapToInt(Trade::getQuantity)
+				.sum();
+		BigDecimal totalBuyAmount = periodTrades.stream()
+				.filter(t -> t.getType() == TradeType.BUY)
+				.map(t -> t.getPrice().multiply(BigDecimal.valueOf(t.getQuantity())))
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+		
+		int totalSellQuantity = periodTrades.stream().filter(t -> t.getType() == TradeType.SELL).mapToInt(Trade::getQuantity)
+				.sum();
+		BigDecimal totalSellAmount = periodTrades.stream()
 				.filter(t -> t.getType() == TradeType.SELL)
 				.map(t -> t.getPrice().multiply(BigDecimal.valueOf(t.getQuantity())))
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
 		BigDecimal averageSellPrice = totalSellQuantity > 0
 				? totalSellAmount.divide(BigDecimal.valueOf(totalSellQuantity), 2, RoundingMode.HALF_UP)
 				: BigDecimal.ZERO;
+		
+		// 4. 실현손익 계산: 기간 내 매도금액 - (전체평단가 * 기간내 매도수량)
 		BigDecimal realizedProfit = totalSellAmount
-				.subtract(averageBuyPrice.multiply(BigDecimal.valueOf(totalSellQuantity)));
+				.subtract(globalAverageBuyPrice.multiply(BigDecimal.valueOf(totalSellQuantity)));
 
-		// 보유 관련 계산 (미실현 손익)
-		int holdingQuantity = totalBuyQuantity - totalSellQuantity;
+		// 5. 보유 관련 계산 (미실현 손익) - 현재 시점 기준 (Snapshot)
+		int holdingQuantity = globalTotalBuyQuantity - globalTotalSellQuantity;
 		BigDecimal currentPrice = stockPriceService.getCurrentPrice(stockItemId);
 		BigDecimal evaluationAmount = currentPrice.multiply(BigDecimal.valueOf(holdingQuantity));
 		BigDecimal evaluationProfit = evaluationAmount
-				.subtract(averageBuyPrice.multiply(BigDecimal.valueOf(holdingQuantity)));
+				.subtract(globalAverageBuyPrice.multiply(BigDecimal.valueOf(holdingQuantity)));
 
-		// 총 손익 계산 (실현 + 미실현)
+		// 총 손익 계산 (기간 실현 + 현재 미실현)
 		BigDecimal totalProfit = realizedProfit.add(evaluationProfit);
 
 		TradeProfit profit = new TradeProfit();
 		profit.setStockItemId(stockItemId);
 		profit.setAccountId(accountId);
-		profit.setTotalBuyAmount(totalBuyAmount);
-		profit.setAverageBuyPrice(averageBuyPrice);
-		profit.setTotalSellQuantity(totalSellQuantity);
-		profit.setAverageSellPrice(averageSellPrice);
-		profit.setTotalSellAmount(totalSellAmount);
-		profit.setRealizedProfit(realizedProfit);
-		profit.setHoldingQuantity(holdingQuantity);
+		profit.setTotalBuyAmount(totalBuyAmount); // Period
+		profit.setAverageBuyPrice(globalAverageBuyPrice); // Global Cost Basis
+		profit.setTotalSellQuantity(totalSellQuantity); // Period
+		profit.setAverageSellPrice(averageSellPrice); // Period
+		profit.setTotalSellAmount(totalSellAmount); // Period
+		profit.setRealizedProfit(realizedProfit); // Period Realized
+		profit.setHoldingQuantity(holdingQuantity); // Global/Current
 		profit.setCurrentPrice(currentPrice);
-		profit.setEvaluationAmount(evaluationAmount);
-		profit.setEvaluationProfit(evaluationProfit);
+		profit.setEvaluationAmount(evaluationAmount); // Global/Current
+		profit.setEvaluationProfit(evaluationProfit); // Global/Current
 		profit.setTotalProfit(totalProfit);
 
 		return profit;
@@ -252,66 +262,72 @@ public class TradeProfitService {
 	/**
 	 * 수수료/세금을 고려한 NET 필드 계산 및 설정
 	 */
-	private void enrichWithNet(List<Trade> trades, TradeProfit profit) {
-		if (trades.isEmpty()) {
-			profit.setTotalBuyFee(BigDecimal.ZERO);
-			profit.setTotalSellFee(BigDecimal.ZERO);
-			profit.setTotalSellTax(BigDecimal.ZERO);
-			profit.setTotalBuyCost(profit.getTotalBuyAmount() == null ? BigDecimal.ZERO : profit.getTotalBuyAmount());
-			profit.setTotalSellProceeds(
-					profit.getTotalSellAmount() == null ? BigDecimal.ZERO : profit.getTotalSellAmount());
-			profit.setAverageBuyPriceNet(profit.getAverageBuyPrice());
-			profit.setAverageSellPriceNet(profit.getAverageSellPrice());
-			profit.setRealizedProfitNet(profit.getRealizedProfit());
-			profit.setEvaluationProfitNet(profit.getEvaluationProfit());
-			profit.setTotalProfitNet(profit.getTotalProfit());
-			return;
+	private void enrichWithNet(List<Trade> trades, TradeProfit profit, TradeProfitRequest request) {
+		// 1. GLOBAL Custom for Net Avg Price
+		int globalTotalBuyQuantity = trades.stream().filter(t -> t.getType() == TradeType.BUY).mapToInt(Trade::getQuantity).sum();
+		BigDecimal globalTotalBuyAmount = trades.stream().filter(t -> t.getType() == TradeType.BUY)
+				.map(t -> t.getPrice().multiply(BigDecimal.valueOf(t.getQuantity())))
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal globalTotalBuyFee = trades.stream().filter(t -> t.getType() == TradeType.BUY)
+				.map(t -> nz(t.getFee()))
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal globalTotalBuyCost = globalTotalBuyAmount.add(globalTotalBuyFee);
+		BigDecimal globalAverageBuyPriceNet = globalTotalBuyQuantity > 0
+				? globalTotalBuyCost.divide(BigDecimal.valueOf(globalTotalBuyQuantity), 2, RoundingMode.HALF_UP)
+				: BigDecimal.ZERO;
+
+		// 2. PERIOD Statistics
+		List<Trade> periodTrades = trades;
+		if (request.hasDateRange()) {
+			periodTrades = trades.stream().filter(t -> {
+				boolean afterStart = (request.startDate() == null) || !t.getTradeDate().isBefore(request.startDate());
+				boolean beforeEnd = (request.endDate() == null) || !t.getTradeDate().isAfter(request.endDate());
+				return afterStart && beforeEnd;
+			}).toList();
 		}
 
-		int totalBuyQuantity = trades.stream().filter(t -> t.getType() == TradeType.BUY).mapToInt(Trade::getQuantity)
-				.sum();
-		int totalSellQuantity = trades.stream().filter(t -> t.getType() == TradeType.SELL).mapToInt(Trade::getQuantity)
-				.sum();
+		// Calculate Period totals
+		int totalSellQuantity = periodTrades.stream().filter(t -> t.getType() == TradeType.SELL).mapToInt(Trade::getQuantity).sum();
 
-		BigDecimal totalBuyAmount = trades.stream().filter(t -> t.getType() == TradeType.BUY)
-				.map(t -> t.getPrice().multiply(BigDecimal.valueOf(t.getQuantity())))
-				.reduce(BigDecimal.ZERO, BigDecimal::add);
-		BigDecimal totalSellAmount = trades.stream().filter(t -> t.getType() == TradeType.SELL)
-				.map(t -> t.getPrice().multiply(BigDecimal.valueOf(t.getQuantity())))
-				.reduce(BigDecimal.ZERO, BigDecimal::add);
-
-		BigDecimal totalBuyFee = trades.stream().filter(t -> t.getType() == TradeType.BUY)
+		BigDecimal totalBuyFee = periodTrades.stream().filter(t -> t.getType() == TradeType.BUY)
 				.map(t -> nz(t.getFee()))
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
-		BigDecimal totalSellFee = trades.stream().filter(t -> t.getType() == TradeType.SELL)
+		BigDecimal totalSellFee = periodTrades.stream().filter(t -> t.getType() == TradeType.SELL)
 				.map(t -> nz(t.getFee()))
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
-		BigDecimal totalSellTax = trades.stream().filter(t -> t.getType() == TradeType.SELL)
+		BigDecimal totalSellTax = periodTrades.stream().filter(t -> t.getType() == TradeType.SELL)
 				.map(t -> nz(t.getTax()))
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
-
-		BigDecimal totalBuyCost = totalBuyAmount.add(totalBuyFee);
-		BigDecimal totalSellProceeds = totalSellAmount.subtract(totalSellFee).subtract(totalSellTax);
-
-		BigDecimal averageBuyPriceNet = totalBuyQuantity > 0
-				? totalBuyCost.divide(BigDecimal.valueOf(totalBuyQuantity), 2, RoundingMode.HALF_UP)
-				: BigDecimal.ZERO;
-		BigDecimal averageSellPriceNet = totalSellQuantity > 0
-				? totalSellProceeds.divide(BigDecimal.valueOf(totalSellQuantity), 2, RoundingMode.HALF_UP)
-				: BigDecimal.ZERO;
-
-		BigDecimal realizedProfitNet = totalSellProceeds
-				.subtract(averageBuyPriceNet.multiply(BigDecimal.valueOf(totalSellQuantity)));
-		BigDecimal evaluationProfitNet = profit.getEvaluationAmount()
-				.subtract(averageBuyPriceNet.multiply(BigDecimal.valueOf(profit.getHoldingQuantity())));
-		BigDecimal totalProfitNet = realizedProfitNet.add(evaluationProfitNet);
 
 		profit.setTotalBuyFee(totalBuyFee);
 		profit.setTotalSellFee(totalSellFee);
 		profit.setTotalSellTax(totalSellTax);
+
+		BigDecimal totalBuyCost = (profit.getTotalBuyAmount() == null ? BigDecimal.ZERO : profit.getTotalBuyAmount())
+				.add(totalBuyFee);
+		
+		// TotalSellProceeds = PeriodSellAmount - Fees - Taxes
+		BigDecimal totalSellProceeds = (profit.getTotalSellAmount() == null ? BigDecimal.ZERO : profit.getTotalSellAmount())
+				.subtract(totalSellFee).subtract(totalSellTax);
+		
 		profit.setTotalBuyCost(totalBuyCost);
 		profit.setTotalSellProceeds(totalSellProceeds);
-		profit.setAverageBuyPriceNet(averageBuyPriceNet);
+
+		BigDecimal averageSellPriceNet = totalSellQuantity > 0
+				? totalSellProceeds.divide(BigDecimal.valueOf(totalSellQuantity), 2, RoundingMode.HALF_UP)
+				: BigDecimal.ZERO;
+
+		// Realized Net = PeriodSellProceeds - (GlobalAvgBuyNet * PeriodSellQty)
+		BigDecimal realizedProfitNet = totalSellProceeds
+				.subtract(globalAverageBuyPriceNet.multiply(BigDecimal.valueOf(totalSellQuantity)));
+		
+		// Evaluation Net = EvaluationAmount - (GlobalAvgBuyNet * HoldingQuantity)
+		BigDecimal evaluationProfitNet = profit.getEvaluationAmount()
+				.subtract(globalAverageBuyPriceNet.multiply(BigDecimal.valueOf(profit.getHoldingQuantity())));
+		
+		BigDecimal totalProfitNet = realizedProfitNet.add(evaluationProfitNet);
+
+		profit.setAverageBuyPriceNet(globalAverageBuyPriceNet);
 		profit.setAverageSellPriceNet(averageSellPriceNet);
 		profit.setRealizedProfitNet(realizedProfitNet);
 		profit.setEvaluationProfitNet(evaluationProfitNet);

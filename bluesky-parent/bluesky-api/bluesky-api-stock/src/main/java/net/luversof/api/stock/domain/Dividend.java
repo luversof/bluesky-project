@@ -35,26 +35,57 @@ public class Dividend {
 	@Column("quantity")
 	private Integer quantity;
 
+	/**
+	 * 주당 배당금 (예: 100원)
+	 */
 	@Column("amountPerShare")
-	private BigDecimal amountPerShare;	// 주당 배당금 (예: 100원)
+	private BigDecimal amountPerShare;
 
+	/**
+	 * 주당 과세금 (예: 15.4원)
+	 */
 	@Column("taxPerShare")
-	private BigDecimal taxPerShare;		// 주당 과세금 (예: 15.4원)
+	private BigDecimal taxPerShare;
 
+	/**
+	 * 세전 배당금 총액 ( = quantity * amountPerShare )
+	 */
 	@Column("grossAmount")
-	private BigDecimal grossAmount;		// 세전 배당금 총액 ( = quantity * amountPerShare )
+	private BigDecimal grossAmount;
 	
+	/**
+	 * 세금 총액 ( = quantity * taxPerShare, 원단위 절사 등 고려하여 별도 저장 추천)
+	 */
 	@Column("tax")
-	private BigDecimal tax;				// 세금 총액 ( = quantity * taxPerShare, 원단위 절사 등 고려하여 별도 저장 추천)
+	private BigDecimal tax;
 
+	/**
+	 * 기타 수수료
+	 */
 	@Column("fee")
-	private BigDecimal fee;				// 기타 수수료
+	private BigDecimal fee;
 
+	/**
+	 * 배당기준일
+	 */
 	@Column("recordDate")
-	private Instant recordDate; // 배당기준일
+	private Instant recordDate;
 
+	/**
+	 * 배당지급일
+	 */
 	@Column("payDate")
-	private Instant payDate; // 배당지급일
+	private Instant payDate;
+
+	/**
+	 * 세후 배당금 (계산 필드: 세전금액 - 세금 - 수수료)
+	 */
+	public BigDecimal getNetAmount() {
+		BigDecimal g = grossAmount != null ? grossAmount : BigDecimal.ZERO;
+		BigDecimal t = tax != null ? tax : BigDecimal.ZERO;
+		BigDecimal f = fee != null ? fee : BigDecimal.ZERO;
+		return g.subtract(t).subtract(f);
+	}
 
 	public UUID getId() {
 		return id;

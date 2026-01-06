@@ -34,6 +34,7 @@ public class DividendController {
 						d.getGrossAmount(),
 						d.getFee(),
 						d.getTax(),
+						d.getNetAmount(),
 						d.getRecordDate(),
 						d.getPayDate()))
 				.toList();

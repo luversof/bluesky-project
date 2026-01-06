@@ -19,6 +19,7 @@ public record DividendResponse(
     BigDecimal grossAmount,
     BigDecimal fee,
     BigDecimal tax,
+    BigDecimal netAmount,
     Instant recordDate,
     Instant payDate
 ) {
