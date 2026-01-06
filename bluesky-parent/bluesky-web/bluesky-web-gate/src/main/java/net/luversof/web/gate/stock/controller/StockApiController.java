@@ -35,7 +35,7 @@ public class StockApiController {
 			return ResponseEntity.status(401).build();
 		}
 		request.setUserId(userId);
-		List<TradeProfitTimeSeriesPoint> series = tradeProfitClient.timeSeries(request);
+		List<TradeProfitTimeSeriesPoint> series = tradeProfitClient.timeSeries(request.toParams());
 		return ResponseEntity.ok(series);
 	}
 }

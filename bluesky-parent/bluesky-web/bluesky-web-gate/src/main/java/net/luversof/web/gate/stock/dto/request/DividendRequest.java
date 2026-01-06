@@ -86,4 +86,14 @@ public class DividendRequest {
 				", endDate=" + endDate +
 				'}';
 	}
+
+	public org.springframework.util.MultiValueMap<String, String> toParams() {
+		org.springframework.util.MultiValueMap<String, String> params = new org.springframework.util.LinkedMultiValueMap<>();
+		if (userId != null) params.add("userId", userId.toString());
+		if (accountIdList != null) accountIdList.forEach(x -> params.add("accountIdList", x.toString()));
+		if (stockItemIdList != null) stockItemIdList.forEach(x -> params.add("stockItemIdList", x.toString()));
+		if (startDate != null) params.add("startDate", startDate.toString());
+		if (endDate != null) params.add("endDate", endDate.toString());
+		return params;
+	}
 }

@@ -3,6 +3,7 @@ package net.luversof.web.gate.stock.httpexchange;
 import java.util.List;
 
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
 
@@ -14,9 +15,11 @@ import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint;
 public interface TradeProfitClient {
 
 	@GetExchange("/calculateProfit")
-	List<TradeProfit> calculateProfit(TradeProfitRequest request);
+	List<TradeProfit> calculateProfit(
+			@org.springframework.web.bind.annotation.RequestParam org.springframework.util.MultiValueMap<String, String> request);
 
 	@GetExchange("/timeSeries")
-	List<TradeProfitTimeSeriesPoint> timeSeries(TradeProfitRequest request);
-	
+	List<TradeProfitTimeSeriesPoint> timeSeries(
+			@org.springframework.web.bind.annotation.RequestParam org.springframework.util.MultiValueMap<String, String> request);
+
 }

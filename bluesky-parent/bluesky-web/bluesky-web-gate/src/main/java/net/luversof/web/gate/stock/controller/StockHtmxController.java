@@ -63,7 +63,7 @@ public class StockHtmxController {
 		// request에 userId 설정
 		request.setUserId(userId);
 
-		List<TradeProfit> tradeProfitList = tradeProfitClient.calculateProfit(request);
+		List<TradeProfit> tradeProfitList = tradeProfitClient.calculateProfit(request.toParams());
 
 		// Account와 StockItem 이름 정보 조회
 		Map<UUID, String> accountNames = tradeProfitList.stream()
@@ -132,7 +132,7 @@ public class StockHtmxController {
 		request.setUserId(userId);
 
 		// calculateProfit와 동일한 로직으로 데이터 조회 및 enrichment
-		List<TradeProfit> tradeProfitList = tradeProfitClient.calculateProfit(request);
+		List<TradeProfit> tradeProfitList = tradeProfitClient.calculateProfit(request.toParams());
 
 		Map<UUID, String> accountNames = tradeProfitList.stream()
 				.map(TradeProfit::accountId)
@@ -208,7 +208,7 @@ public class StockHtmxController {
 
 		request.setUserId(userId);
 
-		List<DividendResponse> dividends = dividendClient.findDividends(request);
+		List<DividendResponse> dividends = dividendClient.findDividends(request.toParams());
 
 		Map<UUID, String> accountNames = accountClient.getAccountsByUserId(userId).stream()
 				.collect(Collectors.toMap(Account::id, Account::name, (left, _) -> left, LinkedHashMap::new));

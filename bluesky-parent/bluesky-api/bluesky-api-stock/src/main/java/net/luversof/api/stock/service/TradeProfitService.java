@@ -218,7 +218,7 @@ public class TradeProfitService {
 		BigDecimal averageSellPrice = totalSellQuantity > 0
 				? totalSellAmount.divide(BigDecimal.valueOf(totalSellQuantity), 2, RoundingMode.HALF_UP)
 				: BigDecimal.ZERO;
-		BigDecimal realizedProfit = totalSellAmount.subtract(totalBuyAmount);
+		BigDecimal realizedProfit = totalSellAmount.subtract(averageBuyPrice.multiply(BigDecimal.valueOf(totalSellQuantity)));
 
 		// 보유 관련 계산 (미실현 손익)
 		int holdingQuantity = totalBuyQuantity - totalSellQuantity;

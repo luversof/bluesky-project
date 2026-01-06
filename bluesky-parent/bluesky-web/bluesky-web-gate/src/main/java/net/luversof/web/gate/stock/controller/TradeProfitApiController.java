@@ -24,7 +24,7 @@ public class TradeProfitApiController {
 
 	@GetMapping("/calculateProfit")
 	public List<TradeProfit> calculateProfit(TradeProfitRequest request) {
-		return tradeProfitClient.calculateProfit(request);
+		return tradeProfitClient.calculateProfit(request.toParams());
 	}
 
 }
