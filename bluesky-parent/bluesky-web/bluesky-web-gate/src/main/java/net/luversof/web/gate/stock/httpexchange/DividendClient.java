@@ -13,5 +13,6 @@ import net.luversof.web.gate.stock.dto.response.DividendResponse;
 public interface DividendClient {
 
 	@GetExchange
-	List<DividendResponse> findDividends(@org.springframework.web.bind.annotation.RequestParam org.springframework.util.MultiValueMap<String, String> request);
+	List<DividendResponse> findDividends(
+			@org.springframework.web.bind.annotation.RequestParam org.springframework.util.MultiValueMap<String, String> request);
 }

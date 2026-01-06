@@ -1,61 +1,65 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 
 <div th:fragment="portfolio">
-    <table class="table table-hover table-striped">
-        <thead>
-        <tr>
-            <th>Account</th>
-            <th>Stock</th>
-            <th>Qty</th>
-            <th>Avg Buy</th>
-            <th>Cur Price</th>
-            <th>Eval Amt</th>
-            <th>Eval P/L</th>
-            <th>Realized P/L</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="item : ${tradeProfitList}">
-            <td th:text="${item.accountName}"></td>
-            <td th:text="${item.stockItemName}"></td>
-            <td th:text="${#numbers.formatInteger(item.holdingQuantity, 0, 'COMMA')}"></td>
-            <td th:text="${#numbers.formatDecimal(item.averageBuyPrice, 0, 'COMMA', 2, 'POINT')}"></td>
-            <td th:text="${#numbers.formatDecimal(item.currentPrice, 0, 'COMMA', 2, 'POINT')}"></td>
-            <td th:text="${#numbers.formatDecimal(item.evaluationAmount, 0, 'COMMA', 2, 'POINT')}"></td>
-            <td th:classappend="${item.evaluationProfit >= 0} ? 'text-success' : 'text-danger'"
-                th:text="${#numbers.formatDecimal(item.evaluationProfit, 0, 'COMMA', 2, 'POINT')}"></td>
-            <td th:classappend="${item.realizedProfit >= 0} ? 'text-success' : 'text-danger'"
-                th:text="${#numbers.formatDecimal(item.realizedProfit, 0, 'COMMA', 2, 'POINT')}"></td>
-        </tr>
-        </tbody>
-    </table>
+    <div class="overflow-x-auto">
+        <table class="table table-hover table-striped w-full">
+            <thead>
+            <tr class="bg-base-200">
+                <th>계좌</th>
+                <th>종목명</th>
+                <th class="text-right">보유수량</th>
+                <th class="text-right">평균단가</th>
+                <th class="text-right">현재가</th>
+                <th class="text-right">평가금액</th>
+                <th class="text-right">평가손익</th>
+                <th class="text-right">실현손익</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${tradeProfitList}">
+                <td th:text="${item.accountName}"></td>
+                <td class="font-bold" th:text="${item.stockItemName}"></td>
+                <td class="text-right" th:text="${#numbers.formatInteger(item.holdingQuantity, 0, 'COMMA')}"></td>
+                <td class="text-right" th:text="${#numbers.formatDecimal(item.averageBuyPrice, 0, 'COMMA', 0, 'POINT')}"></td>
+                <td class="text-right" th:text="${#numbers.formatDecimal(item.currentPrice, 0, 'COMMA', 0, 'POINT')}"></td>
+                <td class="text-right" th:text="${#numbers.formatDecimal(item.evaluationAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+                <td class="text-right font-bold" th:classappend="${item.evaluationProfit >= 0} ? 'text-success' : 'text-error'"
+                    th:text="${#numbers.formatDecimal(item.evaluationProfit, 0, 'COMMA', 0, 'POINT')}"></td>
+                <td class="text-right" th:classappend="${item.realizedProfit >= 0} ? 'text-success' : 'text-error'"
+                    th:text="${#numbers.formatDecimal(item.realizedProfit, 0, 'COMMA', 0, 'POINT')}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <div th:fragment="dividendHistory">
-    <table class="table table-hover table-striped">
-        <thead>
-        <tr>
-            <th>Pay Date</th>
-            <th>Account</th>
-            <th>Stock</th>
-            <th>Amount</th>
-            <th>Tax</th>
-            <th>Net Amount</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="item : ${dividendList}">
-            <td th:text="${#temporals.format(item.payDate, 'yyyy-MM-dd')}"></td>
-            <td th:text="${item.accountName}"></td>
-            <td th:text="${item.stockItemName}"></td>
-            <td th:text="${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')}"></td>
-            <td th:text="${#numbers.formatDecimal(item.tax, 0, 'COMMA', 0, 'POINT')}"></td>
-            <td th:text="${#numbers.formatDecimal(item.netAmount, 0, 'COMMA', 0, 'POINT')}"></td>
-        </tr>
-        </tbody>
-    </table>
+    <div class="overflow-x-auto">
+        <table class="table table-hover table-striped w-full">
+            <thead>
+            <tr class="bg-base-200">
+                <th>지급일</th>
+                <th>계좌</th>
+                <th>종목명</th>
+                <th class="text-right">세전금액</th>
+                <th class="text-right">세금</th>
+                <th class="text-right">세후금액</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${dividendList}">
+                <td th:text="${#temporals.format(item.payDate, 'yyyy-MM-dd')}"></td>
+                <td th:text="${item.accountName}"></td>
+                <td class="font-bold" th:text="${item.stockItemName}"></td>
+                <td class="text-right" th:text="${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')}"></td>
+                <td class="text-right" th:text="${#numbers.formatDecimal(item.tax, 0, 'COMMA', 0, 'POINT')}"></td>
+                <td class="text-right text-primary font-bold" th:text="${#numbers.formatDecimal(item.netAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 </body>

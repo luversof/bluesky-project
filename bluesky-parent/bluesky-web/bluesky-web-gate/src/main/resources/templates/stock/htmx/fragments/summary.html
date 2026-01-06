@@ -1,33 +1,65 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 <div th:fragment="summary">
     <div class="stats stats-vertical lg:stats-horizontal shadow w-full">
+        <!-- 총 자산 -->
         <div class="stat">
-            <div class="stat-title">Total Asset</div>
-            <div class="stat-value" th:text="${#numbers.formatDecimal(totalAsset, 0, 'COMMA', 0, 'POINT')}"></div>
-            <div class="stat-desc">Evaluation Amount</div>
+            <div class="stat-figure text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div class="stat-title">총 자산</div>
+            <div class="stat-value text-primary" th:text="${#numbers.formatDecimal(totalAsset, 0, 'COMMA', 0, 'POINT')} + ' 원'"></div>
+            <div class="stat-desc">평가 금액 합계</div>
         </div>
 
+        <!-- 실현 손익 -->
         <div class="stat">
-            <div class="stat-title">Realized Profit</div>
+            <div class="stat-figure text-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+            </div>
+            <div class="stat-title">실현 손익</div>
             <div class="stat-value" th:classappend="${totalRealizedProfit >= 0} ? 'text-success' : 'text-error'"
                  th:text="${#numbers.formatDecimal(totalRealizedProfit, 0, 'COMMA', 0, 'POINT')}"></div>
-            <div class="stat-desc">Sold Gains</div>
-        </div>
-        
-        <div class="stat">
-            <div class="stat-title">Unrealized Profit</div>
-             <div class="stat-value" th:classappend="${totalUnrealizedProfit >= 0} ? 'text-success' : 'text-error'"
-                 th:text="${#numbers.formatDecimal(totalUnrealizedProfit, 0, 'COMMA', 0, 'POINT')}"></div>
-            <div class="stat-desc">Current Holdings</div>
+            <div class="stat-desc">매도 완료분</div>
         </div>
 
+        <!-- 평가 손익 -->
         <div class="stat">
-            <div class="stat-title">Total Dividend</div>
+            <div class="stat-title">평가 손익</div>
+             <div class="stat-value" th:classappend="${totalUnrealizedProfit >= 0} ? 'text-success' : 'text-error'"
+                 th:text="${#numbers.formatDecimal(totalUnrealizedProfit, 0, 'COMMA', 0, 'POINT')}"></div>
+            <div class="stat-desc">현재 보유분</div>
+        </div>
+
+        <!-- 누적 배당 -->
+        <div class="stat">
+            <div class="stat-title">누적 배당금</div>
              <div class="stat-value text-info"
                  th:text="${#numbers.formatDecimal(totalDividend, 0, 'COMMA', 0, 'POINT')}"></div>
-            <div class="stat-desc">Cumulative</div>
+            <div class="stat-desc">전체 기간</div>
+        </div>
+
+        <!-- 승률 -->
+        <div class="stat">
+            <div class="stat-title">종목 승률</div>
+            <div class="stat-value" th:text="${#numbers.formatDecimal(winRate, 1, 1)} + '%'"></div>
+            <div class="stat-desc">수익권 종목 비율</div>
+        </div>
+    </div>
+    
+    <!-- Top Gainers -->
+    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4" th:if="${not #lists.isEmpty(topGainers)}">
+        <div class="card bg-base-100 shadow-sm compact border border-base-200" th:each="gainer, iter : ${topGainers}">
+            <div class="card-body p-4 flex flex-row items-center justify-between">
+                <div>
+                   <span class="badge badge-sm badge-accent mr-2" th:text="${iter.count}">1</span>
+                   <span class="font-bold text-sm" th:text="${gainer.stockItemName}">종목명</span>
+                </div>
+                <div class="text-right font-mono font-bold text-success" 
+                     th:text="${'+' + #numbers.formatDecimal(gainer.totalProfit, 0, 'COMMA', 0, 'POINT')}">
+                </div>
+            </div>
         </div>
     </div>
 </div>
