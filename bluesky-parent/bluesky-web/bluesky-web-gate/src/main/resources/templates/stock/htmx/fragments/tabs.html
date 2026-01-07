@@ -6,25 +6,50 @@
     <div class="overflow-x-auto">
         <table class="table table-hover table-striped w-full">
             <thead>
-            <tr class="bg-base-200">
-                <th>계좌</th>
-                <th>종목명</th>
-                <th class="text-right">보유수량</th>
-                <th class="text-right">평균단가</th>
-                <th class="text-right">현재가</th>
-                <th class="text-right">평가금액</th>
-                <th class="text-right">평가손익</th>
-                <th class="text-right">실현손익</th>
+            <tr class="bg-base-200"
+                th:with="sortField=${sort != null ? sort.split(',')[0] : ''}, sortDir=${sort != null && sort.contains(',') ? sort.split(',')[1] : ''}">
+                <th class="cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
+                    th:hx-vals="|{&quot;sort&quot;: &quot;accountName,${sortField == 'accountName' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    계좌 <span th:if="${sortField == 'accountName'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+                </th>
+                <th class="cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
+                    th:hx-vals="|{&quot;sort&quot;: &quot;stockItemName,${sortField == 'stockItemName' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    종목명 <span th:if="${sortField == 'stockItemName'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+                </th>
+                <th class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
+                    th:hx-vals="|{&quot;sort&quot;: &quot;holdingQuantity,${sortField == 'holdingQuantity' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    보유수량 <span th:if="${sortField == 'holdingQuantity'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+                </th>
+                <th class="text-right cursor-pointer hover:bg-base-300 hidden xl:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
+                    th:hx-vals="|{&quot;sort&quot;: &quot;averageBuyPrice,${sortField == 'averageBuyPrice' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    평균단가 <span th:if="${sortField == 'averageBuyPrice'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+                </th>
+                <th class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
+                    th:hx-vals="|{&quot;sort&quot;: &quot;currentPrice,${sortField == 'currentPrice' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    현재가 <span th:if="${sortField == 'currentPrice'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+                </th>
+                <th class="text-right cursor-pointer hover:bg-base-300 hidden md:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
+                    th:hx-vals="|{&quot;sort&quot;: &quot;evaluationAmount,${sortField == 'evaluationAmount' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    평가금액 <span th:if="${sortField == 'evaluationAmount'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+                </th>
+                <th class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
+                    th:hx-vals="|{&quot;sort&quot;: &quot;evaluationProfit,${sortField == 'evaluationProfit' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    평가손익 <span th:if="${sortField == 'evaluationProfit'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+                </th>
+                <th class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
+                    th:hx-vals="|{&quot;sort&quot;: &quot;realizedProfit,${sortField == 'realizedProfit' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    실현손익 <span th:if="${sortField == 'realizedProfit'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+                </th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="item : ${tradeProfitList}">
                 <td th:text="${item.accountName}"></td>
                 <td class="font-bold" th:text="${item.stockItemName}"></td>
-                <td class="text-right" th:text="${#numbers.formatInteger(item.holdingQuantity, 0, 'COMMA')}"></td>
-                <td class="text-right" th:text="${#numbers.formatDecimal(item.averageBuyPrice, 0, 'COMMA', 0, 'POINT')}"></td>
-                <td class="text-right" th:text="${#numbers.formatDecimal(item.currentPrice, 0, 'COMMA', 0, 'POINT')}"></td>
-                <td class="text-right" th:text="${#numbers.formatDecimal(item.evaluationAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+                <td class="text-right hidden lg:table-cell" th:text="${#numbers.formatInteger(item.holdingQuantity, 0, 'COMMA')}"></td>
+                <td class="text-right hidden xl:table-cell" th:text="${#numbers.formatDecimal(item.averageBuyPrice, 0, 'COMMA', 0, 'POINT')}"></td>
+                <td class="text-right hidden lg:table-cell" th:text="${#numbers.formatDecimal(item.currentPrice, 0, 'COMMA', 0, 'POINT')}"></td>
+                <td class="text-right hidden md:table-cell" th:text="${#numbers.formatDecimal(item.evaluationAmount, 0, 'COMMA', 0, 'POINT')}"></td>
                 <td class="text-right font-bold" th:classappend="${item.evaluationProfit >= 0} ? 'text-success' : 'text-error'"
                     th:text="${#numbers.formatDecimal(item.evaluationProfit, 0, 'COMMA', 0, 'POINT')}"></td>
                 <td class="text-right" th:classappend="${item.realizedProfit >= 0} ? 'text-success' : 'text-error'"
@@ -39,25 +64,47 @@
     <div class="overflow-x-auto">
         <table class="table table-hover table-striped w-full">
             <thead>
-            <tr class="bg-base-200">
-                <th>지급일</th>
-                <th>계좌</th>
-                <th>종목명</th>
-                <th class="text-right">배당금(세전)</th>
-                <th class="text-right">배당금(세후)</th>
-                <th class="text-right">세금</th>
-                <th class="text-right">과세금액</th>
+            <tr class="bg-base-200"
+                th:with="sortField=${sort != null ? sort.split(',')[0] : ''}, sortDir=${sort != null && sort.contains(',') ? sort.split(',')[1] : ''}">
+                <th class="cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#tab-content"
+                    th:hx-vals="|{&quot;sort&quot;: &quot;payDate,${sortField == 'payDate' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    지급일 <span th:if="${sortField == 'payDate'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+                </th>
+                <th class="cursor-pointer hover:bg-base-300 hidden sm:table-cell" hx-get="/stock/htmx/dividend/list" hx-target="#tab-content"
+                    th:hx-vals="|{&quot;sort&quot;: &quot;accountName,${sortField == 'accountName' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    계좌 <span th:if="${sortField == 'accountName'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+                </th>
+                <th class="cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#tab-content"
+                    th:hx-vals="|{&quot;sort&quot;: &quot;stockItemName,${sortField == 'stockItemName' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    종목명 <span th:if="${sortField == 'stockItemName'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+                </th>
+                <th class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#tab-content"
+                    th:hx-vals="|{&quot;sort&quot;: &quot;grossAmount,${sortField == 'grossAmount' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    배당금(세전) <span th:if="${sortField == 'grossAmount'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+                </th>
+                <th class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#tab-content"
+                    th:hx-vals="|{&quot;sort&quot;: &quot;netAmount,${sortField == 'netAmount' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    배당금(세후) <span th:if="${sortField == 'netAmount'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+                </th>
+                <th class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell" hx-get="/stock/htmx/dividend/list" hx-target="#tab-content"
+                    th:hx-vals="|{&quot;sort&quot;: &quot;tax,${sortField == 'tax' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    세금 <span th:if="${sortField == 'tax'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+                </th>
+                <th class="text-right cursor-pointer hover:bg-base-300 hidden xl:table-cell" hx-get="/stock/htmx/dividend/list" hx-target="#tab-content"
+                    th:hx-vals="|{&quot;sort&quot;: &quot;taxableAmount,${sortField == 'taxableAmount' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    과세금액 <span th:if="${sortField == 'taxableAmount'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+                </th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="item : ${dividendList}">
                 <td th:text="${#temporals.format(item.payDate, 'yyyy-MM-dd')}"></td>
-                <td th:text="${item.accountName}"></td>
+                <td class="hidden sm:table-cell" th:text="${item.accountName}"></td>
                 <td class="font-bold" th:text="${item.stockItemName}"></td>
                 <td class="text-right" th:text="${#numbers.formatDecimal(item.grossAmount, 0, 'COMMA', 0, 'POINT')}"></td>
                 <td class="text-right text-primary font-bold" th:text="${#numbers.formatDecimal(item.netAmount, 0, 'COMMA', 0, 'POINT')}"></td>
-                <td class="text-right" th:text="${#numbers.formatDecimal(item.tax, 0, 'COMMA', 0, 'POINT')}"></td>
-                <td class="text-right" th:text="${#numbers.formatDecimal(item.taxableAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+                <td class="text-right hidden lg:table-cell" th:text="${#numbers.formatDecimal(item.tax, 0, 'COMMA', 0, 'POINT')}"></td>
+                <td class="text-right hidden xl:table-cell" th:text="${#numbers.formatDecimal(item.taxableAmount, 0, 'COMMA', 0, 'POINT')}"></td>
             </tr>
             </tbody>
         </table>

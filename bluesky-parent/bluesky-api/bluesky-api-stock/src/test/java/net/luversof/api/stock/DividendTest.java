@@ -23,9 +23,9 @@ import net.luversof.api.stock.domain.Dividend;
 //import net.luversof.api.stock.domain.Dividend;
 import net.luversof.api.stock.domain.GoogleSheetsDividend;
 import net.luversof.api.stock.domain.StockItem;
-import net.luversof.api.stock.repository.AccountRepository;
 import net.luversof.api.stock.repository.DividendRepository;
 import net.luversof.api.stock.repository.StockItemRepository;
+import net.luversof.api.stock.service.AccountTestService;
 import net.luversof.api.stock.service.DividendService;
 import net.luversof.api.stock.service.GoogleSheetsTestService;
 import net.luversof.api.stock.web.dto.request.DividendSearchRequest;
@@ -44,7 +44,7 @@ class DividendTest implements GeneralTest {
 	DividendRepository dividendRepository;
 
 	@Autowired
-	AccountRepository accountRepository;
+	AccountTestService accountTestService;
 
 	@Autowired
 	StockItemRepository stockItemRepository;
@@ -83,7 +83,7 @@ class DividendTest implements GeneralTest {
 	}
 
 	private Map<String, UUID> prepareAccountMap(List<GoogleSheetsDividend> records) {
-		var accountMap = accountRepository.findByUserId(userId).stream()
+		var accountMap = accountTestService.findByUserId(userId).stream()
 				.collect(Collectors.toMap(Account::getName, Account::getId, (left, _) -> left,
 						java.util.LinkedHashMap::new));
 
@@ -95,7 +95,7 @@ class DividendTest implements GeneralTest {
 					var newAccount = new Account();
 					newAccount.setUserId(userId);
 					newAccount.setName(name);
-					var savedAccount = accountRepository.save(newAccount);
+					var savedAccount = accountTestService.save(newAccount);
 					log.debug("Created account for dividend import: {}", name);
 					return savedAccount.getId();
 				}));

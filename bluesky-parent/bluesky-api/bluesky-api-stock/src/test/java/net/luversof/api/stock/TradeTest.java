@@ -20,9 +20,9 @@ import net.luversof.api.stock.constant.TestConstant;
 import net.luversof.api.stock.constant.TradeType;
 import net.luversof.api.stock.databind.TradeTypeDeserializer;
 import net.luversof.api.stock.domain.GoogleSheetsTrade;
-import net.luversof.api.stock.repository.AccountRepository;
 import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.repository.TradeRepository;
+import net.luversof.api.stock.service.AccountTestService;
 import net.luversof.api.stock.service.GoogleSheetsTestService;
 import net.luversof.api.stock.service.StockPriceService;
 import net.luversof.api.stock.service.TradeService;
@@ -45,7 +45,7 @@ class TradeTest implements GeneralTest {
 	TradeRepository tradeRepository;
 
 	@Autowired
-	AccountRepository accountRepository;
+	AccountTestService accountTestService;
 
 	@Autowired
 	StockItemRepository stockItemRepository;
@@ -75,7 +75,7 @@ class TradeTest implements GeneralTest {
 
 		// 계좌 이름별로 계좌 찾기 또는 생성
 		var accountMap = new HashMap<String, UUID>();
-		var existingAccounts = accountRepository.findByUserId(userId);
+		var existingAccounts = accountTestService.findByUserId(userId);
 
 		// 기존 계좌 맵에 추가
 		existingAccounts.forEach(account -> accountMap.put(account.getName(), account.getId()));
@@ -91,7 +91,7 @@ class TradeTest implements GeneralTest {
 					var newAccount = new net.luversof.api.stock.domain.Account();
 					newAccount.setUserId(userId);
 					newAccount.setName(accountName);
-					var savedAccount = accountRepository.save(newAccount);
+					var savedAccount = accountTestService.save(newAccount);
 					accountMap.put(accountName, savedAccount.getId());
 					log.debug("Created new account: {} with id: {}", accountName, savedAccount.getId());
 				});

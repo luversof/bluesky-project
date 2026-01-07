@@ -4,6 +4,8 @@ package net.luversof.web.gate.stock.controller;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -461,15 +463,20 @@ public class StockHtmxController {
 
 			// Resolve Names
 			final Map<UUID, String> stockNames = new HashMap<>();
-			final Map<UUID, String> accountNames = new HashMap<>();
+
+			List<Account> accounts = accountClient.getAccountsByUserId(userId);
+			final Map<UUID, String> accountNames = accounts.stream()
+					.collect(Collectors.toMap(Account::id, Account::name, (left, _) -> left, LinkedHashMap::new));
+			final Map<UUID, Boolean> taxDeferredMap = accounts.stream().collect(Collectors.toMap(Account::id,
+					a -> a.jsonConfig() != null && Boolean.TRUE.equals(a.jsonConfig().get("isTaxDeferred")),
+					(l, _) -> l));
+
 			if (dividends.stream().anyMatch(d -> d.stockItemName() == null)) {
 				dividends.stream().map(DividendResponse::stockItemId).filter(Objects::nonNull).distinct()
 						.forEach(id -> stockNames.put(id,
 								stockItemClient.getStockItemById(id).map(StockItem::name).orElse(UNKNOWN_LABEL)));
 			}
-			if (groupBy.equals("ACCOUNT")) {
-				accountClient.getAccountsByUserId(userId).forEach(a -> accountNames.put(a.id(), a.name()));
-			}
+
 			java.util.function.Function<DividendResponse, String> getSeriesName = d -> {
 				if ("ACCOUNT".equals(groupBy))
 					return accountNames.getOrDefault(d.accountId(), "Unknown");
@@ -549,10 +556,13 @@ public class StockHtmxController {
 							String sName = getSeriesName.apply(d);
 							periodGrossMap.merge(sName, d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO,
 									BigDecimal::add);
-							periodTaxMap.merge(sName, d.tax() != null ? d.tax() : BigDecimal.ZERO, BigDecimal::add);
+
+							boolean isDeferred = taxDeferredMap.getOrDefault(d.accountId(), false);
+							BigDecimal tax = (d.tax() != null && !isDeferred) ? d.tax() : BigDecimal.ZERO;
+							periodTaxMap.merge(sName, tax, BigDecimal::add);
 
 							BigDecimal taxable = BigDecimal.ZERO;
-							if (d.taxPerShare() != null && d.quantity() != null) {
+							if (!isDeferred && d.taxPerShare() != null && d.quantity() != null) {
 								taxable = d.taxPerShare().multiply(BigDecimal.valueOf(d.quantity()));
 							}
 							periodTaxableMap.merge(sName, taxable, BigDecimal::add);
@@ -585,11 +595,19 @@ public class StockHtmxController {
 															: BigDecimal.ZERO)
 													.reduce(BigDecimal.ZERO, BigDecimal::add);
 											BigDecimal t = list.stream()
-													.map(d -> d.tax() != null ? d.tax() : BigDecimal.ZERO)
+													.map(d -> {
+														boolean isDeferred = taxDeferredMap.getOrDefault(d.accountId(),
+																false);
+														return (d.tax() != null && !isDeferred) ? d.tax()
+																: BigDecimal.ZERO;
+													})
 													.reduce(BigDecimal.ZERO, BigDecimal::add);
 											BigDecimal taxable = list.stream()
 													.map(d -> {
-														if (d.taxPerShare() != null && d.quantity() != null) {
+														boolean isDeferred = taxDeferredMap.getOrDefault(d.accountId(),
+																false);
+														if (!isDeferred && d.taxPerShare() != null
+																&& d.quantity() != null) {
 															return d.taxPerShare()
 																	.multiply(BigDecimal.valueOf(d.quantity()));
 														}
@@ -650,6 +668,13 @@ public class StockHtmxController {
 
 		// 1. 자산/손익 데이터 (Enriched to get names for Top Gainers)
 		List<TradeProfit> profitList = getEnrichedTradeProfits(request);
+
+		// Allocation Map
+		Map<String, BigDecimal> allocation = profitList.stream()
+				.filter(p -> p.evaluationAmount() != null && p.evaluationAmount().compareTo(BigDecimal.ZERO) > 0)
+				.collect(Collectors.groupingBy(
+						p -> p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL,
+						Collectors.reducing(BigDecimal.ZERO, TradeProfit::evaluationAmount, BigDecimal::add)));
 
 		BigDecimal totalAsset = profitList.stream().map(TradeProfit::evaluationAmount).filter(Objects::nonNull)
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -759,6 +784,7 @@ public class StockHtmxController {
 		model.addAttribute("topBuying", topBuying);
 		model.addAttribute("topRealized", topRealized);
 		model.addAttribute("topDividend", topDividend);
+		model.addAttribute("allocation", allocation);
 
 		return "stock/htmx/fragments/summary :: summary";
 	}
@@ -813,15 +839,52 @@ public class StockHtmxController {
 	}
 
 	@GetMapping("/portfolio")
-	public String portfolio(TradeProfitRequest request, Model model) {
+	public String portfolio(TradeProfitRequest request,
+			@RequestParam(required = false) String sort,
+			Model model) {
 		UUID userId = UserUtil.getUserId();
 		if (userId == null) {
 			model.addAttribute(ERROR_ATTRIBUTE, LOGIN_REQUIRED_MESSAGE);
 			return ERROR_VIEW;
 		}
 		request.setUserId(userId);
-		List<TradeProfit> enrichedList = getEnrichedTradeProfits(request);
+		List<TradeProfit> enrichedList = new ArrayList<>(getEnrichedTradeProfits(request));
+
+		if (sort != null && !sort.isEmpty()) {
+			String[] parts = sort.split(",");
+			String field = parts[0];
+			String direction = parts.length > 1 ? parts[1] : "asc";
+
+			Comparator<TradeProfit> comparator = switch (field) {
+				case "accountName" -> Comparator.comparing(TradeProfit::accountName,
+						Comparator.nullsLast(Comparator.naturalOrder()));
+				case "stockItemName" -> Comparator.comparing(TradeProfit::stockItemName,
+						Comparator.nullsLast(Comparator.naturalOrder()));
+				case "holdingQuantity" -> Comparator.comparing(TradeProfit::holdingQuantity,
+						Comparator.nullsLast(Comparator.naturalOrder()));
+				case "averageBuyPrice" -> Comparator.comparing(TradeProfit::averageBuyPrice,
+						Comparator.nullsLast(Comparator.naturalOrder()));
+				case "currentPrice" -> Comparator.comparing(TradeProfit::currentPrice,
+						Comparator.nullsLast(Comparator.naturalOrder()));
+				case "evaluationAmount" -> Comparator.comparing(TradeProfit::evaluationAmount,
+						Comparator.nullsLast(Comparator.naturalOrder()));
+				case "evaluationProfit" -> Comparator.comparing(TradeProfit::evaluationProfit,
+						Comparator.nullsLast(Comparator.naturalOrder()));
+				case "realizedProfit" -> Comparator.comparing(TradeProfit::realizedProfit,
+						Comparator.nullsLast(Comparator.naturalOrder()));
+				default -> null;
+			};
+
+			if (comparator != null) {
+				if ("desc".equalsIgnoreCase(direction)) {
+					comparator = comparator.reversed();
+				}
+				enrichedList.sort(comparator);
+			}
+		}
+
 		model.addAttribute("tradeProfitList", enrichedList);
+		model.addAttribute("sort", sort);
 		return "stock/htmx/fragments/tabs :: portfolio";
 	}
 
@@ -838,18 +901,14 @@ public class StockHtmxController {
 						id -> accountClient.getAccountById(id).map(Account::name).orElse(UNKNOWN_LABEL),
 						(a, _) -> a)); // duplicate handling
 
-		Map<UUID, String> stockItemNames = tradeProfitList.stream()
-				.map(TradeProfit::stockItemId)
-				.distinct()
-				.collect(Collectors.toMap(
-						id -> id,
-						id -> stockItemClient.getStockItemById(id).map(StockItem::name).orElse(UNKNOWN_LABEL),
-						(a, _) -> a)); // duplicate handling
+		// Optimize: Bulk fetch all stock names instead of N+1 calls
+		Map<UUID, String> stockItemNames = stockItemClient.getStockItems().stream()
+				.collect(Collectors.toMap(StockItem::id, StockItem::name, (a, _) -> a));
 
 		return tradeProfitList.stream()
 				.map(profit -> new TradeProfit(
 						profit.stockItemId(),
-						stockItemNames.get(profit.stockItemId()),
+						stockItemNames.getOrDefault(profit.stockItemId(), UNKNOWN_LABEL),
 						profit.accountId(),
 						profit.accountId() != null ? accountNames.get(profit.accountId()) : null,
 						profit.totalBuyAmount(),
@@ -877,7 +936,9 @@ public class StockHtmxController {
 	}
 
 	@GetMapping("/dividend/list")
-	public String dividendList(DividendRequest request, Model model) {
+	public String dividendList(DividendRequest request,
+			@RequestParam(required = false) String sort,
+			Model model) {
 		UUID userId = UserUtil.getUserId();
 		if (userId == null) {
 			model.addAttribute(ERROR_ATTRIBUTE, LOGIN_REQUIRED_MESSAGE);
@@ -888,19 +949,17 @@ public class StockHtmxController {
 
 		List<DividendResponse> dividends = dividendClient.findDividends(request.toParams());
 
-		Map<UUID, String> accountNames = accountClient.getAccountsByUserId(userId).stream()
+		List<Account> accounts = accountClient.getAccountsByUserId(userId);
+		Map<UUID, String> accountNames = accounts.stream()
 				.collect(Collectors.toMap(Account::id, Account::name, (left, _) -> left, LinkedHashMap::new));
+		Map<UUID, Boolean> taxDeferredMap = accounts.stream().collect(Collectors.toMap(Account::id,
+				a -> a.jsonConfig() != null && Boolean.TRUE.equals(a.jsonConfig().get("isTaxDeferred")),
+				(l, _) -> l));
 
 		// 모든 stockItemId 수집 및 이름 조회
-		Map<UUID, String> stockItemNames = dividends.stream()
-				.map(DividendResponse::stockItemId)
-				.filter(Objects::nonNull)
-				.distinct()
-				.collect(Collectors.toMap(
-						id -> id,
-						id -> stockItemClient.getStockItemById(id)
-								.map(StockItem::name)
-								.orElse(UNKNOWN_LABEL)));
+		// Optimize: Bulk fetch
+		Map<UUID, String> stockItemNames = stockItemClient.getStockItems().stream()
+				.collect(Collectors.toMap(StockItem::id, StockItem::name));
 
 		List<DividendView> viewList = dividends.stream()
 				.map(dividend -> {
@@ -909,12 +968,17 @@ public class StockHtmxController {
 							.orElse(Optional.ofNullable(dividend.stockItemId())
 									.map(id -> stockItemNames.getOrDefault(id, UNKNOWN_LABEL))
 									.orElse(UNKNOWN_LABEL));
+
+					boolean isDeferred = taxDeferredMap.getOrDefault(dividend.accountId(), false);
+
 					BigDecimal grossAmount = Optional.ofNullable(dividend.grossAmount()).orElse(BigDecimal.ZERO);
-					BigDecimal tax = Optional.ofNullable(dividend.tax()).orElse(BigDecimal.ZERO);
-					BigDecimal netAmount = Optional.ofNullable(dividend.netAmount()).orElse(grossAmount.subtract(tax));
+					BigDecimal tax = isDeferred ? BigDecimal.ZERO
+							: Optional.ofNullable(dividend.tax()).orElse(BigDecimal.ZERO);
+					BigDecimal netAmount = isDeferred ? grossAmount
+							: Optional.ofNullable(dividend.netAmount()).orElse(grossAmount.subtract(tax));
 
 					BigDecimal taxableAmount = BigDecimal.ZERO;
-					if (dividend.taxPerShare() != null && dividend.quantity() != null) {
+					if (!isDeferred && dividend.taxPerShare() != null && dividend.quantity() != null) {
 						taxableAmount = dividend.taxPerShare().multiply(BigDecimal.valueOf(dividend.quantity()));
 					}
 
@@ -931,9 +995,41 @@ public class StockHtmxController {
 							dividend.recordDate(),
 							dividend.payDate());
 				})
-				.toList();
+				.collect(Collectors.toCollection(ArrayList::new));
+
+		if (sort != null && !sort.isEmpty()) {
+			String[] parts = sort.split(",");
+			String field = parts[0];
+			String direction = parts.length > 1 ? parts[1] : "asc";
+
+			Comparator<DividendView> comparator = switch (field) {
+				case "payDate" -> Comparator.comparing(DividendView::payDate,
+						Comparator.nullsLast(Comparator.naturalOrder()));
+				case "accountName" -> Comparator.comparing(DividendView::accountName,
+						Comparator.nullsLast(Comparator.naturalOrder()));
+				case "stockItemName" -> Comparator.comparing(DividendView::stockItemName,
+						Comparator.nullsLast(Comparator.naturalOrder()));
+				case "grossAmount" -> Comparator.comparing(DividendView::grossAmount,
+						Comparator.nullsLast(Comparator.naturalOrder()));
+				case "netAmount" -> Comparator.comparing(DividendView::netAmount,
+						Comparator.nullsLast(Comparator.naturalOrder()));
+				case "tax" -> Comparator.comparing(DividendView::tax,
+						Comparator.nullsLast(Comparator.naturalOrder()));
+				case "taxableAmount" -> Comparator.comparing(DividendView::taxableAmount,
+						Comparator.nullsLast(Comparator.naturalOrder()));
+				default -> null;
+			};
+
+			if (comparator != null) {
+				if ("desc".equalsIgnoreCase(direction)) {
+					comparator = comparator.reversed();
+				}
+				viewList.sort(comparator);
+			}
+		}
 
 		model.addAttribute("dividendList", viewList);
+		model.addAttribute("sort", sort);
 		return "stock/htmx/fragments/tabs :: dividendHistory";
 	}
 
