@@ -148,7 +148,7 @@ public class StockHtmxController {
 										subReq.setAccountIdList(List.of(accountId));
 									subReq.setStartDate(LocalDate.of(year, m, 1)
 											.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
-									subReq.setEndDate(LocalDate.of(year, m, 1).plusMonths(1).minusDays(1)
+									subReq.setEndDate(LocalDate.of(year, m, 1).plusMonths(1)
 											.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
 									return getEnrichedTradeProfits(subReq);
 								}));
@@ -258,7 +258,7 @@ public class StockHtmxController {
 										subReq.setAccountIdList(List.of(accountId));
 									subReq.setStartDate(LocalDate.of(y, 1, 1)
 											.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
-									subReq.setEndDate(LocalDate.of(y, 12, 31)
+									subReq.setEndDate(LocalDate.of(y, 12, 31).plusDays(1)
 											.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
 									return getEnrichedTradeProfits(subReq);
 								}));
@@ -428,7 +428,7 @@ public class StockHtmxController {
 				request.setStartDate(
 						LocalDate.of(year - 4, 1, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
 				request.setEndDate(
-						LocalDate.of(year, 12, 31).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+						LocalDate.of(year, 12, 31).plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
 				chartTitle = "연도별 배당 추이 (최근 5년)";
 				keyLabel = "연도";
 				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
@@ -442,7 +442,7 @@ public class StockHtmxController {
 				request.setStartDate(
 						LocalDate.of(year, 1, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
 				request.setEndDate(
-						LocalDate.of(year, 12, 31).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+						LocalDate.of(year, 12, 31).plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
 				chartTitle = year + "년 월별 배당 내역";
 				keyLabel = "월";
 				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";

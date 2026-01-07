@@ -1,5 +1,6 @@
 package net.luversof.api.stock.service;
 
+import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,12 +56,12 @@ public class DividendService {
 
 		if (request.getStartDate() != null) {
 			sql.append(" AND d.\"payDate\" >= :startDate");
-			params.put("startDate", request.getStartDate());
+			params.put("startDate", Timestamp.from(request.getStartDate()));
 		}
 
 		if (request.getEndDate() != null) {
 			sql.append(" AND d.\"payDate\" <= :endDate");
-			params.put("endDate", request.getEndDate());
+			params.put("endDate", Timestamp.from(request.getEndDate()));
 		}
 
 		sql.append(" ORDER BY d.\"payDate\" DESC, d.\"id\" DESC");
