@@ -143,7 +143,9 @@ public class TradeProfitService {
 			UUID stockItemId = first.getStockItemId();
 
 			TradeProfit profit = calculateStockProfit(group, accountId, stockItemId, request);
-			result.add(profit);
+			if (!isEmptyProfit(profit)) {
+				result.add(profit);
+			}
 		}
 		return result;
 	}
@@ -161,9 +163,17 @@ public class TradeProfitService {
 			List<Trade> group = entry.getValue();
 
 			TradeProfit profit = calculateStockProfit(group, null, stockItemId, request);
-			result.add(profit);
+			if (!isEmptyProfit(profit)) {
+				result.add(profit);
+			}
 		}
 		return result;
+	}
+
+	private boolean isEmptyProfit(TradeProfit profit) {
+		return profit.getHoldingQuantity() == 0
+				&& profit.getTotalSellQuantity() == 0
+				&& (profit.getTotalBuyAmount() == null || profit.getTotalBuyAmount().compareTo(BigDecimal.ZERO) == 0);
 	}
 
 	/**
