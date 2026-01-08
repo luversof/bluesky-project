@@ -30,12 +30,15 @@ import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.domain.TradeProfit;
 import net.luversof.web.gate.stock.dto.request.DividendRequest;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
+import net.luversof.web.gate.stock.dto.request.TradeSearchRequest;
 import net.luversof.web.gate.stock.dto.response.DividendResponse;
 import net.luversof.web.gate.stock.dto.response.DividendView;
+import net.luversof.web.gate.stock.dto.response.TradeResponse;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
+import net.luversof.web.gate.stock.httpexchange.TradeClient;
 
 @Controller
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
@@ -48,6 +51,9 @@ public class StockHtmxController {
 
 	@Autowired
 	private TradeProfitClient tradeProfitClient;
+
+	@Autowired
+	private TradeClient tradeClient;
 
 	@Autowired
 	private AccountClient accountClient;
@@ -428,7 +434,8 @@ public class StockHtmxController {
 				request.setStartDate(
 						LocalDate.of(year - 4, 1, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
 				request.setEndDate(
-						LocalDate.of(year, 12, 31).plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+						LocalDate.of(year, 12, 31).plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault())
+								.toInstant());
 				chartTitle = "연도별 배당 추이 (최근 5년)";
 				keyLabel = "연도";
 				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
@@ -442,7 +449,8 @@ public class StockHtmxController {
 				request.setStartDate(
 						LocalDate.of(year, 1, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
 				request.setEndDate(
-						LocalDate.of(year, 12, 31).plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+						LocalDate.of(year, 12, 31).plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault())
+								.toInstant());
 				chartTitle = year + "년 월별 배당 내역";
 				keyLabel = "월";
 				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
@@ -1031,6 +1039,49 @@ public class StockHtmxController {
 		model.addAttribute("dividendList", viewList);
 		model.addAttribute("sort", sort);
 		return "stock/htmx/fragments/tabs :: dividendHistory";
+	}
+
+	@GetMapping("/trade/list")
+	public String tradeList(
+			@RequestHeader(value = "userId", required = false) String userIdStr,
+			@RequestParam(required = false) List<UUID> accountIdList,
+			@RequestParam(required = false) List<UUID> stockItemIdList,
+			@RequestParam(required = false) LocalDate startDate,
+			@RequestParam(required = false) LocalDate endDate,
+			Model model) {
+
+		UUID userId = UserUtil.getUserId();
+		if (userId == null && userIdStr != null) {
+			try {
+				userId = UUID.fromString(userIdStr);
+			} catch (Exception e) {
+			}
+		}
+
+		if (userId == null) {
+			model.addAttribute(ERROR_ATTRIBUTE, LOGIN_REQUIRED_MESSAGE);
+			return ERROR_VIEW;
+		}
+
+		LocalDate end = (endDate == null) ? LocalDate.now() : endDate;
+		LocalDate start = (startDate == null) ? end.minusMonths(1) : startDate;
+
+		java.time.Instant startInst = start.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+		java.time.Instant endInst = end.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+
+		TradeSearchRequest request = new TradeSearchRequest(userId, accountIdList, stockItemIdList, startInst, endInst);
+		List<TradeResponse> tradeList = tradeClient.findTrades(request.toParams());
+
+		List<Account> accounts = accountClient.getAccountsByUserId(userId);
+		Map<UUID, String> accountNames = accounts.stream()
+				.collect(Collectors.toMap(Account::id, Account::name, (left, r) -> left));
+
+		model.addAttribute("tradeList", tradeList);
+		model.addAttribute("accountNames", accountNames);
+		model.addAttribute("startDate", start);
+		model.addAttribute("endDate", end);
+
+		return "stock/htmx/trade";
 	}
 
 }

@@ -1,0 +1,45 @@
+<div th:fragment="tradeList">
+	<!-- Filter Form? -->
+	<div class="overflow-x-auto">
+	  <table class="table table-hover table-striped w-full table-sm">
+	      <thead>
+	          <tr class="bg-base-200">
+	              <th>날짜</th>
+	              <th>종목</th>
+	              <th>구분</th>
+	              <th>계좌</th>
+	              <th class="text-right">단가</th>
+	              <th class="text-right">수량</th>
+	              <th class="text-right">금액</th>
+	              <th class="text-right">수수료</th>
+	              <th class="text-right">거래세</th>
+	              <th class="text-right">실현손익</th>
+	          </tr>
+	      </thead>
+	      <tbody>
+	          <tr th:each="trade : ${tradeList}">
+	              <td th:text="${#temporals.format(trade.tradeDate, 'yyyy-MM-dd HH:mm')}"></td>
+	              <td class="font-bold" th:text="${trade.stockItemName}"></td>
+	              <td>
+	                  <span th:text="${trade.type}" 
+	                        th:class="${trade.type == T(net.luversof.web.gate.stock.constant.TradeType).BUY ? 'badge badge-error' : 'badge badge-primary'}">
+	                  </span>
+	              </td>
+	              <td th:text="${accountNames.get(trade.accountId)}"></td>
+	              <td class="text-right" th:text="${#numbers.formatDecimal(trade.price, 0, 'COMMA', 0, 'POINT')}"></td>
+	              <td class="text-right" th:text="${#numbers.formatInteger(trade.quantity, 0, 'COMMA')}"></td>
+	              <td class="text-right" th:text="${#numbers.formatDecimal(trade.amount, 0, 'COMMA', 0, 'POINT')}"></td>
+	              <td class="text-right text-xs" th:text="${#numbers.formatDecimal(trade.fee, 0, 'COMMA', 0, 'POINT')}"></td>
+	              <td class="text-right text-xs" th:text="${#numbers.formatDecimal(trade.tax, 0, 'COMMA', 0, 'POINT')}"></td>
+	              <td class="text-right font-bold" 
+	                  th:text="${trade.realizedProfit != null ? #numbers.formatDecimal(trade.realizedProfit, 0, 'COMMA', 0, 'POINT') : ''}"
+	                  th:classappend="${trade.realizedProfit != null && trade.realizedProfit > 0 ? 'text-error' : (trade.realizedProfit != null && trade.realizedProfit < 0 ? 'text-primary' : '')}">
+	              </td>
+	          </tr>
+	          <tr th:if="${#lists.isEmpty(tradeList)}">
+	          	<td colspan="10" class="text-center py-4">거래 내역이 없습니다. (최근 1개월)</td>
+	          </tr>
+	      </tbody>
+	  </table>
+	</div>
+</div>

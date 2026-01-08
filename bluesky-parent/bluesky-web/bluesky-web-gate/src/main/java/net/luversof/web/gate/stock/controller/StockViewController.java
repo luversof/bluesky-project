@@ -55,4 +55,17 @@ public class StockViewController {
 	public String dividendPage() {
 		return "stock/dividend";
 	}
+
+	@GetMapping("/trade")
+	public String tradePage(Model model) {
+		UUID userId = UserUtil.getUserId();
+		if (userId != null) {
+			var accounts = accountClient.getAccountsByUserId(userId);
+			model.addAttribute("accounts", accounts);
+		}
+		var stockItems = stockItemClient.getStockItems();
+		model.addAttribute("stockItems", stockItems);
+		return "stock/trade";
+	}
 }
+
