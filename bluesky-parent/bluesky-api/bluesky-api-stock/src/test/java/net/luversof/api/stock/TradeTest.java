@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.StreamSupport;
 
@@ -24,7 +25,6 @@ import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.repository.TradeRepository;
 import net.luversof.api.stock.service.AccountTestService;
 import net.luversof.api.stock.service.GoogleSheetsTestService;
-import net.luversof.api.stock.service.StockPriceService;
 import net.luversof.api.stock.service.TradeService;
 import tools.jackson.databind.MappingIterator;
 import tools.jackson.databind.module.SimpleModule;
@@ -49,9 +49,6 @@ class TradeTest implements GeneralTest {
 
 	@Autowired
 	StockItemRepository stockItemRepository;
-
-	@Autowired
-	StockPriceService stockPriceService;
 
 	@Autowired
 	JdbcTemplate jdbcTemplate;
@@ -99,17 +96,8 @@ class TradeTest implements GeneralTest {
 		// googleSheetsTradeList를 tradeList로 변환
 		var tradeList = googleSheetsTradeList
 				.stream()
-				.map(t -> {
-					var trade = t.toTrade(accountMap, stockItemList);
-		
-					// 현재가 정보가 있으면 StockPrice에 저장
-					if (trade != null && t.get현재가() != null) {
-						stockPriceService.savePrice(trade.getStockItemId(), t.get현재가());
-					}
-		
-					return trade;
-				})
-				.filter(trade -> trade != null) // null 제거
+				.map(t -> t.toTrade(accountMap, stockItemList))
+				.filter(Objects::nonNull) // null 제거
 				.toList();
 		log.debug("tradeList : {}", tradeList);
 

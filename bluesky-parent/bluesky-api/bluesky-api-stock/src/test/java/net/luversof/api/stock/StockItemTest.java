@@ -1,8 +1,11 @@
 package net.luversof.api.stock;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -15,9 +18,12 @@ import io.github.luversof.boot.uuid.UuidGeneratorUtil;
 import net.luversof.GeneralTest;
 import net.luversof.api.stock.domain.GoogleSheetsStockItem;
 import net.luversof.api.stock.domain.StockItem;
+import net.luversof.api.stock.domain.StockPrice;
 import net.luversof.api.stock.repository.StockItemRepository;
+import net.luversof.api.stock.repository.StockPriceRepository;
 import net.luversof.api.stock.service.GoogleSheetsTestService;
 import net.luversof.api.stock.service.StockItemService;
+import net.luversof.api.stock.service.StockPriceService;
 import tools.jackson.core.exc.StreamReadException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DatabindException;
@@ -32,15 +38,38 @@ class StockItemTest implements GeneralTest {
 
 	@Autowired
 	StockItemService stockItemService;
-	
+
+	@Autowired
+	StockPriceService stockPriceService;
+
 	@Autowired
 	StockItemRepository stockItemRepository;
-	
+
+	@Autowired
+	StockPriceRepository stockPriceRepository;
+
 	@Autowired
 	private GoogleSheetsTestService googleSheetsTestService;
 
 	@Autowired
 	JdbcTemplate jdbcTemplate;
+
+	String insertStockItemSql = """
+			INSERT INTO "StockItem" (id, symbol, name, market)
+			VALUES (?, ?, ?, ?)
+			ON CONFLICT (symbol)
+			DO NOTHING
+			""";
+
+	// stockPrice에 없으면 insert 하고 있으면 update 하는 쿼리
+	String insertStockPriceSql = """
+			INSERT INTO "StockPrice" (id, "stockItem_id", price, "updatedDate")
+			VALUES (?, ?, ?, ?)
+			ON CONFLICT ("stockItem_id")
+			DO UPDATE SET
+				price = EXCLUDED.price,
+				"updatedDate" = NOW()
+			""";
 
 	@Test
 	void createStockItem() {
@@ -55,41 +84,67 @@ class StockItemTest implements GeneralTest {
 
 	@Test
 	void stockItemBulkInsert() {
-		stockItemRepository.deleteAll();
-		
-		String sql = """
-				INSERT INTO "StockItem" (id, symbol, name, market)
-				VALUES (?, ?, ?, ?)
-				ON CONFLICT (symbol)
-				DO UPDATE SET
-					name   = EXCLUDED.name,
-					market = EXCLUDED.market
-				""";
+		// stockItemRepository.deleteAll();
+		// stockPriceRepository.deleteAll();
 
-		var stockItemList = loadSpreadSheetStockItemList();
+		var googleSheetStockItemList = loadGoogleSheetStockItemList();
 
 		// 상장폐지종목 추가
 		for (var delistedStock : DelistedStocks.values()) {
-			var stockItem = new StockItem();
-			stockItem.setMarket(delistedStock.getMarket());
-			stockItem.setSymbol(delistedStock.getSymbol());
-			stockItem.setName(delistedStock.name());
-			
-			stockItemList.add(stockItem);
-		};
+			var googleSheetsStockItem = new GoogleSheetsStockItem();
+			googleSheetsStockItem.set종목이름(delistedStock.name());
+			googleSheetsStockItem.set종목코드(delistedStock.getSymbol());
+			googleSheetsStockItem.set현재가(BigDecimal.ZERO);
+			googleSheetStockItemList.add(googleSheetsStockItem);
+		}
+		;
 
-		jdbcTemplate.batchUpdate(sql, stockItemList, stockItemList.size(), (ps, item) -> {
+		var stockItemList = googleSheetStockItemList.stream().map(x -> x.toStockItem()).collect(Collectors.toList());
+		jdbcTemplate.batchUpdate(insertStockItemSql, stockItemList, stockItemList.size(), (ps, item) -> {
 			item.setId(UuidGeneratorUtil.getUuid());
 			ps.setObject(1, item.getId());
 			ps.setString(2, item.getSymbol());
 			ps.setString(3, item.getName());
 			ps.setString(4, item.getMarket());
 		});
+
+		var savedStockItemList = stockItemRepository.findAll();
+
+		var stockPriceList = StreamSupport.stream(savedStockItemList.spliterator(), false)
+				.map(item -> {
+					var stockPrice = new StockPrice();
+					stockPrice.setId(UuidGeneratorUtil.getUuid());
+					stockPrice.setStockItemId(item.getId());
+					stockPrice.setPrice(googleSheetStockItemList.stream()
+							.filter(x -> x.get종목코드().equals(item.getSymbol()))
+							.findFirst()
+							.map(GoogleSheetsStockItem::get현재가)
+							.orElse(BigDecimal.ZERO));
+					stockPrice.setUpdatedDate(Instant.now());
+
+					return stockPrice;
+				})
+				.toList();
+
+		var result = jdbcTemplate.batchUpdate(insertStockPriceSql, stockPriceList, stockPriceList.size(),
+				(ps, item) -> {
+					ps.setObject(1, item.getId());
+					ps.setObject(2, item.getStockItemId());
+					ps.setObject(3, item.getPrice());
+					ps.setTimestamp(4, java.sql.Timestamp.from(item.getUpdatedDate()));
+				});
+
+		log.debug("result : {}", result.length);
 	}
-	
+
 	List<StockItem> loadSpreadSheetStockItemList() {
-		List<GoogleSheetsStockItem> stockItemList = googleSheetsTestService.getList(GoogleSheetsApiCase.GoogleSheetsStockItem);
+		List<GoogleSheetsStockItem> stockItemList = googleSheetsTestService
+				.getList(GoogleSheetsApiCase.GoogleSheetsStockItem);
 		return stockItemList.stream().map(x -> x.toStockItem()).collect(Collectors.toList());
+	}
+
+	List<GoogleSheetsStockItem> loadGoogleSheetStockItemList() {
+		return googleSheetsTestService.getList(GoogleSheetsApiCase.GoogleSheetsStockItem);
 	}
 
 	List<StockItem> loadJsonStockItemList() throws StreamReadException, DatabindException, IOException {

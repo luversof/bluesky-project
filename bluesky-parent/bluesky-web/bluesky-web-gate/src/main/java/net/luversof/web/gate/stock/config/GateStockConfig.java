@@ -10,6 +10,7 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
+import net.luversof.web.gate.stock.httpexchange.TradeClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 
 @Configuration
@@ -35,6 +36,11 @@ public class GateStockConfig {
 	@Bean
 	StockItemClient stockItemClient(HttpServiceProxyFactory stockHttpServiceProxyFactory) {
 		return stockHttpServiceProxyFactory.createClient(StockItemClient.class);
+	}
+
+	@Bean
+	TradeClient tradeClient(HttpServiceProxyFactory stockHttpServiceProxyFactory) {
+		return stockHttpServiceProxyFactory.createClient(TradeClient.class);
 	}
 
 	@Bean
