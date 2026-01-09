@@ -4,7 +4,7 @@
 
 <div th:fragment="allocation" class="card bg-base-100 shadow-xl h-full">
     <div class="card-body">
-        <h2 class="card-title text-base-content/70">자산 비중</h2>
+        <h2 class="card-title text-base-content/70">종목 비중</h2>
         <div class="h-64 flex justify-center items-center">
             <canvas id="allocationChart"></canvas>
         </div>
@@ -29,7 +29,8 @@
                     datasets: [{
                         data: values,
                         backgroundColor: [
-                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
+                             '#E7E9ED', '#76A346', '#4D5360', '#F7464A', '#46BFBD', '#FDB45C'
                         ]
                     }]
                 },
@@ -37,7 +38,73 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'right' }
+                        legend: { position: 'right' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    let value = context.raw;
+                                    let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    let percentage = ((value / total) * 100).toFixed(1) + '%';
+                                    return label + ': ' + new Intl.NumberFormat('ko-KR').format(value) + '원 (' + percentage + ')';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
+</div>
+
+<div th:fragment="accountAllocation" class="card bg-base-100 shadow-xl h-full">
+    <div class="card-body">
+        <h2 class="card-title text-base-content/70">계좌 비중</h2>
+        <div class="h-64 flex justify-center items-center">
+            <canvas id="accountAllocationChart"></canvas>
+        </div>
+    </div>
+    <script th:inline="javascript">
+        (function() {
+            // Check if Chart is loaded
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js not loaded. Waiting...');
+                return;
+            }
+            const ctx = document.getElementById('accountAllocationChart').getContext('2d');
+            const data = /*[[${accountAllocation}]]*/ {};
+
+            const labels = Object.keys(data);
+            const values = Object.values(data);
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
+                             '#E7E9ED', '#76A346', '#4D5360', '#F7464A', '#46BFBD', '#FDB45C'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    let value = context.raw;
+                                    let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    let percentage = ((value / total) * 100).toFixed(1) + '%';
+                                    return label + ': ' + new Intl.NumberFormat('ko-KR').format(value) + '원 (' + percentage + ')';
+                                }
+                            }
+                        }
                     }
                 }
             });

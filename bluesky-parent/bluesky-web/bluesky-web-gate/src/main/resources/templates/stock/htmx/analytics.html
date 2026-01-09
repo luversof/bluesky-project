@@ -81,12 +81,8 @@
                             yearSelect.style.display = 'inline-block';
                         }
 
-                        // Month logic: Only for DIVIDEND & MONTHLY
-                        // Note: Profit Monthly also uses Year but seemingly 1-12 months fixed logic in Controller?
-                        // If user meant "Monthly view for Profit" should also allow month selection, I would need to check backend.
-                        // Currently backend PROFIT logic for MONTHLY ignores 'month' param and iterates 1..12.
-                        // So only show month select for DIVIDEND + MONTHLY.
-                        if (type === 'DIVIDEND' && timeScale === 'MONTHLY') {
+                        // Month logic: Show for MONTHLY (Both PROFIT and DIVIDEND)
+                        if (timeScale === 'MONTHLY') {
                              monthSelect.style.display = 'inline-block';
                         } else {
                              monthSelect.style.display = 'none';
