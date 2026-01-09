@@ -94,6 +94,7 @@ public class StockHtmxController {
 		}
 		model.addAttribute("years", years);
 		model.addAttribute("currentYear", currentYear);
+		model.addAttribute("currentMonth", LocalDate.now().getMonthValue());
 
 		return "stock/htmx/analytics :: container";
 	}
@@ -104,6 +105,7 @@ public class StockHtmxController {
 			@RequestParam(defaultValue = "TOTAL") String timeScale, // TOTAL | MONTHLY | YEARLY
 			@RequestParam(defaultValue = "STOCK") String groupBy, // STOCK | ACCOUNT
 			@RequestParam(defaultValue = "2025") int year,
+			@RequestParam(defaultValue = "1") int month,
 			@RequestParam(required = false) UUID accountId,
 			Model model) {
 
@@ -414,7 +416,7 @@ public class StockHtmxController {
 							return new AnalyticsRow("전체", name, r, u, e, null);
 						})
 						.sorted((a, b) -> b.value1().compareTo(a.value1())) // Sort by Realized Profit (value1)
-						.limit(20)
+						// .limit(20)
 						.toList());
 
 				labels = rows.stream().map(AnalyticsRow::subKey).toList();
@@ -440,27 +442,14 @@ public class StockHtmxController {
 				request.setAccountIdList(List.of(accountId));
 
 			if ("YEARLY".equals(timeScale)) {
-				request.setStartDate(
-						LocalDate.of(year - 4, 1, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
-				request.setEndDate(
-						LocalDate.of(year, 12, 31).plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault())
-								.toInstant());
-				chartTitle = "연도별 배당 추이 (최근 5년)";
-				keyLabel = "연도";
-				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
-				chartType = "line";
-
-				// Generate Labels (Year-4 to Year)
-				for (int i = year - 4; i <= year; i++)
-					labels.add(String.valueOf(i));
-
-			} else if ("MONTHLY".equals(timeScale)) {
+				// Show Monthly stats for the specific YEAR
+				// Start: year-01-01, End: year-12-31 (+1 day)
 				request.setStartDate(
 						LocalDate.of(year, 1, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
 				request.setEndDate(
 						LocalDate.of(year, 12, 31).plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault())
 								.toInstant());
-				chartTitle = year + "년 월별 배당 내역";
+				chartTitle = year + "년 월별 배당 (전체)";
 				keyLabel = "월";
 				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
 				chartType = "line";
@@ -468,10 +457,27 @@ public class StockHtmxController {
 				// Generate Labels (1월 to 12월)
 				for (int i = 1; i <= 12; i++)
 					labels.add(i + "월");
+
+			} else if ("MONTHLY".equals(timeScale)) {
+				// Show Daily stats for the specific MONTH
+				LocalDate start = LocalDate.of(year, month, 1);
+				LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
+
+				request.setStartDate(start.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+				request.setEndDate(end.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+
+				chartTitle = year + "년 " + month + "월 일별 배당";
+				keyLabel = "일";
+				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
+				chartType = "line";
+
+				// Generate Labels (1 to End)
+				for (int i = 1; i <= start.lengthOfMonth(); i++)
+					labels.add(i + "일");
 			} else {
 				// TOTAL
 				keyLabel = "전체";
-				chartTitle = "누적 배당 총합";
+				chartTitle = "누적 배당 총합 (전체)";
 				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
 			}
 
@@ -515,9 +521,10 @@ public class StockHtmxController {
 					seriesTotals.put(name, sum);
 				});
 
+				// REMOVED LIMIT lines
 				List<String> topSeries = seriesTotals.entrySet().stream()
 						.sorted((a, b) -> b.getValue().compareTo(a.getValue()))
-						.limit(5)
+						// .limit(5)
 						.map(Map.Entry::getKey)
 						.toList();
 
@@ -530,16 +537,18 @@ public class StockHtmxController {
 					for (String label : labels) {
 						BigDecimal pointSum = BigDecimal.ZERO;
 						if ("YEARLY".equals(timeScale)) {
-							int y = Integer.parseInt(label);
+							// Check Month
+							int m = Integer.parseInt(label.replace("월", ""));
 							pointSum = seriesData.stream()
-									.filter(d -> d.payDate().atZone(java.time.ZoneId.systemDefault()).getYear() == y)
+									.filter(d -> d.payDate().atZone(java.time.ZoneId.systemDefault()).getMonthValue() == m)
 									.map(d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO)
 									.reduce(BigDecimal.ZERO, BigDecimal::add);
 						} else {
-							int m = Integer.parseInt(label.replace("월", ""));
+							// Check Day
+							int dVal = Integer.parseInt(label.replace("일", ""));
 							pointSum = seriesData.stream()
 									.filter(d -> d.payDate().atZone(java.time.ZoneId.systemDefault())
-											.getMonthValue() == m)
+											.getDayOfMonth() == dVal)
 									.map(d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO)
 									.reduce(BigDecimal.ZERO, BigDecimal::add);
 						}
@@ -561,12 +570,12 @@ public class StockHtmxController {
 							continue;
 						boolean match = false;
 						if ("YEARLY".equals(timeScale)) {
-							if (d.payDate().atZone(java.time.ZoneId.systemDefault()).getYear() == Integer
-									.parseInt(timeLabel))
-								match = true;
-						} else {
 							int m = Integer.parseInt(timeLabel.replace("월", ""));
 							if (d.payDate().atZone(java.time.ZoneId.systemDefault()).getMonthValue() == m)
+								match = true;
+						} else {
+							int dVal = Integer.parseInt(timeLabel.replace("일", ""));
+							if (d.payDate().atZone(java.time.ZoneId.systemDefault()).getDayOfMonth() == dVal)
 								match = true;
 						}
 						if (match) {
@@ -642,7 +651,8 @@ public class StockHtmxController {
 							return new AnalyticsRow("전체", e.getKey(), g, net, t, taxable);
 						})
 						.sorted((a, b) -> b.value1().compareTo(a.value1())) // Sort by Gross
-						.limit(20)
+						// REMOVED LIMIT
+						//.limit(20)
 						.toList());
 
 				labels = rows.stream().map(AnalyticsRow::subKey).toList();
@@ -732,12 +742,20 @@ public class StockHtmxController {
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
 
 		// 3. Top Lists
-		// Top Buy (Purchase Amount - Net Cost)
+		// Top Buying (Purchase Amount - Net Cost)
 		List<TradeProfit> topBuying = profitList.stream()
 				.filter(p -> p.totalBuyCost() != null)
 				.sorted((p1, p2) -> p2.totalBuyCost().compareTo(p1.totalBuyCost()))
-				.limit(3)
+				.limit(4)
 				.toList();
+		
+		// Bottom Buying
+		List<TradeProfit> bottomBuying = profitList.stream()
+				.filter(p -> p.totalBuyCost() != null)
+				.sorted((p1, p2) -> p1.totalBuyCost().compareTo(p2.totalBuyCost()))
+				.limit(4)
+				.toList();
+
 
 		// Top Realized Profit (Net) - Aggregated by Stock Item
 		Map<String, BigDecimal> realizedByStock = profitList.stream()
@@ -747,34 +765,37 @@ public class StockHtmxController {
 						Collectors.reducing(BigDecimal.ZERO, TradeProfit::realizedProfitNet, BigDecimal::add)));
 
 		List<TradeProfit> topRealized = realizedByStock.entrySet().stream()
+				//.filter(e -> e.getValue().compareTo(BigDecimal.ZERO) > 0)
 				.sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
-				.limit(3)
-				.map(e -> new TradeProfit(
-						null,
-						e.getKey(),
-						null,
-						null,
-						null,
-						null,
-						0,
-						null,
-						null,
-						null,
-						0,
-						null,
-						null,
-						null,
-						null,
-						null,
-						null,
-						null,
-						null,
-						null,
-						null,
-						null,
-						e.getValue(),
-						null,
-						null))
+				.limit(4)
+				.map(e -> createSummaryTradeProfit(e.getKey(), e.getValue()))
+				.toList();
+		
+		List<TradeProfit> bottomRealized = realizedByStock.entrySet().stream()
+				//.filter(e -> e.getValue().compareTo(BigDecimal.ZERO) < 0)
+				.sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
+				.limit(4)
+				.map(e -> createSummaryTradeProfit(e.getKey(), e.getValue()))
+				.toList();
+		
+		
+		// Top Unrealized Profit (Evaluation Profit)
+		Map<String, BigDecimal> unrealizedByStock = profitList.stream()
+				.filter(p -> p.evaluationProfitNet() != null)
+				.collect(Collectors.groupingBy(
+						p -> p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL,
+						Collectors.reducing(BigDecimal.ZERO, TradeProfit::evaluationProfitNet, BigDecimal::add)));
+		
+		List<TradeProfit> topUnrealized = unrealizedByStock.entrySet().stream()
+				.sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
+				.limit(4)
+				.map(e -> createSummaryTradeProfit2(e.getKey(), e.getValue()))
+				.toList();
+		
+		List<TradeProfit> bottomUnrealized = unrealizedByStock.entrySet().stream()
+				.sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
+				.limit(4)
+				.map(e -> createSummaryTradeProfit2(e.getKey(), e.getValue()))
 				.toList();
 
 		// Top Dividend (Gross) - Need to aggregate by Stock/Account first?
@@ -789,7 +810,12 @@ public class StockHtmxController {
 
 		List<Map.Entry<String, BigDecimal>> topDividend = dividendBySeries.entrySet().stream()
 				.sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
-				.limit(3)
+				.limit(4)
+				.toList();
+		
+		List<Map.Entry<String, BigDecimal>> bottomDividend = dividendBySeries.entrySet().stream()
+				.sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
+				.limit(4)
 				.toList();
 
 		model.addAttribute("totalAsset", totalAsset);
@@ -799,11 +825,78 @@ public class StockHtmxController {
 		model.addAttribute("winRate", winRate);
 
 		model.addAttribute("topBuying", topBuying);
+		model.addAttribute("bottomBuying", bottomBuying);
+		
 		model.addAttribute("topRealized", topRealized);
+		model.addAttribute("bottomRealized", bottomRealized);
+		
+		model.addAttribute("topUnrealized", topUnrealized);
+		model.addAttribute("bottomUnrealized", bottomUnrealized);
+		
 		model.addAttribute("topDividend", topDividend);
+		model.addAttribute("bottomDividend", bottomDividend);
+		
 		model.addAttribute("allocation", allocation);
 
 		return "stock/htmx/fragments/summary :: summary";
+	}
+	
+	private TradeProfit createSummaryTradeProfit(String stockItemName, BigDecimal realizedProfitNet) {
+		return new TradeProfit(
+				null,
+				stockItemName,
+				null,
+				null,
+				null,
+				null,
+				0,
+				null,
+				null,
+				null,
+				0,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				realizedProfitNet,
+				null,
+				null);
+	}
+	
+	private TradeProfit createSummaryTradeProfit2(String stockItemName, BigDecimal evaluationProfitNet) {
+		return new TradeProfit(
+				null,
+				stockItemName,
+				null,
+				null,
+				null,
+				null,
+				0,
+				null,
+				null,
+				null,
+				0,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				evaluationProfitNet,
+				null);
 	}
 
 	@GetMapping("/charts/allocation")

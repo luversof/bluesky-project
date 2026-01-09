@@ -60,56 +60,152 @@
     <!-- ... -->
 
     
-    <!-- Top Lists (3 Columns) -->
-    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- Top/Bottom Lists (4 Columns) -->
+    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         
-        <!-- Top Buying -->
-        <div class="card bg-base-100 shadow-sm compact border border-base-200" th:if="${not #lists.isEmpty(topBuying)}">
-            <div class="card-body p-3">
-                <h3 class="card-title text-sm opacity-70 mb-2">💰 매수 상위</h3>
-                <div class="space-y-2">
-                    <div th:each="item, iter : ${topBuying}" class="flex justify-between items-center text-sm">
-                        <div class="flex items-center gap-2">
-                            <span class="badge badge-sm badge-ghost" th:text="${iter.count}">1</span>
-                            <span class="truncate max-w-[100px]" th:text="${item.stockItemName}">종목</span>
+        <!-- Buying -->
+        <div class="space-y-4">
+            <!-- Top Buying -->
+            <div class="card bg-base-100 shadow-sm compact border border-base-200" th:if="${not #lists.isEmpty(topBuying)}">
+                <div class="card-body p-3">
+                    <h3 class="card-title text-sm opacity-70 mb-2">💰 매수 상위</h3>
+                    <div class="space-y-1">
+                        <div th:each="item, iter : ${topBuying}" class="flex justify-between items-center text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center" th:text="${iter.count}">1</span>
+                                <span class="truncate max-w-[80px]" th:text="${item.stockItemName}">종목</span>
+                            </div>
+                            <span class="font-mono font-bold" 
+                                  th:text="${#numbers.formatDecimal(item.totalBuyCost, 0, 'COMMA', 0, 'POINT')}"></span>
                         </div>
-                        <span class="font-mono font-bold" 
-                              th:text="${#numbers.formatDecimal(item.totalBuyCost, 0, 'COMMA', 0, 'POINT')}"></span>
+                    </div>
+                </div>
+            </div>
+            <!-- Bottom Buying -->
+            <div class="card bg-base-100 shadow-sm compact border border-base-200" th:if="${not #lists.isEmpty(bottomBuying)}">
+                <div class="card-body p-3">
+                    <h3 class="card-title text-sm opacity-70 mb-2">📉 매수 하위</h3>
+                    <div class="space-y-1">
+                        <div th:each="item, iter : ${bottomBuying}" class="flex justify-between items-center text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center" th:text="${iter.count}">1</span>
+                                <span class="truncate max-w-[80px]" th:text="${item.stockItemName}">종목</span>
+                            </div>
+                            <span class="font-mono font-bold" 
+                                  th:text="${#numbers.formatDecimal(item.totalBuyCost, 0, 'COMMA', 0, 'POINT')}"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Unrealized Profit -->
+        <div class="space-y-4">
+            <!-- Top Unrealized -->
+            <div class="card bg-base-100 shadow-sm compact border border-base-200" th:if="${not #lists.isEmpty(topUnrealized)}">
+                <div class="card-body p-3">
+                    <h3 class="card-title text-sm opacity-70 mb-2">🚀 평가 수익 상위</h3>
+                    <div class="space-y-1">
+                        <div th:each="item, iter : ${topUnrealized}" class="flex justify-between items-center text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center" th:text="${iter.count}">1</span>
+                                <span class="truncate max-w-[80px]" th:text="${item.stockItemName}">종목</span>
+                            </div>
+                            <span class="font-mono font-bold" 
+                                  th:classappend="${item.evaluationProfitNet >= 0} ? 'text-success' : 'text-error'"
+                                  th:text="${#numbers.formatDecimal(item.evaluationProfitNet, 0, 'COMMA', 0, 'POINT')}"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Bottom Unrealized -->
+            <div class="card bg-base-100 shadow-sm compact border border-base-200" th:if="${not #lists.isEmpty(bottomUnrealized)}">
+                <div class="card-body p-3">
+                    <h3 class="card-title text-sm opacity-70 mb-2">💧 평가 수익 하위</h3>
+                    <div class="space-y-1">
+                        <div th:each="item, iter : ${bottomUnrealized}" class="flex justify-between items-center text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center" th:text="${iter.count}">1</span>
+                                <span class="truncate max-w-[80px]" th:text="${item.stockItemName}">종목</span>
+                            </div>
+                            <span class="font-mono font-bold" 
+                                  th:classappend="${item.evaluationProfitNet >= 0} ? 'text-success' : 'text-error'"
+                                  th:text="${#numbers.formatDecimal(item.evaluationProfitNet, 0, 'COMMA', 0, 'POINT')}"></span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Top Realized Profit -->
-        <div class="card bg-base-100 shadow-sm compact border border-base-200" th:if="${not #lists.isEmpty(topRealized)}">
-            <div class="card-body p-3">
-                <h3 class="card-title text-sm opacity-70 mb-2">📈 실현 수익 상위</h3>
-                <div class="space-y-2">
-                    <div th:each="item, iter : ${topRealized}" class="flex justify-between items-center text-sm">
-                        <div class="flex items-center gap-2">
-                            <span class="badge badge-sm badge-ghost" th:text="${iter.count}">1</span>
-                            <span class="truncate max-w-[100px]" th:text="${item.stockItemName}">종목</span>
+        <!-- Realized Profit -->
+        <div class="space-y-4">
+           <!-- Top Realized -->
+           <div class="card bg-base-100 shadow-sm compact border border-base-200" th:if="${not #lists.isEmpty(topRealized)}">
+               <div class="card-body p-3">
+                   <h3 class="card-title text-sm opacity-70 mb-2">📈 실현 수익 상위</h3>
+                   <div class="space-y-1">
+                       <div th:each="item, iter : ${topRealized}" class="flex justify-between items-center text-xs">
+                           <div class="flex items-center gap-2">
+                               <span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center" th:text="${iter.count}">1</span>
+                               <span class="truncate max-w-[80px]" th:text="${item.stockItemName}">종목</span>
+                           </div>
+                           <span class="font-mono font-bold" 
+                                 th:classappend="${item.realizedProfitNet >= 0} ? 'text-success' : 'text-error'"
+                                 th:text="${#numbers.formatDecimal(item.realizedProfitNet, 0, 'COMMA', 0, 'POINT')}"></span>
+                       </div>
+                   </div>
+               </div>
+           </div>
+           <!-- Bottom Realized -->
+           <div class="card bg-base-100 shadow-sm compact border border-base-200" th:if="${not #lists.isEmpty(bottomRealized)}">
+               <div class="card-body p-3">
+                   <h3 class="card-title text-sm opacity-70 mb-2">📉 실현 수익 하위</h3>
+                   <div class="space-y-1">
+                       <div th:each="item, iter : ${bottomRealized}" class="flex justify-between items-center text-xs">
+                           <div class="flex items-center gap-2">
+                               <span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center" th:text="${iter.count}">1</span>
+                               <span class="truncate max-w-[80px]" th:text="${item.stockItemName}">종목</span>
+                           </div>
+                           <span class="font-mono font-bold" 
+                                 th:classappend="${item.realizedProfitNet >= 0} ? 'text-success' : 'text-error'"
+                                 th:text="${#numbers.formatDecimal(item.realizedProfitNet, 0, 'COMMA', 0, 'POINT')}"></span>
+                       </div>
+                   </div>
+               </div>
+           </div>
+       </div>
+
+        <!-- Dividend -->
+        <div class="space-y-4">
+            <!-- Top Dividend -->
+            <div class="card bg-base-100 shadow-sm compact border border-base-200" th:if="${not #lists.isEmpty(topDividend)}">
+                <div class="card-body p-3">
+                    <h3 class="card-title text-sm opacity-70 mb-2">🎁 배당 상위</h3>
+                    <div class="space-y-1">
+                        <div th:each="entry, iter : ${topDividend}" class="flex justify-between items-center text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center" th:text="${iter.count}">1</span>
+                                <span class="truncate max-w-[80px]" th:text="${entry.key}">종목</span>
+                            </div>
+                            <span class="font-mono font-bold text-info" 
+                                  th:text="${#numbers.formatDecimal(entry.value, 0, 'COMMA', 0, 'POINT')}"></span>
                         </div>
-                        <span class="font-mono font-bold" 
-                              th:classappend="${item.realizedProfitNet >= 0} ? 'text-success' : 'text-error'"
-                              th:text="${#numbers.formatDecimal(item.realizedProfitNet, 0, 'COMMA', 0, 'POINT')}"></span>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Top Dividend -->
-        <div class="card bg-base-100 shadow-sm compact border border-base-200" th:if="${not #lists.isEmpty(topDividend)}">
-            <div class="card-body p-3">
-                <h3 class="card-title text-sm opacity-70 mb-2">🎁 배당 상위</h3>
-                <div class="space-y-2">
-                    <div th:each="entry, iter : ${topDividend}" class="flex justify-between items-center text-sm">
-                        <div class="flex items-center gap-2">
-                            <span class="badge badge-sm badge-ghost" th:text="${iter.count}">1</span>
-                            <span class="truncate max-w-[100px]" th:text="${entry.key}">종목</span>
+            <!-- Bottom Dividend -->
+            <div class="card bg-base-100 shadow-sm compact border border-base-200" th:if="${not #lists.isEmpty(bottomDividend)}">
+                <div class="card-body p-3">
+                    <h3 class="card-title text-sm opacity-70 mb-2">☕ 배당 하위</h3>
+                    <div class="space-y-1">
+                        <div th:each="entry, iter : ${bottomDividend}" class="flex justify-between items-center text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center" th:text="${iter.count}">1</span>
+                                <span class="truncate max-w-[80px]" th:text="${entry.key}">종목</span>
+                            </div>
+                            <span class="font-mono font-bold text-info" 
+                                  th:text="${#numbers.formatDecimal(entry.value, 0, 'COMMA', 0, 'POINT')}"></span>
                         </div>
-                        <span class="font-mono font-bold text-info" 
-                              th:text="${#numbers.formatDecimal(entry.value, 0, 'COMMA', 0, 'POINT')}"></span>
                     </div>
                 </div>
             </div>

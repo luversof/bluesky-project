@@ -49,8 +49,13 @@
                             <option th:each="y : ${years}" th:value="${y}" th:text="${y + '년'}" th:selected="${y == currentYear}">2025년</option>
                         </select>
 
+                        <!-- Month Filter -->
+                        <select name="month" id="filter-month" class="select select-bordered select-sm w-20" style="display:none;" onchange="updateAnalyticsFilters()">
+                            <option th:each="m : ${#numbers.sequence(1, 12)}" th:value="${m}" th:text="${m + '월'}" th:selected="${m == currentMonth}">1월</option>
+                        </select>
+
                         <!-- Account Filter -->
-                        <select name="accountId" id="filter-account" class="select select-bordered select-sm w-full sm:w-auto max-w-xs" onchange="updateAnalyticsFilters()">
+                        <select name="accountId" id="filter-account" class="select select-bordered select-sm w-auto" onchange="updateAnalyticsFilters()">
                             <option value="">전체 계좌</option>
                             <option th:each="acc : ${accounts}" 
                                     th:value="${acc.id}" 
@@ -62,9 +67,11 @@
 
                 <script>
                     function updateAnalyticsFilters() {
+                        const type = document.querySelector('input[name="type"]:checked').value;
                         const timeScale = document.querySelector('input[name="timeScale"]:checked').value;
                         const groupBy = document.querySelector('input[name="groupBy"]:checked').value;
                         const yearSelect = document.getElementById('filter-year');
+                        const monthSelect = document.getElementById('filter-month');
                         const accountSelect = document.getElementById('filter-account');
                         
                         // Hide Year if TOTAL
@@ -74,11 +81,20 @@
                             yearSelect.style.display = 'inline-block';
                         }
 
+                        // Month logic: Only for DIVIDEND & MONTHLY
+                        // Note: Profit Monthly also uses Year but seemingly 1-12 months fixed logic in Controller?
+                        // If user meant "Monthly view for Profit" should also allow month selection, I would need to check backend.
+                        // Currently backend PROFIT logic for MONTHLY ignores 'month' param and iterates 1..12.
+                        // So only show month select for DIVIDEND + MONTHLY.
+                        if (type === 'DIVIDEND' && timeScale === 'MONTHLY') {
+                             monthSelect.style.display = 'inline-block';
+                        } else {
+                             monthSelect.style.display = 'none';
+                        }
+
                         // Hide Account Filter if groupBy is ACCOUNT
                         if (groupBy === 'ACCOUNT') {
                             accountSelect.style.display = 'none';
-                            // Optional: Reset to All if hidden? Better to keep state or reset.
-                            // accountSelect.value = ''; 
                         } else {
                             accountSelect.style.display = 'inline-block';
                         }
