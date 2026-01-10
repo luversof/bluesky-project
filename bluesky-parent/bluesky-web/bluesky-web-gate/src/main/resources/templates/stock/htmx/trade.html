@@ -1,45 +1,143 @@
 <div th:fragment="tradeList">
-	<!-- Filter Form? -->
-	<div class="overflow-x-auto">
-	  <table class="table table-hover table-striped w-full table-sm">
-	      <thead>
-	          <tr class="bg-base-200">
-	              <th>날짜</th>
-	              <th>종목</th>
-	              <th>구분</th>
-	              <th>계좌</th>
-	              <th class="text-right">단가</th>
-	              <th class="text-right">수량</th>
-	              <th class="text-right">금액</th>
-	              <th class="text-right">수수료</th>
-	              <th class="text-right">거래세</th>
-	              <th class="text-right">실현손익</th>
-	          </tr>
-	      </thead>
-	      <tbody>
-	          <tr th:each="trade : ${tradeList}">
-	              <td th:text="${#temporals.format(trade.tradeDate, 'yyyy-MM-dd HH:mm')}"></td>
-	              <td class="font-bold" th:text="${trade.stockItemName}"></td>
-	              <td>
-	                  <span th:text="${trade.type}" 
-	                        th:class="${trade.type == T(net.luversof.web.gate.stock.constant.TradeType).BUY ? 'badge badge-error' : 'badge badge-primary'}">
-	                  </span>
-	              </td>
-	              <td th:text="${accountNames.get(trade.accountId)}"></td>
-	              <td class="text-right" th:text="${#numbers.formatDecimal(trade.price, 0, 'COMMA', 0, 'POINT')}"></td>
-	              <td class="text-right" th:text="${#numbers.formatInteger(trade.quantity, 0, 'COMMA')}"></td>
-	              <td class="text-right" th:text="${#numbers.formatDecimal(trade.amount, 0, 'COMMA', 0, 'POINT')}"></td>
-	              <td class="text-right text-xs" th:text="${#numbers.formatDecimal(trade.fee, 0, 'COMMA', 0, 'POINT')}"></td>
-	              <td class="text-right text-xs" th:text="${#numbers.formatDecimal(trade.tax, 0, 'COMMA', 0, 'POINT')}"></td>
-	              <td class="text-right font-bold" 
-	                  th:text="${trade.realizedProfit != null ? #numbers.formatDecimal(trade.realizedProfit, 0, 'COMMA', 0, 'POINT') : ''}"
-	                  th:classappend="${trade.realizedProfit != null && trade.realizedProfit > 0 ? 'text-error' : (trade.realizedProfit != null && trade.realizedProfit < 0 ? 'text-primary' : '')}">
-	              </td>
-	          </tr>
-	          <tr th:if="${#lists.isEmpty(tradeList)}">
-	          	<td colspan="10" class="text-center py-4">거래 내역이 없습니다. (최근 1개월)</td>
-	          </tr>
-	      </tbody>
-	  </table>
+	<!-- Filter & Search Form -->
+	<form id="tradeSearchForm" class="flex flex-wrap gap-2 mb-4 items-end bg-base-100 p-2 rounded-box shadow-sm"
+	      hx-get="/stock/htmx/trade/list" 
+	      hx-target="#tradeListContainer" 
+	      hx-select="#tradeListContainer"
+	      hx-swap="outerHTML"
+	      hx-trigger="submit">
+		
+		<div class="form-control w-full sm:w-auto">
+			<label class="label p-1"><span class="label-text text-xs">기간</span></label>
+			<div class="join">
+				<input type="date" name="startDate" class="input input-sm input-bordered join-item" th:value="${startDate}">
+				<input type="date" name="endDate" class="input input-sm input-bordered join-item" th:value="${endDate}">
+			</div>
+		</div>
+
+		<div class="form-control flex-1 min-w-[150px]">
+			<label class="label p-1"><span class="label-text text-xs">종목 검색</span></label>
+			<input type="text" name="keyword" class="input input-sm input-bordered w-full" 
+			       th:value="${keyword}" placeholder="종목명...">
+		</div>
+
+		<button type="submit" class="btn btn-sm btn-primary">조회</button>
+	</form>
+
+	<div id="tradeListContainer" class="flex flex-col h-full relative">
+		<div class="overflow-x-auto flex-1 min-h-0">
+		  <table class="table table-hover table-striped w-full table-sm table-pin-rows">
+		      <thead>
+		          <tr class="bg-base-200">
+		              <th>날짜</th>
+		              <th>종목</th>
+		              <th>구분</th>
+		              <th>계좌</th>
+		              <th class="text-right">단가</th>
+		              <th class="text-right">수량</th>
+		              <th class="text-right">금액</th>
+		              <th class="text-right">수수료</th>
+		              <th class="text-right">거래세</th>
+		              <th class="text-right">실현손익</th>
+		          </tr>
+		      </thead>
+		      <tbody>
+		          <tr th:each="trade : ${tradeList}">
+		              <td th:text="${#temporals.format(trade.tradeDate, 'yyyy-MM-dd')}"></td>
+		              <td class="font-bold whitespace-nowrap" th:text="${trade.stockItemName}"></td>
+		              <td>
+		                  <span th:text="${trade.type}" 
+		                        th:class="${trade.type == T(net.luversof.web.gate.stock.constant.TradeType).BUY ? 'badge badge-error badge-sm' : 'badge badge-primary badge-sm'}">
+		                  </span>
+		              </td>
+		              <td th:text="${accountNames.get(trade.accountId)}" class="whitespace-nowrap"></td>
+		              <td class="text-right font-mono" th:text="${#numbers.formatDecimal(trade.price, 0, 'COMMA', 0, 'POINT')}"></td>
+		              <td class="text-right font-mono" th:text="${#numbers.formatInteger(trade.quantity, 0, 'COMMA')}"></td>
+		              <td class="text-right font-mono" th:text="${#numbers.formatDecimal(trade.amount, 0, 'COMMA', 0, 'POINT')}"></td>
+		              <td class="text-right text-xs text-base-content/60" th:text="${#numbers.formatDecimal(trade.fee, 0, 'COMMA', 0, 'POINT')}"></td>
+		              <td class="text-right text-xs text-base-content/60" th:text="${#numbers.formatDecimal(trade.tax, 0, 'COMMA', 0, 'POINT')}"></td>
+		              <td class="text-right font-bold font-mono" 
+		                  th:text="${trade.realizedProfit != null ? #numbers.formatDecimal(trade.realizedProfit, 0, 'COMMA', 0, 'POINT') : ''}"
+		                  th:classappend="${trade.realizedProfit != null && trade.realizedProfit > 0 ? 'text-error' : (trade.realizedProfit != null && trade.realizedProfit < 0 ? 'text-primary' : '')}">
+		              </td>
+		          </tr>
+		          <tr th:if="${#lists.isEmpty(tradeList)}">
+		          	<td colspan="10" class="text-center py-10 opacity-50">거래 내역이 없습니다.</td>
+		          </tr>
+		      </tbody>
+		      <!-- Footer -->
+		      <tfoot>
+		          <tr class="font-bold bg-base-200">
+		              <td colspan="7" class="text-center">합계</td>
+		              <td class="text-right font-mono" th:text="${#numbers.formatDecimal(totalFee, 0, 'COMMA', 0, 'POINT')}">0</td>
+		              <td class="text-right font-mono" th:text="${#numbers.formatDecimal(totalTax, 0, 'COMMA', 0, 'POINT')}">0</td>
+		              <td class="text-right font-mono" 
+		                  th:text="${#numbers.formatDecimal(totalRealizedProfit, 0, 'COMMA', 0, 'POINT')}"
+		                  th:classappend="${totalRealizedProfit > 0 ? 'text-error' : (totalRealizedProfit < 0 ? 'text-primary' : '')}">0</td>
+		          </tr>
+		      </tfoot>
+		  </table>
+		</div>
+		
+		<!-- Pagination -->
+		<div class="flex justify-center p-2 border-t border-base-200 bg-base-100" th:if="${pagination.totalPage > 0}">
+			<div class="join">
+				<!-- First -->
+				<button class="join-item btn btn-sm" 
+				        th:classappend="${!pagination.firstNav.isActive} ? 'btn-disabled'"
+				        th:disabled="${!pagination.firstNav.isActive}"
+				        hx-get="/stock/htmx/trade/list" 
+				        hx-include="#tradeSearchForm"
+				        th:hx-vals="${'{&quot;page&quot;: ' + pagination.firstNav.page + '}'}"
+				        hx-target="#tradeListContainer"
+				        hx-select="#tradeListContainer"
+				        hx-swap="outerHTML">≪</button>
+				        
+				<!-- Previous -->
+				<button class="join-item btn btn-sm" 
+				        th:classappend="${!pagination.prevNav.isActive} ? 'btn-disabled'"
+				        th:disabled="${!pagination.prevNav.isActive}"
+				        hx-get="/stock/htmx/trade/list"
+				        hx-include="#tradeSearchForm"
+				        th:hx-vals="${'{&quot;page&quot;: ' + pagination.prevNav.page + '}'}"
+				        hx-target="#tradeListContainer"
+				        hx-select="#tradeListContainer"
+				        hx-swap="outerHTML">＜</button>
+				
+				<!-- Page Numbers -->
+				<button class="join-item btn btn-sm" 
+				        th:each="nav : ${pagination.navList}"
+				        th:text="${nav.page}"
+				        th:classappend="${nav.isActive} ? 'btn-active'"
+				        hx-get="/stock/htmx/trade/list" 
+				        hx-include="#tradeSearchForm"
+				        th:hx-vals="${'{&quot;page&quot;: ' + nav.page + '}'}"
+				        hx-target="#tradeListContainer"
+				        hx-select="#tradeListContainer"
+				        hx-swap="outerHTML"></button>
+				
+				<!-- Next -->
+				<button class="join-item btn btn-sm" 
+				        th:classappend="${!pagination.nextNav.isActive} ? 'btn-disabled'"
+				        th:disabled="${!pagination.nextNav.isActive}"
+				        hx-get="/stock/htmx/trade/list"
+				        hx-include="#tradeSearchForm"
+				        th:hx-vals="${'{&quot;page&quot;: ' + pagination.nextNav.page + '}'}"
+				        hx-target="#tradeListContainer"
+				        hx-select="#tradeListContainer"
+				        hx-swap="outerHTML">＞</button>
+
+				<!-- Last -->
+				<button class="join-item btn btn-sm" 
+				        th:classappend="${!pagination.lastNav.isActive} ? 'btn-disabled'"
+				        th:disabled="${!pagination.lastNav.isActive}"
+				        hx-get="/stock/htmx/trade/list"
+				        hx-include="#tradeSearchForm"
+				        th:hx-vals="${'{&quot;page&quot;: ' + pagination.lastNav.page + '}'}"
+				        hx-target="#tradeListContainer"
+				        hx-select="#tradeListContainer"
+				        hx-swap="outerHTML">≫</button>
+			</div>
+		</div>
 	</div>
 </div>

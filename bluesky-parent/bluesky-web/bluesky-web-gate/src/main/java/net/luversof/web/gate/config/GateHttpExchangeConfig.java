@@ -1,49 +1,64 @@
-//package net.luversof.web.gate.config;
-//
-//import org.springframework.context.annotation.Configuration;
-//import org.springframework.web.service.registry.ImportHttpServices;
-//
-//import net.luversof.web.gate.blog.httpexchange.BlogArticleCategoryClient;
-//import net.luversof.web.gate.blog.httpexchange.BlogArticleClient;
-//import net.luversof.web.gate.blog.httpexchange.BlogArticleCommentClient;
-//import net.luversof.web.gate.blog.httpexchange.BlogClient;
-//
-//@Configuration
-//public class GateHttpExchangeConfig {
-//	
-//
-//	@Setter(onMethod_ = @Autowired)
-//	private OAuth2AuthorizedClientManager authorizedClientManager;
-//
-//	/*
-//	 * feign client 전체 적용
-//	 */
-//	@Bean
-//	RequestInterceptor feignClientRequestInterceptor() {
-//		return requestTemplate -> {
-//			requestTemplate.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-//
-//			// OAuth2 Token 자동 전파
-//			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-//
-//			if (authentication != null && authentication.isAuthenticated() && authorizedClientManager != null) {
-//				try {
-//					OAuth2AuthorizeRequest authorizeRequest = OAuth2AuthorizeRequest
-//							.withClientRegistrationId("bluesky")
-//							.principal(authentication)
-//							.build();
-//
-//					OAuth2AuthorizedClient authorizedClient = authorizedClientManager.authorize(authorizeRequest);
-//
-//					if (authorizedClient != null && authorizedClient.getAccessToken() != null) {
-//						String accessToken = authorizedClient.getAccessToken().getTokenValue();
-//						requestTemplate.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-//					}
-//				} catch (Exception e) {
-//					// Token 획득 실패 시 무시 (로그인하지 않은 요청)
-//				}
-//			}
-//		};
-//	}
-//
-//}
+package net.luversof.web.gate.config;
+
+import org.springframework.boot.restclient.RestClientCustomizer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+
+@Configuration
+public class GateHttpExchangeConfig {
+
+	@Bean
+	public OAuth2AuthorizedClientManager authorizedClientManager(
+			ClientRegistrationRepository clientRegistrationRepository,
+			OAuth2AuthorizedClientRepository authorizedClientRepository) {
+
+		OAuth2AuthorizedClientProvider authorizedClientProvider = OAuth2AuthorizedClientProviderBuilder.builder()
+				.authorizationCode()
+				.refreshToken()
+				.clientCredentials()
+				.build();
+
+		DefaultOAuth2AuthorizedClientManager authorizedClientManager = new DefaultOAuth2AuthorizedClientManager(
+				clientRegistrationRepository, authorizedClientRepository);
+		authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider);
+
+		return authorizedClientManager;
+	}
+	
+	@Bean
+	RestClientCustomizer oauth2RestClientCustomizer(OAuth2AuthorizedClientManager authorizedClientManager) {
+		return builder -> builder.requestInterceptor((request, body, execution) -> {
+			if (!request.getURI().getPath().startsWith("/api/userInfo")) {
+				Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+				if (authentication instanceof OAuth2AuthenticationToken oauthToken) {
+					try {
+						OAuth2AuthorizeRequest authorizeRequest = OAuth2AuthorizeRequest
+								.withClientRegistrationId(oauthToken.getAuthorizedClientRegistrationId())
+								.principal(authentication)
+								.build();
+
+						OAuth2AuthorizedClient authorizedClient = authorizedClientManager.authorize(authorizeRequest);
+						if (authorizedClient != null && authorizedClient.getAccessToken() != null) {
+							request.getHeaders().setBearerAuth(authorizedClient.getAccessToken().getTokenValue());
+						}
+					} catch (Exception e) {
+						// Ignore if authorization fails
+					}
+				}
+			}
+			return execution.execute(request, body);
+		});
+	}
+
+}

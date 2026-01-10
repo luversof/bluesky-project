@@ -16,6 +16,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.common.menu.domain.Pagination;
 import net.luversof.web.gate.stock.domain.Account;
 import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.domain.TradeProfit;
@@ -1142,6 +1145,9 @@ public class StockHtmxController {
 			@RequestParam(required = false) List<UUID> stockItemIdList,
 			@RequestParam(required = false) LocalDate startDate,
 			@RequestParam(required = false) LocalDate endDate,
+			@RequestParam(defaultValue = "1") int page,
+			@RequestParam(defaultValue = "15") int size,
+			@RequestParam(required = false) String keyword,
 			Model model) {
 
 		UUID userId = UserUtil.getUserId();
@@ -1158,22 +1164,82 @@ public class StockHtmxController {
 		}
 
 		LocalDate end = (endDate == null) ? LocalDate.now() : endDate;
-		LocalDate start = (startDate == null) ? end.minusMonths(1) : startDate;
+		// Default start date: 2020-01-01 (effectively "all" for typical use, vs 1 month previously)
+		LocalDate start = (startDate == null) ? LocalDate.of(2020, 1, 1) : startDate;
 
 		java.time.Instant startInst = start.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
 		java.time.Instant endInst = end.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
 
 		TradeSearchRequest request = new TradeSearchRequest(userId, accountIdList, stockItemIdList, startInst, endInst);
-		List<TradeResponse> tradeList = tradeClient.findTrades(request.toParams());
+		List<TradeResponse> fullTradeList = tradeClient.findTrades(request.toParams());
+
+		// Filtering (Keyword)
+		if (keyword != null && !keyword.isBlank()) {
+			fullTradeList = fullTradeList.stream()
+					.filter(t -> t.stockItemName() != null && t.stockItemName().contains(keyword))
+					.toList();
+		}
+		
+		// Sort by Date Descending
+		fullTradeList = new ArrayList<>(fullTradeList); // make mutable
+		fullTradeList.sort(Comparator.comparing(TradeResponse::tradeDate, Comparator.nullsLast(Comparator.reverseOrder())));
+		
+		// Check invalid size
+		if(size <= 0) size = 15;
+		
+		boolean isSearch = (keyword != null && !keyword.isBlank()) || (startDate != null) || (endDate != null);
+		if (isSearch) {
+			size = Math.max(fullTradeList.size(), 1);
+		}
+
+		// Pagination
+		int totalItems = fullTradeList.size();
+		int totalPages = (int) Math.ceil((double) totalItems / size);
+		int currentPage = Math.max(1, Math.min(page, totalPages));
+		if (totalPages == 0) currentPage = 1;
+
+		int fromIndex = (currentPage - 1) * size;
+		int toIndex = Math.min(fromIndex + size, totalItems);
+
+		List<TradeResponse> pagedList = (fromIndex < totalItems) 
+				? fullTradeList.subList(fromIndex, toIndex) 
+				: Collections.emptyList();
+		
+		// Calculate Sums for the visible list (pagedList)
+		BigDecimal totalFee = pagedList.stream()
+				.map(t -> t.fee() != null ? t.fee() : BigDecimal.ZERO)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+		
+		BigDecimal totalTax = pagedList.stream()
+				.map(t -> t.tax() != null ? t.tax() : BigDecimal.ZERO)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+		
+		BigDecimal totalRealizedProfit = pagedList.stream()
+				.map(t -> t.realizedProfit() != null ? t.realizedProfit() : BigDecimal.ZERO)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+		
+		model.addAttribute("totalFee", totalFee);
+		model.addAttribute("totalTax", totalTax);
+		model.addAttribute("totalRealizedProfit", totalRealizedProfit);
+
+		
+		var pageImpl = new PageImpl<>(pagedList, PageRequest.of(currentPage - 1, size), totalItems);
+		var pagination = new Pagination(pageImpl);
 
 		List<Account> accounts = accountClient.getAccountsByUserId(userId);
 		Map<UUID, String> accountNames = accounts.stream()
 				.collect(Collectors.toMap(Account::id, Account::name, (left, r) -> left));
 
-		model.addAttribute("tradeList", tradeList);
+		model.addAttribute("tradeList", pagedList);
+		model.addAttribute("pagination", pagination);
+		model.addAttribute("totalItems", totalItems);
+		model.addAttribute("totalPages", totalPages);
+		model.addAttribute("currentPage", currentPage);
+		model.addAttribute("size", size);
 		model.addAttribute("accountNames", accountNames);
 		model.addAttribute("startDate", start);
 		model.addAttribute("endDate", end);
+		model.addAttribute("keyword", keyword);
 
 		return "stock/htmx/trade";
 	}

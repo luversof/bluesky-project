@@ -24,35 +24,7 @@
             </div>
         </div>
 
-        <!-- 3. Details Tabs -->
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-                <div role="tablist" class="tabs tabs-boxed mb-4">
-                    <a role="tab" class="tab tab-active" 
-                       id="tab-portfolio"
-                       hx-get="/stock/htmx/portfolio" 
-                       hx-target="#tab-content" 
-                       hx-swap="innerHTML"
-                       onclick="document.querySelectorAll('.tab').forEach(t => t.classList.remove('tab-active')); this.classList.add('tab-active');">
-                       주식 매매 내역
-                    </a>
-                    <a role="tab" class="tab" 
-                       id="tab-dividend"
-                       hx-get="/stock/htmx/dividend/list" 
-                       hx-target="#tab-content" 
-                       hx-swap="innerHTML"
-                       onclick="document.querySelectorAll('.tab').forEach(t => t.classList.remove('tab-active')); this.classList.add('tab-active');">
-                       배당 내역
-                    </a>
-                </div>
-                
-                <div id="tab-content" hx-get="/stock/htmx/portfolio" hx-trigger="load">
-                    <div class="flex justify-center p-10">
-                        <span class="loading loading-dots loading-lg"></span>
-                    </div>
-                </div>
-            </div>
-        </div>
+
 
     </div>
 </div>
