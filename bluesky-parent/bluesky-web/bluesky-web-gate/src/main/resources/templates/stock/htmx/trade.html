@@ -1,4 +1,4 @@
-<div th:fragment="tradeList">
+<div th:fragment="tradeList" id="tradeListFragment">
 	<!-- Filter & Search Form -->
 	<form id="tradeSearchForm" class="flex flex-wrap gap-2 mb-4 items-end bg-base-100 p-2 rounded-box shadow-sm"
 	      hx-get="/stock/htmx/trade/list" 
@@ -15,13 +15,34 @@
 			</div>
 		</div>
 
-		<div class="form-control flex-1 min-w-[150px]">
-			<label class="label p-1"><span class="label-text text-xs">종목 검색</span></label>
-			<input type="text" name="keyword" class="input input-sm input-bordered w-full" 
-			       th:value="${keyword}" placeholder="종목명...">
+		<div class="form-control w-full sm:w-auto">
+			<label class="label p-1"><span class="label-text text-xs">계좌</span></label>
+			<select name="accountIdList" class="select select-sm select-bordered">
+				<option value="">전체</option>
+				<option th:each="account : ${accountList}" 
+						th:value="${account.id}" 
+						th:text="${account.name}"
+						th:selected="${account.id == selectedAccountId}"></option>
+			</select>
+		</div>
+
+		<div class="form-control w-full sm:w-auto">
+			<label class="label p-1"><span class="label-text text-xs">종목</span></label>
+			<select name="stockItemIdList" class="select select-sm select-bordered">
+				<option value="">전체</option>
+				<option th:each="stockItem : ${stockItemList}" 
+						th:value="${stockItem.id}" 
+						th:text="${stockItem.name}"
+						th:selected="${stockItem.id == selectedStockItemId}"></option>
+			</select>
 		</div>
 
 		<button type="submit" class="btn btn-sm btn-primary">조회</button>
+		<button type="button" class="btn btn-sm text-xs" 
+		        hx-get="/stock/htmx/trade/list" 
+		        hx-target="#tradeListFragment" 
+		        hx-select="#tradeListFragment"
+		        hx-swap="outerHTML">초기화</button>
 	</form>
 
 	<div id="tradeListContainer" class="flex flex-col h-full relative">
@@ -80,7 +101,7 @@
 		</div>
 		
 		<!-- Pagination -->
-		<div class="flex justify-center p-2 border-t border-base-200 bg-base-100" th:if="${pagination.totalPage > 0}">
+		<div class="flex justify-center p-2 border-t border-base-200 bg-base-100" th:if="${pagination.totalPage > 1}">
 			<div class="join">
 				<!-- First -->
 				<button class="join-item btn btn-sm" 

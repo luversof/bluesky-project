@@ -60,55 +60,177 @@
     </div>
 </div>
 
-<div th:fragment="dividendHistory">
-    <div class="overflow-x-auto">
-        <table class="table table-hover table-striped w-full">
-            <thead>
-            <tr class="bg-base-200"
-                th:with="sortField=${sort != null ? sort.split(',')[0] : ''}, sortDir=${sort != null && sort.contains(',') ? sort.split(',')[1] : ''}">
-                <th class="cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#tab-content"
-                    th:hx-vals="|{&quot;sort&quot;: &quot;payDate,${sortField == 'payDate' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
-                    지급일 <span th:if="${sortField == 'payDate'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
-                </th>
-                <th class="cursor-pointer hover:bg-base-300 hidden sm:table-cell" hx-get="/stock/htmx/dividend/list" hx-target="#tab-content"
-                    th:hx-vals="|{&quot;sort&quot;: &quot;accountName,${sortField == 'accountName' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
-                    계좌 <span th:if="${sortField == 'accountName'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
-                </th>
-                <th class="cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#tab-content"
-                    th:hx-vals="|{&quot;sort&quot;: &quot;stockItemName,${sortField == 'stockItemName' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
-                    종목명 <span th:if="${sortField == 'stockItemName'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
-                </th>
-                <th class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#tab-content"
-                    th:hx-vals="|{&quot;sort&quot;: &quot;grossAmount,${sortField == 'grossAmount' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
-                    배당금(세전) <span th:if="${sortField == 'grossAmount'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
-                </th>
-                <th class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#tab-content"
-                    th:hx-vals="|{&quot;sort&quot;: &quot;netAmount,${sortField == 'netAmount' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
-                    배당금(세후) <span th:if="${sortField == 'netAmount'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
-                </th>
-                <th class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell" hx-get="/stock/htmx/dividend/list" hx-target="#tab-content"
-                    th:hx-vals="|{&quot;sort&quot;: &quot;tax,${sortField == 'tax' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
-                    세금 <span th:if="${sortField == 'tax'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
-                </th>
-                <th class="text-right cursor-pointer hover:bg-base-300 hidden xl:table-cell" hx-get="/stock/htmx/dividend/list" hx-target="#tab-content"
-                    th:hx-vals="|{&quot;sort&quot;: &quot;taxableAmount,${sortField == 'taxableAmount' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
-                    과세금액 <span th:if="${sortField == 'taxableAmount'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
-                </th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="item : ${dividendList}">
-                <td th:text="${#temporals.format(item.payDate, 'yyyy-MM-dd')}"></td>
-                <td class="hidden sm:table-cell" th:text="${item.accountName}"></td>
-                <td class="font-bold" th:text="${item.stockItemName}"></td>
-                <td class="text-right" th:text="${#numbers.formatDecimal(item.grossAmount, 0, 'COMMA', 0, 'POINT')}"></td>
-                <td class="text-right text-primary font-bold" th:text="${#numbers.formatDecimal(item.netAmount, 0, 'COMMA', 0, 'POINT')}"></td>
-                <td class="text-right hidden lg:table-cell" th:text="${#numbers.formatDecimal(item.tax, 0, 'COMMA', 0, 'POINT')}"></td>
-                <td class="text-right hidden xl:table-cell" th:text="${#numbers.formatDecimal(item.taxableAmount, 0, 'COMMA', 0, 'POINT')}"></td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
+<div th:fragment="dividendHistory" id="dividendListFragment">
+	<!-- Filter & Search Form -->
+	<form id="dividendSearchForm" class="flex flex-wrap gap-2 mb-4 items-end bg-base-100 p-2 rounded-box shadow-sm"
+	      hx-get="/stock/htmx/dividend/list" 
+	      hx-target="#dividendListContainer" 
+	      hx-select="#dividendListContainer"
+	      hx-swap="outerHTML"
+	      hx-trigger="submit">
+		
+		<div class="form-control w-full sm:w-auto">
+			<label class="label p-1"><span class="label-text text-xs">기간</span></label>
+			<div class="join">
+				<input type="date" name="startDate" class="input input-sm input-bordered join-item" th:value="${startDate}">
+				<input type="date" name="endDate" class="input input-sm input-bordered join-item" th:value="${endDate}">
+			</div>
+		</div>
+
+		<div class="form-control w-full sm:w-auto">
+			<label class="label p-1"><span class="label-text text-xs">계좌</span></label>
+			<select name="accountIdList" class="select select-sm select-bordered">
+				<option value="">전체</option>
+				<option th:each="account : ${accountList}" 
+						th:value="${account.id}" 
+						th:text="${account.name}"
+						th:selected="${account.id == selectedAccountId}"></option>
+			</select>
+		</div>
+
+		<div class="form-control w-full sm:w-auto">
+			<label class="label p-1"><span class="label-text text-xs">종목</span></label>
+			<select name="stockItemIdList" class="select select-sm select-bordered">
+				<option value="">전체</option>
+				<option th:each="stockItem : ${stockItemList}" 
+						th:value="${stockItem.id}" 
+						th:text="${stockItem.name}"
+						th:selected="${stockItem.id == selectedStockItemId}"></option>
+			</select>
+		</div>
+		
+		<button type="submit" class="btn btn-sm btn-primary">조회</button>
+		<button type="button" class="btn btn-sm text-xs" 
+		        hx-get="/stock/htmx/dividend/list" 
+		        hx-target="#dividendListFragment" 
+		        hx-select="#dividendListFragment"
+		        hx-swap="outerHTML">초기화</button>
+	</form>
+
+	<div id="dividendListContainer" class="flex flex-col h-full relative">
+	    <div class="overflow-x-auto flex-1 min-h-0">
+	        <table class="table table-hover table-striped w-full table-sm table-pin-rows">
+	            <thead>
+	            <tr class="bg-base-200"
+	                th:with="sortField=${sort != null ? sort.split(',')[0] : ''}, sortDir=${sort != null && sort.contains(',') ? sort.split(',')[1] : ''}">
+	                <th class="cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListContainer" hx-select="#dividendListContainer" hx-swap="outerHTML" hx-include="#dividendSearchForm"
+	                    th:hx-vals="|{&quot;sort&quot;: &quot;payDate,${sortField == 'payDate' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+	                    지급일 <span th:if="${sortField == 'payDate'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+	                </th>
+	                <th class="cursor-pointer hover:bg-base-300 hidden sm:table-cell" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListContainer" hx-select="#dividendListContainer" hx-swap="outerHTML" hx-include="#dividendSearchForm"
+	                    th:hx-vals="|{&quot;sort&quot;: &quot;accountName,${sortField == 'accountName' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+	                    계좌 <span th:if="${sortField == 'accountName'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+	                </th>
+	                <th class="cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListContainer" hx-select="#dividendListContainer" hx-swap="outerHTML" hx-include="#dividendSearchForm"
+	                    th:hx-vals="|{&quot;sort&quot;: &quot;stockItemName,${sortField == 'stockItemName' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+	                    종목명 <span th:if="${sortField == 'stockItemName'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+	                </th>
+	                <th class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListContainer" hx-select="#dividendListContainer" hx-swap="outerHTML" hx-include="#dividendSearchForm"
+	                    th:hx-vals="|{&quot;sort&quot;: &quot;grossAmount,${sortField == 'grossAmount' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+	                    배당금(세전) <span th:if="${sortField == 'grossAmount'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+	                </th>
+	                <th class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListContainer" hx-select="#dividendListContainer" hx-swap="outerHTML" hx-include="#dividendSearchForm"
+	                    th:hx-vals="|{&quot;sort&quot;: &quot;netAmount,${sortField == 'netAmount' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+	                    배당금(세후) <span th:if="${sortField == 'netAmount'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+	                </th>
+	                <th class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListContainer" hx-select="#dividendListContainer" hx-swap="outerHTML" hx-include="#dividendSearchForm"
+	                    th:hx-vals="|{&quot;sort&quot;: &quot;tax,${sortField == 'tax' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+	                    세금 <span th:if="${sortField == 'tax'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+	                </th>
+	                <th class="text-right cursor-pointer hover:bg-base-300 hidden xl:table-cell" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListContainer" hx-select="#dividendListContainer" hx-swap="outerHTML" hx-include="#dividendSearchForm"
+	                    th:hx-vals="|{&quot;sort&quot;: &quot;taxableAmount,${sortField == 'taxableAmount' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+	                    과세금액 <span th:if="${sortField == 'taxableAmount'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
+	                </th>
+	            </tr>
+	            </thead>
+	            <tbody>
+	            <tr th:each="item : ${dividendList}">
+	                <td th:text="${#temporals.format(item.payDate, 'yyyy-MM-dd')}"></td>
+	                <td class="hidden sm:table-cell" th:text="${item.accountName}"></td>
+	                <td class="font-bold" th:text="${item.stockItemName}"></td>
+	                <td class="text-right" th:text="${#numbers.formatDecimal(item.grossAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+	                <td class="text-right text-primary font-bold" th:text="${#numbers.formatDecimal(item.netAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+	                <td class="text-right hidden lg:table-cell" th:text="${#numbers.formatDecimal(item.tax, 0, 'COMMA', 0, 'POINT')}"></td>
+	                <td class="text-right hidden xl:table-cell" th:text="${#numbers.formatDecimal(item.taxableAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+	            </tr>
+	            <tr th:if="${#lists.isEmpty(dividendList)}">
+		          	<td colspan="7" class="text-center py-10 opacity-50">배당 내역이 없습니다.</td>
+		        </tr>
+	            </tbody>
+	            <!-- Footer -->
+				<tfoot>
+					<tr class="font-bold bg-base-200">
+						<td colspan="3" class="text-center sm:text-right sm:pr-4">합계</td>
+						<td class="text-right font-mono" th:text="${#numbers.formatDecimal(totalGrossAmount, 0, 'COMMA', 0, 'POINT')}">0</td>
+						<td class="text-right font-mono" th:text="${#numbers.formatDecimal(totalNetAmount, 0, 'COMMA', 0, 'POINT')}">0</td>
+						<td class="text-right font-mono hidden lg:table-cell" th:text="${#numbers.formatDecimal(totalTax, 0, 'COMMA', 0, 'POINT')}">0</td>
+						<td class="text-right font-mono hidden xl:table-cell" th:text="${#numbers.formatDecimal(totalTaxableAmount, 0, 'COMMA', 0, 'POINT')}">0</td>
+					</tr>
+				</tfoot>
+	        </table>
+	    </div>
+	    
+	    <!-- Pagination -->
+		<div class="flex justify-center p-2 border-t border-base-200 bg-base-100" th:if="${pagination.totalPage > 1}">
+			<div class="join">
+				<!-- First -->
+				<button class="join-item btn btn-sm" 
+				        th:classappend="${!pagination.firstNav.isActive} ? 'btn-disabled'"
+				        th:disabled="${!pagination.firstNav.isActive}"
+				        hx-get="/stock/htmx/dividend/list" 
+				        hx-include="#dividendSearchForm"
+				        th:hx-vals="${'{&quot;page&quot;: ' + pagination.firstNav.page + '}'}"
+				        hx-target="#dividendListContainer"
+				        hx-select="#dividendListContainer"
+				        hx-swap="outerHTML">≪</button>
+				        
+				<!-- Previous -->
+				<button class="join-item btn btn-sm" 
+				        th:classappend="${!pagination.prevNav.isActive} ? 'btn-disabled'"
+				        th:disabled="${!pagination.prevNav.isActive}"
+				        hx-get="/stock/htmx/dividend/list"
+				        hx-include="#dividendSearchForm"
+				        th:hx-vals="${'{&quot;page&quot;: ' + pagination.prevNav.page + '}'}"
+				        hx-target="#dividendListContainer"
+				        hx-select="#dividendListContainer"
+				        hx-swap="outerHTML">&lt;</button>
+
+				<!-- Page Numbers -->
+				<button class="join-item btn btn-sm" 
+				        th:each="nav : ${pagination.navList}"
+				        th:text="${nav.page}"
+				        th:classappend="${nav.isActive} ? 'btn-active'"
+				        hx-get="/stock/htmx/dividend/list"
+				        hx-include="#dividendSearchForm"
+				        th:hx-vals="${'{&quot;page&quot;: ' + nav.page + '}'}"
+				        hx-target="#dividendListContainer"
+				        hx-select="#dividendListContainer"
+				        hx-swap="outerHTML"></button>
+
+				<!-- Next -->
+				<button class="join-item btn btn-sm" 
+				        th:classappend="${!pagination.nextNav.isActive} ? 'btn-disabled'"
+				        th:disabled="${!pagination.nextNav.isActive}"
+				        hx-get="/stock/htmx/dividend/list"
+				        hx-include="#dividendSearchForm"
+				        th:hx-vals="${'{&quot;page&quot;: ' + pagination.nextNav.page + '}'}"
+				        hx-target="#dividendListContainer"
+				        hx-select="#dividendListContainer"
+				        hx-swap="outerHTML">&gt;</button>
+				        
+				<!-- Last -->
+				<button class="join-item btn btn-sm" 
+				        th:classappend="${!pagination.lastNav.isActive} ? 'btn-disabled'"
+				        th:disabled="${!pagination.lastNav.isActive}"
+				        hx-get="/stock/htmx/dividend/list"
+				        hx-include="#dividendSearchForm"
+				        th:hx-vals="${'{&quot;page&quot;: ' + pagination.lastNav.page + '}'}"
+				        hx-target="#dividendListContainer"
+				        hx-select="#dividendListContainer"
+				        hx-swap="outerHTML">≫</button>
+			</div>
+		</div>
+	</div>
 </div>
 
 </body>

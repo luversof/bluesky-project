@@ -2,6 +2,7 @@
 package net.luversof.web.gate.stock.controller;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -462,10 +463,10 @@ public class StockHtmxController {
 
 			List<Account> accounts = accountClient.getAccountsByUserId(userId);
 			final Map<UUID, String> accountNames = accounts.stream()
-					.collect(Collectors.toMap(Account::id, Account::name, (left, _) -> left, LinkedHashMap::new));
+					.collect(Collectors.toMap(Account::id, Account::name, (left, right) -> left, LinkedHashMap::new));
 			final Map<UUID, Boolean> taxDeferredMap = accounts.stream().collect(Collectors.toMap(Account::id,
 					a -> a.jsonConfig() != null && Boolean.TRUE.equals(a.jsonConfig().get("isTaxDeferred")),
-					(l, _) -> l));
+					(l, r) -> l));
 
 			if (dividends.stream().anyMatch(d -> d.stockItemName() == null)) {
 				dividends.stream().map(DividendResponse::stockItemId).filter(Objects::nonNull).distinct()
@@ -1041,7 +1042,13 @@ public class StockHtmxController {
 	}
 
 	@GetMapping("/dividend/list")
-	public String dividendList(DividendRequest request,
+	public String dividendList(
+			@RequestParam(required = false) List<UUID> accountIdList,
+			@RequestParam(required = false) List<UUID> stockItemIdList,
+			@RequestParam(required = false) LocalDate startDate,
+			@RequestParam(required = false) LocalDate endDate,
+			@RequestParam(defaultValue = "1") int page,
+			@RequestParam(defaultValue = "15") int size,
 			@RequestParam(required = false) String sort,
 			Model model) {
 		UUID userId = UserUtil.getUserId();
@@ -1050,23 +1057,52 @@ public class StockHtmxController {
 			return ERROR_VIEW;
 		}
 
-		request.setUserId(userId);
+		// Date Range: Optional
+		Instant startInstant = (startDate == null) 
+				? null 
+				: startDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+				
+		Instant endInstant = (endDate == null)
+				? null
+				: endDate.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
 
+		var request = new DividendRequest();
+		request.setUserId(userId);
+		// Don't filter by account/stock at API level to get full list for Dropdowns
+		request.setStartDate(startInstant);
+		request.setEndDate(endInstant);
+		
 		List<DividendResponse> dividends = dividendClient.findDividends(request.toParams());
 
+		// 1. Extract Unique IDs from the full result set (for Dropdowns)
+		var dividendAccountIds = dividends.stream().map(DividendResponse::accountId).collect(Collectors.toSet());
+		var dividendStockIds = dividends.stream().map(DividendResponse::stockItemId).collect(Collectors.toSet());
+
+		// 2. Filter Account & Stock List for Dropdowns
 		List<Account> accounts = accountClient.getAccountsByUserId(userId);
+		List<Account> filteredAccountList = accounts.stream()
+				.filter(a -> dividendAccountIds.contains(a.id()))
+				.toList();
+				
 		Map<UUID, String> accountNames = accounts.stream()
-				.collect(Collectors.toMap(Account::id, Account::name, (left, _) -> left, LinkedHashMap::new));
+				.collect(Collectors.toMap(Account::id, Account::name, (left, right) -> left, LinkedHashMap::new));
 		Map<UUID, Boolean> taxDeferredMap = accounts.stream().collect(Collectors.toMap(Account::id,
 				a -> a.jsonConfig() != null && Boolean.TRUE.equals(a.jsonConfig().get("isTaxDeferred")),
-				(l, _) -> l));
+				(l, r) -> l));
 
-		// 모든 stockItemId 수집 및 이름 조회
-		// Optimize: Bulk fetch
-		Map<UUID, String> stockItemNames = stockItemClient.getStockItems().stream()
+		// Optimize: Bulk fetch and then filter
+		List<StockItem> stockItemList = stockItemClient.getStockItems();
+		List<StockItem> filteredStockItemList = stockItemList.stream()
+				.filter(s -> dividendStockIds.contains(s.id()))
+				.toList();
+				
+		Map<UUID, String> stockItemNames = stockItemList.stream()
 				.collect(Collectors.toMap(StockItem::id, StockItem::name));
 
+		// 3. Filter Dividends for View List based on User Selection
 		List<DividendView> viewList = dividends.stream()
+				.filter(d -> (accountIdList == null || accountIdList.isEmpty() || accountIdList.contains(d.accountId())))
+				.filter(d -> (stockItemIdList == null || stockItemIdList.isEmpty() || stockItemIdList.contains(d.stockItemId())))
 				.map(dividend -> {
 					String accountName = accountNames.getOrDefault(dividend.accountId(), UNKNOWN_LABEL);
 					String stockItemName = Optional.ofNullable(dividend.stockItemName())
@@ -1102,6 +1138,7 @@ public class StockHtmxController {
 				})
 				.collect(Collectors.toCollection(ArrayList::new));
 
+		// Sort
 		if (sort != null && !sort.isEmpty()) {
 			String[] parts = sort.split(",");
 			String field = parts[0];
@@ -1131,10 +1168,66 @@ public class StockHtmxController {
 				}
 				viewList.sort(comparator);
 			}
+		} else {
+			// Default Sort: PayDate Desc
+			viewList.sort(Comparator.comparing(DividendView::payDate, Comparator.nullsLast(Comparator.reverseOrder())));
 		}
+		
+		// Pagination & Show All Logic
+		if (size <= 0) size = 15;
+		
+		boolean isSearch = (accountIdList != null && !accountIdList.isEmpty())
+				|| (stockItemIdList != null && !stockItemIdList.isEmpty())
+				|| startDate != null || endDate != null;
 
-		model.addAttribute("dividendList", viewList);
+		if (isSearch) {
+			size = Math.max(viewList.size(), 1);
+		}
+		
+		int totalItems = viewList.size();
+		int totalPages = (int) Math.ceil((double) totalItems / size);
+		int currentPage = Math.max(1, Math.min(page, totalPages));
+		if (totalPages == 0) currentPage = 1;
+		
+		int fromIndex = (currentPage - 1) * size;
+		int toIndex = Math.min(fromIndex + size, totalItems);
+		
+		List<DividendView> pagedList = (fromIndex < totalItems)
+				? viewList.subList(fromIndex, toIndex)
+				: Collections.emptyList();
+		
+		// Calculate Totals
+		BigDecimal totalGrossAmount = pagedList.stream().map(DividendView::grossAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal totalNetAmount = pagedList.stream().map(DividendView::netAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal totalTax = pagedList.stream().map(DividendView::tax).reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal totalTaxableAmount = pagedList.stream().map(DividendView::taxableAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+		var pageImpl = new PageImpl<>(pagedList, PageRequest.of(currentPage - 1, size), totalItems);
+		var pagination = new Pagination(pageImpl);
+
+		model.addAttribute("dividendList", pagedList);
+		model.addAttribute("pagination", pagination);
+		model.addAttribute("totalItems", totalItems);
+		model.addAttribute("totalPages", totalPages);
+		model.addAttribute("currentPage", currentPage);
+		model.addAttribute("size", size);
+
+		model.addAttribute("accountList", filteredAccountList);
+		model.addAttribute("stockItemList", filteredStockItemList);
+		
+		// Preserved Values
+		model.addAttribute("selectedAccountId", (accountIdList != null && !accountIdList.isEmpty()) ? accountIdList.get(0) : null);
+		model.addAttribute("selectedStockItemId", (stockItemIdList != null && !stockItemIdList.isEmpty()) ? stockItemIdList.get(0) : null);
+		model.addAttribute("startDate", startDate);
+		model.addAttribute("endDate", endDate);
+		
 		model.addAttribute("sort", sort);
+		
+		model.addAttribute("totalGrossAmount", totalGrossAmount);
+		model.addAttribute("totalNetAmount", totalNetAmount);
+		model.addAttribute("totalTax", totalTax);
+		model.addAttribute("totalTaxableAmount", totalTaxableAmount);
+
 		return "stock/htmx/fragments/tabs :: dividendHistory";
 	}
 
@@ -1147,7 +1240,6 @@ public class StockHtmxController {
 			@RequestParam(required = false) LocalDate endDate,
 			@RequestParam(defaultValue = "1") int page,
 			@RequestParam(defaultValue = "15") int size,
-			@RequestParam(required = false) String keyword,
 			Model model) {
 
 		UUID userId = UserUtil.getUserId();
@@ -1163,31 +1255,51 @@ public class StockHtmxController {
 			return ERROR_VIEW;
 		}
 
-		LocalDate end = (endDate == null) ? LocalDate.now() : endDate;
-		// Default start date: 2020-01-01 (effectively "all" for typical use, vs 1 month previously)
-		LocalDate start = (startDate == null) ? LocalDate.of(2020, 1, 1) : startDate;
-
-		java.time.Instant startInst = start.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
-		java.time.Instant endInst = end.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+		java.time.Instant startInst = (startDate == null) 
+				? null 
+				: startDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+				
+		java.time.Instant endInst = (endDate == null)
+				? null
+				: endDate.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
 
 		TradeSearchRequest request = new TradeSearchRequest(userId, accountIdList, stockItemIdList, startInst, endInst);
 		List<TradeResponse> fullTradeList = tradeClient.findTrades(request.toParams());
 
-		// Filtering (Keyword)
-		if (keyword != null && !keyword.isBlank()) {
-			fullTradeList = fullTradeList.stream()
-					.filter(t -> t.stockItemName() != null && t.stockItemName().contains(keyword))
-					.toList();
-		}
-		
+		// Basic Data Fetching (Accounts & StockItems) for UI Labels
+		List<Account> accountList = accountClient.getAccountsByUserId(userId);
+		Map<UUID, String> accountNames = accountList.stream()
+				.collect(Collectors.toMap(Account::id, Account::name, (left, right) -> left, LinkedHashMap::new));
+
+		List<StockItem> stockItemList = stockItemClient.getStockItems();
+		Map<UUID, String> stockItemNames = stockItemList.stream()
+				.collect(Collectors.toMap(StockItem::id, StockItem::name));
+
+		// Enrich Trade List with Names (if needed for sorting or just logic)
+		fullTradeList = fullTradeList.stream().map(t -> new TradeResponse(
+				t.id(),
+				t.accountId(),
+				t.stockItemId(),
+				stockItemNames.getOrDefault(t.stockItemId(), UNKNOWN_LABEL),
+				t.type(),
+				t.quantity(),
+				t.price(),
+				t.fee(),
+				t.tax(),
+				t.amount(),
+				t.realizedProfit(),
+				t.tradeDate()))
+		.collect(Collectors.toCollection(ArrayList::new));
+
 		// Sort by Date Descending
-		fullTradeList = new ArrayList<>(fullTradeList); // make mutable
 		fullTradeList.sort(Comparator.comparing(TradeResponse::tradeDate, Comparator.nullsLast(Comparator.reverseOrder())));
 		
-		// Check invalid size
 		if(size <= 0) size = 15;
 		
-		boolean isSearch = (keyword != null && !keyword.isBlank()) || (startDate != null) || (endDate != null);
+		boolean isSearch = (accountIdList != null && !accountIdList.isEmpty())
+				|| (stockItemIdList != null && !stockItemIdList.isEmpty())
+				|| startDate != null || endDate != null;
+		
 		if (isSearch) {
 			size = Math.max(fullTradeList.size(), 1);
 		}
@@ -1226,22 +1338,20 @@ public class StockHtmxController {
 		var pageImpl = new PageImpl<>(pagedList, PageRequest.of(currentPage - 1, size), totalItems);
 		var pagination = new Pagination(pageImpl);
 
-		List<Account> accounts = accountClient.getAccountsByUserId(userId);
-		Map<UUID, String> accountNames = accounts.stream()
-				.collect(Collectors.toMap(Account::id, Account::name, (left, r) -> left));
-
 		model.addAttribute("tradeList", pagedList);
 		model.addAttribute("pagination", pagination);
-		model.addAttribute("totalItems", totalItems);
-		model.addAttribute("totalPages", totalPages);
-		model.addAttribute("currentPage", currentPage);
-		model.addAttribute("size", size);
 		model.addAttribute("accountNames", accountNames);
-		model.addAttribute("startDate", start);
-		model.addAttribute("endDate", end);
-		model.addAttribute("keyword", keyword);
-
-		return "stock/htmx/trade";
+		
+		// Search Form Data
+		model.addAttribute("accountList", accountList); 
+		model.addAttribute("stockItemList", stockItemList);
+		
+		// Preserved Values
+		model.addAttribute("selectedAccountId", (accountIdList != null && !accountIdList.isEmpty()) ? accountIdList.get(0) : null);
+		model.addAttribute("selectedStockItemId", (stockItemIdList != null && !stockItemIdList.isEmpty()) ? stockItemIdList.get(0) : null);
+		model.addAttribute("startDate", startDate);
+		model.addAttribute("endDate", endDate);
+		
+		return "stock/htmx/trade :: tradeList";
 	}
-
 }
