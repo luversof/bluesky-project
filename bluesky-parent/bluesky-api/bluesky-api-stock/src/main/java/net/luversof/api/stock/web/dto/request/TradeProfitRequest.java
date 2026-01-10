@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
 import org.springframework.util.CollectionUtils;
 
 import net.luversof.api.stock.constant.StockErrorCode;
@@ -31,8 +33,8 @@ public record TradeProfitRequest(
 	UUID userId,
 	List<UUID> accountIdList,
 	List<UUID> stockItemIdList,
-	Instant startDate,
-	Instant endDate,
+	@DateTimeFormat(iso = ISO.DATE_TIME) Instant startDate,
+	@DateTimeFormat(iso = ISO.DATE_TIME) Instant endDate,
 	TradeProfitRequestGroup groupBy
 	) {
 	

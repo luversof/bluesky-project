@@ -229,6 +229,7 @@ public class StockHtmxController {
 					String timeLabel = labels.get(d - 1);
 					List<TradeProfit> profitList = dayData.get(d);
 					Map<String, BigDecimal> rMap = new HashMap<>();
+					Map<String, BigDecimal> uMap = new HashMap<>();
 
 					for (TradeProfit p : profitList) {
 						String name = "ACCOUNT".equals(groupBy)
@@ -236,12 +237,15 @@ public class StockHtmxController {
 								: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
 						rMap.merge(name, p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO,
 								BigDecimal::add);
+						uMap.merge(name, p.evaluationProfitNet() != null ? p.evaluationProfitNet() : BigDecimal.ZERO,
+								BigDecimal::add);
 					}
 
 					for (String name : rMap.keySet()) {
 						BigDecimal r = rMap.getOrDefault(name, BigDecimal.ZERO);
-						if (r.abs().compareTo(BigDecimal.ZERO) > 0) {
-							rows.add(new AnalyticsRow(timeLabel, name, r, BigDecimal.ZERO, BigDecimal.ZERO, r));
+						BigDecimal u = uMap.getOrDefault(name, BigDecimal.ZERO);
+						if (r.abs().compareTo(BigDecimal.ZERO) > 0 || u.abs().compareTo(BigDecimal.ZERO) > 0) {
+							rows.add(new AnalyticsRow(timeLabel, name, r, u, BigDecimal.ZERO, r));
 						}
 					}
 				}
@@ -321,6 +325,7 @@ public class StockHtmxController {
 					String timeLabel = labels.get(m - 1);
 					List<TradeProfit> profitList = monthData.get(m);
 					Map<String, BigDecimal> rMap = new HashMap<>();
+					Map<String, BigDecimal> uMap = new HashMap<>();
 
 					for (TradeProfit p : profitList) {
 						String name = "ACCOUNT".equals(groupBy)
@@ -328,12 +333,15 @@ public class StockHtmxController {
 								: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
 						rMap.merge(name, p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO,
 								BigDecimal::add);
+						uMap.merge(name, p.evaluationProfitNet() != null ? p.evaluationProfitNet() : BigDecimal.ZERO,
+								BigDecimal::add);
 					}
 
 					for (String name : rMap.keySet()) {
 						BigDecimal r = rMap.getOrDefault(name, BigDecimal.ZERO);
-						if (r.abs().compareTo(BigDecimal.ZERO) > 0) {
-							rows.add(new AnalyticsRow(timeLabel, name, r, BigDecimal.ZERO, BigDecimal.ZERO, r));
+						BigDecimal u = uMap.getOrDefault(name, BigDecimal.ZERO);
+						if (r.abs().compareTo(BigDecimal.ZERO) > 0 || u.abs().compareTo(BigDecimal.ZERO) > 0) {
+							rows.add(new AnalyticsRow(timeLabel, name, r, u, BigDecimal.ZERO, r));
 						}
 					}
 				}

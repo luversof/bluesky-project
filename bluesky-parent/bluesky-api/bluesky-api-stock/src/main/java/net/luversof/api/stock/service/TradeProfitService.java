@@ -209,10 +209,12 @@ public class TradeProfitService {
 		Instant end = request.endDate();
 
 		for (Trade trade : sortedTrades) {
+			
+			if (end != null && trade.getTradeDate().isAfter(end))
+				break;
+			
 			boolean inPeriod = true;
 			if (start != null && trade.getTradeDate().isBefore(start))
-				inPeriod = false;
-			if (end != null && trade.getTradeDate().isAfter(end))
 				inPeriod = false;
 
 			BigDecimal fee = nz(trade.getFee());
