@@ -128,6 +128,10 @@ public class EnhancedTradeProfitService extends TradeProfitService {
 				tradesForRow = byStock.getOrDefault(p.getStockItemId(), List.of());
 			}
 			enrichWithNet(tradesForRow, p);
+			if (request.hasDateRange()) {
+				p.setEvaluationProfitNet(BigDecimal.ZERO);
+				p.setTotalProfitNet(p.getRealizedProfitNet());
+			}
 			enriched.add(p);
 		}
 		return enriched;

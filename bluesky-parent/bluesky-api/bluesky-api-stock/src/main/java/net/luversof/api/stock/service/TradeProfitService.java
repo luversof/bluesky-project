@@ -143,8 +143,14 @@ public class TradeProfitService {
 			UUID stockItemId = first.getStockItemId();
 
 			TradeProfit profit = calculateStockProfit(group, accountId, stockItemId, request);
-			if (!isEmptyProfit(profit)) {
-				result.add(profit);
+			if (request.hasDateRange()) {
+				if (profit.getRealizedProfit().compareTo(BigDecimal.ZERO) != 0) {
+					result.add(profit);
+				}
+			} else {
+				if (!isEmptyProfit(profit)) {
+					result.add(profit);
+				}
 			}
 		}
 		return result;
@@ -163,8 +169,14 @@ public class TradeProfitService {
 			List<Trade> group = entry.getValue();
 
 			TradeProfit profit = calculateStockProfit(group, null, stockItemId, request);
-			if (!isEmptyProfit(profit)) {
-				result.add(profit);
+			if (request.hasDateRange()) {
+				if (profit.getRealizedProfit().compareTo(BigDecimal.ZERO) != 0) {
+					result.add(profit);
+				}
+			} else {
+				if (!isEmptyProfit(profit)) {
+					result.add(profit);
+				}
 			}
 		}
 		return result;
@@ -308,12 +320,19 @@ public class TradeProfitService {
 				: BigDecimal.ZERO;
 
 		// 5. Current Evaluation
-		BigDecimal currentPrice = stockPriceService.getCurrentPrice(stockItemId);
-		BigDecimal evaluationAmount = currentPrice.multiply(BigDecimal.valueOf(holdingQuantity));
+		BigDecimal currentPrice = BigDecimal.ZERO;
+		BigDecimal evaluationAmount = BigDecimal.ZERO;
+		BigDecimal evaluationProfit = BigDecimal.ZERO;
+		BigDecimal evaluationProfitNet = BigDecimal.ZERO;
 
-		// Profit on Holdings
-		BigDecimal evaluationProfit = evaluationAmount.subtract(holdingTotalCost);
-		BigDecimal evaluationProfitNet = evaluationAmount.subtract(holdingTotalCostNet);
+		if (!request.hasDateRange()) {
+			currentPrice = stockPriceService.getCurrentPrice(stockItemId);
+			evaluationAmount = currentPrice.multiply(BigDecimal.valueOf(holdingQuantity));
+
+			// Profit on Holdings
+			evaluationProfit = evaluationAmount.subtract(holdingTotalCost);
+			evaluationProfitNet = evaluationAmount.subtract(holdingTotalCostNet);
+		}
 
 		// 6. Period Averages & Derived Stats
 		BigDecimal averageSellPrice = periodTotalSellQuantity > 0
