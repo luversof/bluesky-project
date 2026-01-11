@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.time.Instant;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -224,6 +225,7 @@ public class UserInfoController {
 			System.err.println("UserInfoController.validateSession session is null. sessionId: " + sessionId);
 			return null;
 		}
+		session.setLastAccessedTime(Instant.now());
 		sessionRepository.save(session);
 
 		Map<String, Object> sessionAttributes = new HashMap<>();
