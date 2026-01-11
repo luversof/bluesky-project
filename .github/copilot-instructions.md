@@ -16,6 +16,7 @@ Spring Boot 기반의 멀티 모듈 프로젝트로, 게시판, 블로그, 주�
 **핵심 원칙**: `bluesky-api-user`가 세션 저장소(Redis)를 독점 관리하며, 웹 모듈은 API를 통해 세션을 공유합니다.
 
 #### 1. 세션 관리 (Session Management)
+
 - **중앙 집중식 세션**: `bluesky-api-user`만 `spring-session-data-redis` 의존성을 가집니다.
 - **웹 모듈 (Client)**:
   - `bluesky-web-*` 모듈은 Redis에 직접 접근하지 않습니다.
@@ -26,6 +27,7 @@ Spring Boot 기반의 멀티 모듈 프로젝트로, 게시판, 블로그, 주�
   - Domain: `bluesky.local` (로컬 개발 기준)
 
 #### 2. OAuth2 로그인 흐름
+
 1. **로그인 시작**: `bluesky-web-gate`에서 `/login/redirect?redirectUrl=...` 호출
 2. **리다이렉트 처리**: `LoginRedirectController`가 `redirectUrl`을 세션에 저장하고 `/login`으로 리다이렉트
 3. **인증 위임**: `bluesky-web-user`가 OAuth2 Provider(GitHub 등)와 통신
@@ -33,13 +35,12 @@ Spring Boot 기반의 멀티 모듈 프로젝트로, 게시판, 블로그, 주�
 5. **로그인 완료**: `OAuth2LoginSuccessHandler`가 세션의 `redirectUrl`로 사용자 이동
 
 #### 3. bluesky-api-user (세션 서버)
+
 - **역할**: 세션 데이터의 물리적 저장(Redis) 및 조회 담당
 - **API**:
   - `POST /api/user/session`: 세션 생성/저장 (직렬화된 속성 포함)
   - `GET /api/user/session/{sessionId}`: 세션 조회
   - `DELETE /api/user/session/{sessionId}`: 세션 삭제
-
-
 
 ## 모듈 구조
 
@@ -233,10 +234,10 @@ Remove-Item Env:SPRING_PROFILES_ACTIVE
 1. **웹 모듈에 Redis 의존성 추가** (`spring-session-data-redis`는 `bluesky-api-user`에만 존재해야 함)
 2. Gate나 다른 웹 모듈에서 직접 OAuth2 토큰을 DB에 저장
 3. **스페이스로 들여쓰기** (반드시 탭 사용)
-3. **properties 파일에 한글 주석** (인코딩 깨짐)
-4. 불필요한 기본 설정 추가
-5. api-user를 외부에 노출
-6. 도메인별 패키지 구조를 무시하고 client 패키지에 모든 Feign Client 모음
+4. **properties 파일에 한글 주석** (인코딩 깨짐)
+5. 불필요한 기본 설정 추가
+6. api-user를 외부에 노출
+7. 도메인별 패키지 구조를 무시하고 client 패키지에 모든 Feign Client 모음
 
 ### ✅ 해야 할 것
 
