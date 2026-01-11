@@ -224,6 +224,7 @@ public class UserInfoController {
 			System.err.println("UserInfoController.validateSession session is null. sessionId: " + sessionId);
 			return null;
 		}
+		sessionRepository.save(session);
 
 		Map<String, Object> sessionAttributes = new HashMap<>();
 		session.getAttributeNames().forEach(name -> sessionAttributes.put(name, session.getAttribute(name)));
