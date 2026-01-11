@@ -65,60 +65,60 @@ public class TradeProfitService {
 		// 기간 요청이 있더라도 평단가 계산을 위해 전체 데이터를 조회해야 함
 		List<Trade> tradeList = switch (request.getRequestType()) {
 			case USER -> {
-				var accountList = accountService.findByUserId(request.userId());
+				var accountList = accountService.findByUserId(request.getUserId());
 				if (accountList.isEmpty()) {
 					StockErrorCode.INVALID_USER_ID.throwException();
 				}
 				yield tradeService.findByAccountIdIn(accountList.stream().map(Account::getId).toList());
 			}
 			case USER_ACCOUNT -> {
-				var accountList = accountService.findByIdIn(request.accountIdList());
+				var accountList = accountService.findByIdIn(request.getAccountIdList());
 				if (accountList.isEmpty()) {
 					StockErrorCode.INVALID_USER_ID.throwException();
 				}
 
 				accountList.stream().forEach(account -> {
-					if (!account.getUserId().equals(request.userId())) {
-						StockErrorCode.INVALID_USER_ID.throwException(request.userId(), account.getId());
+					if (!account.getUserId().equals(request.getUserId())) {
+						StockErrorCode.INVALID_USER_ID.throwException(request.getUserId(), account.getId());
 					}
 				});
 
-				yield tradeService.findByAccountIdIn(request.accountIdList());
+				yield tradeService.findByAccountIdIn(request.getAccountIdList());
 			}
 			case USER_STOCKITEM -> {
-				var accountList = accountService.findByUserId(request.userId());
+				var accountList = accountService.findByUserId(request.getUserId());
 				if (accountList.isEmpty()) {
 					StockErrorCode.INVALID_USER_ID.throwException();
 				}
 
 				accountList.stream().forEach(x -> {
-					if (!x.getUserId().equals(request.userId())) {
+					if (!x.getUserId().equals(request.getUserId())) {
 						StockErrorCode.INVALID_USER_ID.throwException();
 					}
 				});
 
-				yield tradeService.findByAccountIdInAndStockItemIdIn(request.accountIdList(),
-						request.stockItemIdList());
+				yield tradeService.findByAccountIdInAndStockItemIdIn(accountList.stream().map(Account::getId).toList(),
+						request.getStockItemIdList());
 			}
 			case USER_ACCOUNT_STOCKITEM -> {
-				var accountList = accountService.findByIdIn(request.accountIdList());
+				var accountList = accountService.findByIdIn(request.getAccountIdList());
 				if (accountList.isEmpty()) {
 					StockErrorCode.INVALID_USER_ID.throwException();
 				}
 
 				accountList.stream().forEach(account -> {
-					if (!account.getUserId().equals(request.userId())) {
-						StockErrorCode.INVALID_USER_ID.throwException(request.userId(), account.getId());
+					if (!account.getUserId().equals(request.getUserId())) {
+						StockErrorCode.INVALID_USER_ID.throwException(request.getUserId(), account.getId());
 					}
 				});
 
-				yield tradeService.findByAccountIdInAndStockItemIdIn(request.accountIdList(),
-						request.stockItemIdList());
+				yield tradeService.findByAccountIdInAndStockItemIdIn(request.getAccountIdList(),
+						request.getStockItemIdList());
 			}
 		};
 
 		// 그룹별로 기본 손익 계산
-		List<TradeProfit> base = switch (request.groupBy()) {
+		List<TradeProfit> base = switch (request.getGroupBy()) {
 			case ACCOUNT_AND_STOCKITEM -> calculateProfitByAccountAndStock(tradeList, request);
 			case STOCKITEM -> calculateProfitByStock(tradeList, request);
 		};
@@ -205,8 +205,8 @@ public class TradeProfitService {
 		BigDecimal periodRealizedProfitNet = BigDecimal.ZERO; // Net
 
 		// Date filter helpers
-		Instant start = request.startDate();
-		Instant end = request.endDate();
+		Instant start = request.getStartDate();
+		Instant end = request.getEndDate();
 
 		for (Trade trade : sortedTrades) {
 			
@@ -374,40 +374,40 @@ public class TradeProfitService {
 	 * 근사치입니다.
 	 */
 	public List<TradeProfitTimeSeriesPoint> aggregateTimeSeries(TradeProfitRequest request, String granularity) {
-		Instant end = request.endDate() != null ? request.endDate() : Instant.now();
-		Instant start = request.startDate() != null ? request.startDate() : end.minus(90, ChronoUnit.DAYS);
+		Instant end = request.getEndDate() != null ? request.getEndDate() : Instant.now();
+		Instant start = request.getStartDate() != null ? request.getStartDate() : end.minus(90, ChronoUnit.DAYS);
 
 		// 1) 조회 대상 트레이드: 기존 calculateProfit과 유사한 기준으로 대상 계좌/종목의 전체 트레이드를 조회(범위 제한 없이)
 		List<Trade> allTrades = switch (request.getRequestType()) {
 			case USER -> {
-				var accountList = accountService.findByUserId(request.userId());
+				var accountList = accountService.findByUserId(request.getUserId());
 				if (accountList.isEmpty()) {
 					StockErrorCode.INVALID_USER_ID.throwException();
 				}
 				yield tradeService.findByAccountIdIn(accountList.stream().map(Account::getId).toList());
 			}
 			case USER_ACCOUNT -> {
-				var accountList = accountService.findByIdIn(request.accountIdList());
+				var accountList = accountService.findByIdIn(request.getAccountIdList());
 				if (accountList.isEmpty()) {
 					StockErrorCode.INVALID_USER_ID.throwException();
 				}
-				yield tradeService.findByAccountIdIn(request.accountIdList());
+				yield tradeService.findByAccountIdIn(request.getAccountIdList());
 			}
 			case USER_STOCKITEM -> {
-				var accountList = accountService.findByUserId(request.userId());
+				var accountList = accountService.findByUserId(request.getUserId());
 				if (accountList.isEmpty()) {
 					StockErrorCode.INVALID_USER_ID.throwException();
 				}
 				yield tradeService.findByAccountIdInAndStockItemIdIn(accountList.stream().map(Account::getId).toList(),
-						request.stockItemIdList());
+						request.getStockItemIdList());
 			}
 			case USER_ACCOUNT_STOCKITEM -> {
-				var accountList = accountService.findByIdIn(request.accountIdList());
+				var accountList = accountService.findByIdIn(request.getAccountIdList());
 				if (accountList.isEmpty()) {
 					StockErrorCode.INVALID_USER_ID.throwException();
 				}
-				yield tradeService.findByAccountIdInAndStockItemIdIn(request.accountIdList(),
-						request.stockItemIdList());
+				yield tradeService.findByAccountIdInAndStockItemIdIn(request.getAccountIdList(),
+						request.getStockItemIdList());
 			}
 		};
 

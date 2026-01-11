@@ -47,69 +47,71 @@ public class EnhancedTradeProfitService extends TradeProfitService {
 		// 2) Fetch the exact trades used by the base calculation (same switch logic)
 		List<Trade> tradeList = switch (request.getRequestType()) {
 			case USER -> {
-				var accountList = accountService.findByUserId(request.userId());
+				var accountList = accountService.findByUserId(request.getUserId());
 				if (accountList.isEmpty()) {
 					StockErrorCode.INVALID_USER_ID.throwException();
 				}
 				yield request.hasDateRange()
 						? tradeService.findByAccountIdInAndTradeDateBetween(
-								accountList.stream().map(Account::getId).toList(), request.startDate(),
-								request.endDate())
+								accountList.stream().map(Account::getId).toList(), request.getStartDate(),
+								request.getEndDate())
 						: tradeService.findByAccountIdIn(accountList.stream().map(Account::getId).toList());
 			}
 			case USER_ACCOUNT -> {
-				var accountList = accountService.findByIdIn(request.accountIdList());
+				var accountList = accountService.findByIdIn(request.getAccountIdList());
 				if (accountList.isEmpty()) {
 					StockErrorCode.INVALID_USER_ID.throwException();
 				}
 				accountList.forEach(account -> {
-					if (!account.getUserId().equals(request.userId())) {
-						StockErrorCode.INVALID_USER_ID.throwException(request.userId(), account.getId());
+					if (!account.getUserId().equals(request.getUserId())) {
+						StockErrorCode.INVALID_USER_ID.throwException(request.getUserId(), account.getId());
 					}
 				});
 				yield request.hasDateRange()
-						? tradeService.findByAccountIdInAndTradeDateBetween(request.accountIdList(),
-								request.startDate(), request.endDate())
-						: tradeService.findByAccountIdIn(request.accountIdList());
+						? tradeService.findByAccountIdInAndTradeDateBetween(request.getAccountIdList(),
+								request.getStartDate(), request.getEndDate())
+						: tradeService.findByAccountIdIn(request.getAccountIdList());
 			}
 			case USER_STOCKITEM -> {
-				var accountList = accountService.findByUserId(request.userId());
+				var accountList = accountService.findByUserId(request.getUserId());
 				if (accountList.isEmpty()) {
 					StockErrorCode.INVALID_USER_ID.throwException();
 				}
 				accountList.forEach(x -> {
-					if (!x.getUserId().equals(request.userId())) {
+					if (!x.getUserId().equals(request.getUserId())) {
 						StockErrorCode.INVALID_USER_ID.throwException();
 					}
 				});
 				yield request.hasDateRange()
-						? tradeService.findByAccountIdInAndStockItemIdInAndTradeDateBetween(request.accountIdList(),
-								request.stockItemIdList(), request.startDate(), request.endDate())
-						: tradeService.findByAccountIdInAndStockItemIdIn(request.accountIdList(),
-								request.stockItemIdList());
+						? tradeService.findByAccountIdInAndStockItemIdInAndTradeDateBetween(
+								accountList.stream().map(Account::getId).toList(),
+								request.getStockItemIdList(), request.getStartDate(), request.getEndDate())
+						: tradeService.findByAccountIdInAndStockItemIdIn(
+								accountList.stream().map(Account::getId).toList(),
+								request.getStockItemIdList());
 			}
 			case USER_ACCOUNT_STOCKITEM -> {
-				var accountList = accountService.findByIdIn(request.accountIdList());
+				var accountList = accountService.findByIdIn(request.getAccountIdList());
 				if (accountList.isEmpty()) {
 					StockErrorCode.INVALID_USER_ID.throwException();
 				}
 				accountList.forEach(account -> {
-					if (!account.getUserId().equals(request.userId())) {
-						StockErrorCode.INVALID_USER_ID.throwException(request.userId(), account.getId());
+					if (!account.getUserId().equals(request.getUserId())) {
+						StockErrorCode.INVALID_USER_ID.throwException(request.getUserId(), account.getId());
 					}
 				});
 				yield request.hasDateRange()
-						? tradeService.findByAccountIdInAndStockItemIdInAndTradeDateBetween(request.accountIdList(),
-								request.stockItemIdList(), request.startDate(), request.endDate())
-						: tradeService.findByAccountIdInAndStockItemIdIn(request.accountIdList(),
-								request.stockItemIdList());
+						? tradeService.findByAccountIdInAndStockItemIdInAndTradeDateBetween(request.getAccountIdList(),
+								request.getStockItemIdList(), request.getStartDate(), request.getEndDate())
+						: tradeService.findByAccountIdInAndStockItemIdIn(request.getAccountIdList(),
+								request.getStockItemIdList());
 			}
 		};
 
 		// 3) Build grouping maps to quickly fetch trades per result row
 		Map<String, List<Trade>> byAccountAndStock = new HashMap<>();
 		Map<UUID, List<Trade>> byStock = new HashMap<>();
-		if (request.groupBy() == TradeProfitRequestGroup.ACCOUNT_AND_STOCKITEM) {
+		if (request.getGroupBy() == TradeProfitRequestGroup.ACCOUNT_AND_STOCKITEM) {
 			byAccountAndStock = tradeList.stream()
 					.collect(Collectors.groupingBy(t -> t.getAccountId() + "-" + t.getStockItemId()));
 		} else {
@@ -120,7 +122,7 @@ public class EnhancedTradeProfitService extends TradeProfitService {
 		List<TradeProfit> enriched = new ArrayList<>(base.size());
 		for (TradeProfit p : base) {
 			List<Trade> tradesForRow;
-			if (request.groupBy() == TradeProfitRequestGroup.ACCOUNT_AND_STOCKITEM) {
+			if (request.getGroupBy() == TradeProfitRequestGroup.ACCOUNT_AND_STOCKITEM) {
 				tradesForRow = byAccountAndStock.getOrDefault(p.getAccountId() + "-" + p.getStockItemId(), List.of());
 			} else {
 				tradesForRow = byStock.getOrDefault(p.getStockItemId(), List.of());
