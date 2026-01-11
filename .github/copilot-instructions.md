@@ -110,6 +110,12 @@ net.luversof.api.{module}/
 - 예: `Customizer.withDefaults()`, 기본 URL 등
 - 필수 설정만 명시적으로 작성
 
+### RequestParam
+
+- `@RequestParam` 사용 시 변수명과 파라미터명이 일치하면 속성값 생략
+- ❌ `@RequestParam("name") String name`
+- ✅ `@RequestParam String name`
+
 ### Security 설정 예시
 
 ```java

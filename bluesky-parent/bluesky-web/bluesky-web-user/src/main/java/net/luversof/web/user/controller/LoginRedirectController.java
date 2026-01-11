@@ -10,7 +10,7 @@ import jakarta.servlet.http.HttpSession;
 public class LoginRedirectController {
 
     @GetMapping("/login/redirect")
-    public String redirect(@RequestParam("redirectUrl") String redirectUrl, HttpSession session) {
+    public String redirect(@RequestParam String redirectUrl, HttpSession session) {
         session.setAttribute("redirectUrl", redirectUrl);
         return "redirect:/login";
     }

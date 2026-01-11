@@ -20,14 +20,14 @@ public interface UserInfoApiClient {
 
 	@GetExchange("/search/findByProvider")
 	UserInfoResponse findByProviderAndProviderId(
-			@RequestParam("provider") String provider,
-			@RequestParam("providerId") String providerId);
+			@RequestParam String provider,
+			@RequestParam String providerId);
 
 	@GetExchange("/search/findByIdIn")
-	List<UserInfoResponse> findByIdIn(@RequestParam("ids") List<UUID> ids);
+	List<UserInfoResponse> findByIdIn(@RequestParam List<UUID> ids);
 
 	@GetExchange("/validate-session")
-	UserInfoResponse validateSession(@RequestParam("sessionId") String sessionId);
+	UserInfoResponse validateSession(@RequestParam String sessionId);
 
 	@PostExchange("/create-session")
 	void createSession(@RequestBody CreateSessionRequest request);

@@ -1,29 +1,19 @@
 package net.luversof.api.user.controller;
 
+import java.lang.reflect.Field;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.time.Instant;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextImpl;
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
-import org.springframework.security.oauth2.core.user.OAuth2User;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.session.Session;
 import org.springframework.session.MapSession;
+import org.springframework.session.Session;
 import org.springframework.session.SessionRepository;
 import org.springframework.util.ReflectionUtils;
-
-import java.lang.reflect.Field;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -219,7 +209,7 @@ public class UserInfoController {
 	}
 
 	@GetMapping("/validate-session")
-	public UserInfoResponse validateSession(@RequestParam("sessionId") String sessionId) {
+	public UserInfoResponse validateSession(@RequestParam String sessionId) {
 		Session session = sessionRepository.findById(sessionId);
 		if (session == null) {
 			System.err.println("UserInfoController.validateSession session is null. sessionId: " + sessionId);
@@ -240,7 +230,7 @@ public class UserInfoController {
 	}
 
 	@GetMapping("/search/findByIdIn")
-	public List<UserInfo> findByIdIn(@RequestParam("ids") List<UUID> ids) {
+	public List<UserInfo> findByIdIn(@RequestParam List<UUID> ids) {
 		return userInfoService.findByIdIn(ids);
 	}
 
@@ -251,8 +241,8 @@ public class UserInfoController {
 
 	@GetMapping("/search/findByProvider")
 	public Optional<UserInfo> findByProviderAndProviderId(
-			@RequestParam("provider") String provider,
-			@RequestParam("providerId") String providerId) {
+			@RequestParam String provider,
+			@RequestParam String providerId) {
 		return userInfoService.findByProviderAndProviderId(provider, providerId);
 	}
 

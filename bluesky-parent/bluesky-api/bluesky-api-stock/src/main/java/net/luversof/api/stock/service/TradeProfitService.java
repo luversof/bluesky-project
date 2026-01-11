@@ -2,10 +2,15 @@ package net.luversof.api.stock.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -18,16 +23,9 @@ import net.luversof.api.stock.domain.Account;
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.domain.TradeProfit;
 import net.luversof.api.stock.web.dto.request.TradeProfitRequest;
-import net.luversof.api.stock.web.dto.request.TradeProfitRequestGroup;
-import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesPoint;
 import net.luversof.api.stock.web.dto.request.TradeSearchRequest;
+import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesPoint;
 import net.luversof.api.stock.web.dto.response.TradeResponse;
-import net.luversof.api.stock.domain.StockItem;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.TreeMap;
 
 /**
  * 통합 주식 손익 계산 서비스
