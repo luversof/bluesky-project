@@ -53,6 +53,11 @@
 			</dependency>
 			<dependency>
 				<groupId>net.luversof</groupId>
+				<artifactId>bluesky-app-google</artifactId>
+				<version>${bluesky-project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.luversof</groupId>
 				<artifactId>bluesky-client-common</artifactId>
 				<version>${bluesky-project.version}</version>
 			</dependency>

@@ -1,0 +1,106 @@
+package net.luversof.app.google.service.sheets;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.jspecify.annotations.NonNull;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.services.sheets.v4.Sheets;
+import com.google.api.services.sheets.v4.model.ValueRange;
+import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.ServiceAccountCredentials;
+
+import net.luversof.app.google.constant.GoogleSpreadSheetInfoType;
+import net.luversof.app.google.service.GoogleIamServiceAccountInfoService;
+import net.luversof.app.google.service.GoogleSpreadSheetInfoService;
+import tools.jackson.databind.json.JsonMapper;
+
+@Service
+public class GoogleSheetService {
+	
+	@Autowired
+	private JsonMapper jsonMapper;
+	
+	@Autowired
+	private GoogleSpreadSheetInfoService googleSpreadSheetInfoService;
+	
+	@Autowired
+	private GoogleIamServiceAccountInfoService googleIamServiceAccountInfoService;
+	
+	private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
+	
+	public  <T> List<T> getSpreadSheetValueList(@NonNull UUID userId, GoogleSpreadSheetInfoType type) {
+		var googleIamServiceAccountInfo = googleIamServiceAccountInfoService.findByUserId(userId);
+		
+		var googleSpreadSheetInfo = googleSpreadSheetInfoService.findByGoogleIamServiceAccountInfoIdAndType(googleIamServiceAccountInfo.getId(), type);
+		
+		GoogleCredentials googleCredentials = null;
+		try {
+			googleCredentials = ServiceAccountCredentials.fromStream(
+						new ByteArrayInputStream(googleIamServiceAccountInfo.getKeyStr().getBytes(StandardCharsets.UTF_8)));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		Sheets sheets = null;
+		try {
+			sheets = new Sheets.Builder(
+						GoogleNetHttpTransport.newTrustedTransport(),
+						JSON_FACTORY,
+
+						new HttpCredentialsAdapter(googleCredentials))
+						.build();
+		} catch (GeneralSecurityException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		ValueRange valueRange = null;
+		try {
+			valueRange = sheets
+						.spreadsheets()
+						.values()
+						.get(googleSpreadSheetInfo.getSpreadsheetId(), googleSpreadSheetInfo.getRange())
+						.execute();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		List<List<Object>> values = valueRange.getValues();
+		if (values == null || values.isEmpty()) {
+			return Collections.emptyList();
+		}
+
+		List<Object> header = values.get(0);
+		List<T> result = new ArrayList<>();
+
+		for (int i = 1; i < values.size(); i++) {
+			List<Object> row = values.get(i);
+			Map<String, Object> map = new HashMap<>();
+			for (int j = 0; j < header.size(); j++) {
+				if (row.size() > j) {
+					map.put(String.valueOf(header.get(j)), row.get(j));
+				}
+			}
+			result.add((T) jsonMapper.convertValue(map, type.getTargetClass()));
+		}
+
+		return result;
+	}
+}

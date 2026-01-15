@@ -16,7 +16,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import io.github.luversof.boot.uuid.UuidGeneratorUtil;
 import net.luversof.GeneralTest;
-import net.luversof.api.stock.domain.GoogleSheetsStockItem;
+import net.luversof.api.stock.constant.TestConstant;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.domain.StockPrice;
 import net.luversof.api.stock.repository.StockItemRepository;
@@ -24,6 +24,8 @@ import net.luversof.api.stock.repository.StockPriceRepository;
 import net.luversof.api.stock.service.GoogleSheetsTestService;
 import net.luversof.api.stock.service.StockItemService;
 import net.luversof.api.stock.service.StockPriceService;
+import net.luversof.app.google.stock.domain.GoogleSheetStockItem;
+import net.luversof.app.google.stock.service.StockGoogleSheetService;
 import tools.jackson.core.exc.StreamReadException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DatabindException;
@@ -35,6 +37,9 @@ import tools.jackson.dataformat.csv.CsvSchema;
 class StockItemTest implements GeneralTest {
 
 	private static final Logger log = LoggerFactory.getLogger(StockItemTest.class);
+	
+	@Autowired
+	StockGoogleSheetService stockGoogleSheetService;
 
 	@Autowired
 	StockItemService stockItemService;
@@ -87,19 +92,19 @@ class StockItemTest implements GeneralTest {
 		// stockItemRepository.deleteAll();
 		// stockPriceRepository.deleteAll();
 
-		var googleSheetStockItemList = loadGoogleSheetStockItemList();
+		var googleSheetStockItemList = stockGoogleSheetService.getGoogleSheetStockItemList(TestConstant.USER_ID);
 
 		// 상장폐지종목 추가
 		for (var delistedStock : DelistedStocks.values()) {
-			var googleSheetsStockItem = new GoogleSheetsStockItem();
-			googleSheetsStockItem.set종목이름(delistedStock.name());
-			googleSheetsStockItem.set종목코드(delistedStock.getSymbol());
-			googleSheetsStockItem.set현재가(BigDecimal.ZERO);
-			googleSheetStockItemList.add(googleSheetsStockItem);
+			var googleSheetStockItem = new GoogleSheetStockItem();
+			googleSheetStockItem.set종목이름(delistedStock.name());
+			googleSheetStockItem.set종목코드(delistedStock.getSymbol());
+			googleSheetStockItem.set현재가(BigDecimal.ZERO);
+			googleSheetStockItemList.add(googleSheetStockItem);
 		}
 		;
 
-		var stockItemList = googleSheetStockItemList.stream().map(x -> x.toStockItem()).collect(Collectors.toList());
+		var stockItemList = googleSheetStockItemList.stream().map(x -> toStockItem(x)).collect(Collectors.toList());
 		jdbcTemplate.batchUpdate(insertStockItemSql, stockItemList, stockItemList.size(), (ps, item) -> {
 			item.setId(UuidGeneratorUtil.getUuid());
 			ps.setObject(1, item.getId());
@@ -118,7 +123,7 @@ class StockItemTest implements GeneralTest {
 					stockPrice.setPrice(googleSheetStockItemList.stream()
 							.filter(x -> x.get종목코드().equals(item.getSymbol()))
 							.findFirst()
-							.map(GoogleSheetsStockItem::get현재가)
+							.map(GoogleSheetStockItem::get현재가)
 							.orElse(BigDecimal.ZERO));
 					stockPrice.setUpdatedDate(Instant.now());
 
@@ -138,12 +143,12 @@ class StockItemTest implements GeneralTest {
 	}
 
 	List<StockItem> loadSpreadSheetStockItemList() {
-		List<GoogleSheetsStockItem> stockItemList = googleSheetsTestService
+		List<GoogleSheetStockItem> stockItemList = googleSheetsTestService
 				.getList(GoogleSheetsApiCase.GoogleSheetsStockItem);
-		return stockItemList.stream().map(x -> x.toStockItem()).collect(Collectors.toList());
+		return stockItemList.stream().map(x -> toStockItem(x)).collect(Collectors.toList());
 	}
 
-	List<GoogleSheetsStockItem> loadGoogleSheetStockItemList() {
+	List<GoogleSheetStockItem> loadGoogleSheetStockItemList() {
 		return googleSheetsTestService.getList(GoogleSheetsApiCase.GoogleSheetsStockItem);
 	}
 
@@ -167,6 +172,16 @@ class StockItemTest implements GeneralTest {
 		var stockItemList = it.readAll();
 		log.debug("items : {}", stockItemList.size());
 		return stockItemList;
+	}
+	
+	
+	private StockItem toStockItem(GoogleSheetStockItem googleSheetStockItem) {
+		StockItem stockItem = new StockItem();
+		
+		stockItem.setMarket("KRX");
+		stockItem.setSymbol(googleSheetStockItem.get종목코드());
+		stockItem.setName(googleSheetStockItem.get종목이름());
+		return stockItem;
 	}
 
 }

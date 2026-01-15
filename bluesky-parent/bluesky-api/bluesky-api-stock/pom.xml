@@ -66,24 +66,12 @@
 			<artifactId>bluesky-boot-autoconfigure-connectioninfo-jdbc</artifactId>
 		</dependency>
 		<!-- (e) bluesky boot connectioninfo -->
-
-		<!-- (s) google -->
+		
 		<dependency>
-			<groupId>com.google.api-client</groupId>
-			<artifactId>google-api-client</artifactId>
-			<version>2.8.1</version>
+			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-app-google</artifactId>
+			<version>${bluesky-project.version}</version>
 		</dependency>
-		<dependency>
-			<groupId>com.google.oauth-client</groupId>
-			<artifactId>google-oauth-client-jetty</artifactId>
-			<version>1.39.0</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.apis</groupId>
-			<artifactId>google-api-services-sheets</artifactId>
-			<version>v4-rev20251110-2.0.0</version>
-		</dependency>
-		<!-- (e) google -->
 	</dependencies>
 	<build>
 		<plugins>

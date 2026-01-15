@@ -1,14 +1,14 @@
 package net.luversof.api.stock;
 
-import net.luversof.api.stock.domain.GoogleSheetsStockItem;
-import net.luversof.api.stock.domain.GoogleSheetsTrade;
-import net.luversof.api.stock.domain.GoogleSheetsDividend;
+import net.luversof.app.google.stock.domain.GoogleSheetDividend;
+import net.luversof.app.google.stock.domain.GoogleSheetStockItem;
+import net.luversof.app.google.stock.domain.GoogleSheetTrade;
 
 public enum GoogleSheetsApiCase {
 	
-	GoogleSheetsStockItem(0, "주식 검색!A1:E", GoogleSheetsStockItem.class),
-	GoogleSheetsDividend(0, "주식 배당 기록!A1:J", GoogleSheetsDividend.class),
-	GoogleSheetsTrade(1, "주식 매매 기록!A1:S", GoogleSheetsTrade.class)
+	GoogleSheetsStockItem(0, "주식 검색!A1:E", GoogleSheetStockItem.class),
+	GoogleSheetsDividend(0, "주식 배당 기록!A1:J", GoogleSheetDividend.class),
+	GoogleSheetsTrade(1, "주식 매매 기록!A1:S", GoogleSheetTrade.class)
 	;
 	
 	private int enabled;

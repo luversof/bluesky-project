@@ -32,15 +32,13 @@ public class UserInfoController {
 	private UserInfoService userInfoService;
 
 	@Autowired
-	@SuppressWarnings("rawtypes")
-	private SessionRepository sessionRepository;
+	private SessionRepository<Session> sessionRepository;
 
 	@Autowired
 	public void setUserInfoService(UserInfoService userInfoService) {
 		this.userInfoService = userInfoService;
 	}
 
-	@SuppressWarnings("unchecked")
 	@PostMapping("/create-session")
 	public void createSession(@RequestBody CreateSessionRequest request) {
 		Session session = sessionRepository.findById(request.sessionId());
@@ -70,7 +68,6 @@ public class UserInfoController {
 		sessionRepository.save(session);
 	}
 
-	@SuppressWarnings("unchecked")
 	@PostMapping("/create-new-session")
 	public String createNewSession() {
 		// Session session = sessionRepository.createSession();
