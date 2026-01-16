@@ -48,13 +48,5 @@ public class TradeService {
 		return tradeRepository.findByAccountIdInAndStockItemIdInAndTradeDateBetween(accountIdList, stockItemIdList,
 				startDate, endDate);
 	}
-	
-	public Iterable<Trade> findAll() {
-		return tradeRepository.findAll();
-	}
-	
-	public void deleteAll() {
-		tradeRepository.deleteAll();
-	}
 
 }

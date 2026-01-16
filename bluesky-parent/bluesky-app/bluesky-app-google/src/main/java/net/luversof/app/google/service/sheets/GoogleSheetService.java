@@ -45,7 +45,6 @@ public class GoogleSheetService {
 	
 	public  <T> List<T> getSpreadSheetValueList(@NonNull UUID userId, GoogleSpreadSheetInfoType type) {
 		var googleIamServiceAccountInfo = googleIamServiceAccountInfoService.findByUserId(userId);
-		
 		var googleSpreadSheetInfo = googleSpreadSheetInfoService.findByGoogleIamServiceAccountInfoIdAndType(googleIamServiceAccountInfo.getId(), type);
 		
 		GoogleCredentials googleCredentials = null;
@@ -53,8 +52,8 @@ public class GoogleSheetService {
 			googleCredentials = ServiceAccountCredentials.fromStream(
 						new ByteArrayInputStream(googleIamServiceAccountInfo.getKeyStr().getBytes(StandardCharsets.UTF_8)));
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return Collections.emptyList();
 		}
 		
 		Sheets sheets = null;
@@ -66,8 +65,8 @@ public class GoogleSheetService {
 						new HttpCredentialsAdapter(googleCredentials))
 						.build();
 		} catch (GeneralSecurityException | IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return Collections.emptyList();
 		}
 		
 		ValueRange valueRange = null;
@@ -78,8 +77,8 @@ public class GoogleSheetService {
 						.get(googleSpreadSheetInfo.getSpreadsheetId(), googleSpreadSheetInfo.getRange())
 						.execute();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return Collections.emptyList();
 		}
 		
 		List<List<Object>> values = valueRange.getValues();

@@ -21,7 +21,6 @@ import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.domain.StockPrice;
 import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.repository.StockPriceRepository;
-import net.luversof.api.stock.service.GoogleSheetsTestService;
 import net.luversof.api.stock.service.StockItemService;
 import net.luversof.api.stock.service.StockPriceService;
 import net.luversof.app.google.stock.domain.GoogleSheetStockItem;
@@ -52,9 +51,6 @@ class StockItemTest implements GeneralTest {
 
 	@Autowired
 	StockPriceRepository stockPriceRepository;
-
-	@Autowired
-	private GoogleSheetsTestService googleSheetsTestService;
 
 	@Autowired
 	JdbcTemplate jdbcTemplate;
@@ -143,13 +139,12 @@ class StockItemTest implements GeneralTest {
 	}
 
 	List<StockItem> loadSpreadSheetStockItemList() {
-		List<GoogleSheetStockItem> stockItemList = googleSheetsTestService
-				.getList(GoogleSheetsApiCase.GoogleSheetsStockItem);
+		List<GoogleSheetStockItem> stockItemList = loadGoogleSheetStockItemList();
 		return stockItemList.stream().map(x -> toStockItem(x)).collect(Collectors.toList());
 	}
 
 	List<GoogleSheetStockItem> loadGoogleSheetStockItemList() {
-		return googleSheetsTestService.getList(GoogleSheetsApiCase.GoogleSheetsStockItem);
+		return stockGoogleSheetService.getGoogleSheetStockItemList(TestConstant.USER_ID);
 	}
 
 	List<StockItem> loadJsonStockItemList() throws StreamReadException, DatabindException, IOException {

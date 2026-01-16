@@ -10,8 +10,6 @@ import org.springframework.data.jdbc.core.convert.JdbcCustomConversions;
 import org.springframework.data.jdbc.repository.config.EnableJdbcAuditing;
 import org.springframework.data.jdbc.repository.config.EnableJdbcRepositories;
 import org.springframework.data.relational.core.mapping.event.BeforeConvertCallback;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -23,16 +21,11 @@ import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
 
 @Configuration
 @EnableJdbcAuditing
-@EnableJdbcRepositories(basePackages = "net.luversof.api.stock.**", transactionManagerRef = "stockTransactionManager", enableDefaultTransactions = false, jdbcOperationsRef = "stockNamedParameterJdbcOperations")
+@EnableJdbcRepositories(basePackages = { "net.luversof.api.stock.**", "net.luversof.app.google.**" }, transactionManagerRef = "stockTransactionManager")
 public class StockDataJdbcConfig {
 	
 	private DataSource getDataSource() {
 		return ConnectionInfoUtil.getConnection("stock_postgresql");
-	}
-
-	@Bean
-	NamedParameterJdbcOperations stockNamedParameterJdbcOperations() {
-		return new NamedParameterJdbcTemplate(getDataSource());
 	}
 
 	@Bean
@@ -58,21 +51,5 @@ public class StockDataJdbcConfig {
 				new MapToPGobjectConverter(),
 				new PGobjectToMapConverter()));
 	}
-
-	@Bean
-	org.springframework.data.relational.core.mapping.event.AfterConvertCallback<net.luversof.api.stock.domain.Trade> tradeAfterConvertCallback() {
-		return (trade) -> {
-			trade.setNew(false);
-			return trade;
-		};
-	}
-
-	@Bean
-	org.springframework.data.relational.core.mapping.event.AfterSaveCallback<net.luversof.api.stock.domain.Trade> tradeAfterSaveCallback() {
-		return (trade) -> {
-			trade.setNew(false);
-			return trade;
-		};
-	}
-
+	
 }

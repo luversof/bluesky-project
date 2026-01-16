@@ -26,7 +26,6 @@ import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.repository.TradeRepository;
 import net.luversof.api.stock.service.AccountTestService;
-import net.luversof.api.stock.service.GoogleSheetsTestService;
 import net.luversof.api.stock.service.TradeService;
 import net.luversof.app.google.stock.domain.GoogleSheetTrade;
 import net.luversof.app.google.stock.service.StockGoogleSheetService;
@@ -42,9 +41,6 @@ class TradeTest implements GeneralTest {
 	@Autowired
 	StockGoogleSheetService stockGoogleSheetService;
 	
-	@Autowired
-	GoogleSheetsTestService googleSheetsTestService;
-
 	@Autowired
 	TradeService tradeService;
 
@@ -71,7 +67,7 @@ class TradeTest implements GeneralTest {
 	// excel csv로 대량 insert 예제
 	@Test
 	void tradeBulkInsert() {
-		tradeService.deleteAll();
+		tradeRepository.deleteAll();
 
 		var stockItemList = StreamSupport.stream(stockItemRepository.findAll().spliterator(), false).toList();
 
@@ -119,7 +115,7 @@ class TradeTest implements GeneralTest {
 	}
 	
 	List<GoogleSheetTrade> loadGoogleSheetsTradeList() {
-		return googleSheetsTestService.getList(GoogleSheetsApiCase.GoogleSheetsTrade);
+		return stockGoogleSheetService.getGoogleSheetTradeList(TestConstant.USER_ID);
 	}
 
 	List<GoogleSheetTrade> loadTradeCsvRecordList() throws IOException {
