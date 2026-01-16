@@ -65,7 +65,7 @@ public class UserInfoController {
 			request.sessionAttributes().forEach(session::setAttribute);
 		}
 
-		sessionRepository.save(session);
+		((SessionRepository) sessionRepository).save(session);
 	}
 
 	@PostMapping("/create-new-session")
@@ -176,7 +176,7 @@ public class UserInfoController {
 		// 따라서 생성 후 ID를 바꿔치기해서 저장하면 됨.
 		
 		Session session = sessionRepository.createSession();
-		sessionRepository.save(session);
+		((SessionRepository) sessionRepository).save(session);
 		return session.getId();
 	}
 
@@ -213,7 +213,7 @@ public class UserInfoController {
 			return null;
 		}
 		session.setLastAccessedTime(Instant.now());
-		sessionRepository.save(session);
+		((SessionRepository) sessionRepository).save(session);
 
 		Map<String, Object> sessionAttributes = new HashMap<>();
 		session.getAttributeNames().forEach(name -> sessionAttributes.put(name, session.getAttribute(name)));
