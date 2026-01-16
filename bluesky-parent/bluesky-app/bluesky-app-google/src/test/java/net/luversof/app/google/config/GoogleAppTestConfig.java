@@ -8,7 +8,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
 @PropertySource("classpath:bluesky-app-google.properties")
-public class GoogleAppConfig {
+public class GoogleAppTestConfig {
 
 	@Bean
 	JsonMapper jsonMapper(JsonMapper.Builder builder) {
