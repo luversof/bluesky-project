@@ -71,7 +71,7 @@ class TradeTest implements GeneralTest {
 	// excel csv로 대량 insert 예제
 	@Test
 	void tradeBulkInsert() {
-		tradeRepository.deleteAll();
+		tradeService.deleteAll();
 
 		var stockItemList = StreamSupport.stream(stockItemRepository.findAll().spliterator(), false).toList();
 
@@ -124,11 +124,12 @@ class TradeTest implements GeneralTest {
 
 	List<GoogleSheetTrade> loadTradeCsvRecordList() throws IOException {
 
-		var mapper = new CsvMapper();
-
 		SimpleModule module = new SimpleModule();
 		module.addDeserializer(TradeType.class, new TradeTypeDeserializer());
-		mapper.registeredModules().add(module);
+		
+		var mapper = CsvMapper.builder()
+				.addModule(module)
+				.build();
 
 		MappingIterator<GoogleSheetTrade> it = mapper
 				.readerFor(GoogleSheetTrade.class)
@@ -143,6 +144,7 @@ class TradeTest implements GeneralTest {
 	
 	public Trade toTrade(GoogleSheetTrade googleSheetTrade, HashMap<String, UUID> accountMap, List<StockItem> stockItemList) {
 		Trade trade = new Trade();
+		trade.setId(UUID.randomUUID());
 		trade.setType(googleSheetTrade.get구분().equals("매수") ? TradeType.BUY : TradeType.SELL);
 		trade.setQuantity(googleSheetTrade.get매매_수량());
 		trade.setPrice(googleSheetTrade.get매매가());

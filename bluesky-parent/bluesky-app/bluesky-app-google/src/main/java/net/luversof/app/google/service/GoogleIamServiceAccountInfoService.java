@@ -5,11 +5,13 @@ import java.util.UUID;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.app.google.domain.GoogleIamServiceAccountInfo;
 import net.luversof.app.google.repository.GoogleIamServiceAccountInfoRepository;
 
 @Service
+@Transactional(transactionManager = "googleAppTransactionManager")
 public class GoogleIamServiceAccountInfoService {
 
 	@Autowired
@@ -20,7 +22,7 @@ public class GoogleIamServiceAccountInfoService {
 	}
 	
 	public GoogleIamServiceAccountInfo findByUserId(@NonNull UUID userId) {
-		return googleIamServiceAccountInfoRepository.findById(userId).orElseThrow(() -> new RuntimeException("AppGoogleError.NOT_FOUND_SERVICE_ACCOUNT_INFO"));
+		return googleIamServiceAccountInfoRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException("AppGoogleError.NOT_FOUND_SERVICE_ACCOUNT_INFO"));
 	}
 	
 }

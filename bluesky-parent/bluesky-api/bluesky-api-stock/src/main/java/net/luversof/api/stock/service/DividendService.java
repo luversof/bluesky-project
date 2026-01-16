@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +22,7 @@ public class DividendService {
 	private final JdbcClient jdbcClient;
 	private final StockItemService stockItemService;
 
-	public DividendService(JdbcClient jdbcClient, StockItemService stockItemService) {
+	public DividendService(@Qualifier("stockJdbcClient") JdbcClient jdbcClient, StockItemService stockItemService) {
 		this.jdbcClient = jdbcClient;
 		this.stockItemService = stockItemService;
 	}

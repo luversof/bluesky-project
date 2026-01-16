@@ -20,15 +20,15 @@ public class StockGoogleSheetService {
 	private GoogleSheetService googleSheetService;
 	
 	public List<GoogleSheetDividend> getGoogleSheetDividendList(@NonNull UUID userId) {
-		return googleSheetService.getSpreadSheetValueList(userId,GoogleSpreadSheetInfoType.STOCK_DIVIDEND);
+		return googleSheetService.getSpreadSheetValueList(userId, GoogleSpreadSheetInfoType.STOCK_DIVIDEND);
 	}
 	
 	public List<GoogleSheetStockItem>getGoogleSheetStockItemList(@NonNull UUID userId) {
-		return googleSheetService.getSpreadSheetValueList(userId,GoogleSpreadSheetInfoType.STOCK_STOCKITEM);
+		return googleSheetService.getSpreadSheetValueList(userId, GoogleSpreadSheetInfoType.STOCK_STOCKITEM);
 	} 
 	
 	public List<GoogleSheetTrade> getGoogleSheetTradeList(@NonNull UUID userId) {
-		return googleSheetService.getSpreadSheetValueList(userId,GoogleSpreadSheetInfoType.STOCK_TRADE);
+		return googleSheetService.getSpreadSheetValueList(userId, GoogleSpreadSheetInfoType.STOCK_TRADE);
 	}
 
 }

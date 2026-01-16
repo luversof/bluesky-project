@@ -6,11 +6,13 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.repository.TradeRepository;
 
 @Service
+@Transactional(transactionManager = "stockTransactionManager")
 public class TradeService {
 
 	@Autowired
@@ -45,6 +47,14 @@ public class TradeService {
 			List<UUID> stockItemIdList, Instant startDate, Instant endDate) {
 		return tradeRepository.findByAccountIdInAndStockItemIdInAndTradeDateBetween(accountIdList, stockItemIdList,
 				startDate, endDate);
+	}
+	
+	public Iterable<Trade> findAll() {
+		return tradeRepository.findAll();
+	}
+	
+	public void deleteAll() {
+		tradeRepository.deleteAll();
 	}
 
 }
