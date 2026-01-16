@@ -38,6 +38,7 @@ public class StockViewController {
 			// 계좌 목록을 모델에 추가하여 select 옵션으로 사용
 			var accounts = accountClient.getAccountsByUserId(userId);
 			model.addAttribute("accounts", accounts);
+			model.addAttribute("userId", userId);
 		}
 
 		// 종목 목록은 사용자와 무관하게 전체 리스트를 제공
