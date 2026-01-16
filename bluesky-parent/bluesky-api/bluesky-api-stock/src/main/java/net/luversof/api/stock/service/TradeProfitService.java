@@ -192,8 +192,10 @@ public class TradeProfitService {
 	private TradeProfit calculateStockProfit(List<Trade> trades, UUID accountId, UUID stockItemId,
 			TradeProfitRequest request) {
 		// 1. Sort by date ascending to ensure FIFO order
+		// If dates are equal, process BUY before SELL to ensure inventory availability
 		List<Trade> sortedTrades = new ArrayList<>(trades);
-		sortedTrades.sort(Comparator.comparing(Trade::getTradeDate));
+		sortedTrades.sort(Comparator.comparing(Trade::getTradeDate)
+				.thenComparing(trade -> trade.getType() == TradeType.BUY ? 0 : 1));
 
 		// 2. FIFO Queue for tracking cost basis
 		// Stores: Price, Remaining Quantity, Fee per share (to preserve precision as

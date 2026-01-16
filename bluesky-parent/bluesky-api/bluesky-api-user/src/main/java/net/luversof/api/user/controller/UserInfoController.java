@@ -32,7 +32,7 @@ public class UserInfoController {
 	private UserInfoService userInfoService;
 
 	@Autowired
-	private SessionRepository<Session> sessionRepository;
+	private SessionRepository<? extends Session> sessionRepository;
 
 	@Autowired
 	public void setUserInfoService(UserInfoService userInfoService) {
