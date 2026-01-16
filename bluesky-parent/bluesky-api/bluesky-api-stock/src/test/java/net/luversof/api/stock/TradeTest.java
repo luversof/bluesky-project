@@ -140,7 +140,6 @@ class TradeTest implements GeneralTest {
 	
 	public Trade toTrade(GoogleSheetTrade googleSheetTrade, HashMap<String, UUID> accountMap, List<StockItem> stockItemList) {
 		Trade trade = new Trade();
-		trade.setId(UUID.randomUUID());
 		trade.setType(googleSheetTrade.get구분().equals("매수") ? TradeType.BUY : TradeType.SELL);
 		trade.setQuantity(googleSheetTrade.get매매_수량());
 		trade.setPrice(googleSheetTrade.get매매가());

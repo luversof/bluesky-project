@@ -43,6 +43,7 @@ public class GoogleSheetService {
 	
 	private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 	
+	@SuppressWarnings("unchecked")
 	public  <T> List<T> getSpreadSheetValueList(@NonNull UUID userId, GoogleSpreadSheetInfoType type) {
 		var googleIamServiceAccountInfo = googleIamServiceAccountInfoService.findByUserId(userId);
 		var googleSpreadSheetInfo = googleSpreadSheetInfoService.findByGoogleIamServiceAccountInfoIdAndType(googleIamServiceAccountInfo.getId(), type);
@@ -61,8 +62,8 @@ public class GoogleSheetService {
 			sheets = new Sheets.Builder(
 						GoogleNetHttpTransport.newTrustedTransport(),
 						JSON_FACTORY,
-
 						new HttpCredentialsAdapter(googleCredentials))
+						.setApplicationName("bluesky-project")
 						.build();
 		} catch (GeneralSecurityException | IOException e) {
 			e.printStackTrace();

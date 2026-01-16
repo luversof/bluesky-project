@@ -32,7 +32,6 @@ import net.luversof.api.stock.domain.StockPrice;
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.repository.DividendRepository;
 import net.luversof.api.stock.repository.StockItemRepository;
-import net.luversof.api.stock.repository.StockPriceRepository;
 import net.luversof.api.stock.repository.TradeRepository;
 import net.luversof.app.google.stock.domain.GoogleSheetDividend;
 import net.luversof.app.google.stock.domain.GoogleSheetStockItem;
@@ -50,9 +49,6 @@ public class StockAdminService {
 
 	@Autowired
 	private StockItemRepository stockItemRepository;
-
-	@Autowired
-	private StockPriceRepository stockPriceRepository;
 
 	@Autowired
 	private TradeRepository tradeRepository;
@@ -202,7 +198,6 @@ public class StockAdminService {
 
 	private Trade toTrade(GoogleSheetTrade googleSheetTrade, HashMap<String, UUID> accountMap, List<StockItem> stockItemList) {
 		Trade trade = new Trade();
-		trade.setId(UUID.randomUUID());
 		trade.setType(googleSheetTrade.get구분().equals("매수") ? TradeType.BUY : TradeType.SELL);
 		trade.setQuantity(googleSheetTrade.get매매_수량());
 		trade.setPrice(googleSheetTrade.get매매가());
@@ -236,7 +231,7 @@ public class StockAdminService {
 	
 	private Map<String, UUID> prepareAccountMap(UUID userId, List<GoogleSheetDividend> records) {
 		var accountMap = accountService.findByUserId(userId).stream()
-				.collect(Collectors.toMap(Account::getName, Account::getId, (left, right) -> left,
+				.collect(Collectors.toMap(Account::getName, Account::getId, (left, _) -> left,
 						java.util.LinkedHashMap::new));
 
 		records.stream()
@@ -257,7 +252,7 @@ public class StockAdminService {
 
 	private Map<String, UUID> prepareStockItemMap(List<GoogleSheetDividend> records) {
 		var stockItemMap = StreamSupport.stream(stockItemRepository.findAll().spliterator(), false)
-				.collect(Collectors.toMap(StockItem::getName, StockItem::getId, (left, right) -> left,
+				.collect(Collectors.toMap(StockItem::getName, StockItem::getId, (left, _) -> left,
 						java.util.LinkedHashMap::new));
 
 		records.stream()
