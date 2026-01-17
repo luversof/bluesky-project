@@ -61,6 +61,10 @@ public class TradeProfitServiceReproductionTest {
 		setField(sell, "fee", new BigDecimal("751")); // Set fee to match the user's "missing" amount
 		setField(sell, "tax", BigDecimal.ZERO);
 		setField(sell, "tradeDate", LocalDate.of(2026, 1, 1).atStartOfDay(ZoneId.of("Asia/Seoul")).toInstant());
+		
+		// Set Realized Profit explicitly as logic now relies on DB value
+		sell.setRealizedProfit(new BigDecimal("2800000"));
+		
 		tradeList.add(sell);
 
 		// 2. Setup Request

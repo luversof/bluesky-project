@@ -281,6 +281,10 @@ public class TradeProfitService {
 			} else if (trade.getType() == TradeType.SELL) {
 				BigDecimal tradeSellAmount = amount; 
 				BigDecimal dbRealizedProfit = nz(trade.getRealizedProfit());
+				
+				if (dbRealizedProfit.compareTo(BigDecimal.ZERO) == 0 && amount.compareTo(BigDecimal.ZERO) > 0) {
+					log.warn("Found SELL trade with 0 realized profit. TradeId: {}, Date: {}, Amount: {}", trade.getId(), trade.getTradeDate(), amount);
+				}
 
 				// To maintain Holdings Cost Basis:
 				// Cost of Goods Sold = Sell Proceeds - Profit

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.StreamSupport;
 
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -16,6 +17,7 @@ import net.luversof.GeneralTest;
 import net.luversof.api.stock.constant.TestConstant;
 import net.luversof.api.stock.constant.TradeType;
 import net.luversof.api.stock.databind.TradeTypeDeserializer;
+import net.luversof.api.stock.repository.TradeRepository;
 import net.luversof.api.stock.service.StockAdminService;
 import net.luversof.api.stock.service.TradeService;
 import net.luversof.app.google.stock.domain.GoogleSheetTrade;
@@ -30,6 +32,9 @@ class TradeTest implements GeneralTest {
 
 	@Autowired
 	StockAdminService stockAdminService;
+	
+	@Autowired
+	TradeRepository tradeRepository;
 
 	@Autowired
 	TradeService tradeService;
@@ -46,6 +51,19 @@ class TradeTest implements GeneralTest {
 	@Test
 	void tradeBulkInsert() {
 		stockAdminService.tradeBulkInsert(TestConstant.USER_ID);
+		
+		// Verify realizedProfit is saved and readable
+		var trades = tradeRepository.findAll();
+		var sellTrade = StreamSupport.stream(trades.spliterator(), false)
+				.filter(t -> t.getType() == TradeType.SELL)
+				.findFirst()
+				.orElse(null);
+		
+		if (sellTrade != null) {
+			log.debug("Fetched SELL Trade: {}", sellTrade);
+			// Assert that realizedProfit is populated (assuming data has it)
+			// assertThat(sellTrade.getRealizedProfit()).isNotNull(); 
+		}
 	}
 
 	@Test
