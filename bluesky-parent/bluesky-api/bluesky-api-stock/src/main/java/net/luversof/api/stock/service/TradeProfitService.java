@@ -211,12 +211,12 @@ public class TradeProfitService {
 	}
 
 	/**
-	 * 개별 그룹에 대한 통합 손익 계산 (FIFO Cost Basis)
+	 * 개별 그룹에 대한 통합 손익 계산 (Weighted Moving Average)
 	 */
 	private TradeProfit calculateStockProfit(List<Trade> trades, UUID accountId, UUID stockItemId,
 			TradeProfitRequest request) {
-		// 1. Sort by date ascending to ensure FIFO order
-		// If dates are equal, process BUY before SELL to ensure inventory availability
+		// 1. Sort by date ascending
+		// If dates are equal, process BUY before SELL to ensure inventory availability for logic consistency
 		List<Trade> sortedTrades = new ArrayList<>(trades);
 		sortedTrades.sort((t1, t2) -> {
 			int dateCompare = t1.getTradeDate().compareTo(t2.getTradeDate());
@@ -224,23 +224,11 @@ public class TradeProfitService {
 				return dateCompare;
 			}
 			// If dates are equal, BUY comes first
-			if (t1.getType() == t2.getType()) {
-				return 0;
-			}
-			if (t1.getType() == TradeType.BUY) {
-				return -1;
-			}
-			return 1;
+			if (t1.getType() == t2.getType()) return 0;
+			return t1.getType() == TradeType.BUY ? -1 : 1;
 		});
 
-		// 2. FIFO Queue for tracking cost basis
-		// Stores: Price, Remaining Quantity, Fee per share (to preserve precision as
-		// much as possible)
-		record BuyBlock(BigDecimal price, int quantity, BigDecimal feePerShare) {
-		}
-		java.util.Deque<BuyBlock> inventory = new java.util.ArrayDeque<>();
-
-		// 3. Period accumulators for "Period" stats
+		// 2. Period accumulators for "Period" stats
 		BigDecimal periodTotalBuyAmount = BigDecimal.ZERO;
 		BigDecimal periodTotalBuyFee = BigDecimal.ZERO;
 
@@ -256,86 +244,85 @@ public class TradeProfitService {
 		Instant start = request.getStartDate();
 		Instant end = request.getEndDate();
 
+		// 3. WMA State
+		long currentQuantity = 0;
+		BigDecimal currentTotalCost = BigDecimal.ZERO;     // Gross cost (price * qty)
+		BigDecimal currentTotalCostNet = BigDecimal.ZERO;  // Net cost (price * qty + fee)
+
 		for (Trade trade : sortedTrades) {
-			
-			if (trade.getType() == null) {
-				continue;
-			}
-			
-			// end 날짜 이후라도 loop 차단 없이 계속 진행하여 사이드 이펙트 방지 (정확도 우선)
-			// if (end != null && trade.getTradeDate().isAfter(end))
-			//	break;
-			
+			if (trade.getType() == null) continue;
+
+			Instant tradeDate = trade.getTradeDate();
 			boolean inPeriod = true;
-			if (start != null && trade.getTradeDate().isBefore(start)) {
-				inPeriod = false;
-			}
-			if (end != null && trade.getTradeDate().isAfter(end)) {
-				inPeriod = false;
-			}
+			if (start != null && tradeDate.isBefore(start)) inPeriod = false;
+			if (end != null && tradeDate.isAfter(end)) inPeriod = false;
 
 			BigDecimal fee = nz(trade.getFee());
 			BigDecimal tax = nz(trade.getTax());
-			int q = trade.getQuantity();
+			int q = trade.getQuantity(); // Trade quantity
 			BigDecimal price = trade.getPrice();
+			BigDecimal amount = price.multiply(BigDecimal.valueOf(q));
 
 			if (trade.getType() == TradeType.BUY) {
 				if (q > 0) {
-					// Use 10 decimal places for fee per share precision
-					BigDecimal feePerShare = fee.divide(BigDecimal.valueOf(q), 10, RoundingMode.HALF_UP);
-					inventory.addLast(new BuyBlock(price, q, feePerShare));
+					currentQuantity += q;
+					currentTotalCost = currentTotalCost.add(amount);
+					currentTotalCostNet = currentTotalCostNet.add(amount).add(fee);
 				}
 
 				if (inPeriod) {
-					periodTotalBuyAmount = periodTotalBuyAmount.add(price.multiply(BigDecimal.valueOf(q)));
+					periodTotalBuyAmount = periodTotalBuyAmount.add(amount);
 					periodTotalBuyFee = periodTotalBuyFee.add(fee);
 				}
 			} else if (trade.getType() == TradeType.SELL) {
-				BigDecimal tradeSellAmount = price.multiply(BigDecimal.valueOf(q));
+				BigDecimal tradeSellAmount = amount; // Sell amount
 
-				// Accumulate period stats
+				// Calculate Cost of Goods Sold (COGS) based on Average Cost
+				BigDecimal tradeCost;
+				BigDecimal tradeCostNet;
+
+				if (currentQuantity > 0) {
+					// Avg Price = Total Cost / Total Qty
+					BigDecimal avgPrice = currentTotalCost.divide(BigDecimal.valueOf(currentQuantity), 10, RoundingMode.HALF_UP);
+					BigDecimal avgPriceNet = currentTotalCostNet.divide(BigDecimal.valueOf(currentQuantity), 10, RoundingMode.HALF_UP);
+					
+					tradeCost = avgPrice.multiply(BigDecimal.valueOf(q));
+					tradeCostNet = avgPriceNet.multiply(BigDecimal.valueOf(q));
+				} else {
+					tradeCost = BigDecimal.ZERO;
+					tradeCostNet = BigDecimal.ZERO;
+				}
+
+				// Update State
+				if (currentQuantity >= q) {
+					currentQuantity -= q;
+					currentTotalCost = currentTotalCost.subtract(tradeCost);
+					currentTotalCostNet = currentTotalCostNet.subtract(tradeCostNet);
+				} else {
+					// Selling more than held? Reset to 0.
+					currentQuantity = 0;
+					currentTotalCost = BigDecimal.ZERO;
+					currentTotalCostNet = BigDecimal.ZERO;
+				}
+				
+				// Zero check to clear small precisions
+				if (currentQuantity == 0) {
+					currentTotalCost = BigDecimal.ZERO;
+					currentTotalCostNet = BigDecimal.ZERO;
+				}
+
 				if (inPeriod) {
 					periodTotalSellQuantity += q;
 					periodTotalSellAmount = periodTotalSellAmount.add(tradeSellAmount);
 					periodTotalSellFee = periodTotalSellFee.add(fee);
 					periodTotalSellTax = periodTotalSellTax.add(tax);
-				}
 
-				// Calculate Cost Basis (FIFO)
-				BigDecimal tradeCost = BigDecimal.ZERO;
-				BigDecimal tradeCostNet = BigDecimal.ZERO;
-				int remainingToSell = q;
-
-				while (remainingToSell > 0 && !inventory.isEmpty()) {
-					BuyBlock block = inventory.peekFirst();
-					int matchQty = Math.min(remainingToSell, block.quantity());
-
-					BigDecimal blockCost = block.price().multiply(BigDecimal.valueOf(matchQty));
-					BigDecimal blockFee = block.feePerShare().multiply(BigDecimal.valueOf(matchQty));
-
-					tradeCost = tradeCost.add(blockCost);
-					tradeCostNet = tradeCostNet.add(blockCost).add(blockFee);
-
-					remainingToSell -= matchQty;
-
-					if (matchQty == block.quantity()) {
-						inventory.pollFirst();
-					} else {
-						// Partially consumed, replace head with remaining
-						inventory.pollFirst();
-						inventory.addFirst(
-								new BuyBlock(block.price(), block.quantity() - matchQty, block.feePerShare()));
-					}
-				}
-
-				// Calculate Realized Profit if in period
-				if (inPeriod) {
-					// Gross Realized Profit
+					// Realized Profit
 					BigDecimal tradeProfit = tradeSellAmount.subtract(tradeCost);
 					periodRealizedProfit = periodRealizedProfit.add(tradeProfit);
 
-					// Net Realized Profit = (SellAmount - SellFee - SellTax) - (BuyCost +
-					// BuyFeePart)
+					// Net Realized Profit = (Sell Proceeds) - (Cost Basis Net)
+					// Sell Proceeds = Sell Amount - Sell Fee - Sell Tax
 					BigDecimal tradeProceedsNet = tradeSellAmount.subtract(fee).subtract(tax);
 					BigDecimal tradeProfitNet = tradeProceedsNet.subtract(tradeCostNet);
 					periodRealizedProfitNet = periodRealizedProfitNet.add(tradeProfitNet);
@@ -343,25 +330,17 @@ public class TradeProfitService {
 			}
 		}
 
-		// 4. Calculate Holdings (Snapshot at end of processing)
-		int holdingQuantity = 0;
-		BigDecimal holdingTotalCost = BigDecimal.ZERO;
-		BigDecimal holdingTotalCostNet = BigDecimal.ZERO;
+		// 4. Calculate Holdings (Snapshot)
+		int holdingQuantity = (int) currentQuantity;
+		BigDecimal holdingTotalCost = currentTotalCost;
+		BigDecimal holdingTotalCostNet = currentTotalCostNet;
 
-		for (BuyBlock block : inventory) {
-			holdingQuantity += block.quantity();
-			BigDecimal blockVal = block.price().multiply(BigDecimal.valueOf(block.quantity()));
-			BigDecimal blockFee = block.feePerShare().multiply(BigDecimal.valueOf(block.quantity()));
-			holdingTotalCost = holdingTotalCost.add(blockVal);
-			holdingTotalCostNet = holdingTotalCostNet.add(blockVal).add(blockFee);
-		}
-
-		BigDecimal averageBuyPrice = holdingQuantity > 0
-				? holdingTotalCost.divide(BigDecimal.valueOf(holdingQuantity), 2, RoundingMode.HALF_UP)
+		BigDecimal averageBuyPrice =holdingQuantity > 0
+				? holdingTotalCost.divide(BigDecimal.valueOf(holdingQuantity),  2, RoundingMode.HALF_UP)
 				: BigDecimal.ZERO;
 
 		BigDecimal averageBuyPriceNet = holdingQuantity > 0
-				? holdingTotalCostNet.divide(BigDecimal.valueOf(holdingQuantity), 2, RoundingMode.HALF_UP)
+				? holdingTotalCostNet.divide(BigDecimal.valueOf(holdingQuantity),  2, RoundingMode.HALF_UP)
 				: BigDecimal.ZERO;
 
 		// 5. Current Evaluation
