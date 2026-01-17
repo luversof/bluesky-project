@@ -1,7 +1,5 @@
 package net.luversof.app.google.constant;
 
-import net.luversof.app.google.constant.GoogleSpreadSheetInfoType;
-
 public enum GoogleSheetsApiCase {
 	
 	GoogleSheetStockItem(0, "주식 검색!A1:E", GoogleSpreadSheetInfoType.STOCK_STOCKITEM),

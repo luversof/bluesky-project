@@ -2,7 +2,6 @@ package net.luversof.app.google.stock.domain;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -59,6 +58,10 @@ public class GoogleSheetTrade {
 	@JsonProperty("현재가")
 	@JsonDeserialize(using = StockCurrencyDeserializer.class)
 	private BigDecimal 현재가;
+	
+	@JsonProperty("매도실현손익")
+	@JsonDeserialize(using = StockCurrencyDeserializer.class)
+	private BigDecimal 매도실현손익;
 
 	public Instant get날짜() {
 		return 날짜;
@@ -164,33 +167,19 @@ public class GoogleSheetTrade {
 		this.현재가 = 현재가;
 	}
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		GoogleSheetTrade other = (GoogleSheetTrade) obj;
-		return Objects.equals(거래세, other.거래세) && Objects.equals(계좌, other.계좌) && Objects.equals(구분, other.구분)
-				&& Objects.equals(날짜, other.날짜) && Objects.equals(매도_금액, other.매도_금액)
-				&& Objects.equals(매도_수량, other.매도_수량) && Objects.equals(매매_수량, other.매매_수량)
-				&& Objects.equals(매매가, other.매매가) && Objects.equals(매수_금액, other.매수_금액)
-				&& Objects.equals(매수_수량, other.매수_수량) && Objects.equals(수수료, other.수수료) && Objects.equals(종목, other.종목)
-				&& Objects.equals(현재가, other.현재가);
+	public BigDecimal get매도실현손익() {
+		return 매도실현손익;
 	}
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(거래세, 계좌, 구분, 날짜, 매도_금액, 매도_수량, 매매_수량, 매매가, 매수_금액, 매수_수량, 수수료, 종목, 현재가);
+	public void set매도실현손익(BigDecimal 매도실현손익) {
+		this.매도실현손익 = 매도실현손익;
 	}
 
 	@Override
 	public String toString() {
-		return "TradeCsvRecord [날짜=" + 날짜 + ", 종목=" + 종목 + ", 구분=" + 구분 + ", 계좌=" + 계좌 + ", 매매가=" + 매매가 + ", 매매_수량="
+		return "GoogleSheetTrade [날짜=" + 날짜 + ", 종목=" + 종목 + ", 구분=" + 구분 + ", 계좌=" + 계좌 + ", 매매가=" + 매매가 + ", 매매_수량="
 				+ 매매_수량 + ", 수수료=" + 수수료 + ", 거래세=" + 거래세 + ", 매수_수량=" + 매수_수량 + ", 매수_금액=" + 매수_금액 + ", 매도_수량=" + 매도_수량
-				+ ", 매도_금액=" + 매도_금액 + ", 현재가=" + 현재가 + "]";
+				+ ", 매도_금액=" + 매도_금액 + ", 현재가=" + 현재가 + ", 매도실현손익=" + 매도실현손익 + "]";
 	}
 
 }

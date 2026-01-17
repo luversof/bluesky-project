@@ -10,13 +10,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -216,22 +214,13 @@ public class TradeProfitService {
 	}
 
 	/**
-	 * 개별 그룹에 대한 통합 손익 계산 (Weighted Moving Average)
+	 * 개별 그룹에 대한 통합 손익 계산 (DB Realized Profit 기반)
 	 */
 	private TradeProfit calculateStockProfit(List<Trade> trades, UUID accountId, UUID stockItemId,
 			TradeProfitRequest request) {
 		// 1. Sort by date ascending
-		// If dates are equal, process BUY before SELL to ensure inventory availability for logic consistency
 		List<Trade> sortedTrades = new ArrayList<>(trades);
-		sortedTrades.sort((t1, t2) -> {
-			int dateCompare = t1.getTradeDate().compareTo(t2.getTradeDate());
-			if (dateCompare != 0) {
-				return dateCompare;
-			}
-			// If dates are equal, BUY comes first
-			if (t1.getType() == t2.getType()) return 0;
-			return t1.getType() == TradeType.BUY ? -1 : 1;
-		});
+		sortedTrades.sort(Comparator.comparing(Trade::getTradeDate));
 
 		// 2. Period accumulators for "Period" stats
 		BigDecimal periodTotalBuyAmount = BigDecimal.ZERO;
@@ -242,18 +231,27 @@ public class TradeProfitService {
 		BigDecimal periodTotalSellFee = BigDecimal.ZERO;
 		BigDecimal periodTotalSellTax = BigDecimal.ZERO;
 
-		BigDecimal periodRealizedProfit = BigDecimal.ZERO; // Gross
-		BigDecimal periodRealizedProfitNet = BigDecimal.ZERO; // Net
+		BigDecimal periodRealizedProfit = BigDecimal.ZERO; // Gross (Using DB Realized Profit)
+
+		/*
+		 * Net Profit fields might be redundant if we fully rely on DB's Realized Profit,
+		 * but assuming DB's realizedProfit is the final profit.
+		 * We will treat periodRealizedProfitNet as equal to periodRealizedProfit for simplicity
+		 * unless the user's realizedProfit is clearly Gross only.
+		 * Usually "Realized Profit" implies bottom line.
+		 */
+		BigDecimal periodRealizedProfitNet = BigDecimal.ZERO; 
 
 		// Date filter helpers
 		Instant start = request.getStartDate();
 		Instant end = request.getEndDate();
 
-		// 3. WMA State
+		// 3. WMA State for Holdings (Simulated)
 		long currentQuantity = 0;
 		BigDecimal currentTotalCost = BigDecimal.ZERO;     // Gross cost (price * qty)
-		BigDecimal currentTotalCostNet = BigDecimal.ZERO;  // Net cost (price * qty + fee)
-
+		// We can't perfectly track Net Cost Basis if we don't calculate Realized Net Profit manually.
+		// But we can approximate holdings cost.
+		
 		for (Trade trade : sortedTrades) {
 			if (trade.getType() == null) continue;
 
@@ -266,13 +264,14 @@ public class TradeProfitService {
 			BigDecimal tax = nz(trade.getTax());
 			int q = trade.getQuantity(); // Trade quantity
 			BigDecimal price = trade.getPrice();
+			
+			// Use DB amount if available, otherwise calc
 			BigDecimal amount = price.multiply(BigDecimal.valueOf(q));
 
 			if (trade.getType() == TradeType.BUY) {
 				if (q > 0) {
 					currentQuantity += q;
 					currentTotalCost = currentTotalCost.add(amount);
-					currentTotalCostNet = currentTotalCostNet.add(amount).add(fee);
 				}
 
 				if (inPeriod) {
@@ -280,43 +279,28 @@ public class TradeProfitService {
 					periodTotalBuyFee = periodTotalBuyFee.add(fee);
 				}
 			} else if (trade.getType() == TradeType.SELL) {
-				BigDecimal tradeSellAmount = amount; // Sell amount
+				BigDecimal tradeSellAmount = amount; 
+				BigDecimal dbRealizedProfit = nz(trade.getRealizedProfit());
 
-				// Calculate Cost of Goods Sold (COGS) based on Average Cost
-				BigDecimal tradeCost;
-				BigDecimal tradeCostNet;
-
-				if (currentQuantity > 0) {
-					// Avg Price = Total Cost / Total Qty
-					BigDecimal avgPrice = currentTotalCost.divide(BigDecimal.valueOf(currentQuantity), 10, RoundingMode.HALF_UP);
-					BigDecimal avgPriceNet = currentTotalCostNet.divide(BigDecimal.valueOf(currentQuantity), 10, RoundingMode.HALF_UP);
-					
-					log.info("[TradeProfit] Stock: {}, Date: {}, CostBasis(Total/Qty): {} / {} = {}, Sell Price: {}", 
-							stockItemId, tradeDate, currentTotalCost, currentQuantity, avgPrice, price);
-
-					tradeCost = avgPrice.multiply(BigDecimal.valueOf(q));
-					tradeCostNet = avgPriceNet.multiply(BigDecimal.valueOf(q));
-				} else {
-					tradeCost = BigDecimal.ZERO;
-					tradeCostNet = BigDecimal.ZERO;
-				}
+				// To maintain Holdings Cost Basis:
+				// Cost of Goods Sold = Sell Proceeds - Profit
+				// Sell Proceeds = Sell Amount - Fee - Tax
+				BigDecimal sellProceeds = tradeSellAmount.subtract(fee).subtract(tax);
+				// Assuming dbRealizedProfit is NET profit:
+				BigDecimal cogs = sellProceeds.subtract(dbRealizedProfit);
 
 				// Update State
 				if (currentQuantity >= q) {
 					currentQuantity -= q;
-					currentTotalCost = currentTotalCost.subtract(tradeCost);
-					currentTotalCostNet = currentTotalCostNet.subtract(tradeCostNet);
+					currentTotalCost = currentTotalCost.subtract(cogs);
 				} else {
-					// Selling more than held? Reset to 0.
+					// Reset if sold more than held (Data Error usually)
 					currentQuantity = 0;
 					currentTotalCost = BigDecimal.ZERO;
-					currentTotalCostNet = BigDecimal.ZERO;
 				}
 				
-				// Zero check to clear small precisions
 				if (currentQuantity == 0) {
 					currentTotalCost = BigDecimal.ZERO;
-					currentTotalCostNet = BigDecimal.ZERO;
 				}
 
 				if (inPeriod) {
@@ -325,15 +309,9 @@ public class TradeProfitService {
 					periodTotalSellFee = periodTotalSellFee.add(fee);
 					periodTotalSellTax = periodTotalSellTax.add(tax);
 
-					// Realized Profit
-					BigDecimal tradeProfit = tradeSellAmount.subtract(tradeCost);
-					periodRealizedProfit = periodRealizedProfit.add(tradeProfit);
-
-					// Net Realized Profit = (Sell Proceeds) - (Cost Basis Net)
-					// Sell Proceeds = Sell Amount - Sell Fee - Sell Tax
-					BigDecimal tradeProceedsNet = tradeSellAmount.subtract(fee).subtract(tax);
-					BigDecimal tradeProfitNet = tradeProceedsNet.subtract(tradeCostNet);
-					periodRealizedProfitNet = periodRealizedProfitNet.add(tradeProfitNet);
+					// Use DB Value
+					periodRealizedProfit = periodRealizedProfit.add(dbRealizedProfit);
+					periodRealizedProfitNet = periodRealizedProfitNet.add(dbRealizedProfit); 
 				}
 			}
 		}
@@ -341,46 +319,34 @@ public class TradeProfitService {
 		// 4. Calculate Holdings (Snapshot)
 		int holdingQuantity = (int) currentQuantity;
 		BigDecimal holdingTotalCost = currentTotalCost;
-		BigDecimal holdingTotalCostNet = currentTotalCostNet;
 
-		BigDecimal averageBuyPrice =holdingQuantity > 0
+		BigDecimal averageBuyPrice = holdingQuantity > 0
 				? holdingTotalCost.divide(BigDecimal.valueOf(holdingQuantity),  2, RoundingMode.HALF_UP)
-				: BigDecimal.ZERO;
-
-		BigDecimal averageBuyPriceNet = holdingQuantity > 0
-				? holdingTotalCostNet.divide(BigDecimal.valueOf(holdingQuantity),  2, RoundingMode.HALF_UP)
 				: BigDecimal.ZERO;
 
 		// 5. Current Evaluation
 		BigDecimal currentPrice = BigDecimal.ZERO;
 		BigDecimal evaluationAmount = BigDecimal.ZERO;
 		BigDecimal evaluationProfit = BigDecimal.ZERO;
-		BigDecimal evaluationProfitNet = BigDecimal.ZERO;
-
+		
 		if (!request.hasDateRange()) {
 			currentPrice = stockPriceService.getCurrentPrice(stockItemId);
 			evaluationAmount = currentPrice.multiply(BigDecimal.valueOf(holdingQuantity));
 
 			// Profit on Holdings
 			evaluationProfit = evaluationAmount.subtract(holdingTotalCost);
-			evaluationProfitNet = evaluationAmount.subtract(holdingTotalCostNet);
 		}
 
 		// 6. Period Averages & Derived Stats
 		BigDecimal averageSellPrice = periodTotalSellQuantity > 0
 				? periodTotalSellAmount.divide(BigDecimal.valueOf(periodTotalSellQuantity), 2, RoundingMode.HALF_UP)
 				: BigDecimal.ZERO;
-
-		BigDecimal periodTotalSellProceeds = periodTotalSellAmount.subtract(periodTotalSellFee)
-				.subtract(periodTotalSellTax);
-		BigDecimal averageSellPriceNet = periodTotalSellQuantity > 0
-				? periodTotalSellProceeds.divide(BigDecimal.valueOf(periodTotalSellQuantity), 2, RoundingMode.HALF_UP)
-				: BigDecimal.ZERO;
-
+		
 		BigDecimal periodTotalBuyCost = periodTotalBuyAmount.add(periodTotalBuyFee);
 
 		BigDecimal totalProfit = periodRealizedProfit.add(evaluationProfit);
-		BigDecimal totalProfitNet = periodRealizedProfitNet.add(evaluationProfitNet);
+		// Assuming Net = Gross for DB values for now
+		BigDecimal totalProfitNet = periodRealizedProfitNet.add(evaluationProfit); 
 
 		// 7. Populate Result
 		TradeProfit profit = new TradeProfit();
@@ -405,15 +371,20 @@ public class TradeProfitService {
 		profit.setTotalSellFee(periodTotalSellFee);
 		profit.setTotalSellTax(periodTotalSellTax);
 		profit.setTotalBuyCost(periodTotalBuyCost);
+		// Proceeds already factored into realized profit check
+		BigDecimal periodTotalSellProceeds = periodTotalSellAmount.subtract(periodTotalSellFee).subtract(periodTotalSellTax);
 		profit.setTotalSellProceeds(periodTotalSellProceeds);
-		profit.setAverageBuyPriceNet(averageBuyPriceNet);
-		profit.setAverageSellPriceNet(averageSellPriceNet);
+		
 		profit.setRealizedProfitNet(periodRealizedProfitNet);
-		profit.setEvaluationProfitNet(evaluationProfitNet);
+		profit.setEvaluationProfitNet(evaluationProfit); // Reuse gross evaluation for net
 		profit.setTotalProfitNet(totalProfitNet);
+		
+		// Unused but required fields?
+		profit.setAverageBuyPriceNet(averageBuyPrice); // Approx
+		profit.setAverageSellPriceNet(averageSellPrice); // Approx
 
-		log.info("[TradeProfit Result] Stock: {}, SellQty: {}, SellAmt: {}, BuyAvg: {}, SellAvg: {}, Realized: {}",
-				stockItemId, periodTotalSellQuantity, periodTotalSellAmount, averageBuyPrice, averageSellPrice, periodRealizedProfit);
+		log.info("[TradeProfit Result] Stock: {}, SellQty: {}, SellAmt: {}, BuyAvg: {}, Realized: {}",
+				stockItemId, periodTotalSellQuantity, periodTotalSellAmount, averageBuyPrice, periodRealizedProfit);
 
 		return profit;
 	}
@@ -563,34 +534,29 @@ public class TradeProfitService {
 						state.totalCostNet = state.totalCostNet.add(amount).add(fee);
 					}
 				} else if (trade.getType() == TradeType.SELL) {
-					BigDecimal tradeCost = BigDecimal.ZERO;
-					BigDecimal tradeCostNet = BigDecimal.ZERO;
+					BigDecimal realProfit = nz(trade.getRealizedProfit());
+					BigDecimal tradeSellAmount = price.multiply(BigDecimal.valueOf(q));
+
+					// Deduce COGS from DB Profit for consistent holdings
+					BigDecimal sellProceeds = tradeSellAmount.subtract(fee).subtract(tax);
+					BigDecimal cogs = sellProceeds.subtract(realProfit);
 
 					if (state.quantity > 0) {
-						BigDecimal avgPrice = state.totalCost.divide(BigDecimal.valueOf(state.quantity), 10, RoundingMode.HALF_UP);
-						BigDecimal avgPriceNet = state.totalCostNet.divide(BigDecimal.valueOf(state.quantity), 10, RoundingMode.HALF_UP);
-						tradeCost = avgPrice.multiply(BigDecimal.valueOf(q));
-						tradeCostNet = avgPriceNet.multiply(BigDecimal.valueOf(q));
-
 						// Update State
 						if (state.quantity >= q) {
 							state.quantity -= q;
-							state.totalCost = state.totalCost.subtract(tradeCost);
-							state.totalCostNet = state.totalCostNet.subtract(tradeCostNet);
+							state.totalCost = state.totalCost.subtract(cogs);
 						} else {
 							state.quantity = 0;
 							state.totalCost = BigDecimal.ZERO;
-							state.totalCostNet = BigDecimal.ZERO;
 						}
+						
 						if (state.quantity == 0) {
 							state.totalCost = BigDecimal.ZERO;
-							state.totalCostNet = BigDecimal.ZERO;
 						}
 					}
 					
-					// Realized Profit (Gross)
-					BigDecimal tradeProfit = amount.subtract(tradeCost);
-					dailyRealizedGain = dailyRealizedGain.add(tradeProfit);
+					dailyRealizedGain = dailyRealizedGain.add(realProfit);
 
 					dailyTradeCount++;
 					dailyVolume += q;

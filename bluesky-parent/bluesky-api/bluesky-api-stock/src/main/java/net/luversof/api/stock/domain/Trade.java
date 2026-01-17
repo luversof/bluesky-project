@@ -2,7 +2,6 @@ package net.luversof.api.stock.domain;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.data.annotation.Id;
@@ -44,6 +43,9 @@ public class Trade {
 
 	@Column("tradeDate")
 	private Instant tradeDate;
+
+	@Column("realizedProfit")
+	private BigDecimal realizedProfit;
 
 	public UUID getId() {
 		return id;
@@ -117,36 +119,19 @@ public class Trade {
 		this.tradeDate = tradeDate;
 	}
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o)
-			return true;
-		if (o == null || getClass() != o.getClass())
-			return false;
-		Trade trade = (Trade) o;
-		return quantity == trade.quantity && Objects.equals(id, trade.id) && Objects.equals(accountId, trade.accountId)
-				&& Objects.equals(stockItemId, trade.stockItemId) && type == trade.type
-				&& Objects.equals(price, trade.price) && Objects.equals(fee, trade.fee)
-				&& Objects.equals(tax, trade.tax) && Objects.equals(tradeDate, trade.tradeDate);
+	public BigDecimal getRealizedProfit() {
+		return realizedProfit;
 	}
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(id, accountId, stockItemId, type, quantity, price, fee, tax, tradeDate);
+	public void setRealizedProfit(BigDecimal realizedProfit) {
+		this.realizedProfit = realizedProfit;
 	}
 
 	@Override
 	public String toString() {
-		return "Trade{" +
-				"id=" + id +
-				", accountId=" + accountId +
-				", stockItemId=" + stockItemId +
-				", type=" + type +
-				", quantity=" + quantity +
-				", price=" + price +
-				", fee=" + fee +
-				", tax=" + tax +
-				", tradeDate=" + tradeDate +
-				'}';
+		return "Trade [id=" + id + ", accountId=" + accountId + ", stockItemId=" + stockItemId + ", type=" + type
+				+ ", quantity=" + quantity + ", price=" + price + ", fee=" + fee + ", tax=" + tax + ", tradeDate="
+				+ tradeDate + ", realizedProfit=" + realizedProfit + "]";
 	}
+	
 }

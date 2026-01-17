@@ -204,6 +204,7 @@ public class StockAdminService {
 		trade.setFee(googleSheetTrade.get수수료() == null ? BigDecimal.ZERO : googleSheetTrade.get수수료());
 		trade.setTax(googleSheetTrade.get거래세() == null ? BigDecimal.ZERO : googleSheetTrade.get거래세());
 		trade.setTradeDate(googleSheetTrade.get날짜());
+		trade.setRealizedProfit(googleSheetTrade.get매도실현손익());
 
 		String accountName = googleSheetTrade.get계좌();
 		if (accountName != null && !accountName.isBlank()) {

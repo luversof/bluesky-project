@@ -26,6 +26,7 @@ CREATE TABLE "Trade" (
 	"price" NUMERIC NOT NULL,
 	"fee" NUMERIC NOT NULL,
 	"tax" NUMERIC NOT NULL,
+	"realizedProfit" NUMERIC,
 	"tradeDate" TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
