@@ -14,6 +14,9 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -34,6 +37,8 @@ import net.luversof.api.stock.web.dto.response.TradeResponse;
  */
 @Service
 public class TradeProfitService {
+
+	private static final Logger log = LoggerFactory.getLogger(TradeProfitService.class);
 
 	@Autowired
 	private AccountService accountService;
@@ -286,6 +291,9 @@ public class TradeProfitService {
 					BigDecimal avgPrice = currentTotalCost.divide(BigDecimal.valueOf(currentQuantity), 10, RoundingMode.HALF_UP);
 					BigDecimal avgPriceNet = currentTotalCostNet.divide(BigDecimal.valueOf(currentQuantity), 10, RoundingMode.HALF_UP);
 					
+					log.info("[TradeProfit] Stock: {}, Date: {}, CostBasis(Total/Qty): {} / {} = {}, Sell Price: {}", 
+							stockItemId, tradeDate, currentTotalCost, currentQuantity, avgPrice, price);
+
 					tradeCost = avgPrice.multiply(BigDecimal.valueOf(q));
 					tradeCostNet = avgPriceNet.multiply(BigDecimal.valueOf(q));
 				} else {
@@ -403,6 +411,9 @@ public class TradeProfitService {
 		profit.setRealizedProfitNet(periodRealizedProfitNet);
 		profit.setEvaluationProfitNet(evaluationProfitNet);
 		profit.setTotalProfitNet(totalProfitNet);
+
+		log.info("[TradeProfit Result] Stock: {}, SellQty: {}, SellAmt: {}, BuyAvg: {}, SellAvg: {}, Realized: {}",
+				stockItemId, periodTotalSellQuantity, periodTotalSellAmount, averageBuyPrice, averageSellPrice, periodRealizedProfit);
 
 		return profit;
 	}
