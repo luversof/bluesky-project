@@ -194,8 +194,20 @@ public class TradeProfitService {
 		// 1. Sort by date ascending to ensure FIFO order
 		// If dates are equal, process BUY before SELL to ensure inventory availability
 		List<Trade> sortedTrades = new ArrayList<>(trades);
-		sortedTrades.sort(Comparator.comparing(Trade::getTradeDate)
-				.thenComparing(trade -> trade.getType() == TradeType.BUY ? 0 : 1));
+		sortedTrades.sort((t1, t2) -> {
+			int dateCompare = t1.getTradeDate().compareTo(t2.getTradeDate());
+			if (dateCompare != 0) {
+				return dateCompare;
+			}
+			// If dates are equal, BUY comes first
+			if (t1.getType() == t2.getType()) {
+				return 0;
+			}
+			if (t1.getType() == TradeType.BUY) {
+				return -1;
+			}
+			return 1;
+		});
 
 		// 2. FIFO Queue for tracking cost basis
 		// Stores: Price, Remaining Quantity, Fee per share (to preserve precision as
@@ -222,12 +234,21 @@ public class TradeProfitService {
 
 		for (Trade trade : sortedTrades) {
 			
-			if (end != null && trade.getTradeDate().isAfter(end))
-				break;
+			if (trade.getType() == null) {
+				continue;
+			}
+			
+			// end 날짜 이후라도 loop 차단 없이 계속 진행하여 사이드 이펙트 방지 (정확도 우선)
+			// if (end != null && trade.getTradeDate().isAfter(end))
+			//	break;
 			
 			boolean inPeriod = true;
-			if (start != null && trade.getTradeDate().isBefore(start))
+			if (start != null && trade.getTradeDate().isBefore(start)) {
 				inPeriod = false;
+			}
+			if (end != null && trade.getTradeDate().isAfter(end)) {
+				inPeriod = false;
+			}
 
 			BigDecimal fee = nz(trade.getFee());
 			BigDecimal tax = nz(trade.getTax());
