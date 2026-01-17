@@ -423,15 +423,14 @@ public class TradeProfitService {
 	}
 
 	/**
-	 * 시간 시계열 집계: start ~ end (inclusive) 일별 포트폴리오 가치(실현 + 미실현) 스냅샷을 반환합니다.
-	 * 현재의 제약: 과거 일별 시세가 없으므로 미실현 평가액은 현재가(`stockPriceService.getCurrentPrice`)를 사용한
-	 * 근사치입니다.
+	 * 시간 시계열 집계: 전체 거래 내역을 바탕으로 Rolling WMA 계산을 수행한 후,
+	 * 요청된 기간(start ~ end)에 해당하는 일별 누적 실현손익 스냅샷을 반환합니다.
 	 */
 	public List<TradeProfitTimeSeriesPoint> aggregateTimeSeries(TradeProfitRequest request, String granularity) {
 		Instant end = request.getEndDate() != null ? request.getEndDate() : Instant.now();
 		Instant start = request.getStartDate() != null ? request.getStartDate() : end.minus(90, ChronoUnit.DAYS);
 
-		// 1) 조회 대상 트레이드: 기존 calculateProfit과 유사한 기준으로 대상 계좌/종목의 전체 트레이드를 조회(범위 제한 없이)
+		// 1) 전체 트레이드 조회 (날짜 제한 없이 전체 로딩)
 		List<Trade> allTrades = switch (request.getRequestType()) {
 			case USER -> {
 				var accountList = accountService.findByUserId(request.getUserId());
@@ -465,63 +464,156 @@ public class TradeProfitService {
 			}
 		};
 
-		// 정렬: 거래일 기준 오름차순
-		allTrades.sort(Comparator.comparing(Trade::getTradeDate));
-
-		// 누적 상태를 관리: 종목별 누적 합계
-		record Cumul(long buyQty, long sellQty, java.math.BigDecimal buyAmount, java.math.BigDecimal sellAmount) {
+		if (allTrades.isEmpty()) {
+			return new ArrayList<>();
 		}
 
-		Map<java.util.UUID, Cumul> cumulMap = new TreeMap<>();
+		// 2) StockItem 정보 로딩 및 그룹핑 키 생성 (calculateProfitByStock과 동일 로직)
+		var stockItemIds = allTrades.stream().map(Trade::getStockItemId).collect(Collectors.toSet());
+		Map<UUID, StockItem> stockItemMap = new HashMap<>();
+		stockItemService.findAllById(stockItemIds).forEach(si -> stockItemMap.put(si.getId(), si));
+
+		// 그룹핑 키 생성 함수
+		java.util.function.Function<Trade, String> getGroupKey = t -> {
+			var si = stockItemMap.get(t.getStockItemId());
+			if (si != null) {
+				if (si.getSymbol() != null && !si.getSymbol().isBlank()) {
+					return "S:" + si.getSymbol();
+				}
+				if (si.getName() != null && !si.getName().isBlank()) {
+					return "N:" + si.getName().trim();
+				}
+			}
+			return "I:" + t.getStockItemId().toString();
+		};
+
+		// 3) 거래 정렬 (날짜 오름차순)
+		// 같은 날짜 내에서는 BUY 먼저 처리 (논리적 재고 확보)
+		allTrades.sort((t1, t2) -> {
+			int dateCompare = t1.getTradeDate().compareTo(t2.getTradeDate());
+			if (dateCompare != 0) return dateCompare;
+			if (t1.getType() == t2.getType()) return 0;
+			return t1.getType() == TradeType.BUY ? -1 : 1;
+		});
+
+		// 4) 시뮬레이션 상태 관리 (WMA)
+		class WmaState {
+			long quantity = 0;
+			BigDecimal totalCost = BigDecimal.ZERO;    // Gross
+			BigDecimal totalCostNet = BigDecimal.ZERO; // Net (Fee included)
+		}
+		Map<String, WmaState> stateMap = new HashMap<>();
+		
+		BigDecimal globalCumulativeRealized = BigDecimal.ZERO;
+
+		// 5) 시뮬레이션 루프
+		// 시작일: 데이터가 있는 첫 날짜부터 시작 (Cost Basis 구축을 위해)
+		Instant firstTradeDate = allTrades.get(0).getTradeDate().truncatedTo(ChronoUnit.DAYS);
+		Instant simulationStart = firstTradeDate;
+		// 출력 시작일: 요청된 start 날짜
+		Instant outputStart = start.truncatedTo(ChronoUnit.DAYS);
+		Instant outputEnd = end.truncatedTo(ChronoUnit.DAYS);
+
+		// 만약 요청 기간이 데이터보다 훨씬 과거라면? -> 데이터 없으므로 그냥 루프 안돌거나 0 출력
+		// 만약 요청 기간이 데이터 시작보다 미래라면? -> 시뮬레이션은 firstTradeDate부터 돌리고, outputStart부터 기록
 
 		List<TradeProfitTimeSeriesPoint> series = new ArrayList<>();
-
 		Iterator<Trade> it = allTrades.iterator();
 		Trade nextTrade = it.hasNext() ? it.next() : null;
 
-		java.math.BigDecimal prevCumulativeRealized = null;
+		Instant currentDay = simulationStart.isBefore(outputStart) ? simulationStart : outputStart;
+		// ※ 단, simulationStart가 outputStart보다 늦으면 (데이터가 미래에 시작), 
+		// outputStart ~ simulationStart 구간은 데이터 없음(0)으로 채워야 함.
+		// 편의상 currentDay를 Math.min(simulationStart, outputStart)로 잡고 진행.
+		if (outputStart.isBefore(simulationStart)) {
+			currentDay = outputStart;
+		} else {
+			currentDay = simulationStart;
+		}
 
-		Instant cur = start.truncatedTo(ChronoUnit.DAYS);
-		while (!cur.isAfter(end)) {
-			// advance trades up to cur (inclusive)
-			long tradesCountForDay = 0L;
-			long tradesVolumeForDay = 0L;
-			while (nextTrade != null && !nextTrade.getTradeDate().isAfter(cur)) {
-				java.util.UUID sid = nextTrade.getStockItemId();
-				Cumul c = cumulMap.get(sid);
-				if (c == null)
-					c = new Cumul(0L, 0L, java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO);
+		while (!currentDay.isAfter(outputEnd)) {
+			// 해당 일자(currentDay)에 포함되는 모든 거래 처리
+			long dailyTradeCount = 0;
+			long dailyVolume = 0;
+			BigDecimal dailyRealizedGain = BigDecimal.ZERO;
 
-				if (nextTrade.getType() == TradeType.BUY) {
-					c = new Cumul(c.buyQty + nextTrade.getQuantity(), c.sellQty, c.buyAmount.add(
-							nz(nextTrade.getPrice().multiply(java.math.BigDecimal.valueOf(nextTrade.getQuantity())))),
-							c.sellAmount);
-				} else {
-					c = new Cumul(c.buyQty, c.sellQty + nextTrade.getQuantity(), c.buyAmount, c.sellAmount.add(
-							nz(nextTrade.getPrice().multiply(java.math.BigDecimal.valueOf(nextTrade.getQuantity())))));
+			// nextTrade가 currentDay의 끝(inclusive)까지인지 확인
+			// tradeDate는 시분초 포함이므로, truncatedTo(DAYS) 결과가 currentDay와 같거나 이전이면 처리
+			while (nextTrade != null) {
+				Instant tradeDay = nextTrade.getTradeDate().truncatedTo(ChronoUnit.DAYS);
+				if (tradeDay.isAfter(currentDay)) {
+					break; // 미래의 거래는 대기
 				}
-				cumulMap.put(sid, c);
-				tradesCountForDay++;
-				tradesVolumeForDay += nextTrade.getQuantity();
+
+				// 거래 처리 logic (WMA)
+				Trade trade = nextTrade;
+				String key = getGroupKey.apply(trade);
+				WmaState state = stateMap.computeIfAbsent(key, k -> new WmaState());
+
+				BigDecimal fee = nz(trade.getFee());
+				BigDecimal tax = nz(trade.getTax());
+				int q = trade.getQuantity();
+				BigDecimal price = trade.getPrice();
+				BigDecimal amount = price.multiply(BigDecimal.valueOf(q));
+
+				if (trade.getType() == TradeType.BUY) {
+					if (q > 0) {
+						state.quantity += q;
+						state.totalCost = state.totalCost.add(amount);
+						state.totalCostNet = state.totalCostNet.add(amount).add(fee);
+					}
+				} else if (trade.getType() == TradeType.SELL) {
+					BigDecimal tradeCost = BigDecimal.ZERO;
+					BigDecimal tradeCostNet = BigDecimal.ZERO;
+
+					if (state.quantity > 0) {
+						BigDecimal avgPrice = state.totalCost.divide(BigDecimal.valueOf(state.quantity), 10, RoundingMode.HALF_UP);
+						BigDecimal avgPriceNet = state.totalCostNet.divide(BigDecimal.valueOf(state.quantity), 10, RoundingMode.HALF_UP);
+						tradeCost = avgPrice.multiply(BigDecimal.valueOf(q));
+						tradeCostNet = avgPriceNet.multiply(BigDecimal.valueOf(q));
+
+						// Update State
+						if (state.quantity >= q) {
+							state.quantity -= q;
+							state.totalCost = state.totalCost.subtract(tradeCost);
+							state.totalCostNet = state.totalCostNet.subtract(tradeCostNet);
+						} else {
+							state.quantity = 0;
+							state.totalCost = BigDecimal.ZERO;
+							state.totalCostNet = BigDecimal.ZERO;
+						}
+						if (state.quantity == 0) {
+							state.totalCost = BigDecimal.ZERO;
+							state.totalCostNet = BigDecimal.ZERO;
+						}
+					}
+					
+					// Realized Profit (Gross)
+					BigDecimal tradeProfit = amount.subtract(tradeCost);
+					dailyRealizedGain = dailyRealizedGain.add(tradeProfit);
+
+					dailyTradeCount++;
+					dailyVolume += q;
+				}
+
 				nextTrade = it.hasNext() ? it.next() : null;
 			}
 
-			// 계산: 가격 의존성을 제거하고, 누적 실현손익 및 일별 실현증가/거래 통계만 계산
-			java.math.BigDecimal cumulativeRealized = java.math.BigDecimal.ZERO;
-			for (Map.Entry<java.util.UUID, Cumul> e : cumulMap.entrySet()) {
-				Cumul c = e.getValue();
-				java.math.BigDecimal realized = c.sellAmount.subtract(c.buyAmount);
-				cumulativeRealized = cumulativeRealized.add(realized);
+			// 하루 마감 -> Global Cumulative Update
+			globalCumulativeRealized = globalCumulativeRealized.add(dailyRealizedGain);
+
+			// 출력 범위 내인지 확인 후 추가
+			if (!currentDay.isBefore(outputStart)) {
+				series.add(new TradeProfitTimeSeriesPoint(
+						currentDay,
+						globalCumulativeRealized,
+						dailyRealizedGain,
+						dailyTradeCount,
+						dailyVolume
+				));
 			}
 
-			java.math.BigDecimal dailyRealized = prevCumulativeRealized == null ? java.math.BigDecimal.ZERO
-					: cumulativeRealized.subtract(prevCumulativeRealized);
-
-			series.add(new TradeProfitTimeSeriesPoint(cur, cumulativeRealized, dailyRealized, tradesCountForDay,
-					tradesVolumeForDay));
-
-			prevCumulativeRealized = cumulativeRealized;
-			cur = cur.plus(1, ChronoUnit.DAYS);
+			currentDay = currentDay.plus(1, ChronoUnit.DAYS);
 		}
 
 		return series;
