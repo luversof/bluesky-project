@@ -59,7 +59,7 @@ public class GoogleSheetTrade {
 	@JsonDeserialize(using = StockCurrencyDeserializer.class)
 	private BigDecimal 현재가;
 	
-	@JsonProperty("매도실현손익")
+	@JsonProperty("매도 실현 손익")
 	@JsonDeserialize(using = StockCurrencyDeserializer.class)
 	private BigDecimal 매도실현손익;
 
