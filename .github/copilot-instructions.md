@@ -196,6 +196,12 @@ CREATE TABLE "UserInfo" (
 - HTMX 기반 인터랙션
 - Server-Side Rendering
 
+### UI 수정 시 빌드 필수
+
+- `bluesky-web-gate`의 UI(HTML, CSS, JS/TS)를 수정한 경우, 반드시 프론트엔드 빌드를 수행해야 변경사항이 반영됩니다.
+- 터미널 경로: `bluesky-project/bluesky-parent/bluesky-web/bluesky-web-gate/src/main/frontend`
+- 명령어: `npm run build`
+
 ## Config Server
 
 - GitHub 기반 설정 저장소

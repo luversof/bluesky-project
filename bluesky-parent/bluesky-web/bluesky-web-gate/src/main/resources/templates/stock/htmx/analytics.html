@@ -148,14 +148,14 @@
                         <td class="text-sm opacity-80" th:if="${subKeyLabel != null}" th:text="${row.subKey}">세부</td>
                         
                         <!-- Value 1 -->
-                        <td class="text-right font-mono" 
+                        <td class="text-right font-mono whitespace-nowrap" 
                             th:text="${#numbers.formatDecimal(row.value1, 0, 'COMMA', 0, 'POINT')}"
                             th:classappend="${row.value1 >= 0} ? 'text-primary' : 'text-error'">
                             0
                         </td>
 
                         <!-- Value 2 (Optional) -->
-                       <td class="text-right font-mono" 
+                       <td class="text-right font-mono whitespace-nowrap" 
                             th:if="${value2Label != null && !value2Label.isEmpty()}" 
                             th:text="${#numbers.formatDecimal(row.value2, 0, 'COMMA', 0, 'POINT')}"
                             th:classappend="${row.value2 >= 0} ? 'text-secondary' : 'text-error'">
@@ -163,7 +163,7 @@
                         </td>
 
                         <!-- Value 3 (Optional) -->
-                       <td class="text-right font-mono" 
+                       <td class="text-right font-mono whitespace-nowrap" 
                             th:if="${value3Label != null && !value3Label.isEmpty()}" 
                             th:text="${#numbers.formatDecimal(row.value3, 0, 'COMMA', 0, 'POINT')}"
                             th:classappend="${row.value3 >= 0} ? 'text-accent' : 'text-error'">
@@ -171,17 +171,17 @@
                         </td>
 
                         <!-- Value 4 (Optional) -->
-                       <td class="text-right font-mono" 
+                       <td class="text-right font-mono whitespace-nowrap" 
                             th:if="${value4Label != null && !value4Label.isEmpty()}" 
-                            th:text="${#numbers.formatDecimal(row.value4, 0, 'COMMA', 0, 'POINT')}">
+                            th:text="${#numbers.formatDecimal(row.value5 != null ? row.value5 : row.value4, 0, 'COMMA', 0, 'POINT')}">
                             0
                         </td>
 
                         <!-- Total (Conditional) -->
-                        <td class="text-right font-bold text-base-content" 
+                        <td class="text-right font-bold text-base-content whitespace-nowrap" 
                              th:if="${totalLabel != null && !totalLabel.isEmpty()}"
-                             th:text="${#numbers.formatDecimal(row.value4 != null ? row.value2 : (row.total != null ? row.total : 0), 0, 'COMMA', 0, 'POINT')}"
-                              th:classappend="${(row.value4 != null ? row.value2 : (row.total != null ? row.total : 0)) >= 0 ? 'text-success' : 'text-error'}">
+                             th:text="${#numbers.formatDecimal(row.total != null ? row.total : (row.value1 + row.value2), 0, 'COMMA', 0, 'POINT')}"
+                              th:classappend="${(row.total != null ? row.total : (row.value1 + row.value2)) >= 0 ? 'text-success' : 'text-error'}">
                              0
                         </td>
                     </tr>
@@ -217,7 +217,7 @@
                          <!-- Total Value 4 -->
                          <td class="text-right" 
                              th:if="${value4Label != null && !value4Label.isEmpty()}"
-                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value4]), 0, 'COMMA', 0, 'POINT')}">
+                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value5 != null ? value5 : value4]), 0, 'COMMA', 0, 'POINT')}">
                         </td>
 
                         <!-- Grand Total (Conditional) -->

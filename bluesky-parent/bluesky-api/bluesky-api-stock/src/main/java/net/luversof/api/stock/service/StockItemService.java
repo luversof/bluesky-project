@@ -30,6 +30,10 @@ public class StockItemService {
 	public StockItem findByName(String name) {
 		return stockItemRepository.findByName(name);
 	}
+	
+	public Iterable<StockItem> findAllById(Iterable<UUID> ids) {
+		return stockItemRepository.findAllById(ids);
+	}
 
 	public java.util.List<StockItem> findAll() {
 		java.util.List<StockItem> list = new java.util.ArrayList<>();

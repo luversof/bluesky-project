@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import net.luversof.api.stock.constant.StockErrorCode;
 import net.luversof.api.stock.constant.TradeType;
 import net.luversof.api.stock.domain.Account;
+import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.domain.TradeProfit;
 import net.luversof.api.stock.web.dto.request.TradeProfitRequest;
@@ -156,15 +157,31 @@ public class TradeProfitService {
 
 	/**
 	 * stockItemId별 통합 손익 통계 (accountId 무시, 실현손익 + 미실현손익)
+	 * StockItem Symbol이 같으면 통합하여 계산 (중복 데이터 보정)
 	 */
 	public List<TradeProfit> calculateProfitByStock(List<Trade> tradeList, TradeProfitRequest request) {
-		Map<UUID, List<Trade>> grouped = tradeList.stream()
-				.collect(Collectors.groupingBy(Trade::getStockItemId));
+		// 1. StockItem 정보 조회 (Symbol 기준 병합을 위해)
+		var stockItemIds = tradeList.stream().map(Trade::getStockItemId).collect(Collectors.toSet());
+		Map<UUID, StockItem> stockItemMap = new HashMap<>();
+		stockItemService.findAllById(stockItemIds).forEach(si -> stockItemMap.put(si.getId(), si));
+
+		// 2. 그룹핑 (Symbol이 같으면 같은 그룹)
+		Map<String, List<Trade>> grouped = tradeList.stream().collect(Collectors.groupingBy(t -> {
+			var si = stockItemMap.get(t.getStockItemId());
+			if (si != null && si.getSymbol() != null && !si.getSymbol().isBlank()) {
+				// Symbol이 같으면 통합
+				return si.getSymbol(); 
+			}
+			return t.getStockItemId().toString();
+		}));
+		
 		List<TradeProfit> result = new ArrayList<>();
 
-		for (Map.Entry<UUID, List<Trade>> entry : grouped.entrySet()) {
-			UUID stockItemId = entry.getKey();
-			List<Trade> group = entry.getValue();
+		for (List<Trade> group : grouped.values()) {
+			if (group.isEmpty()) continue;
+			
+			// 대표 ID 사용 (첫번째 Trade의 StockItemId)
+			UUID stockItemId = group.get(0).getStockItemId();
 
 			TradeProfit profit = calculateStockProfit(group, null, stockItemId, request);
 			if (request.hasDateRange()) {
