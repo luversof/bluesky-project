@@ -165,14 +165,21 @@ public class TradeProfitService {
 		Map<UUID, StockItem> stockItemMap = new HashMap<>();
 		stockItemService.findAllById(stockItemIds).forEach(si -> stockItemMap.put(si.getId(), si));
 
-		// 2. 그룹핑 (Symbol이 같으면 같은 그룹)
+		// 2. 그룹핑 (Symbol -> Name -> ID 순으로 식별)
 		Map<String, List<Trade>> grouped = tradeList.stream().collect(Collectors.groupingBy(t -> {
 			var si = stockItemMap.get(t.getStockItemId());
-			if (si != null && si.getSymbol() != null && !si.getSymbol().isBlank()) {
-				// Symbol이 같으면 통합
-				return si.getSymbol(); 
+			if (si != null) {
+				if (si.getSymbol() != null && !si.getSymbol().isBlank()) {
+					return "S:" + si.getSymbol(); // Symbol Prefix
+				}
+				// 2026-01-17: Name match fallback for inconsistent data
+				// Remove spaces to ensure better matching (e.g. "Samsung Electronics" vs "SamsungElectronics")
+				// But risking collision? TIGER REITs name is specific enough.
+				if (si.getName() != null && !si.getName().isBlank()) {
+					return "N:" + si.getName().trim();
+				}
 			}
-			return t.getStockItemId().toString();
+			return "I:" + t.getStockItemId().toString();
 		}));
 		
 		List<TradeProfit> result = new ArrayList<>();
