@@ -185,8 +185,9 @@ public class EnhancedTradeProfitService extends TradeProfitService {
 				? totalSellProceeds.divide(BigDecimal.valueOf(totalSellQuantity), 2, RoundingMode.HALF_UP)
 				: BigDecimal.ZERO;
 
-		BigDecimal realizedProfitNet = totalSellProceeds
-				.subtract(averageBuyPriceNet.multiply(BigDecimal.valueOf(totalSellQuantity)));
+		// Use the DB Realized Profit (already in profit object from base service) as the Net Profit source of truth
+		BigDecimal realizedProfitNet = profit.getRealizedProfit();
+		
 		BigDecimal evaluationProfitNet = profit.getEvaluationAmount()
 				.subtract(averageBuyPriceNet.multiply(BigDecimal.valueOf(profit.getHoldingQuantity())));
 		BigDecimal totalProfitNet = realizedProfitNet.add(evaluationProfitNet);

@@ -628,85 +628,31 @@ public class TradeProfitService {
 		Map<UUID, String> stockItemNames = new HashMap<>();
 		stockItemService.findAll().forEach(item -> stockItemNames.put(item.getId(), item.getName()));
 
-		// 2. Group by Account & StockItem to perform FIFO calculation
-		Map<String, List<Trade>> grouped = tradeList.stream()
-				.collect(Collectors.groupingBy(t -> t.getAccountId() + "-" + t.getStockItemId()));
-
 		List<TradeResponse> result = new ArrayList<>();
 
-		for (List<Trade> group : grouped.values()) {
-			// Sort by date ASC for FIFO
-			group.sort(Comparator.comparing(Trade::getTradeDate));
+		for (Trade trade : tradeList) {
+			
+			// 3. Filter by Date Range and Add to Result
+			boolean inRange = true;
+			if (request.startDate() != null && trade.getTradeDate().isBefore(request.startDate()))
+				inRange = false;
+			if (request.endDate() != null && trade.getTradeDate().isAfter(request.endDate()))
+				inRange = false;
 
-			record BuyBlock(BigDecimal price, int quantity, BigDecimal feePerShare) {
-			}
-			java.util.Deque<BuyBlock> inventory = new java.util.ArrayDeque<>();
-
-			for (Trade trade : group) {
-				BigDecimal realizedProfit = null;
-
-				BigDecimal fee = nz(trade.getFee());
-				int q = trade.getQuantity();
-				BigDecimal price = trade.getPrice();
-
-				if (trade.getType() == TradeType.BUY) {
-					if (q > 0) {
-						BigDecimal feePerShare = fee.divide(BigDecimal.valueOf(q), 10, RoundingMode.HALF_UP);
-						inventory.addLast(new BuyBlock(price, q, feePerShare));
-					}
-				} else if (trade.getType() == TradeType.SELL) {
-					// FIFO Calculation
-					BigDecimal tradeCostNet = BigDecimal.ZERO;
-					int remainingToSell = q;
-
-					while (remainingToSell > 0 && !inventory.isEmpty()) {
-						BuyBlock block = inventory.peekFirst();
-						int matchQty = Math.min(remainingToSell, block.quantity());
-
-						BigDecimal blockCost = block.price().multiply(BigDecimal.valueOf(matchQty));
-						BigDecimal blockFee = block.feePerShare().multiply(BigDecimal.valueOf(matchQty));
-
-						tradeCostNet = tradeCostNet.add(blockCost).add(blockFee);
-						remainingToSell -= matchQty;
-
-						if (matchQty == block.quantity()) {
-							inventory.pollFirst();
-						} else {
-							// Update head
-							inventory.pollFirst();
-							inventory.addFirst(
-									new BuyBlock(block.price(), block.quantity() - matchQty, block.feePerShare()));
-						}
-					}
-
-					// Sell Proceeds Net = (Price * Qty) - Fee - Tax
-					BigDecimal proceeds = price.multiply(BigDecimal.valueOf(q)).subtract(fee)
-							.subtract(nz(trade.getTax()));
-					realizedProfit = proceeds.subtract(tradeCostNet);
-				}
-
-				// 3. Filter by Date Range and Add to Result
-				boolean inRange = true;
-				if (request.startDate() != null && trade.getTradeDate().isBefore(request.startDate()))
-					inRange = false;
-				if (request.endDate() != null && trade.getTradeDate().isAfter(request.endDate()))
-					inRange = false;
-
-				if (inRange) {
-					result.add(new TradeResponse(
-							trade.getId(),
-							trade.getAccountId(),
-							trade.getStockItemId(),
-							stockItemNames.getOrDefault(trade.getStockItemId(), ""),
-							trade.getType(),
-							trade.getQuantity(),
-							trade.getPrice(),
-							trade.getFee(),
-							trade.getTax(),
-							price.multiply(BigDecimal.valueOf(q)),
-							realizedProfit,
-							trade.getTradeDate()));
-				}
+			if (inRange) {
+				result.add(new TradeResponse(
+						trade.getId(),
+						trade.getAccountId(),
+						trade.getStockItemId(),
+						stockItemNames.getOrDefault(trade.getStockItemId(), ""),
+						trade.getType(),
+						trade.getQuantity(),
+						trade.getPrice(),
+						trade.getFee(),
+						trade.getTax(),
+						trade.getPrice().multiply(BigDecimal.valueOf(trade.getQuantity())),
+						trade.getRealizedProfit(),
+						trade.getTradeDate()));
 			}
 		}
 
