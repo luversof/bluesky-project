@@ -9,6 +9,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Configuration
 @EnableWebSecurity
@@ -28,8 +30,12 @@ public class ClientUserSecurityConfig {
 				.authorizeHttpRequests(authorize -> authorize
 						.anyRequest().permitAll())
 				.exceptionHandling(exception -> exception
-						.authenticationEntryPoint(
-								new LoginUrlAuthenticationEntryPoint(clientUserProperties.getLoginUrl())))
+						.authenticationEntryPoint((request, response, authException) -> {
+							String url = UriComponentsBuilder.fromUriString(clientUserProperties.getLoginUrl())
+									.queryParam("redirectUrl", ServletUriComponentsBuilder.fromRequest(request).build().toUriString())
+									.build().toUriString();
+							response.sendRedirect(url);
+						}))
 				.oauth2Client(Customizer.withDefaults())
 				.logout(logout -> logout
 						.logoutUrl("/logout")
