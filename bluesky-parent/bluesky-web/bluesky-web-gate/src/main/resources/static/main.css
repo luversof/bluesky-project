@@ -1760,9 +1760,6 @@
   .z-\[1\] {
     z-index: 1;
   }
-  .col-span-1 {
-    grid-column: span 1 / span 1;
-  }
   .stat-figure {
     @layer daisyui.component {
       grid-column-start: 2;
@@ -2695,11 +2692,11 @@
   .h-64 {
     height: calc(var(--spacing) * 64);
   }
-  .h-80 {
-    height: calc(var(--spacing) * 80);
-  }
   .h-\[28\.6rem\] {
     height: 28.6rem;
+  }
+  .h-\[300px\] {
+    height: 300px;
   }
   .h-full {
     height: 100%;
@@ -3492,11 +3489,6 @@
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
-  .lg\:col-span-2 {
-    @media (width >= 64rem) {
-      grid-column: span 2 / span 2;
-    }
-  }
   .lg\:flex {
     @media (width >= 64rem) {
       display: flex;
@@ -3525,11 +3517,6 @@
           border-block-end: none;
         }
       }
-    }
-  }
-  .lg\:grid-cols-3 {
-    @media (width >= 64rem) {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
   .lg\:flex-row {

@@ -112,14 +112,14 @@
 </div>
 
 <!-- 2. Data Content Fragment -->
-<div th:fragment="data-content" class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in"
+<div th:fragment="data-content" class="flex flex-col gap-6 animate-fade-in"
      xmlns:th="http://www.thymeleaf.org">
     
     <!-- Chart Area -->
-    <div class="card bg-base-100 shadow-xl col-span-1 lg:col-span-2">
+    <div class="card bg-base-100 shadow-xl w-full">
         <div class="card-body">
             <h2 class="card-title text-sm opacity-70" th:text="${chartTitle}">분석 차트</h2>
-            <div class="h-80 w-full relative">
+            <div class="h-[300px] w-full relative">
                  <canvas id="analysisChart"></canvas>
             </div>
             <div class="text-xs text-right opacity-50 mt-2">* 상위 20개 항목만 표시됩니다.</div>
@@ -127,7 +127,7 @@
     </div>
 
     <!-- Summary Table Area -->
-    <div class="card bg-base-100 shadow-xl col-span-1">
+    <div class="card bg-base-100 shadow-xl w-full">
         <div class="card-body overflow-x-auto p-0 scrollbar-thin">
             <table class="table table-sm table-pin-rows">
                 <thead>
