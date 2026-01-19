@@ -3,7 +3,7 @@ package net.luversof.api.stock.service;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
@@ -78,7 +78,7 @@ public class StockAdminService {
 				"updatedDate" = NOW()
 			""";
 
-	private static final ZoneOffset KST = ZoneOffset.ofHours(9);
+	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 	private static final List<DateTimeFormatter> DATE_FORMATTERS = List.of(
 			DateTimeFormatter.ofPattern("yyyy. M. d"),
 			DateTimeFormatter.ofPattern("yyyy-M-d"),
@@ -322,7 +322,7 @@ public class StockAdminService {
 		var trimmed = value.trim();
 		for (var formatter : DATE_FORMATTERS) {
 			try {
-				return LocalDate.parse(trimmed, formatter).atStartOfDay().toInstant(KST);
+				return LocalDate.parse(trimmed, formatter).atStartOfDay(KST).toInstant();
 			} catch (DateTimeParseException ignored) {
 				// try next pattern
 			}
