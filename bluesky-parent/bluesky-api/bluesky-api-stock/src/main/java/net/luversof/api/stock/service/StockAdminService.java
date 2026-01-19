@@ -322,7 +322,9 @@ public class StockAdminService {
 		var trimmed = value.trim();
 		for (var formatter : DATE_FORMATTERS) {
 			try {
-				return LocalDate.parse(trimmed, formatter).atStartOfDay(KST).toInstant();
+				// 한국 시간 기준 15:00 저장 (UTC +9) -> 00:00 저장 이슈 (전일 15:00)
+				// 한국 시장 개장 시간인 09:00 기준으로 저장하여 UTC 00:00 으로 맞춤
+				return LocalDate.parse(trimmed, formatter).atTime(9, 0).atZone(KST).toInstant();
 			} catch (DateTimeParseException ignored) {
 				// try next pattern
 			}
