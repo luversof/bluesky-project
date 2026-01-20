@@ -46,6 +46,11 @@ public class StockViewController {
 		model.addAttribute("stockItems", stockItems);
 		return "stock/htmx/dashboard";
 	}
+	
+	@GetMapping("/analytics")
+	public String analyticsPage() {
+		return "stock/analytics";
+	}
 
 	@GetMapping("/dashboard")
 	public String dashboard() {

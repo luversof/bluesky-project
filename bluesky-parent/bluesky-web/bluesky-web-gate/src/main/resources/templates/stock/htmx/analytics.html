@@ -1,305 +1,251 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
-
-<!-- 1. Main Analytics Container -->
 <div th:fragment="container">
-    <div class="card bg-base-100 shadow-xl">
-        <div class="card-body p-4 space-y-4">
+    <div class="flex flex-col gap-6">
+        <!-- Tabs -->
+        <div class="tabs tabs-boxed bg-base-200 p-1">
+             <a class="tab tab-lg flex-1 transition-all duration-300 tab-active font-bold" 
+                id="tab-profit" 
+                onclick="selectAnalyticsTab('PROFIT')">자산 성장</a>
+             <a class="tab tab-lg flex-1 transition-all duration-300 font-bold" 
+                id="tab-dividend" 
+                onclick="selectAnalyticsTab('DIVIDEND')">배당 추이</a>
+        </div>
+
+        <!-- Filter Form -->
+        <form id="analytics-filter-form"
+              hx-get="/stock/htmx/analytics/data"
+              hx-target="#analytics-content"
+              hx-trigger="submit, change delay:200ms, load">
+              
+            <!-- Hidden Type -->
+            <input type="hidden" name="type" id="input-type" value="PROFIT">
             
-            <!-- Filters Form -->
-            <form id="analytics-filter-form" 
-                  hx-get="/stock/htmx/analytics/data" 
-                  hx-target="#analytics-content" 
-                  hx-trigger="submit, change delay:200ms, load"
-                  class="flex flex-col gap-3">
+            <div class="flex flex-wrap gap-4 items-center justify-between bg-base-100 p-2 rounded-lg border border-base-200">
+                 <!-- Time Scale -->
+                 <div class="join shadow-sm">
+                    <input class="join-item btn btn-sm" type="radio" name="timeScale" value="YEARLY" aria-label="연도별 흐름" checked onchange="updateAnalyticsVis()"/>
+                    <input class="join-item btn btn-sm" type="radio" name="timeScale" value="MONTHLY" aria-label="월별 상세" onchange="updateAnalyticsVis()"/>
+                    <input class="join-item btn btn-sm" type="radio" name="timeScale" value="TOTAL" aria-label="전체 누적" onchange="updateAnalyticsVis()"/>
+                 </div>
 
-                <!-- Top Control Panel -->
-                <div class="flex flex-col xl:flex-row items-center justify-between gap-4 p-4 bg-base-200 rounded-box shadow-sm">
-                    
-                    <!-- Left: Type & Period -->
-                    <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-4 w-full xl:w-auto">
-                        <!-- Type -->
-                        <div class="join shadow-sm">
-                            <input class="join-item btn btn-sm" type="radio" name="type" value="PROFIT" aria-label="매매/보유 손익" checked onclick="updateAnalyticsFilters()"/>
-                            <input class="join-item btn btn-sm" type="radio" name="type" value="DIVIDEND" aria-label="배당 내역" onclick="updateAnalyticsFilters()"/>
-                        </div>
-                        
-                        <!-- Separator (Visual) -->
-                        <div class="hidden sm:block w-px h-6 bg-base-content/20"></div>
+                 <!-- Details -->
+                 <div class="flex gap-2 items-center">
+                     <select name="year" id="select-year" class="select select-bordered select-sm" onchange="updateAnalyticsVis()">
+                         <option th:each="y : ${years}" th:value="${y}" th:text="${y}+'년'" th:selected="${y==currentYear}"></option>
+                     </select>
+                     
+                     <select name="month" id="select-month" class="select select-bordered select-sm" style="display:none;" onchange="updateAnalyticsVis()">
+                         <option th:each="m : ${#numbers.sequence(1, 12)}" th:value="${m}" th:text="${m}+'월'" th:selected="${m==currentMonth}"></option>
+                     </select>
 
-                        <!-- Period -->
-                        <div class="join shadow-sm">
-                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="TOTAL" aria-label="누적(전체)" checked onclick="updateAnalyticsFilters()"/>
-                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="YEARLY" aria-label="연도별" onclick="updateAnalyticsFilters()"/>
-                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="MONTHLY" id="period-monthly" aria-label="월별" onclick="updateAnalyticsFilters()"/>
-                        </div>
+                     <!-- Separator -->
+                     <div class="w-px h-6 bg-base-300 mx-2"></div>
+
+                     <!-- Group By -->
+                     <div class="join shadow-sm">
+                        <input class="join-item btn btn-sm" type="radio" name="groupBy" value="STOCK" aria-label="종목별" checked onchange="htmx.trigger('#analytics-filter-form', 'submit')"/>
+                        <input class="join-item btn btn-sm" type="radio" name="groupBy" value="ACCOUNT" aria-label="계좌별" onchange="htmx.trigger('#analytics-filter-form', 'submit')"/>
                     </div>
+                 </div>
+            </div>
+        </form>
 
-                    <!-- Right: Grouping & Selects -->
-                    <div class="flex flex-wrap items-center justify-center gap-2 w-full xl:w-auto">
-                        <!-- Grouping -->
-                        <div class="join shadow-sm mr-2">
-                            <input class="join-item btn btn-sm" type="radio" name="groupBy" value="STOCK" aria-label="종목별" checked onclick="updateAnalyticsFilters()"/>
-                            <input class="join-item btn btn-sm" type="radio" name="groupBy" value="ACCOUNT" aria-label="계좌별" onclick="updateAnalyticsFilters()"/>
-                        </div>
-
-                        <!-- Year Filter -->
-                        <select name="year" id="filter-year" class="select select-bordered select-sm w-24" style="display:none;" onchange="updateAnalyticsFilters()">
-                            <option th:each="y : ${years}" th:value="${y}" th:text="${y + '년'}" th:selected="${y == currentYear}">2025년</option>
-                        </select>
-
-                        <!-- Month Filter -->
-                        <select name="month" id="filter-month" class="select select-bordered select-sm w-20" style="display:none;" onchange="updateAnalyticsFilters()">
-                            <option th:each="m : ${#numbers.sequence(1, 12)}" th:value="${m}" th:text="${m + '월'}" th:selected="${m == currentMonth}">1월</option>
-                        </select>
-
-                        <!-- Account Filter -->
-                        <select name="accountId" id="filter-account" class="select select-bordered select-sm w-auto" onchange="updateAnalyticsFilters()">
-                            <option value="">전체 계좌</option>
-                            <option th:each="acc : ${accounts}" 
-                                    th:value="${acc.id}" 
-                                    th:text="${acc.name}">계좌명</option>
-                        </select>
-                    </div>
-
-                </div>
-
-                <script>
-                    function updateAnalyticsFilters() {
-                        const type = document.querySelector('input[name="type"]:checked').value;
-                        const timeScale = document.querySelector('input[name="timeScale"]:checked').value;
-                        const groupBy = document.querySelector('input[name="groupBy"]:checked').value;
-                        const yearSelect = document.getElementById('filter-year');
-                        const monthSelect = document.getElementById('filter-month');
-                        const accountSelect = document.getElementById('filter-account');
-                        
-                        // Hide Year if TOTAL
-                        if (timeScale === 'TOTAL') {
-                            yearSelect.style.display = 'none';
-                        } else {
-                            yearSelect.style.display = 'inline-block';
-                        }
-
-                        // Month logic: Show for MONTHLY (Both PROFIT and DIVIDEND)
-                        if (timeScale === 'MONTHLY') {
-                             monthSelect.style.display = 'inline-block';
-                        } else {
-                             monthSelect.style.display = 'none';
-                        }
-
-                        // Hide Account Filter if groupBy is ACCOUNT
-                        if (groupBy === 'ACCOUNT') {
-                            accountSelect.style.display = 'none';
-                        } else {
-                            accountSelect.style.display = 'inline-block';
-                        }
-                    }
-                    // Initialize
-                    setTimeout(updateAnalyticsFilters, 0);
-                </script>
-
-            </form>
+        <!-- Content -->
+        <div id="analytics-content" class="min-h-[600px] flex flex-col gap-4">
+             <div class="flex justify-center p-20">
+                <span class="loading loading-spinner text-primary loading-lg"></span>
+            </div>
         </div>
     </div>
 
-    <!-- Data Content Area -->
-    <div id="analytics-content" class="mt-4 min-h-[300px]">
-        <div class="flex justify-center py-10">
-            <span class="loading loading-spinner text-primary"></span>
-        </div>
-    </div>
+    <!-- Logic -->
+    <script>
+        function selectAnalyticsTab(type) {
+            // UI Update
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('tab-active', 'bg-primary', 'text-primary-content'));
+            const activeTab = document.getElementById('tab-' + type.toLowerCase());
+            if(activeTab) activeTab.classList.add('tab-active', 'bg-primary', 'text-primary-content');
+            
+            // Value Update
+            document.getElementById('input-type').value = type;
+            
+            // Trigger
+            htmx.trigger('#analytics-filter-form', 'submit');
+        }
+
+        function updateAnalyticsVis() {
+            const timeScaleElement = document.querySelector('input[name="timeScale"]:checked');
+            if(!timeScaleElement) return;
+
+            const timeScale = timeScaleElement.value;
+            const yearSelect = document.getElementById('select-year');
+            const monthSelect = document.getElementById('select-month');
+            
+            if (timeScale === 'TOTAL') {
+                 yearSelect.style.display = 'none';
+                 monthSelect.style.display = 'none';
+            } else if (timeScale === 'YEARLY') {
+                 yearSelect.style.display = 'inline-block';
+                 monthSelect.style.display = 'none';
+            } else {
+                 yearSelect.style.display = 'inline-block';
+                 monthSelect.style.display = 'inline-block';
+            }
+            htmx.trigger('#analytics-filter-form', 'submit');
+        }
+    </script>
 </div>
 
-<!-- 2. Data Content Fragment -->
-<div th:fragment="data-content" class="flex flex-col gap-6 animate-fade-in"
-     xmlns:th="http://www.thymeleaf.org">
-    
-    <!-- Chart Area -->
-    <div class="card bg-base-100 shadow-xl w-full">
-        <div class="card-body">
-            <h2 class="card-title text-sm opacity-70" th:text="${chartTitle}">분석 차트</h2>
-            <div class="h-[300px] w-full relative">
-                 <canvas id="analysisChart"></canvas>
+
+<!-- 2. Data Content Fragment (Loaded via HTMX) -->
+<div th:fragment="data-content" class="fade-in space-y-6">
+
+    <!-- 1. Stats Summary -->
+    <div class="stats shadow w-full bg-base-100">
+        <div class="stat">
+            <div class="stat-figure text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
             </div>
-            <div class="text-xs text-right opacity-50 mt-2">* 상위 20개 항목만 표시됩니다.</div>
+            <div class="stat-title" th:text="${totalLabel}">총 합계</div>
+            <div class="stat-value text-primary" th:text="${totalValue}">0</div>
+            <div class="stat-desc">선택 기간/기준</div>
+        </div>
+        
+        <div class="stat">
+            <div class="stat-figure text-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+            </div>
+            <div class="stat-title">데이터 포인트</div>
+            <div class="stat-value text-secondary" th:text="${#lists.size(tableData)} + ' 개'">0 개</div>
+            <div class="stat-desc">상세 내역 수</div>
         </div>
     </div>
 
-    <!-- Summary Table Area -->
-    <div class="card bg-base-100 shadow-xl w-full">
-        <div class="card-body overflow-x-auto p-0 scrollbar-thin">
-            <table class="table table-sm table-pin-rows">
-                <thead>
-                    <tr class="bg-base-200">
-                        <th th:text="${keyLabel}">항목</th>
-                        <!-- Dynamic Sub Key -->
-                        <th th:if="${subKeyLabel != null}" th:text="${subKeyLabel}">세부</th>
-                        <th class="text-right" th:text="${value1Label}">금액1</th>
-                        <th class="text-right" th:if="${value2Label != null && !value2Label.isEmpty()}" th:text="${value2Label}">금액2</th>
-                        <th class="text-right" th:if="${value3Label != null && !value3Label.isEmpty()}" th:text="${value3Label}">금액3</th>
-                        <th class="text-right" th:if="${value4Label != null && !value4Label.isEmpty()}" th:text="${value4Label}">금액4</th>
-                        <th class="text-right" th:if="${totalLabel != null && !totalLabel.isEmpty()}" th:text="${totalLabel}">합계</th>
+    <!-- 2. Chart Area (Large) -->
+    <div class="card bg-base-100 shadow-xl overflow-hidden">
+        <div class="card-body p-4 sm:p-6" style="min-height: 400px;">
+            <h2 class="card-title text-base opacity-70 mb-4" th:text="${chartType == 'bar' ? '기간별 추이 (Bar)' : '누적 성장 (Line)'}">차트 분석</h2>
+            <div class="relative w-full h-[350px] sm:h-[450px]">
+                <canvas th:id="${canvasId}"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Detailed Data Table -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body p-0 overflow-x-auto">
+            <table class="table table-zebra w-full text-center">
+                <!-- Head -->
+                <thead class="bg-base-200">
+                    <tr>
+                        <th class="w-16">No</th>
+                        <th th:text="${value4Label != null ? value4Label : '날짜'}">날짜</th>
+                        <th class="text-left">항목/계좌</th>
+                        <th class="text-right">거래/평가금액</th>
+                        <th class="text-right font-bold">실현손익</th>
+                        <th class="text-right hidden sm:table-cell">평가손익</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr th:each="row : ${tableData}" class="hover">
-                        <td class="font-medium" th:text="${row.key}">항목</td>
-                        <td class="text-sm opacity-80" th:if="${subKeyLabel != null}" th:text="${row.subKey}">세부</td>
-                        
-                        <!-- Value 1 -->
-                        <td class="text-right font-mono whitespace-nowrap" 
-                            th:text="${#numbers.formatDecimal(row.value1, 0, 'COMMA', 0, 'POINT')}"
-                            th:classappend="${row.value1 >= 0} ? 'text-primary' : 'text-error'">
-                            0
-                        </td>
-
-                        <!-- Value 2 (Optional) -->
-                       <td class="text-right font-mono whitespace-nowrap" 
-                            th:if="${value2Label != null && !value2Label.isEmpty()}" 
-                            th:text="${#numbers.formatDecimal(row.value2, 0, 'COMMA', 0, 'POINT')}"
-                            th:classappend="${row.value2 >= 0} ? 'text-secondary' : 'text-error'">
-                            0
-                        </td>
-
-                        <!-- Value 3 (Optional) -->
-                       <td class="text-right font-mono whitespace-nowrap" 
-                            th:if="${value3Label != null && !value3Label.isEmpty()}" 
-                            th:text="${#numbers.formatDecimal(row.value3, 0, 'COMMA', 0, 'POINT')}"
-                            th:classappend="${row.value3 >= 0} ? 'text-accent' : 'text-error'">
-                            0
-                        </td>
-
-                        <!-- Value 4 (Optional) -->
-                       <td class="text-right font-mono whitespace-nowrap" 
-                            th:if="${value4Label != null && !value4Label.isEmpty()}" 
-                            th:text="${#numbers.formatDecimal(row.value5 != null ? row.value5 : row.value4, 0, 'COMMA', 0, 'POINT')}">
-                            0
-                        </td>
-
-                        <!-- Total (Conditional) -->
-                        <td class="text-right font-bold text-base-content whitespace-nowrap" 
-                             th:if="${totalLabel != null && !totalLabel.isEmpty()}"
-                             th:text="${#numbers.formatDecimal(row.total != null ? row.total : (row.value1 + row.value2), 0, 'COMMA', 0, 'POINT')}"
-                              th:classappend="${(row.total != null ? row.total : (row.value1 + row.value2)) >= 0 ? 'text-success' : 'text-error'}">
-                             0
-                        </td>
-                    </tr>
                     <tr th:if="${#lists.isEmpty(tableData)}">
-                        <td colspan="7" class="text-center py-10 text-base-content/50">
-                            <div>데이터가 없습니다.</div>
-                            <div class="text-xs mt-1">기간이나 조건을 변경해보세요.</div>
-                        </td>
+                        <td colspan="6" class="py-6 text-base-content/50">데이터가 없습니다.</td>
+                    </tr>
+                    <tr th:each="row, stat : ${tableData}" class="hover">
+                        <td th:text="${stat.count}">1</td>
+                        <td class="font-mono text-sm" th:text="${row.key}">2023-10</td>
+                        <td class="text-left font-bold truncate max-w-[150px]" th:title="${row.subKey}" 
+                            th:text="${row.subKey}">삼성전자</td>
+                        <!-- 금액 (매도/평가) - Value5 -->
+                        <td class="text-right font-mono text-sm" 
+                            th:text="${#numbers.formatDecimal(row.value5 != null ? row.value5 : 0, 0, 'COMMA', 0, 'POINT')}">1,000,000</td>
+                        <!-- 수익금 (실현) - Value1 -->
+                        <td class="text-right font-mono font-bold text-sm" 
+                            th:classappend="${row.value1 >= 0 ? 'text-success' : 'text-error'}"
+                            th:text="${#numbers.formatDecimal(row.value1, 0, 'COMMA', 0, 'POINT')}">+50,000</td>
+                        <!-- 수익(평가) - Value2 -->
+                        <td class="text-right font-mono text-sm hidden sm:table-cell" 
+                            th:classappend="${row.value2 >= 0 ? 'text-success' : 'text-error'}"
+                            th:text="${#numbers.formatDecimal(row.value2, 0, 'COMMA', 0, 'POINT')}">+5.00</td>
                     </tr>
                 </tbody>
-                <!-- Footer Total -->
-                <tfoot th:if="${not #lists.isEmpty(tableData)}">
-                    <tr class="bg-base-200 font-bold">
-                        <td th:colspan="${subKeyLabel != null ? 2 : 1}">합계</td>
-                        
-                         <!-- Total Value 1 -->
-                         <td class="text-right text-primary" 
-                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value1]), 0, 'COMMA', 0, 'POINT')}">
-                        </td>
-
-                         <!-- Total Value 2 -->
-                         <td class="text-right text-secondary" 
-                             th:if="${value2Label != null && !value2Label.isEmpty()}"
-                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value2]), 0, 'COMMA', 0, 'POINT')}">
-                        </td>
-
-                         <!-- Total Value 3 -->
-                         <td class="text-right text-accent" 
-                             th:if="${value3Label != null && !value3Label.isEmpty()}"
-                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value3]), 0, 'COMMA', 0, 'POINT')}">
-                        </td>
-
-                         <!-- Total Value 4 -->
-                         <td class="text-right" 
-                             th:if="${value4Label != null && !value4Label.isEmpty()}"
-                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value5 != null ? value5 : value4]), 0, 'COMMA', 0, 'POINT')}">
-                        </td>
-
-                        <!-- Grand Total (Conditional) -->
-                        <td class="text-right text-base-content font-bold" 
-                            th:if="${totalLabel != null && !totalLabel.isEmpty()}"
-                            th:text="${#numbers.formatDecimal(totalValue, 0, 'COMMA', 0, 'POINT')}"
-                            th:classappend="${totalValue >= 0} ? 'text-success' : 'text-error'">
-                        </td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>
 
+    <!-- Chart Script -->
     <script th:inline="javascript">
-    /*<![CDATA[*/
         (function() {
-            // Safe cleanup
-            var chartId = 'analysisChart';
-            var existingChart = Chart.getChart(chartId);
-            if (existingChart) {
-                existingChart.destroy();
-            }
-
-            var ctx = document.getElementById(chartId);
+            const chartId = /*[[${canvasId}]]*/ 'analyticsChart';
+            const ctx = document.getElementById(chartId);
             if(!ctx) return;
-
-            var labels = /*[[${chartLabels}]]*/ [];
-            var datasets = /*[[${chartDatasets}]]*/ [];
-            var chartType = /*[[${chartType}]]*/ 'bar';
             
-            // Fallback for single dataset structure if legacy data passed (compability)
-            var singleData = /*[[${chartData}]]*/ null;
-            if((!datasets || datasets.length === 0) && singleData) {
-                 var label = /*[[${valueLabel}]]*/ 'Value';
-                 datasets = [{
-                    label: label,
-                    data: singleData,
-                    backgroundColor: singleData.map(v => v >= 0 ? 'rgba(54, 162, 235, 0.6)' : 'rgba(255, 99, 132, 0.6)'),
-                    borderColor: singleData.map(v => v >= 0 ? 'rgba(54, 162, 235, 1)' : 'rgba(255, 99, 132, 1)'),
-                    borderWidth: 1
-                }];
-            }
+            // Cleanup just in case
+            const existingChart = Chart.getChart(ctx);
+            if(existingChart) existingChart.destroy();
 
-            // Fix: Wait for layout to settle to avoid clipping
-            setTimeout(function() {
-                new Chart(ctx, {
-                    type: chartType, 
-                    data: {
-                        labels: labels,
-                        datasets: datasets
+            const labels = /*[[${chartLabels}]]*/ [];
+
+            const datasets = /*[[${chartDatasets}]]*/ [];
+            const type = /*[[${chartType}]]*/ 'line';
+
+            // Convert dataset colors/logic if needed
+            const chartData = {
+                labels: labels,
+                datasets: datasets.map(ds => ({
+                    label: ds.label,
+                    data: ds.data,
+                    borderColor: ds.borderColor,
+                    backgroundColor: ds.backgroundColor,
+                    borderWidth: ds.borderWidth,
+                    tension: 0.3,
+                    fill: false // Line chart defaults to no fill for trend
+                }))
+            };
+
+            new Chart(ctx, {
+                type: type, // 'line' or 'bar'
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        layout: {
-                            padding: {
-                                right: 20, // Prevent cut-off
-                                left: 10
-                            }
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { usePointStyle: true, boxWidth: 8 }
                         },
-                        scales: {
-                            y: { beginAtZero: true },
-                            x: {
-                                offset: true, // Important for Line chart to show first/last points fully
-                                ticks: {
-                                    autoSkip: false // Force show all labels if possible
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('ko-KR').format(context.parsed.y);
+                                    }
+                                    return label;
                                 }
                             }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' }
                         },
-                        plugins: {
-                            legend: { display: datasets.length > 1 } 
-                        },
-                        interaction: {
-                            mode: 'index',
-                            intersect: false,
+                        x: {
+                            grid: { display: false }
                         }
                     }
-                });
-            }, 100);
+                }
+            });
         })();
-    /*]]>*/
     </script>
 </div>
 

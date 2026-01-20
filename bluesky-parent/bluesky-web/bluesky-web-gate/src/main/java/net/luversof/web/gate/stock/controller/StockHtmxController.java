@@ -84,8 +84,8 @@ public class StockHtmxController {
 		return "stock/htmx/dashboard";
 	}
 
-	@GetMapping("/analytics/view")
-	public String analyticsView(Model model) {
+	@GetMapping("/daily-summary/view")
+	public String dailySummaryView(Model model) {
 		UUID userId = UserUtil.getUserId();
 		if (userId != null) {
 			model.addAttribute("accounts", accountClient.getAccountsByUserId(userId));
@@ -100,11 +100,11 @@ public class StockHtmxController {
 		model.addAttribute("currentYear", currentYear);
 		model.addAttribute("currentMonth", LocalDate.now().getMonthValue());
 
-		return "stock/htmx/analytics :: container";
+		return "stock/htmx/daily-summary :: container";
 	}
 
-	@GetMapping("/analytics/data")
-	public String analyticsData(
+	@GetMapping("/daily-summary/data")
+	public String dailySummaryData(
 			@RequestParam(defaultValue = "PROFIT") String type, // PROFIT | DIVIDEND
 			@RequestParam(defaultValue = "TOTAL") String timeScale, // TOTAL | MONTHLY | YEARLY
 			@RequestParam(defaultValue = "STOCK") String groupBy, // STOCK | ACCOUNT
@@ -262,16 +262,41 @@ public class StockHtmxController {
 			} else if ("YEARLY".equals(timeScale)) {
 				// Yearly View -> Show Monthly Stats (1~12) for Selected Year
 				// (Previously this was MONTHLY logic)
-				
-				chartTitle = year + "년 월별 손익 추이";
+
+				chartTitle = year + "년 월별 자산 성장 (전체 누적)";
 				keyLabel = "월";
 				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
 
 				chartType = "line";
 				for (int i = 1; i <= 12; i++)
 					labels.add(i + "월");
+					
+				// 0. Base Data (All time until year-01-01)
+				// To show "Accumulated Asset", we need Realized Profit up to Last Year End.
+				// (We cannot easily get HISTORICAL evaluation amount without snapshots, 
+				// so we only accumulate Realized Profit correctly and add Current Month's Evaluation)
+				
+				TradeProfitRequest baseReq = new TradeProfitRequest();
+				baseReq.setUserId(userId);
+				if (accountId != null)
+					baseReq.setAccountIdList(List.of(accountId));
+				if ("STOCK".equals(groupBy)) {
+					baseReq.setGroupBy(net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup.STOCKITEM);
+				}
+				// Start from far past
+				baseReq.setStartDate(LocalDate.of(2000, 1, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+				baseReq.setEndDate(LocalDate.of(year, 1, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+				
+				List<TradeProfit> baseProfits = getEnrichedTradeProfits(baseReq);
+				Map<String, BigDecimal> baseRealizedMap = new HashMap<>();
+				baseProfits.forEach(p -> {
+					String name = "ACCOUNT".equals(groupBy) ? (p.accountName() != null ? p.accountName() : "Unknown")
+							: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
+					baseRealizedMap.merge(name, p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO, BigDecimal::add);
+				});
 
-				// 1. Fetch Parallel Data for each month
+
+				// 1. Fetch Parallel Data for each month (Current Year)
 				Map<Integer, List<TradeProfit>> monthData = java.util.stream.IntStream.rangeClosed(1, 12).parallel()
 						.boxed()
 						.collect(Collectors.toMap(
@@ -291,12 +316,16 @@ public class StockHtmxController {
 									return getEnrichedTradeProfits(subReq);
 								}));
 
-				// 2. Identify Top Series (by Total Net Profit sum)
+				// 2. Identify Top Series (by Total Net Profit + Evaluation sum)
 				Map<String, BigDecimal> seriesTotals = new HashMap<>();
+				// Add Base to Totals for sorting
+				baseRealizedMap.forEach((k, v) -> seriesTotals.merge(k, v, BigDecimal::add));
+				
 				monthData.values().stream().flatMap(List::stream).forEach(p -> {
 					String name = "ACCOUNT".equals(groupBy) ? (p.accountName() != null ? p.accountName() : "Unknown")
 							: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
-					BigDecimal total = (p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO);
+					BigDecimal total = (p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO)
+							.add(p.evaluationAmount() != null ? p.evaluationAmount() : BigDecimal.ZERO);
 					seriesTotals.merge(name, total, BigDecimal::add);
 				});
 
@@ -306,29 +335,40 @@ public class StockHtmxController {
 						.map(Map.Entry::getKey)
 						.toList();
 
-				// 3. Build Datasets
+				// 3. Build Datasets (Asset Growth = Cumulative Base + Month Realized + Month Evaluation)
 				int colorIdx = 0;
 				for (String series : topSeries) {
-					List<BigDecimal> realizedPoints = new ArrayList<>();
+					List<BigDecimal> dataPoints = new ArrayList<>();
+					
+					// Initialize with Base Realized Profit
+					BigDecimal cumulativeRealized = baseRealizedMap.getOrDefault(series, BigDecimal.ZERO);
 
 					for (int m = 1; m <= 12; m++) {
 						List<TradeProfit> profitList = monthData.get(m);
-						BigDecimal realizedSum = BigDecimal.ZERO;
+						BigDecimal monthlyRealized = BigDecimal.ZERO;
+						BigDecimal monthlyEvaluation = BigDecimal.ZERO;
 
 						for (TradeProfit p : profitList) {
 							String name = "ACCOUNT".equals(groupBy)
 									? (p.accountName() != null ? p.accountName() : "Unknown")
 									: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
 							if (series.equals(name)) {
-								realizedSum = realizedSum
+								monthlyRealized = monthlyRealized
 										.add(p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO);
+								monthlyEvaluation = monthlyEvaluation
+										.add(p.evaluationAmount() != null ? p.evaluationAmount() : BigDecimal.ZERO);
 							}
 						}
-						realizedPoints.add(realizedSum);
+						// Accumulate Realized
+						cumulativeRealized = cumulativeRealized.add(monthlyRealized);
+						
+						// Add Snapshot Evaluation (Note: If no trade in month, eval might be 0, causing dips. 
+						// Ideally we need snapshot service, but this is best effort with TradeProfit)
+						dataPoints.add(cumulativeRealized.add(monthlyEvaluation));
 					}
 					String baseColor = palette.get(colorIdx++ % palette.size());
 					datasets.add(
-							new ChartDataset(series + " (실현)", realizedPoints, baseColor, baseColor, 2, List.of()));
+							new ChartDataset(series, dataPoints, baseColor, baseColor, 2, List.of()));
 				}
 
 				// 4. Build Table Rows
@@ -684,7 +724,49 @@ public class StockHtmxController {
 		model.addAttribute("chartType", chartType);
 		model.addAttribute("chartLabels", labels);
 		model.addAttribute("chartDatasets", datasets);
+		
+		// Unique Canvas ID to prevent Chart.js reuse issues
+		model.addAttribute("canvasId", "chart-" + UUID.randomUUID());
 
+		return "stock/htmx/daily-summary :: data-content";
+	}
+	
+	@GetMapping("/analytics/view")
+	public String analyticsView(Model model) {
+		UUID userId = UserUtil.getUserId();
+		// Years list
+		int currentYear = LocalDate.now().getYear();
+		List<Integer> years = new ArrayList<>();
+		for (int i = currentYear; i >= 2015; i--) {
+			years.add(i);
+		}
+		model.addAttribute("years", years);
+		model.addAttribute("currentYear", currentYear);
+		model.addAttribute("currentMonth", LocalDate.now().getMonthValue());
+		if (userId != null) {
+			model.addAttribute("accounts", accountClient.getAccountsByUserId(userId));
+		}
+		return "stock/htmx/analytics :: container";
+	}
+
+	@GetMapping("/analytics/data")
+	public String analyticsData(
+			@RequestParam(defaultValue = "PROFIT") String type, // PROFIT | DIVIDEND
+			@RequestParam(defaultValue = "YEARLY") String timeScale, // TOTAL | MONTHLY | YEARLY
+			@RequestParam(defaultValue = "STOCK") String groupBy, // STOCK | ACCOUNT
+			@RequestParam(defaultValue = "2025") int year,
+			@RequestParam(defaultValue = "1") int month,
+			@RequestParam(required = false) UUID accountId,
+			Model model) {
+		
+		// For now, reuse the dailySummaryData logic but point to daily-summary :: data-content
+		// Because the logic for data processing is robust there.
+		// However, we need to handle the case where "timeScale=YEARLY" for PROFIT behaves as "Yearly Trend" if possible.
+		// Current dailySummaryData only handles "MONTHLY" for trend (per day) or "TOTAL" (per year if passed?).
+		// Let's modify dailySummaryData to handle YEARLY chart (Month per Month) if needed, or create a new method if it diverges.
+		
+		// Reuse logic but return distinct view
+		dailySummaryData(type, timeScale, groupBy, year, month, accountId, model);
 		return "stock/htmx/analytics :: data-content";
 	}
 

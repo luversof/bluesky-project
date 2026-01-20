@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- 1. Main Daily Summary Container -->
+<div th:fragment="container">
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body p-4 space-y-4">
+            
+            <!-- Filters Form -->
+            <form id="daily-summary-filter-form" 
+                  hx-get="/stock/htmx/daily-summary/data" 
+                  hx-target="#daily-summary-content" 
+                  hx-trigger="submit, change delay:200ms, load"
+                  class="flex flex-col gap-3">
+
+                <!-- Top Control Panel -->
+                <div class="flex flex-col xl:flex-row items-center justify-between gap-4 p-4 bg-base-200 rounded-box shadow-sm">
+                    
+                    <!-- Left: Type & Period -->
+                    <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-4 w-full xl:w-auto">
+                        <!-- Type -->
+                        <div class="join shadow-sm">
+                            <input class="join-item btn btn-sm" type="radio" name="type" value="PROFIT" aria-label="매매/보유 손익" checked onclick="updateDailySummaryFilters()"/>
+                            <input class="join-item btn btn-sm" type="radio" name="type" value="DIVIDEND" aria-label="배당 내역" onclick="updateDailySummaryFilters()"/>
+                        </div>
+                        
+                        <!-- Separator (Visual) -->
+                        <div class="hidden sm:block w-px h-6 bg-base-content/20"></div>
+
+                        <!-- Period -->
+                        <div class="join shadow-sm">
+                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="TOTAL" aria-label="누적(전체)" checked onclick="updateDailySummaryFilters()"/>
+                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="YEARLY" aria-label="연도별" onclick="updateDailySummaryFilters()"/>
+                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="MONTHLY" id="period-monthly" aria-label="월별" onclick="updateDailySummaryFilters()"/>
+                        </div>
+                    </div>
+
+                    <!-- Right: Grouping & Selects -->
+                    <div class="flex flex-wrap items-center justify-center gap-2 w-full xl:w-auto">
+                        <!-- Grouping -->
+                        <div class="join shadow-sm mr-2">
+                            <input class="join-item btn btn-sm" type="radio" name="groupBy" value="STOCK" aria-label="종목별" checked onclick="updateDailySummaryFilters()"/>
+                            <input class="join-item btn btn-sm" type="radio" name="groupBy" value="ACCOUNT" aria-label="계좌별" onclick="updateDailySummaryFilters()"/>
+                        </div>
+
+                        <!-- Year Filter -->
+                        <select name="year" id="filter-year" class="select select-bordered select-sm w-24" style="display:none;" onchange="updateDailySummaryFilters()">
+                            <option th:each="y : ${years}" th:value="${y}" th:text="${y + '년'}" th:selected="${y == currentYear}">2025년</option>
+                        </select>
+
+                        <!-- Month Filter -->
+                        <select name="month" id="filter-month" class="select select-bordered select-sm w-20" style="display:none;" onchange="updateDailySummaryFilters()">
+                            <option th:each="m : ${#numbers.sequence(1, 12)}" th:value="${m}" th:text="${m + '월'}" th:selected="${m == currentMonth}">1월</option>
+                        </select>
+
+                        <!-- Account Filter -->
+                        <select name="accountId" id="filter-account" class="select select-bordered select-sm w-auto" onchange="updateDailySummaryFilters()">
+                            <option value="">전체 계좌</option>
+                            <option th:each="acc : ${accounts}" 
+                                    th:value="${acc.id}" 
+                                    th:text="${acc.name}">계좌명</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <script>
+                    function updateDailySummaryFilters() {
+                        const type = document.querySelector('input[name="type"]:checked').value;
+                        const timeScale = document.querySelector('input[name="timeScale"]:checked').value;
+                        const groupBy = document.querySelector('input[name="groupBy"]:checked').value;
+                        const yearSelect = document.getElementById('filter-year');
+                        const monthSelect = document.getElementById('filter-month');
+                        const accountSelect = document.getElementById('filter-account');
+                        
+                        // Hide Year if TOTAL
+                        if (timeScale === 'TOTAL') {
+                            yearSelect.style.display = 'none';
+                        } else {
+                            yearSelect.style.display = 'inline-block';
+                        }
+
+                        // Month logic: Show for MONTHLY (Both PROFIT and DIVIDEND)
+                        if (timeScale === 'MONTHLY') {
+                             monthSelect.style.display = 'inline-block';
+                        } else {
+                             monthSelect.style.display = 'none';
+                        }
+
+                        // Hide Account Filter if groupBy is ACCOUNT
+                        if (groupBy === 'ACCOUNT') {
+                            accountSelect.style.display = 'none';
+                        } else {
+                            accountSelect.style.display = 'inline-block';
+                        }
+                    }
+                    // Initialize
+                    setTimeout(updateDailySummaryFilters, 0);
+                </script>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Data Content Area -->
+    <div id="daily-summary-content" class="mt-4 min-h-[300px]">
+        <div class="flex justify-center py-10">
+            <span class="loading loading-spinner text-primary"></span>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Data Content Fragment -->
+<div th:fragment="data-content" class="flex flex-col gap-6 animate-fade-in"
+     xmlns:th="http://www.thymeleaf.org">
+    
+    <!-- Chart Area -->
+    <div class="card bg-base-100 shadow-xl w-full">
+        <div class="card-body">
+            <h2 class="card-title text-sm opacity-70" th:text="${chartTitle}">분석 차트</h2>
+            <div class="h-[300px] w-full relative">
+                 <canvas id="dailySummaryChart"></canvas>
+            </div>
+            <div class="text-xs text-right opacity-50 mt-2">* 상위 20개 항목만 표시됩니다.</div>
+        </div>
+    </div>
+
+    <!-- Summary Table Area -->
+    <div class="card bg-base-100 shadow-xl w-full">
+        <div class="card-body overflow-x-auto p-0 scrollbar-thin">
+            <table class="table table-sm table-pin-rows">
+                <thead>
+                    <tr class="bg-base-200">
+                        <th th:text="${keyLabel}">항목</th>
+                        <!-- Dynamic Sub Key -->
+                        <th th:if="${subKeyLabel != null}" th:text="${subKeyLabel}">세부</th>
+                        <th class="text-right" th:text="${value1Label}">금액1</th>
+                        <th class="text-right" th:if="${value2Label != null && !value2Label.isEmpty()}" th:text="${value2Label}">금액2</th>
+                        <th class="text-right" th:if="${value3Label != null && !value3Label.isEmpty()}" th:text="${value3Label}">금액3</th>
+                        <th class="text-right" th:if="${value4Label != null && !value4Label.isEmpty()}" th:text="${value4Label}">금액4</th>
+                        <th class="text-right" th:if="${totalLabel != null && !totalLabel.isEmpty()}" th:text="${totalLabel}">합계</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="row : ${tableData}" class="hover">
+                        <td class="font-medium" th:text="${row.key}">항목</td>
+                        <td class="text-sm opacity-80" th:if="${subKeyLabel != null}" th:text="${row.subKey}">세부</td>
+                        
+                        <!-- Value 1 -->
+                        <td class="text-right font-mono whitespace-nowrap" 
+                            th:text="${#numbers.formatDecimal(row.value1, 0, 'COMMA', 0, 'POINT')}"
+                            th:classappend="${row.value1 >= 0} ? 'text-primary' : 'text-error'">
+                            0
+                        </td>
+
+                        <!-- Value 2 (Optional) -->
+                       <td class="text-right font-mono whitespace-nowrap" 
+                            th:if="${value2Label != null && !value2Label.isEmpty()}" 
+                            th:text="${#numbers.formatDecimal(row.value2, 0, 'COMMA', 0, 'POINT')}"
+                            th:classappend="${row.value2 >= 0} ? 'text-secondary' : 'text-error'">
+                            0
+                        </td>
+
+                        <!-- Value 3 (Optional) -->
+                       <td class="text-right font-mono whitespace-nowrap" 
+                            th:if="${value3Label != null && !value3Label.isEmpty()}" 
+                            th:text="${#numbers.formatDecimal(row.value3, 0, 'COMMA', 0, 'POINT')}"
+                            th:classappend="${row.value3 >= 0} ? 'text-accent' : 'text-error'">
+                            0
+                        </td>
+
+                        <!-- Value 4 (Optional) -->
+                       <td class="text-right font-mono whitespace-nowrap" 
+                            th:if="${value4Label != null && !value4Label.isEmpty()}" 
+                            th:text="${#numbers.formatDecimal(row.value5 != null ? row.value5 : row.value4, 0, 'COMMA', 0, 'POINT')}">
+                            0
+                        </td>
+
+                        <!-- Total (Conditional) -->
+                        <td class="text-right font-bold text-base-content whitespace-nowrap" 
+                             th:if="${totalLabel != null && !totalLabel.isEmpty()}"
+                             th:text="${#numbers.formatDecimal(row.total != null ? row.total : (row.value1 + row.value2), 0, 'COMMA', 0, 'POINT')}"
+                              th:classappend="${(row.total != null ? row.total : (row.value1 + row.value2)) >= 0 ? 'text-success' : 'text-error'}">
+                             0
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(tableData)}">
+                        <td colspan="7" class="text-center py-10 text-base-content/50">
+                            <div>데이터가 없습니다.</div>
+                            <div class="text-xs mt-1">기간이나 조건을 변경해보세요.</div>
+                        </td>
+                    </tr>
+                </tbody>
+                <!-- Footer Total -->
+                <tfoot th:if="${not #lists.isEmpty(tableData)}">
+                    <tr class="bg-base-200 font-bold">
+                        <td th:colspan="${subKeyLabel != null ? 2 : 1}">합계</td>
+                        
+                         <!-- Total Value 1 -->
+                         <td class="text-right text-primary" 
+                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value1]), 0, 'COMMA', 0, 'POINT')}">
+                        </td>
+
+                         <!-- Total Value 2 -->
+                         <td class="text-right text-secondary" 
+                             th:if="${value2Label != null && !value2Label.isEmpty()}"
+                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value2]), 0, 'COMMA', 0, 'POINT')}">
+                        </td>
+
+                         <!-- Total Value 3 -->
+                         <td class="text-right text-accent" 
+                             th:if="${value3Label != null && !value3Label.isEmpty()}"
+                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value3]), 0, 'COMMA', 0, 'POINT')}">
+                        </td>
+
+                         <!-- Total Value 4 -->
+                         <td class="text-right" 
+                             th:if="${value4Label != null && !value4Label.isEmpty()}"
+                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value5 != null ? value5 : value4]), 0, 'COMMA', 0, 'POINT')}">
+                        </td>
+
+                        <!-- Grand Total (Conditional) -->
+                        <td class="text-right text-base-content font-bold" 
+                            th:if="${totalLabel != null && !totalLabel.isEmpty()}"
+                            th:text="${#numbers.formatDecimal(totalValue, 0, 'COMMA', 0, 'POINT')}"
+                            th:classappend="${totalValue >= 0} ? 'text-success' : 'text-error'">
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+    /*<![CDATA[*/
+        (function() {
+            // Safe cleanup
+            var chartId = 'dailySummaryChart';
+            var existingChart = Chart.getChart(chartId);
+            if (existingChart) {
+                existingChart.destroy();
+            }
+
+            var ctx = document.getElementById(chartId);
+            if(!ctx) return;
+
+            var labels = /*[[${chartLabels}]]*/ [];
+            var datasets = /*[[${chartDatasets}]]*/ [];
+            var chartType = /*[[${chartType}]]*/ 'bar';
+            
+            // Fallback for single dataset structure if legacy data passed (compability)
+            var singleData = /*[[${chartData}]]*/ null;
+            if((!datasets || datasets.length === 0) && singleData) {
+                 var label = /*[[${valueLabel}]]*/ 'Value';
+                 datasets = [{
+                    label: label,
+                    data: singleData,
+                    backgroundColor: singleData.map(v => v >= 0 ? 'rgba(54, 162, 235, 0.6)' : 'rgba(255, 99, 132, 0.6)'),
+                    borderColor: singleData.map(v => v >= 0 ? 'rgba(54, 162, 235, 1)' : 'rgba(255, 99, 132, 1)'),
+                    borderWidth: 1
+                }];
+            }
+
+            // Fix: Wait for layout to settle to avoid clipping
+            setTimeout(function() {
+                new Chart(ctx, {
+                    type: chartType, 
+                    data: {
+                        labels: labels,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        layout: {
+                            padding: {
+                                right: 20, // Prevent cut-off
+                                left: 10
+                            }
+                        },
+                        scales: {
+                            y: { beginAtZero: true },
+                            x: {
+                                offset: true, // Important for Line chart to show first/last points fully
+                                ticks: {
+                                    autoSkip: false // Force show all labels if possible
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: datasets.length > 1 } 
+                        },
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    }
+                });
+            }, 100);
+        })();
+    /*]]>*/
+    </script>
+</div>
+
+</body>
+</html>
