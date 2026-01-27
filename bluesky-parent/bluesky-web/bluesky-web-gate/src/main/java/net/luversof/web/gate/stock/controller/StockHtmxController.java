@@ -857,6 +857,7 @@ public class StockHtmxController {
 	@GetMapping("/portfolio")
 	public String portfolio(TradeProfitRequest request,
 			@RequestParam(required = false) String sort,
+			@RequestParam(defaultValue = "ACCOUNT") String viewGroupBy,
 			Model model) {
 		UUID userId = UserUtil.getUserId();
 		if (userId == null) {
@@ -865,13 +866,74 @@ public class StockHtmxController {
 		}
 		request.setUserId(userId);
 		List<TradeProfit> enrichedList = new ArrayList<>(getEnrichedTradeProfits(request));
+		
+		// Filter out zero holding quantity
+		enrichedList.removeIf(tp -> tp.holdingQuantity() == 0);
+		
+		if ("STOCK".equals(viewGroupBy)) {
+			// Aggregate by Stock Item
+			Map<UUID, List<TradeProfit>> byStock = enrichedList.stream()
+					.collect(Collectors.groupingBy(TradeProfit::stockItemId));
+			
+			List<TradeProfit> aggregatedList = new ArrayList<>();
+			byStock.forEach((stockId, list) -> {
+				if (list.isEmpty()) return;
+				
+				TradeProfit first = list.get(0);
+				String stockName = first.stockItemName();
+				
+				// Sums
+				BigDecimal totalBuyAmount = list.stream().map(TradeProfit::totalBuyAmount).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				int holdingQty = list.stream().mapToInt(TradeProfit::holdingQuantity).sum();
+				int totalSellQty = list.stream().mapToInt(TradeProfit::totalSellQuantity).sum();
+				BigDecimal totalSellAmount = list.stream().map(TradeProfit::totalSellAmount).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				BigDecimal realizedProfit = list.stream().map(TradeProfit::realizedProfit).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				BigDecimal evaluationAmount = list.stream().map(TradeProfit::evaluationAmount).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				BigDecimal evaluationProfit = list.stream().map(TradeProfit::evaluationProfit).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				BigDecimal totalProfit = list.stream().map(TradeProfit::totalProfit).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				
+				BigDecimal totalBuyFee = list.stream().map(TradeProfit::totalBuyFee).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				BigDecimal totalSellFee = list.stream().map(TradeProfit::totalSellFee).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				BigDecimal totalSellTax = list.stream().map(TradeProfit::totalSellTax).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				
+				BigDecimal totalBuyCost = list.stream().map(TradeProfit::totalBuyCost).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				BigDecimal totalSellProceeds = list.stream().map(TradeProfit::totalSellProceeds).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				
+				BigDecimal realizedProfitNet = list.stream().map(TradeProfit::realizedProfitNet).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				BigDecimal evaluationProfitNet = list.stream().map(TradeProfit::evaluationProfitNet).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				BigDecimal totalProfitNet = list.stream().map(TradeProfit::totalProfitNet).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				
+				// Averages
+				BigDecimal currentPrice = first.currentPrice(); // Assumed same for same stock
+				BigDecimal avgBuyPrice = (holdingQty > 0) ? totalBuyAmount.divide(BigDecimal.valueOf(holdingQty), 0, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+				BigDecimal avgSellPrice = (totalSellQty > 0) ? totalSellAmount.divide(BigDecimal.valueOf(totalSellQty), 0, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+				
+				BigDecimal avgBuyPriceNet = (holdingQty > 0) ? totalBuyCost.divide(BigDecimal.valueOf(holdingQty), 0, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+				BigDecimal avgSellPriceNet = (totalSellQty > 0) ? totalSellProceeds.divide(BigDecimal.valueOf(totalSellQty), 0, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+				
+				aggregatedList.add(new TradeProfit(
+						stockId, stockName, null, "전체",
+						totalBuyAmount, avgBuyPrice,
+						totalSellQty, avgSellPrice, totalSellAmount, realizedProfit,
+						holdingQty, currentPrice, evaluationAmount, evaluationProfit,
+						totalProfit,
+						totalBuyFee, totalSellFee, totalSellTax,
+						totalBuyCost, totalSellProceeds,
+						avgBuyPriceNet, avgSellPriceNet,
+						realizedProfitNet, evaluationProfitNet, totalProfitNet
+						));
+			});
+			enrichedList = aggregatedList;
+		}
+		
+		Comparator<TradeProfit> comparator = null;
 
 		if (sort != null && !sort.isEmpty()) {
 			String[] parts = sort.split(",");
 			String field = parts[0];
 			String direction = parts.length > 1 ? parts[1] : "asc";
 
-			Comparator<TradeProfit> comparator = switch (field) {
+			comparator = switch (field) {
 				case "accountName" -> Comparator.comparing(TradeProfit::accountName,
 						Comparator.nullsLast(Comparator.naturalOrder()));
 				case "stockItemName" -> Comparator.comparing(TradeProfit::stockItemName,
@@ -890,17 +952,94 @@ public class StockHtmxController {
 						Comparator.nullsLast(Comparator.naturalOrder()));
 				default -> null;
 			};
-
+			
 			if (comparator != null) {
 				if ("desc".equalsIgnoreCase(direction)) {
 					comparator = comparator.reversed();
 				}
-				enrichedList.sort(comparator);
 			}
 		}
+		
+		
+		// If grouping by ACCOUNT, ensure we sort by Account Name first
+		Map<String, TradeProfit> accountTotalMap = new HashMap<>();
+		if ("ACCOUNT".equals(viewGroupBy)) {
+			Comparator<TradeProfit> accountComparator = Comparator.comparing(TradeProfit::accountName, Comparator.nullsLast(Comparator.naturalOrder()));
+			if (comparator == null) {
+				comparator = accountComparator;
+			} else {
+				// Secondary sort
+				comparator = accountComparator.thenComparing(comparator);
+			}
+			
+			// Calculate Account Subtotals
+			Map<String, List<TradeProfit>> byAccount = enrichedList.stream()
+					.collect(Collectors.groupingBy(TradeProfit::accountName));
+			
+			byAccount.forEach((accountName, list) -> {
+				if (list.isEmpty()) return;
+
+				BigDecimal totalBuyAmount = list.stream().map(TradeProfit::totalBuyAmount).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				int holdingQty = list.stream().mapToInt(TradeProfit::holdingQuantity).sum();
+				int totalSellQty = list.stream().mapToInt(TradeProfit::totalSellQuantity).sum();
+				BigDecimal totalSellAmount = list.stream().map(TradeProfit::totalSellAmount).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				BigDecimal realizedProfit = list.stream().map(TradeProfit::realizedProfit).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				BigDecimal evaluationAmount = list.stream().map(TradeProfit::evaluationAmount).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				BigDecimal evaluationProfit = list.stream().map(TradeProfit::evaluationProfit).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				BigDecimal totalProfit = list.stream().map(TradeProfit::totalProfit).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				
+				BigDecimal totalBuyFee = list.stream().map(TradeProfit::totalBuyFee).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				BigDecimal totalSellFee = list.stream().map(TradeProfit::totalSellFee).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				BigDecimal totalSellTax = list.stream().map(TradeProfit::totalSellTax).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				
+				BigDecimal totalBuyCost = list.stream().map(TradeProfit::totalBuyCost).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				BigDecimal totalSellProceeds = list.stream().map(TradeProfit::totalSellProceeds).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				
+				BigDecimal realizedProfitNet = list.stream().map(TradeProfit::realizedProfitNet).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				BigDecimal evaluationProfitNet = list.stream().map(TradeProfit::evaluationProfitNet).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				BigDecimal totalProfitNet = list.stream().map(TradeProfit::totalProfitNet).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+				
+				accountTotalMap.put(accountName, new TradeProfit(
+						null, null, null, accountName,
+						totalBuyAmount, BigDecimal.ZERO,
+						totalSellQty, BigDecimal.ZERO, totalSellAmount, realizedProfit,
+						holdingQty, BigDecimal.ZERO, evaluationAmount, evaluationProfit,
+						totalProfit,
+						totalBuyFee, totalSellFee, totalSellTax,
+						totalBuyCost, totalSellProceeds,
+						BigDecimal.ZERO, BigDecimal.ZERO,
+						realizedProfitNet, evaluationProfitNet, totalProfitNet
+						));
+			});
+		}
+
+		if (comparator != null) {
+			enrichedList.sort(comparator);
+		}
+		
+		// Calculate Totals
+		BigDecimal totalEvaluationAmount = enrichedList.stream()
+				.map(TradeProfit::evaluationAmount)
+				.filter(Objects::nonNull)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+		
+		BigDecimal totalEvaluationProfit = enrichedList.stream()
+				.map(TradeProfit::evaluationProfit)
+				.filter(Objects::nonNull)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+		
+		BigDecimal totalRealizedProfit = enrichedList.stream()
+				.map(TradeProfit::realizedProfit)
+				.filter(Objects::nonNull)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
 
 		model.addAttribute("tradeProfitList", enrichedList);
 		model.addAttribute("sort", sort);
+		model.addAttribute("viewGroupBy", viewGroupBy);
+		model.addAttribute("totalEvaluationAmount", totalEvaluationAmount);
+		model.addAttribute("totalEvaluationProfit", totalEvaluationProfit);
+		model.addAttribute("totalRealizedProfit", totalRealizedProfit);
+		model.addAttribute("accountTotalMap", accountTotalMap);
 		return "stock/htmx/fragments/tabs :: portfolio";
 	}
 

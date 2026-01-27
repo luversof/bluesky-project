@@ -9,53 +9,85 @@
             <tr class="bg-base-200"
                 th:with="sortField=${sort != null ? sort.split(',')[0] : ''}, sortDir=${sort != null && sort.contains(',') ? sort.split(',')[1] : ''}">
                 <th class="cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
-                    th:hx-vals="|{&quot;sort&quot;: &quot;accountName,${sortField == 'accountName' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    th:classappend="${viewGroupBy == 'STOCK' or viewGroupBy == 'ACCOUNT'} ? 'hidden' : ''"
+                    th:hx-vals="|{&quot;sort&quot;: &quot;accountName,${sortField == 'accountName' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;, &quot;viewGroupBy&quot;: &quot;${viewGroupBy}&quot;}|">
                     계좌 <span th:if="${sortField == 'accountName'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
                 </th>
                 <th class="cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
-                    th:hx-vals="|{&quot;sort&quot;: &quot;stockItemName,${sortField == 'stockItemName' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    th:hx-vals="|{&quot;sort&quot;: &quot;stockItemName,${sortField == 'stockItemName' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;, &quot;viewGroupBy&quot;: &quot;${viewGroupBy}&quot;}|">
                     종목명 <span th:if="${sortField == 'stockItemName'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
                 </th>
                 <th class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
-                    th:hx-vals="|{&quot;sort&quot;: &quot;holdingQuantity,${sortField == 'holdingQuantity' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    th:hx-vals="|{&quot;sort&quot;: &quot;holdingQuantity,${sortField == 'holdingQuantity' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;, &quot;viewGroupBy&quot;: &quot;${viewGroupBy}&quot;}|">
                     보유수량 <span th:if="${sortField == 'holdingQuantity'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
                 </th>
                 <th class="text-right cursor-pointer hover:bg-base-300 hidden xl:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
-                    th:hx-vals="|{&quot;sort&quot;: &quot;averageBuyPrice,${sortField == 'averageBuyPrice' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    th:hx-vals="|{&quot;sort&quot;: &quot;averageBuyPrice,${sortField == 'averageBuyPrice' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;, &quot;viewGroupBy&quot;: &quot;${viewGroupBy}&quot;}|">
                     평균단가 <span th:if="${sortField == 'averageBuyPrice'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
                 </th>
                 <th class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
-                    th:hx-vals="|{&quot;sort&quot;: &quot;currentPrice,${sortField == 'currentPrice' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    th:hx-vals="|{&quot;sort&quot;: &quot;currentPrice,${sortField == 'currentPrice' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;, &quot;viewGroupBy&quot;: &quot;${viewGroupBy}&quot;}|">
                     현재가 <span th:if="${sortField == 'currentPrice'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
                 </th>
                 <th class="text-right cursor-pointer hover:bg-base-300 hidden md:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
-                    th:hx-vals="|{&quot;sort&quot;: &quot;evaluationAmount,${sortField == 'evaluationAmount' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    th:hx-vals="|{&quot;sort&quot;: &quot;evaluationAmount,${sortField == 'evaluationAmount' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;, &quot;viewGroupBy&quot;: &quot;${viewGroupBy}&quot;}|">
                     평가금액 <span th:if="${sortField == 'evaluationAmount'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
                 </th>
                 <th class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
-                    th:hx-vals="|{&quot;sort&quot;: &quot;evaluationProfit,${sortField == 'evaluationProfit' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    th:hx-vals="|{&quot;sort&quot;: &quot;evaluationProfit,${sortField == 'evaluationProfit' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;, &quot;viewGroupBy&quot;: &quot;${viewGroupBy}&quot;}|">
                     평가손익 <span th:if="${sortField == 'evaluationProfit'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
                 </th>
                 <th class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
-                    th:hx-vals="|{&quot;sort&quot;: &quot;realizedProfit,${sortField == 'realizedProfit' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
+                    th:hx-vals="|{&quot;sort&quot;: &quot;realizedProfit,${sortField == 'realizedProfit' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;, &quot;viewGroupBy&quot;: &quot;${viewGroupBy}&quot;}|">
                     실현손익 <span th:if="${sortField == 'realizedProfit'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
                 </th>
             </tr>
             </thead>
             <tbody>
-            <tr th:each="item : ${tradeProfitList}">
-                <td th:text="${item.accountName}"></td>
-                <td class="font-bold" th:text="${item.stockItemName}"></td>
-                <td class="text-right hidden lg:table-cell" th:text="${#numbers.formatInteger(item.holdingQuantity, 0, 'COMMA')}"></td>
-                <td class="text-right hidden xl:table-cell" th:text="${#numbers.formatDecimal(item.averageBuyPrice, 0, 'COMMA', 0, 'POINT')}"></td>
-                <td class="text-right hidden lg:table-cell" th:text="${#numbers.formatDecimal(item.currentPrice, 0, 'COMMA', 0, 'POINT')}"></td>
-                <td class="text-right hidden md:table-cell" th:text="${#numbers.formatDecimal(item.evaluationAmount, 0, 'COMMA', 0, 'POINT')}"></td>
-                <td class="text-right font-bold" th:classappend="${item.evaluationProfit >= 0} ? 'text-success' : 'text-error'"
-                    th:text="${#numbers.formatDecimal(item.evaluationProfit, 0, 'COMMA', 0, 'POINT')}"></td>
-                <td class="text-right" th:classappend="${item.realizedProfit >= 0} ? 'text-success' : 'text-error'"
-                    th:text="${#numbers.formatDecimal(item.realizedProfit, 0, 'COMMA', 0, 'POINT')}"></td>
-            </tr>
+            <th:block th:each="item, iterStat : ${tradeProfitList}">
+                <tr th:if="${viewGroupBy == 'ACCOUNT' and (iterStat.first or item.accountName != tradeProfitList[iterStat.index - 1].accountName)}">
+                    <td colspan="8" class="bg-base-200 font-bold text-center" th:text="${item.accountName}"></td>
+                </tr>
+                <tr>
+                    <td th:text="${item.accountName}" th:classappend="${viewGroupBy == 'STOCK' or viewGroupBy == 'ACCOUNT'} ? 'hidden' : ''"></td>
+                    <td class="font-bold" th:text="${item.stockItemName}"></td>
+                    <td class="text-right hidden lg:table-cell" th:text="${#numbers.formatInteger(item.holdingQuantity, 0, 'COMMA')}"></td>
+                    <td class="text-right hidden xl:table-cell" th:text="${#numbers.formatDecimal(item.averageBuyPrice, 0, 'COMMA', 0, 'POINT')}"></td>
+                    <td class="text-right hidden lg:table-cell" th:text="${#numbers.formatDecimal(item.currentPrice, 0, 'COMMA', 0, 'POINT')}"></td>
+                    <td class="text-right hidden md:table-cell" th:text="${#numbers.formatDecimal(item.evaluationAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+                    <td class="text-right font-bold" th:classappend="${item.evaluationProfit >= 0} ? 'text-success' : 'text-error'"
+                        th:text="${#numbers.formatDecimal(item.evaluationProfit, 0, 'COMMA', 0, 'POINT')}"></td>
+                    <td class="text-right" th:classappend="${item.realizedProfit >= 0} ? 'text-success' : 'text-error'"
+                        th:text="${#numbers.formatDecimal(item.realizedProfit, 0, 'COMMA', 0, 'POINT')}"></td>
+                </tr>
+                <tr class="bg-base-200 font-bold" th:if="${viewGroupBy == 'ACCOUNT' and (iterStat.last or item.accountName != tradeProfitList[iterStat.index + 1].accountName)}">
+                    <td th:classappend="${viewGroupBy == 'STOCK' or viewGroupBy == 'ACCOUNT'} ? 'hidden' : ''"></td>
+                    <td>소계</td>
+                    <td class="hidden lg:table-cell"></td>
+                    <td class="hidden xl:table-cell"></td>
+                    <td class="hidden lg:table-cell"></td>
+                    <td class="text-right hidden md:table-cell" th:text="${#numbers.formatDecimal(accountTotalMap[item.accountName].evaluationAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+                    <td class="text-right" th:classappend="${accountTotalMap[item.accountName].evaluationProfit >= 0} ? 'text-success' : 'text-error'"
+                        th:text="${#numbers.formatDecimal(accountTotalMap[item.accountName].evaluationProfit, 0, 'COMMA', 0, 'POINT')}"></td>
+                    <td class="text-right" th:classappend="${accountTotalMap[item.accountName].realizedProfit >= 0} ? 'text-success' : 'text-error'"
+                        th:text="${#numbers.formatDecimal(accountTotalMap[item.accountName].realizedProfit, 0, 'COMMA', 0, 'POINT')}"></td>
+                </tr>
+            </th:block>
             </tbody>
+            <tfoot>
+            <tr class="bg-base-200 font-bold">
+                <td th:classappend="${viewGroupBy == 'STOCK' or viewGroupBy == 'ACCOUNT'} ? 'hidden' : ''"></td>
+                <td class="text-center">합계</td>
+                <td class="hidden lg:table-cell"></td>
+                <td class="hidden xl:table-cell"></td>
+                <td class="hidden lg:table-cell"></td>
+                <td class="text-right hidden md:table-cell" th:text="${#numbers.formatDecimal(totalEvaluationAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+                <td class="text-right" th:classappend="${totalEvaluationProfit >= 0} ? 'text-success' : 'text-error'"
+                    th:text="${#numbers.formatDecimal(totalEvaluationProfit, 0, 'COMMA', 0, 'POINT')}"></td>
+                <td class="text-right" th:classappend="${totalRealizedProfit >= 0} ? 'text-success' : 'text-error'"
+                    th:text="${#numbers.formatDecimal(totalRealizedProfit, 0, 'COMMA', 0, 'POINT')}"></td>
+            </tr>
+            </tfoot>
         </table>
     </div>
 </div>
