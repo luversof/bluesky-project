@@ -46,9 +46,12 @@ public class StockViewController {
 		model.addAttribute("stockItems", stockItems);
 		return "stock/htmx/dashboard";
 	}
-	
+
 	@GetMapping("/analytics")
 	public String analyticsPage() {
+		if (UserUtil.getUserId() == null) {
+			return "redirect:/login";
+		}
 		return "stock/analytics";
 	}
 
@@ -74,4 +77,3 @@ public class StockViewController {
 		return "stock/trade";
 	}
 }
-

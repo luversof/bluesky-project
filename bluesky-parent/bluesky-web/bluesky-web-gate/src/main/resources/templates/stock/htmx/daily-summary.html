@@ -139,6 +139,8 @@
                         <th class="text-right" th:if="${value2Label != null && !value2Label.isEmpty()}" th:text="${value2Label}">금액2</th>
                         <th class="text-right" th:if="${value3Label != null && !value3Label.isEmpty()}" th:text="${value3Label}">금액3</th>
                         <th class="text-right" th:if="${value4Label != null && !value4Label.isEmpty()}" th:text="${value4Label}">금액4</th>
+                        <th class="text-right" th:if="${value5Label != null && !value5Label.isEmpty()}" th:text="${value5Label}">금액5</th>
+                        <th class="text-right" th:if="${value6Label != null && !value6Label.isEmpty()}" th:text="${value6Label}">금액6</th>
                         <th class="text-right" th:if="${totalLabel != null && !totalLabel.isEmpty()}" th:text="${totalLabel}">합계</th>
                     </tr>
                 </thead>
@@ -174,6 +176,20 @@
                        <td class="text-right font-mono whitespace-nowrap" 
                             th:if="${value4Label != null && !value4Label.isEmpty()}" 
                             th:text="${#numbers.formatDecimal(row.value5 != null ? row.value5 : row.value4, 0, 'COMMA', 0, 'POINT')}">
+                            0
+                        </td>
+
+                        <!-- Value 5 (Optional) - Holding Quantity (row.value6) -->
+                       <td class="text-right font-mono whitespace-nowrap" 
+                            th:if="${value5Label != null && !value5Label.isEmpty()}" 
+                            th:text="${#numbers.formatDecimal(row.value6, 0, 'COMMA', 0, 'POINT')}">
+                            0
+                        </td>
+
+                        <!-- Value 6 (Optional) - Avg Price (row.value7) -->
+                       <td class="text-right font-mono whitespace-nowrap" 
+                            th:if="${value6Label != null && !value6Label.isEmpty()}" 
+                            th:text="${#numbers.formatDecimal(row.value7, 0, 'COMMA', 0, 'POINT')}">
                             0
                         </td>
 
@@ -218,6 +234,18 @@
                          <td class="text-right" 
                              th:if="${value4Label != null && !value4Label.isEmpty()}"
                              th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value5 != null ? value5 : value4]), 0, 'COMMA', 0, 'POINT')}">
+                        </td>
+
+                         <!-- Total Value 5 (Holding Quantity) -->
+                         <td class="text-right" 
+                             th:if="${value5Label != null && !value5Label.isEmpty()}"
+                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value6]), 0, 'COMMA', 0, 'POINT')}">
+                        </td>
+
+                         <!-- Total Value 6 (Avg Price) - Empty or calculated? Let's leave empty or '-' -->
+                         <td class="text-right opacity-50" 
+                             th:if="${value6Label != null && !value6Label.isEmpty()}">
+                             -
                         </td>
 
                         <!-- Grand Total (Conditional) -->
