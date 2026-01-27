@@ -302,6 +302,7 @@
             var datasets = /*[[${chartDatasets}]]*/ [];
             var chartType = /*[[${chartType}]]*/ 'bar';
             var isStacked = /*[[${isStacked}]]*/ false;
+            var taxableTotals = /*[[${taxableTotals}]]*/ [];
             
             // Fallback for single dataset structure if legacy data passed (compability)
             var singleData = /*[[${chartData}]]*/ null;
@@ -347,7 +348,28 @@
                             }
                         },
                         plugins: {
-                            legend: { display: datasets.length > 1 } 
+                            legend: { display: datasets.length > 1 },
+                            tooltip: {
+                                filter: function(tooltipItem) {
+                                    return tooltipItem.parsed.y !== 0;
+                                },
+                                callbacks: {
+                                    footer: function(tooltipItems) {
+                                        let sum = 0;
+                                        tooltipItems.forEach(function(tooltipItem) {
+                                            sum += tooltipItem.parsed.y;
+                                        });
+                                        let footerText = '합계: ' + sum.toLocaleString();
+                                        
+                                        if (taxableTotals && taxableTotals.length > 0) {
+                                            let index = tooltipItems[0].dataIndex;
+                                            let taxableSum = taxableTotals[index] || 0;
+                                            footerText += '\n과세대상: ' + taxableSum.toLocaleString();
+                                        }
+                                        return footerText;
+                                    }
+                                }
+                            }
                         },
                         interaction: {
                             mode: 'index',

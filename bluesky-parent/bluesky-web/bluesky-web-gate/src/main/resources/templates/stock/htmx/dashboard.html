@@ -17,24 +17,39 @@
 				<div class="flex flex-wrap gap-4">
 					<button th:attr="hx-post=@{'/api/stock/admin/stock-items?userId=' + ${userId}}"
 							hx-swap="none"
-							class="btn btn-secondary gap-2"
-							onclick="if(!confirm('주식 종목 정보를 갱신하시겠습니까?')) return false;">
+							hx-indicator="#update-loading"
+							hx-confirm="주식 종목 정보를 갱신하시겠습니까?"
+							hx-on:htmx:after-request="if(event.detail.successful) window.location.reload();"
+							class="btn btn-secondary gap-2">
 						종목 갱신 (Stock Items)
 					</button>
 					<button th:attr="hx-post=@{'/api/stock/admin/trades?userId=' + ${userId}}"
 							hx-swap="none"
-							class="btn btn-secondary gap-2"
-							onclick="if(!confirm('매매 내역을 갱신하시겠습니까?')) return false;">
+							hx-indicator="#update-loading"
+							hx-confirm="매매 내역을 갱신하시겠습니까?"
+							hx-on:htmx:after-request="if(event.detail.successful) window.location.reload();"
+							class="btn btn-secondary gap-2">
 						매매 내역 갱신 (Trades)
 					</button>
 					<button th:attr="hx-post=@{'/api/stock/admin/dividends?userId=' + ${userId}}"
 							hx-swap="none"
-							class="btn btn-secondary gap-2"
-							onclick="if(!confirm('배당 내역을 갱신하시겠습니까?')) return false;">
+							hx-indicator="#update-loading"
+							hx-confirm="배당 내역을 갱신하시겠습니까?"
+							hx-on:htmx:after-request="if(event.detail.successful) window.location.reload();"
+							class="btn btn-secondary gap-2">
 						배당 내역 갱신 (Dividends)
 					</button>
 				</div>
 			</div>
+		</div>
+		
+		<!-- Loading Indicator Overlay -->
+		<div id="update-loading" class="htmx-indicator fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+		    <div class="bg-base-100 p-8 rounded-lg shadow-xl flex flex-col items-center gap-4">
+		        <span class="loading loading-spinner loading-lg text-primary"></span>
+		        <div class="text-lg font-bold">데이터 갱신 중입니다...</div>
+		        <div class="text-sm opacity-70">잠시만 기다려주세요.</div>
+		    </div>
 		</div>
         
         <!-- 1. Summary Cards (Lazy Load) -->

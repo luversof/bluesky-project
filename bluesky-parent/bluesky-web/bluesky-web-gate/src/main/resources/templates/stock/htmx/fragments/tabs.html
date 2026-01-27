@@ -137,7 +137,7 @@
 	                    th:hx-vals="|{&quot;sort&quot;: &quot;tax,${sortField == 'tax' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
 	                    세금 <span th:if="${sortField == 'tax'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
 	                </th>
-	                <th class="text-right cursor-pointer hover:bg-base-300 hidden xl:table-cell" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListContainer" hx-select="#dividendListContainer" hx-swap="outerHTML" hx-include="#dividendSearchForm"
+	                <th class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListContainer" hx-select="#dividendListContainer" hx-swap="outerHTML" hx-include="#dividendSearchForm"
 	                    th:hx-vals="|{&quot;sort&quot;: &quot;taxableAmount,${sortField == 'taxableAmount' && sortDir == 'asc' ? 'desc' : 'asc'}&quot;}|">
 	                    과세금액 <span th:if="${sortField == 'taxableAmount'}" th:text="${sortDir == 'asc' ? '▲' : '▼'}"></span>
 	                </th>
@@ -151,7 +151,7 @@
 	                <td class="text-right" th:text="${#numbers.formatDecimal(item.grossAmount, 0, 'COMMA', 0, 'POINT')}"></td>
 	                <td class="text-right text-primary font-bold" th:text="${#numbers.formatDecimal(item.netAmount, 0, 'COMMA', 0, 'POINT')}"></td>
 	                <td class="text-right hidden lg:table-cell" th:text="${#numbers.formatDecimal(item.tax, 0, 'COMMA', 0, 'POINT')}"></td>
-	                <td class="text-right hidden xl:table-cell" th:text="${#numbers.formatDecimal(item.taxableAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+	                <td class="text-right" th:text="${#numbers.formatDecimal(item.taxableAmount, 0, 'COMMA', 0, 'POINT')}"></td>
 	            </tr>
 	            <tr th:if="${#lists.isEmpty(dividendList)}">
 		          	<td colspan="7" class="text-center py-10 opacity-50">배당 내역이 없습니다.</td>
@@ -164,7 +164,7 @@
 						<td class="text-right font-mono" th:text="${#numbers.formatDecimal(totalGrossAmount, 0, 'COMMA', 0, 'POINT')}">0</td>
 						<td class="text-right font-mono" th:text="${#numbers.formatDecimal(totalNetAmount, 0, 'COMMA', 0, 'POINT')}">0</td>
 						<td class="text-right font-mono hidden lg:table-cell" th:text="${#numbers.formatDecimal(totalTax, 0, 'COMMA', 0, 'POINT')}">0</td>
-						<td class="text-right font-mono hidden xl:table-cell" th:text="${#numbers.formatDecimal(totalTaxableAmount, 0, 'COMMA', 0, 'POINT')}">0</td>
+						<td class="text-right font-mono" th:text="${#numbers.formatDecimal(totalTaxableAmount, 0, 'COMMA', 0, 'POINT')}">0</td>
 					</tr>
 				</tfoot>
 	        </table>

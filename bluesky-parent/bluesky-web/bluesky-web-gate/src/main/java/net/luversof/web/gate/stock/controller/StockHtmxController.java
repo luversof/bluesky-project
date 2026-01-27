@@ -362,6 +362,7 @@ public class StockHtmxController {
 				}
 
 				// Table Rows
+				List<BigDecimal> taxableTotals = new ArrayList<>();
 				for (int i = 0; i < labels.size(); i++) {
 					String timeLabel = labels.get(i);
 					Map<String, BigDecimal> periodGrossMap = new HashMap<>();
@@ -402,6 +403,8 @@ public class StockHtmxController {
 
 						}
 					}
+					
+					taxableTotals.add(periodTaxableMap.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add));
 
 					java.util.Set<String> allSeries = new java.util.HashSet<>();
 					allSeries.addAll(periodGrossMap.keySet());
@@ -490,7 +493,27 @@ public class StockHtmxController {
 		model.addAttribute("totalValue", totalValue);
 		model.addAttribute("chartType", chartType);
 		model.addAttribute("isStacked", isStacked);
+		if ("DIVIDEND".equals(type) && !"TOTAL".equals(timeScale)) {
+			// Calculate Taxable Totals again for Chart or refactor. 
+			// Simpler to just re-accumulate from 'rows' which have 'value4' (taxable) and 'key' (timeLabel).
+			// 'rows' contains all data.
+			// Group 'rows' by 'key' (TimeLabel) and sum 'value4'.
+			// Ensure order matches 'labels'.
+			Map<String, BigDecimal> sumMap = rows.stream()
+				.collect(Collectors.groupingBy(AnalyticsRow::key, 
+						Collectors.reducing(BigDecimal.ZERO, 
+								r -> r.value4() != null ? r.value4() : BigDecimal.ZERO, 
+								BigDecimal::add)));
+			
+			List<BigDecimal> taxableTotalList = new ArrayList<>();
+			for(String lbl : labels) {
+				taxableTotalList.add(sumMap.getOrDefault(lbl, BigDecimal.ZERO));
+			}
+			model.addAttribute("taxableTotals", taxableTotalList);
+		}
+		
 		model.addAttribute("chartLabels", labels);
+		// model.addAttribute("chartLabels", labels);
 		model.addAttribute("chartDatasets", datasets);
 
 		// Unique Canvas ID to prevent Chart.js reuse issues
