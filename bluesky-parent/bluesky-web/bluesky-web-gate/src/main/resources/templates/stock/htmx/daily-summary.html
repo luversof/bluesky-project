@@ -29,9 +29,9 @@
                         <div class="hidden sm:block w-px h-6 bg-base-content/20"></div>
 
                         <!-- Period -->
-                        <div class="join shadow-sm">
-                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="TOTAL" aria-label="누적(전체)" checked onclick="updateDailySummaryFilters()"/>
-                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="YEARLY" aria-label="연도별" onclick="updateDailySummaryFilters()"/>
+                        <div class="join shadow-sm" id="period-group">
+                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="TOTAL" id="period-total" aria-label="누적(전체)" checked onclick="updateDailySummaryFilters()"/>
+                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="YEARLY" id="period-yearly" aria-label="연도별" onclick="updateDailySummaryFilters()"/>
                             <input class="join-item btn btn-sm" type="radio" name="timeScale" value="MONTHLY" id="period-monthly" aria-label="월별" onclick="updateDailySummaryFilters()"/>
                         </div>
                     </div>
@@ -74,19 +74,40 @@
                         const monthSelect = document.getElementById('filter-month');
                         const accountSelect = document.getElementById('filter-account');
                         
-                        // Hide Year if TOTAL
-                        if (timeScale === 'TOTAL') {
+                        const periodTotal = document.getElementById('period-total');
+                        const periodYearly = document.getElementById('period-yearly');
+                        const periodMonthly = document.getElementById('period-monthly');
+
+                         // UI Logic: Hide Period Options based on Type
+                        if (type === 'PROFIT') {
+                             // Force TOTAL if not already (logic below handles visibility)
+                             if (!periodTotal.checked) {
+                                 periodTotal.checked = true;
+                                 // We need to re-read timeScale if we changed it, 
+                                 // but for visibility logic below 'TOTAL' is fine.
+                             }
+                             periodYearly.classList.add('hidden');
+                             periodMonthly.classList.add('hidden');
+                        } else {
+                             // DIVIDEND
+                             periodYearly.classList.remove('hidden');
+                             periodMonthly.classList.remove('hidden');
+                        }
+
+                        // Re-read timeScale in case we forced it
+                        const currentTimeScale = document.querySelector('input[name="timeScale"]:checked').value;
+
+                        // Hide Year if TOTAL or YEARLY (Since YEARLY is now multi-year)
+                        if (currentTimeScale === 'TOTAL' || currentTimeScale === 'YEARLY') {
                             yearSelect.style.display = 'none';
                         } else {
                             yearSelect.style.display = 'inline-block';
                         }
 
-                        // Month logic: Show for MONTHLY (Both PROFIT and DIVIDEND)
-                        if (timeScale === 'MONTHLY') {
-                             monthSelect.style.display = 'inline-block';
-                        } else {
-                             monthSelect.style.display = 'none';
-                        }
+                        // Month logic: Show for ? None. 
+                        // New Logic: MONTHLY shows Year Select (to see months of that year). It does NOT need Month Select.
+                        // So monthSelect is always hidden unless we want Daily stats (which we removed).
+                        monthSelect.style.display = 'none';
 
                         // Hide Account Filter if groupBy is ACCOUNT
                         if (groupBy === 'ACCOUNT') {
@@ -172,32 +193,34 @@
                             0
                         </td>
 
-                        <!-- Value 4 (Optional) -->
+                        <!-- Value 4 -->
                        <td class="text-right font-mono whitespace-nowrap" 
                             th:if="${value4Label != null && !value4Label.isEmpty()}" 
-                            th:text="${#numbers.formatDecimal(row.value5 != null ? row.value5 : row.value4, 0, 'COMMA', 0, 'POINT')}">
+                            th:text="${#numbers.formatDecimal(row.value4, 0, 'COMMA', 0, 'POINT')}"
+                             th:classappend="${row.value4 >= 0 ? 'text-success' : 'text-error'}">
                             0
                         </td>
 
-                        <!-- Value 5 (Optional) - Holding Quantity (row.value6) -->
+                        <!-- Value 5 -->
                        <td class="text-right font-mono whitespace-nowrap" 
                             th:if="${value5Label != null && !value5Label.isEmpty()}" 
-                            th:text="${#numbers.formatDecimal(row.value6, 0, 'COMMA', 0, 'POINT')}">
+                            th:text="${#numbers.formatDecimal(row.value5, 0, 'COMMA', 0, 'POINT')}">
                             0
                         </td>
 
-                        <!-- Value 6 (Optional) - Avg Price (row.value7) -->
+                        <!-- Value 6 -->
                        <td class="text-right font-mono whitespace-nowrap" 
                             th:if="${value6Label != null && !value6Label.isEmpty()}" 
-                            th:text="${#numbers.formatDecimal(row.value7, 0, 'COMMA', 0, 'POINT')}">
+                            th:text="${#numbers.formatDecimal(row.value6, 0, 'COMMA', 0, 'POINT')}"
+                             th:classappend="${row.value6 >= 0 ? 'text-primary' : 'text-error'}">
                             0
                         </td>
 
                         <!-- Total (Conditional) -->
                         <td class="text-right font-bold text-base-content whitespace-nowrap" 
                              th:if="${totalLabel != null && !totalLabel.isEmpty()}"
-                             th:text="${#numbers.formatDecimal(row.total != null ? row.total : (row.value1 + row.value2), 0, 'COMMA', 0, 'POINT')}"
-                              th:classappend="${(row.total != null ? row.total : (row.value1 + row.value2)) >= 0 ? 'text-success' : 'text-error'}">
+                             th:text="${#numbers.formatDecimal(row.total != null ? row.total : (row.value4 + row.value6), 0, 'COMMA', 0, 'POINT')}"
+                              th:classappend="${(row.total != null ? row.total : (row.value4 + row.value6)) >= 0 ? 'text-success' : 'text-error'}">
                              0
                         </td>
                     </tr>
@@ -213,39 +236,41 @@
                     <tr class="bg-base-200 font-bold">
                         <td th:colspan="${subKeyLabel != null ? 2 : 1}">합계</td>
                         
-                         <!-- Total Value 1 -->
+                         <!-- Total Value 1 (Quantity) -->
                          <td class="text-right text-primary" 
                              th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value1]), 0, 'COMMA', 0, 'POINT')}">
                         </td>
 
-                         <!-- Total Value 2 -->
+                         <!-- Total Value 2 (Avg Price - N/A) -->
                          <td class="text-right text-secondary" 
-                             th:if="${value2Label != null && !value2Label.isEmpty()}"
-                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value2]), 0, 'COMMA', 0, 'POINT')}">
+                             th:if="${value2Label != null && !value2Label.isEmpty()}">
+                             -
                         </td>
 
-                         <!-- Total Value 3 -->
+                         <!-- Total Value 3 (Eval) -->
                          <td class="text-right text-accent" 
                              th:if="${value3Label != null && !value3Label.isEmpty()}"
                              th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value3]), 0, 'COMMA', 0, 'POINT')}">
                         </td>
 
-                         <!-- Total Value 4 -->
+                         <!-- Total Value 4 (Unrealized) -->
                          <td class="text-right" 
                              th:if="${value4Label != null && !value4Label.isEmpty()}"
-                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value5 != null ? value5 : value4]), 0, 'COMMA', 0, 'POINT')}">
+                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value4]), 0, 'COMMA', 0, 'POINT')}"
+                             th:classappend="${#aggregates.sum(tableData.![value4]) >= 0 ? 'text-success' : 'text-error'}">
                         </td>
 
-                         <!-- Total Value 5 (Holding Quantity) -->
+                         <!-- Total Value 5 (Sell) -->
                          <td class="text-right" 
                              th:if="${value5Label != null && !value5Label.isEmpty()}"
-                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value6]), 0, 'COMMA', 0, 'POINT')}">
+                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value5]), 0, 'COMMA', 0, 'POINT')}">
                         </td>
 
-                         <!-- Total Value 6 (Avg Price) - Empty or calculated? Let's leave empty or '-' -->
-                         <td class="text-right opacity-50" 
-                             th:if="${value6Label != null && !value6Label.isEmpty()}">
-                             -
+                         <!-- Total Value 6 (Realized) -->
+                         <td class="text-right" 
+                             th:if="${value6Label != null && !value6Label.isEmpty()}"
+                             th:text="${#numbers.formatDecimal(#aggregates.sum(tableData.![value6]), 0, 'COMMA', 0, 'POINT')}"
+                             th:classappend="${#aggregates.sum(tableData.![value6]) >= 0 ? 'text-primary' : 'text-error'}">
                         </td>
 
                         <!-- Grand Total (Conditional) -->
@@ -276,6 +301,7 @@
             var labels = /*[[${chartLabels}]]*/ [];
             var datasets = /*[[${chartDatasets}]]*/ [];
             var chartType = /*[[${chartType}]]*/ 'bar';
+            var isStacked = /*[[${isStacked}]]*/ false;
             
             // Fallback for single dataset structure if legacy data passed (compability)
             var singleData = /*[[${chartData}]]*/ null;
@@ -308,8 +334,12 @@
                             }
                         },
                         scales: {
-                            y: { beginAtZero: true },
+                            y: { 
+                                beginAtZero: true,
+                                stacked: isStacked
+                            },
                             x: {
+                                stacked: isStacked,
                                 offset: true, // Important for Line chart to show first/last points fully
                                 ticks: {
                                     autoSkip: false // Force show all labels if possible

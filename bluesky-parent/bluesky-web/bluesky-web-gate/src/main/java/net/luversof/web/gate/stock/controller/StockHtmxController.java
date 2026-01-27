@@ -134,18 +134,19 @@ public class StockHtmxController {
 		String totalLabel = "합계";
 
 		String chartType = "bar";
+		boolean isStacked = false;
 
 		List<String> palette = List.of("#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f", "#edc948", "#b07aa1",
 				"#ff9da7", "#9c755f", "#bab0ac");
 
 		// --- 1. PROFIT LOGIC ---
 		if ("PROFIT".equals(type)) {
-			value1Label = "실현 손익";
-			value2Label = "보유 손익";
+			value1Label = "보유 수량";
+			value2Label = "보유 평단가";
 			value3Label = "평가 금액";
-			value4Label = "매도 금액"; // New Label
-			value5Label = "보유 수량";
-			value6Label = "보유 평단가";
+			value4Label = "보유 손익";
+			value5Label = "매도 금액";
+			value6Label = "실현 손익";
 			totalLabel = null; // Hide Total for Profit view
 
 			TradeProfitRequest request = new TradeProfitRequest();
@@ -153,350 +154,82 @@ public class StockHtmxController {
 			if (accountId != null)
 				request.setAccountIdList(List.of(accountId));
 
-			if ("MONTHLY".equals(timeScale)) {
-				// Monthly View -> Show Daily Stats for Selected Month
-				LocalDate start = LocalDate.of(year, month, 1);
-				LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
+			// TOTAL: Snapshot (Default)
+			List<TradeProfit> profits = getEnrichedTradeProfits(request);
+			chartTitle = "매매/보유 손익 (" + (groupBy.equals("ACCOUNT") ? "계좌별" : "종목별") + ")";
+			keyLabel = "TOTAL";
+			subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
 
-				chartTitle = year + "년 " + month + "월 일별 손익 추이 (실현 손익)";
-				keyLabel = "일";
-				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
+			Map<String, BigDecimal> realizedMap = new HashMap<>();
+			Map<String, BigDecimal> unrealizedMap = new HashMap<>(); // EvaluationProfit
+			Map<String, BigDecimal> evaluationAmountMap = new HashMap<>();
+			Map<String, BigDecimal> sellAmountMap = new HashMap<>();
+			Map<String, BigDecimal> holdingQuantityMap = new HashMap<>();
+			Map<String, BigDecimal> costBasisMap = new HashMap<>();
 
-				chartType = "line";
-				for (int i = 1; i <= start.lengthOfMonth(); i++)
-					labels.add(i + "일");
+			profits.forEach(p -> {
+				String name = "ACCOUNT".equals(groupBy) ? (p.accountName() != null ? p.accountName() : "Unknown")
+						: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
+				realizedMap.merge(name, p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO,
+						BigDecimal::add);
+				unrealizedMap.merge(name,
+						p.evaluationProfitNet() != null ? p.evaluationProfitNet() : BigDecimal.ZERO,
+						BigDecimal::add);
+				sellAmountMap.merge(name, p.totalSellAmount() != null ? p.totalSellAmount() : BigDecimal.ZERO,
+						BigDecimal::add);
 
-				// 1. Fetch Parallel Data for each DAY
-				Map<Integer, List<TradeProfit>> dayData = java.util.stream.IntStream
-						.rangeClosed(1, start.lengthOfMonth()).parallel()
-						.boxed()
-						.collect(Collectors.toMap(
-								d -> d,
-								d -> {
-									TradeProfitRequest subReq = new TradeProfitRequest();
-									subReq.setUserId(userId);
-									if (accountId != null)
-										subReq.setAccountIdList(List.of(accountId));
-									if ("STOCK".equals(groupBy)) {
-										subReq.setGroupBy(
-												net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup.STOCKITEM);
-									}
-									subReq.setStartDate(LocalDate.of(year, month, d)
-											.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
-									subReq.setEndDate(LocalDate.of(year, month, d).plusDays(1)
-											.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
-									return getEnrichedTradeProfits(subReq);
-								}));
-
-				// 2. Identify Top Series (by Total Realized Profit)
-				Map<String, BigDecimal> seriesTotals = new HashMap<>();
-				dayData.values().stream().flatMap(List::stream).forEach(p -> {
-					String name = "ACCOUNT".equals(groupBy) ? (p.accountName() != null ? p.accountName() : "Unknown")
-							: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
-					BigDecimal total = (p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO);
-					seriesTotals.merge(name, total, BigDecimal::add);
-				});
-
-				// No Limit for Total compliance (though chart might get busy, usually filtered
-				// by top X for chart, but user asked for "All" in previous steps?)
-				// User said "remove limit". For Chart, drawing 100 lines is bad.
-				// The previous instruction "limit remove" was for "Total Cumulative".
-				// For "Trend", user didn't explicitly say "remove limit on chart series".
-				// But "Group by Year -> Show Monthly" implies seeing all?
-				// Usually charts need limits. Let's keep "Top 5" for Chart Series, but Table
-				// shows all.
-				// Wait, the previous code had limit(5) for chart series.
-				List<String> topSeries = seriesTotals.entrySet().stream()
-						.sorted((a, b) -> b.getValue().compareTo(a.getValue()))
-						.limit(5)
-						.map(Map.Entry::getKey)
-						.toList();
-
-				// 3. Build Datasets
-				int colorIdx = 0;
-				for (String series : topSeries) {
-					List<BigDecimal> realizedPoints = new ArrayList<>();
-
-					for (int d = 1; d <= start.lengthOfMonth(); d++) {
-						List<TradeProfit> profitList = dayData.get(d);
-						BigDecimal realizedSum = BigDecimal.ZERO;
-
-						for (TradeProfit p : profitList) {
-							String name = "ACCOUNT".equals(groupBy)
-									? (p.accountName() != null ? p.accountName() : "Unknown")
-									: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
-							if (series.equals(name)) {
-								realizedSum = realizedSum
-										.add(p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO);
-							}
-						}
-						realizedPoints.add(realizedSum);
-					}
-					String baseColor = palette.get(colorIdx++ % palette.size());
-					datasets.add(
-							new ChartDataset(series + " (실현)", realizedPoints, baseColor, baseColor, 2, List.of()));
-				}
-
-				// 4. Build Table Rows
-				for (int d = 1; d <= start.lengthOfMonth(); d++) {
-					String timeLabel = labels.get(d - 1);
-					List<TradeProfit> profitList = dayData.get(d);
-					Map<String, BigDecimal> rMap = new HashMap<>(); // Realized Profit
-					Map<String, BigDecimal> uMap = new HashMap<>(); // Unrealized Profit
-					Map<String, BigDecimal> sMap = new HashMap<>(); // Sell Amount
-
-					for (TradeProfit p : profitList) {
-						String name = "ACCOUNT".equals(groupBy)
-								? (p.accountName() != null ? p.accountName() : "Unknown")
-								: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
-						rMap.merge(name, p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO,
-								BigDecimal::add);
-						uMap.merge(name, p.evaluationProfitNet() != null ? p.evaluationProfitNet() : BigDecimal.ZERO,
-								BigDecimal::add);
-						sMap.merge(name, p.totalSellAmount() != null ? p.totalSellAmount() : BigDecimal.ZERO,
-								BigDecimal::add);
-					}
-
-					for (String name : rMap.keySet()) {
-						BigDecimal r = rMap.getOrDefault(name, BigDecimal.ZERO);
-						BigDecimal u = uMap.getOrDefault(name, BigDecimal.ZERO);
-						BigDecimal s = sMap.getOrDefault(name, BigDecimal.ZERO);
-						if (r.abs().compareTo(BigDecimal.ZERO) > 0 || u.abs().compareTo(BigDecimal.ZERO) > 0
-								|| s.abs().compareTo(BigDecimal.ZERO) > 0) {
-							rows.add(new AnalyticsRow(timeLabel, name, r, u, BigDecimal.ZERO, r, s, null, null));
-						}
+				BigDecimal evalAmt = BigDecimal.ZERO;
+				if (p.currentPrice() != null) {
+					if (p.evaluationAmount() != null) {
+						evalAmt = p.evaluationAmount();
 					}
 				}
+				evaluationAmountMap.merge(name, evalAmt, BigDecimal::add);
 
-			} else if ("YEARLY".equals(timeScale)) {
-				// Yearly View -> Show Monthly Stats (1~12) for Selected Year
-				// (Previously this was MONTHLY logic)
+				// Holding Quantity & Cost Basis
+				BigDecimal hQty = BigDecimal.valueOf(p.holdingQuantity());
+				holdingQuantityMap.merge(name, hQty, BigDecimal::add);
 
-				chartTitle = year + "년 월별 자산 성장 (전체 누적)";
-				keyLabel = "월";
-				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
-
-				chartType = "line";
-				for (int i = 1; i <= 12; i++)
-					labels.add(i + "월");
-
-				// 0. Base Data (All time until year-01-01)
-				// To show "Accumulated Asset", we need Realized Profit up to Last Year End.
-				// (We cannot easily get HISTORICAL evaluation amount without snapshots,
-				// so we only accumulate Realized Profit correctly and add Current Month's
-				// Evaluation)
-
-				TradeProfitRequest baseReq = new TradeProfitRequest();
-				baseReq.setUserId(userId);
-				if (accountId != null)
-					baseReq.setAccountIdList(List.of(accountId));
-				if ("STOCK".equals(groupBy)) {
-					baseReq.setGroupBy(net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup.STOCKITEM);
+				if (p.holdingQuantity() > 0 && p.averageBuyPrice() != null) {
+					BigDecimal cost = p.averageBuyPrice().multiply(hQty);
+					costBasisMap.merge(name, cost, BigDecimal::add);
 				}
-				// Start from far past
-				baseReq.setStartDate(
-						LocalDate.of(2000, 1, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
-				baseReq.setEndDate(LocalDate.of(year, 1, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+			});
 
-				List<TradeProfit> baseProfits = getEnrichedTradeProfits(baseReq);
-				Map<String, BigDecimal> baseRealizedMap = new HashMap<>();
-				baseProfits.forEach(p -> {
-					String name = "ACCOUNT".equals(groupBy) ? (p.accountName() != null ? p.accountName() : "Unknown")
-							: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
-					baseRealizedMap.merge(name, p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO,
-							BigDecimal::add);
-				});
+			// Collect all keys to ensure we don't miss any negative profit items
+			java.util.Set<String> allKeys = new java.util.HashSet<>();
+			allKeys.addAll(realizedMap.keySet());
+			allKeys.addAll(unrealizedMap.keySet());
+			allKeys.addAll(sellAmountMap.keySet());
+			allKeys.addAll(holdingQuantityMap.keySet());
 
-				// 1. Fetch Parallel Data for each month (Current Year)
-				Map<Integer, List<TradeProfit>> monthData = java.util.stream.IntStream.rangeClosed(1, 12).parallel()
-						.boxed()
-						.collect(Collectors.toMap(
-								m -> m,
-								m -> {
-									TradeProfitRequest subReq = new TradeProfitRequest();
-									subReq.setUserId(userId);
-									if (accountId != null)
-										subReq.setAccountIdList(List.of(accountId));
-									if ("STOCK".equals(groupBy)) {
-										subReq.setGroupBy(
-												net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup.STOCKITEM);
-									}
-									subReq.setStartDate(LocalDate.of(year, m, 1)
-											.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
-									subReq.setEndDate(LocalDate.of(year, m, 1).plusMonths(1)
-											.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
-									return getEnrichedTradeProfits(subReq);
-								}));
+			rows.addAll(allKeys.stream()
+					.map(name -> {
+						BigDecimal r = realizedMap.getOrDefault(name, BigDecimal.ZERO);
+						BigDecimal u = unrealizedMap.getOrDefault(name, BigDecimal.ZERO);
+						BigDecimal e = evaluationAmountMap.getOrDefault(name, BigDecimal.ZERO);
+						BigDecimal s = sellAmountMap.getOrDefault(name, BigDecimal.ZERO);
 
-				// 2. Identify Top Series (by Total Net Profit + Evaluation sum)
-				Map<String, BigDecimal> seriesTotals = new HashMap<>();
-				// Add Base to Totals for sorting
-				baseRealizedMap.forEach((k, v) -> seriesTotals.merge(k, v, BigDecimal::add));
+						BigDecimal hQty = holdingQuantityMap.getOrDefault(name, BigDecimal.ZERO);
+						BigDecimal totalCost = costBasisMap.getOrDefault(name, BigDecimal.ZERO);
+						BigDecimal avgPrice = (hQty.compareTo(BigDecimal.ZERO) > 0)
+								? totalCost.divide(hQty, 0, RoundingMode.HALF_UP)
+								: BigDecimal.ZERO;
 
-				monthData.values().stream().flatMap(List::stream).forEach(p -> {
-					String name = "ACCOUNT".equals(groupBy) ? (p.accountName() != null ? p.accountName() : "Unknown")
-							: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
-					BigDecimal total = (p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO)
-							.add(p.evaluationAmount() != null ? p.evaluationAmount() : BigDecimal.ZERO);
-					seriesTotals.merge(name, total, BigDecimal::add);
-				});
+						// Order: Qty(1), Price(2), Eval(3), Unrealized(4), Sell(5), Realized(6)
+						return new AnalyticsRow("전체", name, hQty, avgPrice, e, u, s, r, null);
+					})
+					.sorted((a, b) -> b.value6().compareTo(a.value6())) // Sort by Realized Profit (value6)
+					// .limit(20)
+					.toList());
 
-				List<String> topSeries = seriesTotals.entrySet().stream()
-						.sorted((a, b) -> b.getValue().compareTo(a.getValue()))
-						.limit(5)
-						.map(Map.Entry::getKey)
-						.toList();
+			labels = rows.stream().map(AnalyticsRow::subKey).toList();
+			List<BigDecimal> rData = rows.stream().map(AnalyticsRow::value6).toList();
+			List<BigDecimal> uData = rows.stream().map(AnalyticsRow::value4).toList();
 
-				// 3. Build Datasets (Asset Growth = Cumulative Base + Month Realized + Month
-				// Evaluation)
-				int colorIdx = 0;
-				for (String series : topSeries) {
-					List<BigDecimal> dataPoints = new ArrayList<>();
-
-					// Initialize with Base Realized Profit
-					BigDecimal cumulativeRealized = baseRealizedMap.getOrDefault(series, BigDecimal.ZERO);
-
-					for (int m = 1; m <= 12; m++) {
-						List<TradeProfit> profitList = monthData.get(m);
-						BigDecimal monthlyRealized = BigDecimal.ZERO;
-						BigDecimal monthlyEvaluation = BigDecimal.ZERO;
-
-						for (TradeProfit p : profitList) {
-							String name = "ACCOUNT".equals(groupBy)
-									? (p.accountName() != null ? p.accountName() : "Unknown")
-									: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
-							if (series.equals(name)) {
-								monthlyRealized = monthlyRealized
-										.add(p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO);
-								monthlyEvaluation = monthlyEvaluation
-										.add(p.evaluationAmount() != null ? p.evaluationAmount() : BigDecimal.ZERO);
-							}
-						}
-						// Accumulate Realized
-						cumulativeRealized = cumulativeRealized.add(monthlyRealized);
-
-						// Add Snapshot Evaluation (Note: If no trade in month, eval might be 0, causing
-						// dips.
-						// Ideally we need snapshot service, but this is best effort with TradeProfit)
-						dataPoints.add(cumulativeRealized.add(monthlyEvaluation));
-					}
-					String baseColor = palette.get(colorIdx++ % palette.size());
-					datasets.add(
-							new ChartDataset(series, dataPoints, baseColor, baseColor, 2, List.of()));
-				}
-
-				// 4. Build Table Rows
-				for (int m = 1; m <= 12; m++) {
-					String timeLabel = labels.get(m - 1);
-					List<TradeProfit> profitList = monthData.get(m);
-					Map<String, BigDecimal> rMap = new HashMap<>(); // Realized
-					Map<String, BigDecimal> uMap = new HashMap<>(); // Unrealized
-					Map<String, BigDecimal> sMap = new HashMap<>(); // Sell Amount
-
-					for (TradeProfit p : profitList) {
-						String name = "ACCOUNT".equals(groupBy)
-								? (p.accountName() != null ? p.accountName() : "Unknown")
-								: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
-						rMap.merge(name, p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO,
-								BigDecimal::add);
-						uMap.merge(name, p.evaluationProfitNet() != null ? p.evaluationProfitNet() : BigDecimal.ZERO,
-								BigDecimal::add);
-						sMap.merge(name, p.totalSellAmount() != null ? p.totalSellAmount() : BigDecimal.ZERO,
-								BigDecimal::add);
-					}
-
-					for (String name : rMap.keySet()) {
-						BigDecimal r = rMap.getOrDefault(name, BigDecimal.ZERO);
-						BigDecimal u = uMap.getOrDefault(name, BigDecimal.ZERO);
-						BigDecimal s = sMap.getOrDefault(name, BigDecimal.ZERO);
-						if (r.abs().compareTo(BigDecimal.ZERO) > 0 || u.abs().compareTo(BigDecimal.ZERO) > 0
-								|| s.abs().compareTo(BigDecimal.ZERO) > 0) {
-							rows.add(new AnalyticsRow(timeLabel, name, r, u, BigDecimal.ZERO, r, s, null, null));
-						}
-					}
-				}
-
-			} else {
-				// TOTAL: Snapshot (Default)
-				List<TradeProfit> profits = getEnrichedTradeProfits(request);
-				chartTitle = "매매/보유 손익 (" + (groupBy.equals("ACCOUNT") ? "계좌별" : "종목별") + ")";
-				keyLabel = "TOTAL";
-				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
-
-				Map<String, BigDecimal> realizedMap = new HashMap<>();
-				Map<String, BigDecimal> unrealizedMap = new HashMap<>(); // EvaluationProfit
-				Map<String, BigDecimal> evaluationAmountMap = new HashMap<>();
-				Map<String, BigDecimal> sellAmountMap = new HashMap<>();
-				Map<String, BigDecimal> holdingQuantityMap = new HashMap<>();
-				Map<String, BigDecimal> costBasisMap = new HashMap<>();
-
-				profits.forEach(p -> {
-					String name = "ACCOUNT".equals(groupBy) ? (p.accountName() != null ? p.accountName() : "Unknown")
-							: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
-					realizedMap.merge(name, p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO,
-							BigDecimal::add);
-					unrealizedMap.merge(name,
-							p.evaluationProfitNet() != null ? p.evaluationProfitNet() : BigDecimal.ZERO,
-							BigDecimal::add);
-					sellAmountMap.merge(name, p.totalSellAmount() != null ? p.totalSellAmount() : BigDecimal.ZERO,
-							BigDecimal::add);
-
-					BigDecimal evalAmt = BigDecimal.ZERO;
-					if (p.currentPrice() != null) {
-						if (p.evaluationAmount() != null) {
-							evalAmt = p.evaluationAmount();
-						}
-					}
-					evaluationAmountMap.merge(name, evalAmt, BigDecimal::add);
-					
-					// Holding Quantity & Cost Basis
-					BigDecimal hQty = BigDecimal.valueOf(p.holdingQuantity());
-					holdingQuantityMap.merge(name, hQty, BigDecimal::add);
-					
-					if (p.holdingQuantity() > 0 && p.averageBuyPrice() != null) {
-						BigDecimal cost = p.averageBuyPrice().multiply(hQty);
-						costBasisMap.merge(name, cost, BigDecimal::add);
-					}
-				});
-
-				// Collect all keys to ensure we don't miss any negative profit items
-				java.util.Set<String> allKeys = new java.util.HashSet<>();
-				allKeys.addAll(realizedMap.keySet());
-				allKeys.addAll(unrealizedMap.keySet());
-				allKeys.addAll(sellAmountMap.keySet());
-				allKeys.addAll(holdingQuantityMap.keySet());
-
-				rows.addAll(allKeys.stream()
-						.map(name -> {
-							BigDecimal r = realizedMap.getOrDefault(name, BigDecimal.ZERO);
-							BigDecimal u = unrealizedMap.getOrDefault(name, BigDecimal.ZERO);
-							BigDecimal e = evaluationAmountMap.getOrDefault(name, BigDecimal.ZERO);
-							BigDecimal s = sellAmountMap.getOrDefault(name, BigDecimal.ZERO);
-							
-							BigDecimal hQty = holdingQuantityMap.getOrDefault(name, BigDecimal.ZERO);
-							BigDecimal totalCost = costBasisMap.getOrDefault(name, BigDecimal.ZERO);
-							BigDecimal avgPrice = (hQty.compareTo(BigDecimal.ZERO) > 0)
-									? totalCost.divide(hQty, 0, RoundingMode.HALF_UP)
-									: BigDecimal.ZERO;
-							
-							return new AnalyticsRow("전체", name, r, u, e, null, s, hQty, avgPrice);
-						})
-						.sorted((a, b) -> b.value1().compareTo(a.value1())) // Sort by Realized Profit (value1)
-						// .limit(20)
-						.toList());
-
-				labels = rows.stream().map(AnalyticsRow::subKey).toList();
-				List<BigDecimal> rData = rows.stream().map(AnalyticsRow::value1).toList();
-				List<BigDecimal> uData = rows.stream().map(AnalyticsRow::value2).toList();
-
-				datasets.add(new ChartDataset("실현 손익", rData, "#4e79a7", "#4e79a7", 1, List.of()));
-				datasets.add(new ChartDataset("보유 손익", uData, "#f28e2b", "#f28e2b", 1, List.of()));
-			}
-
-			// --- 2. DIVIDEND LOGIC ---
-		} else {
-			value1Label = "배당금(세전)"; // value1
-			value2Label = "배당금(세후)"; // value2 (Net Payment)
+			datasets.add(new ChartDataset("실현 손익", rData, "#4e79a7", "#4e79a7", 1, List.of()));
+			datasets.add(new ChartDataset("보유 손익", uData, "#f28e2b", "#f28e2b", 1, List.of()));
+		} else if ("DIVIDEND".equals(type)) {
 			value3Label = "세금"; // value3 (Gross - Net)
 			value4Label = "과세금액"; // value4 (quantity * taxPerShare)
 
@@ -508,38 +241,42 @@ public class StockHtmxController {
 				request.setAccountIdList(List.of(accountId));
 
 			if ("YEARLY".equals(timeScale)) {
-				// Show Monthly stats for the specific YEAR
-				// Start: year-01-01, End: year-12-31 (+1 day)
+				// YEARLY -> Show Annual Stats for ALL Years (2015 ~ Current)
+				int startYear = 2015;
+				int endYear = LocalDate.now().getYear();
+				
+				request.setStartDate(LocalDate.of(startYear, 1, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+				request.setEndDate(LocalDate.of(endYear, 12, 31).plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+				
+				chartTitle = "연도별 배당 통계 (" + startYear + " ~ " + endYear + ")";
+				keyLabel = "연도";
+				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
+				chartType = "bar";
+				isStacked = true;
+
+				// Generate Labels (Years)
+				for (int i = startYear; i <= endYear; i++)
+					labels.add(i + "년");
+
+			} else if ("MONTHLY".equals(timeScale)) {
+				// MONTHLY -> Show Monthly Stats for the specific YEAR (1월 ~ 12월)
+				// (Previously this was YEARLY logic)
 				request.setStartDate(
 						LocalDate.of(year, 1, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
 				request.setEndDate(
 						LocalDate.of(year, 12, 31).plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault())
 								.toInstant());
-				chartTitle = year + "년 월별 배당 (전체)";
+
+				chartTitle = year + "년 월별 배당 통계";
 				keyLabel = "월";
 				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
-				chartType = "line";
+				chartType = "bar";
+				isStacked = true;
 
 				// Generate Labels (1월 to 12월)
 				for (int i = 1; i <= 12; i++)
 					labels.add(i + "월");
 
-			} else if ("MONTHLY".equals(timeScale)) {
-				// Show Daily stats for the specific MONTH
-				LocalDate start = LocalDate.of(year, month, 1);
-				LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
-
-				request.setStartDate(start.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
-				request.setEndDate(end.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
-
-				chartTitle = year + "년 " + month + "월 일별 배당";
-				keyLabel = "일";
-				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
-				chartType = "line";
-
-				// Generate Labels (1 to End)
-				for (int i = 1; i <= start.lengthOfMonth(); i++)
-					labels.add(i + "일");
 			} else {
 				// TOTAL
 				keyLabel = "전체";
@@ -603,19 +340,18 @@ public class StockHtmxController {
 					for (String label : labels) {
 						BigDecimal pointSum = BigDecimal.ZERO;
 						if ("YEARLY".equals(timeScale)) {
-							// Check Month
+							// YEARLY -> Group by Year (label is "YYYY년")
+							int y = Integer.parseInt(label.replace("년", ""));
+							pointSum = seriesData.stream()
+									.filter(d -> d.payDate().atZone(java.time.ZoneId.systemDefault()).getYear() == y)
+									.map(d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO)
+									.reduce(BigDecimal.ZERO, BigDecimal::add);
+						} else if ("MONTHLY".equals(timeScale)) {
+							// MONTHLY -> Group by Month (label is "M월")
 							int m = Integer.parseInt(label.replace("월", ""));
 							pointSum = seriesData.stream()
 									.filter(d -> d.payDate().atZone(java.time.ZoneId.systemDefault())
 											.getMonthValue() == m)
-									.map(d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO)
-									.reduce(BigDecimal.ZERO, BigDecimal::add);
-						} else {
-							// Check Day
-							int dVal = Integer.parseInt(label.replace("일", ""));
-							pointSum = seriesData.stream()
-									.filter(d -> d.payDate().atZone(java.time.ZoneId.systemDefault())
-											.getDayOfMonth() == dVal)
 									.map(d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO)
 									.reduce(BigDecimal.ZERO, BigDecimal::add);
 						}
@@ -636,15 +372,19 @@ public class StockHtmxController {
 						if (d.payDate() == null)
 							continue;
 						boolean match = false;
+						
 						if ("YEARLY".equals(timeScale)) {
+							// YEARLY -> timeLabel is "YYYY년"
+							int y = Integer.parseInt(timeLabel.replace("년", ""));
+							if (d.payDate().atZone(java.time.ZoneId.systemDefault()).getYear() == y)
+								match = true;
+						} else if ("MONTHLY".equals(timeScale)) {
+							// MONTHLY -> timeLabel is "M월"
 							int m = Integer.parseInt(timeLabel.replace("월", ""));
 							if (d.payDate().atZone(java.time.ZoneId.systemDefault()).getMonthValue() == m)
 								match = true;
-						} else {
-							int dVal = Integer.parseInt(timeLabel.replace("일", ""));
-							if (d.payDate().atZone(java.time.ZoneId.systemDefault()).getDayOfMonth() == dVal)
-								match = true;
 						}
+
 						if (match) {
 							String sName = getSeriesName.apply(d);
 							periodGrossMap.merge(sName, d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO,
@@ -749,6 +489,7 @@ public class StockHtmxController {
 		model.addAttribute("tableData", rows);
 		model.addAttribute("totalValue", totalValue);
 		model.addAttribute("chartType", chartType);
+		model.addAttribute("isStacked", isStacked);
 		model.addAttribute("chartLabels", labels);
 		model.addAttribute("chartDatasets", datasets);
 
