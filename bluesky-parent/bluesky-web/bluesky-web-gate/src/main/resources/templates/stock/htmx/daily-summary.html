@@ -40,8 +40,9 @@
                     <div class="flex flex-wrap items-center justify-center gap-2 w-full xl:w-auto">
                         <!-- Grouping -->
                         <div class="join shadow-sm mr-2">
-                            <input class="join-item btn btn-sm" type="radio" name="groupBy" value="STOCK" aria-label="종목별" checked onclick="updateDailySummaryFilters()"/>
+                            <input class="join-item btn btn-sm" type="radio" name="groupBy" value="STOCK" aria-label="종목별" onclick="updateDailySummaryFilters()"/>
                             <input class="join-item btn btn-sm" type="radio" name="groupBy" value="ACCOUNT" aria-label="계좌별" onclick="updateDailySummaryFilters()"/>
+                            <input class="join-item btn btn-sm" type="radio" name="groupBy" value="SUMMARY" aria-label="합계" checked onclick="updateDailySummaryFilters()"/>
                         </div>
 
                         <!-- Year Filter -->
@@ -332,6 +333,11 @@
                             padding: {
                                 right: 20, // Prevent cut-off
                                 left: 10
+                            }
+                        },
+                        datasets: {
+                            bar: {
+                                maxBarThickness: 60
                             }
                         },
                         scales: {

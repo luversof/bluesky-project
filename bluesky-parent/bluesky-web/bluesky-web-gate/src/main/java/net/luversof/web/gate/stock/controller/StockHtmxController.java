@@ -69,6 +69,23 @@ public class StockHtmxController {
 	@Autowired
 	private DividendClient dividendClient;
 
+	private BigDecimal calculateDividendTax(DividendResponse d, boolean isDeferred) {
+		if (isDeferred) {
+			return BigDecimal.ZERO;
+		}
+		return d.tax() != null ? d.tax() : BigDecimal.ZERO;
+	}
+
+	private BigDecimal calculateDividendTaxable(DividendResponse d, boolean isDeferred) {
+		if (isDeferred) {
+			return BigDecimal.ZERO;
+		}
+		if (d.taxPerShare() != null && d.quantity() != null) {
+			return d.taxPerShare().multiply(BigDecimal.valueOf(d.quantity()));
+		}
+		return BigDecimal.ZERO;
+	}
+
 	private record AnalyticsRow(String key, String subKey, BigDecimal value1, BigDecimal value2, BigDecimal value3,
 			BigDecimal value4, BigDecimal value5, BigDecimal value6, BigDecimal value7) {
 	}
@@ -108,7 +125,7 @@ public class StockHtmxController {
 	public String dailySummaryData(
 			@RequestParam(defaultValue = "PROFIT") String type, // PROFIT | DIVIDEND
 			@RequestParam(defaultValue = "TOTAL") String timeScale, // TOTAL | MONTHLY | YEARLY
-			@RequestParam(defaultValue = "STOCK") String groupBy, // STOCK | ACCOUNT
+			@RequestParam(defaultValue = "SUMMARY") String groupBy, // STOCK | ACCOUNT | SUMMARY
 			@RequestParam(defaultValue = "2025") int year,
 			@RequestParam(defaultValue = "1") int month,
 			@RequestParam(required = false) UUID accountId,
@@ -156,9 +173,19 @@ public class StockHtmxController {
 
 			// TOTAL: Snapshot (Default)
 			List<TradeProfit> profits = getEnrichedTradeProfits(request);
-			chartTitle = "매매/보유 손익 (" + (groupBy.equals("ACCOUNT") ? "계좌별" : "종목별") + ")";
+			String groupLabel = "종목별";
+			if ("ACCOUNT".equals(groupBy))
+				groupLabel = "계좌별";
+			else if ("SUMMARY".equals(groupBy))
+				groupLabel = "합계";
+
+			chartTitle = "매매/보유 손익 (" + groupLabel + ")";
 			keyLabel = "TOTAL";
-			subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
+			if ("SUMMARY".equals(groupBy)) {
+				subKeyLabel = null;
+			} else {
+				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
+			}
 
 			Map<String, BigDecimal> realizedMap = new HashMap<>();
 			Map<String, BigDecimal> unrealizedMap = new HashMap<>(); // EvaluationProfit
@@ -168,8 +195,13 @@ public class StockHtmxController {
 			Map<String, BigDecimal> costBasisMap = new HashMap<>();
 
 			profits.forEach(p -> {
-				String name = "ACCOUNT".equals(groupBy) ? (p.accountName() != null ? p.accountName() : "Unknown")
-						: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
+				String name;
+				if ("SUMMARY".equals(groupBy)) {
+					name = "합계";
+				} else {
+					name = "ACCOUNT".equals(groupBy) ? (p.accountName() != null ? p.accountName() : "Unknown")
+							: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
+				}
 				realizedMap.merge(name, p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO,
 						BigDecimal::add);
 				unrealizedMap.merge(name,
@@ -230,6 +262,8 @@ public class StockHtmxController {
 			datasets.add(new ChartDataset("실현 손익", rData, "#4e79a7", "#4e79a7", 1, List.of()));
 			datasets.add(new ChartDataset("보유 손익", uData, "#f28e2b", "#f28e2b", 1, List.of()));
 		} else if ("DIVIDEND".equals(type)) {
+			value1Label = "배당금(세전)";
+			value2Label = "실지급액";
 			value3Label = "세금"; // value3 (Gross - Net)
 			value4Label = "과세금액"; // value4 (quantity * taxPerShare)
 
@@ -239,6 +273,12 @@ public class StockHtmxController {
 			request.setUserId(userId);
 			if (accountId != null)
 				request.setAccountIdList(List.of(accountId));
+
+			if ("SUMMARY".equals(groupBy)) {
+				subKeyLabel = null;
+			} else {
+				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
+			}
 
 			if ("YEARLY".equals(timeScale)) {
 				// YEARLY -> Show Annual Stats for ALL Years (2015 ~ Current)
@@ -250,7 +290,6 @@ public class StockHtmxController {
 				
 				chartTitle = "연도별 배당 통계 (" + startYear + " ~ " + endYear + ")";
 				keyLabel = "연도";
-				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
 				chartType = "bar";
 				isStacked = true;
 
@@ -269,7 +308,6 @@ public class StockHtmxController {
 
 				chartTitle = year + "년 월별 배당 통계";
 				keyLabel = "월";
-				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
 				chartType = "bar";
 				isStacked = true;
 
@@ -281,7 +319,6 @@ public class StockHtmxController {
 				// TOTAL
 				keyLabel = "전체";
 				chartTitle = "누적 배당 총합 (전체)";
-				subKeyLabel = "ACCOUNT".equals(groupBy) ? "계좌명" : "종목명";
 			}
 
 			List<DividendResponse> dividends = Optional.ofNullable(dividendClient.findDividends(request.toParams()))
@@ -294,7 +331,11 @@ public class StockHtmxController {
 			final Map<UUID, String> accountNames = accounts.stream()
 					.collect(Collectors.toMap(Account::id, Account::name, (left, right) -> left, LinkedHashMap::new));
 			final Map<UUID, Boolean> taxDeferredMap = accounts.stream().collect(Collectors.toMap(Account::id,
-					a -> a.jsonConfig() != null && Boolean.TRUE.equals(a.jsonConfig().get("isTaxDeferred")),
+					a -> {
+						if (a.jsonConfig() == null) return false;
+						Object val = a.jsonConfig().get("isTaxDeferred");
+						return Boolean.TRUE.equals(val) || "true".equalsIgnoreCase(String.valueOf(val));
+					},
 					(l, r) -> l));
 
 			if (dividends.stream().anyMatch(d -> d.stockItemName() == null)) {
@@ -304,6 +345,7 @@ public class StockHtmxController {
 			}
 
 			java.util.function.Function<DividendResponse, String> getSeriesName = d -> {
+				if ("SUMMARY".equals(groupBy)) return "합계";
 				if ("ACCOUNT".equals(groupBy))
 					return accountNames.getOrDefault(d.accountId(), "Unknown");
 				return d.stockItemName() != null ? d.stockItemName()
@@ -392,13 +434,10 @@ public class StockHtmxController {
 									BigDecimal::add);
 
 							boolean isDeferred = taxDeferredMap.getOrDefault(d.accountId(), false);
-							BigDecimal tax = (d.tax() != null && !isDeferred) ? d.tax() : BigDecimal.ZERO;
+							BigDecimal tax = calculateDividendTax(d, isDeferred);
 							periodTaxMap.merge(sName, tax, BigDecimal::add);
 
-							BigDecimal taxable = BigDecimal.ZERO;
-							if (!isDeferred && d.taxPerShare() != null && d.quantity() != null) {
-								taxable = d.taxPerShare().multiply(BigDecimal.valueOf(d.quantity()));
-							}
+							BigDecimal taxable = calculateDividendTaxable(d, isDeferred);
 							periodTaxableMap.merge(sName, taxable, BigDecimal::add);
 
 						}
@@ -434,20 +473,14 @@ public class StockHtmxController {
 													.map(d -> {
 														boolean isDeferred = taxDeferredMap.getOrDefault(d.accountId(),
 																false);
-														return (d.tax() != null && !isDeferred) ? d.tax()
-																: BigDecimal.ZERO;
+														return calculateDividendTax(d, isDeferred);
 													})
 													.reduce(BigDecimal.ZERO, BigDecimal::add);
 											BigDecimal taxable = list.stream()
 													.map(d -> {
 														boolean isDeferred = taxDeferredMap.getOrDefault(d.accountId(),
 																false);
-														if (!isDeferred && d.taxPerShare() != null
-																&& d.quantity() != null) {
-															return d.taxPerShare()
-																	.multiply(BigDecimal.valueOf(d.quantity()));
-														}
-														return BigDecimal.ZERO;
+														return calculateDividendTaxable(d, isDeferred);
 													})
 													.reduce(BigDecimal.ZERO, BigDecimal::add);
 											return new java.math.BigDecimal[] { g, t, taxable };

@@ -1,5 +1,6 @@
 package net.luversof.api.stock.service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,6 +39,12 @@ public class AccountService {
 	}
 
 	public Account createAccount(Account account) {
+		if (account.getName().contains("ISA") || account.getName().contains("연금")) {
+			if (account.getJsonConfig() == null) {
+				account.setJsonConfig(new HashMap<>());
+			}
+			account.getJsonConfig().put("isTaxDeferred", true);
+		}
 		return accountRepository.save(account);
 	}
 
