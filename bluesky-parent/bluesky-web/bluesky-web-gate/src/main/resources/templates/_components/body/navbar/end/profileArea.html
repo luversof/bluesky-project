@@ -18,7 +18,20 @@
 <a 
 	data-sec-authorize="!isAuthenticated()"
 	class="btn btn-ghost"
-	data-th-href="${@clientUserProperties.loginUrl}"
+	id="login-link"
+	href="#"
 >
 	<svg data-th-replace="~{__${path_icons}__ :: login}" /> 로그인
 </a>
+<script th:inline="javascript">
+/*<![CDATA[*/
+document.addEventListener('DOMContentLoaded', function() {
+	var loginLink = document.getElementById('login-link');
+	if (loginLink) {
+		var loginBase = /*[[${@clientUserProperties.loginUrl}]]*/ 'https://user.web.bluesky.local/login/redirect';
+		var redirectUrl = window.location.href;
+		loginLink.href = loginBase + '?redirectUrl=' + encodeURIComponent(redirectUrl);
+	}
+});
+/*]]>*/
+</script>

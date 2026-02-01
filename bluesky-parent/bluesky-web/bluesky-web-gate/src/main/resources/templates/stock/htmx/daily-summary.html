@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
 <body>
 
 <!-- 1. Main Daily Summary Container -->
@@ -370,7 +373,7 @@
                                         if (taxableTotals && taxableTotals.length > 0) {
                                             let index = tooltipItems[0].dataIndex;
                                             let taxableSum = taxableTotals[index] || 0;
-                                            footerText += '\n과세대상: ' + taxableSum.toLocaleString();
+                                            footerText += '\n과세금액: ' + taxableSum.toLocaleString();
                                         }
                                         return footerText;
                                     }

@@ -524,9 +524,15 @@ public class StockHtmxController {
 		model.addAttribute("totalLabel", totalLabel);
 		model.addAttribute("tableData", rows);
 		model.addAttribute("totalValue", totalValue);
-		model.addAttribute("chartType", chartType);
-		model.addAttribute("isStacked", isStacked);
-		if ("DIVIDEND".equals(type) && !"TOTAL".equals(timeScale)) {
+		if ("DIVIDEND".equals(type) && "TOTAL".equals(timeScale)) {
+			// TOTAL view: calculate taxable totals for tooltip
+			// 'rows' contains all data. Sort order matches 'labels' derived from rows.
+			// rows.value4() is Taxable Amount.
+			List<BigDecimal> taxableTotalList = rows.stream()
+				.map(r -> r.value4() != null ? r.value4() : BigDecimal.ZERO)
+				.toList();
+			model.addAttribute("taxableTotals", taxableTotalList);
+		} else if ("DIVIDEND".equals(type) && !"TOTAL".equals(timeScale)) {
 			// Calculate Taxable Totals again for Chart or refactor. 
 			// Simpler to just re-accumulate from 'rows' which have 'value4' (taxable) and 'key' (timeLabel).
 			// 'rows' contains all data.
