@@ -13,6 +13,7 @@
 	</parent>
 
 	<properties>
+		<java.version>17</java.version>
 		<bluesky-project.version>0.0.1-SNAPSHOT</bluesky-project.version>
 		<poi-ooxml.version>5.4.1</poi-ooxml.version>
 		<jsqlparser.version>5.3</jsqlparser.version>
