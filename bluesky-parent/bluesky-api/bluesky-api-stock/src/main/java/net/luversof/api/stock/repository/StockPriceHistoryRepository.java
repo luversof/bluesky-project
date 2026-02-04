@@ -1,6 +1,7 @@
 package net.luversof.api.stock.repository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,7 +17,7 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
 
 	List<StockPriceHistory> findByStockItemIdAndPriceDateBetween(UUID stockItemId, Instant start, Instant end);
 
-	List<StockPriceHistory> findByStockItemIdInAndPriceDateBetween(Iterable<UUID> stockItemId, Instant start,
+	List<StockPriceHistory> findByStockItemIdInAndPriceDateBetween(Collection<UUID> stockItemId, Instant start,
 			Instant end);
 
 }

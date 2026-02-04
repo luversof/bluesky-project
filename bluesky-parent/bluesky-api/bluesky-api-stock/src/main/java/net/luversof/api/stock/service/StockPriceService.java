@@ -1,6 +1,7 @@
 package net.luversof.api.stock.service;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -72,7 +73,7 @@ public class StockPriceService {
 		return stockPriceRepository.save(stockPrice);
 	}
 
-	public List<StockPriceHistory> getPriceHistory(Iterable<UUID> stockItemIdList, Instant start, Instant end) {
+	public List<StockPriceHistory> getPriceHistory(Collection<UUID> stockItemIdList, Instant start, Instant end) {
 		return stockPriceHistoryRepository.findByStockItemIdInAndPriceDateBetween(stockItemIdList, start, end);
 	}
 }
