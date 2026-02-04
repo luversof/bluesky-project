@@ -318,12 +318,15 @@ public class TradeProfitService {
 		Instant outputEnd = end.truncatedTo(ChronoUnit.DAYS);
 
 		// Price History (Bulk Load)
-		List<StockPriceHistory> priceHistory = stockPriceService.getPriceHistory(stockItemIds, outputStart, outputEnd);
+		// List<StockPriceHistory> priceHistory =
+		// stockPriceService.getPriceHistory(stockItemIds, outputStart, outputEnd);
+		// Map<Instant, Map<UUID, BigDecimal>> dailyPriceMap = new HashMap<>();
+		// for (StockPriceHistory h : priceHistory) {
+		// dailyPriceMap.computeIfAbsent(h.getPriceDate().truncatedTo(ChronoUnit.DAYS),
+		// k -> new HashMap<>())
+		// .put(h.getStockItemId(), h.getPrice());
+		// }
 		Map<Instant, Map<UUID, BigDecimal>> dailyPriceMap = new HashMap<>();
-		for (StockPriceHistory h : priceHistory) {
-			dailyPriceMap.computeIfAbsent(h.getPriceDate().truncatedTo(ChronoUnit.DAYS), k -> new HashMap<>())
-					.put(h.getStockItemId(), h.getPrice());
-		}
 
 		Map<UUID, BigDecimal> lastKnownPrices = new HashMap<>();
 
