@@ -34,6 +34,9 @@ public class Account {
 	@Column("name")
 	private String name;
 
+	@Column("base_currency")
+	private String baseCurrency;
+
 	@CreatedDate
 	@Column("createdDate")
 	private Instant createdDate;
@@ -88,6 +91,14 @@ public class Account {
 
 	public void setJsonConfig(Map<String, Object> jsonConfig) {
 		this.jsonConfig = jsonConfig;
+	}
+
+	public String getBaseCurrency() {
+		return baseCurrency;
+	}
+
+	public void setBaseCurrency(String baseCurrency) {
+		this.baseCurrency = baseCurrency;
 	}
 
 	@Override

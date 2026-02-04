@@ -3,6 +3,7 @@ CREATE TABLE "Account" (
 	"user_id" UUID NOT NULL,
 	"name" VARCHAR(100) NOT NULL,
 	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL,
+	"base_currency" VARCHAR(3),
 	"jsonConfig" JSONB
 );
 
@@ -27,6 +28,7 @@ CREATE TABLE "Trade" (
 	"fee" NUMERIC NOT NULL,
 	"tax" NUMERIC NOT NULL,
 	"realizedProfit" NUMERIC,
+	"exchangeRate" NUMERIC,
 	"tradeDate" TIMESTAMP WITH TIME ZONE NOT NULL
 );
 

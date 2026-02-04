@@ -22,8 +22,10 @@ import net.luversof.api.stock.constant.StockErrorCode;
 import net.luversof.api.stock.constant.TradeType;
 import net.luversof.api.stock.domain.Account;
 import net.luversof.api.stock.domain.StockItem;
+import net.luversof.api.stock.domain.StockPriceHistory;
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.domain.TradeProfit;
+import net.luversof.api.stock.service.strategy.ProfitCalculator;
 import net.luversof.api.stock.web.dto.request.TradeProfitRequest;
 import net.luversof.api.stock.web.dto.request.TradeSearchRequest;
 import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesPoint;
@@ -46,6 +48,9 @@ public class TradeProfitService {
 
 	@Autowired
 	private StockPriceService stockPriceService;
+
+	@Autowired
+	private ProfitCalculator profitCalculator;
 
 	@Autowired
 	private StockItemService stockItemService;
@@ -144,7 +149,7 @@ public class TradeProfitService {
 			UUID accountId = first.getAccountId();
 			UUID stockItemId = first.getStockItemId();
 
-			TradeProfit profit = calculateStockProfit(group, accountId, stockItemId, request);
+			TradeProfit profit = profitCalculator.calculate(group, request, stockPriceService);
 			if (request.hasDateRange()) {
 				if (profit.getRealizedProfit().compareTo(BigDecimal.ZERO) != 0) {
 					result.add(profit);
@@ -176,7 +181,8 @@ public class TradeProfitService {
 					return "S:" + si.getSymbol(); // Symbol Prefix
 				}
 				// 2026-01-17: Name match fallback for inconsistent data
-				// Remove spaces to ensure better matching (e.g. "Samsung Electronics" vs "SamsungElectronics")
+				// Remove spaces to ensure better matching (e.g. "Samsung Electronics" vs
+				// "SamsungElectronics")
 				// But risking collision? TIGER REITs name is specific enough.
 				if (si.getName() != null && !si.getName().isBlank()) {
 					return "N:" + si.getName().trim();
@@ -184,16 +190,17 @@ public class TradeProfitService {
 			}
 			return "I:" + t.getStockItemId().toString();
 		}));
-		
+
 		List<TradeProfit> result = new ArrayList<>();
 
 		for (List<Trade> group : grouped.values()) {
-			if (group.isEmpty()) continue;
-			
+			if (group.isEmpty())
+				continue;
+
 			// 대표 ID 사용 (첫번째 Trade의 StockItemId)
 			UUID stockItemId = group.get(0).getStockItemId();
 
-			TradeProfit profit = calculateStockProfit(group, null, stockItemId, request);
+			TradeProfit profit = profitCalculator.calculate(group, request, stockPriceService);
 			if (request.hasDateRange()) {
 				if (profit.getRealizedProfit().compareTo(BigDecimal.ZERO) != 0) {
 					result.add(profit);
@@ -211,186 +218,6 @@ public class TradeProfitService {
 		return profit.getHoldingQuantity() == 0
 				&& profit.getTotalSellQuantity() == 0
 				&& (profit.getTotalBuyAmount() == null || profit.getTotalBuyAmount().compareTo(BigDecimal.ZERO) == 0);
-	}
-
-	/**
-	 * 개별 그룹에 대한 통합 손익 계산 (DB Realized Profit 기반)
-	 */
-	private TradeProfit calculateStockProfit(List<Trade> trades, UUID accountId, UUID stockItemId,
-			TradeProfitRequest request) {
-		// 1. Sort by date ascending
-		List<Trade> sortedTrades = new ArrayList<>(trades);
-		sortedTrades.sort(Comparator.comparing(Trade::getTradeDate));
-
-		// 2. Period accumulators for "Period" stats
-		BigDecimal periodTotalBuyAmount = BigDecimal.ZERO;
-		BigDecimal periodTotalBuyFee = BigDecimal.ZERO;
-
-		int periodTotalSellQuantity = 0;
-		BigDecimal periodTotalSellAmount = BigDecimal.ZERO;
-		BigDecimal periodTotalSellFee = BigDecimal.ZERO;
-		BigDecimal periodTotalSellTax = BigDecimal.ZERO;
-
-		BigDecimal periodRealizedProfit = BigDecimal.ZERO; // Gross (Using DB Realized Profit)
-
-		/*
-		 * Net Profit fields might be redundant if we fully rely on DB's Realized Profit,
-		 * but assuming DB's realizedProfit is the final profit.
-		 * We will treat periodRealizedProfitNet as equal to periodRealizedProfit for simplicity
-		 * unless the user's realizedProfit is clearly Gross only.
-		 * Usually "Realized Profit" implies bottom line.
-		 */
-		BigDecimal periodRealizedProfitNet = BigDecimal.ZERO; 
-
-		// Date filter helpers
-		Instant start = request.getStartDate();
-		Instant end = request.getEndDate();
-
-		// 3. WMA State for Holdings (Simulated)
-		long currentQuantity = 0;
-		BigDecimal currentTotalCost = BigDecimal.ZERO;     // Gross cost (price * qty)
-		// We can't perfectly track Net Cost Basis if we don't calculate Realized Net Profit manually.
-		// But we can approximate holdings cost.
-		
-		for (Trade trade : sortedTrades) {
-			if (trade.getType() == null) continue;
-
-			Instant tradeDate = trade.getTradeDate();
-			boolean inPeriod = true;
-			if (start != null && tradeDate.isBefore(start)) inPeriod = false;
-			if (end != null && tradeDate.isAfter(end)) inPeriod = false;
-
-			BigDecimal fee = nz(trade.getFee());
-			BigDecimal tax = nz(trade.getTax());
-			int q = trade.getQuantity(); // Trade quantity
-			BigDecimal price = trade.getPrice();
-			
-			// Use DB amount if available, otherwise calc
-			BigDecimal amount = price.multiply(BigDecimal.valueOf(q));
-
-			if (trade.getType() == TradeType.BUY) {
-				if (q > 0) {
-					currentQuantity += q;
-					currentTotalCost = currentTotalCost.add(amount);
-				}
-
-				if (inPeriod) {
-					periodTotalBuyAmount = periodTotalBuyAmount.add(amount);
-					periodTotalBuyFee = periodTotalBuyFee.add(fee);
-				}
-			} else if (trade.getType() == TradeType.SELL) {
-				BigDecimal tradeSellAmount = amount; 
-				BigDecimal dbRealizedProfit = nz(trade.getRealizedProfit());
-				
-				if (dbRealizedProfit.compareTo(BigDecimal.ZERO) == 0 && amount.compareTo(BigDecimal.ZERO) > 0) {
-					log.warn("Found SELL trade with 0 realized profit. TradeId: {}, Date: {}, Amount: {}", trade.getId(), trade.getTradeDate(), amount);
-				}
-
-				// To maintain Holdings Cost Basis:
-				// Cost of Goods Sold = Sell Proceeds - Profit
-				// Sell Proceeds = Sell Amount - Fee - Tax
-				BigDecimal sellProceeds = tradeSellAmount.subtract(fee).subtract(tax);
-				// Assuming dbRealizedProfit is NET profit:
-				BigDecimal cogs = sellProceeds.subtract(dbRealizedProfit);
-
-				// Update State
-				if (currentQuantity >= q) {
-					currentQuantity -= q;
-					currentTotalCost = currentTotalCost.subtract(cogs);
-				} else {
-					// Reset if sold more than held (Data Error usually)
-					currentQuantity = 0;
-					currentTotalCost = BigDecimal.ZERO;
-				}
-				
-				if (currentQuantity == 0) {
-					currentTotalCost = BigDecimal.ZERO;
-				}
-
-				if (inPeriod) {
-					periodTotalSellQuantity += q;
-					periodTotalSellAmount = periodTotalSellAmount.add(tradeSellAmount);
-					periodTotalSellFee = periodTotalSellFee.add(fee);
-					periodTotalSellTax = periodTotalSellTax.add(tax);
-
-					// Use DB Value
-					periodRealizedProfit = periodRealizedProfit.add(dbRealizedProfit);
-					periodRealizedProfitNet = periodRealizedProfitNet.add(dbRealizedProfit); 
-				}
-			}
-		}
-
-		// 4. Calculate Holdings (Snapshot)
-		int holdingQuantity = (int) currentQuantity;
-		BigDecimal holdingTotalCost = currentTotalCost;
-
-		BigDecimal averageBuyPrice = holdingQuantity > 0
-				? holdingTotalCost.divide(BigDecimal.valueOf(holdingQuantity),  2, RoundingMode.HALF_UP)
-				: BigDecimal.ZERO;
-
-		// 5. Current Evaluation
-		BigDecimal currentPrice = BigDecimal.ZERO;
-		BigDecimal evaluationAmount = BigDecimal.ZERO;
-		BigDecimal evaluationProfit = BigDecimal.ZERO;
-		
-		if (!request.hasDateRange()) {
-			currentPrice = stockPriceService.getCurrentPrice(stockItemId);
-			evaluationAmount = currentPrice.multiply(BigDecimal.valueOf(holdingQuantity));
-
-			// Profit on Holdings
-			evaluationProfit = evaluationAmount.subtract(holdingTotalCost);
-		}
-
-		// 6. Period Averages & Derived Stats
-		BigDecimal averageSellPrice = periodTotalSellQuantity > 0
-				? periodTotalSellAmount.divide(BigDecimal.valueOf(periodTotalSellQuantity), 2, RoundingMode.HALF_UP)
-				: BigDecimal.ZERO;
-		
-		BigDecimal periodTotalBuyCost = periodTotalBuyAmount.add(periodTotalBuyFee);
-
-		BigDecimal totalProfit = periodRealizedProfit.add(evaluationProfit);
-		// Assuming Net = Gross for DB values for now
-		BigDecimal totalProfitNet = periodRealizedProfitNet.add(evaluationProfit); 
-
-		// 7. Populate Result
-		TradeProfit profit = new TradeProfit();
-		profit.setStockItemId(stockItemId);
-		profit.setAccountId(accountId);
-
-		// Base Fields
-		profit.setTotalBuyAmount(periodTotalBuyAmount);
-		profit.setAverageBuyPrice(averageBuyPrice); // Average Cost of Holdings
-		profit.setTotalSellQuantity(periodTotalSellQuantity);
-		profit.setAverageSellPrice(averageSellPrice);
-		profit.setTotalSellAmount(periodTotalSellAmount);
-		profit.setRealizedProfit(periodRealizedProfit);
-		profit.setHoldingQuantity(holdingQuantity);
-		profit.setCurrentPrice(currentPrice);
-		profit.setEvaluationAmount(evaluationAmount);
-		profit.setEvaluationProfit(evaluationProfit);
-		profit.setTotalProfit(totalProfit);
-
-		// Net Fields
-		profit.setTotalBuyFee(periodTotalBuyFee);
-		profit.setTotalSellFee(periodTotalSellFee);
-		profit.setTotalSellTax(periodTotalSellTax);
-		profit.setTotalBuyCost(periodTotalBuyCost);
-		// Proceeds already factored into realized profit check
-		BigDecimal periodTotalSellProceeds = periodTotalSellAmount.subtract(periodTotalSellFee).subtract(periodTotalSellTax);
-		profit.setTotalSellProceeds(periodTotalSellProceeds);
-		
-		profit.setRealizedProfitNet(periodRealizedProfitNet);
-		profit.setEvaluationProfitNet(evaluationProfit); // Reuse gross evaluation for net
-		profit.setTotalProfitNet(totalProfitNet);
-		
-		// Unused but required fields?
-		profit.setAverageBuyPriceNet(averageBuyPrice); // Approx
-		profit.setAverageSellPriceNet(averageSellPrice); // Approx
-
-		log.info("[TradeProfit Result] Stock: {}, SellQty: {}, SellAmt: {}, BuyAvg: {}, Realized: {}",
-				stockItemId, periodTotalSellQuantity, periodTotalSellAmount, averageBuyPrice, periodRealizedProfit);
-
-		return profit;
 	}
 
 	private static BigDecimal nz(BigDecimal v) {
@@ -441,9 +268,7 @@ public class TradeProfitService {
 
 		if (allTrades.isEmpty()) {
 			return new ArrayList<>();
-		}
-
-		// 2) StockItem 정보 로딩 및 그룹핑 키 생성 (calculateProfitByStock과 동일 로직)
+		} // 2) StockItem 정보 로딩 및 그룹핑 키 생성 (calculateProfitByStock과 동일 로직)
 		var stockItemIds = allTrades.stream().map(Trade::getStockItemId).collect(Collectors.toSet());
 		Map<UUID, StockItem> stockItemMap = new HashMap<>();
 		stockItemService.findAllById(stockItemIds).forEach(si -> stockItemMap.put(si.getId(), si));
@@ -466,19 +291,22 @@ public class TradeProfitService {
 		// 같은 날짜 내에서는 BUY 먼저 처리 (논리적 재고 확보)
 		allTrades.sort((t1, t2) -> {
 			int dateCompare = t1.getTradeDate().compareTo(t2.getTradeDate());
-			if (dateCompare != 0) return dateCompare;
-			if (t1.getType() == t2.getType()) return 0;
+			if (dateCompare != 0)
+				return dateCompare;
+			if (t1.getType() == t2.getType())
+				return 0;
 			return t1.getType() == TradeType.BUY ? -1 : 1;
 		});
 
 		// 4) 시뮬레이션 상태 관리 (WMA)
 		class WmaState {
 			long quantity = 0;
-			BigDecimal totalCost = BigDecimal.ZERO;    // Gross
+			BigDecimal totalCost = BigDecimal.ZERO; // Gross
 			BigDecimal totalCostNet = BigDecimal.ZERO; // Net (Fee included)
+			UUID stockItemId;
 		}
 		Map<String, WmaState> stateMap = new HashMap<>();
-		
+
 		BigDecimal globalCumulativeRealized = BigDecimal.ZERO;
 
 		// 5) 시뮬레이션 루프
@@ -489,15 +317,22 @@ public class TradeProfitService {
 		Instant outputStart = start.truncatedTo(ChronoUnit.DAYS);
 		Instant outputEnd = end.truncatedTo(ChronoUnit.DAYS);
 
-		// 만약 요청 기간이 데이터보다 훨씬 과거라면? -> 데이터 없으므로 그냥 루프 안돌거나 0 출력
-		// 만약 요청 기간이 데이터 시작보다 미래라면? -> 시뮬레이션은 firstTradeDate부터 돌리고, outputStart부터 기록
+		// Price History (Bulk Load)
+		List<StockPriceHistory> priceHistory = stockPriceService.getPriceHistory(stockItemIds, outputStart, outputEnd);
+		Map<Instant, Map<UUID, BigDecimal>> dailyPriceMap = new HashMap<>();
+		for (StockPriceHistory h : priceHistory) {
+			dailyPriceMap.computeIfAbsent(h.getPriceDate().truncatedTo(ChronoUnit.DAYS), k -> new HashMap<>())
+					.put(h.getStockItemId(), h.getPrice());
+		}
+
+		Map<UUID, BigDecimal> lastKnownPrices = new HashMap<>();
 
 		List<TradeProfitTimeSeriesPoint> series = new ArrayList<>();
 		Iterator<Trade> it = allTrades.iterator();
 		Trade nextTrade = it.hasNext() ? it.next() : null;
 
 		Instant currentDay = simulationStart.isBefore(outputStart) ? simulationStart : outputStart;
-		// ※ 단, simulationStart가 outputStart보다 늦으면 (데이터가 미래에 시작), 
+		// ※ 단, simulationStart가 outputStart보다 늦으면 (데이터가 미래에 시작),
 		// outputStart ~ simulationStart 구간은 데이터 없음(0)으로 채워야 함.
 		// 편의상 currentDay를 Math.min(simulationStart, outputStart)로 잡고 진행.
 		if (outputStart.isBefore(simulationStart)) {
@@ -523,13 +358,21 @@ public class TradeProfitService {
 				// 거래 처리 logic (WMA)
 				Trade trade = nextTrade;
 				String key = getGroupKey.apply(trade);
-				WmaState state = stateMap.computeIfAbsent(key, k -> new WmaState());
+				WmaState state = stateMap.computeIfAbsent(key, k -> {
+					WmaState s = new WmaState();
+					s.stockItemId = trade.getStockItemId();
+					return s;
+				});
+				if (state.stockItemId == null)
+					state.stockItemId = trade.getStockItemId();
 
 				BigDecimal fee = nz(trade.getFee());
 				BigDecimal tax = nz(trade.getTax());
 				int q = trade.getQuantity();
 				BigDecimal price = trade.getPrice();
 				BigDecimal amount = price.multiply(BigDecimal.valueOf(q));
+
+				lastKnownPrices.put(trade.getStockItemId(), price);
 
 				if (trade.getType() == TradeType.BUY) {
 					if (q > 0) {
@@ -554,12 +397,12 @@ public class TradeProfitService {
 							state.quantity = 0;
 							state.totalCost = BigDecimal.ZERO;
 						}
-						
+
 						if (state.quantity == 0) {
 							state.totalCost = BigDecimal.ZERO;
 						}
 					}
-					
+
 					dailyRealizedGain = dailyRealizedGain.add(realProfit);
 
 					dailyTradeCount++;
@@ -574,13 +417,39 @@ public class TradeProfitService {
 
 			// 출력 범위 내인지 확인 후 추가
 			if (!currentDay.isBefore(outputStart)) {
+				// Update Last Known Prices from History
+				Map<UUID, BigDecimal> dayPrices = dailyPriceMap.getOrDefault(currentDay, Map.of());
+				lastKnownPrices.putAll(dayPrices);
+
+				// Calculate Holdings Value
+				BigDecimal totalHoldingsValue = BigDecimal.ZERO;
+				BigDecimal totalHoldingsCost = BigDecimal.ZERO;
+
+				for (WmaState state : stateMap.values()) {
+					if (state.quantity > 0) {
+						totalHoldingsCost = totalHoldingsCost.add(state.totalCost);
+
+						BigDecimal price = lastKnownPrices.get(state.stockItemId);
+						if (price == null)
+							price = BigDecimal.ZERO;
+
+						BigDecimal value = price.multiply(BigDecimal.valueOf(state.quantity));
+						totalHoldingsValue = totalHoldingsValue.add(value);
+					}
+				}
+
+				BigDecimal cumulativeTotalProfit = globalCumulativeRealized
+						.add(totalHoldingsValue.subtract(totalHoldingsCost));
+
 				series.add(new TradeProfitTimeSeriesPoint(
 						currentDay,
 						globalCumulativeRealized,
 						dailyRealizedGain,
 						dailyTradeCount,
-						dailyVolume
-				));
+						dailyVolume,
+						totalHoldingsValue,
+						totalHoldingsCost,
+						cumulativeTotalProfit));
 			}
 
 			currentDay = currentDay.plus(1, ChronoUnit.DAYS);
@@ -631,7 +500,7 @@ public class TradeProfitService {
 		List<TradeResponse> result = new ArrayList<>();
 
 		for (Trade trade : tradeList) {
-			
+
 			// 3. Filter by Date Range and Add to Result
 			boolean inRange = true;
 			if (request.startDate() != null && trade.getTradeDate().isBefore(request.startDate()))

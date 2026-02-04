@@ -84,7 +84,6 @@ public class StockAdminService {
 			DateTimeFormatter.ofPattern("yyyy-M-d"),
 			DateTimeFormatter.ISO_LOCAL_DATE);
 
-
 	public int stockItemBulkInsert(UUID userId) {
 		var googleSheetStockItemList = stockGoogleSheetService.getGoogleSheetStockItemList(userId);
 		var allStockItems = new java.util.ArrayList<>(googleSheetStockItemList);
@@ -98,7 +97,7 @@ public class StockAdminService {
 		}
 
 		var stockItemList = allStockItems.stream().map(this::toStockItem).collect(Collectors.toList());
-		
+
 		jdbcTemplate.batchUpdate(INSERT_STOCK_ITEM_SQL, stockItemList, stockItemList.size(), (ps, item) -> {
 			item.setId(UuidGeneratorUtil.getUuid());
 			ps.setObject(1, item.getId());
@@ -131,7 +130,7 @@ public class StockAdminService {
 					ps.setObject(3, item.getPrice());
 					ps.setTimestamp(4, java.sql.Timestamp.from(item.getUpdatedDate()));
 				});
-		
+
 		log.debug("Processed {} stock prices", result.length);
 		return result.length;
 	}
@@ -166,7 +165,7 @@ public class StockAdminService {
 				.map(t -> toTrade(t, accountMap, stockItemList))
 				.filter(Objects::nonNull)
 				.toList();
-		
+
 		log.debug("Importing {} trades", tradeList.size());
 		tradeRepository.saveAll(tradeList);
 	}
@@ -175,7 +174,7 @@ public class StockAdminService {
 		dividendRepository.deleteAll();
 
 		var googleSheetsDividendList = stockGoogleSheetService.getGoogleSheetDividendList(userId);
-		
+
 		var accountMap = prepareAccountMap(userId, googleSheetsDividendList);
 		var stockItemMap = prepareStockItemMap(googleSheetsDividendList);
 
@@ -196,7 +195,8 @@ public class StockAdminService {
 		return stockItem;
 	}
 
-	private Trade toTrade(GoogleSheetTrade googleSheetTrade, HashMap<String, UUID> accountMap, List<StockItem> stockItemList) {
+	private Trade toTrade(GoogleSheetTrade googleSheetTrade, HashMap<String, UUID> accountMap,
+			List<StockItem> stockItemList) {
 		Trade trade = new Trade();
 		trade.setType(googleSheetTrade.get구분().equals("매수") ? TradeType.BUY : TradeType.SELL);
 		trade.setQuantity(googleSheetTrade.get매매_수량());
@@ -229,10 +229,10 @@ public class StockAdminService {
 		trade.setStockItemId(stockItem.getId());
 		return trade;
 	}
-	
+
 	private Map<String, UUID> prepareAccountMap(UUID userId, List<GoogleSheetDividend> records) {
 		var accountMap = accountService.findByUserId(userId).stream()
-				.collect(Collectors.toMap(Account::getName, Account::getId, (left, _) -> left,
+				.collect(Collectors.toMap(Account::getName, Account::getId, (left, right) -> left,
 						java.util.LinkedHashMap::new));
 
 		records.stream()
@@ -253,7 +253,7 @@ public class StockAdminService {
 
 	private Map<String, UUID> prepareStockItemMap(List<GoogleSheetDividend> records) {
 		var stockItemMap = StreamSupport.stream(stockItemRepository.findAll().spliterator(), false)
-				.collect(Collectors.toMap(StockItem::getName, StockItem::getId, (left, _) -> left,
+				.collect(Collectors.toMap(StockItem::getName, StockItem::getId, (left, right) -> left,
 						java.util.LinkedHashMap::new));
 
 		records.stream()
@@ -272,7 +272,7 @@ public class StockAdminService {
 
 		return stockItemMap;
 	}
-	
+
 	private String generateSymbol(String baseName) {
 		var alphanumeric = baseName == null ? "" : baseName.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
 		if (!StringUtils.hasText(alphanumeric)) {
@@ -282,8 +282,9 @@ public class StockAdminService {
 		var candidate = (alphanumeric + randomSuffix);
 		return candidate.substring(0, Math.min(candidate.length(), 12));
 	}
-	
-	private Dividend toDividend(GoogleSheetDividend googleSheetsDividend, Map<String, UUID> accountMap, Map<String, UUID> stockItemMap) {
+
+	private Dividend toDividend(GoogleSheetDividend googleSheetsDividend, Map<String, UUID> accountMap,
+			Map<String, UUID> stockItemMap) {
 		var accountName = googleSheetsDividend.get계좌();
 		var stockName = googleSheetsDividend.get종목();
 
@@ -307,7 +308,8 @@ public class StockAdminService {
 		dividend.setQuantity(googleSheetsDividend.get주식수());
 		dividend.setAmountPerShare(googleSheetsDividend.get배당금());
 		dividend.setTaxPerShare(googleSheetsDividend.get주당과세표준액());
-		dividend.setGrossAmount(googleSheetsDividend.get배당금() == null ? BigDecimal.ZERO : googleSheetsDividend.get배당금());
+		dividend.setGrossAmount(
+				googleSheetsDividend.get배당금() == null ? BigDecimal.ZERO : googleSheetsDividend.get배당금());
 		dividend.setTax(googleSheetsDividend.get세금() == null ? BigDecimal.ZERO : googleSheetsDividend.get세금());
 		dividend.setFee(BigDecimal.ZERO);
 		dividend.setRecordDate(payDate);

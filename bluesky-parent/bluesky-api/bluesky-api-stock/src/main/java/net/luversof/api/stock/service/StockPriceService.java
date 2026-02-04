@@ -1,6 +1,7 @@
 package net.luversof.api.stock.service;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,5 +70,9 @@ public class StockPriceService {
 		stockPrice.setPrice(price);
 
 		return stockPriceRepository.save(stockPrice);
+	}
+
+	public List<StockPriceHistory> getPriceHistory(Iterable<UUID> stockItemIdList, Instant start, Instant end) {
+		return stockPriceHistoryRepository.findByStockItemIdInAndPriceDateBetween(stockItemIdList, start, end);
 	}
 }

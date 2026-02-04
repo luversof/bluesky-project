@@ -47,6 +47,9 @@ public class Trade {
 	@Column("realizedProfit")
 	private BigDecimal realizedProfit;
 
+	@Column("exchangeRate")
+	private BigDecimal exchangeRate;
+
 	public UUID getId() {
 		return id;
 	}
@@ -127,11 +130,19 @@ public class Trade {
 		this.realizedProfit = realizedProfit;
 	}
 
+	public BigDecimal getExchangeRate() {
+		return exchangeRate;
+	}
+
+	public void setExchangeRate(BigDecimal exchangeRate) {
+		this.exchangeRate = exchangeRate;
+	}
+
 	@Override
 	public String toString() {
 		return "Trade [id=" + id + ", accountId=" + accountId + ", stockItemId=" + stockItemId + ", type=" + type
 				+ ", quantity=" + quantity + ", price=" + price + ", fee=" + fee + ", tax=" + tax + ", tradeDate="
 				+ tradeDate + ", realizedProfit=" + realizedProfit + "]";
 	}
-	
+
 }
