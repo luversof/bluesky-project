@@ -69,60 +69,7 @@
 
                 </div>
 
-                <script>
-                    function updateDailySummaryFilters() {
-                        const type = document.querySelector('input[name="type"]:checked').value;
-                        const timeScale = document.querySelector('input[name="timeScale"]:checked').value;
-                        const groupBy = document.querySelector('input[name="groupBy"]:checked').value;
-                        const yearSelect = document.getElementById('filter-year');
-                        const monthSelect = document.getElementById('filter-month');
-                        const accountSelect = document.getElementById('filter-account');
-                        
-                        const periodTotal = document.getElementById('period-total');
-                        const periodYearly = document.getElementById('period-yearly');
-                        const periodMonthly = document.getElementById('period-monthly');
-
-                         // UI Logic: Hide Period Options based on Type
-                        if (type === 'PROFIT') {
-                             // Force TOTAL if not already (logic below handles visibility)
-                             if (!periodTotal.checked) {
-                                 periodTotal.checked = true;
-                                 // We need to re-read timeScale if we changed it, 
-                                 // but for visibility logic below 'TOTAL' is fine.
-                             }
-                             periodYearly.classList.add('hidden');
-                             periodMonthly.classList.add('hidden');
-                        } else {
-                             // DIVIDEND
-                             periodYearly.classList.remove('hidden');
-                             periodMonthly.classList.remove('hidden');
-                        }
-
-                        // Re-read timeScale in case we forced it
-                        const currentTimeScale = document.querySelector('input[name="timeScale"]:checked').value;
-
-                        // Hide Year if TOTAL or YEARLY (Since YEARLY is now multi-year)
-                        if (currentTimeScale === 'TOTAL' || currentTimeScale === 'YEARLY') {
-                            yearSelect.style.display = 'none';
-                        } else {
-                            yearSelect.style.display = 'inline-block';
-                        }
-
-                        // Month logic: Show for ? None. 
-                        // New Logic: MONTHLY shows Year Select (to see months of that year). It does NOT need Month Select.
-                        // So monthSelect is always hidden unless we want Daily stats (which we removed).
-                        monthSelect.style.display = 'none';
-
-                        // Hide Account Filter if groupBy is ACCOUNT
-                        if (groupBy === 'ACCOUNT') {
-                            accountSelect.style.display = 'none';
-                        } else {
-                            accountSelect.style.display = 'inline-block';
-                        }
-                    }
-                    // Initialize
-                    setTimeout(updateDailySummaryFilters, 0);
-                </script>
+                <script src="/js/stock/dailySummary.js"></script>
 
             </form>
         </div>

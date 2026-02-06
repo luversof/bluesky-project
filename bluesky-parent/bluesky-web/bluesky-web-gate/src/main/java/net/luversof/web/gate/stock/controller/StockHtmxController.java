@@ -126,7 +126,7 @@ public class StockHtmxController {
 			@RequestParam(defaultValue = "PROFIT") String type, // PROFIT | DIVIDEND
 			@RequestParam(defaultValue = "TOTAL") String timeScale, // TOTAL | MONTHLY | YEARLY
 			@RequestParam(defaultValue = "SUMMARY") String groupBy, // STOCK | ACCOUNT | SUMMARY
-			@RequestParam(defaultValue = "2025") int year,
+			@RequestParam(required = false) Integer year,
 			@RequestParam(defaultValue = "1") int month,
 			@RequestParam(required = false) UUID accountId,
 			Model model) {
@@ -134,6 +134,10 @@ public class StockHtmxController {
 		UUID userId = UserUtil.getUserId();
 		if (userId == null)
 			return ERROR_VIEW;
+			
+		if (year == null) {
+			year = LocalDate.now().getYear();
+		}
 
 		List<AnalyticsRow> rows = new ArrayList<>();
 		List<String> labels = new ArrayList<>();
