@@ -19,26 +19,17 @@ public class StockAdminApiController {
 	private StockAdminClient stockAdminClient;
 
 	@PostMapping("/stock-items")
-	public int stockItemBulkInsert(@RequestParam(required = false) UUID userId) {
-		if (userId == null) {
-			userId = UserUtil.getUserId();
-		}
-		return stockAdminClient.stockItemBulkInsert(userId);
+	public int stockItemBulkInsert() {
+		return stockAdminClient.stockItemBulkInsert(UserUtil.getUserId());
 	}
 
 	@PostMapping("/trades")
-	public void tradeBulkInsert(@RequestParam(required = false) UUID userId) {
-		if (userId == null) {
-			userId = UserUtil.getUserId();
-		}
-		stockAdminClient.tradeBulkInsert(userId);
+	public void tradeBulkInsert() {
+		stockAdminClient.tradeBulkInsert(UserUtil.getUserId());
 	}
 
 	@PostMapping("/dividends")
-	public void dividendBulkInsert(@RequestParam(required = false) UUID userId) {
-		if (userId == null) {
-			userId = UserUtil.getUserId();
-		}
-		stockAdminClient.dividendBulkInsert(userId);
+	public void dividendBulkInsert() {
+		stockAdminClient.dividendBulkInsert(UserUtil.getUserId());
 	}
 }

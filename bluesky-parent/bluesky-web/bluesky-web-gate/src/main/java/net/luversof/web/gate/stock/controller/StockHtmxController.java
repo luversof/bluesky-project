@@ -134,7 +134,7 @@ public class StockHtmxController {
 		UUID userId = UserUtil.getUserId();
 		if (userId == null)
 			return ERROR_VIEW;
-			
+
 		if (year == null) {
 			year = LocalDate.now().getYear();
 		}

@@ -15,6 +15,7 @@
                   hx-get="/stock/htmx/daily-summary/data" 
                   hx-target="#daily-summary-content" 
                   hx-trigger="submit, change delay:200ms, load"
+                  hx-indicator="#daily-summary-loading"
                   class="flex flex-col gap-3">
 
                 <!-- Top Control Panel -->
@@ -24,8 +25,8 @@
                     <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-4 w-full xl:w-auto">
                         <!-- Type -->
                         <div class="join shadow-sm">
-                            <input class="join-item btn btn-sm" type="radio" name="type" value="PROFIT" aria-label="매매/보유 손익" checked onclick="updateDailySummaryFilters()"/>
-                            <input class="join-item btn btn-sm" type="radio" name="type" value="DIVIDEND" aria-label="배당 내역" onclick="updateDailySummaryFilters()"/>
+                            <input class="join-item btn btn-sm" type="radio" name="type" value="PROFIT" aria-label="매매/보유 손익" checked onclick="updateDailySummaryUI()"/>
+                            <input class="join-item btn btn-sm" type="radio" name="type" value="DIVIDEND" aria-label="배당 내역" onclick="updateDailySummaryUI()"/>
                         </div>
                         
                         <!-- Separator (Visual) -->
@@ -33,9 +34,9 @@
 
                         <!-- Period -->
                         <div class="join shadow-sm" id="period-group">
-                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="TOTAL" id="period-total" aria-label="누적(전체)" checked onclick="updateDailySummaryFilters()"/>
-                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="YEARLY" id="period-yearly" aria-label="연도별" onclick="updateDailySummaryFilters()"/>
-                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="MONTHLY" id="period-monthly" aria-label="월별" onclick="updateDailySummaryFilters()"/>
+                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="TOTAL" id="period-total" aria-label="누적(전체)" checked onclick="updateDailySummaryUI()"/>
+                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="YEARLY" id="period-yearly" aria-label="연도별" onclick="updateDailySummaryUI()"/>
+                            <input class="join-item btn btn-sm" type="radio" name="timeScale" value="MONTHLY" id="period-monthly" aria-label="월별" onclick="updateDailySummaryUI()"/>
                         </div>
                     </div>
 
@@ -43,23 +44,23 @@
                     <div class="flex flex-wrap items-center justify-center gap-2 w-full xl:w-auto">
                         <!-- Grouping -->
                         <div class="join shadow-sm mr-2">
-                            <input class="join-item btn btn-sm" type="radio" name="groupBy" value="STOCK" aria-label="종목별" onclick="updateDailySummaryFilters()"/>
-                            <input class="join-item btn btn-sm" type="radio" name="groupBy" value="ACCOUNT" aria-label="계좌별" onclick="updateDailySummaryFilters()"/>
-                            <input class="join-item btn btn-sm" type="radio" name="groupBy" value="SUMMARY" aria-label="합계" checked onclick="updateDailySummaryFilters()"/>
+                            <input class="join-item btn btn-sm" type="radio" name="groupBy" value="STOCK" aria-label="종목별" onclick="updateDailySummaryUI()"/>
+                            <input class="join-item btn btn-sm" type="radio" name="groupBy" value="ACCOUNT" aria-label="계좌별" onclick="updateDailySummaryUI()"/>
+                            <input class="join-item btn btn-sm" type="radio" name="groupBy" value="SUMMARY" aria-label="합계" checked onclick="updateDailySummaryUI()"/>
                         </div>
 
                         <!-- Year Filter -->
-                        <select name="year" id="filter-year" class="select select-bordered select-sm w-24" style="display:none;" onchange="updateDailySummaryFilters()">
+                        <select name="year" id="filter-year" class="select select-bordered select-sm w-24" style="display:none;" onchange="updateDailySummaryUI()">
                             <option th:each="y : ${years}" th:value="${y}" th:text="${y + '년'}" th:selected="${y == currentYear}">2025년</option>
                         </select>
 
                         <!-- Month Filter -->
-                        <select name="month" id="filter-month" class="select select-bordered select-sm w-20" style="display:none;" onchange="updateDailySummaryFilters()">
+                        <select name="month" id="filter-month" class="select select-bordered select-sm w-20" style="display:none;" onchange="updateDailySummaryUI()">
                             <option th:each="m : ${#numbers.sequence(1, 12)}" th:value="${m}" th:text="${m + '월'}" th:selected="${m == currentMonth}">1월</option>
                         </select>
 
                         <!-- Account Filter -->
-                        <select name="accountId" id="filter-account" class="select select-bordered select-sm w-auto" onchange="updateDailySummaryFilters()">
+                        <select name="accountId" id="filter-account" class="select select-bordered select-sm w-auto" onchange="updateDailySummaryUI()">
                             <option value="">전체 계좌</option>
                             <option th:each="acc : ${accounts}" 
                                     th:value="${acc.id}" 
@@ -67,6 +68,11 @@
                         </select>
                     </div>
 
+                </div>
+                
+                <!-- Loading Overlay -->
+                <div id="daily-summary-loading" class="htmx-indicator hidden flex justify-center py-2">
+                    <span class="loading loading-spinner text-secondary"></span>
                 </div>
 
                 <script src="/js/stock/dailySummary.js"></script>
