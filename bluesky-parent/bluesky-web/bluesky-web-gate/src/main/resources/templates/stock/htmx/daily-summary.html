@@ -273,6 +273,25 @@
                     borderWidth: 1
                 }];
             }
+            
+            // Add Taxable Amount as a Line Dataset (Overlay)
+            if (taxableTotals && taxableTotals.length > 0) {
+                datasets.push({
+                    type: 'line',
+                    label: '과세금액',
+                    data: taxableTotals,
+                    borderColor: '#FF6384',
+                    backgroundColor: '#FF6384',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointStyle: 'circle',
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    fill: false,
+                    tension: 0.1,
+                    order: 0 // Render on top
+                });
+            }
 
             // Fix: Wait for layout to settle to avoid clipping
             setTimeout(function() {
@@ -319,16 +338,16 @@
                                     footer: function(tooltipItems) {
                                         let sum = 0;
                                         tooltipItems.forEach(function(tooltipItem) {
-                                            sum += tooltipItem.parsed.y;
+                                            // Sum only Bar datasets for "Total"
+                                            if (tooltipItem.dataset.type !== 'line') {
+                                                sum += tooltipItem.parsed.y;
+                                            }
                                         });
-                                        let footerText = '합계: ' + sum.toLocaleString();
+                                        // If sum is 0 (e.g. only hovering line), don't show footer or show context?
+                                        // Usually with 'index' mode, we see everything.
                                         
-                                        if (taxableTotals && taxableTotals.length > 0) {
-                                            let index = tooltipItems[0].dataIndex;
-                                            let taxableSum = taxableTotals[index] || 0;
-                                            footerText += '\n과세금액: ' + taxableSum.toLocaleString();
-                                        }
-                                        return footerText;
+                                        // Clarify label: Pre-tax Dividend
+                                        return '배당금(세전): ' + sum.toLocaleString();
                                     }
                                 }
                             }

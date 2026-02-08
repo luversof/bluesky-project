@@ -86,7 +86,7 @@ function updateDailySummaryFilters() {
 // Rename function to reflect its purpose (UI update only)
 window.updateDailySummaryUI = updateDailySummaryFilters;
 // Keep old name for compatibility if needed (but we will update HTML)
-window.updateDailySummaryFilters = updateDailySummaryFilters; 
+window.updateDailySummaryFilters = updateDailySummaryFilters;
 
 // If we want to auto-init when this script is loaded:
 setTimeout(updateDailySummaryFilters, 0);
