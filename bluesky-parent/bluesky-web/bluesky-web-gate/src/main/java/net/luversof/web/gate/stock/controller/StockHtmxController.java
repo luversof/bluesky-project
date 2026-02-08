@@ -563,11 +563,13 @@ public class StockHtmxController {
 		// Decide Chart Type
 		// String chartType = "bar"; // Default -> chartType variable is already
 		// defined.
+		/*
 		if ("PROFIT".equals(type) && !"MONTHLY".equals(timeScale)) {
 			// Trend lines for Yearly/Total profit
 			chartType = "line";
 			// If we want stacked bars for profit breakdown, we can switch.
 		}
+		*/
 		model.addAttribute("chartType", chartType);
 
 		model.addAttribute("chartLabels", labels);

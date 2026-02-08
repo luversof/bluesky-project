@@ -27,17 +27,17 @@
                     <h2 class="card-title text-xl">보유 종목 현황</h2>
                     <div class="join">
                         <button class="join-item btn btn-sm btn-active" 
-                                hx-get="/stock/htmx/portfolio?viewGroupBy=ACCOUNT" 
-                                hx-target="#tab-content"
-                                onclick="document.querySelectorAll('.join-item').forEach(el => el.classList.remove('btn-active')); this.classList.add('btn-active');">계좌별</button>
-                        <button class="join-item btn btn-sm" 
                                 hx-get="/stock/htmx/portfolio?viewGroupBy=STOCK" 
                                 hx-target="#tab-content"
                                 onclick="document.querySelectorAll('.join-item').forEach(el => el.classList.remove('btn-active')); this.classList.add('btn-active');">종목별</button>
+                        <button class="join-item btn btn-sm" 
+                                hx-get="/stock/htmx/portfolio?viewGroupBy=ACCOUNT" 
+                                hx-target="#tab-content"
+                                onclick="document.querySelectorAll('.join-item').forEach(el => el.classList.remove('btn-active')); this.classList.add('btn-active');">계좌별</button>
                     </div>
                 </div>
                 <div id="tab-content" 
-                     hx-get="/stock/htmx/portfolio?viewGroupBy=ACCOUNT" 
+                     hx-get="/stock/htmx/portfolio?viewGroupBy=STOCK" 
                      hx-trigger="load" 
                      hx-swap="innerHTML">
                      <div class="flex justify-center p-10">

@@ -273,23 +273,35 @@
                     borderWidth: 1
                 }];
             }
+
+            // Adjust existing datasets for overlapping/nested bar effect
+            datasets.forEach(bs => {
+                bs.order = 10;
+                bs.grouped = false; // Prevent side-by-side
+                bs.barPercentage = 0.6; // Moderate width for Total
+                bs.categoryPercentage = 0.9;
+                bs.borderRadius = 4; // Rounded corners for modern look
+                // lighter color for background
+                if(bs.backgroundColor && Array.isArray(bs.backgroundColor)) {
+                     bs.backgroundColor = bs.data.map(v => 'rgba(209, 213, 219, 0.5)'); // Light Gray
+                     bs.borderColor = bs.data.map(v => 'rgba(156, 163, 175, 0.5)');
+                }
+            });
             
-            // Add Taxable Amount as a Line Dataset (Overlay)
+            // Add Taxable Amount as a Bar Dataset (Overlay)
             if (taxableTotals && taxableTotals.length > 0) {
                 datasets.push({
-                    type: 'line',
+                    type: 'bar',
                     label: '과세금액',
                     data: taxableTotals,
-                    borderColor: '#FF6384',
-                    backgroundColor: '#FF6384',
-                    borderWidth: 2,
-                    borderDash: [5, 5],
-                    pointStyle: 'circle',
-                    pointRadius: 3,
-                    pointHoverRadius: 5,
-                    fill: false,
-                    tension: 0.1,
-                    order: 0 // Render on top
+                    backgroundColor: 'rgba(255, 99, 132, 0.8)', // Strong Pink
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1,
+                    grouped: false, // Prevent side-by-side
+                    barPercentage: 0.6, // Same width as Total for "Fill" effect
+                    categoryPercentage: 0.9,
+                    borderRadius: 4,
+                    order: 0 // Render on top of Total
                 });
             }
 
