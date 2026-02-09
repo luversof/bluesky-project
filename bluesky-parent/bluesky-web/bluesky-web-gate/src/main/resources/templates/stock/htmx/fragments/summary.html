@@ -15,6 +15,14 @@
                 <div class="stat-desc">평가 금액 합계</div>
             </div>
 
+            <!-- 평가 손익 -->
+            <div class="stat">
+                <div class="stat-title">평가 손익</div>
+                 <div class="stat-value" th:classappend="${totalUnrealizedProfit >= 0} ? 'text-success' : 'text-error'"
+                     th:text="${#numbers.formatDecimal(totalUnrealizedProfit, 0, 'COMMA', 0, 'POINT')}"></div>
+                <div class="stat-desc">현재 보유분</div>
+            </div>
+
             <!-- 실현 손익 -->
             <div class="stat">
                 <div class="stat-figure text-secondary">
@@ -24,14 +32,6 @@
                 <div class="stat-value" th:classappend="${totalRealizedProfit >= 0} ? 'text-success' : 'text-error'"
                      th:text="${#numbers.formatDecimal(totalRealizedProfit, 0, 'COMMA', 0, 'POINT')}"></div>
                 <div class="stat-desc">매도 완료분</div>
-            </div>
-
-            <!-- 평가 손익 -->
-            <div class="stat">
-                <div class="stat-title">평가 손익</div>
-                 <div class="stat-value" th:classappend="${totalUnrealizedProfit >= 0} ? 'text-success' : 'text-error'"
-                     th:text="${#numbers.formatDecimal(totalUnrealizedProfit, 0, 'COMMA', 0, 'POINT')}"></div>
-                <div class="stat-desc">현재 보유분</div>
             </div>
 
             <!-- 누적 배당 -->
