@@ -79,7 +79,7 @@
 		              <td class="text-right text-xs text-base-content/60" th:text="${#numbers.formatDecimal(trade.tax, 0, 'COMMA', 0, 'POINT')}"></td>
 		              <td class="text-right font-bold font-mono" 
 		                  th:text="${trade.realizedProfit != null ? #numbers.formatDecimal(trade.realizedProfit, 0, 'COMMA', 0, 'POINT') : ''}"
-		                  th:classappend="${trade.realizedProfit != null && trade.realizedProfit > 0 ? 'text-error' : (trade.realizedProfit != null && trade.realizedProfit < 0 ? 'text-primary' : '')}">
+		                  th:classappend="${trade.realizedProfit != null ? (trade.realizedProfit >= 0 ? 'text-profit' : 'text-loss') : ''}">
 		              </td>
 		          </tr>
 		          <tr th:if="${#lists.isEmpty(tradeList)}">
@@ -94,7 +94,7 @@
 		              <td class="text-right font-mono" th:text="${#numbers.formatDecimal(totalTax, 0, 'COMMA', 0, 'POINT')}">0</td>
 		              <td class="text-right font-mono" 
 		                  th:text="${#numbers.formatDecimal(totalRealizedProfit, 0, 'COMMA', 0, 'POINT')}"
-		                  th:classappend="${totalRealizedProfit > 0 ? 'text-error' : (totalRealizedProfit < 0 ? 'text-primary' : '')}">0</td>
+		                  th:classappend="${totalRealizedProfit >= 0 ? 'text-profit' : 'text-loss'}">0</td>
 		          </tr>
 		      </tfoot>
 		  </table>

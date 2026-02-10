@@ -60,3 +60,47 @@
 .rounded-btn {
 	border-radius: var(--radius-box, .5rem);
 }
+
+/* Financial Text Colors (Modern Fintech Style with Theme Support) */
+@layer utilities {
+	.text-profit {
+		/* Light Mode: Soft Red / Dark Mode: Brighter Pastel Red */
+		color: #f04452; 
+		@media (prefers-color-scheme: dark) {
+			color: #ff6b6b;
+		}
+		font-weight: 600;
+	}
+	[data-theme="dark"] .text-profit {
+		color: #ff6b6b;
+	}
+
+	.text-loss {
+		/* Light Mode: Primary Blue / Dark Mode: Brighter Blue */
+		color: #3e6cdf;
+		@media (prefers-color-scheme: dark) {
+			color: #4dabf7;
+		}
+		font-weight: 600;
+	}
+	[data-theme="dark"] .text-loss {
+		color: #4dabf7;
+	}
+
+	.text-principal {
+		/* Use semantic color for auto light/dark adjustment */
+		@apply text-base-content/80 font-medium;
+	}
+
+	.text-dividend {
+		/* Light Mode: Mint / Dark Mode: Brighter Mint */
+		color: #26c281;
+		@media (prefers-color-scheme: dark) {
+			color: #69db7c;
+		}
+		font-weight: 600;
+	}
+	[data-theme="dark"] .text-dividend {
+		color: #69db7c;
+	}
+}

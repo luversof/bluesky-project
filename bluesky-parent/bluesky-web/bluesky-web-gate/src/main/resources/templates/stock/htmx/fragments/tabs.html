@@ -46,30 +46,31 @@
             <tbody>
             <th:block th:each="item, iterStat : ${tradeProfitList}">
                 <tr th:if="${viewGroupBy == 'ACCOUNT' and (iterStat.first or item.accountName != tradeProfitList[iterStat.index - 1].accountName)}">
-                    <td colspan="8" class="bg-base-200 font-bold text-center" th:text="${item.accountName}"></td>
+                    <!-- Distinct Account Header: Primary Tint + Left Align -->
+                    <td colspan="8" class="bg-primary/10 font-bold text-left px-4 py-3" th:text="${item.accountName}"></td>
                 </tr>
                 <tr>
                     <td th:text="${item.accountName}" th:classappend="${viewGroupBy == 'STOCK' or viewGroupBy == 'ACCOUNT'} ? 'hidden' : ''"></td>
-                    <td class="font-bold" th:text="${item.stockItemName}"></td>
-                    <td class="text-right hidden lg:table-cell" th:text="${#numbers.formatInteger(item.holdingQuantity, 0, 'COMMA')}"></td>
-                    <td class="text-right hidden xl:table-cell" th:text="${#numbers.formatDecimal(item.averageBuyPrice, 0, 'COMMA', 0, 'POINT')}"></td>
-                    <td class="text-right hidden lg:table-cell" th:text="${#numbers.formatDecimal(item.currentPrice, 0, 'COMMA', 0, 'POINT')}"></td>
-                    <td class="text-right hidden md:table-cell" th:text="${#numbers.formatDecimal(item.evaluationAmount, 0, 'COMMA', 0, 'POINT')}"></td>
-                    <td class="text-right font-bold" th:classappend="${item.evaluationProfit >= 0} ? 'text-success' : 'text-error'"
+                    <td class="font-bold pl-8" th:text="${item.stockItemName}"></td> <!-- Indent Item -->
+                    <td class="text-right hidden lg:table-cell text-principal" th:text="${#numbers.formatInteger(item.holdingQuantity, 0, 'COMMA')}"></td>
+                    <td class="text-right hidden xl:table-cell text-principal" th:text="${#numbers.formatDecimal(item.averageBuyPrice, 0, 'COMMA', 0, 'POINT')}"></td>
+                    <td class="text-right hidden lg:table-cell text-principal" th:text="${#numbers.formatDecimal(item.currentPrice, 0, 'COMMA', 0, 'POINT')}"></td>
+                    <td class="text-right hidden md:table-cell text-principal" th:text="${#numbers.formatDecimal(item.evaluationAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+                    <td class="text-right font-bold" th:classappend="${item.evaluationProfit >= 0} ? 'text-profit' : 'text-loss'"
                         th:text="${#numbers.formatDecimal(item.evaluationProfit, 0, 'COMMA', 0, 'POINT')}"></td>
-                    <td class="text-right" th:classappend="${item.realizedProfit >= 0} ? 'text-success' : 'text-error'"
+                    <td class="text-right" th:classappend="${item.realizedProfit >= 0} ? 'text-profit' : 'text-loss'"
                         th:text="${#numbers.formatDecimal(item.realizedProfit, 0, 'COMMA', 0, 'POINT')}"></td>
                 </tr>
-                <tr class="bg-base-200 font-bold" th:if="${viewGroupBy == 'ACCOUNT' and (iterStat.last or item.accountName != tradeProfitList[iterStat.index + 1].accountName)}">
+                <tr class="bg-base-200/50 font-bold border-t border-base-300" th:if="${viewGroupBy == 'ACCOUNT' and (iterStat.last or item.accountName != tradeProfitList[iterStat.index + 1].accountName)}">
                     <td th:classappend="${viewGroupBy == 'STOCK' or viewGroupBy == 'ACCOUNT'} ? 'hidden' : ''"></td>
-                    <td>소계</td>
+                    <td class="text-right pr-4">소계</td> <!-- Right Align Label adjacent to values -->
                     <td class="hidden lg:table-cell"></td>
                     <td class="hidden xl:table-cell"></td>
                     <td class="hidden lg:table-cell"></td>
-                    <td class="text-right hidden md:table-cell" th:text="${#numbers.formatDecimal(accountTotalMap[item.accountName].evaluationAmount, 0, 'COMMA', 0, 'POINT')}"></td>
-                    <td class="text-right" th:classappend="${accountTotalMap[item.accountName].evaluationProfit >= 0} ? 'text-success' : 'text-error'"
+                    <td class="text-right hidden md:table-cell text-principal opacity-80" th:text="${#numbers.formatDecimal(accountTotalMap[item.accountName].evaluationAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+                    <td class="text-right" th:classappend="${accountTotalMap[item.accountName].evaluationProfit >= 0} ? 'text-profit' : 'text-loss'"
                         th:text="${#numbers.formatDecimal(accountTotalMap[item.accountName].evaluationProfit, 0, 'COMMA', 0, 'POINT')}"></td>
-                    <td class="text-right" th:classappend="${accountTotalMap[item.accountName].realizedProfit >= 0} ? 'text-success' : 'text-error'"
+                    <td class="text-right" th:classappend="${accountTotalMap[item.accountName].realizedProfit >= 0} ? 'text-profit' : 'text-loss'"
                         th:text="${#numbers.formatDecimal(accountTotalMap[item.accountName].realizedProfit, 0, 'COMMA', 0, 'POINT')}"></td>
                 </tr>
             </th:block>
@@ -81,10 +82,10 @@
                 <td class="hidden lg:table-cell"></td>
                 <td class="hidden xl:table-cell"></td>
                 <td class="hidden lg:table-cell"></td>
-                <td class="text-right hidden md:table-cell" th:text="${#numbers.formatDecimal(totalEvaluationAmount, 0, 'COMMA', 0, 'POINT')}"></td>
-                <td class="text-right" th:classappend="${totalEvaluationProfit >= 0} ? 'text-success' : 'text-error'"
+                <td class="text-right hidden md:table-cell text-principal" th:text="${#numbers.formatDecimal(totalEvaluationAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+                <td class="text-right" th:classappend="${totalEvaluationProfit >= 0} ? 'text-profit' : 'text-loss'"
                     th:text="${#numbers.formatDecimal(totalEvaluationProfit, 0, 'COMMA', 0, 'POINT')}"></td>
-                <td class="text-right" th:classappend="${totalRealizedProfit >= 0} ? 'text-success' : 'text-error'"
+                <td class="text-right" th:classappend="${totalRealizedProfit >= 0} ? 'text-profit' : 'text-loss'"
                     th:text="${#numbers.formatDecimal(totalRealizedProfit, 0, 'COMMA', 0, 'POINT')}"></td>
             </tr>
             </tfoot>
@@ -181,7 +182,7 @@
 	                <td class="hidden sm:table-cell" th:text="${item.accountName}"></td>
 	                <td class="font-bold" th:text="${item.stockItemName}"></td>
 	                <td class="text-right" th:text="${#numbers.formatDecimal(item.grossAmount, 0, 'COMMA', 0, 'POINT')}"></td>
-	                <td class="text-right text-primary font-bold" th:text="${#numbers.formatDecimal(item.netAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+	                <td class="text-right text-dividend font-bold" th:text="${#numbers.formatDecimal(item.netAmount, 0, 'COMMA', 0, 'POINT')}"></td>
 	                <td class="text-right hidden lg:table-cell" th:text="${#numbers.formatDecimal(item.tax, 0, 'COMMA', 0, 'POINT')}"></td>
 	                <td class="text-right" th:text="${#numbers.formatDecimal(item.taxableAmount, 0, 'COMMA', 0, 'POINT')}"></td>
 	            </tr>
@@ -194,7 +195,7 @@
 					<tr class="font-bold bg-base-200">
 						<td colspan="3" class="text-center sm:text-right sm:pr-4">합계</td>
 						<td class="text-right font-mono" th:text="${#numbers.formatDecimal(totalGrossAmount, 0, 'COMMA', 0, 'POINT')}">0</td>
-						<td class="text-right font-mono" th:text="${#numbers.formatDecimal(totalNetAmount, 0, 'COMMA', 0, 'POINT')}">0</td>
+						<td class="text-right font-mono text-dividend" th:text="${#numbers.formatDecimal(totalNetAmount, 0, 'COMMA', 0, 'POINT')}">0</td>
 						<td class="text-right font-mono hidden lg:table-cell" th:text="${#numbers.formatDecimal(totalTax, 0, 'COMMA', 0, 'POINT')}">0</td>
 						<td class="text-right font-mono" th:text="${#numbers.formatDecimal(totalTaxableAmount, 0, 'COMMA', 0, 'POINT')}">0</td>
 					</tr>
