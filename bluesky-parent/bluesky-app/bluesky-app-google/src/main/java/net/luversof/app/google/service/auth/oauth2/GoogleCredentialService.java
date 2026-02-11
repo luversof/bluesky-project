@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
-import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,12 +20,12 @@ public class GoogleCredentialService {
 	@Autowired
 	private GoogleIamServiceAccountInfoService googleIamServiceAccountInfoService;
 	
-	public GoogleCredentials getGoogleCredentialsByGoogleIamServiceAccountInfoId(@NonNull UUID googleIamServiceAccountInfoId) {
+	public GoogleCredentials getGoogleCredentialsByGoogleIamServiceAccountInfoId(UUID googleIamServiceAccountInfoId) {
 		var googleIamServiceAccountInfo = googleIamServiceAccountInfoService.findById(googleIamServiceAccountInfoId);
 		return getServiceAccountCredentialsByGoogleIamServiceAccountInfo(googleIamServiceAccountInfo);
 	}
 
-	public GoogleCredentials getGoogleCredentialsByUserId(@NonNull UUID userId) {
+	public GoogleCredentials getGoogleCredentialsByUserId(UUID userId) {
 		var googleIamServiceAccountInfo = googleIamServiceAccountInfoService.findByUserId(userId);
 		return getServiceAccountCredentialsByGoogleIamServiceAccountInfo(googleIamServiceAccountInfo);
 

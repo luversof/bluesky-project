@@ -2,7 +2,6 @@ package net.luversof.web.gate.config;
 
 import java.util.Locale;
 
-import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
@@ -22,7 +21,7 @@ import net.luversof.web.gate.interceptor.PaginationInterceptor;
 public class GateWebMvcConfig implements WebMvcConfigurer {
 
 	@Override
-	public void addCorsMappings(@NonNull CorsRegistry registry) {
+	public void addCorsMappings(CorsRegistry registry) {
 		registry.addMapping("/**")
 				.allowedOriginPatterns("http://*.bluesky.local:[*]", "https://*.bluesky.local:[*]")
 				.allowedHeaders(CorsConfiguration.ALL)
@@ -31,7 +30,7 @@ public class GateWebMvcConfig implements WebMvcConfigurer {
 	}
 
 	@Override
-	public void addInterceptors(@NonNull InterceptorRegistry registry) {
+	public void addInterceptors(InterceptorRegistry registry) {
 		registry.addInterceptor(new LocaleChangeInterceptor());
 		registry.addWebRequestInterceptor(new PaginationInterceptor());
 	}

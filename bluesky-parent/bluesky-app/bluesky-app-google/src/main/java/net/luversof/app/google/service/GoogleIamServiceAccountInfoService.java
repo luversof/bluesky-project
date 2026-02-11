@@ -2,7 +2,6 @@ package net.luversof.app.google.service;
 
 import java.util.UUID;
 
-import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,11 +14,11 @@ public class GoogleIamServiceAccountInfoService {
 	@Autowired
 	private GoogleIamServiceAccountInfoRepository googleIamServiceAccountInfoRepository;
 	
-	public GoogleIamServiceAccountInfo findById(@NonNull UUID id) {
+	public GoogleIamServiceAccountInfo findById(UUID id) {
 		return googleIamServiceAccountInfoRepository.findById(id).orElseThrow(() -> new RuntimeException("AppGoogleError.NOT_FOUND_SERVICE_ACCOUNT_INFO"));
 	}
 	
-	public GoogleIamServiceAccountInfo findByUserId(@NonNull UUID userId) {
+	public GoogleIamServiceAccountInfo findByUserId(UUID userId) {
 		return googleIamServiceAccountInfoRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException("AppGoogleError.NOT_FOUND_SERVICE_ACCOUNT_INFO"));
 	}
 	

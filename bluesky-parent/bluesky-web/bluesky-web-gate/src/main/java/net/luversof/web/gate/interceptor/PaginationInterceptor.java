@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.context.request.WebRequest;
@@ -17,11 +15,11 @@ import org.springframework.web.context.request.WebRequestInterceptor;
 public class PaginationInterceptor implements WebRequestInterceptor {
 
 	@Override
-	public void preHandle(@Nullable WebRequest request) throws Exception {
+	public void preHandle(WebRequest request) throws Exception {
 	}
 
 	@Override
-	public void postHandle(@NonNull WebRequest request, @Nullable ModelMap model) throws Exception {
+	public void postHandle(WebRequest request, ModelMap model) throws Exception {
 		if (model == null) {
 			return;
 		}
@@ -38,7 +36,7 @@ public class PaginationInterceptor implements WebRequestInterceptor {
 	}
 
 	@Override
-	public void afterCompletion(@Nullable WebRequest request, @Nullable Exception ex) throws Exception {
+	public void afterCompletion(WebRequest request, Exception ex) throws Exception {
 	}
 
 	class Pagination {

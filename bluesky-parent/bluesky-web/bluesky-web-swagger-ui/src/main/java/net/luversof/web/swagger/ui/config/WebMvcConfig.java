@@ -1,6 +1,5 @@
 package net.luversof.web.swagger.ui.config;
 
-import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -9,7 +8,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebMvcConfig implements WebMvcConfigurer {
 	
 	@Override
-	public void addViewControllers(@NonNull ViewControllerRegistry registry) {
+	public void addViewControllers(ViewControllerRegistry registry) {
 		registry.addViewController("/webjars/swagger-ui/swagger-initializer.js").setViewName("/swagger-ui/swagger-initializer.js");
 		registry.addRedirectViewController("/", "/webjars/swagger-ui/index.html");
 	}

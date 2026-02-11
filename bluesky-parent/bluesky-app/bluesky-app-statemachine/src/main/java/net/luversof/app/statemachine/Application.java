@@ -1,6 +1,5 @@
 package net.luversof.app.statemachine;
 
-import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -23,7 +22,7 @@ public class Application implements CommandLineRunner {
 	private StateMachine<States, Events> stateMachine;
 
 	@Override
-	public void run(@Nullable String... args) throws Exception {
+	public void run(String... args) throws Exception {
 		
 //		Scanner scanner = new Scanner(System.in);
 //		while (true) {

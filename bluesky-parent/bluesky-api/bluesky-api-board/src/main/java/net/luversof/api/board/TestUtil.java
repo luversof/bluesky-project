@@ -1,7 +1,6 @@
 package net.luversof.api.board;
 
 
-import org.jspecify.annotations.Nullable;
 
 import io.github.luversof.boot.devcheck.annotation.DevCheckDescription;
 import io.github.luversof.boot.devcheck.annotation.DevCheckUtil;
@@ -28,7 +27,7 @@ public class TestUtil {
 		return null;
 	}
 	
-	public static Board testMethod4(@Nullable String a) {
+	public static Board testMethod4(String a) {
 		return null;
 	}
 }

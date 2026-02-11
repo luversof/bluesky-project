@@ -3,7 +3,6 @@ package net.luversof.app.google.service;
 import java.util.List;
 import java.util.UUID;
 
-import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,13 +21,13 @@ public class GoogleSpreadSheetInfoService {
 		return googleSpreadSheetInfoRepository.findByGoogleIamServiceAccountInfoId(googleIamServiceAccountInfoId);
 	}
 	
-	public GoogleSpreadSheetInfo findByGoogleIamServiceAccountInfoIdAndType(@NonNull UUID googleIamServiceAccountInfoId, @NonNull GoogleSpreadSheetInfoType type) {
+	public GoogleSpreadSheetInfo findByGoogleIamServiceAccountInfoIdAndType(UUID googleIamServiceAccountInfoId, GoogleSpreadSheetInfoType type) {
 		return googleSpreadSheetInfoRepository
 				.findByGoogleIamServiceAccountInfoIdAndType(googleIamServiceAccountInfoId, type)
 				.orElseThrow(() -> new BlueskyException("AppGoogleError.NOT_FOUND_SPREADSHEET_INFO"));
 	}
 	
-	public GoogleSpreadSheetInfo findById(@NonNull UUID id) {
+	public GoogleSpreadSheetInfo findById(UUID id) {
 		return googleSpreadSheetInfoRepository
 				.findById(id)
 				.orElseThrow(() -> new BlueskyException("AppGoogleError.NOT_FOUND_SPREADSHEET_INFO"));

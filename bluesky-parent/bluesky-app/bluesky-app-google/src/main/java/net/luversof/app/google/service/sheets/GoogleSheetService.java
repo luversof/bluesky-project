@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -44,7 +43,7 @@ public class GoogleSheetService {
 	private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 	
 	@SuppressWarnings("unchecked")
-	public  <T> List<T> getSpreadSheetValueList(@NonNull UUID userId, GoogleSpreadSheetInfoType type) {
+	public  <T> List<T> getSpreadSheetValueList(UUID userId, GoogleSpreadSheetInfoType type) {
 		var googleIamServiceAccountInfo = googleIamServiceAccountInfoService.findByUserId(userId);
 		var googleSpreadSheetInfo = googleSpreadSheetInfoService.findByGoogleIamServiceAccountInfoIdAndType(googleIamServiceAccountInfo.getId(), type);
 		

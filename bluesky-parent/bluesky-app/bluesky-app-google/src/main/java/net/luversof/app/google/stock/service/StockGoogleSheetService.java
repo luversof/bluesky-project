@@ -3,7 +3,6 @@ package net.luversof.app.google.stock.service;
 import java.util.List;
 import java.util.UUID;
 
-import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,15 +18,15 @@ public class StockGoogleSheetService {
 	@Autowired
 	private GoogleSheetService googleSheetService;
 	
-	public List<GoogleSheetDividend> getGoogleSheetDividendList(@NonNull UUID userId) {
+	public List<GoogleSheetDividend> getGoogleSheetDividendList(UUID userId) {
 		return googleSheetService.getSpreadSheetValueList(userId, GoogleSpreadSheetInfoType.STOCK_DIVIDEND);
 	}
 	
-	public List<GoogleSheetStockItem>getGoogleSheetStockItemList(@NonNull UUID userId) {
+	public List<GoogleSheetStockItem>getGoogleSheetStockItemList(UUID userId) {
 		return googleSheetService.getSpreadSheetValueList(userId, GoogleSpreadSheetInfoType.STOCK_STOCKITEM);
 	} 
 	
-	public List<GoogleSheetTrade> getGoogleSheetTradeList(@NonNull UUID userId) {
+	public List<GoogleSheetTrade> getGoogleSheetTradeList(UUID userId) {
 		return googleSheetService.getSpreadSheetValueList(userId, GoogleSpreadSheetInfoType.STOCK_TRADE);
 	}
 

@@ -1,6 +1,5 @@
 package net.luversof.batch.example.job;
 
-import org.jspecify.annotations.NonNull;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
@@ -40,7 +39,7 @@ public class TestJob2Config {
 	public ItemWriter<String> itemWriter() {
 		return new ItemWriter<String>() {
 			@Override
-			public void write(@NonNull Chunk<? extends String> chunk) throws Exception {
+			public void write(Chunk<? extends String> chunk) throws Exception {
 				chunk.iterator().forEachRemaining(s -> System.out.println("String is : " + s));
 			}
 		};
