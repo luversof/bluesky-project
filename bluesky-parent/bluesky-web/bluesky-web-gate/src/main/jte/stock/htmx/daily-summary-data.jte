@@ -212,36 +212,46 @@
         }
 
         const chartType = '${chartType}';
-        const labels = [
+        const labels = [];
+        @if(chartLabels != null)
             @for(String label : chartLabels)
-                '${label}',
+                labels.push("${label}");
             @endfor
-        ];
+        @endif
         
-        const datasets = [
+        const datasets = [];
+        @if(chartDatasets != null)
             @for(ChartDataset ds : chartDatasets)
-            {
-                label: '${ds.label()}',
-                data: [
-                    @for(BigDecimal val : ds.data())
-                        ${val},
-                    @endfor
-                ],
-                backgroundColor: '${ds.backgroundColor()}',
-                borderColor: '${ds.borderColor()}',
-                borderWidth: ${ds.borderWidth()},
-                @if(ds.borderDash() != null && !ds.borderDash().isEmpty())
-                borderDash: [
-                    @for(Integer dash : ds.borderDash())
-                        ${dash},
-                    @endfor
-                ],
-                @endif
-                fill: false,
-                tension: 0.1
-            },
+                {
+                    const data = [];
+                    @if(ds.data() != null)
+                        @for(BigDecimal val : ds.data())
+                            data.push($unsafe{val != null ? val.toPlainString() : "null"});
+                        @endfor
+                    @endif
+                    
+                    const dataset = {
+                        label: "${ds.label() != null ? ds.label() : ""}",
+                        data: data,
+                        backgroundColor: "${ds.backgroundColor() != null ? ds.backgroundColor() : "#000"}",
+                        borderColor: "${ds.borderColor() != null ? ds.borderColor() : "#000"}",
+                        borderWidth: $unsafe{ds.borderWidth() != null ? String.valueOf(ds.borderWidth()) : "1"},
+                        fill: false,
+                        tension: 0.1
+                    };
+                    
+                    @if(ds.borderDash() != null && !ds.borderDash().isEmpty())
+                        const borderDash = [];
+                        @for(Integer dash : ds.borderDash())
+                            borderDash.push($unsafe{String.valueOf(dash)});
+                        @endfor
+                        dataset.borderDash = borderDash;
+                    @endif
+                    
+                    datasets.push(dataset);
+                }
             @endfor
-        ];
+        @endif
 
         window.dailySummaryChartInstance = new Chart(ctx, {
             type: chartType,

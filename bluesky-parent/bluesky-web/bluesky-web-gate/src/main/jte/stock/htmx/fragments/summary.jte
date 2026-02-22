@@ -22,51 +22,54 @@
 <div class="flex flex-col gap-4">
     <!-- Stats -->
     <div class="stats stats-vertical lg:stats-horizontal shadow w-full bg-base-100">
-        <!-- 총 자산 -->
+        
+        <!-- 1. 현재 자산 상태 (원금 + 평가손익) -->
+        !{BigDecimal totalPrincipal = totalAsset.subtract(totalUnrealizedProfit);}
+        !{double unrealizedRate = totalPrincipal.compareTo(BigDecimal.ZERO) > 0 ? totalUnrealizedProfit.doubleValue() / totalPrincipal.doubleValue() * 100 : 0.0;}
         <div class="stat">
             <div class="stat-figure text-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </div>
-            <div class="stat-title">총 자산</div>
-            <div class="stat-value text-principal">${String.format("%,d", totalAsset.longValue())} 원</div>
-            <div class="stat-desc">평가 금액 합계</div>
+            <div class="stat-title">현재 총 자산</div>
+            <div class="stat-value text-principal">${String.format("%,d", totalAsset.longValue())}</div>
+            <div class="stat-desc font-semibold mt-1">
+                투자 원금: ${String.format("%,d", totalPrincipal.longValue())}
+            </div>
         </div>
 
-        <!-- 평가 손익 -->
         <div class="stat">
-            <div class="stat-title">평가 손익</div>
+            <div class="stat-title">현재 평가 손익</div>
              <div class="stat-value ${totalUnrealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                  ${String.format("%,d", totalUnrealizedProfit.longValue())}
              </div>
-            <div class="stat-desc">현재 보유분</div>
+            <div class="stat-desc font-bold mt-1 ${totalUnrealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                수익률: ${String.format("%+.2f%%", unrealizedRate)}
+            </div>
         </div>
 
-        <!-- 실현 손익 -->
-        <div class="stat">
+        <!-- 2. 확정 수익 (실현손익 + 배당금) -->
+        !{BigDecimal totalRealizedIncome = totalRealizedProfit.add(totalDividend);}
+        <div class="stat border-l border-base-200">
             <div class="stat-figure text-secondary">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
             </div>
-            <div class="stat-title">실현 손익</div>
-            <div class="stat-value ${totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                 ${String.format("%,d", totalRealizedProfit.longValue())}
+            <div class="stat-title">누적 확정 수익</div>
+            <div class="stat-value ${totalRealizedIncome.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                 ${String.format("%,d", totalRealizedIncome.longValue())}
             </div>
-            <div class="stat-desc">매도 완료분</div>
-        </div>
-
-        <!-- 누적 배당 -->
-        <div class="stat">
-            <div class="stat-title">누적 배당금</div>
-             <div class="stat-value text-dividend">
-                 ${String.format("%,d", totalDividend.longValue())}
-             </div>
-            <div class="stat-desc">전체 기간</div>
+            <div class="stat-desc mt-1">
+                실현 손익: ${String.format("%,d", totalRealizedProfit.longValue())}
+            </div>
+            <div class="stat-desc">
+                누적 배당: ${String.format("%,d", totalDividend.longValue())}
+            </div>
         </div>
 
         <!-- 승률 -->
-        <div class="stat hidden 2xl:grid">
+        <div class="stat hidden 2xl:grid border-l border-base-200">
             <div class="stat-title">종목 승률</div>
             <div class="stat-value">${String.format("%.1f", winRate)}%</div>
-            <div class="stat-desc">수익권 종목 비율</div>
+            <div class="stat-desc mt-1">수익권 종목 비율</div>
         </div>
     </div>
 

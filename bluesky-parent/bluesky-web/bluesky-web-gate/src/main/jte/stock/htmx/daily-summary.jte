@@ -50,21 +50,21 @@
                     </div>
 
                     <!-- Year Filter -->
-                    <select name="year" id="filter-year" class="select select-bordered select-sm w-24" style="display:none;" onchange="updateDailySummaryUI()">
+                    <select name="year" id="filter-year" class="select select-bordered select-sm text-center" style="display:none;" onchange="updateDailySummaryUI()">
                         @for(Integer y : years)
                             <option value="${y}" selected="${y == currentYear}">${y}년</option>
                         @endfor
                     </select>
 
                     <!-- Month Filter -->
-                    <select name="month" id="filter-month" class="select select-bordered select-sm w-20" style="display:none;" onchange="updateDailySummaryUI()">
+                    <select name="month" id="filter-month" class="select select-bordered select-sm text-center" style="display:none;" onchange="updateDailySummaryUI()">
                         @for(int m = 1; m <= 12; m++)
                             <option value="${m}" selected="${m == currentMonth}">${m}월</option>
                         @endfor
                     </select>
 
                     <!-- Account Filter -->
-                    <select name="accountId" id="filter-account" class="select select-bordered select-sm w-auto" onchange="updateDailySummaryUI()">
+                    <select name="accountId" id="filter-account" class="select select-bordered select-sm text-center" onchange="updateDailySummaryUI()">
                         <option value="">전체 계좌</option>
                         @if(accounts != null)
                             @for(Account acc : accounts)

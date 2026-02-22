@@ -1516,4 +1516,51 @@ public class StockHtmxController {
 
 		return "stock/htmx/tradeList";
 	}
+
+	public record Activity(String type, String stockItemName, String description, BigDecimal amount, Instant date) {
+	}
+
+	@GetMapping("/recent-activities")
+	public String recentActivities(Model model) {
+		UUID userId = UserUtil.getUserId();
+		if (userId == null) {
+			return ERROR_VIEW;
+		}
+
+		// Fetch Trades
+		TradeSearchRequest tradeReq = new TradeSearchRequest(userId, null, null, null, null);
+		List<TradeResponse> trades = tradeClient.findTrades(tradeReq.toParams());
+
+		// Fetch Dividends
+		DividendRequest divReq = new DividendRequest();
+		divReq.setUserId(userId);
+		List<DividendResponse> dividends = dividendClient.findDividends(divReq.toParams());
+
+		// Fetch Stock Names
+		List<StockItem> stockItemList = stockItemClient.getStockItems();
+		Map<UUID, String> stockItemNames = stockItemList.stream()
+				.collect(Collectors.toMap(StockItem::id, StockItem::name));
+
+		List<Activity> activities = new ArrayList<>();
+
+		for (TradeResponse t : trades) {
+			String stockName = stockItemNames.getOrDefault(t.stockItemId(), UNKNOWN_LABEL);
+			String desc = t.type().name() + " " + t.quantity() + "주";
+			activities.add(new Activity("TRADE", stockName, desc, t.amount(), t.tradeDate()));
+		}
+
+		for (DividendResponse d : dividends) {
+			String stockName = d.stockItemName() != null ? d.stockItemName()
+					: stockItemNames.getOrDefault(d.stockItemId(), UNKNOWN_LABEL);
+			String desc = "배당금 지급";
+			activities.add(new Activity("DIVIDEND", stockName, desc, d.netAmount(),
+					d.payDate() != null ? d.payDate() : d.recordDate()));
+		}
+
+		activities.sort(Comparator.comparing(Activity::date, Comparator.nullsLast(Comparator.reverseOrder())));
+
+		model.addAttribute("activities", activities.stream().limit(5).toList());
+
+		return "stock/htmx/fragments/recentActivities";
+	}
 }
