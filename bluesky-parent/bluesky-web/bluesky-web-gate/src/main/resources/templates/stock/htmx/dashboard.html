@@ -1,10 +1,12 @@
 ﻿<!DOCTYPE html>
-<html lang="ko" data-layout-decorate="~{_layout/stockLayout}">
+<html lang="ko" 
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" 
+      layout:decorate="~{_layout/stockLayout}">
 <head>
     <title>주식 대시보드</title>
 </head>
 <body>
-<div data-layout-fragment="content-stock" th:fragment="dashboardContent">
+<div layout:fragment="content-stock" th:fragment="dashboardContent">
     <!-- Chart.js is required for chart fragments -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Dashboard Layout -->

@@ -86,18 +86,20 @@ public class StockHtmxController {
 		return BigDecimal.ZERO;
 	}
 
-	private record AnalyticsRow(String key, String subKey, BigDecimal value1, BigDecimal value2, BigDecimal value3,
+	public record AnalyticsRow(String key, String subKey, BigDecimal value1, BigDecimal value2, BigDecimal value3,
 			BigDecimal value4, BigDecimal value5, BigDecimal value6, BigDecimal value7) {
 	}
 
-	private record ChartDataset(String label, List<BigDecimal> data, String backgroundColor, String borderColor,
+	public record ChartDataset(String label, List<BigDecimal> data, String backgroundColor, String borderColor,
 			Integer borderWidth, List<Integer> borderDash) {
 	}
 
 	@GetMapping("/dashboard")
-	public String dashboard(@RequestHeader(value = "HX-Request", required = false) boolean hxRequest) {
+	public String dashboard(@RequestHeader(value = "HX-Request", required = false) boolean hxRequest, Model model) {
+		UUID userId = UserUtil.getUserId();
+		model.addAttribute("isAuthenticated", userId != null);
 		if (hxRequest) {
-			return "stock/htmx/dashboard :: dashboardContent";
+			return "stock/htmx/dashboardContent";
 		}
 		return "stock/htmx/dashboard";
 	}
@@ -118,7 +120,7 @@ public class StockHtmxController {
 		model.addAttribute("currentYear", currentYear);
 		model.addAttribute("currentMonth", LocalDate.now().getMonthValue());
 
-		return "stock/htmx/daily-summary :: container";
+		return "stock/htmx/daily-summary";
 	}
 
 	@GetMapping("/daily-summary/data")
@@ -579,7 +581,7 @@ public class StockHtmxController {
 		// Unique Canvas ID to prevent Chart.js reuse issues
 		model.addAttribute("canvasId", "chart-" + UUID.randomUUID());
 
-		return "stock/htmx/daily-summary :: data-content";
+		return "stock/htmx/daily-summary-data";
 	}
 
 	@GetMapping("/analytics/view")
@@ -597,7 +599,7 @@ public class StockHtmxController {
 		if (userId != null) {
 			model.addAttribute("accounts", accountClient.getAccountsByUserId(userId));
 		}
-		return "stock/htmx/analytics :: container";
+		return "stock/htmx/analytics";
 	}
 
 	@GetMapping("/analytics/data")
@@ -629,7 +631,7 @@ public class StockHtmxController {
 		// Unique Canvas ID to prevent Chart.js reuse issues
 		model.addAttribute("canvasId", "chart-" + UUID.randomUUID());
 
-		return "stock/htmx/analytics :: data-content";
+		return "stock/htmx/analytics-data";
 	}
 
 	@GetMapping("/summary")
@@ -773,14 +775,16 @@ public class StockHtmxController {
 			dividendBySeries.merge(name, d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO, BigDecimal::add);
 		});
 
-		List<Map.Entry<String, BigDecimal>> topDividend = dividendBySeries.entrySet().stream()
+		List<TradeProfit> topDividend = dividendBySeries.entrySet().stream()
 				.sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
 				.limit(4)
+				.map(e -> createSummaryTradeProfit(e.getKey(), e.getValue()))
 				.toList();
 
-		List<Map.Entry<String, BigDecimal>> bottomDividend = dividendBySeries.entrySet().stream()
+		List<TradeProfit> bottomDividend = dividendBySeries.entrySet().stream()
 				.sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
 				.limit(4)
+				.map(e -> createSummaryTradeProfit(e.getKey(), e.getValue()))
 				.toList();
 
 		model.addAttribute("totalAsset", totalAsset);
@@ -804,7 +808,7 @@ public class StockHtmxController {
 		model.addAttribute("allocation", allocation);
 		model.addAttribute("accountAllocation", accountAllocation);
 
-		return "stock/htmx/fragments/summary :: summary";
+		return "stock/htmx/fragments/summary";
 	}
 
 	private TradeProfit createSummaryTradeProfit(String stockItemName, BigDecimal realizedProfitNet) {
@@ -884,7 +888,7 @@ public class StockHtmxController {
 
 		model.addAttribute("allocation", allocation);
 
-		return "stock/htmx/fragments/charts :: allocation";
+		return "stock/htmx/fragments/chartsAllocation";
 	}
 
 	@GetMapping("/charts/dividend")
@@ -911,7 +915,7 @@ public class StockHtmxController {
 		Map<String, BigDecimal> sortedMonthly = new java.util.TreeMap<>(monthly);
 
 		model.addAttribute("monthlyDividends", sortedMonthly);
-		return "stock/htmx/fragments/charts :: dividend";
+		return "stock/htmx/fragments/chartsDividend";
 	}
 
 	@GetMapping("/portfolio")
@@ -1136,7 +1140,7 @@ public class StockHtmxController {
 		model.addAttribute("totalEvaluationProfit", totalEvaluationProfit);
 		model.addAttribute("totalRealizedProfit", totalRealizedProfit);
 		model.addAttribute("accountTotalMap", accountTotalMap);
-		return "stock/htmx/fragments/tabs :: portfolio";
+		return "stock/htmx/fragments/tabsPortfolio";
 	}
 
 	// Helper to get enriched data
@@ -1382,7 +1386,7 @@ public class StockHtmxController {
 		model.addAttribute("totalTax", totalTax);
 		model.addAttribute("totalTaxableAmount", totalTaxableAmount);
 
-		return "stock/htmx/fragments/tabs :: dividendHistory";
+		return "stock/htmx/fragments/tabsDividendHistory";
 	}
 
 	@GetMapping("/trade/list")
@@ -1510,6 +1514,6 @@ public class StockHtmxController {
 		model.addAttribute("startDate", startDate);
 		model.addAttribute("endDate", endDate);
 
-		return "stock/htmx/trade :: tradeList";
+		return "stock/htmx/tradeList";
 	}
 }

@@ -124,6 +124,6 @@ public class Pagination {
 		lastNav = new Nav(totalPage, nextPage > 0);
 	}
 
-	record Nav(int page, boolean isActive) {
+	public record Nav(int page, boolean isActive) {
 	}
 }

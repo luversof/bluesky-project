@@ -54,6 +54,19 @@
 		</dependency>
 		<!-- (e) bluesky boot devcheck-->
 
+		<!-- (s) jte -->
+		<dependency>
+			<groupId>gg.jte</groupId>
+			<artifactId>jte-spring-boot-starter-3</artifactId>
+			<version>3.1.12</version>
+		</dependency>
+		<dependency>
+			<groupId>gg.jte</groupId>
+			<artifactId>jte-models</artifactId>
+			<version>3.1.12</version>
+		</dependency>
+		<!-- (e) jte -->
+
 		<!-- (s) thymeleaf -->
 		<dependency>
 			<groupId>nz.net.ultraq.thymeleaf</groupId>
@@ -90,6 +103,25 @@
 
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>gg.jte</groupId>
+				<artifactId>jte-maven-plugin</artifactId>
+				<version>3.1.12</version>
+				<executions>
+					<execution>
+						<id>jte-generate</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<sourceDirectory>${project.basedir}/src/main/jte</sourceDirectory>
+							<contentType>Html</contentType>
+							<binaryStaticContent>true</binaryStaticContent>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>

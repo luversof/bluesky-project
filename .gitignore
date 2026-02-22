@@ -378,3 +378,6 @@ dist
 ### local ###
 logs/
 build.properties
+jte-classes/ 
+ 
+ 
