@@ -59,6 +59,7 @@ net.luversof.api.{module}/
 3. 스페이스로 들여쓰기
 4. properties 파일에 한글 주석
 5. 도메인별 패키지 구조 무시 (client 패키지에 몰아넣기 금지)
+6. **Git 관련 작업(commit, push 등) 자동 실행 금지 (사용자가 직접 수행)**
 
 ### ✅ 해야 할 것
 1. 모든 OAuth2 토큰 저장은 `api-user` 위임
