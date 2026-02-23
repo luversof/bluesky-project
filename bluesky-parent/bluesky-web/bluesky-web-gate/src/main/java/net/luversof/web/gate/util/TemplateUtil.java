@@ -6,9 +6,9 @@ import java.util.Random;
 
 import net.luversof.web.common.util.WebCommonUtil;
 
-public final class ThymeleafUtil {
+public final class TemplateUtil {
 
-	private ThymeleafUtil() {
+	private TemplateUtil() {
 	}
 
 	private static final String[] THEMES = new String[] {

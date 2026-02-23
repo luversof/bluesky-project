@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
 @RequestMapping(produces = MediaType.TEXT_HTML_VALUE)
-public class IndexThymeleafController {
+public class IndexController {
 
 	@GetMapping({ "/", "/index" })
 	public String index() {

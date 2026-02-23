@@ -1,12 +1,6 @@
-<!DOCTYPE html>
-<html lang="ko" data-layout-decorate="~{_layout/defaultLayout}">
-
-<head>
-	<title>Bluesky Dev Guide</title>
-</head>
-
-<body>
-	<div class="prose" data-layout-fragment="content">
+@template._layout.defaultLayout(
+	content = @`
+	<div class="prose">
 		
 		<div class="collapse">
 			<input type="checkbox" /> 
@@ -74,13 +68,12 @@
 		<h1>UI Component 확인</h1>
 
 		<h2>navmenu</h2>
-		<div data-th-replace="~{_components/navmenu (menu = 'main', classAppend = 'menu-horizontal px-1')}" />
+		@template._components.navmenu(menu = "main", classAppend = "menu-horizontal px-1")
 		<br />
 		
 		<h1>h1 확인</h1>
 		<h2>h2 확인</h2>
 		<h3>h3 확인</h3>
 	</div>
-</body>
-
-</html>
+	`
+)

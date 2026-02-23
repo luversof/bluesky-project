@@ -7,7 +7,7 @@
 	</div>
 	<div tabindex="0" class="dropdown-content z-[1] bg-base-200 top-px h-[28.6rem] max-h-[calc(100vh-10rem)] w-56 overflow-y-auto mt-16">
 		<div class="grid gap-3 p-3">
-			@for(String theme : net.luversof.web.gate.util.ThymeleafUtil.getThemeList())
+			@for(String theme : net.luversof.web.gate.util.TemplateUtil.getThemeList())
 			<button class="text-start" data-set-theme="${theme}" data-act-class="[&_svg]:visible">
 				<span data-theme="${theme}" class="rounded-btn block w-full font-sans">
 					<span class="grid">

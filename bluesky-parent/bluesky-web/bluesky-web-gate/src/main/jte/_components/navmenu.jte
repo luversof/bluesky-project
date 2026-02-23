@@ -2,7 +2,7 @@
 @param String menu = "main"
 
 <ul class="menu p-0 ${classAppend}">
-	@for(var menuItem : net.luversof.web.gate.util.ThymeleafUtil.getMenuList(menu))
+	@for(var menuItem : net.luversof.web.gate.util.TemplateUtil.getMenuList(menu))
 		@if(menuItem instanceof net.luversof.web.common.menu.domain.Menu m)
 			@if(m.isDisplay())
 				<li>

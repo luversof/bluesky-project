@@ -12,7 +12,7 @@
 				</svg>
 			</div>
 			<ul class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
-				@for(var menuItem : net.luversof.web.gate.util.ThymeleafUtil.getMenuList("main"))
+				@for(var menuItem : net.luversof.web.gate.util.TemplateUtil.getMenuList("main"))
 					@if(menuItem instanceof net.luversof.web.common.menu.domain.Menu m)
 						@if(m.isDisplay())
 							<li>
@@ -29,7 +29,7 @@
 	</div>
 	<div class="navbar-center hidden lg:flex">
 		<ul class="menu menu-horizontal px-1">
-			@for(var menuItem : net.luversof.web.gate.util.ThymeleafUtil.getMenuList("main"))
+			@for(var menuItem : net.luversof.web.gate.util.TemplateUtil.getMenuList("main"))
 				@if(menuItem instanceof net.luversof.web.common.menu.domain.Menu m)
 					@if(m.isDisplay())
 						<li>

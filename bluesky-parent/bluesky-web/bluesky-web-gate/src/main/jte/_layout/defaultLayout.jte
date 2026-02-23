@@ -6,7 +6,7 @@
 @param String profile = "local"
 
 <!DOCTYPE html>
-<html lang="ko" data-theme="${net.luversof.web.gate.util.ThymeleafUtil.getRandomTheme()}">
+<html lang="ko" data-theme="${net.luversof.web.gate.util.TemplateUtil.getRandomTheme()}">
 <head>
 	<title>${title}</title>
 	<link href="/main.css" rel="stylesheet" />
