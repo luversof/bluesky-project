@@ -89,7 +89,7 @@
 
 	.text-principal {
 		/* Use semantic color for auto light/dark adjustment */
-		@apply text-base-content/80 font-medium;
+		@apply text-base-content/80;
 	}
 
 	.text-dividend {
@@ -102,5 +102,49 @@
 	}
 	[data-theme="dark"] .text-dividend {
 		color: #69db7c;
+	}
+
+	/* Fix for daisyUI select-sm vertical alignment */
+	.select-sm {
+		padding-top: 0 !important;
+		padding-bottom: 0 !important;
+		height: 2rem !important;
+		min-height: 2rem !important;
+		line-height: 1.5 !important;
+		font-size: 0.875rem !important;
+		padding-left: 0.75rem !important;
+		padding-right: 2rem !important;
+	}
+	
+	.select-sm option {
+		line-height: normal;
+	}
+	
+	/* Custom select wrapper for vertical alignment */
+	.select-wrapper {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+	}
+	
+	.select-wrapper select {
+		appearance: none;
+		-webkit-appearance: none;
+		-moz-appearance: none;
+		background-image: none;
+	}
+	
+	.select-wrapper::after {
+		content: "";
+		position: absolute;
+		right: 0.75rem;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 0.75rem;
+		height: 0.75rem;
+		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+		background-repeat: no-repeat;
+		background-position: center;
+		pointer-events: none;
 	}
 }

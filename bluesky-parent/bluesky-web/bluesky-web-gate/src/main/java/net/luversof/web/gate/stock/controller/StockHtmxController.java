@@ -96,8 +96,6 @@ public class StockHtmxController {
 
 	@GetMapping("/dashboard")
 	public String dashboard(@RequestHeader(value = "HX-Request", required = false) boolean hxRequest, Model model) {
-		UUID userId = UserUtil.getUserId();
-		model.addAttribute("isAuthenticated", userId != null);
 		if (hxRequest) {
 			return "stock/htmx/dashboardContent";
 		}

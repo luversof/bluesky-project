@@ -44,8 +44,6 @@ public class StockViewController {
 		// 종목 목록은 사용자와 무관하게 전체 리스트를 제공
 		var stockItems = stockItemClient.getStockItems();
 		model.addAttribute("stockItems", stockItems);
-		model.addAttribute("isAuthenticated", userId != null);
-		model.addAttribute("username", UserUtil.getUsername());
 		return "stock/dashboard";
 	}
 
@@ -55,24 +53,16 @@ public class StockViewController {
 		if (userId == null) {
 			return "redirect:/login";
 		}
-		model.addAttribute("isAuthenticated", true);
-		model.addAttribute("username", UserUtil.getUsername());
 		return "stock/analytics";
 	}
 
 	@GetMapping("/dashboard")
 	public String dashboard(Model model) {
-		UUID userId = UserUtil.getUserId();
-		model.addAttribute("isAuthenticated", userId != null);
-		model.addAttribute("username", UserUtil.getUsername());
 		return "stock/dashboard";
 	}
 
 	@GetMapping("/dividend")
 	public String dividendPage(Model model) {
-		UUID userId = UserUtil.getUserId();
-		model.addAttribute("isAuthenticated", userId != null);
-		model.addAttribute("username", UserUtil.getUsername());
 		return "stock/dividend";
 	}
 
@@ -85,8 +75,6 @@ public class StockViewController {
 		}
 		var stockItems = stockItemClient.getStockItems();
 		model.addAttribute("stockItems", stockItems);
-		model.addAttribute("isAuthenticated", userId != null);
-		model.addAttribute("username", UserUtil.getUsername());
 		return "stock/trade";
 	}
 }

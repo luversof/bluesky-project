@@ -42,36 +42,26 @@ function updateDailySummaryFilters() {
   ).value;
 
   // Visibility of Year/Month selects
-  if (currentTimeScale === "TOTAL") {
-    if (yearSelect) yearSelect.style.display = "none";
-    if (monthSelect) monthSelect.style.display = "none";
-    // Note: Logic in original code said: if TOTAL or YEARLY -> yearSelect.style.display = 'none' ?!
-    // Original: if (currentTimeScale === 'TOTAL' || currentTimeScale === 'YEARLY') { yearSelect.style.display = 'none'; }
-    // This seems WRONG for YEARLY. Usually Yearly needs Year filter?
-    // Ah, maybe "Yearly" means "Group by Year" so it shows list of years? Then you don't select ONE year.
-    // Yes, "Yearly" usually means "Show me data for ALL years" or "Group by Year".
-    // Let's stick to original logic:
-    if (yearSelect) yearSelect.style.display = "none";
-  } else {
-    // MONTHLY (or others if added)
-    // If Monthly, do we need Year Select? Yes, to specify which year to show months for?
-    // Original logic: else { yearSelect.style.display = 'inline-block'; }
-    // So ONLY 'MONTHLY' shows year select.
-    // Wait, original logic:
-    // if (currentTimeScale === 'TOTAL' || currentTimeScale === 'YEARLY') { yearSelect.style.display = 'none'; } else { yearSelect.style.display = 'inline-block'; }
+  const yearWrapper = document.getElementById("filter-year-wrapper");
+  const monthWrapper = document.getElementById("filter-month-wrapper");
+  const accountWrapper =
+    document.getElementById("filter-account").parentElement;
 
-    if (yearSelect) yearSelect.style.display = "inline-block";
+  if (currentTimeScale === "TOTAL" || currentTimeScale === "YEARLY") {
+    if (yearWrapper) yearWrapper.style.display = "none";
+    if (monthWrapper) monthWrapper.style.display = "none";
+  } else {
+    if (yearWrapper) yearWrapper.style.display = "inline-flex";
   }
 
   // Month Select Logic
-  // Original: monthSelect.style.display = 'none'; (Always hidden)
-  if (monthSelect) monthSelect.style.display = "none";
+  if (monthWrapper) monthWrapper.style.display = "none";
 
   // Account Select Logic
   if (currentGroupBy === "ACCOUNT") {
-    if (accountSelect) accountSelect.style.display = "none";
+    if (accountWrapper) accountWrapper.style.display = "none";
   } else {
-    if (accountSelect) accountSelect.style.display = "inline-block";
+    if (accountWrapper) accountWrapper.style.display = "inline-flex";
   }
 
   /* 
