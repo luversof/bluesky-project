@@ -10,18 +10,18 @@
 			<div class="collapse-content"> 
 				<h2 class="m-0">npm 설정</h2>
 				<div>
-					 `src/main/frontend` 위치에서 아래 명령 실행하면 FE 프로젝트 관련 설정이 설치됩니다.
+					 <code>src/main/frontend</code> 위치에서 아래 명령 실행하면 FE 프로젝트 관련 설정이 설치됩니다.
 					<div class="mockup-code">
 						<pre data-prefix="$"><code>npm install</code></pre>
 					</div>
 				</div>
 				<h2 class="m-0">watch 사용</h2>
 				<div>
-					프로젝트 최상위 위치에 제공되는 `npm-watch.bat`를 실행하거나
+					프로젝트 최상위 위치에 제공되는 <code>npm-watch.bat</code>를 실행하거나
 					<div class="mockup-code">
 						<pre data-prefix="$"><code>npm-watch.bat</code></pre>
 					</div>
-					`src/main/frontend` 위치에서 직접 실행하면 개발하는 template 소스의 tailwindcss class 변경이 실시간으로 반영됩니다.
+					<code>src/main/frontend</code> 위치에서 직접 실행하면 개발하는 template 소스의 tailwindcss class 변경이 실시간으로 반영됩니다.
 					<div class="mockup-code">
 						<pre data-prefix="$"><code>npm run watch</code></pre>
 					</div>
