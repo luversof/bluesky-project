@@ -99,6 +99,30 @@
 							<sourceDirectory>${project.basedir}/src/main/jte</sourceDirectory>
 							<contentType>Html</contentType>
 							<binaryStaticContent>true</binaryStaticContent>
+							<targetResourceDirectory>${project.build.directory}/generated-sources/jte</targetResourceDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>add-resource</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>add-resource</goal>
+						</goals>
+						<configuration>
+							<resources>
+								<resource>
+									<directory>${project.build.directory}/generated-sources/jte</directory>
+									<includes>
+										<include>**/*.bin</include>
+									</includes>
+								</resource>
+							</resources>
 						</configuration>
 					</execution>
 				</executions>
