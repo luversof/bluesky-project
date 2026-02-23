@@ -96,7 +96,10 @@ public class StockAdminService {
 			allStockItems.add(googleSheetStockItem);
 		}
 
-		var stockItemList = allStockItems.stream().map(this::toStockItem).collect(Collectors.toList());
+		var stockItemList = allStockItems.stream()
+				.map(this::toStockItem)
+				.filter(item -> item.getName() != null)
+				.collect(Collectors.toList());
 
 		jdbcTemplate.batchUpdate(INSERT_STOCK_ITEM_SQL, stockItemList, stockItemList.size(), (ps, item) -> {
 			item.setId(UuidGeneratorUtil.getUuid());
