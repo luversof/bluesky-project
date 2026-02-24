@@ -8,9 +8,9 @@
         <h2 class="card-title text-base-content/70 text-sm mb-2">종목 비중</h2>
         <div class="flex h-60">
             <div class="w-1/2 h-full flex items-center justify-center relative">
-                <canvas id="allocationChart"></canvas>
+                <canvas id="allocationChart" class="amount-chart"></canvas>
             </div>
-            <div id="allocationLegend" class="w-1/2 h-full overflow-y-auto pl-2 scrollbar-thin"></div>
+            <div id="allocationLegend" class="w-1/2 h-full overflow-y-auto pl-2 scrollbar-thin amount-chart"></div>
         </div>
     </div>
     <script>

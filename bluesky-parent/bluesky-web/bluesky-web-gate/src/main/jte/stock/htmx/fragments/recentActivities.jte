@@ -20,7 +20,7 @@
                                 <div class="text-sm opacity-70">${activity.description()}</div>
                             </div>
                             <div class="text-right">
-                                <div class="font-mono font-bold ${"DIVIDEND".equals(activity.type()) ? "text-dividend" : ""}">
+                                <div class="font-mono font-bold amount-value ${"DIVIDEND".equals(activity.type()) ? "text-dividend" : ""}">
                                     ${String.format("%,d", activity.amount() != null ? activity.amount().longValue() : 0)} 원
                                 </div>
                                 <div class="text-xs opacity-50">

@@ -31,19 +31,19 @@
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </div>
             <div class="stat-title">현재 총 자산</div>
-            <div class="stat-value text-principal font-bold">${String.format("%,d", totalAsset.longValue())}</div>
+            <div class="stat-value text-principal font-bold amount-value">${String.format("%,d", totalAsset.longValue())}</div>
             <div class="stat-desc font-semibold mt-1">
-                투자 원금: ${String.format("%,d", totalPrincipal.longValue())}
+                투자 원금: <span class="amount-value">${String.format("%,d", totalPrincipal.longValue())}</span>
             </div>
         </div>
 
         <div class="stat">
             <div class="stat-title">현재 평가 손익</div>
-             <div class="stat-value font-bold ${totalUnrealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+             <div class="stat-value font-bold amount-value ${totalUnrealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                  ${String.format("%,d", totalUnrealizedProfit.longValue())}
              </div>
             <div class="stat-desc font-bold mt-1 ${totalUnrealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                수익률: ${String.format("%+.2f%%", unrealizedRate)}
+                수익률: <span class="amount-value">${String.format("%+.2f%%", unrealizedRate)}</span>
             </div>
         </div>
 
@@ -54,14 +54,14 @@
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
             </div>
             <div class="stat-title">누적 확정 수익</div>
-            <div class="stat-value font-bold ${totalRealizedIncome.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+            <div class="stat-value font-bold amount-value ${totalRealizedIncome.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                  ${String.format("%,d", totalRealizedIncome.longValue())}
             </div>
             <div class="stat-desc mt-1">
-                실현 손익: ${String.format("%,d", totalRealizedProfit.longValue())}
+                실현 손익: <span class="amount-value">${String.format("%,d", totalRealizedProfit.longValue())}</span>
             </div>
             <div class="stat-desc">
-                누적 배당: ${String.format("%,d", totalDividend.longValue())}
+                누적 배당: <span class="amount-value">${String.format("%,d", totalDividend.longValue())}</span>
             </div>
         </div>
 
@@ -73,18 +73,18 @@
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
             </div>
             <div class="stat-title">총 합산 수익</div>
-            <div class="stat-value font-bold ${totalCombinedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+            <div class="stat-value font-bold amount-value ${totalCombinedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                  ${String.format("%,d", totalCombinedProfit.longValue())}
             </div>
             <div class="stat-desc font-bold mt-1 ${totalCombinedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                수익률: ${String.format("%+.2f%%", combinedRate)}
+                수익률: <span class="amount-value">${String.format("%+.2f%%", combinedRate)}</span>
             </div>
         </div>
 
         <!-- 승률 -->
         <div class="stat hidden 2xl:grid border-l border-base-200">
             <div class="stat-title">종목 승률</div>
-            <div class="stat-value font-bold">${String.format("%.1f", winRate)}%</div>
+            <div class="stat-value font-bold amount-value">${String.format("%.1f", winRate)}%</div>
             <div class="stat-desc mt-1">수익권 종목 비율</div>
         </div>
     </div>
@@ -113,7 +113,7 @@
                                 <span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center">${count++}</span>
                                 <span class="truncate max-w-[80px]">${item.stockItemName()}</span>
                             </div>
-                            <span class="font-mono font-bold">
+                            <span class="font-mono font-bold amount-value">
                                 ${String.format("%,d", item.totalBuyCost() != null ? item.totalBuyCost().longValue() : 0)}
                             </span>
                         </div>
@@ -135,7 +135,7 @@
                                 <span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center">${count++}</span>
                                 <span class="truncate max-w-[80px]">${item.stockItemName()}</span>
                             </div>
-                            <span class="font-mono font-bold">
+                            <span class="font-mono font-bold amount-value">
                                 ${String.format("%,d", item.totalBuyCost() != null ? item.totalBuyCost().longValue() : 0)}
                             </span>
                         </div>
@@ -161,7 +161,7 @@
                                 <span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center">${count++}</span>
                                 <span class="truncate max-w-[80px]">${item.stockItemName()}</span>
                             </div>
-                            <span class="font-mono font-bold text-profit">
+                            <span class="font-mono font-bold text-profit amount-value">
                                 ${String.format("%+,d", item.realizedProfitNet() != null ? item.realizedProfitNet().longValue() : 0)}
                             </span>
                         </div>
@@ -183,7 +183,7 @@
                                 <span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center">${count++}</span>
                                 <span class="truncate max-w-[80px]">${item.stockItemName()}</span>
                             </div>
-                            <span class="font-mono font-bold text-loss">
+                            <span class="font-mono font-bold text-loss amount-value">
                                 ${String.format("%+,d", item.realizedProfitNet() != null ? item.realizedProfitNet().longValue() : 0)}
                             </span>
                         </div>
@@ -209,7 +209,7 @@
                                 <span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center">${count++}</span>
                                 <span class="truncate max-w-[80px]">${item.stockItemName()}</span>
                             </div>
-                            <span class="font-mono font-bold text-profit">
+                            <span class="font-mono font-bold text-profit amount-value">
                                 ${String.format("%+,d", item.evaluationProfitNet() != null ? item.evaluationProfitNet().longValue() : 0)}
                             </span>
                         </div>
@@ -231,7 +231,7 @@
                                 <span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center">${count++}</span>
                                 <span class="truncate max-w-[80px]">${item.stockItemName()}</span>
                             </div>
-                            <span class="font-mono font-bold text-loss">
+                            <span class="font-mono font-bold text-loss amount-value">
                                 ${String.format("%+,d", item.evaluationProfitNet() != null ? item.evaluationProfitNet().longValue() : 0)}
                             </span>
                         </div>
@@ -257,7 +257,7 @@
                                 <span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center">${count++}</span>
                                 <span class="truncate max-w-[80px]">${item.stockItemName()}</span>
                             </div>
-                            <span class="font-mono font-bold text-dividend">
+                            <span class="font-mono font-bold text-dividend amount-value">
                                 ${String.format("%,d", item.realizedProfitNet() != null ? item.realizedProfitNet().longValue() : 0)}
                             </span>
                         </div>
@@ -279,7 +279,7 @@
                                 <span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center">${count++}</span>
                                 <span class="truncate max-w-[80px]">${item.stockItemName()}</span>
                             </div>
-                            <span class="font-mono font-bold text-dividend">
+                            <span class="font-mono font-bold text-dividend amount-value">
                                 ${String.format("%,d", item.realizedProfitNet() != null ? item.realizedProfitNet().longValue() : 0)}
                             </span>
                         </div>

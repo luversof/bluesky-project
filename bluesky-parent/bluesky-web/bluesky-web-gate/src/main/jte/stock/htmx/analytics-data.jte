@@ -22,7 +22,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
             </div>
             <div class="stat-title">${totalLabel != null ? totalLabel : "총 합계"}</div>
-            <div class="stat-value">${totalValue != null ? String.format("%,d", totalValue.longValue()) : "0"}</div>
+            <div class="stat-value amount-value">${totalValue != null ? String.format("%,d", totalValue.longValue()) : "0"}</div>
             <div class="stat-desc">선택 기간/기준</div>
         </div>
         
@@ -41,7 +41,7 @@
         <div class="card-body p-4 sm:p-6" style="min-height: 400px;">
             <h2 class="card-title text-base opacity-70 mb-4">${"bar".equals(chartType) ? "기간별 추이 (Bar)" : "누적 성장 (Line)"}</h2>
             <div class="relative w-full h-[350px] sm:h-[450px]">
-                <canvas id="${canvasId}"></canvas>
+                <canvas id="${canvasId}" class="amount-chart"></canvas>
             </div>
         </div>
     </div>
@@ -74,15 +74,15 @@
                                 <td class="font-mono text-sm">${row.key()}</td>
                                 <td class="text-left font-bold truncate max-w-[150px]" title="${row.subKey()}">${row.subKey()}</td>
                                 <!-- 금액 (매도/평가) - Value5 -->
-                                <td class="text-right font-mono text-sm">
+                                <td class="text-right font-mono text-sm amount-value">
                                     ${String.format("%,d", row.value5() != null ? row.value5().longValue() : 0)}
                                 </td>
                                 <!-- 수익금 (실현) - Value1 -->
-                                <td class="text-right font-mono font-bold text-sm ${row.value1() != null && row.value1().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                                <td class="text-right font-mono font-bold text-sm amount-value ${row.value1() != null && row.value1().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                                     ${String.format("%+,d", row.value1() != null ? row.value1().longValue() : 0)}
                                 </td>
                                 <!-- 수익(평가) - Value2 -->
-                                <td class="text-right font-mono text-sm hidden sm:table-cell ${row.value2() != null && row.value2().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                                <td class="text-right font-mono text-sm hidden sm:table-cell amount-value ${row.value2() != null && row.value2().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                                     ${String.format("%+,d", row.value2() != null ? row.value2().longValue() : 0)}
                                 </td>
                             </tr>

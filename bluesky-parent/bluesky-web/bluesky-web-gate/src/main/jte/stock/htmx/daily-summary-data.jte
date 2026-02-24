@@ -27,7 +27,7 @@
         <div class="card-body">
             <h2 class="card-title text-sm opacity-70">${chartTitle}</h2>
             <div class="h-[300px] w-full relative">
-                 <canvas id="${canvasId}"></canvas>
+                 <canvas id="${canvasId}" class="amount-chart"></canvas>
             </div>
             <div class="text-xs text-right opacity-50 mt-2">* 상위 20개 항목만 표시됩니다.</div>
         </div>
@@ -82,41 +82,41 @@
                                 @endif
                                 
                                 <!-- Value 1 -->
-                                <td class="text-right font-mono whitespace-nowrap ${row.value1() != null && row.value1().compareTo(BigDecimal.ZERO) >= 0 ? "text-principal" : "text-loss"}">
+                                <td class="text-right amount-value font-mono whitespace-nowrap ${row.value1() != null && row.value1().compareTo(BigDecimal.ZERO) >= 0 ? "text-principal" : "text-loss"}">
                                     ${String.format("%,d", row.value1() != null ? row.value1().longValue() : 0)}
                                 </td>
 
                                 <!-- Value 2 (Optional) -->
                                 @if(value2Label != null && !value2Label.isEmpty())
-                                    <td class="text-right font-mono whitespace-nowrap ${row.value2() != null && row.value2().compareTo(BigDecimal.ZERO) >= 0 ? "text-principal" : "text-loss"}">
+                                    <td class="text-right amount-value font-mono whitespace-nowrap ${row.value2() != null && row.value2().compareTo(BigDecimal.ZERO) >= 0 ? "text-principal" : "text-loss"}">
                                         ${String.format("%,d", row.value2() != null ? row.value2().longValue() : 0)}
                                     </td>
                                 @endif
 
                                 <!-- Value 3 (Optional) -->
                                 @if(value3Label != null && !value3Label.isEmpty())
-                                    <td class="text-right font-mono whitespace-nowrap ${row.value3() != null && row.value3().compareTo(BigDecimal.ZERO) >= 0 ? "text-principal" : "text-loss"}">
+                                    <td class="text-right amount-value font-mono whitespace-nowrap ${row.value3() != null && row.value3().compareTo(BigDecimal.ZERO) >= 0 ? "text-principal" : "text-loss"}">
                                         ${String.format("%,d", row.value3() != null ? row.value3().longValue() : 0)}
                                     </td>
                                 @endif
 
                                 <!-- Value 4 -->
                                 @if(value4Label != null && !value4Label.isEmpty())
-                                    <td class="text-right font-mono whitespace-nowrap ${row.value4() != null && row.value4().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                                    <td class="text-right amount-value font-mono whitespace-nowrap ${row.value4() != null && row.value4().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                                         ${String.format("%,d", row.value4() != null ? row.value4().longValue() : 0)}
                                     </td>
                                 @endif
 
                                 <!-- Value 5 -->
                                 @if(value5Label != null && !value5Label.isEmpty())
-                                    <td class="text-right font-mono whitespace-nowrap">
+                                    <td class="text-right amount-value font-mono whitespace-nowrap">
                                         ${String.format("%,d", row.value5() != null ? row.value5().longValue() : 0)}
                                     </td>
                                 @endif
 
                                 <!-- Value 6 -->
                                 @if(value6Label != null && !value6Label.isEmpty())
-                                    <td class="text-right font-mono whitespace-nowrap ${row.value6() != null && row.value6().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                                    <td class="text-right amount-value font-mono whitespace-nowrap ${row.value6() != null && row.value6().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                                         ${String.format("%,d", row.value6() != null ? row.value6().longValue() : 0)}
                                     </td>
                                 @endif
@@ -124,7 +124,7 @@
                                 <!-- Total (Conditional) -->
                                 @if(totalLabel != null && !totalLabel.isEmpty())
                                     !{BigDecimal total = row.value7() != null ? row.value7() : (row.value4() != null ? row.value4() : BigDecimal.ZERO).add(row.value6() != null ? row.value6() : BigDecimal.ZERO);}
-                                    <td class="text-right font-bold text-base-content whitespace-nowrap ${total.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                                    <td class="text-right amount-value font-bold text-base-content whitespace-nowrap ${total.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                                         ${String.format("%,d", total.longValue())}
                                     </td>
                                 @endif
@@ -140,14 +140,14 @@
                             
                             <!-- Total Value 1 -->
                             !{BigDecimal sum1 = tableData.stream().map(r -> r.value1() != null ? r.value1() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);}
-                            <td class="text-right text-principal">
+                            <td class="text-right amount-value text-principal">
                                 ${String.format("%,d", sum1.longValue())}
                             </td>
 
                             <!-- Total Value 2 -->
                             @if(value2Label != null && !value2Label.isEmpty())
                                 !{BigDecimal sum2 = tableData.stream().map(r -> r.value2() != null ? r.value2() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);}
-                                <td class="text-right text-principal">
+                                <td class="text-right amount-value text-principal">
                                     ${String.format("%,d", sum2.longValue())}
                                 </td>
                             @endif
@@ -155,7 +155,7 @@
                             <!-- Total Value 3 -->
                             @if(value3Label != null && !value3Label.isEmpty())
                                 !{BigDecimal sum3 = tableData.stream().map(r -> r.value3() != null ? r.value3() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);}
-                                <td class="text-right text-principal">
+                                <td class="text-right amount-value text-principal">
                                     ${String.format("%,d", sum3.longValue())}
                                 </td>
                             @endif
@@ -163,7 +163,7 @@
                             <!-- Total Value 4 -->
                             @if(value4Label != null && !value4Label.isEmpty())
                                 !{BigDecimal sum4 = tableData.stream().map(r -> r.value4() != null ? r.value4() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);}
-                                <td class="text-right ${sum4.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                                <td class="text-right amount-value ${sum4.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                                     ${String.format("%,d", sum4.longValue())}
                                 </td>
                             @endif
@@ -171,7 +171,7 @@
                             <!-- Total Value 5 -->
                             @if(value5Label != null && !value5Label.isEmpty())
                                 !{BigDecimal sum5 = tableData.stream().map(r -> r.value5() != null ? r.value5() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);}
-                                <td class="text-right">
+                                <td class="text-right amount-value">
                                     ${String.format("%,d", sum5.longValue())}
                                 </td>
                             @endif
@@ -179,7 +179,7 @@
                             <!-- Total Value 6 -->
                             @if(value6Label != null && !value6Label.isEmpty())
                                 !{BigDecimal sum6 = tableData.stream().map(r -> r.value6() != null ? r.value6() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);}
-                                <td class="text-right ${sum6.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                                <td class="text-right amount-value ${sum6.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                                     ${String.format("%,d", sum6.longValue())}
                                 </td>
                             @endif
@@ -187,7 +187,7 @@
                             <!-- Total -->
                             @if(totalLabel != null && !totalLabel.isEmpty())
                                 !{BigDecimal sumTotal = tableData.stream().map(r -> r.value7() != null ? r.value7() : (r.value4() != null ? r.value4() : BigDecimal.ZERO).add(r.value6() != null ? r.value6() : BigDecimal.ZERO)).reduce(BigDecimal.ZERO, BigDecimal::add);}
-                                <td class="text-right ${sumTotal.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                                <td class="text-right amount-value ${sumTotal.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                                     ${String.format("%,d", sumTotal.longValue())}
                                 </td>
                             @endif

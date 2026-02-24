@@ -7,7 +7,7 @@
     <div class="card-body">
         <h2 class="card-title text-base-content/70">월별 배당금</h2>
         <div class="h-64 flex justify-center items-center">
-            <canvas id="dividendChart"></canvas>
+            <canvas id="dividendChart" class="amount-chart"></canvas>
         </div>
     </div>
     <script>

@@ -66,14 +66,14 @@
                 <tr>
                     <td class="${"STOCK".equals(viewGroupBy) || "ACCOUNT".equals(viewGroupBy) ? "hidden" : ""}">${item.accountName()}</td>
                     <td class="font-bold pl-8">${item.stockItemName()}</td> <!-- Indent Item -->
-                    <td class="text-right hidden lg:table-cell text-principal">${String.format("%,d", item.holdingQuantity())}</td>
-                    <td class="text-right hidden xl:table-cell text-principal">${String.format("%,d", item.averageBuyPrice() != null ? item.averageBuyPrice().longValue() : 0)}</td>
-                    <td class="text-right hidden lg:table-cell text-principal">${String.format("%,d", item.currentPrice() != null ? item.currentPrice().longValue() : 0)}</td>
-                    <td class="text-right hidden md:table-cell text-principal">${String.format("%,d", item.evaluationAmount() != null ? item.evaluationAmount().longValue() : 0)}</td>
-                    <td class="text-right font-bold ${item.evaluationProfit() != null && item.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                    <td class="text-right hidden lg:table-cell text-principal amount-value">${String.format("%,d", item.holdingQuantity())}</td>
+                    <td class="text-right hidden xl:table-cell text-principal amount-value">${String.format("%,d", item.averageBuyPrice() != null ? item.averageBuyPrice().longValue() : 0)}</td>
+                    <td class="text-right hidden lg:table-cell text-principal amount-value">${String.format("%,d", item.currentPrice() != null ? item.currentPrice().longValue() : 0)}</td>
+                    <td class="text-right hidden md:table-cell text-principal amount-value">${String.format("%,d", item.evaluationAmount() != null ? item.evaluationAmount().longValue() : 0)}</td>
+                    <td class="text-right font-bold amount-value ${item.evaluationProfit() != null && item.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                         ${String.format("%,d", item.evaluationProfit() != null ? item.evaluationProfit().longValue() : 0)}
                     </td>
-                    <td class="text-right ${item.realizedProfit() != null && item.realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                    <td class="text-right amount-value ${item.realizedProfit() != null && item.realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                         ${String.format("%,d", item.realizedProfit() != null ? item.realizedProfit().longValue() : 0)}
                     </td>
                 </tr>
@@ -84,13 +84,13 @@
                         <td class="hidden lg:table-cell"></td>
                         <td class="hidden xl:table-cell"></td>
                         <td class="hidden lg:table-cell"></td>
-                        <td class="text-right hidden md:table-cell text-principal opacity-80">
+                        <td class="text-right hidden md:table-cell text-principal opacity-80 amount-value">
                             ${String.format("%,d", accountTotalMap.get(item.accountName()).evaluationAmount() != null ? accountTotalMap.get(item.accountName()).evaluationAmount().longValue() : 0)}
                         </td>
-                        <td class="text-right ${accountTotalMap.get(item.accountName()).evaluationProfit() != null && accountTotalMap.get(item.accountName()).evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                        <td class="text-right amount-value ${accountTotalMap.get(item.accountName()).evaluationProfit() != null && accountTotalMap.get(item.accountName()).evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                             ${String.format("%,d", accountTotalMap.get(item.accountName()).evaluationProfit() != null ? accountTotalMap.get(item.accountName()).evaluationProfit().longValue() : 0)}
                         </td>
-                        <td class="text-right ${accountTotalMap.get(item.accountName()).realizedProfit() != null && accountTotalMap.get(item.accountName()).realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                        <td class="text-right amount-value ${accountTotalMap.get(item.accountName()).realizedProfit() != null && accountTotalMap.get(item.accountName()).realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                             ${String.format("%,d", accountTotalMap.get(item.accountName()).realizedProfit() != null ? accountTotalMap.get(item.accountName()).realizedProfit().longValue() : 0)}
                         </td>
                     </tr>
@@ -106,11 +106,11 @@
             <td class="hidden lg:table-cell"></td>
             <td class="hidden xl:table-cell"></td>
             <td class="hidden lg:table-cell"></td>
-            <td class="text-right hidden md:table-cell text-principal">${String.format("%,d", totalEvaluationAmount != null ? totalEvaluationAmount.longValue() : 0)}</td>
-            <td class="text-right ${totalEvaluationProfit != null && totalEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+            <td class="text-right hidden md:table-cell text-principal amount-value">${String.format("%,d", totalEvaluationAmount != null ? totalEvaluationAmount.longValue() : 0)}</td>
+            <td class="text-right amount-value ${totalEvaluationProfit != null && totalEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                 ${String.format("%,d", totalEvaluationProfit != null ? totalEvaluationProfit.longValue() : 0)}
             </td>
-            <td class="text-right ${totalRealizedProfit != null && totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+            <td class="text-right amount-value ${totalRealizedProfit != null && totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                 ${String.format("%,d", totalRealizedProfit != null ? totalRealizedProfit.longValue() : 0)}
             </td>
         </tr>

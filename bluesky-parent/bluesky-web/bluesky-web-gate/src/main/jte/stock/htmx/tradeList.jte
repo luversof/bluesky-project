@@ -102,12 +102,12 @@
 		                  </span>
 		              </td>
 		              <td class="whitespace-nowrap">${accountNames.get(trade.accountId())}</td>
-		              <td class="text-right font-mono">${trade.price() != null ? decimalFormat.format(trade.price()) : "0"}</td>
-		              <td class="text-right font-mono">${decimalFormat.format(trade.quantity())}</td>
-		              <td class="text-right font-mono">${trade.amount() != null ? decimalFormat.format(trade.amount()) : "0"}</td>
-		              <td class="text-right text-xs text-base-content/60">${trade.fee() != null ? decimalFormat.format(trade.fee()) : "0"}</td>
-		              <td class="text-right text-xs text-base-content/60">${trade.tax() != null ? decimalFormat.format(trade.tax()) : "0"}</td>
-		              <td class="text-right font-bold font-mono ${trade.realizedProfit() != null ? (trade.realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss") : ""}">
+		              <td class="text-right font-mono amount-value">${trade.price() != null ? decimalFormat.format(trade.price()) : "0"}</td>
+		              <td class="text-right font-mono amount-value">${decimalFormat.format(trade.quantity())}</td>
+		              <td class="text-right font-mono amount-value">${trade.amount() != null ? decimalFormat.format(trade.amount()) : "0"}</td>
+		              <td class="text-right text-xs text-base-content/60 amount-value">${trade.fee() != null ? decimalFormat.format(trade.fee()) : "0"}</td>
+		              <td class="text-right text-xs text-base-content/60 amount-value">${trade.tax() != null ? decimalFormat.format(trade.tax()) : "0"}</td>
+		              <td class="text-right font-bold font-mono amount-value ${trade.realizedProfit() != null ? (trade.realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss") : ""}">
 		                  ${trade.realizedProfit() != null ? decimalFormat.format(trade.realizedProfit()) : ""}
 		              </td>
 		          </tr>
@@ -122,9 +122,9 @@
 		      <tfoot>
 		          <tr class="font-bold bg-base-200">
 		              <td colspan="7" class="text-center">합계</td>
-		              <td class="text-right font-mono">${totalFee != null ? decimalFormat.format(totalFee) : "0"}</td>
-		              <td class="text-right font-mono">${totalTax != null ? decimalFormat.format(totalTax) : "0"}</td>
-		              <td class="text-right font-mono ${totalRealizedProfit != null && totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+		              <td class="text-right font-mono amount-value">${totalFee != null ? decimalFormat.format(totalFee) : "0"}</td>
+		              <td class="text-right font-mono amount-value">${totalTax != null ? decimalFormat.format(totalTax) : "0"}</td>
+		              <td class="text-right font-mono amount-value ${totalRealizedProfit != null && totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
 		                  ${totalRealizedProfit != null ? decimalFormat.format(totalRealizedProfit) : "0"}
 		              </td>
 		          </tr>

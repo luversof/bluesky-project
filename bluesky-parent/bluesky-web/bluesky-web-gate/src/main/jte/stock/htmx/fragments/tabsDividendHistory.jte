@@ -120,10 +120,10 @@
 	                <td>${item.payDate() != null ? dateFormatter.format(item.payDate().atZone(java.time.ZoneId.systemDefault())) : ""}</td>
 	                <td class="hidden sm:table-cell">${item.accountName()}</td>
 	                <td class="font-bold">${item.stockItemName()}</td>
-	                <td class="text-right">${item.grossAmount() != null ? decimalFormat.format(item.grossAmount()) : "0"}</td>
-	                <td class="text-right text-dividend font-bold">${item.netAmount() != null ? decimalFormat.format(item.netAmount()) : "0"}</td>
-	                <td class="text-right hidden lg:table-cell">${item.tax() != null ? decimalFormat.format(item.tax()) : "0"}</td>
-	                <td class="text-right">${item.taxableAmount() != null ? decimalFormat.format(item.taxableAmount()) : "0"}</td>
+	                <td class="text-right amount-value">${item.grossAmount() != null ? decimalFormat.format(item.grossAmount()) : "0"}</td>
+	                <td class="text-right text-dividend font-bold amount-value">${item.netAmount() != null ? decimalFormat.format(item.netAmount()) : "0"}</td>
+	                <td class="text-right hidden lg:table-cell amount-value">${item.tax() != null ? decimalFormat.format(item.tax()) : "0"}</td>
+	                <td class="text-right amount-value">${item.taxableAmount() != null ? decimalFormat.format(item.taxableAmount()) : "0"}</td>
 	            </tr>
 	            @endfor
 	            @if(dividendList == null || dividendList.isEmpty())
@@ -136,10 +136,10 @@
 				<tfoot>
 					<tr class="font-bold bg-base-200">
 						<td colspan="3" class="text-center sm:text-right sm:pr-4">합계</td>
-						<td class="text-right font-mono">${totalGrossAmount != null ? decimalFormat.format(totalGrossAmount) : "0"}</td>
-						<td class="text-right font-mono text-dividend">${totalNetAmount != null ? decimalFormat.format(totalNetAmount) : "0"}</td>
-						<td class="text-right font-mono hidden lg:table-cell">${totalTax != null ? decimalFormat.format(totalTax) : "0"}</td>
-						<td class="text-right font-mono">${totalTaxableAmount != null ? decimalFormat.format(totalTaxableAmount) : "0"}</td>
+						<td class="text-right font-mono amount-value">${totalGrossAmount != null ? decimalFormat.format(totalGrossAmount) : "0"}</td>
+						<td class="text-right font-mono text-dividend amount-value">${totalNetAmount != null ? decimalFormat.format(totalNetAmount) : "0"}</td>
+						<td class="text-right font-mono hidden lg:table-cell amount-value">${totalTax != null ? decimalFormat.format(totalTax) : "0"}</td>
+						<td class="text-right font-mono amount-value">${totalTaxableAmount != null ? decimalFormat.format(totalTaxableAmount) : "0"}</td>
 					</tr>
 				</tfoot>
 	        </table>

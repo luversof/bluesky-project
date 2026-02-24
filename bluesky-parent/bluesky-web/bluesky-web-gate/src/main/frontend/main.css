@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @source "../resources/templates";
+@source "../jte";
 @plugin "@tailwindcss/typography";
 
 @plugin "daisyui" {
@@ -147,4 +148,19 @@
 		background-position: center;
 		pointer-events: none;
 	}
+}
+
+/* Hide Amounts Feature */
+html.hide-amounts .amount-value {
+	filter: blur(10px);
+	opacity: 0.6;
+	user-select: none;
+	pointer-events: none;
+}
+
+html.hide-amounts .amount-chart {
+	filter: blur(15px);
+	opacity: 0.3;
+	user-select: none;
+	pointer-events: none;
 }
