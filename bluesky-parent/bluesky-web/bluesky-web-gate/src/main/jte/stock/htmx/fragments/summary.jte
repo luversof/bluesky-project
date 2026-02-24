@@ -65,6 +65,22 @@
             </div>
         </div>
 
+        <!-- 3. 총 합산 수익 (평가손익 + 확정수익) -->
+        !{BigDecimal totalCombinedProfit = totalUnrealizedProfit.add(totalRealizedIncome);}
+        !{double combinedRate = totalPrincipal.compareTo(BigDecimal.ZERO) > 0 ? totalCombinedProfit.doubleValue() / totalPrincipal.doubleValue() * 100 : 0.0;}
+        <div class="stat border-l border-base-200">
+            <div class="stat-figure text-accent">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            </div>
+            <div class="stat-title">총 합산 수익</div>
+            <div class="stat-value font-bold ${totalCombinedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                 ${String.format("%,d", totalCombinedProfit.longValue())}
+            </div>
+            <div class="stat-desc font-bold mt-1 ${totalCombinedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                수익률: ${String.format("%+.2f%%", combinedRate)}
+            </div>
+        </div>
+
         <!-- 승률 -->
         <div class="stat hidden 2xl:grid border-l border-base-200">
             <div class="stat-title">종목 승률</div>
