@@ -3973,10 +3973,22 @@
       --badge-fg: var(--color-error-content);
     }
   }
+  .badge-info {
+    @layer daisyui.modifier {
+      --badge-color: var(--color-info);
+      --badge-fg: var(--color-info-content);
+    }
+  }
   .badge-primary {
     @layer daisyui.modifier {
       --badge-color: var(--color-primary);
       --badge-fg: var(--color-primary-content);
+    }
+  }
+  .badge-success {
+    @layer daisyui.modifier {
+      --badge-color: var(--color-success);
+      --badge-fg: var(--color-success-content);
     }
   }
   .btn-error {

@@ -10,8 +10,7 @@
         <div class="flex justify-between items-center mb-4">
             <h2 class="card-title text-xl">최근 활동</h2>
             <div class="join">
-                <a href="/stock/trade" class="join-item btn btn-sm btn-ghost">매매 내역</a>
-                <a href="/stock/dividend" class="join-item btn btn-sm btn-ghost">배당 내역</a>
+                <a href="/stock/activity" class="join-item btn btn-sm btn-ghost">전체보기</a>
             </div>
         </div>
         @if(activities == null || activities.isEmpty())
@@ -25,7 +24,7 @@
                                 <div class="font-bold">${activity.stockItemName()}</div>
                                 <div class="text-sm opacity-70">
                                     @if("TRADE".equals(activity.type()))
-                                        ${activity.tradeType()} <span class="amount-value">${activity.quantity()}</span>주
+                                        ${"BUY".equals(activity.tradeType()) ? "매수" : "매도"} <span class="amount-value">${activity.quantity()}</span>주
                                     @else
                                         ${activity.description()}
                                     @endif

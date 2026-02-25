@@ -1518,13 +1518,7 @@ public class StockHtmxController {
 	public record Activity(String type, String stockItemName, String tradeType, Integer quantity, String description, BigDecimal amount, Instant date) {
 	}
 
-	@GetMapping("/recent-activities")
-	public String recentActivities(Model model) {
-		UUID userId = UserUtil.getUserId();
-		if (userId == null) {
-			return ERROR_VIEW;
-		}
-
+	private List<Activity> getAllActivities(UUID userId) {
 		// Fetch Trades
 		TradeSearchRequest tradeReq = new TradeSearchRequest(userId, null, null, null, null);
 		List<TradeResponse> trades = tradeClient.findTrades(tradeReq.toParams());
@@ -1554,9 +1548,32 @@ public class StockHtmxController {
 		}
 
 		activities.sort(Comparator.comparing(Activity::date, Comparator.nullsLast(Comparator.reverseOrder())));
+		return activities;
+	}
 
+	@GetMapping("/recent-activities")
+	public String recentActivities(Model model) {
+		UUID userId = UserUtil.getUserId();
+		if (userId == null) {
+			return ERROR_VIEW;
+		}
+
+		List<Activity> activities = getAllActivities(userId);
 		model.addAttribute("activities", activities.stream().limit(5).toList());
 
 		return "stock/htmx/fragments/recentActivities";
+	}
+
+	@GetMapping("/activity-list")
+	public String activityList(Model model) {
+		UUID userId = UserUtil.getUserId();
+		if (userId == null) {
+			return ERROR_VIEW;
+		}
+
+		List<Activity> activities = getAllActivities(userId);
+		model.addAttribute("activities", activities);
+
+		return "stock/htmx/fragments/activityList";
 	}
 }

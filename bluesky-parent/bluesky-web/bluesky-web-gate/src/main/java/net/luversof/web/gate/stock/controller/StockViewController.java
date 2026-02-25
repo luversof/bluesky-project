@@ -61,6 +61,11 @@ public class StockViewController {
 		return "stock/dashboard";
 	}
 
+	@GetMapping("/activity")
+	public String activityPage(Model model) {
+		return "stock/activity";
+	}
+
 	@GetMapping("/dividend")
 	public String dividendPage(Model model) {
 		return "stock/dividend";
