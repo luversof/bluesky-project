@@ -1515,7 +1515,8 @@ public class StockHtmxController {
 		return "stock/htmx/tradeList";
 	}
 
-	public record Activity(String type, String stockItemName, String tradeType, Integer quantity, String description, BigDecimal amount, Instant date) {
+	public record Activity(String type, String stockItemName, String tradeType, Integer quantity, String description,
+			BigDecimal amount, Instant date, List<String> accountNames) {
 	}
 
 	private List<Activity> getAllActivities(UUID userId) {
@@ -1533,20 +1534,70 @@ public class StockHtmxController {
 		Map<UUID, String> stockItemNames = stockItemList.stream()
 				.collect(Collectors.toMap(StockItem::id, StockItem::name));
 
-		List<Activity> activities = new ArrayList<>();
+		// Fetch Account Names
+		List<Account> accountList = accountClient.getAccountsByUserId(userId);
+		Map<UUID, String> accountNamesMap = accountList.stream()
+				.collect(Collectors.toMap(Account::id, Account::name));
+
+		List<Activity> rawActivities = new ArrayList<>();
 
 		for (TradeResponse t : trades) {
 			String stockName = stockItemNames.getOrDefault(t.stockItemId(), UNKNOWN_LABEL);
-			activities.add(new Activity("TRADE", stockName, t.type().name(), t.quantity(), null, t.amount(), t.tradeDate()));
+			String accountName = accountNamesMap.getOrDefault(t.accountId(), "Unknown Account");
+			rawActivities.add(
+					new Activity("TRADE", stockName, t.type().name(), t.quantity(), null, t.amount(), t.tradeDate(),
+							List.of(accountName)));
 		}
 
 		for (DividendResponse d : dividends) {
 			String stockName = d.stockItemName() != null ? d.stockItemName()
 					: stockItemNames.getOrDefault(d.stockItemId(), UNKNOWN_LABEL);
-			activities.add(new Activity("DIVIDEND", stockName, null, null, "배당금 지급", d.netAmount(),
-					d.payDate() != null ? d.payDate() : d.recordDate()));
+			String accountName = accountNamesMap.getOrDefault(d.accountId(), "Unknown Account");
+			rawActivities.add(new Activity("DIVIDEND", stockName, null, null, "배당금 지급", d.netAmount(),
+					d.payDate() != null ? d.payDate() : d.recordDate(), List.of(accountName)));
 		}
 
+		// Grouping Logic
+		// Group by: Date (yyyy-MM-dd), Type (TRADE/DIVIDEND), StockName, TradeType
+		// (BUY/SELL/null)
+		Map<String, Activity> groupedMap = new HashMap<>();
+
+		for (Activity a : rawActivities) {
+			if (a.date() == null)
+				continue;
+
+			String dateStr = a.date().atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString();
+			String key = String.format("%s|%s|%s|%s", dateStr, a.type(), a.stockItemName(), a.tradeType());
+
+			if (groupedMap.containsKey(key)) {
+				Activity existing = groupedMap.get(key);
+
+				Integer newQty = null;
+				if (existing.quantity() != null || a.quantity() != null) {
+					newQty = (existing.quantity() != null ? existing.quantity() : 0)
+							+ (a.quantity() != null ? a.quantity() : 0);
+				}
+
+				BigDecimal newAmount = null;
+				if (existing.amount() != null || a.amount() != null) {
+					newAmount = (existing.amount() != null ? existing.amount() : BigDecimal.ZERO)
+							.add(a.amount() != null ? a.amount() : BigDecimal.ZERO);
+				}
+
+				List<String> newAccountNames = new ArrayList<>(existing.accountNames());
+				if (!newAccountNames.contains(a.accountNames().get(0))) {
+					newAccountNames.add(a.accountNames().get(0));
+				}
+
+				groupedMap.put(key, new Activity(
+						existing.type(), existing.stockItemName(), existing.tradeType(),
+						newQty, existing.description(), newAmount, existing.date(), newAccountNames));
+			} else {
+				groupedMap.put(key, a);
+			}
+		}
+
+		List<Activity> activities = new ArrayList<>(groupedMap.values());
 		activities.sort(Comparator.comparing(Activity::date, Comparator.nullsLast(Comparator.reverseOrder())));
 		return activities;
 	}

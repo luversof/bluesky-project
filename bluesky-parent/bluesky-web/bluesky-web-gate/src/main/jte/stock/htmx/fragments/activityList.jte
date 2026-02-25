@@ -41,6 +41,21 @@
                                     @else
                                         ${activity.description()}
                                     @endif
+                                    
+                                    <!-- Account Badges (Max 2 + Tooltip) -->
+                                    @if(activity.accountNames() != null && !activity.accountNames().isEmpty())
+                                        <div class="mt-1 flex flex-wrap gap-1">
+                                            @for(int i = 0; i < Math.min(2, activity.accountNames().size()); i++)
+                                                <span class="badge badge-xs badge-outline opacity-70">${activity.accountNames().get(i)}</span>
+                                            @endfor
+                                            
+                                            @if(activity.accountNames().size() > 2)
+                                                <div class="tooltip tooltip-right" data-tip="${String.join(", ", activity.accountNames())}">
+                                                    <span class="badge badge-xs badge-outline opacity-70 cursor-help">+${activity.accountNames().size() - 2}</span>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endif
                                 </td>
                                 <td class="text-right font-mono font-bold amount-value ${"DIVIDEND".equals(activity.type()) ? "text-dividend" : ""}">
                                     ${String.format("%,d", activity.amount() != null ? activity.amount().longValue() : 0)} 원
