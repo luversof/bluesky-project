@@ -604,14 +604,14 @@ const boardModify = (() => {
 
 // DOM 로드 후 자동 초기화
 document.addEventListener("DOMContentLoaded", () => {
-	// body의 data 속성에서 값 읽어오기
-	const body = document.body;
-	const boardMode = body.dataset.boardMode;
-	const boardAlias = body.dataset.boardAlias;
-	const boardId = body.dataset.boardId;
-	const boardArticleId = body.dataset.boardArticleId;
-	const isAuthenticated = body.dataset.isAuthenticated;
-	const currentUserId = body.dataset.currentUserId;
+	// data-board-mode 속성을 가진 요소에서 값 읽어오기
+	const boardContainer = document.querySelector("[data-board-mode]") as HTMLElement || document.body;
+	const boardMode = boardContainer.dataset.boardMode;
+	const boardAlias = boardContainer.dataset.boardAlias;
+	const boardId = boardContainer.dataset.boardId;
+	const boardArticleId = boardContainer.dataset.boardArticleId;
+	const isAuthenticated = boardContainer.dataset.isAuthenticated;
+	const currentUserId = boardContainer.dataset.currentUserId;
 
 	const appConfig = document.getElementById("app-config");
 	if (appConfig && appConfig.dataset.loginUrl) {
