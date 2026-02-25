@@ -43,7 +43,7 @@ public class BoardArticleCommentController {
 
 	@GetMapping("/search/findByBoardArticleId/{boardArticleId}")
 	public Page<BoardArticleComment> findByBoardArticleId(@PathVariable UUID boardArticleId,
-			@PageableDefault(size = 10) @SortDefault(sort = "createdDate", direction = Direction.DESC) Pageable pageable) {
+			@PageableDefault(size = 10) @SortDefault(sort = "createdDate", direction = Direction.ASC) Pageable pageable) {
 		return boardArticleCommentService.findByBoardArticleId(boardArticleId, pageable);
 	}
 

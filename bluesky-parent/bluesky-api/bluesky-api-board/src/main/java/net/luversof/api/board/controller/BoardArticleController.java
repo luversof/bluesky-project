@@ -41,7 +41,7 @@ public class BoardArticleController {
 
 	@GetMapping("/search/findByBoardAlias/{boardAlias}")
 	public Page<BoardArticle> findByBoardAlias(@PathVariable String boardAlias,
-			@PageableDefault(size = 20) @SortDefault(sort = "id", direction = Direction.DESC) Pageable pageable) {
+			@PageableDefault(size = 20) @SortDefault(sort = "createdDate", direction = Direction.DESC) Pageable pageable) {
 		return boardArticleService.findByAlias(boardAlias, pageable);
 	}
 
