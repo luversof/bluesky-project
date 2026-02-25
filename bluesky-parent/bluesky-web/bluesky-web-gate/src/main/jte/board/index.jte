@@ -1,0 +1,80 @@
+@param String title = "게시판"
+@param boolean isAuthenticated = false
+@param String username = ""
+@param String loginUrl = "https://user.web.bluesky.local/login/redirect"
+@param String profile = "local"
+
+@template._layout.boardLayout(
+	title = title,
+	isAuthenticated = isAuthenticated,
+	username = username,
+	loginUrl = loginUrl,
+	profile = profile,
+	content = @`
+		<div class="container mx-auto px-4 py-8">
+			<div class="prose max-w-none">
+				<h1 class="text-3xl font-bold mb-6">게시판</h1>
+				
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-8">
+					<!-- 공지사항 카드 -->
+					<div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+						<div class="card-body">
+							<h2 class="card-title">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+								</svg>
+								공지사항
+							</h2>
+							<p>중요한 공지사항을 확인하세요</p>
+							<div class="card-actions justify-end">
+								<a href="/board/notice/list" class="btn btn-primary btn-sm">바로가기</a>
+							</div>
+						</div>
+					</div>
+					
+					<!-- 자유게시판 카드 -->
+					<div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+						<div class="card-body">
+							<h2 class="card-title">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+								</svg>
+								자유게시판
+							</h2>
+							<p>자유롭게 이야기를 나눠보세요</p>
+							<div class="card-actions justify-end">
+								<a href="/board/free/list" class="btn btn-primary btn-sm">바로가기</a>
+							</div>
+						</div>
+					</div>
+					
+					<!-- Q&A 카드 -->
+					<div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+						<div class="card-body">
+							<h2 class="card-title">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+								</svg>
+								Q&A
+							</h2>
+							<p>궁금한 점을 질문하세요</p>
+							<div class="card-actions justify-end">
+								<a href="/board/qna/list" class="btn btn-primary btn-sm">바로가기</a>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<div class="alert alert-info shadow-lg">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+					</svg>
+					<div>
+						<h3 class="font-bold">이용 안내</h3>
+						<div class="text-xs">건전한 게시판 문화를 만들어 주세요. 타인을 비방하거나 욕설, 광고성 게시물은 삭제될 수 있습니다.</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	`
+)

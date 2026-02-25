@@ -39,7 +39,7 @@ public class PaginationInterceptor implements WebRequestInterceptor {
 	public void afterCompletion(WebRequest request, Exception ex) throws Exception {
 	}
 
-	class Pagination {
+	public static class Pagination {
 
 		private int currentPage;
 		private int totalPage;
@@ -136,7 +136,7 @@ public class PaginationInterceptor implements WebRequestInterceptor {
 			this.lastNav = lastNav;
 		}
 
-		Pagination(Page<?> page) {
+		public Pagination(Page<?> page) {
 			currentPage = page.getPageable().getPageNumber();
 			totalPage = page.getTotalPages();
 
@@ -161,6 +161,6 @@ public class PaginationInterceptor implements WebRequestInterceptor {
 		}
 	}
 
-	record Nav(int page, boolean isActive) {
+	public record Nav(int page, boolean isActive) {
 	}
 }

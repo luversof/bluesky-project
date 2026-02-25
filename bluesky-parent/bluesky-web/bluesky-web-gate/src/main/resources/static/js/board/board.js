@@ -247,7 +247,9 @@ const boardAction = (() => {
             if (!boardData.getIsAuthenticated()) {
                 if (confirm("로그인이 필요한 서비스입니다. 로그인 페이지로 이동하시겠습니까?")) {
                     window.location.href =
-                        boardData.getLoginUrl() + "?redirectUrl=" + encodeURIComponent(targetUrl);
+                        boardData.getLoginUrl() +
+                            "?redirectUrl=" +
+                            encodeURIComponent(targetUrl);
                 }
                 return;
             }
@@ -271,7 +273,9 @@ const boardAction = (() => {
             if (!boardData.getIsAuthenticated()) {
                 if (confirm("로그인이 필요한 서비스입니다. 로그인 페이지로 이동하시겠습니까?")) {
                     window.location.href =
-                        boardData.getLoginUrl() + "?redirectUrl=" + encodeURIComponent(targetUrl);
+                        boardData.getLoginUrl() +
+                            "?redirectUrl=" +
+                            encodeURIComponent(targetUrl);
                 }
                 return;
             }
@@ -540,14 +544,14 @@ window.boardModify = boardModify;
 window.boardComment = boardComment;
 // DOM 로드 후 자동 초기화
 document.addEventListener("DOMContentLoaded", () => {
-    // body의 data 속성에서 값 읽어오기
-    const body = document.body;
-    const boardMode = body.dataset.boardMode;
-    const boardAlias = body.dataset.boardAlias;
-    const boardId = body.dataset.boardId;
-    const boardArticleId = body.dataset.boardArticleId;
-    const isAuthenticated = body.dataset.isAuthenticated;
-    const currentUserId = body.dataset.currentUserId;
+    // data-board-mode 속성을 가진 요소에서 값 읽어오기
+    const boardContainer = document.querySelector("[data-board-mode]") || document.body;
+    const boardMode = boardContainer.dataset.boardMode;
+    const boardAlias = boardContainer.dataset.boardAlias;
+    const boardId = boardContainer.dataset.boardId;
+    const boardArticleId = boardContainer.dataset.boardArticleId;
+    const isAuthenticated = boardContainer.dataset.isAuthenticated;
+    const currentUserId = boardContainer.dataset.currentUserId;
     const appConfig = document.getElementById("app-config");
     if (appConfig && appConfig.dataset.loginUrl) {
         boardData.setLoginUrl(appConfig.dataset.loginUrl);
