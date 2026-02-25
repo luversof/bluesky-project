@@ -103,7 +103,7 @@ public class PaginationInterceptor implements WebRequestInterceptor {
 		private Nav prevNav;
 		private Nav nextNav;
 		private Nav lastNav;
-		
+
 		public Nav getFirstNav() {
 			return firstNav;
 		}

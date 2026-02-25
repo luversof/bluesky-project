@@ -605,7 +605,9 @@ const boardModify = (() => {
 // DOM 로드 후 자동 초기화
 document.addEventListener("DOMContentLoaded", () => {
 	// data-board-mode 속성을 가진 요소에서 값 읽어오기
-	const boardContainer = document.querySelector("[data-board-mode]") as HTMLElement || document.body;
+	const boardContainer =
+		(document.querySelector("[data-board-mode]") as HTMLElement) ||
+		document.body;
 	const boardMode = boardContainer.dataset.boardMode;
 	const boardAlias = boardContainer.dataset.boardAlias;
 	const boardId = boardContainer.dataset.boardId;

@@ -162,8 +162,8 @@ public class StockHtmxController {
 
 		// --- 1. PROFIT LOGIC ---
 		if ("PROFIT".equals(type)) {
-			value1Label = "보유 수량";
-			value2Label = "보유 평단가";
+			value1Label = null;
+			value2Label = null;
 			value3Label = "평가 금액";
 			value4Label = "보유 손익";
 			value5Label = "매도 금액";

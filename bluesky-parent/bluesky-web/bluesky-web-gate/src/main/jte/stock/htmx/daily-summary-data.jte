@@ -22,16 +22,87 @@
 <!-- 2. Data Content Fragment -->
 <div class="flex flex-col gap-6 animate-fade-in">
     
-    <!-- Chart Area -->
-    <div class="card bg-base-100 shadow-xl w-full">
-        <div class="card-body">
-            <h2 class="card-title text-sm opacity-70">${chartTitle}</h2>
-            <div class="h-[300px] w-full relative">
-                 <canvas id="${canvasId}" class="amount-chart"></canvas>
+    @if(tableData != null && tableData.size() == 1 && subKeyLabel == null)
+        <!-- KPI Cards Area (Summary View) -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            !{var row = tableData.get(0);}
+            
+            @if(value1Label != null && !value1Label.isEmpty())
+            <div class="stat bg-base-100 shadow-xl rounded-box p-4">
+                <div class="stat-title text-xs opacity-70">${value1Label}</div>
+                <div class="stat-value amount-value text-lg mt-1 font-mono ${row.value1() != null && row.value1().compareTo(BigDecimal.ZERO) >= 0 ? "text-principal" : "text-loss"}">
+                    ${String.format("%,d", row.value1() != null ? row.value1().longValue() : 0)}
+                </div>
             </div>
-            <div class="text-xs text-right opacity-50 mt-2">* 상위 20개 항목만 표시됩니다.</div>
+            @endif
+            
+            @if(value2Label != null && !value2Label.isEmpty())
+            <div class="stat bg-base-100 shadow-xl rounded-box p-4">
+                <div class="stat-title text-xs opacity-70">${value2Label}</div>
+                <div class="stat-value amount-value text-lg mt-1 font-mono ${row.value2() != null && row.value2().compareTo(BigDecimal.ZERO) >= 0 ? "text-principal" : "text-loss"}">
+                    ${String.format("%,d", row.value2() != null ? row.value2().longValue() : 0)}
+                </div>
+            </div>
+            @endif
+            
+            @if(value3Label != null && !value3Label.isEmpty())
+            <div class="stat bg-base-100 shadow-xl rounded-box p-4">
+                <div class="stat-title text-xs opacity-70">${value3Label}</div>
+                <div class="stat-value amount-value text-lg mt-1 font-mono ${row.value3() != null && row.value3().compareTo(BigDecimal.ZERO) >= 0 ? "text-principal" : "text-loss"}">
+                    ${String.format("%,d", row.value3() != null ? row.value3().longValue() : 0)}
+                </div>
+            </div>
+            @endif
+            
+            @if(value4Label != null && !value4Label.isEmpty())
+            <div class="stat bg-base-100 shadow-xl rounded-box p-4">
+                <div class="stat-title text-xs opacity-70">${value4Label}</div>
+                <div class="stat-value amount-value text-lg mt-1 font-mono ${row.value4() != null && row.value4().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                    ${String.format("%,d", row.value4() != null ? row.value4().longValue() : 0)}
+                </div>
+            </div>
+            @endif
+            
+            @if(value5Label != null && !value5Label.isEmpty())
+            <div class="stat bg-base-100 shadow-xl rounded-box p-4">
+                <div class="stat-title text-xs opacity-70">${value5Label}</div>
+                <div class="stat-value amount-value text-lg mt-1 font-mono">
+                    ${String.format("%,d", row.value5() != null ? row.value5().longValue() : 0)}
+                </div>
+            </div>
+            @endif
+            
+            @if(value6Label != null && !value6Label.isEmpty())
+            <div class="stat bg-base-100 shadow-xl rounded-box p-4">
+                <div class="stat-title text-xs opacity-70">${value6Label}</div>
+                <div class="stat-value amount-value text-lg mt-1 font-mono ${row.value6() != null && row.value6().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                    ${String.format("%,d", row.value6() != null ? row.value6().longValue() : 0)}
+                </div>
+            </div>
+            @endif
+            
+            @if(totalLabel != null && !totalLabel.isEmpty())
+            !{BigDecimal total = row.value7() != null ? row.value7() : (row.value4() != null ? row.value4() : BigDecimal.ZERO).add(row.value6() != null ? row.value6() : BigDecimal.ZERO);}
+            <div class="stat bg-base-100 shadow-xl rounded-box p-4">
+                <div class="stat-title text-xs opacity-70 font-bold">${totalLabel}</div>
+                <div class="stat-value amount-value text-lg mt-1 font-mono font-bold ${total.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                    ${String.format("%,d", total.longValue())}
+                </div>
+            </div>
+            @endif
         </div>
-    </div>
+    @else
+        <!-- Chart Area -->
+        <div class="card bg-base-100 shadow-xl w-full">
+            <div class="card-body">
+                <h2 class="card-title text-sm opacity-70">${chartTitle}</h2>
+                <div class="h-[300px] w-full relative">
+                     <canvas id="${canvasId}" class="amount-chart"></canvas>
+                </div>
+                <div class="text-xs text-right opacity-50 mt-2">* 상위 20개 항목만 표시됩니다.</div>
+            </div>
+        </div>
+    @endif
 
     <!-- Summary Table Area -->
     <div class="card bg-base-100 shadow-xl w-full">
@@ -44,7 +115,9 @@
                         @if(subKeyLabel != null)
                             <th>${subKeyLabel}</th>
                         @endif
-                        <th class="text-right">${value1Label}</th>
+                        @if(value1Label != null && !value1Label.isEmpty())
+                            <th class="text-right">${value1Label}</th>
+                        @endif
                         @if(value2Label != null && !value2Label.isEmpty())
                             <th class="text-right">${value2Label}</th>
                         @endif
@@ -82,9 +155,11 @@
                                 @endif
                                 
                                 <!-- Value 1 -->
-                                <td class="text-right amount-value font-mono whitespace-nowrap ${row.value1() != null && row.value1().compareTo(BigDecimal.ZERO) >= 0 ? "text-principal" : "text-loss"}">
-                                    ${String.format("%,d", row.value1() != null ? row.value1().longValue() : 0)}
-                                </td>
+                                @if(value1Label != null && !value1Label.isEmpty())
+                                    <td class="text-right amount-value font-mono whitespace-nowrap ${row.value1() != null && row.value1().compareTo(BigDecimal.ZERO) >= 0 ? "text-principal" : "text-loss"}">
+                                        ${String.format("%,d", row.value1() != null ? row.value1().longValue() : 0)}
+                                    </td>
+                                @endif
 
                                 <!-- Value 2 (Optional) -->
                                 @if(value2Label != null && !value2Label.isEmpty())
@@ -202,14 +277,15 @@
 <!-- Chart Initialization Script -->
 <script>
     (function() {
-        const canvasId = '${canvasId}';
-        const ctx = document.getElementById(canvasId);
-        if (!ctx) return;
-
         // Destroy existing chart if any
         if (window.dailySummaryChartInstance) {
             window.dailySummaryChartInstance.destroy();
+            window.dailySummaryChartInstance = null;
         }
+
+        const canvasId = '${canvasId}';
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
 
         const chartType = '${chartType}';
         const labels = [];
