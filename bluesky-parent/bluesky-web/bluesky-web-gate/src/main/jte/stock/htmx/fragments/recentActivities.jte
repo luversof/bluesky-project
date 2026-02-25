@@ -7,7 +7,13 @@
 
 <div class="card bg-base-100 shadow-xl">
     <div class="card-body">
-        <h2 class="card-title text-xl mb-4">최근 활동</h2>
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="card-title text-xl">최근 활동</h2>
+            <div class="join">
+                <a href="/stock/trade" class="join-item btn btn-sm btn-ghost">매매 내역</a>
+                <a href="/stock/dividend" class="join-item btn btn-sm btn-ghost">배당 내역</a>
+            </div>
+        </div>
         @if(activities == null || activities.isEmpty())
             <div class="text-center text-base-content/50 py-4">최근 활동 내역이 없습니다.</div>
         @else

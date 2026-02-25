@@ -36,7 +36,7 @@ public class BoardHtmxController {
 	}
 
 	@GetMapping("/{boardAlias}/{boardMode:list}")
-	public String boardArticlePage(@PathVariable String boardAlias, @PathVariable String boardMode, 
+	public String boardArticlePage(@PathVariable String boardAlias, @PathVariable String boardMode,
 			@PageableDefault(size = 20) @SortDefault(sort = "createdDate", direction = Direction.DESC) Pageable pageable,
 			Model model) {
 		var pageResponse = boardUserInfoService.enrich(boardArticleClient.findByBoardAlias(boardAlias, pageable));
