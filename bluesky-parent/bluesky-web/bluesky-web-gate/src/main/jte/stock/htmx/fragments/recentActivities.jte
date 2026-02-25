@@ -23,7 +23,13 @@
                         <div class="flex justify-between w-full text-left">
                             <div>
                                 <div class="font-bold">${activity.stockItemName()}</div>
-                                <div class="text-sm opacity-70">${activity.description()}</div>
+                                <div class="text-sm opacity-70">
+                                    @if("TRADE".equals(activity.type()))
+                                        ${activity.tradeType()} <span class="amount-value">${activity.quantity()}</span>주
+                                    @else
+                                        ${activity.description()}
+                                    @endif
+                                </div>
                             </div>
                             <div class="text-right">
                                 <div class="font-mono font-bold amount-value ${"DIVIDEND".equals(activity.type()) ? "text-dividend" : ""}">

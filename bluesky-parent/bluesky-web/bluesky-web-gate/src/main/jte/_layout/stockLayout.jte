@@ -21,10 +21,10 @@
 			<div class="grid bg-base-100">
 				@template._components.navmenu(menu = "stock", classAppend = "bg-base-100 w-56")
 			</div>
-			<div class="grid grow mx-4">
-				<div class="flex justify-end mb-4">
+			<div class="grid grow mx-4 relative">
+				<div class="flex justify-end mb-4 sticky top-4 z-50">
 					<div class="form-control">
-						<label class="label cursor-pointer gap-2 bg-base-200/50 hover:bg-base-200 px-4 py-2 rounded-full transition-colors border border-base-300 shadow-sm">
+						<label class="label cursor-pointer gap-2 bg-base-100/90 backdrop-blur hover:bg-base-200 px-4 py-2 rounded-full transition-colors border border-base-300 shadow-md">
 							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-base-content/70">
 								<path d="M3.53 2.47a.75.75 0 00-1.06 1.06l18 18a.75.75 0 101.06-1.06l-18-18zM22.676 12.553a11.249 11.249 0 01-2.631 4.31l-3.099-3.099a5.25 5.25 0 00-6.71-6.71L7.759 4.577a11.217 11.217 0 014.242-.827c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113z" />
 								<path d="M15.75 12c0 .18-.013.357-.037.53l-4.244-4.243A3.75 3.75 0 0115.75 12zM12.53 15.713l-4.243-4.244a3.75 3.75 0 004.243 4.243z" />

@@ -1515,7 +1515,7 @@ public class StockHtmxController {
 		return "stock/htmx/tradeList";
 	}
 
-	public record Activity(String type, String stockItemName, String description, BigDecimal amount, Instant date) {
+	public record Activity(String type, String stockItemName, String tradeType, Integer quantity, String description, BigDecimal amount, Instant date) {
 	}
 
 	@GetMapping("/recent-activities")
@@ -1543,15 +1543,13 @@ public class StockHtmxController {
 
 		for (TradeResponse t : trades) {
 			String stockName = stockItemNames.getOrDefault(t.stockItemId(), UNKNOWN_LABEL);
-			String desc = t.type().name() + " " + t.quantity() + "주";
-			activities.add(new Activity("TRADE", stockName, desc, t.amount(), t.tradeDate()));
+			activities.add(new Activity("TRADE", stockName, t.type().name(), t.quantity(), null, t.amount(), t.tradeDate()));
 		}
 
 		for (DividendResponse d : dividends) {
 			String stockName = d.stockItemName() != null ? d.stockItemName()
 					: stockItemNames.getOrDefault(d.stockItemId(), UNKNOWN_LABEL);
-			String desc = "배당금 지급";
-			activities.add(new Activity("DIVIDEND", stockName, desc, d.netAmount(),
+			activities.add(new Activity("DIVIDEND", stockName, null, null, "배당금 지급", d.netAmount(),
 					d.payDate() != null ? d.payDate() : d.recordDate()));
 		}
 
