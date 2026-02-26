@@ -25,7 +25,7 @@
                         @for(Activity activity : activities)
                             <tr>
                                 <td class="whitespace-nowrap">
-                                    ${activity.date() != null ? activity.date().atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) : ""}
+                                    ${activity.date() != null ? activity.date().atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) : ""}
                                 </td>
                                 <td>
                                     @if("TRADE".equals(activity.type()))
