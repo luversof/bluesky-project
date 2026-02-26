@@ -51,8 +51,8 @@
 
                  <!-- Group By -->
                  <div class="join shadow-sm">
-                    <input class="join-item btn btn-sm" type="radio" name="groupBy" value="STOCK" aria-label="종목별" checked onchange="htmx.trigger('#analytics-filter-form', 'submit')"/>
-                    <input class="join-item btn btn-sm" type="radio" name="groupBy" value="ACCOUNT" aria-label="계좌별" onchange="htmx.trigger('#analytics-filter-form', 'submit')"/>
+                    <input class="join-item btn btn-sm" type="radio" name="groupBy" value="STOCK" aria-label="종목별" checked />
+                    <input class="join-item btn btn-sm" type="radio" name="groupBy" value="ACCOUNT" aria-label="계좌별" />
                 </div>
              </div>
         </div>
@@ -99,6 +99,5 @@
              yearSelect.style.display = 'inline-block';
              monthSelect.style.display = 'inline-block';
         }
-        htmx.trigger('#analytics-filter-form', 'submit');
     }
 </script>

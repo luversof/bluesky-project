@@ -164,8 +164,8 @@ public class StockHtmxController {
 		if ("PROFIT".equals(type)) {
 			value1Label = null;
 			value2Label = null;
-			value3Label = "평가 금액";
-			value4Label = "보유 손익";
+			value3Label = "TOTAL".equals(timeScale) ? "평가 금액" : null;
+			value4Label = "TOTAL".equals(timeScale) ? "보유 손익" : null;
 			value5Label = "매도 금액";
 			value6Label = "실현 손익";
 			totalLabel = null; // Hide Total for Profit view
@@ -175,8 +175,29 @@ public class StockHtmxController {
 			if (accountId != null)
 				request.setAccountIdList(List.of(accountId));
 
-			// TOTAL: Snapshot (Default)
-			List<TradeProfit> profits = getEnrichedTradeProfits(request);
+			// 1. Get Current Snapshot (for Holding Quantity and Unrealized Profit)
+			List<TradeProfit> currentProfits = getEnrichedTradeProfits(request);
+
+			// 2. Get Period Realized Profit
+			if ("YEARLY".equals(timeScale)) {
+				request.setStartDate(
+						LocalDate.of(year, 1, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+				request.setEndDate(LocalDate.of(year, 12, 31).plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault())
+						.toInstant());
+				keyLabel = year + "년";
+			} else if ("MONTHLY".equals(timeScale)) {
+				LocalDate start = LocalDate.of(year, month, 1);
+				LocalDate end = start.plusMonths(1);
+				request.setStartDate(start.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+				request.setEndDate(end.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+				keyLabel = year + "년 " + month + "월";
+			} else {
+				keyLabel = "TOTAL";
+			}
+
+			List<TradeProfit> periodProfits = "TOTAL".equals(timeScale) ? currentProfits
+					: getEnrichedTradeProfits(request);
+
 			String groupLabel = "종목별";
 			if ("ACCOUNT".equals(groupBy))
 				groupLabel = "계좌별";
@@ -184,7 +205,10 @@ public class StockHtmxController {
 				groupLabel = "합계";
 
 			chartTitle = "매매/보유 손익 (" + groupLabel + ")";
-			keyLabel = "TOTAL";
+			if (!"TOTAL".equals(timeScale)) {
+				chartTitle = keyLabel + " " + chartTitle;
+			}
+
 			if ("SUMMARY".equals(groupBy)) {
 				subKeyLabel = null;
 			} else {
@@ -195,10 +219,65 @@ public class StockHtmxController {
 			Map<String, BigDecimal> unrealizedMap = new HashMap<>(); // EvaluationProfit
 			Map<String, BigDecimal> evaluationAmountMap = new HashMap<>();
 			Map<String, BigDecimal> sellAmountMap = new HashMap<>();
+			Map<String, BigDecimal> buyAmountMap = new HashMap<>();
 			Map<String, BigDecimal> holdingQuantityMap = new HashMap<>();
 			Map<String, BigDecimal> costBasisMap = new HashMap<>();
 
-			profits.forEach(p -> {
+			// Process Current Snapshot for Holdings
+			// Even for YEARLY/MONTHLY, we might want to show currently held quantity if the
+			// user traded it in that period?
+			// But the requirement for period view is usually "How much did I make in
+			// 2025?".
+			// However, if the user bought a stock in 2025 and still holds it, they might
+			// expect to see it?
+			// But previous logic for TOTAL was clear.
+			// The issue might be that for YEARLY view, we skip this block, so
+			// 'holdingQuantityMap' is empty.
+			// Then in the row mapper:
+			// BigDecimal hQty = holdingQuantityMap.getOrDefault(name, BigDecimal.ZERO);
+			// So hQty is 0.
+
+			// If we want to show 'Current Holding' info even in YEARLY view (for context),
+			// we should remove the 'if' check or modify it.
+			// But typically 'Period Profit' focuses on Realized.
+			// Let's assume the user just wants to see the realized profit rows.
+
+			// The problem is likely here:
+			if ("TOTAL".equals(timeScale)) {
+				currentProfits.forEach(p -> {
+					String name;
+					if ("SUMMARY".equals(groupBy)) {
+						name = "합계";
+					} else {
+						name = "ACCOUNT".equals(groupBy) ? (p.accountName() != null ? p.accountName() : "Unknown")
+								: (p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL);
+					}
+
+					unrealizedMap.merge(name,
+							p.evaluationProfitNet() != null ? p.evaluationProfitNet() : BigDecimal.ZERO,
+							BigDecimal::add);
+
+					BigDecimal evalAmt = BigDecimal.ZERO;
+					if (p.currentPrice() != null) {
+						if (p.evaluationAmount() != null) {
+							evalAmt = p.evaluationAmount();
+						}
+					}
+					evaluationAmountMap.merge(name, evalAmt, BigDecimal::add);
+
+					// Holding Quantity & Cost Basis
+					BigDecimal hQty = BigDecimal.valueOf(p.holdingQuantity());
+					holdingQuantityMap.merge(name, hQty, BigDecimal::add);
+
+					if (p.holdingQuantity() > 0 && p.averageBuyPrice() != null) {
+						BigDecimal cost = p.averageBuyPrice().multiply(hQty);
+						costBasisMap.merge(name, cost, BigDecimal::add);
+					}
+				});
+			}
+
+			// Process Period Profits for Realized
+			periodProfits.forEach(p -> {
 				String name;
 				if ("SUMMARY".equals(groupBy)) {
 					name = "합계";
@@ -208,28 +287,20 @@ public class StockHtmxController {
 				}
 				realizedMap.merge(name, p.realizedProfitNet() != null ? p.realizedProfitNet() : BigDecimal.ZERO,
 						BigDecimal::add);
-				unrealizedMap.merge(name,
-						p.evaluationProfitNet() != null ? p.evaluationProfitNet() : BigDecimal.ZERO,
-						BigDecimal::add);
 				sellAmountMap.merge(name, p.totalSellAmount() != null ? p.totalSellAmount() : BigDecimal.ZERO,
 						BigDecimal::add);
+				buyAmountMap.merge(name, p.totalBuyAmount() != null ? p.totalBuyAmount() : BigDecimal.ZERO,
+						BigDecimal::add);
 
-				BigDecimal evalAmt = BigDecimal.ZERO;
-				if (p.currentPrice() != null) {
-					if (p.evaluationAmount() != null) {
-						evalAmt = p.evaluationAmount();
-					}
-				}
-				evaluationAmountMap.merge(name, evalAmt, BigDecimal::add);
-
-				// Holding Quantity & Cost Basis
-				BigDecimal hQty = BigDecimal.valueOf(p.holdingQuantity());
-				holdingQuantityMap.merge(name, hQty, BigDecimal::add);
-
-				if (p.holdingQuantity() > 0 && p.averageBuyPrice() != null) {
-					BigDecimal cost = p.averageBuyPrice().multiply(hQty);
-					costBasisMap.merge(name, cost, BigDecimal::add);
-				}
+				// Ensure that even if realized/sell amount is 0, we track the key if it exists
+				// in periodProfits
+				// Only if we want to show items that have 0 profit/sell amount but were part of
+				// the period result?
+				// But period result usually implies some activity.
+				// However, if we filter below based on value != 0, we might lose it.
+				// If the user wants to see "Zero Profit" trades, we need to relax the filter.
+				// Or add a dummy value to a map to ensure key exists?
+				// Actually, keys are added to maps above.
 			});
 
 			// Collect all keys to ensure we don't miss any negative profit items
@@ -237,6 +308,7 @@ public class StockHtmxController {
 			allKeys.addAll(realizedMap.keySet());
 			allKeys.addAll(unrealizedMap.keySet());
 			allKeys.addAll(sellAmountMap.keySet());
+			allKeys.addAll(buyAmountMap.keySet());
 			allKeys.addAll(holdingQuantityMap.keySet());
 
 			rows.addAll(allKeys.stream()
@@ -245,6 +317,7 @@ public class StockHtmxController {
 						BigDecimal u = unrealizedMap.getOrDefault(name, BigDecimal.ZERO);
 						BigDecimal e = evaluationAmountMap.getOrDefault(name, BigDecimal.ZERO);
 						BigDecimal s = sellAmountMap.getOrDefault(name, BigDecimal.ZERO);
+						BigDecimal b = buyAmountMap.getOrDefault(name, BigDecimal.ZERO);
 
 						BigDecimal hQty = holdingQuantityMap.getOrDefault(name, BigDecimal.ZERO);
 						BigDecimal totalCost = costBasisMap.getOrDefault(name, BigDecimal.ZERO);
@@ -252,8 +325,32 @@ public class StockHtmxController {
 								? totalCost.divide(hQty, 0, RoundingMode.HALF_UP)
 								: BigDecimal.ZERO;
 
-						// Order: Qty(1), Price(2), Eval(3), Unrealized(4), Sell(5), Realized(6)
-						return new AnalyticsRow("전체", name, hQty, avgPrice, e, u, s, r, null);
+						// Order: Qty(1), Price(2), Eval(3), Unrealized(4), Sell(5), Realized(6), Buy(7)
+						return new AnalyticsRow("전체", name, hQty, avgPrice, e, u, s, r, b);
+					})
+					// Only rows that have activity in the selected period should be shown.
+					// Activity = Realized Profit exists OR Sell Amount exists OR Buy Amount exists.
+					// If TIME_SCALE is TOTAL, then Holding Quantity also counts as activity
+					// (current holding).
+					// But for YEARLY/MONTHLY, merely holding the stock (value1) should NOT be
+					// enough to show it if there was no trade.
+					.filter(row -> {
+						boolean isTotal = "TOTAL".equals(timeScale);
+						boolean hasHolding = row.value1().compareTo(BigDecimal.ZERO) != 0;
+						boolean hasSell = row.value5().compareTo(BigDecimal.ZERO) != 0;
+						boolean hasRealized = row.value6().compareTo(BigDecimal.ZERO) != 0;
+						boolean hasBuy = row.value7() != null && row.value7().compareTo(BigDecimal.ZERO) != 0;
+
+						if (isTotal) {
+							// For TOTAL context, show if held OR sold OR realized OR bought
+							return hasHolding || hasSell || hasRealized || hasBuy;
+						} else {
+							// For YEARLY/MONTHLY, show ONLY if traded (sold/realized/bought)
+							// Holding (value1) is irrelevant for period view if no trade happened.
+							// We must rely on non-zero sell amount, non-zero realized profit, or non-zero
+							// buy amount to indicate activity.
+							return hasSell || hasRealized || hasBuy;
+						}
 					})
 					.sorted((a, b) -> b.value6().compareTo(a.value6())) // Sort by Realized Profit (value6)
 					// .limit(20)
@@ -264,7 +361,9 @@ public class StockHtmxController {
 			List<BigDecimal> uData = rows.stream().map(AnalyticsRow::value4).toList();
 
 			datasets.add(new ChartDataset("실현 손익", rData, "#4e79a7", "#4e79a7", 1, List.of()));
-			datasets.add(new ChartDataset("보유 손익", uData, "#f28e2b", "#f28e2b", 1, List.of()));
+			if ("TOTAL".equals(timeScale)) {
+				datasets.add(new ChartDataset("보유 손익", uData, "#f28e2b", "#f28e2b", 1, List.of()));
+			}
 		} else if ("DIVIDEND".equals(type)) {
 			value1Label = "배당금(세전)";
 			value2Label = "실지급액";
@@ -628,6 +727,7 @@ public class StockHtmxController {
 
 		// Unique Canvas ID to prevent Chart.js reuse issues
 		model.addAttribute("canvasId", "chart-" + UUID.randomUUID());
+		model.addAttribute("type", type);
 
 		return "stock/htmx/analytics-data";
 	}

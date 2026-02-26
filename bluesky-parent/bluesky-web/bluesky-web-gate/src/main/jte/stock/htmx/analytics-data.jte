@@ -11,6 +11,8 @@
 @param List<ChartDataset> chartDatasets
 @param String canvasId
 @param String value4Label = null
+@param String chartTitle = null
+@param String type = "PROFIT"
 
 <!-- 2. Data Content Fragment (Loaded via HTMX) -->
 <div class="fade-in space-y-6">
@@ -39,7 +41,7 @@
     <!-- 2. Chart Area (Large) -->
     <div class="card bg-base-100 shadow-xl overflow-hidden">
         <div class="card-body p-4 sm:p-6" style="min-height: 400px;">
-            <h2 class="card-title text-base opacity-70 mb-4">${"bar".equals(chartType) ? "기간별 추이 (Bar)" : "누적 성장 (Line)"}</h2>
+            <h2 class="card-title text-base opacity-70 mb-4">${chartTitle != null ? chartTitle : ("bar".equals(chartType) ? "기간별 추이 (Bar)" : "누적 성장 (Line)")}</h2>
             <div class="relative w-full h-[350px] sm:h-[450px]">
                 <canvas id="${canvasId}" class="amount-chart"></canvas>
             </div>
@@ -56,9 +58,15 @@
                         <th class="w-16">No</th>
                         <th>${value4Label != null ? value4Label : "날짜"}</th>
                         <th class="text-left">항목/계좌</th>
-                        <th class="text-right">거래/평가금액</th>
-                        <th class="text-right font-bold">실현손익</th>
-                        <th class="text-right hidden sm:table-cell">평가손익</th>
+                        @if("PROFIT".equals(type))
+                            <th class="text-right">매도금액</th>
+                            <th class="text-right font-bold">실현손익</th>
+                            <th class="text-right hidden sm:table-cell">보유손익</th>
+                        @else
+                            <th class="text-right">배당금(세전)</th>
+                            <th class="text-right font-bold">실지급액</th>
+                            <th class="text-right hidden sm:table-cell">세금</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody>
@@ -73,18 +81,34 @@
                                 <td>${count++}</td>
                                 <td class="font-mono text-sm">${row.key()}</td>
                                 <td class="text-left font-bold truncate max-w-[150px]" title="${row.subKey()}">${row.subKey()}</td>
-                                <!-- 금액 (매도/평가) - Value5 -->
-                                <td class="text-right font-mono text-sm amount-value">
-                                    ${String.format("%,d", row.value5() != null ? row.value5().longValue() : 0)}
-                                </td>
-                                <!-- 수익금 (실현) - Value1 -->
-                                <td class="text-right font-mono font-bold text-sm amount-value ${row.value1() != null && row.value1().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                                    ${String.format("%+,d", row.value1() != null ? row.value1().longValue() : 0)}
-                                </td>
-                                <!-- 수익(평가) - Value2 -->
-                                <td class="text-right font-mono text-sm hidden sm:table-cell amount-value ${row.value2() != null && row.value2().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                                    ${String.format("%+,d", row.value2() != null ? row.value2().longValue() : 0)}
-                                </td>
+                                
+                                @if("PROFIT".equals(type))
+                                    <!-- 매도금액 - Value5 -->
+                                    <td class="text-right font-mono text-sm amount-value">
+                                        ${String.format("%,d", row.value5() != null ? row.value5().longValue() : 0)}
+                                    </td>
+                                    <!-- 실현손익 - Value6 -->
+                                    <td class="text-right font-mono font-bold text-sm amount-value ${row.value6() != null && row.value6().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                                        ${String.format("%+,d", row.value6() != null ? row.value6().longValue() : 0)}
+                                    </td>
+                                    <!-- 보유손익 - Value4 -->
+                                    <td class="text-right font-mono text-sm hidden sm:table-cell amount-value ${row.value4() != null && row.value4().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                                        ${String.format("%+,d", row.value4() != null ? row.value4().longValue() : 0)}
+                                    </td>
+                                @else
+                                    <!-- 배당금(세전) - Value1 -->
+                                    <td class="text-right font-mono text-sm amount-value">
+                                        ${String.format("%,d", row.value1() != null ? row.value1().longValue() : 0)}
+                                    </td>
+                                    <!-- 실지급액 - Value2 -->
+                                    <td class="text-right font-mono font-bold text-sm amount-value text-profit">
+                                        ${String.format("%,d", row.value2() != null ? row.value2().longValue() : 0)}
+                                    </td>
+                                    <!-- 세금 - Value3 -->
+                                    <td class="text-right font-mono text-sm hidden sm:table-cell amount-value text-loss">
+                                        ${String.format("%,d", row.value3() != null ? row.value3().longValue() : 0)}
+                                    </td>
+                                @endif
                             </tr>
                         @endfor
                     @endif

@@ -151,7 +151,11 @@ public class TradeProfitService {
 
 			TradeProfit profit = profitCalculator.calculate(group, request, stockPriceService);
 			if (request.hasDateRange()) {
-				if (profit.getRealizedProfit().compareTo(BigDecimal.ZERO) != 0) {
+				// Include if Realized Profit != 0 OR if there was any Sell Activity OR any Buy Activity
+				boolean hasProfit = profit.getRealizedProfit().compareTo(BigDecimal.ZERO) != 0;
+				boolean hasSell = profit.getTotalSellAmount() != null && profit.getTotalSellAmount().compareTo(BigDecimal.ZERO) > 0;
+				boolean hasBuy = profit.getTotalBuyAmount() != null && profit.getTotalBuyAmount().compareTo(BigDecimal.ZERO) > 0;
+				if (hasProfit || hasSell || hasBuy) {
 					result.add(profit);
 				}
 			} else {
@@ -202,7 +206,11 @@ public class TradeProfitService {
 
 			TradeProfit profit = profitCalculator.calculate(group, request, stockPriceService);
 			if (request.hasDateRange()) {
-				if (profit.getRealizedProfit().compareTo(BigDecimal.ZERO) != 0) {
+				// Include if Realized Profit != 0 OR if there was any Sell Activity OR any Buy Activity
+				boolean hasProfit = profit.getRealizedProfit().compareTo(BigDecimal.ZERO) != 0;
+				boolean hasSell = profit.getTotalSellAmount() != null && profit.getTotalSellAmount().compareTo(BigDecimal.ZERO) > 0;
+				boolean hasBuy = profit.getTotalBuyAmount() != null && profit.getTotalBuyAmount().compareTo(BigDecimal.ZERO) > 0;
+				if (hasProfit || hasSell || hasBuy) {
 					result.add(profit);
 				}
 			} else {
