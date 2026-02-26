@@ -29,9 +29,9 @@
                                 </td>
                                 <td>
                                     @if("TRADE".equals(activity.type()))
-                                        <span class="badge badge-sm ${"BUY".equals(activity.tradeType()) ? "badge-error" : "badge-info"}">${"BUY".equals(activity.tradeType()) ? "매수" : "매도"}</span>
+                                        <span class="badge badge-sm badge-outline ${"BUY".equals(activity.tradeType()) ? "badge-error" : "badge-info"}">${"BUY".equals(activity.tradeType()) ? "매수" : "매도"}</span>
                                     @else
-                                        <span class="badge badge-sm badge-success">배당</span>
+                                        <span class="badge badge-sm badge-outline badge-success">배당</span>
                                     @endif
                                 </td>
                                 <td class="font-bold">${activity.stockItemName()}</td>

@@ -6,11 +6,11 @@
 
 <div class="flex flex-col gap-6">
     <!-- Tabs -->
-    <div class="tabs tabs-boxed bg-base-200 p-1">
-         <a class="tab tab-lg flex-1 transition-all duration-300 tab-active font-bold" 
+    <div role="tablist" class="tabs tabs-box bg-base-200 p-1">
+         <a role="tab" class="tab tab-lg flex-1 transition-all duration-300 tab-active !bg-primary !text-primary-content font-bold" 
             id="tab-profit" 
             onclick="selectAnalyticsTab('PROFIT')">자산 성장</a>
-         <a class="tab tab-lg flex-1 transition-all duration-300 font-bold" 
+         <a role="tab" class="tab tab-lg flex-1 transition-all duration-300 font-bold" 
             id="tab-dividend" 
             onclick="selectAnalyticsTab('DIVIDEND')">배당 추이</a>
     </div>
@@ -70,9 +70,9 @@
 <script>
     function selectAnalyticsTab(type) {
         // UI Update
-        document.querySelectorAll('.tab').forEach(el => el.classList.remove('tab-active', 'bg-primary', 'text-primary-content'));
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('tab-active', '!bg-primary', '!text-primary-content'));
         const activeTab = document.getElementById('tab-' + type.toLowerCase());
-        if(activeTab) activeTab.classList.add('tab-active', 'bg-primary', 'text-primary-content');
+        if(activeTab) activeTab.classList.add('tab-active', '!bg-primary', '!text-primary-content');
         
         // Value Update
         document.getElementById('input-type').value = type;

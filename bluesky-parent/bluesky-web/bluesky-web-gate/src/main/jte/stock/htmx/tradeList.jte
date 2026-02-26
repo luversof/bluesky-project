@@ -97,8 +97,8 @@
 		              <td>${trade.tradeDate() != null ? dateFormatter.format(trade.tradeDate().atZone(java.time.ZoneId.systemDefault())) : ""}</td>
 		              <td class="font-bold whitespace-nowrap">${trade.stockItemName()}</td>
 		              <td>
-		                  <span class="${trade.type() == TradeType.BUY ? "badge badge-error badge-sm" : "badge badge-primary badge-sm"}">
-		                      ${trade.type() != null ? trade.type().name() : ""}
+		                  <span class="${trade.type() == TradeType.BUY ? "badge badge-error badge-outline badge-sm" : "badge badge-info badge-outline badge-sm"}">
+		                      ${trade.type() == TradeType.BUY ? "매수" : "매도"}
 		                  </span>
 		              </td>
 		              <td class="whitespace-nowrap">${accountNames.get(trade.accountId())}</td>
