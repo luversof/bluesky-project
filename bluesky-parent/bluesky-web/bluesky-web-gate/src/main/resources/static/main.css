@@ -2189,9 +2189,6 @@
   .mx-2 {
     margin-inline: calc(var(--spacing) * 2);
   }
-  .mx-4 {
-    margin-inline: calc(var(--spacing) * 4);
-  }
   .mx-auto {
     margin-inline: auto;
   }
@@ -3230,9 +3227,6 @@
   .flex-grow {
     flex-grow: 1;
   }
-  .grow {
-    flex-grow: 1;
-  }
   .cursor-help {
     cursor: help;
   }
@@ -3378,6 +3372,9 @@
   .rounded-lg {
     border-radius: var(--radius-lg);
   }
+  .rounded-none {
+    border-radius: 0;
+  }
   .border {
     border-style: var(--tw-border-style);
     border-width: 1px;
@@ -3393,6 +3390,10 @@
   .border-b {
     border-bottom-style: var(--tw-border-style);
     border-bottom-width: 1px;
+  }
+  .border-b-2 {
+    border-bottom-style: var(--tw-border-style);
+    border-bottom-width: 2px;
   }
   .border-l {
     border-left-style: var(--tw-border-style);
@@ -3426,6 +3427,9 @@
   }
   .border-primary {
     border-color: var(--color-primary);
+  }
+  .border-transparent {
+    border-color: transparent;
   }
   .table-zebra {
     @layer daisyui.modifier {
@@ -3907,6 +3911,16 @@
       }
     }
   }
+  .hover\:border-base-content\/30 {
+    &:hover {
+      @media (hover: hover) {
+        border-color: var(--color-base-content);
+        @supports (color: color-mix(in lab, red, red)) {
+          border-color: color-mix(in oklab, var(--color-base-content) 30%, transparent);
+        }
+      }
+    }
+  }
   .hover\:bg-base-200 {
     &:hover {
       @media (hover: hover) {
@@ -3918,6 +3932,13 @@
     &:hover {
       @media (hover: hover) {
         background-color: var(--color-base-300);
+      }
+    }
+  }
+  .hover\:bg-transparent {
+    &:hover {
+      @media (hover: hover) {
+        background-color: transparent;
       }
     }
   }

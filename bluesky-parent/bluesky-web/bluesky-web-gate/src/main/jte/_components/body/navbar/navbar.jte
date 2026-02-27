@@ -27,13 +27,13 @@
 		</div>
 		@template._components.body.navbar.start.title(profile = profile)
 	</div>
-	<div class="navbar-center hidden lg:flex">
-		<ul class="menu menu-horizontal px-1">
+	<div class="navbar-center hidden lg:flex h-full">
+		<ul class="menu menu-horizontal px-1 h-full items-center gap-2">
 			@for(var menuItem : net.luversof.web.gate.util.TemplateUtil.getMenuList("main"))
 				@if(menuItem instanceof net.luversof.web.common.menu.domain.Menu m)
 					@if(m.isDisplay())
-						<li>
-							<a class="${m.isCurrentMenu() ? "active font-bold" : "hover:bg-base-200"}" href="${m.getUrl()}">
+						<li class="h-full flex items-center">
+							<a class="font-medium px-4 py-2 rounded-none border-b-2 transition-colors duration-200 h-full flex items-center ${m.isCurrentMenu() ? "border-primary text-primary font-bold" : "border-transparent hover:border-base-content/30 text-base-content/80 hover:text-base-content hover:bg-transparent"}" href="${m.getUrl()}">
 								${m.getName()}
 							</a>
 						</li>
