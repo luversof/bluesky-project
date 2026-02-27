@@ -135,7 +135,7 @@
 	            <!-- Footer -->
 				<tfoot>
 					<tr class="font-bold bg-base-200">
-						<td colspan="3" class="text-center sm:text-right sm:pr-4">합계</td>
+						<td colspan="3" class="text-center sm:text-right sm:pr-4 text-base-content">합계</td>
 						<td class="text-right font-mono amount-value">${totalGrossAmount != null ? decimalFormat.format(totalGrossAmount) : "0"}</td>
 						<td class="text-right font-mono text-dividend amount-value">${totalNetAmount != null ? decimalFormat.format(totalNetAmount) : "0"}</td>
 						<td class="text-right font-mono hidden lg:table-cell amount-value">${totalTax != null ? decimalFormat.format(totalTax) : "0"}</td>

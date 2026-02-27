@@ -211,13 +211,15 @@
                 @if(tableData != null && !tableData.isEmpty())
                     <tfoot class="bg-base-200 font-bold">
                         <tr>
-                            <td colspan="${subKeyLabel != null ? 2 : 1}">합계</td>
+                            <td colspan="${subKeyLabel != null ? 2 : 1}" class="text-center text-base-content">합계</td>
                             
                             <!-- Total Value 1 -->
-                            !{BigDecimal sum1 = tableData.stream().map(r -> r.value1() != null ? r.value1() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);}
-                            <td class="text-right amount-value text-principal">
-                                ${String.format("%,d", sum1.longValue())}
-                            </td>
+                            @if(value1Label != null && !value1Label.isEmpty())
+                                !{BigDecimal sum1 = tableData.stream().map(r -> r.value1() != null ? r.value1() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);}
+                                <td class="text-right amount-value text-principal">
+                                    ${String.format("%,d", sum1.longValue())}
+                                </td>
+                            @endif
 
                             <!-- Total Value 2 -->
                             @if(value2Label != null && !value2Label.isEmpty())

@@ -101,8 +101,8 @@
         </tbody>
         <tfoot>
         <tr class="bg-base-200 font-bold">
-            <td class="${"STOCK".equals(viewGroupBy) || "ACCOUNT".equals(viewGroupBy) ? "hidden" : ""}"></td>
-            <td class="text-center">합계</td>
+            <td class="${"STOCK".equals(viewGroupBy) || "ACCOUNT".equals(viewGroupBy) ? "hidden" : ""} text-center text-base-content"></td>
+            <td class="text-center text-base-content">합계</td>
             <td class="hidden lg:table-cell"></td>
             <td class="hidden xl:table-cell"></td>
             <td class="hidden lg:table-cell"></td>

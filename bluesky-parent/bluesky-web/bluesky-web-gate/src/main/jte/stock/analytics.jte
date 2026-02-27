@@ -14,7 +14,7 @@
 			<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 			<!-- Reuse the daily summary component designed for analytics -->
-			<h1 class="text-2xl font-bold mb-4 ml-1">자산 통계</h1>
+			<h1 class="text-2xl font-bold mb-4 ml-1">투자 분석</h1>
 			<div class="mb-8">
 				 <div hx-get="/stock/htmx/analytics/view" hx-trigger="load" hx-swap="outerHTML">
 					 <div class="flex justify-center p-10">

@@ -121,7 +121,7 @@
 		      <!-- Footer -->
 		      <tfoot>
 		          <tr class="font-bold bg-base-200">
-		              <td colspan="7" class="text-center">합계</td>
+		              <td colspan="7" class="text-center text-base-content">합계</td>
 		              <td class="text-right font-mono amount-value">${totalFee != null ? decimalFormat.format(totalFee) : "0"}</td>
 		              <td class="text-right font-mono amount-value">${totalTax != null ? decimalFormat.format(totalTax) : "0"}</td>
 		              <td class="text-right font-mono amount-value ${totalRealizedProfit != null && totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
