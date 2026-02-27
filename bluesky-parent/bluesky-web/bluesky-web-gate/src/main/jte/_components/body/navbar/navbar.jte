@@ -3,7 +3,7 @@
 @param String loginUrl = "https://user.web.bluesky.local/login/redirect"
 @param String profile = "local"
 
-<div class="navbar bg-base-100 shadow-sm">
+<div class="navbar bg-base-100/90 backdrop-blur sticky top-0 z-50 shadow-sm">
 	<div class="navbar-start">
 		<div class="dropdown">
 			<div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
@@ -16,7 +16,7 @@
 					@if(menuItem instanceof net.luversof.web.common.menu.domain.Menu m)
 						@if(m.isDisplay())
 							<li>
-								<a class="${m.isCurrentMenu() ? "menu-active" : ""}" href="${m.getUrl()}">
+								<a class="${m.isCurrentMenu() ? "active font-bold" : "hover:bg-base-200"}" href="${m.getUrl()}">
 									${m.getName()}
 								</a>
 							</li>
@@ -33,7 +33,7 @@
 				@if(menuItem instanceof net.luversof.web.common.menu.domain.Menu m)
 					@if(m.isDisplay())
 						<li>
-							<a class="${m.isCurrentMenu() ? "menu-active" : ""}" href="${m.getUrl()}">
+							<a class="${m.isCurrentMenu() ? "active font-bold" : "hover:bg-base-200"}" href="${m.getUrl()}">
 								${m.getName()}
 							</a>
 						</li>
