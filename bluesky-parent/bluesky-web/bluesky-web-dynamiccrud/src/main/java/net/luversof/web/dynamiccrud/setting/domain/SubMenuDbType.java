@@ -6,6 +6,7 @@ import java.util.stream.Stream;
 public enum SubMenuDbType {
 	MySql,
 	MsSql,
+	PostgreSql,
 	Mongo;
 	
 	public static String toPresetString() {
