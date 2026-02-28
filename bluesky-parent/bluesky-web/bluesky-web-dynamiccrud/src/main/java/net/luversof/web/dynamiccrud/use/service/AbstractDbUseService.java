@@ -246,7 +246,26 @@ public abstract class AbstractDbUseService implements UseService {
 		var insertQueryBuilder = new StringBuilder(dbQuery.getQueryString() + " ");
 		var paramSource = new MapSqlParameterSource();
 		setSqlParameterSourceRegisterSqlType(paramSource, dbFieldList);
-		dataMap.forEach((key, value) -> paramSource.addValue(key, StringUtils.hasText(value) ? value : null));
+		
+		dataMap.forEach((key, value) -> {
+			if (StringUtils.hasText(value)) {
+				paramSource.addValue(key, value);
+			} else {
+				DbField filterDbField = dbFieldList.stream().filter(dbField -> dbField.getColumnId().equals(key)).findAny().orElse(null);
+				if (filterDbField != null) {
+					if (StringUtils.hasText(filterDbField.getColumnDefaultValue())) {
+						paramSource.addValue(key, filterDbField.getColumnDefaultValue());
+					} else if (filterDbField.getColumnType() == DbFieldColumnType.INT || filterDbField.getColumnType() == DbFieldColumnType.LONG) {
+						paramSource.addValue(key, 0); // 숫자형인데 값이 없으면 0으로 기본값 할당
+					} else {
+						paramSource.addValue(key, null);
+					}
+				} else {
+					paramSource.addValue(key, null);
+				}
+			}
+		});
+		
 		return dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(
 				() -> namedParameterJdbcTemplate.update(insertQueryBuilder.toString(), paramSource));
 	}

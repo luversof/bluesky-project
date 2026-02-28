@@ -123,7 +123,7 @@ public final class UrlConstant {
 
 		public static String getUrl(String target, String adminProjectId) {
 			var urlResolver = valueOf(target);
-			return adminProjectId.equals(AdminConstant.ADMIN_PROJECT_ID_VALUE) ? urlResolver.getSettingUrl()
+			return AdminConstant.ADMIN_PROJECT_ID_VALUE.equals(adminProjectId) ? urlResolver.getSettingUrl()
 					: urlResolver.getUseUrl();
 		}
 

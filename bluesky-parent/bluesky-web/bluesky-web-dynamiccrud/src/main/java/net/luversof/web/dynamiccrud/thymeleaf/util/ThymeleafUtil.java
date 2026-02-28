@@ -14,8 +14,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import io.github.luversof.boot.web.servlet.util.ServletRequestUtil;
 
 import net.luversof.web.common.menu.domain.Menu;
 import net.luversof.web.common.menu.domain.Pagination;
@@ -146,7 +149,46 @@ public final class ThymeleafUtil {
 	}
 
 	private static String getAttribute(String key) {
-		return (String) RequestContextHolder.getRequestAttributes().getAttribute(key, RequestAttributes.SCOPE_REQUEST);
+		var settingParameter = SettingUtil.getSettingParameter();
+		if (settingParameter != null) {
+			if (SettingConstant.ADMIN_PROJECT_ID.equals(key))
+				return settingParameter.adminProjectId();
+			if (SettingConstant.PROJECT_ID.equals(key))
+				return settingParameter.projectId();
+			if (SettingConstant.MAINMENU_ID.equals(key))
+				return settingParameter.mainMenuId();
+			if (SettingConstant.SUBMENU_ID.equals(key))
+				return settingParameter.subMenuId();
+		}
+
+		var requestAttributes = RequestContextHolder.getRequestAttributes();
+		if (requestAttributes == null) {
+			return null;
+		}
+
+		var value = requestAttributes.getAttribute(key, RequestAttributes.SCOPE_REQUEST);
+		if (value != null) {
+			return String.valueOf(value);
+		}
+
+		@SuppressWarnings("unchecked")
+		var pathVariables = (Map<String, String>) requestAttributes.getAttribute(
+				HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST);
+
+		if (pathVariables != null && pathVariables.containsKey(key)) {
+			return pathVariables.get(key);
+		}
+
+		var uriVariableMap = ServletRequestUtil.getUriVariableMap();
+		if (uriVariableMap != null && uriVariableMap.containsKey(key)) {
+			return uriVariableMap.get(key);
+		}
+
+		// check if model attributes are exposed somehow, but usually JTE doesn't unless
+		// passed into the view.
+		// Since SettingViewController puts it in Model, it might not be in request.
+		// Let's return null temporarily, we'll fix the controller if needed.
+		return null;
 	}
 
 	private static void putRequestParameterToMap(Map<String, String> map, String key) {
@@ -170,7 +212,7 @@ public final class ThymeleafUtil {
 		var replaceUrl = url;
 		while (matcher.find()) {
 			String key = matcher.group(2);
-			if (targetMap.containsKey(key)) {
+			if (targetMap.containsKey(key) && targetMap.get(key) != null) {
 				replaceUrl = replaceUrl.replace(matcher.group(), targetMap.get(key));
 			}
 		}
@@ -220,7 +262,7 @@ public final class ThymeleafUtil {
 		return Arrays.asList(THEMES);
 	}
 
-	public UriComponentsBuilder getUriComponentsBuilder() {
+	public static UriComponentsBuilder getUriComponentsBuilder() {
 		return ServletUriComponentsBuilder.fromCurrentRequestUri();
 	}
 }

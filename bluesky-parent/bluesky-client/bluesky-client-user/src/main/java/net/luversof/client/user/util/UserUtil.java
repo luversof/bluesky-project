@@ -27,7 +27,7 @@ public final class UserUtil {
 			return null;
 		}
 
-		// OAuth2 로그인인 경우 UserInfo 테이블 조회
+		// OAuth2 로그?�인 경우 UserInfo ?�이�?조회
 		if (authentication instanceof OAuth2AuthenticationToken oauth2Auth) {
 			OAuth2User principal = oauth2Auth.getPrincipal();
 			if (principal.getAttribute("userInfo") instanceof UserInfoResponse userInfo) {
@@ -44,7 +44,7 @@ public final class UserUtil {
 		String registrationId = oauth2Auth.getAuthorizedClientRegistrationId();
 		String provider = normalizeProvider(registrationId);
 
-		// GitHub의 id는 Integer 타입
+		// GitHub??id??Integer ?�??
 		Object idAttr = principal.getAttribute("id");
 		if (idAttr == null) {
 			log.warn("id attribute is null for provider: {}", provider);
@@ -73,31 +73,36 @@ public final class UserUtil {
 	}
 
 	/**
-	 * Provider 이름을 정규화 (github-local → github)
+	 * Provider ?�름???�규??(github-local ??github)
 	 */
 	private static String normalizeProvider(String provider) {
 		if (provider == null) {
 			return null;
 		}
-		// github-local, github-dev 등을 모두 github로 통일
+		// github-local, github-dev ?�을 모두 github�??�일
 		if (provider.startsWith("github")) {
 			return "github";
 		}
-		// kakao-local, kakao-dev 등을 모두 kakao로 통일
+		// kakao-local, kakao-dev ?�을 모두 kakao�??�일
 		if (provider.startsWith("kakao")) {
 			return "kakao";
 		}
 		return provider;
 	}
 
-	public static String getUsername() {
+	        public static boolean isAuthenticated() {
+                var authentication = SecurityContextHolder.getContext().getAuthentication();
+                return authentication != null && authentication.isAuthenticated() && !(authentication instanceof org.springframework.security.authentication.AnonymousAuthenticationToken);
+        }
+
+        public static String getUsername() {
 		var authentication = SecurityContextHolder.getContext().getAuthentication();
 
 		if (authentication == null || !authentication.isAuthenticated()) {
 			return null;
 		}
 
-		// OAuth2 로그인
+		// OAuth2 로그??
 		if (authentication instanceof OAuth2AuthenticationToken oauth2Auth) {
 			OAuth2User principal = oauth2Auth.getPrincipal();
 			if (principal.getAttribute("userInfo") instanceof UserInfoResponse userInfo) {
@@ -115,3 +120,4 @@ public final class UserUtil {
 		return authentication.getName();
 	}
 }
+

@@ -56,3 +56,8 @@ Spring Boot 기반의 멀티 모듈 프로젝트로, 게시판, 블로그, 주�
 #### UserInfo (bluesky-api-user)
 - 사용자 기본 정보
 - Columns: id(UUID), username, password
+
+## 6. JTE (Java Template Engine) 설정 전략
+- **기본 환경 (k8sdev, 프로덕션 등)**: gg.jte.usePrecompiledTemplates=true (사전 컴파일된 클래스 파일 사용)
+- **로컬 개발 환경 (localdev 프로파일)**: gg.jte.developmentMode=true 설정으로 실시간 템플릿 컴파일 및 새로고침 반영. gg.jte.usePrecompiledTemplates=false 병행 필수.
+- **에러 인지**: developmentMode=true가 누락된 채 usePrecompiledTemplates=false만 설정되면 Spring Boot 시작 시 Failed to instantiate [gg.jte.TemplateEngine] 오류 발생.

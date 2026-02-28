@@ -28,76 +28,75 @@ import net.luversof.web.dynamiccrud.use.service.UseServiceDecorator;
 import net.luversof.web.dynamiccrud.use.view.UseExcelView;
 
 public abstract class AbstractSettingFragmentController implements SettingFragmentControllerInterface {
-	
+
 	@Autowired
 	private UseServiceDecorator useService;
-	
+
 	@Autowired
 	private ObjectMapper objectMapper;
-	
+
 	@Override
 	public String list(
 			String adminProjectId,
-			String projectId, 
-			String mainMenuId, 
+			String projectId,
+			String mainMenuId,
 			String subMenuId,
-			Pageable pageable, 
+			Pageable pageable,
 			Map<String, String> paramMap,
 			Model model) {
 		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
-		var subMenu = SettingUtil.getSubMenu();
-		
+		var subMenu = SettingUtil.getSubMenu(settingParameter);
+
 		if (subMenu == null) {
 			throw new BlueskyException("NOT_EXIST_SUBMENU");
 		}
-		
-		
+
 		if (!subMenu.isEnableDisplay()) {
 			throw new BlueskyException("NOT_USE_SUBMENU");
 		}
-		
+
 		pageable = PageRequest.of(pageable.getPageNumber(), subMenu.getPageSize(), pageable.getSort());
 		var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
-		
+
 		addSpelForEditColumnToDataMap(settingParameter, paramMap);
-		
+
 		var page = useService.find(settingParameter, pageable, paramMap);
 		model.addAttribute("page", page);
-		
+
 		// 응답 데이터 목록 관리 객체
 		model.addAttribute("contentInfo", new ContentInfo(subMenu.getDbType(), page.getContent(), dbFieldList));
-		
+
 		// 여기도 필드 정보 기준으로 출력 처리를 해야 할꺼 같은데?
-		
+
 		return "use/fragment/list";
 	}
-	
+
 	@Override
 	public String modalForm(
 			String adminProjectId,
-			String projectId, 
-			String mainMenuId, 
+			String projectId,
+			String mainMenuId,
 			String subMenuId,
 			String modalMode,
 			Model model) {
 		return "use/fragment/modalForm";
 	}
-	
+
 	@Override
 	public void createModal(
 			String adminProjectId,
-			String projectId, 
-			String mainMenuId, 
+			String projectId,
+			String mainMenuId,
 			String subMenuId,
 			String modalMode,
 			Map<String, String> dataMap,
 			Model model) {
-		
+
 		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
-		
+
 		// 로그인한 유저 정보 추가 (설정 정보의 경우 필요하여 추가함. 기본 제공 변수 값에 대한 정의가 필요할수도 있음)
 		dataMap.put("writer", "bluesky계정");
-		
+
 		addSpelForEditColumnToDataMap(settingParameter, dataMap);
 
 		if (modalMode.equals("create")) {
@@ -106,12 +105,12 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 			useService.update(settingParameter, dataMap);
 		}
 	}
-	
+
 	@Override
 	public void deleteModal(
 			String adminProjectId,
-			String projectId, 
-			String mainMenuId, 
+			String projectId,
+			String mainMenuId,
 			String subMenuId,
 			String modalMode,
 			MultiValueMap<String, String> dataMap,
@@ -119,30 +118,32 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
 		useService.delete(settingParameter, dataMap);
 	}
-	
+
 	@Override
 	public String modalBulkForm(
 			String adminProjectId,
-			String projectId, 
-			String mainMenuId, 
+			String projectId,
+			String mainMenuId,
 			String subMenuId,
 			String modalMode,
 			Model model) {
 		return "use/fragment/modalBulkForm";
 	}
-	
+
 	@Override
 	public void importModalBulk(
 			String adminProjectId,
-			String projectId, 
-			String mainMenuId, 
+			String projectId,
+			String mainMenuId,
 			String subMenuId,
 			String modalMode,
 			Map<String, String> dataMap,
 			Model model) throws JsonProcessingException {
 		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
-		var dataMapList = objectMapper.readValue(dataMap.get("bulkData"), new TypeReference<List<Map<String, String>>>() {});
-		
+		var dataMapList = objectMapper.readValue(dataMap.get("bulkData"),
+				new TypeReference<List<Map<String, String>>>() {
+				});
+
 		// dataMapList 중 date 타입 field의 경우 ISO-8601 형식을 toString으로 변환하여 전달.
 		var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
 		for (var dbField : dbFieldList) {
@@ -150,9 +151,9 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 				for (var map : dataMapList) {
 					if (map.containsKey(dbField.getColumnId())) {
 						var dateValue = map.get(dbField.getColumnId());
-						
+
 						// dataValue를 Date type 으로 변환 한 후 toString 처리
-						
+
 						if (dateValue != null && !dateValue.isEmpty()) {
 							try {
 								var date = ZonedDateTime.parse(dateValue);
@@ -161,24 +162,24 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 								map.put(dbField.getColumnId(), zoneDate.format(formatter));
 							} catch (Exception e) {
 								// 날짜 형식이 잘못된 경우 예외 처리
-								throw  new BlueskyException("INVALID_DATE_FORMAT", dbField.getColumnId(), dateValue);
+								throw new BlueskyException("INVALID_DATE_FORMAT", dbField.getColumnId(), dateValue);
 							}
 						}
 					}
 				}
 			}
 		}
-		
+
 		for (var map : dataMapList) {
 			useService.create(settingParameter, map);
 		}
 	}
-	
+
 	@Override
 	public View excel(
 			String adminProjectId,
-			String projectId, 
-			String mainMenuId, 
+			String projectId,
+			String mainMenuId,
 			String subMenuId,
 			Map<String, String> paramMap,
 			Pageable pageable,
@@ -187,8 +188,8 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 		list(adminProjectId, projectId, mainMenuId, subMenuId, pageable, paramMap, model);
 		return new UseExcelView();
 	}
-	
-	// DbFieldColumnType이 SPEL_FOR_EDIT인 경우 추가	
+
+	// DbFieldColumnType이 SPEL_FOR_EDIT인 경우 추가
 	private void addSpelForEditColumnToDataMap(SettingParameter settingParameter, Map<String, String> dataMap) {
 		var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
 		// DbFieldColumnType이 SPEL_FOR_EDIT인 경우 추가
@@ -196,12 +197,13 @@ public abstract class AbstractSettingFragmentController implements SettingFragme
 			var evaluationContext = new StandardEvaluationContext();
 			dataMap.forEach(evaluationContext::setVariable);
 			var expressionParser = new SpelExpressionParser();
-			
-			dbFieldList.stream().filter(dbField -> dbField.getColumnType() == DbFieldColumnType.SPEL_FOR_EDIT).forEach(dbField -> {
-				var expression = expressionParser.parseExpression(dbField.getColumnFormat());
-				Object value = expression.getValue(evaluationContext);
-				dataMap.put(dbField.getColumnId(), String.valueOf(value));
-			});
+
+			dbFieldList.stream().filter(dbField -> dbField.getColumnType() == DbFieldColumnType.SPEL_FOR_EDIT)
+					.forEach(dbField -> {
+						var expression = expressionParser.parseExpression(dbField.getColumnFormat());
+						Object value = expression.getValue(evaluationContext);
+						dataMap.put(dbField.getColumnId(), String.valueOf(value));
+					});
 		}
 	}
 }
