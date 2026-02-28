@@ -1,6 +1,8 @@
 package net.luversof.web.gate.stock.controller;
 
 import java.util.UUID;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
+import jakarta.servlet.http.HttpServletRequest;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
@@ -18,75 +21,110 @@ import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 @RequestMapping(value = "/stock", produces = MediaType.TEXT_HTML_VALUE)
 public class StockViewController {
 
-	private AccountClient accountClient;
+        private AccountClient accountClient;
 
-	private StockItemClient stockItemClient;
+        private StockItemClient stockItemClient;
 
-	@Autowired
-	public void setAccountClient(AccountClient accountClient) {
-		this.accountClient = accountClient;
-	}
+        @Autowired
+        public void setAccountClient(AccountClient accountClient) {
+                this.accountClient = accountClient;
+        }
 
-	@Autowired
-	public void setStockItemClient(StockItemClient stockItemClient) {
-		this.stockItemClient = stockItemClient;
-	}
+        @Autowired
+        public void setStockItemClient(StockItemClient stockItemClient) {
+                this.stockItemClient = stockItemClient;
+        }
 
-	@BlueskyPreAuthorize
-	@GetMapping
-	public String index(Model model) {
-		UUID userId = UserUtil.getUserId();
-		if (userId != null) {
-			// 계좌 목록을 모델에 추가하여 select 옵션으로 사용
-			var accounts = accountClient.getAccountsByUserId(userId);
-			model.addAttribute("accounts", accounts);
-			model.addAttribute("userId", userId);
-		}
+        private String getLoginRedirectUrl(HttpServletRequest request) {
+                String scheme = request.getScheme();
+                String serverName = request.getServerName();
+                int serverPort = request.getServerPort();
+                
+                StringBuilder urlBuilder = new StringBuilder();
+                urlBuilder.append(scheme).append("://").append(serverName);
+                if (serverPort != 80 && serverPort != 443) {
+                        urlBuilder.append(":").append(serverPort);
+                }
+                urlBuilder.append(request.getRequestURI());
+                
+                if (request.getQueryString() != null) {
+                        urlBuilder.append("?").append(request.getQueryString());
+                }
+                
+                String encodedUrl = URLEncoder.encode(urlBuilder.toString(), StandardCharsets.UTF_8);
+                return "redirect:/login?redirectUrl=" + encodedUrl;
+        }
 
-		// 종목 목록은 사용자와 무관하게 전체 리스트를 제공
-		var stockItems = stockItemClient.getStockItems();
-		model.addAttribute("stockItems", stockItems);
-		return "stock/dashboard";
-	}
+        private boolean isNotAuthenticated() {
+                return UserUtil.getUserId() == null;
+        }
 
-	@BlueskyPreAuthorize
-	@GetMapping("/analytics")
-	public String analyticsPage(Model model) {
-		UUID userId = UserUtil.getUserId();
-		if (userId == null) {
-			return "redirect:/login";
-		}
-		return "stock/analytics";
-	}
+        @BlueskyPreAuthorize
+        @GetMapping
+        public String index(HttpServletRequest request, Model model) {
+                if (isNotAuthenticated()) {
+                        return getLoginRedirectUrl(request);
+                }
+                
+                UUID userId = UserUtil.getUserId();
+                var accounts = accountClient.getAccountsByUserId(userId);
+                model.addAttribute("accounts", accounts);
+                model.addAttribute("userId", userId);
 
-	@BlueskyPreAuthorize
-	@GetMapping("/dashboard")
-	public String dashboard(Model model) {
-		return "stock/dashboard";
-	}
+                var stockItems = stockItemClient.getStockItems();
+                model.addAttribute("stockItems", stockItems);
+                return "stock/dashboard";
+        }
 
-	@BlueskyPreAuthorize
-	@GetMapping("/activity")
-	public String activityPage(Model model) {
-		return "stock/activity";
-	}
+        @BlueskyPreAuthorize
+        @GetMapping("/analytics")
+        public String analyticsPage(HttpServletRequest request, Model model) {
+                if (isNotAuthenticated()) {
+                        return getLoginRedirectUrl(request);
+                }
+                return "stock/analytics";
+        }
 
-	@BlueskyPreAuthorize
-	@GetMapping("/dividend")
-	public String dividendPage(Model model) {
-		return "stock/dividend";
-	}
+        @BlueskyPreAuthorize
+        @GetMapping("/dashboard")
+        public String dashboard(HttpServletRequest request, Model model) {
+                if (isNotAuthenticated()) {
+                        return getLoginRedirectUrl(request);
+                }
+                return "redirect:/stock"; 
+        }
 
-	@BlueskyPreAuthorize
-	@GetMapping("/trade")
-	public String tradePage(Model model) {
-		UUID userId = UserUtil.getUserId();
-		if (userId != null) {
-			var accounts = accountClient.getAccountsByUserId(userId);
-			model.addAttribute("accounts", accounts);
-		}
-		var stockItems = stockItemClient.getStockItems();
-		model.addAttribute("stockItems", stockItems);
-		return "stock/trade";
-	}
+        @BlueskyPreAuthorize
+        @GetMapping("/activity")
+        public String activityPage(HttpServletRequest request, Model model) {
+                if (isNotAuthenticated()) {
+                        return getLoginRedirectUrl(request);
+                }
+                return "stock/activity";
+        }
+
+        @BlueskyPreAuthorize
+        @GetMapping("/dividend")
+        public String dividendPage(HttpServletRequest request, Model model) {
+                if (isNotAuthenticated()) {
+                        return getLoginRedirectUrl(request);
+                }
+                return "stock/dividend";
+        }
+
+        @BlueskyPreAuthorize
+        @GetMapping("/trade")
+        public String tradePage(HttpServletRequest request, Model model) {
+                if (isNotAuthenticated()) {
+                        return getLoginRedirectUrl(request);
+                }
+                
+                UUID userId = UserUtil.getUserId();
+                var accounts = accountClient.getAccountsByUserId(userId);
+                model.addAttribute("accounts", accounts);
+
+                var stockItems = stockItemClient.getStockItems();
+                model.addAttribute("stockItems", stockItems);
+                return "stock/trade";
+        }
 }

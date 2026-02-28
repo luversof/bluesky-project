@@ -24,7 +24,7 @@
 				</div>
 			</div>
 			<div class="flex-1 min-w-0 p-4 relative">
-				<div class="flex justify-end mb-4 sticky top-4 z-50">
+				<div class="flex justify-end mb-4 sticky top-20 z-40">
 					<div class="form-control">
 						<label class="label cursor-pointer gap-2 bg-base-100/90 backdrop-blur hover:bg-base-200 px-4 py-2 rounded-full transition-colors border border-base-300 shadow-md">
 							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-base-content/70">
