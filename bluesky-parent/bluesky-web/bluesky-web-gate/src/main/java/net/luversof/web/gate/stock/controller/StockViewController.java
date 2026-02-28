@@ -9,6 +9,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
@@ -31,6 +32,7 @@ public class StockViewController {
 		this.stockItemClient = stockItemClient;
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping
 	public String index(Model model) {
 		UUID userId = UserUtil.getUserId();
@@ -47,6 +49,7 @@ public class StockViewController {
 		return "stock/dashboard";
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/analytics")
 	public String analyticsPage(Model model) {
 		UUID userId = UserUtil.getUserId();
@@ -56,21 +59,25 @@ public class StockViewController {
 		return "stock/analytics";
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/dashboard")
 	public String dashboard(Model model) {
 		return "stock/dashboard";
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/activity")
 	public String activityPage(Model model) {
 		return "stock/activity";
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/dividend")
 	public String dividendPage(Model model) {
 		return "stock/dividend";
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/trade")
 	public String tradePage(Model model) {
 		UUID userId = UserUtil.getUserId();

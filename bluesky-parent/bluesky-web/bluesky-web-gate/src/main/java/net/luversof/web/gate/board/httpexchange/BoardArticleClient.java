@@ -17,7 +17,7 @@ import io.github.luversof.boot.data.domain.PageResponse;
 import net.luversof.web.gate.board.domain.BoardArticle;
 
 /**
- * 게시글 관련 API를 호출하는 OpenFeign 클라이언트 (bluesky-api-board 호출)
+ * 게시글 관련 API를 호출하는 HttpExchange 클라이언트 (bluesky-api-board 호출)
  */
 @HttpExchange(url = "/api/boardArticle", contentType = MediaType.APPLICATION_JSON_VALUE)
 public interface BoardArticleClient {

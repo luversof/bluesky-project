@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.exception.BlueskyException;
+import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.board.domain.Board;
 import net.luversof.web.gate.board.httpexchange.BoardArticleClient;
@@ -76,6 +77,7 @@ public class BoardViewController {
 		return "board/view";
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/{boardAlias}/{boardMode:write}")
 	public String write(@PathVariable String boardAlias, @PathVariable String boardMode, Model model) {
 		var board = checkBoard(boardAlias);
@@ -83,6 +85,7 @@ public class BoardViewController {
 		return "board/write";
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/{boardAlias}/{boardMode:modify}")
 	public String modify(@PathVariable String boardAlias, @PathVariable String boardMode,
 			@RequestParam UUID boardArticleId, Model model) {

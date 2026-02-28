@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
 import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint;
@@ -27,6 +28,7 @@ public class StockApiController {
 		this.tradeProfitClient = tradeProfitClient;
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping(value = "/timeSeries", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseBody
 	public ResponseEntity<List<TradeProfitTimeSeriesPoint>> timeSeries(TradeProfitRequest request) {

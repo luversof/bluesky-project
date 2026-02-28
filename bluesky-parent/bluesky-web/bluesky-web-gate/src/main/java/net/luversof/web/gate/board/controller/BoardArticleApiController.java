@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.github.luversof.boot.data.domain.PageResponse;
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.board.domain.BoardArticle;
@@ -63,11 +64,11 @@ public class BoardArticleApiController {
 	 * @return
 	 */
 	@GetMapping("/search/findByBoardAlias/{boardAlias}")
-	public Page<BoardArticle> findByBoardAlias(@PathVariable String boardAlias,
+	public PageResponse<BoardArticle> findByBoardAlias(@PathVariable String boardAlias,
 			@PageableDefault(size = 20) @SortDefault(sort = "createdDate", direction = Direction.DESC) Pageable pageable) {
 		log.debug("findByBoardAlias boardAlias : {}", boardAlias);
 		var page = boardArticleClient.findByBoardAlias(boardAlias, pageable);
-		return boardUserInfoService.enrich(page).toPage();
+		return boardUserInfoService.enrich(page);
 	}
 
 	@GetMapping("/{id}")

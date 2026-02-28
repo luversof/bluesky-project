@@ -11,7 +11,7 @@ import org.springframework.web.service.annotation.PutExchange;
 import net.luversof.web.gate.board.domain.Board;
 
 /**
- * 게시판 관련 API를 호출하는 OpenFeign 클라이언트 (bluesky-api-board 호출)
+ * 게시판 관련 API를 호출하는 HttpExchange 클라이언트 (bluesky-api-board 호출)
  */
 @HttpExchange(url = "/api/board", contentType = MediaType.APPLICATION_JSON_VALUE)
 public interface BoardClient {

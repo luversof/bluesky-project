@@ -33,21 +33,25 @@
              </div>
 
              <!-- Details -->
-             <div class="flex gap-2 items-center">
-                 <select name="year" id="select-year" class="select select-bordered select-sm" onchange="updateAnalyticsVis()">
-                     @for(Integer y : years)
-                         <option value="${y}" selected="${y == currentYear}">${y}년</option>
-                     @endfor
-                 </select>
+             <div class="flex flex-wrap gap-2 items-center">
+                 <div id="wrapper-year" style="display:block;">
+                     <select name="year" id="select-year" class="select select-bordered select-sm w-24" onchange="updateAnalyticsVis()">
+                         @for(Integer y : years)
+                             <option value="${y}" selected="${y == currentYear}">${y}년</option>
+                         @endfor
+                     </select>
+                 </div>
                  
-                 <select name="month" id="select-month" class="select select-bordered select-sm" style="display:none;" onchange="updateAnalyticsVis()">
-                     @for(int m = 1; m <= 12; m++)
-                         <option value="${m}" selected="${m == currentMonth}">${m}월</option>
-                     @endfor
-                 </select>
+                 <div id="wrapper-month" style="display:none;">
+                     <select name="month" id="select-month" class="select select-bordered select-sm w-20" onchange="updateAnalyticsVis()">
+                         @for(int m = 1; m <= 12; m++)
+                             <option value="${m}" selected="${m == currentMonth}">${m}월</option>
+                         @endfor
+                     </select>
+                 </div>
 
                  <!-- Separator -->
-                 <div class="w-px h-6 bg-base-300 mx-2"></div>
+                 <div class="hidden sm:block w-px h-6 bg-base-300 mx-2"></div>
 
                  <!-- Group By -->
                  <div class="join shadow-sm">
@@ -86,18 +90,18 @@
         if(!timeScaleElement) return;
 
         const timeScale = timeScaleElement.value;
-        const yearSelect = document.getElementById('select-year');
-        const monthSelect = document.getElementById('select-month');
+        const yearWrapper = document.getElementById('wrapper-year');
+        const monthWrapper = document.getElementById('wrapper-month');
         
         if (timeScale === 'TOTAL') {
-             yearSelect.style.display = 'none';
-             monthSelect.style.display = 'none';
+             yearWrapper.style.display = 'none';
+             monthWrapper.style.display = 'none';
         } else if (timeScale === 'YEARLY') {
-             yearSelect.style.display = 'inline-block';
-             monthSelect.style.display = 'none';
+             yearWrapper.style.display = 'inline-block';
+             monthWrapper.style.display = 'none';
         } else {
-             yearSelect.style.display = 'inline-block';
-             monthSelect.style.display = 'inline-block';
+             yearWrapper.style.display = 'inline-block';
+             monthWrapper.style.display = 'inline-block';
         }
     }
 </script>

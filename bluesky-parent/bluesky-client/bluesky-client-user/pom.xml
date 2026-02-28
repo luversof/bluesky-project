@@ -22,6 +22,7 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
+
 		<!-- (e) spring-boot -->
 
 		<!-- (s) spring-session (redis store) -->
@@ -39,10 +40,6 @@
 		<!-- (e) spring-security -->
 
 		<!-- (s) spring-cloud -->
-		<!--<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-openfeign</artifactId>
-		</dependency>-->
 		<!-- (e) spring-cloud -->
 		
 		<dependency>

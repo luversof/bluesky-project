@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 
@@ -22,6 +23,7 @@ public class StockItemApiController {
 		this.stockItemClient = stockItemClient;
 	}
 
+	@BlueskyPreAuthorize
 	@PostMapping
 	public StockItem createStockItem(@RequestBody StockItem stockItem) {
 		return stockItemClient.createStockItem(stockItem);

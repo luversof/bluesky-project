@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.common.menu.domain.Pagination;
 import net.luversof.web.gate.stock.domain.Account;
@@ -94,6 +95,7 @@ public class StockHtmxController {
 			Integer borderWidth, List<Integer> borderDash) {
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/dashboard")
 	public String dashboard(@RequestHeader(value = "HX-Request", required = false) boolean hxRequest, Model model) {
 		if (hxRequest) {
@@ -102,6 +104,7 @@ public class StockHtmxController {
 		return "stock/htmx/dashboard";
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/daily-summary/view")
 	public String dailySummaryView(Model model) {
 		UUID userId = UserUtil.getUserId();
@@ -121,6 +124,7 @@ public class StockHtmxController {
 		return "stock/htmx/daily-summary";
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/daily-summary/data")
 	public String dailySummaryData(
 			@RequestParam(defaultValue = "PROFIT") String type, // PROFIT | DIVIDEND
@@ -681,6 +685,7 @@ public class StockHtmxController {
 		return "stock/htmx/daily-summary-data";
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/analytics/view")
 	public String analyticsView(Model model) {
 		UUID userId = UserUtil.getUserId();
@@ -699,6 +704,7 @@ public class StockHtmxController {
 		return "stock/htmx/analytics";
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/analytics/data")
 	public String analyticsData(
 			@RequestParam(defaultValue = "PROFIT") String type, // PROFIT | DIVIDEND
@@ -732,6 +738,7 @@ public class StockHtmxController {
 		return "stock/htmx/analytics-data";
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/summary")
 	public String summary(TradeProfitRequest request, Model model) {
 		UUID userId = UserUtil.getUserId();
@@ -967,6 +974,7 @@ public class StockHtmxController {
 				null);
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/charts/allocation")
 	public String allocationChart(TradeProfitRequest request, Model model) {
 		UUID userId = UserUtil.getUserId();
@@ -989,6 +997,7 @@ public class StockHtmxController {
 		return "stock/htmx/fragments/chartsAllocation";
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/charts/dividend")
 	public String dividendChart(Model model) {
 		UUID userId = UserUtil.getUserId();
@@ -1016,6 +1025,7 @@ public class StockHtmxController {
 		return "stock/htmx/fragments/chartsDividend";
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/portfolio")
 	public String portfolio(TradeProfitRequest request,
 			@RequestParam(required = false) String sort,
@@ -1288,6 +1298,7 @@ public class StockHtmxController {
 				.toList();
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/dividend/list")
 	public String dividendList(
 			@RequestParam(required = false) List<UUID> accountIdList,
@@ -1487,6 +1498,7 @@ public class StockHtmxController {
 		return "stock/htmx/fragments/tabsDividendHistory";
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/trade/list")
 	public String tradeList(
 			@RequestHeader(value = "userId", required = false) String userIdStr,
@@ -1702,6 +1714,7 @@ public class StockHtmxController {
 		return activities;
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/recent-activities")
 	public String recentActivities(Model model) {
 		UUID userId = UserUtil.getUserId();
@@ -1715,6 +1728,7 @@ public class StockHtmxController {
 		return "stock/htmx/fragments/recentActivities";
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping("/activity-list")
 	public String activityList(Model model) {
 		UUID userId = UserUtil.getUserId();

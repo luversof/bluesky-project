@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.stock.httpexchange.StockAdminClient;
 
@@ -18,16 +19,19 @@ public class StockAdminApiController {
 	@Autowired
 	private StockAdminClient stockAdminClient;
 
+	@BlueskyPreAuthorize
 	@PostMapping("/stock-items")
 	public int stockItemBulkInsert() {
 		return stockAdminClient.stockItemBulkInsert(UserUtil.getUserId());
 	}
 
+	@BlueskyPreAuthorize
 	@PostMapping("/trades")
 	public void tradeBulkInsert() {
 		stockAdminClient.tradeBulkInsert(UserUtil.getUserId());
 	}
 
+	@BlueskyPreAuthorize
 	@PostMapping("/dividends")
 	public void dividendBulkInsert() {
 		stockAdminClient.dividendBulkInsert(UserUtil.getUserId());

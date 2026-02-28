@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.github.luversof.boot.data.domain.PageResponse;
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.board.domain.BoardArticleComment;
@@ -51,10 +52,10 @@ public class BoardArticleCommentApiController {
 	}
 
 	@GetMapping("/search/findByBoardArticleId/{boardArticleId}")
-	public Page<BoardArticleComment> findByBoardArticleId(@PathVariable UUID boardArticleId,
+	public PageResponse<BoardArticleComment> findByBoardArticleId(@PathVariable UUID boardArticleId,
 			@PageableDefault(size = 10) @SortDefault(sort = "createdDate", direction = Direction.ASC) Pageable pageable) {
 		var page = boardArticleCommentClient.findByBoardArticleId(boardArticleId, pageable);
-		return boardUserInfoService.enrichComments(page).toPage();
+		return boardUserInfoService.enrichComments(page);
 	}
 
 	@GetMapping("/search/countByBoardArticleId/{boardArticleId}")

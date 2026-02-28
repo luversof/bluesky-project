@@ -38,6 +38,7 @@ public class BookkeepingApiController {
 						.build());
 	}
 
+	@BlueskyPreAuthorize
 	@GetMapping
 	public List<Bookkeeping> findByUserId(@RequestParam String userId) {
 		return bookkeepingClient.findByUserId(userId);

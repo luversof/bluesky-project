@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import jakarta.servlet.http.HttpServletRequest;
 import net.luversof.client.user.util.UserUtil;
 
@@ -20,6 +21,7 @@ public class UserController {
 	@Value("${bluesky.client.user.login-url}")
 	private String loginUrl;
 
+	@BlueskyPreAuthorize
 	@GetMapping("/user/info")
 	@ResponseBody
 	public Map<String, Object> userInfo(@AuthenticationPrincipal OAuth2User principal) {
@@ -39,11 +41,12 @@ public class UserController {
 		if (redirectUrl == null) {
 			redirectUrl = request.getHeader(org.springframework.http.HttpHeaders.REFERER);
 		}
-		
+
 		if (redirectUrl != null) {
-			return "redirect:" + UriComponentsBuilder.fromUriString(loginUrl).replaceQueryParam("redirectUrl", redirectUrl).build().toUriString();
+			return "redirect:" + UriComponentsBuilder.fromUriString(loginUrl)
+					.replaceQueryParam("redirectUrl", redirectUrl).build().toUriString();
 		}
-		
+
 		return "redirect:" + loginUrl;
 	}
 
