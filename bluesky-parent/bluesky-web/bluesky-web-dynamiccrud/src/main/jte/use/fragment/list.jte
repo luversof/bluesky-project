@@ -2,7 +2,7 @@
 @import org.springframework.data.domain.Page
 @import net.luversof.web.dynamiccrud.use.domain.ContentInfo
 @import net.luversof.web.dynamiccrud.use.domain.ContentInfo.ContentKeyInfo
-@import net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil
+@import net.luversof.web.dynamiccrud.util.TemplateUtil
 @import net.luversof.web.dynamiccrud.setting.domain.SubMenu
 @import net.luversof.web.dynamiccrud.util.MessageUtil
 @import com.fasterxml.jackson.databind.ObjectMapper
@@ -12,7 +12,7 @@
 @param ObjectMapper jacksonObjectMapper
 
 !{
-        SubMenu targetSubMenu = ThymeleafUtil.getSubMenu();
+        SubMenu targetSubMenu = TemplateUtil.getSubMenu();
 }
 
 <div id="content">
@@ -42,7 +42,7 @@
                 <div>
                         @if(targetSubMenu.isShowExportButton())
                         <button class="btn btn-outline btn-sm exportButton"
-                                hx-get="${ThymeleafUtil.getUrl("FRAGMENT_MODAL_BULK_FORM", Map.of("modalMode", "export"))}"
+                                hx-get="${TemplateUtil.getUrl("FRAGMENT_MODAL_BULK_FORM", Map.of("modalMode", "export"))}"
                                 hx-trigger="exportModalBulkTrigger"
                                 hx-target="#fragmentArea"
                         >
@@ -55,7 +55,7 @@
 
                         @if(targetSubMenu.isShowImportButton())
                         <button class="btn btn-outline btn-sm importButton"
-                                hx-get="${ThymeleafUtil.getUrl("FRAGMENT_MODAL_BULK_FORM", Map.of("modalMode", "import"))}"
+                                hx-get="${TemplateUtil.getUrl("FRAGMENT_MODAL_BULK_FORM", Map.of("modalMode", "import"))}"
                                 hx-target="#fragmentArea"
                         >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -67,7 +67,7 @@
 
                         @if(targetSubMenu.isEnableExcel())
                         <a
-                                href="${ThymeleafUtil.getUriComponentsBuilder().replacePath(ThymeleafUtil.getUrl("FRAGMENT_EXCEL")).toUriString()}"
+                                href="${TemplateUtil.getUriComponentsBuilder().replacePath(TemplateUtil.getUrl("FRAGMENT_EXCEL")).toUriString()}"
                                 target="_blank"
                                 download
                         >
@@ -136,7 +136,7 @@
                                         @if(targetSubMenu.isEnableUpdate())
                                         <td class="contentDataMenu">
                                                 <button class="btn btn-sm"
-                                                        hx-get="${ThymeleafUtil.getUrl("FRAGMENT_MODAL_FORM", Map.of("modalMode", "update"))}"
+                                                        hx-get="${TemplateUtil.getUrl("FRAGMENT_MODAL_FORM", Map.of("modalMode", "update"))}"
                                                         hx-target="#fragmentArea"
                                                 >
                                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -175,7 +175,7 @@
                 <div class="w-3/12 text-right">
                         @if(targetSubMenu.isEnableInsert())
                         <button class="btn btn-outline btn-info btn-sm"
-                                hx-get="${ThymeleafUtil.getUrl("FRAGMENT_MODAL_FORM", Map.of("modalMode", "create"))}"
+                                hx-get="${TemplateUtil.getUrl("FRAGMENT_MODAL_FORM", Map.of("modalMode", "create"))}"
                                 hx-target="#fragmentArea"
                         >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -187,7 +187,7 @@
 
                         @if(targetSubMenu.isEnableDelete())
                         <button class="btn btn-outline btn-error btn-sm deleteButton"
-                                hx-post="${ThymeleafUtil.getUrl("FRAGMENT_MODAL_FORM", Map.of("modalMode", "delete"))}"
+                                hx-post="${TemplateUtil.getUrl("FRAGMENT_MODAL_FORM", Map.of("modalMode", "delete"))}"
                                 hx-include="#contentTable tr:has(input[name=contentDataCheck]:checked) .contentData input"
                                 hx-trigger="deleteModalTrigger"
                                 hx-target="#fragmentArea"

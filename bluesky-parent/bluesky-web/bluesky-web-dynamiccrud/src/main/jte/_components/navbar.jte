@@ -1,4 +1,4 @@
-@import net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil
+@import net.luversof.web.dynamiccrud.util.TemplateUtil
 @import net.luversof.client.user.util.UserUtil
 @import io.github.luversof.boot.context.ApplicationContextUtil
 @import org.springframework.core.env.Environment
@@ -10,7 +10,7 @@
 <div class="navbar bg-base-200 p-0 min-h-14 fixed top-0 z-2 bg-opacity-90">
 
         <div class="navbar-start p-0">
-                @if(ThymeleafUtil.isAdminMenu())
+                @if(TemplateUtil.isAdminMenu())
                         <div class="dropdown">
                                 <label tabindex="0" class="btn btn-ghost">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
@@ -35,7 +35,7 @@
                         </div>
                 @endif
 
-                @if(ThymeleafUtil.isEnableMainMenuUI() && !ThymeleafUtil.isAdminMenu())
+                @if(TemplateUtil.isEnableMainMenuUI() && !TemplateUtil.isAdminMenu())
                         <div class="drawer w-fit">
                                 <input id="mainMenu-drawer" type="checkbox" class="drawer-toggle" />
                                 <div class="drawer-content">
@@ -49,7 +49,7 @@
                                         <label for="mainMenu-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
                                         <div class="menu p-4 w-80 min-h-full bg-base-100 text-base-content">
                                                 <ul>
-                                                        @for(var menu : ThymeleafUtil.getMainMenuList())
+                                                        @for(var menu : TemplateUtil.getMainMenuList())
                                                                 @if(menu.isDisplay())
                                                                         <li>
                                                                                 <a
@@ -126,7 +126,7 @@
                         </div>
                         <div tabindex="0" class="dropdown-content z-1 bg-base-200 top-px h-[28.6rem] max-h-[calc(100vh-10rem)] w-56 overflow-y-auto mt-16">
                                 <div class="grid gap-3 p-3">
-                                        @for(String theme : ThymeleafUtil.getThemeList())
+                                        @for(String theme : TemplateUtil.getThemeList())
                                                 <button
                                                         class="text-start"
                                                         data-set-theme="${theme}"

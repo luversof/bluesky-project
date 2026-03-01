@@ -1,4 +1,4 @@
-@import net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil
+@import net.luversof.web.dynamiccrud.util.TemplateUtil
 @import net.luversof.web.dynamiccrud.util.MessageUtil
 @import java.util.Map
 
@@ -12,7 +12,7 @@
                 <h3 class="font-bold text-lg">${MessageUtil.getMessage("use.text.modalBulkForm." + modalMode)}</h3>
                 <div class="m-2">
                         <form id="modalBulkForm"
-                                hx-post="${ThymeleafUtil.getUrl("FRAGMENT_MODAL_BULK_FORM", Map.of("modalMode", modalMode))}"
+                                hx-post="${TemplateUtil.getUrl("FRAGMENT_MODAL_BULK_FORM", Map.of("modalMode", modalMode))}"
                                 hx-target="#fragmentArea"
                         >
                                 <div class="w-full m-1">

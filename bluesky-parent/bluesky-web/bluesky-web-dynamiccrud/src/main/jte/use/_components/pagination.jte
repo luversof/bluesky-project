@@ -1,5 +1,5 @@
 @import org.springframework.data.domain.Page
-@import net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil
+@import net.luversof.web.dynamiccrud.util.TemplateUtil
 @import net.luversof.web.common.menu.domain.Pagination
 
 @param Page<?> page
@@ -8,7 +8,7 @@
 
 @if(page.getTotalPages() > 1)
 !{
-        Pagination pagination = ThymeleafUtil.getPagination(page);
+        Pagination pagination = TemplateUtil.getPagination(page);
 }
 <div class="w-full join place-content-center">
         <button

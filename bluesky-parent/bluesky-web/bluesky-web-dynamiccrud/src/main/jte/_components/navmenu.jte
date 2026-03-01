@@ -1,8 +1,8 @@
 @import java.util.List
 @import net.luversof.web.common.menu.domain.Menu
-@import net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil
+@import net.luversof.web.dynamiccrud.util.TemplateUtil
 
-@param List<Menu> menuList = ThymeleafUtil.getSubMenuList() != null ? ThymeleafUtil.getSubMenuList() : ThymeleafUtil.getDefaultSubMenuList()
+@param List<Menu> menuList = TemplateUtil.getSubMenuList() != null ? TemplateUtil.getSubMenuList() : TemplateUtil.getDefaultSubMenuList()
 @param boolean isCurrentMenu = false
 @param boolean isDropdown = false
 @param String classAppend = ""

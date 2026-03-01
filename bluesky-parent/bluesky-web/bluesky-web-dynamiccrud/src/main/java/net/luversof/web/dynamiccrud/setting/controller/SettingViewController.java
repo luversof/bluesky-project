@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import net.luversof.web.dynamiccrud.setting.constant.SettingConstant;
 import net.luversof.web.dynamiccrud.setting.service.admin.AdminConstant;
-import net.luversof.web.dynamiccrud.thymeleaf.constant.UrlConstant;
+import net.luversof.web.dynamiccrud.constant.UrlConstant;
 
 @Controller
 public class SettingViewController extends AbstractSettingViewController {

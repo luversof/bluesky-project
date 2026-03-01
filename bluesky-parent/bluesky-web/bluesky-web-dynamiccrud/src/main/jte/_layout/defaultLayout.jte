@@ -1,8 +1,8 @@
-@import net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil
+@import net.luversof.web.dynamiccrud.util.TemplateUtil
 @param gg.jte.Content content
 
 <!DOCTYPE html>
-<html data-theme="${ThymeleafUtil.getRandomTheme()}">
+<html data-theme="${TemplateUtil.getRandomTheme()}">
 
 <head>
         <link href="/main.css" rel="stylesheet" />

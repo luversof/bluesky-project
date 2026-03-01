@@ -12,7 +12,7 @@ import net.luversof.web.dynamiccrud.setting.controller.AbstractSettingViewContro
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
 import net.luversof.web.dynamiccrud.setting.service.admin.AdminConstant;
 import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
-import net.luversof.web.dynamiccrud.thymeleaf.constant.UrlConstant;
+import net.luversof.web.dynamiccrud.constant.UrlConstant;
 
 /**
  * 설정된 데이터를 호출하여 화면을 구성

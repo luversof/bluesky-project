@@ -1,5 +1,5 @@
 @import net.luversof.web.dynamiccrud.setting.domain.DbField
-@import net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil
+@import net.luversof.web.dynamiccrud.util.TemplateUtil
 @import java.util.List
 
 @param boolean hasSearchField
@@ -15,7 +15,7 @@
 
                 <div id="listArea"
                         class="px-10 text-center"
-                        hx-get="${ThymeleafUtil.getUrl("FRAGMENT_LIST")}"
+                        hx-get="${TemplateUtil.getUrl("FRAGMENT_LIST")}"
                         hx-vals="js:{'page' : param.getRequestPage()}"
                         hx-include="#searchArea .searchInput"
                         hx-swap="transition:true"

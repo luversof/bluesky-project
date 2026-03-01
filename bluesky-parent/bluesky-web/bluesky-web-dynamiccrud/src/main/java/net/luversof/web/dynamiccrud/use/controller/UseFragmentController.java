@@ -17,7 +17,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.github.luversof.boot.htmx.annotation.HtmxResponseHeader;
 import net.luversof.web.dynamiccrud.setting.controller.AbstractSettingFragmentController;
-import net.luversof.web.dynamiccrud.thymeleaf.constant.UrlConstant;
+import net.luversof.web.dynamiccrud.constant.UrlConstant;
 
 @Controller
 public class UseFragmentController extends AbstractSettingFragmentController {

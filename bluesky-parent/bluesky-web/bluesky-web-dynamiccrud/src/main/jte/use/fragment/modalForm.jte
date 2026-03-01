@@ -1,7 +1,7 @@
 @import net.luversof.web.dynamiccrud.setting.domain.DbField
 @import net.luversof.web.dynamiccrud.setting.domain.SubMenu
 @import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType
-@import net.luversof.web.dynamiccrud.thymeleaf.util.ThymeleafUtil
+@import net.luversof.web.dynamiccrud.util.TemplateUtil
 @import net.luversof.web.dynamiccrud.util.MessageUtil
 @import java.util.Map
 @import java.util.List
@@ -9,8 +9,8 @@
 @param String modalMode
 
 !{
-        SubMenu subMenu = ThymeleafUtil.getSubMenu();
-        List<DbField> dbFieldList = ThymeleafUtil.getDbFieldList();
+        SubMenu subMenu = TemplateUtil.getSubMenu();
+        List<DbField> dbFieldList = TemplateUtil.getDbFieldList();
 }
 
 <dialog id="modal" class="modal">
@@ -21,7 +21,7 @@
                 <h3 class="font-bold text-lg">${MessageUtil.getMessage("use.text.modalForm." + modalMode)}</h3>
                 <div class="m-2">
                         <form id="modalForm"
-                                hx-post="${ThymeleafUtil.getUrl("FRAGMENT_MODAL_FORM", Map.of("modalMode", modalMode))}"
+                                hx-post="${TemplateUtil.getUrl("FRAGMENT_MODAL_FORM", Map.of("modalMode", modalMode))}"
                                 hx-target="#fragmentArea"
                         >
                                 @for(DbField dbField : dbFieldList)
