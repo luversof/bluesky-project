@@ -61,3 +61,29 @@ CREATE TABLE "StockPrice" (
 );
 
 CREATE UNIQUE INDEX uk_stockPrice_stockItemId ON "StockPrice" ("stockItem_id");
+
+CREATE TABLE "StockPriceHistory" (
+	"id" UUID NOT NULL PRIMARY KEY,
+	"stockItem_id" UUID NOT NULL,
+	"tradeDate" DATE NOT NULL,
+	"openPrice" NUMERIC,
+	"highPrice" NUMERIC,
+	"lowPrice" NUMERIC,
+	"closePrice" NUMERIC,
+	"volume" BIGINT,
+	"updatedDate" TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE UNIQUE INDEX uk_stockPriceHistory_stockItemId_tradeDate ON "StockPriceHistory" ("stockItem_id", "tradeDate");
+
+CREATE TABLE "OpenApiConfig" (
+	"id" UUID NOT NULL PRIMARY KEY,
+	"provider" VARCHAR(50) NOT NULL,
+	"appKey" VARCHAR(255) NOT NULL,
+	"appSecret" VARCHAR(255) NOT NULL,
+	"accessToken" VARCHAR(2000),
+	"tokenUpdatedDate" TIMESTAMP WITH TIME ZONE,
+	"updatedDate" TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE UNIQUE INDEX uk_openApiConfig_provider ON "OpenApiConfig" ("provider");

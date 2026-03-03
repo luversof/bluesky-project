@@ -1,6 +1,6 @@
 package net.luversof.api.stock.repository;
 
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -12,12 +12,10 @@ import net.luversof.api.stock.domain.StockPriceHistory;
 
 public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHistory, UUID> {
 
-	Optional<StockPriceHistory> findTopByStockItemIdAndPriceDateLessThanEqualOrderByPriceDateDesc(UUID stockItemId,
-			Instant priceDate);
+Optional<StockPriceHistory> findTopByStockItemIdAndTradeDateLessThanEqualOrderByTradeDateDesc(UUID stockItemId, LocalDate tradeDate);
 
-	List<StockPriceHistory> findByStockItemIdAndPriceDateBetween(UUID stockItemId, Instant start, Instant end);
+List<StockPriceHistory> findByStockItemIdAndTradeDateBetween(UUID stockItemId, LocalDate start, LocalDate end);
 
-	List<StockPriceHistory> findByStockItemIdInAndPriceDateBetween(Collection<UUID> stockItemId, Instant start,
-			Instant end);
+List<StockPriceHistory> findByStockItemIdInAndTradeDateBetween(Collection<UUID> stockItemId, LocalDate start, LocalDate end);
 
 }

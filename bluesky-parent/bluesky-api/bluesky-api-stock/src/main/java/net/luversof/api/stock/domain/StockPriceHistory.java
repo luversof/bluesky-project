@@ -1,91 +1,55 @@
 package net.luversof.api.stock.domain;
 
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.Objects;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
-import jakarta.validation.constraints.NotNull;
-
 @Table("StockPriceHistory")
 public class StockPriceHistory {
 
-	@Id
-	@Column("id")
-	private UUID id;
+@Id
+@Column("id")
+private UUID id;
 
-	@NotNull
-	@Column("stockItem_id")
-	private UUID stockItemId;
+@Column("stockItem_id")
+private UUID stockItemId;
 
-	@NotNull
-	@Column("price")
-	private BigDecimal price;
+@Column("tradeDate")
+private LocalDate tradeDate;
 
-	/**
-	 * 가격이 적용된 날짜/시각 (보통 일별 종가 기준으로 사용)
-	 */
-	@NotNull
-	@Column("priceDate")
-	private Instant priceDate;
+@Column("openPrice")
+private BigDecimal openPrice;
 
-	public UUID getId() {
-		return id;
-	}
+@Column("highPrice")
+private BigDecimal highPrice;
 
-	public void setId(UUID id) {
-		this.id = id;
-	}
+@Column("lowPrice")
+private BigDecimal lowPrice;
 
-	public UUID getStockItemId() {
-		return stockItemId;
-	}
+@Column("closePrice")
+private BigDecimal closePrice;
 
-	public void setStockItemId(UUID stockItemId) {
-		this.stockItemId = stockItemId;
-	}
+@Column("volume")
+private long volume;
 
-	public BigDecimal getPrice() {
-		return price;
-	}
-
-	public void setPrice(BigDecimal price) {
-		this.price = price;
-	}
-
-	public Instant getPriceDate() {
-		return priceDate;
-	}
-
-	public void setPriceDate(Instant priceDate) {
-		this.priceDate = priceDate;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		StockPriceHistory other = (StockPriceHistory) obj;
-		return Objects.equals(id, other.id) && Objects.equals(price, other.price)
-				&& Objects.equals(priceDate, other.priceDate) && Objects.equals(stockItemId, other.stockItemId);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(id, price, priceDate, stockItemId);
-	}
-
-	@Override
-	public String toString() {
-		return "StockPriceHistory [id=" + id + ", stockItemId=" + stockItemId + ", price=" + price + ", priceDate="
-				+ priceDate + "]";
-	}
+public UUID getId() { return id; }
+public void setId(UUID id) { this.id = id; }
+public UUID getStockItemId() { return stockItemId; }
+public void setStockItemId(UUID stockItemId) { this.stockItemId = stockItemId; }
+public LocalDate getTradeDate() { return tradeDate; }
+public void setTradeDate(LocalDate tradeDate) { this.tradeDate = tradeDate; }
+public BigDecimal getOpenPrice() { return openPrice; }
+public void setOpenPrice(BigDecimal openPrice) { this.openPrice = openPrice; }
+public BigDecimal getHighPrice() { return highPrice; }
+public void setHighPrice(BigDecimal highPrice) { this.highPrice = highPrice; }
+public BigDecimal getLowPrice() { return lowPrice; }
+public void setLowPrice(BigDecimal lowPrice) { this.lowPrice = lowPrice; }
+public BigDecimal getClosePrice() { return closePrice; }
+public void setClosePrice(BigDecimal closePrice) { this.closePrice = closePrice; }
+public long getVolume() { return volume; }
+public void setVolume(long volume) { this.volume = volume; }
 }
