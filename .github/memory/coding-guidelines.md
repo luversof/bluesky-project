@@ -66,3 +66,9 @@ net.luversof.api.{module}/
 2. **반드시 탭(Tab) 들여쓰기**
 3. properties 파일 영문 주석
 4. Feign Client는 `{domain}/openfeign/` 패키지 위치
+
+## 4. 모듈간 통신 룰 (Microservice Routing)
+- 프론트엔드(luesky-web-*)에서 백엔드(luesky-api-*)를 호출할 때는 직접적인 HTTP 호출 로직 하드코딩을 지양합니다.
+- 대신 **Spring HTTP Interfaces (@HttpExchange)**를 사용합니다.
+- 프론트엔드 컨트롤러는 클라이언트의 요건을 받고, 주입받은 Client 인터페이스를 호출하여 API를 대신 호출하는 Reverse Proxy 형태를 띕니다.
+

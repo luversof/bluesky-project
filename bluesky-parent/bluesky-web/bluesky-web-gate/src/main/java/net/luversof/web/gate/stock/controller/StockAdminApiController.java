@@ -36,4 +36,10 @@ public class StockAdminApiController {
 	public void dividendBulkInsert() {
 		stockAdminClient.dividendBulkInsert(UserUtil.getUserId());
 	}
+
+	@BlueskyPreAuthorize
+	@PostMapping("/price-histories")
+	public void priceHistoriesUpdate() {
+		stockAdminClient.priceHistoriesUpdate(UserUtil.getUserId());
+	}
 }

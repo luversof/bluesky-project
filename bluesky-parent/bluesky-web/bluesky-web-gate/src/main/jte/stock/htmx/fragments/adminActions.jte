@@ -44,6 +44,17 @@
                 </svg>
                 배당 내역 갱신 (Dividends)
             </button>
+            <button hx-post="/api/stock/admin/price-histories"
+                    hx-swap="none"
+                    hx-indicator="#update-loading"
+                    hx-confirm="종목 히스토리를 갱신하시겠습니까?"
+                    hx-on:htmx:after-request="if(event.detail.successful) window.location.reload();"
+                    class="btn btn-outline gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+                종목 히스토리 갱신 (Price Histories)
+            </button>
         </div>
     </div>
     

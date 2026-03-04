@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.api.stock.service.StockAdminService;
+import net.luversof.api.stock.service.kis.KisStockPriceUpdateService;
 
 @RestController
 @RequestMapping("/api/stock/admin")
@@ -16,6 +17,9 @@ public class StockAdminController {
 
 	@Autowired
 	private StockAdminService stockAdminService;
+
+	@Autowired
+	private KisStockPriceUpdateService kisStockPriceUpdateService;
 
 	@PostMapping("/stock-items")
 	public int stockItemBulkInsert(@RequestParam UUID userId) {
@@ -30,5 +34,10 @@ public class StockAdminController {
 	@PostMapping("/dividends")
 	public void dividendBulkInsert(@RequestParam UUID userId) {
 		stockAdminService.dividendBulkInsert(userId);
+	}
+
+	@PostMapping("/price-histories")
+	public void priceHistoryUpdate(@RequestParam UUID userId) {
+		kisStockPriceUpdateService.updatePriceHistory();
 	}
 }

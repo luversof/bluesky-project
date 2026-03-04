@@ -18,4 +18,7 @@ public interface StockAdminClient {
 
 	@PostExchange("/dividends")
 	void dividendBulkInsert(@RequestParam UUID userId);
+
+	@PostExchange("/price-histories")
+	void priceHistoriesUpdate(@RequestParam UUID userId);
 }

@@ -61,3 +61,12 @@ Spring Boot 기반의 멀티 모듈 프로젝트로, 게시판, 블로그, 주�
 - **기본 환경 (k8sdev, 프로덕션 등)**: gg.jte.usePrecompiledTemplates=true (사전 컴파일된 클래스 파일 사용)
 - **로컬 개발 환경 (localdev 프로파일)**: gg.jte.developmentMode=true 설정으로 실시간 템플릿 컴파일 및 새로고침 반영. gg.jte.usePrecompiledTemplates=false 병행 필수.
 - **에러 인지**: developmentMode=true가 누락된 채 usePrecompiledTemplates=false만 설정되면 Spring Boot 시작 시 Failed to instantiate [gg.jte.TemplateEngine] 오류 발생.
+
+## 7. Web-to-API 통신 아키텍처 (HttpExchange)
+- **프론트엔드-백엔드 분리**: luesky-web-* 모듈(예: luesky-web-gate)은 클라이언트의 요청(HTMX, 브라우저)을 직접 처리하지 않고, 데이터를 관장하는 luesky-api-* 모듈(예: luesky-api-stock)로 요청을 위임(Reverse Proxy)합니다.
+- **Spring HTTP Interfaces (@HttpExchange)**: 웹 모듈 내부에서 백엔드 모듈을 호출할 때 @HttpExchange를 선언한 Client Interface를 사용합니다.
+- **라우팅 구조 요약**:
+  1. 클라이언트 요청(HTMX 등) -> luesky-web-gate의 Controller (예: StockAdminApiController)
+  2. Web Controller 내부에서 주입된 @HttpExchange Client 호출 (예: StockAdminClient)
+  3. Client가 luesky-api-stock의 REST API 엔드포인트(예: StockAdminController)로 HTTP 요청 전송
+- **주의 사항**: luesky-api-*에 새로운 API를 추가한 경우, 직접 프론트엔드에서 호출할 수 없습니다. 반드시 동일한 경로를 처리하는 Web Controller와 Client Interface(@HttpExchange)를 luesky-web-gate 쪽에 추가해주어야 정상적으로 라우팅됩니다.
