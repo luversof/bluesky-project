@@ -517,78 +517,35 @@ public class TradeProfitService {
 		List<TradeResponse> result = new ArrayList<>();
 
 		// Group by accountId and stockItemId to calculate realized profit dynamically
-		Map<String, List<Trade>> groupedTrades = tradeList.stream()
-				.collect(Collectors.groupingBy(t -> t.getAccountId() + "-" + t.getStockItemId()));
+		for (Trade trade : tradeList) {
+                        boolean inRange = true;
+                        if (request.startDate() != null && trade.getTradeDate().isBefore(request.startDate()))
+                                inRange = false;
+                        if (request.endDate() != null && trade.getTradeDate().isAfter(request.endDate()))
+                                inRange = false;
 
-		for (List<Trade> group : groupedTrades.values()) {
-			// Sort ascending by date for calculation
-			group.sort(Comparator.comparing(Trade::getTradeDate));
+                        if (inRange) {
+                                int q = trade.getQuantity();
+                                BigDecimal price = trade.getPrice() != null ? trade.getPrice() : BigDecimal.ZERO;
+                                BigDecimal amount = price.multiply(BigDecimal.valueOf(q));
 
-			long currentQuantity = 0;
-			BigDecimal currentTotalCostNet = BigDecimal.ZERO;
+                                result.add(new TradeResponse(
+                                                trade.getId(),
+                                                trade.getAccountId(),
+                                                trade.getStockItemId(),
+                                                stockItemNames.getOrDefault(trade.getStockItemId(), ""),
+                                                trade.getType(),
+                                                trade.getQuantity(),
+                                                trade.getPrice(),
+                                                trade.getFee(),
+                                                trade.getTax(),
+                                                amount,
+                                                trade.getType() == TradeType.SELL ? trade.getRealizedProfit() : null,
+                                                trade.getTradeDate()));
+                        }
+                }
 
-			for (Trade trade : group) {
-				BigDecimal fee = trade.getFee() != null ? trade.getFee() : BigDecimal.ZERO;
-				BigDecimal tax = trade.getTax() != null ? trade.getTax() : BigDecimal.ZERO;
-				int q = trade.getQuantity();
-				BigDecimal price = trade.getPrice() != null ? trade.getPrice() : BigDecimal.ZERO;
-				BigDecimal amount = price.multiply(BigDecimal.valueOf(q));
-
-				BigDecimal calculatedRealizedProfit = null;
-
-				if (trade.getType() == TradeType.BUY) {
-					if (q > 0) {
-						currentQuantity += q;
-						currentTotalCostNet = currentTotalCostNet.add(amount).add(fee);
-					}
-				} else if (trade.getType() == TradeType.SELL) {
-					BigDecimal sellProceeds = amount.subtract(fee).subtract(tax);
-					BigDecimal unitCostNet = BigDecimal.ZERO;
-					if (currentQuantity > 0) {
-						unitCostNet = currentTotalCostNet.divide(BigDecimal.valueOf(currentQuantity), 10,
-								RoundingMode.HALF_UP);
-					}
-					BigDecimal costOfGoodsSoldNet = unitCostNet.multiply(BigDecimal.valueOf(q));
-					calculatedRealizedProfit = sellProceeds.subtract(costOfGoodsSoldNet);
-
-					if (currentQuantity >= q) {
-						currentQuantity -= q;
-						currentTotalCostNet = currentTotalCostNet.subtract(costOfGoodsSoldNet);
-					} else {
-						currentQuantity = 0;
-						currentTotalCostNet = BigDecimal.ZERO;
-					}
-					if (currentQuantity == 0) {
-						currentTotalCostNet = BigDecimal.ZERO;
-					}
-				}
-
-				// Filter by Date Range and Add to Result
-				boolean inRange = true;
-				if (request.startDate() != null && trade.getTradeDate().isBefore(request.startDate()))
-					inRange = false;
-				if (request.endDate() != null && trade.getTradeDate().isAfter(request.endDate()))
-					inRange = false;
-
-				if (inRange) {
-					result.add(new TradeResponse(
-							trade.getId(),
-							trade.getAccountId(),
-							trade.getStockItemId(),
-							stockItemNames.getOrDefault(trade.getStockItemId(), ""),
-							trade.getType(),
-							trade.getQuantity(),
-							trade.getPrice(),
-							trade.getFee(),
-							trade.getTax(),
-							amount,
-							calculatedRealizedProfit,
-							trade.getTradeDate()));
-				}
-			}
-		}
-
-		// Global sort by date descending
+                // Global sort by date descending
 		result.sort(Comparator.comparing(TradeResponse::tradeDate).reversed());
 
 		return result;

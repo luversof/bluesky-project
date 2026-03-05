@@ -70,13 +70,23 @@ public class StockAdminService {
 			""";
 
 	private static final String INSERT_STOCK_PRICE_SQL = """
-			INSERT INTO "StockPrice" (id, "stockItem_id", price, "updatedDate")
-			VALUES (?, ?, ?, ?)
-			ON CONFLICT ("stockItem_id")
-			DO UPDATE SET
-				price = EXCLUDED.price,
-				"updatedDate" = NOW()
-			""";
+INSERT INTO "StockPrice" (id, "stockItem_id", price, "updatedDate")
+VALUES (?, ?, ?, ?)
+ON CONFLICT ("stockItem_id")
+DO UPDATE SET
+price = EXCLUDED.price,
+"updatedDate" = NOW()
+""";
+
+private static final String INSERT_TRADE_SQL = """
+INSERT INTO "Trade" (id, account_id, "stockItem_id", type, quantity, price, fee, tax, "tradeDate", "realizedProfit", "exchangeRate")
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+""";
+
+private static final String INSERT_DIVIDEND_SQL = """
+INSERT INTO "Dividend" (id, account_id, "stockItem_id", type, quantity, "amountPerShare", "taxPerShare", "grossAmount", tax, fee, "recordDate", "payDate")
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+""";
 
 	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 	private static final List<DateTimeFormatter> DATE_FORMATTERS = List.of(
@@ -207,7 +217,7 @@ public class StockAdminService {
 		trade.setFee(googleSheetTrade.get수수료() == null ? BigDecimal.ZERO : googleSheetTrade.get수수료());
 		trade.setTax(googleSheetTrade.get거래세() == null ? BigDecimal.ZERO : googleSheetTrade.get거래세());
 		trade.setTradeDate(googleSheetTrade.get날짜());
-		trade.setRealizedProfit(googleSheetTrade.get매도실현손익());
+		trade.setRealizedProfit(googleSheetTrade.get매도_실현_손익());
 
 		String accountName = googleSheetTrade.get계좌();
 		if (accountName != null && !accountName.isBlank()) {

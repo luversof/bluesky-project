@@ -61,7 +61,7 @@ public class GoogleSheetTrade {
 	
 	@JsonProperty("매도 실현 손익")
 	@JsonDeserialize(using = StockCurrencyDeserializer.class)
-	private BigDecimal 매도실현손익;
+	private BigDecimal 매도_실현_손익;
 
 	public Instant get날짜() {
 		return 날짜;
@@ -167,19 +167,19 @@ public class GoogleSheetTrade {
 		this.현재가 = 현재가;
 	}
 
-	public BigDecimal get매도실현손익() {
-		return 매도실현손익;
+	public BigDecimal get매도_실현_손익() {
+		return 매도_실현_손익;
 	}
 
-	public void set매도실현손익(BigDecimal 매도실현손익) {
-		this.매도실현손익 = 매도실현손익;
+	public void set매도_실현_손익(BigDecimal 매도_실현_손익) {
+		this.매도_실현_손익 = 매도_실현_손익;
 	}
 
 	@Override
 	public String toString() {
 		return "GoogleSheetTrade [날짜=" + 날짜 + ", 종목=" + 종목 + ", 구분=" + 구분 + ", 계좌=" + 계좌 + ", 매매가=" + 매매가 + ", 매매_수량="
 				+ 매매_수량 + ", 수수료=" + 수수료 + ", 거래세=" + 거래세 + ", 매수_수량=" + 매수_수량 + ", 매수_금액=" + 매수_금액 + ", 매도_수량=" + 매도_수량
-				+ ", 매도_금액=" + 매도_금액 + ", 현재가=" + 현재가 + ", 매도실현손익=" + 매도실현손익 + "]";
+				+ ", 매도_금액=" + 매도_금액 + ", 현재가=" + 현재가 + ", 매도실현손익=" + 매도_실현_손익 + "]";
 	}
 
 }

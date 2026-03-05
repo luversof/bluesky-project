@@ -82,7 +82,8 @@ public class KisStockPriceUpdateService {
 		LocalDate today = LocalDate.now(zoneId);
 
 		// N+1 문제 해결을 위해 모든 대상을 In 쿼리로 한 번에 조회합니다.
-		List<StockItem> stockItemsAssigned = (List<StockItem>) stockItemRepository.findAllById(stockItemMinDateMap.keySet());
+		List<StockItem> stockItemsAssigned = (List<StockItem>) stockItemRepository
+				.findAllById(stockItemMinDateMap.keySet());
 		Map<UUID, StockItem> stockItemMap = stockItemsAssigned.stream()
 				.collect(Collectors.toMap(StockItem::getId, item -> item));
 

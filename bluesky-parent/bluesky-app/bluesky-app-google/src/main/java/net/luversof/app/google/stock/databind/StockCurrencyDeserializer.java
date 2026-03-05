@@ -20,6 +20,7 @@ public class StockCurrencyDeserializer extends ValueDeserializer<BigDecimal> {
 		try {
 			return new BigDecimal(value);
 		} catch (NumberFormatException e) {
+			System.err.println("StockCurrencyDeserializer Failed to parse: [" + value + "]");
 			return null;
 		}
 	}

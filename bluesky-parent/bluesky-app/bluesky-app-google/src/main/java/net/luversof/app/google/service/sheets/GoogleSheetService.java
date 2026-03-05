@@ -87,6 +87,11 @@ public class GoogleSheetService {
 		}
 
 		List<Object> header = values.get(0);
+		System.out.println("====== GOOGLE SHEET HEADERS ======");
+		for(Object h : header) {
+			System.out.println("[" + h + "]");
+		}
+		System.out.println("==================================");
 		List<T> result = new ArrayList<>();
 
 		for (int i = 1; i < values.size(); i++) {
@@ -94,7 +99,11 @@ public class GoogleSheetService {
 			Map<String, Object> map = new HashMap<>();
 			for (int j = 0; j < header.size(); j++) {
 				if (row.size() > j) {
-					map.put(String.valueOf(header.get(j)), row.get(j));
+					String h = String.valueOf(header.get(j)).replaceAll("\\s+", " ").trim();
+										map.put(h, row.get(j));
+										if (h.contains("매도") && h.contains("손익")) {
+											map.put("매도 실현 손익", row.get(j));
+										}
 				}
 			}
 			result.add((T) jsonMapper.convertValue(map, type.getTargetClass()));
