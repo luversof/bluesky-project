@@ -127,4 +127,13 @@ public class StockViewController {
                 model.addAttribute("stockItems", stockItems);
                 return "stock/trade";
         }
+
+        @BlueskyPreAuthorize
+        @GetMapping("/asset-growth")
+        public String assetGrowthPage(HttpServletRequest request, Model model) {
+                if (isNotAuthenticated()) {
+                        return getLoginRedirectUrl(request);
+                }
+                return "stock/assetGrowth";
+        }
 }

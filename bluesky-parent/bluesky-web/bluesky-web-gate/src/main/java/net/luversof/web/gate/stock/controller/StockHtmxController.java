@@ -1741,4 +1741,22 @@ public class StockHtmxController {
 
 		return "stock/htmx/fragments/activityList";
 	}
+
+	@GetMapping("/asset-growth/view")
+public String assetGrowthView(TradeProfitRequest request, Model model) {
+    UUID userId = UserUtil.getUserId();
+    if (userId == null) {
+        return ERROR_VIEW;
+    }
+
+    request.setUserId(userId);
+    
+    // 타임시리즈 데이터 패치
+    List<net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint> timeSeries = tradeProfitClient.timeSeries(request.toParams());
+    
+    model.addAttribute("timeSeries", timeSeries);
+    return "stock/htmx/asset-growth";
+}
+
+
 }
