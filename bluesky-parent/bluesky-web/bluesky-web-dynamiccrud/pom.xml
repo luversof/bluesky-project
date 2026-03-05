@@ -67,24 +67,24 @@
 			<groupId>org.mariadb.jdbc</groupId>
 			<artifactId>mariadb-java-client</artifactId>
 		</dependency>
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-        </dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+		</dependency>
 		<!-- (e) jdbc -->
 		
 		<!-- (s) jte -->
 		<dependency>
-                        <groupId>gg.jte</groupId>
-                        <artifactId>jte-spring-boot-starter-3</artifactId>
-                        <version>3.1.12</version>
-                </dependency>
-                <dependency>
-                        <groupId>gg.jte</groupId>
-                        <artifactId>jte-models</artifactId>
-                        <version>3.1.12</version>
-                </dependency>
-                <!-- (e) jte -->
+						<groupId>gg.jte</groupId>
+						<artifactId>jte-spring-boot-starter-3</artifactId>
+						<version>3.1.12</version>
+				</dependency>
+				<dependency>
+						<groupId>gg.jte</groupId>
+						<artifactId>jte-models</artifactId>
+						<version>3.1.12</version>
+				</dependency>
+				<!-- (e) jte -->
 
 		<!-- (s) poi -->
 		<dependency>
@@ -158,49 +158,50 @@
 			</plugin>-->
 
 			<plugin>
-                                <groupId>gg.jte</groupId>
-                                <artifactId>jte-maven-plugin</artifactId>
-                                <version>3.1.12</version>
-                                <executions>
-                                        <execution>
-                                                <id>jte-generate</id>
-                                                <phase>generate-sources</phase>
-                                                <goals>
-                                                        <goal>generate</goal>
-                                                </goals>
-                                                <configuration>
-                                                        <sourceDirectory>${project.basedir}/src/main/jte</sourceDirectory>
-                                                        <contentType>Html</contentType>
-                                                        <binaryStaticContent>true</binaryStaticContent>
-                                                        <targetResourceDirectory>${project.build.directory}/generated-sources/jte</targetResourceDirectory>
-                                                </configuration>
-                                        </execution>
-                                </executions>
-                        </plugin>
-                        <plugin>
-                                <groupId>org.codehaus.mojo</groupId>
-                                <artifactId>build-helper-maven-plugin</artifactId>
-                                <executions>
-                                        <execution>
-                                                <id>add-resource</id>
-                                                <phase>generate-resources</phase>
-                                                <goals>
-                                                        <goal>add-resource</goal>
-                                                </goals>
-                                                <configuration>
-                                                        <resources>
-                                                                <resource>
-                                                                        <directory>${project.build.directory}/generated-sources/jte</directory>
-                                                                </resource>
-                                                        </resources>
-                                                </configuration>
-                                        </execution>
-                                </executions>
-                        </plugin>
-                        <plugin>
-                                <groupId>org.springframework.boot</groupId>
-                                <artifactId>spring-boot-maven-plugin</artifactId>
-                        </plugin>
+				<groupId>gg.jte</groupId>
+				<artifactId>jte-maven-plugin</artifactId>
+				<version>3.1.12</version>
+				<executions>
+					<execution>
+						<id>jte-generate</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<sourceDirectory>${project.basedir}/src/main/jte</sourceDirectory>
+							<contentType>Html</contentType>
+							<binaryStaticContent>true</binaryStaticContent>
+							<targetResourceDirectory>${project.build.directory}/generated-sources/jte</targetResourceDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>add-resource</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>add-resource</goal>
+						</goals>
+						<configuration>
+							<resources>
+								<resource>
+									<directory>
+										${project.build.directory}/generated-sources/jte</directory>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
 			<plugin>
 				<groupId>com.google.cloud.tools</groupId>
 				<artifactId>jib-maven-plugin</artifactId>
