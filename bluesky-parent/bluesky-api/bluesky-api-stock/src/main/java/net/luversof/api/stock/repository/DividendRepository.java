@@ -12,13 +12,13 @@ import net.luversof.api.stock.domain.StockItemDateRange;
 public interface DividendRepository extends CrudRepository<Dividend, UUID> {
 
 	@Query("""
-			SELECT "stockItem_id" AS stock_item_id,
-			MIN(LEAST(COALESCE("recordDate", "payDate"), COALESCE("payDate", "recordDate"))) AS min_date,
-			MAX(GREATEST(COALESCE("recordDate", "payDate"), COALESCE("payDate", "recordDate"))) AS max_date
-			FROM "Dividend"
-			WHERE "stockItem_id" IS NOT NULL AND ("recordDate" IS NOT NULL OR "payDate" IS NOT NULL)
-			GROUP BY "stockItem_id"
-		""")
+				SELECT "stockItem_id" AS stock_item_id,
+				MIN(LEAST(COALESCE("recordDate", "payDate"), COALESCE("payDate", "recordDate"))) AS min_date,
+				MAX(GREATEST(COALESCE("recordDate", "payDate"), COALESCE("payDate", "recordDate"))) AS max_date
+				FROM "Dividend"
+				WHERE "stockItem_id" IS NOT NULL AND ("recordDate" IS NOT NULL OR "payDate" IS NOT NULL)
+				GROUP BY "stockItem_id"
+			""")
 	List<StockItemDateRange> findDividendDateRanges();
 
 	long deleteByAccountId(UUID accountId);

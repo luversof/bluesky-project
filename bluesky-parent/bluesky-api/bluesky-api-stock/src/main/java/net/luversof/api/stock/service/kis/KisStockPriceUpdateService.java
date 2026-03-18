@@ -212,11 +212,11 @@ public class KisStockPriceUpdateService {
 
 			List<StockPriceHistory> existingHistories = stockPriceHistoryRepository
 					.findByStockItemIdAndTradeDateBetween(stockItemId, startDate, endDate);
-			Set<LocalDate> existingDates = existingHistories.stream()
-					.map(StockPriceHistory::getTradeDate)
-					.collect(Collectors.toSet());
+			Map<LocalDate, StockPriceHistory> existingHistoryMap = existingHistories.stream()
+					.collect(Collectors.toMap(StockPriceHistory::getTradeDate, h -> h));
 
 			List<StockPriceHistory> newHistories = new ArrayList<>();
+			ZoneId zoneId = ZoneId.systemDefault();
 
 			for (KisDailyPriceItem item : items) {
 				if (item.getStck_bsop_date() == null || item.getStck_bsop_date().isEmpty()) {
@@ -224,11 +224,28 @@ public class KisStockPriceUpdateService {
 				}
 
 				LocalDate tradeDate = LocalDate.parse(item.getStck_bsop_date(), formatter);
+				StockPriceHistory history = existingHistoryMap.get(tradeDate);
+				boolean shouldSave = false;
 
-				if (!existingDates.contains(tradeDate)) {
-					StockPriceHistory history = new StockPriceHistory();
+				if (history == null) {
+					history = new StockPriceHistory();
 					history.setStockItemId(stockItemId);
 					history.setTradeDate(tradeDate);
+					shouldSave = true;
+				} else {
+					// 기존 데이터가 존재하는 경우, updatedDate의 날짜가 tradeDate와 같다면
+					// 장 중에 수집되어 아직 종가가 아닐 수 있으므로 갱신 대상에 포함합니다.
+					if (history.getUpdatedDate() != null) {
+						LocalDate updatedLocalDate = history.getUpdatedDate().atZone(zoneId).toLocalDate();
+						if (updatedLocalDate.equals(tradeDate)) {
+							shouldSave = true;
+						}
+					} else {
+						shouldSave = true;
+					}
+				}
+
+				if (shouldSave) {
 					history.setOpenPrice(new BigDecimal(item.getStck_oprc()));
 					history.setHighPrice(new BigDecimal(item.getStck_hgpr()));
 					history.setLowPrice(new BigDecimal(item.getStck_lwpr()));
