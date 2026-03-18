@@ -14,9 +14,10 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
 
 	@Query("""
 			SELECT "stockItem_id" AS stock_item_id, MIN("tradeDate") AS min_date, MAX("tradeDate") AS max_date
-				WHERE "stockItem_id" IS NOT NULL AND "tradeDate" IS NOT NULL
-				GROUP BY "stockItem_id"
-			""")
+			FROM "Trade"
+			WHERE "stockItem_id" IS NOT NULL AND "tradeDate" IS NOT NULL
+			GROUP BY "stockItem_id"
+		""")
 	List<StockItemDateRange> findTradeDateRanges();
 
 	List<Trade> findByAccountId(UUID accountId);
