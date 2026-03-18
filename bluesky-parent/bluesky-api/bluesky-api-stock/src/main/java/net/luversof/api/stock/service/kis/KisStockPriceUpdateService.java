@@ -88,7 +88,8 @@ public class KisStockPriceUpdateService {
 
 		for (StockItem stockItem : stockItemsAssigned) {
 			UUID stockItemId = stockItem.getId();
-			// Trade나 Dividend가 있으면 그것들의 minDate를 사용하고, 없다면 오늘 날짜(또는 원하는 디폴트 과거 날짜)를 기준으로 설정합니다.
+			// Trade나 Dividend가 있으면 그것들의 minDate를 사용하고, 없다면 오늘 날짜(또는 원하는 디폴트 과거 날짜)를 기준으로
+			// 설정합니다.
 			// 아무 이력이 없는 경우 당일 데이터만 초기 수집하도록 today 연산 지정 (최초 1회에는 today, 이후에는 append)
 			LocalDate minDate = stockItemMinDateMap.getOrDefault(stockItemId, today);
 			LocalDate maxDate = today;
