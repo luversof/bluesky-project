@@ -332,16 +332,17 @@ public class TradeProfitService {
 		Instant outputEnd = end.truncatedTo(ChronoUnit.DAYS);
 
 		// Price History (Bulk Load)
-		// List<StockPriceHistory> priceHistory =
-		// stockPriceService.getPriceHistory(stockItemIds, outputStart, outputEnd);
-		// Map<Instant, Map<UUID, BigDecimal>> dailyPriceMap = new HashMap<>();
-		// for (StockPriceHistory h : priceHistory) {
-		// dailyPriceMap.computeIfAbsent(h.getPriceDate().truncatedTo(ChronoUnit.DAYS),
-		// k -> new HashMap<>())
-		// .put(h.getStockItemId(), h.getPrice());
-		// }
-		Map<Instant, Map<UUID, BigDecimal>> dailyPriceMap = new HashMap<>();
-
+                Instant fetchStart = simulationStart.isBefore(outputStart) ? simulationStart : outputStart;
+                java.time.LocalDate startLocalDate = java.time.LocalDate.ofInstant(fetchStart, java.time.ZoneId.systemDefault());
+                java.time.LocalDate endLocalDate = java.time.LocalDate.ofInstant(outputEnd, java.time.ZoneId.systemDefault());
+                List<StockPriceHistory> priceHistory = stockPriceService.getPriceHistory(stockItemIds, startLocalDate, endLocalDate);
+                
+                Map<Instant, Map<UUID, BigDecimal>> dailyPriceMap = new HashMap<>();
+                for (StockPriceHistory h : priceHistory) {
+                        Instant historyInstant = h.getTradeDate().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().truncatedTo(ChronoUnit.DAYS);
+                        dailyPriceMap.computeIfAbsent(historyInstant, k -> new HashMap<>())
+                                .put(h.getStockItemId(), h.getClosePrice());
+                }
 		Map<UUID, BigDecimal> lastKnownPrices = new HashMap<>();
 
 		List<TradeProfitTimeSeriesPoint> series = new ArrayList<>();

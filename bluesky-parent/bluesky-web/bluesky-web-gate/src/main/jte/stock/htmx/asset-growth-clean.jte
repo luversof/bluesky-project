@@ -25,22 +25,26 @@
     <script>
         (function() {
             if (typeof Chart === 'undefined') return;
-            var ctx = document.getElementById('assetGrowthChart');
+            const ctx = document.getElementById('assetGrowthChart');
             if (!ctx) return;
+            
+                                                            const seriesData = [
+                @for(TradeProfitTimeSeriesPoint pt : timeSeries)
+                    {
+                        label: '${formatter.format(pt.timestamp())}',
+                        totalValue: ${pt.totalHoldingsValue() != null ? pt.totalHoldingsValue() : 0},
+                        totalCost: ${pt.totalHoldingsCost() != null ? pt.totalHoldingsCost() : 0},
+                        cumulativeTotal: ${pt.cumulativeTotalProfit() != null ? pt.cumulativeTotalProfit() : 0},
+                        daily: ${pt.dailyRealizedProfit() != null ? pt.dailyRealizedProfit() : 0}
+                    },
+                @endfor
+            ];
 
-            var labels = [];
-            var totalValueData = [];
-            var totalCostData = [];
-            var cumulativeTotalProfitData = [];
-            var dailyData = [];
-
-            @for(TradeProfitTimeSeriesPoint pt : timeSeries)
-                labels.push("$unsafe{formatter.format(pt.timestamp())}");
-                totalValueData.push(${pt.totalHoldingsValue() != null ? pt.totalHoldingsValue() : 0});
-                totalCostData.push(${pt.totalHoldingsCost() != null ? pt.totalHoldingsCost() : 0});
-                cumulativeTotalProfitData.push(${pt.cumulativeTotalProfit() != null ? pt.cumulativeTotalProfit() : 0});
-                dailyData.push(${pt.dailyRealizedProfit() != null ? pt.dailyRealizedProfit() : 0});
-            @endfor
+            const labels = seriesData.map(d => d.label);
+            const totalValueData = seriesData.map(d => d.totalValue);
+            const totalCostData = seriesData.map(d => d.totalCost);
+            const cumulativeTotalProfitData = seriesData.map(d => d.cumulativeTotal);
+            const dailyData = seriesData.map(d => d.daily);
 
             new Chart(ctx.getContext('2d'), {
                 type: 'line',
@@ -96,7 +100,23 @@
                     maintainAspectRatio: false,
                     interaction: {
                         mode: 'index',
-                        intersect: false
+                        intersect: false,
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
                     },
                     scales: {
                         x: {
@@ -120,3 +140,5 @@
     </script>
     @endif
 </div>
+
+
