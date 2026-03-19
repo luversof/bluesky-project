@@ -332,17 +332,20 @@ public class TradeProfitService {
 		Instant outputEnd = end.truncatedTo(ChronoUnit.DAYS);
 
 		// Price History (Bulk Load)
-                Instant fetchStart = simulationStart.isBefore(outputStart) ? simulationStart : outputStart;
-                java.time.LocalDate startLocalDate = java.time.LocalDate.ofInstant(fetchStart, java.time.ZoneId.systemDefault());
-                java.time.LocalDate endLocalDate = java.time.LocalDate.ofInstant(outputEnd, java.time.ZoneId.systemDefault());
-                List<StockPriceHistory> priceHistory = stockPriceService.getPriceHistory(stockItemIds, startLocalDate, endLocalDate);
-                
-                Map<Instant, Map<UUID, BigDecimal>> dailyPriceMap = new HashMap<>();
-                for (StockPriceHistory h : priceHistory) {
-                        Instant historyInstant = h.getTradeDate().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().truncatedTo(ChronoUnit.DAYS);
-                        dailyPriceMap.computeIfAbsent(historyInstant, k -> new HashMap<>())
-                                .put(h.getStockItemId(), h.getClosePrice());
-                }
+		Instant fetchStart = simulationStart.isBefore(outputStart) ? simulationStart : outputStart;
+		java.time.LocalDate startLocalDate = java.time.LocalDate.ofInstant(fetchStart,
+				java.time.ZoneId.systemDefault());
+		java.time.LocalDate endLocalDate = java.time.LocalDate.ofInstant(outputEnd, java.time.ZoneId.systemDefault());
+		List<StockPriceHistory> priceHistory = stockPriceService.getPriceHistory(stockItemIds, startLocalDate,
+				endLocalDate);
+
+		Map<Instant, Map<UUID, BigDecimal>> dailyPriceMap = new HashMap<>();
+		for (StockPriceHistory h : priceHistory) {
+			Instant historyInstant = h.getTradeDate().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant()
+					.truncatedTo(ChronoUnit.DAYS);
+			dailyPriceMap.computeIfAbsent(historyInstant, k -> new HashMap<>())
+					.put(h.getStockItemId(), h.getClosePrice());
+		}
 		Map<UUID, BigDecimal> lastKnownPrices = new HashMap<>();
 
 		List<TradeProfitTimeSeriesPoint> series = new ArrayList<>();
@@ -519,34 +522,34 @@ public class TradeProfitService {
 
 		// Group by accountId and stockItemId to calculate realized profit dynamically
 		for (Trade trade : tradeList) {
-                        boolean inRange = true;
-                        if (request.startDate() != null && trade.getTradeDate().isBefore(request.startDate()))
-                                inRange = false;
-                        if (request.endDate() != null && trade.getTradeDate().isAfter(request.endDate()))
-                                inRange = false;
+			boolean inRange = true;
+			if (request.startDate() != null && trade.getTradeDate().isBefore(request.startDate()))
+				inRange = false;
+			if (request.endDate() != null && trade.getTradeDate().isAfter(request.endDate()))
+				inRange = false;
 
-                        if (inRange) {
-                                int q = trade.getQuantity();
-                                BigDecimal price = trade.getPrice() != null ? trade.getPrice() : BigDecimal.ZERO;
-                                BigDecimal amount = price.multiply(BigDecimal.valueOf(q));
+			if (inRange) {
+				int q = trade.getQuantity();
+				BigDecimal price = trade.getPrice() != null ? trade.getPrice() : BigDecimal.ZERO;
+				BigDecimal amount = price.multiply(BigDecimal.valueOf(q));
 
-                                result.add(new TradeResponse(
-                                                trade.getId(),
-                                                trade.getAccountId(),
-                                                trade.getStockItemId(),
-                                                stockItemNames.getOrDefault(trade.getStockItemId(), ""),
-                                                trade.getType(),
-                                                trade.getQuantity(),
-                                                trade.getPrice(),
-                                                trade.getFee(),
-                                                trade.getTax(),
-                                                amount,
-                                                trade.getType() == TradeType.SELL ? trade.getRealizedProfit() : null,
-                                                trade.getTradeDate()));
-                        }
-                }
+				result.add(new TradeResponse(
+						trade.getId(),
+						trade.getAccountId(),
+						trade.getStockItemId(),
+						stockItemNames.getOrDefault(trade.getStockItemId(), ""),
+						trade.getType(),
+						trade.getQuantity(),
+						trade.getPrice(),
+						trade.getFee(),
+						trade.getTax(),
+						amount,
+						trade.getType() == TradeType.SELL ? trade.getRealizedProfit() : null,
+						trade.getTradeDate()));
+			}
+		}
 
-                // Global sort by date descending
+		// Global sort by date descending
 		result.sort(Comparator.comparing(TradeResponse::tradeDate).reversed());
 
 		return result;
