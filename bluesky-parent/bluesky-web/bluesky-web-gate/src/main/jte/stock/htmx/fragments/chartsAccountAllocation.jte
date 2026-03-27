@@ -25,7 +25,7 @@
             ];
             const values = [
                 @for(BigDecimal val : accountAllocation.values())
-                    ${val},
+                    $unsafe{val != null ? val.toPlainString() : "0"},
                 @endfor
             ];
             

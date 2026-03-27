@@ -11,5 +11,6 @@ public record TradeProfitTimeSeriesPoint(
 		long tradeVolume,
 		BigDecimal totalHoldingsValue,
 		BigDecimal totalHoldingsCost,
-		BigDecimal cumulativeTotalProfit) {
+		BigDecimal cumulativeTotalProfit,
+		BigDecimal cumulativeDividend) {
 }

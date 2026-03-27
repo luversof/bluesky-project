@@ -12,7 +12,7 @@
 <div class="card bg-base-100 shadow-xl">
     <div class="card-body">
         <h2 class="card-title text-base-content/70">누적 자산 성장 차트</h2>
-        <div class="h-96 w-full flex justify-center items-center">
+        <div class="w-full flex justify-center items-center" style="height: 600px;">
             @if(timeSeries == null || timeSeries.isEmpty())
                 <p class="text-gray-500">데이터가 없습니다.</p>
             @else
@@ -22,6 +22,8 @@
     </div>
 
     @if(timeSeries != null && !timeSeries.isEmpty())
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
     <script>
         (function() {
             if (typeof Chart === 'undefined') return;
@@ -33,13 +35,15 @@
             var totalCostData = [];
             var cumulativeTotalProfitData = [];
             var dailyData = [];
+            var cumulativeDividendData = [];
 
             @for(TradeProfitTimeSeriesPoint pt : timeSeries)
                 labels.push("$unsafe{formatter.format(pt.timestamp())}");
-                totalValueData.push(${pt.totalHoldingsValue() != null ? pt.totalHoldingsValue() : 0});
-                totalCostData.push(${pt.totalHoldingsCost() != null ? pt.totalHoldingsCost() : 0});
-                cumulativeTotalProfitData.push(${pt.cumulativeTotalProfit() != null ? pt.cumulativeTotalProfit() : 0});
-                dailyData.push(${pt.dailyRealizedProfit() != null ? pt.dailyRealizedProfit() : 0});
+                totalValueData.push($unsafe{pt.totalHoldingsValue() != null ? pt.totalHoldingsValue().toPlainString() : "0"});
+                totalCostData.push($unsafe{pt.totalHoldingsCost() != null ? pt.totalHoldingsCost().toPlainString() : "0"});
+                cumulativeTotalProfitData.push($unsafe{pt.cumulativeTotalProfit() != null ? pt.cumulativeTotalProfit().toPlainString() : "0"});
+                dailyData.push($unsafe{pt.dailyRealizedProfit() != null ? pt.dailyRealizedProfit().toPlainString() : "0"});
+                cumulativeDividendData.push($unsafe{pt.cumulativeDividend() != null ? pt.cumulativeDividend().toPlainString() : "0"});
             @endfor
 
             new Chart(ctx.getContext('2d'), {
@@ -92,6 +96,18 @@
                             fill: false,
                             tension: 0.1,
                             yAxisID: 'y1'
+                        },
+                        {
+                            type: 'line',
+                            label: '누적 배당금',
+                            data: cumulativeDividendData,
+                            borderColor: 'rgba(255, 159, 64, 1)',
+                            backgroundColor: 'rgba(255, 159, 64, 1)',
+                            borderWidth: 2,
+                            pointRadius: 2,
+                            fill: false,
+                            tension: 0.1,
+                            yAxisID: 'y1'
                         }
                     ]
                 },
@@ -103,6 +119,25 @@
                         intersect: false
                     },
                     plugins: {
+                        zoom: {
+                            zoom: {
+                                wheel: {
+                                    enabled: true
+                                },
+                                drag: {
+                                    enabled: true,
+                                    backgroundColor: 'rgba(54, 162, 235, 0.3)'
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'x',
+                            },
+                            pan: {
+                                enabled: true,
+                                mode: 'x',
+                            }
+                        },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {

@@ -55,6 +55,9 @@ public class TradeProfitService {
 	@Autowired
 	private StockItemService stockItemService;
 
+	@Autowired
+	private DividendService dividendService;
+
 	public void setAccountService(AccountService accountService) {
 		this.accountService = accountService;
 	}
@@ -287,6 +290,18 @@ public class TradeProfitService {
 		Map<UUID, StockItem> stockItemMap = new HashMap<>();
 		stockItemService.findAllById(stockItemIds).forEach(si -> stockItemMap.put(si.getId(), si));
 
+		// Fetch Dividends for the user/accounts
+		net.luversof.api.stock.web.dto.request.DividendSearchRequest dividendRequest = new net.luversof.api.stock.web.dto.request.DividendSearchRequest();
+		dividendRequest.setUserId(request.getUserId());
+		dividendRequest.setAccountIdList(request.getAccountIdList());
+		if (request.getRequestType() == net.luversof.api.stock.web.dto.request.TradeProfitRequestType.USER_STOCKITEM || request.getRequestType() == net.luversof.api.stock.web.dto.request.TradeProfitRequestType.USER_ACCOUNT_STOCKITEM) {
+			dividendRequest.setStockItemIdList(request.getStockItemIdList());
+		}
+		List<net.luversof.api.stock.domain.Dividend> allDividends = dividendService.findDividends(dividendRequest);
+		allDividends.sort(Comparator.comparing(net.luversof.api.stock.domain.Dividend::getPayDate));
+		Iterator<net.luversof.api.stock.domain.Dividend> divIt = allDividends.iterator();
+		net.luversof.api.stock.domain.Dividend nextDividend = divIt.hasNext() ? divIt.next() : null;
+
 		// 그룹핑 키 생성 함수
 		java.util.function.Function<Trade, String> getGroupKey = t -> {
 			var si = stockItemMap.get(t.getStockItemId());
@@ -322,6 +337,7 @@ public class TradeProfitService {
 		Map<String, WmaState> stateMap = new HashMap<>();
 
 		BigDecimal globalCumulativeRealized = BigDecimal.ZERO;
+		BigDecimal globalCumulativeDividend = BigDecimal.ZERO;
 
 		// 5) 시뮬레이션 루프
 		// 시작일: 데이터가 있는 첫 날짜부터 시작 (Cost Basis 구축을 위해)
@@ -433,6 +449,21 @@ public class TradeProfitService {
 				nextTrade = it.hasNext() ? it.next() : null;
 			}
 
+			// 배당 처리 logic
+			while (nextDividend != null) {
+				Instant payDay = nextDividend.getPayDate().truncatedTo(ChronoUnit.DAYS);
+				if (payDay.isAfter(currentDay)) {
+					break;
+				}
+				BigDecimal gross = nz(nextDividend.getGrossAmount());
+				BigDecimal fee = nz(nextDividend.getFee());
+				BigDecimal tax = nz(nextDividend.getTax());
+				BigDecimal netDiv = gross.subtract(fee).subtract(tax);
+				globalCumulativeDividend = globalCumulativeDividend.add(netDiv);
+
+				nextDividend = divIt.hasNext() ? divIt.next() : null;
+			}
+
 			// 하루 마감 -> Global Cumulative Update
 			globalCumulativeRealized = globalCumulativeRealized.add(dailyRealizedGain);
 
@@ -470,7 +501,8 @@ public class TradeProfitService {
 						dailyVolume,
 						totalHoldingsValue,
 						totalHoldingsCost,
-						cumulativeTotalProfit));
+						cumulativeTotalProfit,
+						globalCumulativeDividend));
 			}
 
 			currentDay = currentDay.plus(1, ChronoUnit.DAYS);

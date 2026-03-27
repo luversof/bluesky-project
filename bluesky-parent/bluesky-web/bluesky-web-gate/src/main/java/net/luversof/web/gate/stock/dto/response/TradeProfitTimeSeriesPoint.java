@@ -5,5 +5,5 @@ import java.time.Instant;
 
 public record TradeProfitTimeSeriesPoint(Instant timestamp, BigDecimal cumulativeRealizedProfit,
 		BigDecimal dailyRealizedProfit, long tradeCount, long tradeVolume, BigDecimal totalHoldingsValue,
-		BigDecimal totalHoldingsCost, BigDecimal cumulativeTotalProfit) {
+		BigDecimal totalHoldingsCost, BigDecimal cumulativeTotalProfit, BigDecimal cumulativeDividend) {
 }
