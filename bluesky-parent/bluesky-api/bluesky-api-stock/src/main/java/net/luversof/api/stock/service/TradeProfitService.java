@@ -247,7 +247,7 @@ public class TradeProfitService {
 	 */
 	public List<TradeProfitTimeSeriesPoint> aggregateTimeSeries(TradeProfitRequest request, String granularity) {
 		Instant end = request.getEndDate() != null ? request.getEndDate() : Instant.now();
-		Instant start = request.getStartDate() != null ? request.getStartDate() : end.minus(90, ChronoUnit.DAYS);
+		Instant start = request.getStartDate();
 
 		// 1) 전체 트레이드 조회 (날짜 제한 없이 전체 로딩)
 		List<Trade> allTrades = switch (request.getRequestType()) {
@@ -343,8 +343,8 @@ public class TradeProfitService {
 		// 시작일: 데이터가 있는 첫 날짜부터 시작 (Cost Basis 구축을 위해)
 		Instant firstTradeDate = allTrades.get(0).getTradeDate().truncatedTo(ChronoUnit.DAYS);
 		Instant simulationStart = firstTradeDate;
-		// 출력 시작일: 요청된 start 날짜
-		Instant outputStart = start.truncatedTo(ChronoUnit.DAYS);
+		// 출력 시작일: 요청상 start 날짜 (없으면 첫 거래일)
+		Instant outputStart = start != null ? start.truncatedTo(ChronoUnit.DAYS) : firstTradeDate;
 		Instant outputEnd = end.truncatedTo(ChronoUnit.DAYS);
 
 		// Price History (Bulk Load)

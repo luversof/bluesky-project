@@ -22,8 +22,6 @@
     </div>
 
     @if(timeSeries != null && !timeSeries.isEmpty())
-    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
     <script>
         (function() {
             if (typeof Chart === 'undefined') return;
@@ -46,6 +44,11 @@
                 cumulativeDividendData.push($unsafe{pt.cumulativeDividend() != null ? pt.cumulativeDividend().toPlainString() : "0"});
             @endfor
 
+            var maxIndex = labels.length - 1;
+            var defaultMinIndex = maxIndex > 365 ? maxIndex - 365 : 0;
+            var defaultMinDate = labels[defaultMinIndex];
+            var defaultMaxDate = labels[maxIndex];
+
             new Chart(ctx.getContext('2d'), {
                 type: 'line',
                 data: {
@@ -58,9 +61,7 @@
                             borderColor: 'rgba(75, 192, 192, 1)',
                             backgroundColor: 'rgba(75, 192, 192, 1)',
                             borderWidth: 2,
-                            pointRadius: 2,
                             fill: false,
-                            tension: 0.1,
                             yAxisID: 'y'
                         },
                         {
@@ -71,9 +72,7 @@
                             backgroundColor: 'rgba(201, 203, 207, 1)',
                             borderWidth: 2,
                             borderDash: [5, 5],
-                            pointRadius: 0,
                             fill: false,
-                            tension: 0.1,
                             yAxisID: 'y'
                         },
                         {
@@ -92,9 +91,7 @@
                             borderColor: 'rgba(153, 102, 255, 1)',
                             backgroundColor: 'rgba(153, 102, 255, 1)',
                             borderWidth: 2,
-                            pointRadius: 2,
                             fill: false,
-                            tension: 0.1,
                             yAxisID: 'y1'
                         },
                         {
@@ -104,14 +101,24 @@
                             borderColor: 'rgba(255, 159, 64, 1)',
                             backgroundColor: 'rgba(255, 159, 64, 1)',
                             borderWidth: 2,
-                            pointRadius: 2,
                             fill: false,
-                            tension: 0.1,
                             yAxisID: 'y1'
                         }
                     ]
                 },
                 options: {
+                    animation: false,
+                    normalized: true,
+                    elements: {
+                        line: {
+                            tension: 0 // disables bezier curves for better performance
+                        },
+                        point: {
+                            radius: 0, // hide points by default for performance
+                            hitRadius: 10,
+                            hoverRadius: 4
+                        }
+                    },
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: {
@@ -136,6 +143,7 @@
                             pan: {
                                 enabled: true,
                                 mode: 'x',
+                                modifierKey: 'alt'
                             }
                         },
                         tooltip: {
@@ -154,6 +162,8 @@
                     scales: {
                         x: {
                             display: true,
+                            min: defaultMinDate,
+                            max: defaultMaxDate,
                             ticks: {
                                 maxRotation: 45,
                                 minRotation: 45,
