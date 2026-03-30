@@ -1,4 +1,4 @@
-package net.luversof.api.stock.service;
+﻿package net.luversof.api.stock.service;
 
 import java.util.HashMap;
 import java.util.List;
@@ -17,61 +17,66 @@ import net.luversof.api.stock.repository.TradeRepository;
 @Service
 public class AccountService {
 
-	@Autowired
-	private AccountRepository accountRepository;
+        @Autowired
+        private AccountRepository accountRepository;
 
-	@Autowired
-	private DividendRepository dividendRepository;
+        @Autowired
+        private DividendRepository dividendRepository;
 
-	@Autowired
-	private TradeRepository tradeRepository;
+        @Autowired
+        private TradeRepository tradeRepository;
 
-	public void setAccountRepository(AccountRepository accountRepository) {
-		this.accountRepository = accountRepository;
-	}
+        @Autowired
+        private net.luversof.api.stock.repository.DailyAccountSnapshotRepository snapshotRepository;
 
-	public void setDividendRepository(DividendRepository dividendRepository) {
-		this.dividendRepository = dividendRepository;
-	}
+        public void setAccountRepository(AccountRepository accountRepository) { 
+                this.accountRepository = accountRepository;
+        }
 
-	public void setTradeRepository(TradeRepository tradeRepository) {
-		this.tradeRepository = tradeRepository;
-	}
+        public void setDividendRepository(DividendRepository dividendRepository) {
+                this.dividendRepository = dividendRepository;
+        }
 
-	public Account createAccount(Account account) {
-		if (account.getName().contains("ISA") || account.getName().contains("연금")) {
-			if (account.getJsonConfig() == null) {
-				account.setJsonConfig(new HashMap<>());
-			}
-			account.getJsonConfig().put("isTaxDeferred", true);
-		}
-		return accountRepository.save(account);
-	}
+        public void setTradeRepository(TradeRepository tradeRepository) {
+                this.tradeRepository = tradeRepository;
+        }
 
-	public Optional<Account> findById(UUID id) {
-		return accountRepository.findById(id);
-	}
+        public Account createAccount(Account account) {
+                if (account.getName().contains("ISA") || account.getName().contains("?곌툑")) {
+                        if (account.getJsonConfig() == null) {
+                                account.setJsonConfig(new HashMap<>());
+                        }
+                        account.getJsonConfig().put("isTaxDeferred", true);     
+                }
+                return accountRepository.save(account);
+        }
 
-	public List<Account> findByIdIn(List<UUID> idList) {
-		return accountRepository.findByIdIn(idList);
-	}
+        public Optional<Account> findById(UUID id) {
+                return accountRepository.findById(id);
+        }
 
-	public List<Account> findByUserId(UUID userId) {
-		return accountRepository.findByUserId(userId);
-	}
+        public List<Account> findByIdIn(List<UUID> idList) {
+                return accountRepository.findByIdIn(idList);
+        }
 
-	/**
-	 * UserId 기준 데이터 일괄 삭제
-	 * 
-	 * @param userId
-	 */
-	@Transactional
-	public void deleteAllByUserId(UUID userId) {
-		var accountList = accountRepository.findByUserId(userId);
-		accountList.forEach(account -> {
-			dividendRepository.deleteByAccountId(account.getId());
-			tradeRepository.deleteByAccountId(account.getId());
-		});
-		accountRepository.deleteAll(accountList);
-	}
+        public List<Account> findByUserId(UUID userId) {
+                return accountRepository.findByUserId(userId);
+        }
+
+        /**
+         * UserId 湲곗? ?곗씠???쇨큵 ??젣
+         *
+         * @param userId
+         */
+        @Transactional
+        public void deleteAllByUserId(UUID userId) {
+                var accountList = accountRepository.findByUserId(userId);       
+                accountList.forEach(account -> {
+                        dividendRepository.deleteByAccountId(account.getId());  
+                        tradeRepository.deleteByAccountId(account.getId());     
+                });
+                accountRepository.deleteAll(accountList);
+                
+                snapshotRepository.deleteByUserIdAndDateGreaterThanEqual(userId, java.time.LocalDate.of(1970, 1, 1));
+        }
 }

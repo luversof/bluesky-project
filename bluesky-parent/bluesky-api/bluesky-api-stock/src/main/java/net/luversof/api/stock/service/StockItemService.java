@@ -5,6 +5,8 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.repository.StockItemRepository;
@@ -19,15 +21,18 @@ public class StockItemService {
 		this.stockItemRepository = stockItemRepository;
 	}
 
-	public StockItem createStockItem(StockItem stockItem) {
+	@CacheEvict(value = "stockItems", allEntries = true)
+        public StockItem createStockItem(StockItem stockItem) {
 		return stockItemRepository.save(stockItem);
 	}
 
-	public Optional<StockItem> findById(UUID id) {
+	@Cacheable(value = "stockItems", key = "#id")
+        public Optional<StockItem> findById(UUID id) {
 		return stockItemRepository.findById(id);
 	}
 
-	public StockItem findByName(String name) {
+	@Cacheable(value = "stockItems", key = "#name")
+        public StockItem findByName(String name) {
 		return stockItemRepository.findByName(name);
 	}
 	
@@ -42,3 +47,5 @@ public class StockItemService {
 	}
 
 }
+
+

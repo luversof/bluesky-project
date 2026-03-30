@@ -508,6 +508,21 @@ public class TradeProfitService {
 			currentDay = currentDay.plus(1, ChronoUnit.DAYS);
 		}
 
+		// Apply Granularity filtering if requested, dynamically sample for large ranges
+		if ("WEEKLY".equalsIgnoreCase(granularity) || ("AUTO".equalsIgnoreCase(granularity) && series.size() > 180 && series.size() <= 730)) {
+			// keep 1 point per week
+			series = series.stream().filter(p -> p.timestamp().atZone(java.time.ZoneId.systemDefault()).getDayOfWeek() == java.time.DayOfWeek.FRIDAY).collect(Collectors.toList());
+		} else if ("MONTHLY".equalsIgnoreCase(granularity) || ("AUTO".equalsIgnoreCase(granularity) && series.size() > 730)) {
+			// keep 1 point per month (last day)
+			series = series.stream()
+					.collect(Collectors.groupingBy(p -> java.time.YearMonth.from(p.timestamp().atZone(java.time.ZoneId.systemDefault()))))
+					.values().stream()
+					.map(list -> list.stream().max(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp)).orElse(null))
+					.filter(java.util.Objects::nonNull)
+					.sorted(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
+					.collect(Collectors.toList());
+		}
+
 		return series;
 	}
 

@@ -125,23 +125,17 @@
                             label: '총 자산 평가액',
                             data: totalValueData,
                             borderColor: 'rgba(75, 192, 192, 1)',
-                            backgroundColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
                             borderWidth: 2,
-                            fill: {
-                                target: '-1',
-                                above: 'rgba(75, 192, 192, 0.2)', // 원금 대비 수익 (푸른색)
-                                below: 'rgba(255, 99, 132, 0.2)'  // 원금 대비 손실 (붉은색)
-                            },
+                            fill: false,
                             yAxisID: 'y'
                         },
                         {
-                            type: 'line',
+                            type: 'bar',
                             label: '누적 총 손실/이익(평가포함)',
                             data: cumulativeTotalProfitData,
-                            borderColor: 'rgba(153, 102, 255, 1)',
-                            backgroundColor: 'rgba(153, 102, 255, 0.2)',
-                            borderWidth: 1,
-                            fill: 'origin',
+                            backgroundColor: cumulativeTotalProfitData.map(val => val >= 0 ? 'rgba(255, 99, 132, 0.6)' : 'rgba(54, 162, 235, 0.6)'),
+                            borderWidth: 0,
                             yAxisID: 'y1'
                         }
                     ]
@@ -265,6 +259,14 @@
                             beginAtZero: true,
                             title: { display: true, text: '배당금 누적' },
                             ticks: { callback: yTicksCallback }
+                        },
+                        y1: {
+                            display: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            title: { display: true, text: '손익', color: 'transparent' },
+                            ticks: { callback: yTicksCallback, color: 'transparent' },
+                            border: { display: false }
                         }
                     }
                 }
