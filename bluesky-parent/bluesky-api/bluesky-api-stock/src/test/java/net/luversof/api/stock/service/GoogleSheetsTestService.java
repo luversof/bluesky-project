@@ -1,30 +1,31 @@
-//package net.luversof.api.stock.service;
+// package net.luversof.api.stock.service;
 //
-//import java.io.IOException;
-//import java.io.InputStream;
-//import java.security.GeneralSecurityException;
-//import java.util.List;
+// import java.io.IOException;
+// import java.io.InputStream;
+// import java.security.GeneralSecurityException;
+// import java.util.List;
 //
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.stereotype.Service;
+// import org.springframework.beans.factory.annotation.Autowired;
+// import org.springframework.stereotype.Service;
 //
-//import net.luversof.api.stock.GoogleSheetsApiCase;
-//import net.luversof.api.stock.provider.InputStreamProvider;
+// import net.luversof.api.stock.GoogleSheetsApiCase;
+// import net.luversof.api.stock.provider.InputStreamProvider;
 //
-//@Service
-//public class GoogleSheetsTestService {
-//	
+// @Service
+// public class GoogleSheetsTestService {
+//
 //	@Autowired
 //	private InputStreamProvider inputStreamProvider;
-//	
+//
 //	@Autowired
 //	private GoogleSheetsApiService googleSheetsApiService;
 //
 //	public String getSpreadsheetId() throws IOException {
-//		InputStream credentialsStream = inputStreamProvider.open(GoogleSheetsApiCase.SPREADSHEET_ID_PATH);
+//		InputStream credentialsStream =
+// inputStreamProvider.open(GoogleSheetsApiCase.SPREADSHEET_ID_PATH);
 //		return new String(credentialsStream.readAllBytes()).trim();
 //	}
-//	
+//
 //	@SuppressWarnings("unchecked")
 //	public <T> List<T> getList(GoogleSheetsApiCase googleSheetsApiCase) {
 //		try {
@@ -39,4 +40,4 @@
 //			return List.of();
 //		}
 //	}
-//}
+// }

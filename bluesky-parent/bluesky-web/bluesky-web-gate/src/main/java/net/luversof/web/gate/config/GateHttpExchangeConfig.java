@@ -18,47 +18,61 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
 @Configuration
 public class GateHttpExchangeConfig {
 
-	@Bean
-	public OAuth2AuthorizedClientManager authorizedClientManager(
-			ClientRegistrationRepository clientRegistrationRepository,
-			OAuth2AuthorizedClientRepository authorizedClientRepository) {
+    @Bean
+    public OAuth2AuthorizedClientManager authorizedClientManager(
+            ClientRegistrationRepository clientRegistrationRepository,
+            OAuth2AuthorizedClientRepository authorizedClientRepository) {
 
-		OAuth2AuthorizedClientProvider authorizedClientProvider = OAuth2AuthorizedClientProviderBuilder.builder()
-				.authorizationCode()
-				.refreshToken()
-				.clientCredentials()
-				.build();
+        OAuth2AuthorizedClientProvider authorizedClientProvider =
+                OAuth2AuthorizedClientProviderBuilder.builder()
+                        .authorizationCode()
+                        .refreshToken()
+                        .clientCredentials()
+                        .build();
 
-		DefaultOAuth2AuthorizedClientManager authorizedClientManager = new DefaultOAuth2AuthorizedClientManager(
-				clientRegistrationRepository, authorizedClientRepository);
-		authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider);
+        DefaultOAuth2AuthorizedClientManager authorizedClientManager =
+                new DefaultOAuth2AuthorizedClientManager(
+                        clientRegistrationRepository, authorizedClientRepository);
+        authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider);
 
-		return authorizedClientManager;
-	}
-	
-	@Bean
-	RestClientCustomizer oauth2RestClientCustomizer(OAuth2AuthorizedClientManager authorizedClientManager) {
-		return builder -> builder.requestInterceptor((request, body, execution) -> {
-			if (!request.getURI().getPath().startsWith("/api/userInfo")) {
-				Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-				if (authentication instanceof OAuth2AuthenticationToken oauthToken) {
-					try {
-						OAuth2AuthorizeRequest authorizeRequest = OAuth2AuthorizeRequest
-								.withClientRegistrationId(oauthToken.getAuthorizedClientRegistrationId())
-								.principal(authentication)
-								.build();
+        return authorizedClientManager;
+    }
 
-						OAuth2AuthorizedClient authorizedClient = authorizedClientManager.authorize(authorizeRequest);
-						if (authorizedClient != null && authorizedClient.getAccessToken() != null) {
-							request.getHeaders().setBearerAuth(authorizedClient.getAccessToken().getTokenValue());
-						}
-					} catch (Exception e) {
-						// Ignore if authorization fails
-					}
-				}
-			}
-			return execution.execute(request, body);
-		});
-	}
+    @Bean
+    RestClientCustomizer oauth2RestClientCustomizer(
+            OAuth2AuthorizedClientManager authorizedClientManager) {
+        return builder ->
+                builder.requestInterceptor(
+                        (request, body, execution) -> {
+                            if (!request.getURI().getPath().startsWith("/api/userInfo")) {
+                                Authentication authentication =
+                                        SecurityContextHolder.getContext().getAuthentication();
+                                if (authentication
+                                        instanceof OAuth2AuthenticationToken oauthToken) {
+                                    try {
+                                        OAuth2AuthorizeRequest authorizeRequest =
+                                                OAuth2AuthorizeRequest.withClientRegistrationId(
+                                                                oauthToken
+                                                                        .getAuthorizedClientRegistrationId())
+                                                        .principal(authentication)
+                                                        .build();
 
+                                        OAuth2AuthorizedClient authorizedClient =
+                                                authorizedClientManager.authorize(authorizeRequest);
+                                        if (authorizedClient != null
+                                                && authorizedClient.getAccessToken() != null) {
+                                            request.getHeaders()
+                                                    .setBearerAuth(
+                                                            authorizedClient
+                                                                    .getAccessToken()
+                                                                    .getTokenValue());
+                                        }
+                                    } catch (Exception e) {
+                                        // Ignore if authorization fails
+                                    }
+                                }
+                            }
+                            return execution.execute(request, body);
+                        });
+    }
 }

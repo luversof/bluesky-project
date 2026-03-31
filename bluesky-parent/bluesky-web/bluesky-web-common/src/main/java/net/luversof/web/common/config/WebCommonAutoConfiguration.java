@@ -7,6 +7,4 @@ import org.springframework.context.annotation.PropertySource;
 @AutoConfiguration("blueskyWebCommonAutoConfiguration")
 @EnableConfigurationProperties(WebCommonProperties.class)
 @PropertySource(value = "classpath:bluesky-web-common.properties", ignoreResourceNotFound = true)
-public class WebCommonAutoConfiguration {
-
-}
+public class WebCommonAutoConfiguration {}

@@ -3,15 +3,6 @@ package net.luversof.api.bookkeeping;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.UUID;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import net.luversof.GeneralTest;
 import net.luversof.api.bookkeeping.constant.AssetJsonConfigConstant;
 import net.luversof.api.bookkeeping.constant.AssetTypeCode;
@@ -21,71 +12,82 @@ import net.luversof.api.bookkeeping.domain.Bookkeeping;
 import net.luversof.api.bookkeeping.repository.AssetTypeRepository;
 import net.luversof.api.bookkeeping.service.AssetService;
 import net.luversof.api.bookkeeping.service.BookkeepingService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 class AssetTest implements GeneralTest {
 
-	private static final Logger log = LoggerFactory.getLogger(AssetTest.class);
+    private static final Logger log = LoggerFactory.getLogger(AssetTest.class);
 
-	@Autowired
-	BookkeepingService bookkeepingService;
+    @Autowired BookkeepingService bookkeepingService;
 
-	@Autowired
-	AssetTypeRepository assetTypeRepository;
+    @Autowired AssetTypeRepository assetTypeRepository;
 
-	@Autowired
-	AssetService assetService;
+    @Autowired AssetService assetService;
 
-	UUID userId = TestConstant.USER_ID;
+    UUID userId = TestConstant.USER_ID;
 
-	@BeforeEach
-	void beforeEach() {
+    @BeforeEach
+    void beforeEach() {}
 
-	}
+    private Bookkeeping getBookkeeping() {
+        return bookkeepingService.findByUserId(userId).get(0);
+    }
 
-	private Bookkeeping getBookkeeping() {
-		return bookkeepingService.findByUserId(userId).get(0);
-	}
+    @Test
+    @DisplayName("자산 생성")
+    void createAsset() {
 
-	@Test
-	@DisplayName("자산 생성")
-	void createAsset() {
+        var bookkeeping = getBookkeeping();
+        var assetType =
+                assetTypeRepository
+                        .findByBookkeepingIdAndCode(bookkeeping.getId(), AssetTypeCode.CASH)
+                        .get(0);
 
-		var bookkeeping = getBookkeeping();
-		var assetType = assetTypeRepository.findByBookkeepingIdAndCode(bookkeeping.getId(), AssetTypeCode.CASH).get(0);
+        var asset = new Asset();
+        asset.setBookkeepingId(bookkeeping.getId());
+        asset.setAssetTypeId(assetType.getId());
+        asset.setName("테스트자산");
 
-		var asset = new Asset();
-		asset.setBookkeepingId(bookkeeping.getId());
-		asset.setAssetTypeId(assetType.getId());
-		asset.setName("테스트자산");
+        var result = assetService.createAsset(asset);
+        log.debug("result : {}", result);
+        assertThat(result).isNotNull();
+    }
 
-		var result = assetService.createAsset(asset);
-		log.debug("result : {}", result);
-		assertThat(result).isNotNull();
-	}
+    @Test
+    void findByBookkeepingId() {
 
-	@Test
-	void findByBookkeepingId() {
+        var bookkeeping = getBookkeeping();
+        var assetList = assetService.findByBookkeepingId(bookkeeping.getId());
 
-		var bookkeeping = getBookkeeping();
-		var assetList = assetService.findByBookkeepingId(bookkeeping.getId());
+        log.debug("assetList : {}", assetList);
+        assertThat(assetList).isNotEmpty();
+    }
 
-		log.debug("assetList : {}", assetList);
-		assertThat(assetList).isNotEmpty();
-	}
+    @Test
+    void updateAsset() {
 
-	@Test
-	void updateAsset() {
+        var bookkeeping = getBookkeeping();
+        var assetList = assetService.findByBookkeepingId(bookkeeping.getId());
+        var targetAsset =
+                assetList.stream()
+                        .filter(
+                                asset ->
+                                        Boolean.TRUE.equals(
+                                                asset.getJsonConfig()
+                                                        .get(
+                                                                AssetJsonConfigConstant
+                                                                        .ENABLE_UPDATE)))
+                        .findAny()
+                        .get();
 
-		var bookkeeping = getBookkeeping();
-		var assetList = assetService.findByBookkeepingId(bookkeeping.getId());
-		var targetAsset = assetList.stream()
-				.filter(asset -> Boolean.TRUE.equals(asset.getJsonConfig().get(AssetJsonConfigConstant.ENABLE_UPDATE)))
-				.findAny().get();
+        targetAsset.setName(targetAsset.getName() + " 수정");
 
-		targetAsset.setName(targetAsset.getName() + " 수정");
-
-		var result = assetService.updateAsset(targetAsset);
-		assertThat(result).isNotNull();
-	}
-
+        var result = assetService.updateAsset(targetAsset);
+        assertThat(result).isNotNull();
+    }
 }

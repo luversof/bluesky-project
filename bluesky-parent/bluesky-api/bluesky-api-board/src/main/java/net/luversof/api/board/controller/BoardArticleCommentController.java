@@ -1,8 +1,10 @@
 package net.luversof.api.board.controller;
 
-import java.util.UUID;
 import java.util.List;
-
+import java.util.UUID;
+import net.luversof.api.board.domain.BoardArticleComment;
+import net.luversof.api.board.domain.BoardArticleCommentCount;
+import net.luversof.api.board.service.BoardArticleCommentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,52 +22,56 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import net.luversof.api.board.domain.BoardArticleComment;
-import net.luversof.api.board.service.BoardArticleCommentService;
-import net.luversof.api.board.domain.BoardArticleCommentCount;
-
 @RestController
 @RequestMapping(value = "/api/boardArticleComment", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BoardArticleCommentController {
 
-	private BoardArticleCommentService boardArticleCommentService;
+    private BoardArticleCommentService boardArticleCommentService;
 
-	@Autowired
-	public void setBoardArticleCommentService(BoardArticleCommentService boardArticleCommentService) {
-		this.boardArticleCommentService = boardArticleCommentService;
-	}
+    @Autowired
+    public void setBoardArticleCommentService(
+            BoardArticleCommentService boardArticleCommentService) {
+        this.boardArticleCommentService = boardArticleCommentService;
+    }
 
-	@PostMapping
-	public BoardArticleComment create(
-			@Validated(BoardArticleComment.Create.class) @RequestBody BoardArticleComment boardArticleComment) {
-		return boardArticleCommentService.save(boardArticleComment);
-	}
+    @PostMapping
+    public BoardArticleComment create(
+            @Validated(BoardArticleComment.Create.class) @RequestBody
+                    BoardArticleComment boardArticleComment) {
+        return boardArticleCommentService.save(boardArticleComment);
+    }
 
-	@GetMapping("/search/findByBoardArticleId/{boardArticleId}")
-	public Page<BoardArticleComment> findByBoardArticleId(@PathVariable UUID boardArticleId,
-			@PageableDefault(size = 10) @SortDefault(sort = "createdDate", direction = Direction.ASC) Pageable pageable) {
-		return boardArticleCommentService.findByBoardArticleId(boardArticleId, pageable);
-	}
+    @GetMapping("/search/findByBoardArticleId/{boardArticleId}")
+    public Page<BoardArticleComment> findByBoardArticleId(
+            @PathVariable UUID boardArticleId,
+            @PageableDefault(size = 10)
+                    @SortDefault(sort = "createdDate", direction = Direction.ASC)
+                    Pageable pageable) {
+        return boardArticleCommentService.findByBoardArticleId(boardArticleId, pageable);
+    }
 
-	@GetMapping("/search/countByBoardArticleId/{boardArticleId}")
-	public long countByBoardArticleId(@PathVariable UUID boardArticleId) {
-		return boardArticleCommentService.countByBoardArticleId(boardArticleId);
-	}
+    @GetMapping("/search/countByBoardArticleId/{boardArticleId}")
+    public long countByBoardArticleId(@PathVariable UUID boardArticleId) {
+        return boardArticleCommentService.countByBoardArticleId(boardArticleId);
+    }
 
-	@PostMapping("/search/countByBoardArticleIds")
-	public List<BoardArticleCommentCount> countByBoardArticleIds(@RequestBody List<UUID> boardArticleIds) {
-		return boardArticleCommentService.countByBoardArticleIds(boardArticleIds);
-	}
+    @PostMapping("/search/countByBoardArticleIds")
+    public List<BoardArticleCommentCount> countByBoardArticleIds(
+            @RequestBody List<UUID> boardArticleIds) {
+        return boardArticleCommentService.countByBoardArticleIds(boardArticleIds);
+    }
 
-	@PutMapping
-	public BoardArticleComment modify(
-			@Validated(BoardArticleComment.Modify.class) @RequestBody BoardArticleComment boardArticleComment) {
-		return boardArticleCommentService.update(boardArticleComment);
-	}
+    @PutMapping
+    public BoardArticleComment modify(
+            @Validated(BoardArticleComment.Modify.class) @RequestBody
+                    BoardArticleComment boardArticleComment) {
+        return boardArticleCommentService.update(boardArticleComment);
+    }
 
-	@DeleteMapping
-	public void delete(
-			@Validated(BoardArticleComment.Delete.class) @RequestBody BoardArticleComment boardArticleComment) {
-		boardArticleCommentService.delete(boardArticleComment);
-	}
+    @DeleteMapping
+    public void delete(
+            @Validated(BoardArticleComment.Delete.class) @RequestBody
+                    BoardArticleComment boardArticleComment) {
+        boardArticleCommentService.delete(boardArticleComment);
+    }
 }

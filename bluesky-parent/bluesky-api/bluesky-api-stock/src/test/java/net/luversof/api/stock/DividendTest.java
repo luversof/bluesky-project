@@ -6,12 +6,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.StreamSupport;
-
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import net.luversof.GeneralTest;
 import net.luversof.api.stock.constant.TestConstant;
 import net.luversof.api.stock.domain.Dividend;
@@ -19,46 +13,47 @@ import net.luversof.api.stock.repository.DividendRepository;
 import net.luversof.api.stock.service.DividendService;
 import net.luversof.api.stock.service.StockAdminService;
 import net.luversof.api.stock.web.dto.request.DividendSearchRequest;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 class DividendTest implements GeneralTest {
-	
-	private static final Logger log = LoggerFactory.getLogger(DividendTest.class);
 
-	@Autowired
-	StockAdminService stockAdminService;
+    private static final Logger log = LoggerFactory.getLogger(DividendTest.class);
 
-	@Autowired
-	DividendRepository dividendRepository;
+    @Autowired StockAdminService stockAdminService;
 
-	@Autowired
-	DividendService dividendService;
+    @Autowired DividendRepository dividendRepository;
 
-	UUID userId = TestConstant.USER_ID;
+    @Autowired DividendService dividendService;
 
-	@Test
-	void dividendBulkInsert() throws IOException {
-		stockAdminService.dividendBulkInsert(TestConstant.USER_ID);
+    UUID userId = TestConstant.USER_ID;
 
-		// Ensure service.findDividends returns stockItemId populated
-		DividendSearchRequest request = new DividendSearchRequest();
-		request.setUserId(userId);
-		List<Dividend> found = dividendService.findDividends(request);
-		assertThat(found).isNotEmpty();
-		found.forEach(d -> assertThat(d.getStockItemId()).isNotNull());
-	}
+    @Test
+    void dividendBulkInsert() throws IOException {
+        stockAdminService.dividendBulkInsert(TestConstant.USER_ID);
 
+        // Ensure service.findDividends returns stockItemId populated
+        DividendSearchRequest request = new DividendSearchRequest();
+        request.setUserId(userId);
+        List<Dividend> found = dividendService.findDividends(request);
+        assertThat(found).isNotEmpty();
+        found.forEach(d -> assertThat(d.getStockItemId()).isNotNull());
+    }
 
-
-
-
-	@Test
-	void selectAllDividends() {
-		var all = StreamSupport.stream(dividendRepository.findAll().spliterator(), false).toList();
-		log.info("Total dividends in DB: {}", all.size());
-		all.forEach(d -> log.info("Dividend id={}, accountId={}, stockItemId={}, stockItemName={}",
-				d.getId(), d.getAccountId(), d.getStockItemId(), d.getStockItemName()));
-		assertThat(all).isNotNull();
-	}
-	
-
+    @Test
+    void selectAllDividends() {
+        var all = StreamSupport.stream(dividendRepository.findAll().spliterator(), false).toList();
+        log.info("Total dividends in DB: {}", all.size());
+        all.forEach(
+                d ->
+                        log.info(
+                                "Dividend id={}, accountId={}, stockItemId={}, stockItemName={}",
+                                d.getId(),
+                                d.getAccountId(),
+                                d.getStockItemId(),
+                                d.getStockItemName()));
+        assertThat(all).isNotNull();
+    }
 }

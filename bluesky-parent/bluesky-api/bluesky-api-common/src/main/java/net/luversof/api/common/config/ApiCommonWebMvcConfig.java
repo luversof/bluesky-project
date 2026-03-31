@@ -11,18 +11,17 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @EnableSpringDataWebSupport(pageSerializationMode = PageSerializationMode.VIA_DTO)
 public class ApiCommonWebMvcConfig implements WebMvcConfigurer {
 
-	@Override
-	public void addCorsMappings(CorsRegistry registry) {
-		registry.addMapping("/**")
-		.allowedOriginPatterns("http://*.bluesky.local:[*]", "https://*.bluesky.local:[*]")
-		.allowedHeaders("*")
-		.allowedMethods("*")
-		.allowCredentials(true);
-	}
-	
-	@Override
-	public void addViewControllers(ViewControllerRegistry registry) {
-		registry.addRedirectViewController("/", "/swagger-ui.html");
-	}
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                .allowedOriginPatterns("http://*.bluesky.local:[*]", "https://*.bluesky.local:[*]")
+                .allowedHeaders("*")
+                .allowedMethods("*")
+                .allowCredentials(true);
+    }
 
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addRedirectViewController("/", "/swagger-ui.html");
+    }
 }

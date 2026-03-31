@@ -5,6 +5,4 @@ import org.springframework.context.annotation.ComponentScan;
 
 @AutoConfiguration
 @ComponentScan("net.luversof.app.google")
-public class GoogleAppConfig {
-
-}
+public class GoogleAppConfig {}

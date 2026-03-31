@@ -2,6 +2,7 @@ package net.luversof.api.user;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import net.luversof.GeneralWebTest;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,47 +13,50 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.UserDetailsManager;
 
-import net.luversof.GeneralWebTest;
-
 class UserDetailsManagerTest implements GeneralWebTest {
 
-	private static final Logger log = LoggerFactory.getLogger(UserDetailsManagerTest.class);
+    private static final Logger log = LoggerFactory.getLogger(UserDetailsManagerTest.class);
 
-	@Autowired
-	private UserDetailsManager userDetailsManager;
+    @Autowired private UserDetailsManager userDetailsManager;
 
-	@Autowired
-	private PasswordEncoder passwordEncoder;
+    @Autowired private PasswordEncoder passwordEncoder;
 
-	@Test
-	void createUser() {
-		UserDetails user = User.builder()
-				.username("user")
-				.passwordEncoder(passwordEncoder::encode)
-				.password("pass")
-				.roles("USER")
-				.build();
-		userDetailsManager.createUser(user);
-		assertThat(user).isNotNull();
-	}
+    @Test
+    void createUser() {
+        UserDetails user =
+                User.builder()
+                        .username("user")
+                        .passwordEncoder(passwordEncoder::encode)
+                        .password("pass")
+                        .roles("USER")
+                        .build();
+        userDetailsManager.createUser(user);
+        assertThat(user).isNotNull();
+    }
 
-	@Test
-	void deleteUser() {
-		userDetailsManager.deleteUser("user");
-	}
+    @Test
+    void deleteUser() {
+        userDetailsManager.deleteUser("user");
+    }
 
-	@Test
-	void encryptest() {
-		var encoder = new BCryptPasswordEncoder();
-		log.debug("encode string : {}", encoder.encode("test"));
-		// encoder result : $2a$10$GEfQb7E10fOeFQo2XowAkubxab4XQGKOvO0Vf.zo6HGUPevVA2t2e
-		assertThat(encoder.matches("test", "$2a$10$GEfQb7E10fOeFQo2XowAkubxab4XQGKOvO0Vf.zo6HGUPevVA2t2e")).isTrue();
+    @Test
+    void encryptest() {
+        var encoder = new BCryptPasswordEncoder();
+        log.debug("encode string : {}", encoder.encode("test"));
+        // encoder result : $2a$10$GEfQb7E10fOeFQo2XowAkubxab4XQGKOvO0Vf.zo6HGUPevVA2t2e
+        assertThat(
+                        encoder.matches(
+                                "test",
+                                "$2a$10$GEfQb7E10fOeFQo2XowAkubxab4XQGKOvO0Vf.zo6HGUPevVA2t2e"))
+                .isTrue();
 
-		log.debug("encode string : {}", passwordEncoder.encode("test"));
-		// encode string :
-		// {bcrypt}$2a$10$Oc60Qx5tpBNfA6du4HMWDeBotdxoln.wTdiowKkbrHFmIo6jIxrIy
-		assertThat(
-				passwordEncoder.matches("test", "{bcrypt}$2a$10$Oc60Qx5tpBNfA6du4HMWDeBotdxoln.wTdiowKkbrHFmIo6jIxrIy"))
-				.isTrue();
-	}
+        log.debug("encode string : {}", passwordEncoder.encode("test"));
+        // encode string :
+        // {bcrypt}$2a$10$Oc60Qx5tpBNfA6du4HMWDeBotdxoln.wTdiowKkbrHFmIo6jIxrIy
+        assertThat(
+                        passwordEncoder.matches(
+                                "test",
+                                "{bcrypt}$2a$10$Oc60Qx5tpBNfA6du4HMWDeBotdxoln.wTdiowKkbrHFmIo6jIxrIy"))
+                .isTrue();
+    }
 }

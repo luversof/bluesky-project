@@ -2,7 +2,8 @@ package net.luversof.api.board.controller;
 
 import java.util.Optional;
 import java.util.UUID;
-
+import net.luversof.api.board.domain.BoardArticle;
+import net.luversof.api.board.service.BoardArticleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,43 +21,46 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import net.luversof.api.board.domain.BoardArticle;
-import net.luversof.api.board.service.BoardArticleService;
-
 @RestController
 @RequestMapping(value = "/api/boardArticle", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BoardArticleController {
 
-	private BoardArticleService boardArticleService;
+    private BoardArticleService boardArticleService;
 
-	@Autowired
-	public void setBoardArticleService(BoardArticleService boardArticleService) {
-		this.boardArticleService = boardArticleService;
-	}
+    @Autowired
+    public void setBoardArticleService(BoardArticleService boardArticleService) {
+        this.boardArticleService = boardArticleService;
+    }
 
-	@PostMapping
-	public BoardArticle create(@Validated(BoardArticle.Create.class) @RequestBody BoardArticle boardArticle) {
-		return boardArticleService.save(boardArticle);
-	}
+    @PostMapping
+    public BoardArticle create(
+            @Validated(BoardArticle.Create.class) @RequestBody BoardArticle boardArticle) {
+        return boardArticleService.save(boardArticle);
+    }
 
-	@GetMapping("/search/findByBoardAlias/{boardAlias}")
-	public Page<BoardArticle> findByBoardAlias(@PathVariable String boardAlias,
-			@PageableDefault(size = 20) @SortDefault(sort = "createdDate", direction = Direction.DESC) Pageable pageable) {
-		return boardArticleService.findByAlias(boardAlias, pageable);
-	}
+    @GetMapping("/search/findByBoardAlias/{boardAlias}")
+    public Page<BoardArticle> findByBoardAlias(
+            @PathVariable String boardAlias,
+            @PageableDefault(size = 20)
+                    @SortDefault(sort = "createdDate", direction = Direction.DESC)
+                    Pageable pageable) {
+        return boardArticleService.findByAlias(boardAlias, pageable);
+    }
 
-	@GetMapping("/{id}")
-	public Optional<BoardArticle> findByBoardArticleId(@PathVariable UUID id) {
-		return boardArticleService.findById(id);
-	}
+    @GetMapping("/{id}")
+    public Optional<BoardArticle> findByBoardArticleId(@PathVariable UUID id) {
+        return boardArticleService.findById(id);
+    }
 
-	@PutMapping
-	public BoardArticle modify(@Validated(BoardArticle.Modify.class) @RequestBody BoardArticle boardArticle) {
-		return boardArticleService.update(boardArticle);
-	}
+    @PutMapping
+    public BoardArticle modify(
+            @Validated(BoardArticle.Modify.class) @RequestBody BoardArticle boardArticle) {
+        return boardArticleService.update(boardArticle);
+    }
 
-	@DeleteMapping
-	public void delete(@Validated(BoardArticle.Delete.class) @RequestBody BoardArticle boardArticle) {
-		boardArticleService.delete(boardArticle);
-	}
+    @DeleteMapping
+    public void delete(
+            @Validated(BoardArticle.Delete.class) @RequestBody BoardArticle boardArticle) {
+        boardArticleService.delete(boardArticle);
+    }
 }

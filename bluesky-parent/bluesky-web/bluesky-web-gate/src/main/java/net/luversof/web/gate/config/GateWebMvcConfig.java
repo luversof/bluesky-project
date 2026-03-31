@@ -1,7 +1,7 @@
 package net.luversof.web.gate.config;
 
 import java.util.Locale;
-
+import net.luversof.web.gate.interceptor.PaginationInterceptor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
@@ -14,32 +14,29 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.i18n.CookieLocaleResolver;
 import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 
-import net.luversof.web.gate.interceptor.PaginationInterceptor;
-
 @Configuration
 @EnableSpringDataWebSupport(pageSerializationMode = PageSerializationMode.VIA_DTO)
 public class GateWebMvcConfig implements WebMvcConfigurer {
 
-	@Override
-	public void addCorsMappings(CorsRegistry registry) {
-		registry.addMapping("/**")
-				.allowedOriginPatterns("http://*.bluesky.local:[*]", "https://*.bluesky.local:[*]")
-				.allowedHeaders(CorsConfiguration.ALL)
-				.allowedMethods(CorsConfiguration.ALL)
-				.allowCredentials(true);
-	}
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                .allowedOriginPatterns("http://*.bluesky.local:[*]", "https://*.bluesky.local:[*]")
+                .allowedHeaders(CorsConfiguration.ALL)
+                .allowedMethods(CorsConfiguration.ALL)
+                .allowCredentials(true);
+    }
 
-	@Override
-	public void addInterceptors(InterceptorRegistry registry) {
-		registry.addInterceptor(new LocaleChangeInterceptor());
-		registry.addWebRequestInterceptor(new PaginationInterceptor());
-	}
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new LocaleChangeInterceptor());
+        registry.addWebRequestInterceptor(new PaginationInterceptor());
+    }
 
-	@Bean
-	LocaleResolver localeResolver() {
-		var localeResolver = new CookieLocaleResolver();
-		localeResolver.setDefaultLocale(Locale.KOREA);
-		return localeResolver;
-	}
-
+    @Bean
+    LocaleResolver localeResolver() {
+        var localeResolver = new CookieLocaleResolver();
+        localeResolver.setDefaultLocale(Locale.KOREA);
+        return localeResolver;
+    }
 }
