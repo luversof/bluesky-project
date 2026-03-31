@@ -14,13 +14,12 @@ import net.luversof.web.gate.blog.domain.Blog;
 @HttpExchange(url = "/api/blog")
 public interface BlogClient {
 
-	@PostExchange
-	Blog create(@RequestBody Blog blog);
-	
-	@GetExchange("/search/findByBlogId/{blogId}")
-	Optional<Blog> findByBlogId(@PathVariable String blogId);
-	
-	@GetExchange("/search/findByUserId/{userId}")
-	List<Blog> findByUserId(@PathVariable String userId);
+    @PostExchange
+    Blog create(@RequestBody Blog blog);
 
+    @GetExchange("/search/findByBlogId/{blogId}")
+    Optional<Blog> findByBlogId(@PathVariable String blogId);
+
+    @GetExchange("/search/findByUserId/{userId}")
+    List<Blog> findByUserId(@PathVariable String userId);
 }

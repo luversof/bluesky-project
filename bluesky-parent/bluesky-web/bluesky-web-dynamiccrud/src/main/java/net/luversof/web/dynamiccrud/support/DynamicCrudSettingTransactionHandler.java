@@ -9,9 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class DynamicCrudSettingTransactionHandler {
 
-	@Transactional(transactionManager = "dynamicCrudSettingTransactionManager", isolation = Isolation.READ_UNCOMMITTED)
-	public <T extends Object> T runInReadUncommittedTransaction(Supplier<T> supplier) {
-		return supplier.get();
-	}
-	
+    @Transactional(
+            transactionManager = "dynamicCrudSettingTransactionManager",
+            isolation = Isolation.READ_UNCOMMITTED)
+    public <T extends Object> T runInReadUncommittedTransaction(Supplier<T> supplier) {
+        return supplier.get();
+    }
 }

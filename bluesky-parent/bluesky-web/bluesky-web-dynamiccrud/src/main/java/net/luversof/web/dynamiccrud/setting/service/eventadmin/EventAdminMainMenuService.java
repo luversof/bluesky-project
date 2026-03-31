@@ -17,46 +17,51 @@ import net.luversof.web.dynamiccrud.setting.service.SettingServiceSupplier;
 
 @Service
 public class EventAdminMainMenuService
-		implements SettingServiceSupplier<MainMenu>, SettingServiceListSupplier<MainMenu> {
+        implements SettingServiceSupplier<MainMenu>, SettingServiceListSupplier<MainMenu> {
 
-	private List<MainMenu> mainMenuList;
+    private List<MainMenu> mainMenuList;
 
-	public List<MainMenu> getMainMenuList() {
-		return mainMenuList;
-	}
+    public List<MainMenu> getMainMenuList() {
+        return mainMenuList;
+    }
 
-	public EventAdminMainMenuService() {
-		loadData();
-	}
+    public EventAdminMainMenuService() {
+        loadData();
+    }
 
-	private void loadData() {
-		mainMenuList = new ArrayList<>();
-		{
-			var mainMenu = new MainMenu(
-					ADMIN_PROJECT_ID_VALUE,
-					PROJECT_ID_VALUE,
-					MAINMENU_ID_VALUE,
-					"Event Admin Setting",
-					true);
-			mainMenuList.add(mainMenu);
-		}
-	}
+    private void loadData() {
+        mainMenuList = new ArrayList<>();
+        {
+            var mainMenu =
+                    new MainMenu(
+                            ADMIN_PROJECT_ID_VALUE,
+                            PROJECT_ID_VALUE,
+                            MAINMENU_ID_VALUE,
+                            "Event Admin Setting",
+                            true);
+            mainMenuList.add(mainMenu);
+        }
+    }
 
-	@Override
-	public MainMenu findOne(SettingParameter settingParameter) {
-		return mainMenuList.stream()
-				.filter(x -> x.getAdminProjectId().equals(settingParameter.adminProjectId())
-						&& x.getProjectId().equals(settingParameter.projectId())
-						&& x.getMainMenuId().equals(settingParameter.mainMenuId()))
-				.findAny().orElseGet(() -> null);
-	}
+    @Override
+    public MainMenu findOne(SettingParameter settingParameter) {
+        return mainMenuList.stream()
+                .filter(
+                        x ->
+                                x.getAdminProjectId().equals(settingParameter.adminProjectId())
+                                        && x.getProjectId().equals(settingParameter.projectId())
+                                        && x.getMainMenuId().equals(settingParameter.mainMenuId()))
+                .findAny()
+                .orElseGet(() -> null);
+    }
 
-	@Override
-	public List<MainMenu> findList(SettingParameter settingParameter) {
-		return mainMenuList.stream()
-				.filter(x -> x.getAdminProjectId().equals(settingParameter.adminProjectId())
-						&& x.getProjectId().equals(settingParameter.projectId()))
-				.collect(Collectors.toList());
-	}
-
+    @Override
+    public List<MainMenu> findList(SettingParameter settingParameter) {
+        return mainMenuList.stream()
+                .filter(
+                        x ->
+                                x.getAdminProjectId().equals(settingParameter.adminProjectId())
+                                        && x.getProjectId().equals(settingParameter.projectId()))
+                .collect(Collectors.toList());
+    }
 }

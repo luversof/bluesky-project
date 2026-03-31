@@ -4,12 +4,16 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public enum SubMenuDbType {
-	MySql,
-	MsSql,
-	PostgreSql,
-	Mongo;
-	
-	public static String toPresetString() {
-		return String.join(",", Stream.of(SubMenuDbType.values()).map(SubMenuDbType::name).collect(Collectors.toList()));
-	}
+    MySql,
+    MsSql,
+    PostgreSql,
+    Mongo;
+
+    public static String toPresetString() {
+        return String.join(
+                ",",
+                Stream.of(SubMenuDbType.values())
+                        .map(SubMenuDbType::name)
+                        .collect(Collectors.toList()));
+    }
 }

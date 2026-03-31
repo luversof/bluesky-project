@@ -14,12 +14,12 @@ import net.luversof.client.user.util.UserUtil;
 @RequestMapping(value = "/api/loginInfo", produces = MediaType.APPLICATION_JSON_VALUE)
 public class LoginInfoController {
 
-	@GetMapping
-	public Map<String, Object> loginInfo() {
-		return Map.of(
-				"authenticated", SecurityContextHolder.getContext().getAuthentication().isAuthenticated(),
-				"userId", UserUtil.getUserId() != null ? UserUtil.getUserId().toString() : "",
-				"username", UserUtil.getUsername() != null ? UserUtil.getUsername() : "");
-	}
-
+    @GetMapping
+    public Map<String, Object> loginInfo() {
+        return Map.of(
+                "authenticated",
+                        SecurityContextHolder.getContext().getAuthentication().isAuthenticated(),
+                "userId", UserUtil.getUserId() != null ? UserUtil.getUserId().toString() : "",
+                "username", UserUtil.getUsername() != null ? UserUtil.getUsername() : "");
+    }
 }

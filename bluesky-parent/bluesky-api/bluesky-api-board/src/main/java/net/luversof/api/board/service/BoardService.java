@@ -11,23 +11,23 @@ import net.luversof.api.board.repository.BoardRepository;
 @Service
 public class BoardService {
 
-	@Autowired
-	private BoardRepository boardRepository;
+    @Autowired private BoardRepository boardRepository;
 
-	public Iterable<Board> findAll() {
-		return boardRepository.findAll();
-	}
+    public Iterable<Board> findAll() {
+        return boardRepository.findAll();
+    }
 
-	public Board create(Board board) {
-		return boardRepository.save(board);
-	}
+    public Board create(Board board) {
+        return boardRepository.save(board);
+    }
 
-	public Board findByAlias(String alias) {
-		return boardRepository.findByAlias(alias)
-				.orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARD));
-	}
+    public Board findByAlias(String alias) {
+        return boardRepository
+                .findByAlias(alias)
+                .orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARD));
+    }
 
-	public Board update(Board board) {
-		return boardRepository.save(board);
-	}
+    public Board update(Board board) {
+        return boardRepository.save(board);
+    }
 }

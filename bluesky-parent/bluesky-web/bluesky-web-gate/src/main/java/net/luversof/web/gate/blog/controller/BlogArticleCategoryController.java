@@ -24,50 +24,51 @@ import net.luversof.web.gate.blog.httpexchange.BlogClient;
 @RequestMapping(value = "/api/blog/articleCategory", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BlogArticleCategoryController {
 
-	private BlogArticleCategoryClient blogArticleCategoryClient;
+    private BlogArticleCategoryClient blogArticleCategoryClient;
 
-	private BlogClient blogClient;
+    private BlogClient blogClient;
 
-	@Autowired
-	public void setBlogArticleCategoryClient(BlogArticleCategoryClient blogArticleCategoryClient) {
-		this.blogArticleCategoryClient = blogArticleCategoryClient;
-	}
+    @Autowired
+    public void setBlogArticleCategoryClient(BlogArticleCategoryClient blogArticleCategoryClient) {
+        this.blogArticleCategoryClient = blogArticleCategoryClient;
+    }
 
-	@Autowired
-	public void setBlogClient(BlogClient blogClient) {
-		this.blogClient = blogClient;
-	}
+    @Autowired
+    public void setBlogClient(BlogClient blogClient) {
+        this.blogClient = blogClient;
+    }
 
-	@BlueskyPreAuthorize
-	@PostMapping
-	public BlogArticleCategory create(@RequestBody BlogArticleCategory blogArticleCategory) {
-		checkUserBlog(blogArticleCategory);
-		return blogArticleCategoryClient.create(blogArticleCategory);
-	}
+    @BlueskyPreAuthorize
+    @PostMapping
+    public BlogArticleCategory create(@RequestBody BlogArticleCategory blogArticleCategory) {
+        checkUserBlog(blogArticleCategory);
+        return blogArticleCategoryClient.create(blogArticleCategory);
+    }
 
-	@GetMapping("/search/findByBlogId/{blogId}")
-	public List<BlogArticleCategory> findByBlogId(@PathVariable String blogId) {
-		return blogArticleCategoryClient.findByBlogId(blogId);
-	}
+    @GetMapping("/search/findByBlogId/{blogId}")
+    public List<BlogArticleCategory> findByBlogId(@PathVariable String blogId) {
+        return blogArticleCategoryClient.findByBlogId(blogId);
+    }
 
-	@BlueskyPreAuthorize
-	@PutMapping
-	public BlogArticleCategory update(@RequestBody BlogArticleCategory blogArticleCategory) {
-		checkUserBlog(blogArticleCategory);
-		return blogArticleCategoryClient.update(blogArticleCategory);
-	}
+    @BlueskyPreAuthorize
+    @PutMapping
+    public BlogArticleCategory update(@RequestBody BlogArticleCategory blogArticleCategory) {
+        checkUserBlog(blogArticleCategory);
+        return blogArticleCategoryClient.update(blogArticleCategory);
+    }
 
-	@BlueskyPreAuthorize
-	@DeleteMapping
-	public void delete(@RequestBody BlogArticleCategory blogArticleCategory) {
-		checkUserBlog(blogArticleCategory);
-		blogArticleCategoryClient.delete(blogArticleCategory);
-	}
+    @BlueskyPreAuthorize
+    @DeleteMapping
+    public void delete(@RequestBody BlogArticleCategory blogArticleCategory) {
+        checkUserBlog(blogArticleCategory);
+        blogArticleCategoryClient.delete(blogArticleCategory);
+    }
 
-	private void checkUserBlog(BlogArticleCategory blogArticleCategory) {
-		var userBlogList = blogClient.findByUserId(UserUtil.getUserId().toString());
-		if (userBlogList.stream().noneMatch(blog -> blog.blogId().equals(blogArticleCategory.blogId()))) {
-			throw new BlueskyException("NOT_USER_BLOG");
-		}
-	}
+    private void checkUserBlog(BlogArticleCategory blogArticleCategory) {
+        var userBlogList = blogClient.findByUserId(UserUtil.getUserId().toString());
+        if (userBlogList.stream()
+                .noneMatch(blog -> blog.blogId().equals(blogArticleCategory.blogId()))) {
+            throw new BlueskyException("NOT_USER_BLOG");
+        }
+    }
 }

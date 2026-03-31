@@ -9,13 +9,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import net.luversof.api.blog.domain.mariadb.BlogArticleComment;
 
 public interface BlogArticleCommentRepository extends JpaRepository<BlogArticleComment, Long> {
-	
-	Optional<BlogArticleComment> findByBlogArticleCommentId(String blogArticleCommentId);
 
-	Page<BlogArticleComment> findByBlogArticleId(String blogArticleId, Pageable pageable);
+    Optional<BlogArticleComment> findByBlogArticleCommentId(String blogArticleCommentId);
 
-	long countByBlogArticleId(String blogArticleId);
-	
-	void deleteByBlogArticleCommentId(String blogArticleCommentId);
+    Page<BlogArticleComment> findByBlogArticleId(String blogArticleId, Pageable pageable);
 
+    long countByBlogArticleId(String blogArticleId);
+
+    void deleteByBlogArticleCommentId(String blogArticleCommentId);
 }

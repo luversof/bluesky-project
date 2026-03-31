@@ -15,19 +15,20 @@ import net.luversof.app.google.stock.domain.GoogleSheetTrade;
 @Service
 public class StockGoogleSheetService {
 
-	@Autowired
-	private GoogleSheetService googleSheetService;
-	
-	public List<GoogleSheetDividend> getGoogleSheetDividendList(UUID userId) {
-		return googleSheetService.getSpreadSheetValueList(userId, GoogleSpreadSheetInfoType.STOCK_DIVIDEND);
-	}
-	
-	public List<GoogleSheetStockItem>getGoogleSheetStockItemList(UUID userId) {
-		return googleSheetService.getSpreadSheetValueList(userId, GoogleSpreadSheetInfoType.STOCK_STOCKITEM);
-	} 
-	
-	public List<GoogleSheetTrade> getGoogleSheetTradeList(UUID userId) {
-		return googleSheetService.getSpreadSheetValueList(userId, GoogleSpreadSheetInfoType.STOCK_TRADE);
-	}
+    @Autowired private GoogleSheetService googleSheetService;
 
+    public List<GoogleSheetDividend> getGoogleSheetDividendList(UUID userId) {
+        return googleSheetService.getSpreadSheetValueList(
+                userId, GoogleSpreadSheetInfoType.STOCK_DIVIDEND);
+    }
+
+    public List<GoogleSheetStockItem> getGoogleSheetStockItemList(UUID userId) {
+        return googleSheetService.getSpreadSheetValueList(
+                userId, GoogleSpreadSheetInfoType.STOCK_STOCKITEM);
+    }
+
+    public List<GoogleSheetTrade> getGoogleSheetTradeList(UUID userId) {
+        return googleSheetService.getSpreadSheetValueList(
+                userId, GoogleSpreadSheetInfoType.STOCK_TRADE);
+    }
 }

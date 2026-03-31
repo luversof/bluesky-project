@@ -13,8 +13,8 @@ import net.luversof.client.user.session.ApiSessionRepository;
 @EnableSpringHttpSession
 public class ApiSessionConfig {
 
-	@Bean
-	ApiSessionRepository sessionRepository(UserInfoApiClient userInfoApiClient) {
-		return new ApiSessionRepository(userInfoApiClient);
-	}
+    @Bean
+    ApiSessionRepository sessionRepository(UserInfoApiClient userInfoApiClient) {
+        return new ApiSessionRepository(userInfoApiClient);
+    }
 }

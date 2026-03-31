@@ -17,22 +17,20 @@ import net.luversof.api.bookkeeping.service.BookkeepingService;
 @RequestMapping(value = "/api/bookkeepings", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BookkeepingController {
 
-	@Autowired
-	private BookkeepingService bookkeepingService;
+    @Autowired private BookkeepingService bookkeepingService;
 
-	@PostMapping
-	public Bookkeeping createBookkeeping(@RequestBody Bookkeeping bookkeeping) {
-		return bookkeepingService.createBookkeeping(bookkeeping);
-	}
+    @PostMapping
+    public Bookkeeping createBookkeeping(@RequestBody Bookkeeping bookkeeping) {
+        return bookkeepingService.createBookkeeping(bookkeeping);
+    }
 
-	@DeleteMapping("/byUserId")
-	public void deleteBookkeepingByUserId(UUID userId) {
-		bookkeepingService.deleteAllByUserId(userId);
-	}
+    @DeleteMapping("/byUserId")
+    public void deleteBookkeepingByUserId(UUID userId) {
+        bookkeepingService.deleteAllByUserId(userId);
+    }
 
-	@DeleteMapping("/byBookkeepingId")
-	public void deleteBookkeepingByBookkeepingId(UUID bookkeepingId) {
-		bookkeepingService.deleteAllByBookkeepingId(bookkeepingId);
-	}
-
+    @DeleteMapping("/byBookkeepingId")
+    public void deleteBookkeepingByBookkeepingId(UUID bookkeepingId) {
+        bookkeepingService.deleteAllByBookkeepingId(bookkeepingId);
+    }
 }

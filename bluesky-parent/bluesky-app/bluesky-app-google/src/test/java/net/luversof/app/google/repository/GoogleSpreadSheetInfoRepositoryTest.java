@@ -14,31 +14,32 @@ import net.luversof.app.google.domain.GoogleSpreadSheetInfo;
 
 public class GoogleSpreadSheetInfoRepositoryTest implements GeneralTest {
 
-	@Autowired
-	private GoogleSpreadSheetInfoRepository googleSpreadSheetInfoRepository;
-	
-	@Autowired
-	private GoogleIamServiceAccountInfoRepository googleIamServiceAccountInfoRepository;
+    @Autowired private GoogleSpreadSheetInfoRepository googleSpreadSheetInfoRepository;
 
-	@ParameterizedTest
-	@EnumSource(GoogleSheetsApiCase.class)
-	void saveTest(GoogleSheetsApiCase googleSheetsApiCase) {
-		var googleIamServiceAccountInfo = googleIamServiceAccountInfoRepository.findByUserId(TestConstant.USER_ID).orElseThrow();
-		
-		GoogleSpreadSheetInfo info = new GoogleSpreadSheetInfo();
-		info.setGoogleIamServiceAccountInfoId(googleIamServiceAccountInfo.getId());
-		info.setSpreadsheetId("testSpreadSheetId");
-		info.setType(googleSheetsApiCase.getType());
-		info.setRange(googleSheetsApiCase.getRange());
+    @Autowired private GoogleIamServiceAccountInfoRepository googleIamServiceAccountInfoRepository;
 
-		GoogleSpreadSheetInfo savedInfo = googleSpreadSheetInfoRepository.save(info);
+    @ParameterizedTest
+    @EnumSource(GoogleSheetsApiCase.class)
+    void saveTest(GoogleSheetsApiCase googleSheetsApiCase) {
+        var googleIamServiceAccountInfo =
+                googleIamServiceAccountInfoRepository
+                        .findByUserId(TestConstant.USER_ID)
+                        .orElseThrow();
 
-		assertThat(savedInfo).isNotNull();
-	}
+        GoogleSpreadSheetInfo info = new GoogleSpreadSheetInfo();
+        info.setGoogleIamServiceAccountInfoId(googleIamServiceAccountInfo.getId());
+        info.setSpreadsheetId("testSpreadSheetId");
+        info.setType(googleSheetsApiCase.getType());
+        info.setRange(googleSheetsApiCase.getRange());
 
-	@Test
-	void findAllTest() {
-		var result = googleSpreadSheetInfoRepository.findAll();
-		assertThat(result).isNotEmpty();
-	}
+        GoogleSpreadSheetInfo savedInfo = googleSpreadSheetInfoRepository.save(info);
+
+        assertThat(savedInfo).isNotNull();
+    }
+
+    @Test
+    void findAllTest() {
+        var result = googleSpreadSheetInfoRepository.findAll();
+        assertThat(result).isNotEmpty();
+    }
 }

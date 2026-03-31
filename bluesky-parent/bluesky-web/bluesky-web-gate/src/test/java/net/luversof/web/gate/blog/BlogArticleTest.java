@@ -11,15 +11,13 @@ import net.luversof.web.gate.blog.httpexchange.BlogArticleClient;
 
 class BlogArticleTest implements GeneralWebTest {
 
-	@Autowired
-	private BlogArticleClient blogArticleClient;
-	
-	@Test
-	void delete() {
-		var blogArticle = BlogArticle.builder().blogArticleId("TEST").userId("user").build();
-		
-		blogArticleClient.delete(blogArticle);
-		assertThat(blogArticle).isNotNull();
-	}
-	
+    @Autowired private BlogArticleClient blogArticleClient;
+
+    @Test
+    void delete() {
+        var blogArticle = BlogArticle.builder().blogArticleId("TEST").userId("user").build();
+
+        blogArticleClient.delete(blogArticle);
+        assertThat(blogArticle).isNotNull();
+    }
 }

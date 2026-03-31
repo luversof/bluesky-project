@@ -13,20 +13,18 @@ import org.springframework.web.service.annotation.PutExchange;
 
 import net.luversof.web.gate.bookkeeping.domain.AssetType;
 
-
 @HttpExchange(url = "/api/bookkeeping/assetGroup", contentType = MediaType.APPLICATION_JSON_VALUE)
 public interface AssetGroupClient {
 
-	@PostExchange
-	AssetType create(@RequestBody AssetType assetGroup);
-	
-	@GetExchange
-	List<AssetType> findByBookkeepingId(@RequestParam String bookkeepingId);
-	
-	@PutExchange
-	AssetType update(@RequestBody AssetType assetGroup);
-	
-	@DeleteExchange
-	void delete(@RequestBody AssetType assetGroup);
+    @PostExchange
+    AssetType create(@RequestBody AssetType assetGroup);
 
+    @GetExchange
+    List<AssetType> findByBookkeepingId(@RequestParam String bookkeepingId);
+
+    @PutExchange
+    AssetType update(@RequestBody AssetType assetGroup);
+
+    @DeleteExchange
+    void delete(@RequestBody AssetType assetGroup);
 }

@@ -7,7 +7,15 @@ import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record DividendView(UUID id, UUID accountId, String accountName, UUID stockItemId, String stockItemName,
-		BigDecimal grossAmount, BigDecimal tax, BigDecimal taxableAmount, BigDecimal netAmount,
-		Instant recordDate, Instant payDate) {
-}
+public record DividendView(
+        UUID id,
+        UUID accountId,
+        String accountName,
+        UUID stockItemId,
+        String stockItemName,
+        BigDecimal grossAmount,
+        BigDecimal tax,
+        BigDecimal taxableAmount,
+        BigDecimal netAmount,
+        Instant recordDate,
+        Instant payDate) {}

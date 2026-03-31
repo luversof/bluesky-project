@@ -16,16 +16,15 @@ import net.luversof.web.gate.bookkeeping.httpexchange.BookkeepingClient;
 @RequestMapping(value = "/bookkeeping", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BookkeepingDevCheckController {
 
-	private BookkeepingClient bookkeepingClient;
+    private BookkeepingClient bookkeepingClient;
 
-	@Autowired
-	public void setBookkeepingClient(BookkeepingClient bookkeepingClient) {
-		this.bookkeepingClient = bookkeepingClient;
-	}
+    @Autowired
+    public void setBookkeepingClient(BookkeepingClient bookkeepingClient) {
+        this.bookkeepingClient = bookkeepingClient;
+    }
 
-	@GetMapping("/findByUserId")
-	public List<Bookkeeping> findByUserId(@RequestParam String userId) {
-		return bookkeepingClient.findByUserId(userId);
-	}
-
+    @GetMapping("/findByUserId")
+    public List<Bookkeeping> findByUserId(@RequestParam String userId) {
+        return bookkeepingClient.findByUserId(userId);
+    }
 }

@@ -7,9 +7,8 @@ import io.github.luversof.boot.jdbc.datasource.support.RoutingDataSourceLookupKe
 @Component
 public class BoardRoutingDataSourceLookupKeyResolver implements RoutingDataSourceLookupKeyResolver {
 
-	@Override
-	public String getLookupKey() {
-		return "board_postgresql";
-	}
-
+    @Override
+    public String getLookupKey() {
+        return "board_postgresql";
+    }
 }

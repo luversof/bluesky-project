@@ -10,23 +10,24 @@ import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
 
 @Service
-public class SubMenuServiceDecorator implements SettingServiceListSupplier<SubMenu>, SettingServiceDecorator {
+public class SubMenuServiceDecorator
+        implements SettingServiceListSupplier<SubMenu>, SettingServiceDecorator {
 
-	private Map<String, SettingServiceListSupplier<SubMenu>> subMenuServiceMap;
+    private Map<String, SettingServiceListSupplier<SubMenu>> subMenuServiceMap;
 
-	public SubMenuServiceDecorator(Map<String, SettingServiceListSupplier<SubMenu>> subMenuServiceMap) {
-		this.subMenuServiceMap = getSortedSettingServiceMap(subMenuServiceMap);
-	}
+    public SubMenuServiceDecorator(
+            Map<String, SettingServiceListSupplier<SubMenu>> subMenuServiceMap) {
+        this.subMenuServiceMap = getSortedSettingServiceMap(subMenuServiceMap);
+    }
 
-	@Override
-	public List<SubMenu> findList(SettingParameter settingParameter) {
-		for (var entry : subMenuServiceMap.entrySet()) {
-			var target = entry.getValue().findList(settingParameter);
-			if (!target.isEmpty()) {
-				return target;
-			}
-		}
-		return Collections.emptyList();
-	}
-
+    @Override
+    public List<SubMenu> findList(SettingParameter settingParameter) {
+        for (var entry : subMenuServiceMap.entrySet()) {
+            var target = entry.getValue().findList(settingParameter);
+            if (!target.isEmpty()) {
+                return target;
+            }
+        }
+        return Collections.emptyList();
+    }
 }

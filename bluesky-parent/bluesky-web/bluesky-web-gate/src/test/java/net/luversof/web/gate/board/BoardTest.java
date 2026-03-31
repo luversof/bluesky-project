@@ -9,13 +9,12 @@ import net.luversof.GeneralWebTest;
 import net.luversof.web.gate.board.httpexchange.BoardClient;
 
 class BoardTest implements GeneralWebTest {
-	
-	@Autowired
-	private BoardClient boardClient;
 
-	@Test
-	void findByAlias() {
-		var board = boardClient.findByAlias("free");
-		assertThat(board).isNotNull();
-	}
+    @Autowired private BoardClient boardClient;
+
+    @Test
+    void findByAlias() {
+        var board = boardClient.findByAlias("free");
+        assertThat(board).isNotNull();
+    }
 }

@@ -11,23 +11,22 @@ import net.luversof.app.google.domain.GoogleIamServiceAccountInfo;
 
 public class GoogleIamServiceAccountInfoRepositoryTest implements GeneralTest {
 
-	@Autowired
-	private GoogleIamServiceAccountInfoRepository googleIamServiceAccountInfoRepository;
+    @Autowired private GoogleIamServiceAccountInfoRepository googleIamServiceAccountInfoRepository;
 
-	@Test
-	void saveTest() {
-		GoogleIamServiceAccountInfo info = new GoogleIamServiceAccountInfo();
-		info.setUserId(TestConstant.USER_ID);
-		info.setKeyStr("testKeyStr");
+    @Test
+    void saveTest() {
+        GoogleIamServiceAccountInfo info = new GoogleIamServiceAccountInfo();
+        info.setUserId(TestConstant.USER_ID);
+        info.setKeyStr("testKeyStr");
 
-		GoogleIamServiceAccountInfo savedInfo = googleIamServiceAccountInfoRepository.save(info);
+        GoogleIamServiceAccountInfo savedInfo = googleIamServiceAccountInfoRepository.save(info);
 
-		assertThat(savedInfo).isNotNull();
-	}
+        assertThat(savedInfo).isNotNull();
+    }
 
-	@Test
-	void findAllTest() {
-		var result = googleIamServiceAccountInfoRepository.findAll();
-		assertThat(result).isNotEmpty();
-	}
+    @Test
+    void findAllTest() {
+        var result = googleIamServiceAccountInfoRepository.findAll();
+        assertThat(result).isNotEmpty();
+    }
 }

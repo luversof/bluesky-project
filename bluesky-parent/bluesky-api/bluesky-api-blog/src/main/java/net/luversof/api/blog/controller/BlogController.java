@@ -21,23 +21,21 @@ import net.luversof.api.blog.service.BlogService;
 @RequestMapping(value = "/api/blog", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BlogController {
 
-	@Autowired
-	private BlogService blogService;
+    @Autowired private BlogService blogService;
 
-	@PostMapping
-	@BlogControllerOperation.Create
-	public Blog create(@Validated(Blog.Create.class) @RequestBody Blog blog) {
-		return blogService.create(blog);
-	}
+    @PostMapping
+    @BlogControllerOperation.Create
+    public Blog create(@Validated(Blog.Create.class) @RequestBody Blog blog) {
+        return blogService.create(blog);
+    }
 
-	@GetMapping("/search/findByBlogId/{blogId}")
-	public Optional<Blog> findByBlogId(@PathVariable String blogId) {
-		return blogService.findByBlogId(blogId);
-	}
+    @GetMapping("/search/findByBlogId/{blogId}")
+    public Optional<Blog> findByBlogId(@PathVariable String blogId) {
+        return blogService.findByBlogId(blogId);
+    }
 
-	@GetMapping("/search/findByUserId/{userId}")
-	public List<Blog> findByUserId(@PathVariable String userId) {
-		return blogService.findByUserId(userId);
-	}
-
+    @GetMapping("/search/findByUserId/{userId}")
+    public List<Blog> findByUserId(@PathVariable String userId) {
+        return blogService.findByUserId(userId);
+    }
 }

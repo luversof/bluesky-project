@@ -4,6 +4,4 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-public class DynamicCrudWebMvcConfig implements WebMvcConfigurer {
-
-}
+public class DynamicCrudWebMvcConfig implements WebMvcConfigurer {}

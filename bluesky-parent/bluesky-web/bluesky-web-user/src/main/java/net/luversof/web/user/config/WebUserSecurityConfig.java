@@ -23,52 +23,68 @@ import net.luversof.client.user.config.OAuth2LoginSuccessHandler;
 @EnableWebSecurity
 public class WebUserSecurityConfig {
 
-	@Bean
-	SecurityFilterChain securityFilterChain(HttpSecurity http,
-			ObjectProvider<OAuth2LoginSuccessHandler> successHandlerProvider,
-			ObjectProvider<CustomOAuth2UserService> customOAuth2UserServiceProvider) throws Exception {
-		return http
-				.csrf(CsrfConfigurer::disable)
-				.authorizeHttpRequests(authorize -> authorize
-						.anyRequest().permitAll())
-				.oauth2Login(oauth2 -> oauth2
-						.successHandler(successHandlerProvider.getObject())
-						.failureHandler(new SimpleUrlAuthenticationFailureHandler() {
-							@Override
-							public void onAuthenticationFailure(jakarta.servlet.http.HttpServletRequest request,
-									jakarta.servlet.http.HttpServletResponse response,
-									org.springframework.security.core.AuthenticationException exception)
-									throws java.io.IOException, jakarta.servlet.ServletException {
-								exception.printStackTrace();
-								super.onAuthenticationFailure(request, response, exception);
-							}
-						})
-						.userInfoEndpoint(
-								userInfo -> userInfo.userService(customOAuth2UserServiceProvider.getObject())))
-				.oauth2Client(Customizer.withDefaults())
-				.logout(logout -> logout
-						.logoutUrl("/logout")
-						.logoutSuccessUrl("/")
-						.invalidateHttpSession(true)
-						.clearAuthentication(true))
-				.build();
-	}
+    @Bean
+    SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            ObjectProvider<OAuth2LoginSuccessHandler> successHandlerProvider,
+            ObjectProvider<CustomOAuth2UserService> customOAuth2UserServiceProvider)
+            throws Exception {
+        return http.csrf(CsrfConfigurer::disable)
+                .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
+                .oauth2Login(
+                        oauth2 ->
+                                oauth2.successHandler(successHandlerProvider.getObject())
+                                        .failureHandler(
+                                                new SimpleUrlAuthenticationFailureHandler() {
+                                                    @Override
+                                                    public void onAuthenticationFailure(
+                                                            jakarta.servlet.http.HttpServletRequest
+                                                                    request,
+                                                            jakarta.servlet.http.HttpServletResponse
+                                                                    response,
+                                                            org.springframework.security.core
+                                                                            .AuthenticationException
+                                                                    exception)
+                                                            throws java.io.IOException,
+                                                                    jakarta.servlet
+                                                                            .ServletException {
+                                                        exception.printStackTrace();
+                                                        super.onAuthenticationFailure(
+                                                                request, response, exception);
+                                                    }
+                                                })
+                                        .userInfoEndpoint(
+                                                userInfo ->
+                                                        userInfo.userService(
+                                                                customOAuth2UserServiceProvider
+                                                                        .getObject())))
+                .oauth2Client(Customizer.withDefaults())
+                .logout(
+                        logout ->
+                                logout.logoutUrl("/logout")
+                                        .logoutSuccessUrl("/")
+                                        .invalidateHttpSession(true)
+                                        .clearAuthentication(true))
+                .build();
+    }
 
-	@Bean
-	OAuth2AuthorizedClientManager authorizedClientManager(
-			ClientRegistrationRepository clientRegistrationRepository,
-			OAuth2AuthorizedClientRepository authorizedClientRepository) {
+    @Bean
+    OAuth2AuthorizedClientManager authorizedClientManager(
+            ClientRegistrationRepository clientRegistrationRepository,
+            OAuth2AuthorizedClientRepository authorizedClientRepository) {
 
-		OAuth2AuthorizedClientProvider authorizedClientProvider = OAuth2AuthorizedClientProviderBuilder.builder()
-				.authorizationCode()
-				.refreshToken()
-				.build();
+        OAuth2AuthorizedClientProvider authorizedClientProvider =
+                OAuth2AuthorizedClientProviderBuilder.builder()
+                        .authorizationCode()
+                        .refreshToken()
+                        .build();
 
-		DefaultOAuth2AuthorizedClientManager authorizedClientManager = new DefaultOAuth2AuthorizedClientManager(
-				clientRegistrationRepository, authorizedClientRepository);
+        DefaultOAuth2AuthorizedClientManager authorizedClientManager =
+                new DefaultOAuth2AuthorizedClientManager(
+                        clientRegistrationRepository, authorizedClientRepository);
 
-		authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider);
+        authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider);
 
-		return authorizedClientManager;
-	}
+        return authorizedClientManager;
+    }
 }

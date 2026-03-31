@@ -8,6 +8,5 @@ import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 @FunctionalInterface
 public interface SettingServiceListSupplier<T extends Setting> extends SettingService<T> {
 
-	List<T> findList(SettingParameter settingParameter);
-
+    List<T> findList(SettingParameter settingParameter);
 }

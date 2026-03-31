@@ -24,35 +24,36 @@ import net.luversof.web.gate.blog.httpexchange.BlogArticleClient;
 @RequestMapping(value = "/api/blogArticle", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BlogArticleController {
 
-	@Autowired
-	private BlogArticleClient blogArticleClient;
+    @Autowired private BlogArticleClient blogArticleClient;
 
-	@BlueskyPreAuthorize
-	@PostMapping
-	public BlogArticle create(@RequestBody BlogArticle blogArticle) {
-		return blogArticleClient.create(blogArticle.toBuilder().userId(UserUtil.getUserId().toString()).build());
-	}
+    @BlueskyPreAuthorize
+    @PostMapping
+    public BlogArticle create(@RequestBody BlogArticle blogArticle) {
+        return blogArticleClient.create(
+                blogArticle.toBuilder().userId(UserUtil.getUserId().toString()).build());
+    }
 
-	@GetMapping("/search/findByBlogId/{blogId}")
-	public Page<BlogArticle> findByBlogId(@PathVariable String blogId, Pageable pageable) {
-		return blogArticleClient.findByBlogId(blogId, pageable);
-	}
+    @GetMapping("/search/findByBlogId/{blogId}")
+    public Page<BlogArticle> findByBlogId(@PathVariable String blogId, Pageable pageable) {
+        return blogArticleClient.findByBlogId(blogId, pageable);
+    }
 
-	@GetMapping("/search/findByBlogArticleId/{blogArticleId}")
-	public Optional<BlogArticle> findByBlogArticleId(@PathVariable String blogArticleId) {
-		return blogArticleClient.findByBlogArticleId(blogArticleId);
-	}
+    @GetMapping("/search/findByBlogArticleId/{blogArticleId}")
+    public Optional<BlogArticle> findByBlogArticleId(@PathVariable String blogArticleId) {
+        return blogArticleClient.findByBlogArticleId(blogArticleId);
+    }
 
-	@BlueskyPreAuthorize
-	@PutMapping
-	public BlogArticle update(@RequestBody BlogArticle blogArticle) {
-		return blogArticleClient.update(blogArticle.toBuilder().userId(UserUtil.getUserId().toString()).build());
-	}
+    @BlueskyPreAuthorize
+    @PutMapping
+    public BlogArticle update(@RequestBody BlogArticle blogArticle) {
+        return blogArticleClient.update(
+                blogArticle.toBuilder().userId(UserUtil.getUserId().toString()).build());
+    }
 
-	@BlueskyPreAuthorize
-	@DeleteMapping
-	public void delete(@RequestBody BlogArticle blogArticle) {
-		blogArticleClient.delete(blogArticle.toBuilder().userId(UserUtil.getUserId().toString()).build());
-	}
-
+    @BlueskyPreAuthorize
+    @DeleteMapping
+    public void delete(@RequestBody BlogArticle blogArticle) {
+        blogArticleClient.delete(
+                blogArticle.toBuilder().userId(UserUtil.getUserId().toString()).build());
+    }
 }

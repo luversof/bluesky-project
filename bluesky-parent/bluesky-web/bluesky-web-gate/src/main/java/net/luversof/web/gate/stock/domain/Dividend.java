@@ -8,15 +8,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record Dividend(
-		UUID id,
-		UUID accountId,
-		UUID stockItemId,
-		String stockItemName,
-		String type,
-		Integer quantity,
-		BigDecimal price,
-		BigDecimal fee,
-		BigDecimal tax,
-		Instant recordDate,
-		Instant payDate) {
-}
+        UUID id,
+        UUID accountId,
+        UUID stockItemId,
+        String stockItemName,
+        String type,
+        Integer quantity,
+        BigDecimal price,
+        BigDecimal fee,
+        BigDecimal tax,
+        Instant recordDate,
+        Instant payDate) {}

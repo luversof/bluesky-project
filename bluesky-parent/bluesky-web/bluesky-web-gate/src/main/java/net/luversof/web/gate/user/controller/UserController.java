@@ -18,36 +18,43 @@ import net.luversof.client.user.util.UserUtil;
 @Controller
 public class UserController {
 
-	@Value("${bluesky.client.user.login-url}")
-	private String loginUrl;
+    @Value("${bluesky.client.user.login-url}")
+    private String loginUrl;
 
-	@BlueskyPreAuthorize
-	@GetMapping("/user/info")
-	@ResponseBody
-	public Map<String, Object> userInfo(@AuthenticationPrincipal OAuth2User principal) {
-		if (principal == null) {
-			return Map.of("error", "Not authenticated");
-		}
+    @BlueskyPreAuthorize
+    @GetMapping("/user/info")
+    @ResponseBody
+    public Map<String, Object> userInfo(@AuthenticationPrincipal OAuth2User principal) {
+        if (principal == null) {
+            return Map.of("error", "Not authenticated");
+        }
 
-		return Map.of(
-				"attributes", principal.getAttributes(),
-				"authorities", principal.getAuthorities(),
-				"userId", UserUtil.getUserId() != null ? UserUtil.getUserId().toString() : "null",
-				"username", UserUtil.getUsername() != null ? UserUtil.getUsername() : "null");
-	}
+        return Map.of(
+                "attributes",
+                principal.getAttributes(),
+                "authorities",
+                principal.getAuthorities(),
+                "userId",
+                UserUtil.getUserId() != null ? UserUtil.getUserId().toString() : "null",
+                "username",
+                UserUtil.getUsername() != null ? UserUtil.getUsername() : "null");
+    }
 
-	@GetMapping("/login")
-	public String login(@RequestParam(required = false) String redirectUrl, HttpServletRequest request) {
-		if (redirectUrl == null) {
-			redirectUrl = request.getHeader(org.springframework.http.HttpHeaders.REFERER);
-		}
+    @GetMapping("/login")
+    public String login(
+            @RequestParam(required = false) String redirectUrl, HttpServletRequest request) {
+        if (redirectUrl == null) {
+            redirectUrl = request.getHeader(org.springframework.http.HttpHeaders.REFERER);
+        }
 
-		if (redirectUrl != null) {
-			return "redirect:" + UriComponentsBuilder.fromUriString(loginUrl)
-					.replaceQueryParam("redirectUrl", redirectUrl).build().toUriString();
-		}
+        if (redirectUrl != null) {
+            return "redirect:"
+                    + UriComponentsBuilder.fromUriString(loginUrl)
+                            .replaceQueryParam("redirectUrl", redirectUrl)
+                            .build()
+                            .toUriString();
+        }
 
-		return "redirect:" + loginUrl;
-	}
-
+        return "redirect:" + loginUrl;
+    }
 }

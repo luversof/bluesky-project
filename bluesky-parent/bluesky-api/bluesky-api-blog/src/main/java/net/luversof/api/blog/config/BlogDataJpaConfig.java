@@ -1,7 +1,5 @@
 package net.luversof.api.blog.config;
 
-
-
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -14,16 +12,26 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
-@EnableJpaRepositories(basePackages = "net.luversof.api.blog.repository.mariadb", entityManagerFactoryRef = "blogEntityManagerFactory", transactionManagerRef = "blogTransactionManager")
+@EnableJpaRepositories(
+        basePackages = "net.luversof.api.blog.repository.mariadb",
+        entityManagerFactoryRef = "blogEntityManagerFactory",
+        transactionManagerRef = "blogTransactionManager")
 public class BlogDataJpaConfig {
 
-	@Bean(name = "blogEntityManagerFactory")
-	LocalContainerEntityManagerFactoryBean blogEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("blogDataSource") DataSource blogDataSource) {
-		return builder.dataSource(blogDataSource).persistenceUnit("blogPersistenceUnit").packages("net.luversof.api.blog.domain.mariadb").build();
-	}
+    @Bean(name = "blogEntityManagerFactory")
+    LocalContainerEntityManagerFactoryBean blogEntityManagerFactory(
+            EntityManagerFactoryBuilder builder,
+            @Qualifier("blogDataSource") DataSource blogDataSource) {
+        return builder.dataSource(blogDataSource)
+                .persistenceUnit("blogPersistenceUnit")
+                .packages("net.luversof.api.blog.domain.mariadb")
+                .build();
+    }
 
-	@Bean(name = "blogTransactionManager")
-	PlatformTransactionManager blogTransactionManager(@Qualifier("blogEntityManagerFactory") LocalContainerEntityManagerFactoryBean blogEntityManagerFactory) {
-		return new JpaTransactionManager(blogEntityManagerFactory.getObject());
-	}
+    @Bean(name = "blogTransactionManager")
+    PlatformTransactionManager blogTransactionManager(
+            @Qualifier("blogEntityManagerFactory")
+                    LocalContainerEntityManagerFactoryBean blogEntityManagerFactory) {
+        return new JpaTransactionManager(blogEntityManagerFactory.getObject());
+    }
 }

@@ -16,22 +16,21 @@ import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesPoint;
 @RequestMapping("/api/tradeProfit")
 public class TradeProfitController {
 
-	@Autowired
-	private TradeProfitService stockProfitService;
+    @Autowired private TradeProfitService stockProfitService;
 
-	public void setStockProfitService(TradeProfitService stockProfitService) {
-		this.stockProfitService = stockProfitService;
-	}
+    public void setStockProfitService(TradeProfitService stockProfitService) {
+        this.stockProfitService = stockProfitService;
+    }
 
-	@GetMapping("/calculateProfit")
-	public List<TradeProfit> calculateProfit(TradeProfitRequest request) {
-		return stockProfitService.calculateProfit(request);
-	}
+    @GetMapping("/calculateProfit")
+    public List<TradeProfit> calculateProfit(TradeProfitRequest request) {
+        return stockProfitService.calculateProfit(request);
+    }
 
-	@GetMapping("/timeSeries")
-	public List<TradeProfitTimeSeriesPoint> timeSeries(TradeProfitRequest request, String granularity) {
-		// Delegate to service-level efficient aggregation
-		return stockProfitService.aggregateTimeSeries(request, granularity);
-	}
-
+    @GetMapping("/timeSeries")
+    public List<TradeProfitTimeSeriesPoint> timeSeries(
+            TradeProfitRequest request, String granularity) {
+        // Delegate to service-level efficient aggregation
+        return stockProfitService.aggregateTimeSeries(request, granularity);
+    }
 }

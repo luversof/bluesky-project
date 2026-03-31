@@ -12,21 +12,19 @@ import net.luversof.api.blog.repository.mariadb.BlogRepository;
 
 @Service
 public class BlogService {
-	
-	@Autowired
-	private BlogRepository blogRepository;
 
-	public Blog create(Blog blog) {
-		blog.setBlogId(UUID.randomUUID().toString());
-		return blogRepository.save(blog);
-	}
-	
-	public Optional<Blog> findByBlogId(String blogId) {
-		return blogRepository.findByBlogId(blogId);
-	}
+    @Autowired private BlogRepository blogRepository;
 
-	public List<Blog> findByUserId(String userId) {
-		return blogRepository.findByUserId(userId);
-	}
-	
+    public Blog create(Blog blog) {
+        blog.setBlogId(UUID.randomUUID().toString());
+        return blogRepository.save(blog);
+    }
+
+    public Optional<Blog> findByBlogId(String blogId) {
+        return blogRepository.findByBlogId(blogId);
+    }
+
+    public List<Blog> findByUserId(String userId) {
+        return blogRepository.findByUserId(userId);
+    }
 }

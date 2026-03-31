@@ -13,10 +13,9 @@ import io.github.luversof.boot.devcheck.annotation.DevCheckController;
 @DevCheckController
 @RequestMapping(value = "/security", produces = MediaType.APPLICATION_JSON_VALUE)
 public class SecurityDevCheckController {
-	
-	@GetMapping("/authorities")
-	public Collection<? extends GrantedAuthority> authorities() {
-		return SecurityContextHolder.getContext().getAuthentication().getAuthorities();
-	}	
 
+    @GetMapping("/authorities")
+    public Collection<? extends GrantedAuthority> authorities() {
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities();
+    }
 }

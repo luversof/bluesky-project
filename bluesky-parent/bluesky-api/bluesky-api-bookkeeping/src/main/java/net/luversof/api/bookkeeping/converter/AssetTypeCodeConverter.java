@@ -1,11 +1,11 @@
-//package net.luversof.api.bookkeeping.converter;
+// package net.luversof.api.bookkeeping.converter;
 //
-//import jakarta.persistence.AttributeConverter;
-//import jakarta.persistence.Converter;
-//import net.luversof.api.bookkeeping.constant.AssetTypeCode;
+// import jakarta.persistence.AttributeConverter;
+// import jakarta.persistence.Converter;
+// import net.luversof.api.bookkeeping.constant.AssetTypeCode;
 //
-//@Converter
-//public class AssetTypeCodeConverter implements AttributeConverter<AssetTypeCode, Integer> {
+// @Converter
+// public class AssetTypeCodeConverter implements AttributeConverter<AssetTypeCode, Integer> {
 //
 //	@Override
 //	public Integer convertToDatabaseColumn(AssetTypeCode attribute) {
@@ -17,4 +17,4 @@
 //		return AssetTypeCode.findByCode(dbData);
 //	}
 //
-//}
+// }

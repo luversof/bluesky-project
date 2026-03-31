@@ -14,16 +14,15 @@ import net.luversof.web.gate.board.httpexchange.BoardClient;
 @RequestMapping(value = "/api/board", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BoardApiController {
 
-	private BoardClient boardClient;
+    private BoardClient boardClient;
 
-	@Autowired
-	public void setBoardClient(BoardClient boardClient) {
-		this.boardClient = boardClient;
-	}
+    @Autowired
+    public void setBoardClient(BoardClient boardClient) {
+        this.boardClient = boardClient;
+    }
 
-	@GetMapping("/search/findByAlias/{alias}")
-	public Board findByAlias(@PathVariable String alias) {
-		return boardClient.findByAlias(alias);
-	}
-
+    @GetMapping("/search/findByAlias/{alias}")
+    public Board findByAlias(@PathVariable String alias) {
+        return boardClient.findByAlias(alias);
+    }
 }

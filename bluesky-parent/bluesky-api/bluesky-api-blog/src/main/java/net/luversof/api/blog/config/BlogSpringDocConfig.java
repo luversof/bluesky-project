@@ -10,14 +10,12 @@ import io.swagger.v3.oas.models.OpenAPI;
 @Configuration
 @ConditionalOnClass(OpenAPI.class)
 @OpenAPIDefinition(
-	info = @Info(
-		title = "Blog API",
-		description = """
+        info =
+                @Info(
+                        title = "Blog API",
+                        description =
+                                """
 			Blog Client API 목록
 		""",
-		version = "0.0.1-SNAPSHOT"
-	)
-)
-public class BlogSpringDocConfig {
-	
-}
+                        version = "0.0.1-SNAPSHOT"))
+public class BlogSpringDocConfig {}

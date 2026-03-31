@@ -17,36 +17,41 @@ import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstan
 
 @Service
 public class EventAdminMariadbProjectService implements SettingServiceSupplier<Project> {
-	
-	@Autowired
-	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
-	
-	private static final RowMapper<Project> ROW_MAPPER = new ProjectRowMapper();
-	
-	@Override
-	public int getOrder() {
-		return Integer.MAX_VALUE;
-	}
 
-	@Override
-	public Project findOne(SettingParameter settingParameter) {
-		var adminProjectId = settingParameter.adminProjectId();
-		if (!StringUtils.hasText(adminProjectId)) {
-			throw new BlueskyException("NOT_EXIST_PARAMETER_ADMINPROJECTID");
-		}
-		
-		var projectId = settingParameter.projectId();
-		if (!StringUtils.hasText(projectId)) {
-			throw new BlueskyException("NOT_EXIST_PARAMETER_PROJECTID");
-		}
-		
-		RoutingDataSourceContextHolder.setContext(() -> EventAdminConstant.DATASOURCE_NAME);
-		
-		var paramSource = new MapSqlParameterSource();
-		paramSource.addValue("adminProjectId", adminProjectId);
-		paramSource.addValue("projectId", projectId);
-		
-		return namedParameterJdbcTemplate.query("SELECT * FROM Project WHERE adminProjectId = :adminProjectId AND projectId = :projectId", paramSource, ROW_MAPPER).stream().findAny().orElseGet(() -> null);
-	}
+    @Autowired private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
+    private static final RowMapper<Project> ROW_MAPPER = new ProjectRowMapper();
+
+    @Override
+    public int getOrder() {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public Project findOne(SettingParameter settingParameter) {
+        var adminProjectId = settingParameter.adminProjectId();
+        if (!StringUtils.hasText(adminProjectId)) {
+            throw new BlueskyException("NOT_EXIST_PARAMETER_ADMINPROJECTID");
+        }
+
+        var projectId = settingParameter.projectId();
+        if (!StringUtils.hasText(projectId)) {
+            throw new BlueskyException("NOT_EXIST_PARAMETER_PROJECTID");
+        }
+
+        RoutingDataSourceContextHolder.setContext(() -> EventAdminConstant.DATASOURCE_NAME);
+
+        var paramSource = new MapSqlParameterSource();
+        paramSource.addValue("adminProjectId", adminProjectId);
+        paramSource.addValue("projectId", projectId);
+
+        return namedParameterJdbcTemplate
+                .query(
+                        "SELECT * FROM Project WHERE adminProjectId = :adminProjectId AND projectId = :projectId",
+                        paramSource,
+                        ROW_MAPPER)
+                .stream()
+                .findAny()
+                .orElseGet(() -> null);
+    }
 }

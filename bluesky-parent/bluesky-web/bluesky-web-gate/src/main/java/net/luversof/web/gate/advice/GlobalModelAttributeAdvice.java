@@ -17,5 +17,4 @@ public class GlobalModelAttributeAdvice {
     public String username() {
         return UserUtil.getUsername();
     }
-
 }

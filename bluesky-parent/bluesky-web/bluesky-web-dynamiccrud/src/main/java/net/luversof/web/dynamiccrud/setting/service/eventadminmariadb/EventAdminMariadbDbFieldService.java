@@ -21,49 +21,53 @@ import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstan
 
 @Service
 public class EventAdminMariadbDbFieldService implements SettingServiceListSupplier<DbField> {
-	
-	@Autowired
-	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
-	
-	private static final RowMapper<DbField> ROW_MAPPER = new DbFieldRowMapper();
-	
-	@Override
-	public int getOrder() {
-		return Integer.MAX_VALUE;
-	}
 
-	@Override
-	public List<DbField> findList(SettingParameter settingParameter) {
-		var adminProjectId = settingParameter.adminProjectId();
-		if (!StringUtils.hasText(adminProjectId)) {
-			throw new BlueskyException("NOT_EXIST_PARAMETER_ADMINPROJECTID");
-		}
-		
-		var projectId = settingParameter.projectId();
-		if (!StringUtils.hasText(projectId)) {
-			throw new BlueskyException("NOT_EXIST_PARAMETER_PROJECTID");
-		}
-		
-		var mainMenuId = settingParameter.mainMenuId();
-		if (!StringUtils.hasText(mainMenuId)) {
-			throw new BlueskyException("NOT_EXIST_PARAMETER_MAINMENUID");
-		}
-		
-		var subMenuId = settingParameter.subMenuId();
-		if (!StringUtils.hasText(subMenuId)) {
-			throw new BlueskyException("NOT_EXIST_PARAMETER_SUBMENUID");
-		}
-		
-		RoutingDataSourceContextHolder.setContext(() -> EventAdminConstant.DATASOURCE_NAME);
-		
-		var paramSource = new MapSqlParameterSource();
-		paramSource.addValue("adminProjectId", adminProjectId);
-		paramSource.addValue("projectId", projectId);
-		paramSource.addValue("mainMenuId", mainMenuId);
-		paramSource.addValue("subMenuId", subMenuId);
-		
-		List<DbField> dbFieldList = namedParameterJdbcTemplate.query("SELECT * FROM DbField WHERE adminProjectId = :adminProjectId AND projectId = :projectId AND mainMenuId = :mainMenuId AND subMenuId = :subMenuId", paramSource, ROW_MAPPER);
-		return dbFieldList.stream().sorted(Comparator.comparing(DbField::getColumnOrder)).collect(Collectors.toList());
-	}
+    @Autowired private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
+    private static final RowMapper<DbField> ROW_MAPPER = new DbFieldRowMapper();
+
+    @Override
+    public int getOrder() {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public List<DbField> findList(SettingParameter settingParameter) {
+        var adminProjectId = settingParameter.adminProjectId();
+        if (!StringUtils.hasText(adminProjectId)) {
+            throw new BlueskyException("NOT_EXIST_PARAMETER_ADMINPROJECTID");
+        }
+
+        var projectId = settingParameter.projectId();
+        if (!StringUtils.hasText(projectId)) {
+            throw new BlueskyException("NOT_EXIST_PARAMETER_PROJECTID");
+        }
+
+        var mainMenuId = settingParameter.mainMenuId();
+        if (!StringUtils.hasText(mainMenuId)) {
+            throw new BlueskyException("NOT_EXIST_PARAMETER_MAINMENUID");
+        }
+
+        var subMenuId = settingParameter.subMenuId();
+        if (!StringUtils.hasText(subMenuId)) {
+            throw new BlueskyException("NOT_EXIST_PARAMETER_SUBMENUID");
+        }
+
+        RoutingDataSourceContextHolder.setContext(() -> EventAdminConstant.DATASOURCE_NAME);
+
+        var paramSource = new MapSqlParameterSource();
+        paramSource.addValue("adminProjectId", adminProjectId);
+        paramSource.addValue("projectId", projectId);
+        paramSource.addValue("mainMenuId", mainMenuId);
+        paramSource.addValue("subMenuId", subMenuId);
+
+        List<DbField> dbFieldList =
+                namedParameterJdbcTemplate.query(
+                        "SELECT * FROM DbField WHERE adminProjectId = :adminProjectId AND projectId = :projectId AND mainMenuId = :mainMenuId AND subMenuId = :subMenuId",
+                        paramSource,
+                        ROW_MAPPER);
+        return dbFieldList.stream()
+                .sorted(Comparator.comparing(DbField::getColumnOrder))
+                .collect(Collectors.toList());
+    }
 }

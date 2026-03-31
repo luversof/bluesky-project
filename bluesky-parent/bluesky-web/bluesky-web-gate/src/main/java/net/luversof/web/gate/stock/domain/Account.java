@@ -5,9 +5,4 @@ import java.util.Map;
 import java.util.UUID;
 
 public record Account(
-	UUID id, 
-	UUID userId, 
-	String name, 
-	Instant createdDate, 
-	Map<String, Object> jsonConfig) {
-}
+        UUID id, UUID userId, String name, Instant createdDate, Map<String, Object> jsonConfig) {}

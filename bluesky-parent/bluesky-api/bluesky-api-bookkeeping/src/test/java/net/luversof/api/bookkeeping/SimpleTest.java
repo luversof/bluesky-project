@@ -7,6 +7,8 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.format.datetime.standard.DateTimeContextHolder;
 import org.springframework.util.StringUtils;
@@ -17,73 +19,77 @@ import com.github.f4b6a3.uuid.UuidCreator;
 import com.github.f4b6a3.uuid.alt.GUID;
 
 import io.github.luversof.boot.exception.BlueskyException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import net.luversof.api.bookkeeping.constant.BookkeepingErrorCode;
 
 class SimpleTest {
 
-	private static final Logger log = LoggerFactory.getLogger(SimpleTest.class);
+    private static final Logger log = LoggerFactory.getLogger(SimpleTest.class);
 
-	@Test
-	void errorCodeTest() throws Exception {
-		DefaultMessageCodesResolver messageCodesResolver = new DefaultMessageCodesResolver();
+    @Test
+    void errorCodeTest() throws Exception {
+        DefaultMessageCodesResolver messageCodesResolver = new DefaultMessageCodesResolver();
 
-		Exception exception = new BlueskyException("DDDDD");
-		String[] errorCodes = messageCodesResolver.resolveMessageCodes(exception.getClass().getSimpleName(),
-				String.valueOf(((BlueskyException) exception).getErrorCode()));
-		log.debug("errorCodes : {}", Arrays.asList(errorCodes));
-		log.debug("errorCodes : {}", Arrays.deepToString(errorCodes));
+        Exception exception = new BlueskyException("DDDDD");
+        String[] errorCodes =
+                messageCodesResolver.resolveMessageCodes(
+                        exception.getClass().getSimpleName(),
+                        String.valueOf(((BlueskyException) exception).getErrorCode()));
+        log.debug("errorCodes : {}", Arrays.asList(errorCodes));
+        log.debug("errorCodes : {}", Arrays.deepToString(errorCodes));
 
-		log.debug("test : {}", Arrays.asList(exception.getClass().getDeclaredFields()).stream()
-				.anyMatch(o -> o.getName().equals("errorCode")));
+        log.debug(
+                "test : {}",
+                Arrays.asList(exception.getClass().getDeclaredFields()).stream()
+                        .anyMatch(o -> o.getName().equals("errorCode")));
 
-		log.debug("test : {}", exception instanceof BlueskyException);
-		log.debug("test : {}", Arrays.asList(BindException.class.getDeclaredFields()).stream()
-				.anyMatch(o -> o.getName().equals("errorCode")));
-		log.debug("test : {}", exception instanceof BindException);
+        log.debug("test : {}", exception instanceof BlueskyException);
+        log.debug(
+                "test : {}",
+                Arrays.asList(BindException.class.getDeclaredFields()).stream()
+                        .anyMatch(o -> o.getName().equals("errorCode")));
+        log.debug("test : {}", exception instanceof BindException);
 
-		log.debug("getField : {}", exception.getClass().getDeclaredField("errorCode"));
-	}
+        log.debug("getField : {}", exception.getClass().getDeclaredField("errorCode"));
+    }
 
-	@Test
-	void 공백테스트() {
-		String a = "공 백";
-		log.debug("result : {}", StringUtils.containsWhitespace(a));
-		log.debug("result : {}", a.contains(" "));
-	}
+    @Test
+    void 공백테스트() {
+        String a = "공 백";
+        log.debug("result : {}", StringUtils.containsWhitespace(a));
+        log.debug("result : {}", a.contains(" "));
+    }
 
-	@Test
-	void localeTest() {
-		TimeZone timeZone = LocaleContextHolder.getTimeZone();
-		log.debug("result : {}", timeZone.getID());
-		log.debug("result : {}", ZoneId.getAvailableZoneIds());
-		log.debug("result : {}", ZoneId.of(LocaleContextHolder.getTimeZone().getID()));
-	}
+    @Test
+    void localeTest() {
+        TimeZone timeZone = LocaleContextHolder.getTimeZone();
+        log.debug("result : {}", timeZone.getID());
+        log.debug("result : {}", ZoneId.getAvailableZoneIds());
+        log.debug("result : {}", ZoneId.of(LocaleContextHolder.getTimeZone().getID()));
+    }
 
-	@Test
-	void zoneIdTest() {
-		ZoneId timeZone = DateTimeContextHolder.getDateTimeContext().getTimeZone();
-		log.debug("zoneId : {}", timeZone);
-	}
+    @Test
+    void zoneIdTest() {
+        ZoneId timeZone = DateTimeContextHolder.getDateTimeContext().getTimeZone();
+        log.debug("zoneId : {}", timeZone);
+    }
 
-	@Test
-	void UUIDTest() {
-		log.debug("result : {}", UUID.fromString("1"));
+    @Test
+    void UUIDTest() {
+        log.debug("result : {}", UUID.fromString("1"));
+    }
 
-	}
+    @RepeatedTest(value = 10)
+    void uuidCreatorTest() {
+        // System.out.println("UUID Version 1: " + UuidCreator.getTimeBased());
+        // System.out.println("UUID Version 6: " + UuidCreator.getTimeOrdered());
+        System.out.println("UUID Version 7: " + UuidCreator.getTimeOrderedEpoch());
+        System.out.println("GUID Version 7: " + GUID.v7().toUUID());
+    }
 
-	@RepeatedTest(value = 10)
-	void uuidCreatorTest() {
-		// System.out.println("UUID Version 1: " + UuidCreator.getTimeBased());
-		// System.out.println("UUID Version 6: " + UuidCreator.getTimeOrdered());
-		System.out.println("UUID Version 7: " + UuidCreator.getTimeOrderedEpoch());
-		System.out.println("GUID Version 7: " + GUID.v7().toUUID());
-	}
-
-	@Test
-	void errorCodeTest2() {
-		log.debug("error : {}", BookkeepingErrorCode.ALREADY_EXIST_BOOKKEEPING.getClass().getSimpleName());
-	}
+    @Test
+    void errorCodeTest2() {
+        log.debug(
+                "error : {}",
+                BookkeepingErrorCode.ALREADY_EXIST_BOOKKEEPING.getClass().getSimpleName());
+    }
 }

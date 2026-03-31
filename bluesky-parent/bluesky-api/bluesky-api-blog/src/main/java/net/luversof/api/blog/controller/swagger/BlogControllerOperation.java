@@ -16,59 +16,57 @@ import net.luversof.api.blog.domain.mariadb.Blog;
 
 public @interface BlogControllerOperation {
 
-	@Target(ElementType.METHOD)
-	@Retention(RetentionPolicy.RUNTIME)
-	@Inherited
-	@Operation(
-		tags = "Blog",
-		summary = "Blog 저장",
-		description = """
-				Blog 저장 설명 
+    @Target(ElementType.METHOD)
+    @Retention(RetentionPolicy.RUNTIME)
+    @Inherited
+    @Operation(
+            tags = "Blog",
+            summary = "Blog 저장",
+            description =
+                    """
+				Blog 저장 설명
 			""",
-		parameters = @Parameter(
-			name = "blog",
-			schema = @Schema(implementation = Blog.class),
-			examples = {
-				@ExampleObject(
-					name = "blog 저장 요청 예제1",
-					description = """
+            parameters =
+                    @Parameter(
+                            name = "blog",
+                            schema = @Schema(implementation = Blog.class),
+                            examples = {
+                                @ExampleObject(
+                                        name = "blog 저장 요청 예제1",
+                                        description =
+                                                """
 						예제 1 설명
 					""",
-					value = """
+                                        value =
+                                                """
 						{
 						  "userId": "testUserId"
 						}
-					"""
-				)
-			}
-		),
-		responses = {
-			@ApiResponse(
-				responseCode = "200",
-				content = {
-					@Content(
-						schema = @Schema(implementation = Blog.class),
-						examples = {
-							@ExampleObject(
-								name = "blog 저장 응답 예제 1",
-								description = """
+					""")
+                            }),
+            responses = {
+                @ApiResponse(
+                        responseCode = "200",
+                        content = {
+                            @Content(
+                                    schema = @Schema(implementation = Blog.class),
+                                    examples = {
+                                        @ExampleObject(
+                                                name = "blog 저장 응답 예제 1",
+                                                description =
+                                                        """
 									예제 1 설명
 								""",
-								value = """
+                                                value =
+                                                        """
 									{
 									  "idx": 0,
 									  "userId": "CBB5D7CA-5A48-E011-8195-18A90577F94A",
 									  "blogId": "E50D9C4B-050C-4DCC-B331-B6F095661E9D"
 									}
-								"""
-							)
-						}
-					)
-				}
-			)
-		}
-	)
-	@interface Create {
-		
-	}
+								""")
+                                    })
+                        })
+            })
+    @interface Create {}
 }

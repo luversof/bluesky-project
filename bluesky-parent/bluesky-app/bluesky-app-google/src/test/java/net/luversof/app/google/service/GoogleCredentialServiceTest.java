@@ -11,14 +11,12 @@ import net.luversof.app.google.service.auth.oauth2.GoogleCredentialService;
 
 class GoogleCredentialServiceTest implements GeneralTest {
 
-	@Autowired
-	private GoogleCredentialService googleCredentialService;
+    @Autowired private GoogleCredentialService googleCredentialService;
 
-	@Test
-	void getGoogleCredentialsByUserIdTest() {
-		var credentials = googleCredentialService.getGoogleCredentialsByUserId(TestConstant.USER_ID);
-		assertThat(credentials).isNotNull();
-	}
-	
-	
+    @Test
+    void getGoogleCredentialsByUserIdTest() {
+        var credentials =
+                googleCredentialService.getGoogleCredentialsByUserId(TestConstant.USER_ID);
+        assertThat(credentials).isNotNull();
+    }
 }

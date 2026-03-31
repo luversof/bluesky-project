@@ -16,22 +16,21 @@ import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 @RequestMapping("/api/stock/stockItem")
 public class StockItemApiController {
 
-	private StockItemClient stockItemClient;
+    private StockItemClient stockItemClient;
 
-	@Autowired
-	public void setStockItemClient(StockItemClient stockItemClient) {
-		this.stockItemClient = stockItemClient;
-	}
+    @Autowired
+    public void setStockItemClient(StockItemClient stockItemClient) {
+        this.stockItemClient = stockItemClient;
+    }
 
-	@BlueskyPreAuthorize
-	@PostMapping
-	public StockItem createStockItem(@RequestBody StockItem stockItem) {
-		return stockItemClient.createStockItem(stockItem);
-	}
+    @BlueskyPreAuthorize
+    @PostMapping
+    public StockItem createStockItem(@RequestBody StockItem stockItem) {
+        return stockItemClient.createStockItem(stockItem);
+    }
 
-	@GetMapping("/search/findByName/{name}")
-	public StockItem findByName(@PathVariable String name) {
-		return stockItemClient.findByName(name);
-	}
-
+    @GetMapping("/search/findByName/{name}")
+    public StockItem findByName(@PathVariable String name) {
+        return stockItemClient.findByName(name);
+    }
 }

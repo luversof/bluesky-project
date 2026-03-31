@@ -15,29 +15,27 @@ import net.luversof.api.stock.service.kis.KisStockPriceUpdateService;
 @RequestMapping("/api/stock/admin")
 public class StockAdminController {
 
-	@Autowired
-	private StockAdminService stockAdminService;
+    @Autowired private StockAdminService stockAdminService;
 
-	@Autowired
-	private KisStockPriceUpdateService kisStockPriceUpdateService;
+    @Autowired private KisStockPriceUpdateService kisStockPriceUpdateService;
 
-	@PostMapping("/stock-items")
-	public int stockItemBulkInsert(@RequestParam UUID userId) {
-		return stockAdminService.stockItemBulkInsert(userId);
-	}
+    @PostMapping("/stock-items")
+    public int stockItemBulkInsert(@RequestParam UUID userId) {
+        return stockAdminService.stockItemBulkInsert(userId);
+    }
 
-	@PostMapping("/trades")
-	public void tradeBulkInsert(@RequestParam UUID userId) {
-		stockAdminService.tradeBulkInsert(userId);
-	}
+    @PostMapping("/trades")
+    public void tradeBulkInsert(@RequestParam UUID userId) {
+        stockAdminService.tradeBulkInsert(userId);
+    }
 
-	@PostMapping("/dividends")
-	public void dividendBulkInsert(@RequestParam UUID userId) {
-		stockAdminService.dividendBulkInsert(userId);
-	}
+    @PostMapping("/dividends")
+    public void dividendBulkInsert(@RequestParam UUID userId) {
+        stockAdminService.dividendBulkInsert(userId);
+    }
 
-	@PostMapping("/price-histories")
-	public void priceHistoryUpdate(@RequestParam UUID userId) {
-		kisStockPriceUpdateService.updatePriceHistory();
-	}
+    @PostMapping("/price-histories")
+    public void priceHistoryUpdate(@RequestParam UUID userId) {
+        kisStockPriceUpdateService.updatePriceHistory();
+    }
 }

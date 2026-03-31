@@ -21,30 +21,31 @@ import net.luversof.api.blog.service.BlogArticleCategoryService;
 @RequestMapping(value = "/api/blogArticleCategory", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BlogArticleCategoryController {
 
-	@Autowired
-	private BlogArticleCategoryService blogArticleCategoryService;
+    @Autowired private BlogArticleCategoryService blogArticleCategoryService;
 
-	@PostMapping
-	public BlogArticleCategory create(
-			@Validated(BlogArticleCategory.Create.class) @RequestBody BlogArticleCategory blogArticleCategory) {
-		return blogArticleCategoryService.create(blogArticleCategory);
-	}
+    @PostMapping
+    public BlogArticleCategory create(
+            @Validated(BlogArticleCategory.Create.class) @RequestBody
+                    BlogArticleCategory blogArticleCategory) {
+        return blogArticleCategoryService.create(blogArticleCategory);
+    }
 
-	@GetMapping("/search/findByBlogId/{blogId}")
-	public List<BlogArticleCategory> findByBlogId(@PathVariable String blogId) {
-		return blogArticleCategoryService.findByBlogId(blogId);
-	}
+    @GetMapping("/search/findByBlogId/{blogId}")
+    public List<BlogArticleCategory> findByBlogId(@PathVariable String blogId) {
+        return blogArticleCategoryService.findByBlogId(blogId);
+    }
 
-	@PutMapping
-	public BlogArticleCategory update(
-			@Validated(BlogArticleCategory.Update.class) @RequestBody BlogArticleCategory blogArticleCategory) {
-		return blogArticleCategoryService.update(blogArticleCategory);
-	}
+    @PutMapping
+    public BlogArticleCategory update(
+            @Validated(BlogArticleCategory.Update.class) @RequestBody
+                    BlogArticleCategory blogArticleCategory) {
+        return blogArticleCategoryService.update(blogArticleCategory);
+    }
 
-	@DeleteMapping
-	public void delete(
-			@Validated(BlogArticleCategory.Delete.class) @RequestBody BlogArticleCategory blogArticleCategory) {
-		blogArticleCategoryService.delete(blogArticleCategory);
-	}
-
+    @DeleteMapping
+    public void delete(
+            @Validated(BlogArticleCategory.Delete.class) @RequestBody
+                    BlogArticleCategory blogArticleCategory) {
+        blogArticleCategoryService.delete(blogArticleCategory);
+    }
 }

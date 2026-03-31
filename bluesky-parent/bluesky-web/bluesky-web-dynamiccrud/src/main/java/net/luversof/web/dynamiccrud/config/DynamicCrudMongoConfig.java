@@ -15,16 +15,19 @@ import io.github.luversof.boot.security.crypto.support.DecryptPropertySourceFact
 import jakarta.annotation.PostConstruct;
 
 @Configuration
-@PropertySource(value = "classpath:mongo-${bluesky-boot-profile}.properties", factory = DecryptPropertySourceFactory.class, ignoreResourceNotFound = true)
+@PropertySource(
+        value = "classpath:mongo-${bluesky-boot-profile}.properties",
+        factory = DecryptPropertySourceFactory.class,
+        ignoreResourceNotFound = true)
 public class DynamicCrudMongoConfig {
 
-	private static final Logger log = LoggerFactory.getLogger(DynamicCrudMongoConfig.class);
+    private static final Logger log = LoggerFactory.getLogger(DynamicCrudMongoConfig.class);
 
-	@Autowired(required = false)
-	private Map<String, ConnectionInfoRegistry<MongoClient>> mongoClientConnectionRegistry;
+    @Autowired(required = false)
+    private Map<String, ConnectionInfoRegistry<MongoClient>> mongoClientConnectionRegistry;
 
-	@PostConstruct
-	public void postConstruct() {
-		log.debug("Test : {}", mongoClientConnectionRegistry);
-	}
+    @PostConstruct
+    public void postConstruct() {
+        log.debug("Test : {}", mongoClientConnectionRegistry);
+    }
 }

@@ -28,71 +28,78 @@ import net.luversof.api.stock.provider.InputStreamProvider;
 @Service
 public class GoogleSheetsApiService {
 
-	private InputStreamProvider inputStreamProvider;
+    private InputStreamProvider inputStreamProvider;
 
-	private ObjectMapper objectMapper;
-	
-	public GoogleSheetsApiService(InputStreamProvider inputStreamProvider, ObjectMapper objectMapper) {
-		this.inputStreamProvider = inputStreamProvider;
-		this.objectMapper = objectMapper;
-	}
+    private ObjectMapper objectMapper;
 
-	private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
+    public GoogleSheetsApiService(
+            InputStreamProvider inputStreamProvider, ObjectMapper objectMapper) {
+        this.inputStreamProvider = inputStreamProvider;
+        this.objectMapper = objectMapper;
+    }
 
-	private GoogleCredentials getCredentials(String credentialJsonLocation) throws IOException {
-		InputStream credentialsStream = inputStreamProvider.open(credentialJsonLocation);
-		ServiceAccountCredentials serviceAccountCredentials = ServiceAccountCredentials.fromStream(credentialsStream);
+    private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 
-		return serviceAccountCredentials.createScoped(SheetsScopes.SPREADSHEETS_READONLY);
-	}
+    private GoogleCredentials getCredentials(String credentialJsonLocation) throws IOException {
+        InputStream credentialsStream = inputStreamProvider.open(credentialJsonLocation);
+        ServiceAccountCredentials serviceAccountCredentials =
+                ServiceAccountCredentials.fromStream(credentialsStream);
 
-	private Sheets getSheets(String credentialJsonLocation) throws GeneralSecurityException, IOException {
-		return new Sheets.Builder(
-				GoogleNetHttpTransport.newTrustedTransport(),
-				JSON_FACTORY,
+        return serviceAccountCredentials.createScoped(SheetsScopes.SPREADSHEETS_READONLY);
+    }
 
-				new HttpCredentialsAdapter(getCredentials(credentialJsonLocation)))
-				.build();
-	}
+    private Sheets getSheets(String credentialJsonLocation)
+            throws GeneralSecurityException, IOException {
+        return new Sheets.Builder(
+                        GoogleNetHttpTransport.newTrustedTransport(),
+                        JSON_FACTORY,
+                        new HttpCredentialsAdapter(getCredentials(credentialJsonLocation)))
+                .build();
+    }
 
-	public ValueRange getSpreadsheetValues(String credentialJsonLocation, String spreadsheetId, String range)
-			throws GeneralSecurityException, IOException {
-		return getSheets(credentialJsonLocation)
-				.spreadsheets()
-				.values()
-				.get(spreadsheetId, range)
-				.execute();
-	}
+    public ValueRange getSpreadsheetValues(
+            String credentialJsonLocation, String spreadsheetId, String range)
+            throws GeneralSecurityException, IOException {
+        return getSheets(credentialJsonLocation)
+                .spreadsheets()
+                .values()
+                .get(spreadsheetId, range)
+                .execute();
+    }
 
-	public <T> List<T> getSpreadsheetValues(String credentialJsonLocation, String spreadsheetId, String range,
-			Function<ValueRange, List<T>> rowMapper) throws GeneralSecurityException, IOException {
-		return rowMapper.apply(getSpreadsheetValues(credentialJsonLocation, spreadsheetId, range));
-	}
+    public <T> List<T> getSpreadsheetValues(
+            String credentialJsonLocation,
+            String spreadsheetId,
+            String range,
+            Function<ValueRange, List<T>> rowMapper)
+            throws GeneralSecurityException, IOException {
+        return rowMapper.apply(getSpreadsheetValues(credentialJsonLocation, spreadsheetId, range));
+    }
 
-	public <T> List<T> getSpreadsheetValues(String credentialJsonLocation, String spreadsheetId, String range,
-			Class<T> type) throws GeneralSecurityException, IOException {
-		ValueRange response = getSpreadsheetValues(credentialJsonLocation, spreadsheetId, range);
-		List<List<Object>> values = response.getValues();
+    public <T> List<T> getSpreadsheetValues(
+            String credentialJsonLocation, String spreadsheetId, String range, Class<T> type)
+            throws GeneralSecurityException, IOException {
+        ValueRange response = getSpreadsheetValues(credentialJsonLocation, spreadsheetId, range);
+        List<List<Object>> values = response.getValues();
 
-		if (values == null || values.isEmpty()) {
-			return Collections.emptyList();
-		}
+        if (values == null || values.isEmpty()) {
+            return Collections.emptyList();
+        }
 
-		List<Object> header = values.get(0);
-		List<T> result = new ArrayList<>();
+        List<Object> header = values.get(0);
+        List<T> result = new ArrayList<>();
 
-		for (int i = 1; i < values.size(); i++) {
-			List<Object> row = values.get(i);
-			Map<String, Object> map = new HashMap<>();
-			for (int j = 0; j < header.size(); j++) {
-				if (row.size() > j) {
-					map.put(String.valueOf(header.get(j)), row.get(j));
-				}
-			}
-			result.add(objectMapper.convertValue(map, type));
-		}
+        for (int i = 1; i < values.size(); i++) {
+            List<Object> row = values.get(i);
+            Map<String, Object> map = new HashMap<>();
+            for (int j = 0; j < header.size(); j++) {
+                if (row.size() > j) {
+                    map.put(String.valueOf(header.get(j)), row.get(j));
+                }
+            }
+            result.add(objectMapper.convertValue(map, type));
+        }
 
-		return result;
-	}
-
+        return result;
+    }
 }

@@ -7,6 +7,4 @@ import org.springframework.stereotype.Repository;
 import net.luversof.api.blog.domain.mongo.Blog;
 
 @Repository(value = "blogMongoRepository")
-public interface BlogRepository extends MongoRepository<Blog, ObjectId> {
-
-}
+public interface BlogRepository extends MongoRepository<Blog, ObjectId> {}

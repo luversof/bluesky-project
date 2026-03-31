@@ -16,13 +16,12 @@ import net.luversof.web.gate.stock.domain.Account;
 @HttpExchange(url = "/api/account", contentType = MediaType.APPLICATION_JSON_VALUE)
 public interface AccountClient {
 
-	@PostExchange
-	Account createAccount(@RequestBody Account account);
-	
-	@GetExchange("/{id}")
-	Optional<Account> getAccountById(@PathVariable UUID id);
-	
-	@GetExchange("/search/findByUserId/{userId}")
-	List<Account> getAccountsByUserId(@PathVariable UUID userId);
+    @PostExchange
+    Account createAccount(@RequestBody Account account);
 
+    @GetExchange("/{id}")
+    Optional<Account> getAccountById(@PathVariable UUID id);
+
+    @GetExchange("/search/findByUserId/{userId}")
+    List<Account> getAccountsByUserId(@PathVariable UUID userId);
 }

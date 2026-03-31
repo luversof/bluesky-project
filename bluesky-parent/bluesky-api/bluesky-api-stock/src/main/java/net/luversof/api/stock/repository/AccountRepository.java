@@ -8,9 +8,8 @@ import org.springframework.data.repository.CrudRepository;
 import net.luversof.api.stock.domain.Account;
 
 public interface AccountRepository extends CrudRepository<Account, UUID> {
-	
-	List<Account> findByIdIn(List<UUID> idList);
 
-	List<Account> findByUserId(UUID userId);
+    List<Account> findByIdIn(List<UUID> idList);
 
+    List<Account> findByUserId(UUID userId);
 }

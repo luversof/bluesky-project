@@ -31,148 +31,167 @@ import net.luversof.web.dynamiccrud.use.service.UseService;
 @Service
 public class MongoUseService implements UseService {
 
-	private ConnectionInfoRegistry<MongoClient> mongoClientConnectionInfoRegistry;
-	private MongoDbConnectionMapProperties mongoDbConnectionMapProperties;
+    private ConnectionInfoRegistry<MongoClient> mongoClientConnectionInfoRegistry;
+    private MongoDbConnectionMapProperties mongoDbConnectionMapProperties;
 
-	public MongoUseService(ConnectionInfoRegistry<MongoClient> mongoClientConnectionInfoRegistry,
-			MongoDbConnectionMapProperties mongoDbConnectionMapProperties) {
-		this.mongoClientConnectionInfoRegistry = mongoClientConnectionInfoRegistry;
-		this.mongoDbConnectionMapProperties = mongoDbConnectionMapProperties;
-	}
+    public MongoUseService(
+            ConnectionInfoRegistry<MongoClient> mongoClientConnectionInfoRegistry,
+            MongoDbConnectionMapProperties mongoDbConnectionMapProperties) {
+        this.mongoClientConnectionInfoRegistry = mongoClientConnectionInfoRegistry;
+        this.mongoDbConnectionMapProperties = mongoDbConnectionMapProperties;
+    }
 
-	public ConnectionInfoRegistry<MongoClient> getMongoClientConnectionInfoRegistry() {
-		return mongoClientConnectionInfoRegistry;
-	}
+    public ConnectionInfoRegistry<MongoClient> getMongoClientConnectionInfoRegistry() {
+        return mongoClientConnectionInfoRegistry;
+    }
 
-	@Override
-	public SubMenuDbType getSupportDbType() {
-		return SubMenuDbType.Mongo;
-	}
+    @Override
+    public SubMenuDbType getSupportDbType() {
+        return SubMenuDbType.Mongo;
+    }
 
-	private MongoClient getMongoClient(String connection) {
-		return mongoClientConnectionInfoRegistry.getConnectionInfoList().stream()
-				.filter(x -> x.getKey().connectionKey().equals(connection)).findAny().orElseThrow().getConnection();
-	}
+    private MongoClient getMongoClient(String connection) {
+        return mongoClientConnectionInfoRegistry.getConnectionInfoList().stream()
+                .filter(x -> x.getKey().connectionKey().equals(connection))
+                .findAny()
+                .orElseThrow()
+                .getConnection();
+    }
 
-	private String getMongoDataBase(String connection) {
-		return mongoDbConnectionMapProperties.getConnectionMap().get(connection).getDatabase();
-	}
+    private String getMongoDataBase(String connection) {
+        return mongoDbConnectionMapProperties.getConnectionMap().get(connection).getDatabase();
+    }
 
-	@Override
-	public Page<Map<String, Object>> find(SettingParameter settingParameter, Pageable pageable,
-			Map<String, String> dataMap) {
-		var dbQuery = SettingUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.SELECT);
-		var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
-		var mongoClient = getMongoClient(dbQuery.getDataSourceName());
-		var database = mongoClient.getDatabase(getMongoDataBase(dbQuery.getDataSourceName()));
+    @Override
+    public Page<Map<String, Object>> find(
+            SettingParameter settingParameter, Pageable pageable, Map<String, String> dataMap) {
+        var dbQuery = SettingUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.SELECT);
+        var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
+        var mongoClient = getMongoClient(dbQuery.getDataSourceName());
+        var database = mongoClient.getDatabase(getMongoDataBase(dbQuery.getDataSourceName()));
 
-		// 필수 검색 조건이 있는 경우 확인
-		var requiredFieldList = dbFieldList.stream().filter(x -> DbFieldEnable.REQUIRED.equals(x.getEnableSearch()))
-				.toList();
-		if (requiredFieldList.stream().anyMatch(
-				x -> !dataMap.containsKey(x.getColumnId()) || !StringUtils.hasText(dataMap.get(x.getColumnId())))) {
-			return new PageImpl<>(Collections.emptyList(), pageable, 0);
-		}
+        // 필수 검색 조건이 있는 경우 확인
+        var requiredFieldList =
+                dbFieldList.stream()
+                        .filter(x -> DbFieldEnable.REQUIRED.equals(x.getEnableSearch()))
+                        .toList();
+        if (requiredFieldList.stream()
+                .anyMatch(
+                        x ->
+                                !dataMap.containsKey(x.getColumnId())
+                                        || !StringUtils.hasText(dataMap.get(x.getColumnId())))) {
+            return new PageImpl<>(Collections.emptyList(), pageable, 0);
+        }
 
-		// 등록된 queryString 문자열 변환 처리
-		var formattedQueryString = SettingStringUtil.format(dbQuery.getQueryString(), dataMap);
+        // 등록된 queryString 문자열 변환 처리
+        var formattedQueryString = SettingStringUtil.format(dbQuery.getQueryString(), dataMap);
 
-		var selectCommand = Document.parse(formattedQueryString);
+        var selectCommand = Document.parse(formattedQueryString);
 
-		// 등록된 queryString에 filter 조건이 작성되어 있는 경우 페이징과 검색 조건을 생략하고 해당 쿼리 실행처리
-		if (selectCommand.containsKey("filter")) {
-			var result = database.runCommand(selectCommand);
-			@SuppressWarnings("unchecked")
-			var list = (List<Map<String, Object>>) ((Document) result.get("cursor")).get("firstBatch");
-			return new PageImpl<>(list, pageable, list.size());
-		}
+        // 등록된 queryString에 filter 조건이 작성되어 있는 경우 페이징과 검색 조건을 생략하고 해당 쿼리 실행처리
+        if (selectCommand.containsKey("filter")) {
+            var result = database.runCommand(selectCommand);
+            @SuppressWarnings("unchecked")
+            var list =
+                    (List<Map<String, Object>>) ((Document) result.get("cursor")).get("firstBatch");
+            return new PageImpl<>(list, pageable, list.size());
+        }
 
-		// 검색 조건 추가
-		var targetFieldList = dbFieldList.stream()
-				.filter(x -> (DbFieldEnable.REQUIRED.equals(x.getEnableSearch())
-						|| DbFieldEnable.ENABLED.equals(x.getEnableSearch())) && dataMap.containsKey(x.getColumnId())
-						&& StringUtils.hasText(dataMap.get(x.getColumnId())))
-				.toList();
-		var filter = new Document();
-		if (!targetFieldList.isEmpty()) {
-			for (var targetField : targetFieldList) {
-				Object value = null;
-				if (targetField.getColumnType().equals(DbFieldColumnType.INT)) {
-					value = Integer.parseInt(dataMap.get(targetField.getColumnId()));
-				} else if (targetField.getColumnType().equals(DbFieldColumnType.LONG)) {
-					value = Long.parseLong(dataMap.get(targetField.getColumnId()));
-				} else {
-					value = dataMap.get(targetField.getColumnId());
-				}
-				filter.put(targetField.getColumnId(), value);
-			}
-			selectCommand.put("filter", filter);
-		}
+        // 검색 조건 추가
+        var targetFieldList =
+                dbFieldList.stream()
+                        .filter(
+                                x ->
+                                        (DbFieldEnable.REQUIRED.equals(x.getEnableSearch())
+                                                        || DbFieldEnable.ENABLED.equals(
+                                                                x.getEnableSearch()))
+                                                && dataMap.containsKey(x.getColumnId())
+                                                && StringUtils.hasText(
+                                                        dataMap.get(x.getColumnId())))
+                        .toList();
+        var filter = new Document();
+        if (!targetFieldList.isEmpty()) {
+            for (var targetField : targetFieldList) {
+                Object value = null;
+                if (targetField.getColumnType().equals(DbFieldColumnType.INT)) {
+                    value = Integer.parseInt(dataMap.get(targetField.getColumnId()));
+                } else if (targetField.getColumnType().equals(DbFieldColumnType.LONG)) {
+                    value = Long.parseLong(dataMap.get(targetField.getColumnId()));
+                } else {
+                    value = dataMap.get(targetField.getColumnId());
+                }
+                filter.put(targetField.getColumnId(), value);
+            }
+            selectCommand.put("filter", filter);
+        }
 
-		selectCommand.put("limit", pageable.getPageSize());
-		selectCommand.put("skip", pageable.getOffset());
-		var result = database.runCommand(selectCommand);
+        selectCommand.put("limit", pageable.getPageSize());
+        selectCommand.put("skip", pageable.getOffset());
+        var result = database.runCommand(selectCommand);
 
-		@SuppressWarnings("unchecked")
-		var list = (List<Map<String, Object>>) result.get("cursor", Document.class).get("firstBatch");
+        @SuppressWarnings("unchecked")
+        var list =
+                (List<Map<String, Object>>) result.get("cursor", Document.class).get("firstBatch");
 
-		// 첫페이지 호출에 pageSize보다 결과 값이 적은 경우 count 호출이 불필요함
-		if (pageable.getOffset() == 0 && list.size() < pageable.getPageSize()) {
-			return new PageImpl<>(list, pageable, list.size());
-		}
+        // 첫페이지 호출에 pageSize보다 결과 값이 적은 경우 count 호출이 불필요함
+        if (pageable.getOffset() == 0 && list.size() < pageable.getPageSize()) {
+            return new PageImpl<>(list, pageable, list.size());
+        }
 
-		// count 조회
-		long countDocuments = database.getCollection(selectCommand.getString("find")).countDocuments(filter);
+        // count 조회
+        long countDocuments =
+                database.getCollection(selectCommand.getString("find")).countDocuments(filter);
 
-		return new PageImpl<>(list, pageable, countDocuments);
-	}
+        return new PageImpl<>(list, pageable, countDocuments);
+    }
 
-	@Override
-	public Object create(SettingParameter settingParameter, Map<String, String> dataMap) {
-		var dbQuery = SettingUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.INSERT);
-		return runCommand(dbQuery, dataMap);
-	}
+    @Override
+    public Object create(SettingParameter settingParameter, Map<String, String> dataMap) {
+        var dbQuery = SettingUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.INSERT);
+        return runCommand(dbQuery, dataMap);
+    }
 
-	@Override
-	public Object update(SettingParameter settingParameter, Map<String, String> dataMap) {
-		var dbQuery = SettingUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.UPDATE);
-		return runCommand(dbQuery, dataMap);
-	}
+    @Override
+    public Object update(SettingParameter settingParameter, Map<String, String> dataMap) {
+        var dbQuery = SettingUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.UPDATE);
+        return runCommand(dbQuery, dataMap);
+    }
 
-	@Override
-	public Object delete(SettingParameter settingParameter, MultiValueMap<String, String> dataMap) {
-		var dbQuery = SettingUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.DELETE);
+    @Override
+    public Object delete(SettingParameter settingParameter, MultiValueMap<String, String> dataMap) {
+        var dbQuery = SettingUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.DELETE);
 
-		var dataMapList = new ArrayList<Map<String, String>>();
+        var dataMapList = new ArrayList<Map<String, String>>();
 
-		dataMap.forEach((key, value) -> {
-			// 갯수 만큼 맵을 추가한다.
-			if (dataMapList.isEmpty()) {
-				for (int i = 0; i < value.size(); i++) {
-					dataMapList.add(new HashMap<>());
-				}
-			}
+        dataMap.forEach(
+                (key, value) -> {
+                    // 갯수 만큼 맵을 추가한다.
+                    if (dataMapList.isEmpty()) {
+                        for (int i = 0; i < value.size(); i++) {
+                            dataMapList.add(new HashMap<>());
+                        }
+                    }
 
-			for (int i = 0; i < value.size(); i++) {
-				dataMapList.get(i).put(key, value.get(i));
-			}
-		});
+                    for (int i = 0; i < value.size(); i++) {
+                        dataMapList.get(i).put(key, value.get(i));
+                    }
+                });
 
-		var resultList = new ArrayList<Object>();
-		dataMapList.forEach(map -> {
-			Object result = runCommand(dbQuery, map);
-			resultList.add(result);
-		});
-		return resultList;
-	}
+        var resultList = new ArrayList<Object>();
+        dataMapList.forEach(
+                map -> {
+                    Object result = runCommand(dbQuery, map);
+                    resultList.add(result);
+                });
+        return resultList;
+    }
 
-	private Object runCommand(DbQuery dbQuery, Map<String, String> dataMap) {
-		var mongoClient = getMongoClient(dbQuery.getDataSourceName());
-		var database = mongoClient.getDatabase(getMongoDataBase(dbQuery.getDataSourceName()));
-		// 등록된 queryString 문자열 변환 처리
-		var formattedQueryString = SettingStringUtil.format(dbQuery.getQueryString(), dataMap);
-		var command = Document.parse(formattedQueryString);
-		return database.runCommand(command);
-	}
-
+    private Object runCommand(DbQuery dbQuery, Map<String, String> dataMap) {
+        var mongoClient = getMongoClient(dbQuery.getDataSourceName());
+        var database = mongoClient.getDatabase(getMongoDataBase(dbQuery.getDataSourceName()));
+        // 등록된 queryString 문자열 변환 처리
+        var formattedQueryString = SettingStringUtil.format(dbQuery.getQueryString(), dataMap);
+        var command = Document.parse(formattedQueryString);
+        return database.runCommand(command);
+    }
 }

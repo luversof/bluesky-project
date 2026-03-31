@@ -10,18 +10,18 @@ import net.luversof.web.common.menu.domain.Menu;
 
 public class MenuTest {
 
-	private static final Logger log = LoggerFactory.getLogger(MenuTest.class);
+    private static final Logger log = LoggerFactory.getLogger(MenuTest.class);
 
-	@Test
-	void patternTest() {
-		var url = "/board/free/list";
-		log.debug("result : {}", Pattern.compile("\\/board\\/.*").matcher(url).matches());
-	}
+    @Test
+    void patternTest() {
+        var url = "/board/free/list";
+        log.debug("result : {}", Pattern.compile("\\/board\\/.*").matcher(url).matches());
+    }
 
-	@Test
-	void menuTest() {
-		var menu = new Menu();
-		menu.setUrl("/board/free/list");
-		log.debug("test : {}", "A");
-	}
+    @Test
+    void menuTest() {
+        var menu = new Menu();
+        menu.setUrl("/board/free/list");
+        log.debug("test : {}", "A");
+    }
 }

@@ -17,48 +17,49 @@ import net.luversof.api.blog.util.BlogRequestAttributeUtil;
 @Service
 public class BlogArticleCommentService {
 
-	@Autowired
-	private BlogArticleCommentRepository blogCommentRepository;
+    @Autowired private BlogArticleCommentRepository blogCommentRepository;
 
-	public BlogArticleComment create(BlogArticleComment blogArticleComment) {
-		if (!StringUtils.hasText(blogArticleComment.getBlogArticleId())) {
-			BlogErrorCode.NOT_EXIST_PARAMETER_BLOGARTICLE_ID.throwException();
-		}
+    public BlogArticleComment create(BlogArticleComment blogArticleComment) {
+        if (!StringUtils.hasText(blogArticleComment.getBlogArticleId())) {
+            BlogErrorCode.NOT_EXIST_PARAMETER_BLOGARTICLE_ID.throwException();
+        }
 
-		BlogRequestAttributeUtil.getBlogArticleService().findByBlogArticleId(blogArticleComment.getBlogArticleId());
-		blogArticleComment.setBlogArticleCommentId(UUID.randomUUID().toString());
+        BlogRequestAttributeUtil.getBlogArticleService()
+                .findByBlogArticleId(blogArticleComment.getBlogArticleId());
+        blogArticleComment.setBlogArticleCommentId(UUID.randomUUID().toString());
 
-		return blogCommentRepository.save(blogArticleComment);
-	}
+        return blogCommentRepository.save(blogArticleComment);
+    }
 
-	public Page<BlogArticleComment> findByBlogArticleId(String blogArticleId, Pageable pageable) {
-		return blogCommentRepository.findByBlogArticleId(blogArticleId, pageable);
-	}
+    public Page<BlogArticleComment> findByBlogArticleId(String blogArticleId, Pageable pageable) {
+        return blogCommentRepository.findByBlogArticleId(blogArticleId, pageable);
+    }
 
-	public Optional<BlogArticleComment> findByBlogArticleCommentId(String blogArticleCommentId) {
-		return blogCommentRepository.findByBlogArticleCommentId(blogArticleCommentId);
-	}
+    public Optional<BlogArticleComment> findByBlogArticleCommentId(String blogArticleCommentId) {
+        return blogCommentRepository.findByBlogArticleCommentId(blogArticleCommentId);
+    }
 
-	public long countByBlogArticleId(String blogArticleId) {
-		return blogCommentRepository.countByBlogArticleId(blogArticleId);
-	}
+    public long countByBlogArticleId(String blogArticleId) {
+        return blogCommentRepository.countByBlogArticleId(blogArticleId);
+    }
 
-	public BlogArticleComment update(BlogArticleComment blogArticleComment) {
-		var targetBlogComment = blogCommentRepository
-				.findByBlogArticleCommentId(blogArticleComment.getBlogArticleCommentId())
-				.orElseThrow(BlogErrorCode.NOT_EXIST_BLOGCOMMENT::exception);
-		if (!targetBlogComment.getUserId().equals(blogArticleComment.getUserId())) {
-			BlogErrorCode.NOT_USER_BLOGCOMMENT.throwException();
-			;
-		}
+    public BlogArticleComment update(BlogArticleComment blogArticleComment) {
+        var targetBlogComment =
+                blogCommentRepository
+                        .findByBlogArticleCommentId(blogArticleComment.getBlogArticleCommentId())
+                        .orElseThrow(BlogErrorCode.NOT_EXIST_BLOGCOMMENT::exception);
+        if (!targetBlogComment.getUserId().equals(blogArticleComment.getUserId())) {
+            BlogErrorCode.NOT_USER_BLOGCOMMENT.throwException();
+            ;
+        }
 
-		targetBlogComment.setComment(blogArticleComment.getComment());
+        targetBlogComment.setComment(blogArticleComment.getComment());
 
-		return blogCommentRepository.save(targetBlogComment);
-	}
+        return blogCommentRepository.save(targetBlogComment);
+    }
 
-	public void delete(BlogArticleComment blogArticleComment) {
-		blogCommentRepository.deleteByBlogArticleCommentId(blogArticleComment.getBlogArticleCommentId());
-	}
-
+    public void delete(BlogArticleComment blogArticleComment) {
+        blogCommentRepository.deleteByBlogArticleCommentId(
+                blogArticleComment.getBlogArticleCommentId());
+    }
 }

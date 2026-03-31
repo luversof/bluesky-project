@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.HashMap;
 
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.expression.Expression;
@@ -22,122 +24,127 @@ import net.luversof.web.dynamiccrud.setting.util.SettingStringUtil;
 import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 import net.luversof.web.dynamiccrud.use.domain.ContentInfo;
 import net.luversof.web.dynamiccrud.use.service.UseServiceDecorator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class UseTest implements GeneralTest {
 
-	private static final Logger log = LoggerFactory.getLogger(UseTest.class);
+    private static final Logger log = LoggerFactory.getLogger(UseTest.class);
 
-	@Autowired
-	private UseServiceDecorator useService;
+    @Autowired private UseServiceDecorator useService;
 
-	@Autowired
-	private ObjectMapper objectMapper;
+    @Autowired private ObjectMapper objectMapper;
 
-	@Test
-	void contentInfoTest() throws JsonProcessingException {
+    @Test
+    void contentInfoTest() throws JsonProcessingException {
 
-		// var product = "setting";
-		// var mainMenu = "menu";
-		// var subMenu = "field";
+        // var product = "setting";
+        // var mainMenu = "menu";
+        // var subMenu = "field";
 
-		var adminProjectId = "eventAdmin";
-		var projectId = "aaaa";
-		var mainMenuId = "amenu";
-		var subMenuId = "asubmenu";
-		var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
+        var adminProjectId = "eventAdmin";
+        var projectId = "aaaa";
+        var mainMenuId = "amenu";
+        var subMenuId = "asubmenu";
+        var settingParameter =
+                new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
 
-		var query = SettingUtil.getDbQuery(adminProjectId, projectId, mainMenuId, subMenuId,
-				DbQuerySqlCommandType.SELECT);
-		assertThat(query).isNotNull();
+        var query =
+                SettingUtil.getDbQuery(
+                        adminProjectId,
+                        projectId,
+                        mainMenuId,
+                        subMenuId,
+                        DbQuerySqlCommandType.SELECT);
+        assertThat(query).isNotNull();
 
-		var fieldList = SettingUtil.getDbFieldList(adminProjectId, projectId, mainMenuId, subMenuId);
-		assertThat(fieldList).isNotEmpty();
+        var fieldList =
+                SettingUtil.getDbFieldList(adminProjectId, projectId, mainMenuId, subMenuId);
+        assertThat(fieldList).isNotEmpty();
 
-		var subMenu = SettingUtil.getSubMenu(adminProjectId, projectId, mainMenuId, subMenuId);
+        var subMenu = SettingUtil.getSubMenu(adminProjectId, projectId, mainMenuId, subMenuId);
 
-		var pageable = PageRequest.of(0, 20);
+        var pageable = PageRequest.of(0, 20);
 
-		var paramMap = Collections.<String, String>emptyMap();
+        var paramMap = Collections.<String, String>emptyMap();
 
-		var page = useService.find(settingParameter, pageable, paramMap);
+        var page = useService.find(settingParameter, pageable, paramMap);
 
-		var contentInfo = new ContentInfo(subMenu.getDbType(), page.getContent(), fieldList);
-		assertThat(contentInfo).isNotNull();
+        var contentInfo = new ContentInfo(subMenu.getDbType(), page.getContent(), fieldList);
+        assertThat(contentInfo).isNotNull();
 
-		log.debug("contentInfo processedContentMapList : {}",
-				objectMapper.writeValueAsString(contentInfo.getProcessedContentMapList()));
+        log.debug(
+                "contentInfo processedContentMapList : {}",
+                objectMapper.writeValueAsString(contentInfo.getProcessedContentMapList()));
 
-		// useService.find(null, null, null, null)
-	}
+        // useService.find(null, null, null, null)
+    }
 
-	@Test
-	void customSpelTest() {
+    @Test
+    void customSpelTest() {
 
-		var expressionParser = new SpelExpressionParser();
+        var expressionParser = new SpelExpressionParser();
 
-		var evaluationContext = new StandardEvaluationContext();
-		evaluationContext.setVariable("testKey", "testValue");
+        var evaluationContext = new StandardEvaluationContext();
+        evaluationContext.setVariable("testKey", "testValue");
 
-		Expression expression = expressionParser.parseExpression("'Any string' + #testKey");
-		String result = (String) expression.getValue(evaluationContext);
+        Expression expression = expressionParser.parseExpression("'Any string' + #testKey");
+        String result = (String) expression.getValue(evaluationContext);
 
-		log.debug("test : {}", result);
-	}
+        log.debug("test : {}", result);
+    }
 
-	@Test
-	void messageFormatTest() {
-		// String sqlTemplate = "select *, ${nonExistValue} From ${table}
-		// ${whereClause}";
-		String sqlTemplate = """
+    @Test
+    void messageFormatTest() {
+        // String sqlTemplate = "select *, ${nonExistValue} From ${table}
+        // ${whereClause}";
+        String sqlTemplate =
+                """
 				select
 					*,
 					${nonExistValue}
 				From ${table}
 				${whereClause}
 				""";
-		var param = new HashMap<String, String>();
-		param.put("table", "users");
-		param.put("whereClause", "where a = :aa and b = :bb");
-		String result = SettingStringUtil.format(sqlTemplate, param);
-		System.out.println(result);
-	}
+        var param = new HashMap<String, String>();
+        param.put("table", "users");
+        param.put("whereClause", "where a = :aa and b = :bb");
+        String result = SettingStringUtil.format(sqlTemplate, param);
+        System.out.println(result);
+    }
 
-	// @Test
-	// void tableNameFromQueryTest() {
-	//// String sql = "SELECT * FROM TET WHERE A = A";
-	// String sql2 = """
-	// SELECT
-	// *
-	// FROM
-	//
-	// dbo.TET
-	//
-	// WHERE A = A
-	// """;
-	// String sql = "SELECT * FROM table ORDER BY column1 ASC, column2 DESC LIMIT
-	// 10";
-	// System.out.println(SettingStringUtil.getTableName(sql));
-	// }
-	//
-	// @Test
-	// void isCustomQueryTest() {
-	// String sql = "SELECT * FROM TET where A = A";
-	// System.out.println(SettingStringUtil.isCustomQuery(sql));
-	// }
-	//
-	// @Test
-	// void orderClauseFromQueryTest() {
-	//// String sql = "SELECT * FROM table ORDER BY column1 ASC, column2 DESC LIMIT
-	/// 10"; String sql = "SELECT * FROM table LIMIT 10";
-	// String sql = """
-	// SELECT * FROM dbo.BongInCancelRequest
-	// ORDER BY nYear ASC
-	// """;
-	// System.out.println("----");
-	// System.out.println(SettingStringUtil.getOrderClause(sql));
-	// System.out.println("----");
-	// }
+    // @Test
+    // void tableNameFromQueryTest() {
+    //// String sql = "SELECT * FROM TET WHERE A = A";
+    // String sql2 = """
+    // SELECT
+    // *
+    // FROM
+    //
+    // dbo.TET
+    //
+    // WHERE A = A
+    // """;
+    // String sql = "SELECT * FROM table ORDER BY column1 ASC, column2 DESC LIMIT
+    // 10";
+    // System.out.println(SettingStringUtil.getTableName(sql));
+    // }
+    //
+    // @Test
+    // void isCustomQueryTest() {
+    // String sql = "SELECT * FROM TET where A = A";
+    // System.out.println(SettingStringUtil.isCustomQuery(sql));
+    // }
+    //
+    // @Test
+    // void orderClauseFromQueryTest() {
+    //// String sql = "SELECT * FROM table ORDER BY column1 ASC, column2 DESC LIMIT
+    /// 10"; String sql = "SELECT * FROM table LIMIT 10";
+    // String sql = """
+    // SELECT * FROM dbo.BongInCancelRequest
+    // ORDER BY nYear ASC
+    // """;
+    // System.out.println("----");
+    // System.out.println(SettingStringUtil.getOrderClause(sql));
+    // System.out.println("----");
+    // }
 
 }

@@ -18,32 +18,31 @@ import net.luversof.api.board.service.BoardService;
 @RequestMapping(value = "/api/board", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BoardController {
 
-	private BoardService boardService;
+    private BoardService boardService;
 
-	@Autowired
-	public void setBoardService(BoardService boardService) {
-		this.boardService = boardService;
-	}
+    @Autowired
+    public void setBoardService(BoardService boardService) {
+        this.boardService = boardService;
+    }
 
-	@PostMapping
-	@BoardControllerOperation.Create
-	public Board create(@RequestBody Board board) {
-		return boardService.create(board);
-	}
+    @PostMapping
+    @BoardControllerOperation.Create
+    public Board create(@RequestBody Board board) {
+        return boardService.create(board);
+    }
 
-	@GetMapping("/search/findByAlias/{alias}")
-	public Board findByAlias(@PathVariable String alias) {
-		return boardService.findByAlias(alias);
-	}
+    @GetMapping("/search/findByAlias/{alias}")
+    public Board findByAlias(@PathVariable String alias) {
+        return boardService.findByAlias(alias);
+    }
 
-	@GetMapping("/search/findAll")
-	public Iterable<Board> findAll() {
-		return boardService.findAll();
-	}
+    @GetMapping("/search/findAll")
+    public Iterable<Board> findAll() {
+        return boardService.findAll();
+    }
 
-	@PutMapping
-	public Board update(@RequestBody Board board) {
-		return boardService.update(board);
-	}
-
+    @PutMapping
+    public Board update(@RequestBody Board board) {
+        return boardService.update(board);
+    }
 }

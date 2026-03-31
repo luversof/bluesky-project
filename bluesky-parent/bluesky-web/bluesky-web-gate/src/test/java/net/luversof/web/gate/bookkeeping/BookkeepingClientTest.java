@@ -13,18 +13,16 @@ import net.luversof.web.gate.bookkeeping.httpexchange.BookkeepingClient;
 
 class BookkeepingClientTest implements GeneralWebTest {
 
-	@Autowired
-	private BookkeepingClient bookkeepingClient;
-	
-	@Test
-	void beanCheck() {
-		assertThat(bookkeepingClient).isNotNull();
-	}
-	
-	
-	@Test
-	void findByUserId() {
-		List<Bookkeeping> bookkeepingList = bookkeepingClient.findByUserId("string");
-		assertThat(bookkeepingList).isNotEmpty();
-	}
+    @Autowired private BookkeepingClient bookkeepingClient;
+
+    @Test
+    void beanCheck() {
+        assertThat(bookkeepingClient).isNotNull();
+    }
+
+    @Test
+    void findByUserId() {
+        List<Bookkeeping> bookkeepingList = bookkeepingClient.findByUserId("string");
+        assertThat(bookkeepingList).isNotEmpty();
+    }
 }

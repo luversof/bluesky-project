@@ -17,52 +17,59 @@ import net.luversof.api.stock.repository.TradeRepository;
 @Transactional(transactionManager = "stockTransactionManager")
 public class TradeService {
 
-        @Autowired
-        private TradeRepository tradeRepository;
+    @Autowired private TradeRepository tradeRepository;
 
-        @Autowired
-        private AccountService accountService;
+    @Autowired private AccountService accountService;
 
-        @Autowired
-        private DailyAccountSnapshotRepository snapshotRepository;
+    @Autowired private DailyAccountSnapshotRepository snapshotRepository;
 
-        public void setTradeRepository(TradeRepository tradeRepository) {       
-                this.tradeRepository = tradeRepository;
-        }
+    public void setTradeRepository(TradeRepository tradeRepository) {
+        this.tradeRepository = tradeRepository;
+    }
 
-        public Trade createTrade(Trade trade) {
-                Trade savedTrade = tradeRepository.save(trade);
-                
-                // 스냅샷 무효화 처리
-                accountService.findById(trade.getAccountId()).ifPresent(account -> {
-                        snapshotRepository.deleteByUserIdAndDateGreaterThanEqual(
-                                account.getUserId(), 
-                                trade.getTradeDate().atZone(ZoneId.systemDefault()).toLocalDate()
-                        );
-                });
-                
-                return savedTrade;
-        }
+    public Trade createTrade(Trade trade) {
+        Trade savedTrade = tradeRepository.save(trade);
 
-        public List<Trade> findByAccountId(UUID accountId) {
-                return tradeRepository.findByAccountId(accountId);        }
-	public List<Trade> findByAccountIdIn(List<UUID> accountIdList) {
-		return tradeRepository.findByAccountIdIn(accountIdList);
-	}
+        // 스냅샷 무효화 처리
+        accountService
+                .findById(trade.getAccountId())
+                .ifPresent(
+                        account -> {
+                            snapshotRepository.deleteByUserIdAndDateGreaterThanEqual(
+                                    account.getUserId(),
+                                    trade.getTradeDate()
+                                            .atZone(ZoneId.systemDefault())
+                                            .toLocalDate());
+                        });
 
-	public List<Trade> findByAccountIdInAndTradeDateBetween(List<UUID> accountIdList, Instant startDate,
-			Instant endDate) {
-		return tradeRepository.findByAccountIdInAndTradeDateBetween(accountIdList, startDate, endDate);
-	}
+        return savedTrade;
+    }
 
-	public List<Trade> findByAccountIdInAndStockItemIdIn(List<UUID> accountIdList, List<UUID> stockItemIdList) {
-		return tradeRepository.findByAccountIdInAndStockItemIdIn(accountIdList, stockItemIdList);
-	}
+    public List<Trade> findByAccountId(UUID accountId) {
+        return tradeRepository.findByAccountId(accountId);
+    }
 
-	public List<Trade> findByAccountIdInAndStockItemIdInAndTradeDateBetween(List<UUID> accountIdList,
-			List<UUID> stockItemIdList, Instant startDate, Instant endDate) {
-		return tradeRepository.findByAccountIdInAndStockItemIdInAndTradeDateBetween(accountIdList, stockItemIdList,
-				startDate, endDate);
-	}
+    public List<Trade> findByAccountIdIn(List<UUID> accountIdList) {
+        return tradeRepository.findByAccountIdIn(accountIdList);
+    }
 
+    public List<Trade> findByAccountIdInAndTradeDateBetween(
+            List<UUID> accountIdList, Instant startDate, Instant endDate) {
+        return tradeRepository.findByAccountIdInAndTradeDateBetween(
+                accountIdList, startDate, endDate);
+    }
+
+    public List<Trade> findByAccountIdInAndStockItemIdIn(
+            List<UUID> accountIdList, List<UUID> stockItemIdList) {
+        return tradeRepository.findByAccountIdInAndStockItemIdIn(accountIdList, stockItemIdList);
+    }
+
+    public List<Trade> findByAccountIdInAndStockItemIdInAndTradeDateBetween(
+            List<UUID> accountIdList,
+            List<UUID> stockItemIdList,
+            Instant startDate,
+            Instant endDate) {
+        return tradeRepository.findByAccountIdInAndStockItemIdInAndTradeDateBetween(
+                accountIdList, stockItemIdList, startDate, endDate);
+    }
 }

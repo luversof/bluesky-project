@@ -17,28 +17,33 @@ import net.luversof.app.google.service.GoogleIamServiceAccountInfoService;
 @Service
 public class GoogleCredentialService {
 
-	@Autowired
-	private GoogleIamServiceAccountInfoService googleIamServiceAccountInfoService;
-	
-	public GoogleCredentials getGoogleCredentialsByGoogleIamServiceAccountInfoId(UUID googleIamServiceAccountInfoId) {
-		var googleIamServiceAccountInfo = googleIamServiceAccountInfoService.findById(googleIamServiceAccountInfoId);
-		return getServiceAccountCredentialsByGoogleIamServiceAccountInfo(googleIamServiceAccountInfo);
-	}
+    @Autowired private GoogleIamServiceAccountInfoService googleIamServiceAccountInfoService;
 
-	public GoogleCredentials getGoogleCredentialsByUserId(UUID userId) {
-		var googleIamServiceAccountInfo = googleIamServiceAccountInfoService.findByUserId(userId);
-		return getServiceAccountCredentialsByGoogleIamServiceAccountInfo(googleIamServiceAccountInfo);
+    public GoogleCredentials getGoogleCredentialsByGoogleIamServiceAccountInfoId(
+            UUID googleIamServiceAccountInfoId) {
+        var googleIamServiceAccountInfo =
+                googleIamServiceAccountInfoService.findById(googleIamServiceAccountInfoId);
+        return getServiceAccountCredentialsByGoogleIamServiceAccountInfo(
+                googleIamServiceAccountInfo);
+    }
 
-	}
-	
-	public GoogleCredentials getServiceAccountCredentialsByGoogleIamServiceAccountInfo(GoogleIamServiceAccountInfo googleIamServiceAccountInfo) {
-		try {
-			return ServiceAccountCredentials.fromStream(
-					new ByteArrayInputStream(googleIamServiceAccountInfo.getKeyStr().getBytes(StandardCharsets.UTF_8)));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
+    public GoogleCredentials getGoogleCredentialsByUserId(UUID userId) {
+        var googleIamServiceAccountInfo = googleIamServiceAccountInfoService.findByUserId(userId);
+        return getServiceAccountCredentialsByGoogleIamServiceAccountInfo(
+                googleIamServiceAccountInfo);
+    }
 
+    public GoogleCredentials getServiceAccountCredentialsByGoogleIamServiceAccountInfo(
+            GoogleIamServiceAccountInfo googleIamServiceAccountInfo) {
+        try {
+            return ServiceAccountCredentials.fromStream(
+                    new ByteArrayInputStream(
+                            googleIamServiceAccountInfo
+                                    .getKeyStr()
+                                    .getBytes(StandardCharsets.UTF_8)));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }

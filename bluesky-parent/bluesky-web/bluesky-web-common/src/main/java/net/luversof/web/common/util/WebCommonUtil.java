@@ -8,11 +8,12 @@ import net.luversof.web.common.menu.domain.Menu;
 
 public final class WebCommonUtil {
 
-	private WebCommonUtil() {
-	}
+    private WebCommonUtil() {}
 
-	public static List<Menu> getMenuList(String key) {
-		return ApplicationContextUtil.getApplicationContext().getBean(WebCommonProperties.class).menu().get(key);
-	}
-
+    public static List<Menu> getMenuList(String key) {
+        return ApplicationContextUtil.getApplicationContext()
+                .getBean(WebCommonProperties.class)
+                .menu()
+                .get(key);
+    }
 }

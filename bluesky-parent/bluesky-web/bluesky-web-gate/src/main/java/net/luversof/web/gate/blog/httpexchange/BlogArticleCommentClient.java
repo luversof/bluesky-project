@@ -14,26 +14,26 @@ import org.springframework.web.service.annotation.PostExchange;
 
 import net.luversof.web.gate.blog.domain.BlogArticleComment;
 
-
 @HttpExchange(url = "/api/blogArticleComment")
 public interface BlogArticleCommentClient {
-	
-	@PostExchange
-	BlogArticleComment create(@RequestBody BlogArticleComment blogArticleComment);
-	
-	@GetExchange("/search/findByBlogArticleId/{blogArticleId}")
-	Page<BlogArticleComment> findByBlogArticleId(@PathVariable String blogArticleId, Pageable pageable);
-	
-	@GetExchange("/search/findByBlogArticleCommentId/{blogArticleCommentId}")
-	Optional<BlogArticleComment> findByBlogArticleCommentId(@PathVariable String blogArticleCommentId);
-	
-	@GetExchange("/search/countByBlogArticleId/{blogArticleId}")
-	long countByBlogArticleId(@PathVariable String blogArticleId);
-	
-	@PutMapping
-	BlogArticleComment update(@RequestBody BlogArticleComment blogArticleComment);
-	
-	@DeleteMapping
-	void delete(@RequestBody BlogArticleComment blogArticleComment);
 
+    @PostExchange
+    BlogArticleComment create(@RequestBody BlogArticleComment blogArticleComment);
+
+    @GetExchange("/search/findByBlogArticleId/{blogArticleId}")
+    Page<BlogArticleComment> findByBlogArticleId(
+            @PathVariable String blogArticleId, Pageable pageable);
+
+    @GetExchange("/search/findByBlogArticleCommentId/{blogArticleCommentId}")
+    Optional<BlogArticleComment> findByBlogArticleCommentId(
+            @PathVariable String blogArticleCommentId);
+
+    @GetExchange("/search/countByBlogArticleId/{blogArticleId}")
+    long countByBlogArticleId(@PathVariable String blogArticleId);
+
+    @PutMapping
+    BlogArticleComment update(@RequestBody BlogArticleComment blogArticleComment);
+
+    @DeleteMapping
+    void delete(@RequestBody BlogArticleComment blogArticleComment);
 }

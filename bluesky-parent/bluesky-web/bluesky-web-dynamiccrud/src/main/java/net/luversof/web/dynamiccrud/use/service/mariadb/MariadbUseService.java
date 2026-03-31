@@ -12,32 +12,31 @@ import net.sf.jsqlparser.statement.select.PlainSelect;
 @Service
 public class MariadbUseService extends AbstractDbUseService {
 
-	private final SubMenuDbType supportDbType = SubMenuDbType.MySql;
+    private final SubMenuDbType supportDbType = SubMenuDbType.MySql;
 
-	public SubMenuDbType getSupportDbType() {
-		return supportDbType;
-	}
+    public SubMenuDbType getSupportDbType() {
+        return supportDbType;
+    }
 
-	// @Getter
-	// private String countQuery = "SELECT COUNT(1) FROM ${tableName}
-	// ${whereClause}";
-	//
-	// @Getter
-	// private String selectPagingQuery = "SELECT * FROM ${tableName} ${whereClause}
-	// ${orderClause} ${limitClause}";
-	//
-	// @Getter
-	// private String limitClause = "LIMIT :limit OFFSET :offset";
+    // @Getter
+    // private String countQuery = "SELECT COUNT(1) FROM ${tableName}
+    // ${whereClause}";
+    //
+    // @Getter
+    // private String selectPagingQuery = "SELECT * FROM ${tableName} ${whereClause}
+    // ${orderClause} ${limitClause}";
+    //
+    // @Getter
+    // private String limitClause = "LIMIT :limit OFFSET :offset";
 
-	@Override
-	protected void addPagingCondition(PlainSelect plainSelect, int limit, long offset) {
-		var limitExpression = new Limit();
-		limitExpression.setRowCount(new LongValue(limit));
-		plainSelect.setLimit(limitExpression);
+    @Override
+    protected void addPagingCondition(PlainSelect plainSelect, int limit, long offset) {
+        var limitExpression = new Limit();
+        limitExpression.setRowCount(new LongValue(limit));
+        plainSelect.setLimit(limitExpression);
 
-		var offsetExpression = new Offset();
-		offsetExpression.setOffset(new LongValue(offset));
-		plainSelect.setOffset(offsetExpression);
-	}
-
+        var offsetExpression = new Offset();
+        offsetExpression.setOffset(new LongValue(offset));
+        plainSelect.setOffset(offsetExpression);
+    }
 }

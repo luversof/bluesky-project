@@ -12,11 +12,10 @@ import net.luversof.api.bookkeeping.service.StatisticService;
 @RequestMapping(value = "/api/statistics", produces = MediaType.APPLICATION_JSON_VALUE)
 public class StatisticsController {
 
-	@Autowired
-	private StatisticService statisticService;
+    @Autowired private StatisticService statisticService;
 
-	@GetMapping
-	public String test() {
-		return "Test";
-	}
+    @GetMapping
+    public String test() {
+        return "Test";
+    }
 }

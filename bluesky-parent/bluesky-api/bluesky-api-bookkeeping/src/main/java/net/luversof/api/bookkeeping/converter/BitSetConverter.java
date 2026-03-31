@@ -1,13 +1,13 @@
-//package net.luversof.api.bookkeeping.converter;
+// package net.luversof.api.bookkeeping.converter;
 //
-//import java.util.BitSet;
+// import java.util.BitSet;
 //
-//import jakarta.persistence.AttributeConverter;
-//import jakarta.persistence.Converter;
+// import jakarta.persistence.AttributeConverter;
+// import jakarta.persistence.Converter;
 //
-//@Converter
-//public class BitSetConverter implements AttributeConverter<BitSet, String> {
-//	
+// @Converter
+// public class BitSetConverter implements AttributeConverter<BitSet, String> {
+//
 //    @Override
 //    public String convertToDatabaseColumn(BitSet attribute) {
 //        if (attribute == null) {
@@ -24,8 +24,8 @@
 //        // 문자열을 BitSet으로 복원 (직접 구현 필요)
 //        return fromStringToBitSet(dbData);
 //    }
-//    
-//    
+//
+//
 //    /**
 //     * 문자열에서 BitSet을 복원하는 메서드
 //     * @param bitSetString BitSet.toString()의 결과
@@ -49,4 +49,4 @@
 //        }
 //        return bitSet;
 //    }
-//}
+// }

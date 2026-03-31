@@ -21,23 +21,23 @@ import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 @RequestMapping(value = "/stock/api")
 public class StockApiController {
 
-	private TradeProfitClient tradeProfitClient;
+    private TradeProfitClient tradeProfitClient;
 
-	@Autowired
-	public void setTradeProfitClient(TradeProfitClient tradeProfitClient) {
-		this.tradeProfitClient = tradeProfitClient;
-	}
+    @Autowired
+    public void setTradeProfitClient(TradeProfitClient tradeProfitClient) {
+        this.tradeProfitClient = tradeProfitClient;
+    }
 
-	@BlueskyPreAuthorize
-	@GetMapping(value = "/timeSeries", produces = MediaType.APPLICATION_JSON_VALUE)
-	@ResponseBody
-	public ResponseEntity<List<TradeProfitTimeSeriesPoint>> timeSeries(TradeProfitRequest request) {
-		UUID userId = UserUtil.getUserId();
-		if (userId == null) {
-			return ResponseEntity.status(401).build();
-		}
-		request.setUserId(userId);
-		List<TradeProfitTimeSeriesPoint> series = tradeProfitClient.timeSeries(request.toParams());
-		return ResponseEntity.ok(series);
-	}
+    @BlueskyPreAuthorize
+    @GetMapping(value = "/timeSeries", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<List<TradeProfitTimeSeriesPoint>> timeSeries(TradeProfitRequest request) {
+        UUID userId = UserUtil.getUserId();
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        request.setUserId(userId);
+        List<TradeProfitTimeSeriesPoint> series = tradeProfitClient.timeSeries(request.toParams());
+        return ResponseEntity.ok(series);
+    }
 }

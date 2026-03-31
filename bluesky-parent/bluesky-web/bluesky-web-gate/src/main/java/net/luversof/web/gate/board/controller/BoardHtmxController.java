@@ -21,27 +21,32 @@ import net.luversof.web.gate.board.service.BoardUserInfoService;
 @HtmxResponseHeader("#{boardMode}HtmxResponseTrigger")
 public class BoardHtmxController {
 
-	private BoardArticleClient boardArticleClient;
+    private BoardArticleClient boardArticleClient;
 
-	private BoardUserInfoService boardUserInfoService;
+    private BoardUserInfoService boardUserInfoService;
 
-	@Autowired
-	public void setBoardArticleClient(BoardArticleClient boardArticleClient) {
-		this.boardArticleClient = boardArticleClient;
-	}
+    @Autowired
+    public void setBoardArticleClient(BoardArticleClient boardArticleClient) {
+        this.boardArticleClient = boardArticleClient;
+    }
 
-	@Autowired
-	public void setBoardUserInfoService(BoardUserInfoService boardUserInfoService) {
-		this.boardUserInfoService = boardUserInfoService;
-	}
+    @Autowired
+    public void setBoardUserInfoService(BoardUserInfoService boardUserInfoService) {
+        this.boardUserInfoService = boardUserInfoService;
+    }
 
-	@GetMapping("/{boardAlias}/{boardMode:list}")
-	public String boardArticlePage(@PathVariable String boardAlias, @PathVariable String boardMode,
-			@PageableDefault(size = 20) @SortDefault(sort = "createdDate", direction = Direction.DESC) Pageable pageable,
-			Model model) {
-		var pageResponse = boardUserInfoService.enrich(boardArticleClient.findByBoardAlias(boardAlias, pageable));
-		model.addAttribute("page", pageResponse.toPage());
-		return "board/htmx/list";
-	}
-
+    @GetMapping("/{boardAlias}/{boardMode:list}")
+    public String boardArticlePage(
+            @PathVariable String boardAlias,
+            @PathVariable String boardMode,
+            @PageableDefault(size = 20)
+                    @SortDefault(sort = "createdDate", direction = Direction.DESC)
+                    Pageable pageable,
+            Model model) {
+        var pageResponse =
+                boardUserInfoService.enrich(
+                        boardArticleClient.findByBoardAlias(boardAlias, pageable));
+        model.addAttribute("page", pageResponse.toPage());
+        return "board/htmx/list";
+    }
 }

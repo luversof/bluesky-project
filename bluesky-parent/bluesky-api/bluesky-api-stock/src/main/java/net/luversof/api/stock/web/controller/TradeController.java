@@ -15,11 +15,10 @@ import net.luversof.api.stock.web.dto.response.TradeResponse;
 @RequestMapping("/api/trade")
 public class TradeController {
 
-	@Autowired
-	private TradeProfitService tradeProfitService;
+    @Autowired private TradeProfitService tradeProfitService;
 
-	@GetMapping
-	public List<TradeResponse> findTrades(TradeSearchRequest request) {
-		return tradeProfitService.getTradeHistory(request);
-	}
+    @GetMapping
+    public List<TradeResponse> findTrades(TradeSearchRequest request) {
+        return tradeProfitService.getTradeHistory(request);
+    }
 }

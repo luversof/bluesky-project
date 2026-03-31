@@ -17,35 +17,36 @@ import net.luversof.api.stock.web.dto.request.TradeProfitRequest;
 
 class TradeProfitTest implements GeneralTest {
 
-	private static final Logger log = LoggerFactory.getLogger(TradeProfitTest.class);
+    private static final Logger log = LoggerFactory.getLogger(TradeProfitTest.class);
 
-	@Autowired
-	TradeRepository tradeRepository;
+    @Autowired TradeRepository tradeRepository;
 
-	@Autowired
-	AccountService accountService;
+    @Autowired AccountService accountService;
 
-	@Autowired
-	private TradeProfitService tradeProfitService;
+    @Autowired private TradeProfitService tradeProfitService;
 
-	@Autowired
-	private StockItemService stockItemService;
+    @Autowired private StockItemService stockItemService;
 
-	@Test
-	void calculateTradeProfitByStock() {
-		var account = accountService.findByUserId(TestConstant.USER_ID).get(0);
+    @Test
+    void calculateTradeProfitByStock() {
+        var account = accountService.findByUserId(TestConstant.USER_ID).get(0);
 
-		var stockItem = stockItemService.findByName("현대차");
-		var tradeList = tradeRepository.findByAccountIdInAndStockItemIdIn(List.of(account.getId()),
-				List.of(stockItem.getId()));
-		var request = new TradeProfitRequest(TestConstant.USER_ID, List.of(account.getId()), List.of(stockItem.getId()),
-				null, null, null);
-		var tradeProfitList = tradeProfitService.calculateProfitByStock(tradeList, request);
-		log.debug("tradeProfitList : {}", tradeProfitList);
-	}
+        var stockItem = stockItemService.findByName("현대차");
+        var tradeList =
+                tradeRepository.findByAccountIdInAndStockItemIdIn(
+                        List.of(account.getId()), List.of(stockItem.getId()));
+        var request =
+                new TradeProfitRequest(
+                        TestConstant.USER_ID,
+                        List.of(account.getId()),
+                        List.of(stockItem.getId()),
+                        null,
+                        null,
+                        null);
+        var tradeProfitList = tradeProfitService.calculateProfitByStock(tradeList, request);
+        log.debug("tradeProfitList : {}", tradeProfitList);
+    }
 
-	@Test
-	void testCalculateHoldingProfit() {
-	}
-
+    @Test
+    void testCalculateHoldingProfit() {}
 }

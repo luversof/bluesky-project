@@ -16,16 +16,15 @@ import net.luversof.web.gate.bookkeeping.domain.Bookkeeping;
 @HttpExchange(url = "/api/bookkeeping", contentType = MediaType.APPLICATION_JSON_VALUE)
 public interface BookkeepingClient {
 
-	@PostExchange
-	Bookkeeping create(@RequestBody Bookkeeping bookkeeping);
-	
-	@GetExchange
-	List<Bookkeeping> findByUserId(@RequestParam String userId);
-	
-	@PutExchange
-	Bookkeeping update(@RequestBody Bookkeeping bookkeeping);
-	
-	@DeleteExchange
-	void delete(@RequestBody Bookkeeping bookkeeping);
-	
+    @PostExchange
+    Bookkeeping create(@RequestBody Bookkeeping bookkeeping);
+
+    @GetExchange
+    List<Bookkeeping> findByUserId(@RequestParam String userId);
+
+    @PutExchange
+    Bookkeeping update(@RequestBody Bookkeeping bookkeeping);
+
+    @DeleteExchange
+    void delete(@RequestBody Bookkeeping bookkeeping);
 }

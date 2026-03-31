@@ -9,111 +9,124 @@ import org.springframework.format.annotation.DateTimeFormat.ISO;
 
 import net.luversof.api.stock.constant.StockErrorCode;
 
-/**
- * 주식 손익 계산 요청 DTO
- * 조회 기준 조합
- */
+/** 주식 손익 계산 요청 DTO 조회 기준 조합 */
 public class TradeProfitRequest {
 
-	private UUID userId;
-	private List<UUID> accountIdList;
-	private List<UUID> stockItemIdList;
-	
-	@DateTimeFormat(iso = ISO.DATE_TIME)
-	private Instant startDate;
-	
-	@DateTimeFormat(iso = ISO.DATE_TIME)
-	private Instant endDate;
-	
-	private TradeProfitRequestGroup groupBy = TradeProfitRequestGroup.ACCOUNT_AND_STOCKITEM;
+    private UUID userId;
+    private List<UUID> accountIdList;
+    private List<UUID> stockItemIdList;
 
-	public TradeProfitRequest() {
-	}
+    @DateTimeFormat(iso = ISO.DATE_TIME)
+    private Instant startDate;
 
-	public TradeProfitRequest(UUID userId, List<UUID> accountIdList, List<UUID> stockItemIdList, Instant startDate, Instant endDate, TradeProfitRequestGroup groupBy) {
-		this.userId = userId;
-		this.accountIdList = accountIdList;
-		this.stockItemIdList = stockItemIdList;
-		this.startDate = startDate;
-		this.endDate = endDate;
-		this.groupBy = groupBy;
-	}
+    @DateTimeFormat(iso = ISO.DATE_TIME)
+    private Instant endDate;
 
-	public UUID getUserId() {
-		return userId;
-	}
+    private TradeProfitRequestGroup groupBy = TradeProfitRequestGroup.ACCOUNT_AND_STOCKITEM;
 
-	public void setUserId(UUID userId) {
-		this.userId = userId;
-	}
+    public TradeProfitRequest() {}
 
-	public List<UUID> getAccountIdList() {
-		return accountIdList;
-	}
+    public TradeProfitRequest(
+            UUID userId,
+            List<UUID> accountIdList,
+            List<UUID> stockItemIdList,
+            Instant startDate,
+            Instant endDate,
+            TradeProfitRequestGroup groupBy) {
+        this.userId = userId;
+        this.accountIdList = accountIdList;
+        this.stockItemIdList = stockItemIdList;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.groupBy = groupBy;
+    }
 
-	public void setAccountIdList(List<UUID> accountIdList) {
-		this.accountIdList = accountIdList;
-	}
+    public UUID getUserId() {
+        return userId;
+    }
 
-	public List<UUID> getStockItemIdList() {
-		return stockItemIdList;
-	}
+    public void setUserId(UUID userId) {
+        this.userId = userId;
+    }
 
-	public void setStockItemIdList(List<UUID> stockItemIdList) {
-		this.stockItemIdList = stockItemIdList;
-	}
+    public List<UUID> getAccountIdList() {
+        return accountIdList;
+    }
 
-	public Instant getStartDate() {
-		return startDate;
-	}
+    public void setAccountIdList(List<UUID> accountIdList) {
+        this.accountIdList = accountIdList;
+    }
 
-	public void setStartDate(Instant startDate) {
-		this.startDate = startDate;
-	}
+    public List<UUID> getStockItemIdList() {
+        return stockItemIdList;
+    }
 
-	public Instant getEndDate() {
-		return endDate;
-	}
+    public void setStockItemIdList(List<UUID> stockItemIdList) {
+        this.stockItemIdList = stockItemIdList;
+    }
 
-	public void setEndDate(Instant endDate) {
-		this.endDate = endDate;
-	}
+    public Instant getStartDate() {
+        return startDate;
+    }
 
-	public TradeProfitRequestGroup getGroupBy() {
-		return groupBy;
-	}
+    public void setStartDate(Instant startDate) {
+        this.startDate = startDate;
+    }
 
-	public void setGroupBy(TradeProfitRequestGroup groupBy) {
-		this.groupBy = groupBy;
-	}
+    public Instant getEndDate() {
+        return endDate;
+    }
 
-	public boolean hasDateRange() {
-		return startDate != null || endDate != null;
-	}
+    public void setEndDate(Instant endDate) {
+        this.endDate = endDate;
+    }
 
-	public TradeProfitRequestType getRequestType() {
-		if (userId == null) {
-			StockErrorCode.NOT_EXIST_USER_ID.throwException();
-		}
-		
-		if (accountIdList == null || accountIdList.isEmpty()) {
-			if (stockItemIdList == null || stockItemIdList.isEmpty()) {
-				return TradeProfitRequestType.USER;
-			} else {
-				return TradeProfitRequestType.USER_STOCKITEM;
-			}
-		} else {
-			if (stockItemIdList == null || stockItemIdList.isEmpty()) {
-				return TradeProfitRequestType.USER_ACCOUNT;
-			} else {
-				return TradeProfitRequestType.USER_ACCOUNT_STOCKITEM;
-			}
-		}
-	}
-	
-	@Override
-	public String toString() {
-		return "TradeProfitRequest [userId=" + userId + ", accountIdList=" + accountIdList + ", stockItemIdList="
-				+ stockItemIdList + ", startDate=" + startDate + ", endDate=" + endDate + ", groupBy=" + groupBy + "]";
-	}
+    public TradeProfitRequestGroup getGroupBy() {
+        return groupBy;
+    }
+
+    public void setGroupBy(TradeProfitRequestGroup groupBy) {
+        this.groupBy = groupBy;
+    }
+
+    public boolean hasDateRange() {
+        return startDate != null || endDate != null;
+    }
+
+    public TradeProfitRequestType getRequestType() {
+        if (userId == null) {
+            StockErrorCode.NOT_EXIST_USER_ID.throwException();
+        }
+
+        if (accountIdList == null || accountIdList.isEmpty()) {
+            if (stockItemIdList == null || stockItemIdList.isEmpty()) {
+                return TradeProfitRequestType.USER;
+            } else {
+                return TradeProfitRequestType.USER_STOCKITEM;
+            }
+        } else {
+            if (stockItemIdList == null || stockItemIdList.isEmpty()) {
+                return TradeProfitRequestType.USER_ACCOUNT;
+            } else {
+                return TradeProfitRequestType.USER_ACCOUNT_STOCKITEM;
+            }
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "TradeProfitRequest [userId="
+                + userId
+                + ", accountIdList="
+                + accountIdList
+                + ", stockItemIdList="
+                + stockItemIdList
+                + ", startDate="
+                + startDate
+                + ", endDate="
+                + endDate
+                + ", groupBy="
+                + groupBy
+                + "]";
+    }
 }

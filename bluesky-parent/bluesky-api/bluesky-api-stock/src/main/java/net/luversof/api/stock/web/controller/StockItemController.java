@@ -18,31 +18,29 @@ import net.luversof.api.stock.service.StockItemService;
 @RequestMapping("/api/stockItem")
 public class StockItemController {
 
-	@Autowired
-	private StockItemService stockItemService;
+    @Autowired private StockItemService stockItemService;
 
-	public void setStockItemService(StockItemService stockItemService) {
-		this.stockItemService = stockItemService;
-	}
+    public void setStockItemService(StockItemService stockItemService) {
+        this.stockItemService = stockItemService;
+    }
 
-	@PostMapping
-	public StockItem createStockItem(@RequestBody StockItem stockItem) {
-		return stockItemService.createStockItem(stockItem);
-	}
+    @PostMapping
+    public StockItem createStockItem(@RequestBody StockItem stockItem) {
+        return stockItemService.createStockItem(stockItem);
+    }
 
-	@GetMapping("/{id}")
-	public Optional<StockItem> getStockItemById(@PathVariable UUID id) {
-		return stockItemService.findById(id);
-	}
+    @GetMapping("/{id}")
+    public Optional<StockItem> getStockItemById(@PathVariable UUID id) {
+        return stockItemService.findById(id);
+    }
 
-	@GetMapping("/search/findByName/{name}")
-	public StockItem findByName(@PathVariable String name) {
-		return stockItemService.findByName(name);
-	}
+    @GetMapping("/search/findByName/{name}")
+    public StockItem findByName(@PathVariable String name) {
+        return stockItemService.findByName(name);
+    }
 
-	@GetMapping("/search/findAll")
-	public java.util.List<net.luversof.api.stock.domain.StockItem> findAll() {
-		return stockItemService.findAll();
-	}
-
+    @GetMapping("/search/findAll")
+    public java.util.List<net.luversof.api.stock.domain.StockItem> findAll() {
+        return stockItemService.findAll();
+    }
 }

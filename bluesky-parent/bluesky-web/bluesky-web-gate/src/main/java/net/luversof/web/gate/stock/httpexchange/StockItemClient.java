@@ -15,16 +15,15 @@ import net.luversof.web.gate.stock.domain.StockItem;
 @HttpExchange(url = "/api/stockItem", contentType = MediaType.APPLICATION_JSON_VALUE)
 public interface StockItemClient {
 
-	@PostExchange
-	StockItem createStockItem(@RequestBody StockItem stockItem);
+    @PostExchange
+    StockItem createStockItem(@RequestBody StockItem stockItem);
 
-	@GetExchange("/{id}")
-	Optional<StockItem> getStockItemById(@PathVariable UUID id);
+    @GetExchange("/{id}")
+    Optional<StockItem> getStockItemById(@PathVariable UUID id);
 
-	@GetExchange("/search/findByName/{name}")
-	StockItem findByName(@PathVariable String name);
+    @GetExchange("/search/findByName/{name}")
+    StockItem findByName(@PathVariable String name);
 
-	@GetExchange("/search/findAll")
-	java.util.List<StockItem> getStockItems();
-
+    @GetExchange("/search/findAll")
+    java.util.List<StockItem> getStockItems();
 }

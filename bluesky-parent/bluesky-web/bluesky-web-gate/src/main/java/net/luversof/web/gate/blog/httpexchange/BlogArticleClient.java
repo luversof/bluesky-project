@@ -17,19 +17,18 @@ import net.luversof.web.gate.blog.domain.BlogArticle;
 @HttpExchange(url = "/api/blogArticle")
 public interface BlogArticleClient {
 
-	@PostExchange
-	BlogArticle create(@RequestBody BlogArticle blogArticle);
-	
-	@GetExchange("/search/findByBlogId/{blogId}")
-	Page<BlogArticle> findByBlogId(@PathVariable String blogId, Pageable pageable);
-	
-	@GetExchange("/search/findByBlogArticleId/{blogArticleId}")
-	Optional<BlogArticle> findByBlogArticleId(@PathVariable String blogArticleId);
-	
-	@PutExchange
-	BlogArticle update(@RequestBody BlogArticle blogArticle);
-	
-	@DeleteExchange
-	void delete(@RequestBody BlogArticle blogArticle);
+    @PostExchange
+    BlogArticle create(@RequestBody BlogArticle blogArticle);
 
+    @GetExchange("/search/findByBlogId/{blogId}")
+    Page<BlogArticle> findByBlogId(@PathVariable String blogId, Pageable pageable);
+
+    @GetExchange("/search/findByBlogArticleId/{blogArticleId}")
+    Optional<BlogArticle> findByBlogArticleId(@PathVariable String blogArticleId);
+
+    @PutExchange
+    BlogArticle update(@RequestBody BlogArticle blogArticle);
+
+    @DeleteExchange
+    void delete(@RequestBody BlogArticle blogArticle);
 }

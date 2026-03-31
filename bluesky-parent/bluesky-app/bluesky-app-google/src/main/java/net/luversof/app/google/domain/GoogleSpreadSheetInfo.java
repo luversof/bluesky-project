@@ -11,59 +11,57 @@ import net.luversof.app.google.constant.GoogleSpreadSheetInfoType;
 @Table("GoogleSpreadSheetInfo")
 public class GoogleSpreadSheetInfo {
 
-	@Id
-	@Column("id")
-	private UUID id;
+    @Id
+    @Column("id")
+    private UUID id;
 
-	@Column("googleIamServiceAccountInfo_id")
-	private UUID googleIamServiceAccountInfoId;
-	
-	@Column
-	private GoogleSpreadSheetInfoType type;
+    @Column("googleIamServiceAccountInfo_id")
+    private UUID googleIamServiceAccountInfoId;
 
-	@Column("spreadsheetId")
-	private String spreadsheetId;
+    @Column private GoogleSpreadSheetInfoType type;
 
-	private String range;
+    @Column("spreadsheetId")
+    private String spreadsheetId;
 
-	public UUID getId() {
-		return id;
-	}
+    private String range;
 
-	public void setId(UUID id) {
-		this.id = id;
-	}
+    public UUID getId() {
+        return id;
+    }
 
-	public UUID getGoogleIamServiceAccountInfoId() {
-		return googleIamServiceAccountInfoId;
-	}
+    public void setId(UUID id) {
+        this.id = id;
+    }
 
-	public void setGoogleIamServiceAccountInfoId(UUID googleIamServiceAccountInfoId) {
-		this.googleIamServiceAccountInfoId = googleIamServiceAccountInfoId;
-	}
+    public UUID getGoogleIamServiceAccountInfoId() {
+        return googleIamServiceAccountInfoId;
+    }
 
-	public GoogleSpreadSheetInfoType getType() {
-		return type;
-	}
+    public void setGoogleIamServiceAccountInfoId(UUID googleIamServiceAccountInfoId) {
+        this.googleIamServiceAccountInfoId = googleIamServiceAccountInfoId;
+    }
 
-	public void setType(GoogleSpreadSheetInfoType type) {
-		this.type = type;
-	}
+    public GoogleSpreadSheetInfoType getType() {
+        return type;
+    }
 
-	public String getSpreadsheetId() {
-		return spreadsheetId;
-	}
+    public void setType(GoogleSpreadSheetInfoType type) {
+        this.type = type;
+    }
 
-	public void setSpreadsheetId(String spreadsheetId) {
-		this.spreadsheetId = spreadsheetId;
-	}
+    public String getSpreadsheetId() {
+        return spreadsheetId;
+    }
 
-	public String getRange() {
-		return range;
-	}
+    public void setSpreadsheetId(String spreadsheetId) {
+        this.spreadsheetId = spreadsheetId;
+    }
 
-	public void setRange(String range) {
-		this.range = range;
-	}
+    public String getRange() {
+        return range;
+    }
 
+    public void setRange(String range) {
+        this.range = range;
+    }
 }

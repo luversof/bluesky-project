@@ -10,8 +10,8 @@ import tools.jackson.databind.json.JsonMapper;
 @PropertySource("classpath:bluesky-app-google.properties")
 public class GoogleAppTestConfig {
 
-	@Bean
-	JsonMapper jsonMapper(JsonMapper.Builder builder) {
-		return builder.build();
-	}
+    @Bean
+    JsonMapper jsonMapper(JsonMapper.Builder builder) {
+        return builder.build();
+    }
 }

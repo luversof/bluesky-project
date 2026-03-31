@@ -22,36 +22,37 @@ import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
 
 @Configuration
 @EnableJdbcAuditing
-@EnableJdbcRepositories(basePackages = "net.luversof.app.google.**", transactionManagerRef = "googleAppTransactionManager", enableDefaultTransactions = false)
+@EnableJdbcRepositories(
+        basePackages = "net.luversof.app.google.**",
+        transactionManagerRef = "googleAppTransactionManager",
+        enableDefaultTransactions = false)
 public class GoogleAppDataJdbcConfig {
-	
-	@Value("${bluesky-boot.connection-info.loaders.hikaridatasource.connections.google_api}")
-	private String connectionKey;
-	
-	private DataSource getDataSource() {
-		return ConnectionInfoUtil.getConnection(connectionKey);
-	}
 
-	@Bean
-	JdbcClient googleAppJdbcClient() {
-		return JdbcClient.create(getDataSource());
-	}
-	
-	@Bean
-	PlatformTransactionManager googleAppTransactionManager() {
-		return new DataSourceTransactionManager(getDataSource());
-	}
+    @Value("${bluesky-boot.connection-info.loaders.hikaridatasource.connections.google_api}")
+    private String connectionKey;
 
-	@Bean
-	<T> BeforeConvertCallback<T> googleAppBeforeConvertCallback() {
-		return DataJdbcConverterUtil::prepareEntity;
-	}
+    private DataSource getDataSource() {
+        return ConnectionInfoUtil.getConnection(connectionKey);
+    }
 
-	@Bean
-	JdbcCustomConversions googleAppJdbcCustomConversions() {
-		return new JdbcCustomConversions(List.of(
-				new MapToPGobjectConverter(),
-				new PGobjectToMapConverter()));
-	}
+    @Bean
+    JdbcClient googleAppJdbcClient() {
+        return JdbcClient.create(getDataSource());
+    }
 
+    @Bean
+    PlatformTransactionManager googleAppTransactionManager() {
+        return new DataSourceTransactionManager(getDataSource());
+    }
+
+    @Bean
+    <T> BeforeConvertCallback<T> googleAppBeforeConvertCallback() {
+        return DataJdbcConverterUtil::prepareEntity;
+    }
+
+    @Bean
+    JdbcCustomConversions googleAppJdbcCustomConversions() {
+        return new JdbcCustomConversions(
+                List.of(new MapToPGobjectConverter(), new PGobjectToMapConverter()));
+    }
 }

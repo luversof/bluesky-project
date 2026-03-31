@@ -10,24 +10,24 @@ import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 
 @Service
-public class DbQueryServiceDecorator implements SettingServiceListSupplier<DbQuery>, SettingServiceDecorator {
+public class DbQueryServiceDecorator
+        implements SettingServiceListSupplier<DbQuery>, SettingServiceDecorator {
 
-	private Map<String, SettingServiceListSupplier<DbQuery>> dbQueryServiceMap;
-	
-	public DbQueryServiceDecorator(Map<String, SettingServiceListSupplier<DbQuery>> dbQueryServiceMap) {
-		this.dbQueryServiceMap = getSortedSettingServiceMap(dbQueryServiceMap);
-	}
+    private Map<String, SettingServiceListSupplier<DbQuery>> dbQueryServiceMap;
 
-	@Override
-	public List<DbQuery> findList(SettingParameter settingParameter) {
-		for (var entry : dbQueryServiceMap.entrySet()) {
-			var target = entry.getValue().findList(settingParameter);
-			if (!target.isEmpty()) {
-				return target;
-			}
-		}
-		return Collections.emptyList();
-	}
-	
+    public DbQueryServiceDecorator(
+            Map<String, SettingServiceListSupplier<DbQuery>> dbQueryServiceMap) {
+        this.dbQueryServiceMap = getSortedSettingServiceMap(dbQueryServiceMap);
+    }
 
+    @Override
+    public List<DbQuery> findList(SettingParameter settingParameter) {
+        for (var entry : dbQueryServiceMap.entrySet()) {
+            var target = entry.getValue().findList(settingParameter);
+            if (!target.isEmpty()) {
+                return target;
+            }
+        }
+        return Collections.emptyList();
+    }
 }

@@ -14,8 +14,8 @@ import net.luversof.web.common.util.WebCommonUtil;
 @RequestMapping(value = "/menu", produces = MediaType.APPLICATION_JSON_VALUE)
 public class WebCommonDevCheckController {
 
-	@GetMapping("/menuList")
-	public List<Menu> getMenuList(String key) {
-		return WebCommonUtil.getMenuList(key);
-	}
+    @GetMapping("/menuList")
+    public List<Menu> getMenuList(String key) {
+        return WebCommonUtil.getMenuList(key);
+    }
 }

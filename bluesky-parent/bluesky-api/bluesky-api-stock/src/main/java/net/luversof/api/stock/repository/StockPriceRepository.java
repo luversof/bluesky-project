@@ -10,5 +10,4 @@ import net.luversof.api.stock.domain.StockPrice;
 public interface StockPriceRepository extends CrudRepository<StockPrice, UUID> {
 
     Optional<StockPrice> findByStockItemId(UUID stockItemId);
-
 }

@@ -13,7 +13,6 @@ import net.luversof.web.gate.stock.dto.response.TradeResponse;
 @HttpExchange(url = "/api/trade", contentType = MediaType.APPLICATION_JSON_VALUE)
 public interface TradeClient {
 
-	@GetExchange
-	List<TradeResponse> findTrades(@RequestParam MultiValueMap<String, String> request);
-
+    @GetExchange
+    List<TradeResponse> findTrades(@RequestParam MultiValueMap<String, String> request);
 }

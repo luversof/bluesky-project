@@ -21,31 +21,33 @@ import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
 
 @Configuration
 @EnableJdbcAuditing
-@EnableJdbcRepositories(basePackages = "net.luversof.api.board.**.repository", transactionManagerRef = "boardTransactionManager")
+@EnableJdbcRepositories(
+        basePackages = "net.luversof.api.board.**.repository",
+        transactionManagerRef = "boardTransactionManager")
 public class BoardDataJdbcConfig {
 
-	@Bean
-	JdbcClient boardJdbcClient(@Qualifier("routingDataSource") DataSource routingDataSource) {
-		return JdbcClient.create(routingDataSource);
-	}
+    @Bean
+    JdbcClient boardJdbcClient(@Qualifier("routingDataSource") DataSource routingDataSource) {
+        return JdbcClient.create(routingDataSource);
+    }
 
-	@Bean
-	PlatformTransactionManager boardTransactionManager(@Qualifier("routingDataSource") DataSource routingDataSource) {
-		return new DataSourceTransactionManager(routingDataSource);
-	}
+    @Bean
+    PlatformTransactionManager boardTransactionManager(
+            @Qualifier("routingDataSource") DataSource routingDataSource) {
+        return new DataSourceTransactionManager(routingDataSource);
+    }
 
-	@Bean
-	<T> BeforeConvertCallback<T> boardBeforeConvertCallback() {
-		return DataJdbcConverterUtil::prepareEntity;
-	}
+    @Bean
+    <T> BeforeConvertCallback<T> boardBeforeConvertCallback() {
+        return DataJdbcConverterUtil::prepareEntity;
+    }
 
-	@Bean
-	JdbcCustomConversions boardJdbcCustomConversions() {
-		return new JdbcCustomConversions(List.of(
-				// new MapToStringConverter(),
-				// new StringToMapConverter()
-				new MapToPGobjectConverter(),
-				new PGobjectToMapConverter()));
-	}
-
+    @Bean
+    JdbcCustomConversions boardJdbcCustomConversions() {
+        return new JdbcCustomConversions(
+                List.of(
+                        // new MapToStringConverter(),
+                        // new StringToMapConverter()
+                        new MapToPGobjectConverter(), new PGobjectToMapConverter()));
+    }
 }

@@ -21,31 +21,29 @@ import net.luversof.api.bookkeeping.service.AssetService;
 @RequestMapping(value = "/api/asset", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AssetController {
 
-	@Autowired
-	private AssetService assetService;
+    @Autowired private AssetService assetService;
 
-	public void setAssetService(AssetService assetService) {
-		this.assetService = assetService;
-	}
+    public void setAssetService(AssetService assetService) {
+        this.assetService = assetService;
+    }
 
-	@PostMapping
-	public Asset createAsset(@RequestBody Asset asset) {
-		return assetService.createAsset(asset);
-	}
+    @PostMapping
+    public Asset createAsset(@RequestBody Asset asset) {
+        return assetService.createAsset(asset);
+    }
 
-	@GetMapping("/search/findByBookkeepingId/{bookkeepingId}")
-	public List<Asset> findByBookkeepingId(@PathVariable UUID bookkeepingId) {
-		return assetService.findByBookkeepingId(bookkeepingId);
-	}
+    @GetMapping("/search/findByBookkeepingId/{bookkeepingId}")
+    public List<Asset> findByBookkeepingId(@PathVariable UUID bookkeepingId) {
+        return assetService.findByBookkeepingId(bookkeepingId);
+    }
 
-	@PutMapping
-	public Asset updateAsset(Asset asset) {
-		return assetService.updateAsset(asset);
-	}
+    @PutMapping
+    public Asset updateAsset(Asset asset) {
+        return assetService.updateAsset(asset);
+    }
 
-	@DeleteMapping
-	public void delete(@RequestBody Asset asset) {
-		assetService.deleteAsset(asset);
-	}
-
+    @DeleteMapping
+    public void delete(@RequestBody Asset asset) {
+        assetService.deleteAsset(asset);
+    }
 }

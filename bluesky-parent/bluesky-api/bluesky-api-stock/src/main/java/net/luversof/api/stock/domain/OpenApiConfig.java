@@ -12,110 +12,110 @@ import org.springframework.data.relational.core.mapping.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 
-/**
- * Open API 연동 설정 (한국투자증권 등)
- */
+/** Open API 연동 설정 (한국투자증권 등) */
 @Table("OpenApiConfig")
 public class OpenApiConfig {
 
-	@Null(groups = Create.class)
-	@NotNull(groups = { Update.class, Delete.class })
-	@Id
-	@Column("id")
-	private UUID id;
+    @Null(groups = Create.class)
+    @NotNull(groups = {Update.class, Delete.class})
+    @Id
+    @Column("id")
+    private UUID id;
 
-	@NotNull(groups = { Create.class, Update.class })
-	@Column("provider")
-	private String provider;
+    @NotNull(groups = {Create.class, Update.class})
+    @Column("provider")
+    private String provider;
 
-	@NotNull(groups = { Create.class, Update.class })
-	@Column("appKey")
-	private String appKey;
+    @NotNull(groups = {Create.class, Update.class})
+    @Column("appKey")
+    private String appKey;
 
-	@NotNull(groups = { Create.class, Update.class })
-	@Column("appSecret")
-	private String appSecret;
+    @NotNull(groups = {Create.class, Update.class})
+    @Column("appSecret")
+    private String appSecret;
 
-	@Column("accessToken")
-	private String accessToken;
+    @Column("accessToken")
+    private String accessToken;
 
-	@Column("tokenUpdatedDate")
-	private Instant tokenUpdatedDate;
+    @Column("tokenUpdatedDate")
+    private Instant tokenUpdatedDate;
 
-	@LastModifiedDate
-	@Column("updatedDate")
-	private Instant updatedDate;
+    @LastModifiedDate
+    @Column("updatedDate")
+    private Instant updatedDate;
 
-	public interface Create {}
-	public interface Update {}
-	public interface Delete {}
+    public interface Create {}
 
-	public UUID getId() {
-		return id;
-	}
+    public interface Update {}
 
-	public void setId(UUID id) {
-		this.id = id;
-	}
+    public interface Delete {}
 
-	public String getProvider() {
-		return provider;
-	}
+    public UUID getId() {
+        return id;
+    }
 
-	public void setProvider(String provider) {
-		this.provider = provider;
-	}
+    public void setId(UUID id) {
+        this.id = id;
+    }
 
-	public String getAppKey() {
-		return appKey;
-	}
+    public String getProvider() {
+        return provider;
+    }
 
-	public void setAppKey(String appKey) {
-		this.appKey = appKey;
-	}
+    public void setProvider(String provider) {
+        this.provider = provider;
+    }
 
-	public String getAppSecret() {
-		return appSecret;
-	}
+    public String getAppKey() {
+        return appKey;
+    }
 
-	public void setAppSecret(String appSecret) {
-		this.appSecret = appSecret;
-	}
+    public void setAppKey(String appKey) {
+        this.appKey = appKey;
+    }
 
-	public String getAccessToken() {
-		return accessToken;
-	}
+    public String getAppSecret() {
+        return appSecret;
+    }
 
-	public void setAccessToken(String accessToken) {
-		this.accessToken = accessToken;
-	}
+    public void setAppSecret(String appSecret) {
+        this.appSecret = appSecret;
+    }
 
-	public Instant getTokenUpdatedDate() {
-		return tokenUpdatedDate;
-	}
+    public String getAccessToken() {
+        return accessToken;
+    }
 
-	public void setTokenUpdatedDate(Instant tokenUpdatedDate) {
-		this.tokenUpdatedDate = tokenUpdatedDate;
-	}
+    public void setAccessToken(String accessToken) {
+        this.accessToken = accessToken;
+    }
 
-	public Instant getUpdatedDate() {
-		return updatedDate;
-	}
+    public Instant getTokenUpdatedDate() {
+        return tokenUpdatedDate;
+    }
 
-	public void setUpdatedDate(Instant updatedDate) {
-		this.updatedDate = updatedDate;
-	}
+    public void setTokenUpdatedDate(Instant tokenUpdatedDate) {
+        this.tokenUpdatedDate = tokenUpdatedDate;
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) return true;
-		if (obj == null || getClass() != obj.getClass()) return false;
-		OpenApiConfig other = (OpenApiConfig) obj;
-		return Objects.equals(id, other.id) && Objects.equals(provider, other.provider);
-	}
+    public Instant getUpdatedDate() {
+        return updatedDate;
+    }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(id, provider);
-	}
+    public void setUpdatedDate(Instant updatedDate) {
+        this.updatedDate = updatedDate;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        OpenApiConfig other = (OpenApiConfig) obj;
+        return Objects.equals(id, other.id) && Objects.equals(provider, other.provider);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, provider);
+    }
 }

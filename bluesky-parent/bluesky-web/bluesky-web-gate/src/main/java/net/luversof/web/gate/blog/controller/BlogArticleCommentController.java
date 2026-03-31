@@ -24,46 +24,48 @@ import net.luversof.web.gate.blog.httpexchange.BlogArticleCommentClient;
 @RequestMapping(value = "/api/blogArticleComment", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BlogArticleCommentController {
 
-	private BlogArticleCommentClient blogArticleCommentClient;
+    private BlogArticleCommentClient blogArticleCommentClient;
 
-	@Autowired
-	public void setBlogArticleCommentClient(BlogArticleCommentClient blogArticleCommentClient) {
-		this.blogArticleCommentClient = blogArticleCommentClient;
-	}
+    @Autowired
+    public void setBlogArticleCommentClient(BlogArticleCommentClient blogArticleCommentClient) {
+        this.blogArticleCommentClient = blogArticleCommentClient;
+    }
 
-	@BlueskyPreAuthorize
-	@PostMapping
-	public BlogArticleComment create(@RequestBody BlogArticleComment blogArticleComment) {
-		return blogArticleCommentClient
-				.create(blogArticleComment.toBuilder().userId(UserUtil.getUserId().toString()).build());
-	}
+    @BlueskyPreAuthorize
+    @PostMapping
+    public BlogArticleComment create(@RequestBody BlogArticleComment blogArticleComment) {
+        return blogArticleCommentClient.create(
+                blogArticleComment.toBuilder().userId(UserUtil.getUserId().toString()).build());
+    }
 
-	@GetMapping("/search/findByBlogArticleId/{blogArticleId}")
-	public Page<BlogArticleComment> findByBlogArticleId(@PathVariable String blogArticleId, Pageable pageable) {
-		return blogArticleCommentClient.findByBlogArticleId(blogArticleId, pageable);
-	}
+    @GetMapping("/search/findByBlogArticleId/{blogArticleId}")
+    public Page<BlogArticleComment> findByBlogArticleId(
+            @PathVariable String blogArticleId, Pageable pageable) {
+        return blogArticleCommentClient.findByBlogArticleId(blogArticleId, pageable);
+    }
 
-	@GetMapping("/search/findByBlogArticleCommentId/{blogArticleCommentId}")
-	public Optional<BlogArticleComment> findByBlogArticleCommentId(@PathVariable String blogArticleCommentId) {
-		return blogArticleCommentClient.findByBlogArticleCommentId(blogArticleCommentId);
-	}
+    @GetMapping("/search/findByBlogArticleCommentId/{blogArticleCommentId}")
+    public Optional<BlogArticleComment> findByBlogArticleCommentId(
+            @PathVariable String blogArticleCommentId) {
+        return blogArticleCommentClient.findByBlogArticleCommentId(blogArticleCommentId);
+    }
 
-	@GetMapping("/search/countByBlogArticleId/{blogArticleId}")
-	public long countByBlogArticleId(@PathVariable String blogArticleId) {
-		return blogArticleCommentClient.countByBlogArticleId(blogArticleId);
-	}
+    @GetMapping("/search/countByBlogArticleId/{blogArticleId}")
+    public long countByBlogArticleId(@PathVariable String blogArticleId) {
+        return blogArticleCommentClient.countByBlogArticleId(blogArticleId);
+    }
 
-	@BlueskyPreAuthorize
-	@PutMapping
-	public BlogArticleComment update(@RequestBody BlogArticleComment blogArticleComment) {
-		return blogArticleCommentClient
-				.update(blogArticleComment.toBuilder().userId(UserUtil.getUserId().toString()).build());
-	}
+    @BlueskyPreAuthorize
+    @PutMapping
+    public BlogArticleComment update(@RequestBody BlogArticleComment blogArticleComment) {
+        return blogArticleCommentClient.update(
+                blogArticleComment.toBuilder().userId(UserUtil.getUserId().toString()).build());
+    }
 
-	@BlueskyPreAuthorize
-	@DeleteMapping
-	public void delete(@RequestBody BlogArticleComment blogArticleComment) {
-		blogArticleCommentClient.delete(blogArticleComment.toBuilder().userId(UserUtil.getUserId().toString()).build());
-	}
-
+    @BlueskyPreAuthorize
+    @DeleteMapping
+    public void delete(@RequestBody BlogArticleComment blogArticleComment) {
+        blogArticleCommentClient.delete(
+                blogArticleComment.toBuilder().userId(UserUtil.getUserId().toString()).build());
+    }
 }

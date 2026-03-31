@@ -10,20 +10,19 @@ import org.springframework.stereotype.Service;
 @Service
 public class InputStreamProvider {
 
-	private final ResourceLoader resourceLoader;
+    private final ResourceLoader resourceLoader;
 
-	public InputStreamProvider(ResourceLoader resourceLoader) {
-		this.resourceLoader = resourceLoader;
-	}
+    public InputStreamProvider(ResourceLoader resourceLoader) {
+        this.resourceLoader = resourceLoader;
+    }
 
-	public InputStream open(String location) throws IOException {
-		Resource resource = resourceLoader.getResource(location);
+    public InputStream open(String location) throws IOException {
+        Resource resource = resourceLoader.getResource(location);
 
-		if (!resource.exists()) {
-			throw new IllegalArgumentException("Resource not found: " + location);
-		}
+        if (!resource.exists()) {
+            throw new IllegalArgumentException("Resource not found: " + location);
+        }
 
-		return resource.getInputStream();
-	}
-
+        return resource.getInputStream();
+    }
 }

@@ -21,34 +21,36 @@ import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
 
 @Configuration
 @EnableJdbcAuditing
-@EnableJdbcRepositories(basePackages = { "net.luversof.api.stock.**", "net.luversof.app.google.**" }, transactionManagerRef = "stockTransactionManager")
+@EnableJdbcRepositories(
+        basePackages = {"net.luversof.api.stock.**", "net.luversof.app.google.**"},
+        transactionManagerRef = "stockTransactionManager")
 public class StockDataJdbcConfig {
-	
-	private DataSource getDataSource() {
-		return ConnectionInfoUtil.getConnection("stock_postgresql");
-	}
 
-	@Bean
-	JdbcClient stockJdbcClient() {
-		return JdbcClient.create(getDataSource());
-	}
+    private DataSource getDataSource() {
+        return ConnectionInfoUtil.getConnection("stock_postgresql");
+    }
 
-	@Bean
-	PlatformTransactionManager stockTransactionManager() {
-		return new DataSourceTransactionManager(getDataSource());
-	}
+    @Bean
+    JdbcClient stockJdbcClient() {
+        return JdbcClient.create(getDataSource());
+    }
 
-	@Bean
-	<T> BeforeConvertCallback<T> stockBeforeConvertCallback() {
-		return DataJdbcConverterUtil::prepareEntity;
-	}
+    @Bean
+    PlatformTransactionManager stockTransactionManager() {
+        return new DataSourceTransactionManager(getDataSource());
+    }
 
-	@Bean
-	JdbcCustomConversions stockJdbcCustomConversions() {
-                return new JdbcCustomConversions(List.of(
-                                // new MapToStringConverter(),
-                                // new StringToMapConverter()
-                                new MapToPGobjectConverter(),
-                                new PGobjectToMapConverter()));
-        }
+    @Bean
+    <T> BeforeConvertCallback<T> stockBeforeConvertCallback() {
+        return DataJdbcConverterUtil::prepareEntity;
+    }
+
+    @Bean
+    JdbcCustomConversions stockJdbcCustomConversions() {
+        return new JdbcCustomConversions(
+                List.of(
+                        // new MapToStringConverter(),
+                        // new StringToMapConverter()
+                        new MapToPGobjectConverter(), new PGobjectToMapConverter()));
+    }
 }

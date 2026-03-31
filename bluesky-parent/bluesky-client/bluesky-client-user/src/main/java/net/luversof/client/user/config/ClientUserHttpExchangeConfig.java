@@ -13,16 +13,16 @@ import net.luversof.client.user.httpexchange.UserInfoApiClient;
 @Configuration
 public class ClientUserHttpExchangeConfig {
 
-	@Bean
-	@ConditionalOnMissingBean(name = "clientUserHttpServiceProxyFactory")
-	HttpServiceProxyFactory clientUserHttpServiceProxyFactory(
-			Function<String, HttpServiceProxyFactory> httpServiceProxyFactoryBuilder,
-			@Value("${spring.http.serviceclient.client-user.base-url}") String baseUrl) {
-		return httpServiceProxyFactoryBuilder.apply(baseUrl);
-	}
+    @Bean
+    @ConditionalOnMissingBean(name = "clientUserHttpServiceProxyFactory")
+    HttpServiceProxyFactory clientUserHttpServiceProxyFactory(
+            Function<String, HttpServiceProxyFactory> httpServiceProxyFactoryBuilder,
+            @Value("${spring.http.serviceclient.client-user.base-url}") String baseUrl) {
+        return httpServiceProxyFactoryBuilder.apply(baseUrl);
+    }
 
-	@Bean
-	UserInfoApiClient userInfoApiClient(HttpServiceProxyFactory clientUserHttpServiceProxyFactory) {
-		return clientUserHttpServiceProxyFactory.createClient(UserInfoApiClient.class);
-	}
+    @Bean
+    UserInfoApiClient userInfoApiClient(HttpServiceProxyFactory clientUserHttpServiceProxyFactory) {
+        return clientUserHttpServiceProxyFactory.createClient(UserInfoApiClient.class);
+    }
 }

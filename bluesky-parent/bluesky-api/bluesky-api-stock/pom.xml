@@ -70,7 +70,6 @@
 		<dependency>
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-app-google</artifactId>
-			<version>${bluesky-project.version}</version>
 		</dependency>
 	</dependencies>
 	<build>

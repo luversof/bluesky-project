@@ -14,21 +14,29 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Configuration
 public class DynamicCrudDataJpaConfig {
 
-	@Configuration
-	@EnableJpaRepositories(basePackages = "net.luversof.web.dynamiccrud.setting.repository", entityManagerFactoryRef = "dynamicCrudSettingEntityManagerFactory", transactionManagerRef = "dynamicCrudSettingTransactionManager")
-	public class DynamicCrudSettingDataJpaConfig {
+    @Configuration
+    @EnableJpaRepositories(
+            basePackages = "net.luversof.web.dynamiccrud.setting.repository",
+            entityManagerFactoryRef = "dynamicCrudSettingEntityManagerFactory",
+            transactionManagerRef = "dynamicCrudSettingTransactionManager")
+    public class DynamicCrudSettingDataJpaConfig {
 
-		@Bean(name = "dynamicCrudSettingEntityManagerFactory")
-		LocalContainerEntityManagerFactoryBean dynamicCrudSettingEntityManagerFactory(EntityManagerFactoryBuilder builder, @Qualifier("routingDataSource") DataSource routingDataSource) {
-			return builder
-					.dataSource(routingDataSource)
-					.persistenceUnit("dynamicCrudSettingPersistenceUnit")
-					.packages("net.luversof.web.dynamiccrud.setting.domain").build();
-		}
+        @Bean(name = "dynamicCrudSettingEntityManagerFactory")
+        LocalContainerEntityManagerFactoryBean dynamicCrudSettingEntityManagerFactory(
+                EntityManagerFactoryBuilder builder,
+                @Qualifier("routingDataSource") DataSource routingDataSource) {
+            return builder.dataSource(routingDataSource)
+                    .persistenceUnit("dynamicCrudSettingPersistenceUnit")
+                    .packages("net.luversof.web.dynamiccrud.setting.domain")
+                    .build();
+        }
 
-		@Bean(name = "dynamicCrudSettingTransactionManager")
-		PlatformTransactionManager dynamicCrudSettingTransactionManager(@Qualifier("dynamicCrudSettingEntityManagerFactory") LocalContainerEntityManagerFactoryBean dynamicCrudSettingEntityManagerFactory) {
-			return new JpaTransactionManager(dynamicCrudSettingEntityManagerFactory.getObject());
-		}
-	}
+        @Bean(name = "dynamicCrudSettingTransactionManager")
+        PlatformTransactionManager dynamicCrudSettingTransactionManager(
+                @Qualifier("dynamicCrudSettingEntityManagerFactory")
+                        LocalContainerEntityManagerFactoryBean
+                                dynamicCrudSettingEntityManagerFactory) {
+            return new JpaTransactionManager(dynamicCrudSettingEntityManagerFactory.getObject());
+        }
+    }
 }

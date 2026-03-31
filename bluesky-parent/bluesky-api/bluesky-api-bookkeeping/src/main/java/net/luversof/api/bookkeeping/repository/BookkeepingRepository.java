@@ -10,7 +10,6 @@ import net.luversof.api.bookkeeping.domain.Bookkeeping;
 
 @Transactional(readOnly = true)
 public interface BookkeepingRepository extends CrudRepository<Bookkeeping, UUID> {
-	
-	List<Bookkeeping> findByUserId(UUID userId);
 
+    List<Bookkeeping> findByUserId(UUID userId);
 }

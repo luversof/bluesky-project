@@ -21,32 +21,33 @@ import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
 
 @Configuration
 @EnableJdbcAuditing
-@EnableJdbcRepositories(basePackages = "net.luversof.api.bookkeeping.**.repository", transactionManagerRef = "bookkeepingTransactionManager")
+@EnableJdbcRepositories(
+        basePackages = "net.luversof.api.bookkeeping.**.repository",
+        transactionManagerRef = "bookkeepingTransactionManager")
 public class BookkeepingDataJdbcConfig {
 
-	@Bean
-	JdbcClient bookkeepingJdbcClient(@Qualifier("routingDataSource") DataSource routingDataSource) {
-		return JdbcClient.create(routingDataSource);
-	}
+    @Bean
+    JdbcClient bookkeepingJdbcClient(@Qualifier("routingDataSource") DataSource routingDataSource) {
+        return JdbcClient.create(routingDataSource);
+    }
 
-	@Bean
-	PlatformTransactionManager bookkeepingTransactionManager(
-			@Qualifier("routingDataSource") DataSource routingDataSource) {
-		return new DataSourceTransactionManager(routingDataSource);
-	}
+    @Bean
+    PlatformTransactionManager bookkeepingTransactionManager(
+            @Qualifier("routingDataSource") DataSource routingDataSource) {
+        return new DataSourceTransactionManager(routingDataSource);
+    }
 
-	@Bean
-	<T> BeforeConvertCallback<T> bookkeepingBeforeConvertCallback() {
-		return DataJdbcConverterUtil::prepareEntity;
-	}
+    @Bean
+    <T> BeforeConvertCallback<T> bookkeepingBeforeConvertCallback() {
+        return DataJdbcConverterUtil::prepareEntity;
+    }
 
-	@Bean
-	JdbcCustomConversions bookkeepingJdbcCustomConversions() {
-		return new JdbcCustomConversions(List.of(
-				// new MapToStringConverter(),
-				// new StringToMapConverter()
-				new MapToPGobjectConverter(),
-				new PGobjectToMapConverter()));
-	}
-
+    @Bean
+    JdbcCustomConversions bookkeepingJdbcCustomConversions() {
+        return new JdbcCustomConversions(
+                List.of(
+                        // new MapToStringConverter(),
+                        // new StringToMapConverter()
+                        new MapToPGobjectConverter(), new PGobjectToMapConverter()));
+    }
 }

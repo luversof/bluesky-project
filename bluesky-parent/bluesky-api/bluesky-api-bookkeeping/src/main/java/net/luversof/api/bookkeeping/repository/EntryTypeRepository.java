@@ -9,8 +9,7 @@ import net.luversof.api.bookkeeping.domain.EntryType;
 
 public interface EntryTypeRepository extends CrudRepository<EntryType, UUID> {
 
-	List<EntryType> findByBookkeepingId(UUID bookkeepingId);
-	
-	long deleteByBookkeepingId(UUID bookkeepingId);
+    List<EntryType> findByBookkeepingId(UUID bookkeepingId);
 
+    long deleteByBookkeepingId(UUID bookkeepingId);
 }

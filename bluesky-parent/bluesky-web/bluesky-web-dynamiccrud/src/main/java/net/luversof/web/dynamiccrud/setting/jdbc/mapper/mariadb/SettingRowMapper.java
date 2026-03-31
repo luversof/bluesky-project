@@ -11,16 +11,17 @@ import org.springframework.jdbc.core.RowMapper;
 import net.luversof.web.dynamiccrud.setting.domain.Setting;
 
 public abstract class SettingRowMapper<T extends Setting> implements RowMapper<T> {
-	
-	
-	protected void setCommon(T t, ResultSet rs) throws SQLException {
-		t.setWriter(rs.getString("writer"));
-		t.setCreateDate(getZonedDateTime(rs.getTimestamp("createDate")));
-		t.setUpdateDate(getZonedDateTime(rs.getTimestamp("updateDate")));
-	}
 
-	protected ZonedDateTime getZonedDateTime(Timestamp timestamp) {
-		return timestamp.toLocalDateTime().atZone(ZoneId.of("UTC")).withZoneSameInstant(ZoneId.systemDefault());
-	}
+    protected void setCommon(T t, ResultSet rs) throws SQLException {
+        t.setWriter(rs.getString("writer"));
+        t.setCreateDate(getZonedDateTime(rs.getTimestamp("createDate")));
+        t.setUpdateDate(getZonedDateTime(rs.getTimestamp("updateDate")));
+    }
 
+    protected ZonedDateTime getZonedDateTime(Timestamp timestamp) {
+        return timestamp
+                .toLocalDateTime()
+                .atZone(ZoneId.of("UTC"))
+                .withZoneSameInstant(ZoneId.systemDefault());
+    }
 }

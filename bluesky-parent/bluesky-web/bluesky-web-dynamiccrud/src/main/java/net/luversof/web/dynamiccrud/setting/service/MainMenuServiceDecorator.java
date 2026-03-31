@@ -10,37 +10,41 @@ import net.luversof.web.dynamiccrud.setting.domain.MainMenu;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 
 @Service
-public class MainMenuServiceDecorator implements SettingServiceSupplier<MainMenu>, SettingServiceListSupplier<MainMenu>, SettingServiceDecorator {
+public class MainMenuServiceDecorator
+        implements SettingServiceSupplier<MainMenu>,
+                SettingServiceListSupplier<MainMenu>,
+                SettingServiceDecorator {
 
-	private Map<String, SettingServiceSupplier<MainMenu>> mainMenuServiceMap;
-	
-	private Map<String, SettingServiceListSupplier<MainMenu>> mainMenuServiceListMap;
+    private Map<String, SettingServiceSupplier<MainMenu>> mainMenuServiceMap;
 
-	public MainMenuServiceDecorator(Map<String, SettingServiceSupplier<MainMenu>> mainMenuServiceMap, Map<String, SettingServiceListSupplier<MainMenu>> mainMenuServiceListMap) {
-		this.mainMenuServiceMap = getSortedSettingServiceMap(mainMenuServiceMap);
-		this.mainMenuServiceListMap = getSortedSettingServiceMap(mainMenuServiceListMap);
-	}
+    private Map<String, SettingServiceListSupplier<MainMenu>> mainMenuServiceListMap;
 
-	@Override
-	public MainMenu findOne(SettingParameter settingParameter) {
-		for (var entry : mainMenuServiceMap.entrySet()) {
-			var target = entry.getValue().findOne(settingParameter);
-			if (target != null) {
-				return target;
-			}
-		}
-		return null;
-	}
-	
-	@Override
-	public List<MainMenu> findList(SettingParameter settingParameter) {
-		for (var entry : mainMenuServiceListMap.entrySet()) {
-			var target = entry.getValue().findList(settingParameter);
-			if (!target.isEmpty()) {
-				return target;
-			}
-		}
-		return Collections.emptyList();
-	}
+    public MainMenuServiceDecorator(
+            Map<String, SettingServiceSupplier<MainMenu>> mainMenuServiceMap,
+            Map<String, SettingServiceListSupplier<MainMenu>> mainMenuServiceListMap) {
+        this.mainMenuServiceMap = getSortedSettingServiceMap(mainMenuServiceMap);
+        this.mainMenuServiceListMap = getSortedSettingServiceMap(mainMenuServiceListMap);
+    }
 
+    @Override
+    public MainMenu findOne(SettingParameter settingParameter) {
+        for (var entry : mainMenuServiceMap.entrySet()) {
+            var target = entry.getValue().findOne(settingParameter);
+            if (target != null) {
+                return target;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public List<MainMenu> findList(SettingParameter settingParameter) {
+        for (var entry : mainMenuServiceListMap.entrySet()) {
+            var target = entry.getValue().findList(settingParameter);
+            if (!target.isEmpty()) {
+                return target;
+            }
+        }
+        return Collections.emptyList();
+    }
 }

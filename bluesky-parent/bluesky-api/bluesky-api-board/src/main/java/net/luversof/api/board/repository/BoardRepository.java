@@ -10,7 +10,6 @@ import net.luversof.api.board.domain.Board;
 
 @Transactional(readOnly = true)
 public interface BoardRepository extends CrudRepository<Board, UUID> {
-	
-	Optional<Board> findByAlias(String alias);
 
+    Optional<Board> findByAlias(String alias);
 }

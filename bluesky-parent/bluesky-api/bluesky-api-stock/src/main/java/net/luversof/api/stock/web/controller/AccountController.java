@@ -19,26 +19,24 @@ import net.luversof.api.stock.service.AccountService;
 @RequestMapping("/api/account")
 public class AccountController {
 
-	@Autowired
-	private AccountService accountService;
+    @Autowired private AccountService accountService;
 
-	public void setAccountService(AccountService accountService) {
-		this.accountService = accountService;
-	}
+    public void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
+    }
 
-	@PostMapping
-	public Account createAccount(@RequestBody Account account) {
-		return accountService.createAccount(account);
-	}
+    @PostMapping
+    public Account createAccount(@RequestBody Account account) {
+        return accountService.createAccount(account);
+    }
 
-	@GetMapping("/{id}")
-	public Optional<Account> getAccountById(@PathVariable UUID id) {
-		return accountService.findById(id);
-	}
+    @GetMapping("/{id}")
+    public Optional<Account> getAccountById(@PathVariable UUID id) {
+        return accountService.findById(id);
+    }
 
-	@GetMapping("/search/findByUserId/{userId}")
-	public List<Account> getAccountsByUserId(@PathVariable UUID userId) {
-		return accountService.findByUserId(userId);
-	}
-
+    @GetMapping("/search/findByUserId/{userId}")
+    public List<Account> getAccountsByUserId(@PathVariable UUID userId) {
+        return accountService.findByUserId(userId);
+    }
 }

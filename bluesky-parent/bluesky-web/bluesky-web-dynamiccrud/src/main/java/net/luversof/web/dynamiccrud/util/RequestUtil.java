@@ -11,6 +11,7 @@ public class RequestUtil {
         }
         return null;
     }
+
     public static String getParameter(String name) {
         var values = getParameterValues(name);
         return (values != null && values.length > 0) ? values[0] : null;

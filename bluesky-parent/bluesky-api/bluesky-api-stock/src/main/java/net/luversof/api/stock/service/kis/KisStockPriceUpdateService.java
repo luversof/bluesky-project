@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -22,12 +21,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import net.luversof.api.stock.domain.Dividend;
 import net.luversof.api.stock.domain.OpenApiConfig;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.domain.StockItemDateRange;
 import net.luversof.api.stock.domain.StockPriceHistory;
-import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.repository.DividendRepository;
 import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.repository.StockPriceHistoryRepository;
@@ -38,230 +35,257 @@ import net.luversof.api.stock.service.kis.dto.KisDailyPriceResponse;
 @Service
 public class KisStockPriceUpdateService {
 
-	@Autowired
-	private DividendRepository dividendRepository;
+    @Autowired private DividendRepository dividendRepository;
 
-	@Autowired
-	private TradeRepository tradeRepository;
+    @Autowired private TradeRepository tradeRepository;
 
-	@Autowired
-	private StockItemRepository stockItemRepository;
+    @Autowired private StockItemRepository stockItemRepository;
 
-	@Autowired
-	private StockPriceHistoryRepository stockPriceHistoryRepository;
+    @Autowired private StockPriceHistoryRepository stockPriceHistoryRepository;
 
-	@Autowired
-	private KisAuthService kisAuthService;
+    @Autowired private KisAuthService kisAuthService;
 
-	private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = new RestTemplate();
 
-	public void updatePriceHistory() {
-		Map<UUID, LocalDate> stockItemMinDateMap = new HashMap<>();
-		Map<UUID, LocalDate> stockItemMaxDateMap = new HashMap<>();
+    public void updatePriceHistory() {
+        Map<UUID, LocalDate> stockItemMinDateMap = new HashMap<>();
+        Map<UUID, LocalDate> stockItemMaxDateMap = new HashMap<>();
 
-		ZoneId zoneId = ZoneId.systemDefault();
+        ZoneId zoneId = ZoneId.systemDefault();
 
-		for (StockItemDateRange range : dividendRepository.findDividendDateRanges()) {
-			if (range.stockItemId() == null)
-				continue;
-			LocalDate minDate = range.minDate() != null ? range.minDate().atZone(zoneId).toLocalDate() : null;
-			LocalDate maxDate = range.maxDate() != null ? range.maxDate().atZone(zoneId).toLocalDate() : null;
+        for (StockItemDateRange range : dividendRepository.findDividendDateRanges()) {
+            if (range.stockItemId() == null) continue;
+            LocalDate minDate =
+                    range.minDate() != null ? range.minDate().atZone(zoneId).toLocalDate() : null;
+            LocalDate maxDate =
+                    range.maxDate() != null ? range.maxDate().atZone(zoneId).toLocalDate() : null;
 
-			updateMinMaxMap(stockItemMinDateMap, stockItemMaxDateMap, range.stockItemId(), minDate, maxDate);
-		}
+            updateMinMaxMap(
+                    stockItemMinDateMap,
+                    stockItemMaxDateMap,
+                    range.stockItemId(),
+                    minDate,
+                    maxDate);
+        }
 
-		for (StockItemDateRange range : tradeRepository.findTradeDateRanges()) {
-			if (range.stockItemId() == null)
-				continue;
-			LocalDate minDate = range.minDate() != null ? range.minDate().atZone(zoneId).toLocalDate() : null;
-			LocalDate maxDate = range.maxDate() != null ? range.maxDate().atZone(zoneId).toLocalDate() : null;
+        for (StockItemDateRange range : tradeRepository.findTradeDateRanges()) {
+            if (range.stockItemId() == null) continue;
+            LocalDate minDate =
+                    range.minDate() != null ? range.minDate().atZone(zoneId).toLocalDate() : null;
+            LocalDate maxDate =
+                    range.maxDate() != null ? range.maxDate().atZone(zoneId).toLocalDate() : null;
 
-			updateMinMaxMap(stockItemMinDateMap, stockItemMaxDateMap, range.stockItemId(), minDate, maxDate);
-		}
+            updateMinMaxMap(
+                    stockItemMinDateMap,
+                    stockItemMaxDateMap,
+                    range.stockItemId(),
+                    minDate,
+                    maxDate);
+        }
 
-		LocalDate today = LocalDate.now(zoneId);
+        LocalDate today = LocalDate.now(zoneId);
 
-		// Trade 나 Dividend 이력이 없는 종목들도 갱신 대상에 포함되도록 전체 StockItem 조회
-		List<StockItem> stockItemsAssigned = (List<StockItem>) stockItemRepository.findAll();
-		Map<UUID, StockItem> stockItemMap = stockItemsAssigned.stream()
-				.collect(Collectors.toMap(StockItem::getId, item -> item));
+        // Trade 나 Dividend 이력이 없는 종목들도 갱신 대상에 포함되도록 전체 StockItem 조회
+        List<StockItem> stockItemsAssigned = (List<StockItem>) stockItemRepository.findAll();
+        Map<UUID, StockItem> stockItemMap =
+                stockItemsAssigned.stream()
+                        .collect(Collectors.toMap(StockItem::getId, item -> item));
 
-		for (StockItem stockItem : stockItemsAssigned) {
-			UUID stockItemId = stockItem.getId();
-			// Trade나 Dividend가 있으면 그것들의 minDate를 사용하고, 없다면 오늘 날짜(또는 원하는 디폴트 과거 날짜)를 기준으로
-			// 설정합니다.
-			// 아무 이력이 없는 경우 당일 데이터만 초기 수집하도록 today 연산 지정 (최초 1회에는 today, 이후에는 append)
-			LocalDate minDate = stockItemMinDateMap.getOrDefault(stockItemId, today);
-			LocalDate maxDate = today;
+        for (StockItem stockItem : stockItemsAssigned) {
+            UUID stockItemId = stockItem.getId();
+            // Trade나 Dividend가 있으면 그것들의 minDate를 사용하고, 없다면 오늘 날짜(또는 원하는 디폴트 과거 날짜)를 기준으로
+            // 설정합니다.
+            // 아무 이력이 없는 경우 당일 데이터만 초기 수집하도록 today 연산 지정 (최초 1회에는 today, 이후에는 append)
+            LocalDate minDate = stockItemMinDateMap.getOrDefault(stockItemId, today);
+            LocalDate maxDate = today;
 
-			if (stockItem.getSymbol() == null || (!"KRX".equalsIgnoreCase(stockItem.getMarket())
-					&& !"KOSPI".equalsIgnoreCase(stockItem.getMarket())
-					&& !"KOSDAQ".equalsIgnoreCase(stockItem.getMarket()))) {
-				continue;
-			}
+            if (stockItem.getSymbol() == null
+                    || (!"KRX".equalsIgnoreCase(stockItem.getMarket())
+                            && !"KOSPI".equalsIgnoreCase(stockItem.getMarket())
+                            && !"KOSDAQ".equalsIgnoreCase(stockItem.getMarket()))) {
+                continue;
+            }
 
-			Optional<StockPriceHistory> topAsc = stockPriceHistoryRepository
-					.findTopByStockItemIdOrderByTradeDateAsc(stockItemId);
-			Optional<StockPriceHistory> topDesc = stockPriceHistoryRepository
-					.findTopByStockItemIdOrderByTradeDateDesc(stockItemId);
+            Optional<StockPriceHistory> topAsc =
+                    stockPriceHistoryRepository.findTopByStockItemIdOrderByTradeDateAsc(
+                            stockItemId);
+            Optional<StockPriceHistory> topDesc =
+                    stockPriceHistoryRepository.findTopByStockItemIdOrderByTradeDateDesc(
+                            stockItemId);
 
-			if (topAsc.isPresent() && topDesc.isPresent()) {
-				LocalDate dbMin = topAsc.get().getTradeDate();
-				LocalDate dbMax = topDesc.get().getTradeDate();
+            if (topAsc.isPresent() && topDesc.isPresent()) {
+                LocalDate dbMin = topAsc.get().getTradeDate();
+                LocalDate dbMax = topDesc.get().getTradeDate();
 
-				// dbMin 이전에 가져와야할 과거 데이터가 있는 경우
-				if (minDate.isBefore(dbMin)) {
-					fetchRangesInBlocks(stockItemId, stockItem.getSymbol(), minDate, dbMin.minusDays(1));
-				}
+                // dbMin 이전에 가져와야할 과거 데이터가 있는 경우
+                if (minDate.isBefore(dbMin)) {
+                    fetchRangesInBlocks(
+                            stockItemId, stockItem.getSymbol(), minDate, dbMin.minusDays(1));
+                }
 
-				// dbMax 이후 오늘까지 업데이트 해야할 최신 데이터가 있는 경우
-				if (maxDate.isAfter(dbMax)) {
-					fetchRangesInBlocks(stockItemId, stockItem.getSymbol(), dbMax.plusDays(1), maxDate);
-				}
-			} else {
-				fetchRangesInBlocks(stockItemId, stockItem.getSymbol(), minDate, maxDate);
-			}
-		}
-	}
+                // dbMax 이후 오늘까지 업데이트 해야할 최신 데이터가 있는 경우
+                if (maxDate.isAfter(dbMax)) {
+                    fetchRangesInBlocks(
+                            stockItemId, stockItem.getSymbol(), dbMax.plusDays(1), maxDate);
+                }
+            } else {
+                fetchRangesInBlocks(stockItemId, stockItem.getSymbol(), minDate, maxDate);
+            }
+        }
+    }
 
-	private void fetchRangesInBlocks(UUID stockItemId, String symbol, LocalDate startDate, LocalDate endDate) {
-		LocalDate currentStartDate = startDate;
-		while (!currentStartDate.isAfter(endDate)) {
-			LocalDate currentEndDate = currentStartDate.plusDays(99);
-			if (currentEndDate.isAfter(endDate)) {
-				currentEndDate = endDate;
-			}
+    private void fetchRangesInBlocks(
+            UUID stockItemId, String symbol, LocalDate startDate, LocalDate endDate) {
+        LocalDate currentStartDate = startDate;
+        while (!currentStartDate.isAfter(endDate)) {
+            LocalDate currentEndDate = currentStartDate.plusDays(99);
+            if (currentEndDate.isAfter(endDate)) {
+                currentEndDate = endDate;
+            }
 
-			fetchAndSavePriceHistory(stockItemId, symbol, currentStartDate, currentEndDate);
+            fetchAndSavePriceHistory(stockItemId, symbol, currentStartDate, currentEndDate);
 
-			currentStartDate = currentEndDate.plusDays(1);
+            currentStartDate = currentEndDate.plusDays(1);
 
-			try {
-				Thread.sleep(200);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}
-	}
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
 
-	private void updateMinMaxMap(Map<UUID, LocalDate> minMap, Map<UUID, LocalDate> maxMap, UUID stockItemId,
-			LocalDate minDate, LocalDate maxDate) {
-		if (minDate != null) {
-			minMap.compute(stockItemId, (k, v) -> (v == null || minDate.isBefore(v)) ? minDate : v);
-		}
-		if (maxDate != null) {
-			maxMap.compute(stockItemId, (k, v) -> (v == null || maxDate.isAfter(v)) ? maxDate : v);
-		}
-	}
+    private void updateMinMaxMap(
+            Map<UUID, LocalDate> minMap,
+            Map<UUID, LocalDate> maxMap,
+            UUID stockItemId,
+            LocalDate minDate,
+            LocalDate maxDate) {
+        if (minDate != null) {
+            minMap.compute(stockItemId, (k, v) -> (v == null || minDate.isBefore(v)) ? minDate : v);
+        }
+        if (maxDate != null) {
+            maxMap.compute(stockItemId, (k, v) -> (v == null || maxDate.isAfter(v)) ? maxDate : v);
+        }
+    }
 
-	private LocalDate getMin(LocalDate d1, LocalDate d2) {
-		if (d1 == null)
-			return d2;
-		if (d2 == null)
-			return d1;
-		return d1.isBefore(d2) ? d1 : d2;
-	}
+    private LocalDate getMin(LocalDate d1, LocalDate d2) {
+        if (d1 == null) return d2;
+        if (d2 == null) return d1;
+        return d1.isBefore(d2) ? d1 : d2;
+    }
 
-	private LocalDate getMax(LocalDate d1, LocalDate d2) {
-		if (d1 == null)
-			return d2;
-		if (d2 == null)
-			return d1;
-		return d1.isAfter(d2) ? d1 : d2;
-	}
+    private LocalDate getMax(LocalDate d1, LocalDate d2) {
+        if (d1 == null) return d2;
+        if (d2 == null) return d1;
+        return d1.isAfter(d2) ? d1 : d2;
+    }
 
-	private void fetchAndSavePriceHistory(UUID stockItemId, String symbol, LocalDate startDate, LocalDate endDate) {
-		OpenApiConfig config;
-		try {
-			config = kisAuthService.getValidConfig();
-		} catch (Exception e) {
-			System.out.println("KIS API Auth is not configured: " + e.getMessage());
-			return;
-		}
+    private void fetchAndSavePriceHistory(
+            UUID stockItemId, String symbol, LocalDate startDate, LocalDate endDate) {
+        OpenApiConfig config;
+        try {
+            config = kisAuthService.getValidConfig();
+        } catch (Exception e) {
+            System.out.println("KIS API Auth is not configured: " + e.getMessage());
+            return;
+        }
 
-		String baseUrl = "https://openapi.koreainvestment.com:9443";
-		String path = "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice";
+        String baseUrl = "https://openapi.koreainvestment.com:9443";
+        String path = "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice";
 
-		HttpHeaders headers = new HttpHeaders();
-		headers.set("authorization", "Bearer " + config.getAccessToken());
-		headers.set("appkey", config.getAppKey());
-		headers.set("appsecret", config.getAppSecret());
-		headers.set("tr_id", "FHKST03010100");
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("authorization", "Bearer " + config.getAccessToken());
+        headers.set("appkey", config.getAppKey());
+        headers.set("appsecret", config.getAppSecret());
+        headers.set("tr_id", "FHKST03010100");
 
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
 
-		String url = UriComponentsBuilder.fromUriString(baseUrl + path)
-				.queryParam("FID_COND_MRKT_DIV_CODE", "J")
-				.queryParam("FID_INPUT_ISCD", symbol)
-				.queryParam("FID_INPUT_DATE_1", startDate.format(formatter))
-				.queryParam("FID_INPUT_DATE_2", endDate.format(formatter))
-				.queryParam("FID_PERIOD_DIV_CODE", "D")
-				.queryParam("FID_ORG_ADJ_PRC", "0")
-				.build().toUriString();
+        String url =
+                UriComponentsBuilder.fromUriString(baseUrl + path)
+                        .queryParam("FID_COND_MRKT_DIV_CODE", "J")
+                        .queryParam("FID_INPUT_ISCD", symbol)
+                        .queryParam("FID_INPUT_DATE_1", startDate.format(formatter))
+                        .queryParam("FID_INPUT_DATE_2", endDate.format(formatter))
+                        .queryParam("FID_PERIOD_DIV_CODE", "D")
+                        .queryParam("FID_ORG_ADJ_PRC", "0")
+                        .build()
+                        .toUriString();
 
-		try {
-			HttpEntity<?> entity = new HttpEntity<>(headers);
-			ResponseEntity<KisDailyPriceResponse> response = restTemplate.exchange(url, HttpMethod.GET, entity,
-					KisDailyPriceResponse.class);
+        try {
+            HttpEntity<?> entity = new HttpEntity<>(headers);
+            ResponseEntity<KisDailyPriceResponse> response =
+                    restTemplate.exchange(url, HttpMethod.GET, entity, KisDailyPriceResponse.class);
 
-			if (response.getBody() == null || response.getBody().getOutput2() == null) {
-				return;
-			}
+            if (response.getBody() == null || response.getBody().getOutput2() == null) {
+                return;
+            }
 
-			List<KisDailyPriceItem> items = response.getBody().getOutput2();
+            List<KisDailyPriceItem> items = response.getBody().getOutput2();
 
-			List<StockPriceHistory> existingHistories = stockPriceHistoryRepository
-					.findByStockItemIdAndTradeDateBetween(stockItemId, startDate, endDate);
-			Map<LocalDate, StockPriceHistory> existingHistoryMap = existingHistories.stream()
-					.collect(Collectors.toMap(StockPriceHistory::getTradeDate, h -> h));
+            List<StockPriceHistory> existingHistories =
+                    stockPriceHistoryRepository.findByStockItemIdAndTradeDateBetween(
+                            stockItemId, startDate, endDate);
+            Map<LocalDate, StockPriceHistory> existingHistoryMap =
+                    existingHistories.stream()
+                            .collect(Collectors.toMap(StockPriceHistory::getTradeDate, h -> h));
 
-			List<StockPriceHistory> newHistories = new ArrayList<>();
-			ZoneId zoneId = ZoneId.systemDefault();
+            List<StockPriceHistory> newHistories = new ArrayList<>();
+            ZoneId zoneId = ZoneId.systemDefault();
 
-			for (KisDailyPriceItem item : items) {
-				if (item.getStck_bsop_date() == null || item.getStck_bsop_date().isEmpty()) {
-					continue;
-				}
+            for (KisDailyPriceItem item : items) {
+                if (item.getStck_bsop_date() == null || item.getStck_bsop_date().isEmpty()) {
+                    continue;
+                }
 
-				LocalDate tradeDate = LocalDate.parse(item.getStck_bsop_date(), formatter);
-				StockPriceHistory history = existingHistoryMap.get(tradeDate);
-				boolean shouldSave = false;
+                LocalDate tradeDate = LocalDate.parse(item.getStck_bsop_date(), formatter);
+                StockPriceHistory history = existingHistoryMap.get(tradeDate);
+                boolean shouldSave = false;
 
-				if (history == null) {
-					history = new StockPriceHistory();
-					history.setStockItemId(stockItemId);
-					history.setTradeDate(tradeDate);
-					shouldSave = true;
-				} else {
-					// 기존 데이터가 존재하는 경우, updatedDate의 날짜가 tradeDate와 같다면
-					// 장 중에 수집되어 아직 종가가 아닐 수 있으므로 갱신 대상에 포함합니다.
-					if (history.getUpdatedDate() != null) {
-						LocalDate updatedLocalDate = history.getUpdatedDate().atZone(zoneId).toLocalDate();
-						if (updatedLocalDate.equals(tradeDate)) {
-							shouldSave = true;
-						}
-					} else {
-						shouldSave = true;
-					}
-				}
+                if (history == null) {
+                    history = new StockPriceHistory();
+                    history.setStockItemId(stockItemId);
+                    history.setTradeDate(tradeDate);
+                    shouldSave = true;
+                } else {
+                    // 기존 데이터가 존재하는 경우, updatedDate의 날짜가 tradeDate와 같다면
+                    // 장 중에 수집되어 아직 종가가 아닐 수 있으므로 갱신 대상에 포함합니다.
+                    if (history.getUpdatedDate() != null) {
+                        LocalDate updatedLocalDate =
+                                history.getUpdatedDate().atZone(zoneId).toLocalDate();
+                        if (updatedLocalDate.equals(tradeDate)) {
+                            shouldSave = true;
+                        }
+                    } else {
+                        shouldSave = true;
+                    }
+                }
 
-				if (shouldSave) {
-					history.setOpenPrice(new BigDecimal(item.getStck_oprc()));
-					history.setHighPrice(new BigDecimal(item.getStck_hgpr()));
-					history.setLowPrice(new BigDecimal(item.getStck_lwpr()));
-					history.setClosePrice(new BigDecimal(item.getStck_clpr()));
-					history.setVolume(Long.parseLong(item.getAcml_vol()));
+                if (shouldSave) {
+                    history.setOpenPrice(new BigDecimal(item.getStck_oprc()));
+                    history.setHighPrice(new BigDecimal(item.getStck_hgpr()));
+                    history.setLowPrice(new BigDecimal(item.getStck_lwpr()));
+                    history.setClosePrice(new BigDecimal(item.getStck_clpr()));
+                    history.setVolume(Long.parseLong(item.getAcml_vol()));
 
-					newHistories.add(history);
-				}
-			}
+                    newHistories.add(history);
+                }
+            }
 
-			if (!newHistories.isEmpty()) {
-				stockPriceHistoryRepository.saveAll(newHistories);
-			}
-		} catch (Exception e) {
-			System.out.println("Failed to fetch history for symbol " + symbol + " range " + startDate + " to " + endDate
-					+ ": " + e.getMessage());
-		}
-	}
+            if (!newHistories.isEmpty()) {
+                stockPriceHistoryRepository.saveAll(newHistories);
+            }
+        } catch (Exception e) {
+            System.out.println(
+                    "Failed to fetch history for symbol "
+                            + symbol
+                            + " range "
+                            + startDate
+                            + " to "
+                            + endDate
+                            + ": "
+                            + e.getMessage());
+        }
+    }
 }

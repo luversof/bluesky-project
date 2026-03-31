@@ -7,8 +7,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import net.luversof.web.common.menu.domain.Menu;
 
-
 @ConfigurationProperties(prefix = "bluesky.web.common")
-public record WebCommonProperties(Map<String, List<Menu>> menu) {
-
-}
+public record WebCommonProperties(Map<String, List<Menu>> menu) {}
