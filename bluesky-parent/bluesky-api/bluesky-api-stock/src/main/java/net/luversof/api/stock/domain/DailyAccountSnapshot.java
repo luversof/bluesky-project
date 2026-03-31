@@ -6,29 +6,50 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
-@Table("daily_account_snapshot")
+@Table("DailyAccountSnapshot")
 public class DailyAccountSnapshot {
 
         @Id
+        @Column("id")
         private UUID id;
 
+        @Column("user_id")
         private UUID userId;
 
+        @Column("account_id")
         private UUID accountId;
 
+        @Column("date")
         private LocalDate date;
 
+        @Column("totalCost")
         private BigDecimal totalCost;
 
+        @Column("totalValue")
         private BigDecimal totalValue;
 
+        @Column("cumulativeRealizedProfit")
         private BigDecimal cumulativeRealizedProfit;
 
+        @Column("cumulativeDividend")
         private BigDecimal cumulativeDividend;
 
-        private ZonedDateTime createdDate;
+        @Column("createdDate")
+        private java.time.Instant createdDate;
+
+        @Column("wmaState")
+        private java.util.Map<String, Object> wmaState;
+
+        public java.util.Map<String, Object> getWmaState() {
+                return wmaState;
+        }
+
+        public void setWmaState(java.util.Map<String, Object> wmaState) {
+                this.wmaState = wmaState;
+        }
 
         public UUID getId() {
                 return id;
@@ -94,11 +115,11 @@ public class DailyAccountSnapshot {
                 this.cumulativeDividend = cumulativeDividend;
         }
 
-        public ZonedDateTime getCreatedDate() {
+        public java.time.Instant getCreatedDate() {
                 return createdDate;
         }
 
-        public void setCreatedDate(ZonedDateTime createdDate) {
+        public void setCreatedDate(java.time.Instant createdDate) {
                 this.createdDate = createdDate;
         }
 }

@@ -1,4 +1,4 @@
-CREATE TABLE "Account" (
+﻿CREATE TABLE "Account" (
 	"id" UUID NOT NULL PRIMARY KEY,
 	"user_id" UUID NOT NULL,
 	"name" VARCHAR(100) NOT NULL,
@@ -87,18 +87,19 @@ CREATE TABLE "OpenApiConfig" (
 );
 
 CREATE UNIQUE INDEX uk_openApiConfig_provider ON "OpenApiConfig" ("provider");
-CREATE TABLE "daily_account_snapshot" (
+CREATE TABLE "DailyAccountSnapshot" (
         "id" UUID NOT NULL PRIMARY KEY,
         "user_id" UUID NOT NULL,
         "account_id" UUID,
         "date" DATE NOT NULL,
-        "total_cost" DECIMAL(19, 4),
-        "total_value" DECIMAL(19, 4),
-        "cumulative_realized_profit" DECIMAL(19, 4),
-        "cumulative_dividend" DECIMAL(19, 4),
-        "created_date" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        "totalCost" DECIMAL(19, 4),
+        "totalValue" DECIMAL(19, 4),
+        "cumulativeRealizedProfit" DECIMAL(19, 4),
+        "cumulativeDividend" DECIMAL(19, 4),
+        "createdDate" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "wmaState" JSONB
 );
 
-CREATE INDEX idx_snapshot_userId ON "daily_account_snapshot" ("user_id");
-CREATE INDEX idx_snapshot_date ON "daily_account_snapshot" ("date");
+CREATE INDEX idx_snapshot_userId ON "DailyAccountSnapshot" ("user_id");
+CREATE INDEX idx_snapshot_date ON "DailyAccountSnapshot" ("date");
 

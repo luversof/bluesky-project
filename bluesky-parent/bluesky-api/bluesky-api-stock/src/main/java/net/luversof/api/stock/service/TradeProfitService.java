@@ -1,4 +1,4 @@
-package net.luversof.api.stock.service;
+﻿package net.luversof.api.stock.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -57,6 +57,9 @@ public class TradeProfitService {
 
 	@Autowired
 	private DividendService dividendService;
+
+        @Autowired
+        private net.luversof.api.stock.repository.DailyAccountSnapshotRepository dailyAccountSnapshotRepository;
 
 	public void setAccountService(AccountService accountService) {
 		this.accountService = accountService;
@@ -245,6 +248,12 @@ public class TradeProfitService {
 	 * 시간 시계열 집계: 전체 거래 내역을 바탕으로 Rolling WMA 계산을 수행한 후,
 	 * 요청된 기간(start ~ end)에 해당하는 일별 누적 실현손익 스냅샷을 반환합니다.
 	 */
+        public static class WmaState {
+                public long quantity = 0;
+                public BigDecimal totalCost = BigDecimal.ZERO;
+                public BigDecimal totalCostNet = BigDecimal.ZERO;
+                public UUID stockItemId;
+        }
 	public List<TradeProfitTimeSeriesPoint> aggregateTimeSeries(TradeProfitRequest request, String granularity) {
 		Instant end = request.getEndDate() != null ? request.getEndDate() : Instant.now();
 		Instant start = request.getStartDate();
@@ -328,12 +337,6 @@ public class TradeProfitService {
 		});
 
 		// 4) 시뮬레이션 상태 관리 (WMA)
-		class WmaState {
-			long quantity = 0;
-			BigDecimal totalCost = BigDecimal.ZERO; // Gross
-			BigDecimal totalCostNet = BigDecimal.ZERO; // Net (Fee included)
-			UUID stockItemId;
-		}
 		Map<String, WmaState> stateMap = new HashMap<>();
 
 		BigDecimal globalCumulativeRealized = BigDecimal.ZERO;
@@ -345,7 +348,57 @@ public class TradeProfitService {
 		Instant simulationStart = firstTradeDate;
 		// 출력 시작일: 요청상 start 날짜 (없으면 첫 거래일)
 		Instant outputStart = start != null ? start.truncatedTo(ChronoUnit.DAYS) : firstTradeDate;
+                // ---- Cache Read Logic ----
+                  boolean isReadUserRequest = (request.getRequestType() == net.luversof.api.stock.web.dto.request.TradeProfitRequestType.USER && request.getUserId() != null);
+                  boolean isReadSingleAccountRequest = (request.getRequestType() == net.luversof.api.stock.web.dto.request.TradeProfitRequestType.USER_ACCOUNT && request.getAccountIdList() != null && request.getAccountIdList().size() == 1);
+                  boolean shouldReadCache = isReadUserRequest || isReadSingleAccountRequest;
+                  if (shouldReadCache) {
+                          java.time.LocalDate targetDate = java.time.LocalDate.ofInstant(outputStart, java.time.ZoneId.systemDefault());
+                          net.luversof.api.stock.domain.DailyAccountSnapshot snap = null;
+                          if (isReadUserRequest) {
+                              snap = dailyAccountSnapshotRepository.findTopByUserIdAndDateLessThanOrderByDateDesc(request.getUserId(), targetDate);
+                          } else {
+                              snap = dailyAccountSnapshotRepository.findTopByAccountIdAndDateLessThanOrderByDateDesc(request.getAccountIdList().get(0), targetDate);
+                          }
+                        if (snap != null) {
+                                simulationStart = snap.getDate().plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                                globalCumulativeRealized = snap.getCumulativeRealizedProfit() != null ? snap.getCumulativeRealizedProfit() : BigDecimal.ZERO;
+                                globalCumulativeDividend = snap.getCumulativeDividend() != null ? snap.getCumulativeDividend() : BigDecimal.ZERO;
+                                  if (snap.getWmaState() != null && !snap.getWmaState().isEmpty()) {
+                                          try {
+                                                  com.fasterxml.jackson.core.type.TypeReference<HashMap<String, WmaState>> typeRef = new com.fasterxml.jackson.core.type.TypeReference<HashMap<String, WmaState>>() {};
+                                                  stateMap = new com.fasterxml.jackson.databind.ObjectMapper().convertValue(snap.getWmaState(), typeRef);
+                                        } catch (Exception ex) {
+                                                log.error("Failed to deserialize WmaState", ex);
+                                        }
+                                }
+                                // Remove trades properly BEFORE simulationStart
+                                final Instant finalSimStart = simulationStart;
+                                allTrades.removeIf(t -> t.getTradeDate().truncatedTo(ChronoUnit.DAYS).isBefore(finalSimStart));
+                        }
+                }
+                // ---------------------------
 		Instant outputEnd = end.truncatedTo(ChronoUnit.DAYS);
+
+		// ---- Bulk Load Existing Snapshot Dates ----
+		java.util.Set<java.time.LocalDate> existingSnapshotDates = new java.util.HashSet<>();
+		if (shouldReadCache) {
+			try {
+				java.time.LocalDate fetchStartLocalDate = java.time.LocalDate.ofInstant(
+						simulationStart.isBefore(outputStart) ? simulationStart : outputStart, 
+						java.time.ZoneId.systemDefault());
+				java.time.LocalDate fetchEndLocalDate = java.time.LocalDate.ofInstant(outputEnd, java.time.ZoneId.systemDefault());
+
+				if (isReadUserRequest) {
+					existingSnapshotDates.addAll(dailyAccountSnapshotRepository.findDatesByUserIdAndAccountIdIsNullAndDateBetween(request.getUserId(), fetchStartLocalDate, fetchEndLocalDate));
+				} else if (isReadSingleAccountRequest) {
+					existingSnapshotDates.addAll(dailyAccountSnapshotRepository.findDatesByAccountIdAndDateBetween(request.getAccountIdList().get(0), fetchStartLocalDate, fetchEndLocalDate));
+				}
+			} catch (Exception e) {
+				log.warn("Failed to load existing snapshot dates", e);
+			}
+		}
+		// -------------------------------------------
 
 		// Price History (Bulk Load)
 		Instant fetchStart = simulationStart.isBefore(outputStart) ? simulationStart : outputStart;
@@ -503,6 +556,33 @@ public class TradeProfitService {
 						totalHoldingsCost,
 						cumulativeTotalProfit,
 						globalCumulativeDividend));
+                                  // 스냅샷 저장이 가능한 요청(USER 전체, 또는 단일 계좌)인 경우
+                                  boolean isUserRequest = (request.getRequestType() == net.luversof.api.stock.web.dto.request.TradeProfitRequestType.USER && request.getUserId() != null);
+                                  boolean isSingleAccountRequest = (request.getRequestType() == net.luversof.api.stock.web.dto.request.TradeProfitRequestType.USER_ACCOUNT && request.getAccountIdList() != null && request.getAccountIdList().size() == 1);
+
+                                  if (isUserRequest || isSingleAccountRequest) {
+                                        try {
+                                                java.time.LocalDate snapDate = java.time.LocalDate.ofInstant(currentDay, java.time.ZoneId.systemDefault());
+																if (!existingSnapshotDates.contains(snapDate)) {
+java.util.Map<String, Object> wmaStateMap = new com.fasterxml.jackson.databind.ObjectMapper().convertValue(stateMap, new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
+
+                                                net.luversof.api.stock.domain.DailyAccountSnapshot snap = new net.luversof.api.stock.domain.DailyAccountSnapshot();
+                                                snap.setUserId(request.getUserId());                                                  if (isSingleAccountRequest) {
+                                                      snap.setAccountId(request.getAccountIdList().get(0));
+                                                  }                                                snap.setDate(java.time.LocalDate.ofInstant(currentDay, java.time.ZoneId.systemDefault()));
+                                                snap.setTotalCost(totalHoldingsCost);
+                                                snap.setTotalValue(totalHoldingsValue);
+                                                snap.setCumulativeRealizedProfit(globalCumulativeRealized);
+                                                snap.setCumulativeDividend(globalCumulativeDividend);
+                                                snap.setWmaState(wmaStateMap);
+                                                snap.setCreatedDate(java.time.Instant.now());
+
+                                                dailyAccountSnapshotRepository.save(snap);
+																}
+                                        } catch (Exception e) {
+                                                log.warn("Failed to save DailyAccountSnapshot", e);
+                                        }
+                                }
 			}
 
 			currentDay = currentDay.plus(1, ChronoUnit.DAYS);

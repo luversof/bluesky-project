@@ -45,11 +45,10 @@ public class StockDataJdbcConfig {
 
 	@Bean
 	JdbcCustomConversions stockJdbcCustomConversions() {
-		return new JdbcCustomConversions(List.of(
-				// new MapToStringConverter(),
-				// new StringToMapConverter()
-				new MapToPGobjectConverter(),
-				new PGobjectToMapConverter()));
-	}
-	
+                return new JdbcCustomConversions(List.of(
+                                // new MapToStringConverter(),
+                                // new StringToMapConverter()
+                                new MapToPGobjectConverter(),
+                                new PGobjectToMapConverter()));
+        }
 }
