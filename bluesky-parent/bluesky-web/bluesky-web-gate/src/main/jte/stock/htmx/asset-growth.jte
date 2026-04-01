@@ -35,18 +35,24 @@
                     <p class="text-gray-500">데이터가 없습니다.</p>
                 </div>
             @else
-                <div class="relative w-full" style="height: 450px;">
-                    <canvas id="assetGrowthChart" class="amount-chart"></canvas>
-                    
-                    <!-- 바로가기 화살표 버튼 -->
-                    <button type="button" id="btnScrollStart" class="btn btn-sm btn-circle absolute top-1/2 left-2 transform -translate-y-1/2 bg-base-100/70 shadow hover:bg-base-200 z-10" style="display: none;" onclick="jumpToEdge('start')" title="맨 앞으로 이동">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
-                    </button>
-                    <button type="button" id="btnScrollEnd" class="btn btn-sm btn-circle absolute top-1/2 right-2 transform -translate-y-1/2 bg-base-100/70 shadow hover:bg-base-200 z-10" style="display: none;" onclick="jumpToEdge('end')" title="맨 위치로 이동">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
-                    </button>
+                <div class="flex items-center justify-between mb-1">
+                    <p class="text-xs text-base-content/50">📈 자산 추이 &mdash; 투자 원금(점선) 대비 총 평가액(실선), 색상 면적이 현재 손익 규모</p>
+                    <div class="flex gap-1">
+                        <button type="button" id="btnScrollStart" class="btn btn-xs btn-ghost btn-circle" style="opacity:0.2;" onclick="jumpToEdge('start')" title="맨 앞으로 이동">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
+                        </button>
+                        <button type="button" id="btnScrollEnd" class="btn btn-xs btn-ghost btn-circle" style="opacity:0.2;" onclick="jumpToEdge('end')" title="맨 끝으로 이동">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+                        </button>
+                    </div>
                 </div>
-                <div class="w-full" style="height: 200px;">
+                <div class="w-full" style="height: 450px;">
+                    <canvas id="assetGrowthChart" class="amount-chart"></canvas>
+                </div>
+                <div>
+                    <p class="text-xs text-base-content/50 mb-1 ml-1">💰 손익 분석 &mdash; 확정 손익(막대) · 평가 손익(선) · 누적 배당금(면적, 우축)</p>
+                </div>
+                <div class="w-full" style="height: 250px;">
                     <canvas id="dividendChart" class="amount-chart"></canvas>
                 </div>
             @endif
@@ -64,16 +70,21 @@
             var labels = [];
             var totalValueData = [];
             var totalCostData = [];
-            var cumulativeTotalProfitData = [];
+            var cumulativeRealizedProfitData = [];
             var cumulativeDividendData = [];
 
             @for(TradeProfitTimeSeriesPoint pt : timeSeries)
                 labels.push("$unsafe{formatter.format(pt.timestamp())}");
                 totalValueData.push($unsafe{pt.totalHoldingsValue() != null ? pt.totalHoldingsValue().toPlainString() : "0"});
                 totalCostData.push($unsafe{pt.totalHoldingsCost() != null ? pt.totalHoldingsCost().toPlainString() : "0"});
-                cumulativeTotalProfitData.push($unsafe{pt.cumulativeTotalProfit() != null ? pt.cumulativeTotalProfit().toPlainString() : "0"});
+                cumulativeRealizedProfitData.push($unsafe{pt.cumulativeRealizedProfit() != null ? pt.cumulativeRealizedProfit().toPlainString() : "0"});
                 cumulativeDividendData.push($unsafe{pt.cumulativeDividend() != null ? pt.cumulativeDividend().toPlainString() : "0"});
             @endfor
+
+            // 현재 평가 손익(미실현) = 총 자산 평가액 - 투자 원금
+            var currentUnrealizedProfitData = totalValueData.map(function(v, i) {
+                return parseFloat(v) - parseFloat(totalCostData[i]);
+            });
 
             var maxIndex = labels.length - 1;
             var defaultMinIndex = maxIndex > 365 ? maxIndex - 365 : 0;
@@ -104,16 +115,12 @@
                 var btnEnd = document.getElementById('btnScrollEnd');
                 
                 if (btnStart) {
-                    btnStart.style.display = 'inline-flex';
-                    btnStart.style.opacity = Math.round(minIdx) > 0 ? '1' : '0';
+                    btnStart.style.opacity = Math.round(minIdx) > 0 ? '1' : '0.2';
                     btnStart.style.pointerEvents = Math.round(minIdx) > 0 ? 'auto' : 'none';
-                    btnStart.style.zIndex = '50';
                 }
                 if (btnEnd) {
-                    btnEnd.style.display = 'inline-flex';
-                    btnEnd.style.opacity = Math.round(maxIdx) < labels.length - 1 ? '1' : '0';
+                    btnEnd.style.opacity = Math.round(maxIdx) < labels.length - 1 ? '1' : '0.2';
                     btnEnd.style.pointerEvents = Math.round(maxIdx) < labels.length - 1 ? 'auto' : 'none';
-                    btnEnd.style.zIndex = '50';
                 }
             };
 
@@ -190,6 +197,8 @@
                 return new Intl.NumberFormat('ko-KR').format(value);
             };
 
+            var syncing = false;
+
             mainChart = new Chart(ctxMain.getContext('2d'), {
                 type: 'line',
                 data: {
@@ -199,28 +208,143 @@
                             type: 'line',
                             label: '투자 원금',
                             data: totalCostData,
-                            borderColor: 'rgba(201, 203, 207, 1)',
+                            borderColor: 'rgba(156, 163, 175, 1)',
                             borderWidth: 2,
                             borderDash: [5, 5],
                             fill: false,
-                            yAxisID: 'y'
+                            yAxisID: 'y',
+                            order: 1
                         },
                         {
                             type: 'line',
                             label: '총 자산 평가액',
                             data: totalValueData,
                             borderColor: 'rgba(75, 192, 192, 1)',
-                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
                             borderWidth: 2,
+                            fill: {
+                                target: '-1',
+                                above: 'rgba(255, 99, 132, 0.25)',
+                                below: 'rgba(54, 162, 235, 0.25)'
+                            },
+                            yAxisID: 'y',
+                            order: 0
+                        }
+                    ]
+                },
+                options: {
+                    animation: false,
+                    normalized: true,
+                    elements: {
+                        line: { tension: 0 },
+                        point: { radius: 0, hitRadius: 10, hoverRadius: 4 }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        zoom: commonZoomOptions,
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    var label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('ko-KR').format(context.parsed.y) + '원';
+                                    }
+                                    return label;
+                                },
+                                afterBody: function(tooltipItems) {
+                                    var idx = tooltipItems[0].dataIndex;
+                                    var value = parseFloat(totalValueData[idx]);
+                                    var cost = parseFloat(totalCostData[idx]);
+                                    var diff = value - cost;
+                                    var sign = diff >= 0 ? '+' : '-';
+                                    var pct = cost !== 0 ? ((diff / cost) * 100).toFixed(2) : '0.00';
+                                    return ['─────────────────', '평가 손익: ' + sign + new Intl.NumberFormat('ko-KR').format(Math.abs(diff)) + '원 (' + sign + pct + '%)'];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            min: defaultMinDate,
+                            max: defaultMaxDate,
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                maxTicksLimit: 15
+                            }
+                        },
+                        y: {
+                            display: true,
+                            position: 'left',
+                            beginAtZero: false,
+                            title: { display: true, text: '자산 총액' },
+                            ticks: { callback: yTicksCallback }
+                        }
+                    },
+                    onHover: function(event, elements) {
+                        if (syncing || !dividendChart) return;
+                        syncing = true;
+                        if (!elements.length) {
+                            dividendChart.tooltip.setActiveElements([], { x: 0, y: 0 });
+                        } else {
+                            var idx = elements[0].index;
+                            var active = dividendChart.data.datasets.map(function(_, i) { return { datasetIndex: i, index: idx }; });
+                            var meta0 = dividendChart.getDatasetMeta(0);
+                            var pt = meta0 && meta0.data && meta0.data[idx];
+                            dividendChart.tooltip.setActiveElements(active, pt ? { x: pt.x, y: pt.y } : { x: 0, y: 0 });
+                        }
+                        dividendChart.update('none');
+                        syncing = false;
+                    }
+                }
+            });
+
+            dividendChart = new Chart(ctxDividend.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            type: 'bar',
+                            label: '누적 결산 손익(실현)',
+                            data: cumulativeRealizedProfitData,
+                            backgroundColor: cumulativeRealizedProfitData.map(v => parseFloat(v) >= 0 ? 'rgba(255, 99, 132, 0.55)' : 'rgba(54, 162, 235, 0.55)'),
+                            borderWidth: 0,
+                            yAxisID: 'y'
+                        },
+                        {
+                            type: 'line',
+                            label: '현재 평가 손익(미실현)',
+                            data: currentUnrealizedProfitData,
+                            segment: {
+                                borderColor: function(ctx) {
+                                    return ctx.p1.parsed.y >= 0 ? 'rgba(255, 99, 132, 1)' : 'rgba(54, 162, 235, 1)';
+                                }
+                            },
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            pointHitRadius: 10,
+                            pointHoverRadius: 4,
                             fill: false,
                             yAxisID: 'y'
                         },
                         {
-                            type: 'bar',
-                            label: '누적 총 손실/이익(평가포함)',
-                            data: cumulativeTotalProfitData,
-                            backgroundColor: cumulativeTotalProfitData.map(val => val >= 0 ? 'rgba(255, 99, 132, 0.6)' : 'rgba(54, 162, 235, 0.6)'),
-                            borderWidth: 0,
+                            type: 'line',
+                            label: '누적 배당금',
+                            data: cumulativeDividendData,
+                            borderColor: 'rgba(255, 159, 64, 1)',
+                            backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                            borderWidth: 2,
+                            fill: 'origin',
+                            pointRadius: 0,
+                            pointHitRadius: 10,
+                            pointHoverRadius: 4,
                             yAxisID: 'y1'
                         }
                     ]
@@ -246,7 +370,9 @@
                                     var label = context.dataset.label || '';
                                     if (label) label += ': ';
                                     if (context.parsed.y !== null) {
-                                        label += new Intl.NumberFormat('ko-KR').format(context.parsed.y) + '원';
+                                        var val = context.parsed.y;
+                                        var sign = val >= 0 ? '+' : '-';
+                                        label += sign + new Intl.NumberFormat('ko-KR').format(Math.abs(val)) + '원';
                                     }
                                     return label;
                                 }
@@ -267,98 +393,50 @@
                         y: {
                             display: true,
                             position: 'left',
-                            beginAtZero: false,
-                            title: { display: true, text: '총액' },
+                            title: { display: true, text: '손익' },
                             ticks: { callback: yTicksCallback }
                         },
                         y1: {
                             display: true,
                             position: 'right',
                             grid: { drawOnChartArea: false },
-                            title: { display: true, text: '손익' },
+                            beginAtZero: true,
+                            title: { display: true, text: '배당금 누적' },
                             ticks: { callback: yTicksCallback }
                         }
+                    },
+                    onHover: function(event, elements) {
+                        if (syncing || !mainChart) return;
+                        syncing = true;
+                        if (!elements.length) {
+                            mainChart.tooltip.setActiveElements([], { x: 0, y: 0 });
+                        } else {
+                            var idx = elements[0].index;
+                            var active = mainChart.data.datasets.map(function(_, i) { return { datasetIndex: i, index: idx }; });
+                            var meta0 = mainChart.getDatasetMeta(0);
+                            var pt = meta0 && meta0.data && meta0.data[idx];
+                            mainChart.tooltip.setActiveElements(active, pt ? { x: pt.x, y: pt.y } : { x: 0, y: 0 });
+                        }
+                        mainChart.update('none');
+                        syncing = false;
                     }
                 }
             });
 
-            dividendChart = new Chart(ctxDividend.getContext('2d'), {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            type: 'line',
-                            label: '누적 배당금',
-                            data: cumulativeDividendData,
-                            borderColor: 'rgba(255, 159, 64, 1)',
-                            backgroundColor: 'rgba(255, 159, 64, 0.2)',
-                            borderWidth: 2,
-                            fill: 'origin', // 바닥에서부터 채워지는 영역 차트
-                            yAxisID: 'y'
-                        }
-                    ]
-                },
-                options: {
-                    animation: false,
-                    normalized: true,
-                    elements: {
-                        line: { tension: 0 },
-                        point: { radius: 0, hitRadius: 10, hoverRadius: 4 }
-                    },
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    },
-                    plugins: {
-                        zoom: commonZoomOptions,
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    var label = context.dataset.label || '';
-                                    if (label) label += ': ';
-                                    if (context.parsed.y !== null) {
-                                        label += new Intl.NumberFormat('ko-KR').format(context.parsed.y) + '원';
-                                    }
-                                    return label;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            display: true,
-                            min: defaultMinDate,
-                            max: defaultMaxDate,
-                            ticks: {
-                                maxRotation: 45,
-                                minRotation: 45,
-                                maxTicksLimit: 15
-                            }
-                        },
-                        y: {
-                            display: true,
-                            position: 'left',
-                            beginAtZero: true,
-                            title: { display: true, text: '배당금 누적' },
-                            ticks: { callback: yTicksCallback }
-                        },
-                        y1: {
-                            display: true,
-                            position: 'right',
-                            grid: { drawOnChartArea: false },
-                            title: { display: true, text: '손익', color: 'transparent' },
-                            ticks: { callback: yTicksCallback, color: 'transparent' },
-                            border: { display: false }
-                        }
-                    }
-                }
-            });
-            
             // 초기 버튼 상태 업데이트
             checkNavButtons();
+
+            // 두 차트 plot 너비 맞추기: double-RAF 로 브라우저 렌더 완료 후 y1 축 너비 측정
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() {
+                    if (!dividendChart || !dividendChart.scales || !dividendChart.scales.y1) return;
+                    var y1Width = dividendChart.scales.y1.width || 0;
+                    if (y1Width > 0) {
+                        mainChart.options.layout = { padding: { right: y1Width } };
+                        mainChart.update('none');
+                    }
+                });
+            });
         })();
     </script>
     @endif
