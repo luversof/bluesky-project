@@ -1,18 +1,15 @@
 package net.luversof.web.dynamiccrud.config;
 
+import com.mongodb.client.MongoClient;
+import io.github.luversof.boot.connectioninfo.ConnectionInfoRegistry;
+import io.github.luversof.boot.security.crypto.support.DecryptPropertySourceFactory;
+import jakarta.annotation.PostConstruct;
 import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
-
-import com.mongodb.client.MongoClient;
-
-import io.github.luversof.boot.connectioninfo.ConnectionInfoRegistry;
-import io.github.luversof.boot.security.crypto.support.DecryptPropertySourceFactory;
-import jakarta.annotation.PostConstruct;
 
 @Configuration
 @PropertySource(

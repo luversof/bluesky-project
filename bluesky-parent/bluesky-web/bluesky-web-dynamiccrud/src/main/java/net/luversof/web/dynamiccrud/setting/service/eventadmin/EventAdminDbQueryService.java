@@ -14,13 +14,11 @@ import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdmin
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Service;
-
 import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuerySqlCommandType;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.service.SettingServiceListSupplier;
+import org.springframework.stereotype.Service;
 
 @Service
 public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQuery> {

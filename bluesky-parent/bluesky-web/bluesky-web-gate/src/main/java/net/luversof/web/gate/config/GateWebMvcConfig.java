@@ -1,7 +1,7 @@
 package net.luversof.web.gate.config;
 
 import java.util.Locale;
-
+import net.luversof.web.gate.interceptor.PaginationInterceptor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
@@ -13,8 +13,6 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.i18n.CookieLocaleResolver;
 import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
-
-import net.luversof.web.gate.interceptor.PaginationInterceptor;
 
 @Configuration
 @EnableSpringDataWebSupport(pageSerializationMode = PageSerializationMode.VIA_DTO)

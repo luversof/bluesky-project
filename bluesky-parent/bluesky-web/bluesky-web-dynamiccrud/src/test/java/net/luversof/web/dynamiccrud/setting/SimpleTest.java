@@ -3,13 +3,11 @@ package net.luversof.web.dynamiccrud.setting;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
+import net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType;
 import org.bson.Document;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType;
 
 class SimpleTest {
 

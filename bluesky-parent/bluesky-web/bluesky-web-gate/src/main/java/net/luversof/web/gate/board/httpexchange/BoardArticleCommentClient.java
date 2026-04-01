@@ -1,8 +1,9 @@
 package net.luversof.web.gate.board.httpexchange;
 
+import io.github.luversof.boot.data.domain.PageResponse;
 import java.util.List;
 import java.util.UUID;
-
+import net.luversof.web.gate.board.domain.BoardArticleComment;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,9 +13,6 @@ import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
 import org.springframework.web.service.annotation.PutExchange;
-
-import io.github.luversof.boot.data.domain.PageResponse;
-import net.luversof.web.gate.board.domain.BoardArticleComment;
 
 @HttpExchange(url = "/api/boardArticleComment", contentType = MediaType.APPLICATION_JSON_VALUE)
 public interface BoardArticleCommentClient {

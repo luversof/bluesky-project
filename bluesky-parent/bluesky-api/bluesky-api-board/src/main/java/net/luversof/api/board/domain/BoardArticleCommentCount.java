@@ -1,7 +1,6 @@
 package net.luversof.api.board.domain;
 
 import java.util.UUID;
-
 import org.springframework.data.relational.core.mapping.Column;
 
 public class BoardArticleCommentCount {

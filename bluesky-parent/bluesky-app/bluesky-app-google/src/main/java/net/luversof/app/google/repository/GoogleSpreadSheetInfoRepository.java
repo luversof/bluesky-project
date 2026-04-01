@@ -3,11 +3,9 @@ package net.luversof.app.google.repository;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import org.springframework.data.repository.CrudRepository;
-
 import net.luversof.app.google.constant.GoogleSpreadSheetInfoType;
 import net.luversof.app.google.domain.GoogleSpreadSheetInfo;
+import org.springframework.data.repository.CrudRepository;
 
 public interface GoogleSpreadSheetInfoRepository
         extends CrudRepository<GoogleSpreadSheetInfo, UUID> {

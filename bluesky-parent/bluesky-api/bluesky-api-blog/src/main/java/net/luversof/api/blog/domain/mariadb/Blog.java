@@ -1,11 +1,5 @@
 package net.luversof.api.blog.domain.mariadb;
 
-import java.io.Serializable;
-import java.time.ZonedDateTime;
-import java.util.List;
-
-import org.hibernate.annotations.CreationTimestamp;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -15,6 +9,10 @@ import jakarta.persistence.Index;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
+import java.io.Serializable;
+import java.time.ZonedDateTime;
+import java.util.List;
+import org.hibernate.annotations.CreationTimestamp;
 
 /**
  * blog 정보

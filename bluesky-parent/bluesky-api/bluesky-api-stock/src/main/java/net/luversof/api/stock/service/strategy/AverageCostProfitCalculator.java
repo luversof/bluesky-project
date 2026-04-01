@@ -7,17 +7,15 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
 import net.luversof.api.stock.constant.TradeType;
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.domain.TradeProfit;
 import net.luversof.api.stock.service.StockPriceService;
 import net.luversof.api.stock.web.dto.request.TradeProfitRequest;
 import net.luversof.api.stock.web.dto.request.TradeProfitRequestGroup;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 @Component
 public class AverageCostProfitCalculator implements ProfitCalculator {

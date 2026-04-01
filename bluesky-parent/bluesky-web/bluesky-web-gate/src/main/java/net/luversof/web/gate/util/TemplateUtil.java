@@ -3,7 +3,6 @@ package net.luversof.web.gate.util;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-
 import net.luversof.web.common.util.WebCommonUtil;
 
 public final class TemplateUtil {

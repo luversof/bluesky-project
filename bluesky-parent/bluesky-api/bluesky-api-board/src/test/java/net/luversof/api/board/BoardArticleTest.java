@@ -2,8 +2,14 @@ package net.luversof.api.board;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
 import java.util.UUID;
-
+import net.luversof.GeneralTest;
+import net.luversof.api.board.domain.Board;
+import net.luversof.api.board.domain.BoardArticle;
+import net.luversof.api.board.repository.BoardArticleRepository;
+import net.luversof.api.board.service.BoardArticleService;
+import net.luversof.api.board.service.BoardService;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
@@ -17,14 +23,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
-
-import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
-import net.luversof.GeneralTest;
-import net.luversof.api.board.domain.Board;
-import net.luversof.api.board.domain.BoardArticle;
-import net.luversof.api.board.repository.BoardArticleRepository;
-import net.luversof.api.board.service.BoardArticleService;
-import net.luversof.api.board.service.BoardService;
 
 @Transactional
 @Rollback(false)

@@ -1,15 +1,14 @@
 package net.luversof.web.gate.devcheck.controller;
 
+import io.github.luversof.boot.exception.BlueskyException;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-
-import io.github.luversof.boot.exception.BlueskyException;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
 
 @Controller
 public class ExceptionTestController {

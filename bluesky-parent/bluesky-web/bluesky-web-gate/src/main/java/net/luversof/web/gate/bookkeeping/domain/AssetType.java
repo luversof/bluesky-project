@@ -1,7 +1,6 @@
 package net.luversof.web.gate.bookkeeping.domain;
 
 import java.util.UUID;
-
 import net.luversof.web.gate.bookkeeping.constant.AssetTypeCode;
 
 public record AssetType(UUID id, UUID bookkeepingId, AssetTypeCode code, String name) {

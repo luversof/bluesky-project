@@ -1,23 +1,13 @@
 package net.luversof.web.dynamiccrud.use.service.mongo;
 
+import com.mongodb.client.MongoClient;
+import io.github.luversof.boot.connectioninfo.ConnectionInfoRegistry;
+import io.github.luversof.boot.connectioninfo.mongodb.MongoDbConnectionMapProperties;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.bson.Document;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.util.MultiValueMap;
-import org.springframework.util.StringUtils;
-
-import com.mongodb.client.MongoClient;
-
-import io.github.luversof.boot.connectioninfo.ConnectionInfoRegistry;
-import io.github.luversof.boot.connectioninfo.mongodb.MongoDbConnectionMapProperties;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldEnable;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
@@ -27,6 +17,13 @@ import net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType;
 import net.luversof.web.dynamiccrud.setting.util.SettingStringUtil;
 import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 import net.luversof.web.dynamiccrud.use.service.UseService;
+import org.bson.Document;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 
 @Service
 public class MongoUseService implements UseService {

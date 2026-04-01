@@ -1,12 +1,10 @@
 package net.luversof.web.dynamiccrud.setting.controller;
 
-import java.util.List;
-
-import org.springframework.ui.Model;
-
 import io.github.luversof.boot.exception.BlueskyException;
+import java.util.List;
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
+import org.springframework.ui.Model;
 
 /** 동일 기능을 path 분기하여 사용하기 위해 제공된은 abstract class */
 public abstract class AbstractSettingViewController implements SettingViewControllerInterface {

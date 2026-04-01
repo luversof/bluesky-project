@@ -1,7 +1,6 @@
 package net.luversof.api.blog.config;
 
 import javax.sql.DataSource;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.context.annotation.Bean;

@@ -1,11 +1,5 @@
 package net.luversof.web.dynamiccrud.setting.service.eventadminmariadb;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.util.StringUtils;
-
 import io.github.luversof.boot.exception.BlueskyException;
 import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
 import net.luversof.web.dynamiccrud.setting.domain.AdminProject;
@@ -13,6 +7,11 @@ import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb.AdminProjectRowMapper;
 import net.luversof.web.dynamiccrud.setting.service.SettingServiceSupplier;
 import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.util.StringUtils;
 
 public class EventAdminMariadbAdminProjectService implements SettingServiceSupplier<AdminProject> {
 

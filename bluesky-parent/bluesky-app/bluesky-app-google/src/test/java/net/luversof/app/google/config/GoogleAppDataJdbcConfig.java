@@ -1,9 +1,11 @@
 package net.luversof.app.google.config;
 
+import io.github.luversof.boot.connectioninfo.ConnectionInfoUtil;
+import io.github.luversof.boot.data.convert.MapToPGobjectConverter;
+import io.github.luversof.boot.data.convert.PGobjectToMapConverter;
+import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
 import java.util.List;
-
 import javax.sql.DataSource;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,11 +16,6 @@ import org.springframework.data.relational.core.mapping.event.BeforeConvertCallb
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
-
-import io.github.luversof.boot.connectioninfo.ConnectionInfoUtil;
-import io.github.luversof.boot.data.convert.MapToPGobjectConverter;
-import io.github.luversof.boot.data.convert.PGobjectToMapConverter;
-import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
 
 @Configuration
 @EnableJdbcAuditing

@@ -1,7 +1,6 @@
 package net.luversof.web.dynamiccrud.config;
 
 import javax.sql.DataSource;
-
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;

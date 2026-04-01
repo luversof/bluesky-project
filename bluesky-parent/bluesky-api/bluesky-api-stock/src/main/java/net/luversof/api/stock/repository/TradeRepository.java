@@ -3,12 +3,10 @@ package net.luversof.api.stock.repository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-
-import org.springframework.data.jdbc.repository.query.Query;
-import org.springframework.data.repository.CrudRepository;
-
 import net.luversof.api.stock.domain.StockItemDateRange;
 import net.luversof.api.stock.domain.Trade;
+import org.springframework.data.jdbc.repository.query.Query;
+import org.springframework.data.repository.CrudRepository;
 
 public interface TradeRepository extends CrudRepository<Trade, UUID> {
 

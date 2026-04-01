@@ -1,7 +1,13 @@
 package net.luversof.web.gate.board.controller;
 
+import io.github.luversof.boot.exception.BlueskyException;
+import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import java.util.UUID;
-
+import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.gate.board.domain.Board;
+import net.luversof.web.gate.board.httpexchange.BoardArticleClient;
+import net.luversof.web.gate.board.httpexchange.BoardClient;
+import net.luversof.web.gate.board.service.BoardUserInfoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
@@ -10,14 +16,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
-import io.github.luversof.boot.exception.BlueskyException;
-import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
-import net.luversof.client.user.util.UserUtil;
-import net.luversof.web.gate.board.domain.Board;
-import net.luversof.web.gate.board.httpexchange.BoardArticleClient;
-import net.luversof.web.gate.board.httpexchange.BoardClient;
-import net.luversof.web.gate.board.service.BoardUserInfoService;
 
 @Controller
 @RequestMapping(value = "/board", produces = MediaType.TEXT_HTML_VALUE)

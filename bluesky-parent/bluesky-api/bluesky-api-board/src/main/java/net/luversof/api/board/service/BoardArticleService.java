@@ -1,19 +1,17 @@
 package net.luversof.api.board.service;
 
+import io.github.luversof.boot.exception.BlueskyException;
 import java.util.Optional;
 import java.util.UUID;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-
-import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.api.board.constant.BoardErrorCode;
 import net.luversof.api.board.domain.Board;
 import net.luversof.api.board.domain.BoardArticle;
 import net.luversof.api.board.repository.BoardArticleCommentRepository;
 import net.luversof.api.board.repository.BoardArticleRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
 
 @Service
 public class BoardArticleService {

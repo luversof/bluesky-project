@@ -15,12 +15,10 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Service;
-
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenu;
 import net.luversof.web.dynamiccrud.setting.service.SettingServiceListSupplier;
+import org.springframework.stereotype.Service;
 
 @Service
 public class EventAdminSubMenuService implements SettingServiceListSupplier<SubMenu> {

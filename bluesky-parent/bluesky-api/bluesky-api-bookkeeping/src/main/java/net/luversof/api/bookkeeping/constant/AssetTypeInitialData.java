@@ -1,11 +1,10 @@
 package net.luversof.api.bookkeeping.constant;
 
+import io.github.luversof.boot.context.support.MessageUtil;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
-import io.github.luversof.boot.context.support.MessageUtil;
 import net.luversof.api.bookkeeping.domain.AssetType;
 
 /** 기본 생성하여 제공하는 AccountType */

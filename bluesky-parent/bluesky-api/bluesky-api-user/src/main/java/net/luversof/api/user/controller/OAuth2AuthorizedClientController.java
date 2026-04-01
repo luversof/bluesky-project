@@ -1,5 +1,6 @@
 package net.luversof.api.user.controller;
 
+import io.github.luversof.boot.web.servlet.util.ServletRequestDataBinderUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.MediaType;
@@ -13,8 +14,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import io.github.luversof.boot.web.servlet.util.ServletRequestDataBinderUtil;
 import tools.jackson.databind.json.JsonMapper;
 
 @RestController

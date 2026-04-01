@@ -2,11 +2,10 @@ package net.luversof.app.google.stock.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import net.luversof.GeneralTest;
 import net.luversof.app.google.constant.TestConstant;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class StockGoogleSheetServiceTest implements GeneralTest {
 

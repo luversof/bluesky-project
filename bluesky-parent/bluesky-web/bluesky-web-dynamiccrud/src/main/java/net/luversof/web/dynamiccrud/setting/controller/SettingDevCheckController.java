@@ -1,13 +1,8 @@
 package net.luversof.web.dynamiccrud.setting.controller;
 
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.ResolvableType;
-import org.springframework.web.bind.annotation.GetMapping;
-
 import io.github.luversof.boot.context.ApplicationContextUtil;
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
+import java.util.List;
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
 import net.luversof.web.dynamiccrud.setting.domain.MainMenu;
@@ -19,6 +14,9 @@ import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminDbQuery
 import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminMainMenuService;
 import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminProjectService;
 import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminSubMenuService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.ResolvableType;
+import org.springframework.web.bind.annotation.GetMapping;
 
 @DevCheckController
 public class SettingDevCheckController {

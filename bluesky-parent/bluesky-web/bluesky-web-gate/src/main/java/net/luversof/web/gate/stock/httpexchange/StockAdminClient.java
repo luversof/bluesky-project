@@ -1,7 +1,6 @@
 package net.luversof.web.gate.stock.httpexchange;
 
 import java.util.UUID;
-
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.HttpExchange;

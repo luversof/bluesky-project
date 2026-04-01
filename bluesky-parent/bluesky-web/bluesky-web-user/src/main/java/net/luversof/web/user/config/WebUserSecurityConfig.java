@@ -1,5 +1,7 @@
 package net.luversof.web.user.config;
 
+import net.luversof.client.user.config.CustomOAuth2UserService;
+import net.luversof.client.user.config.OAuth2LoginSuccessHandler;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,9 +17,6 @@ import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedCli
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
-
-import net.luversof.client.user.config.CustomOAuth2UserService;
-import net.luversof.client.user.config.OAuth2LoginSuccessHandler;
 
 @Configuration
 @EnableWebSecurity

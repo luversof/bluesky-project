@@ -1,17 +1,15 @@
 package net.luversof.web.gate.bookkeeping.config;
 
 import java.util.function.Function;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.service.invoker.HttpServiceProxyFactory;
-
 import net.luversof.web.gate.bookkeeping.httpexchange.AssetClient;
 import net.luversof.web.gate.bookkeeping.httpexchange.AssetGroupClient;
 import net.luversof.web.gate.bookkeeping.httpexchange.BookkeepingClient;
 import net.luversof.web.gate.bookkeeping.httpexchange.EntryClient;
 import net.luversof.web.gate.bookkeeping.httpexchange.EntryGroupClient;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 @Configuration
 public class GateBookkeepingConfig {

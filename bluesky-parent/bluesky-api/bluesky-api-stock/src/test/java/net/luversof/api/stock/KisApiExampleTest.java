@@ -6,7 +6,10 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-
+import net.luversof.api.stock.domain.OpenApiConfig;
+import net.luversof.api.stock.domain.StockPriceHistory;
+import net.luversof.api.stock.repository.StockPriceHistoryRepository;
+import net.luversof.api.stock.service.kis.KisAuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,11 +19,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-
-import net.luversof.api.stock.domain.OpenApiConfig;
-import net.luversof.api.stock.domain.StockPriceHistory;
-import net.luversof.api.stock.repository.StockPriceHistoryRepository;
-import net.luversof.api.stock.service.kis.KisAuthService;
 
 @SpringBootTest
 public class KisApiExampleTest {

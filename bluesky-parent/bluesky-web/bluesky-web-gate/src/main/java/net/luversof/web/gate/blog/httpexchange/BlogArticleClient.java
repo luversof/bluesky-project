@@ -1,7 +1,7 @@
 package net.luversof.web.gate.blog.httpexchange;
 
 import java.util.Optional;
-
+import net.luversof.web.gate.blog.domain.BlogArticle;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,8 +11,6 @@ import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
 import org.springframework.web.service.annotation.PutExchange;
-
-import net.luversof.web.gate.blog.domain.BlogArticle;
 
 @HttpExchange(url = "/api/blogArticle")
 public interface BlogArticleClient {

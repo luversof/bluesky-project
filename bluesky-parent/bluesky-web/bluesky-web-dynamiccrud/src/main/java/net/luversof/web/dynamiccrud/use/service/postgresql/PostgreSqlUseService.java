@@ -1,13 +1,12 @@
 package net.luversof.web.dynamiccrud.use.service.postgresql;
 
-import org.springframework.stereotype.Service;
-
 import net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType;
 import net.luversof.web.dynamiccrud.use.service.AbstractDbUseService;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.statement.select.Limit;
 import net.sf.jsqlparser.statement.select.Offset;
 import net.sf.jsqlparser.statement.select.PlainSelect;
+import org.springframework.stereotype.Service;
 
 @Service
 public class PostgreSqlUseService extends AbstractDbUseService {

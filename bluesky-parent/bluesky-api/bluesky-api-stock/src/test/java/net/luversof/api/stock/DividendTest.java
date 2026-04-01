@@ -6,12 +6,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.StreamSupport;
-
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import net.luversof.GeneralTest;
 import net.luversof.api.stock.constant.TestConstant;
 import net.luversof.api.stock.domain.Dividend;
@@ -19,6 +13,10 @@ import net.luversof.api.stock.repository.DividendRepository;
 import net.luversof.api.stock.service.DividendService;
 import net.luversof.api.stock.service.StockAdminService;
 import net.luversof.api.stock.web.dto.request.DividendSearchRequest;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 class DividendTest implements GeneralTest {
 

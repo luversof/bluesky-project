@@ -1,15 +1,13 @@
 package net.luversof.api.stock.web.controller;
 
 import java.util.List;
-
+import net.luversof.api.stock.service.DividendService;
+import net.luversof.api.stock.web.dto.request.DividendSearchRequest;
+import net.luversof.api.stock.web.dto.response.DividendResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import net.luversof.api.stock.service.DividendService;
-import net.luversof.api.stock.web.dto.request.DividendSearchRequest;
-import net.luversof.api.stock.web.dto.response.DividendResponse;
 
 @RestController
 @RequestMapping("/api/dividend")

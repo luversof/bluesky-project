@@ -3,7 +3,6 @@ package net.luversof.web.gate.stock.domain;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
-
 import net.luversof.web.gate.stock.constant.TradeType;
 
 public record Trade(

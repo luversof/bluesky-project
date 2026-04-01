@@ -2,11 +2,10 @@ package net.luversof.web.dynamiccrud.setting.service.eventadmin;
 
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.PROJECT_ID_VALUE;
 
-import org.springframework.stereotype.Service;
-
 import net.luversof.web.dynamiccrud.setting.domain.AdminProject;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.service.SettingServiceSupplier;
+import org.springframework.stereotype.Service;
 
 @Service
 public class EventAdminAdminProjectService implements SettingServiceSupplier<AdminProject> {

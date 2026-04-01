@@ -9,14 +9,12 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
-import org.junit.jupiter.api.Test;
-
 import net.luversof.api.stock.constant.TradeType;
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.service.TradeProfitService;
 import net.luversof.api.stock.web.dto.request.TradeProfitRequest;
 import net.luversof.api.stock.web.dto.request.TradeProfitRequestGroup;
+import org.junit.jupiter.api.Test;
 
 /**
  * Reproduction test for Realized Profit calculation issue. Scenario: Buy in 2025, Sell in 2026.

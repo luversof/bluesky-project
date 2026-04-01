@@ -1,16 +1,14 @@
 package net.luversof.web.gate.blog.config;
 
 import java.util.function.Function;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.service.invoker.HttpServiceProxyFactory;
-
 import net.luversof.web.gate.blog.httpexchange.BlogArticleCategoryClient;
 import net.luversof.web.gate.blog.httpexchange.BlogArticleClient;
 import net.luversof.web.gate.blog.httpexchange.BlogArticleCommentClient;
 import net.luversof.web.gate.blog.httpexchange.BlogClient;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 @Configuration
 public class GateBlogConfig {

@@ -3,11 +3,9 @@ package net.luversof.web.dynamiccrud.setting.service;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import org.springframework.stereotype.Service;
-
 import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
+import org.springframework.stereotype.Service;
 
 @Service
 public class DbQueryServiceDecorator

@@ -4,11 +4,9 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
-
+import net.luversof.client.user.httpexchange.UserInfoApiClient;
 import org.springframework.session.MapSession;
 import org.springframework.session.Session;
-
-import net.luversof.client.user.httpexchange.UserInfoApiClient;
 
 public class ApiSession implements Session, Serializable {
 

@@ -1,15 +1,13 @@
 package net.luversof.web.gate.board.config;
 
 import java.util.function.Function;
-
+import net.luversof.web.gate.board.httpexchange.BoardArticleClient;
+import net.luversof.web.gate.board.httpexchange.BoardArticleCommentClient;
+import net.luversof.web.gate.board.httpexchange.BoardClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
-
-import net.luversof.web.gate.board.httpexchange.BoardArticleClient;
-import net.luversof.web.gate.board.httpexchange.BoardArticleCommentClient;
-import net.luversof.web.gate.board.httpexchange.BoardClient;
 
 @Configuration
 public class GateBoardConfig {

@@ -1,14 +1,13 @@
 package net.luversof.app.statemachine;
 
+import net.luversof.app.statemachine.state.Events;
+import net.luversof.app.statemachine.state.States;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachine;
-
-import net.luversof.app.statemachine.state.Events;
-import net.luversof.app.statemachine.state.States;
 import reactor.core.publisher.Mono;
 
 @SpringBootApplication

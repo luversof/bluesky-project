@@ -1,16 +1,14 @@
 package net.luversof.web.gate.stock.controller;
 
+import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import java.util.List;
-
+import net.luversof.web.gate.stock.domain.TradeProfit;
+import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
+import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
-import net.luversof.web.gate.stock.domain.TradeProfit;
-import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
-import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 
 @RestController
 @RequestMapping("/api/stock/tradeProfit")

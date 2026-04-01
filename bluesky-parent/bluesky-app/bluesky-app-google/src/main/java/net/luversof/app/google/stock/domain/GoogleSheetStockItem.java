@@ -1,10 +1,8 @@
 package net.luversof.app.google.stock.domain;
 
-import java.math.BigDecimal;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
+import java.math.BigDecimal;
 import net.luversof.app.google.stock.databind.StockCurrencyDeserializer;
 import tools.jackson.databind.annotation.JsonDeserialize;
 

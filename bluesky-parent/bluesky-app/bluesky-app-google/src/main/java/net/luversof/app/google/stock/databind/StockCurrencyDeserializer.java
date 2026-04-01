@@ -1,7 +1,6 @@
 package net.luversof.app.google.stock.databind;
 
 import java.math.BigDecimal;
-
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonParser;
 import tools.jackson.databind.DeserializationContext;

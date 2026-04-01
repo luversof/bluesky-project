@@ -1,7 +1,6 @@
 package net.luversof.api.stock.service.strategy;
 
 import java.util.List;
-
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.domain.TradeProfit;
 import net.luversof.api.stock.service.StockPriceService;

@@ -1,10 +1,9 @@
 package net.luversof.api.board;
 
+import io.github.luversof.boot.security.crypto.factory.TextEncryptorFactories;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.security.crypto.encrypt.Encryptors;
-
-import io.github.luversof.boot.security.crypto.factory.TextEncryptorFactories;
 
 @SpringBootApplication
 public class Application {

@@ -4,14 +4,12 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.repository.DailyAccountSnapshotRepository;
 import net.luversof.api.stock.repository.TradeRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional(transactionManager = "stockTransactionManager")

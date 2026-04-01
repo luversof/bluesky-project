@@ -1,5 +1,8 @@
 package net.luversof.web.gate.board.controller;
 
+import io.github.luversof.boot.htmx.annotation.HtmxResponseHeader;
+import net.luversof.web.gate.board.httpexchange.BoardArticleClient;
+import net.luversof.web.gate.board.service.BoardUserInfoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
@@ -11,10 +14,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-
-import io.github.luversof.boot.htmx.annotation.HtmxResponseHeader;
-import net.luversof.web.gate.board.httpexchange.BoardArticleClient;
-import net.luversof.web.gate.board.service.BoardUserInfoService;
 
 @Controller
 @RequestMapping(value = "/board/htmx", produces = MediaType.TEXT_HTML_VALUE)

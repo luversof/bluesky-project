@@ -1,7 +1,8 @@
 package net.luversof.client.common.config;
 
+import io.github.luversof.boot.web.client.BlueskyClientResponseErrorHandler;
+import io.github.luversof.boot.web.service.invoker.PageableHttpServiceArgumentResolver;
 import java.util.function.Function;
-
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -14,9 +15,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
-
-import io.github.luversof.boot.web.client.BlueskyClientResponseErrorHandler;
-import io.github.luversof.boot.web.service.invoker.PageableHttpServiceArgumentResolver;
 import tools.jackson.databind.json.JsonMapper;
 
 @AutoConfiguration

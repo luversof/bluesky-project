@@ -1,11 +1,9 @@
 package net.luversof.web.dynamiccrud.setting.service;
 
 import java.util.Map;
-
-import org.springframework.stereotype.Service;
-
 import net.luversof.web.dynamiccrud.setting.domain.Project;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
+import org.springframework.stereotype.Service;
 
 @Service
 public class ProjectServiceDecorator

@@ -3,10 +3,6 @@ package net.luversof.web.dynamiccrud.setting.util;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
@@ -21,6 +17,8 @@ import net.sf.jsqlparser.expression.operators.relational.LikeExpression;
 import net.sf.jsqlparser.expression.operators.relational.MinorThan;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.PlainSelect;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class JSqlParserUtil {
 

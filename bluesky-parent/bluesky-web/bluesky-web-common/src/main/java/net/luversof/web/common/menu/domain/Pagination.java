@@ -3,7 +3,6 @@ package net.luversof.web.common.menu.domain;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
 import org.springframework.data.domain.Page;
 
 public class Pagination {

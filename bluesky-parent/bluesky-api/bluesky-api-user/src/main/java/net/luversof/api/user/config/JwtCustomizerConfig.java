@@ -2,14 +2,12 @@ package net.luversof.api.user.config;
 
 import java.util.Set;
 import java.util.stream.Collectors;
-
+import net.luversof.api.user.repository.UserInfoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
-
-import net.luversof.api.user.repository.UserInfoRepository;
 
 @Configuration
 public class JwtCustomizerConfig {

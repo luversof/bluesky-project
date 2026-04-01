@@ -1,13 +1,11 @@
 package net.luversof.web.dynamiccrud.use.service;
 
 import java.util.Map;
-
+import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
+import net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.util.MultiValueMap;
-
-import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
-import net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType;
 
 public interface UseService {
 

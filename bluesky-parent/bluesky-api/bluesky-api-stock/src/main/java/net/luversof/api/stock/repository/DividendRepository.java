@@ -2,12 +2,10 @@ package net.luversof.api.stock.repository;
 
 import java.util.List;
 import java.util.UUID;
-
-import org.springframework.data.jdbc.repository.query.Query;
-import org.springframework.data.repository.CrudRepository;
-
 import net.luversof.api.stock.domain.Dividend;
 import net.luversof.api.stock.domain.StockItemDateRange;
+import org.springframework.data.jdbc.repository.query.Query;
+import org.springframework.data.repository.CrudRepository;
 
 public interface DividendRepository extends CrudRepository<Dividend, UUID> {
 

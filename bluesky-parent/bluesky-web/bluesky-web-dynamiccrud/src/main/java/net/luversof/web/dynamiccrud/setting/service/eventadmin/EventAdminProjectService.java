@@ -2,11 +2,10 @@ package net.luversof.web.dynamiccrud.setting.service.eventadmin;
 
 import static net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant.*;
 
-import org.springframework.stereotype.Service;
-
 import net.luversof.web.dynamiccrud.setting.domain.Project;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.service.SettingServiceSupplier;
+import org.springframework.stereotype.Service;
 
 @Service
 public class EventAdminProjectService implements SettingServiceSupplier<Project> {

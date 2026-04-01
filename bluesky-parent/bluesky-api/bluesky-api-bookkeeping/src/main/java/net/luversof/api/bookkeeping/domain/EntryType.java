@@ -1,14 +1,12 @@
 package net.luversof.api.bookkeeping.domain;
 
+import jakarta.validation.constraints.Null;
 import java.util.Objects;
 import java.util.UUID;
-
+import net.luversof.api.bookkeeping.constant.EntryTypeCode;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
-
-import jakarta.validation.constraints.Null;
-import net.luversof.api.bookkeeping.constant.EntryTypeCode;
 
 @Table("EntryType")
 public class EntryType {

@@ -2,11 +2,10 @@ package net.luversof.web.dynamiccrud.setting.service.admin;
 
 import static net.luversof.web.dynamiccrud.setting.service.admin.AdminConstant.ADMIN_PROJECT_ID_VALUE;
 
-import org.springframework.stereotype.Service;
-
 import net.luversof.web.dynamiccrud.setting.domain.AdminProject;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.service.SettingServiceSupplier;
+import org.springframework.stereotype.Service;
 
 @Service
 public class AdminAdminProjectService implements SettingServiceSupplier<AdminProject> {

@@ -2,15 +2,13 @@ package net.luversof.app.google.stock.service;
 
 import java.util.List;
 import java.util.UUID;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import net.luversof.app.google.constant.GoogleSpreadSheetInfoType;
 import net.luversof.app.google.service.sheets.GoogleSheetService;
 import net.luversof.app.google.stock.domain.GoogleSheetDividend;
 import net.luversof.app.google.stock.domain.GoogleSheetStockItem;
 import net.luversof.app.google.stock.domain.GoogleSheetTrade;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 @Service
 public class StockGoogleSheetService {

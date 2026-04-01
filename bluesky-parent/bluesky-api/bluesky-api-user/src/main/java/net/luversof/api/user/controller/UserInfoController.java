@@ -7,7 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-
+import net.luversof.api.user.domain.UserInfo;
+import net.luversof.api.user.service.UserInfoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.session.MapSession;
@@ -21,9 +22,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import net.luversof.api.user.domain.UserInfo;
-import net.luversof.api.user.service.UserInfoService;
 
 @RestController
 @RequestMapping(value = "/api/userInfo", produces = MediaType.APPLICATION_JSON_VALUE)

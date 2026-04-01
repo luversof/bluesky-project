@@ -1,7 +1,6 @@
 package net.luversof.web.dynamiccrud.support;
 
 import java.util.function.Supplier;
-
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;

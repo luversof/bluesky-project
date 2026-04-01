@@ -5,10 +5,8 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-
-import org.springframework.jdbc.core.RowMapper;
-
 import net.luversof.web.dynamiccrud.setting.domain.Setting;
+import org.springframework.jdbc.core.RowMapper;
 
 public abstract class SettingRowMapper<T extends Setting> implements RowMapper<T> {
 

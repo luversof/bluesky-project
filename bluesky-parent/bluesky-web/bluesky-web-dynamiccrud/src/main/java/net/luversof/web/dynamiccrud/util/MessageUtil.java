@@ -1,9 +1,8 @@
 package net.luversof.web.dynamiccrud.util;
 
+import io.github.luversof.boot.context.ApplicationContextUtil;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
-
-import io.github.luversof.boot.context.ApplicationContextUtil;
 
 public class MessageUtil {
     public static String getMessage(String code) {

@@ -1,12 +1,10 @@
 package net.luversof.web.common.menu;
 
 import java.util.regex.Pattern;
-
+import net.luversof.web.common.menu.domain.Menu;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import net.luversof.web.common.menu.domain.Menu;
 
 public class MenuTest {
 

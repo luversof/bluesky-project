@@ -1,7 +1,6 @@
 package net.luversof.web.dynamiccrud.setting.service;
 
 import java.util.List;
-
 import net.luversof.web.dynamiccrud.setting.domain.Setting;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 

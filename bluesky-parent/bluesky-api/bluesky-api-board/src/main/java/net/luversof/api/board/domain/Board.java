@@ -1,15 +1,13 @@
 package net.luversof.api.board.domain;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
-
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Null;
 
 @Table("Board")
 public class Board {

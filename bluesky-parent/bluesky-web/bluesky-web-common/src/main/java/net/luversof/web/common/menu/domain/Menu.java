@@ -1,12 +1,10 @@
 package net.luversof.web.common.menu.domain;
 
+import io.github.luversof.boot.context.support.MessageUtil;
 import java.util.Objects;
 import java.util.regex.Pattern;
-
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-
-import io.github.luversof.boot.context.support.MessageUtil;
 
 public class Menu {
     private String messageCode;

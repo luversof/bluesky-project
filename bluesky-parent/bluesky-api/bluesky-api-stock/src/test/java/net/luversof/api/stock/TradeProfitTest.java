@@ -1,12 +1,6 @@
 package net.luversof.api.stock;
 
 import java.util.List;
-
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import net.luversof.GeneralTest;
 import net.luversof.api.stock.constant.TestConstant;
 import net.luversof.api.stock.repository.TradeRepository;
@@ -14,6 +8,10 @@ import net.luversof.api.stock.service.AccountService;
 import net.luversof.api.stock.service.StockItemService;
 import net.luversof.api.stock.service.TradeProfitService;
 import net.luversof.api.stock.web.dto.request.TradeProfitRequest;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 class TradeProfitTest implements GeneralTest {
 

@@ -2,6 +2,7 @@ package net.luversof.api.user;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import net.luversof.GeneralWebTest;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,8 +12,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.UserDetailsManager;
-
-import net.luversof.GeneralWebTest;
 
 class UserDetailsManagerTest implements GeneralWebTest {
 

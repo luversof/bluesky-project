@@ -5,7 +5,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-
 import net.luversof.web.dynamiccrud.setting.domain.Setting;
 
 public interface SettingServiceDecorator {

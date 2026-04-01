@@ -3,7 +3,6 @@ package net.luversof.api.stock.web.dto.response;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
-
 import net.luversof.api.stock.constant.TradeType;
 
 public record TradeResponse(

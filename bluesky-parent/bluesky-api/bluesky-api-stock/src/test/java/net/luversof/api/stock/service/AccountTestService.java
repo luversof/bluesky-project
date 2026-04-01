@@ -1,12 +1,10 @@
 package net.luversof.api.stock.service;
 
 import java.util.HashMap;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import net.luversof.api.stock.domain.Account;
 import net.luversof.api.stock.repository.AccountRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 @Service
 public class AccountTestService extends AccountService {

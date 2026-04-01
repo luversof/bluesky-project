@@ -1,7 +1,8 @@
 package net.luversof.api.blog.controller;
 
 import java.util.Optional;
-
+import net.luversof.api.blog.domain.mariadb.BlogArticle;
+import net.luversof.api.blog.service.BlogArticleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,9 +16,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import net.luversof.api.blog.domain.mariadb.BlogArticle;
-import net.luversof.api.blog.service.BlogArticleService;
 
 @RestController
 @RequestMapping(value = "/api/blogArticle", produces = MediaType.APPLICATION_JSON_VALUE)

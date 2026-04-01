@@ -2,7 +2,8 @@ package net.luversof.api.board.controller;
 
 import java.util.Optional;
 import java.util.UUID;
-
+import net.luversof.api.board.domain.BoardArticle;
+import net.luversof.api.board.service.BoardArticleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,9 +20,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import net.luversof.api.board.domain.BoardArticle;
-import net.luversof.api.board.service.BoardArticleService;
 
 @RestController
 @RequestMapping(value = "/api/boardArticle", produces = MediaType.APPLICATION_JSON_VALUE)

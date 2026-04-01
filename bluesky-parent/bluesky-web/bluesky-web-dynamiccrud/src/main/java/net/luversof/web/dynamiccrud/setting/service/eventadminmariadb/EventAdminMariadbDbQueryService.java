@@ -1,21 +1,19 @@
 package net.luversof.web.dynamiccrud.setting.service.eventadminmariadb;
 
+import io.github.luversof.boot.exception.BlueskyException;
+import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
 import java.util.List;
-
+import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
+import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
+import net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb.DbQueryRowMapper;
+import net.luversof.web.dynamiccrud.setting.service.SettingServiceListSupplier;
+import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-
-import io.github.luversof.boot.exception.BlueskyException;
-import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
-import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
-import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
-import net.luversof.web.dynamiccrud.setting.jdbc.mapper.mariadb.DbQueryRowMapper;
-import net.luversof.web.dynamiccrud.setting.service.SettingServiceListSupplier;
-import net.luversof.web.dynamiccrud.setting.service.eventadmin.EventAdminConstant;
 
 @Service
 public class EventAdminMariadbDbQueryService implements SettingServiceListSupplier<DbQuery> {

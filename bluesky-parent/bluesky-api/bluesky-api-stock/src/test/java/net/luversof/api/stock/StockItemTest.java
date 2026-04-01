@@ -3,13 +3,6 @@ package net.luversof.api.stock;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
-
 import net.luversof.GeneralTest;
 import net.luversof.api.stock.constant.TestConstant;
 import net.luversof.api.stock.domain.StockItem;
@@ -20,6 +13,11 @@ import net.luversof.api.stock.service.StockItemService;
 import net.luversof.api.stock.service.StockPriceService;
 import net.luversof.app.google.stock.domain.GoogleSheetStockItem;
 import net.luversof.app.google.stock.service.StockGoogleSheetService;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import tools.jackson.core.exc.StreamReadException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DatabindException;

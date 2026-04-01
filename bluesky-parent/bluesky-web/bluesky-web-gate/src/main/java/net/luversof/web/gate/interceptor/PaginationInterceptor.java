@@ -3,7 +3,6 @@ package net.luversof.web.gate.interceptor;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
 import org.springframework.data.domain.Page;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.context.request.WebRequest;

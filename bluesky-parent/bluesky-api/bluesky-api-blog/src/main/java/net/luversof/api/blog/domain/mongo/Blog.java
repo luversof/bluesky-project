@@ -1,14 +1,12 @@
 package net.luversof.api.blog.domain.mongo;
 
+import jakarta.persistence.Id;
 import java.time.LocalDateTime;
-
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import jakarta.persistence.Id;
 
 @Document
 public class Blog implements net.luversof.api.blog.domain.Blog<ObjectId> {

@@ -1,18 +1,16 @@
 package net.luversof.web.gate.stock.config;
 
 import java.util.function.Function;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.service.invoker.HttpServiceProxyFactory;
-
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.StockAdminClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 @Configuration
 public class GateStockConfig {

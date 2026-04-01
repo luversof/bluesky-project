@@ -1,5 +1,6 @@
 package net.luversof.web.gate.board.service;
 
+import io.github.luversof.boot.data.domain.PageResponse;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -8,16 +9,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
+import net.luversof.client.user.httpexchange.UserInfoApiClient;
+import net.luversof.web.gate.board.domain.BoardArticle;
+import net.luversof.web.gate.board.domain.BoardArticleComment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-
-import io.github.luversof.boot.data.domain.PageResponse;
-import net.luversof.client.user.httpexchange.UserInfoApiClient;
-import net.luversof.web.gate.board.domain.BoardArticle;
-import net.luversof.web.gate.board.domain.BoardArticleComment;
 
 /**
  * Helper service that enriches board resources with human readable usernames fetched from
