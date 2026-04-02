@@ -39,11 +39,11 @@
             <div class="flex gap-4 mb-3 text-sm">
                 <div class="stat bg-base-200 rounded-box py-2 px-4 flex-1">
                     <div class="stat-title text-xs">총 평가액</div>
-                    <div class="stat-value text-base">${String.format("%,d", totalValue.longValue())}원</div>
+                    <div class="stat-value text-base amount-value">${String.format("%,d", totalValue.longValue())}원</div>
                 </div>
                 <div class="stat bg-base-200 rounded-box py-2 px-4 flex-1">
                     <div class="stat-title text-xs">총 평가 손익</div>
-                    <div class="stat-value text-base ${totalPositive ? "text-red-500" : "text-blue-500"}">
+                    <div class="stat-value text-base amount-value ${totalPositive ? "text-red-500" : "text-blue-500"}">
                         ${totalPositive ? "+" : ""}${String.format("%,d", totalUnrealized.longValue())}원
                     </div>
                 </div>
@@ -73,9 +73,9 @@
                             String pct = cost.compareTo(BigDecimal.ZERO) != 0 && item.unrealizedProfit() != null
                                 ? String.format("%.2f", item.unrealizedProfit().divide(cost, 4, java.math.RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue())
                                 : "0.00";
-                            // 수정주가 기준 환산 수량을 소수점 4자리까지 표시
+                            // 수량은 정수로 표시
                             String qtyDisplay = item.quantity() != null
-                                ? item.quantity().setScale(4, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
+                                ? String.format("%,d", item.quantity().longValue())
                                 : "0";
                         }
                         <tr>
@@ -85,14 +85,14 @@
                                     <div class="text-xs text-base-content/50">${item.symbol()}</div>
                                 @endif
                             </td>
-                            <td class="text-right">${qtyDisplay}</td>
-                            <td class="text-right">${item.avgCost() != null ? String.format("%,d", item.avgCost().longValue()) : "-"}원</td>
-                            <td class="text-right">${item.priceAtDate() != null ? String.format("%,d", item.priceAtDate().longValue()) : "-"}원</td>
-                            <td class="text-right font-medium">${item.value() != null ? String.format("%,d", item.value().longValue()) : "-"}원</td>
-                            <td class="text-right font-medium ${colorClass}">
+                            <td class="text-right amount-value">${qtyDisplay}</td>
+                            <td class="text-right amount-value">${item.avgCost() != null ? String.format("%,d", item.avgCost().longValue()) : "-"}원</td>
+                            <td class="text-right amount-value">${item.priceAtDate() != null ? String.format("%,d", item.priceAtDate().longValue()) : "-"}원</td>
+                            <td class="text-right font-medium amount-value">${item.value() != null ? String.format("%,d", item.value().longValue()) : "-"}원</td>
+                            <td class="text-right font-medium ${colorClass} amount-value">
                                 ${sign}${item.unrealizedProfit() != null ? String.format("%,d", item.unrealizedProfit().longValue()) : "0"}원
                             </td>
-                            <td class="text-right ${colorClass}">${sign}${pct}%</td>
+                            <td class="text-right ${colorClass} amount-value">${sign}${pct}%</td>
                         </tr>
                         @endfor
                     </tbody>

@@ -1,4 +1,4 @@
-package net.luversof.web.gate.stock.controller;
+﻿package net.luversof.web.gate.stock.controller;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -50,9 +50,9 @@ import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 public class StockHtmxController {
 
     private static final String ERROR_ATTRIBUTE = "error";
-    private static final String LOGIN_REQUIRED_MESSAGE = "로그?�이 ?�요?�니??";
+    private static final String LOGIN_REQUIRED_MESSAGE = "로그인이 필요합니다";
     private static final String ERROR_VIEW = "stock/htmx/error";
-    private static final String UNKNOWN_LABEL = "종목 ?�보 ?�음";
+    private static final String UNKNOWN_LABEL = "종목 정보 없음";
 
     @Autowired private TradeProfitClient tradeProfitClient;
 
@@ -155,13 +155,13 @@ public class StockHtmxController {
         String chartTitle = "";
         String keyLabel = "";
         String subKeyLabel = null;
-        String value1Label = "거래?�익"; // Default
-        String value2Label = "?��??�익"; // Default
+        String value1Label = "거래손익"; // Default
+        String value2Label = "평가손익"; // Default
         String value3Label = null;
         String value4Label = null;
         String value5Label = null;
         String value6Label = null;
-        String totalLabel = "?�계";
+        String totalLabel = "합계";
 
         String chartType = "bar";
         boolean isStacked = false;
@@ -175,10 +175,10 @@ public class StockHtmxController {
         if ("PROFIT".equals(type)) {
             value1Label = null;
             value2Label = null;
-            value3Label = "TOTAL".equals(timeScale) ? "?��? 금액" : null;
-            value4Label = "TOTAL".equals(timeScale) ? "보유 ?�익" : null;
+            value3Label = "TOTAL".equals(timeScale) ? "평가 금액" : null;
+            value4Label = "TOTAL".equals(timeScale) ? "보유 손익" : null;
             value5Label = "매도 금액";
-            value6Label = "?�현 ?�익";
+            value6Label = "실현 손익";
             totalLabel = null; // Hide Total for Profit view
 
             TradeProfitRequest request = new TradeProfitRequest();
@@ -217,7 +217,7 @@ public class StockHtmxController {
             String groupLabel = "종목별";
             if ("ACCOUNT".equals(groupBy)) groupLabel = "계좌별";
             else if ("SUMMARY".equals(groupBy)) groupLabel = "합계";
-            chartTitle = "매매/보유 ?�익 (" + groupLabel + ")";
+            chartTitle = "매매/보유 손익 (" + groupLabel + ")";
             if (!"TOTAL".equals(timeScale)) {
                 chartTitle = keyLabel + " " + chartTitle;
             }
@@ -261,7 +261,7 @@ public class StockHtmxController {
                         p -> {
                             String name;
                             if ("SUMMARY".equals(groupBy)) {
-                                name = "?�계";
+                                name = "합계";
                             } else {
                                 name =
                                         "ACCOUNT".equals(groupBy)
@@ -304,7 +304,7 @@ public class StockHtmxController {
                     p -> {
                         String name;
                         if ("SUMMARY".equals(groupBy)) {
-                            name = "?�계";
+                            name = "합계";
                         } else {
                             name =
                                     "ACCOUNT".equals(groupBy)
@@ -382,7 +382,7 @@ public class StockHtmxController {
                                         // Order: Qty(1), Price(2), Eval(3), Unrealized(4), Sell(5),
                                         // Realized(6), Buy(7)
                                         return new AnalyticsRow(
-                                                "?�체", name, hQty, avgPrice, e, u, s, r, b);
+                                                "전체", name, hQty, avgPrice, e, u, s, r, b);
                                     })
                             // Only rows that have activity in the selected period should be shown.
                             // Activity = Realized Profit exists OR Sell Amount exists OR Buy Amount
@@ -430,14 +430,14 @@ public class StockHtmxController {
             List<BigDecimal> rData = rows.stream().map(AnalyticsRow::value6).toList();
             List<BigDecimal> uData = rows.stream().map(AnalyticsRow::value4).toList();
 
-            datasets.add(new ChartDataset("?�현 ?�익", rData, "#4e79a7", "#4e79a7", 1, List.of()));
+            datasets.add(new ChartDataset("실현 손익", rData, "#4e79a7", "#4e79a7", 1, List.of()));
             if ("TOTAL".equals(timeScale)) {
-                datasets.add(new ChartDataset("보유 ?�익", uData, "#f28e2b", "#f28e2b", 1, List.of()));
+                datasets.add(new ChartDataset("보유 손익", uData, "#f28e2b", "#f28e2b", 1, List.of()));
             }
         } else if ("DIVIDEND".equals(type)) {
-            value1Label = "배당�??�전)";
-            value2Label = "?��?급액";
-            value3Label = "?�금"; // value3 (Gross - Net)
+            value1Label = "배당(세전)";
+            value2Label = "지급액";
+            value3Label = "세금"; // value3 (Gross - Net)
             value4Label = "과세금액"; // value4 (quantity * taxPerShare)
 
             totalLabel = null;
@@ -467,8 +467,8 @@ public class StockHtmxController {
                                 .atStartOfDay(java.time.ZoneId.systemDefault())
                                 .toInstant());
 
-                chartTitle = "?�도�?배당 ?�계 (" + startYear + " ~ " + endYear + ")";
-                keyLabel = "?�도";
+                chartTitle = "연도별 배당 집계 (" + startYear + " ~ " + endYear + ")";
+                keyLabel = "연도";
                 chartType = "bar";
                 isStacked = true;
 
@@ -488,7 +488,7 @@ public class StockHtmxController {
                                 .atStartOfDay(java.time.ZoneId.systemDefault())
                                 .toInstant());
 
-                chartTitle = year + "???�별 배당 ?�계";
+                chartTitle = year + "년 월별 배당 집계";
                 keyLabel = "년";
                 chartType = "bar";
                 isStacked = true;
@@ -498,8 +498,8 @@ public class StockHtmxController {
 
             } else {
                 // TOTAL
-                keyLabel = "?�체";
-                chartTitle = "?�적 배당 총합 (?�체)";
+                keyLabel = "전체";
+                chartTitle = "누적 배당 총합 (전체)";
             }
 
             List<DividendResponse> dividends =
@@ -550,7 +550,7 @@ public class StockHtmxController {
 
             java.util.function.Function<DividendResponse, String> getSeriesName =
                     d -> {
-                        if ("SUMMARY".equals(groupBy)) return "?�계";
+                        if ("SUMMARY".equals(groupBy)) return "합계";
                         if ("ACCOUNT".equals(groupBy))
                             return accountNames.getOrDefault(d.accountId(), "Unknown");
                         return d.stockItemName() != null
@@ -774,7 +774,7 @@ public class StockHtmxController {
                                             BigDecimal taxable = e.getValue()[2];
                                             BigDecimal net = g.subtract(t);
                                             return new AnalyticsRow(
-                                                    "?�체",
+                                                    "전체",
                                                     e.getKey(),
                                                     g,
                                                     net,
@@ -791,7 +791,7 @@ public class StockHtmxController {
 
                 labels = rows.stream().map(AnalyticsRow::subKey).toList();
                 List<BigDecimal> data = rows.stream().map(AnalyticsRow::value1).toList();
-                datasets.add(new ChartDataset("배당�?(?�전)", data, null, null, null, List.of()));
+                datasets.add(new ChartDataset("배당금(세전)", data, null, null, null, List.of()));
             }
         }
 
@@ -937,7 +937,7 @@ public class StockHtmxController {
         if (userId == null) return ERROR_VIEW;
         request.setUserId(userId);
 
-        // 1. ?�산/?�익 ?�이??(Enriched to get names for Top Gainers)
+        // 1. 자산/손익 데이터(Enriched to get names for Top Gainers)
         List<TradeProfit> profitList = getEnrichedTradeProfits(request);
 
         // Allocation Map
@@ -1022,7 +1022,7 @@ public class StockHtmxController {
                         .count();
         double winRate = profitList.isEmpty() ? 0.0 : (double) winCount / profitList.size() * 100;
 
-        // 2. 배당 ?�이??(?�체 기간)
+        // 2. 배당 데이터(전체 기간)
         DividendRequest dividendRequest = new DividendRequest();
         dividendRequest.setUserId(userId);
         List<DividendResponse> dividendList =
@@ -1255,7 +1255,7 @@ public class StockHtmxController {
 
         List<TradeProfit> profitList = getEnrichedTradeProfits(request);
 
-        // 종목�?비중 (Top 5 + Others)
+        // 종목별 비중 (Top 5 + Others)
         Map<String, BigDecimal> allocation =
                 profitList.stream()
                         .filter(p -> p.evaluationAmount() != null)
@@ -1283,7 +1283,7 @@ public class StockHtmxController {
         request.setUserId(userId);
         List<DividendResponse> dividends = dividendClient.findDividends(request.toParams());
 
-        // ?�별 그룹??(최근 12개월 or ?�체) - ?�기?�는 ?�체 ?�별 ?�계
+        // 월별 그룹화(최근 12개월 or 전체) - 전체 월별 집계
         Map<String, BigDecimal> monthly =
                 dividends.stream()
                         .filter(d -> d.payDate() != null)
@@ -1303,7 +1303,7 @@ public class StockHtmxController {
                                                                 : BigDecimal.ZERO,
                                                 BigDecimal::add)));
 
-        // Map??Key(?�월) ?�으�??�렬
+        // Map Key(월) 기준으로 정렬
         Map<String, BigDecimal> sortedMonthly = new java.util.TreeMap<>(monthly);
 
         model.addAttribute("monthlyDividends", sortedMonthly);
@@ -1457,7 +1457,7 @@ public class StockHtmxController {
                                         stockId,
                                         stockName,
                                         null,
-                                        "?�체",
+                                        "전체",
                                         totalBuyAmount,
                                         avgBuyPrice,
                                         totalSellQty,
@@ -2352,7 +2352,7 @@ public class StockHtmxController {
 
         request.setUserId(userId);
 
-        // ?�?�시리즈 ?�이???�치
+        // 타임시리즈 데이터 위치
         var params = request.toParams();
         params.add("granularity", "AUTO");
         List<net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint> timeSeries =

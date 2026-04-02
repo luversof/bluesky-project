@@ -76,10 +76,10 @@
 
             @for(TradeProfitTimeSeriesPoint pt : timeSeries)
                 labels.push("$unsafe{formatter.format(pt.timestamp())}");
-                totalValueData.push($unsafe{pt.totalHoldingsValue() != null ? pt.totalHoldingsValue().toPlainString() : "0"});
-                totalCostData.push($unsafe{pt.totalHoldingsCost() != null ? pt.totalHoldingsCost().toPlainString() : "0"});
-                cumulativeRealizedProfitData.push($unsafe{pt.cumulativeRealizedProfit() != null ? pt.cumulativeRealizedProfit().toPlainString() : "0"});
-                cumulativeDividendData.push($unsafe{pt.cumulativeDividend() != null ? pt.cumulativeDividend().toPlainString() : "0"});
+                totalValueData.push($unsafe{pt.totalHoldingsValue() != null ? pt.totalHoldingsValue().setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0"});
+                totalCostData.push($unsafe{pt.totalHoldingsCost() != null ? pt.totalHoldingsCost().setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0"});
+                cumulativeRealizedProfitData.push($unsafe{pt.cumulativeRealizedProfit() != null ? pt.cumulativeRealizedProfit().setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0"});
+                cumulativeDividendData.push($unsafe{pt.cumulativeDividend() != null ? pt.cumulativeDividend().setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0"});
             @endfor
 
             // 현재 평가 손익(미실현) = 총 자산 평가액 - 투자 원금
@@ -284,7 +284,7 @@
                             display: true,
                             position: 'left',
                             beginAtZero: false,
-                            title: { display: true, text: '자산 총액' },
+                            title: { display: true, text: '금융 자산 총액' },
                             ticks: { callback: yTicksCallback }
                         }
                     },

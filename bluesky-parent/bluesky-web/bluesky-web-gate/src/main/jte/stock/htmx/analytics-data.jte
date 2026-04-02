@@ -144,7 +144,7 @@
                         const data = [];
                         @if(ds.data() != null)
                             @for(BigDecimal val : ds.data())
-                                data.push($unsafe{val != null ? val.toPlainString() : "null"});
+                                data.push($unsafe{val != null ? val.setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "null"});
                             @endfor
                         @endif
                         

@@ -32,10 +32,10 @@
                 @for(TradeProfitTimeSeriesPoint pt : timeSeries)
                     {
                         label: '${formatter.format(pt.timestamp())}',
-                        totalValue: $unsafe{pt.totalHoldingsValue() != null ? pt.totalHoldingsValue().toPlainString() : "0"},
-                        totalCost: $unsafe{pt.totalHoldingsCost() != null ? pt.totalHoldingsCost().toPlainString() : "0"},
-                        cumulativeTotal: $unsafe{pt.cumulativeTotalProfit() != null ? pt.cumulativeTotalProfit().toPlainString() : "0"},
-                        daily: $unsafe{pt.dailyRealizedProfit() != null ? pt.dailyRealizedProfit().toPlainString() : "0"}
+                        totalValue: $unsafe{pt.totalHoldingsValue() != null ? pt.totalHoldingsValue().setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0"},
+                        totalCost: $unsafe{pt.totalHoldingsCost() != null ? pt.totalHoldingsCost().setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0"},
+                        cumulativeTotal: $unsafe{pt.cumulativeTotalProfit() != null ? pt.cumulativeTotalProfit().setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0"},
+                        daily: $unsafe{pt.dailyRealizedProfit() != null ? pt.dailyRealizedProfit().setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0"}
                     },
                 @endfor
             ];

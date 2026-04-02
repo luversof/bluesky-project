@@ -268,6 +268,8 @@ public class TradeProfitService {
     public static class WmaState {
         /** 수정주가 기준으로 환산된 보유 수량 (分割/합병 등 이벤트 반영) */
         public BigDecimal quantity = BigDecimal.ZERO;
+        /** 실제 정수 주식 수량 (전량 매도 여부 판단용) */
+        public long rawQuantity = 0;
         public BigDecimal totalCost = BigDecimal.ZERO;
         public BigDecimal totalCostNet = BigDecimal.ZERO;
         public UUID stockItemId;
@@ -569,6 +571,7 @@ public class TradeProfitService {
                         BigDecimal adjustedQty =
                                 amount.divide(adjustedClose, 10, java.math.RoundingMode.HALF_UP);
                         state.quantity = state.quantity.add(adjustedQty);
+                        state.rawQuantity += q;
                         state.totalCost = state.totalCost.add(amount);
                         state.totalCostNet = state.totalCostNet.add(amount).add(fee);
                     }
@@ -592,7 +595,13 @@ public class TradeProfitService {
                             state.totalCost = BigDecimal.ZERO;
                         }
 
-                        if (state.quantity.compareTo(BigDecimal.ZERO) == 0) {
+                        state.rawQuantity -= q;
+                        // rawQuantity가 0 이하이면 전량 매도: adjustedQty 반올림 오차 강제 제거
+                        if (state.rawQuantity <= 0) {
+                            state.quantity = BigDecimal.ZERO;
+                            state.totalCost = BigDecimal.ZERO;
+                            state.rawQuantity = 0;
+                        } else if (state.quantity.compareTo(BigDecimal.ZERO) == 0) {
                             state.totalCost = BigDecimal.ZERO;
                         }
                     }
@@ -887,10 +896,16 @@ public class TradeProfitService {
                 symbol = item.getSymbol();
             }
 
+            // 표시용 수량: rawQuantity(정수)가 있으면 사용, 없으면(구버전 스냅샷)은 반올림 처리
+            long displayQty = state.rawQuantity > 0
+                    ? state.rawQuantity
+                    : state.quantity.setScale(0, java.math.RoundingMode.HALF_UP).longValue();
+            java.math.BigDecimal displayQtyBd = java.math.BigDecimal.valueOf(displayQty);
+
             java.math.BigDecimal avgCost =
-                    state.quantity.compareTo(BigDecimal.ZERO) > 0
+                    displayQty > 0
                             ? state.totalCost.divide(
-                                    state.quantity,
+                                    displayQtyBd,
                                     2,
                                     java.math.RoundingMode.HALF_UP)
                             : java.math.BigDecimal.ZERO;
@@ -900,7 +915,7 @@ public class TradeProfitService {
 
             result.add(
                     new net.luversof.api.stock.web.dto.response.HoldingsSnapshotItem(
-                            name, symbol, state.quantity, avgCost, price, value, unrealizedProfit));
+                            name, symbol, displayQtyBd, avgCost, price, value, unrealizedProfit));
         }
 
         result.sort(
