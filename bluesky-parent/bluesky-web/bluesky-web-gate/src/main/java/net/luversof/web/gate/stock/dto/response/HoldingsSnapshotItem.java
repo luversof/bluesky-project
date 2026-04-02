@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 public record HoldingsSnapshotItem(
         String name,
         String symbol,
-        long quantity,
+        BigDecimal quantity,
         BigDecimal avgCost,
         BigDecimal priceAtDate,
         BigDecimal value,

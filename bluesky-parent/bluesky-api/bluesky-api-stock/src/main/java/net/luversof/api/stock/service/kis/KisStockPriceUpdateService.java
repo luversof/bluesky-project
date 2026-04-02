@@ -25,6 +25,7 @@ import net.luversof.api.stock.domain.OpenApiConfig;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.domain.StockItemDateRange;
 import net.luversof.api.stock.domain.StockPriceHistory;
+import net.luversof.api.stock.repository.DailyAccountSnapshotRepository;
 import net.luversof.api.stock.repository.DividendRepository;
 import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.repository.StockPriceHistoryRepository;
@@ -34,6 +35,8 @@ import net.luversof.api.stock.service.kis.dto.KisDailyPriceResponse;
 
 @Service
 public class KisStockPriceUpdateService {
+
+    @Autowired private DailyAccountSnapshotRepository dailyAccountSnapshotRepository;
 
     @Autowired private DividendRepository dividendRepository;
 
@@ -85,6 +88,10 @@ public class KisStockPriceUpdateService {
 
         LocalDate today = LocalDate.now(zoneId);
 
+        // 현재 보유 중인 종목 ID 집합 (net quantity > 0)
+        java.util.Set<UUID> currentlyHeldStockItemIds =
+                new java.util.HashSet<>(tradeRepository.findCurrentlyHeldStockItemIds());
+
         // Trade 나 Dividend 이력이 없는 종목들도 갱신 대상에 포함되도록 전체 StockItem 조회
         List<StockItem> stockItemsAssigned = (List<StockItem>) stockItemRepository.findAll();
         Map<UUID, StockItem> stockItemMap =
@@ -93,11 +100,12 @@ public class KisStockPriceUpdateService {
 
         for (StockItem stockItem : stockItemsAssigned) {
             UUID stockItemId = stockItem.getId();
-            // Trade나 Dividend가 있으면 그것들의 minDate를 사용하고, 없다면 오늘 날짜(또는 원하는 디폴트 과거 날짜)를 기준으로
-            // 설정합니다.
-            // 아무 이력이 없는 경우 당일 데이터만 초기 수집하도록 today 연산 지정 (최초 1회에는 today, 이후에는 append)
             LocalDate minDate = stockItemMinDateMap.getOrDefault(stockItemId, today);
-            LocalDate maxDate = today;
+            // 현재 보유 중이면 오늘까지, 더 이상 보유하지 않으면 마지막 거래/배당 날짜까지만 갱신
+            LocalDate maxDate =
+                    currentlyHeldStockItemIds.contains(stockItemId)
+                            ? today
+                            : stockItemMaxDateMap.getOrDefault(stockItemId, today);
 
             if (stockItem.getSymbol() == null
                     || (!"KRX".equalsIgnoreCase(stockItem.getMarket())
@@ -263,10 +271,52 @@ public class KisStockPriceUpdateService {
                 }
 
                 if (shouldSave) {
+                    BigDecimal newClose = new BigDecimal(item.getStck_clpr());
+
+                    // 수정주가 재조정 감지: 기존 종가와 신규 종가 차이가 2% 초과이고,
+                    // 오늘 날짜(장중 업데이트)가 아닌 과거 날짜인 경우 → 분할/합병 등 이벤트로 판단
+                    if (history.getId() != null
+                            && history.getClosePrice() != null
+                            && !tradeDate.isEqual(LocalDate.now(zoneId))) {
+                        BigDecimal oldClose = history.getClosePrice();
+                        // 변동률 = |신규 - 기존| / 기존
+                        java.math.BigDecimal changeRatio =
+                                newClose.subtract(oldClose).abs()
+                                        .divide(oldClose, 6, java.math.RoundingMode.HALF_UP);
+                        if (changeRatio.compareTo(new java.math.BigDecimal("0.02")) > 0) {
+                            // 수정주가 재조정 감지 → 이 stockItem이 포함된 스냅샷 전체 무효화
+                            try {
+                                dailyAccountSnapshotRepository
+                                        .deleteByWmaStateContainingStockItemId(
+                                                stockItemId.toString());
+                                System.out.println(
+                                        "Invalidated DailyAccountSnapshots for stockItemId "
+                                                + stockItemId
+                                                + " due to price adjustment on "
+                                                + tradeDate
+                                                + " (old="
+                                                + oldClose
+                                                + ", new="
+                                                + newClose
+                                                + ", change="
+                                                + changeRatio.multiply(
+                                                                java.math.BigDecimal.valueOf(100))
+                                                        .setScale(2, java.math.RoundingMode.HALF_UP)
+                                                + "%)");
+                            } catch (Exception ex) {
+                                System.out.println(
+                                        "Failed to invalidate snapshots for stockItemId "
+                                                + stockItemId
+                                                + ": "
+                                                + ex.getMessage());
+                            }
+                        }
+                    }
+
                     history.setOpenPrice(new BigDecimal(item.getStck_oprc()));
                     history.setHighPrice(new BigDecimal(item.getStck_hgpr()));
                     history.setLowPrice(new BigDecimal(item.getStck_lwpr()));
-                    history.setClosePrice(new BigDecimal(item.getStck_clpr()));
+                    history.setClosePrice(newClose);
                     history.setVolume(Long.parseLong(item.getAcml_vol()));
 
                     newHistories.add(history);

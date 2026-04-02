@@ -16,6 +16,15 @@ public interface DailyAccountSnapshotRepository extends CrudRepository<DailyAcco
     void deleteByUserIdAndDateGreaterThanEqual(
             @Param("userId") UUID userId, @Param("fromDate") LocalDate fromDate);
 
+    /**
+     * 수정주가 재조정으로 인해 특정 stockItemId가 포함된 모든 스냅샷을 무효화합니다. wmaState JSON 컬럼에서 해당 stockItemId를 포함한
+     * 스냅샷을 삭제합니다.
+     */
+    @Modifying
+    @Query(
+            "DELETE FROM \"DailyAccountSnapshot\" WHERE \"wmaState\" IS NOT NULL AND \"wmaState\"::text LIKE CONCAT('%', :stockItemId, '%')")
+    void deleteByWmaStateContainingStockItemId(@Param("stockItemId") String stockItemId);
+
     @Query(
             "SELECT * FROM \"DailyAccountSnapshot\" WHERE \"user_id\" = :userId AND \"date\" >= :startDate AND \"date\" <= :endDate ORDER BY \"date\" ASC")
     java.util.List<DailyAccountSnapshot> findByUserIdAndDateBetween(

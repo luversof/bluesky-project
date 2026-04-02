@@ -67,12 +67,16 @@
                             boolean isProfit = item.unrealizedProfit() != null && item.unrealizedProfit().compareTo(BigDecimal.ZERO) >= 0;
                             String colorClass = isProfit ? "text-red-500" : "text-blue-500";
                             String sign = isProfit ? "+" : "";
-                            BigDecimal cost = item.avgCost() != null && item.quantity() > 0
-                                ? item.avgCost().multiply(BigDecimal.valueOf(item.quantity()))
+                            BigDecimal cost = item.avgCost() != null && item.quantity() != null && item.quantity().compareTo(BigDecimal.ZERO) > 0
+                                ? item.avgCost().multiply(item.quantity())
                                 : BigDecimal.ZERO;
                             String pct = cost.compareTo(BigDecimal.ZERO) != 0 && item.unrealizedProfit() != null
                                 ? String.format("%.2f", item.unrealizedProfit().divide(cost, 4, java.math.RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue())
                                 : "0.00";
+                            // 수정주가 기준 환산 수량을 소수점 4자리까지 표시
+                            String qtyDisplay = item.quantity() != null
+                                ? item.quantity().setScale(4, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
+                                : "0";
                         }
                         <tr>
                             <td>
@@ -81,7 +85,7 @@
                                     <div class="text-xs text-base-content/50">${item.symbol()}</div>
                                 @endif
                             </td>
-                            <td class="text-right">${String.format("%,d", item.quantity())}</td>
+                            <td class="text-right">${qtyDisplay}</td>
                             <td class="text-right">${item.avgCost() != null ? String.format("%,d", item.avgCost().longValue()) : "-"}원</td>
                             <td class="text-right">${item.priceAtDate() != null ? String.format("%,d", item.priceAtDate().longValue()) : "-"}원</td>
                             <td class="text-right font-medium">${item.value() != null ? String.format("%,d", item.value().longValue()) : "-"}원</td>

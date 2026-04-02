@@ -19,6 +19,16 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
 			""")
     List<StockItemDateRange> findTradeDateRanges();
 
+    @Query(
+            """
+                                SELECT "stockItem_id"
+                                FROM "Trade"
+                                WHERE "stockItem_id" IS NOT NULL
+                                GROUP BY "stockItem_id"
+                                HAVING SUM(CASE WHEN "type" = 'BUY' THEN "quantity" ELSE -"quantity" END) > 0
+                        """)
+    List<UUID> findCurrentlyHeldStockItemIds();
+
     List<Trade> findByAccountId(UUID accountId);
 
     List<Trade> findByAccountIdIn(List<UUID> accountIdList);

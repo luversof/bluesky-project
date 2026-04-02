@@ -266,7 +266,8 @@ public class TradeProfitService {
      * 반환합니다.
      */
     public static class WmaState {
-        public long quantity = 0;
+        /** 수정주가 기준으로 환산된 보유 수량 (分割/합병 등 이벤트 반영) */
+        public BigDecimal quantity = BigDecimal.ZERO;
         public BigDecimal totalCost = BigDecimal.ZERO;
         public BigDecimal totalCostNet = BigDecimal.ZERO;
         public UUID stockItemId;
@@ -541,36 +542,57 @@ public class TradeProfitService {
                 BigDecimal fee = nz(trade.getFee());
                 BigDecimal tax = nz(trade.getTax());
                 int q = trade.getQuantity();
-                BigDecimal price = trade.getPrice();
-                BigDecimal amount = price.multiply(BigDecimal.valueOf(q));
+                BigDecimal tradePrice = trade.getPrice();
+                BigDecimal amount = tradePrice.multiply(BigDecimal.valueOf(q));
 
-                lastKnownPrices.put(trade.getStockItemId(), price);
+                // 수정주가 기준 환산 수량 계산:
+                // 거래일의 수정주가(StockPriceHistory.closePrice)로 수량을 정규화한다.
+                // totalCost = rawQty × tradePrice (불변, 실제 투자금)
+                // adjustedQty = totalCost / adjustedClosePrice
+                // → 향후 평가액 = adjustedClosePrice × adjustedQty = totalCost 와 일치 (손익=0 기준선)
+                // 거래일의 수정주가(StockPriceHistory)로 adjustedQty 계산
+                // fallback 순서: 당일 수정주가 → 가장 최근 알려진 수정주가 → tradePrice(원주가)
+                // 마지막 fallback(tradePrice)은 분할/합병 후 18배 오류를 유발할 수 있으므로 경고 로그 발생
+                Map<UUID, BigDecimal> tradeDayPrices =
+                        dailyPriceMap.getOrDefault(currentDay, Map.of());
+                BigDecimal adjustedClose = tradeDayPrices.get(trade.getStockItemId());
+                if (adjustedClose == null) adjustedClose = lastKnownPrices.get(trade.getStockItemId());
+                if (adjustedClose == null || adjustedClose.compareTo(BigDecimal.ZERO) == 0) {
+                    log.warn("[WMA] 수정주가 없음 - stockItemId={}, tradeDate={}, tradePrice={}. adjustedQty 계산에 원주가를 사용합니다. 액면분할/합병이 있었다면 평가액이 부정확할 수 있습니다.",
+                            trade.getStockItemId(), trade.getTradeDate(), tradePrice);
+                    adjustedClose = tradePrice;
+                }
 
                 if (trade.getType() == TradeType.BUY) {
                     if (q > 0) {
-                        state.quantity += q;
+                        // 수정주가 기준 환산 수량: amount(투자금) / 당일 수정주가
+                        BigDecimal adjustedQty =
+                                amount.divide(adjustedClose, 10, java.math.RoundingMode.HALF_UP);
+                        state.quantity = state.quantity.add(adjustedQty);
                         state.totalCost = state.totalCost.add(amount);
                         state.totalCostNet = state.totalCostNet.add(amount).add(fee);
                     }
                 } else if (trade.getType() == TradeType.SELL) {
                     BigDecimal realProfit = nz(trade.getRealizedProfit());
-                    BigDecimal tradeSellAmount = price.multiply(BigDecimal.valueOf(q));
+                    BigDecimal tradeSellAmount = tradePrice.multiply(BigDecimal.valueOf(q));
 
                     // Deduce COGS from DB Profit for consistent holdings
                     BigDecimal sellProceeds = tradeSellAmount.subtract(fee).subtract(tax);
                     BigDecimal cogs = sellProceeds.subtract(realProfit);
 
-                    if (state.quantity > 0) {
-                        // Update State
-                        if (state.quantity >= q) {
-                            state.quantity -= q;
+                    if (state.quantity.compareTo(BigDecimal.ZERO) > 0) {
+                        // 매도 수량도 수정주가 기준으로 환산
+                        BigDecimal adjustedSellQty =
+                                amount.divide(adjustedClose, 10, java.math.RoundingMode.HALF_UP);
+                        if (state.quantity.compareTo(adjustedSellQty) >= 0) {
+                            state.quantity = state.quantity.subtract(adjustedSellQty);
                             state.totalCost = state.totalCost.subtract(cogs);
                         } else {
-                            state.quantity = 0;
+                            state.quantity = BigDecimal.ZERO;
                             state.totalCost = BigDecimal.ZERO;
                         }
 
-                        if (state.quantity == 0) {
+                        if (state.quantity.compareTo(BigDecimal.ZERO) == 0) {
                             state.totalCost = BigDecimal.ZERO;
                         }
                     }
@@ -602,24 +624,26 @@ public class TradeProfitService {
             // 하루 마감 -> Global Cumulative Update
             globalCumulativeRealized = globalCumulativeRealized.add(dailyRealizedGain);
 
+            // lastKnownPrices는 outputStart 여부와 무관하게 항상 업데이트
+            // (주말/공휴일 거래, 스냅샷 복원 직후 첫 거래에서 adjustedClose fallback 방지)
+            Map<UUID, BigDecimal> dayPricesForLastKnown = dailyPriceMap.getOrDefault(currentDay, Map.of());
+            lastKnownPrices.putAll(dayPricesForLastKnown);
+
             // 출력 범위 내인지 확인 후 추가
             if (!currentDay.isBefore(outputStart)) {
-                // Update Last Known Prices from History
-                Map<UUID, BigDecimal> dayPrices = dailyPriceMap.getOrDefault(currentDay, Map.of());
-                lastKnownPrices.putAll(dayPrices);
-
                 // Calculate Holdings Value
                 BigDecimal totalHoldingsValue = BigDecimal.ZERO;
                 BigDecimal totalHoldingsCost = BigDecimal.ZERO;
 
                 for (WmaState state : stateMap.values()) {
-                    if (state.quantity > 0) {
+                    if (state.quantity.compareTo(BigDecimal.ZERO) > 0) {
                         totalHoldingsCost = totalHoldingsCost.add(state.totalCost);
 
                         BigDecimal price = lastKnownPrices.get(state.stockItemId);
                         if (price == null) price = BigDecimal.ZERO;
 
-                        BigDecimal value = price.multiply(BigDecimal.valueOf(state.quantity));
+                        // quantity는 수정주가 기준 환산 수량이므로 수정주가 × 환산수량 = 올바른 평가액
+                        BigDecimal value = price.multiply(state.quantity);
                         totalHoldingsValue = totalHoldingsValue.add(value);
                     }
                 }
@@ -852,7 +876,7 @@ public class TradeProfitService {
         List<net.luversof.api.stock.web.dto.response.HoldingsSnapshotItem> result =
                 new ArrayList<>();
         for (WmaState state : stateMap.values()) {
-            if (state.quantity <= 0 || state.stockItemId == null) continue;
+            if (state.quantity.compareTo(BigDecimal.ZERO) <= 0 || state.stockItemId == null) continue;
 
             String name = state.stockItemId.toString();
             String symbol = null;
@@ -864,14 +888,14 @@ public class TradeProfitService {
             }
 
             java.math.BigDecimal avgCost =
-                    state.quantity > 0
+                    state.quantity.compareTo(BigDecimal.ZERO) > 0
                             ? state.totalCost.divide(
-                                    java.math.BigDecimal.valueOf(state.quantity),
+                                    state.quantity,
                                     2,
                                     java.math.RoundingMode.HALF_UP)
                             : java.math.BigDecimal.ZERO;
             java.math.BigDecimal price = stockPriceService.getPriceAt(state.stockItemId, date);
-            java.math.BigDecimal value = price.multiply(java.math.BigDecimal.valueOf(state.quantity));
+            java.math.BigDecimal value = price.multiply(state.quantity);
             java.math.BigDecimal unrealizedProfit = value.subtract(state.totalCost);
 
             result.add(
