@@ -2361,4 +2361,27 @@ public class StockHtmxController {
         model.addAttribute("timeSeries", timeSeries);
         return "stock/htmx/asset-growth";
     }
+
+    @BlueskyPreAuthorize
+    @GetMapping("/holdings-snapshot")
+    public String holdingsSnapshot(
+            @RequestParam(required = false) String date, Model model) {
+        UUID userId = UserUtil.getUserId();
+        if (userId == null) {
+            return ERROR_VIEW;
+        }
+        if (date == null || date.isBlank()) {
+            model.addAttribute("holdings", java.util.List.of());
+            model.addAttribute("date", "");
+            return "stock/htmx/holdings-snapshot";
+        }
+        var params = new org.springframework.util.LinkedMultiValueMap<String, String>();
+        params.add("userId", userId.toString());
+        params.add("date", date);
+        List<net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem> holdings =
+                tradeProfitClient.holdingsSnapshot(params);
+        model.addAttribute("holdings", holdings);
+        model.addAttribute("date", date);
+        return "stock/htmx/holdings-snapshot";
+    }
 }

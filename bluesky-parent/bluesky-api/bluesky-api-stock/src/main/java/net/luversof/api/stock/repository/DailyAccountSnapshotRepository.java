@@ -58,4 +58,9 @@ public interface DailyAccountSnapshotRepository extends CrudRepository<DailyAcco
             @Param("userId") UUID userId,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
+
+    @Query(
+            "SELECT * FROM \"DailyAccountSnapshot\" WHERE \"user_id\" = :userId AND \"account_id\" IS NULL AND \"date\" <= :date ORDER BY \"date\" DESC LIMIT 1")
+    java.util.Optional<DailyAccountSnapshot> findLatestByUserIdAndAccountIdIsNullOnOrBefore(
+            @Param("userId") UUID userId, @Param("date") LocalDate date);
 }

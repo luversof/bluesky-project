@@ -824,4 +824,66 @@ public class TradeProfitService {
 
         return result;
     }
+
+    /**
+     * 특정 날짜의 보유 종목 스냅샷을 반환합니다. DailyAccountSnapshot의 wmaState를 활용합니다.
+     */
+    public List<net.luversof.api.stock.web.dto.response.HoldingsSnapshotItem> getHoldingsSnapshot(
+            UUID userId, java.time.LocalDate date) {
+        var snapshot =
+                dailyAccountSnapshotRepository.findLatestByUserIdAndAccountIdIsNullOnOrBefore(
+                        userId, date);
+        if (snapshot.isEmpty() || snapshot.get().getWmaState() == null) {
+            return List.of();
+        }
+
+        Map<String, WmaState> stateMap;
+        try {
+            com.fasterxml.jackson.core.type.TypeReference<HashMap<String, WmaState>> typeRef =
+                    new com.fasterxml.jackson.core.type.TypeReference<>() {};
+            stateMap =
+                    new com.fasterxml.jackson.databind.ObjectMapper()
+                            .convertValue(snapshot.get().getWmaState(), typeRef);
+        } catch (Exception ex) {
+            log.error("Failed to deserialize WmaState for holdingsSnapshot", ex);
+            return List.of();
+        }
+
+        List<net.luversof.api.stock.web.dto.response.HoldingsSnapshotItem> result =
+                new ArrayList<>();
+        for (WmaState state : stateMap.values()) {
+            if (state.quantity <= 0 || state.stockItemId == null) continue;
+
+            String name = state.stockItemId.toString();
+            String symbol = null;
+            var itemOpt = stockItemService.findById(state.stockItemId);
+            if (itemOpt.isPresent()) {
+                var item = itemOpt.get();
+                name = item.getName() != null ? item.getName() : name;
+                symbol = item.getSymbol();
+            }
+
+            java.math.BigDecimal avgCost =
+                    state.quantity > 0
+                            ? state.totalCost.divide(
+                                    java.math.BigDecimal.valueOf(state.quantity),
+                                    2,
+                                    java.math.RoundingMode.HALF_UP)
+                            : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal price = stockPriceService.getPriceAt(state.stockItemId, date);
+            java.math.BigDecimal value = price.multiply(java.math.BigDecimal.valueOf(state.quantity));
+            java.math.BigDecimal unrealizedProfit = value.subtract(state.totalCost);
+
+            result.add(
+                    new net.luversof.api.stock.web.dto.response.HoldingsSnapshotItem(
+                            name, symbol, state.quantity, avgCost, price, value, unrealizedProfit));
+        }
+
+        result.sort(
+                Comparator.comparing(
+                                net.luversof.api.stock.web.dto.response.HoldingsSnapshotItem
+                                        ::unrealizedProfit)
+                        .reversed());
+        return result;
+    }
 }

@@ -36,7 +36,7 @@
                 </div>
             @else
                 <div class="flex items-center justify-between mb-1">
-                    <p class="text-xs text-base-content/50">📈 자산 추이 &mdash; 투자 원금(점선) 대비 총 평가액(실선), 색상 면적이 현재 손익 규모</p>
+                    <p class="text-xs text-base-content/50">📈 자산 추이 &mdash; 투자 원금(점선) 대비 총 평가액(실선), 색상 면적이 현재 손익 규모 &bull; <span class="text-info">날짜 클릭 시 해당일 보유 종목 조회</span></p>
                     <div class="flex gap-1">
                         <button type="button" id="btnScrollStart" class="btn btn-xs btn-ghost btn-circle" style="opacity:0.2;" onclick="jumpToEdge('start')" title="맨 앞으로 이동">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
@@ -55,6 +55,7 @@
                 <div class="w-full" style="height: 250px;">
                     <canvas id="dividendChart" class="amount-chart"></canvas>
                 </div>
+                <div id="holdings-snapshot-container"></div>
             @endif
         </div>
     </div>
@@ -301,6 +302,14 @@
                         }
                         dividendChart.update('none');
                         syncing = false;
+                    },
+                    onClick: function(event, elements) {
+                        if (!elements.length) return;
+                        var date = labels[elements[0].index];
+                        htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + date, {
+                            target: '#holdings-snapshot-container',
+                            swap: 'innerHTML'
+                        });
                     }
                 }
             });
@@ -419,6 +428,14 @@
                         }
                         mainChart.update('none');
                         syncing = false;
+                    },
+                    onClick: function(event, elements) {
+                        if (!elements.length) return;
+                        var date = labels[elements[0].index];
+                        htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + date, {
+                            target: '#holdings-snapshot-container',
+                            swap: 'innerHTML'
+                        });
                     }
                 }
             });
