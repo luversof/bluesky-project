@@ -75,6 +75,11 @@ public class StockHtmxController {
         if (isDeferred) {
             return BigDecimal.ZERO;
         }
+        // 스프레드시트에서 직접 저장한 과세금액을 우선 사용
+        if (d.taxableAmount() != null) {
+            return d.taxableAmount();
+        }
+        // fallback: taxPerShare × quantity
         if (d.taxPerShare() != null && d.quantity() != null) {
             return d.taxPerShare().multiply(BigDecimal.valueOf(d.quantity()));
         }
@@ -437,7 +442,7 @@ public class StockHtmxController {
         } else if ("DIVIDEND".equals(type)) {
             value1Label = "배당(세전)";
             value2Label = "지급액";
-            value3Label = "세금"; // value3 (Gross - Net)
+            value3Label = null; // 세금 컬럼 숨김 (후처리 계좌는 0으로 표시되어 의미 없음)
             value4Label = "과세금액"; // value4 (quantity * taxPerShare)
 
             totalLabel = null;
@@ -473,7 +478,7 @@ public class StockHtmxController {
                 isStacked = true;
 
                 // Generate Labels (Years)
-                for (int i = startYear; i <= endYear; i++) labels.add(i + "월");
+                for (int i = startYear; i <= endYear; i++) labels.add(i + "년");
 
             } else if ("MONTHLY".equals(timeScale)) {
                 // MONTHLY -> Show Monthly Stats for the specific YEAR (1??~ 12??

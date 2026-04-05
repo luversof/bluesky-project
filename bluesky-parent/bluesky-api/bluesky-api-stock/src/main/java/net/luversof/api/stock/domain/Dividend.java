@@ -51,6 +51,10 @@ public class Dividend {
     @Column("fee")
     private BigDecimal fee;
 
+    /** 과세금액 (스프레드시트에서 직접 가져온 값) */
+    @Column("taxableAmount")
+    private BigDecimal taxableAmount;
+
     /** 배당기준일 */
     @Column("recordDate")
     private Instant recordDate;
@@ -153,6 +157,14 @@ public class Dividend {
 
     public void setTax(BigDecimal tax) {
         this.tax = tax;
+    }
+
+    public BigDecimal getTaxableAmount() {
+        return taxableAmount;
+    }
+
+    public void setTaxableAmount(BigDecimal taxableAmount) {
+        this.taxableAmount = taxableAmount;
     }
 
     public Instant getRecordDate() {

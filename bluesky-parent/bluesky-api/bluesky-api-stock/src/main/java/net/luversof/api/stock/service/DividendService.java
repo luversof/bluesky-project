@@ -40,7 +40,7 @@ public class DividendService {
                         .append(
                                 "d.\"amountPerShare\" as \"amountPerShare\", d.\"taxPerShare\" as \"taxPerShare\", d.\"grossAmount\" as \"grossAmount\", ")
                         .append(
-                                "d.\"fee\" as \"fee\", d.\"tax\" as \"tax\", d.\"recordDate\" as \"recordDate\", d.\"payDate\" as \"payDate\" ")
+                                "d.\"fee\" as \"fee\", d.\"tax\" as \"tax\", d.\"taxableAmount\" as \"taxableAmount\", d.\"recordDate\" as \"recordDate\", d.\"payDate\" as \"payDate\" ")
                         .append("FROM \"Dividend\" d ")
                         .append("JOIN \"Account\" a ON d.\"account_id\" = a.\"id\" ")
                         .append("LEFT JOIN \"StockItem\" si ON d.\"stockItem_id\" = si.\"id\" ")

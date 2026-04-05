@@ -378,17 +378,18 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         dividend.setStockItemId(stockItemId);
         dividend.setType("DIVIDEND");
         dividend.setQuantity(googleSheetsDividend.get주식수());
-        dividend.setAmountPerShare(googleSheetsDividend.get배당금());
+        dividend.setAmountPerShare(googleSheetsDividend.get분배금액());  // 주당 분배금 (per-share)
         dividend.setTaxPerShare(googleSheetsDividend.get주당과세표준액());
         dividend.setGrossAmount(
                 googleSheetsDividend.get배당금() == null
                         ? BigDecimal.ZERO
-                        : googleSheetsDividend.get배당금());
+                        : googleSheetsDividend.get배당금());             // 총 배당금액 (= 분배금액 × 주식수)
         dividend.setTax(
                 googleSheetsDividend.get세금() == null
                         ? BigDecimal.ZERO
                         : googleSheetsDividend.get세금());
         dividend.setFee(BigDecimal.ZERO);
+        dividend.setTaxableAmount(googleSheetsDividend.get과세금액()); // 스프레드시트의 과세금액 직접 저장
         dividend.setRecordDate(payDate);
         dividend.setPayDate(payDate);
         return dividend;

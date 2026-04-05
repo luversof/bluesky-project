@@ -35,22 +35,20 @@
                     <p class="text-gray-500">데이터가 없습니다.</p>
                 </div>
             @else
-                <div class="flex items-center justify-between mb-1">
+                <div class="mb-1">
                     <p class="text-xs text-base-content/50">📈 자산 추이 &mdash; 투자 원금(점선) 대비 총 평가액(실선), 색상 면적이 현재 손익 규모 &bull; <span class="text-info">날짜 클릭 시 해당일 보유 종목 조회</span></p>
-                    <div class="flex gap-1">
-                        <button type="button" id="btnScrollStart" class="btn btn-xs btn-ghost btn-circle" style="opacity:0.2;" onclick="jumpToEdge('start')" title="맨 앞으로 이동">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
-                        </button>
-                        <button type="button" id="btnScrollEnd" class="btn btn-xs btn-ghost btn-circle" style="opacity:0.2;" onclick="jumpToEdge('end')" title="맨 끝으로 이동">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
-                        </button>
-                    </div>
                 </div>
                 <div class="w-full" style="height: 450px;">
                     <canvas id="assetGrowthChart" class="amount-chart"></canvas>
                 </div>
-                <div>
-                    <p class="text-xs text-base-content/50 mb-1 ml-1">💰 손익 분석 &mdash; 확정 손익(막대) · 평가 손익(선) · 누적 배당금(면적, 우축)</p>
+                <div class="flex items-center justify-center gap-4 py-1">
+                    <button type="button" id="btnScrollStart" class="btn btn-sm btn-ghost btn-circle" style="opacity:0.2;" onclick="jumpToEdge('start')" title="맨 앞으로 이동">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
+                    </button>
+                    <p class="text-xs text-base-content/50">💰 손익 분석 &mdash; 확정 손익(막대) · 평가 손익(선) · 누적 배당금(면적, 우축)</p>
+                    <button type="button" id="btnScrollEnd" class="btn btn-sm btn-ghost btn-circle" style="opacity:0.2;" onclick="jumpToEdge('end')" title="맨 끝으로 이동">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+                    </button>
                 </div>
                 <div class="w-full" style="height: 250px;">
                     <canvas id="dividendChart" class="amount-chart"></canvas>

@@ -92,8 +92,15 @@ public class KisStockPriceUpdateService {
         java.util.Set<UUID> currentlyHeldStockItemIds =
                 new java.util.HashSet<>(tradeRepository.findCurrentlyHeldStockItemIds());
 
-        // Trade 나 Dividend 이력이 없는 종목들도 갱신 대상에 포함되도록 전체 StockItem 조회
-        List<StockItem> stockItemsAssigned = (List<StockItem>) stockItemRepository.findAll();
+        // Trade 또는 Dividend 이력이 있는 종목만 갱신 대상
+        java.util.Set<UUID> targetStockItemIds = new java.util.HashSet<>();
+        targetStockItemIds.addAll(stockItemMinDateMap.keySet());
+        targetStockItemIds.addAll(currentlyHeldStockItemIds);
+
+        List<StockItem> stockItemsAssigned = new ArrayList<>();
+        for (UUID id : targetStockItemIds) {
+            stockItemRepository.findById(id).ifPresent(stockItemsAssigned::add);
+        }
         Map<UUID, StockItem> stockItemMap =
                 stockItemsAssigned.stream()
                         .collect(Collectors.toMap(StockItem::getId, item -> item));

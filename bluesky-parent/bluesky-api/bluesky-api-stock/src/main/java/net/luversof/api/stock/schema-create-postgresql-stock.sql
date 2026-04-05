@@ -46,6 +46,7 @@ CREATE TABLE "Dividend" (
 	"grossAmount" NUMERIC NOT NULL,
 	"fee" NUMERIC NOT NULL,
 	"tax" NUMERIC NOT NULL,
+	"taxableAmount" NUMERIC,
 	"recordDate" TIMESTAMP WITH TIME ZONE,
 	"payDate" TIMESTAMP WITH TIME ZONE
 );
