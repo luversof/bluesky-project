@@ -19,32 +19,32 @@ import org.springframework.web.bind.annotation.RestController;
 @ConditionalOnBean(UserDetailsManager.class)
 public class UserDetailsController {
 
-    private UserDetailsManager userDetailsManager;
+  private UserDetailsManager userDetailsManager;
 
-    @Autowired
-    public void setUserDetailsManager(UserDetailsManager userDetailsManager) {
-        this.userDetailsManager = userDetailsManager;
-    }
+  @Autowired
+  public void setUserDetailsManager(UserDetailsManager userDetailsManager) {
+    this.userDetailsManager = userDetailsManager;
+  }
 
-    @GetMapping("/search/loadUserByUsername")
-    public UserDetails loadUserByUsername(String username) {
-        return userDetailsManager.loadUserByUsername(username);
-    }
+  @GetMapping("/search/loadUserByUsername")
+  public UserDetails loadUserByUsername(String username) {
+    return userDetailsManager.loadUserByUsername(username);
+  }
 
-    @PostMapping
-    public UserDetails createUser(@RequestBody User user) {
-        userDetailsManager.createUser(user);
-        return user;
-    }
+  @PostMapping
+  public UserDetails createUser(@RequestBody User user) {
+    userDetailsManager.createUser(user);
+    return user;
+  }
 
-    @PutMapping
-    public UserDetails updateUser(@RequestBody User user) {
-        userDetailsManager.updateUser(user);
-        return user;
-    }
+  @PutMapping
+  public UserDetails updateUser(@RequestBody User user) {
+    userDetailsManager.updateUser(user);
+    return user;
+  }
 
-    @DeleteMapping
-    public void deleteUser(String username) {
-        userDetailsManager.deleteUser(username);
-    }
+  @DeleteMapping
+  public void deleteUser(String username) {
+    userDetailsManager.deleteUser(username);
+  }
 }

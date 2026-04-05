@@ -7,17 +7,17 @@ import java.util.List;
  * Authority를 전부 들고 있는 형태임
  */
 public enum BoardRole {
-    ADMIN(List.of("ROLE_ADMIN", "ROLE_USER", "ROLE_GUEST")),
-    USER(List.of("ROLE_USER", "ROLE_GUEST")),
-    GUEST(List.of("ROLE_GUEST"));
+  ADMIN(List.of("ROLE_ADMIN", "ROLE_USER", "ROLE_GUEST")),
+  USER(List.of("ROLE_USER", "ROLE_GUEST")),
+  GUEST(List.of("ROLE_GUEST"));
 
-    List<String> reachableRoleList;
+  List<String> reachableRoleList;
 
-    BoardRole(List<String> reachableRoleList) {
-        this.reachableRoleList = reachableRoleList;
-    }
+  BoardRole(List<String> reachableRoleList) {
+    this.reachableRoleList = reachableRoleList;
+  }
 
-    public List<String> getReachableRoleList() {
-        return reachableRoleList;
-    }
+  public List<String> getReachableRoleList() {
+    return reachableRoleList;
+  }
 }

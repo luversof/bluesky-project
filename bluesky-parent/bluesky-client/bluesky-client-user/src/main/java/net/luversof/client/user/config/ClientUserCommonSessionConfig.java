@@ -12,8 +12,8 @@ import org.springframework.context.annotation.PropertySource;
 @AutoConfiguration
 public class ClientUserCommonSessionConfig {
 
-    @Configuration(proxyBeanMethods = false)
-    @Profile("k8sdev")
-    @PropertySource("classpath:clientUser.properties")
-    static class K8sDevClientUserConfig {}
+  @Configuration(proxyBeanMethods = false)
+  @Profile("k8sdev")
+  @PropertySource("classpath:clientUser.properties")
+  static class K8sDevClientUserConfig {}
 }

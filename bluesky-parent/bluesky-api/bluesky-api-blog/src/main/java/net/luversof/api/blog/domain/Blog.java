@@ -2,7 +2,7 @@ package net.luversof.api.blog.domain;
 
 public interface Blog<T> {
 
-    T getId();
+  T getId();
 
-    void setId(T t);
+  void setId(T t);
 }

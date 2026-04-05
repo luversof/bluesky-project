@@ -5,13 +5,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "bluesky.client.user")
 public class ClientUserProperties {
 
-    private String loginUrl;
+  private String loginUrl;
 
-    public String getLoginUrl() {
-        return loginUrl;
-    }
+  public String getLoginUrl() {
+    return loginUrl;
+  }
 
-    public void setLoginUrl(String loginUrl) {
-        this.loginUrl = loginUrl;
-    }
+  public void setLoginUrl(String loginUrl) {
+    this.loginUrl = loginUrl;
+  }
 }

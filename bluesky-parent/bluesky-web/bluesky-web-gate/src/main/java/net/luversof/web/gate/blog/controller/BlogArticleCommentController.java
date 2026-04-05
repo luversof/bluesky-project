@@ -1,10 +1,7 @@
 package net.luversof.web.gate.blog.controller;
 
-import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import java.util.Optional;
-import net.luversof.client.user.util.UserUtil;
-import net.luversof.web.gate.blog.domain.BlogArticleComment;
-import net.luversof.web.gate.blog.httpexchange.BlogArticleCommentClient;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,52 +15,57 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
+import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.gate.blog.domain.BlogArticleComment;
+import net.luversof.web.gate.blog.httpexchange.BlogArticleCommentClient;
+
 @RestController
 @RequestMapping(value = "/api/blogArticleComment", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BlogArticleCommentController {
 
-    private BlogArticleCommentClient blogArticleCommentClient;
+  private BlogArticleCommentClient blogArticleCommentClient;
 
-    @Autowired
-    public void setBlogArticleCommentClient(BlogArticleCommentClient blogArticleCommentClient) {
-        this.blogArticleCommentClient = blogArticleCommentClient;
-    }
+  @Autowired
+  public void setBlogArticleCommentClient(BlogArticleCommentClient blogArticleCommentClient) {
+    this.blogArticleCommentClient = blogArticleCommentClient;
+  }
 
-    @BlueskyPreAuthorize
-    @PostMapping
-    public BlogArticleComment create(@RequestBody BlogArticleComment blogArticleComment) {
-        return blogArticleCommentClient.create(
-                blogArticleComment.toBuilder().userId(UserUtil.getUserId().toString()).build());
-    }
+  @BlueskyPreAuthorize
+  @PostMapping
+  public BlogArticleComment create(@RequestBody BlogArticleComment blogArticleComment) {
+    return blogArticleCommentClient.create(
+        blogArticleComment.toBuilder().userId(UserUtil.getUserId().toString()).build());
+  }
 
-    @GetMapping("/search/findByBlogArticleId/{blogArticleId}")
-    public Page<BlogArticleComment> findByBlogArticleId(
-            @PathVariable String blogArticleId, Pageable pageable) {
-        return blogArticleCommentClient.findByBlogArticleId(blogArticleId, pageable);
-    }
+  @GetMapping("/search/findByBlogArticleId/{blogArticleId}")
+  public Page<BlogArticleComment> findByBlogArticleId(
+      @PathVariable String blogArticleId, Pageable pageable) {
+    return blogArticleCommentClient.findByBlogArticleId(blogArticleId, pageable);
+  }
 
-    @GetMapping("/search/findByBlogArticleCommentId/{blogArticleCommentId}")
-    public Optional<BlogArticleComment> findByBlogArticleCommentId(
-            @PathVariable String blogArticleCommentId) {
-        return blogArticleCommentClient.findByBlogArticleCommentId(blogArticleCommentId);
-    }
+  @GetMapping("/search/findByBlogArticleCommentId/{blogArticleCommentId}")
+  public Optional<BlogArticleComment> findByBlogArticleCommentId(
+      @PathVariable String blogArticleCommentId) {
+    return blogArticleCommentClient.findByBlogArticleCommentId(blogArticleCommentId);
+  }
 
-    @GetMapping("/search/countByBlogArticleId/{blogArticleId}")
-    public long countByBlogArticleId(@PathVariable String blogArticleId) {
-        return blogArticleCommentClient.countByBlogArticleId(blogArticleId);
-    }
+  @GetMapping("/search/countByBlogArticleId/{blogArticleId}")
+  public long countByBlogArticleId(@PathVariable String blogArticleId) {
+    return blogArticleCommentClient.countByBlogArticleId(blogArticleId);
+  }
 
-    @BlueskyPreAuthorize
-    @PutMapping
-    public BlogArticleComment update(@RequestBody BlogArticleComment blogArticleComment) {
-        return blogArticleCommentClient.update(
-                blogArticleComment.toBuilder().userId(UserUtil.getUserId().toString()).build());
-    }
+  @BlueskyPreAuthorize
+  @PutMapping
+  public BlogArticleComment update(@RequestBody BlogArticleComment blogArticleComment) {
+    return blogArticleCommentClient.update(
+        blogArticleComment.toBuilder().userId(UserUtil.getUserId().toString()).build());
+  }
 
-    @BlueskyPreAuthorize
-    @DeleteMapping
-    public void delete(@RequestBody BlogArticleComment blogArticleComment) {
-        blogArticleCommentClient.delete(
-                blogArticleComment.toBuilder().userId(UserUtil.getUserId().toString()).build());
-    }
+  @BlueskyPreAuthorize
+  @DeleteMapping
+  public void delete(@RequestBody BlogArticleComment blogArticleComment) {
+    blogArticleCommentClient.delete(
+        blogArticleComment.toBuilder().userId(UserUtil.getUserId().toString()).build());
+  }
 }

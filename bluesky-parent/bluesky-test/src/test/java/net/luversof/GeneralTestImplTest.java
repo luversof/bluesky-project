@@ -8,10 +8,10 @@ import org.springframework.context.ApplicationContext;
 
 public class GeneralTestImplTest implements GeneralTest {
 
-    @Autowired private ApplicationContext applicationContext;
+  @Autowired private ApplicationContext applicationContext;
 
-    @Test
-    void testContextLoads() {
-        assertThat(applicationContext).isNotNull();
-    }
+  @Test
+  void testContextLoads() {
+    assertThat(applicationContext).isNotNull();
+  }
 }

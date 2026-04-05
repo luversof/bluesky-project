@@ -14,25 +14,25 @@ import net.luversof.api.stock.service.AccountService;
 
 class AccountTest implements GeneralTest {
 
-    private static final Logger log = LoggerFactory.getLogger(AccountTest.class);
+  private static final Logger log = LoggerFactory.getLogger(AccountTest.class);
 
-    @Autowired AccountService accountService;
+  @Autowired AccountService accountService;
 
-    UUID userId = TestConstant.USER_ID;
+  UUID userId = TestConstant.USER_ID;
 
-    @Test
-    void createAccount() {
-        var account = new Account();
-        account.setUserId(userId);
-        account.setName("테스트계좌");
+  @Test
+  void createAccount() {
+    var account = new Account();
+    account.setUserId(userId);
+    account.setName("테스트계좌");
 
-        var result = accountService.createAccount(account);
-        log.debug("result : {}", result);
-    }
+    var result = accountService.createAccount(account);
+    log.debug("result : {}", result);
+  }
 
-    @Test
-    void deleteAllByUserId() {
-        accountService.deleteAllByUserId(userId);
-        log.debug("삭제 완료 : {}", userId);
-    }
+  @Test
+  void deleteAllByUserId() {
+    accountService.deleteAllByUserId(userId);
+    log.debug("삭제 완료 : {}", userId);
+  }
 }

@@ -18,23 +18,22 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Configuration
 public class SimpleJob1Config {
 
-    private static final Logger log = LoggerFactory.getLogger(SimpleJob1Config.class);
+  private static final Logger log = LoggerFactory.getLogger(SimpleJob1Config.class);
 
-    @Bean
-    Job simpleJob1(JobRepository jobRepository, Step sampleJob1Step) {
-        return new JobBuilder("simpleJob1", jobRepository).start(sampleJob1Step).build();
-    }
+  @Bean
+  Job simpleJob1(JobRepository jobRepository, Step sampleJob1Step) {
+    return new JobBuilder("simpleJob1", jobRepository).start(sampleJob1Step).build();
+  }
 
-    @Bean
-    Step sampleJob1Step(
-            JobRepository jobRepository, PlatformTransactionManager transactionManager) {
-        return new StepBuilder("sampleJob1Step", jobRepository)
-                .tasklet(
-                        (StepContribution _, ChunkContext _) -> {
-                            log.debug("sampleJob1Step");
-                            return RepeatStatus.FINISHED;
-                        },
-                        transactionManager)
-                .build();
-    }
+  @Bean
+  Step sampleJob1Step(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
+    return new StepBuilder("sampleJob1Step", jobRepository)
+        .tasklet(
+            (StepContribution _, ChunkContext _) -> {
+              log.debug("sampleJob1Step");
+              return RepeatStatus.FINISHED;
+            },
+            transactionManager)
+        .build();
+  }
 }

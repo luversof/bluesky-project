@@ -13,29 +13,29 @@ import net.luversof.web.gate.stock.httpexchange.StockAdminClient;
 @RequestMapping("/api/stock/admin")
 public class StockAdminApiController {
 
-    @Autowired private StockAdminClient stockAdminClient;
+  @Autowired private StockAdminClient stockAdminClient;
 
-    @BlueskyPreAuthorize
-    @PostMapping("/stock-items")
-    public int stockItemBulkInsert() {
-        return stockAdminClient.stockItemBulkInsert(UserUtil.getUserId());
-    }
+  @BlueskyPreAuthorize
+  @PostMapping("/stock-items")
+  public int stockItemBulkInsert() {
+    return stockAdminClient.stockItemBulkInsert(UserUtil.getUserId());
+  }
 
-    @BlueskyPreAuthorize
-    @PostMapping("/trades")
-    public void tradeBulkInsert() {
-        stockAdminClient.tradeBulkInsert(UserUtil.getUserId());
-    }
+  @BlueskyPreAuthorize
+  @PostMapping("/trades")
+  public void tradeBulkInsert() {
+    stockAdminClient.tradeBulkInsert(UserUtil.getUserId());
+  }
 
-    @BlueskyPreAuthorize
-    @PostMapping("/dividends")
-    public void dividendBulkInsert() {
-        stockAdminClient.dividendBulkInsert(UserUtil.getUserId());
-    }
+  @BlueskyPreAuthorize
+  @PostMapping("/dividends")
+  public void dividendBulkInsert() {
+    stockAdminClient.dividendBulkInsert(UserUtil.getUserId());
+  }
 
-    @BlueskyPreAuthorize
-    @PostMapping("/price-histories")
-    public void priceHistoriesUpdate() {
-        stockAdminClient.priceHistoriesUpdate(UserUtil.getUserId());
-    }
+  @BlueskyPreAuthorize
+  @PostMapping("/price-histories")
+  public void priceHistoriesUpdate() {
+    stockAdminClient.priceHistoriesUpdate(UserUtil.getUserId());
+  }
 }

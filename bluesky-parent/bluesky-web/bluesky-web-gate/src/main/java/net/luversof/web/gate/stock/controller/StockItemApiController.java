@@ -1,8 +1,5 @@
 package net.luversof.web.gate.stock.controller;
 
-import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
-import net.luversof.web.gate.stock.domain.StockItem;
-import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,25 +8,29 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
+import net.luversof.web.gate.stock.domain.StockItem;
+import net.luversof.web.gate.stock.httpexchange.StockItemClient;
+
 @RestController
 @RequestMapping("/api/stock/stockItem")
 public class StockItemApiController {
 
-    private StockItemClient stockItemClient;
+  private StockItemClient stockItemClient;
 
-    @Autowired
-    public void setStockItemClient(StockItemClient stockItemClient) {
-        this.stockItemClient = stockItemClient;
-    }
+  @Autowired
+  public void setStockItemClient(StockItemClient stockItemClient) {
+    this.stockItemClient = stockItemClient;
+  }
 
-    @BlueskyPreAuthorize
-    @PostMapping
-    public StockItem createStockItem(@RequestBody StockItem stockItem) {
-        return stockItemClient.createStockItem(stockItem);
-    }
+  @BlueskyPreAuthorize
+  @PostMapping
+  public StockItem createStockItem(@RequestBody StockItem stockItem) {
+    return stockItemClient.createStockItem(stockItem);
+  }
 
-    @GetMapping("/search/findByName/{name}")
-    public StockItem findByName(@PathVariable String name) {
-        return stockItemClient.findByName(name);
-    }
+  @GetMapping("/search/findByName/{name}")
+  public StockItem findByName(@PathVariable String name) {
+    return stockItemClient.findByName(name);
+  }
 }

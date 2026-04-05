@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.UUID;
 
 public record TradeSearchRequest(
-        UUID userId,
-        List<UUID> accountIdList,
-        List<UUID> stockItemIdList,
-        Instant startDate,
-        Instant endDate) {}
+    UUID userId,
+    List<UUID> accountIdList,
+    List<UUID> stockItemIdList,
+    Instant startDate,
+    Instant endDate) {}

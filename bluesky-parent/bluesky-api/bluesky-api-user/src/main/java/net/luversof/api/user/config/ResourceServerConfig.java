@@ -15,47 +15,44 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity(prePostEnabled = true)
 public class ResourceServerConfig {
 
-    @Bean
-    @Order(2)
-    SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http) throws Exception {
-        http.securityMatcher("/api/**")
-                .authorizeHttpRequests(
-                        authorize ->
-                                authorize
-                                        .requestMatchers("/api/oAuth2AuthorizedClient/**")
-                                        .permitAll()
-                                        .requestMatchers(
-                                                "/api/userInfo/oauth2",
-                                                "/api/userInfo/search/findByProvider",
-                                                "/api/userInfo/search/findByIdIn",
-                                                "/api/userInfo/create-new-session",
-                                                "/api/userInfo/create-session",
-                                                "/api/userInfo/validate-session",
-                                                "/api/userInfo/delete-session")
-                                        .permitAll()
-                                        .anyRequest()
-                                        .authenticated())
-                .oauth2ResourceServer(
-                        oauth2 ->
-                                oauth2.jwt(
-                                        jwt ->
-                                                jwt.jwtAuthenticationConverter(
-                                                        jwtAuthenticationConverter())))
-                .csrf(csrf -> csrf.disable());
+  @Bean
+  @Order(2)
+  SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http) throws Exception {
+    http.securityMatcher("/api/**")
+        .authorizeHttpRequests(
+            authorize ->
+                authorize
+                    .requestMatchers("/api/oAuth2AuthorizedClient/**")
+                    .permitAll()
+                    .requestMatchers(
+                        "/api/userInfo/oauth2",
+                        "/api/userInfo/search/findByProvider",
+                        "/api/userInfo/search/findByIdIn",
+                        "/api/userInfo/create-new-session",
+                        "/api/userInfo/create-session",
+                        "/api/userInfo/validate-session",
+                        "/api/userInfo/delete-session")
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated())
+        .oauth2ResourceServer(
+            oauth2 ->
+                oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+        .csrf(csrf -> csrf.disable());
 
-        return http.build();
-    }
+    return http.build();
+  }
 
-    @Bean
-    JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter =
-                new JwtGrantedAuthoritiesConverter();
-        grantedAuthoritiesConverter.setAuthoritiesClaimName("scope");
-        grantedAuthoritiesConverter.setAuthorityPrefix("SCOPE_");
+  @Bean
+  JwtAuthenticationConverter jwtAuthenticationConverter() {
+    JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter =
+        new JwtGrantedAuthoritiesConverter();
+    grantedAuthoritiesConverter.setAuthoritiesClaimName("scope");
+    grantedAuthoritiesConverter.setAuthorityPrefix("SCOPE_");
 
-        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
+    JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+    jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
 
-        return jwtAuthenticationConverter;
-    }
+    return jwtAuthenticationConverter;
+  }
 }

@@ -8,6 +8,6 @@ import org.springframework.data.repository.CrudRepository;
 import net.luversof.app.google.domain.GoogleIamServiceAccountInfo;
 
 public interface GoogleIamServiceAccountInfoRepository
-        extends CrudRepository<GoogleIamServiceAccountInfo, UUID> {
-    Optional<GoogleIamServiceAccountInfo> findByUserId(UUID userId);
+    extends CrudRepository<GoogleIamServiceAccountInfo, UUID> {
+  Optional<GoogleIamServiceAccountInfo> findByUserId(UUID userId);
 }

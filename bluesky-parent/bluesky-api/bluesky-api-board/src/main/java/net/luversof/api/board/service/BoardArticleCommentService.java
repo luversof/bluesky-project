@@ -19,66 +19,60 @@ import net.luversof.api.board.repository.BoardArticleRepository;
 @Service
 public class BoardArticleCommentService {
 
-    @Autowired private BoardArticleRepository boardArticleRepository;
+  @Autowired private BoardArticleRepository boardArticleRepository;
 
-    @Autowired private BoardArticleCommentRepository boardArticleCommentRepository;
+  @Autowired private BoardArticleCommentRepository boardArticleCommentRepository;
 
-    public BoardArticleComment save(BoardArticleComment boardArticleComment) {
-        boardArticleRepository
-                .findById(boardArticleComment.getBoardArticleId())
-                .orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARDARTICLE));
-        return boardArticleCommentRepository.save(boardArticleComment);
+  public BoardArticleComment save(BoardArticleComment boardArticleComment) {
+    boardArticleRepository
+        .findById(boardArticleComment.getBoardArticleId())
+        .orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARDARTICLE));
+    return boardArticleCommentRepository.save(boardArticleComment);
+  }
+
+  public BoardArticleComment update(BoardArticleComment boardArticleComment) {
+    var targetComment =
+        boardArticleCommentRepository
+            .findById(boardArticleComment.getId())
+            .orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARDARTICLECOMMENT));
+
+    if (!targetComment.getUserId().equals(boardArticleComment.getUserId())) {
+      throw new BlueskyException(BoardErrorCode.NOT_OWNER_BOARDARTICLECOMMENT);
     }
 
-    public BoardArticleComment update(BoardArticleComment boardArticleComment) {
-        var targetComment =
-                boardArticleCommentRepository
-                        .findById(boardArticleComment.getId())
-                        .orElseThrow(
-                                () ->
-                                        new BlueskyException(
-                                                BoardErrorCode.NOT_EXIST_BOARDARTICLECOMMENT));
+    targetComment.setContent(boardArticleComment.getContent());
+    return boardArticleCommentRepository.save(targetComment);
+  }
 
-        if (!targetComment.getUserId().equals(boardArticleComment.getUserId())) {
-            throw new BlueskyException(BoardErrorCode.NOT_OWNER_BOARDARTICLECOMMENT);
-        }
+  public Page<BoardArticleComment> findByBoardArticleId(UUID boardArticleId, Pageable pageable) {
+    return boardArticleCommentRepository.findByBoardArticleId(boardArticleId, pageable);
+  }
 
-        targetComment.setContent(boardArticleComment.getContent());
-        return boardArticleCommentRepository.save(targetComment);
+  public long countByBoardArticleId(UUID boardArticleId) {
+    return boardArticleCommentRepository.countByBoardArticleId(boardArticleId);
+  }
+
+  public List<BoardArticleCommentCount> countByBoardArticleIds(Collection<UUID> ids) {
+    if (ids == null || ids.isEmpty()) {
+      return List.of();
+    }
+    return boardArticleCommentRepository.countByBoardArticleIds(ids);
+  }
+
+  public void delete(BoardArticleComment boardArticleComment) {
+    var targetComment =
+        boardArticleCommentRepository
+            .findById(boardArticleComment.getId())
+            .orElseThrow(() -> new BlueskyException(BoardErrorCode.NOT_EXIST_BOARDARTICLECOMMENT));
+
+    if (!targetComment.getUserId().equals(boardArticleComment.getUserId())) {
+      throw new BlueskyException(BoardErrorCode.NOT_OWNER_BOARDARTICLECOMMENT);
     }
 
-    public Page<BoardArticleComment> findByBoardArticleId(UUID boardArticleId, Pageable pageable) {
-        return boardArticleCommentRepository.findByBoardArticleId(boardArticleId, pageable);
-    }
+    boardArticleCommentRepository.delete(targetComment);
+  }
 
-    public long countByBoardArticleId(UUID boardArticleId) {
-        return boardArticleCommentRepository.countByBoardArticleId(boardArticleId);
-    }
-
-    public List<BoardArticleCommentCount> countByBoardArticleIds(Collection<UUID> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return List.of();
-        }
-        return boardArticleCommentRepository.countByBoardArticleIds(ids);
-    }
-
-    public void delete(BoardArticleComment boardArticleComment) {
-        var targetComment =
-                boardArticleCommentRepository
-                        .findById(boardArticleComment.getId())
-                        .orElseThrow(
-                                () ->
-                                        new BlueskyException(
-                                                BoardErrorCode.NOT_EXIST_BOARDARTICLECOMMENT));
-
-        if (!targetComment.getUserId().equals(boardArticleComment.getUserId())) {
-            throw new BlueskyException(BoardErrorCode.NOT_OWNER_BOARDARTICLECOMMENT);
-        }
-
-        boardArticleCommentRepository.delete(targetComment);
-    }
-
-    public void deleteByBoardArticleId(UUID boardArticleId) {
-        boardArticleCommentRepository.deleteByBoardArticleId(boardArticleId);
-    }
+  public void deleteByBoardArticleId(UUID boardArticleId) {
+    boardArticleCommentRepository.deleteByBoardArticleId(boardArticleId);
+  }
 }

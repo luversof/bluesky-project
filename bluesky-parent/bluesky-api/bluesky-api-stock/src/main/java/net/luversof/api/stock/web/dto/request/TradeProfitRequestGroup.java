@@ -6,7 +6,7 @@ package net.luversof.api.stock.web.dto.request;
  * @author luversof
  */
 public enum TradeProfitRequestGroup {
-    STOCKITEM,
-    ACCOUNT_AND_STOCKITEM,
-    ;
+  STOCKITEM,
+  ACCOUNT_AND_STOCKITEM,
+  ;
 }

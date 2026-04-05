@@ -6,17 +6,17 @@ import net.luversof.app.google.stock.domain.GoogleSheetTrade;
 
 /** 저장할 info type 정의 */
 public enum GoogleSpreadSheetInfoType {
-    STOCK_DIVIDEND(GoogleSheetDividend.class),
-    STOCK_STOCKITEM(GoogleSheetStockItem.class),
-    STOCK_TRADE(GoogleSheetTrade.class);
+  STOCK_DIVIDEND(GoogleSheetDividend.class),
+  STOCK_STOCKITEM(GoogleSheetStockItem.class),
+  STOCK_TRADE(GoogleSheetTrade.class);
 
-    private Class<?> targetClass;
+  private Class<?> targetClass;
 
-    private GoogleSpreadSheetInfoType(Class<?> targetClass) {
-        this.targetClass = targetClass;
-    }
+  private GoogleSpreadSheetInfoType(Class<?> targetClass) {
+    this.targetClass = targetClass;
+  }
 
-    public Class<?> getTargetClass() {
-        return targetClass;
-    }
+  public Class<?> getTargetClass() {
+    return targetClass;
+  }
 }

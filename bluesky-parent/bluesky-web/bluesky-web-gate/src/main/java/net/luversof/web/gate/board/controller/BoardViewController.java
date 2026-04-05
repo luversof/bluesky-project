@@ -1,13 +1,7 @@
 package net.luversof.web.gate.board.controller;
 
-import io.github.luversof.boot.exception.BlueskyException;
-import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import java.util.UUID;
-import net.luversof.client.user.util.UserUtil;
-import net.luversof.web.gate.board.domain.Board;
-import net.luversof.web.gate.board.httpexchange.BoardArticleClient;
-import net.luversof.web.gate.board.httpexchange.BoardClient;
-import net.luversof.web.gate.board.service.BoardUserInfoService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
@@ -17,102 +11,109 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import io.github.luversof.boot.exception.BlueskyException;
+import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
+import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.gate.board.domain.Board;
+import net.luversof.web.gate.board.httpexchange.BoardArticleClient;
+import net.luversof.web.gate.board.httpexchange.BoardClient;
+import net.luversof.web.gate.board.service.BoardUserInfoService;
+
 @Controller
 @RequestMapping(value = "/board", produces = MediaType.TEXT_HTML_VALUE)
 public class BoardViewController {
 
-    private BoardClient boardClient;
+  private BoardClient boardClient;
 
-    private BoardArticleClient boardArticleClient;
+  private BoardArticleClient boardArticleClient;
 
-    private BoardUserInfoService boardUserInfoService;
+  private BoardUserInfoService boardUserInfoService;
 
-    @Autowired
-    public void setBoardClient(BoardClient boardClient) {
-        this.boardClient = boardClient;
+  @Autowired
+  public void setBoardClient(BoardClient boardClient) {
+    this.boardClient = boardClient;
+  }
+
+  @Autowired
+  public void setBoardArticleClient(BoardArticleClient boardArticleClient) {
+    this.boardArticleClient = boardArticleClient;
+  }
+
+  @Autowired
+  public void setBoardUserInfoService(BoardUserInfoService boardUserInfoService) {
+    this.boardUserInfoService = boardUserInfoService;
+  }
+
+  @GetMapping
+  public String index() {
+    return "board/index";
+  }
+
+  @GetMapping("/{boardAlias}/{boardMode:list}")
+  public String list(@PathVariable String boardAlias, @PathVariable String boardMode, Model model) {
+    var board = checkBoard(boardAlias);
+    model.addAttribute("board", board);
+    return "board/list";
+  }
+
+  @GetMapping("/{boardAlias}/{boardMode:view}")
+  public String view(
+      @PathVariable String boardAlias,
+      @PathVariable String boardMode,
+      @RequestParam UUID boardArticleId,
+      Model model) {
+    var board = checkBoard(boardAlias);
+    model.addAttribute("board", board);
+    model.addAttribute("boardArticleId", boardArticleId);
+
+    var boardArticle =
+        boardArticleClient
+            .findById(boardArticleId)
+            .orElseThrow(() -> new BlueskyException("board.NOT_EXIST_BOARD_ARTICLE"));
+
+    model.addAttribute("boardArticle", boardUserInfoService.enrich(boardArticle));
+
+    // 현재 로그인한 사용자가 작성자인지 확인
+    UUID currentUserId = UserUtil.getUserId();
+    boolean isOwner = currentUserId != null && currentUserId.equals(boardArticle.userId());
+    model.addAttribute("isOwner", isOwner);
+    model.addAttribute("currentUserId", currentUserId);
+
+    return "board/view";
+  }
+
+  @BlueskyPreAuthorize
+  @GetMapping("/{boardAlias}/{boardMode:write}")
+  public String write(
+      @PathVariable String boardAlias, @PathVariable String boardMode, Model model) {
+    var board = checkBoard(boardAlias);
+    model.addAttribute("board", board);
+    return "board/write";
+  }
+
+  @BlueskyPreAuthorize
+  @GetMapping("/{boardAlias}/{boardMode:modify}")
+  public String modify(
+      @PathVariable String boardAlias,
+      @PathVariable String boardMode,
+      @RequestParam UUID boardArticleId,
+      Model model) {
+    var board = checkBoard(boardAlias);
+    model.addAttribute("board", board);
+
+    var boardArticle =
+        boardArticleClient
+            .findById(boardArticleId)
+            .orElseThrow(() -> new BlueskyException("board.NOT_EXIST_BOARD_ARTICLE"));
+    model.addAttribute(boardArticle);
+    return "board/modify";
+  }
+
+  private Board checkBoard(String boardAlias) {
+    var board = boardClient.findByAlias(boardAlias);
+    if (board == null) {
+      throw new BlueskyException("board.NOT_EXIST_BOARD");
     }
-
-    @Autowired
-    public void setBoardArticleClient(BoardArticleClient boardArticleClient) {
-        this.boardArticleClient = boardArticleClient;
-    }
-
-    @Autowired
-    public void setBoardUserInfoService(BoardUserInfoService boardUserInfoService) {
-        this.boardUserInfoService = boardUserInfoService;
-    }
-
-    @GetMapping
-    public String index() {
-        return "board/index";
-    }
-
-    @GetMapping("/{boardAlias}/{boardMode:list}")
-    public String list(
-            @PathVariable String boardAlias, @PathVariable String boardMode, Model model) {
-        var board = checkBoard(boardAlias);
-        model.addAttribute("board", board);
-        return "board/list";
-    }
-
-    @GetMapping("/{boardAlias}/{boardMode:view}")
-    public String view(
-            @PathVariable String boardAlias,
-            @PathVariable String boardMode,
-            @RequestParam UUID boardArticleId,
-            Model model) {
-        var board = checkBoard(boardAlias);
-        model.addAttribute("board", board);
-        model.addAttribute("boardArticleId", boardArticleId);
-
-        var boardArticle =
-                boardArticleClient
-                        .findById(boardArticleId)
-                        .orElseThrow(() -> new BlueskyException("board.NOT_EXIST_BOARD_ARTICLE"));
-
-        model.addAttribute("boardArticle", boardUserInfoService.enrich(boardArticle));
-
-        // 현재 로그인한 사용자가 작성자인지 확인
-        UUID currentUserId = UserUtil.getUserId();
-        boolean isOwner = currentUserId != null && currentUserId.equals(boardArticle.userId());
-        model.addAttribute("isOwner", isOwner);
-        model.addAttribute("currentUserId", currentUserId);
-
-        return "board/view";
-    }
-
-    @BlueskyPreAuthorize
-    @GetMapping("/{boardAlias}/{boardMode:write}")
-    public String write(
-            @PathVariable String boardAlias, @PathVariable String boardMode, Model model) {
-        var board = checkBoard(boardAlias);
-        model.addAttribute("board", board);
-        return "board/write";
-    }
-
-    @BlueskyPreAuthorize
-    @GetMapping("/{boardAlias}/{boardMode:modify}")
-    public String modify(
-            @PathVariable String boardAlias,
-            @PathVariable String boardMode,
-            @RequestParam UUID boardArticleId,
-            Model model) {
-        var board = checkBoard(boardAlias);
-        model.addAttribute("board", board);
-
-        var boardArticle =
-                boardArticleClient
-                        .findById(boardArticleId)
-                        .orElseThrow(() -> new BlueskyException("board.NOT_EXIST_BOARD_ARTICLE"));
-        model.addAttribute(boardArticle);
-        return "board/modify";
-    }
-
-    private Board checkBoard(String boardAlias) {
-        var board = boardClient.findByAlias(boardAlias);
-        if (board == null) {
-            throw new BlueskyException("board.NOT_EXIST_BOARD");
-        }
-        return board;
-    }
+    return board;
+  }
 }

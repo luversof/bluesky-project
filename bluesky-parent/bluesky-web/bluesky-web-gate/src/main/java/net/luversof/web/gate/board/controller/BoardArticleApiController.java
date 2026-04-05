@@ -1,13 +1,8 @@
 package net.luversof.web.gate.board.controller;
 
-import io.github.luversof.boot.data.domain.PageResponse;
-import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import java.util.Optional;
 import java.util.UUID;
-import net.luversof.client.user.util.UserUtil;
-import net.luversof.web.gate.board.domain.BoardArticle;
-import net.luversof.web.gate.board.httpexchange.BoardArticleClient;
-import net.luversof.web.gate.board.service.BoardUserInfoService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,71 +20,75 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.github.luversof.boot.data.domain.PageResponse;
+import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
+import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.gate.board.domain.BoardArticle;
+import net.luversof.web.gate.board.httpexchange.BoardArticleClient;
+import net.luversof.web.gate.board.service.BoardUserInfoService;
+
 @RestController
 @RequestMapping(value = "/api/boardArticle", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BoardArticleApiController {
 
-    private static final Logger log = LoggerFactory.getLogger(BoardArticleApiController.class);
+  private static final Logger log = LoggerFactory.getLogger(BoardArticleApiController.class);
 
-    private BoardArticleClient boardArticleClient;
+  private BoardArticleClient boardArticleClient;
 
-    private BoardUserInfoService boardUserInfoService;
+  private BoardUserInfoService boardUserInfoService;
 
-    @Autowired
-    public void setBoardArticleClient(BoardArticleClient boardArticleClient) {
-        this.boardArticleClient = boardArticleClient;
-    }
+  @Autowired
+  public void setBoardArticleClient(BoardArticleClient boardArticleClient) {
+    this.boardArticleClient = boardArticleClient;
+  }
 
-    @Autowired
-    public void setBoardUserInfoService(BoardUserInfoService boardUserInfoService) {
-        this.boardUserInfoService = boardUserInfoService;
-    }
+  @Autowired
+  public void setBoardUserInfoService(BoardUserInfoService boardUserInfoService) {
+    this.boardUserInfoService = boardUserInfoService;
+  }
 
-    @BlueskyPreAuthorize
-    @PostMapping
-    public BoardArticle create(@RequestBody BoardArticle boardArticle) {
-        var createdArticle =
-                boardArticleClient.create(
-                        boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
-        return boardUserInfoService.enrich(createdArticle);
-    }
+  @BlueskyPreAuthorize
+  @PostMapping
+  public BoardArticle create(@RequestBody BoardArticle boardArticle) {
+    var createdArticle =
+        boardArticleClient.create(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
+    return boardUserInfoService.enrich(createdArticle);
+  }
 
-    /**
-     * Sort를 query parameter로 변경하기 귀찮아서 매개변수 처리하지 않음
-     *
-     * @param boardAlias
-     * @param page
-     * @param pageable
-     * @return
-     */
-    @GetMapping("/search/findByBoardAlias/{boardAlias}")
-    public PageResponse<BoardArticle> findByBoardAlias(
-            @PathVariable String boardAlias,
-            @PageableDefault(size = 20)
-                    @SortDefault(sort = "createdDate", direction = Direction.DESC)
-                    Pageable pageable) {
-        log.debug("findByBoardAlias boardAlias : {}", boardAlias);
-        var page = boardArticleClient.findByBoardAlias(boardAlias, pageable);
-        return boardUserInfoService.enrich(page);
-    }
+  /**
+   * Sort를 query parameter로 변경하기 귀찮아서 매개변수 처리하지 않음
+   *
+   * @param boardAlias
+   * @param page
+   * @param pageable
+   * @return
+   */
+  @GetMapping("/search/findByBoardAlias/{boardAlias}")
+  public PageResponse<BoardArticle> findByBoardAlias(
+      @PathVariable String boardAlias,
+      @PageableDefault(size = 20) @SortDefault(sort = "createdDate", direction = Direction.DESC)
+          Pageable pageable) {
+    log.debug("findByBoardAlias boardAlias : {}", boardAlias);
+    var page = boardArticleClient.findByBoardAlias(boardAlias, pageable);
+    return boardUserInfoService.enrich(page);
+  }
 
-    @GetMapping("/{id}")
-    public Optional<BoardArticle> findById(@PathVariable UUID id) {
-        return boardArticleClient.findById(id).map(boardUserInfoService::enrich);
-    }
+  @GetMapping("/{id}")
+  public Optional<BoardArticle> findById(@PathVariable UUID id) {
+    return boardArticleClient.findById(id).map(boardUserInfoService::enrich);
+  }
 
-    @BlueskyPreAuthorize
-    @PutMapping
-    public BoardArticle modify(@RequestBody BoardArticle boardArticle) {
-        var updatedArticle =
-                boardArticleClient.modify(
-                        boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
-        return boardUserInfoService.enrich(updatedArticle);
-    }
+  @BlueskyPreAuthorize
+  @PutMapping
+  public BoardArticle modify(@RequestBody BoardArticle boardArticle) {
+    var updatedArticle =
+        boardArticleClient.modify(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
+    return boardUserInfoService.enrich(updatedArticle);
+  }
 
-    @BlueskyPreAuthorize
-    @DeleteMapping
-    public void delete(@RequestBody BoardArticle boardArticle) {
-        boardArticleClient.delete(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
-    }
+  @BlueskyPreAuthorize
+  @DeleteMapping
+  public void delete(@RequestBody BoardArticle boardArticle) {
+    boardArticleClient.delete(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
+  }
 }

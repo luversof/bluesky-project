@@ -15,22 +15,22 @@ import net.luversof.api.board.domain.BoardArticleComment;
 import net.luversof.api.board.domain.BoardArticleCommentCount;
 
 public interface BoardArticleCommentRepository
-        extends PagingAndSortingRepository<BoardArticleComment, UUID>,
-                CrudRepository<BoardArticleComment, UUID> {
+    extends PagingAndSortingRepository<BoardArticleComment, UUID>,
+        CrudRepository<BoardArticleComment, UUID> {
 
-    Page<BoardArticleComment> findByBoardArticleId(UUID boardArticleId, Pageable pageable);
+  Page<BoardArticleComment> findByBoardArticleId(UUID boardArticleId, Pageable pageable);
 
-    long countByBoardArticleId(UUID boardArticleId);
+  long countByBoardArticleId(UUID boardArticleId);
 
-    void deleteByBoardArticleId(UUID boardArticleId);
+  void deleteByBoardArticleId(UUID boardArticleId);
 
-    // batch count by board article ids
-    @Query(
-            """
+  // batch count by board article ids
+  @Query(
+      """
 			SELECT "boardArticle_id", COUNT(*) AS count
 			FROM "BoardArticleComment"
 			WHERE "boardArticle_id" IN (:ids)
 			GROUP BY "boardArticle_id"
 		""")
-    List<BoardArticleCommentCount> countByBoardArticleIds(@Param("ids") Collection<UUID> ids);
+  List<BoardArticleCommentCount> countByBoardArticleIds(@Param("ids") Collection<UUID> ids);
 }

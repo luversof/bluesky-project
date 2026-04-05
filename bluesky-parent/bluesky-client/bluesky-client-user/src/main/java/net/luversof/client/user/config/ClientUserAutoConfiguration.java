@@ -13,31 +13,30 @@ import org.springframework.web.filter.ForwardedHeaderFilter;
 
 @AutoConfiguration
 @ConditionalOnClass(
-        name =
-                "org.springframework.security.oauth2.client.registration.ClientRegistrationRepository")
+    name = "org.springframework.security.oauth2.client.registration.ClientRegistrationRepository")
 @Import({
-    ClientUserHttpExchangeConfig.class,
-    CustomOAuth2UserService.class,
-    ClientUserSecurityConfig.class,
-    ApiSessionConfig.class
+  ClientUserHttpExchangeConfig.class,
+  CustomOAuth2UserService.class,
+  ClientUserSecurityConfig.class,
+  ApiSessionConfig.class
 })
 @PropertySource("classpath:clientUser.properties")
 public class ClientUserAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    FilterRegistrationBean<ForwardedHeaderFilter> forwardedHeaderFilter() {
-        FilterRegistrationBean<ForwardedHeaderFilter> bean =
-                new FilterRegistrationBean<>(new ForwardedHeaderFilter());
-        bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
-        return bean;
-    }
+  @Bean
+  @ConditionalOnMissingBean
+  FilterRegistrationBean<ForwardedHeaderFilter> forwardedHeaderFilter() {
+    FilterRegistrationBean<ForwardedHeaderFilter> bean =
+        new FilterRegistrationBean<>(new ForwardedHeaderFilter());
+    bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
+    return bean;
+  }
 
-    @Bean
-    OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler(
-            OAuth2AuthorizedClientRepository authorizedClientRepository) {
-        OAuth2LoginSuccessHandler handler = new OAuth2LoginSuccessHandler();
-        handler.setAuthorizedClientRepository(authorizedClientRepository);
-        return handler;
-    }
+  @Bean
+  OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler(
+      OAuth2AuthorizedClientRepository authorizedClientRepository) {
+    OAuth2LoginSuccessHandler handler = new OAuth2LoginSuccessHandler();
+    handler.setAuthorizedClientRepository(authorizedClientRepository);
+    return handler;
+  }
 }

@@ -16,15 +16,15 @@ import net.luversof.web.gate.blog.domain.BlogArticleCategory;
 @HttpExchange(url = "/api/blogArticleCategory", contentType = MediaType.APPLICATION_JSON_VALUE)
 public interface BlogArticleCategoryClient {
 
-    @PostExchange
-    BlogArticleCategory create(@RequestBody BlogArticleCategory blogArticleCategory);
+  @PostExchange
+  BlogArticleCategory create(@RequestBody BlogArticleCategory blogArticleCategory);
 
-    @GetExchange("/search/findByBlogId/{blogId}")
-    List<BlogArticleCategory> findByBlogId(@PathVariable String blogId);
+  @GetExchange("/search/findByBlogId/{blogId}")
+  List<BlogArticleCategory> findByBlogId(@PathVariable String blogId);
 
-    @PutMapping
-    BlogArticleCategory update(@RequestBody BlogArticleCategory blogArticleCategory);
+  @PutMapping
+  BlogArticleCategory update(@RequestBody BlogArticleCategory blogArticleCategory);
 
-    @DeleteMapping
-    void delete(@RequestBody BlogArticleCategory blogArticleCategory);
+  @DeleteMapping
+  void delete(@RequestBody BlogArticleCategory blogArticleCategory);
 }

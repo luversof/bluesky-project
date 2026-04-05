@@ -1,10 +1,7 @@
 package net.luversof.web.gate.bookkeeping.controller;
 
-import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import java.util.List;
-import net.luversof.client.user.util.UserUtil;
-import net.luversof.web.gate.bookkeeping.domain.Bookkeeping;
-import net.luversof.web.gate.bookkeeping.httpexchange.BookkeepingClient;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,40 +13,43 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
+import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.gate.bookkeeping.domain.Bookkeeping;
+import net.luversof.web.gate.bookkeeping.httpexchange.BookkeepingClient;
+
 @RestController
 @RequestMapping(value = "/api/bookkeeping", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BookkeepingApiController {
 
-    private BookkeepingClient bookkeepingClient;
+  private BookkeepingClient bookkeepingClient;
 
-    @Autowired
-    public void setBookkeepingClient(BookkeepingClient bookkeepingClient) {
-        this.bookkeepingClient = bookkeepingClient;
-    }
+  @Autowired
+  public void setBookkeepingClient(BookkeepingClient bookkeepingClient) {
+    this.bookkeepingClient = bookkeepingClient;
+  }
 
-    @BlueskyPreAuthorize
-    @PostMapping
-    public Bookkeeping create(@RequestBody Bookkeeping bookkeeping) {
-        return bookkeepingClient.create(
-                bookkeeping.toBuilder().userId(UserUtil.getUserId()).build());
-    }
+  @BlueskyPreAuthorize
+  @PostMapping
+  public Bookkeeping create(@RequestBody Bookkeeping bookkeeping) {
+    return bookkeepingClient.create(bookkeeping.toBuilder().userId(UserUtil.getUserId()).build());
+  }
 
-    @BlueskyPreAuthorize
-    @GetMapping
-    public List<Bookkeeping> findByUserId(@RequestParam String userId) {
-        return bookkeepingClient.findByUserId(userId);
-    }
+  @BlueskyPreAuthorize
+  @GetMapping
+  public List<Bookkeeping> findByUserId(@RequestParam String userId) {
+    return bookkeepingClient.findByUserId(userId);
+  }
 
-    @BlueskyPreAuthorize
-    @PutMapping
-    public Bookkeeping update(@RequestBody Bookkeeping bookkeeping) {
-        return bookkeepingClient.update(
-                bookkeeping.toBuilder().userId(UserUtil.getUserId()).build());
-    }
+  @BlueskyPreAuthorize
+  @PutMapping
+  public Bookkeeping update(@RequestBody Bookkeeping bookkeeping) {
+    return bookkeepingClient.update(bookkeeping.toBuilder().userId(UserUtil.getUserId()).build());
+  }
 
-    @BlueskyPreAuthorize
-    @DeleteMapping
-    public void delete(@RequestBody Bookkeeping bookkeeping) {
-        bookkeepingClient.delete(bookkeeping.toBuilder().userId(UserUtil.getUserId()).build());
-    }
+  @BlueskyPreAuthorize
+  @DeleteMapping
+  public void delete(@RequestBody Bookkeeping bookkeeping) {
+    bookkeepingClient.delete(bookkeeping.toBuilder().userId(UserUtil.getUserId()).build());
+  }
 }

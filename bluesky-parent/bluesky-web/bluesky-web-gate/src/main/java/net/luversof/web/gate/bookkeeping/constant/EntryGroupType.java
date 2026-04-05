@@ -6,7 +6,7 @@ package net.luversof.web.gate.bookkeeping.constant;
  * @author bluesky
  */
 public enum EntryGroupType {
-    INCOME, // 수입
-    EXPENSE, // 지출
-    TRANSFER // 이체
+  INCOME, // 수입
+  EXPENSE, // 지출
+  TRANSFER // 이체
 }

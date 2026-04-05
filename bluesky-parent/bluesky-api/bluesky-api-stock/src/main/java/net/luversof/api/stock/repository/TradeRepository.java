@@ -3,47 +3,46 @@ package net.luversof.api.stock.repository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import net.luversof.api.stock.domain.StockItemDateRange;
-import net.luversof.api.stock.domain.Trade;
+
 import org.springframework.data.jdbc.repository.query.Query;
 import org.springframework.data.repository.CrudRepository;
 
+import net.luversof.api.stock.domain.StockItemDateRange;
+import net.luversof.api.stock.domain.Trade;
+
 public interface TradeRepository extends CrudRepository<Trade, UUID> {
 
-    @Query(
-            """
+  @Query(
+      """
 				SELECT "stockItem_id" AS stock_item_id, MIN("tradeDate") AS min_date, MAX("tradeDate") AS max_date
 				FROM "Trade"
 				WHERE "stockItem_id" IS NOT NULL AND "tradeDate" IS NOT NULL
 				GROUP BY "stockItem_id"
 			""")
-    List<StockItemDateRange> findTradeDateRanges();
+  List<StockItemDateRange> findTradeDateRanges();
 
-    @Query(
-            """
+  @Query(
+      """
                                 SELECT "stockItem_id"
                                 FROM "Trade"
                                 WHERE "stockItem_id" IS NOT NULL
                                 GROUP BY "stockItem_id"
                                 HAVING SUM(CASE WHEN "type" = 'BUY' THEN "quantity" ELSE -"quantity" END) > 0
                         """)
-    List<UUID> findCurrentlyHeldStockItemIds();
+  List<UUID> findCurrentlyHeldStockItemIds();
 
-    List<Trade> findByAccountId(UUID accountId);
+  List<Trade> findByAccountId(UUID accountId);
 
-    List<Trade> findByAccountIdIn(List<UUID> accountIdList);
+  List<Trade> findByAccountIdIn(List<UUID> accountIdList);
 
-    List<Trade> findByAccountIdInAndTradeDateBetween(
-            List<UUID> accountIdList, Instant startDate, Instant endDate);
+  List<Trade> findByAccountIdInAndTradeDateBetween(
+      List<UUID> accountIdList, Instant startDate, Instant endDate);
 
-    List<Trade> findByAccountIdInAndStockItemIdIn(
-            List<UUID> accountIdList, List<UUID> stockItemIdList);
+  List<Trade> findByAccountIdInAndStockItemIdIn(
+      List<UUID> accountIdList, List<UUID> stockItemIdList);
 
-    List<Trade> findByAccountIdInAndStockItemIdInAndTradeDateBetween(
-            List<UUID> accountIdList,
-            List<UUID> stockItemIdList,
-            Instant startDate,
-            Instant endDate);
+  List<Trade> findByAccountIdInAndStockItemIdInAndTradeDateBetween(
+      List<UUID> accountIdList, List<UUID> stockItemIdList, Instant startDate, Instant endDate);
 
-    long deleteByAccountId(UUID accountId);
+  long deleteByAccountId(UUID accountId);
 }

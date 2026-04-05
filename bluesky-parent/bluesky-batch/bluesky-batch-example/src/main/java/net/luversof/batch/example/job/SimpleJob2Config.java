@@ -19,26 +19,25 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Configuration
 public class SimpleJob2Config {
 
-    private static final Logger log = LoggerFactory.getLogger(SimpleJob2Config.class);
+  private static final Logger log = LoggerFactory.getLogger(SimpleJob2Config.class);
 
-    @Bean
-    Job simpleJob2(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
-        return new JobBuilder("simpleJob2", jobRepository)
-                .incrementer(new RunIdIncrementer())
-                .start(sampleJob2Step(jobRepository, transactionManager))
-                .build();
-    }
+  @Bean
+  Job simpleJob2(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
+    return new JobBuilder("simpleJob2", jobRepository)
+        .incrementer(new RunIdIncrementer())
+        .start(sampleJob2Step(jobRepository, transactionManager))
+        .build();
+  }
 
-    @Bean
-    Step sampleJob2Step(
-            JobRepository jobRepository, PlatformTransactionManager transactionManager) {
-        return new StepBuilder("sampleJob2Step", jobRepository)
-                .tasklet(
-                        (StepContribution _, ChunkContext _) -> {
-                            log.debug("sampleJob2Step");
-                            return RepeatStatus.FINISHED;
-                        },
-                        transactionManager)
-                .build();
-    }
+  @Bean
+  Step sampleJob2Step(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
+    return new StepBuilder("sampleJob2Step", jobRepository)
+        .tasklet(
+            (StepContribution _, ChunkContext _) -> {
+              log.debug("sampleJob2Step");
+              return RepeatStatus.FINISHED;
+            },
+            transactionManager)
+        .build();
+  }
 }

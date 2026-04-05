@@ -9,11 +9,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping(produces = MediaType.TEXT_HTML_VALUE)
 public class IndexController {
 
-    @GetMapping({"/", "/index"})
-    public String index() {
-        return "index";
-    }
+  @GetMapping({"/", "/index"})
+  public String index() {
+    return "index";
+  }
 
-    @GetMapping("/dev")
-    public void dev() {}
+  @GetMapping("/dev")
+  public void dev() {}
 }

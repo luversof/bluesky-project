@@ -20,23 +20,23 @@ import net.luversof.web.gate.board.domain.BoardArticle;
 @HttpExchange(url = "/api/boardArticle", contentType = MediaType.APPLICATION_JSON_VALUE)
 public interface BoardArticleClient {
 
-    /** 새 게시글 작성 */
-    @PostExchange
-    BoardArticle create(@RequestBody BoardArticle boardArticle);
+  /** 새 게시글 작성 */
+  @PostExchange
+  BoardArticle create(@RequestBody BoardArticle boardArticle);
 
-    /** 게시판 alias로 게시글 목록 조회 (페이지네이션) */
-    @GetExchange("/search/findByBoardAlias/{boardAlias}")
-    PageResponse<BoardArticle> findByBoardAlias(@PathVariable String boardAlias, Pageable pageable);
+  /** 게시판 alias로 게시글 목록 조회 (페이지네이션) */
+  @GetExchange("/search/findByBoardAlias/{boardAlias}")
+  PageResponse<BoardArticle> findByBoardAlias(@PathVariable String boardAlias, Pageable pageable);
 
-    /** ID로 특정 게시글 조회 */
-    @GetExchange("/{id}")
-    Optional<BoardArticle> findById(@PathVariable UUID id);
+  /** ID로 특정 게시글 조회 */
+  @GetExchange("/{id}")
+  Optional<BoardArticle> findById(@PathVariable UUID id);
 
-    /** 게시글 수정 */
-    @PutExchange
-    BoardArticle modify(@RequestBody BoardArticle boardArticle);
+  /** 게시글 수정 */
+  @PutExchange
+  BoardArticle modify(@RequestBody BoardArticle boardArticle);
 
-    /** 게시글 삭제 */
-    @DeleteExchange
-    void delete(@RequestBody BoardArticle boardArticle);
+  /** 게시글 삭제 */
+  @DeleteExchange
+  void delete(@RequestBody BoardArticle boardArticle);
 }

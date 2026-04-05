@@ -16,15 +16,15 @@ import net.luversof.web.gate.bookkeeping.domain.Asset;
 @HttpExchange(url = "/api/asset", contentType = MediaType.APPLICATION_JSON_VALUE)
 public interface AssetClient {
 
-    @PostExchange
-    Asset create(@RequestBody Asset asset);
+  @PostExchange
+  Asset create(@RequestBody Asset asset);
 
-    @GetExchange("/search/findByBookkeepingId/{bookkeepingId}")
-    List<Asset> findByBookkeepingId(@PathVariable String bookkeepingId);
+  @GetExchange("/search/findByBookkeepingId/{bookkeepingId}")
+  List<Asset> findByBookkeepingId(@PathVariable String bookkeepingId);
 
-    @PutExchange
-    Asset update(@RequestBody Asset asset);
+  @PutExchange
+  Asset update(@RequestBody Asset asset);
 
-    @DeleteExchange
-    void delete(@RequestBody Asset asset);
+  @DeleteExchange
+  void delete(@RequestBody Asset asset);
 }

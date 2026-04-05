@@ -4,5 +4,5 @@ import net.luversof.web.dynamiccrud.setting.domain.Project;
 
 public interface ProjectRepository extends SettingRepository<Project, Long> {
 
-    Project findByAdminProjectIdAndProjectId(String adminProjectId, String projectId);
+  Project findByAdminProjectIdAndProjectId(String adminProjectId, String projectId);
 }

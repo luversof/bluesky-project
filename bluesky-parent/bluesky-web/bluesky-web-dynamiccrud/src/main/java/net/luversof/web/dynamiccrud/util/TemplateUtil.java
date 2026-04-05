@@ -31,249 +31,243 @@ import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 
 public final class TemplateUtil {
 
-    private TemplateUtil() {}
+  private TemplateUtil() {}
 
-    private static final String URL_PATTERN = "(\\{)([\\w\\d]*)([\\:\\w\\|]*)(})";
+  private static final String URL_PATTERN = "(\\{)([\\w\\d]*)([\\:\\w\\|]*)(})";
 
-    private static final String[] THEMES =
-            new String[] {
-                "bluesky",
-                "light",
-                "dark",
-                "cupcake",
-                "bumblebee",
-                "emerald",
-                "corporate",
-                "synthwave",
-                "retro",
-                "cyberpunk",
-                "valentine",
-                "halloween",
-                "garden",
-                "forest",
-                "aqua",
-                "lofi",
-                "pastel",
-                "fantasy",
-                "wireframe",
-                "black",
-                "luxury",
-                "dracula",
-                "cmyk",
-                "autumn",
-                "business",
-                "acid",
-                "lemonade",
-                "night",
-                "coffee",
-                "winter",
-                "dim",
-                "nord",
-                "sunset",
-                "caramellatte",
-                "abyss",
-                "silk"
-            };
+  private static final String[] THEMES =
+      new String[] {
+        "bluesky",
+        "light",
+        "dark",
+        "cupcake",
+        "bumblebee",
+        "emerald",
+        "corporate",
+        "synthwave",
+        "retro",
+        "cyberpunk",
+        "valentine",
+        "halloween",
+        "garden",
+        "forest",
+        "aqua",
+        "lofi",
+        "pastel",
+        "fantasy",
+        "wireframe",
+        "black",
+        "luxury",
+        "dracula",
+        "cmyk",
+        "autumn",
+        "business",
+        "acid",
+        "lemonade",
+        "night",
+        "coffee",
+        "winter",
+        "dim",
+        "nord",
+        "sunset",
+        "caramellatte",
+        "abyss",
+        "silk"
+      };
 
-    public static List<Menu> getMainMenuList(String adminProjectId, String projectId) {
-        var mainMenuList = SettingUtil.getMainMenuList(adminProjectId, projectId);
-        return getMenuListFromMainMenuList(mainMenuList);
+  public static List<Menu> getMainMenuList(String adminProjectId, String projectId) {
+    var mainMenuList = SettingUtil.getMainMenuList(adminProjectId, projectId);
+    return getMenuListFromMainMenuList(mainMenuList);
+  }
+
+  public static List<Menu> getMainMenuList() {
+    var mainMenuList = SettingUtil.getMainMenuList();
+    return getMenuListFromMainMenuList(mainMenuList);
+  }
+
+  private static List<Menu> getMenuListFromMainMenuList(List<MainMenu> mainMenuList) {
+    var menuList = new ArrayList<Menu>();
+    mainMenuList.forEach(
+        mainMenu -> {
+          var subMenuList =
+              SettingUtil.getSubMenuList(
+                  mainMenu.getAdminProjectId(), mainMenu.getProjectId(), mainMenu.getMainMenuId());
+          subMenuList.sort(Comparator.comparing(SubMenu::getDisplayOrder));
+          if (!CollectionUtils.isEmpty(subMenuList)) {
+            var menu = new Menu();
+            var targetSubMenu =
+                subMenuList.stream()
+                    .filter(SubMenu::isEnableDisplay)
+                    .findFirst()
+                    .orElseGet(() -> null);
+            menu.setUrl(targetSubMenu == null ? null : targetSubMenu.getUrl());
+            menu.setMessageCode(mainMenu.getMainMenuName());
+            menu.setDisplay(mainMenu.isEnableDisplay());
+            menuList.add(menu);
+          }
+        });
+    return menuList;
+  }
+
+  public static List<Menu> getSubMenuList(
+      String adminProjectId, String projectId, String mainMenuId) {
+    var subMenuList = SettingUtil.getSubMenuList(adminProjectId, projectId, mainMenuId);
+    return getMenuListFromSubMenuList(subMenuList);
+  }
+
+  public static List<Menu> getSubMenuList() {
+    var subMenuList = SettingUtil.getSubMenuList();
+    return getMenuListFromSubMenuList(subMenuList);
+  }
+
+  /**
+   * layout에서 처리하는 menu호출이 null인 경우 기본 menu를 호출 처리
+   *
+   * @return
+   */
+  public static List<Menu> getDefaultSubMenuList() {
+    return getSubMenuList(
+        EventAdminConstant.ADMIN_PROJECT_ID_VALUE,
+        EventAdminConstant.PROJECT_ID_VALUE,
+        EventAdminConstant.MAINMENU_ID_VALUE);
+  }
+
+  private static List<Menu> getMenuListFromSubMenuList(List<SubMenu> subMenuList) {
+    subMenuList.sort(Comparator.comparing(SubMenu::getDisplayOrder));
+    var menuList = new ArrayList<Menu>();
+    subMenuList.forEach(
+        subMenu -> {
+          var menu = new Menu();
+          menu.setUrl(subMenu.getUrl());
+          menu.setMessageCode(subMenu.getSubMenuName());
+          menu.setDisplay(subMenu.isEnableDisplay());
+          menuList.add(menu);
+        });
+    return menuList;
+  }
+
+  public static Pagination getPagination(@SuppressWarnings("rawtypes") Page page) {
+    return new Pagination(page);
+  }
+
+  public static String getUrl(String target) {
+    return getUrl(target, null);
+  }
+
+  private static String getAttribute(String key) {
+    var settingParameter = SettingUtil.getSettingParameter();
+    if (settingParameter != null) {
+      if (SettingConstant.ADMIN_PROJECT_ID.equals(key)) return settingParameter.adminProjectId();
+      if (SettingConstant.PROJECT_ID.equals(key)) return settingParameter.projectId();
+      if (SettingConstant.MAINMENU_ID.equals(key)) return settingParameter.mainMenuId();
+      if (SettingConstant.SUBMENU_ID.equals(key)) return settingParameter.subMenuId();
     }
 
-    public static List<Menu> getMainMenuList() {
-        var mainMenuList = SettingUtil.getMainMenuList();
-        return getMenuListFromMainMenuList(mainMenuList);
+    var requestAttributes = RequestContextHolder.getRequestAttributes();
+    if (requestAttributes == null) {
+      return null;
     }
 
-    private static List<Menu> getMenuListFromMainMenuList(List<MainMenu> mainMenuList) {
-        var menuList = new ArrayList<Menu>();
-        mainMenuList.forEach(
-                mainMenu -> {
-                    var subMenuList =
-                            SettingUtil.getSubMenuList(
-                                    mainMenu.getAdminProjectId(),
-                                    mainMenu.getProjectId(),
-                                    mainMenu.getMainMenuId());
-                    subMenuList.sort(Comparator.comparing(SubMenu::getDisplayOrder));
-                    if (!CollectionUtils.isEmpty(subMenuList)) {
-                        var menu = new Menu();
-                        var targetSubMenu =
-                                subMenuList.stream()
-                                        .filter(SubMenu::isEnableDisplay)
-                                        .findFirst()
-                                        .orElseGet(() -> null);
-                        menu.setUrl(targetSubMenu == null ? null : targetSubMenu.getUrl());
-                        menu.setMessageCode(mainMenu.getMainMenuName());
-                        menu.setDisplay(mainMenu.isEnableDisplay());
-                        menuList.add(menu);
-                    }
-                });
-        return menuList;
+    var value = requestAttributes.getAttribute(key, RequestAttributes.SCOPE_REQUEST);
+    if (value != null) {
+      return String.valueOf(value);
     }
 
-    public static List<Menu> getSubMenuList(
-            String adminProjectId, String projectId, String mainMenuId) {
-        var subMenuList = SettingUtil.getSubMenuList(adminProjectId, projectId, mainMenuId);
-        return getMenuListFromSubMenuList(subMenuList);
+    @SuppressWarnings("unchecked")
+    var pathVariables =
+        (Map<String, String>)
+            requestAttributes.getAttribute(
+                HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST);
+
+    if (pathVariables != null && pathVariables.containsKey(key)) {
+      return pathVariables.get(key);
     }
 
-    public static List<Menu> getSubMenuList() {
-        var subMenuList = SettingUtil.getSubMenuList();
-        return getMenuListFromSubMenuList(subMenuList);
+    var uriVariableMap = ServletRequestUtil.getUriVariableMap();
+    if (uriVariableMap != null && uriVariableMap.containsKey(key)) {
+      return uriVariableMap.get(key);
     }
 
-    /**
-     * layout에서 처리하는 menu호출이 null인 경우 기본 menu를 호출 처리
-     *
-     * @return
-     */
-    public static List<Menu> getDefaultSubMenuList() {
-        return getSubMenuList(
-                EventAdminConstant.ADMIN_PROJECT_ID_VALUE,
-                EventAdminConstant.PROJECT_ID_VALUE,
-                EventAdminConstant.MAINMENU_ID_VALUE);
+    // check if model attributes are exposed somehow, but usually JTE doesn't unless
+    // passed into the view.
+    // Since SettingViewController puts it in Model, it might not be in request.
+    // Let's return null temporarily, we'll fix the controller if needed.
+    return null;
+  }
+
+  private static void putRequestParameterToMap(Map<String, String> map, String key) {
+    if (!map.containsKey(key)) {
+      map.put(key, getAttribute(key));
     }
+  }
 
-    private static List<Menu> getMenuListFromSubMenuList(List<SubMenu> subMenuList) {
-        subMenuList.sort(Comparator.comparing(SubMenu::getDisplayOrder));
-        var menuList = new ArrayList<Menu>();
-        subMenuList.forEach(
-                subMenu -> {
-                    var menu = new Menu();
-                    menu.setUrl(subMenu.getUrl());
-                    menu.setMessageCode(subMenu.getSubMenuName());
-                    menu.setDisplay(subMenu.isEnableDisplay());
-                    menuList.add(menu);
-                });
-        return menuList;
+  public static String getUrl(String target, Map<String, String> map) {
+    var targetMap = map == null ? new HashMap<String, String>() : new HashMap<String, String>(map);
+    putRequestParameterToMap(targetMap, SettingConstant.ADMIN_PROJECT_ID);
+    putRequestParameterToMap(targetMap, SettingConstant.PROJECT_ID);
+    putRequestParameterToMap(targetMap, SettingConstant.MAINMENU_ID);
+    putRequestParameterToMap(targetMap, SettingConstant.SUBMENU_ID);
+
+    var url =
+        UrlConstant.UrlResolver.getUrl(target, targetMap.get(SettingConstant.ADMIN_PROJECT_ID));
+
+    Pattern pattern = Pattern.compile(URL_PATTERN);
+    Matcher matcher = pattern.matcher(url);
+
+    var replaceUrl = url;
+    while (matcher.find()) {
+      String key = matcher.group(2);
+      if (targetMap.containsKey(key) && targetMap.get(key) != null) {
+        replaceUrl = replaceUrl.replace(matcher.group(), targetMap.get(key));
+      }
     }
+    return replaceUrl;
+  }
 
-    public static Pagination getPagination(@SuppressWarnings("rawtypes") Page page) {
-        return new Pagination(page);
-    }
+  public static boolean isAdminMenu() {
+    return SettingUtil.isAdminMenu(getAttribute(SettingConstant.ADMIN_PROJECT_ID));
+  }
 
-    public static String getUrl(String target) {
-        return getUrl(target, null);
-    }
+  public static boolean isEnableMainMenuUI() {
+    var project = SettingUtil.getProject();
+    return project != null && project.isEnableMainMenuUI();
+  }
 
-    private static String getAttribute(String key) {
-        var settingParameter = SettingUtil.getSettingParameter();
-        if (settingParameter != null) {
-            if (SettingConstant.ADMIN_PROJECT_ID.equals(key))
-                return settingParameter.adminProjectId();
-            if (SettingConstant.PROJECT_ID.equals(key)) return settingParameter.projectId();
-            if (SettingConstant.MAINMENU_ID.equals(key)) return settingParameter.mainMenuId();
-            if (SettingConstant.SUBMENU_ID.equals(key)) return settingParameter.subMenuId();
-        }
+  public static MainMenu getMainMenu() {
+    return SettingUtil.getMainMenu(
+        getAttribute(SettingConstant.ADMIN_PROJECT_ID),
+        getAttribute(SettingConstant.PROJECT_ID),
+        getAttribute(SettingConstant.MAINMENU_ID));
+  }
 
-        var requestAttributes = RequestContextHolder.getRequestAttributes();
-        if (requestAttributes == null) {
-            return null;
-        }
+  public static SubMenu getSubMenu() {
+    return SettingUtil.getSubMenu(
+        getAttribute(SettingConstant.ADMIN_PROJECT_ID),
+        getAttribute(SettingConstant.PROJECT_ID),
+        getAttribute(SettingConstant.MAINMENU_ID),
+        getAttribute(SettingConstant.SUBMENU_ID));
+  }
 
-        var value = requestAttributes.getAttribute(key, RequestAttributes.SCOPE_REQUEST);
-        if (value != null) {
-            return String.valueOf(value);
-        }
+  public static List<DbField> getDbFieldList() {
+    return SettingUtil.getDbFieldList(
+        getAttribute(SettingConstant.ADMIN_PROJECT_ID),
+        getAttribute(SettingConstant.PROJECT_ID),
+        getAttribute(SettingConstant.MAINMENU_ID),
+        getAttribute(SettingConstant.SUBMENU_ID));
+  }
 
-        @SuppressWarnings("unchecked")
-        var pathVariables =
-                (Map<String, String>)
-                        requestAttributes.getAttribute(
-                                HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE,
-                                RequestAttributes.SCOPE_REQUEST);
+  private static Random random = new Random();
 
-        if (pathVariables != null && pathVariables.containsKey(key)) {
-            return pathVariables.get(key);
-        }
+  public static String getRandomTheme(String... themes) {
+    var themeList = List.of(themes.length == 0 ? THEMES : themes);
+    return themeList.get(random.nextInt(themeList.size()));
+  }
 
-        var uriVariableMap = ServletRequestUtil.getUriVariableMap();
-        if (uriVariableMap != null && uriVariableMap.containsKey(key)) {
-            return uriVariableMap.get(key);
-        }
+  public static List<String> getThemeList() {
+    return Arrays.asList(THEMES);
+  }
 
-        // check if model attributes are exposed somehow, but usually JTE doesn't unless
-        // passed into the view.
-        // Since SettingViewController puts it in Model, it might not be in request.
-        // Let's return null temporarily, we'll fix the controller if needed.
-        return null;
-    }
-
-    private static void putRequestParameterToMap(Map<String, String> map, String key) {
-        if (!map.containsKey(key)) {
-            map.put(key, getAttribute(key));
-        }
-    }
-
-    public static String getUrl(String target, Map<String, String> map) {
-        var targetMap =
-                map == null ? new HashMap<String, String>() : new HashMap<String, String>(map);
-        putRequestParameterToMap(targetMap, SettingConstant.ADMIN_PROJECT_ID);
-        putRequestParameterToMap(targetMap, SettingConstant.PROJECT_ID);
-        putRequestParameterToMap(targetMap, SettingConstant.MAINMENU_ID);
-        putRequestParameterToMap(targetMap, SettingConstant.SUBMENU_ID);
-
-        var url =
-                UrlConstant.UrlResolver.getUrl(
-                        target, targetMap.get(SettingConstant.ADMIN_PROJECT_ID));
-
-        Pattern pattern = Pattern.compile(URL_PATTERN);
-        Matcher matcher = pattern.matcher(url);
-
-        var replaceUrl = url;
-        while (matcher.find()) {
-            String key = matcher.group(2);
-            if (targetMap.containsKey(key) && targetMap.get(key) != null) {
-                replaceUrl = replaceUrl.replace(matcher.group(), targetMap.get(key));
-            }
-        }
-        return replaceUrl;
-    }
-
-    public static boolean isAdminMenu() {
-        return SettingUtil.isAdminMenu(getAttribute(SettingConstant.ADMIN_PROJECT_ID));
-    }
-
-    public static boolean isEnableMainMenuUI() {
-        var project = SettingUtil.getProject();
-        return project != null && project.isEnableMainMenuUI();
-    }
-
-    public static MainMenu getMainMenu() {
-        return SettingUtil.getMainMenu(
-                getAttribute(SettingConstant.ADMIN_PROJECT_ID),
-                getAttribute(SettingConstant.PROJECT_ID),
-                getAttribute(SettingConstant.MAINMENU_ID));
-    }
-
-    public static SubMenu getSubMenu() {
-        return SettingUtil.getSubMenu(
-                getAttribute(SettingConstant.ADMIN_PROJECT_ID),
-                getAttribute(SettingConstant.PROJECT_ID),
-                getAttribute(SettingConstant.MAINMENU_ID),
-                getAttribute(SettingConstant.SUBMENU_ID));
-    }
-
-    public static List<DbField> getDbFieldList() {
-        return SettingUtil.getDbFieldList(
-                getAttribute(SettingConstant.ADMIN_PROJECT_ID),
-                getAttribute(SettingConstant.PROJECT_ID),
-                getAttribute(SettingConstant.MAINMENU_ID),
-                getAttribute(SettingConstant.SUBMENU_ID));
-    }
-
-    private static Random random = new Random();
-
-    public static String getRandomTheme(String... themes) {
-        var themeList = List.of(themes.length == 0 ? THEMES : themes);
-        return themeList.get(random.nextInt(themeList.size()));
-    }
-
-    public static List<String> getThemeList() {
-        return Arrays.asList(THEMES);
-    }
-
-    public static UriComponentsBuilder getUriComponentsBuilder() {
-        return ServletUriComponentsBuilder.fromCurrentRequestUri();
-    }
+  public static UriComponentsBuilder getUriComponentsBuilder() {
+    return ServletUriComponentsBuilder.fromCurrentRequestUri();
+  }
 }

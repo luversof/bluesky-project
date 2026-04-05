@@ -14,19 +14,19 @@ import net.luversof.web.gate.board.domain.Board;
 @HttpExchange(url = "/api/board", contentType = MediaType.APPLICATION_JSON_VALUE)
 public interface BoardClient {
 
-    /** 새 게시판 생성 */
-    @PostExchange
-    Board create(@RequestBody Board board);
+  /** 새 게시판 생성 */
+  @PostExchange
+  Board create(@RequestBody Board board);
 
-    /** 게시판 alias로 조회 */
-    @GetExchange("/search/findByAlias/{alias}")
-    Board findByAlias(@PathVariable String alias);
+  /** 게시판 alias로 조회 */
+  @GetExchange("/search/findByAlias/{alias}")
+  Board findByAlias(@PathVariable String alias);
 
-    /** 모든 게시판 목록 조회 */
-    @GetExchange("/search/findAll")
-    Iterable<Board> findAll();
+  /** 모든 게시판 목록 조회 */
+  @GetExchange("/search/findAll")
+  Iterable<Board> findAll();
 
-    /** 게시판 정보 수정 */
-    @PutExchange
-    Board update(@RequestBody Board board);
+  /** 게시판 정보 수정 */
+  @PutExchange
+  Board update(@RequestBody Board board);
 }

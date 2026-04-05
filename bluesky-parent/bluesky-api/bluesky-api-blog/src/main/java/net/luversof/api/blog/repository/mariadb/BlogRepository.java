@@ -8,9 +8,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import net.luversof.api.blog.domain.mariadb.Blog;
 
 public interface BlogRepository
-        extends JpaRepository<Blog, Long> /* , QueryByExampleExecutor<Blog> */ {
+    extends JpaRepository<Blog, Long> /* , QueryByExampleExecutor<Blog> */ {
 
-    List<Blog> findByUserId(String userId);
+  List<Blog> findByUserId(String userId);
 
-    Optional<Blog> findByBlogId(String blogId);
+  Optional<Blog> findByBlogId(String blogId);
 }

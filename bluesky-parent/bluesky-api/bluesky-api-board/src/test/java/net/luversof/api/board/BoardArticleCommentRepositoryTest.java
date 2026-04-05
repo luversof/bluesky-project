@@ -23,44 +23,44 @@ import net.luversof.api.board.repository.BoardArticleRepository;
 @Rollback(false)
 class BoardArticleCommentRepositoryTest implements GeneralTest {
 
-    @Autowired private BoardArticleRepository boardArticleRepository;
+  @Autowired private BoardArticleRepository boardArticleRepository;
 
-    @Autowired private BoardArticleCommentRepository boardArticleCommentRepository;
+  @Autowired private BoardArticleCommentRepository boardArticleCommentRepository;
 
-    @BeforeAll
-    static void beforeAll() {
-        RoutingDataSourceContextHolder.setContext(() -> "board_postgresql");
+  @BeforeAll
+  static void beforeAll() {
+    RoutingDataSourceContextHolder.setContext(() -> "board_postgresql");
+  }
+
+  @Test
+  @DisplayName("batch countByBoardArticleIds should return non-null ids and counts")
+  void countByBoardArticleIds_batch() {
+    // collect up to 5 existing article ids
+    List<UUID> ids = new ArrayList<>();
+    boardArticleRepository
+        .findAll()
+        .forEach(
+            a -> {
+              if (ids.size() < 335) ids.add(a.getId());
+            });
+
+    // if repository is empty the test is inconclusive but should not fail hard
+    if (ids.isEmpty()) {
+      // no articles to test against
+      return;
     }
 
-    @Test
-    @DisplayName("batch countByBoardArticleIds should return non-null ids and counts")
-    void countByBoardArticleIds_batch() {
-        // collect up to 5 existing article ids
-        List<UUID> ids = new ArrayList<>();
-        boardArticleRepository
-                .findAll()
-                .forEach(
-                        a -> {
-                            if (ids.size() < 335) ids.add(a.getId());
-                        });
+    List<BoardArticleCommentCount> counts =
+        boardArticleCommentRepository.countByBoardArticleIds(ids);
 
-        // if repository is empty the test is inconclusive but should not fail hard
-        if (ids.isEmpty()) {
-            // no articles to test against
-            return;
-        }
+    assertThat(counts).isNotNull();
+    assertThat(counts).isNotEmpty();
 
-        List<BoardArticleCommentCount> counts =
-                boardArticleCommentRepository.countByBoardArticleIds(ids);
-
-        assertThat(counts).isNotNull();
-        assertThat(counts).isNotEmpty();
-
-        // each returned entry must have a non-null boardArticleId and a non-negative count
-        counts.forEach(
-                c -> {
-                    assertThat(c.getBoardArticleId()).isNotNull();
-                    assertThat(c.getCount()).isGreaterThanOrEqualTo(0);
-                });
-    }
+    // each returned entry must have a non-null boardArticleId and a non-negative count
+    counts.forEach(
+        c -> {
+          assertThat(c.getBoardArticleId()).isNotNull();
+          assertThat(c.getCount()).isGreaterThanOrEqualTo(0);
+        });
+  }
 }

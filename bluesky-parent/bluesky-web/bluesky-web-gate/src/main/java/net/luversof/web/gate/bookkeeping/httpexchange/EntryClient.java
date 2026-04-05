@@ -16,15 +16,15 @@ import net.luversof.web.gate.bookkeeping.domain.EntryRequestParam;
 @HttpExchange(url = "/api/bookkeeping/entry", contentType = MediaType.APPLICATION_JSON_VALUE)
 public interface EntryClient {
 
-    @PostExchange
-    Entry create(@RequestBody Entry entry);
+  @PostExchange
+  Entry create(@RequestBody Entry entry);
 
-    @GetExchange
-    List<Entry> search(EntryRequestParam entryRequestParam);
+  @GetExchange
+  List<Entry> search(EntryRequestParam entryRequestParam);
 
-    @PutExchange
-    Entry update(@RequestBody Entry entry);
+  @PutExchange
+  Entry update(@RequestBody Entry entry);
 
-    @DeleteExchange
-    void delete(Entry entry);
+  @DeleteExchange
+  void delete(Entry entry);
 }
