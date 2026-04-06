@@ -1,6 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>net.luversof</groupId>
@@ -36,6 +36,13 @@
 		</dependency>
 		<!-- (e) springdoc-openapi -->
 
+		<!-- (s) spring-boot-admin -->
+		<dependency>
+			<groupId>de.codecentric</groupId>
+			<artifactId>spring-boot-admin-starter-client</artifactId>
+		</dependency>
+		<!-- (e) spring-boot-admin -->
+
 		<!-- (s) jdbc driver -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
@@ -47,7 +54,7 @@
 			<groupId>com.github.f4b6a3</groupId>
 			<artifactId>uuid-creator</artifactId>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>tools.jackson.dataformat</groupId>
 			<artifactId>jackson-dataformat-csv</artifactId>
@@ -66,7 +73,7 @@
 			<artifactId>bluesky-boot-autoconfigure-connectioninfo-jdbc</artifactId>
 		</dependency>
 		<!-- (e) bluesky boot connectioninfo -->
-		
+
 		<dependency>
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-app-google</artifactId>

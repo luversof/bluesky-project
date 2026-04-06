@@ -1,1 +1,0 @@
-file1 = r" D:\dev\git\bluesky-project\bluesky-parent\bluesky-web\bluesky-web-gate\src\main\java\net\luversof\web\gate\stock\controller\StockHtmxController.java\n

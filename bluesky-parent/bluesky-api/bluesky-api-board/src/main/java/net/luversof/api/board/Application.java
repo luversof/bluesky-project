@@ -2,10 +2,12 @@ package net.luversof.api.board;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.security.crypto.encrypt.Encryptors;
 
 import io.github.luversof.boot.security.crypto.factory.TextEncryptorFactories;
 
+@EnableDiscoveryClient
 @SpringBootApplication
 public class Application {
 

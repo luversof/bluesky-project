@@ -43,6 +43,13 @@
 		</dependency>
 		<!-- (e) springdoc-openapi -->
 
+		<!-- (s) spring-boot-admin -->
+		<dependency>
+			<groupId>de.codecentric</groupId>
+			<artifactId>spring-boot-admin-starter-client</artifactId>
+		</dependency>
+		<!-- (e) spring-boot-admin -->
+
 		<!-- (e) bluesky boot devcheck-->
 		<dependency>
 			<groupId>io.github.luversof</groupId>
@@ -99,7 +106,8 @@
 							<sourceDirectory>${project.basedir}/src/main/jte</sourceDirectory>
 							<contentType>Html</contentType>
 							<binaryStaticContent>true</binaryStaticContent>
-							<targetResourceDirectory>${project.build.directory}/generated-sources/jte</targetResourceDirectory>
+							<targetResourceDirectory>
+								${project.build.directory}/generated-sources/jte</targetResourceDirectory>
 						</configuration>
 					</execution>
 				</executions>
@@ -117,7 +125,8 @@
 						<configuration>
 							<resources>
 								<resource>
-									<directory>${project.build.directory}/generated-sources/jte</directory>
+									<directory>
+										${project.build.directory}/generated-sources/jte</directory>
 									<includes>
 										<include>**/*.bin</include>
 									</includes>

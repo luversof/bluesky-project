@@ -19,20 +19,27 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-mongodb</artifactId>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 		<!-- (e) spring-boot -->
-		
+
 		<!-- (s) springdoc-openapi -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 		</dependency>
 		<!-- (e) springdoc-openapi -->
-		
+
+		<!-- (s) spring-boot-admin -->
+		<dependency>
+			<groupId>de.codecentric</groupId>
+			<artifactId>spring-boot-admin-starter-client</artifactId>
+		</dependency>
+		<!-- (e) spring-boot-admin -->
+
 		<!-- (e) bluesky boot connectioninfo -->
 		<dependency>
 			<groupId>io.github.luversof</groupId>
@@ -43,14 +50,14 @@
 			<artifactId>bluesky-boot-autoconfigure-connectioninfo-mongodb</artifactId>
 		</dependency>
 		<!-- (e) bluesky boot connectioninfo -->
-		
+
 		<!-- (s) bluesky boot crypto -->
 		<dependency>
 			<groupId>io.github.luversof</groupId>
 			<artifactId>bluesky-boot-crypto</artifactId>
 		</dependency>
 		<!-- (e) bluesky boot crypto -->
-		
+
 		<!-- (e) bluesky boot devcheck-->
 		<dependency>
 			<groupId>io.github.luversof</groupId>
@@ -72,19 +79,19 @@
 			<artifactId>postgresql</artifactId>
 		</dependency>
 		<!-- (e) jdbc -->
-		
+
 		<!-- (s) jte -->
 		<dependency>
-						<groupId>gg.jte</groupId>
-						<artifactId>jte-spring-boot-starter-3</artifactId>
-						<version>3.1.12</version>
-				</dependency>
-				<dependency>
-						<groupId>gg.jte</groupId>
-						<artifactId>jte-models</artifactId>
-						<version>3.1.12</version>
-				</dependency>
-				<!-- (e) jte -->
+			<groupId>gg.jte</groupId>
+			<artifactId>jte-spring-boot-starter-3</artifactId>
+			<version>3.1.12</version>
+		</dependency>
+		<dependency>
+			<groupId>gg.jte</groupId>
+			<artifactId>jte-models</artifactId>
+			<version>3.1.12</version>
+		</dependency>
+		<!-- (e) jte -->
 
 		<!-- (s) poi -->
 		<dependency>
@@ -92,12 +99,12 @@
 			<artifactId>poi-ooxml</artifactId>
 		</dependency>
 		<!-- (e) poi -->
-		
+
 		<dependency>
 			<groupId>com.github.jsqlparser</groupId>
 			<artifactId>jsqlparser</artifactId>
 		</dependency>
-		
+
 		<!-- (s) webjars -->
 		<dependency>
 			<groupId>org.webjars</groupId>
@@ -114,7 +121,7 @@
 			<version>2.0.4</version>
 		</dependency>
 		<!-- (e) webjars -->
-		
+
 		<!-- (s) bluesky -->
 		<dependency>
 			<groupId>net.luversof</groupId>
@@ -172,7 +179,8 @@
 							<sourceDirectory>${project.basedir}/src/main/jte</sourceDirectory>
 							<contentType>Html</contentType>
 							<binaryStaticContent>true</binaryStaticContent>
-							<targetResourceDirectory>${project.build.directory}/generated-sources/jte</targetResourceDirectory>
+							<targetResourceDirectory>
+								${project.build.directory}/generated-sources/jte</targetResourceDirectory>
 						</configuration>
 					</execution>
 				</executions>

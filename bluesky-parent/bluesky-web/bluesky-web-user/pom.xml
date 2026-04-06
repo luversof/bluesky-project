@@ -12,6 +12,7 @@
 	<name>bluesky-web-user</name>
 	<description>bluesky-web-user</description>
 	<dependencies>
+		<!-- (s) spring-boot -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -20,7 +21,15 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-oauth2-client</artifactId>
 		</dependency>
-		
+		<!-- (e) spring-boot -->
+
+		<!-- (s) spring-boot-admin -->
+		<dependency>
+			<groupId>de.codecentric</groupId>
+			<artifactId>spring-boot-admin-starter-client</artifactId>
+		</dependency>
+		<!-- (e) spring-boot-admin -->
+
 		<!-- (s) bluesky -->
 		<dependency>
 			<groupId>net.luversof</groupId>
