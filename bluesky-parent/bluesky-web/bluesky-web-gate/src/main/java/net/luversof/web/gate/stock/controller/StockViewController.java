@@ -136,4 +136,13 @@ public class StockViewController {
     }
     return "stock/assetGrowth";
   }
+
+  @BlueskyPreAuthorize
+  @GetMapping("/admin")
+  public String adminPage(HttpServletRequest request, Model model) {
+    if (isNotAuthenticated()) {
+      return getLoginRedirectUrl(request);
+    }
+    return "stock/admin";
+  }
 }

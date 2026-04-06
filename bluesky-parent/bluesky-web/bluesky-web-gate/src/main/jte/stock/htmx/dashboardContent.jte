@@ -4,10 +4,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <!-- Dashboard Layout -->
 <div class="container mx-auto p-4 space-y-6">
-
-    <!-- Admin Actions -->
-    @template.stock.htmx.fragments.adminActions(isAuthenticated = isAuthenticated)
-    
     <!-- 1. Summary Cards (Lazy Load) -->
     <div hx-get="/stock/htmx/summary" hx-trigger="load" hx-swap="innerHTML">
         <div class="flex justify-center p-4">

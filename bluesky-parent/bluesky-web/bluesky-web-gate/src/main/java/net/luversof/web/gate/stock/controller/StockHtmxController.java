@@ -1167,6 +1167,172 @@ public class StockHtmxController {
   }
 
   @BlueskyPreAuthorize
+  @GetMapping("/asset-status")
+  public String assetStatus(TradeProfitRequest request, Model model) {
+    UUID userId = UserUtil.getUserId();
+    if (userId == null) return ERROR_VIEW;
+    request.setUserId(userId);
+
+    List<TradeProfit> enrichedList = new ArrayList<>(getEnrichedTradeProfits(request));
+    enrichedList.removeIf(tp -> tp.holdingQuantity() == 0);
+
+    // 계좌별 집계
+    Map<String, TradeProfit> accountTotalMap = new LinkedHashMap<>();
+    enrichedList.stream()
+        .collect(Collectors.groupingBy(TradeProfit::accountName))
+        .entrySet()
+        .stream()
+        .sorted(Map.Entry.comparingByKey(Comparator.nullsLast(Comparator.naturalOrder())))
+        .forEach(
+            entry -> {
+              String accountName = entry.getKey();
+              List<TradeProfit> list = entry.getValue();
+              BigDecimal evalAmt =
+                  list.stream()
+                      .map(TradeProfit::evaluationAmount)
+                      .filter(Objects::nonNull)
+                      .reduce(BigDecimal.ZERO, BigDecimal::add);
+              BigDecimal evalProfit =
+                  list.stream()
+                      .map(TradeProfit::evaluationProfit)
+                      .filter(Objects::nonNull)
+                      .reduce(BigDecimal.ZERO, BigDecimal::add);
+              BigDecimal realizedProfit =
+                  list.stream()
+                      .map(TradeProfit::realizedProfit)
+                      .filter(Objects::nonNull)
+                      .reduce(BigDecimal.ZERO, BigDecimal::add);
+              BigDecimal totalBuyCost =
+                  list.stream()
+                      .map(TradeProfit::totalBuyCost)
+                      .filter(Objects::nonNull)
+                      .reduce(BigDecimal.ZERO, BigDecimal::add);
+              accountTotalMap.put(
+                  accountName,
+                  new TradeProfit(
+                      null,
+                      null,
+                      null,
+                      accountName,
+                      null,
+                      null,
+                      0,
+                      null,
+                      null,
+                      realizedProfit,
+                      0,
+                      null,
+                      evalAmt,
+                      evalProfit,
+                      null,
+                      null,
+                      null,
+                      null,
+                      totalBuyCost,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null));
+            });
+
+    // 종목별 집계 (계좌 통합)
+    Map<UUID, List<TradeProfit>> byStock =
+        enrichedList.stream().collect(Collectors.groupingBy(TradeProfit::stockItemId));
+    List<TradeProfit> stockAggregated =
+        byStock.entrySet().stream()
+            .map(
+                entry -> {
+                  List<TradeProfit> list = entry.getValue();
+                  TradeProfit first = list.get(0);
+                  int holdingQty = list.stream().mapToInt(TradeProfit::holdingQuantity).sum();
+                  BigDecimal totalBuyCost =
+                      list.stream()
+                          .map(TradeProfit::totalBuyCost)
+                          .filter(Objects::nonNull)
+                          .reduce(BigDecimal.ZERO, BigDecimal::add);
+                  BigDecimal evalAmt =
+                      list.stream()
+                          .map(TradeProfit::evaluationAmount)
+                          .filter(Objects::nonNull)
+                          .reduce(BigDecimal.ZERO, BigDecimal::add);
+                  BigDecimal evalProfit =
+                      list.stream()
+                          .map(TradeProfit::evaluationProfit)
+                          .filter(Objects::nonNull)
+                          .reduce(BigDecimal.ZERO, BigDecimal::add);
+                  BigDecimal realizedProfit =
+                      list.stream()
+                          .map(TradeProfit::realizedProfit)
+                          .filter(Objects::nonNull)
+                          .reduce(BigDecimal.ZERO, BigDecimal::add);
+                  BigDecimal avgBuyPrice =
+                      holdingQty > 0
+                          ? totalBuyCost.divide(
+                              BigDecimal.valueOf(holdingQty), 0, RoundingMode.HALF_UP)
+                          : BigDecimal.ZERO;
+                  return new TradeProfit(
+                      entry.getKey(),
+                      first.stockItemName(),
+                      null,
+                      null,
+                      null,
+                      avgBuyPrice,
+                      0,
+                      null,
+                      null,
+                      realizedProfit,
+                      holdingQty,
+                      first.currentPrice(),
+                      evalAmt,
+                      evalProfit,
+                      null,
+                      null,
+                      null,
+                      null,
+                      totalBuyCost,
+                      null,
+                      avgBuyPrice,
+                      null,
+                      null,
+                      null,
+                      null);
+                })
+            .sorted(
+                Comparator.comparing(
+                        TradeProfit::evaluationAmount,
+                        Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(
+                        TradeProfit::stockItemName,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+            .toList();
+
+    BigDecimal totalEvaluationAmount =
+        stockAggregated.stream()
+            .map(TradeProfit::evaluationAmount)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalEvaluationProfit =
+        stockAggregated.stream()
+            .map(TradeProfit::evaluationProfit)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalRealizedProfit =
+        stockAggregated.stream()
+            .map(TradeProfit::realizedProfit)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    model.addAttribute("accountTotalMap", accountTotalMap);
+    model.addAttribute("stockAggregated", stockAggregated);
+    model.addAttribute("totalEvaluationAmount", totalEvaluationAmount);
+    model.addAttribute("totalEvaluationProfit", totalEvaluationProfit);
+    model.addAttribute("totalRealizedProfit", totalRealizedProfit);
+    return "stock/htmx/fragments/assetStatus";
+  }
+
+  @BlueskyPreAuthorize
   @GetMapping("/portfolio")
   public String portfolio(
       TradeProfitRequest request,

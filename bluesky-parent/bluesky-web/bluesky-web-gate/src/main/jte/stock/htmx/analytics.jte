@@ -9,7 +9,7 @@
     <div role="tablist" class="tabs tabs-box bg-base-200 p-1">
          <a role="tab" class="tab tab-lg flex-1 transition-all duration-300 tab-active !bg-primary !text-primary-content font-bold" 
             id="tab-profit" 
-            onclick="selectAnalyticsTab('PROFIT')">자산 성장</a>
+            onclick="selectAnalyticsTab('PROFIT')">손익 추이</a>
          <a role="tab" class="tab tab-lg flex-1 transition-all duration-300 font-bold" 
             id="tab-dividend" 
             onclick="selectAnalyticsTab('DIVIDEND')">배당 추이</a>

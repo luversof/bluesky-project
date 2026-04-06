@@ -10,18 +10,24 @@
 	profile = profile,
 	contentStock = @`
 		<div class="container mx-auto p-4 space-y-6">
-			<!-- Chart.js Library -->
 			<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-			<!-- Reuse the daily summary component designed for analytics -->
-			<h1 class="text-2xl font-bold mb-4 ml-1">투자 분석</h1>
-			<div class="mb-8">
-				 <div hx-get="/stock/htmx/analytics/view" hx-trigger="load" hx-swap="outerHTML">
-					 <div class="flex justify-center p-10">
-						<span class="loading loading-spinner text-primary loading-lg"></span>
-					 </div>
+			<h1 class="text-2xl font-bold mb-4 ml-1">자산 현황</h1>
+
+			<!-- Section 1: 요약 카드 + 비중 차트 -->
+			<div hx-get="/stock/htmx/summary" hx-trigger="load" hx-swap="innerHTML">
+				<div class="flex justify-center p-10">
+					<span class="loading loading-spinner text-primary loading-lg"></span>
 				</div>
 			</div>
+
+			<!-- Section 2: 계좌별 카드 + 종목별 집계 테이블 -->
+			<div hx-get="/stock/htmx/asset-status" hx-trigger="load" hx-swap="innerHTML">
+				<div class="flex justify-center p-10">
+					<span class="loading loading-spinner text-primary loading-lg"></span>
+				</div>
+			</div>
+
 		</div>
 	`
 )
