@@ -3,9 +3,11 @@ package net.luversof.client.common.config;
 import java.util.function.Function;
 
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.restclient.RestClientCustomizer;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.restclient.autoconfigure.RestClientBuilderConfigurer;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
@@ -19,7 +21,7 @@ import io.github.luversof.boot.web.client.BlueskyClientResponseErrorHandler;
 import io.github.luversof.boot.web.service.invoker.PageableHttpServiceArgumentResolver;
 import tools.jackson.databind.json.JsonMapper;
 
-@AutoConfiguration
+@AutoConfiguration(before = RestClientAutoConfiguration.class)
 public class ClientCommonAutoConfiguration {
 
   @Bean
@@ -30,7 +32,6 @@ public class ClientCommonAutoConfiguration {
 
   @Bean
   @Scope("prototype")
-  @ConditionalOnMissingBean
   @Primary
   RestClient.Builder restClientBuilder(RestClientBuilderConfigurer restClientBuilderConfigurer) {
     return restClientBuilderConfigurer.configure(RestClient.builder());
@@ -61,7 +62,7 @@ public class ClientCommonAutoConfiguration {
   @ConditionalOnMissingBean
   Function<String, HttpServiceProxyFactory> httpServiceProxyFactoryBuilder(
       @LoadBalanced ObjectProvider<RestClient.Builder> loadBalancedRestClientBuilderProvider,
-      ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+      @Qualifier("restClientBuilder") ObjectProvider<RestClient.Builder> restClientBuilderProvider,
       PageableHttpServiceArgumentResolver pageableHttpServiceArgumentResolver) {
     return baseUrl -> {
       RestClient.Builder builder;
