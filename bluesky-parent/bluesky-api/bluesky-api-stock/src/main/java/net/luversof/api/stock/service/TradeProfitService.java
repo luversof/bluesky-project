@@ -399,7 +399,7 @@ public class TradeProfitService {
       }
       if (snap != null) {
         simulationStart =
-            snap.getDate().plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+            snap.getDate().plusDays(1).atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
         globalCumulativeRealized =
             snap.getCumulativeRealizedProfit() != null
                 ? snap.getCumulativeRealizedProfit()
@@ -544,8 +544,11 @@ public class TradeProfitService {
         if (trade.getType() == TradeType.BUY) {
           if (q > 0) {
             // 수정주가 기준 환산 수량: amount(투자금) / 당일 수정주가
+            // adjustedClose가 0이면 rawQty를 그대로 사용 (평가액 계산 불가 상황)
             BigDecimal adjustedQty =
-                amount.divide(adjustedClose, 10, java.math.RoundingMode.HALF_UP);
+                (adjustedClose == null || adjustedClose.compareTo(BigDecimal.ZERO) == 0)
+                    ? BigDecimal.valueOf(q)
+                    : amount.divide(adjustedClose, 10, java.math.RoundingMode.HALF_UP);
             state.quantity = state.quantity.add(adjustedQty);
             state.rawQuantity += q;
             state.totalCost = state.totalCost.add(amount);
@@ -562,7 +565,9 @@ public class TradeProfitService {
           if (state.quantity.compareTo(BigDecimal.ZERO) > 0) {
             // 매도 수량도 수정주가 기준으로 환산
             BigDecimal adjustedSellQty =
-                amount.divide(adjustedClose, 10, java.math.RoundingMode.HALF_UP);
+                (adjustedClose == null || adjustedClose.compareTo(BigDecimal.ZERO) == 0)
+                    ? BigDecimal.valueOf(q)
+                    : amount.divide(adjustedClose, 10, java.math.RoundingMode.HALF_UP);
             if (state.quantity.compareTo(adjustedSellQty) >= 0) {
               state.quantity = state.quantity.subtract(adjustedSellQty);
               state.totalCost = state.totalCost.subtract(cogs);

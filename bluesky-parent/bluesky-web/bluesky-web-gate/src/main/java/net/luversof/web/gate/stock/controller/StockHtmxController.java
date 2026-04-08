@@ -4,6 +4,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -26,6 +29,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
@@ -2305,6 +2309,62 @@ public class StockHtmxController {
 
     model.addAttribute("timeSeries", timeSeries);
     return "stock/htmx/asset-growth";
+  }
+
+  @GetMapping(value = "/asset-growth/data", produces = org.springframework.http.MediaType.APPLICATION_JSON_VALUE)
+  @ResponseBody
+  public Map<String, Object> assetGrowthData(
+      TradeProfitRequest request,
+      @RequestParam(name = "from", required = false) String from,
+      @RequestParam(name = "to", required = false) String to,
+      @RequestParam(name = "gran", required = false) String gran) {
+    UUID userId = UserUtil.getUserId();
+    if (userId == null) {
+      return Map.of("labels", List.of());
+    }
+    request.setUserId(userId);
+    if (from != null) {
+      request.setStartDate(
+          LocalDate.parse(from).atStartOfDay(ZoneOffset.UTC).toInstant());
+    }
+    if (to != null) {
+      request.setEndDate(
+          LocalDate.parse(to).atStartOfDay(ZoneOffset.UTC).toInstant());
+    }
+    var params = request.toParams();
+    params.add("granularity", gran != null ? gran : "AUTO");
+    var timeSeries = tradeProfitClient.timeSeries(params);
+    var fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    var labelsList = new ArrayList<String>();
+    var tvList = new ArrayList<Long>();
+    var tcList = new ArrayList<Long>();
+    var crpList = new ArrayList<Long>();
+    var cdList = new ArrayList<Long>();
+    for (var pt : timeSeries) {
+      labelsList.add(fmt.format(pt.timestamp()));
+      tvList.add(
+          pt.totalHoldingsValue() != null
+              ? pt.totalHoldingsValue().setScale(0, RoundingMode.HALF_UP).longValue()
+              : 0L);
+      tcList.add(
+          pt.totalHoldingsCost() != null
+              ? pt.totalHoldingsCost().setScale(0, RoundingMode.HALF_UP).longValue()
+              : 0L);
+      crpList.add(
+          pt.cumulativeRealizedProfit() != null
+              ? pt.cumulativeRealizedProfit().setScale(0, RoundingMode.HALF_UP).longValue()
+              : 0L);
+      cdList.add(
+          pt.cumulativeDividend() != null
+              ? pt.cumulativeDividend().setScale(0, RoundingMode.HALF_UP).longValue()
+              : 0L);
+    }
+    return Map.of(
+        "labels", labelsList,
+        "totalValueData", tvList,
+        "totalCostData", tcList,
+        "cumulativeRealizedProfitData", crpList,
+        "cumulativeDividendData", cdList);
   }
 
   @BlueskyPreAuthorize
