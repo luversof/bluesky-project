@@ -40,6 +40,7 @@
                         <button type="button" class="btn btn-xs btn-ghost" data-months="1" onclick="setViewRange(1)">1개월</button>
                         <button type="button" class="btn btn-xs btn-ghost" data-months="3" onclick="setViewRange(3)">3개월</button>
                         <button type="button" class="btn btn-xs btn-ghost" data-months="6" onclick="setViewRange(6)">6개월</button>
+                        <button type="button" class="btn btn-xs btn-ghost" data-months="-1" onclick="setViewRange(-1)">올해</button>
                         <button type="button" class="btn btn-xs btn-ghost" data-months="12" onclick="setViewRange(12)">1년</button>
                         <button type="button" class="btn btn-xs btn-ghost" data-months="36" onclick="setViewRange(36)">3년</button>
                         <button type="button" class="btn btn-xs btn-ghost" data-months="0" onclick="setViewRange(0)">전체</button>
@@ -478,6 +479,17 @@
                 if (months === 0) {
                     newMinIdx = 0;
                     newMaxIdx = labels.length - 1;
+                } else if (months === -1) {
+                    // 올해: Jan 1 of current year ~ today
+                    var ytdStart = new Date().getFullYear() + '-01-01';
+                    newMaxIdx = labels.length - 1;
+                    for (var k = labels.length - 1; k >= 0; k--) {
+                        if (labels[k] <= viewEndDate) { newMaxIdx = k; break; }
+                    }
+                    newMinIdx = 0;
+                    for (var i = 0; i < labels.length; i++) {
+                        if (labels[i] >= ytdStart) { newMinIdx = i; break; }
+                    }
                 } else {
                     var startDate = new Date(viewEndDate);
                     startDate.setMonth(startDate.getMonth() - months);
@@ -511,9 +523,13 @@
                 var curVisStart = od.visStart, curVisEnd = od.visEnd;
                 var curSpanMs = new Date(curVisEnd) - new Date(curVisStart);
 
-                // 이동 거리 계산 (activeMonths=0 이면 현재 span 사용)
+                // 이동 거리 계산 (activeMonths=0 이면 현재 span 사용, activeMonths=-1(올해)이면 1년 단위)
                 var shiftMs;
-                if (activeMonths > 0) {
+                if (activeMonths === -1) {
+                    var d = new Date(curVisEnd);
+                    d.setFullYear(d.getFullYear() - 1);
+                    shiftMs = new Date(curVisEnd) - d;
+                } else if (activeMonths > 0) {
                     var d = new Date(curVisEnd);
                     d.setMonth(d.getMonth() - activeMonths);
                     shiftMs = new Date(curVisEnd) - d;

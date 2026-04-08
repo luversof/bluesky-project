@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -1861,11 +1862,13 @@ public class StockHtmxController {
                               .orElse(grossAmount.subtract(tax));
 
                   BigDecimal taxableAmount = BigDecimal.ZERO;
-                  if (!isDeferred
-                      && dividend.taxPerShare() != null
-                      && dividend.quantity() != null) {
-                    taxableAmount =
-                        dividend.taxPerShare().multiply(BigDecimal.valueOf(dividend.quantity()));
+                  if (!isDeferred) {
+                    if (dividend.taxableAmount() != null) {
+                      taxableAmount = dividend.taxableAmount();
+                    } else if (dividend.taxPerShare() != null && dividend.quantity() != null) {
+                      taxableAmount =
+                          dividend.taxPerShare().multiply(BigDecimal.valueOf(dividend.quantity()));
+                    }
                   }
 
                   return new DividendView(
@@ -1952,7 +1955,7 @@ public class StockHtmxController {
     List<DividendView> pagedList =
         (fromIndex < totalItems) ? viewList.subList(fromIndex, toIndex) : Collections.emptyList();
 
-    // Calculate Totals
+    // Calculate Totals (paged - for tfoot)
     BigDecimal totalGrossAmount =
         pagedList.stream().map(DividendView::grossAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
     BigDecimal totalNetAmount =
@@ -1964,10 +1967,65 @@ public class StockHtmxController {
             .map(DividendView::taxableAmount)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+    // All-items totals (for summary cards)
+    BigDecimal totalAllGrossAmount =
+        viewList.stream().map(DividendView::grossAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalAllNetAmount =
+        viewList.stream().map(DividendView::netAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalAllTaxableAmount =
+        viewList.stream().map(DividendView::taxableAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    // Previous period comparison (only when both dates are selected)
+    BigDecimal prevPeriodNetAmount = null;
+    LocalDate prevStartDate = null;
+    LocalDate prevEndDate = null;
+    if (startDate != null && endDate != null) {
+      long durationDays = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+      prevStartDate = startDate.minusDays(durationDays);
+      prevEndDate = startDate.minusDays(1);
+
+      Instant prevStartInstant = prevStartDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+      Instant prevEndInstant =
+          prevEndDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+      var prevRequest = new DividendRequest();
+      prevRequest.setUserId(userId);
+      prevRequest.setStartDate(prevStartInstant);
+      prevRequest.setEndDate(prevEndInstant);
+
+      final List<UUID> finalAccountIdList = accountIdList;
+      final List<UUID> finalStockItemIdList = stockItemIdList;
+      List<DividendResponse> prevDividends = dividendClient.findDividends(prevRequest.toParams());
+      prevPeriodNetAmount =
+          prevDividends.stream()
+              .filter(
+                  d ->
+                      (finalAccountIdList == null
+                          || finalAccountIdList.isEmpty()
+                          || finalAccountIdList.contains(d.accountId())))
+              .filter(
+                  d ->
+                      (finalStockItemIdList == null
+                          || finalStockItemIdList.isEmpty()
+                          || finalStockItemIdList.contains(d.stockItemId())))
+              .map(
+                  d -> {
+                    boolean isDeferred = taxDeferredMap.getOrDefault(d.accountId(), false);
+                    BigDecimal gross =
+                        Optional.ofNullable(d.grossAmount()).orElse(BigDecimal.ZERO);
+                    if (isDeferred) return gross;
+                    BigDecimal tax =
+                        Optional.ofNullable(d.tax()).orElse(BigDecimal.ZERO);
+                    return Optional.ofNullable(d.netAmount()).orElse(gross.subtract(tax));
+                  })
+              .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
     var pageImpl = new PageImpl<>(pagedList, PageRequest.of(currentPage - 1, size), totalItems);
     var pagination = new Pagination(pageImpl);
 
     model.addAttribute("dividendList", pagedList);
+    model.addAttribute("allDividendList", viewList);
     model.addAttribute("pagination", pagination);
     model.addAttribute("totalItems", totalItems);
     model.addAttribute("totalPages", totalPages);
@@ -1993,6 +2051,12 @@ public class StockHtmxController {
     model.addAttribute("totalNetAmount", totalNetAmount);
     model.addAttribute("totalTax", totalTax);
     model.addAttribute("totalTaxableAmount", totalTaxableAmount);
+    model.addAttribute("totalAllGrossAmount", totalAllGrossAmount);
+    model.addAttribute("totalAllNetAmount", totalAllNetAmount);
+    model.addAttribute("totalAllTaxableAmount", totalAllTaxableAmount);
+    model.addAttribute("prevPeriodNetAmount", prevPeriodNetAmount);
+    model.addAttribute("prevStartDate", prevStartDate);
+    model.addAttribute("prevEndDate", prevEndDate);
 
     return "stock/htmx/fragments/tabsDividendHistory";
   }
