@@ -59,7 +59,7 @@
                     <button type="button" id="btnPrev" class="btn btn-sm btn-ghost btn-circle" style="opacity:0.2;" onclick="shiftView(-1)" title="이전 기간">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                     </button>
-                    <p class="text-xs text-base-content/50 px-2">💰 손익 분석 &mdash; 확정 손익(막대) · 평가 손익(선) · 누적 배당금(면적, 우축)</p>
+                    <p class="text-xs text-base-content/50 px-2">💰 손익 분석 &mdash; <span class="text-indigo-400">■</span> 누적 결산 손익 + <span class="text-green-400">■</span> 누적 배당금 = 수익 합산 선</p>
                     <button type="button" id="btnNext" class="btn btn-sm btn-ghost btn-circle" onclick="shiftView(1)" title="다음 기간">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                     </button>
@@ -101,6 +101,10 @@
             var currentUnrealizedProfitData = totalValueData.map(function(v, i) {
                 return parseFloat(v) - parseFloat(totalCostData[i]);
             });
+            // 총 누적 이익 = 누적 결산 손익 + 누적 배당금
+            var totalCumulativeProfitData = cumulativeRealizedProfitData.map(function(v, i) {
+                return parseFloat(v) + parseFloat(cumulativeDividendData[i]);
+            });
 
             // ── 줌/팬 시 동적 그래뉼래러티 로딩 ─────────────────────────────────
             var baseData = {
@@ -138,7 +142,57 @@
             var pendingVisStart = null;
             var pendingVisEnd   = null;
 
+            var scaleAnimFrame = null; // requestAnimationFrame handle for scale transition
+
+            // 뷰 구간을 부드럽게(easeOutCubic) 전환하는 헬퍼
+            // shiftView / setViewRange / jumpToEdge 에서 사용
+            var animateScaleChange = function(toMin, toMax, duration) {
+                if (scaleAnimFrame !== null) {
+                    cancelAnimationFrame(scaleAnimFrame);
+                    scaleAnimFrame = null;
+                }
+                var fromMin = mainChart.scales.x.min;
+                var fromMax = mainChart.scales.x.max;
+                // 이미 목표값에 매우 가까우면 즉시 적용
+                if (Math.abs(fromMin - toMin) < 0.5 && Math.abs(fromMax - toMax) < 0.5) {
+                    mainChart.options.scales.x.min = toMin;
+                    mainChart.options.scales.x.max = toMax;
+                    dividendChart.options.scales.x.min = toMin;
+                    dividendChart.options.scales.x.max = toMax;
+                    mainChart.update('none');
+                    dividendChart.update('none');
+                    checkNavButtons();
+                    return;
+                }
+                var startTime = null;
+                var step = function(ts) {
+                    if (!startTime) startTime = ts;
+                    var t = Math.min((ts - startTime) / duration, 1);
+                    var ease = 1 - Math.pow(1 - t, 3); // easeOutCubic
+                    var curMin = fromMin + (toMin - fromMin) * ease;
+                    var curMax = fromMax + (toMax - fromMax) * ease;
+                    mainChart.options.scales.x.min = curMin;
+                    mainChart.options.scales.x.max = curMax;
+                    dividendChart.options.scales.x.min = curMin;
+                    dividendChart.options.scales.x.max = curMax;
+                    mainChart.update('none');
+                    dividendChart.update('none');
+                    if (t < 1) {
+                        scaleAnimFrame = requestAnimationFrame(step);
+                    } else {
+                        scaleAnimFrame = null;
+                        checkNavButtons();
+                    }
+                };
+                scaleAnimFrame = requestAnimationFrame(step);
+            };
+
             var applyChartData = function(newData, visStart, visEnd) {
+                // 진행 중인 scale 애니메이션 취소 (데이터 교체와 충돌 방지)
+                if (scaleAnimFrame !== null) {
+                    cancelAnimationFrame(scaleAnimFrame);
+                    scaleAnimFrame = null;
+                }
                 // onHover 핸들러 진입 차단 (stale 인덱스 방지)
                 syncing = true;
 
@@ -153,9 +207,6 @@
                 cumulativeDividendData.length = 0;
                 newData.cumulativeDividendData.forEach(function(v) { cumulativeDividendData.push(v); });
 
-                var newUnrealized = totalValueData.map(function(v, i) {
-                    return parseFloat(v) - parseFloat(totalCostData[i]);
-                });
                 var newMin = 0;
                 for (var i = 0; i < labels.length; i++) {
                     if (labels[i] >= visStart) { newMin = i; break; }
@@ -180,11 +231,9 @@
 
                 dividendChart.data.labels = labels;
                 dividendChart.data.datasets[0].data = cumulativeRealizedProfitData.slice();
-                dividendChart.data.datasets[0].backgroundColor = cumulativeRealizedProfitData.map(function(v) {
-                    return parseFloat(v) >= 0 ? 'rgba(255, 99, 132, 0.55)' : 'rgba(54, 162, 235, 0.55)';
+                dividendChart.data.datasets[1].data = cumulativeRealizedProfitData.map(function(v, i) {
+                    return parseFloat(v) + parseFloat(cumulativeDividendData[i]);
                 });
-                dividendChart.data.datasets[1].data = newUnrealized;
-                dividendChart.data.datasets[2].data = cumulativeDividendData.slice();
                 dividendChart.options.scales.x.min = newMin;
                 dividendChart.options.scales.x.max = newMax;
                 dividendChart.options.plugins.zoom.limits.x.min = 0;
@@ -396,13 +445,7 @@
                     edgeMinIdx = Math.max(0, labels.length - 1 - spanPts);
                 }
 
-                mainChart.options.scales.x.min = edgeMinIdx;
-                mainChart.options.scales.x.max = edgeMaxIdx;
-                mainChart.update('none');
-                dividendChart.options.scales.x.min = edgeMinIdx;
-                dividendChart.options.scales.x.max = edgeMaxIdx;
-                dividendChart.update('none');
-                checkNavButtons();
+                animateScaleChange(edgeMinIdx, edgeMaxIdx, 320);
             };
 
             // 퀘셀렉터: 단위 M=월, Y=년, 0=전체
@@ -449,20 +492,14 @@
                     }
                 }
                 if (newMaxIdx < newMinIdx) newMaxIdx = Math.min(newMinIdx + 1, labels.length - 1);
-                mainChart.options.scales.x.min = newMinIdx;
-                mainChart.options.scales.x.max = newMaxIdx;
-                mainChart.update('none');
-                dividendChart.options.scales.x.min = newMinIdx;
-                dividendChart.options.scales.x.max = newMaxIdx;
-                dividendChart.update('none');
-                checkNavButtons();
-                // checkAndFetchDetail 이 BASE labels 포인트를 getOptDates() 로 읽으면 희박한 범위가 나오모로
+                // checkAndFetchDetail 이 BASE labels 포인트를 getOptDates() 로 읽으면 희박한 범위가 나오므로
                 // 실제 목표 날짜를 명시적으로 저장
                 pendingVisStart = labels[newMinIdx];
                 pendingVisEnd   = labels[newMaxIdx];
                 setLoading(true);
                 clearTimeout(checkDetailTimer);
                 checkDetailTimer = setTimeout(checkAndFetchDetail, 200);
+                animateScaleChange(newMinIdx, newMaxIdx, 320);
             };
 
             // 이전/다음 기간 이동 (direction: -1=이전, 1=다음)
@@ -525,13 +562,6 @@
                 }
                 if (newMaxIdx < newMinIdx) newMaxIdx = Math.min(newMinIdx + 1, labels.length - 1);
 
-                mainChart.options.scales.x.min = newMinIdx;
-                mainChart.options.scales.x.max = newMaxIdx;
-                mainChart.update('none');
-                dividendChart.options.scales.x.min = newMinIdx;
-                dividendChart.options.scales.x.max = newMaxIdx;
-                dividendChart.update('none');
-                checkNavButtons();
                 // checkAndFetchDetail 이 BASE labels 포인트를 getOptDates() 로 읽으면 희박한 범위가 나오므로
                 // 실제 목표 날짜를 명시적으로 저장 (newMinTarget/newMaxTarget 은 경계 보정된 날짜 문자열)
                 pendingVisStart = newMinTarget;
@@ -539,6 +569,7 @@
                 setLoading(true);
                 clearTimeout(checkDetailTimer);
                 checkDetailTimer = setTimeout(checkAndFetchDetail, 200);
+                animateScaleChange(newMinIdx, newMaxIdx, 320);
             };
 
             var syncZoomPan = function({chart}) {
@@ -715,47 +746,33 @@
             });
 
             dividendChart = new Chart(ctxDividend.getContext('2d'), {
-                type: 'bar',
+                type: 'line',
                 data: {
                     labels: labels,
                     datasets: [
                         {
-                            type: 'bar',
                             label: '누적 결산 손익(실현)',
                             data: cumulativeRealizedProfitData,
-                            backgroundColor: cumulativeRealizedProfitData.map(v => parseFloat(v) >= 0 ? 'rgba(255, 99, 132, 0.55)' : 'rgba(54, 162, 235, 0.55)'),
-                            borderWidth: 0,
-                            yAxisID: 'y'
-                        },
-                        {
-                            type: 'line',
-                            label: '현재 평가 손익(미실현)',
-                            data: currentUnrealizedProfitData,
-                            segment: {
-                                borderColor: function(ctx) {
-                                    if (!ctx.p1 || ctx.p1.parsed == null) return 'rgba(156,163,175,0.5)';
-                                    return ctx.p1.parsed.y >= 0 ? 'rgba(255, 99, 132, 1)' : 'rgba(54, 162, 235, 1)';
-                                }
-                            },
-                            borderWidth: 2,
-                            pointRadius: 0,
-                            pointHitRadius: 10,
-                            pointHoverRadius: 4,
-                            fill: false,
-                            yAxisID: 'y'
-                        },
-                        {
-                            type: 'line',
-                            label: '누적 배당금',
-                            data: cumulativeDividendData,
-                            borderColor: 'rgba(255, 159, 64, 1)',
-                            backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                            borderColor: 'rgba(99, 102, 241, 1)',
+                            backgroundColor: 'rgba(99, 102, 241, 0.25)',
                             borderWidth: 2,
                             fill: 'origin',
                             pointRadius: 0,
                             pointHitRadius: 10,
                             pointHoverRadius: 4,
-                            yAxisID: 'y1'
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '수익 합산(결산+배당)',
+                            data: totalCumulativeProfitData,
+                            borderColor: 'rgba(34, 197, 94, 1)',
+                            backgroundColor: 'rgba(34, 197, 94, 0.25)',
+                            borderWidth: 2,
+                            fill: '-1',
+                            pointRadius: 0,
+                            pointHitRadius: 10,
+                            pointHoverRadius: 4,
+                            yAxisID: 'y'
                         }
                     ]
                 },
@@ -776,15 +793,24 @@
                         zoom: commonZoomOptions,
                         tooltip: {
                             callbacks: {
-                                label: function(context) {
-                                    var label = context.dataset.label || '';
-                                    if (label) label += ': ';
-                                    if (context.parsed.y !== null) {
-                                        var val = context.parsed.y;
-                                        var sign = val >= 0 ? '+' : '-';
-                                        label += sign + new Intl.NumberFormat('ko-KR').format(Math.abs(val)) + '원';
-                                    }
-                                    return label;
+                                // dataset label 은 숨기고 afterBody 에서 원하는 형태로 직접 구성
+                                label: function() { return null; },
+                                afterBody: function(tooltipItems) {
+                                    if (!tooltipItems.length) return [];
+                                    var idx = tooltipItems[0].dataIndex;
+                                    var fmt = function(val) {
+                                        var v = Math.round(parseFloat(val) || 0);
+                                        return (v >= 0 ? '+' : '-') + new Intl.NumberFormat('ko-KR').format(Math.abs(v)) + '원';
+                                    };
+                                    var realized  = cumulativeRealizedProfitData[idx];
+                                    var dividend  = cumulativeDividendData[idx];
+                                    var total     = (parseFloat(realized) || 0) + (parseFloat(dividend) || 0);
+                                    return [
+                                        '누적 결산 손익: ' + fmt(realized),
+                                        '누적 배당금:    ' + fmt(dividend),
+                                        '─────────────────────',
+                                        '수익 합산:      ' + fmt(total)
+                                    ];
                                 }
                             }
                         }
@@ -803,15 +829,7 @@
                         y: {
                             display: true,
                             position: 'left',
-                            title: { display: true, text: '손익' },
-                            ticks: { callback: yTicksCallback }
-                        },
-                        y1: {
-                            display: true,
-                            position: 'right',
-                            grid: { drawOnChartArea: false },
-                            beginAtZero: true,
-                            title: { display: true, text: '배당금 누적' },
+                            title: { display: true, text: '누적 손익 / 이익' },
                             ticks: { callback: yTicksCallback }
                         }
                     },
@@ -843,6 +861,12 @@
 
             // 초기 버튼 상태 업데이트
             checkNavButtons();
+
+            // canvas 에 opacity 부드러운 전환 적용 (데이터 로딩 시 fade in/out 효과)
+            var c1El = document.getElementById('assetGrowthChart');
+            var c2El = document.getElementById('dividendChart');
+            if (c1El) c1El.style.transition = 'opacity 0.25s ease';
+            if (c2El) c2El.style.transition = 'opacity 0.25s ease';
 
             // 두 차트 plot 너비 맞추기: double-RAF 로 브라우저 렌더 완료 후 y1 축 너비 측정
             requestAnimationFrame(function() {
