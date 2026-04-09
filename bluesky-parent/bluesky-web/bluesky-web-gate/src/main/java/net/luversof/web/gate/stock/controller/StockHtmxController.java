@@ -2011,11 +2011,9 @@ public class StockHtmxController {
               .map(
                   d -> {
                     boolean isDeferred = taxDeferredMap.getOrDefault(d.accountId(), false);
-                    BigDecimal gross =
-                        Optional.ofNullable(d.grossAmount()).orElse(BigDecimal.ZERO);
+                    BigDecimal gross = Optional.ofNullable(d.grossAmount()).orElse(BigDecimal.ZERO);
                     if (isDeferred) return gross;
-                    BigDecimal tax =
-                        Optional.ofNullable(d.tax()).orElse(BigDecimal.ZERO);
+                    BigDecimal tax = Optional.ofNullable(d.tax()).orElse(BigDecimal.ZERO);
                     return Optional.ofNullable(d.netAmount()).orElse(gross.subtract(tax));
                   })
               .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -2375,7 +2373,9 @@ public class StockHtmxController {
     return "stock/htmx/asset-growth";
   }
 
-  @GetMapping(value = "/asset-growth/data", produces = org.springframework.http.MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(
+      value = "/asset-growth/data",
+      produces = org.springframework.http.MediaType.APPLICATION_JSON_VALUE)
   @ResponseBody
   public Map<String, Object> assetGrowthData(
       TradeProfitRequest request,
@@ -2388,12 +2388,10 @@ public class StockHtmxController {
     }
     request.setUserId(userId);
     if (from != null) {
-      request.setStartDate(
-          LocalDate.parse(from).atStartOfDay(ZoneOffset.UTC).toInstant());
+      request.setStartDate(LocalDate.parse(from).atStartOfDay(ZoneOffset.UTC).toInstant());
     }
     if (to != null) {
-      request.setEndDate(
-          LocalDate.parse(to).atStartOfDay(ZoneOffset.UTC).toInstant());
+      request.setEndDate(LocalDate.parse(to).atStartOfDay(ZoneOffset.UTC).toInstant());
     }
     var params = request.toParams();
     params.add("granularity", gran != null ? gran : "AUTO");
