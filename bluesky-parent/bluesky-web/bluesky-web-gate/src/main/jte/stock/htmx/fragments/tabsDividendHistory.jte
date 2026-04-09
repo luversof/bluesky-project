@@ -34,6 +34,7 @@
 @param BigDecimal prevPeriodNetAmount = null
 @param LocalDate prevStartDate = null
 @param LocalDate prevEndDate = null
+@param String rangeMode = null
 
 !{
     String sortField = sort != null ? sort.split(",")[0] : "";
@@ -85,15 +86,15 @@
     <!-- Quick Date Selector -->
     <div class="flex flex-wrap gap-2 mb-3 items-center">
         <span class="text-xs opacity-50 mr-1">기간</span>
-        <button type="button" id="prevRangeBtn" class="btn btn-xs btn-ghost" onclick="shiftDateRange(-1)">‹ 이전</button>
-        <button type="button" class="btn btn-xs quick-range-btn" onclick="setDateRange(1,this)">1개월</button>
-        <button type="button" class="btn btn-xs quick-range-btn" onclick="setDateRange(3,this)">3개월</button>
-        <button type="button" class="btn btn-xs quick-range-btn" onclick="setDateRange(6,this)">6개월</button>
-        <button type="button" class="btn btn-xs quick-range-btn" onclick="setDateRange('ytd',this)">올해</button>
-        <button type="button" class="btn btn-xs quick-range-btn" onclick="setDateRange(12,this)">1년</button>
-        <button type="button" class="btn btn-xs quick-range-btn" onclick="setDateRange(36,this)">3년</button>
-        <button type="button" class="btn btn-xs quick-range-btn" onclick="setDateRange(0,this)">전체</button>
-        <button type="button" id="nextRangeBtn" class="btn btn-xs btn-ghost" onclick="shiftDateRange(1)">다음 ›</button>
+        <button type="button" class="btn btn-xs btn-ghost" onclick="dividendPicker.shift(-1)">‹ 이전</button>
+        <button type="button" class="btn btn-xs quick-range-btn ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : ""}" onclick="dividendPicker.set(1,this)">1개월</button>
+        <button type="button" class="btn btn-xs quick-range-btn ${rangeMode != null && rangeMode.equals("3") ? "btn-primary" : ""}" onclick="dividendPicker.set(3,this)">3개월</button>
+        <button type="button" class="btn btn-xs quick-range-btn ${rangeMode != null && rangeMode.equals("6") ? "btn-primary" : ""}" onclick="dividendPicker.set(6,this)">6개월</button>
+        <button type="button" class="btn btn-xs quick-range-btn ${rangeMode != null && rangeMode.equals("ytd") ? "btn-primary" : ""}" onclick="dividendPicker.set('ytd',this)">올해</button>
+        <button type="button" class="btn btn-xs quick-range-btn ${rangeMode != null && rangeMode.equals("12") ? "btn-primary" : ""}" onclick="dividendPicker.set(12,this)">1년</button>
+        <button type="button" class="btn btn-xs quick-range-btn ${rangeMode != null && rangeMode.equals("36") ? "btn-primary" : ""}" onclick="dividendPicker.set(36,this)">3년</button>
+        <button type="button" class="btn btn-xs quick-range-btn ${rangeMode != null && rangeMode.equals("all") ? "btn-primary" : ""}" onclick="dividendPicker.set(0,this)">전체</button>
+        <button type="button" class="btn btn-xs btn-ghost" onclick="dividendPicker.shift(1)">다음 ›</button>
     </div>
 
     <!-- Filter & Search Form -->
@@ -111,6 +112,7 @@
                 <input type="date" name="endDate" id="endDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.toString() : ""}">
             </div>
         </div>
+        <input type="hidden" name="rangeMode" id="dividendRangeModeInput" value="${rangeMode != null ? rangeMode : ""}">
 
         <div class="form-control w-full sm:w-auto">
             <label class="label p-1"><span class="label-text text-xs">계좌</span></label>
@@ -476,29 +478,7 @@
         }
 
         function updateNavButtons() {
-            const prevBtn = document.getElementById('prevRangeBtn');
-            const nextBtn = document.getElementById('nextRangeBtn');
-            const startVal = document.getElementById('startDateInput').value;
-            const endVal = document.getElementById('endDateInput').value;
-            const today = new Date().toISOString().slice(0, 10);
-
-            // 이전: 날짜 범위가 없으면(전체 보기) 비활성화
-            const prevDisabled = !startVal;
-            if (prevBtn) {
-                prevBtn.disabled = prevDisabled;
-                prevBtn.classList.toggle('btn-disabled', prevDisabled);
-                prevBtn.classList.toggle('opacity-30', prevDisabled);
-                prevBtn.classList.toggle('cursor-not-allowed', prevDisabled);
-            }
-
-            // 다음: 종료일이 오늘이거나 날짜 범위가 없으면 비활성화
-            const nextDisabled = !endVal || endVal >= today;
-            if (nextBtn) {
-                nextBtn.disabled = nextDisabled;
-                nextBtn.classList.toggle('btn-disabled', nextDisabled);
-                nextBtn.classList.toggle('opacity-30', nextDisabled);
-                nextBtn.classList.toggle('cursor-not-allowed', nextDisabled);
-            }
+            // nav button state is handled by DateRangePicker
         }
 
         function initAll() {
@@ -514,78 +494,15 @@
             initDonutChart(mode);
         };
 
-        let activeRangeDef = null; // null | number | 'ytd'
-
-        window.shiftDateRange = function(dir) {
-            const startEl = document.getElementById('startDateInput');
-            const endEl = document.getElementById('endDateInput');
-            const startVal = startEl.value;
-            const endVal = endEl.value;
-            if (!startVal || !endVal) return;
-
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            // HTMX 스왑 후 activeRangeDef 가 리셋되므로, startDate 가 1월 1일이면 YTD로 간주
-            const isYtd = activeRangeDef === 'ytd' || startVal.slice(5) === '01-01';
-
-            if (isYtd) {
-                const curYear = new Date(startVal + 'T00:00:00').getFullYear();
-                const newYear = curYear + dir;
-                if (dir > 0 && newYear > today.getFullYear()) return;
-                startEl.value = newYear + '-01-01';
-                if (dir > 0 && newYear === today.getFullYear()) {
-                    endEl.value = today.toISOString().slice(0, 10);
-                } else {
-                    endEl.value = newYear + '-12-31';
-                }
-            } else if (activeRangeDef !== null && activeRangeDef > 0) {
-                // shift by fixed months
-                const start = new Date(startVal + 'T00:00:00');
-                const end = new Date(endVal + 'T00:00:00');
-                start.setMonth(start.getMonth() + dir * activeRangeDef);
-                end.setMonth(end.getMonth() + dir * activeRangeDef);
-                if (dir > 0 && start > today) return;
-                if (dir > 0 && end > today) end.setTime(today.getTime());
-                startEl.value = start.toISOString().slice(0, 10);
-                endEl.value = end.toISOString().slice(0, 10);
-            } else {
-                // span-based shift
-                const start = new Date(startVal + 'T00:00:00');
-                const end = new Date(endVal + 'T00:00:00');
-                const spanMs = end - start;
-                if (spanMs <= 0) return;
-                const newStart = new Date(start.getTime() + dir * spanMs);
-                const newEnd = new Date(end.getTime() + dir * spanMs);
-                if (dir > 0 && newStart > today) return;
-                if (dir > 0 && newEnd > today) newEnd.setTime(today.getTime());
-                startEl.value = newStart.toISOString().slice(0, 10);
-                endEl.value = newEnd.toISOString().slice(0, 10);
-            }
-            document.querySelectorAll('.quick-range-btn').forEach(b => b.classList.remove('btn-primary'));
-            document.getElementById('dividendSearchForm').requestSubmit();
-        };
-
-        window.setDateRange = function(months, btn) {
-            document.querySelectorAll('.quick-range-btn').forEach(b => b.classList.remove('btn-primary'));
-            if (btn) btn.classList.add('btn-primary');
-            activeRangeDef = months;
-            const end = new Date();
-            const start = new Date(end);
-            if (months === 0) {
-                document.getElementById('startDateInput').value = '';
-                document.getElementById('endDateInput').value = '';
-            } else if (months === 'ytd') {
-                document.getElementById('startDateInput').value = new Date().getFullYear() + '-01-01';
-                document.getElementById('endDateInput').value = end.toISOString().slice(0, 10);
-            } else {
-                start.setMonth(start.getMonth() - months);
-                document.getElementById('startDateInput').value = start.toISOString().slice(0, 10);
-                document.getElementById('endDateInput').value = end.toISOString().slice(0, 10);
-            }
-            updateNavButtons();
-            document.getElementById('dividendSearchForm').requestSubmit();
-        };
+        window.dividendPicker = window.DateRangePicker
+            ? window.DateRangePicker.create({
+                formId:      'dividendSearchForm',
+                startId:     'startDateInput',
+                endId:       'endDateInput',
+                rangeModeId: 'dividendRangeModeInput',
+                btnClass:    'quick-range-btn'
+            })
+            : { set: function(){}, shift: function(){} };
 
         // details arrow animation
         const detailSection = document.getElementById('detailSection');

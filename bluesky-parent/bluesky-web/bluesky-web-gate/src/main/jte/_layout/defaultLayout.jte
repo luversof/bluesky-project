@@ -14,6 +14,7 @@
 	<script src="https://unpkg.com/htmx.org"></script>
 	<script src="https://unpkg.com/htmx-ext-json-enc/json-enc.js"></script>
 	<script src="/js/common.js"></script>
+	<script src="/js/date-range-picker.js"></script>
 </head>
 
 <body>

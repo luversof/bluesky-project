@@ -36,14 +36,28 @@
                 </div>
             @else
                 <div class="flex items-center justify-between mb-2">
-                    <div class="flex gap-1" id="quickRangeButtons">
-                        <button type="button" class="btn btn-xs btn-ghost" data-months="1" onclick="setViewRange(1)">1개월</button>
-                        <button type="button" class="btn btn-xs btn-ghost" data-months="3" onclick="setViewRange(3)">3개월</button>
-                        <button type="button" class="btn btn-xs btn-ghost" data-months="6" onclick="setViewRange(6)">6개월</button>
-                        <button type="button" class="btn btn-xs btn-ghost" data-months="-1" onclick="setViewRange(-1)">올해</button>
-                        <button type="button" class="btn btn-xs btn-ghost" data-months="12" onclick="setViewRange(12)">1년</button>
-                        <button type="button" class="btn btn-xs btn-ghost" data-months="36" onclick="setViewRange(36)">3년</button>
-                        <button type="button" class="btn btn-xs btn-ghost" data-months="0" onclick="setViewRange(0)">전체</button>
+                    <div class="flex items-center gap-1">
+                        <button type="button" id="btnFirst" class="btn btn-xs btn-ghost btn-circle" style="opacity:0.2;" onclick="jumpToEdge('start')" title="제일 앞으로">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
+                        </button>
+                        <button type="button" id="btnPrev" class="btn btn-xs btn-ghost btn-circle" style="opacity:0.2;" onclick="shiftView(-1)" title="이전 기간">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                        </button>
+                        <div class="flex gap-1" id="quickRangeButtons">
+                            <button type="button" class="btn btn-xs btn-ghost" data-months="1" onclick="setViewRange(1)">1개월</button>
+                            <button type="button" class="btn btn-xs btn-ghost" data-months="3" onclick="setViewRange(3)">3개월</button>
+                            <button type="button" class="btn btn-xs btn-ghost" data-months="6" onclick="setViewRange(6)">6개월</button>
+                            <button type="button" class="btn btn-xs btn-ghost" data-months="-1" onclick="setViewRange(-1)">올해</button>
+                            <button type="button" class="btn btn-xs btn-ghost" data-months="12" onclick="setViewRange(12)">1년</button>
+                            <button type="button" class="btn btn-xs btn-ghost" data-months="36" onclick="setViewRange(36)">3년</button>
+                            <button type="button" class="btn btn-xs btn-ghost" data-months="0" onclick="setViewRange(0)">전체</button>
+                        </div>
+                        <button type="button" id="btnNext" class="btn btn-xs btn-ghost btn-circle" onclick="shiftView(1)" title="다음 기간">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                        </button>
+                        <button type="button" id="btnLast" class="btn btn-xs btn-ghost btn-circle" onclick="jumpToEdge('end')" title="제일 뒤로">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+                        </button>
                     </div>
                     <p class="text-xs text-base-content/50">📈 자산 추이 &mdash; 투자 원금(점선) 대비 총 평가액(실선), 색상 면적이 현재 손익 규모 &bull; <span class="text-info">날짜 클릭 시 해당일 보유 종목 조회</span></p>
                 </div>
@@ -53,21 +67,7 @@
                         <span class="loading loading-spinner loading-md text-primary"></span>
                     </div>
                 </div>
-                <div class="flex items-center justify-center gap-1 py-1">
-                    <button type="button" id="btnFirst" class="btn btn-sm btn-ghost btn-circle" style="opacity:0.2;" onclick="jumpToEdge('start')" title="제일 앞으로">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
-                    </button>
-                    <button type="button" id="btnPrev" class="btn btn-sm btn-ghost btn-circle" style="opacity:0.2;" onclick="shiftView(-1)" title="이전 기간">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-                    </button>
-                    <p class="text-xs text-base-content/50 px-2">💰 손익 분석 &mdash; <span class="text-indigo-400">■</span> 누적 결산 손익 + <span class="text-green-400">■</span> 누적 배당금 = 수익 합산 선</p>
-                    <button type="button" id="btnNext" class="btn btn-sm btn-ghost btn-circle" onclick="shiftView(1)" title="다음 기간">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-                    </button>
-                    <button type="button" id="btnLast" class="btn btn-sm btn-ghost btn-circle" onclick="jumpToEdge('end')" title="제일 뒤로">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
-                    </button>
-                </div>
+                <p class="text-xs text-base-content/50 text-center py-1">💰 손익 분석 &mdash; <span class="text-indigo-400">■</span> 누적 결산 손익 + <span class="text-green-400">■</span> 누적 배당금 = 수익 합산 선</p>
                 <div class="w-full" style="height: 250px;">
                     <canvas id="dividendChart" class="amount-chart"></canvas>
                 </div>
