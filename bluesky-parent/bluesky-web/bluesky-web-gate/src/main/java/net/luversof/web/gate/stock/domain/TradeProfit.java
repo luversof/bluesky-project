@@ -48,4 +48,273 @@ public record TradeProfit(
     BigDecimal realizedProfitNet, // 총수령액 - 총원가
     BigDecimal evaluationProfitNet, // 평가액 - (평단NET*보유수량)
     BigDecimal totalProfitNet // realizedNet + evaluationNet
-    ) {}
+    ) {
+
+  // --- 팩토리 메서드 ---
+
+  /** 실현 손익(수수료 반영) 요약 행 생성 */
+  public static TradeProfit ofRealizedSummary(String stockItemName, BigDecimal realizedProfitNet) {
+    return new TradeProfit(
+        null,
+        stockItemName,
+        null,
+        null,
+        null,
+        null,
+        0,
+        null,
+        null,
+        null,
+        0,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        realizedProfitNet,
+        null,
+        null);
+  }
+
+  /** 평가 손익(수수료 반영) 요약 행 생성 */
+  public static TradeProfit ofEvaluationSummary(
+      String stockItemName, BigDecimal evaluationProfitNet) {
+    return new TradeProfit(
+        null,
+        stockItemName,
+        null,
+        null,
+        null,
+        null,
+        0,
+        null,
+        null,
+        null,
+        0,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        evaluationProfitNet,
+        null);
+  }
+
+  /** 자산 현황 - 계좌별 집계 행 생성 */
+  public static TradeProfit ofAccountStatus(
+      String accountName,
+      BigDecimal evalAmt,
+      BigDecimal evalProfit,
+      BigDecimal realizedProfit,
+      BigDecimal totalBuyCost) {
+    return new TradeProfit(
+        null,
+        null,
+        null,
+        accountName,
+        null,
+        null,
+        0,
+        null,
+        null,
+        realizedProfit,
+        0,
+        null,
+        evalAmt,
+        evalProfit,
+        null,
+        null,
+        null,
+        null,
+        totalBuyCost,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null);
+  }
+
+  /** 자산 현황 - 종목별 집계 행 생성 */
+  public static TradeProfit ofStockStatus(
+      UUID stockItemId,
+      String stockItemName,
+      BigDecimal avgBuyPrice,
+      int holdingQty,
+      BigDecimal currentPrice,
+      BigDecimal evalAmt,
+      BigDecimal evalProfit,
+      BigDecimal realizedProfit,
+      BigDecimal totalBuyCost) {
+    return new TradeProfit(
+        stockItemId,
+        stockItemName,
+        null,
+        null,
+        null,
+        avgBuyPrice,
+        0,
+        null,
+        null,
+        realizedProfit,
+        holdingQty,
+        currentPrice,
+        evalAmt,
+        evalProfit,
+        null,
+        null,
+        null,
+        null,
+        totalBuyCost,
+        null,
+        avgBuyPrice,
+        null,
+        null,
+        null,
+        null);
+  }
+
+  /** 포트폴리오 - 종목 집계 행 생성 */
+  public static TradeProfit ofPortfolioStock(
+      UUID stockId,
+      String stockName,
+      BigDecimal totalBuyAmount,
+      BigDecimal avgBuyPrice,
+      int totalSellQty,
+      BigDecimal avgSellPrice,
+      BigDecimal totalSellAmount,
+      BigDecimal realizedProfit,
+      int holdingQty,
+      BigDecimal currentPrice,
+      BigDecimal evaluationAmount,
+      BigDecimal evaluationProfit,
+      BigDecimal totalProfit,
+      BigDecimal totalBuyFee,
+      BigDecimal totalSellFee,
+      BigDecimal totalSellTax,
+      BigDecimal totalBuyCost,
+      BigDecimal totalSellProceeds,
+      BigDecimal avgBuyPriceNet,
+      BigDecimal avgSellPriceNet,
+      BigDecimal realizedProfitNet,
+      BigDecimal evaluationProfitNet,
+      BigDecimal totalProfitNet) {
+    return new TradeProfit(
+        stockId,
+        stockName,
+        null,
+        "전체",
+        totalBuyAmount,
+        avgBuyPrice,
+        totalSellQty,
+        avgSellPrice,
+        totalSellAmount,
+        realizedProfit,
+        holdingQty,
+        currentPrice,
+        evaluationAmount,
+        evaluationProfit,
+        totalProfit,
+        totalBuyFee,
+        totalSellFee,
+        totalSellTax,
+        totalBuyCost,
+        totalSellProceeds,
+        avgBuyPriceNet,
+        avgSellPriceNet,
+        realizedProfitNet,
+        evaluationProfitNet,
+        totalProfitNet);
+  }
+
+  /** 포트폴리오 - 계좌 소계 행 생성 */
+  public static TradeProfit ofPortfolioAccount(
+      String accountName,
+      BigDecimal totalBuyAmount,
+      int totalSellQty,
+      BigDecimal totalSellAmount,
+      BigDecimal realizedProfit,
+      int holdingQty,
+      BigDecimal evaluationAmount,
+      BigDecimal evaluationProfit,
+      BigDecimal totalProfit,
+      BigDecimal totalBuyFee,
+      BigDecimal totalSellFee,
+      BigDecimal totalSellTax,
+      BigDecimal totalBuyCost,
+      BigDecimal totalSellProceeds,
+      BigDecimal realizedProfitNet,
+      BigDecimal evaluationProfitNet,
+      BigDecimal totalProfitNet) {
+    return new TradeProfit(
+        null,
+        null,
+        null,
+        accountName,
+        totalBuyAmount,
+        BigDecimal.ZERO,
+        totalSellQty,
+        BigDecimal.ZERO,
+        totalSellAmount,
+        realizedProfit,
+        holdingQty,
+        BigDecimal.ZERO,
+        evaluationAmount,
+        evaluationProfit,
+        totalProfit,
+        totalBuyFee,
+        totalSellFee,
+        totalSellTax,
+        totalBuyCost,
+        totalSellProceeds,
+        BigDecimal.ZERO,
+        BigDecimal.ZERO,
+        realizedProfitNet,
+        evaluationProfitNet,
+        totalProfitNet);
+  }
+
+  /** 이름 정보를 주입하여 새 TradeProfit 생성 */
+  public static TradeProfit withNames(
+      TradeProfit source, String stockItemName, String accountName) {
+    return new TradeProfit(
+        source.stockItemId(),
+        stockItemName,
+        source.accountId(),
+        accountName,
+        source.totalBuyAmount(),
+        source.averageBuyPrice(),
+        source.totalSellQuantity(),
+        source.averageSellPrice(),
+        source.totalSellAmount(),
+        source.realizedProfit(),
+        source.holdingQuantity(),
+        source.currentPrice(),
+        source.evaluationAmount(),
+        source.evaluationProfit(),
+        source.totalProfit(),
+        source.totalBuyFee(),
+        source.totalSellFee(),
+        source.totalSellTax(),
+        source.totalBuyCost(),
+        source.totalSellProceeds(),
+        source.averageBuyPriceNet(),
+        source.averageSellPriceNet(),
+        source.realizedProfitNet(),
+        source.evaluationProfitNet(),
+        source.totalProfitNet());
+  }
+}

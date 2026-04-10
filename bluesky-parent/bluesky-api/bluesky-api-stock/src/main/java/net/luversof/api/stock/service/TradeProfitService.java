@@ -1,32 +1,50 @@
 package net.luversof.api.stock.service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.DayOfWeek;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.luversof.api.stock.constant.StockErrorCode;
 import net.luversof.api.stock.constant.TradeType;
 import net.luversof.api.stock.domain.Account;
+import net.luversof.api.stock.domain.DailyAccountSnapshot;
+import net.luversof.api.stock.domain.Dividend;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.domain.StockPriceHistory;
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.domain.TradeProfit;
+import net.luversof.api.stock.repository.DailyAccountSnapshotRepository;
 import net.luversof.api.stock.service.strategy.ProfitCalculator;
+import net.luversof.api.stock.web.dto.request.DividendSearchRequest;
 import net.luversof.api.stock.web.dto.request.TradeProfitRequest;
+import net.luversof.api.stock.web.dto.request.TradeProfitRequestType;
 import net.luversof.api.stock.web.dto.request.TradeSearchRequest;
+import net.luversof.api.stock.web.dto.response.HoldingsSnapshotItem;
 import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesPoint;
 import net.luversof.api.stock.web.dto.response.TradeResponse;
 
@@ -36,112 +54,105 @@ public class TradeProfitService {
 
   private static final Logger log = LoggerFactory.getLogger(TradeProfitService.class);
 
-  @Autowired
-  private AccountService accountService;
+  private final AccountService accountService;
+  private final TradeService tradeService;
+  private final StockPriceService stockPriceService;
+  private final ProfitCalculator profitCalculator;
+  private final StockItemService stockItemService;
+  private final DividendService dividendService;
+  private final DailyAccountSnapshotRepository dailyAccountSnapshotRepository;
 
-  @Autowired
-  private TradeService tradeService;
-
-  @Autowired
-  private StockPriceService stockPriceService;
-
-  @Autowired
-  private ProfitCalculator profitCalculator;
-
-  @Autowired
-  private StockItemService stockItemService;
-
-  @Autowired
-  private DividendService dividendService;
-
-  @Autowired
-  private net.luversof.api.stock.repository.DailyAccountSnapshotRepository dailyAccountSnapshotRepository;
-
-  public void setAccountService(AccountService accountService) {
+  public TradeProfitService(
+      AccountService accountService,
+      TradeService tradeService,
+      StockPriceService stockPriceService,
+      ProfitCalculator profitCalculator,
+      StockItemService stockItemService,
+      DividendService dividendService,
+      DailyAccountSnapshotRepository dailyAccountSnapshotRepository) {
     this.accountService = accountService;
-  }
-
-  public void setTradeService(TradeService tradeService) {
     this.tradeService = tradeService;
-  }
-
-  public void setStockPriceService(StockPriceService stockPriceService) {
     this.stockPriceService = stockPriceService;
+    this.profitCalculator = profitCalculator;
+    this.stockItemService = stockItemService;
+    this.dividendService = dividendService;
+    this.dailyAccountSnapshotRepository = dailyAccountSnapshotRepository;
   }
 
   public List<TradeProfit> calculateProfit(TradeProfitRequest request) {
     // 요청 기준으로 tradeList를 조회
     // 기간 요청이 있더라도 평단가 계산을 위해 전체 데이터를 조회해야 함
-    List<Trade> tradeList = switch (request.getRequestType()) {
-      case USER -> {
-        var accountList = accountService.findByUserId(request.getUserId());
-        if (accountList.isEmpty()) {
-          StockErrorCode.INVALID_USER_ID.throwException();
-        }
-        yield tradeService.findByAccountIdIn(accountList.stream().map(Account::getId).toList());
-      }
-      case USER_ACCOUNT -> {
-        var accountList = accountService.findByIdIn(request.getAccountIdList());
-        if (accountList.isEmpty()) {
-          StockErrorCode.INVALID_USER_ID.throwException();
-        }
+    List<Trade> tradeList =
+        switch (request.getRequestType()) {
+          case USER -> {
+            var accountList = accountService.findByUserId(request.getUserId());
+            if (accountList.isEmpty()) {
+              StockErrorCode.INVALID_USER_ID.throwException();
+            }
+            yield tradeService.findByAccountIdIn(accountList.stream().map(Account::getId).toList());
+          }
+          case USER_ACCOUNT -> {
+            var accountList = accountService.findByIdIn(request.getAccountIdList());
+            if (accountList.isEmpty()) {
+              StockErrorCode.INVALID_USER_ID.throwException();
+            }
 
-        accountList.stream()
-            .forEach(
-                account -> {
-                  if (!account.getUserId().equals(request.getUserId())) {
-                    StockErrorCode.INVALID_USER_ID.throwException(
-                        request.getUserId(), account.getId());
-                  }
-                });
+            accountList.stream()
+                .forEach(
+                    account -> {
+                      if (!account.getUserId().equals(request.getUserId())) {
+                        StockErrorCode.INVALID_USER_ID.throwException(
+                            request.getUserId(), account.getId());
+                      }
+                    });
 
-        yield tradeService.findByAccountIdIn(request.getAccountIdList());
-      }
-      case USER_STOCKITEM -> {
-        var accountList = accountService.findByUserId(request.getUserId());
-        if (accountList.isEmpty()) {
-          StockErrorCode.INVALID_USER_ID.throwException();
-        }
+            yield tradeService.findByAccountIdIn(request.getAccountIdList());
+          }
+          case USER_STOCKITEM -> {
+            var accountList = accountService.findByUserId(request.getUserId());
+            if (accountList.isEmpty()) {
+              StockErrorCode.INVALID_USER_ID.throwException();
+            }
 
-        accountList.stream()
-            .forEach(
-                x -> {
-                  if (!x.getUserId().equals(request.getUserId())) {
-                    StockErrorCode.INVALID_USER_ID.throwException();
-                  }
-                });
+            accountList.stream()
+                .forEach(
+                    x -> {
+                      if (!x.getUserId().equals(request.getUserId())) {
+                        StockErrorCode.INVALID_USER_ID.throwException();
+                      }
+                    });
 
-        yield tradeService.findByAccountIdInAndStockItemIdIn(
-            accountList.stream().map(Account::getId).toList(), request.getStockItemIdList());
-      }
-      case USER_ACCOUNT_STOCKITEM -> {
-        var accountList = accountService.findByIdIn(request.getAccountIdList());
-        if (accountList.isEmpty()) {
-          StockErrorCode.INVALID_USER_ID.throwException();
-        }
+            yield tradeService.findByAccountIdInAndStockItemIdIn(
+                accountList.stream().map(Account::getId).toList(), request.getStockItemIdList());
+          }
+          case USER_ACCOUNT_STOCKITEM -> {
+            var accountList = accountService.findByIdIn(request.getAccountIdList());
+            if (accountList.isEmpty()) {
+              StockErrorCode.INVALID_USER_ID.throwException();
+            }
 
-        accountList.stream()
-            .forEach(
-                account -> {
-                  if (!account.getUserId().equals(request.getUserId())) {
-                    StockErrorCode.INVALID_USER_ID.throwException(
-                        request.getUserId(), account.getId());
-                  }
-                });
+            accountList.stream()
+                .forEach(
+                    account -> {
+                      if (!account.getUserId().equals(request.getUserId())) {
+                        StockErrorCode.INVALID_USER_ID.throwException(
+                            request.getUserId(), account.getId());
+                      }
+                    });
 
-        yield tradeService.findByAccountIdInAndStockItemIdIn(
-            request.getAccountIdList(), request.getStockItemIdList());
-      }
-    };
+            yield tradeService.findByAccountIdInAndStockItemIdIn(
+                request.getAccountIdList(), request.getStockItemIdList());
+          }
+        };
 
     // 그룹별로 기본 손익 계산
-    List<TradeProfit> base = switch (request.getGroupBy()) {
-      case ACCOUNT_AND_STOCKITEM -> calculateProfitByAccountAndStock(tradeList, request);
-      case STOCKITEM -> calculateProfitByStock(tradeList, request);
-    };
+    List<TradeProfit> base =
+        switch (request.getGroupBy()) {
+          case ACCOUNT_AND_STOCKITEM -> calculateProfitByAccountAndStock(tradeList, request);
+          case STOCKITEM -> calculateProfitByStock(tradeList, request);
+        };
 
-    if (base.isEmpty())
-      return base;
+    if (base.isEmpty()) return base;
 
     return base;
   }
@@ -149,8 +160,9 @@ public class TradeProfitService {
   /** accountId+stockItemId별 통합 손익 통계 (실현손익 + 미실현손익) */
   public List<TradeProfit> calculateProfitByAccountAndStock(
       List<Trade> tradeList, TradeProfitRequest request) {
-    Map<String, List<Trade>> grouped = tradeList.stream()
-        .collect(Collectors.groupingBy(t -> t.getAccountId() + "-" + t.getStockItemId()));
+    Map<String, List<Trade>> grouped =
+        tradeList.stream()
+            .collect(Collectors.groupingBy(t -> t.getAccountId() + "-" + t.getStockItemId()));
     List<TradeProfit> result = new ArrayList<>();
 
     for (List<Trade> group : grouped.values()) {
@@ -163,10 +175,12 @@ public class TradeProfitService {
         // Include if Realized Profit != 0 OR if there was any Sell Activity OR any Buy
         // Activity
         boolean hasProfit = profit.getRealizedProfit().compareTo(BigDecimal.ZERO) != 0;
-        boolean hasSell = profit.getTotalSellAmount() != null
-            && profit.getTotalSellAmount().compareTo(BigDecimal.ZERO) > 0;
-        boolean hasBuy = profit.getTotalBuyAmount() != null
-            && profit.getTotalBuyAmount().compareTo(BigDecimal.ZERO) > 0;
+        boolean hasSell =
+            profit.getTotalSellAmount() != null
+                && profit.getTotalSellAmount().compareTo(BigDecimal.ZERO) > 0;
+        boolean hasBuy =
+            profit.getTotalBuyAmount() != null
+                && profit.getTotalBuyAmount().compareTo(BigDecimal.ZERO) > 0;
         if (hasProfit || hasSell || hasBuy) {
           result.add(profit);
         }
@@ -180,8 +194,7 @@ public class TradeProfitService {
   }
 
   /**
-   * stockItemId별 통합 손익 통계 (accountId 무시, 실현손익 + 미실현손익) StockItem Symbol이 같으면 통합하여
-   * 계산 (중복 데이터 보정)
+   * stockItemId별 통합 손익 통계 (accountId 무시, 실현손익 + 미실현손익) StockItem Symbol이 같으면 통합하여 계산 (중복 데이터 보정)
    */
   public List<TradeProfit> calculateProfitByStock(
       List<Trade> tradeList, TradeProfitRequest request) {
@@ -191,34 +204,34 @@ public class TradeProfitService {
     stockItemService.findAllById(stockItemIds).forEach(si -> stockItemMap.put(si.getId(), si));
 
     // 2. 그룹핑 (Symbol -> Name -> ID 순으로 식별)
-    Map<String, List<Trade>> grouped = tradeList.stream()
-        .collect(
-            Collectors.groupingBy(
-                t -> {
-                  var si = stockItemMap.get(t.getStockItemId());
-                  if (si != null) {
-                    if (si.getSymbol() != null && !si.getSymbol().isBlank()) {
-                      return "S:" + si.getSymbol(); // Symbol Prefix
-                    }
-                    // 2026-01-17: Name match fallback for inconsistent
-                    // data
-                    // Remove spaces to ensure better matching (e.g.
-                    // "Samsung Electronics" vs
-                    // "SamsungElectronics")
-                    // But risking collision? TIGER REITs name is
-                    // specific enough.
-                    if (si.getName() != null && !si.getName().isBlank()) {
-                      return "N:" + si.getName().trim();
-                    }
-                  }
-                  return "I:" + t.getStockItemId().toString();
-                }));
+    Map<String, List<Trade>> grouped =
+        tradeList.stream()
+            .collect(
+                Collectors.groupingBy(
+                    t -> {
+                      var si = stockItemMap.get(t.getStockItemId());
+                      if (si != null) {
+                        if (si.getSymbol() != null && !si.getSymbol().isBlank()) {
+                          return "S:" + si.getSymbol(); // Symbol Prefix
+                        }
+                        // 2026-01-17: Name match fallback for inconsistent
+                        // data
+                        // Remove spaces to ensure better matching (e.g.
+                        // "Samsung Electronics" vs
+                        // "SamsungElectronics")
+                        // But risking collision? TIGER REITs name is
+                        // specific enough.
+                        if (si.getName() != null && !si.getName().isBlank()) {
+                          return "N:" + si.getName().trim();
+                        }
+                      }
+                      return "I:" + t.getStockItemId().toString();
+                    }));
 
     List<TradeProfit> result = new ArrayList<>();
 
     for (List<Trade> group : grouped.values()) {
-      if (group.isEmpty())
-        continue;
+      if (group.isEmpty()) continue;
 
       // 대표 ID 사용 (첫번째 Trade의 StockItemId)
       UUID stockItemId = group.get(0).getStockItemId();
@@ -228,10 +241,12 @@ public class TradeProfitService {
         // Include if Realized Profit != 0 OR if there was any Sell Activity OR any Buy
         // Activity
         boolean hasProfit = profit.getRealizedProfit().compareTo(BigDecimal.ZERO) != 0;
-        boolean hasSell = profit.getTotalSellAmount() != null
-            && profit.getTotalSellAmount().compareTo(BigDecimal.ZERO) > 0;
-        boolean hasBuy = profit.getTotalBuyAmount() != null
-            && profit.getTotalBuyAmount().compareTo(BigDecimal.ZERO) > 0;
+        boolean hasSell =
+            profit.getTotalSellAmount() != null
+                && profit.getTotalSellAmount().compareTo(BigDecimal.ZERO) > 0;
+        boolean hasBuy =
+            profit.getTotalBuyAmount() != null
+                && profit.getTotalBuyAmount().compareTo(BigDecimal.ZERO) > 0;
         if (hasProfit || hasSell || hasBuy) {
           result.add(profit);
         }
@@ -256,20 +271,59 @@ public class TradeProfitService {
   }
 
   /**
-   * 시간 시계열 집계: 전체 거래 내역을 바탕으로 Rolling WMA 계산을 수행한 후, 요청된 기간(start ~ end)에 해당하는 일별
-   * 누적 실현손익 스냅샷을
+   * 시간 시계열 집계: 전체 거래 내역을 바탕으로 Rolling WMA 계산을 수행한 후, 요청된 기간(start ~ end)에 해당하는 일별 누적 실현손익 스냅샷을
    * 반환합니다.
    */
   public static class WmaState {
     /** 수정주가 기준으로 환산된 보유 수량 (分割/합병 등 이벤트 반영) */
-    public BigDecimal quantity = BigDecimal.ZERO;
+    private BigDecimal quantity = BigDecimal.ZERO;
 
     /** 실제 정수 주식 수량 (전량 매도 여부 판단용) */
-    public long rawQuantity = 0;
+    private long rawQuantity = 0;
 
-    public BigDecimal totalCost = BigDecimal.ZERO;
-    public BigDecimal totalCostNet = BigDecimal.ZERO;
-    public UUID stockItemId;
+    private BigDecimal totalCost = BigDecimal.ZERO;
+    private BigDecimal totalCostNet = BigDecimal.ZERO;
+    private UUID stockItemId;
+
+    public BigDecimal getQuantity() {
+      return quantity;
+    }
+
+    public void setQuantity(BigDecimal quantity) {
+      this.quantity = quantity;
+    }
+
+    public long getRawQuantity() {
+      return rawQuantity;
+    }
+
+    public void setRawQuantity(long rawQuantity) {
+      this.rawQuantity = rawQuantity;
+    }
+
+    public BigDecimal getTotalCost() {
+      return totalCost;
+    }
+
+    public void setTotalCost(BigDecimal totalCost) {
+      this.totalCost = totalCost;
+    }
+
+    public BigDecimal getTotalCostNet() {
+      return totalCostNet;
+    }
+
+    public void setTotalCostNet(BigDecimal totalCostNet) {
+      this.totalCostNet = totalCostNet;
+    }
+
+    public UUID getStockItemId() {
+      return stockItemId;
+    }
+
+    public void setStockItemId(UUID stockItemId) {
+      this.stockItemId = stockItemId;
+    }
   }
 
   public List<TradeProfitTimeSeriesPoint> aggregateTimeSeries(
@@ -278,38 +332,7 @@ public class TradeProfitService {
     Instant start = request.getStartDate();
 
     // 1) 전체 트레이드 조회 (날짜 제한 없이 전체 로딩)
-    List<Trade> allTrades = switch (request.getRequestType()) {
-      case USER -> {
-        var accountList = accountService.findByUserId(request.getUserId());
-        if (accountList.isEmpty()) {
-          StockErrorCode.INVALID_USER_ID.throwException();
-        }
-        yield tradeService.findByAccountIdIn(accountList.stream().map(Account::getId).toList());
-      }
-      case USER_ACCOUNT -> {
-        var accountList = accountService.findByIdIn(request.getAccountIdList());
-        if (accountList.isEmpty()) {
-          StockErrorCode.INVALID_USER_ID.throwException();
-        }
-        yield tradeService.findByAccountIdIn(request.getAccountIdList());
-      }
-      case USER_STOCKITEM -> {
-        var accountList = accountService.findByUserId(request.getUserId());
-        if (accountList.isEmpty()) {
-          StockErrorCode.INVALID_USER_ID.throwException();
-        }
-        yield tradeService.findByAccountIdInAndStockItemIdIn(
-            accountList.stream().map(Account::getId).toList(), request.getStockItemIdList());
-      }
-      case USER_ACCOUNT_STOCKITEM -> {
-        var accountList = accountService.findByIdIn(request.getAccountIdList());
-        if (accountList.isEmpty()) {
-          StockErrorCode.INVALID_USER_ID.throwException();
-        }
-        yield tradeService.findByAccountIdInAndStockItemIdIn(
-            request.getAccountIdList(), request.getStockItemIdList());
-      }
-    };
+    List<Trade> allTrades = loadAllTrades(request);
 
     if (allTrades.isEmpty()) {
       return new ArrayList<>();
@@ -319,42 +342,40 @@ public class TradeProfitService {
     stockItemService.findAllById(stockItemIds).forEach(si -> stockItemMap.put(si.getId(), si));
 
     // Fetch Dividends for the user/accounts
-    net.luversof.api.stock.web.dto.request.DividendSearchRequest dividendRequest = new net.luversof.api.stock.web.dto.request.DividendSearchRequest();
+    DividendSearchRequest dividendRequest = new DividendSearchRequest();
     dividendRequest.setUserId(request.getUserId());
     dividendRequest.setAccountIdList(request.getAccountIdList());
-    if (request.getRequestType() == net.luversof.api.stock.web.dto.request.TradeProfitRequestType.USER_STOCKITEM
-        || request
-            .getRequestType() == net.luversof.api.stock.web.dto.request.TradeProfitRequestType.USER_ACCOUNT_STOCKITEM) {
+    if (request.getRequestType() == TradeProfitRequestType.USER_STOCKITEM
+        || request.getRequestType() == TradeProfitRequestType.USER_ACCOUNT_STOCKITEM) {
       dividendRequest.setStockItemIdList(request.getStockItemIdList());
     }
-    List<net.luversof.api.stock.domain.Dividend> allDividends = dividendService.findDividends(dividendRequest);
-    allDividends.sort(Comparator.comparing(net.luversof.api.stock.domain.Dividend::getPayDate));
-    Iterator<net.luversof.api.stock.domain.Dividend> divIt = allDividends.iterator();
-    net.luversof.api.stock.domain.Dividend nextDividend = divIt.hasNext() ? divIt.next() : null;
+    List<Dividend> allDividends = dividendService.findDividends(dividendRequest);
+    allDividends.sort(Comparator.comparing(Dividend::getPayDate));
+    Iterator<Dividend> divIt = allDividends.iterator();
+    Dividend nextDividend = divIt.hasNext() ? divIt.next() : null;
 
     // 그룹핑 키 생성 함수
-    java.util.function.Function<Trade, String> getGroupKey = t -> {
-      var si = stockItemMap.get(t.getStockItemId());
-      if (si != null) {
-        if (si.getSymbol() != null && !si.getSymbol().isBlank()) {
-          return "S:" + si.getSymbol();
-        }
-        if (si.getName() != null && !si.getName().isBlank()) {
-          return "N:" + si.getName().trim();
-        }
-      }
-      return "I:" + t.getStockItemId().toString();
-    };
+    Function<Trade, String> getGroupKey =
+        t -> {
+          var si = stockItemMap.get(t.getStockItemId());
+          if (si != null) {
+            if (si.getSymbol() != null && !si.getSymbol().isBlank()) {
+              return "S:" + si.getSymbol();
+            }
+            if (si.getName() != null && !si.getName().isBlank()) {
+              return "N:" + si.getName().trim();
+            }
+          }
+          return "I:" + t.getStockItemId().toString();
+        };
 
     // 3) 거래 정렬 (날짜 오름차순)
     // 같은 날짜 내에서는 BUY 먼저 처리 (논리적 재고 확보)
     allTrades.sort(
         (t1, t2) -> {
           int dateCompare = t1.getTradeDate().compareTo(t2.getTradeDate());
-          if (dateCompare != 0)
-            return dateCompare;
-          if (t1.getType() == t2.getType())
-            return 0;
+          if (dateCompare != 0) return dateCompare;
+          if (t1.getType() == t2.getType()) return 0;
           return t1.getType() == TradeType.BUY ? -1 : 1;
         });
 
@@ -371,37 +392,38 @@ public class TradeProfitService {
     // 출력 시작일: 요청상 start 날짜 (없으면 첫 거래일)
     Instant outputStart = start != null ? start.truncatedTo(ChronoUnit.DAYS) : firstTradeDate;
     // ---- Cache Read Logic ----
-    boolean isReadUserRequest = (request
-        .getRequestType() == net.luversof.api.stock.web.dto.request.TradeProfitRequestType.USER
-        && request.getUserId() != null);
-    boolean isReadSingleAccountRequest = (request
-        .getRequestType() == net.luversof.api.stock.web.dto.request.TradeProfitRequestType.USER_ACCOUNT
-        && request.getAccountIdList() != null
-        && request.getAccountIdList().size() == 1);
+    boolean isReadUserRequest =
+        (request.getRequestType() == TradeProfitRequestType.USER && request.getUserId() != null);
+    boolean isReadSingleAccountRequest =
+        (request.getRequestType() == TradeProfitRequestType.USER_ACCOUNT
+            && request.getAccountIdList() != null
+            && request.getAccountIdList().size() == 1);
     boolean shouldReadCache = isReadUserRequest || isReadSingleAccountRequest;
     if (shouldReadCache) {
-      java.time.LocalDate targetDate = java.time.LocalDate.ofInstant(outputStart, java.time.ZoneId.systemDefault());
-      net.luversof.api.stock.domain.DailyAccountSnapshot snap = null;
+      LocalDate targetDate = LocalDate.ofInstant(outputStart, ZoneId.systemDefault());
+      DailyAccountSnapshot snap = null;
       if (isReadUserRequest) {
-        snap = dailyAccountSnapshotRepository.findTopByUserIdAndDateLessThanOrderByDateDesc(
-            request.getUserId(), targetDate);
+        snap =
+            dailyAccountSnapshotRepository.findTopByUserIdAndDateLessThanOrderByDateDesc(
+                request.getUserId(), targetDate);
       } else {
-        snap = dailyAccountSnapshotRepository.findTopByAccountIdAndDateLessThanOrderByDateDesc(
-            request.getAccountIdList().get(0), targetDate);
+        snap =
+            dailyAccountSnapshotRepository.findTopByAccountIdAndDateLessThanOrderByDateDesc(
+                request.getAccountIdList().get(0), targetDate);
       }
       if (snap != null) {
-        simulationStart = snap.getDate().plusDays(1).atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
-        globalCumulativeRealized = snap.getCumulativeRealizedProfit() != null
-            ? snap.getCumulativeRealizedProfit()
-            : BigDecimal.ZERO;
-        globalCumulativeDividend = snap.getCumulativeDividend() != null ? snap.getCumulativeDividend()
-            : BigDecimal.ZERO;
+        simulationStart = snap.getDate().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+        globalCumulativeRealized =
+            snap.getCumulativeRealizedProfit() != null
+                ? snap.getCumulativeRealizedProfit()
+                : BigDecimal.ZERO;
+        globalCumulativeDividend =
+            snap.getCumulativeDividend() != null ? snap.getCumulativeDividend() : BigDecimal.ZERO;
         if (snap.getWmaState() != null && !snap.getWmaState().isEmpty()) {
           try {
-            com.fasterxml.jackson.core.type.TypeReference<HashMap<String, WmaState>> typeRef = new com.fasterxml.jackson.core.type.TypeReference<HashMap<String, WmaState>>() {
-            };
-            stateMap = new com.fasterxml.jackson.databind.ObjectMapper()
-                .convertValue(snap.getWmaState(), typeRef);
+            TypeReference<HashMap<String, WmaState>> typeRef =
+                new TypeReference<HashMap<String, WmaState>>() {};
+            stateMap = new ObjectMapper().convertValue(snap.getWmaState(), typeRef);
           } catch (Exception ex) {
             log.error("Failed to deserialize WmaState", ex);
           }
@@ -423,14 +445,14 @@ public class TradeProfitService {
     Instant outputEnd = end.truncatedTo(ChronoUnit.DAYS);
 
     // ---- Bulk Load Existing Snapshot Dates ----
-    java.util.Set<java.time.LocalDate> existingSnapshotDates = new java.util.HashSet<>();
+    Set<LocalDate> existingSnapshotDates = new HashSet<>();
     if (shouldReadCache) {
       try {
-        java.time.LocalDate fetchStartLocalDate = java.time.LocalDate.ofInstant(
-            simulationStart.isBefore(outputStart) ? simulationStart : outputStart,
-            java.time.ZoneId.systemDefault());
-        java.time.LocalDate fetchEndLocalDate = java.time.LocalDate.ofInstant(outputEnd,
-            java.time.ZoneId.systemDefault());
+        LocalDate fetchStartLocalDate =
+            LocalDate.ofInstant(
+                simulationStart.isBefore(outputStart) ? simulationStart : outputStart,
+                ZoneId.systemDefault());
+        LocalDate fetchEndLocalDate = LocalDate.ofInstant(outputEnd, ZoneId.systemDefault());
 
         if (isReadUserRequest) {
           existingSnapshotDates.addAll(
@@ -449,17 +471,18 @@ public class TradeProfitService {
 
     // Price History (Bulk Load)
     Instant fetchStart = simulationStart.isBefore(outputStart) ? simulationStart : outputStart;
-    java.time.LocalDate startLocalDate = java.time.LocalDate.ofInstant(fetchStart, java.time.ZoneId.systemDefault());
-    java.time.LocalDate endLocalDate = java.time.LocalDate.ofInstant(outputEnd, java.time.ZoneId.systemDefault());
-    List<StockPriceHistory> priceHistory = stockPriceService.getPriceHistory(stockItemIds, startLocalDate,
-        endLocalDate);
+    LocalDate startLocalDate = LocalDate.ofInstant(fetchStart, ZoneId.systemDefault());
+    LocalDate endLocalDate = LocalDate.ofInstant(outputEnd, ZoneId.systemDefault());
+    List<StockPriceHistory> priceHistory =
+        stockPriceService.getPriceHistory(stockItemIds, startLocalDate, endLocalDate);
 
     Map<Instant, Map<UUID, BigDecimal>> dailyPriceMap = new HashMap<>();
     for (StockPriceHistory h : priceHistory) {
-      Instant historyInstant = h.getTradeDate()
-          .atStartOfDay(java.time.ZoneId.systemDefault())
-          .toInstant()
-          .truncatedTo(ChronoUnit.DAYS);
+      Instant historyInstant =
+          h.getTradeDate()
+              .atStartOfDay(ZoneId.systemDefault())
+              .toInstant()
+              .truncatedTo(ChronoUnit.DAYS);
       dailyPriceMap
           .computeIfAbsent(historyInstant, k -> new HashMap<>())
           .put(h.getStockItemId(), h.getClosePrice());
@@ -497,15 +520,15 @@ public class TradeProfitService {
         // 거래 처리 logic (WMA)
         Trade trade = nextTrade;
         String key = getGroupKey.apply(trade);
-        WmaState state = stateMap.computeIfAbsent(
-            key,
-            k -> {
-              WmaState s = new WmaState();
-              s.stockItemId = trade.getStockItemId();
-              return s;
-            });
-        if (state.stockItemId == null)
-          state.stockItemId = trade.getStockItemId();
+        WmaState state =
+            stateMap.computeIfAbsent(
+                key,
+                k -> {
+                  WmaState s = new WmaState();
+                  s.setStockItemId(trade.getStockItemId());
+                  return s;
+                });
+        if (state.getStockItemId() == null) state.setStockItemId(trade.getStockItemId());
 
         BigDecimal fee = nz(trade.getFee());
         BigDecimal tax = nz(trade.getTax());
@@ -523,8 +546,7 @@ public class TradeProfitService {
         // 마지막 fallback(tradePrice)은 분할/합병 후 18배 오류를 유발할 수 있으므로 경고 로그 발생
         Map<UUID, BigDecimal> tradeDayPrices = dailyPriceMap.getOrDefault(currentDay, Map.of());
         BigDecimal adjustedClose = tradeDayPrices.get(trade.getStockItemId());
-        if (adjustedClose == null)
-          adjustedClose = lastKnownPrices.get(trade.getStockItemId());
+        if (adjustedClose == null) adjustedClose = lastKnownPrices.get(trade.getStockItemId());
         if (adjustedClose == null || adjustedClose.compareTo(BigDecimal.ZERO) == 0) {
           log.warn(
               "[WMA] 수정주가 없음 - stockItemId={}, tradeDate={}, tradePrice={}. adjustedQty 계산에 원주가를 사용합니다. 액면분할/합병이 있었다면 평가액이 부정확할 수 있습니다.",
@@ -538,13 +560,14 @@ public class TradeProfitService {
           if (q > 0) {
             // 수정주가 기준 환산 수량: amount(투자금) / 당일 수정주가
             // adjustedClose가 0이면 rawQty를 그대로 사용 (평가액 계산 불가 상황)
-            BigDecimal adjustedQty = (adjustedClose == null || adjustedClose.compareTo(BigDecimal.ZERO) == 0)
-                ? BigDecimal.valueOf(q)
-                : amount.divide(adjustedClose, 10, java.math.RoundingMode.HALF_UP);
-            state.quantity = state.quantity.add(adjustedQty);
-            state.rawQuantity += q;
-            state.totalCost = state.totalCost.add(amount);
-            state.totalCostNet = state.totalCostNet.add(amount).add(fee);
+            BigDecimal adjustedQty =
+                (adjustedClose == null || adjustedClose.compareTo(BigDecimal.ZERO) == 0)
+                    ? BigDecimal.valueOf(q)
+                    : amount.divide(adjustedClose, 10, java.math.RoundingMode.HALF_UP);
+            state.setQuantity(state.getQuantity().add(adjustedQty));
+            state.setRawQuantity(state.getRawQuantity() + q);
+            state.setTotalCost(state.getTotalCost().add(amount));
+            state.setTotalCostNet(state.getTotalCostNet().add(amount).add(fee));
           }
         } else if (trade.getType() == TradeType.SELL) {
           BigDecimal realProfit = nz(trade.getRealizedProfit());
@@ -554,27 +577,28 @@ public class TradeProfitService {
           BigDecimal sellProceeds = tradeSellAmount.subtract(fee).subtract(tax);
           BigDecimal cogs = sellProceeds.subtract(realProfit);
 
-          if (state.quantity.compareTo(BigDecimal.ZERO) > 0) {
+          if (state.getQuantity().compareTo(BigDecimal.ZERO) > 0) {
             // 매도 수량도 수정주가 기준으로 환산
-            BigDecimal adjustedSellQty = (adjustedClose == null || adjustedClose.compareTo(BigDecimal.ZERO) == 0)
-                ? BigDecimal.valueOf(q)
-                : amount.divide(adjustedClose, 10, java.math.RoundingMode.HALF_UP);
-            if (state.quantity.compareTo(adjustedSellQty) >= 0) {
-              state.quantity = state.quantity.subtract(adjustedSellQty);
-              state.totalCost = state.totalCost.subtract(cogs);
+            BigDecimal adjustedSellQty =
+                (adjustedClose == null || adjustedClose.compareTo(BigDecimal.ZERO) == 0)
+                    ? BigDecimal.valueOf(q)
+                    : amount.divide(adjustedClose, 10, RoundingMode.HALF_UP);
+            if (state.getQuantity().compareTo(adjustedSellQty) >= 0) {
+              state.setQuantity(state.getQuantity().subtract(adjustedSellQty));
+              state.setTotalCost(state.getTotalCost().subtract(cogs));
             } else {
-              state.quantity = BigDecimal.ZERO;
-              state.totalCost = BigDecimal.ZERO;
+              state.setQuantity(BigDecimal.ZERO);
+              state.setTotalCost(BigDecimal.ZERO);
             }
 
-            state.rawQuantity -= q;
+            state.setRawQuantity(state.getRawQuantity() - q);
             // rawQuantity가 0 이하이면 전량 매도: adjustedQty 반올림 오차 강제 제거
-            if (state.rawQuantity <= 0) {
-              state.quantity = BigDecimal.ZERO;
-              state.totalCost = BigDecimal.ZERO;
-              state.rawQuantity = 0;
-            } else if (state.quantity.compareTo(BigDecimal.ZERO) == 0) {
-              state.totalCost = BigDecimal.ZERO;
+            if (state.getRawQuantity() <= 0) {
+              state.setQuantity(BigDecimal.ZERO);
+              state.setTotalCost(BigDecimal.ZERO);
+              state.setRawQuantity(0);
+            } else if (state.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
+              state.setTotalCost(BigDecimal.ZERO);
             }
           }
 
@@ -607,7 +631,8 @@ public class TradeProfitService {
 
       // lastKnownPrices는 outputStart 여부와 무관하게 항상 업데이트
       // (주말/공휴일 거래, 스냅샷 복원 직후 첫 거래에서 adjustedClose fallback 방지)
-      Map<UUID, BigDecimal> dayPricesForLastKnown = dailyPriceMap.getOrDefault(currentDay, Map.of());
+      Map<UUID, BigDecimal> dayPricesForLastKnown =
+          dailyPriceMap.getOrDefault(currentDay, Map.of());
       lastKnownPrices.putAll(dayPricesForLastKnown);
 
       // 출력 범위 내인지 확인 후 추가
@@ -617,20 +642,20 @@ public class TradeProfitService {
         BigDecimal totalHoldingsCost = BigDecimal.ZERO;
 
         for (WmaState state : stateMap.values()) {
-          if (state.quantity.compareTo(BigDecimal.ZERO) > 0) {
-            totalHoldingsCost = totalHoldingsCost.add(state.totalCost);
+          if (state.getQuantity().compareTo(BigDecimal.ZERO) > 0) {
+            totalHoldingsCost = totalHoldingsCost.add(state.getTotalCost());
 
-            BigDecimal price = lastKnownPrices.get(state.stockItemId);
-            if (price == null)
-              price = BigDecimal.ZERO;
+            BigDecimal price = lastKnownPrices.get(state.getStockItemId());
+            if (price == null) price = BigDecimal.ZERO;
 
             // quantity는 수정주가 기준 환산 수량이므로 수정주가 × 환산수량 = 올바른 평가액
-            BigDecimal value = price.multiply(state.quantity);
+            BigDecimal value = price.multiply(state.getQuantity());
             totalHoldingsValue = totalHoldingsValue.add(value);
           }
         }
 
-        BigDecimal cumulativeTotalProfit = globalCumulativeRealized.add(totalHoldingsValue.subtract(totalHoldingsCost));
+        BigDecimal cumulativeTotalProfit =
+            globalCumulativeRealized.add(totalHoldingsValue.subtract(totalHoldingsCost));
 
         series.add(
             new TradeProfitTimeSeriesPoint(
@@ -644,43 +669,26 @@ public class TradeProfitService {
                 cumulativeTotalProfit,
                 globalCumulativeDividend));
         // 스냅샷 저장이 가능한 요청(USER 전체, 또는 단일 계좌)인 경우
-        boolean isUserRequest = (request
-            .getRequestType() == net.luversof.api.stock.web.dto.request.TradeProfitRequestType.USER
-            && request.getUserId() != null);
-        boolean isSingleAccountRequest = (request
-            .getRequestType() == net.luversof.api.stock.web.dto.request.TradeProfitRequestType.USER_ACCOUNT
-            && request.getAccountIdList() != null
-            && request.getAccountIdList().size() == 1);
+        boolean isUserRequest =
+            (request.getRequestType() == TradeProfitRequestType.USER
+                && request.getUserId() != null);
+        boolean isSingleAccountRequest =
+            (request.getRequestType() == TradeProfitRequestType.USER_ACCOUNT
+                && request.getAccountIdList() != null
+                && request.getAccountIdList().size() == 1);
 
         if (isUserRequest || isSingleAccountRequest) {
-          try {
-            java.time.LocalDate snapDate = java.time.LocalDate.ofInstant(currentDay, java.time.ZoneId.systemDefault());
-            if (!existingSnapshotDates.contains(snapDate)) {
-              java.util.Map<String, Object> wmaStateMap = new com.fasterxml.jackson.databind.ObjectMapper()
-                  .convertValue(
-                      stateMap,
-                      new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {
-                      });
-
-              net.luversof.api.stock.domain.DailyAccountSnapshot snap = new net.luversof.api.stock.domain.DailyAccountSnapshot();
-              snap.setUserId(request.getUserId());
-              if (isSingleAccountRequest) {
-                snap.setAccountId(request.getAccountIdList().get(0));
-              }
-              snap.setDate(
-                  java.time.LocalDate.ofInstant(currentDay, java.time.ZoneId.systemDefault()));
-              snap.setTotalCost(totalHoldingsCost);
-              snap.setTotalValue(totalHoldingsValue);
-              snap.setCumulativeRealizedProfit(globalCumulativeRealized);
-              snap.setCumulativeDividend(globalCumulativeDividend);
-              snap.setWmaState(wmaStateMap);
-              snap.setCreatedDate(java.time.Instant.now());
-
-              dailyAccountSnapshotRepository.save(snap);
-            }
-          } catch (Exception e) {
-            log.warn("Failed to save DailyAccountSnapshot", e);
-          }
+          LocalDate snapDate = LocalDate.ofInstant(currentDay, ZoneId.systemDefault());
+          saveDailySnapshotIfNeeded(
+              request,
+              snapDate,
+              isSingleAccountRequest,
+              existingSnapshotDates,
+              totalHoldingsCost,
+              totalHoldingsValue,
+              globalCumulativeRealized,
+              globalCumulativeDividend,
+              stateMap);
         }
       }
 
@@ -688,32 +696,107 @@ public class TradeProfitService {
     }
 
     // Apply Granularity filtering if requested, dynamically sample for large ranges
+    return applyGranularity(series, granularity);
+  }
+
+  private void saveDailySnapshotIfNeeded(
+      TradeProfitRequest request,
+      LocalDate snapDate,
+      boolean isSingleAccountRequest,
+      Set<LocalDate> existingSnapshotDates,
+      BigDecimal totalHoldingsCost,
+      BigDecimal totalHoldingsValue,
+      BigDecimal globalCumulativeRealized,
+      BigDecimal globalCumulativeDividend,
+      Map<String, WmaState> stateMap) {
+    if (existingSnapshotDates.contains(snapDate)) {
+      return;
+    }
+    try {
+      Map<String, Object> wmaStateMap =
+          new ObjectMapper().convertValue(stateMap, new TypeReference<Map<String, Object>>() {});
+
+      DailyAccountSnapshot snap = new DailyAccountSnapshot();
+      snap.setUserId(request.getUserId());
+      if (isSingleAccountRequest) {
+        snap.setAccountId(request.getAccountIdList().get(0));
+      }
+      snap.setDate(snapDate);
+      snap.setTotalCost(totalHoldingsCost);
+      snap.setTotalValue(totalHoldingsValue);
+      snap.setCumulativeRealizedProfit(globalCumulativeRealized);
+      snap.setCumulativeDividend(globalCumulativeDividend);
+      snap.setWmaState(wmaStateMap);
+      snap.setCreatedDate(java.time.Instant.now());
+
+      dailyAccountSnapshotRepository.save(snap);
+    } catch (Exception e) {
+      log.warn("Failed to save DailyAccountSnapshot", e);
+    }
+  }
+
+  private List<Trade> loadAllTrades(TradeProfitRequest request) {
+    return switch (request.getRequestType()) {
+      case USER -> {
+        var accountList = accountService.findByUserId(request.getUserId());
+        if (accountList.isEmpty()) {
+          StockErrorCode.INVALID_USER_ID.throwException();
+        }
+        yield tradeService.findByAccountIdIn(accountList.stream().map(Account::getId).toList());
+      }
+      case USER_ACCOUNT -> {
+        var accountList = accountService.findByIdIn(request.getAccountIdList());
+        if (accountList.isEmpty()) {
+          StockErrorCode.INVALID_USER_ID.throwException();
+        }
+        yield tradeService.findByAccountIdIn(request.getAccountIdList());
+      }
+      case USER_STOCKITEM -> {
+        var accountList = accountService.findByUserId(request.getUserId());
+        if (accountList.isEmpty()) {
+          StockErrorCode.INVALID_USER_ID.throwException();
+        }
+        yield tradeService.findByAccountIdInAndStockItemIdIn(
+            accountList.stream().map(Account::getId).toList(), request.getStockItemIdList());
+      }
+      case USER_ACCOUNT_STOCKITEM -> {
+        var accountList = accountService.findByIdIn(request.getAccountIdList());
+        if (accountList.isEmpty()) {
+          StockErrorCode.INVALID_USER_ID.throwException();
+        }
+        yield tradeService.findByAccountIdInAndStockItemIdIn(
+            request.getAccountIdList(), request.getStockItemIdList());
+      }
+    };
+  }
+
+  private List<TradeProfitTimeSeriesPoint> applyGranularity(
+      List<TradeProfitTimeSeriesPoint> series, String granularity) {
     if ("WEEKLY".equalsIgnoreCase(granularity)
         || ("AUTO".equalsIgnoreCase(granularity) && series.size() > 180 && series.size() <= 730)) {
       // keep 1 point per week
-      series = series.stream()
+      return series.stream()
           .filter(
-              p -> p.timestamp().atZone(java.time.ZoneId.systemDefault()).getDayOfWeek() == java.time.DayOfWeek.FRIDAY)
+              p -> p.timestamp().atZone(ZoneId.systemDefault()).getDayOfWeek() == DayOfWeek.FRIDAY)
           .collect(Collectors.toList());
     } else if ("MONTHLY".equalsIgnoreCase(granularity)
         || ("AUTO".equalsIgnoreCase(granularity) && series.size() > 730)) {
       // keep 1 point per month (last day)
-      series = series.stream()
+      return series.stream()
           .collect(
               Collectors.groupingBy(
-                  p -> java.time.YearMonth.from(
-                      p.timestamp().atZone(java.time.ZoneId.systemDefault()))))
+                  p -> YearMonth.from(p.timestamp().atZone(ZoneId.systemDefault()))))
           .values()
           .stream()
           .map(
-              list -> list.stream()
-                  .max(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
-                  .orElse(null))
-          .filter(java.util.Objects::nonNull)
+              list ->
+                  list.stream()
+                      .max(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
+                      .orElse(null))
+          .filter(Objects::nonNull)
           .sorted(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
           .collect(Collectors.toList());
     }
-
     return series;
   }
 
@@ -734,16 +817,18 @@ public class TradeProfitService {
         StockErrorCode.INVALID_USER_ID.throwException();
       }
       if (request.stockItemIdList() != null && !request.stockItemIdList().isEmpty()) {
-        tradeList = tradeService.findByAccountIdInAndStockItemIdIn(
-            request.accountIdList(), request.stockItemIdList());
+        tradeList =
+            tradeService.findByAccountIdInAndStockItemIdIn(
+                request.accountIdList(), request.stockItemIdList());
       } else {
         tradeList = tradeService.findByAccountIdIn(request.accountIdList());
       }
     } else {
       // All user accounts
       if (request.stockItemIdList() != null && !request.stockItemIdList().isEmpty()) {
-        tradeList = tradeService.findByAccountIdInAndStockItemIdIn(
-            validAccountIds, request.stockItemIdList());
+        tradeList =
+            tradeService.findByAccountIdInAndStockItemIdIn(
+                validAccountIds, request.stockItemIdList());
       } else {
         tradeList = tradeService.findByAccountIdIn(validAccountIds);
       }
@@ -796,32 +881,30 @@ public class TradeProfitService {
   }
 
   /** 특정 날짜의 보유 종목 스냅샷을 반환합니다. DailyAccountSnapshot의 wmaState를 활용합니다. */
-  public List<net.luversof.api.stock.web.dto.response.HoldingsSnapshotItem> getHoldingsSnapshot(
-      UUID userId, java.time.LocalDate date) {
-    var snapshot = dailyAccountSnapshotRepository.findLatestByUserIdAndAccountIdIsNullOnOrBefore(userId, date);
+  public List<HoldingsSnapshotItem> getHoldingsSnapshot(UUID userId, LocalDate date) {
+    var snapshot =
+        dailyAccountSnapshotRepository.findLatestByUserIdAndAccountIdIsNullOnOrBefore(userId, date);
     if (snapshot.isEmpty() || snapshot.get().getWmaState() == null) {
       return List.of();
     }
 
     Map<String, WmaState> stateMap;
     try {
-      com.fasterxml.jackson.core.type.TypeReference<HashMap<String, WmaState>> typeRef = new com.fasterxml.jackson.core.type.TypeReference<>() {
-      };
-      stateMap = new com.fasterxml.jackson.databind.ObjectMapper()
-          .convertValue(snapshot.get().getWmaState(), typeRef);
+      TypeReference<HashMap<String, WmaState>> typeRef = new TypeReference<>() {};
+      stateMap = new ObjectMapper().convertValue(snapshot.get().getWmaState(), typeRef);
     } catch (Exception ex) {
       log.error("Failed to deserialize WmaState for holdingsSnapshot", ex);
       return List.of();
     }
 
-    List<net.luversof.api.stock.web.dto.response.HoldingsSnapshotItem> result = new ArrayList<>();
+    List<HoldingsSnapshotItem> result = new ArrayList<>();
     for (WmaState state : stateMap.values()) {
-      if (state.quantity.compareTo(BigDecimal.ZERO) <= 0 || state.stockItemId == null)
+      if (state.getQuantity().compareTo(BigDecimal.ZERO) <= 0 || state.getStockItemId() == null)
         continue;
 
-      String name = state.stockItemId.toString();
+      String name = state.getStockItemId().toString();
       String symbol = null;
-      var itemOpt = stockItemService.findById(state.stockItemId);
+      var itemOpt = stockItemService.findById(state.getStockItemId());
       if (itemOpt.isPresent()) {
         var item = itemOpt.get();
         name = item.getName() != null ? item.getName() : name;
@@ -829,27 +912,26 @@ public class TradeProfitService {
       }
 
       // 표시용 수량: rawQuantity(정수)가 있으면 사용, 없으면(구버전 스냅샷)은 반올림 처리
-      long displayQty = state.rawQuantity > 0
-          ? state.rawQuantity
-          : state.quantity.setScale(0, java.math.RoundingMode.HALF_UP).longValue();
-      java.math.BigDecimal displayQtyBd = java.math.BigDecimal.valueOf(displayQty);
+      long displayQty =
+          state.getRawQuantity() > 0
+              ? state.getRawQuantity()
+              : state.getQuantity().setScale(0, RoundingMode.HALF_UP).longValue();
+      BigDecimal displayQtyBd = BigDecimal.valueOf(displayQty);
 
-      java.math.BigDecimal avgCost = displayQty > 0
-          ? state.totalCost.divide(displayQtyBd, 2, java.math.RoundingMode.HALF_UP)
-          : java.math.BigDecimal.ZERO;
-      java.math.BigDecimal price = stockPriceService.getPriceAt(state.stockItemId, date);
-      java.math.BigDecimal value = price.multiply(state.quantity);
-      java.math.BigDecimal unrealizedProfit = value.subtract(state.totalCost);
+      BigDecimal avgCost =
+          displayQty > 0
+              ? state.getTotalCost().divide(displayQtyBd, 2, RoundingMode.HALF_UP)
+              : BigDecimal.ZERO;
+      BigDecimal price = stockPriceService.getPriceAt(state.getStockItemId(), date);
+      BigDecimal value = price.multiply(state.getQuantity());
+      BigDecimal unrealizedProfit = value.subtract(state.getTotalCost());
 
       result.add(
-          new net.luversof.api.stock.web.dto.response.HoldingsSnapshotItem(
+          new HoldingsSnapshotItem(
               name, symbol, displayQtyBd, avgCost, price, value, unrealizedProfit));
     }
 
-    result.sort(
-        Comparator.comparing(
-            net.luversof.api.stock.web.dto.response.HoldingsSnapshotItem::unrealizedProfit)
-            .reversed());
+    result.sort(Comparator.comparing(HoldingsSnapshotItem::unrealizedProfit).reversed());
     return result;
   }
 }

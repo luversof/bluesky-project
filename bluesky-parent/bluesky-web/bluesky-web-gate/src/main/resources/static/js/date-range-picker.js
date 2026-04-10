@@ -67,6 +67,8 @@ window.DateRangePicker = (function () {
         if (rmEl) rmEl.value = months === 0 ? "all" : String(months);
 
         var today = new Date();
+        today.setHours(0, 0, 0, 0);
+        var todayStr = fmtDate(today);
         var startEl = el(cfg.startId);
         var endEl = el(cfg.endId);
 
@@ -75,12 +77,98 @@ window.DateRangePicker = (function () {
           if (endEl) endEl.value = "";
         } else if (months === "ytd") {
           if (startEl) startEl.value = today.getFullYear() + "-01-01";
-          if (endEl) endEl.value = fmtDate(today);
+          if (endEl) endEl.value = todayStr;
         } else {
-          var s = new Date(today);
-          s.setMonth(s.getMonth() - months);
-          if (startEl) startEl.value = fmtDate(s);
-          if (endEl) endEl.value = fmtDate(today);
+          // asset-growth 와 동일한 이중 앵커 로직:
+          // atDataEnd = 끝 포함(끝 앵커 우선)  atDataStart = 시작 고정
+          var curEnd = endEl ? endEl.value : "";
+          var curStart = startEl ? startEl.value : "";
+          var atDataEnd = !curEnd || curEnd >= todayStr;
+          var atDataStart =
+            !atDataEnd && !!cfg.minDate && !!curStart && curStart <= cfg.minDate;
+
+          if (atDataStart) {
+            // 시작 앵커: minDate 고정, 끝을 +months 로 계산
+            var minD = new Date(cfg.minDate + "T00:00:00");
+            var e = new Date(minD);
+            e.setMonth(e.getMonth() + months);
+            if (e > today) e = new Date(today);
+            if (startEl) startEl.value = fmtDate(minD);
+            if (endEl) endEl.value = fmtDate(e);
+          } else {
+            // 끝 앵커 (기본): today 고정, 시작을 -months 로 계산
+            var s = new Date(today);
+            s.setMonth(s.getMonth() - months);
+            if (startEl) startEl.value = fmtDate(s);
+            if (endEl) endEl.value = todayStr;
+          }
+        }
+        submit();
+      },
+
+      /**
+       * 처음/끝 버튼 클릭 시 호출
+       * @param {'start'|'end'} direction
+       */
+      jumpToEdge: function (direction) {
+        var startEl = el(cfg.startId);
+        var endEl = el(cfg.endId);
+        var mode = (el(cfg.rangeModeId) || {}).value || "";
+        if (mode === "all") return;
+
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+        clearActive();
+
+        if (direction === "end") {
+          if (mode && !isNaN(+mode) && +mode > 0) {
+            var months = +mode;
+            var s = new Date(today);
+            s.setMonth(s.getMonth() - months);
+            if (startEl) startEl.value = fmtDate(s);
+            if (endEl) endEl.value = fmtDate(today);
+          } else if (mode === "ytd") {
+            if (startEl) startEl.value = today.getFullYear() + "-01-01";
+            if (endEl) endEl.value = fmtDate(today);
+          } else {
+            if (!startEl || !startEl.value || !endEl || !endEl.value) return;
+            var s = new Date(startEl.value + "T00:00:00");
+            var e = new Date(endEl.value + "T00:00:00");
+            var ms = e - s;
+            if (ms <= 0) return;
+            var ne = new Date(today);
+            var ns = new Date(ne.getTime() - ms);
+            if (startEl) startEl.value = fmtDate(ns);
+            endEl.value = fmtDate(ne);
+          }
+        } else if (direction === "start") {
+          if (!cfg.minDate) return;
+          var minD = new Date(cfg.minDate + "T00:00:00");
+          if (mode && !isNaN(+mode) && +mode > 0) {
+            var months = +mode;
+            var e = new Date(minD);
+            e.setMonth(e.getMonth() + months);
+            if (e > today) e = new Date(today);
+            if (startEl) startEl.value = fmtDate(minD);
+            if (endEl) endEl.value = fmtDate(e);
+          } else if (mode === "ytd") {
+            var minYear = minD.getFullYear();
+            if (startEl) startEl.value = minYear + "-01-01";
+            if (endEl)
+              endEl.value =
+                minYear === today.getFullYear() ? fmtDate(today) : minYear + "-12-31";
+          } else {
+            if (!startEl || !startEl.value || !endEl || !endEl.value) return;
+            var currStart = new Date(startEl.value + "T00:00:00");
+            var currEnd = new Date(endEl.value + "T00:00:00");
+            var ms = currEnd - currStart;
+            if (ms <= 0) return;
+            var ns = new Date(minD);
+            var ne = new Date(minD.getTime() + ms);
+            if (ne > today) ne = new Date(today);
+            if (startEl) startEl.value = fmtDate(ns);
+            if (endEl) endEl.value = fmtDate(ne);
+          }
         }
         submit();
       },

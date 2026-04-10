@@ -1,5 +1,5 @@
 @import java.util.List
-@import net.luversof.web.gate.stock.controller.StockHtmxController.Activity
+@import net.luversof.web.gate.stock.controller.StockTradeHtmxController.Activity
 @import java.time.ZoneId
 @import java.time.format.DateTimeFormatter
 

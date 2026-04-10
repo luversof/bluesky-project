@@ -35,6 +35,7 @@
 @param BigDecimal totalAllTax = BigDecimal.ZERO
 @param BigDecimal totalAllRealizedProfit = BigDecimal.ZERO
 @param String rangeMode = null
+@param String dataFirstDate = null
 
 !{
     String sortField = sort != null ? sort.split(",")[0] : "";
@@ -76,6 +77,7 @@
     <!-- Quick Date Selector -->
     <div class="flex flex-wrap gap-2 mb-3 items-center">
         <span class="text-xs opacity-50 mr-1">기간</span>
+        <button type="button" class="btn btn-xs btn-ghost" onclick="tradePicker.jumpToEdge('start')">&#171;</button>
         <button type="button" class="btn btn-xs btn-ghost" onclick="tradePicker.shift(-1)">&#8249; 이전</button>
         <button type="button" class="btn btn-xs trade-range-btn ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : ""}" onclick="tradePicker.set(1,this)">1개월</button>
         <button type="button" class="btn btn-xs trade-range-btn ${rangeMode != null && rangeMode.equals("3") ? "btn-primary" : ""}" onclick="tradePicker.set(3,this)">3개월</button>
@@ -85,6 +87,7 @@
         <button type="button" class="btn btn-xs trade-range-btn ${rangeMode != null && rangeMode.equals("36") ? "btn-primary" : ""}" onclick="tradePicker.set(36,this)">3년</button>
         <button type="button" class="btn btn-xs trade-range-btn ${rangeMode != null && rangeMode.equals("all") ? "btn-primary" : ""}" onclick="tradePicker.set(0,this)">전체</button>
         <button type="button" class="btn btn-xs btn-ghost" onclick="tradePicker.shift(1)">다음 &#8250;</button>
+        <button type="button" class="btn btn-xs btn-ghost" onclick="tradePicker.jumpToEdge('end')">&#187;</button>
     </div>
 
     <!-- Filter & Search Form -->
@@ -598,9 +601,10 @@
                 startId:     'tradeStartDateInput',
                 endId:       'tradeEndDateInput',
                 rangeModeId: 'tradeRangeModeInput',
-                btnClass:    'trade-range-btn'
+                btnClass:    'trade-range-btn',
+                minDate:     '${dataFirstDate != null ? dataFirstDate : ""}'
             })
-            : { set: function(){}, shift: function(){} };
+            : { set: function(){}, shift: function(){}, jumpToEdge: function(){} };
 
         function initAll() {
             initTradeMonthlyChart();

@@ -1,7 +1,7 @@
 @import java.util.List
 @import java.math.BigDecimal
-@import net.luversof.web.gate.stock.controller.StockHtmxController.AnalyticsRow
-@import net.luversof.web.gate.stock.controller.StockHtmxController.ChartDataset
+@import net.luversof.web.gate.stock.controller.StockBaseHtmxController.AnalyticsRow
+@import net.luversof.web.gate.stock.controller.StockBaseHtmxController.ChartDataset
 
 @param String chartTitle
 @param String keyLabel

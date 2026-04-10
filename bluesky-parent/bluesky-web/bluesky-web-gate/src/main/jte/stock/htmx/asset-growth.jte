@@ -413,7 +413,7 @@
                 if (minIdx < 0 || isNaN(minIdx)) minIdx = 0;
                 if (maxIdx < 0 || isNaN(maxIdx)) maxIdx = labels.length - 1;
 
-                // 현재 뷰포트 span을 baseData 인덱스로 환산
+                // 현재 뷰포트 span을 날짜(ms)로 계산 - BASE 복원 전에 읽어야 함
                 var curSpanDays = labels.length > 1
                     ? (new Date(labels[Math.min(maxIdx, labels.length-1)]) - new Date(labels[Math.max(minIdx, 0)])) / 86400000
                     : 365;
@@ -426,27 +426,57 @@
                     maxIdx = labels.length - 1;
                 }
 
-                // curSpanDays 기준 span 유지
-                var spanPts = 0;
-                for (var i = 0; i < labels.length; i++) {
-                    if ((new Date(labels[i]) - new Date(labels[0])) / 86400000 >= curSpanDays) {
-                        spanPts = i;
-                        break;
-                    }
-                }
-                if (spanPts === 0) spanPts = maxIdx - minIdx;
-                if (spanPts <= 0) spanPts = Math.min(365, labels.length - 1);
+                // 처음/끝은 항상 전체 데이터 기준 (baseData) 앵커 사용
+                // labels[0/last] 는 fetch 버퍼나 DETAIL 교체로 변경될 수 있어 사용 금지
+                var dataFirst = baseData.labels[0];
+                var dataLast  = baseData.labels[baseData.labels.length - 1];
 
-                var edgeMinIdx, edgeMaxIdx;
+                // activeMonths 가 설정되어 있으면 날짜 산술로 정확한 span 계산
+                // (BASE labels 가 월별처럼 희박할 때 curSpanDays → label index 변환 오류 방지)
+                var targetStartStr, targetEndStr;
                 if (position === 'start') {
-                    edgeMinIdx = 0;
-                    edgeMaxIdx = Math.min(spanPts, labels.length - 1);
+                    targetStartStr = dataFirst;
+                    if (activeMonths > 0) {
+                        var d = new Date(dataFirst);
+                        d.setMonth(d.getMonth() + activeMonths);
+                        targetEndStr = d.toISOString().split('T')[0];
+                    } else if (activeMonths === -1) {
+                        targetEndStr = new Date().getFullYear() + '-12-31';
+                    } else {
+                        targetEndStr = new Date(new Date(dataFirst).getTime() + curSpanDays * 86400000).toISOString().split('T')[0];
+                    }
+                    if (targetEndStr > dataLast) targetEndStr = dataLast;
                 } else {
-                    edgeMaxIdx = labels.length - 1;
-                    edgeMinIdx = Math.max(0, labels.length - 1 - spanPts);
+                    targetEndStr = dataLast;
+                    if (activeMonths > 0) {
+                        var d = new Date(dataLast);
+                        d.setMonth(d.getMonth() - activeMonths);
+                        targetStartStr = d.toISOString().split('T')[0];
+                    } else if (activeMonths === -1) {
+                        targetStartStr = new Date().getFullYear() + '-01-01';
+                    } else {
+                        targetStartStr = new Date(new Date(dataLast).getTime() - curSpanDays * 86400000).toISOString().split('T')[0];
+                    }
+                    if (targetStartStr < dataFirst) targetStartStr = dataFirst;
                 }
+
+                var edgeMinIdx = 0;
+                for (var i = 0; i < labels.length; i++) {
+                    if (labels[i] >= targetStartStr) { edgeMinIdx = i; break; }
+                }
+                var edgeMaxIdx = labels.length - 1;
+                for (var j = labels.length - 1; j >= 0; j--) {
+                    if (labels[j] <= targetEndStr) { edgeMaxIdx = j; break; }
+                }
+                if (edgeMaxIdx < edgeMinIdx) edgeMaxIdx = Math.min(edgeMinIdx + 1, labels.length - 1);
 
                 animateScaleChange(edgeMinIdx, edgeMaxIdx, 320);
+                // 이동한 구간에 맞는 세밀도 데이터 fetch 트리거 (실제 목표 날짜 사용)
+                pendingVisStart = targetStartStr;
+                pendingVisEnd   = targetEndStr;
+                setLoading(true);
+                clearTimeout(checkDetailTimer);
+                checkDetailTimer = setTimeout(checkAndFetchDetail, 200);
             };
 
             // 퀘셀렉터: 단위 M=월, Y=년, 0=전체
@@ -458,23 +488,37 @@
                     var m = parseInt(btn.dataset.months, 10);
                     btn.classList.toggle('btn-active', m === months);
                 });
-                // 현재 뷰포트의 max 날짜를 먼저 읽기 (복원 전에)
+                // 현재 뷰포트의 min/max 날짜를 먼저 읽기 (복원 전에)
                 var xAxisNow = mainChart.scales.x;
+                var rawMinNow = xAxisNow.min;
                 var rawMaxNow = xAxisNow.max;
+                var curMinIdx = typeof rawMinNow === 'number' ? Math.round(rawMinNow) : labels.indexOf(rawMinNow);
                 var curMaxIdx = typeof rawMaxNow === 'number' ? Math.round(rawMaxNow) : labels.indexOf(rawMaxNow);
+                if (curMinIdx < 0 || curMinIdx >= labels.length) curMinIdx = 0;
                 if (curMaxIdx < 0 || curMaxIdx >= labels.length) curMaxIdx = labels.length - 1;
+                var viewStartDate = labels[curMinIdx];
                 var viewEndDate = labels[curMaxIdx];
                 // 상세 모드라면 base로 먼저 복원
                 if (currentTierNum > baseDataTierNum) {
                     applyChartData(baseData, baseData.labels[0], baseData.labels[baseData.labels.length - 1]);
                     currentTierNum = baseDataTierNum;
-                    // base labels 기준으로 viewEndDate 보정
+                    // base labels 기준으로 viewStartDate/viewEndDate 보정
+                    var bStart = baseData.labels[0];
+                    for (var bs = 0; bs < baseData.labels.length; bs++) {
+                        if (baseData.labels[bs] >= viewStartDate) { bStart = baseData.labels[bs]; break; }
+                    }
+                    viewStartDate = bStart;
                     var bEnd = baseData.labels[baseData.labels.length - 1];
                     for (var bi = baseData.labels.length - 1; bi >= 0; bi--) {
                         if (baseData.labels[bi] <= viewEndDate) { bEnd = baseData.labels[bi]; break; }
                     }
                     viewEndDate = bEnd;
                 }
+                // 데이터 시작점 근처인지 판단: 왼쪽 앵커 vs 오른쪽 앵커 결정
+                // atDataEnd 가 TRUE 이면(끝 포함) 항상 끝 앵커 사용
+                // (전체 데이터가 표시 중이면 viewStartDate = dataStart 여도 끝 앵커 사용)
+                var atDataEnd   = viewEndDate >= baseData.labels[baseData.labels.length - 1];
+                var atDataStart = !atDataEnd && viewStartDate <= baseData.labels[0];
                 var newMinIdx, newMaxIdx;
                 if (months === 0) {
                     newMinIdx = 0;
@@ -491,12 +535,24 @@
                         if (labels[i] >= ytdStart) { newMinIdx = i; break; }
                     }
                 } else {
-                    var startDate = new Date(viewEndDate);
-                    startDate.setMonth(startDate.getMonth() - months);
-                    var startStr = startDate.toISOString().split('T')[0];
+                    var startStr, endStr;
+                    if (atDataStart) {
+                        // 데이터 시작점 근처: 왼쪽(시작) 고정, 오른쪽을 +months 로 계산
+                        startStr = baseData.labels[0];
+                        var endDate = new Date(baseData.labels[0]);
+                        endDate.setMonth(endDate.getMonth() + months);
+                        endStr = endDate.toISOString().split('T')[0];
+                        if (endStr > labels[labels.length - 1]) endStr = labels[labels.length - 1];
+                    } else {
+                        // 일반: 오른쪽(끝) 고정, 왼쪽을 -months 로 계산
+                        endStr = viewEndDate;
+                        var sd = new Date(viewEndDate);
+                        sd.setMonth(sd.getMonth() - months);
+                        startStr = sd.toISOString().split('T')[0];
+                    }
                     newMaxIdx = labels.length - 1;
                     for (var k = labels.length - 1; k >= 0; k--) {
-                        if (labels[k] <= viewEndDate) { newMaxIdx = k; break; }
+                        if (labels[k] <= endStr) { newMaxIdx = k; break; }
                     }
                     newMinIdx = 0;
                     for (var i = 0; i < labels.length; i++) {
@@ -504,10 +560,19 @@
                     }
                 }
                 if (newMaxIdx < newMinIdx) newMaxIdx = Math.min(newMinIdx + 1, labels.length - 1);
-                // checkAndFetchDetail 이 BASE labels 포인트를 getOptDates() 로 읽으면 희박한 범위가 나오므로
-                // 실제 목표 날짜를 명시적으로 저장
-                pendingVisStart = labels[newMinIdx];
-                pendingVisEnd   = labels[newMaxIdx];
+                // checkAndFetchDetail 에 실제 목표 날짜(BASE label 스냅이 아닌 실제 범위)를 전달
+                // BASE labels 가 희박(월별)할 때 labels[newMinIdx/newMaxIdx] 를 쓰면
+                // 범위가 1~2개월 간격으로 줄어 캐시 히트 → fetch 생략 버그 발생
+                if (months === 0) {
+                    pendingVisStart = labels[0];
+                    pendingVisEnd   = labels[labels.length - 1];
+                } else if (months === -1) {
+                    pendingVisStart = ytdStart;
+                    pendingVisEnd   = viewEndDate;
+                } else {
+                    pendingVisStart = startStr;
+                    pendingVisEnd   = endStr;
+                }
                 setLoading(true);
                 clearTimeout(checkDetailTimer);
                 checkDetailTimer = setTimeout(checkAndFetchDetail, 200);
