@@ -15,7 +15,7 @@
 			<h1 class="text-2xl font-bold mb-4 ml-1">자산 현황</h1>
 
 			<!-- Section 1: 요약 카드 + 비중 차트 -->
-			<div hx-get="/stock/htmx/summary" hx-trigger="load" hx-swap="innerHTML">
+			<div hx-get="/stock/htmx/summary?showCharts=true" hx-trigger="load" hx-swap="innerHTML">
 				<div class="flex justify-center p-10">
 					<span class="loading loading-spinner text-primary loading-lg"></span>
 				</div>

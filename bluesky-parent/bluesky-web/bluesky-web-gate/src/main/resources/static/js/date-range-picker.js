@@ -85,7 +85,10 @@ window.DateRangePicker = (function () {
           var curStart = startEl ? startEl.value : "";
           var atDataEnd = !curEnd || curEnd >= todayStr;
           var atDataStart =
-            !atDataEnd && !!cfg.minDate && !!curStart && curStart <= cfg.minDate;
+            !atDataEnd &&
+            !!cfg.minDate &&
+            !!curStart &&
+            curStart <= cfg.minDate;
 
           if (atDataStart) {
             // 시작 앵커: minDate 고정, 끝을 +months 로 계산
@@ -156,7 +159,9 @@ window.DateRangePicker = (function () {
             if (startEl) startEl.value = minYear + "-01-01";
             if (endEl)
               endEl.value =
-                minYear === today.getFullYear() ? fmtDate(today) : minYear + "-12-31";
+                minYear === today.getFullYear()
+                  ? fmtDate(today)
+                  : minYear + "-12-31";
           } else {
             if (!startEl || !startEl.value || !endEl || !endEl.value) return;
             var currStart = new Date(startEl.value + "T00:00:00");

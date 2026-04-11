@@ -357,8 +357,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     model.addAttribute("prevStartDate", prevStartDate);
     model.addAttribute("prevEndDate", prevEndDate);
     model.addAttribute("rangeMode", rangeMode);
-    model.addAttribute(
-        "dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");
+    model.addAttribute("dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");
 
     return "stock/htmx/fragments/tabsDividendHistory";
   }

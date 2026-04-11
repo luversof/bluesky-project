@@ -18,6 +18,7 @@
 @param List<TradeProfit> bottomDividend
 @param Map<String, BigDecimal> allocation
 @param Map<String, BigDecimal> accountAllocation
+@param boolean showCharts = true
 
 <div class="flex flex-col gap-4">
     <!-- Stats -->
@@ -90,10 +91,12 @@
     </div>
 
     <!-- Charts Row -->
+    @if(showCharts)
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 w-full">
          @template.stock.htmx.fragments.chartsAllocation(allocation = allocation)
          @template.stock.htmx.fragments.chartsAccountAllocation(accountAllocation = accountAllocation)
     </div>
+    @endif
     
     <!-- Top/Bottom Lists (4 Columns) -->
     <div class="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">

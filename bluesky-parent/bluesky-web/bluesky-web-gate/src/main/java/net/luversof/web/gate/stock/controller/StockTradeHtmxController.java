@@ -257,8 +257,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     model.addAttribute("totalAllTax", totalAllTax);
     model.addAttribute("totalAllRealizedProfit", totalAllRealizedProfit);
     model.addAttribute("rangeMode", rangeMode);
-    model.addAttribute(
-        "dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");
+    model.addAttribute("dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");
 
     return "stock/htmx/tradeList";
   }
