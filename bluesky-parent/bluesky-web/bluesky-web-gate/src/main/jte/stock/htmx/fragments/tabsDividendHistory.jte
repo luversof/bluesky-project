@@ -89,19 +89,27 @@
         <span class="text-xs opacity-50 mr-1">기간</span>
         <button type="button" class="btn btn-xs btn-ghost" onclick="dividendPicker.jumpToEdge('start')">«</button>
         <button type="button" class="btn btn-xs btn-ghost" onclick="dividendPicker.shift(-1)">‹ 이전</button>
-        <button type="button" class="btn btn-xs quick-range-btn ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : ""}" onclick="dividendPicker.set(1,this)">1개월</button>
-        <button type="button" class="btn btn-xs quick-range-btn ${rangeMode != null && rangeMode.equals("3") ? "btn-primary" : ""}" onclick="dividendPicker.set(3,this)">3개월</button>
-        <button type="button" class="btn btn-xs quick-range-btn ${rangeMode != null && rangeMode.equals("6") ? "btn-primary" : ""}" onclick="dividendPicker.set(6,this)">6개월</button>
-        <button type="button" class="btn btn-xs quick-range-btn ${rangeMode != null && rangeMode.equals("ytd") ? "btn-primary" : ""}" onclick="dividendPicker.set('ytd',this)">올해</button>
-        <button type="button" class="btn btn-xs quick-range-btn ${rangeMode != null && rangeMode.equals("12") ? "btn-primary" : ""}" onclick="dividendPicker.set(12,this)">1년</button>
-        <button type="button" class="btn btn-xs quick-range-btn ${rangeMode != null && rangeMode.equals("36") ? "btn-primary" : ""}" onclick="dividendPicker.set(36,this)">3년</button>
-        <button type="button" class="btn btn-xs quick-range-btn ${rangeMode != null && rangeMode.equals("all") ? "btn-primary" : ""}" onclick="dividendPicker.set(0,this)">전체</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : ""}" onclick="dividendPicker.set(1,this)">1개월</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("3") ? "btn-primary" : ""}" onclick="dividendPicker.set(3,this)">3개월</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("6") ? "btn-primary" : ""}" onclick="dividendPicker.set(6,this)">6개월</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("ytd") ? "btn-primary" : ""}" onclick="dividendPicker.set('ytd',this)">올해</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("12") ? "btn-primary" : ""}" onclick="dividendPicker.set(12,this)">1년</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("36") ? "btn-primary" : ""}" onclick="dividendPicker.set(36,this)">3년</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("all") ? "btn-primary" : ""}" onclick="dividendPicker.set(0,this)">전체</button>
         <button type="button" class="btn btn-xs btn-ghost" onclick="dividendPicker.shift(1)">다음 ›</button>
         <button type="button" class="btn btn-xs btn-ghost" onclick="dividendPicker.jumpToEdge('end')">»</button>
     </div>
 
-    <!-- Filter & Search Form -->
-    <form id="dividendSearchForm" class="flex flex-wrap gap-2 mb-4 items-end bg-base-100 p-2 rounded-box shadow-sm"
+    <!-- Filter & Search Form (collapsible) -->
+    <details class="mb-4"$unsafe{(selectedAccountId != null || selectedStockItemId != null || startDate != null) ? " open" : ""}>
+        <summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
+            상세 검색
+            @if(selectedAccountId != null || selectedStockItemId != null || startDate != null)
+                <span class="badge badge-xs badge-primary">필터 적용 중</span>
+            @endif
+        </summary>
+    <form id="dividendSearchForm" class="flex flex-wrap gap-2 mt-2 mb-2 items-end bg-base-100 p-2 rounded-box shadow-sm"
           hx-get="/stock/htmx/dividend/list"
           hx-target="#dividendListFragment"
           hx-select="#dividendListFragment"
@@ -144,6 +152,7 @@
                 hx-select="#dividendListFragment"
                 hx-swap="outerHTML">초기화</button>
     </form>
+    </details>
 
     <!-- Dashboard -->
 
@@ -208,16 +217,18 @@
         <div class="card bg-base-100 shadow-sm border border-base-200 flex-[2] min-w-[200px]">
             <div class="card-body p-4">
                 <div class="text-sm font-bold mb-3">비중 분석</div>
-                <div class="flex justify-center mb-3">
-                    <div class="w-[140px] h-[140px]">
+                <div class="flex gap-3">
+                    <div class="flex-shrink-0 w-[200px] h-[200px]">
                         <canvas id="donutChart" class="amount-chart"></canvas>
                     </div>
+                    <div class="flex flex-col w-0 flex-1 h-[200px] overflow-hidden">
+                        <div class="tabs tabs-boxed tabs-xs mb-1 w-fit flex-shrink-0">
+                            <a class="tab tab-active" id="donutTabStock" onclick="switchDonut('stock')">종목별</a>
+                            <a class="tab" id="donutTabAccount" onclick="switchDonut('account')">계좌별</a>
+                        </div>
+                        <div id="donutLegend" class="flex-1 min-h-0 overflow-y-auto text-[0.72rem]"></div>
+                    </div>
                 </div>
-                <div class="tabs tabs-boxed tabs-xs mb-2 w-fit">
-                    <a class="tab tab-active" id="donutTabStock" onclick="switchDonut('stock')">종목별</a>
-                    <a class="tab" id="donutTabAccount" onclick="switchDonut('account')">계좌별</a>
-                </div>
-                <div id="donutLegend" class="overflow-y-auto text-[0.72rem] max-h-[120px]"></div>
             </div>
         </div>
 
@@ -225,7 +236,7 @@
         <div class="card bg-base-100 shadow-sm border border-base-200 flex-[3] min-w-[280px] overflow-visible">
             <div class="card-body p-4">
                 <h3 class="font-bold text-sm mb-3">월별 배당금</h3>
-                <div class="relative h-[260px]">
+                <div class="relative h-[220px]">
                     <canvas id="monthlyBarChart" class="amount-chart"></canvas>
                 </div>
             </div>
@@ -429,6 +440,14 @@
             const ctx = document.getElementById('donutChart');
             if (!ctx) return;
             if (donutChart) donutChart.destroy();
+            const legend = document.getElementById('donutLegend');
+            if (d.labels.length === 0) {
+                ctx.style.display = 'none';
+                if (legend) legend.innerHTML = '<div class="text-xs opacity-40 pt-4 text-center">해당 기간 배당 내역이 없습니다.</div>';
+                return;
+            }
+            if (ctx.parentElement) ctx.parentElement.style.display = '';
+            ctx.style.display = '';
             donutChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
@@ -450,14 +469,14 @@
                 }
             });
             const total = d.data.reduce((s, v) => s + v, 0);
-            const legend = document.getElementById('donutLegend');
             if (legend) {
                 legend.innerHTML = d.labels.map((label, i) => {
                     const pct = total > 0 ? ((d.data[i] / total) * 100).toFixed(1) : '0.0';
-                    return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;white-space:nowrap;">'
-                        + '<span style="width:8px;height:8px;border-radius:50%;background:' + CHART_COLORS[i % CHART_COLORS.length] + ';flex-shrink:0;display:inline-block;"></span>'
-                        + '<span style="overflow:hidden;text-overflow:ellipsis;">' + label + '</span>'
-                        + '<span style="flex-shrink:0;margin-left:6px;font-family:monospace;opacity:0.7;">' + pct + '%</span>'
+                    const color = CHART_COLORS[i % CHART_COLORS.length];
+                    return '<div class="flex items-center gap-1 mb-0.5">'
+                        + '<span style="flex-shrink:0;display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + '"></span>'
+                        + '<span class="flex-1" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + label + '">' + label + '</span>'
+                        + '<span style="flex-shrink:0;opacity:0.75;">' + pct + '%</span>'
                         + '</div>';
                 }).join('');
             }
@@ -503,7 +522,7 @@
                 startId:     'startDateInput',
                 endId:       'endDateInput',
                 rangeModeId: 'dividendRangeModeInput',
-                btnClass:    'quick-range-btn',
+                btnClass:    'date-range-btn',
                 minDate:     '${dataFirstDate != null ? dataFirstDate : ""}'
             })
             : { set: function(){}, shift: function(){}, jumpToEdge: function(){} };
@@ -529,6 +548,16 @@
             };
             document.head.appendChild(s);
         }
+
+        // 페이징 클릭 시 fragment 상단 스크롤
+        if (window.__pendingScrollTo === 'dividendListFragment') {
+            delete window.__pendingScrollTo;
+            const frag = document.getElementById('dividendListFragment');
+            if (frag) frag.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        document.querySelectorAll('#dividendListFragment .join button[hx-get]').forEach(btn => {
+            btn.addEventListener('click', () => { window.__pendingScrollTo = 'dividendListFragment'; });
+        });
     })();
     </script>
 

@@ -79,19 +79,27 @@
         <span class="text-xs opacity-50 mr-1">기간</span>
         <button type="button" class="btn btn-xs btn-ghost" onclick="tradePicker.jumpToEdge('start')">&#171;</button>
         <button type="button" class="btn btn-xs btn-ghost" onclick="tradePicker.shift(-1)">&#8249; 이전</button>
-        <button type="button" class="btn btn-xs trade-range-btn ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : ""}" onclick="tradePicker.set(1,this)">1개월</button>
-        <button type="button" class="btn btn-xs trade-range-btn ${rangeMode != null && rangeMode.equals("3") ? "btn-primary" : ""}" onclick="tradePicker.set(3,this)">3개월</button>
-        <button type="button" class="btn btn-xs trade-range-btn ${rangeMode != null && rangeMode.equals("6") ? "btn-primary" : ""}" onclick="tradePicker.set(6,this)">6개월</button>
-        <button type="button" class="btn btn-xs trade-range-btn ${rangeMode != null && rangeMode.equals("ytd") ? "btn-primary" : ""}" onclick="tradePicker.set('ytd',this)">올해</button>
-        <button type="button" class="btn btn-xs trade-range-btn ${rangeMode != null && rangeMode.equals("12") ? "btn-primary" : ""}" onclick="tradePicker.set(12,this)">1년</button>
-        <button type="button" class="btn btn-xs trade-range-btn ${rangeMode != null && rangeMode.equals("36") ? "btn-primary" : ""}" onclick="tradePicker.set(36,this)">3년</button>
-        <button type="button" class="btn btn-xs trade-range-btn ${rangeMode != null && rangeMode.equals("all") ? "btn-primary" : ""}" onclick="tradePicker.set(0,this)">전체</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : ""}" onclick="tradePicker.set(1,this)">1개월</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("3") ? "btn-primary" : ""}" onclick="tradePicker.set(3,this)">3개월</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("6") ? "btn-primary" : ""}" onclick="tradePicker.set(6,this)">6개월</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("ytd") ? "btn-primary" : ""}" onclick="tradePicker.set('ytd',this)">올해</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("12") ? "btn-primary" : ""}" onclick="tradePicker.set(12,this)">1년</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("36") ? "btn-primary" : ""}" onclick="tradePicker.set(36,this)">3년</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("all") ? "btn-primary" : ""}" onclick="tradePicker.set(0,this)">전체</button>
         <button type="button" class="btn btn-xs btn-ghost" onclick="tradePicker.shift(1)">다음 &#8250;</button>
         <button type="button" class="btn btn-xs btn-ghost" onclick="tradePicker.jumpToEdge('end')">&#187;</button>
     </div>
 
-    <!-- Filter & Search Form -->
-    <form id="tradeSearchForm" class="flex flex-wrap gap-2 mb-4 items-end bg-base-100 p-2 rounded-box shadow-sm"
+    <!-- Filter & Search Form (collapsible) -->
+    <details class="mb-4"$unsafe{(selectedAccountId != null || selectedStockItemId != null || startDate != null) ? " open" : ""}>
+        <summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
+            상세 검색
+            @if(selectedAccountId != null || selectedStockItemId != null)
+                <span class="badge badge-xs badge-primary">필터 적용 중</span>
+            @endif
+        </summary>
+    <form id="tradeSearchForm" class="flex flex-wrap gap-2 mt-2 mb-2 items-end bg-base-100 p-2 rounded-box shadow-sm"
           hx-get="/stock/htmx/trade/list"
           hx-target="#tradeListFragment"
           hx-select="#tradeListFragment"
@@ -134,6 +142,7 @@
                 hx-select="#tradeListFragment"
                 hx-swap="outerHTML">초기화</button>
     </form>
+    </details>
 
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
@@ -187,25 +196,27 @@
     <div class="flex flex-wrap gap-4 mb-4 overflow-visible">
 
         <!-- Left: 비중 분석 도넛 -->
-        <div class="card bg-base-100 shadow-sm border border-base-200 flex-[2] min-w-[200px] overflow-visible">
-            <div class="card-body p-4 overflow-visible">
+        <div class="card bg-base-100 shadow-sm border border-base-200 flex-[2] min-w-[200px]">
+            <div class="card-body p-4">
                 <div class="flex items-center justify-between mb-2">
-                    <div class="text-sm font-bold" id="tradeDonutTitle">비중 분석</div>
+                    <div class="text-sm font-bold" id="tradeDonutTitle">매수 집중도</div>
                     <div class="tabs tabs-boxed tabs-xs">
-                        <a class="tab tab-active" id="tradeDonutMetricProfit" onclick="switchTradeDonut('profit', null)">실현손익</a>
-                        <a class="tab" id="tradeDonutMetricBuy" onclick="switchTradeDonut('buy', null)">매수금액</a>
+                        <a class="tab" id="tradeDonutMetricProfit" onclick="switchTradeDonut('profit', null)">실현손익</a>
+                        <a class="tab tab-active" id="tradeDonutMetricBuy" onclick="switchTradeDonut('buy', null)">매수금액</a>
                     </div>
                 </div>
-                <div class="flex justify-center mb-2">
-                    <div class="w-[140px] h-[140px]">
+                <div class="flex gap-3">
+                    <div class="flex-shrink-0 w-[200px] h-[200px]">
                         <canvas id="tradeDonutChart" class="amount-chart"></canvas>
                     </div>
+                    <div class="flex flex-col w-0 flex-1 h-[200px] overflow-hidden">
+                        <div class="tabs tabs-boxed tabs-xs mb-1 w-fit flex-shrink-0">
+                            <a class="tab tab-active" id="tradeDonutTabStock" onclick="switchTradeDonut(null, 'stock')">종목별</a>
+                            <a class="tab" id="tradeDonutTabAccount" onclick="switchTradeDonut(null, 'account')">계좌별</a>
+                        </div>
+                        <div id="tradeDonutLegend" class="flex-1 min-h-0 overflow-y-auto text-[0.72rem]"></div>
+                    </div>
                 </div>
-                <div class="tabs tabs-boxed tabs-xs mb-2 w-fit">
-                    <a class="tab tab-active" id="tradeDonutTabStock" onclick="switchTradeDonut(null, 'stock')">종목별</a>
-                    <a class="tab" id="tradeDonutTabAccount" onclick="switchTradeDonut(null, 'account')">계좌별</a>
-                </div>
-                <div id="tradeDonutLegend" class="overflow-y-auto text-[0.72rem] max-h-[120px]"></div>
             </div>
         </div>
 
@@ -213,7 +224,7 @@
         <div class="card bg-base-100 shadow-sm border border-base-200 flex-[3] min-w-[280px] overflow-visible">
             <div class="card-body p-4">
                 <h3 class="font-bold text-sm mb-3">월별 매매 금액</h3>
-                <div class="relative h-[260px]">
+                <div class="relative h-[220px]">
                     <canvas id="tradeMonthlyChart" class="amount-chart"></canvas>
                 </div>
             </div>
@@ -356,7 +367,7 @@
 
         let tradeMonthlyChartInst = null;
         let tradeDonutChartInst = null;
-        let currentMetric = 'profit';
+        let currentMetric = 'buy';
         let currentGroupBy = 'stock';
 
         function buildMonthlyData() {
@@ -378,11 +389,11 @@
         }
 
         const PROFIT_COLORS_POS = [
-            'rgba(59,130,246,0.8)','rgba(34,197,94,0.8)','rgba(20,184,166,0.8)',
-            'rgba(99,102,241,0.8)','rgba(14,165,233,0.8)','rgba(168,85,247,0.8)'
+            'rgba(239,68,68,0.85)','rgba(220,38,38,0.8)','rgba(249,115,22,0.8)',
+            'rgba(253,164,175,0.85)','rgba(236,72,153,0.8)','rgba(245,158,11,0.8)'
         ];
         const PROFIT_COLORS_NEG = [
-            'rgba(239,68,68,0.8)','rgba(249,115,22,0.8)','rgba(236,72,153,0.8)'
+            'rgba(59,130,246,0.85)','rgba(14,165,233,0.8)','rgba(99,102,241,0.8)'
         ];
 
         function buildDonutData(metric, groupBy) {
@@ -472,9 +483,9 @@
                             ticks: {
                                 font: { size: 10 },
                                 callback: function(v) {
-                                    if (v >= 1000000) return (v/1000000).toFixed(0) + 'M';
-                                    if (v >= 1000) return (v/1000).toFixed(0) + 'K';
-                                    return v;
+                                    if (v >= 100000000) return (v/100000000).toFixed(0) + '억';
+                                    if (v >= 10000) return (v/10000).toFixed(0) + '만';
+                                    return v.toLocaleString('ko-KR');
                                 }
                             }
                         }
@@ -531,10 +542,17 @@
             const ctx = document.getElementById('tradeDonutChart');
             if (!ctx) return;
             if (tradeDonutChartInst) tradeDonutChartInst.destroy();
-            // hide any lingering tooltip
             var oldTip = document.getElementById('tradeDonutTooltipEl');
             if (oldTip) oldTip.style.opacity = '0';
             const isProfitMode = (metric || 'profit') === 'profit';
+            const legend = document.getElementById('tradeDonutLegend');
+            // 데이터 없음 처리
+            if (d.labels.length === 0) {
+                ctx.style.display = 'none';
+                if (legend) legend.innerHTML = '<div class="text-xs opacity-40 pt-4 text-center">해당 기간 ' + (isProfitMode ? '매도 내역' : '매수 내역') + '이 없습니다.</div>';
+                return;
+            }
+            ctx.style.display = '';
             tradeDonutChartInst = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
@@ -560,14 +578,13 @@
             });
             const titleEl = document.getElementById('tradeDonutTitle');
             if (titleEl) titleEl.textContent = isProfitMode ? '종목별 손익 기여' : '매수 집중도';
-            const legend = document.getElementById('tradeDonutLegend');
             if (legend) {
                 const total = d.data.reduce(function(a, b) { return a + b; }, 0);
                 legend.innerHTML = d.labels.map(function(l, i) {
                     const pct = total > 0 ? ((d.data[i] / total) * 100).toFixed(1) : '0.0';
                     const raw = d.rawData[i];
                     const sign = isProfitMode ? (raw >= 0 ? '\u25b2 ' : '\u25bc ') : '';
-                    const valClass = isProfitMode ? (raw >= 0 ? 'color:rgba(59,130,246,0.9)' : 'color:rgba(239,68,68,0.9)') : '';
+                    const valClass = isProfitMode ? (raw >= 0 ? 'color:rgba(239,68,68,0.9)' : 'color:rgba(59,130,246,0.9)') : '';
                     return '<div class="flex items-center gap-1 mb-0.5">'
                         + '<span style="flex-shrink:0;display:inline-block;width:8px;height:8px;border-radius:50%;background:' + d.colors[i] + '"></span>'
                         + '<span class="flex-1" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + l + '">' + l + '</span>'
@@ -601,14 +618,14 @@
                 startId:     'tradeStartDateInput',
                 endId:       'tradeEndDateInput',
                 rangeModeId: 'tradeRangeModeInput',
-                btnClass:    'trade-range-btn',
+                btnClass:    'date-range-btn',
                 minDate:     '${dataFirstDate != null ? dataFirstDate : ""}'
             })
             : { set: function(){}, shift: function(){}, jumpToEdge: function(){} };
 
         function initAll() {
             initTradeMonthlyChart();
-            initTradeDonutChart('profit', 'stock');
+            initTradeDonutChart(currentMetric, currentGroupBy);
         }
 
         if (window.Chart) {
@@ -637,6 +654,16 @@
                 if (arrow) arrow.style.transform = detail.open ? 'rotate(90deg)' : '';
             });
         }
+
+        // 페이징 클릭 시 fragment 상단 스크롤
+        if (window.__pendingScrollTo === 'tradeListFragment') {
+            delete window.__pendingScrollTo;
+            var frag = document.getElementById('tradeListFragment');
+            if (frag) frag.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        document.querySelectorAll('#tradeListFragment .join button[hx-get]').forEach(function(btn) {
+            btn.addEventListener('click', function() { window.__pendingScrollTo = 'tradeListFragment'; });
+        });
     })();
     </script>
 </div>

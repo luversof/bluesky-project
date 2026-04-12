@@ -11,58 +11,70 @@
 
 <div class="flex flex-col gap-6">
 
-    <!-- Section 1: 계좌별 카드 -->
+    <!-- Section 1: 계좌별 현황 테이블 -->
     <div>
         <h2 class="text-lg font-semibold mb-3 opacity-70">계좌별 현황</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            @for(Map.Entry<String, TradeProfit> entry : accountTotalMap.entrySet())
-                !{TradeProfit acc = entry.getValue();}
-                !{BigDecimal principal = acc.evaluationAmount() != null && acc.evaluationProfit() != null
-                    ? acc.evaluationAmount().subtract(acc.evaluationProfit())
-                    : (acc.totalBuyCost() != null ? acc.totalBuyCost() : BigDecimal.ZERO);}
-                !{double rate = principal.compareTo(BigDecimal.ZERO) > 0 && acc.evaluationProfit() != null
-                    ? acc.evaluationProfit().doubleValue() / principal.doubleValue() * 100
-                    : 0.0;}
-                <div class="card bg-base-100 shadow-md border border-base-200 hover:shadow-lg transition-shadow">
-                    <div class="card-body p-4 gap-2">
-                        <!-- 계좌명 -->
-                        <div class="flex items-center justify-between">
-                            <h3 class="font-bold text-base truncate">${entry.getKey()}</h3>
-                            <span class="badge badge-ghost badge-sm">주식</span>
-                        </div>
-                        <!-- 평가금액 (메인 숫자) -->
-                        <div class="mt-1">
-                            <div class="text-xs opacity-50 mb-0.5">평가금액</div>
-                            <div class="text-2xl font-bold font-mono amount-value text-principal">
-                                ${String.format("%,d", acc.evaluationAmount() != null ? acc.evaluationAmount().longValue() : 0)}
+        <div class="card bg-base-100 shadow-md overflow-x-auto">
+            <table class="table table-sm w-full">
+                <thead class="bg-base-200">
+                    <tr>
+                        <th>계좌명</th>
+                        <th class="text-right">평가금액</th>
+                        <th class="text-right hidden sm:table-cell">투자원금</th>
+                        <th class="text-right">평가손익</th>
+                        <th class="text-right hidden md:table-cell">실현손익</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @for(Map.Entry<String, TradeProfit> entry : accountTotalMap.entrySet())
+                    !{TradeProfit acc = entry.getValue();}
+                    !{BigDecimal principal = acc.evaluationAmount() != null && acc.evaluationProfit() != null
+                        ? acc.evaluationAmount().subtract(acc.evaluationProfit())
+                        : (acc.totalBuyCost() != null ? acc.totalBuyCost() : BigDecimal.ZERO);}
+                    !{double rate = principal.compareTo(BigDecimal.ZERO) > 0 && acc.evaluationProfit() != null
+                        ? acc.evaluationProfit().doubleValue() / principal.doubleValue() * 100
+                        : 0.0;}
+                    <tr class="hover">
+                        <td>
+                            <div class="font-semibold">${entry.getKey()}</div>
+                            <div class="text-xs opacity-50">주식</div>
+                        </td>
+                        <td class="text-right font-bold font-mono amount-value text-principal">
+                            ${String.format("%,d", acc.evaluationAmount() != null ? acc.evaluationAmount().longValue() : 0)}
+                        </td>
+                        <td class="text-right font-mono hidden sm:table-cell amount-value opacity-70">
+                            ${String.format("%,d", principal.longValue())}
+                        </td>
+                        <td class="text-right">
+                            <div class="font-bold font-mono amount-value ${acc.evaluationProfit() != null && acc.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                                ${String.format("%+,d", acc.evaluationProfit() != null ? acc.evaluationProfit().longValue() : 0)}
                             </div>
-                        </div>
-                        <!-- 하단 지표 3분할 -->
-                        <div class="divider my-0"></div>
-                        <div class="grid grid-cols-3 gap-1 text-center">
-                            <div>
-                                <div class="text-xs opacity-50">투자원금</div>
-                                <div class="text-sm font-mono font-semibold amount-value">
-                                    ${String.format("%,d", principal.longValue())}
-                                </div>
+                            <div class="text-xs font-semibold amount-value ${acc.evaluationProfit() != null && acc.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                                ${String.format("%+.1f%%", rate)}
                             </div>
-                            <div>
-                                <div class="text-xs opacity-50">평가손익</div>
-                                <div class="text-sm font-mono font-bold amount-value ${acc.evaluationProfit() != null && acc.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                                    ${String.format("%+,d", acc.evaluationProfit() != null ? acc.evaluationProfit().longValue() : 0)}
-                                    <span class="text-xs">(${String.format("%+.1f%%", rate)})</span>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="text-xs opacity-50">실현손익</div>
-                                <div class="text-sm font-mono font-bold amount-value ${acc.realizedProfit() != null && acc.realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                                    ${String.format("%+,d", acc.realizedProfit() != null ? acc.realizedProfit().longValue() : 0)}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            @endfor
+                        </td>
+                        <td class="text-right font-mono hidden md:table-cell amount-value ${acc.realizedProfit() != null && acc.realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                            ${String.format("%+,d", acc.realizedProfit() != null ? acc.realizedProfit().longValue() : 0)}
+                        </td>
+                    </tr>
+                @endfor
+                </tbody>
+                <tfoot class="bg-base-200 font-bold">
+                    <tr>
+                        <td>합계</td>
+                        <td class="text-right font-mono amount-value text-principal">
+                            ${String.format("%,d", totalEvaluationAmount != null ? totalEvaluationAmount.longValue() : 0)}
+                        </td>
+                        <td class="hidden sm:table-cell"></td>
+                        <td class="text-right font-mono amount-value ${totalEvaluationProfit != null && totalEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                            ${String.format("%+,d", totalEvaluationProfit != null ? totalEvaluationProfit.longValue() : 0)}
+                        </td>
+                        <td class="text-right font-mono hidden md:table-cell amount-value ${totalRealizedProfit != null && totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                            ${String.format("%+,d", totalRealizedProfit != null ? totalRealizedProfit.longValue() : 0)}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
         </div>
     </div>
 

@@ -32,18 +32,26 @@
         <span class="text-xs opacity-50 mr-1">기간</span>
         <button type="button" class="btn btn-xs btn-ghost" onclick="activityPicker.jumpToEdge('start')">&#171;</button>
         <button type="button" class="btn btn-xs btn-ghost" onclick="activityPicker.shift(-1)">&#8249; 이전</button>
-        <button type="button" class="btn btn-xs activity-range-btn ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : ""}" onclick="activityPicker.set(1,this)">1개월</button>
-        <button type="button" class="btn btn-xs activity-range-btn ${rangeMode != null && rangeMode.equals("3") ? "btn-primary" : ""}" onclick="activityPicker.set(3,this)">3개월</button>
-        <button type="button" class="btn btn-xs activity-range-btn ${rangeMode != null && rangeMode.equals("6") ? "btn-primary" : ""}" onclick="activityPicker.set(6,this)">6개월</button>
-        <button type="button" class="btn btn-xs activity-range-btn ${rangeMode != null && rangeMode.equals("ytd") ? "btn-primary" : ""}" onclick="activityPicker.set('ytd',this)">올해</button>
-        <button type="button" class="btn btn-xs activity-range-btn ${rangeMode != null && rangeMode.equals("12") ? "btn-primary" : ""}" onclick="activityPicker.set(12,this)">1년</button>
-        <button type="button" class="btn btn-xs activity-range-btn ${rangeMode != null && rangeMode.equals("all") ? "btn-primary" : ""}" onclick="activityPicker.set(0,this)">전체</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : ""}" onclick="activityPicker.set(1,this)">1개월</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("3") ? "btn-primary" : ""}" onclick="activityPicker.set(3,this)">3개월</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("6") ? "btn-primary" : ""}" onclick="activityPicker.set(6,this)">6개월</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("ytd") ? "btn-primary" : ""}" onclick="activityPicker.set('ytd',this)">올해</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("12") ? "btn-primary" : ""}" onclick="activityPicker.set(12,this)">1년</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("all") ? "btn-primary" : ""}" onclick="activityPicker.set(0,this)">전체</button>
         <button type="button" class="btn btn-xs btn-ghost" onclick="activityPicker.shift(1)">다음 &#8250;</button>
         <button type="button" class="btn btn-xs btn-ghost" onclick="activityPicker.jumpToEdge('end')">&#187;</button>
     </div>
 
-    <!-- Filter Form -->
-    <form id="activitySearchForm" class="flex flex-wrap gap-2 mb-4 items-end bg-base-100 p-2 rounded-box shadow-sm"
+    <!-- Filter Form (collapsible) -->
+    <details class="mb-4"$unsafe{startDate != null ? " open" : ""}>
+        <summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
+            상세 검색
+            @if(startDate != null)
+                <span class="badge badge-xs badge-primary">${startDate.toString()} ~ ${endDate != null ? endDate.toString() : ""}</span>
+            @endif
+        </summary>
+    <form id="activitySearchForm" class="flex flex-wrap gap-2 mt-2 mb-2 items-end bg-base-100 p-2 rounded-box shadow-sm"
           hx-get="/stock/htmx/activity-list"
           hx-target="#activityListFragment"
           hx-select="#activityListFragment"
@@ -64,6 +72,7 @@
                 hx-select="#activityListFragment"
                 hx-swap="outerHTML">초기화</button>
     </form>
+    </details>
 
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
@@ -176,7 +185,7 @@
             startId:     'activityStartDateInput',
             endId:       'activityEndDateInput',
             rangeModeId: 'activityRangeModeInput',
-            btnClass:    'activity-range-btn',
+            btnClass:    'date-range-btn',
             minDate:     '${dataFirstDate != null ? dataFirstDate : ""}'
         });
         window.activityPicker = activityPicker;
