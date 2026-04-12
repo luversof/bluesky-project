@@ -273,11 +273,25 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
       List<String> accountNames) {}
 
   private List<Activity> getAllActivities(UUID userId) {
-    TradeSearchRequest tradeReq = new TradeSearchRequest(userId, null, null, null, null);
+    return getAllActivities(userId, null, null);
+  }
+
+  private List<Activity> getAllActivities(UUID userId, LocalDate startDate, LocalDate endDate) {
+    Instant startInstant =
+        startDate != null ? startDate.atStartOfDay(ZoneId.systemDefault()).toInstant() : null;
+    Instant endInstant =
+        endDate != null
+            ? endDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()
+            : null;
+
+    TradeSearchRequest tradeReq =
+        new TradeSearchRequest(userId, null, null, startInstant, endInstant);
     List<TradeResponse> trades = tradeClient.findTrades(tradeReq.toParams());
 
     DividendRequest divReq = new DividendRequest();
     divReq.setUserId(userId);
+    divReq.setStartDate(startInstant);
+    divReq.setEndDate(endInstant);
     List<DividendResponse> dividends = dividendClient.findDividends(divReq.toParams());
 
     List<StockItem> stockItemList = stockItemClient.getStockItems();
@@ -388,12 +402,61 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
 
   @BlueskyPreAuthorize
   @GetMapping("/activity-list")
-  public String activityList(Model model) {
+  public String activityList(
+      @RequestParam(required = false) LocalDate startDate,
+      @RequestParam(required = false) LocalDate endDate,
+      @RequestParam(required = false) String rangeMode,
+      Model model) {
     UUID userId = UserUtil.getUserId();
     if (userId == null) return ERROR_VIEW;
 
-    List<Activity> activities = getAllActivities(userId);
+    List<Activity> allActivities = getAllActivities(userId);
+    LocalDate dataFirstDate =
+        allActivities.stream()
+            .filter(a -> a.date() != null)
+            .map(a -> a.date().atZone(ZoneId.systemDefault()).toLocalDate())
+            .min(Comparator.naturalOrder())
+            .orElse(null);
+
+    List<Activity> activities = getAllActivities(userId, startDate, endDate);
+
+    long buyCount =
+        activities.stream()
+            .filter(a -> "TRADE".equals(a.type()) && "BUY".equals(a.tradeType()))
+            .count();
+    long sellCount =
+        activities.stream()
+            .filter(a -> "TRADE".equals(a.type()) && "SELL".equals(a.tradeType()))
+            .count();
+    BigDecimal buyAmount =
+        activities.stream()
+            .filter(a -> "TRADE".equals(a.type()) && "BUY".equals(a.tradeType()))
+            .map(a -> a.amount() != null ? a.amount() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal sellAmount =
+        activities.stream()
+            .filter(a -> "TRADE".equals(a.type()) && "SELL".equals(a.tradeType()))
+            .map(a -> a.amount() != null ? a.amount() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    long dividendCount =
+        activities.stream().filter(a -> "DIVIDEND".equals(a.type())).count();
+    BigDecimal dividendAmount =
+        activities.stream()
+            .filter(a -> "DIVIDEND".equals(a.type()))
+            .map(a -> a.amount() != null ? a.amount() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
     model.addAttribute("activities", activities);
+    model.addAttribute("startDate", startDate);
+    model.addAttribute("endDate", endDate);
+    model.addAttribute("rangeMode", rangeMode);
+    model.addAttribute("dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");
+    model.addAttribute("buyCount", buyCount);
+    model.addAttribute("sellCount", sellCount);
+    model.addAttribute("buyAmount", buyAmount);
+    model.addAttribute("sellAmount", sellAmount);
+    model.addAttribute("dividendCount", dividendCount);
+    model.addAttribute("dividendAmount", dividendAmount);
     return "stock/htmx/fragments/activityList";
   }
 }
