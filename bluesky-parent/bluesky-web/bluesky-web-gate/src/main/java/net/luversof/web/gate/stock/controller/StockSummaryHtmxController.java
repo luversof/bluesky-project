@@ -778,6 +778,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
         .toList();
 
     List<TradeProfit> bottomUnrealized = unrealizedByStock.entrySet().stream()
+        .filter(e -> e.getValue().compareTo(BigDecimal.ZERO) < 0)
         .sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
         .limit(4)
         .map(e -> TradeProfit.ofEvaluationSummary(e.getKey(), e.getValue()))

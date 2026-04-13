@@ -239,6 +239,35 @@
                             </span>
                         </div>
                         @endfor
+                        @for(int i = bottomUnrealized.size(); i < 4; i++)
+                        <div class="flex justify-between items-center text-xs invisible">
+                            <div class="flex items-center gap-2">
+                                <span class="badge badge-sm badge-ghost w-5 h-5 p-0">-</span>
+                                <span>-</span>
+                            </div>
+                            <span>-</span>
+                        </div>
+                        @endfor
+                    </div>
+                </div>
+            </div>
+            @else
+            <div class="card bg-base-100 shadow-sm compact border border-base-200">
+                <div class="card-body p-3">
+                    <h3 class="card-title text-sm opacity-70 mb-2">⚓ 평가손실 하위</h3>
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center text-xs opacity-40">
+                            <span>평가손실 종목 없음</span>
+                        </div>
+                        @for(int i = 1; i < 4; i++)
+                        <div class="flex justify-between items-center text-xs invisible">
+                            <div class="flex items-center gap-2">
+                                <span class="badge badge-sm badge-ghost w-5 h-5 p-0">-</span>
+                                <span>-</span>
+                            </div>
+                            <span>-</span>
+                        </div>
+                        @endfor
                     </div>
                 </div>
             </div>

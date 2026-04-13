@@ -3125,6 +3125,9 @@
   .min-h-0 {
     min-height: calc(var(--spacing) * 0);
   }
+  .min-h-\[5rem\] {
+    min-height: 5rem;
+  }
   .min-h-\[300px\] {
     min-height: 300px;
   }
