@@ -300,9 +300,8 @@ window.DateRangePicker = (function () {
       // 이동 후 해당 N개월 버튼 재활성화 (mtd/ytd → 1개월/1년, 그 외 → 동일 버튼)
       btns().forEach(function (b) {
         if (
-          (b.getAttribute("onclick") || "").indexOf(
-            "set(" + newMode + ",",
-          ) !== -1
+          (b.getAttribute("onclick") || "").indexOf("set(" + newMode + ",") !==
+          -1
         ) {
           b.classList.add(activeClass());
         }
