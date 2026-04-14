@@ -32,6 +32,7 @@
         <span class="text-xs opacity-50 mr-1">기간</span>
         <button type="button" class="btn btn-xs btn-ghost" onclick="activityPicker.jumpToEdge('start')">&#171;</button>
         <button type="button" class="btn btn-xs btn-ghost" onclick="activityPicker.shift(-1)">&#8249; 이전</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("mtd") ? "btn-primary" : ""}" onclick="activityPicker.set('mtd',this)">이번달</button>
         <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : ""}" onclick="activityPicker.set(1,this)">1개월</button>
         <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("3") ? "btn-primary" : ""}" onclick="activityPicker.set(3,this)">3개월</button>
         <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("6") ? "btn-primary" : ""}" onclick="activityPicker.set(6,this)">6개월</button>

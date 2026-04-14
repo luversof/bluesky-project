@@ -372,7 +372,45 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
             return ERROR_VIEW;
 
         List<Activity> activities = getAllActivities(userId);
+
+        // 이번 달 요약
+        LocalDate now = LocalDate.now();
+        LocalDate monthStart = now.withDayOfMonth(1);
+        Instant monthStartInst = monthStart.atStartOfDay(ZoneId.systemDefault()).toInstant();
+        Instant monthEndInst = now.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        List<Activity> thisMonth = activities.stream()
+                .filter(a -> a.date() != null
+                        && !a.date().isBefore(monthStartInst)
+                        && a.date().isBefore(monthEndInst))
+                .toList();
+
+        long buyCount = thisMonth.stream()
+                .filter(a -> "TRADE".equals(a.type()) && "BUY".equals(a.tradeType())).count();
+        long sellCount = thisMonth.stream()
+                .filter(a -> "TRADE".equals(a.type()) && "SELL".equals(a.tradeType())).count();
+        BigDecimal buyAmount = thisMonth.stream()
+                .filter(a -> "TRADE".equals(a.type()) && "BUY".equals(a.tradeType()))
+                .map(a -> a.amount() != null ? a.amount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal sellAmount = thisMonth.stream()
+                .filter(a -> "TRADE".equals(a.type()) && "SELL".equals(a.tradeType()))
+                .map(a -> a.amount() != null ? a.amount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        long dividendCount = thisMonth.stream()
+                .filter(a -> "DIVIDEND".equals(a.type())).count();
+        BigDecimal dividendAmount = thisMonth.stream()
+                .filter(a -> "DIVIDEND".equals(a.type()))
+                .map(a -> a.amount() != null ? a.amount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         model.addAttribute("activities", activities.stream().limit(5).toList());
+        model.addAttribute("thisMonthLabel", now.getMonthValue() + "월");
+        model.addAttribute("buyCount", buyCount);
+        model.addAttribute("sellCount", sellCount);
+        model.addAttribute("buyAmount", buyAmount);
+        model.addAttribute("sellAmount", sellAmount);
+        model.addAttribute("dividendCount", dividendCount);
+        model.addAttribute("dividendAmount", dividendAmount);
         return "stock/htmx/fragments/recentActivities";
     }
 

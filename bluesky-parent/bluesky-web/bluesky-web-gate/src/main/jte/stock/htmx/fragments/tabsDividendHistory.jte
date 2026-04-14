@@ -89,6 +89,7 @@
         <span class="text-xs opacity-50 mr-1">기간</span>
         <button type="button" class="btn btn-xs btn-ghost" onclick="dividendPicker.jumpToEdge('start')">«</button>
         <button type="button" class="btn btn-xs btn-ghost" onclick="dividendPicker.shift(-1)">‹ 이전</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("mtd") ? "btn-primary" : ""}" onclick="dividendPicker.set('mtd',this)">이번달</button>
         <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : ""}" onclick="dividendPicker.set(1,this)">1개월</button>
         <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("3") ? "btn-primary" : ""}" onclick="dividendPicker.set(3,this)">3개월</button>
         <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("6") ? "btn-primary" : ""}" onclick="dividendPicker.set(6,this)">6개월</button>
