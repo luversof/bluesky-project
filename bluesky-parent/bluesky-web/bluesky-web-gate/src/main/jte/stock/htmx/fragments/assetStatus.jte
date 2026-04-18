@@ -60,12 +60,17 @@
                 @endfor
                 </tbody>
                 <tfoot class="bg-base-200 font-bold">
+                    !{BigDecimal totalPrincipal = totalEvaluationAmount != null && totalEvaluationProfit != null
+                        ? totalEvaluationAmount.subtract(totalEvaluationProfit)
+                        : BigDecimal.ZERO;}
                     <tr>
                         <td>합계</td>
                         <td class="text-right font-mono amount-value text-principal">
                             ${String.format("%,d", totalEvaluationAmount != null ? totalEvaluationAmount.longValue() : 0)}
                         </td>
-                        <td class="hidden sm:table-cell"></td>
+                        <td class="text-right font-mono hidden sm:table-cell amount-value opacity-70">
+                            ${String.format("%,d", totalPrincipal.longValue())}
+                        </td>
                         <td class="text-right font-mono amount-value ${totalEvaluationProfit != null && totalEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                             ${String.format("%+,d", totalEvaluationProfit != null ? totalEvaluationProfit.longValue() : 0)}
                         </td>
@@ -90,6 +95,7 @@
                         <th class="text-right hidden xl:table-cell">평균단가</th>
                         <th class="text-right hidden lg:table-cell">현재가</th>
                         <th class="text-right">평가금액</th>
+                        <th class="text-right hidden sm:table-cell">투자원금</th>
                         <th class="text-right">평가손익</th>
                         <th class="text-right hidden md:table-cell">실현손익</th>
                     </tr>
@@ -112,6 +118,7 @@
                                 <td class="text-right font-mono hidden xl:table-cell amount-value">${String.format("%,d", item.averageBuyPrice() != null ? item.averageBuyPrice().longValue() : 0)}</td>
                                 <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", item.currentPrice() != null ? item.currentPrice().longValue() : 0)}</td>
                                 <td class="text-right font-mono font-semibold amount-value text-principal">${String.format("%,d", item.evaluationAmount() != null ? item.evaluationAmount().longValue() : 0)}</td>
+                                <td class="text-right font-mono hidden sm:table-cell amount-value opacity-70">${String.format("%,d", item.totalBuyCost() != null ? item.totalBuyCost().longValue() : 0)}</td>
                                 <td class="text-right font-mono font-bold amount-value ${item.evaluationProfit() != null && item.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                                     ${String.format("%+,d", item.evaluationProfit() != null ? item.evaluationProfit().longValue() : 0)}
                                     <span class="text-xs opacity-70">(${String.format("%+.1f%%", evalProfitRate.doubleValue())})</span>
@@ -124,12 +131,16 @@
                     @endif
                 </tbody>
                 <tfoot class="bg-base-200 font-bold">
+                    !{BigDecimal totalStockPrincipal = stockAggregated != null
+                        ? stockAggregated.stream().map(i -> i.totalBuyCost() != null ? i.totalBuyCost() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add)
+                        : BigDecimal.ZERO;}
                     <tr>
                         <td>합계</td>
                         <td class="hidden lg:table-cell"></td>
                         <td class="hidden xl:table-cell"></td>
                         <td class="hidden lg:table-cell"></td>
                         <td class="text-right font-mono amount-value text-principal">${String.format("%,d", totalEvaluationAmount != null ? totalEvaluationAmount.longValue() : 0)}</td>
+                        <td class="text-right font-mono hidden sm:table-cell amount-value opacity-70">${String.format("%,d", totalStockPrincipal.longValue())}</td>
                         <td class="text-right font-mono font-bold amount-value ${totalEvaluationProfit != null && totalEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">${String.format("%+,d", totalEvaluationProfit != null ? totalEvaluationProfit.longValue() : 0)}</td>
                         <td class="text-right font-mono hidden md:table-cell amount-value ${totalRealizedProfit != null && totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">${String.format("%+,d", totalRealizedProfit != null ? totalRealizedProfit.longValue() : 0)}</td>
                     </tr>

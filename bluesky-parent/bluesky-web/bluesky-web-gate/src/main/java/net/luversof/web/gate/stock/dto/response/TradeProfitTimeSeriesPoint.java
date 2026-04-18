@@ -4,12 +4,14 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 public record TradeProfitTimeSeriesPoint(
-    Instant timestamp,
-    BigDecimal cumulativeRealizedProfit,
-    BigDecimal dailyRealizedProfit,
-    long tradeCount,
-    long tradeVolume,
-    BigDecimal totalHoldingsValue,
-    BigDecimal totalHoldingsCost,
-    BigDecimal cumulativeTotalProfit,
-    BigDecimal cumulativeDividend) {}
+        Instant timestamp,
+        BigDecimal cumulativeRealizedProfit,
+        BigDecimal dailyRealizedProfit,
+        long tradeCount,
+        long buyCount,
+        long tradeVolume,
+        BigDecimal totalHoldingsValue,
+        BigDecimal totalHoldingsCost,
+        BigDecimal cumulativeTotalProfit,
+        BigDecimal cumulativeDividend) {
+}

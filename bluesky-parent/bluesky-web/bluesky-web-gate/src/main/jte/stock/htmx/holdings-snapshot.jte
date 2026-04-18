@@ -1,9 +1,13 @@
 @import java.util.List
 @import java.math.BigDecimal
 @import net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem
+@import net.luversof.web.gate.stock.dto.response.TradeResponse
+@import net.luversof.web.gate.stock.constant.TradeType
 
 @param List<HoldingsSnapshotItem> holdings
+@param List<TradeResponse> trades
 @param String date
+@param String tradePeriod
 
 <div class="card bg-base-100 shadow-xl mt-4">
     <div class="card-body p-4">
@@ -98,6 +102,71 @@
                     </tbody>
                 </table>
             </div>
+            @if(trades != null && !trades.isEmpty())
+            !{
+                java.util.List<TradeResponse> buyTrades = trades.stream().filter(t -> t.type() == TradeType.BUY).collect(java.util.stream.Collectors.toList());
+                java.util.List<TradeResponse> sellTrades = trades.stream().filter(t -> t.type() == TradeType.SELL).collect(java.util.stream.Collectors.toList());
+                BigDecimal totalBuyAmt = buyTrades.stream().map(t -> t.amount() != null ? t.amount() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);
+                BigDecimal totalSellAmt = sellTrades.stream().map(t -> t.amount() != null ? t.amount() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);
+                BigDecimal totalRealizedProfit = sellTrades.stream().map(t -> t.realizedProfit() != null ? t.realizedProfit() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add);
+            }
+            <div class="divider text-xs my-2">💱 거래 내역 <span class="font-normal text-base-content/50">(${tradePeriod != null ? tradePeriod : date})</span></div>
+            <div class="flex gap-2 mb-2 text-xs flex-wrap">
+                @if(!buyTrades.isEmpty())
+                <div class="badge badge-error badge-outline gap-1">
+                    매수 ${String.format("%,d", totalBuyAmt.longValue())}원
+                </div>
+                @endif
+                @if(!sellTrades.isEmpty())
+                <div class="badge badge-info badge-outline gap-1">
+                    매도 ${String.format("%,d", totalSellAmt.longValue())}원
+                    @if(totalRealizedProfit.compareTo(BigDecimal.ZERO) != 0)
+                    &nbsp;|&nbsp;실현손익 ${totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "+" : ""}${String.format("%,d", totalRealizedProfit.longValue())}원
+                    @endif
+                </div>
+                @endif
+            </div>
+            <div class="overflow-x-auto mb-2">
+                <table class="table table-xs w-full">
+                    <thead>
+                        <tr class="text-xs text-base-content/60">
+                            <th>구분</th>
+                            <th>종목명</th>
+                            <th class="text-right">수량</th>
+                            <th class="text-right">단가</th>
+                            <th class="text-right">거래금액</th>
+                            <th class="text-right">실현손익</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for(TradeResponse trade : trades)
+                        !{
+                            boolean isBuy = trade.type() == TradeType.BUY;
+                            String typeClass = isBuy ? "text-red-500 font-bold" : "text-blue-500 font-bold";
+                            String typeLabel = isBuy ? "매수" : "매도";
+                            boolean hasProfit = trade.realizedProfit() != null && trade.realizedProfit().compareTo(BigDecimal.ZERO) != 0;
+                            String profitSign = trade.realizedProfit() != null && trade.realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "+" : "";
+                            String profitClass = trade.realizedProfit() != null && trade.realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-red-500" : "text-blue-500";
+                        }
+                        <tr>
+                            <td><span class="${typeClass}">${typeLabel}</span></td>
+                            <td>${trade.stockItemName() != null ? trade.stockItemName() : "-"}</td>
+                            <td class="text-right amount-value">${String.format("%,d", (long)trade.quantity())}</td>
+                            <td class="text-right amount-value">${trade.price() != null ? String.format("%,d", trade.price().longValue()) : "-"}원</td>
+                            <td class="text-right font-medium amount-value">${trade.amount() != null ? String.format("%,d", trade.amount().longValue()) : "-"}원</td>
+                            <td class="text-right amount-value ${hasProfit ? profitClass : "text-base-content/40"}">
+                                @if(hasProfit)
+                                    ${profitSign}${String.format("%,d", trade.realizedProfit().longValue())}원
+                                @else
+                                    -
+                                @endif
+                            </td>
+                        </tr>
+                        @endfor
+                    </tbody>
+                </table>
+            </div>
+            @endif
         @endif
     </div>
 </div>

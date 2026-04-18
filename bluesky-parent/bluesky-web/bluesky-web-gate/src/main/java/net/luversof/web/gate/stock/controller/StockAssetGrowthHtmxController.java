@@ -1,6 +1,7 @@
 package net.luversof.web.gate.stock.controller;
 
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -8,6 +9,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import net.luversof.web.gate.stock.dto.request.TradeSearchRequest;
+import net.luversof.web.gate.stock.dto.response.TradeResponse;
 
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
@@ -85,6 +89,9 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     var tcList = new ArrayList<Long>();
     var crpList = new ArrayList<Long>();
     var cdList = new ArrayList<Long>();
+    var tradeCountList = new ArrayList<Long>();
+    var buyCountList = new ArrayList<Long>();
+    var dailyRealizedList = new ArrayList<Long>();
     for (var pt : timeSeries) {
       labelsList.add(fmt.format(pt.timestamp()));
       tvList.add(
@@ -103,17 +110,30 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
           pt.cumulativeDividend() != null
               ? pt.cumulativeDividend().setScale(0, RoundingMode.HALF_UP).longValue()
               : 0L);
+      tradeCountList.add(pt.tradeCount());
+      buyCountList.add(pt.buyCount());
+      dailyRealizedList.add(
+          pt.dailyRealizedProfit() != null
+              ? pt.dailyRealizedProfit().setScale(0, RoundingMode.HALF_UP).longValue()
+              : 0L);
     }
     return Map.of(
         "labels", labelsList,
         "totalValueData", tvList,
         "totalCostData", tcList,
         "cumulativeRealizedProfitData", crpList,
-        "cumulativeDividendData", cdList);
+        "cumulativeDividendData", cdList,
+        "tradeCountData", tradeCountList,
+        "buyCountData", buyCountList,
+        "dailyRealizedProfitData", dailyRealizedList);
   }
 
   @GetMapping("/holdings-snapshot")
-  public String holdingsSnapshot(@RequestParam(required = false) String date, Model model) {
+  public String holdingsSnapshot(
+      @RequestParam(required = false) String date,
+      @RequestParam(required = false) String tradeFrom,
+      @RequestParam(required = false) String tradeTo,
+      Model model) {
     var userId = UserUtil.getUserId();
     if (userId == null) {
       return ERROR_VIEW;
@@ -127,8 +147,30 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     params.add("userId", userId.toString());
     params.add("date", date);
     List<HoldingsSnapshotItem> holdings = tradeProfitClient.holdingsSnapshot(params);
+
+    // 거래 내역 조회: tradeFrom/tradeTo 제공 시 해당 기간, 아니면 당일 하루
+    Instant tradeStart;
+    Instant tradeEnd;
+    if (tradeFrom != null && !tradeFrom.isBlank() && tradeTo != null && !tradeTo.isBlank()) {
+      tradeStart = LocalDate.parse(tradeFrom).atStartOfDay(ZoneOffset.UTC).toInstant();
+      tradeEnd = LocalDate.parse(tradeTo).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+    } else {
+      tradeStart = LocalDate.parse(date).atStartOfDay(ZoneOffset.UTC).toInstant();
+      tradeEnd = LocalDate.parse(date).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+    }
+    var tradeReq = new TradeSearchRequest(userId, null, null, tradeStart, tradeEnd);
+    var trades = tradeClient.findTrades(tradeReq.toParams());
+
+    String tradePeriod;
+    if (tradeFrom != null && !tradeFrom.isBlank() && tradeTo != null && !tradeTo.isBlank()) {
+      tradePeriod = tradeFrom + " ~ " + tradeTo;
+    } else {
+      tradePeriod = date;
+    }
     model.addAttribute("holdings", holdings);
+    model.addAttribute("trades", trades);
     model.addAttribute("date", date);
+    model.addAttribute("tradePeriod", tradePeriod);
     return "stock/htmx/holdings-snapshot";
   }
 }

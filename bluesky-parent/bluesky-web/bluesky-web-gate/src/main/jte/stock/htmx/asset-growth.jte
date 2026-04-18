@@ -3,9 +3,10 @@
 @import java.time.format.DateTimeFormatter
 @import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint
 
-@param List<TradeProfitTimeSeriesPoint> timeSeries
+@param Object timeSeries
 
 !{
+    java.util.List ts = (java.util.List) timeSeries;
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
 }
 
@@ -30,7 +31,7 @@
             </div>
         </div>
         <div class="w-full flex flex-col gap-4">
-            @if(timeSeries == null || timeSeries.isEmpty())
+            @if(ts == null || ts.isEmpty())
                 <div class="w-full flex justify-center items-center" style="height: 600px;">
                     <p class="text-gray-500">데이터가 없습니다.</p>
                 </div>
@@ -77,7 +78,7 @@
         </div>
     </div>
 
-    @if(timeSeries != null && !timeSeries.isEmpty())
+    @if(ts != null && !ts.isEmpty())
     <script>
         (function() {
             if (typeof Chart === 'undefined') return;
@@ -90,13 +91,20 @@
             var totalCostData = [];
             var cumulativeRealizedProfitData = [];
             var cumulativeDividendData = [];
+            var tradeCountData = [];
+            var buyCountData = [];
+            var dailyRealizedProfitData = [];
 
-            @for(TradeProfitTimeSeriesPoint pt : timeSeries)
+            @for(Object _pt : ts)
+            !{ var pt = (TradeProfitTimeSeriesPoint) _pt; }
                 labels.push("$unsafe{formatter.format(pt.timestamp())}");
                 totalValueData.push($unsafe{pt.totalHoldingsValue() != null ? pt.totalHoldingsValue().setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0"});
                 totalCostData.push($unsafe{pt.totalHoldingsCost() != null ? pt.totalHoldingsCost().setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0"});
                 cumulativeRealizedProfitData.push($unsafe{pt.cumulativeRealizedProfit() != null ? pt.cumulativeRealizedProfit().setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0"});
                 cumulativeDividendData.push($unsafe{pt.cumulativeDividend() != null ? pt.cumulativeDividend().setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0"});
+                tradeCountData.push($unsafe{String.valueOf(pt.tradeCount())});
+                buyCountData.push($unsafe{String.valueOf(pt.buyCount())});
+                dailyRealizedProfitData.push($unsafe{pt.dailyRealizedProfit() != null ? pt.dailyRealizedProfit().setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0"});
             @endfor
 
             // 현재 평가 손익(미실현) = 총 자산 평가액 - 투자 원금
@@ -114,7 +122,10 @@
                 totalValueData: totalValueData.slice(),
                 totalCostData: totalCostData.slice(),
                 cumulativeRealizedProfitData: cumulativeRealizedProfitData.slice(),
-                cumulativeDividendData: cumulativeDividendData.slice()
+                cumulativeDividendData: cumulativeDividendData.slice(),
+                tradeCountData: tradeCountData.slice(),
+                buyCountData: buyCountData.slice(),
+                dailyRealizedProfitData: dailyRealizedProfitData.slice()
             };
             // 초기 데이터 tier 감지 (0=MONTHLY, 1=WEEKLY, 2=DAILY)
             var baseDataTierNum = (function() {
@@ -240,6 +251,12 @@
                 newData.cumulativeRealizedProfitData.forEach(function(v) { cumulativeRealizedProfitData.push(v); });
                 cumulativeDividendData.length = 0;
                 newData.cumulativeDividendData.forEach(function(v) { cumulativeDividendData.push(v); });
+                tradeCountData.length = 0;
+                (newData.tradeCountData || []).forEach(function(v) { tradeCountData.push(v); });
+                buyCountData.length = 0;
+                (newData.buyCountData || []).forEach(function(v) { buyCountData.push(v); });
+                dailyRealizedProfitData.length = 0;
+                (newData.dailyRealizedProfitData || []).forEach(function(v) { dailyRealizedProfitData.push(v); });
 
                 var newMin = 0;
                 for (var i = 0; i < labels.length; i++) {
@@ -255,6 +272,9 @@
                 mainChart.data.labels = labels;
                 mainChart.data.datasets[0].data = totalCostData.slice();
                 mainChart.data.datasets[1].data = totalValueData.slice();
+                // 매수/매도 마커 업데이트 (afterDraw 플러그인용 외부 변수)
+                buyMarkersData = buildBuyMarkers(labels, buyCountData);
+                sellMarkersData = buildSellMarkers(labels, dailyRealizedProfitData);
                 mainChart.options.scales.x.min = newMin;
                 mainChart.options.scales.x.max = newMax;
                 // DETAIL 데이터 교체 시 zoom limits 를 새 데이터 범위로 맞춤
@@ -377,7 +397,10 @@
                                 totalValueData: data.totalValueData,
                                 totalCostData: data.totalCostData,
                                 cumulativeRealizedProfitData: data.cumulativeRealizedProfitData,
-                                cumulativeDividendData: data.cumulativeDividendData
+                                cumulativeDividendData: data.cumulativeDividendData,
+                                tradeCountData: data.tradeCountData || [],
+                                buyCountData: data.buyCountData || [],
+                                dailyRealizedProfitData: data.dailyRealizedProfitData || []
                             };
                             detailCacheEntries.push(entry);
                             // fetch 완료 후 applyChartData 의 표시 범위는 capturedVisStart/End 사용
@@ -466,7 +489,7 @@
                     x: { min: 0, max: labels.length > 0 ? labels.length - 1 : 0, minRange: 9 } // applyChartData 에서 갱신됨
                 },
                 zoom: {
-                    wheel: { enabled: true },
+                    wheel: { enabled: false }, // 커스텀 휠 핸들러로 대체 (차트 중심 기준 줌)
                     drag: { enabled: true, backgroundColor: 'rgba(54, 162, 235, 0.3)' },
                     pinch: { enabled: true },
                     mode: 'x',
@@ -487,10 +510,92 @@
                 return new Intl.NumberFormat('ko-KR').format(value);
             };
 
+            // \ub9e4\uc218/\ub9e4\ub3c4 \ub9c8\ucee4 \ub370\uc774\ud130 \uc0dd\uc131: tradeCount > 0 \uc778 \uc778\ub371\uc2a4\ub97c scatter \ud3ec\uc778\ud2b8\ub85c \ubcc0\ud658
+            // dailyRealizedProfit > 0 \uc774\uba74 \ub9e4\ub3c4(\uc5ed\uc0bc\uac01\ud615), \uc544\ub2c8\uba74 \ub9e4\uc218(\uc0bc\uac01\ud615)
+            var buildBuyMarkers = function(lbls, bcounts) {
+                var pts = [];
+                for (var i = 0; i < lbls.length; i++) {
+                    if (Number(bcounts[i]) > 0) {
+                        pts.push({ date: lbls[i] }); // 인덱스 대신 날짜 문자열 저장
+                    }
+                }
+                return pts;
+            };
+            var buildSellMarkers = function(lbls, drealized) {
+                var pts = [];
+                for (var i = 0; i < lbls.length; i++) {
+                    if (parseFloat(drealized[i]) > 0) {
+                        pts.push({ date: lbls[i] }); // 인덱스 대신 날짜 문자열 저장
+                    }
+                }
+                return pts;
+            };
+
+            var buyMarkersData = buildBuyMarkers(labels, buyCountData);
+            var sellMarkersData = buildSellMarkers(labels, dailyRealizedProfitData);
+            var drawnMarkers = []; // afterDatasetsDraw에서 갱신, { px, py, date } 형태
+
             var syncing = false;
+
+            var tradeMarkersPlugin = {
+                id: 'tradeMarkers',
+                afterDatasetsDraw: function(chart) { // tooltip 아래에 그리기 위해 afterDatasetsDraw 사용
+                    var ctx = chart.ctx;
+                    var xAxis = chart.scales['x'];
+                    var yAxis = chart.scales['y'];
+                    if (!xAxis || !yAxis) return;
+                    var chartLeft = chart.chartArea.left;
+                    var chartRight = chart.chartArea.right;
+                    var arrowSize = 7;
+                    // 꼬리 없는 삼각 화살표: 매수는 라인 아래(위를 가리킴 ▲), 매도는 라인 위(아래를 가리킴 ▼)
+                    function drawArrow(cx, cy, up, color) {
+                        ctx.save();
+                        ctx.fillStyle = color;
+                        ctx.beginPath();
+                        if (up) {
+                            ctx.moveTo(cx, cy);
+                            ctx.lineTo(cx + arrowSize, cy + arrowSize * 1.4);
+                            ctx.lineTo(cx - arrowSize, cy + arrowSize * 1.4);
+                        } else {
+                            ctx.moveTo(cx, cy);
+                            ctx.lineTo(cx + arrowSize, cy - arrowSize * 1.4);
+                            ctx.lineTo(cx - arrowSize, cy - arrowSize * 1.4);
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.restore();
+                    }
+                    var buyData = buyMarkersData;
+                    var sellData = sellMarkersData;
+                    drawnMarkers = [];
+                    for (var i = 0; i < buyData.length; i++) {
+                        var xi = labels.indexOf(buyData[i].date); // 날짜로 현재 인덱스 조회
+                        if (xi < 0) continue;
+                        var pxi = xAxis.getPixelForValue(xi);
+                        if (pxi < chartLeft || pxi > chartRight) continue;
+                        var costI = parseFloat(totalCostData[xi]);
+                        if (isNaN(costI)) continue;
+                        var pyi = yAxis.getPixelForValue(costI);
+                        drawArrow(pxi, pyi + 2, true, 'rgba(255, 99, 132, 0.9)');
+                        drawnMarkers.push({ px: pxi, py: pyi + 2 + arrowSize * 0.7, date: buyData[i].date });
+                    }
+                    for (var j = 0; j < sellData.length; j++) {
+                        var xj = labels.indexOf(sellData[j].date); // 날짜로 현재 인덱스 조회
+                        if (xj < 0) continue;
+                        var pxj = xAxis.getPixelForValue(xj);
+                        if (pxj < chartLeft || pxj > chartRight) continue;
+                        var costJ = parseFloat(totalCostData[xj]);
+                        if (isNaN(costJ)) continue;
+                        var pyj = yAxis.getPixelForValue(costJ);
+                        drawArrow(pxj, pyj - 2, false, 'rgba(54, 162, 235, 0.9)');
+                        drawnMarkers.push({ px: pxj, py: pyj - 2 - arrowSize * 0.7, date: sellData[j].date });
+                    }
+                }
+            };
 
             mainChart = new Chart(ctxMain.getContext('2d'), {
                 type: 'line',
+                plugins: [tradeMarkersPlugin],
                 data: {
                     labels: labels,
                     datasets: [
@@ -518,7 +623,8 @@
                             },
                             yAxisID: 'y',
                             order: 0
-                        }
+                        },
+
                     ]
                 },
                 options: {
@@ -527,6 +633,9 @@
                     elements: {
                         line: { tension: 0 },
                         point: { radius: 0, hitRadius: 10, hoverRadius: 4 }
+                    },
+                    layout: {
+                        padding: { top: 20, bottom: 5 }
                     },
                     responsive: true,
                     maintainAspectRatio: false,
@@ -547,13 +656,25 @@
                                     return label;
                                 },
                                 afterBody: function(tooltipItems) {
-                                    var idx = tooltipItems[0].dataIndex;
+                                    // scatter 아이템은 데이터 배열 내 인덱스라 category index가 아님 → 라인 아이템 기준
+                                    var lineItem = tooltipItems.find(function(t) { return t.datasetIndex < 2; });
+                                    if (!lineItem) return [];
+                                    var idx = lineItem.dataIndex;
                                     var value = parseFloat(totalValueData[idx]);
                                     var cost = parseFloat(totalCostData[idx]);
                                     var diff = value - cost;
                                     var sign = diff >= 0 ? '+' : '-';
                                     var pct = cost !== 0 ? ((diff / cost) * 100).toFixed(2) : '0.00';
-                                    return ['─────────────────', '평가 손익: ' + sign + new Intl.NumberFormat('ko-KR').format(Math.abs(diff)) + '원 (' + sign + pct + '%)'];
+                                    var lines = ['─────────────────', '평가 손익: ' + sign + new Intl.NumberFormat('ko-KR').format(Math.abs(diff)) + '원 (' + sign + pct + '%)']; 
+                                    if (tradeCountData[idx] > 0) {
+                                        var drp = parseFloat(dailyRealizedProfitData[idx]);
+                                        var tradeSign = drp >= 0 ? '+' : '';
+                                        lines.push('─────────────────');
+                                        lines.push('클릭하면 거래 내역 확인 ↓');
+                                        lines.push('거래 횟수: ' + tradeCountData[idx] + '건');
+                                        if (drp !== 0) lines.push('당일 실현손익: ' + tradeSign + new Intl.NumberFormat('ko-KR').format(drp) + '원');
+                                    }
+                                    return lines;
                                 }
                             }
                         }
@@ -575,15 +696,18 @@
                             beginAtZero: false,
                             title: { display: true, text: '금융 자산 총액' },
                             ticks: { callback: yTicksCallback }
-                        }
+                        },
+
                     },
                     onHover: function(event, elements) {
                         if (syncing || !dividendChart) return;
+                        event.native.target.style.cursor = 'default';
                         syncing = true;
-                        if (!elements.length) {
+                        var lineEl = elements.find(function(e) { return e.datasetIndex < 2; });
+                        if (!lineEl) {
                             dividendChart.tooltip.setActiveElements([], { x: 0, y: 0 });
                         } else {
-                            var idx = elements[0].index;
+                            var idx = lineEl.index;
                             var active = dividendChart.data.datasets.map(function(_, i) { return { datasetIndex: i, index: idx }; });
                             var meta0 = dividendChart.getDatasetMeta(0);
                             var pt = meta0 && meta0.data && meta0.data[idx];
@@ -594,8 +718,23 @@
                     },
                     onClick: function(event, elements) {
                         if (!elements.length) return;
-                        var date = labels[elements[0].index];
-                        htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + date, {
+                        if (markerClicked) { markerClicked = false; return; } // 마커 클릭 시 중복 방지
+                        var clicked = elements[0];
+                        var date = labels[clicked.index];
+                        var url = '/stock/htmx/holdings-snapshot?date=' + date;
+                        if (currentTierNum < 2) {
+                            var d = new Date(date);
+                            var tradeFrom;
+                            if (currentTierNum === 1) {
+                                var ws = new Date(d);
+                                ws.setDate(ws.getDate() - 6);
+                                tradeFrom = ws.toISOString().slice(0, 10);
+                            } else {
+                                tradeFrom = date.slice(0, 7) + '-01';
+                            }
+                            url += '&tradeFrom=' + tradeFrom + '&tradeTo=' + date;
+                        }
+                        htmx.ajax('GET', url, {
                             target: '#holdings-snapshot-container',
                             swap: 'innerHTML'
                         });
@@ -708,8 +847,22 @@
                     },
                     onClick: function(event, elements) {
                         if (!elements.length) return;
+                        if (markerClicked) { markerClicked = false; return; } // 마커 클릭 시 중복 방지
                         var date = labels[elements[0].index];
-                        htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + date, {
+                        var url = '/stock/htmx/holdings-snapshot?date=' + date;
+                        if (currentTierNum < 2) {
+                            var d = new Date(date);
+                            var tradeFrom;
+                            if (currentTierNum === 1) {
+                                var ws = new Date(d);
+                                ws.setDate(ws.getDate() - 6);
+                                tradeFrom = ws.toISOString().slice(0, 10);
+                            } else {
+                                tradeFrom = date.slice(0, 7) + '-01';
+                            }
+                            url += '&tradeFrom=' + tradeFrom + '&tradeTo=' + date;
+                        }
+                        htmx.ajax('GET', url, {
                             target: '#holdings-snapshot-container',
                             swap: 'innerHTML'
                         });
@@ -725,6 +878,79 @@
             var c2El = document.getElementById('dividendChart');
             if (c1El) c1El.style.transition = 'opacity 0.25s ease';
             if (c2El) c2El.style.transition = 'opacity 0.25s ease';
+
+            // 마커 삼각형 클릭 감지 (afterDraw로 그린 삼각형은 Chart.js hit detection 밖이므로 직접 처리)
+            var markerClicked = false; // Chart.js onClick 중복 호출 방지 플래그
+            if (c1El) {
+                c1El.addEventListener('click', function(e) {
+                    var rect = c1El.getBoundingClientRect();
+                    var mx = e.clientX - rect.left;
+                    var my = e.clientY - rect.top;
+                    var hitR = 12;
+                    for (var k = 0; k < drawnMarkers.length; k++) {
+                        var m = drawnMarkers[k];
+                        if (Math.abs(mx - m.px) <= hitR && Math.abs(my - m.py) <= hitR) {
+                            markerClicked = true;
+                            var date = m.date;
+                            var url = '/stock/htmx/holdings-snapshot?date=' + date;
+                            // WEEKLY(1)/MONTHLY(0): 해당 기간 전체 거래 내역을 조회
+                            if (currentTierNum < 2) {
+                                var d = new Date(date);
+                                var tradeFrom;
+                                if (currentTierNum === 1) {
+                                    // WEEKLY: 라벨은 주 마지막날, 6일 앞이 주 시작
+                                    var ws = new Date(d);
+                                    ws.setDate(ws.getDate() - 6);
+                                    tradeFrom = ws.toISOString().slice(0, 10);
+                                } else {
+                                    // MONTHLY: 해당 월의 1일
+                                    tradeFrom = date.slice(0, 7) + '-01';
+                                }
+                                url += '&tradeFrom=' + tradeFrom + '&tradeTo=' + date;
+                            }
+                            htmx.ajax('GET', url, {
+                                target: '#holdings-snapshot-container',
+                                swap: 'innerHTML'
+                            });
+                            return;
+                        }
+                    }
+                });
+            }
+
+            // 휠 스크롤: 마우스 위치가 줌 후 뷰 중앙에 오도록 확대/축소
+            var handleCenteredWheel = function(chart, event) {
+                event.preventDefault();
+                var xAxis = chart.scales['x'];
+                if (!xAxis) return;
+                var currentMin = xAxis.min;
+                var currentMax = xAxis.max;
+                var currentRange = currentMax - currentMin;
+                var limits = chart.options.plugins.zoom.limits.x;
+                var maxRange = limits.max;
+                var minRange = limits.minRange || 9;
+                // deltaY > 0: 축소, < 0: 확대
+                var speed = 0.15;
+                var zoomFactor = event.deltaY > 0 ? (1 + speed) : (1 - speed);
+                var newRange = currentRange * zoomFactor;
+                newRange = Math.max(minRange, Math.min(maxRange, newRange));
+                // 마우스가 위치한 데이터 인덱스를 구해서 새 뷰의 중앙으로 배치
+                var rect = chart.canvas.getBoundingClientRect();
+                var mouseX = event.clientX - rect.left;
+                var mouseIndex = xAxis.getValueForPixel(mouseX);
+                // mouseIndex가 새 범위의 중심이 되도록 계산
+                var newMin = mouseIndex - newRange / 2;
+                var newMax = mouseIndex + newRange / 2;
+                // 경계 보정
+                if (newMin < 0) { newMax = Math.min(maxRange, newMax - newMin); newMin = 0; }
+                if (newMax > maxRange) { newMin = Math.max(0, newMin - (newMax - maxRange)); newMax = maxRange; }
+                chart.options.scales.x.min = newMin;
+                chart.options.scales.x.max = newMax;
+                chart.update('none');
+                syncZoomPan({chart: chart});
+            };
+            if (c1El) c1El.addEventListener('wheel', function(e) { handleCenteredWheel(mainChart, e); }, { passive: false });
+            if (c2El) c2El.addEventListener('wheel', function(e) { handleCenteredWheel(dividendChart, e); }, { passive: false });
 
             // 두 차트 plot 너비 맞추기: double-RAF 로 브라우저 렌더 완료 후 y1 축 너비 측정
             requestAnimationFrame(function() {
