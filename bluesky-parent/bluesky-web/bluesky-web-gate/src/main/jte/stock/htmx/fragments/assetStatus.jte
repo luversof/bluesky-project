@@ -7,7 +7,6 @@
 @param List<TradeProfit> stockAggregated
 @param BigDecimal totalEvaluationAmount
 @param BigDecimal totalEvaluationProfit
-@param BigDecimal totalRealizedProfit
 
 <div class="flex flex-col gap-6">
 
@@ -22,7 +21,6 @@
                         <th class="text-right">평가금액</th>
                         <th class="text-right hidden sm:table-cell">투자원금</th>
                         <th class="text-right">평가손익</th>
-                        <th class="text-right hidden md:table-cell">실현손익</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -53,9 +51,6 @@
                                 ${String.format("%+.1f%%", rate)}
                             </div>
                         </td>
-                        <td class="text-right font-mono hidden md:table-cell amount-value ${acc.realizedProfit() != null && acc.realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                            ${String.format("%+,d", acc.realizedProfit() != null ? acc.realizedProfit().longValue() : 0)}
-                        </td>
                     </tr>
                 @endfor
                 </tbody>
@@ -73,9 +68,6 @@
                         </td>
                         <td class="text-right font-mono amount-value ${totalEvaluationProfit != null && totalEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                             ${String.format("%+,d", totalEvaluationProfit != null ? totalEvaluationProfit.longValue() : 0)}
-                        </td>
-                        <td class="text-right font-mono hidden md:table-cell amount-value ${totalRealizedProfit != null && totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                            ${String.format("%+,d", totalRealizedProfit != null ? totalRealizedProfit.longValue() : 0)}
                         </td>
                     </tr>
                 </tfoot>
@@ -97,7 +89,6 @@
                         <th class="text-right">평가금액</th>
                         <th class="text-right hidden sm:table-cell">투자원금</th>
                         <th class="text-right">평가손익</th>
-                        <th class="text-right hidden md:table-cell">실현손익</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -123,9 +114,6 @@
                                     ${String.format("%+,d", item.evaluationProfit() != null ? item.evaluationProfit().longValue() : 0)}
                                     <span class="text-xs opacity-70">(${String.format("%+.1f%%", evalProfitRate.doubleValue())})</span>
                                 </td>
-                                <td class="text-right font-mono hidden md:table-cell amount-value ${item.realizedProfit() != null && item.realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                                    ${String.format("%+,d", item.realizedProfit() != null ? item.realizedProfit().longValue() : 0)}
-                                </td>
                             </tr>
                         @endfor
                     @endif
@@ -142,7 +130,6 @@
                         <td class="text-right font-mono amount-value text-principal">${String.format("%,d", totalEvaluationAmount != null ? totalEvaluationAmount.longValue() : 0)}</td>
                         <td class="text-right font-mono hidden sm:table-cell amount-value opacity-70">${String.format("%,d", totalStockPrincipal.longValue())}</td>
                         <td class="text-right font-mono font-bold amount-value ${totalEvaluationProfit != null && totalEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">${String.format("%+,d", totalEvaluationProfit != null ? totalEvaluationProfit.longValue() : 0)}</td>
-                        <td class="text-right font-mono hidden md:table-cell amount-value ${totalRealizedProfit != null && totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">${String.format("%+,d", totalRealizedProfit != null ? totalRealizedProfit.longValue() : 0)}</td>
                     </tr>
                 </tfoot>
             </table>
