@@ -44,7 +44,7 @@
                  ${String.format("%,d", totalUnrealizedProfit.longValue())}
              </div>
             <div class="stat-desc font-bold mt-1 ${totalUnrealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                수익률: <span class="amount-value">${String.format("%+.2f%%", unrealizedRate)}</span>
+                수익률: <span>${String.format("%+.2f%%", unrealizedRate)}</span>
             </div>
         </div>
 
@@ -78,14 +78,14 @@
                  ${String.format("%,d", totalCombinedProfit.longValue())}
             </div>
             <div class="stat-desc font-bold mt-1 ${totalCombinedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                수익률: <span class="amount-value">${String.format("%+.2f%%", combinedRate)}</span>
+                수익률: <span>${String.format("%+.2f%%", combinedRate)}</span>
             </div>
         </div>
 
         <!-- 승률 -->
         <div class="stat hidden 2xl:grid border-l border-base-200">
             <div class="stat-title">종목 승률</div>
-            <div class="stat-value font-bold amount-value">${String.format("%.1f", winRate)}%</div>
+            <div class="stat-value font-bold">${String.format("%.1f", winRate)}%</div>
             <div class="stat-desc mt-1">수익권 종목 비율</div>
         </div>
     </div>

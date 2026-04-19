@@ -11,7 +11,7 @@
 	contentStock = @`
 		<div class="container mx-auto p-4 space-y-6">
 
-			<h1 class="text-2xl font-bold mb-4 ml-1">실현손익 현황</h1>
+			<h1 class="text-2xl font-bold mb-4 ml-1">실현 손익 현황</h1>
 
 			<!-- Chart.js: fragment 내 차트 사용 -->
 			<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

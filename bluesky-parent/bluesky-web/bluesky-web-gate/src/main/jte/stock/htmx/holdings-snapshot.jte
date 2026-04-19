@@ -96,7 +96,7 @@
                             <td class="text-right font-medium ${colorClass} amount-value">
                                 ${sign}${item.unrealizedProfit() != null ? String.format("%,d", item.unrealizedProfit().longValue()) : "0"}원
                             </td>
-                            <td class="text-right ${colorClass} amount-value">${sign}${pct}%</td>
+                            <td class="text-right ${colorClass}">${sign}${pct}%</td>
                         </tr>
                         @endfor
                     </tbody>

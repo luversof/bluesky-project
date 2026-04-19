@@ -38,8 +38,8 @@
             <div class="stat-value font-bold amount-value ${totalRealizedProfit != null && totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                 ${String.format("%+,d", totalRealizedProfit != null ? totalRealizedProfit.longValue() : 0)}
             </div>
-            <div class="stat-desc font-semibold mt-1 ${totalRealizedProfit != null && totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                수익률: <span class="amount-value">${String.format("%+.2f%%", totalRate)}</span>
+            <div class="stat-desc mt-1 opacity-60">
+                매도 원가: <span class="amount-value">${String.format("%,d", totalSoldCost.longValue())}</span>
             </div>
         </div>
 
@@ -56,8 +56,8 @@
             <div class="stat-value text-base font-bold text-profit">
                 ${bestStock.stockItemName() != null ? bestStock.stockItemName() : "-"}
             </div>
-            <div class="stat-desc font-semibold mt-1 text-profit amount-value">
-                ${String.format("%+,d", bestStock.realizedProfitNet() != null ? bestStock.realizedProfitNet().longValue() : 0)}
+            <div class="stat-desc font-semibold mt-1 text-profit">
+                <span class="amount-value">${String.format("%+,d", bestStock.realizedProfitNet() != null ? bestStock.realizedProfitNet().longValue() : 0)}</span>
                 <span class="ml-1">(${String.format("%+.1f%%", bestRate)})</span>
             </div>
         </div>
@@ -76,8 +76,8 @@
             <div class="stat-value text-base font-bold text-loss">
                 ${worstStock.stockItemName() != null ? worstStock.stockItemName() : "-"}
             </div>
-            <div class="stat-desc font-semibold mt-1 text-loss amount-value">
-                ${String.format("%+,d", worstStock.realizedProfitNet() != null ? worstStock.realizedProfitNet().longValue() : 0)}
+            <div class="stat-desc font-semibold mt-1 text-loss">
+                <span class="amount-value">${String.format("%+,d", worstStock.realizedProfitNet() != null ? worstStock.realizedProfitNet().longValue() : 0)}</span>
                 <span class="ml-1">(${String.format("%+.1f%%", worstRate)})</span>
             </div>
         </div>
@@ -115,7 +115,7 @@
         <div class="card bg-base-100 shadow-md">
             <div class="card-body p-4">
                 <h2 class="text-base font-semibold mb-2 text-profit">수익 Top ${chartProfitLabels.size()}</h2>
-                <div class="relative w-full" style="height: ${Math.max(160, chartProfitLabels.size() * 40)}px;">
+                <div class="relative w-full amount-chart" style="height: ${Math.max(160, chartProfitLabels.size() * 40)}px;">
                     <canvas id="chartProfit"></canvas>
                 </div>
             </div>
@@ -158,7 +158,7 @@
         <div class="card bg-base-100 shadow-md">
             <div class="card-body p-4">
                 <h2 class="text-base font-semibold mb-2 text-loss">손실 Worst ${chartLossLabels.size()}</h2>
-                <div class="relative w-full" style="height: ${Math.max(160, chartLossLabels.size() * 40)}px;">
+                <div class="relative w-full amount-chart" style="height: ${Math.max(160, chartLossLabels.size() * 40)}px;">
                     <canvas id="chartLoss"></canvas>
                 </div>
             </div>
@@ -254,9 +254,7 @@
                         <td class="text-right font-mono amount-value ${totalAccountRealized.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                             ${String.format("%+,d", totalAccountRealized.longValue())}
                         </td>
-                        <td class="hidden sm:table-cell text-right font-mono ${totalRate >= 0 ? "text-profit" : "text-loss"}">
-                            ${String.format("%+.2f%%", totalRate)}
-                        </td>
+                        <td class="hidden sm:table-cell"></td>
                         <td class="hidden sm:table-cell"></td>
                     </tr>
                 </tfoot>
@@ -372,9 +370,7 @@
                         <td class="text-right font-mono amount-value ${totalRealizedProfit != null && totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                             ${String.format("%+,d", totalRealizedProfit != null ? totalRealizedProfit.longValue() : 0)}
                         </td>
-                        <td class="hidden sm:table-cell text-right font-mono ${totalRate >= 0 ? "text-profit" : "text-loss"}">
-                            ${String.format("%+.2f%%", totalRate)}
-                        </td>
+                        <td class="hidden sm:table-cell"></td>
                         <td class="text-right font-mono hidden md:table-cell amount-value opacity-70">
                             ${String.format("%,d", totalSoldCost.longValue())}
                         </td>
