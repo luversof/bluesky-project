@@ -80,26 +80,27 @@
     }
     jsSb.append("];");
     String dividendDataJs = jsSb.toString();
+
+    // Nav 버튼 활성화 여부
+    boolean isAllMode = "all".equals(rangeMode);
+    java.time.LocalDate today = java.time.LocalDate.now();
+    boolean canNext = !isAllMode && endDate != null && endDate.isBefore(today);
+    boolean canPrev = !isAllMode && startDate != null
+        && dataFirstDate != null && !dataFirstDate.isEmpty()
+        && startDate.isAfter(java.time.LocalDate.parse(dataFirstDate));
 }
 
 <div id="dividendListFragment">
 
-    <!-- Quick Date Selector -->
-    <div class="flex flex-wrap gap-2 mb-3 items-center">
-        <span class="text-xs opacity-50 mr-1">기간</span>
-        <button type="button" class="btn btn-xs btn-ghost" onclick="dividendPicker.jumpToEdge('start')">«</button>
-        <button type="button" class="btn btn-xs btn-ghost" onclick="dividendPicker.shift(-1)">‹ 이전</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("mtd") ? "btn-primary" : ""}" onclick="dividendPicker.set('mtd',this)">이번달</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : ""}" onclick="dividendPicker.set(1,this)">1개월</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("3") ? "btn-primary" : ""}" onclick="dividendPicker.set(3,this)">3개월</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("6") ? "btn-primary" : ""}" onclick="dividendPicker.set(6,this)">6개월</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("ytd") ? "btn-primary" : ""}" onclick="dividendPicker.set('ytd',this)">올해</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("12") ? "btn-primary" : ""}" onclick="dividendPicker.set(12,this)">1년</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("36") ? "btn-primary" : ""}" onclick="dividendPicker.set(36,this)">3년</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("all") ? "btn-primary" : ""}" onclick="dividendPicker.set(0,this)">전체</button>
-        <button type="button" class="btn btn-xs btn-ghost" onclick="dividendPicker.shift(1)">다음 ›</button>
-        <button type="button" class="btn btn-xs btn-ghost" onclick="dividendPicker.jumpToEdge('end')">»</button>
-    </div>
+    @template.stock.htmx.fragments.dateRangeNavBar(
+        pickerName = "dividendPicker",
+        btnClass = "date-range-btn",
+        canPrev = canPrev,
+        canNext = canNext,
+        rangeMode = rangeMode,
+        startDate = startDate,
+        endDate = endDate
+    )
 
     <!-- Filter & Search Form (collapsible) -->
     <details class="mb-4"$unsafe{(selectedAccountId != null || selectedStockItemId != null || startDate != null) ? " open" : ""}>
@@ -372,6 +373,8 @@
     <script>
     (function() {
         $unsafe{dividendDataJs}
+        const filterStartDate = "${startDate != null ? startDate.format(DateTimeFormatter.ofPattern("yyyy-MM")) : ""}";
+        const filterEndDate = "${endDate != null ? endDate.format(DateTimeFormatter.ofPattern("yyyy-MM")) : ""}";
 
         const CHART_COLORS = [
             'rgba(99,102,241,0.8)','rgba(34,197,94,0.8)','rgba(251,191,36,0.8)',
@@ -385,6 +388,15 @@
 
         function buildMonthlyData() {
             const map = {};
+            if (filterStartDate && filterEndDate) {
+                let cur = filterStartDate;
+                while (cur <= filterEndDate) {
+                    map[cur] = 0;
+                    const parts = cur.split('-');
+                    const y = Number(parts[0]), mo = Number(parts[1]);
+                    cur = mo === 12 ? (y + 1) + '-01' : y + '-' + String(mo + 1).padStart(2, '0');
+                }
+            }
             dividendData.forEach(d => {
                 if (!d.payDate) return;
                 const mon = d.payDate.slice(0, 7);
@@ -493,8 +505,15 @@
                 return;
             }
             const totalNet = dividendData.reduce((s, d) => s + Number(d.net), 0);
-            const monthSet = new Set(dividendData.filter(d => d.payDate).map(d => d.payDate.slice(0, 7)));
-            const monthCount = monthSet.size || 1;
+            let monthCount;
+            if (filterStartDate && filterEndDate) {
+                const [sy, sm] = filterStartDate.split('-').map(Number);
+                const [ey, em] = filterEndDate.split('-').map(Number);
+                monthCount = (ey - sy) * 12 + (em - sm) + 1;
+            } else {
+                const monthSet = new Set(dividendData.filter(d => d.payDate).map(d => d.payDate.slice(0, 7)));
+                monthCount = monthSet.size || 1;
+            }
             const avgPerMonth = totalNet / monthCount;
             displayEl.textContent = Math.round(avgPerMonth).toLocaleString();
             if (descEl) descEl.textContent = monthCount + '개월 평균 · 총 ' + Math.round(totalNet).toLocaleString() + '원 / ' + dividendData.length + '건';

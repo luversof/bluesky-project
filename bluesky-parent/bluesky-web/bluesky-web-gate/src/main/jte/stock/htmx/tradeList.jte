@@ -70,26 +70,27 @@
     }
     jsSb.append("];");
     String tradeDataJs = jsSb.toString();
+
+    // Nav 버튼 활성화 여부
+    boolean isAllMode = "all".equals(rangeMode);
+    java.time.LocalDate today = java.time.LocalDate.now();
+    boolean canNext = !isAllMode && endDate != null && endDate.isBefore(today);
+    boolean canPrev = !isAllMode && startDate != null
+        && dataFirstDate != null && !dataFirstDate.isEmpty()
+        && startDate.isAfter(java.time.LocalDate.parse(dataFirstDate));
 }
 
 <div id="tradeListFragment">
 
-    <!-- Quick Date Selector -->
-    <div class="flex flex-wrap gap-2 mb-3 items-center">
-        <span class="text-xs opacity-50 mr-1">기간</span>
-        <button type="button" class="btn btn-xs btn-ghost" onclick="tradePicker.jumpToEdge('start')">&#171;</button>
-        <button type="button" class="btn btn-xs btn-ghost" onclick="tradePicker.shift(-1)">&#8249; 이전</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("mtd") ? "btn-primary" : ""}" onclick="tradePicker.set('mtd',this)">이번달</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : ""}" onclick="tradePicker.set(1,this)">1개월</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("3") ? "btn-primary" : ""}" onclick="tradePicker.set(3,this)">3개월</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("6") ? "btn-primary" : ""}" onclick="tradePicker.set(6,this)">6개월</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("ytd") ? "btn-primary" : ""}" onclick="tradePicker.set('ytd',this)">올해</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("12") ? "btn-primary" : ""}" onclick="tradePicker.set(12,this)">1년</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("36") ? "btn-primary" : ""}" onclick="tradePicker.set(36,this)">3년</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("all") ? "btn-primary" : ""}" onclick="tradePicker.set(0,this)">전체</button>
-        <button type="button" class="btn btn-xs btn-ghost" onclick="tradePicker.shift(1)">다음 &#8250;</button>
-        <button type="button" class="btn btn-xs btn-ghost" onclick="tradePicker.jumpToEdge('end')">&#187;</button>
-    </div>
+    @template.stock.htmx.fragments.dateRangeNavBar(
+        pickerName = "tradePicker",
+        btnClass = "date-range-btn",
+        canPrev = canPrev,
+        canNext = canNext,
+        rangeMode = rangeMode,
+        startDate = startDate,
+        endDate = endDate
+    )
 
     <!-- Filter & Search Form (collapsible) -->
     <details class="mb-4"$unsafe{(selectedAccountId != null || selectedStockItemId != null || startDate != null) ? " open" : ""}>

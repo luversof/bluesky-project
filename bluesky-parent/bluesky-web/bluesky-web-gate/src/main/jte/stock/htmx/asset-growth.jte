@@ -60,6 +60,7 @@
                         <button type="button" id="btnLast" class="btn btn-xs btn-ghost btn-circle" onclick="assetPicker.jumpToEdge('end')" title="제일 뒤로">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
                         </button>
+                        <span id="assetRangeDisplay" class="text-xs text-base-content/40 ml-1"></span>
                     </div>
                     <p class="text-xs text-base-content/50">📈 자산 추이 &mdash; 투자 원금(점선) 대비 총 평가액(실선), 색상 면적이 현재 손익 규모 &bull; <span class="text-info">날짜 클릭 시 해당일 보유 종목 조회</span></p>
                 </div>
@@ -155,6 +156,17 @@
             var pendingVisStart = null;
             var pendingVisEnd   = null;
 
+            // 기간 표시 업데이트
+            var updateRangeDisplay = function(startStr, endStr) {
+                var el = document.getElementById('assetRangeDisplay');
+                if (!el) return;
+                if (startStr && endStr) {
+                    el.textContent = startStr + ' ~ ' + endStr;
+                } else {
+                    el.textContent = '';
+                }
+            };
+
             // 기간 선택 피커 onApply 콜백: 날짜 문자열 → 차트 인덱스 적용
             var applyRangeToChart = function(startStr, endStr) {
                 if (!mainChart || !dividendChart) return;
@@ -172,6 +184,7 @@
                 if (newMaxIdx < newMinIdx) newMaxIdx = Math.min(newMinIdx + 1, labels.length - 1);
                 pendingVisStart = startStr;
                 pendingVisEnd   = endStr;
+                updateRangeDisplay(startStr, endStr);
                 setLoading(true);
                 clearTimeout(checkDetailTimer);
                 checkDetailTimer = setTimeout(checkAndFetchDetail, 200);
@@ -280,10 +293,11 @@
                 mainChart.options.scales.x.min = newMin;
                 mainChart.options.scales.x.max = newMax;
                 // DETAIL 데이터 교체 시 zoom limits 를 새 데이터 범위로 맞춤
-                // BASE 복원 시에도 항상 0 ~ labels.length-1 로 갱신
+                // BASE 복원 시에도 항상 0 ~ todayMaxIdx 로 갱신 (미래 날짜 차단)
                 var newLabelLen = labels.length;
+                var newTodayMaxIdx = getTodayMaxIdx();
                 mainChart.options.plugins.zoom.limits.x.min = 0;
-                mainChart.options.plugins.zoom.limits.x.max = newLabelLen > 0 ? newLabelLen - 1 : 0;
+                mainChart.options.plugins.zoom.limits.x.max = newLabelLen > 0 ? newTodayMaxIdx : 0;
 
                 dividendChart.data.labels = labels;
                 dividendChart.data.datasets[0].data = cumulativeRealizedProfitData.slice();
@@ -293,7 +307,7 @@
                 dividendChart.options.scales.x.min = newMin;
                 dividendChart.options.scales.x.max = newMax;
                 dividendChart.options.plugins.zoom.limits.x.min = 0;
-                dividendChart.options.plugins.zoom.limits.x.max = newLabelLen > 0 ? newLabelLen - 1 : 0;
+                dividendChart.options.plugins.zoom.limits.x.max = newLabelLen > 0 ? newTodayMaxIdx : 0;
 
                 mainChart.update('none');
                 dividendChart.update('none');
@@ -422,10 +436,19 @@
             };
             // ─────────────────────────────────────────────────────────────────
 
+            // 오늘 날짜 기준 최대 인덱스 (미래 projected 데이터 포함 시에도 오늘까지만 표시)
+            var getTodayMaxIdx = function() {
+                var ts = new Date().toISOString().slice(0, 10);
+                for (var i = labels.length - 1; i >= 0; i--) {
+                    if (labels[i] <= ts) return i;
+                }
+                return labels.length - 1;
+            };
             var maxIndex = labels.length - 1;
-            var defaultMinIndex = maxIndex > 365 ? maxIndex - 365 : 0;
+            var todayMaxIdx = getTodayMaxIdx();
+            var defaultMinIndex = todayMaxIdx > 365 ? todayMaxIdx - 365 : 0;
             var defaultMinDate = labels[defaultMinIndex];
-            var defaultMaxDate = labels[maxIndex];
+            var defaultMaxDate = labels[todayMaxIdx];
 
             var mainChart, dividendChart;
 
@@ -444,17 +467,18 @@
                 var visMinDate = labels[minIdx] || '';
                 var visMaxDate = labels[maxIdx] || '';
                 var atStart = visMinDate <= baseData.labels[0];
-                var atEnd   = visMaxDate >= baseData.labels[baseData.labels.length - 1];
+                var atEnd   = visMaxDate >= new Date().toISOString().slice(0, 10);
 
                 var btnFirst = document.getElementById('btnFirst');
                 var btnPrev = document.getElementById('btnPrev');
                 var btnNext = document.getElementById('btnNext');
                 var btnLast = document.getElementById('btnLast');
 
-                if (btnFirst) { btnFirst.style.opacity = atStart ? '0.2' : '1'; btnFirst.style.pointerEvents = atStart ? 'none' : 'auto'; }
-                if (btnPrev)  { btnPrev.style.opacity  = atStart ? '0.2' : '1'; btnPrev.style.pointerEvents  = atStart ? 'none' : 'auto'; }
-                if (btnNext)  { btnNext.style.opacity  = atEnd   ? '0.2' : '1'; btnNext.style.pointerEvents  = atEnd   ? 'none' : 'auto'; }
-                if (btnLast)  { btnLast.style.opacity  = atEnd   ? '0.2' : '1'; btnLast.style.pointerEvents  = atEnd   ? 'none' : 'auto'; }
+                if (btnFirst) { btnFirst.style.opacity = atStart ? '0.2' : '1'; btnFirst.style.pointerEvents = atStart ? 'none' : 'auto'; btnFirst.disabled = atStart; }
+                if (btnPrev)  { btnPrev.style.opacity  = atStart ? '0.2' : '1'; btnPrev.style.pointerEvents  = atStart ? 'none' : 'auto'; btnPrev.disabled = atStart; }
+                if (btnNext)  { btnNext.style.opacity  = atEnd   ? '0.2' : '1'; btnNext.style.pointerEvents  = atEnd   ? 'none' : 'auto'; btnNext.disabled = atEnd; }
+                if (btnLast)  { btnLast.style.opacity  = atEnd   ? '0.2' : '1'; btnLast.style.pointerEvents  = atEnd   ? 'none' : 'auto'; btnLast.disabled = atEnd; }
+                updateRangeDisplay(visMinDate, visMaxDate);
             };
 
             var syncZoomPan = function({chart}) {
@@ -489,7 +513,7 @@
 
             var commonZoomOptions = {
                 limits: {
-                    x: { min: 0, max: labels.length > 0 ? labels.length - 1 : 0, minRange: 9 } // applyChartData 에서 갱신됨
+                    x: { min: 0, max: labels.length > 0 ? getTodayMaxIdx() : 0, minRange: 9 } // applyChartData 에서 갱신됨
                 },
                 zoom: {
                     wheel: { enabled: false }, // 커스텀 휠 핸들러로 대체 (차트 중심 기준 줌)
@@ -887,7 +911,7 @@
                 var currentMax = xAxis.max;
                 var currentRange = currentMax - currentMin;
                 var limits = chart.options.plugins.zoom.limits.x;
-                var maxRange = limits.max;
+                var maxRange = Math.min(limits.max, getTodayMaxIdx());
                 var minRange = limits.minRange || 9;
                 // deltaY > 0: 축소, < 0: 확대
                 var speed = 0.15;
