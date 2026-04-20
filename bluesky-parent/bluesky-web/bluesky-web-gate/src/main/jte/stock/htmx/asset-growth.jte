@@ -74,6 +74,7 @@
                     <canvas id="dividendChart" class="amount-chart"></canvas>
                 </div>
                 <div id="holdings-snapshot-container"></div>
+                <div id="trade-history-container"></div>
             @endif
         </div>
     </div>
@@ -175,6 +176,7 @@
                 clearTimeout(checkDetailTimer);
                 checkDetailTimer = setTimeout(checkAndFetchDetail, 200);
                 animateScaleChange(newMinIdx, newMaxIdx, 320);
+                refreshTradeHistory(startStr, endStr);
             };
             var assetPicker = window.DateRangePicker
                 ? window.DateRangePicker.create({
@@ -468,6 +470,7 @@
                 setTimeout(checkNavButtons, 50);
                 clearTimeout(checkDetailTimer);
                 checkDetailTimer = setTimeout(checkAndFetchDetail, 200);
+                refreshTradeHistory(od.visStart, od.visEnd);
             };
 
             // 팬(alt+drag) 이 현재 데이터 끝에 닿았을 때 baseData 에 더 많은 데이터가 있으면
@@ -670,7 +673,7 @@
                                         var drp = parseFloat(dailyRealizedProfitData[idx]);
                                         var tradeSign = drp >= 0 ? '+' : '';
                                         lines.push('─────────────────');
-                                        lines.push('클릭하면 거래 내역 확인 ↓');
+                                        lines.push('클릭하면 매매 내역 확인 ↓');
                                         lines.push('거래 횟수: ' + tradeCountData[idx] + '건');
                                         if (drp !== 0) lines.push('당일 실현손익: ' + tradeSign + new Intl.NumberFormat('ko-KR').format(drp) + '원');
                                     }
@@ -721,20 +724,7 @@
                         if (markerClicked) { markerClicked = false; return; } // 마커 클릭 시 중복 방지
                         var clicked = elements[0];
                         var date = labels[clicked.index];
-                        var url = '/stock/htmx/holdings-snapshot?date=' + date;
-                        if (currentTierNum < 2) {
-                            var d = new Date(date);
-                            var tradeFrom;
-                            if (currentTierNum === 1) {
-                                var ws = new Date(d);
-                                ws.setDate(ws.getDate() - 6);
-                                tradeFrom = ws.toISOString().slice(0, 10);
-                            } else {
-                                tradeFrom = date.slice(0, 7) + '-01';
-                            }
-                            url += '&tradeFrom=' + tradeFrom + '&tradeTo=' + date;
-                        }
-                        htmx.ajax('GET', url, {
+                        htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + date, {
                             target: '#holdings-snapshot-container',
                             swap: 'innerHTML'
                         });
@@ -849,20 +839,7 @@
                         if (!elements.length) return;
                         if (markerClicked) { markerClicked = false; return; } // 마커 클릭 시 중복 방지
                         var date = labels[elements[0].index];
-                        var url = '/stock/htmx/holdings-snapshot?date=' + date;
-                        if (currentTierNum < 2) {
-                            var d = new Date(date);
-                            var tradeFrom;
-                            if (currentTierNum === 1) {
-                                var ws = new Date(d);
-                                ws.setDate(ws.getDate() - 6);
-                                tradeFrom = ws.toISOString().slice(0, 10);
-                            } else {
-                                tradeFrom = date.slice(0, 7) + '-01';
-                            }
-                            url += '&tradeFrom=' + tradeFrom + '&tradeTo=' + date;
-                        }
-                        htmx.ajax('GET', url, {
+                        htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + date, {
                             target: '#holdings-snapshot-container',
                             swap: 'innerHTML'
                         });
@@ -891,24 +868,7 @@
                         var m = drawnMarkers[k];
                         if (Math.abs(mx - m.px) <= hitR && Math.abs(my - m.py) <= hitR) {
                             markerClicked = true;
-                            var date = m.date;
-                            var url = '/stock/htmx/holdings-snapshot?date=' + date;
-                            // WEEKLY(1)/MONTHLY(0): 해당 기간 전체 거래 내역을 조회
-                            if (currentTierNum < 2) {
-                                var d = new Date(date);
-                                var tradeFrom;
-                                if (currentTierNum === 1) {
-                                    // WEEKLY: 라벨은 주 마지막날, 6일 앞이 주 시작
-                                    var ws = new Date(d);
-                                    ws.setDate(ws.getDate() - 6);
-                                    tradeFrom = ws.toISOString().slice(0, 10);
-                                } else {
-                                    // MONTHLY: 해당 월의 1일
-                                    tradeFrom = date.slice(0, 7) + '-01';
-                                }
-                                url += '&tradeFrom=' + tradeFrom + '&tradeTo=' + date;
-                            }
-                            htmx.ajax('GET', url, {
+                            htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + m.date, {
                                 target: '#holdings-snapshot-container',
                                 swap: 'innerHTML'
                             });
@@ -963,6 +923,25 @@
                     }
                 });
             });
+
+            // ── 매매 내역 자동 갱신 ──────────────────────────────────────────
+            var tradeHistoryTimer = null;
+            var refreshTradeHistory = function(from, to) {
+                clearTimeout(tradeHistoryTimer);
+                tradeHistoryTimer = setTimeout(function() {
+                    var url = '/stock/htmx/trade-history';
+                    if (from && to) {
+                        url += '?from=' + from + '&to=' + to;
+                    }
+                    htmx.ajax('GET', url, {
+                        target: '#trade-history-container',
+                        swap: 'innerHTML'
+                    });
+                }, 500);
+            };
+
+            // 초기 로드: 기본 표시 범위 기준으로 매매 내역 로드
+            refreshTradeHistory(defaultMinDate, defaultMaxDate);
         })();
     </script>
     @endif

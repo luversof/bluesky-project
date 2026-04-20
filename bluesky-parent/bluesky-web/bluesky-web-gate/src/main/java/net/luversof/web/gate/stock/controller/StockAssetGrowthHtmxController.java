@@ -1,5 +1,6 @@
 package net.luversof.web.gate.stock.controller;
 
+import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -7,9 +8,15 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
+import net.luversof.web.gate.stock.constant.TradeType;
+import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.dto.request.TradeSearchRequest;
 import net.luversof.web.gate.stock.dto.response.TradeResponse;
 
@@ -131,8 +138,6 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
   @GetMapping("/holdings-snapshot")
   public String holdingsSnapshot(
       @RequestParam(required = false) String date,
-      @RequestParam(required = false) String tradeFrom,
-      @RequestParam(required = false) String tradeTo,
       Model model) {
     var userId = UserUtil.getUserId();
     if (userId == null) {
@@ -147,30 +152,105 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     params.add("userId", userId.toString());
     params.add("date", date);
     List<HoldingsSnapshotItem> holdings = tradeProfitClient.holdingsSnapshot(params);
-
-    // 거래 내역 조회: tradeFrom/tradeTo 제공 시 해당 기간, 아니면 당일 하루
-    Instant tradeStart;
-    Instant tradeEnd;
-    if (tradeFrom != null && !tradeFrom.isBlank() && tradeTo != null && !tradeTo.isBlank()) {
-      tradeStart = LocalDate.parse(tradeFrom).atStartOfDay(ZoneOffset.UTC).toInstant();
-      tradeEnd = LocalDate.parse(tradeTo).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
-    } else {
-      tradeStart = LocalDate.parse(date).atStartOfDay(ZoneOffset.UTC).toInstant();
-      tradeEnd = LocalDate.parse(date).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
-    }
-    var tradeReq = new TradeSearchRequest(userId, null, null, tradeStart, tradeEnd);
-    var trades = tradeClient.findTrades(tradeReq.toParams());
-
-    String tradePeriod;
-    if (tradeFrom != null && !tradeFrom.isBlank() && tradeTo != null && !tradeTo.isBlank()) {
-      tradePeriod = tradeFrom + " ~ " + tradeTo;
-    } else {
-      tradePeriod = date;
-    }
     model.addAttribute("holdings", holdings);
-    model.addAttribute("trades", trades);
     model.addAttribute("date", date);
-    model.addAttribute("tradePeriod", tradePeriod);
     return "stock/htmx/holdings-snapshot";
+  }
+
+  @GetMapping("/trade-history")
+  public String tradeHistory(
+      @RequestParam(required = false) String from,
+      @RequestParam(required = false) String to,
+      @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "20") int size,
+      Model model) {
+    var userId = UserUtil.getUserId();
+    if (userId == null) {
+      model.addAttribute("trades", List.of());
+      model.addAttribute("totalItems", 0);
+      model.addAttribute("currentPage", 1);
+      model.addAttribute("totalPages", 0);
+      model.addAttribute("pageSize", size);
+      model.addAttribute("from", from);
+      model.addAttribute("to", to);
+      model.addAttribute("totalBuy", BigDecimal.ZERO);
+      model.addAttribute("totalSell", BigDecimal.ZERO);
+      model.addAttribute("totalRealizedProfit", BigDecimal.ZERO);
+      model.addAttribute("tradePeriod", "");
+      return "stock/htmx/trade-history";
+    }
+
+    Instant tradeStart = (from != null && !from.isBlank())
+        ? LocalDate.parse(from).atStartOfDay(ZoneOffset.UTC).toInstant()
+        : null;
+    Instant tradeEnd = (to != null && !to.isBlank())
+        ? LocalDate.parse(to).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()
+        : null;
+
+    var tradeReq = new TradeSearchRequest(userId, null, null, tradeStart, tradeEnd);
+    var allFromApi = tradeClient.findTrades(tradeReq.toParams());
+
+    List<StockItem> stockItems = stockItemClient.getStockItems();
+    Map<UUID, String> stockItemNames = stockItems.stream()
+        .collect(Collectors.toMap(StockItem::id, StockItem::name, (l, r) -> l));
+
+    var allTrades = allFromApi.stream()
+        .map(t -> new TradeResponse(
+            t.id(), t.accountId(), t.stockItemId(),
+            stockItemNames.getOrDefault(t.stockItemId(), UNKNOWN_LABEL),
+            t.type(), t.quantity(), t.price(), t.fee(), t.tax(),
+            t.amount(), t.realizedProfit(), t.tradeDate()))
+        .sorted(Comparator.comparing(TradeResponse::tradeDate, Comparator.nullsLast(Comparator.reverseOrder())))
+        .collect(Collectors.toCollection(ArrayList::new));
+
+    BigDecimal totalBuy = allTrades.stream()
+        .filter(t -> t.type() == TradeType.BUY)
+        .map(t -> t.amount() != null ? t.amount() : BigDecimal.ZERO)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalSell = allTrades.stream()
+        .filter(t -> t.type() == TradeType.SELL)
+        .map(t -> t.amount() != null ? t.amount() : BigDecimal.ZERO)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalRealizedProfit = allTrades.stream()
+        .filter(t -> t.type() == TradeType.SELL)
+        .map(t -> t.realizedProfit() != null ? t.realizedProfit() : BigDecimal.ZERO)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalFee = allTrades.stream()
+        .map(t -> t.fee() != null ? t.fee() : BigDecimal.ZERO)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalTax = allTrades.stream()
+        .map(t -> t.tax() != null ? t.tax() : BigDecimal.ZERO)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    int totalItems = allTrades.size();
+    if (size <= 0) size = 20;
+    int totalPages = totalItems > 0 ? (int) Math.ceil((double) totalItems / size) : 0;
+    int currentPage = Math.max(1, Math.min(page, Math.max(1, totalPages)));
+    int fromIdx = (currentPage - 1) * size;
+    int toIdx = Math.min(fromIdx + size, totalItems);
+    List<TradeResponse> pagedTrades = fromIdx < totalItems
+        ? allTrades.subList(fromIdx, toIdx)
+        : Collections.emptyList();
+
+    String periodFrom = (from != null && !from.isBlank()) ? from : "";
+    String periodTo = (to != null && !to.isBlank()) ? to : "";
+    String tradePeriod = periodFrom.isEmpty() && periodTo.isEmpty()
+        ? "전체"
+        : periodFrom + (periodTo.isEmpty() ? "" : " ~ " + periodTo);
+
+    model.addAttribute("trades", pagedTrades);
+    model.addAttribute("totalItems", totalItems);
+    model.addAttribute("currentPage", currentPage);
+    model.addAttribute("totalPages", totalPages);
+    model.addAttribute("pageSize", size);
+    model.addAttribute("from", periodFrom);
+    model.addAttribute("to", periodTo);
+    model.addAttribute("totalBuy", totalBuy);
+    model.addAttribute("totalSell", totalSell);
+    model.addAttribute("totalRealizedProfit", totalRealizedProfit);
+    model.addAttribute("totalFee", totalFee);
+    model.addAttribute("totalTax", totalTax);
+    model.addAttribute("tradePeriod", tradePeriod);
+    return "stock/htmx/trade-history";
   }
 }
