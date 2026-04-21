@@ -516,7 +516,7 @@
             }
             const avgPerMonth = totalNet / monthCount;
             displayEl.textContent = Math.round(avgPerMonth).toLocaleString();
-            if (descEl) descEl.textContent = monthCount + '개월 평균 · 총 ' + Math.round(totalNet).toLocaleString() + '원 / ' + dividendData.length + '건';
+            if (descEl) descEl.innerHTML = monthCount + '개월 평균 · 총 <span class="amount-value">' + Math.round(totalNet).toLocaleString() + '원</span> / ' + dividendData.length + '건';
         }
 
         function updateNavButtons() {
