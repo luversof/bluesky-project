@@ -82,10 +82,11 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     }
     request.setUserId(userId);
     if (from != null) {
-      request.setStartDate(LocalDate.parse(from).atStartOfDay(ZoneOffset.UTC).toInstant());
+      request.setStartDate(LocalDate.parse(from).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
     }
     if (to != null) {
-      request.setEndDate(LocalDate.parse(to).atStartOfDay(ZoneOffset.UTC).toInstant());
+      // preserve original behavior: treat 'to' as exclusive end (start of next day)
+      request.setEndDate(LocalDate.parse(to).plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
     }
     var params = request.toParams();
     params.add("granularity", gran != null ? gran : "AUTO");

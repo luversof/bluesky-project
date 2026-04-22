@@ -1,6 +1,7 @@
 package net.luversof.web.gate.stock.dto.request;
 
 import java.time.Instant;
+import org.springframework.format.annotation.DateTimeFormat;
 import java.util.List;
 import java.util.UUID;
 
@@ -8,8 +9,11 @@ public class TradeProfitRequest {
   UUID userId;
   List<UUID> accountIdList;
   List<UUID> stockItemIdList;
+  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
   Instant startDate;
+  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
   Instant endDate;
+  String timeZone;
   TradeProfitRequestGroup groupBy;
 
   public UUID getUserId() {
@@ -52,6 +56,14 @@ public class TradeProfitRequest {
     this.endDate = endDate;
   }
 
+  public String getTimeZone() {
+    return timeZone;
+  }
+
+  public void setTimeZone(String timeZone) {
+    this.timeZone = timeZone;
+  }
+
   public TradeProfitRequestGroup getGroupBy() {
     return groupBy;
   }
@@ -68,8 +80,13 @@ public class TradeProfitRequest {
       accountIdList.forEach(x -> params.add("accountIdList", x.toString()));
     if (stockItemIdList != null)
       stockItemIdList.forEach(x -> params.add("stockItemIdList", x.toString()));
-    if (startDate != null) params.add("startDate", startDate.toString());
-    if (endDate != null) params.add("endDate", endDate.toString());
+    if (startDate != null) {
+      params.add("startDate", startDate.toString());
+    }
+    if (endDate != null) {
+      params.add("endDate", endDate.toString());
+    }
+    if (timeZone != null) params.add("timeZone", timeZone);
     if (groupBy != null) params.add("groupBy", groupBy.name());
     return params;
   }

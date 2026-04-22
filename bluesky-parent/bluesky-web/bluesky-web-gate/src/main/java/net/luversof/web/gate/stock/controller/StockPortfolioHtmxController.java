@@ -288,9 +288,9 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         return "stock/htmx/fragments/assetStatus";
     }
 
-    @BlueskyPreAuthorize
-    @GetMapping("/realized-profit")
-    public String realizedProfit(TradeProfitRequest request, Model model) {
+        @BlueskyPreAuthorize
+        @GetMapping("/realized-profit")
+        public String realizedProfit(TradeProfitRequest request, @RequestParam(required = false) String rangeMode, Model model) {
         UUID userId = UserUtil.getUserId();
         if (userId == null)
             return ERROR_VIEW;
@@ -426,6 +426,11 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         model.addAttribute("chartProfitValues", chartProfitValues);
         model.addAttribute("chartLossLabels", chartLossLabels);
         model.addAttribute("chartLossValues", chartLossValues);
+                // Pass date range and UI state back to the fragment so buttons/inputs reflect the selection
+                model.addAttribute("startDate", request.getStartDate());
+                model.addAttribute("endDate", request.getEndDate());
+                model.addAttribute("rangeMode", rangeMode);
+                model.addAttribute("timeZone", request.getTimeZone());
         return "stock/htmx/fragments/realizedProfit";
     }
 

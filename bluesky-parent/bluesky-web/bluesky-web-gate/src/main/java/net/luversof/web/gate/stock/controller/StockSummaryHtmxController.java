@@ -136,17 +136,14 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
 
       // 2. Get Period Realized Profit
       if ("YEARLY".equals(timeScale)) {
-        request.setStartDate(
-            LocalDate.of(year, 1, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
-        request.setEndDate(
-            LocalDate.of(year, 12, 31)
-                .plusDays(1)
-                .atStartOfDay(java.time.ZoneId.systemDefault())
-                .toInstant());
+        // Convert LocalDate boundaries to Instants (start inclusive, end exclusive)
+        request.setStartDate(LocalDate.of(year, 1, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+        request.setEndDate(LocalDate.of(year, 12, 31).plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
         keyLabel = year + "년";
       } else if ("MONTHLY".equals(timeScale)) {
         LocalDate start = LocalDate.of(year, month, 1);
         LocalDate end = start.plusMonths(1);
+        // Use start-of-month (inclusive) and start-of-next-month (exclusive)
         request.setStartDate(start.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
         request.setEndDate(end.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
         keyLabel = year + "년 " + month + "월";

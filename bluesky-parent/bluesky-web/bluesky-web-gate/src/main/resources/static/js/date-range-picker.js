@@ -78,6 +78,51 @@ window.DateRangePicker = (function () {
       });
     }
 
+    // Class names for previous/next navigation buttons (will be toggled disabled)
+    var prevClassName = cfg.prevClass || 'date-range-prev';
+    var nextClassName = cfg.nextClass || 'date-range-next';
+
+    function updatePrevNextState() {
+      try {
+        var prevEls = document.querySelectorAll('.' + prevClassName);
+        var nextEls = document.querySelectorAll('.' + nextClassName);
+        var start = getStart();
+        var end = getEnd();
+        var maxDate = new Date(maxDateStr() + 'T00:00:00');
+        var minDate = cfg.minDate ? new Date(cfg.minDate + 'T00:00:00') : null;
+        var disablePrev = false;
+        var disableNext = false;
+        if (start && end) {
+          var sDate = new Date(start + 'T00:00:00');
+          var eDate = new Date(end + 'T00:00:00');
+          disableNext = eDate >= maxDate;
+          if (minDate) {
+            disablePrev = sDate <= minDate;
+          }
+        }
+        prevEls.forEach(function (el) {
+          el.disabled = disablePrev;
+          if (disablePrev) {
+            el.classList.add('opacity-40');
+            el.setAttribute('aria-disabled', 'true');
+          } else {
+            el.classList.remove('opacity-40');
+            el.removeAttribute('aria-disabled');
+          }
+        });
+        nextEls.forEach(function (el) {
+          el.disabled = disableNext;
+          if (disableNext) {
+            el.classList.add('opacity-40');
+            el.setAttribute('aria-disabled', 'true');
+          } else {
+            el.classList.remove('opacity-40');
+            el.removeAttribute('aria-disabled');
+          }
+        });
+      } catch (e) {}
+    }
+
     // ── 현재 start / end / mode 읽기 ─────────────────────────────────────
     function getStart() {
       return isCallback() ? _s.start : (el(cfg.startId) || {}).value || "";
@@ -96,6 +141,7 @@ window.DateRangePicker = (function () {
 
     // ── 날짜 범위 최종 적용 (DOM 갱신 또는 콜백 호출) ──────────────────────
     function applyRange(startStr, endStr, modeStr) {
+      try { console.debug && console.debug('DateRangePicker.applyRange', { start: startStr, end: endStr, mode: modeStr }); } catch(e){}
       if (isCallback()) {
         _s.start = startStr;
         _s.end = endStr;
@@ -108,13 +154,78 @@ window.DateRangePicker = (function () {
         if (se) se.value = startStr || "";
         if (ee) ee.value = endStr || "";
         if (me) me.value = modeStr;
+        // If configured, also set Instant (ISO) hidden inputs computed in
+        // the client's local timezone. start -> local 00:00:00, end -> next
+        // day 00:00:00 (end-exclusive).
+        try {
+          function localDateToInstantIso(ds, addDays) {
+            if (!ds) return "";
+            var parts = ds.split("-");
+            var y = parseInt(parts[0], 10), m = parseInt(parts[1], 10) - 1, d = parseInt(parts[2], 10);
+            var dt = new Date(y, m, d + (addDays || 0), 0, 0, 0, 0);
+            return dt.toISOString();
+          }
+          if (cfg.instantStartId) {
+            var instSe = el(cfg.instantStartId);
+            if (instSe) instSe.value = startStr ? localDateToInstantIso(startStr, 0) : "";
+          }
+          if (cfg.instantEndId) {
+            var instEe = el(cfg.instantEndId);
+            if (instEe) instEe.value = endStr ? localDateToInstantIso(endStr, 1) : "";
+          }
+          // Populate client timezone if requested
+          try {
+            var tz = (Intl && Intl.DateTimeFormat) ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC";
+            if (cfg.timeZoneId) {
+              var tzEl = el(cfg.timeZoneId);
+              if (tzEl) tzEl.value = tz || "UTC";
+            }
+          } catch (e) {}
+        } catch (e) {
+          // ignore Instant population failures
+        }
+        try { updatePrevNextState(); } catch(e) {}
         var form = el(cfg.formId);
-        if (form) form.requestSubmit();
+        if (form) {
+          if (typeof form.requestSubmit === "function") {
+            form.requestSubmit();
+          } else {
+            // Try to dispatch a real 'submit' event so HTMX and other handlers
+            // see it. If that doesn't trigger, fall back to clicking a temp
+            // submit button, finally falling back to form.submit().
+            try {
+              var ev = new Event('submit', { bubbles: true, cancelable: true });
+              var prevented = !form.dispatchEvent(ev);
+              if (!prevented) {
+                // If no handler prevented default, simulate a user click on a
+                // hidden submit button which should trigger submit handlers.
+                var tmp = document.createElement('button');
+                tmp.type = 'submit';
+                tmp.style.display = 'none';
+                form.appendChild(tmp);
+                tmp.click();
+                form.removeChild(tmp);
+              }
+            } catch (e) {
+              try {
+                var tmp2 = document.createElement('button');
+                tmp2.type = 'submit';
+                tmp2.style.display = 'none';
+                form.appendChild(tmp2);
+                tmp2.click();
+                form.removeChild(tmp2);
+              } catch (e2) {
+                form.submit();
+              }
+            }
+          }
+        }
       }
     }
 
     // ── set ──────────────────────────────────────────────────────────────
     function doSet(months, btn) {
+      try { console.debug && console.debug('DateRangePicker.doSet', { months: months }); } catch(e){}
       clearActive();
       if (btn) btn.classList.add(activeClass());
 
@@ -234,6 +345,7 @@ window.DateRangePicker = (function () {
       var start = getStart(),
         end = getEnd(),
         mode = getMode();
+      try { console.debug && console.debug('DateRangePicker.doShift', { dir: dir, start: start, end: end, mode: mode }); } catch(e){}
       if (!start || mode === "all") return;
 
       var maxStr = maxDateStr();
@@ -309,6 +421,7 @@ window.DateRangePicker = (function () {
       applyRange(newStart, newEnd, newMode);
     }
 
+    try { updatePrevNextState(); } catch(e) {}
     return {
       /** 기간 버튼 클릭: months = 숫자 | 'mtd' | 'ytd' | 0(전체) */
       set: function (months, btn) {

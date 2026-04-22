@@ -16,6 +16,11 @@
 @param List<Long> chartProfitValues
 @param List<String> chartLossLabels
 @param List<Long> chartLossValues
+@param String rangeMode = null
+@param String dataFirstDate = null
+@param java.time.Instant startDate = null
+@param java.time.Instant endDate = null
+@param String timeZone = null
 
 <%-- 수익률 기준: 매도한 주식의 취득원가 = 매도수령액 - 실현손익 --%>
 !{BigDecimal totalSoldCost = totalSellProceeds != null && totalRealizedProfit != null
@@ -25,7 +30,57 @@
     ? totalRealizedProfit.doubleValue() / totalSoldCost.doubleValue() * 100
     : 0.0;}
 
-<div class="flex flex-col gap-6">
+<div id="realizedProfitFragment" class="flex flex-col gap-6">
+
+    <!-- Quick Date Selector -->
+    <div class="flex flex-wrap gap-2 mb-3 items-center">
+        <span class="text-xs opacity-50 mr-1">기간</span>
+        <button type="button" class="btn btn-xs btn-ghost date-range-prev" onclick="realizedProfitPicker.jumpToEdge('start')">&#171;</button>
+        <button type="button" class="btn btn-xs btn-ghost date-range-prev" onclick="realizedProfitPicker.shift(-1)">&#8249; 이전</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("mtd") ? "btn-primary" : ""}" onclick="realizedProfitPicker.set('mtd',this)">이번달</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : ""}" onclick="realizedProfitPicker.set(1,this)">1개월</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("3") ? "btn-primary" : ""}" onclick="realizedProfitPicker.set(3,this)">3개월</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("6") ? "btn-primary" : ""}" onclick="realizedProfitPicker.set(6,this)">6개월</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("ytd") ? "btn-primary" : ""}" onclick="realizedProfitPicker.set('ytd',this)">올해</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("12") ? "btn-primary" : ""}" onclick="realizedProfitPicker.set(12,this)">1년</button>
+        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("all") ? "btn-primary" : ""}" onclick="realizedProfitPicker.set(0,this)">전체</button>
+        <button type="button" class="btn btn-xs btn-ghost date-range-next" onclick="realizedProfitPicker.shift(1)">다음 &#8250;</button>
+        <button type="button" class="btn btn-xs btn-ghost date-range-next" onclick="realizedProfitPicker.jumpToEdge('end')">&#187;</button>
+    </div>
+
+    <details class="mb-4"$unsafe{startDate != null ? " open" : ""}>
+        <summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
+            상세 검색
+            @if(startDate != null)
+                <span class="badge badge-xs badge-primary">${startDate.atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString()} ~ ${endDate != null ? endDate.atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString() : ""}</span>
+            @endif
+        </summary>
+    <form id="realizedProfitSearchForm" class="flex flex-wrap gap-2 mt-2 mb-2 items-end bg-base-100 p-2 rounded-box shadow-sm"
+          hx-get="/stock/htmx/realized-profit"
+          hx-target="#realizedProfitFragment"
+          hx-select="#realizedProfitFragment"
+          hx-swap="outerHTML"
+          hx-trigger="submit">
+        <div class="form-control w-full sm:w-auto">
+            <label class="label p-1"><span class="label-text text-xs">기간</span></label>
+            <div class="join">
+                <input type="date" name="realizedUiStartDate" id="realizedStartDateInput" class="input input-sm input-bordered join-item" value="${startDate != null ? startDate.atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString() : ""}">
+                <input type="date" name="realizedUiEndDate" id="realizedEndDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString() : ""}">
+            </div>
+        </div>
+        <input type="hidden" name="startDate" id="realizedStartInstantInput" value="${startDate != null ? startDate.toString() : ""}">
+        <input type="hidden" name="endDate" id="realizedEndInstantInput" value="${endDate != null ? endDate.toString() : ""}">
+        <input type="hidden" name="timeZone" id="realizedTimeZoneInput" value="${timeZone != null ? timeZone : ""}">
+        <input type="hidden" name="rangeMode" id="realizedRangeModeInput" value="${rangeMode != null ? rangeMode : ""}">
+        <button type="submit" class="btn btn-sm btn-primary">조회</button>
+        <button type="button" class="btn btn-sm text-xs"
+                hx-get="/stock/htmx/realized-profit"
+                hx-target="#realizedProfitFragment"
+                hx-select="#realizedProfitFragment"
+                hx-swap="outerHTML">초기화</button>
+    </form>
+    </details>
 
     <!-- Section 0: 요약 카드 -->
     <div class="stats stats-vertical lg:stats-horizontal shadow w-full bg-base-100">
@@ -492,6 +547,23 @@
         }
         rows.forEach(function(r) { tbody.appendChild(r); });
     };
+    </script>
+
+    <script>
+    (function() {
+        var realizedProfitPicker = DateRangePicker.create({
+            formId:      'realizedProfitSearchForm',
+            startId:     'realizedStartDateInput',
+            endId:       'realizedEndDateInput',
+            instantStartId: 'realizedStartInstantInput',
+            instantEndId: 'realizedEndInstantInput',
+            timeZoneId:  'realizedTimeZoneInput',
+            rangeModeId: 'realizedRangeModeInput',
+            btnClass:    'date-range-btn',
+            minDate:     '${dataFirstDate != null ? dataFirstDate : ""}'
+        });
+        window.realizedProfitPicker = realizedProfitPicker;
+    })();
     </script>
 
 </div>
