@@ -1,5 +1,7 @@
 @import java.util.List
 @import java.util.UUID
+@import java.time.Instant
+@import java.time.ZoneId
 @import java.time.LocalDate
 @import java.math.BigDecimal
 @import java.math.RoundingMode
@@ -21,8 +23,9 @@
 @param List<StockItem> stockItemList
 @param UUID selectedAccountId
 @param UUID selectedStockItemId
-@param LocalDate startDate
-@param LocalDate endDate
+@param java.time.Instant startDate
+@param java.time.Instant endDate
+@param String timeZone = null
 @param String sort
 @param BigDecimal totalGrossAmount
 @param BigDecimal totalNetAmount
@@ -71,7 +74,8 @@
     for (int ci = 0; ci < chartList.size(); ci++) {
         DividendView d = chartList.get(ci);
         if (ci > 0) jsSb.append(",");
-        jsSb.append("{payDate:\"").append(d.payDate() != null ? ymd.format(d.payDate().atZone(java.time.ZoneId.systemDefault())) : "").append("\"");
+        java.time.ZoneId _zone = (timeZone != null && !timeZone.isEmpty()) ? java.time.ZoneId.of(timeZone) : java.time.ZoneId.systemDefault();
+        jsSb.append("{payDate:\"").append(d.payDate() != null ? ymd.format(d.payDate().atZone(_zone)) : "").append("\"");
         jsSb.append(",stockItem:\"").append(ej.apply(d.stockItemName())).append("\"");
         jsSb.append(",account:\"").append(ej.apply(d.accountName())).append("\"");
         jsSb.append(",net:").append(d.netAmount() != null ? d.netAmount().toPlainString() : "0");
@@ -81,13 +85,16 @@
     jsSb.append("];");
     String dividendDataJs = jsSb.toString();
 
-    // Nav 버튼 활성화 여부
+    // Nav 버튼 활성화 여부 (use client timezone if available)
     boolean isAllMode = "all".equals(rangeMode);
-    java.time.LocalDate today = java.time.LocalDate.now();
-    boolean canNext = !isAllMode && endDate != null && endDate.isBefore(today);
-    boolean canPrev = !isAllMode && startDate != null
+    java.time.ZoneId zone = (timeZone != null && !timeZone.isEmpty()) ? java.time.ZoneId.of(timeZone) : java.time.ZoneId.systemDefault();
+    java.time.LocalDate today = java.time.LocalDate.now(zone);
+    java.time.LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
+    java.time.LocalDate endLocal = endDate != null ? endDate.atZone(zone).toLocalDate() : null;
+    boolean canNext = !isAllMode && endLocal != null && endLocal.isBefore(today);
+    boolean canPrev = !isAllMode && startLocal != null
         && dataFirstDate != null && !dataFirstDate.isEmpty()
-        && startDate.isAfter(java.time.LocalDate.parse(dataFirstDate));
+        && startLocal.isAfter(java.time.LocalDate.parse(dataFirstDate));
 }
 
 <div id="dividendListFragment">
@@ -98,8 +105,8 @@
         canPrev = canPrev,
         canNext = canNext,
         rangeMode = rangeMode,
-        startDate = startDate,
-        endDate = endDate
+        startDate = startLocal,
+        endDate = endLocal
     )
 
     <!-- Filter & Search Form (collapsible) -->
@@ -107,9 +114,12 @@
         <summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
             상세 검색
-            @if(selectedAccountId != null || selectedStockItemId != null || startDate != null)
-                <span class="badge badge-xs badge-primary">필터 적용 중</span>
-            @endif
+            @template.stock.htmx.fragments.components.filterBadge(
+                selectedAccountId = selectedAccountId,
+                selectedStockItemId = selectedStockItemId,
+                startDate = startDate,
+                endDate = endDate
+            )
         </summary>
     <form id="dividendSearchForm" class="flex flex-wrap gap-2 mt-2 mb-2 items-end bg-base-100 p-2 rounded-box shadow-sm"
           hx-get="/stock/htmx/dividend/list"
@@ -121,10 +131,13 @@
         <div class="form-control w-full sm:w-auto">
             <label class="label p-1"><span class="label-text text-xs">기간</span></label>
             <div class="join">
-                <input type="date" name="startDate" id="startDateInput" class="input input-sm input-bordered join-item" value="${startDate != null ? startDate.toString() : ""}">
-                <input type="date" name="endDate" id="endDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.toString() : ""}">
+                <input type="date" name="dividendUiStartDate" id="startDateInput" class="input input-sm input-bordered join-item" value="${startDate != null ? startDate.atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString() : ""}">
+                <input type="date" name="dividendUiEndDate" id="endDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString() : ""}">
             </div>
         </div>
+        <input type="hidden" name="startDate" id="dividendStartInstantInput" value="${startDate != null ? startDate.toString() : ""}">
+        <input type="hidden" name="endDate" id="dividendEndInstantInput" value="${endDate != null ? endDate.toString() : ""}">
+        <input type="hidden" name="timeZone" id="dividendTimeZoneInput" value="${timeZone != null ? timeZone : ""}">
         <input type="hidden" name="rangeMode" id="dividendRangeModeInput" value="${rangeMode != null ? rangeMode : ""}">
 
         <div class="form-control w-full sm:w-auto">
@@ -373,8 +386,8 @@
     <script>
     (function() {
         $unsafe{dividendDataJs}
-        const filterStartDate = "${startDate != null ? startDate.format(DateTimeFormatter.ofPattern("yyyy-MM")) : ""}";
-        const filterEndDate = "${endDate != null ? endDate.format(DateTimeFormatter.ofPattern("yyyy-MM")) : ""}";
+        const filterStartDate = "${startLocal != null ? startLocal.format(DateTimeFormatter.ofPattern("yyyy-MM")) : ""}";
+        const filterEndDate = "${endLocal != null ? endLocal.format(DateTimeFormatter.ofPattern("yyyy-MM")) : ""}";
 
         const CHART_COLORS = [
             'rgba(99,102,241,0.8)','rgba(34,197,94,0.8)','rgba(251,191,36,0.8)',
@@ -541,6 +554,9 @@
                 formId:      'dividendSearchForm',
                 startId:     'startDateInput',
                 endId:       'endDateInput',
+                instantStartId: 'dividendStartInstantInput',
+                instantEndId:   'dividendEndInstantInput',
+                timeZoneId:     'dividendTimeZoneInput',
                 rangeModeId: 'dividendRangeModeInput',
                 btnClass:    'date-range-btn',
                 minDate:     '${dataFirstDate != null ? dataFirstDate : ""}'

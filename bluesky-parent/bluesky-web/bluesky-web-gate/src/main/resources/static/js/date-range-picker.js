@@ -88,11 +88,16 @@ window.DateRangePicker = (function () {
         var nextEls = document.querySelectorAll('.' + nextClassName);
         var start = getStart();
         var end = getEnd();
+        var mode = getMode();
         var maxDate = new Date(maxDateStr() + 'T00:00:00');
         var minDate = cfg.minDate ? new Date(cfg.minDate + 'T00:00:00') : null;
         var disablePrev = false;
         var disableNext = false;
-        if (start && end) {
+        // If mode is 'all' or start/end missing, disable both navigation buttons
+        if (mode === 'all' || !start || !end) {
+          disablePrev = true;
+          disableNext = true;
+        } else {
           var sDate = new Date(start + 'T00:00:00');
           var eDate = new Date(end + 'T00:00:00');
           disableNext = eDate >= maxDate;

@@ -43,321 +43,349 @@ import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
 public class StockDividendHtmxController extends StockBaseHtmxController {
 
-    public StockDividendHtmxController(
-            TradeProfitClient tradeProfitClient,
-            TradeClient tradeClient,
-            AccountClient accountClient,
-            StockItemClient stockItemClient,
-            DividendClient dividendClient) {
-        super(tradeProfitClient, tradeClient, accountClient, stockItemClient, dividendClient);
+  public StockDividendHtmxController(
+      TradeProfitClient tradeProfitClient,
+      TradeClient tradeClient,
+      AccountClient accountClient,
+      StockItemClient stockItemClient,
+      DividendClient dividendClient) {
+    super(tradeProfitClient, tradeClient, accountClient, stockItemClient, dividendClient);
+  }
+
+  @BlueskyPreAuthorize
+  @GetMapping("/dividend/list")
+  public String dividendList(
+      @RequestParam(required = false) List<UUID> accountIdList,
+      @RequestParam(required = false) List<UUID> stockItemIdList,
+      @RequestParam(required = false) Instant startDate,
+      @RequestParam(required = false) Instant endDate,
+      @RequestParam(required = false) String timeZone,
+      @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "15") int size,
+      @RequestParam(required = false) String sort,
+      @RequestParam(required = false) String rangeMode,
+      Model model) {
+    UUID userId = UserUtil.getUserId();
+    if (userId == null) {
+      model.addAttribute(ERROR_ATTRIBUTE, LOGIN_REQUIRED_MESSAGE);
+      return ERROR_VIEW;
     }
 
-    @BlueskyPreAuthorize
-    @GetMapping("/dividend/list")
-    public String dividendList(
-            @RequestParam(required = false) List<UUID> accountIdList,
-            @RequestParam(required = false) List<UUID> stockItemIdList,
-            @RequestParam(required = false) LocalDate startDate,
-            @RequestParam(required = false) LocalDate endDate,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "15") int size,
-            @RequestParam(required = false) String sort,
-            @RequestParam(required = false) String rangeMode,
-            Model model) {
-        UUID userId = UserUtil.getUserId();
-        if (userId == null) {
-            model.addAttribute(ERROR_ATTRIBUTE, LOGIN_REQUIRED_MESSAGE);
-            return ERROR_VIEW;
-        }
+    Instant startInstant = startDate;
+    Instant endInstant = endDate;
 
-        Instant startInstant = (startDate == null) ? null : startDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-        Instant endInstant = (endDate == null)
-                ? null
-                : endDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+    var request = new DividendRequest();
+    request.setUserId(userId);
+    request.setStartDate(startInstant);
+    request.setEndDate(endInstant);
 
-        var request = new DividendRequest();
-        request.setUserId(userId);
-        request.setStartDate(startInstant);
-        request.setEndDate(endInstant);
+    List<DividendResponse> dividends = dividendClient.findDividends(request.toParams());
 
-        List<DividendResponse> dividends = dividendClient.findDividends(request.toParams());
+    List<DividendResponse> globalDividends;
+    if (startDate == null && endDate == null) {
+      globalDividends = dividends;
+    } else {
+      var globalReq = new DividendRequest();
+      globalReq.setUserId(userId);
+      globalDividends = dividendClient.findDividends(globalReq.toParams());
+    }
+    ZoneId zone =
+        (timeZone != null && !timeZone.isEmpty()) ? ZoneId.of(timeZone) : ZoneId.systemDefault();
+    LocalDate dataFirstDate =
+        globalDividends.stream()
+            .map(
+                d -> {
+                  Instant payDate = d.payDate();
+                  Instant recordDate = d.recordDate();
+                  if (payDate == null && recordDate == null) return null;
+                  if (payDate == null) return recordDate;
+                  if (recordDate == null) return payDate;
+                  return payDate.isBefore(recordDate) ? payDate : recordDate;
+                })
+            .filter(inst -> inst != null)
+            .map(inst -> inst.atZone(zone).toLocalDate())
+            .min(Comparator.naturalOrder())
+            .orElse(null);
 
-        List<DividendResponse> globalDividends;
-        if (startDate == null && endDate == null) {
-            globalDividends = dividends;
-        } else {
-            var globalReq = new DividendRequest();
-            globalReq.setUserId(userId);
-            globalDividends = dividendClient.findDividends(globalReq.toParams());
-        }
-        LocalDate dataFirstDate = globalDividends.stream()
-                .map(
-                        d -> {
-                            Instant payDate = d.payDate();
-                            Instant recordDate = d.recordDate();
-                            if (payDate == null && recordDate == null)
-                                return null;
-                            if (payDate == null)
-                                return recordDate;
-                            if (recordDate == null)
-                                return payDate;
-                            return payDate.isBefore(recordDate) ? payDate : recordDate;
-                        })
-                .filter(inst -> inst != null)
-                .map(inst -> inst.atZone(ZoneId.systemDefault()).toLocalDate())
-                .min(Comparator.naturalOrder())
-                .orElse(null);
+    var dividendAccountIds =
+        dividends.stream().map(DividendResponse::accountId).collect(Collectors.toSet());
+    var dividendStockIds =
+        dividends.stream().map(DividendResponse::stockItemId).collect(Collectors.toSet());
 
-        var dividendAccountIds = dividends.stream().map(DividendResponse::accountId).collect(Collectors.toSet());
-        var dividendStockIds = dividends.stream().map(DividendResponse::stockItemId).collect(Collectors.toSet());
+    List<Account> accounts = accountClient.getAccountsByUserId(userId);
+    List<Account> filteredAccountList =
+        accounts.stream().filter(a -> dividendAccountIds.contains(a.id())).toList();
 
-        List<Account> accounts = accountClient.getAccountsByUserId(userId);
-        List<Account> filteredAccountList = accounts.stream().filter(a -> dividendAccountIds.contains(a.id())).toList();
+    Map<UUID, String> accountNames =
+        accounts.stream()
+            .collect(
+                Collectors.toMap(
+                    Account::id, Account::name, (left, right) -> left, LinkedHashMap::new));
+    Map<UUID, Boolean> taxDeferredMap =
+        accounts.stream()
+            .collect(
+                Collectors.toMap(
+                    Account::id,
+                    a ->
+                        a.jsonConfig() != null
+                            && Boolean.TRUE.equals(a.jsonConfig().get("isTaxDeferred")),
+                    (l, r) -> l));
 
-        Map<UUID, String> accountNames = accounts.stream()
-                .collect(
-                        Collectors.toMap(
-                                Account::id, Account::name, (left, right) -> left, LinkedHashMap::new));
-        Map<UUID, Boolean> taxDeferredMap = accounts.stream()
-                .collect(
-                        Collectors.toMap(
-                                Account::id,
-                                a -> a.jsonConfig() != null
-                                        && Boolean.TRUE.equals(a.jsonConfig().get("isTaxDeferred")),
-                                (l, r) -> l));
+    List<StockItem> stockItemList = stockItemClient.getStockItems();
+    List<StockItem> filteredStockItemList =
+        stockItemList.stream().filter(s -> dividendStockIds.contains(s.id())).toList();
+    Map<UUID, String> stockItemNames =
+        stockItemList.stream().collect(Collectors.toMap(StockItem::id, StockItem::name));
 
-        List<StockItem> stockItemList = stockItemClient.getStockItems();
-        List<StockItem> filteredStockItemList = stockItemList.stream().filter(s -> dividendStockIds.contains(s.id()))
-                .toList();
-        Map<UUID, String> stockItemNames = stockItemList.stream()
-                .collect(Collectors.toMap(StockItem::id, StockItem::name));
-
-        // 요청된 필터가 현재 기간에 존재하지 않으면 필터 자동 해제 (이전/다음 기간 이동 시 빈 결과 방지)
-        Set<UUID> filteredAccountIds = filteredAccountList.stream().map(Account::id).collect(Collectors.toSet());
-        List<UUID> effectiveAccountIdList = (accountIdList != null && !accountIdList.isEmpty()
+    // 요청된 필터가 현재 기간에 존재하지 않으면 필터 자동 해제 (이전/다음 기간 이동 시 빈 결과 방지)
+    Set<UUID> filteredAccountIds =
+        filteredAccountList.stream().map(Account::id).collect(Collectors.toSet());
+    List<UUID> effectiveAccountIdList =
+        (accountIdList != null
+                && !accountIdList.isEmpty()
                 && filteredAccountIds.containsAll(accountIdList))
-                        ? accountIdList
-                        : null;
+            ? accountIdList
+            : null;
 
-        Set<UUID> filteredStockIds = filteredStockItemList.stream().map(StockItem::id).collect(Collectors.toSet());
-        List<UUID> effectiveStockItemIdList = (stockItemIdList != null && !stockItemIdList.isEmpty()
+    Set<UUID> filteredStockIds =
+        filteredStockItemList.stream().map(StockItem::id).collect(Collectors.toSet());
+    List<UUID> effectiveStockItemIdList =
+        (stockItemIdList != null
+                && !stockItemIdList.isEmpty()
                 && filteredStockIds.containsAll(stockItemIdList))
-                        ? stockItemIdList
-                        : null;
+            ? stockItemIdList
+            : null;
 
-        List<DividendView> viewList = dividends.stream()
-                .filter(
-                        d -> (effectiveAccountIdList == null
-                                || effectiveAccountIdList.isEmpty()
-                                || effectiveAccountIdList.contains(d.accountId())))
-                .filter(
-                        d -> (effectiveStockItemIdList == null
-                                || effectiveStockItemIdList.isEmpty()
-                                || effectiveStockItemIdList.contains(d.stockItemId())))
-                .map(
-                        dividend -> {
-                            String accountName = accountNames.getOrDefault(dividend.accountId(), UNKNOWN_LABEL);
-                            String stockItemName = Optional.ofNullable(dividend.stockItemName())
-                                    .orElse(
-                                            Optional.ofNullable(dividend.stockItemId())
-                                                    .map(id -> stockItemNames.getOrDefault(id, UNKNOWN_LABEL))
-                                                    .orElse(UNKNOWN_LABEL));
+    List<DividendView> viewList =
+        dividends.stream()
+            .filter(
+                d ->
+                    (effectiveAccountIdList == null
+                        || effectiveAccountIdList.isEmpty()
+                        || effectiveAccountIdList.contains(d.accountId())))
+            .filter(
+                d ->
+                    (effectiveStockItemIdList == null
+                        || effectiveStockItemIdList.isEmpty()
+                        || effectiveStockItemIdList.contains(d.stockItemId())))
+            .map(
+                dividend -> {
+                  String accountName =
+                      accountNames.getOrDefault(dividend.accountId(), UNKNOWN_LABEL);
+                  String stockItemName =
+                      Optional.ofNullable(dividend.stockItemName())
+                          .orElse(
+                              Optional.ofNullable(dividend.stockItemId())
+                                  .map(id -> stockItemNames.getOrDefault(id, UNKNOWN_LABEL))
+                                  .orElse(UNKNOWN_LABEL));
 
-                            boolean isDeferred = taxDeferredMap.getOrDefault(dividend.accountId(), false);
+                  boolean isDeferred = taxDeferredMap.getOrDefault(dividend.accountId(), false);
 
-                            BigDecimal grossAmount = Optional.ofNullable(dividend.grossAmount())
-                                    .orElse(BigDecimal.ZERO);
-                            BigDecimal tax = isDeferred
-                                    ? BigDecimal.ZERO
-                                    : Optional.ofNullable(dividend.tax()).orElse(BigDecimal.ZERO);
-                            BigDecimal netAmount = isDeferred
-                                    ? grossAmount
-                                    : Optional.ofNullable(dividend.netAmount())
-                                            .orElse(grossAmount.subtract(tax));
+                  BigDecimal grossAmount =
+                      Optional.ofNullable(dividend.grossAmount()).orElse(BigDecimal.ZERO);
+                  BigDecimal tax =
+                      isDeferred
+                          ? BigDecimal.ZERO
+                          : Optional.ofNullable(dividend.tax()).orElse(BigDecimal.ZERO);
+                  BigDecimal netAmount =
+                      isDeferred
+                          ? grossAmount
+                          : Optional.ofNullable(dividend.netAmount())
+                              .orElse(grossAmount.subtract(tax));
 
-                            BigDecimal taxableAmount = BigDecimal.ZERO;
-                            if (!isDeferred) {
-                                if (dividend.taxableAmount() != null) {
-                                    taxableAmount = dividend.taxableAmount();
-                                } else if (dividend.taxPerShare() != null && dividend.quantity() != null) {
-                                    taxableAmount = dividend.taxPerShare()
-                                            .multiply(BigDecimal.valueOf(dividend.quantity()));
-                                }
-                            }
+                  BigDecimal taxableAmount = BigDecimal.ZERO;
+                  if (!isDeferred) {
+                    if (dividend.taxableAmount() != null) {
+                      taxableAmount = dividend.taxableAmount();
+                    } else if (dividend.taxPerShare() != null && dividend.quantity() != null) {
+                      taxableAmount =
+                          dividend.taxPerShare().multiply(BigDecimal.valueOf(dividend.quantity()));
+                    }
+                  }
 
-                            return new DividendView(
-                                    dividend.id(),
-                                    dividend.accountId(),
-                                    accountName,
-                                    dividend.stockItemId(),
-                                    stockItemName,
-                                    grossAmount,
-                                    tax,
-                                    taxableAmount,
-                                    netAmount,
-                                    dividend.recordDate(),
-                                    dividend.payDate());
-                        })
-                .collect(Collectors.toCollection(ArrayList::new));
+                  return new DividendView(
+                      dividend.id(),
+                      dividend.accountId(),
+                      accountName,
+                      dividend.stockItemId(),
+                      stockItemName,
+                      grossAmount,
+                      tax,
+                      taxableAmount,
+                      netAmount,
+                      dividend.recordDate(),
+                      dividend.payDate());
+                })
+            .collect(Collectors.toCollection(ArrayList::new));
 
-        if (sort != null && !sort.isEmpty()) {
-            String[] parts = sort.split(",");
-            String field = parts[0];
-            String direction = parts.length > 1 ? parts[1] : "asc";
+    if (sort != null && !sort.isEmpty()) {
+      String[] parts = sort.split(",");
+      String field = parts[0];
+      String direction = parts.length > 1 ? parts[1] : "asc";
 
-            Comparator<DividendView> comparator = switch (field) {
-                case "payDate" ->
-                    Comparator.comparing(
-                            DividendView::payDate, Comparator.nullsLast(Comparator.naturalOrder()));
-                case "accountName" ->
-                    Comparator.comparing(
-                            DividendView::accountName, Comparator.nullsLast(Comparator.naturalOrder()));
-                case "stockItemName" ->
-                    Comparator.comparing(
-                            DividendView::stockItemName, Comparator.nullsLast(Comparator.naturalOrder()));
-                case "grossAmount" ->
-                    Comparator.comparing(
-                            DividendView::grossAmount, Comparator.nullsLast(Comparator.naturalOrder()));
-                case "netAmount" ->
-                    Comparator.comparing(
-                            DividendView::netAmount, Comparator.nullsLast(Comparator.naturalOrder()));
-                case "tax" ->
-                    Comparator.comparing(
-                            DividendView::tax, Comparator.nullsLast(Comparator.naturalOrder()));
-                case "taxableAmount" ->
-                    Comparator.comparing(
-                            DividendView::taxableAmount, Comparator.nullsLast(Comparator.naturalOrder()));
-                default -> null;
-            };
+      Comparator<DividendView> comparator =
+          switch (field) {
+            case "payDate" ->
+                Comparator.comparing(
+                    DividendView::payDate, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "accountName" ->
+                Comparator.comparing(
+                    DividendView::accountName, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "stockItemName" ->
+                Comparator.comparing(
+                    DividendView::stockItemName, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "grossAmount" ->
+                Comparator.comparing(
+                    DividendView::grossAmount, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "netAmount" ->
+                Comparator.comparing(
+                    DividendView::netAmount, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "tax" ->
+                Comparator.comparing(
+                    DividendView::tax, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "taxableAmount" ->
+                Comparator.comparing(
+                    DividendView::taxableAmount, Comparator.nullsLast(Comparator.naturalOrder()));
+            default -> null;
+          };
 
-            if (comparator != null) {
-                if ("desc".equalsIgnoreCase(direction)) {
-                    comparator = comparator.reversed();
-                }
-                viewList.sort(comparator);
-            }
-        } else {
-            viewList.sort(
-                    Comparator.comparing(
-                            DividendView::payDate, Comparator.nullsLast(Comparator.reverseOrder())));
+      if (comparator != null) {
+        if ("desc".equalsIgnoreCase(direction)) {
+          comparator = comparator.reversed();
         }
-
-        if (size <= 0)
-            size = 15;
-
-        boolean isSearch = (effectiveAccountIdList != null && !effectiveAccountIdList.isEmpty())
-                || (effectiveStockItemIdList != null && !effectiveStockItemIdList.isEmpty())
-                || startDate != null
-                || endDate != null;
-
-        if (isSearch) {
-            size = Math.max(viewList.size(), 1);
-        }
-
-        int totalItems = viewList.size();
-        int totalPages = (int) Math.ceil((double) totalItems / size);
-        int currentPage = Math.max(1, Math.min(page, totalPages));
-        if (totalPages == 0)
-            currentPage = 1;
-
-        int fromIndex = (currentPage - 1) * size;
-        int toIndex = Math.min(fromIndex + size, totalItems);
-        List<DividendView> pagedList = (fromIndex < totalItems) ? viewList.subList(fromIndex, toIndex)
-                : Collections.emptyList();
-
-        BigDecimal totalGrossAmount = pagedList.stream().map(DividendView::grossAmount).reduce(BigDecimal.ZERO,
-                BigDecimal::add);
-        BigDecimal totalNetAmount = pagedList.stream().map(DividendView::netAmount).reduce(BigDecimal.ZERO,
-                BigDecimal::add);
-        BigDecimal totalTax = pagedList.stream().map(DividendView::tax).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal totalTaxableAmount = pagedList.stream()
-                .map(DividendView::taxableAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalAllGrossAmount = viewList.stream().map(DividendView::grossAmount).reduce(BigDecimal.ZERO,
-                BigDecimal::add);
-        BigDecimal totalAllNetAmount = viewList.stream().map(DividendView::netAmount).reduce(BigDecimal.ZERO,
-                BigDecimal::add);
-        BigDecimal totalAllTaxableAmount = viewList.stream().map(DividendView::taxableAmount).reduce(BigDecimal.ZERO,
-                BigDecimal::add);
-
-        BigDecimal prevPeriodNetAmount = null;
-        LocalDate prevStartDate = null;
-        LocalDate prevEndDate = null;
-        if (startDate != null && endDate != null) {
-            long durationDays = ChronoUnit.DAYS.between(startDate, endDate) + 1;
-            prevStartDate = startDate.minusDays(durationDays);
-            prevEndDate = startDate.minusDays(1);
-
-            Instant prevStartInstant = prevStartDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-            Instant prevEndInstant = prevEndDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
-
-            var prevRequest = new DividendRequest();
-            prevRequest.setUserId(userId);
-            prevRequest.setStartDate(prevStartInstant);
-            prevRequest.setEndDate(prevEndInstant);
-
-            final List<UUID> finalAccountIdList = effectiveAccountIdList;
-            final List<UUID> finalStockItemIdList = effectiveStockItemIdList;
-            List<DividendResponse> prevDividends = dividendClient.findDividends(prevRequest.toParams());
-            prevPeriodNetAmount = prevDividends.stream()
-                    .filter(
-                            d -> (finalAccountIdList == null
-                                    || finalAccountIdList.isEmpty()
-                                    || finalAccountIdList.contains(d.accountId())))
-                    .filter(
-                            d -> (finalStockItemIdList == null
-                                    || finalStockItemIdList.isEmpty()
-                                    || finalStockItemIdList.contains(d.stockItemId())))
-                    .map(
-                            d -> {
-                                boolean isDeferred = taxDeferredMap.getOrDefault(d.accountId(), false);
-                                BigDecimal gross = Optional.ofNullable(d.grossAmount()).orElse(BigDecimal.ZERO);
-                                if (isDeferred)
-                                    return gross;
-                                BigDecimal tax2 = Optional.ofNullable(d.tax()).orElse(BigDecimal.ZERO);
-                                return Optional.ofNullable(d.netAmount()).orElse(gross.subtract(tax2));
-                            })
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-        }
-
-        var pageImpl = new PageImpl<>(pagedList, PageRequest.of(currentPage - 1, size), totalItems);
-        var pagination = new Pagination(pageImpl);
-
-        model.addAttribute("dividendList", pagedList);
-        model.addAttribute("allDividendList", viewList);
-        model.addAttribute("pagination", pagination);
-        model.addAttribute("totalItems", totalItems);
-        model.addAttribute("totalPages", totalPages);
-        model.addAttribute("currentPage", currentPage);
-        model.addAttribute("size", size);
-        model.addAttribute("accountList", filteredAccountList);
-        model.addAttribute("stockItemList", filteredStockItemList);
-        model.addAttribute(
-                "selectedAccountId",
-                (effectiveAccountIdList != null && !effectiveAccountIdList.isEmpty()) ? effectiveAccountIdList.get(0)
-                        : null);
-        model.addAttribute(
-                "selectedStockItemId",
-                (effectiveStockItemIdList != null && !effectiveStockItemIdList.isEmpty())
-                        ? effectiveStockItemIdList.get(0)
-                        : null);
-        model.addAttribute("startDate", startDate);
-        model.addAttribute("endDate", endDate);
-        model.addAttribute("sort", sort);
-        model.addAttribute("totalGrossAmount", totalGrossAmount);
-        model.addAttribute("totalNetAmount", totalNetAmount);
-        model.addAttribute("totalTax", totalTax);
-        model.addAttribute("totalTaxableAmount", totalTaxableAmount);
-        model.addAttribute("totalAllGrossAmount", totalAllGrossAmount);
-        model.addAttribute("totalAllNetAmount", totalAllNetAmount);
-        model.addAttribute("totalAllTaxableAmount", totalAllTaxableAmount);
-        model.addAttribute("prevPeriodNetAmount", prevPeriodNetAmount);
-        model.addAttribute("prevStartDate", prevStartDate);
-        model.addAttribute("prevEndDate", prevEndDate);
-        model.addAttribute("rangeMode", rangeMode);
-        model.addAttribute("dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");
-
-        return "stock/htmx/fragments/tabsDividendHistory";
+        viewList.sort(comparator);
+      }
+    } else {
+      viewList.sort(
+          Comparator.comparing(
+              DividendView::payDate, Comparator.nullsLast(Comparator.reverseOrder())));
     }
+
+    if (size <= 0) size = 15;
+
+    boolean isSearch =
+        (effectiveAccountIdList != null && !effectiveAccountIdList.isEmpty())
+            || (effectiveStockItemIdList != null && !effectiveStockItemIdList.isEmpty())
+            || startDate != null
+            || endDate != null;
+
+    if (isSearch) {
+      size = Math.max(viewList.size(), 1);
+    }
+
+    int totalItems = viewList.size();
+    int totalPages = (int) Math.ceil((double) totalItems / size);
+    int currentPage = Math.max(1, Math.min(page, totalPages));
+    if (totalPages == 0) currentPage = 1;
+
+    int fromIndex = (currentPage - 1) * size;
+    int toIndex = Math.min(fromIndex + size, totalItems);
+    List<DividendView> pagedList =
+        (fromIndex < totalItems) ? viewList.subList(fromIndex, toIndex) : Collections.emptyList();
+
+    BigDecimal totalGrossAmount =
+        pagedList.stream().map(DividendView::grossAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalNetAmount =
+        pagedList.stream().map(DividendView::netAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalTax =
+        pagedList.stream().map(DividendView::tax).reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalTaxableAmount =
+        pagedList.stream()
+            .map(DividendView::taxableAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    BigDecimal totalAllGrossAmount =
+        viewList.stream().map(DividendView::grossAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalAllNetAmount =
+        viewList.stream().map(DividendView::netAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalAllTaxableAmount =
+        viewList.stream().map(DividendView::taxableAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    BigDecimal prevPeriodNetAmount = null;
+    LocalDate prevStartDate = null;
+    LocalDate prevEndDate = null;
+    if (startDate != null && endDate != null) {
+      // convert Instants to LocalDate in the request's timezone (reuse earlier `zone`)
+      LocalDate startLocal = startDate.atZone(zone).toLocalDate();
+      LocalDate endLocal = endDate.atZone(zone).toLocalDate();
+
+      long durationDays = ChronoUnit.DAYS.between(startLocal, endLocal) + 1;
+      prevStartDate = startLocal.minusDays(durationDays);
+      prevEndDate = startLocal.minusDays(1);
+
+      Instant prevStartInstant = prevStartDate.atStartOfDay(zone).toInstant();
+      Instant prevEndInstant = prevEndDate.plusDays(1).atStartOfDay(zone).toInstant();
+
+      var prevRequest = new DividendRequest();
+      prevRequest.setUserId(userId);
+      prevRequest.setStartDate(prevStartInstant);
+      prevRequest.setEndDate(prevEndInstant);
+
+      final List<UUID> finalAccountIdList = effectiveAccountIdList;
+      final List<UUID> finalStockItemIdList = effectiveStockItemIdList;
+      List<DividendResponse> prevDividends = dividendClient.findDividends(prevRequest.toParams());
+      prevPeriodNetAmount =
+          prevDividends.stream()
+              .filter(
+                  d ->
+                      (finalAccountIdList == null
+                          || finalAccountIdList.isEmpty()
+                          || finalAccountIdList.contains(d.accountId())))
+              .filter(
+                  d ->
+                      (finalStockItemIdList == null
+                          || finalStockItemIdList.isEmpty()
+                          || finalStockItemIdList.contains(d.stockItemId())))
+              .map(
+                  d -> {
+                    boolean isDeferred = taxDeferredMap.getOrDefault(d.accountId(), false);
+                    BigDecimal gross = Optional.ofNullable(d.grossAmount()).orElse(BigDecimal.ZERO);
+                    if (isDeferred) return gross;
+                    BigDecimal tax2 = Optional.ofNullable(d.tax()).orElse(BigDecimal.ZERO);
+                    return Optional.ofNullable(d.netAmount()).orElse(gross.subtract(tax2));
+                  })
+              .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    var pageImpl = new PageImpl<>(pagedList, PageRequest.of(currentPage - 1, size), totalItems);
+    var pagination = new Pagination(pageImpl);
+
+    model.addAttribute("dividendList", pagedList);
+    model.addAttribute("allDividendList", viewList);
+    model.addAttribute("pagination", pagination);
+    model.addAttribute("totalItems", totalItems);
+    model.addAttribute("totalPages", totalPages);
+    model.addAttribute("currentPage", currentPage);
+    model.addAttribute("size", size);
+    model.addAttribute("accountList", filteredAccountList);
+    model.addAttribute("stockItemList", filteredStockItemList);
+    model.addAttribute(
+        "selectedAccountId",
+        (effectiveAccountIdList != null && !effectiveAccountIdList.isEmpty())
+            ? effectiveAccountIdList.get(0)
+            : null);
+    model.addAttribute(
+        "selectedStockItemId",
+        (effectiveStockItemIdList != null && !effectiveStockItemIdList.isEmpty())
+            ? effectiveStockItemIdList.get(0)
+            : null);
+    model.addAttribute("startDate", startDate);
+    model.addAttribute("endDate", endDate);
+    model.addAttribute("timeZone", timeZone);
+    model.addAttribute("sort", sort);
+    model.addAttribute("totalGrossAmount", totalGrossAmount);
+    model.addAttribute("totalNetAmount", totalNetAmount);
+    model.addAttribute("totalTax", totalTax);
+    model.addAttribute("totalTaxableAmount", totalTaxableAmount);
+    model.addAttribute("totalAllGrossAmount", totalAllGrossAmount);
+    model.addAttribute("totalAllNetAmount", totalAllNetAmount);
+    model.addAttribute("totalAllTaxableAmount", totalAllTaxableAmount);
+    model.addAttribute("prevPeriodNetAmount", prevPeriodNetAmount);
+    model.addAttribute("prevStartDate", prevStartDate);
+    model.addAttribute("prevEndDate", prevEndDate);
+    model.addAttribute("rangeMode", rangeMode);
+    model.addAttribute("dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");
+
+    return "stock/htmx/fragments/tabsDividendHistory";
+  }
 }

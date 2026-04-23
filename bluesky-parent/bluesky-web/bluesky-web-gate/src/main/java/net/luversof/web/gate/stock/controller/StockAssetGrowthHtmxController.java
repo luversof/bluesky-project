@@ -15,11 +15,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import net.luversof.web.gate.stock.constant.TradeType;
-import net.luversof.web.gate.stock.domain.StockItem;
-import net.luversof.web.gate.stock.dto.request.TradeSearchRequest;
-import net.luversof.web.gate.stock.dto.response.TradeResponse;
-
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -30,9 +25,13 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.gate.stock.constant.TradeType;
+import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
+import net.luversof.web.gate.stock.dto.request.TradeSearchRequest;
 import net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem;
 import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint;
+import net.luversof.web.gate.stock.dto.response.TradeResponse;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
@@ -82,11 +81,16 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     }
     request.setUserId(userId);
     if (from != null) {
-      request.setStartDate(LocalDate.parse(from).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+      request.setStartDate(
+          LocalDate.parse(from).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
     }
     if (to != null) {
       // preserve original behavior: treat 'to' as exclusive end (start of next day)
-      request.setEndDate(LocalDate.parse(to).plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+      request.setEndDate(
+          LocalDate.parse(to)
+              .plusDays(1)
+              .atStartOfDay(java.time.ZoneId.systemDefault())
+              .toInstant());
     }
     var params = request.toParams();
     params.add("granularity", gran != null ? gran : "AUTO");
@@ -137,9 +141,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
   }
 
   @GetMapping("/holdings-snapshot")
-  public String holdingsSnapshot(
-      @RequestParam(required = false) String date,
-      Model model) {
+  public String holdingsSnapshot(@RequestParam(required = false) String date, Model model) {
     var userId = UserUtil.getUserId();
     if (userId == null) {
       return ERROR_VIEW;
@@ -181,47 +183,67 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       return "stock/htmx/trade-history";
     }
 
-    Instant tradeStart = (from != null && !from.isBlank())
-        ? LocalDate.parse(from).atStartOfDay(ZoneOffset.UTC).toInstant()
-        : null;
-    Instant tradeEnd = (to != null && !to.isBlank())
-        ? LocalDate.parse(to).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()
-        : null;
+    Instant tradeStart =
+        (from != null && !from.isBlank())
+            ? LocalDate.parse(from).atStartOfDay(ZoneOffset.UTC).toInstant()
+            : null;
+    Instant tradeEnd =
+        (to != null && !to.isBlank())
+            ? LocalDate.parse(to).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()
+            : null;
 
     var tradeReq = new TradeSearchRequest(userId, null, null, tradeStart, tradeEnd);
     var allFromApi = tradeClient.findTrades(tradeReq.toParams());
 
     List<StockItem> stockItems = stockItemClient.getStockItems();
-    Map<UUID, String> stockItemNames = stockItems.stream()
-        .collect(Collectors.toMap(StockItem::id, StockItem::name, (l, r) -> l));
+    Map<UUID, String> stockItemNames =
+        stockItems.stream().collect(Collectors.toMap(StockItem::id, StockItem::name, (l, r) -> l));
 
-    var allTrades = allFromApi.stream()
-        .map(t -> new TradeResponse(
-            t.id(), t.accountId(), t.stockItemId(),
-            stockItemNames.getOrDefault(t.stockItemId(), UNKNOWN_LABEL),
-            t.type(), t.quantity(), t.price(), t.fee(), t.tax(),
-            t.amount(), t.realizedProfit(), t.tradeDate()))
-        .sorted(Comparator.comparing(TradeResponse::tradeDate, Comparator.nullsLast(Comparator.reverseOrder())))
-        .collect(Collectors.toCollection(ArrayList::new));
+    var allTrades =
+        allFromApi.stream()
+            .map(
+                t ->
+                    new TradeResponse(
+                        t.id(),
+                        t.accountId(),
+                        t.stockItemId(),
+                        stockItemNames.getOrDefault(t.stockItemId(), UNKNOWN_LABEL),
+                        t.type(),
+                        t.quantity(),
+                        t.price(),
+                        t.fee(),
+                        t.tax(),
+                        t.amount(),
+                        t.realizedProfit(),
+                        t.tradeDate()))
+            .sorted(
+                Comparator.comparing(
+                    TradeResponse::tradeDate, Comparator.nullsLast(Comparator.reverseOrder())))
+            .collect(Collectors.toCollection(ArrayList::new));
 
-    BigDecimal totalBuy = allTrades.stream()
-        .filter(t -> t.type() == TradeType.BUY)
-        .map(t -> t.amount() != null ? t.amount() : BigDecimal.ZERO)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalSell = allTrades.stream()
-        .filter(t -> t.type() == TradeType.SELL)
-        .map(t -> t.amount() != null ? t.amount() : BigDecimal.ZERO)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalRealizedProfit = allTrades.stream()
-        .filter(t -> t.type() == TradeType.SELL)
-        .map(t -> t.realizedProfit() != null ? t.realizedProfit() : BigDecimal.ZERO)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalFee = allTrades.stream()
-        .map(t -> t.fee() != null ? t.fee() : BigDecimal.ZERO)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalTax = allTrades.stream()
-        .map(t -> t.tax() != null ? t.tax() : BigDecimal.ZERO)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalBuy =
+        allTrades.stream()
+            .filter(t -> t.type() == TradeType.BUY)
+            .map(t -> t.amount() != null ? t.amount() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalSell =
+        allTrades.stream()
+            .filter(t -> t.type() == TradeType.SELL)
+            .map(t -> t.amount() != null ? t.amount() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalRealizedProfit =
+        allTrades.stream()
+            .filter(t -> t.type() == TradeType.SELL)
+            .map(t -> t.realizedProfit() != null ? t.realizedProfit() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalFee =
+        allTrades.stream()
+            .map(t -> t.fee() != null ? t.fee() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalTax =
+        allTrades.stream()
+            .map(t -> t.tax() != null ? t.tax() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     int totalItems = allTrades.size();
     if (size <= 0) size = 20;
@@ -229,15 +251,15 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     int currentPage = Math.max(1, Math.min(page, Math.max(1, totalPages)));
     int fromIdx = (currentPage - 1) * size;
     int toIdx = Math.min(fromIdx + size, totalItems);
-    List<TradeResponse> pagedTrades = fromIdx < totalItems
-        ? allTrades.subList(fromIdx, toIdx)
-        : Collections.emptyList();
+    List<TradeResponse> pagedTrades =
+        fromIdx < totalItems ? allTrades.subList(fromIdx, toIdx) : Collections.emptyList();
 
     String periodFrom = (from != null && !from.isBlank()) ? from : "";
     String periodTo = (to != null && !to.isBlank()) ? to : "";
-    String tradePeriod = periodFrom.isEmpty() && periodTo.isEmpty()
-        ? "전체"
-        : periodFrom + (periodTo.isEmpty() ? "" : " ~ " + periodTo);
+    String tradePeriod =
+        periodFrom.isEmpty() && periodTo.isEmpty()
+            ? "전체"
+            : periodFrom + (periodTo.isEmpty() ? "" : " ~ " + periodTo);
 
     model.addAttribute("trades", pagedTrades);
     model.addAttribute("totalItems", totalItems);

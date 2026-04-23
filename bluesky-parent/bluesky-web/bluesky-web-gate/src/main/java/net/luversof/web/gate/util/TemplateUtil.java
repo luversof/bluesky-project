@@ -61,7 +61,8 @@ public final class TemplateUtil {
    * runtime (e.g., missing class), the method returns an empty list instead of throwing
    * `UnresolvedCompilationErrors` or `NoClassDefFoundError`.
    */
-  @DevCheckDescription("Returns the menu list for the given key. If the WebCommonUtil or the Menu type is not available at runtime, returns an empty list.")
+  @DevCheckDescription(
+      "Returns the menu list for the given key. If the WebCommonUtil or the Menu type is not available at runtime, returns an empty list.")
   public static List<?> getMenuList(String key) {
     try {
       return WebCommonUtil.getMenuList(key);

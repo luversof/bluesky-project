@@ -1,18 +1,22 @@
 package net.luversof.web.gate.stock.dto.request;
 
 import java.time.Instant;
-import org.springframework.format.annotation.DateTimeFormat;
 import java.util.List;
 import java.util.UUID;
+
+import org.springframework.format.annotation.DateTimeFormat;
 
 public class TradeProfitRequest {
   UUID userId;
   List<UUID> accountIdList;
   List<UUID> stockItemIdList;
+
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
   Instant startDate;
+
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
   Instant endDate;
+
   String timeZone;
   TradeProfitRequestGroup groupBy;
 

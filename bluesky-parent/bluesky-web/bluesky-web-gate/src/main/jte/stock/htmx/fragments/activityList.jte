@@ -2,13 +2,14 @@
 @import net.luversof.web.gate.stock.controller.StockTradeHtmxController.Activity
 @import java.time.ZoneId
 @import java.time.format.DateTimeFormatter
-@import java.time.LocalDate
+@import java.time.Instant
 @import java.math.BigDecimal
 @import java.text.DecimalFormat
 
 @param List<Activity> activities
-@param LocalDate startDate = null
-@param LocalDate endDate = null
+@param java.time.Instant startDate = null
+@param java.time.Instant endDate = null
+@param String timeZone = null
 @param String rangeMode = null
 @param String dataFirstDate = null
 @param long buyCount = 0
@@ -27,30 +28,35 @@
 
 <div id="activityListFragment">
 
-    <!-- Quick Date Selector -->
-    <div class="flex flex-wrap gap-2 mb-3 items-center">
-        <span class="text-xs opacity-50 mr-1">기간</span>
-        <button type="button" class="btn btn-xs btn-ghost" onclick="activityPicker.jumpToEdge('start')">&#171;</button>
-        <button type="button" class="btn btn-xs btn-ghost" onclick="activityPicker.shift(-1)">&#8249; 이전</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("mtd") ? "btn-primary" : ""}" onclick="activityPicker.set('mtd',this)">이번달</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : ""}" onclick="activityPicker.set(1,this)">1개월</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("3") ? "btn-primary" : ""}" onclick="activityPicker.set(3,this)">3개월</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("6") ? "btn-primary" : ""}" onclick="activityPicker.set(6,this)">6개월</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("ytd") ? "btn-primary" : ""}" onclick="activityPicker.set('ytd',this)">올해</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("12") ? "btn-primary" : ""}" onclick="activityPicker.set(12,this)">1년</button>
-        <button type="button" class="btn btn-xs date-range-btn ${rangeMode != null && rangeMode.equals("all") ? "btn-primary" : ""}" onclick="activityPicker.set(0,this)">전체</button>
-        <button type="button" class="btn btn-xs btn-ghost" onclick="activityPicker.shift(1)">다음 &#8250;</button>
-        <button type="button" class="btn btn-xs btn-ghost" onclick="activityPicker.jumpToEdge('end')">&#187;</button>
-    </div>
+    !{
+        boolean isAllMode = "all".equals(rangeMode);
+        java.time.ZoneId zone = (timeZone != null && !timeZone.isEmpty()) ? java.time.ZoneId.of(timeZone) : java.time.ZoneId.systemDefault();
+        java.time.LocalDate today = java.time.LocalDate.now(zone);
+        java.time.LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
+        java.time.LocalDate endLocal = endDate != null ? endDate.atZone(zone).toLocalDate() : null;
+        boolean canNext = !isAllMode && endLocal != null && endLocal.isBefore(today);
+        boolean canPrev = !isAllMode && startLocal != null && dataFirstDate != null && !dataFirstDate.isEmpty()
+            && startLocal.isAfter(java.time.LocalDate.parse(dataFirstDate));
+    }
+    @template.stock.htmx.fragments.dateRangeNavBar(
+        pickerName = "activityPicker",
+        btnClass = "date-range-btn",
+        canPrev = canPrev,
+        canNext = canNext,
+        rangeMode = rangeMode,
+        startDate = startLocal,
+        endDate = endLocal
+    )
 
     <!-- Filter Form (collapsible) -->
     <details class="mb-4"$unsafe{startDate != null ? " open" : ""}>
         <summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
             상세 검색
-            @if(startDate != null)
-                <span class="badge badge-xs badge-primary">${startDate.toString()} ~ ${endDate != null ? endDate.toString() : ""}</span>
-            @endif
+            @template.stock.htmx.fragments.components.filterBadge(
+                startDate = startDate,
+                endDate = endDate
+            )
         </summary>
     <form id="activitySearchForm" class="flex flex-wrap gap-2 mt-2 mb-2 items-end bg-base-100 p-2 rounded-box shadow-sm"
           hx-get="/stock/htmx/activity-list"
@@ -61,11 +67,14 @@
         <div class="form-control w-full sm:w-auto">
             <label class="label p-1"><span class="label-text text-xs">기간</span></label>
             <div class="join">
-                <input type="date" name="startDate" id="activityStartDateInput" class="input input-sm input-bordered join-item" value="${startDate != null ? startDate.toString() : ""}">
-                <input type="date" name="endDate" id="activityEndDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.toString() : ""}">
+                <input type="date" name="activityUiStartDate" id="activityStartDateInput" class="input input-sm input-bordered join-item" value="${startDate != null ? startDate.atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString() : ""}">
+                <input type="date" name="activityUiEndDate" id="activityEndDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString() : ""}">
             </div>
         </div>
         <input type="hidden" name="rangeMode" id="activityRangeModeInput" value="${rangeMode != null ? rangeMode : ""}">
+        <input type="hidden" name="startDate" id="activityStartInstantInput" value="${startDate != null ? startDate.toString() : ""}">
+        <input type="hidden" name="endDate" id="activityEndInstantInput" value="${endDate != null ? endDate.toString() : ""}">
+        <input type="hidden" name="timeZone" id="activityTimeZoneInput" value="${timeZone != null ? timeZone : ""}">
         <button type="submit" class="btn btn-sm btn-primary">조회</button>
         <button type="button" class="btn btn-sm text-xs"
                 hx-get="/stock/htmx/activity-list"
@@ -185,6 +194,9 @@
             formId:      'activitySearchForm',
             startId:     'activityStartDateInput',
             endId:       'activityEndDateInput',
+            instantStartId: 'activityStartInstantInput',
+            instantEndId:   'activityEndInstantInput',
+            timeZoneId:     'activityTimeZoneInput',
             rangeModeId: 'activityRangeModeInput',
             btnClass:    'date-range-btn',
             minDate:     '${dataFirstDate != null ? dataFirstDate : ""}'

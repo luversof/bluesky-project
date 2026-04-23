@@ -38,10 +38,10 @@
             @else
                 <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center gap-1">
-                        <button type="button" id="btnFirst" class="btn btn-xs btn-ghost btn-circle" style="opacity:0.2;" onclick="assetPicker.jumpToEdge('start')" title="제일 앞으로">
+                        <button type="button" id="btnFirst" class="btn btn-xs btn-ghost btn-circle date-range-prev" style="opacity:0.2;" onclick="assetPicker.jumpToEdge('start')" title="제일 앞으로">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
                         </button>
-                        <button type="button" id="btnPrev" class="btn btn-xs btn-ghost btn-circle" style="opacity:0.2;" onclick="assetPicker.shift(-1)" title="이전 기간">
+                        <button type="button" id="btnPrev" class="btn btn-xs btn-ghost btn-circle date-range-prev" style="opacity:0.2;" onclick="assetPicker.shift(-1)" title="이전 기간">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                         </button>
                         <div class="flex gap-1" id="quickRangeButtons">
@@ -54,10 +54,10 @@
                             <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(36,this)">3년</button>
                             <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(0,this)">전체</button>
                         </div>
-                        <button type="button" id="btnNext" class="btn btn-xs btn-ghost btn-circle" onclick="assetPicker.shift(1)" title="다음 기간">
+                        <button type="button" id="btnNext" class="btn btn-xs btn-ghost btn-circle date-range-next" onclick="assetPicker.shift(1)" title="다음 기간">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                         </button>
-                        <button type="button" id="btnLast" class="btn btn-xs btn-ghost btn-circle" onclick="assetPicker.jumpToEdge('end')" title="제일 뒤로">
+                        <button type="button" id="btnLast" class="btn btn-xs btn-ghost btn-circle date-range-next" onclick="assetPicker.jumpToEdge('end')" title="제일 뒤로">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
                         </button>
                         <span id="assetRangeDisplay" class="text-xs text-base-content/40 ml-1"></span>

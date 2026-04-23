@@ -1,7 +1,8 @@
 @import java.util.List
 @import java.util.Map
 @import java.util.UUID
-@import java.time.LocalDate
+@import java.time.Instant
+@import java.time.ZoneId
 @import java.math.BigDecimal
 @import net.luversof.web.gate.stock.dto.response.TradeResponse
 @import net.luversof.web.common.menu.domain.Pagination
@@ -23,8 +24,9 @@
 @param Map<UUID, String> accountNames
 @param UUID selectedAccountId
 @param UUID selectedStockItemId
-@param LocalDate startDate
-@param LocalDate endDate
+@param java.time.Instant startDate
+@param java.time.Instant endDate
+@param String timeZone = null
 @param String sort
 @param BigDecimal totalFee
 @param BigDecimal totalTax
@@ -60,7 +62,9 @@
     for (int ci = 0; ci < chartList.size(); ci++) {
         TradeResponse t = chartList.get(ci);
         if (ci > 0) jsSb.append(",");
-        jsSb.append("{tradeDate:\"").append(t.tradeDate() != null ? ymd.format(t.tradeDate().atZone(java.time.ZoneId.systemDefault())) : "").append("\"");
+        // Use the user's timezone (if provided) when rendering trade dates in JS payload
+        java.time.ZoneId _zone = (timeZone != null && !timeZone.isEmpty()) ? java.time.ZoneId.of(timeZone) : java.time.ZoneId.systemDefault();
+        jsSb.append("{tradeDate:\"").append(t.tradeDate() != null ? ymd.format(t.tradeDate().atZone(_zone)) : "").append("\"");
         jsSb.append(",stockItem:\"").append(ej.apply(t.stockItemName())).append("\"");
         jsSb.append(",account:\"").append(ej.apply(accountNames != null ? accountNames.getOrDefault(t.accountId(), "") : "")).append("\"");
         jsSb.append(",type:\"").append(t.type() != null ? t.type().name() : "").append("\"");
@@ -71,13 +75,16 @@
     jsSb.append("];");
     String tradeDataJs = jsSb.toString();
 
-    // Nav 버튼 활성화 여부
+    // Nav 버튼 활성화 여부 (use client timezone if available)
     boolean isAllMode = "all".equals(rangeMode);
-    java.time.LocalDate today = java.time.LocalDate.now();
-    boolean canNext = !isAllMode && endDate != null && endDate.isBefore(today);
-    boolean canPrev = !isAllMode && startDate != null
+    java.time.ZoneId zone = (timeZone != null && !timeZone.isEmpty()) ? java.time.ZoneId.of(timeZone) : java.time.ZoneId.systemDefault();
+    java.time.LocalDate today = java.time.LocalDate.now(zone);
+    java.time.LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
+    java.time.LocalDate endLocal = endDate != null ? endDate.atZone(zone).toLocalDate() : null;
+    boolean canNext = !isAllMode && endLocal != null && endLocal.isBefore(today);
+    boolean canPrev = !isAllMode && startLocal != null
         && dataFirstDate != null && !dataFirstDate.isEmpty()
-        && startDate.isAfter(java.time.LocalDate.parse(dataFirstDate));
+        && startLocal.isAfter(java.time.LocalDate.parse(dataFirstDate));
 }
 
 <div id="tradeListFragment">
@@ -88,8 +95,8 @@
         canPrev = canPrev,
         canNext = canNext,
         rangeMode = rangeMode,
-        startDate = startDate,
-        endDate = endDate
+        startDate = startLocal,
+        endDate = endLocal
     )
 
     <!-- Filter & Search Form (collapsible) -->
@@ -97,9 +104,12 @@
         <summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
             상세 검색
-            @if(selectedAccountId != null || selectedStockItemId != null)
-                <span class="badge badge-xs badge-primary">필터 적용 중</span>
-            @endif
+            @template.stock.htmx.fragments.components.filterBadge(
+                selectedAccountId = selectedAccountId,
+                selectedStockItemId = selectedStockItemId,
+                startDate = startDate,
+                endDate = endDate
+            )
         </summary>
     <form id="tradeSearchForm" class="flex flex-wrap gap-2 mt-2 mb-2 items-end bg-base-100 p-2 rounded-box shadow-sm"
           hx-get="/stock/htmx/trade/list"
@@ -111,10 +121,13 @@
         <div class="form-control w-full sm:w-auto">
             <label class="label p-1"><span class="label-text text-xs">기간</span></label>
             <div class="join">
-                <input type="date" name="startDate" id="tradeStartDateInput" class="input input-sm input-bordered join-item" value="${startDate != null ? startDate.toString() : ""}">
-                <input type="date" name="endDate" id="tradeEndDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.toString() : ""}">
+                <input type="date" name="tradeUiStartDate" id="tradeStartDateInput" class="input input-sm input-bordered join-item" value="${startDate != null ? startDate.atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString() : ""}">
+                <input type="date" name="tradeUiEndDate" id="tradeEndDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString() : ""}">
             </div>
         </div>
+        <input type="hidden" name="startDate" id="tradeStartInstantInput" value="${startDate != null ? startDate.toString() : ""}">
+        <input type="hidden" name="endDate" id="tradeEndInstantInput" value="${endDate != null ? endDate.toString() : ""}">
+        <input type="hidden" name="timeZone" id="tradeTimeZoneInput" value="${timeZone != null ? timeZone : ""}">
         <input type="hidden" name="rangeMode" id="tradeRangeModeInput" value="${rangeMode != null ? rangeMode : ""}">
 
         <div class="form-control w-full sm:w-auto">
@@ -197,40 +210,21 @@
     <!-- Charts Row -->
     <div class="flex flex-wrap gap-4 mb-4 overflow-visible">
 
-        <!-- Left: 비중 분석 도넛 -->
-        <div class="card bg-base-100 shadow-sm border border-base-200 flex-[2] min-w-[200px]">
-            <div class="card-body p-4">
-                <div class="flex items-center justify-between mb-2">
-                    <div class="text-sm font-bold" id="tradeDonutTitle">매수 집중도</div>
-                    <div class="tabs tabs-boxed tabs-xs">
-                        <a class="tab" id="tradeDonutMetricProfit" onclick="switchTradeDonut('profit', null)">실현손익</a>
-                        <a class="tab tab-active" id="tradeDonutMetricBuy" onclick="switchTradeDonut('buy', null)">매수금액</a>
-                    </div>
-                </div>
-                <div class="flex gap-3">
-                    <div class="flex-shrink-0 w-[200px] h-[200px]">
-                        <canvas id="tradeDonutChart" class="amount-chart"></canvas>
-                    </div>
-                    <div class="flex flex-col w-0 flex-1 h-[200px] overflow-hidden">
-                        <div class="tabs tabs-boxed tabs-xs mb-1 w-fit flex-shrink-0">
-                            <a class="tab tab-active" id="tradeDonutTabStock" onclick="switchTradeDonut(null, 'stock')">종목별</a>
-                            <a class="tab" id="tradeDonutTabAccount" onclick="switchTradeDonut(null, 'account')">계좌별</a>
-                        </div>
-                        <div id="tradeDonutLegend" class="flex-1 min-h-0 overflow-y-auto text-[0.72rem]"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        @template.stock.htmx.fragments.components.doughnutShell(
+            title = "매수 집중도",
+            canvasId = "tradeDonutChart",
+            legendId = "tradeDonutLegend",
+            titleId = "tradeDonutTitle",
+            metricProfitId = "tradeDonutMetricProfit",
+            metricBuyId = "tradeDonutMetricBuy",
+            tabStockId = "tradeDonutTabStock",
+            tabAccountId = "tradeDonutTabAccount"
+        )
 
-        <!-- Right: 월별 매수/매도 바 차트 -->
-        <div class="card bg-base-100 shadow-sm border border-base-200 flex-[3] min-w-[280px] overflow-visible">
-            <div class="card-body p-4">
-                <h3 class="font-bold text-sm mb-3">월별 매매 금액</h3>
-                <div class="relative h-[220px]">
-                    <canvas id="tradeMonthlyChart" class="amount-chart"></canvas>
-                </div>
-            </div>
-        </div>
+        @template.stock.htmx.fragments.components.barShell(
+            title = "월별 매매 금액",
+            canvasId = "tradeMonthlyChart"
+        )
 
     </div>
 
@@ -619,6 +613,9 @@
                 formId:      'tradeSearchForm',
                 startId:     'tradeStartDateInput',
                 endId:       'tradeEndDateInput',
+                instantStartId: 'tradeStartInstantInput',
+                instantEndId:   'tradeEndInstantInput',
+                timeZoneId:     'tradeTimeZoneInput',
                 rangeModeId: 'tradeRangeModeInput',
                 btnClass:    'date-range-btn',
                 minDate:     '${dataFirstDate != null ? dataFirstDate : ""}'
