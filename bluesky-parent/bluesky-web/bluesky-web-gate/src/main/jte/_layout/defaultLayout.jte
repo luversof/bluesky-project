@@ -22,6 +22,21 @@
 	<script src="https://unpkg.com/htmx-ext-json-enc/json-enc.js"></script>
 	<script src="/js/common.js"></script>
 	<script src="/js/date-range-picker.js"></script>
+
+	<script>
+		// Ensure stock-charts helper is available; loads /js/stock-charts.js on demand
+		window.ensureStockCharts = function(cb) {
+			if (window.StockCharts) {
+				if (typeof cb === 'function') cb();
+				return;
+			}
+			var s = document.createElement('script');
+			s.src = '/js/stock-charts.js';
+			s.onload = function() { if (typeof cb === 'function') cb(); };
+			s.onerror = function() { console.warn('Failed to load /js/stock-charts.js'); if (typeof cb === 'function') cb(); };
+			document.head.appendChild(s);
+		};
+	</script>
 </head>
 
 <body>

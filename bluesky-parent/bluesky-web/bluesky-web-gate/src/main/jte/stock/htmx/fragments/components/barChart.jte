@@ -47,7 +47,7 @@
                     }
                 }
             };
-            window['${canvasId}Instance'] = window.StockCharts.createChart(canvasId, config, window['${canvasId}Instance']);
+            window.ensureStockCharts(function() { window['${canvasId}Instance'] = window.StockCharts.createChart(canvasId, config, window['${canvasId}Instance']); });
         })();
     </script>
 </div>

@@ -460,7 +460,7 @@
                     }
                 }
             };
-            monthlyChart = window.StockCharts.createChart(canvasId, config, monthlyChart);
+            window.ensureStockCharts(function() { monthlyChart = window.StockCharts.createChart(canvasId, config, monthlyChart); });
         }
 
         function initDonutChart(mode) {
@@ -497,7 +497,7 @@
                     cutout: '62%'
                 }
             };
-            donutChart = window.StockCharts.createChart(canvasId, config, donutChart);
+            window.ensureStockCharts(function() { donutChart = window.StockCharts.createChart(canvasId, config, donutChart); });
             const total = d.data.reduce((s, v) => s + v, 0);
             if (legend) {
                 legend.innerHTML = d.labels.map((label, i) => {
@@ -563,9 +563,27 @@
                 timeZoneId:     'dividendTimeZoneInput',
                 rangeModeId: 'dividendRangeModeInput',
                 btnClass:    'date-range-btn',
-                minDate:     '${dataFirstDate != null ? dataFirstDate : ""}'
+                minDate:     '${dataFirstDate != null ? dataFirstDate : ""}',
+                globalKey:   'globalDateRange'
             })
             : { set: function(){}, shift: function(){}, jumpToEdge: function(){} };
+
+        // 기본값: 페이지 진입 시 기간 미지정이면 '이번달(mtd)'을 선택 (한번만 적용하도록 세션 가드)
+        try {
+            if (window.dividendPicker && typeof window.dividendPicker.getState === 'function') {
+                var __s = window.dividendPicker.getState();
+                if ((!__s || !__s.mode) && (!__s || !__s.start) && (!__s || !__s.end)) {
+                    var __key = 'dateRangeDefaultApplied:dividendPicker';
+                    try {
+                        if (!sessionStorage.getItem(__key)) {
+                            var _btn = document.querySelector('#dividendListFragment .date-range-btn');
+                            window.dividendPicker.set('mtd', _btn || null);
+                            sessionStorage.setItem(__key, '1');
+                        }
+                    } catch(e) { window.dividendPicker.set('mtd', null); }
+                }
+            }
+        } catch(e) {}
 
         // details arrow animation
         const detailSection = document.getElementById('detailSection');

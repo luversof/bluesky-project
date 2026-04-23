@@ -135,7 +135,7 @@
                         }
                     }
                 }
-                window['assetGrowthChartInstance'] = window.StockCharts.createChart('assetGrowthChart', config, window['assetGrowthChartInstance']);
+                window.ensureStockCharts(function() { window['assetGrowthChartInstance'] = window.StockCharts.createChart('assetGrowthChart', config, window['assetGrowthChartInstance']); });
         })();
     </script>
     @endif

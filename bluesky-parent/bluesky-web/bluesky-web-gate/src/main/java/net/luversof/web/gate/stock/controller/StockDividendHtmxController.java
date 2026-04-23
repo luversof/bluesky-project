@@ -71,8 +71,16 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       return ERROR_VIEW;
     }
 
-    Instant startInstant = startDate;
-    Instant endInstant = endDate;
+        Instant startInstant = startDate;
+        Instant endInstant = endDate;
+        // Default to this month when client didn't provide range
+        if (startInstant == null && endInstant == null && (rangeMode == null || rangeMode.isBlank())) {
+            ZoneId zone = (timeZone != null && !timeZone.isEmpty()) ? ZoneId.of(timeZone) : ZoneId.systemDefault();
+            LocalDate now = LocalDate.now(zone);
+            startInstant = now.withDayOfMonth(1).atStartOfDay(zone).toInstant();
+            endInstant = now.plusMonths(1).withDayOfMonth(1).atStartOfDay(zone).toInstant();
+            rangeMode = "mtd";
+        }
 
     var request = new DividendRequest();
     request.setUserId(userId);
@@ -385,6 +393,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     model.addAttribute("prevEndDate", prevEndDate);
     model.addAttribute("rangeMode", rangeMode);
     model.addAttribute("dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");
+    // reflect rangeMode back into model (may have been defaulted above)
+    model.addAttribute("rangeMode", rangeMode);
 
     return "stock/htmx/fragments/tabsDividendHistory";
   }

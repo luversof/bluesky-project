@@ -60,6 +60,19 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
 
     request.setUserId(userId);
 
+    // If no date range provided, default to this month (mtd) so initial fragment matches client default
+    if (request.getStartDate() == null && request.getEndDate() == null) {
+      ZoneId zone = (request.getTimeZone() != null && !request.getTimeZone().isEmpty())
+          ? ZoneId.of(request.getTimeZone())
+          : ZoneId.systemDefault();
+      LocalDate now = LocalDate.now(zone);
+      request.setStartDate(now.withDayOfMonth(1).atStartOfDay(zone).toInstant());
+      request.setEndDate(now.plusMonths(1).withDayOfMonth(1).atStartOfDay(zone).toInstant());
+      model.addAttribute("rangeMode", "mtd");
+      model.addAttribute("startDate", request.getStartDate());
+      model.addAttribute("endDate", request.getEndDate());
+    }
+
     var params = request.toParams();
     params.add("granularity", "AUTO");
     List<TradeProfitTimeSeriesPoint> timeSeries = tradeProfitClient.timeSeries(params);

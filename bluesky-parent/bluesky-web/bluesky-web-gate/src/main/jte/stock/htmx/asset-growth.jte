@@ -4,13 +4,14 @@
 @import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint
 
 @param Object timeSeries
+@param String rangeMode
 
 !{
     java.util.List ts = (java.util.List) timeSeries;
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
 }
 
-<div class="card bg-base-100 shadow-xl">
+<div id="assetGrowthFragment" class="card bg-base-100 shadow-xl">
     <div class="card-body">
         <div class="flex items-center gap-2 mb-2">
             <h2 class="card-title text-base-content/70 m-0">누적 자산 성장 차트</h2>
@@ -45,7 +46,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                         </button>
                         <div class="flex gap-1" id="quickRangeButtons">
-                            <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set('mtd',this)">이번달</button>
+                            <button type="button" class="btn btn-xs ${rangeMode != null && rangeMode.equals("mtd") ? "btn-primary" : "btn-ghost"} asset-range-btn" onclick="assetPicker.set('mtd',this)">이번달</button>
                             <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(1,this)">1개월</button>
                             <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(3,this)">3개월</button>
                             <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(6,this)">6개월</button>
@@ -191,16 +192,46 @@
                 animateScaleChange(newMinIdx, newMaxIdx, 320);
                 refreshTradeHistory(startStr, endStr);
             };
-            var assetPicker = window.DateRangePicker
-                ? window.DateRangePicker.create({
-                    btnClass:    'asset-range-btn',
-                    activeClass: 'btn-active',
-                    minDate:     baseData.labels.length > 0 ? baseData.labels[0] : null,
-                    maxDate:     baseData.labels.length > 0 ? baseData.labels[baseData.labels.length - 1] : null,
-                    onApply:     applyRangeToChart
-                  })
-                : { set: function(){}, shift: function(){}, jumpToEdge: function(){}, setState: function(){}, setMaxDate: function(){} };
+                        var assetPicker = window.DateRangePicker
+                                            ? window.DateRangePicker.create({
+                                                    btnClass:    'asset-range-btn',
+                                                    activeClass: 'btn-primary',
+                                                    minDate:     baseData.labels.length > 0 ? baseData.labels[0] : null,
+                                                    maxDate:     baseData.labels.length > 0 ? baseData.labels[baseData.labels.length - 1] : null,
+                                                    onApply:     applyRangeToChart,
+                                                    // optional global sync key to unify period across pages
+                                                    globalKey:   'globalDateRange',
+                                                    // scope DOM queries to this fragment to avoid cross-fragment selection
+                                                    rootSelector: '#assetGrowthFragment'
+                                                })
+                            : { set: function(){}, shift: function(){}, jumpToEdge: function(){}, setState: function(){}, setMaxDate: function(){} };
             window.assetPicker = assetPicker;
+
+            // 기본값: 페이지 진입 시 기간 미지정이면 '이번달(mtd)'을 선택 (한번만 적용하도록 세션 가드)
+            try {
+                if (assetPicker && typeof assetPicker.getState === 'function') {
+                    var _s = assetPicker.getState();
+                    if ((!_s || !_s.mode) && (!_s || !_s.start) && (!_s || !_s.end)) {
+                            var _key = 'dateRangeDefaultApplied:assetGrowthFragment';
+                            try {
+                                if (!sessionStorage.getItem(_key)) {
+                                        var _root = document.querySelector('#assetGrowthFragment') || document;
+                                        var _btn = _root.querySelector('.asset-range-btn');
+                                        assetPicker.set('mtd', _btn || null);
+                                        // ensure visual activation: prefer btn-primary and remove btn-ghost if present
+                                        try {
+                                            if (_btn) {
+                                                _btn.classList.add('btn-primary');
+                                                _btn.classList.remove('btn-ghost');
+                                            }
+                                            console.debug && console.debug('assetPicker default applied, state=', assetPicker.getState());
+                                        } catch(e) {}
+                                        sessionStorage.setItem(_key, '1');
+                                    }
+                            } catch(e) { assetPicker.set('mtd', null); }
+                    }
+                }
+            } catch(e) {}
 
             var scaleAnimFrame = null; // requestAnimationFrame handle for scale transition
 
@@ -620,7 +651,8 @@
                 }
             };
 
-            mainChart = window.StockCharts.createChart('assetGrowthChart', {
+            window.ensureStockCharts(function() {
+                mainChart = window.StockCharts.createChart('assetGrowthChart', {
                 type: 'line',
                 plugins: [tradeMarkersPlugin],
                 data: {
@@ -754,8 +786,10 @@
                         });
                     }
                 }
-            }, mainChart);
+                }, mainChart);
+            });
 
+            window.ensureStockCharts(function() {
             dividendChart = window.StockCharts.createChart('dividendChart', {
                 type: 'line',
                 data: {
@@ -869,6 +903,8 @@
                         });
                     }
                 }
+            });
+
             });
 
             // 초기 버튼 상태 업데이트

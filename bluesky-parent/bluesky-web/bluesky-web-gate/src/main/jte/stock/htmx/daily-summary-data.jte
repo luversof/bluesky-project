@@ -385,6 +385,6 @@
             }
         };
 
-        window.dailySummaryChartInstance = window.StockCharts.createChart(canvasId, config, window.dailySummaryChartInstance);
+        window.ensureStockCharts(function() { window.dailySummaryChartInstance = window.StockCharts.createChart(canvasId, config, window.dailySummaryChartInstance); });
     })();
 </script>

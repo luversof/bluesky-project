@@ -73,8 +73,18 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
       return ERROR_VIEW;
     }
 
-    Instant startInst = startDate;
-    Instant endInst = endDate;
+        // If no date range provided by client, default to this month (mtd)
+        Instant startInst = startDate;
+        Instant endInst = endDate;
+        if (startInst == null && endInst == null && (rangeMode == null || rangeMode.isBlank())) {
+            ZoneId zone = (timeZone != null && !timeZone.isEmpty()) ? ZoneId.of(timeZone) : ZoneId.systemDefault();
+            LocalDate now = LocalDate.now(zone);
+            var monthStart = now.withDayOfMonth(1).atStartOfDay(zone).toInstant();
+            var monthEnd = now.plusMonths(1).withDayOfMonth(1).atStartOfDay(zone).toInstant();
+            startInst = monthStart;
+            endInst = monthEnd;
+            rangeMode = "mtd";
+        }
 
     TradeSearchRequest request = new TradeSearchRequest(userId, null, null, startInst, endInst);
     List<TradeResponse> allFromApi = tradeClient.findTrades(request.toParams());
@@ -270,6 +280,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
             : null);
     model.addAttribute("startDate", startDate);
     model.addAttribute("endDate", endDate);
+    // reflect rangeMode back into model (may have been defaulted above)
+    model.addAttribute("rangeMode", rangeMode);
     model.addAttribute("timeZone", timeZone);
     model.addAttribute("sort", sort);
     model.addAttribute("totalFee", totalFee);
@@ -598,9 +610,16 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
             .min(Comparator.naturalOrder())
             .orElse(null);
 
-    // Convert start/end Instants into Instants for the helper (they already are Instants)
-    Instant startInstant = startDate;
-    Instant endInstant = endDate;
+        // Convert start/end Instants into Instants for the helper (they already are Instants)
+        Instant startInstant = startDate;
+        Instant endInstant = endDate;
+        // Default to this month when client didn't provide range
+        if (startInstant == null && endInstant == null && (rangeMode == null || rangeMode.isBlank())) {
+            LocalDate now = LocalDate.now(zone);
+            startInstant = now.withDayOfMonth(1).atStartOfDay(zone).toInstant();
+            endInstant = now.plusMonths(1).withDayOfMonth(1).atStartOfDay(zone).toInstant();
+            rangeMode = "mtd";
+        }
     List<Activity> activities = getAllActivities(userId, startInstant, endInstant);
 
     long buyCount =
@@ -629,8 +648,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     model.addAttribute("activities", activities);
-    model.addAttribute("startDate", startDate);
-    model.addAttribute("endDate", endDate);
+    model.addAttribute("startDate", startInstant);
+    model.addAttribute("endDate", endInstant);
     model.addAttribute("timeZone", timeZone);
     model.addAttribute("rangeMode", rangeMode);
     model.addAttribute("dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");

@@ -321,7 +321,20 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     if (userId == null) return ERROR_VIEW;
     request.setUserId(userId);
 
-    // 보유량 0인 것도 포함 (전량 매도한 종목의 실현손익도 표시)
+        // If client did not provide date range, default to this month (mtd)
+        if ((request.getStartDate() == null || request.getStartDate().toEpochMilli() == 0)
+                && (request.getEndDate() == null || request.getEndDate().toEpochMilli() == 0)
+                && (rangeMode == null || rangeMode.isBlank())) {
+            ZoneId zone = (request.getTimeZone() != null && !request.getTimeZone().isEmpty())
+                    ? ZoneId.of(request.getTimeZone())
+                    : ZoneId.systemDefault();
+            LocalDate now = LocalDate.now(zone);
+            request.setStartDate(now.withDayOfMonth(1).atStartOfDay(zone).toInstant());
+            request.setEndDate(now.plusMonths(1).withDayOfMonth(1).atStartOfDay(zone).toInstant());
+            rangeMode = "mtd";
+        }
+
+        // 보유량 0인 것도 포함 (전량 매도한 종목의 실현손익도 표시)
     List<TradeProfit> enrichedList = new ArrayList<>(getEnrichedTradeProfits(request));
 
     // 계좌별 집계

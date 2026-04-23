@@ -199,9 +199,26 @@
             timeZoneId:     'activityTimeZoneInput',
             rangeModeId: 'activityRangeModeInput',
             btnClass:    'date-range-btn',
-            minDate:     '${dataFirstDate != null ? dataFirstDate : ""}'
+            minDate:     '${dataFirstDate != null ? dataFirstDate : ""}',
+            globalKey:   'globalDateRange'
         });
         window.activityPicker = activityPicker;
+        // 기본값: 페이지 진입 시 기간 미지정이면 '이번달(mtd)'을 선택 (한번만 적용하도록 세션 가드)
+        try {
+            if (window.activityPicker && typeof window.activityPicker.getState === 'function') {
+                var __s = window.activityPicker.getState();
+                if ((!__s || !__s.mode) && (!__s || !__s.start) && (!__s || !__s.end)) {
+                    var __key = 'dateRangeDefaultApplied:activityPicker';
+                    try {
+                        if (!sessionStorage.getItem(__key)) {
+                        var _btn = document.querySelector('#activityListFragment .date-range-btn');
+                        window.activityPicker.set('mtd', _btn || null);
+                        sessionStorage.setItem(__key, '1');
+                    }
+                    } catch(e) { window.activityPicker.set('mtd', null); }
+                }
+            }
+        } catch(e) {}
     })();
     </script>
 </div>

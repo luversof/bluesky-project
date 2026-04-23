@@ -407,10 +407,26 @@
                 timeZoneId:     'tradeTimeZoneInput',
                 rangeModeId: 'tradeRangeModeInput',
                 btnClass:    'date-range-btn',
-                minDate:     '${dataFirstDate != null ? dataFirstDate : ""}'
+                minDate:     '${dataFirstDate != null ? dataFirstDate : ""}',
+                globalKey:   'globalDateRange'
             })
             : { set: function(){}, shift: function(){}, jumpToEdge: function(){} };
-
+        // 기본값: 페이지 진입 시 기간 미지정이면 '이번달(mtd)'을 선택 (한번만 적용하도록 세션 가드)
+        try {
+            if (window.tradePicker && typeof window.tradePicker.getState === 'function') {
+                var __s = window.tradePicker.getState();
+                if ((!__s || !__s.mode) && (!__s || !__s.start) && (!__s || !__s.end)) {
+                    var __key = 'dateRangeDefaultApplied:tradePicker';
+                    try {
+                        if (!sessionStorage.getItem(__key)) {
+                            var _btn = document.querySelector('#tradeListFragment .date-range-btn');
+                            window.tradePicker.set('mtd', _btn || null);
+                            sessionStorage.setItem(__key, '1');
+                        }
+                    } catch(e) { window.tradePicker.set('mtd', null); }
+                }
+            }
+        } catch(e) {}
         if (window.Chart && window.StockCharts) {
             setTimeout(initAll, 0);
             setTimeout(function() {

@@ -212,7 +212,7 @@
                     }
                 }
             };
-            window['chartProfitInstance'] = window.StockCharts.createChart('chartProfit', config, window['chartProfitInstance']);
+            window.ensureStockCharts(function() { window['chartProfitInstance'] = window.StockCharts.createChart('chartProfit', config, window['chartProfitInstance']); });
         })();
         </script>
         @endif
@@ -256,7 +256,7 @@
                     }
                 }
             };
-            window['chartLossInstance'] = window.StockCharts.createChart('chartLoss', config, window['chartLossInstance']);
+            window.ensureStockCharts(function() { window['chartLossInstance'] = window.StockCharts.createChart('chartLoss', config, window['chartLossInstance']); });
         })();
         </script>
         @endif
@@ -569,9 +569,26 @@
             timeZoneId:  'realizedTimeZoneInput',
             rangeModeId: 'realizedRangeModeInput',
             btnClass:    'date-range-btn',
-            minDate:     '${dataFirstDate != null ? dataFirstDate : ""}'
+            minDate:     '${dataFirstDate != null ? dataFirstDate : ""}',
+            globalKey:   'globalDateRange'
         });
         window.realizedProfitPicker = realizedProfitPicker;
+        // 기본값: 페이지 진입 시 기간 미지정이면 '이번달(mtd)'을 선택 (한번만 적용하도록 세션 가드)
+        try {
+            if (window.realizedProfitPicker && typeof window.realizedProfitPicker.getState === 'function') {
+                var __s = window.realizedProfitPicker.getState();
+                if ((!__s || !__s.mode) && (!__s || !__s.start) && (!__s || !__s.end)) {
+                    var __key = 'dateRangeDefaultApplied:realizedProfitPicker';
+                    try {
+                        if (!sessionStorage.getItem(__key)) {
+                                var _btn = document.querySelector('#realizedProfitFragment .date-range-btn');
+                                window.realizedProfitPicker.set('mtd', _btn || null);
+                                sessionStorage.setItem(__key, '1');
+                            }
+                    } catch(e) { window.realizedProfitPicker.set('mtd', null); }
+                }
+            }
+        } catch(e) {}
     })();
     </script>
 
