@@ -331,7 +331,7 @@
             @endfor
         @endif
 
-        window.dailySummaryChartInstance = new Chart(ctx, {
+        var config = {
             type: chartType,
             data: {
                 labels: labels,
@@ -383,6 +383,8 @@
                     }
                 }
             }
-        });
+        };
+
+        window.dailySummaryChartInstance = window.StockCharts.createChart(canvasId, config, window.dailySummaryChartInstance);
     })();
 </script>

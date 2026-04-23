@@ -46,7 +46,7 @@
             const cumulativeTotalProfitData = seriesData.map(d => d.cumulativeTotal);
             const dailyData = seriesData.map(d => d.daily);
 
-            new Chart(ctx.getContext('2d'), {
+            var config = {
                 type: 'line',
                 data: {
                     labels: labels,
@@ -135,7 +135,7 @@
                         }
                     }
                 }
-            });
+                window['assetGrowthChartInstance'] = window.StockCharts.createChart('assetGrowthChart', config, window['assetGrowthChartInstance']);
         })();
     </script>
     @endif

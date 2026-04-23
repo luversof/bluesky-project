@@ -350,262 +350,51 @@
         </div>
     </details>
 
+    <script src="/js/stock-charts.js"></script>
     <script>
     (function() {
         $unsafe{tradeDataJs}
 
-        const TRADE_COLORS = [
-            'rgba(99,102,241,0.8)','rgba(34,197,94,0.8)','rgba(251,191,36,0.8)',
-            'rgba(239,68,68,0.8)','rgba(59,130,246,0.8)','rgba(236,72,153,0.8)',
-            'rgba(14,165,233,0.8)','rgba(249,115,22,0.8)','rgba(168,85,247,0.8)',
-            'rgba(20,184,166,0.8)','rgba(245,158,11,0.8)','rgba(16,185,129,0.8)'
-        ];
-
-        let tradeMonthlyChartInst = null;
-        let tradeDonutChartInst = null;
-        let currentMetric = 'buy';
-        let currentGroupBy = 'stock';
-
-        function buildMonthlyData() {
-            const buyMap = {}, sellMap = {};
-            tradeData.forEach(function(d) {
-                if (!d.tradeDate) return;
-                const mon = d.tradeDate.slice(0, 7);
-                const amt = Number(d.amount) || 0;
-                if (d.type === 'BUY') buyMap[mon] = (buyMap[mon] || 0) + amt;
-                else if (d.type === 'SELL') sellMap[mon] = (sellMap[mon] || 0) + amt;
-            });
-            const allMonths = Object.keys(buyMap).concat(Object.keys(sellMap));
-            const months = allMonths.filter(function(v, i, a) { return a.indexOf(v) === i; }).sort();
-            return {
-                labels: months,
-                buyData: months.map(function(m) { return buyMap[m] || 0; }),
-                sellData: months.map(function(m) { return sellMap[m] || 0; })
-            };
-        }
-
-        const PROFIT_COLORS_POS = [
-            'rgba(239,68,68,0.85)','rgba(220,38,38,0.8)','rgba(249,115,22,0.8)',
-            'rgba(253,164,175,0.85)','rgba(236,72,153,0.8)','rgba(245,158,11,0.8)'
-        ];
-        const PROFIT_COLORS_NEG = [
-            'rgba(59,130,246,0.85)','rgba(14,165,233,0.8)','rgba(99,102,241,0.8)'
-        ];
-
-        function buildDonutData(metric, groupBy) {
-            const map = {};
-            tradeData.forEach(function(d) {
-                const key = groupBy === 'stock' ? d.stockItem : d.account;
-                if (!key) return;
-                if (metric === 'profit') {
-                    if (d.type !== 'SELL') return;
-                    map[key] = (map[key] || 0) + (Number(d.profit) || 0);
-                } else {
-                    if (d.type !== 'BUY') return;
-                    map[key] = (map[key] || 0) + (Number(d.amount) || 0);
-                }
-            });
-            if (metric === 'profit') {
-                const entries = Object.entries(map);
-                const pos = entries.filter(function(e) { return e[1] >= 0; }).sort(function(a, b) { return b[1] - a[1]; });
-                const neg = entries.filter(function(e) { return e[1] < 0; }).sort(function(a, b) { return a[1] - b[1]; });
-                const sorted = pos.concat(neg);
-                const posLen = pos.length;
-                return {
-                    labels: sorted.map(function(e) { return e[0]; }),
-                    data: sorted.map(function(e) { return Math.abs(e[1]); }),
-                    rawData: sorted.map(function(e) { return e[1]; }),
-                    colors: sorted.map(function(e, i) {
-                        return e[1] >= 0
-                            ? PROFIT_COLORS_POS[i % PROFIT_COLORS_POS.length]
-                            : PROFIT_COLORS_NEG[(i - posLen) % PROFIT_COLORS_NEG.length];
-                    })
-                };
-            } else {
-                const sorted = Object.entries(map).sort(function(a, b) { return b[1] - a[1]; });
-                return {
-                    labels: sorted.map(function(e) { return e[0]; }),
-                    data: sorted.map(function(e) { return e[1]; }),
-                    rawData: sorted.map(function(e) { return e[1]; }),
-                    colors: TRADE_COLORS.slice(0, sorted.length)
-                };
-            }
-        }
-
-        function fmtAmt(v) {
-            return Number(v).toLocaleString('ko-KR');
-        }
-
-        function initTradeMonthlyChart() {
-            const m = buildMonthlyData();
-            const ctx = document.getElementById('tradeMonthlyChart');
-            if (!ctx) return;
-            if (tradeMonthlyChartInst) tradeMonthlyChartInst.destroy();
-            const gridColor = 'rgba(128,128,128,0.1)';
-            tradeMonthlyChartInst = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: m.labels,
-                    datasets: [
-                        {
-                            label: '매수',
-                            data: m.buyData,
-                            backgroundColor: 'rgba(239,68,68,0.7)',
-                            borderRadius: 3
-                        },
-                        {
-                            label: '매도',
-                            data: m.sellData,
-                            backgroundColor: 'rgba(59,130,246,0.7)',
-                            borderRadius: 3
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
-                        tooltip: {
-                            callbacks: {
-                                label: function(ctx) { return ctx.dataset.label + ': \u20a9' + fmtAmt(ctx.parsed.y); }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: { grid: { color: gridColor }, ticks: { font: { size: 10 } } },
-                        y: {
-                            grid: { color: gridColor },
-                            ticks: {
-                                font: { size: 10 },
-                                callback: function(v) {
-                                    if (v >= 100000000) return (v/100000000).toFixed(0) + '억';
-                                    if (v >= 10000) return (v/10000).toFixed(0) + '만';
-                                    return v.toLocaleString('ko-KR');
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function makeDonutTooltipHandler(rawData, isProfitMode) {
-            return function(context) {
-                var tooltip = context.tooltip;
-                var tooltipEl = document.getElementById('tradeDonutTooltipEl');
-                if (!tooltipEl) {
-                    tooltipEl = document.createElement('div');
-                    tooltipEl.id = 'tradeDonutTooltipEl';
-                    tooltipEl.style.cssText = 'position:fixed;z-index:9999;background:rgba(30,30,30,0.92);color:#fff;padding:6px 10px;border-radius:6px;font-size:12px;pointer-events:none;white-space:nowrap;transition:opacity .1s;';
-                    document.body.appendChild(tooltipEl);
-                }
-                if (tooltip.opacity === 0) {
-                    tooltipEl.style.opacity = '0';
-                    return;
-                }
-                var idx = tooltip.dataPoints && tooltip.dataPoints[0] ? tooltip.dataPoints[0].dataIndex : 0;
-                var label = tooltip.title && tooltip.title[0] ? tooltip.title[0] : '';
-                var raw = rawData[idx] !== undefined ? rawData[idx] : 0;
-                var sign = isProfitMode ? (raw >= 0 ? '\u25b2 ' : '\u25bc ') : '';
-                var valText = sign + '\u20a9' + fmtAmt(Math.abs(raw));
-                var color = context.chart.data.datasets[0].backgroundColor[idx] || '#999';
-                tooltipEl.innerHTML = '<div style="font-weight:bold;margin-bottom:3px">' + label + '</div>'
-                    + '<div style="display:flex;align-items:center;gap:5px">'
-                    + '<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + color + '"></span>'
-                    + '<span>' + label + ': ' + valText + '</span>'
-                    + '</div>';
-                var rect = context.chart.canvas.getBoundingClientRect();
-                var x = rect.left + tooltip.caretX;
-                var y = rect.top + tooltip.caretY;
-                tooltipEl.style.opacity = '1';
-                // reposition to avoid going off screen
-                tooltipEl.style.left = '0px';
-                tooltipEl.style.top = '0px';
-                var tw = tooltipEl.offsetWidth;
-                var th = tooltipEl.offsetHeight;
-                var finalX = x + 12;
-                var finalY = y - th - 8;
-                if (finalX + tw > window.innerWidth - 8) finalX = x - tw - 12;
-                if (finalY < 8) finalY = y + 16;
-                tooltipEl.style.left = finalX + 'px';
-                tooltipEl.style.top = finalY + 'px';
-            };
-        }
-
-        function initTradeDonutChart(metric, groupBy) {
-            const d = buildDonutData(metric || 'profit', groupBy || 'stock');
-            const ctx = document.getElementById('tradeDonutChart');
-            if (!ctx) return;
-            if (tradeDonutChartInst) tradeDonutChartInst.destroy();
-            var oldTip = document.getElementById('tradeDonutTooltipEl');
-            if (oldTip) oldTip.style.opacity = '0';
-            const isProfitMode = (metric || 'profit') === 'profit';
-            const legend = document.getElementById('tradeDonutLegend');
-            // 데이터 없음 처리
-            if (d.labels.length === 0) {
-                ctx.style.display = 'none';
-                if (legend) legend.innerHTML = '<div class="text-xs opacity-40 pt-4 text-center">해당 기간 ' + (isProfitMode ? '매도 내역' : '매수 내역') + '이 없습니다.</div>';
-                return;
-            }
-            ctx.style.display = '';
-            tradeDonutChartInst = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: d.labels,
-                    datasets: [{
-                        data: d.data,
-                        backgroundColor: d.colors,
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '65%',
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            enabled: false,
-                            external: makeDonutTooltipHandler(d.rawData, isProfitMode)
-                        }
-                    }
-                }
-            });
-            const titleEl = document.getElementById('tradeDonutTitle');
-            if (titleEl) titleEl.textContent = isProfitMode ? '종목별 손익 기여' : '매수 집중도';
-            if (legend) {
-                const total = d.data.reduce(function(a, b) { return a + b; }, 0);
-                legend.innerHTML = d.labels.map(function(l, i) {
-                    const pct = total > 0 ? ((d.data[i] / total) * 100).toFixed(1) : '0.0';
-                    const raw = d.rawData[i];
-                    const sign = isProfitMode ? (raw >= 0 ? '\u25b2 ' : '\u25bc ') : '';
-                    const valClass = isProfitMode ? (raw >= 0 ? 'color:rgba(239,68,68,0.9)' : 'color:rgba(59,130,246,0.9)') : '';
-                    return '<div class="flex items-center gap-1 mb-0.5">'
-                        + '<span style="flex-shrink:0;display:inline-block;width:8px;height:8px;border-radius:50%;background:' + d.colors[i] + '"></span>'
-                        + '<span class="flex-1" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + l + '">' + l + '</span>'
-                        + '<span style="flex-shrink:0;opacity:0.75;' + valClass + '">' + sign + pct + '%</span>'
-                        + '</div>';
-                }).join('');
-            }
-        }
+        window.tradeMonthlyChartInst = null;
+        window.tradeDonutChartInst = null;
+        window.currentMetric = 'buy';
+        window.currentGroupBy = 'stock';
 
         window.switchTradeDonut = function(metric, groupBy) {
-            if (metric) currentMetric = metric;
-            if (groupBy) currentGroupBy = groupBy;
-            document.getElementById('tradeDonutMetricProfit').classList.toggle('tab-active', currentMetric === 'profit');
-            document.getElementById('tradeDonutMetricBuy').classList.toggle('tab-active', currentMetric === 'buy');
-            document.getElementById('tradeDonutTabStock').classList.toggle('tab-active', currentGroupBy === 'stock');
-            document.getElementById('tradeDonutTabAccount').classList.toggle('tab-active', currentGroupBy === 'account');
-            initTradeDonutChart(currentMetric, currentGroupBy);
+            if (metric) window.currentMetric = metric;
+            if (groupBy) window.currentGroupBy = groupBy;
+            var elProfit = document.getElementById('tradeDonutMetricProfit');
+            var elBuy = document.getElementById('tradeDonutMetricBuy');
+            var elStock = document.getElementById('tradeDonutTabStock');
+            var elAccount = document.getElementById('tradeDonutTabAccount');
+            if (elProfit) elProfit.classList.toggle('tab-active', window.currentMetric === 'profit');
+            if (elBuy) elBuy.classList.toggle('tab-active', window.currentMetric === 'buy');
+            if (elStock) elStock.classList.toggle('tab-active', window.currentGroupBy === 'stock');
+            if (elAccount) elAccount.classList.toggle('tab-active', window.currentGroupBy === 'account');
+
+            if (window.StockCharts) {
+                window.tradeDonutChartInst = window.StockCharts.initDonutFromData(tradeData, {
+                    canvasId: 'tradeDonutChart',
+                    legendId: 'tradeDonutLegend',
+                    titleId: 'tradeDonutTitle',
+                    metric: window.currentMetric,
+                    groupBy: window.currentGroupBy,
+                    tooltipId: 'tradeDonutTooltipEl'
+                }, window.tradeDonutChartInst);
+            }
         };
 
-        function fmtDate(d) {
-            return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-        }
-
-        function tradeSubmit() {
-            document.getElementById('tradeSearchForm').requestSubmit();
+        function initAll() {
+            if (!window.StockCharts) return;
+            window.tradeMonthlyChartInst = window.StockCharts.initMonthlyFromData(tradeData, 'tradeMonthlyChart', window.tradeMonthlyChartInst);
+            window.tradeDonutChartInst = window.StockCharts.initDonutFromData(tradeData, {
+                canvasId: 'tradeDonutChart',
+                legendId: 'tradeDonutLegend',
+                titleId: 'tradeDonutTitle',
+                metric: window.currentMetric,
+                groupBy: window.currentGroupBy,
+                tooltipId: 'tradeDonutTooltipEl'
+            }, window.tradeDonutChartInst);
         }
 
         window.tradePicker = window.DateRangePicker
@@ -622,16 +411,11 @@
             })
             : { set: function(){}, shift: function(){}, jumpToEdge: function(){} };
 
-        function initAll() {
-            initTradeMonthlyChart();
-            initTradeDonutChart(currentMetric, currentGroupBy);
-        }
-
-        if (window.Chart) {
+        if (window.Chart && window.StockCharts) {
             setTimeout(initAll, 0);
             setTimeout(function() {
-                if (tradeMonthlyChartInst) tradeMonthlyChartInst.resize();
-                if (tradeDonutChartInst) tradeDonutChartInst.resize();
+                if (window.tradeMonthlyChartInst && window.tradeMonthlyChartInst.resize) window.tradeMonthlyChartInst.resize();
+                if (window.tradeDonutChartInst && window.tradeDonutChartInst.resize) window.tradeDonutChartInst.resize();
             }, 200);
         } else {
             var s = document.createElement('script');
@@ -639,8 +423,8 @@
             s.onload = function() {
                 setTimeout(initAll, 0);
                 setTimeout(function() {
-                    if (tradeMonthlyChartInst) tradeMonthlyChartInst.resize();
-                    if (tradeDonutChartInst) tradeDonutChartInst.resize();
+                    if (window.tradeMonthlyChartInst && window.tradeMonthlyChartInst.resize) window.tradeMonthlyChartInst.resize();
+                    if (window.tradeDonutChartInst && window.tradeDonutChartInst.resize) window.tradeDonutChartInst.resize();
                 }, 200);
             };
             document.head.appendChild(s);

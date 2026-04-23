@@ -186,13 +186,13 @@
         (function() {
             var labels = [];
             @for(String lbl : chartProfitLabels)
-                labels.push("${lbl.replace("\"", "\\\"").replace("\\", "\\\\")}");
+                labels.push("${lbl.replace("\"", "\\\"").replace("\\", "\\\\")} ");
             @endfor
             var values = [];
             @for(Long val : chartProfitValues)
                 values.push($unsafe{String.valueOf(val)});
             @endfor
-            new Chart(document.getElementById('chartProfit').getContext('2d'), {
+            var config = {
                 type: 'bar',
                 data: {
                     labels: labels,
@@ -211,7 +211,8 @@
                         y: { ticks: { font: { size: 12 } } }
                     }
                 }
-            });
+            };
+            window['chartProfitInstance'] = window.StockCharts.createChart('chartProfit', config, window['chartProfitInstance']);
         })();
         </script>
         @endif
@@ -229,13 +230,13 @@
         (function() {
             var labels = [];
             @for(String lbl : chartLossLabels)
-                labels.push("${lbl.replace("\"", "\\\"").replace("\\", "\\\\")}");
+                labels.push("${lbl.replace("\"", "\\\"").replace("\\", "\\\\")} ");
             @endfor
             var values = [];
             @for(Long val : chartLossValues)
                 values.push($unsafe{String.valueOf(val)});
             @endfor
-            new Chart(document.getElementById('chartLoss').getContext('2d'), {
+            var config = {
                 type: 'bar',
                 data: {
                     labels: labels,
@@ -254,7 +255,8 @@
                         y: { ticks: { font: { size: 12 } } }
                     }
                 }
-            });
+            };
+            window['chartLossInstance'] = window.StockCharts.createChart('chartLoss', config, window['chartLossInstance']);
         })();
         </script>
         @endif

@@ -432,10 +432,11 @@
         function initMonthlyChart() {
             const m = buildMonthlyData();
             const gridColor = 'rgba(128,128,128,0.1)';
-            const ctx = document.getElementById('monthlyBarChart');
-            if (!ctx) return;
-            if (monthlyChart) monthlyChart.destroy();
-            monthlyChart = new Chart(ctx, {
+            const canvasId = 'monthlyBarChart';
+            const canvasEl = document.getElementById(canvasId);
+            if (!canvasEl) return;
+            if (monthlyChart) try { monthlyChart.destroy(); } catch(e) {}
+            var config = {
                 type: 'bar',
                 data: {
                     labels: m.labels,
@@ -458,23 +459,25 @@
                         y: { beginAtZero: true, grid: { color: gridColor }, ticks: { callback: v => '₩' + Math.round(v).toLocaleString(), font: { size: 11 } } }
                     }
                 }
-            });
+            };
+            monthlyChart = window.StockCharts.createChart(canvasId, config, monthlyChart);
         }
 
         function initDonutChart(mode) {
             const d = buildDonutData(mode);
-            const ctx = document.getElementById('donutChart');
-            if (!ctx) return;
-            if (donutChart) donutChart.destroy();
+            const canvasId = 'donutChart';
+            const canvasEl = document.getElementById(canvasId);
+            if (!canvasEl) return;
+            if (donutChart) try { donutChart.destroy(); } catch(e) {}
             const legend = document.getElementById('donutLegend');
             if (d.labels.length === 0) {
-                ctx.style.display = 'none';
+                canvasEl.style.display = 'none';
                 if (legend) legend.innerHTML = '<div class="text-xs opacity-40 pt-4 text-center">해당 기간 배당 내역이 없습니다.</div>';
                 return;
             }
-            if (ctx.parentElement) ctx.parentElement.style.display = '';
-            ctx.style.display = '';
-            donutChart = new Chart(ctx, {
+            if (canvasEl.parentElement) canvasEl.parentElement.style.display = '';
+            canvasEl.style.display = '';
+            var config = {
                 type: 'doughnut',
                 data: {
                     labels: d.labels,
@@ -493,7 +496,8 @@
                     },
                     cutout: '62%'
                 }
-            });
+            };
+            donutChart = window.StockCharts.createChart(canvasId, config, donutChart);
             const total = d.data.reduce((s, v) => s + v, 0);
             if (legend) {
                 legend.innerHTML = d.labels.map((label, i) => {

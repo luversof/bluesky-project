@@ -620,7 +620,7 @@
                 }
             };
 
-            mainChart = new Chart(ctxMain.getContext('2d'), {
+            mainChart = window.StockCharts.createChart('assetGrowthChart', {
                 type: 'line',
                 plugins: [tradeMarkersPlugin],
                 data: {
@@ -754,9 +754,9 @@
                         });
                     }
                 }
-            });
+            }, mainChart);
 
-            dividendChart = new Chart(ctxDividend.getContext('2d'), {
+            dividendChart = window.StockCharts.createChart('dividendChart', {
                 type: 'line',
                 data: {
                     labels: labels,

@@ -15,8 +15,8 @@
     </div>
     <script>
         (function() {
-            if (typeof Chart === 'undefined') return;
-            const ctx = document.getElementById('${canvasId}').getContext('2d');
+            if (typeof Chart === 'undefined' || !window.StockCharts) return;
+            const canvasId = '${canvasId}';
             const labels = [
                 @for(String l : labels)
                     '${l}',
@@ -27,8 +27,7 @@
                     $unsafe{v != null ? v.toString() : "0"},
                 @endfor
             ];
-
-            new Chart(ctx, {
+            var config = {
                 type: 'bar',
                 data: {
                     labels: labels,
@@ -47,7 +46,8 @@
                         y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString ? v.toLocaleString() : v } }
                     }
                 }
-            });
+            };
+            window['${canvasId}Instance'] = window.StockCharts.createChart(canvasId, config, window['${canvasId}Instance']);
         })();
     </script>
 </div>

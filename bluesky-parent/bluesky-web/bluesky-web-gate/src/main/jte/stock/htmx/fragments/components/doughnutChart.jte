@@ -20,8 +20,10 @@
     </div>
     <script>
         (function() {
-            if (typeof Chart === 'undefined') return;
-            const ctx = document.getElementById('${canvasId}').getContext('2d');
+            if (typeof Chart === 'undefined' || !window.StockCharts) return;
+            const canvasEl = document.getElementById('${canvasId}');
+            if (!canvasEl) return;
+            const canvasId = '${canvasId}';
             const labels = [
                 @for(String l : labels)
                     '${l}',
@@ -43,7 +45,7 @@
                 @endif
             ];
 
-            new Chart(ctx, {
+            var config = {
                 type: 'doughnut',
                 data: {
                     labels: labels,
@@ -71,7 +73,8 @@
                     },
                     cutout: '${cutout}'
                 }
-            });
+            };
+            window['${canvasId}Instance'] = window.StockCharts.createChart(canvasId, config, window['${canvasId}Instance']);
 
             const legendContainer = document.getElementById('${legendId}');
             const total = values.reduce((a, b) => a + b, 0);

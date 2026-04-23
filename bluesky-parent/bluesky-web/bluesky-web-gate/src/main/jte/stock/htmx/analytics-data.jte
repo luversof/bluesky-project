@@ -162,7 +162,7 @@
             @endif
             const type = "${chartType != null ? chartType : "bar"}";
 
-            new Chart(ctx, {
+            var config = {
                 type: type, // 'line' or 'bar'
                 data: {
                     labels: labels,
@@ -205,7 +205,9 @@
                         }
                     }
                 }
-            });
+            };
+
+            window[chartId + 'Instance'] = window.StockCharts.createChart(chartId, config, window[chartId + 'Instance']);
         })();
     </script>
 </div>
