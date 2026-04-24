@@ -350,7 +350,6 @@
         </div>
     </details>
 
-    <script src="/js/stock-charts.js"></script>
     <script>
     (function() {
         $unsafe{tradeDataJs}

@@ -5,6 +5,7 @@
 
 @param Object timeSeries
 @param String rangeMode
+@param String dataFirstDate = null
 
 !{
     java.util.List ts = (java.util.List) timeSeries;
@@ -46,11 +47,11 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                         </button>
                         <div class="flex gap-1" id="quickRangeButtons">
-                            <button type="button" class="btn btn-xs ${rangeMode != null && rangeMode.equals("mtd") ? "btn-primary" : "btn-ghost"} asset-range-btn" onclick="assetPicker.set('mtd',this)">이번달</button>
+                            <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set('mtd',this)">이번달</button>
                             <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(1,this)">1개월</button>
                             <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(3,this)">3개월</button>
                             <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(6,this)">6개월</button>
-                            <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set('ytd',this)">올해</button>
+                            <button type="button" class="btn btn-xs ${rangeMode != null && rangeMode.equals("ytd") ? "btn-primary" : "btn-ghost"} asset-range-btn" onclick="assetPicker.set('ytd',this)">올해</button>
                             <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(12,this)">1년</button>
                             <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(36,this)">3년</button>
                             <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(0,this)">전체</button>
@@ -206,6 +207,13 @@
                                                 })
                             : { set: function(){}, shift: function(){}, jumpToEdge: function(){}, setState: function(){}, setMaxDate: function(){} };
             window.assetPicker = assetPicker;
+                        // prefer server-provided overall earliest date when available
+                        try {
+                            if (assetPicker && typeof assetPicker.setMinDate === 'function') {
+                                var df = '${dataFirstDate != null ? dataFirstDate : ""}';
+                                if (df) assetPicker.setMinDate(df);
+                            }
+                        } catch(e) {}
 
             // 기본값: 페이지 진입 시 기간 미지정이면 '이번달(mtd)'을 선택 (한번만 적용하도록 세션 가드)
             try {
@@ -494,21 +502,42 @@
                 if (minIdx < 0 || isNaN(minIdx)) minIdx = 0;
                 if (maxIdx < 0 || isNaN(maxIdx)) maxIdx = labels.length - 1;
 
-                // DETAIL 상태에서도 올바르게 판단하기 위해 baseData 기준 날짜 비교
                 var visMinDate = labels[minIdx] || '';
                 var visMaxDate = labels[maxIdx] || '';
-                var atStart = visMinDate <= baseData.labels[0];
-                var atEnd   = visMaxDate >= new Date().toISOString().slice(0, 10);
+
+                // Ensure picker internal state matches current view so canShift uses correct values
+                try {
+                    if (typeof assetPicker !== 'undefined' && assetPicker && typeof assetPicker.setState === 'function') {
+                        assetPicker.setState(visMinDate, visMaxDate, '');
+                    }
+                } catch (e) {}
+
+                // Prefer DateRangePicker.canShift when available (single source of truth)
+                var disablePrev = false, disableNext = false;
+                try {
+                    if (typeof assetPicker !== 'undefined' && assetPicker && typeof assetPicker.canShift === 'function') {
+                        disablePrev = !assetPicker.canShift(-1);
+                        disableNext = !assetPicker.canShift(1);
+                    } else {
+                        // fallback to previous logic
+                        var atStart = visMinDate <= baseData.labels[0];
+                        var atEnd   = visMaxDate >= new Date().toISOString().slice(0, 10);
+                        disablePrev = atStart;
+                        disableNext = atEnd;
+                    }
+                } catch (e) {
+                    disablePrev = disableNext = false;
+                }
 
                 var btnFirst = document.getElementById('btnFirst');
                 var btnPrev = document.getElementById('btnPrev');
                 var btnNext = document.getElementById('btnNext');
                 var btnLast = document.getElementById('btnLast');
 
-                if (btnFirst) { btnFirst.style.opacity = atStart ? '0.2' : '1'; btnFirst.style.pointerEvents = atStart ? 'none' : 'auto'; btnFirst.disabled = atStart; }
-                if (btnPrev)  { btnPrev.style.opacity  = atStart ? '0.2' : '1'; btnPrev.style.pointerEvents  = atStart ? 'none' : 'auto'; btnPrev.disabled = atStart; }
-                if (btnNext)  { btnNext.style.opacity  = atEnd   ? '0.2' : '1'; btnNext.style.pointerEvents  = atEnd   ? 'none' : 'auto'; btnNext.disabled = atEnd; }
-                if (btnLast)  { btnLast.style.opacity  = atEnd   ? '0.2' : '1'; btnLast.style.pointerEvents  = atEnd   ? 'none' : 'auto'; btnLast.disabled = atEnd; }
+                if (btnFirst) { btnFirst.style.opacity = disablePrev ? '0.2' : '1'; btnFirst.style.pointerEvents = disablePrev ? 'none' : 'auto'; btnFirst.disabled = disablePrev; }
+                if (btnPrev)  { btnPrev.style.opacity  = disablePrev ? '0.2' : '1'; btnPrev.style.pointerEvents  = disablePrev ? 'none' : 'auto'; btnPrev.disabled = disablePrev; }
+                if (btnNext)  { btnNext.style.opacity  = disableNext ? '0.2' : '1'; btnNext.style.pointerEvents  = disableNext ? 'none' : 'auto'; btnNext.disabled = disableNext; }
+                if (btnLast)  { btnLast.style.opacity  = disableNext ? '0.2' : '1'; btnLast.style.pointerEvents  = disableNext ? 'none' : 'auto'; btnLast.disabled = disableNext; }
                 updateRangeDisplay(visMinDate, visMaxDate);
             };
 

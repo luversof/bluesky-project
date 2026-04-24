@@ -9,51 +9,125 @@ function fmtDate(d) {
 const DateRangePicker = (function () {
     function create(cfg) {
         const _s = { start: "", end: "", mode: "" };
-        try {
-            console.debug && console.debug("DRP:create", { globalKey: cfg && cfg.globalKey, root: cfg && cfg.rootSelector });
-        }
-        catch (e) { }
         const isCallback = () => typeof cfg.onApply === "function";
         const activeClass = () => cfg.activeClass || "btn-primary";
         const el = (id) => (id ? document.getElementById(id) : null);
-        const btns = (root) => cfg.btnClass ? Array.from((root || document).querySelectorAll("." + cfg.btnClass)) : [];
+        const btns = (root) => cfg.btnClass
+            ? Array.from((root || document).querySelectorAll("." + cfg.btnClass))
+            : [];
         function clearActive(root) {
             btns(root).forEach((b) => b.classList.remove(activeClass()));
         }
         const prevClassName = cfg.prevClass || "date-range-prev";
         const nextClassName = cfg.nextClass || "date-range-next";
+        function canShift(dir) {
+            try {
+                const start = getStart();
+                const end = getEnd();
+                const mode = getMode();
+                if (!start || mode === "all")
+                    return false;
+                const maxDate = new Date(maxDateStr() + "T00:00:00");
+                const minDate = cfg.minDate ? new Date(cfg.minDate + "T00:00:00") : null;
+                // Quick boundary checks: if current view already reaches data edge,
+                // disallow shifting further in that direction.
+                try {
+                    const sDate = start ? new Date(start + "T00:00:00") : null;
+                    const eDate = end ? new Date(end + "T00:00:00") : null;
+                    if (dir > 0 && eDate && eDate >= maxDate)
+                        return false;
+                    if (dir < 0 && sDate && minDate && sDate <= minDate)
+                        return false;
+                }
+                catch (e) { }
+                const isMtd = mode === "mtd";
+                const isYtd = !isMtd && (mode === "ytd" || (mode === "" && start.slice(5) === "01-01"));
+                if (isMtd) {
+                    const curFirst = new Date(start + "T00:00:00");
+                    const newFirst = new Date(curFirst.getFullYear(), curFirst.getMonth() + dir, 1);
+                    const thisMonthFirst = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
+                    if (dir > 0 && newFirst > thisMonthFirst)
+                        return false;
+                    if (dir < 0 && minDate)
+                        return newFirst >= minDate;
+                    return true;
+                }
+                if (isYtd) {
+                    const newYear = Number.parseInt(start.slice(0, 4), 10) + dir;
+                    if (dir > 0 && newYear > maxDate.getFullYear())
+                        return false;
+                    if (dir < 0 && minDate) {
+                        const ns = new Date(newYear + "-01-01T00:00:00");
+                        return ns >= minDate;
+                    }
+                    return true;
+                }
+                if (mode && !isNaN(+mode) && +mode > 0) {
+                    const months = +mode;
+                    const s = new Date(start + "T00:00:00");
+                    const e = end ? new Date(end + "T00:00:00") : new Date(s);
+                    s.setMonth(s.getMonth() + dir * months);
+                    e.setMonth(e.getMonth() + dir * months);
+                    if (dir > 0 && s > maxDate)
+                        return false;
+                    if (dir < 0 && minDate)
+                        return s >= minDate;
+                    return true;
+                }
+                // Free range
+                if (!end)
+                    return false;
+                const s = new Date(start + "T00:00:00");
+                const e = new Date(end + "T00:00:00");
+                const ms = e.getTime() - s.getTime();
+                if (ms <= 0)
+                    return false;
+                const ns = new Date(s.getTime() + dir * ms);
+                const ne = new Date(e.getTime() + dir * ms);
+                // when shifting forward, new end must not exceed maxDate
+                if (dir > 0 && ne > maxDate)
+                    return false;
+                // when shifting backward, new start must not be before minDate
+                if (dir < 0 && minDate)
+                    return ns >= minDate;
+                return true;
+            }
+            catch (e) {
+                return false;
+            }
+        }
         function updatePrevNextState() {
             try {
-                const prevEls = Array.from(document.querySelectorAll("." + prevClassName));
-                const nextEls = Array.from(document.querySelectorAll("." + nextClassName));
+                const root = cfg.rootSelector ? (document.querySelector(cfg.rootSelector) || document) : document;
+                const prevEls = Array.from(root.querySelectorAll("." + prevClassName));
+                const nextEls = Array.from(root.querySelectorAll("." + nextClassName));
                 const start = getStart();
                 const end = getEnd();
                 const mode = getMode();
                 const maxDate = new Date(maxDateStr() + "T00:00:00");
-                const minDate = cfg.minDate ? new Date(cfg.minDate + "T00:00:00") : null;
-                let disablePrev = false;
-                let disableNext = false;
-                if (mode === "all" || !start || !end) {
-                    disablePrev = true;
-                    disableNext = true;
-                }
-                else {
-                    const sDate = new Date(start + "T00:00:00");
-                    const eDate = new Date(end + "T00:00:00");
-                    disableNext = eDate >= maxDate;
-                    if (minDate) {
-                        disablePrev = sDate <= minDate;
-                    }
-                }
+                const minDate = cfg.minDate
+                    ? new Date(cfg.minDate + "T00:00:00")
+                    : null;
+                let disablePrev = !canShift(-1);
+                let disableNext = !canShift(1);
                 prevEls.forEach((el) => {
                     el.disabled = disablePrev;
                     if (disablePrev) {
                         el.classList.add("opacity-40");
                         el.setAttribute("aria-disabled", "true");
+                        // ensure visual dimming even if template used inline styles
+                        try {
+                            el.style.opacity = "0.2";
+                        }
+                        catch (e) { }
                     }
                     else {
                         el.classList.remove("opacity-40");
                         el.removeAttribute("aria-disabled");
+                        try {
+                            el.style.opacity = "";
+                        }
+                        catch (e) { }
                     }
                 });
                 nextEls.forEach((el) => {
@@ -61,10 +135,18 @@ const DateRangePicker = (function () {
                     if (disableNext) {
                         el.classList.add("opacity-40");
                         el.setAttribute("aria-disabled", "true");
+                        try {
+                            el.style.opacity = "0.2";
+                        }
+                        catch (e) { }
                     }
                     else {
                         el.classList.remove("opacity-40");
                         el.removeAttribute("aria-disabled");
+                        try {
+                            el.style.opacity = "";
+                        }
+                        catch (e) { }
                     }
                 });
             }
@@ -73,27 +155,52 @@ const DateRangePicker = (function () {
             }
         }
         function getStart() {
-            var _a;
-            return isCallback() ? _s.start : ((_a = el(cfg.startId)) === null || _a === void 0 ? void 0 : _a.value) || "";
+            if (isCallback())
+                return _s.start;
+            const dEl = el(cfg.startId);
+            if (dEl && dEl.value)
+                return dEl.value;
+            // fallback to instant input if date input empty
+            const instEl = el(cfg.instantStartId);
+            if (instEl && instEl.value) {
+                try {
+                    const dt = new Date(instEl.value);
+                    if (!isNaN(dt.getTime()))
+                        return fmtDate(dt);
+                }
+                catch (e) { }
+            }
+            return "";
         }
         function getEnd() {
-            var _a;
-            return isCallback() ? _s.end : ((_a = el(cfg.endId)) === null || _a === void 0 ? void 0 : _a.value) || "";
+            if (isCallback())
+                return _s.end;
+            const dEl = el(cfg.endId);
+            if (dEl && dEl.value)
+                return dEl.value;
+            const instEl = el(cfg.instantEndId);
+            if (instEl && instEl.value) {
+                try {
+                    const dt = new Date(instEl.value);
+                    if (!isNaN(dt.getTime()))
+                        return fmtDate(new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()));
+                }
+                catch (e) { }
+            }
+            return "";
         }
         function getMode() {
             var _a;
-            return isCallback() ? _s.mode : ((_a = el(cfg.rangeModeId)) === null || _a === void 0 ? void 0 : _a.value) || "";
+            return isCallback()
+                ? _s.mode
+                : ((_a = el(cfg.rangeModeId)) === null || _a === void 0 ? void 0 : _a.value) || "";
         }
         function maxDateStr() {
             return cfg.maxDate || fmtDate(new Date());
         }
         function applyRange(startStr, endStr, modeStr) {
-            var _a, _b;
+            var _a, _b, _c;
             try {
-                try {
-                    console.debug && console.debug("DRP:applyRange", { start: startStr, end: endStr, mode: modeStr, globalKey: cfg && cfg.globalKey });
-                }
-                catch (e) { }
                 if (isCallback()) {
                     _s.start = startStr;
                     _s.end = endStr;
@@ -102,8 +209,25 @@ const DateRangePicker = (function () {
                     try {
                         if (cfg.globalKey && typeof sessionStorage !== "undefined") {
                             const tz = ((_a = Intl === null || Intl === void 0 ? void 0 : Intl.DateTimeFormat) === null || _a === void 0 ? void 0 : _a.call(Intl).resolvedOptions().timeZone) || null;
-                            sessionStorage.setItem(cfg.globalKey, JSON.stringify({ start: startStr || "", end: endStr || "", mode: modeStr || "", timeZone: tz || "" }));
+                            sessionStorage.setItem(cfg.globalKey, JSON.stringify({
+                                start: startStr || "",
+                                end: endStr || "",
+                                mode: modeStr || "",
+                                timeZone: tz || "",
+                            }));
                         }
+                    }
+                    catch (e) { }
+                    // ensure prev/next buttons reflect new state in callback mode as well
+                    try {
+                        updatePrevNextState();
+                        // run again after a short delay to let charts/DOM finish animating
+                        setTimeout(() => {
+                            try {
+                                updatePrevNextState();
+                            }
+                            catch (e) { }
+                        }, 80);
                     }
                     catch (e) { }
                 }
@@ -131,7 +255,9 @@ const DateRangePicker = (function () {
                         if (cfg.instantStartId) {
                             const instSe = el(cfg.instantStartId);
                             if (instSe)
-                                instSe.value = startStr ? localDateToInstantIso(startStr, 0) : "";
+                                instSe.value = startStr
+                                    ? localDateToInstantIso(startStr, 0)
+                                    : "";
                         }
                         if (cfg.instantEndId) {
                             const instEe = el(cfg.instantEndId);
@@ -147,10 +273,27 @@ const DateRangePicker = (function () {
                             }
                         }
                         catch (e) { }
+                        // persist selection to sessionStorage even when we're using form submit mode
+                        try {
+                            if (cfg.globalKey && typeof sessionStorage !== "undefined") {
+                                const tz2 = ((_c = Intl === null || Intl === void 0 ? void 0 : Intl.DateTimeFormat) === null || _c === void 0 ? void 0 : _c.call(Intl).resolvedOptions().timeZone) || null;
+                                sessionStorage.setItem(cfg.globalKey, JSON.stringify({
+                                    start: startStr || "",
+                                    end: endStr || "",
+                                    mode: modeStr || "",
+                                    timeZone: tz2 || "",
+                                }));
+                            }
+                        }
+                        catch (e) { }
                     }
                     catch (e) { }
                     try {
                         updatePrevNextState();
+                        setTimeout(() => { try {
+                            updatePrevNextState();
+                        }
+                        catch (e) { } }, 80);
                     }
                     catch (e) { }
                     const form = el(cfg.formId);
@@ -160,7 +303,10 @@ const DateRangePicker = (function () {
                         }
                         else {
                             try {
-                                const ev = new Event("submit", { bubbles: true, cancelable: true });
+                                const ev = new Event("submit", {
+                                    bubbles: true,
+                                    cancelable: true,
+                                });
                                 const prevented = !form.dispatchEvent(ev);
                                 if (!prevented) {
                                     const tmp = document.createElement("button");
@@ -190,17 +336,69 @@ const DateRangePicker = (function () {
             }
             catch (e) { }
         }
-        function doSet(months, btn) {
+        // Apply range to inputs and update UI without submitting the form.
+        function applyRangeNoSubmit(startStr, endStr, modeStr) {
+            var _a;
             try {
-                console.debug && console.debug("DRP:doSet", { months: months, btn: btn, root: cfg && cfg.rootSelector });
+                const se = el(cfg.startId);
+                const ee = el(cfg.endId);
+                const me = el(cfg.rangeModeId);
+                if (se)
+                    se.value = startStr || "";
+                if (ee)
+                    ee.value = endStr || "";
+                if (me)
+                    me.value = modeStr || "";
+                try {
+                    function localDateToInstantIso(ds, addDays) {
+                        if (!ds)
+                            return "";
+                        const parts = ds.split("-");
+                        const y = Number.parseInt(parts[0], 10);
+                        const m = Number.parseInt(parts[1], 10) - 1;
+                        const d = Number.parseInt(parts[2], 10);
+                        const dt = new Date(y, m, d + (addDays || 0), 0, 0, 0, 0);
+                        return dt.toISOString();
+                    }
+                    if (cfg.instantStartId) {
+                        const instSe = el(cfg.instantStartId);
+                        if (instSe)
+                            instSe.value = startStr ? localDateToInstantIso(startStr, 0) : "";
+                    }
+                    if (cfg.instantEndId) {
+                        const instEe = el(cfg.instantEndId);
+                        if (instEe)
+                            instEe.value = endStr ? localDateToInstantIso(endStr, 1) : "";
+                    }
+                    try {
+                        const tz = ((_a = Intl === null || Intl === void 0 ? void 0 : Intl.DateTimeFormat) === null || _a === void 0 ? void 0 : _a.call(Intl).resolvedOptions().timeZone) || "UTC";
+                        if (cfg.timeZoneId) {
+                            const tzEl = el(cfg.timeZoneId);
+                            if (tzEl)
+                                tzEl.value = tz || "UTC";
+                        }
+                    }
+                    catch (e) { }
+                }
+                catch (e) { }
+                try {
+                    updatePrevNextState();
+                    setTimeout(() => { try {
+                        updatePrevNextState();
+                    }
+                    catch (e) { } }, 80);
+                }
+                catch (e) { }
             }
             catch (e) { }
+        }
+        function doSet(months, btn) {
             clearActive();
             if (btn) {
                 // add active style to clicked button and remove ghost style
                 try {
                     btn.classList.add(activeClass());
-                    btn.classList.remove('btn-ghost');
+                    btn.classList.remove("btn-ghost");
                 }
                 catch (e) { }
             }
@@ -249,11 +447,16 @@ const DateRangePicker = (function () {
             }
             // ensure visual state: toggle classes within configured rootSelector
             try {
-                const root = cfg.rootSelector ? (document.querySelector(cfg.rootSelector) || document) : document;
-                btns(root).forEach((b) => { b.classList.remove(activeClass()); b.classList.add('btn-ghost'); });
+                const root = cfg.rootSelector
+                    ? document.querySelector(cfg.rootSelector) || document
+                    : document;
+                btns(root).forEach((b) => {
+                    b.classList.remove(activeClass());
+                    b.classList.add("btn-ghost");
+                });
                 if (btn) {
                     btn.classList.add(activeClass());
-                    btn.classList.remove('btn-ghost');
+                    btn.classList.remove("btn-ghost");
                 }
             }
             catch (e) { }
@@ -284,7 +487,8 @@ const DateRangePicker = (function () {
                     const cs = getStart(), ce = getEnd();
                     if (!cs || !ce)
                         return;
-                    const ms = new Date(ce + "T00:00:00").getTime() - new Date(cs + "T00:00:00").getTime();
+                    const ms = new Date(ce + "T00:00:00").getTime() -
+                        new Date(cs + "T00:00:00").getTime();
                     if (ms <= 0)
                         return;
                     startStr = fmtDate(new Date(maxDate.getTime() - ms));
@@ -311,13 +515,15 @@ const DateRangePicker = (function () {
                 else if (mode === "ytd") {
                     const minYear = minD.getFullYear();
                     startStr = minYear + "-01-01";
-                    endStr = minYear === maxDate.getFullYear() ? maxStr : minYear + "-12-31";
+                    endStr =
+                        minYear === maxDate.getFullYear() ? maxStr : minYear + "-12-31";
                 }
                 else {
                     const cs = getStart(), ce = getEnd();
                     if (!cs || !ce)
                         return;
-                    const ms = new Date(ce + "T00:00:00").getTime() - new Date(cs + "T00:00:00").getTime();
+                    const ms = new Date(ce + "T00:00:00").getTime() -
+                        new Date(cs + "T00:00:00").getTime();
                     if (ms <= 0)
                         return;
                     let ne = new Date(minD.getTime() + ms);
@@ -330,10 +536,6 @@ const DateRangePicker = (function () {
             applyRange(startStr, endStr, getMode());
         }
         function doShift(dir) {
-            try {
-                console.debug && console.debug("DRP:doShift", { dir: dir, mode: getMode(), root: cfg && cfg.rootSelector });
-            }
-            catch (e) { }
             const start = getStart(), end = getEnd(), mode = getMode();
             if (!start || mode === "all")
                 return;
@@ -341,7 +543,8 @@ const DateRangePicker = (function () {
             const maxDate = new Date(maxStr + "T00:00:00");
             clearActive();
             const isMtd = mode === "mtd";
-            const isYtd = !isMtd && (mode === "ytd" || (mode === "" && start.slice(5) === "01-01"));
+            const isYtd = !isMtd &&
+                (mode === "ytd" || (mode === "" && start.slice(5) === "01-01"));
             let newStart = "", newEnd = "";
             const newMode = isMtd ? "1" : isYtd ? "12" : mode;
             if (isMtd) {
@@ -359,7 +562,8 @@ const DateRangePicker = (function () {
                 if (dir > 0 && newYear > maxDate.getFullYear())
                     return;
                 newStart = newYear + "-01-01";
-                newEnd = newYear === maxDate.getFullYear() ? maxStr : newYear + "-12-31";
+                newEnd =
+                    newYear === maxDate.getFullYear() ? maxStr : newYear + "-12-31";
             }
             else if (mode && !isNaN(+mode) && +mode > 0) {
                 const months = +mode;
@@ -393,12 +597,17 @@ const DateRangePicker = (function () {
             }
             // reactivate appropriate button inside configured root
             try {
-                const root = cfg.rootSelector ? document.querySelector(cfg.rootSelector) || document : document;
-                btns(root).forEach((b) => { b.classList.remove(activeClass()); b.classList.add('btn-ghost'); });
+                const root = cfg.rootSelector
+                    ? document.querySelector(cfg.rootSelector) || document
+                    : document;
+                btns(root).forEach((b) => {
+                    b.classList.remove(activeClass());
+                    b.classList.add("btn-ghost");
+                });
                 Array.from(root.querySelectorAll("." + cfg.btnClass)).forEach((b) => {
                     if ((b.getAttribute("onclick") || "").indexOf("set(" + newMode + ",") !== -1) {
                         b.classList.add(activeClass());
-                        b.classList.remove('btn-ghost');
+                        b.classList.remove("btn-ghost");
                     }
                 });
             }
@@ -409,25 +618,52 @@ const DateRangePicker = (function () {
             updatePrevNextState();
         }
         catch (e) { }
-        // on init: if globalKey present, try to initialize from session (scoped by rootSelector)
+        // on init: prefer sessionStorage value if cfg.globalKey provided
         try {
-            if (cfg.globalKey && !getMode() && !getStart() && !getEnd()) {
+            if (cfg.globalKey) {
                 const raw = sessionStorage.getItem(cfg.globalKey);
                 if (raw) {
                     try {
                         const obj = JSON.parse(raw);
                         if (obj) {
-                            try {
-                                console.debug && console.debug("DRP:initFromSession", { obj: obj, root: cfg && cfg.rootSelector });
-                            }
-                            catch (e) { }
-                            const root = cfg.rootSelector ? document.querySelector(cfg.rootSelector) || document : document;
+                            const root = cfg.rootSelector
+                                ? document.querySelector(cfg.rootSelector) || document
+                                : document;
                             if (obj.mode) {
-                                const btn = root.querySelector('.' + (cfg.btnClass || ''));
-                                doSet(obj.mode, btn || null);
+                                // try to find a matching button inside the configured root
+                                let foundBtn = null;
+                                try {
+                                    const candidates = Array.from(root.querySelectorAll("." + (cfg.btnClass || "")));
+                                    for (const c of candidates) {
+                                        const onclick = c.getAttribute("onclick") || "";
+                                        if (onclick.indexOf("set(" + obj.mode + ",") !== -1 ||
+                                            onclick.indexOf("set('" + obj.mode + "'") !== -1) {
+                                            foundBtn = c;
+                                            break;
+                                        }
+                                    }
+                                }
+                                catch (e) { }
+                                // Set visual state and inputs only — do NOT submit form to avoid HTMX reload loops
+                                try {
+                                    // activate matching button visuals
+                                    const rootEl = cfg.rootSelector
+                                        ? document.querySelector(cfg.rootSelector) || document
+                                        : document;
+                                    btns(rootEl).forEach((b) => {
+                                        b.classList.remove(activeClass());
+                                        b.classList.add("btn-ghost");
+                                    });
+                                    if (foundBtn) {
+                                        foundBtn.classList.add(activeClass());
+                                        foundBtn.classList.remove("btn-ghost");
+                                    }
+                                }
+                                catch (e) { }
+                                applyRangeNoSubmit(obj.start || "", obj.end || "", obj.mode || "");
                             }
                             else if (obj.start && obj.end) {
-                                applyRange(obj.start, obj.end, obj.mode || '');
+                                applyRangeNoSubmit(obj.start, obj.end, obj.mode || "");
                             }
                         }
                     }
@@ -440,8 +676,12 @@ const DateRangePicker = (function () {
             set: (months, btn) => doSet(months, btn),
             jumpToEdge: (direction) => doJumpToEdge(direction),
             shift: (dir) => doShift(dir),
-            setMinDate: (d) => { cfg.minDate = d; },
-            setMaxDate: (d) => { cfg.maxDate = d; },
+            setMinDate: (d) => {
+                cfg.minDate = d;
+            },
+            setMaxDate: (d) => {
+                cfg.maxDate = d;
+            },
             setState: (start, end, mode) => {
                 if (isCallback()) {
                     _s.start = start;
@@ -450,7 +690,15 @@ const DateRangePicker = (function () {
                 }
                 clearActive();
             },
-            getState: () => ({ start: getStart(), end: getEnd(), mode: getMode() })
+            getState: () => ({ start: getStart(), end: getEnd(), mode: getMode() }),
+            canShift: (dir) => {
+                try {
+                    return canShift(dir);
+                }
+                catch (e) {
+                    return false;
+                }
+            },
         };
     }
     return { create, fmt: fmtDate };
