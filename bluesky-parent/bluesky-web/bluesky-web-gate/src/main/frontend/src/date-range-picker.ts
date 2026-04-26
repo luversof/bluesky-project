@@ -38,22 +38,34 @@ const DateRangePicker = (function () {
 				const mode = getMode();
 				if (!start || mode === "all") return false;
 				const maxDate = new Date(maxDateStr() + "T00:00:00");
-				const minDate = cfg.minDate ? new Date(cfg.minDate + "T00:00:00") : null;
+				const minDate = cfg.minDate
+					? new Date(cfg.minDate + "T00:00:00")
+					: null;
 
-					// Quick boundary checks: if current view already reaches data edge,
-					// disallow shifting further in that direction.
-					try {
-						const sDate = start ? new Date(start + "T00:00:00") : null;
-						const eDate = end ? new Date(end + "T00:00:00") : null;
-						if (dir > 0 && eDate && eDate >= maxDate) return false;
-						if (dir < 0 && sDate && minDate && sDate <= minDate) return false;
-					} catch (e) {}
+				// Quick boundary checks: if current view already reaches data edge,
+				// disallow shifting further in that direction.
+				try {
+					const sDate = start ? new Date(start + "T00:00:00") : null;
+					const eDate = end ? new Date(end + "T00:00:00") : null;
+					if (dir > 0 && eDate && eDate >= maxDate) return false;
+					if (dir < 0 && sDate && minDate && sDate <= minDate) return false;
+				} catch (e) {}
 				const isMtd = mode === "mtd";
-				const isYtd = !isMtd && (mode === "ytd" || (mode === "" && start.slice(5) === "01-01"));
+				const isYtd =
+					!isMtd &&
+					(mode === "ytd" || (mode === "" && start.slice(5) === "01-01"));
 				if (isMtd) {
 					const curFirst = new Date(start + "T00:00:00");
-					const newFirst = new Date(curFirst.getFullYear(), curFirst.getMonth() + dir, 1);
-					const thisMonthFirst = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
+					const newFirst = new Date(
+						curFirst.getFullYear(),
+						curFirst.getMonth() + dir,
+						1,
+					);
+					const thisMonthFirst = new Date(
+						maxDate.getFullYear(),
+						maxDate.getMonth(),
+						1,
+					);
 					if (dir > 0 && newFirst > thisMonthFirst) return false;
 					if (dir < 0 && minDate) return newFirst >= minDate;
 					return true;
@@ -97,7 +109,9 @@ const DateRangePicker = (function () {
 
 		function updatePrevNextState() {
 			try {
-				const root = cfg.rootSelector ? (document.querySelector(cfg.rootSelector) || document) : document;
+				const root = cfg.rootSelector
+					? document.querySelector(cfg.rootSelector) || document
+					: document;
 				const prevEls = Array.from(
 					(root as Element).querySelectorAll("." + prevClassName),
 				) as HTMLButtonElement[];
@@ -119,11 +133,15 @@ const DateRangePicker = (function () {
 						el.classList.add("opacity-40");
 						el.setAttribute("aria-disabled", "true");
 						// ensure visual dimming even if template used inline styles
-						try { el.style.opacity = "0.2"; } catch (e) {}
+						try {
+							el.style.opacity = "0.2";
+						} catch (e) {}
 					} else {
 						el.classList.remove("opacity-40");
 						el.removeAttribute("aria-disabled");
-						try { el.style.opacity = ""; } catch (e) {}
+						try {
+							el.style.opacity = "";
+						} catch (e) {}
 					}
 				});
 				nextEls.forEach((el) => {
@@ -131,11 +149,15 @@ const DateRangePicker = (function () {
 					if (disableNext) {
 						el.classList.add("opacity-40");
 						el.setAttribute("aria-disabled", "true");
-						try { el.style.opacity = "0.2"; } catch (e) {}
+						try {
+							el.style.opacity = "0.2";
+						} catch (e) {}
 					} else {
 						el.classList.remove("opacity-40");
 						el.removeAttribute("aria-disabled");
-						try { el.style.opacity = ""; } catch (e) {}
+						try {
+							el.style.opacity = "";
+						} catch (e) {}
 					}
 				});
 			} catch (e) {
@@ -205,12 +227,32 @@ const DateRangePicker = (function () {
 							);
 						}
 					} catch (e) {}
+
+					// notify global sync listeners (callback mode)
+					try {
+						if (
+							typeof window !== "undefined" &&
+							typeof (window as any).dispatchEvent === "function"
+						) {
+							window.dispatchEvent(
+								new CustomEvent("globalDateRange:changed", {
+									detail: {
+										start: startStr || "",
+										end: endStr || "",
+										mode: modeStr || "",
+									},
+								}),
+							);
+						}
+					} catch (e) {}
 					// ensure prev/next buttons reflect new state in callback mode as well
 					try {
 						updatePrevNextState();
 						// run again after a short delay to let charts/DOM finish animating
 						setTimeout(() => {
-							try { updatePrevNextState(); } catch (e) {}
+							try {
+								updatePrevNextState();
+							} catch (e) {}
 						}, 80);
 					} catch (e) {}
 				} else {
@@ -266,10 +308,32 @@ const DateRangePicker = (function () {
 								);
 							}
 						} catch (e) {}
+
+						// notify global sync listeners that the active global range changed
+						try {
+							if (
+								typeof window !== "undefined" &&
+								typeof (window as any).dispatchEvent === "function"
+							) {
+								window.dispatchEvent(
+									new CustomEvent("globalDateRange:changed", {
+										detail: {
+											start: startStr || "",
+											end: endStr || "",
+											mode: modeStr || "",
+										},
+									}),
+								);
+							}
+						} catch (e) {}
 					} catch (e) {}
 					try {
 						updatePrevNextState();
-						setTimeout(() => { try { updatePrevNextState(); } catch (e) {} }, 80);
+						setTimeout(() => {
+							try {
+								updatePrevNextState();
+							} catch (e) {}
+						}, 80);
 					} catch (e) {}
 					const form = el(cfg.formId) as HTMLFormElement | null;
 					if (form) {
@@ -352,7 +416,11 @@ const DateRangePicker = (function () {
 				} catch (e) {}
 				try {
 					updatePrevNextState();
-					setTimeout(() => { try { updatePrevNextState(); } catch (e) {} }, 80);
+					setTimeout(() => {
+						try {
+							updatePrevNextState();
+						} catch (e) {}
+					}, 80);
 				} catch (e) {}
 			} catch (e) {}
 		}
@@ -596,49 +664,70 @@ const DateRangePicker = (function () {
 							const root = cfg.rootSelector
 								? document.querySelector(cfg.rootSelector) || document
 								: document;
-							if (obj.mode) {
-								// try to find a matching button inside the configured root
-								let foundBtn: Element | null = null;
-								try {
-									const candidates = Array.from(
-										(root as Element).querySelectorAll(
-											"." + (cfg.btnClass || ""),
-										),
-									);
-									for (const c of candidates) {
-										const onclick = c.getAttribute("onclick") || "";
-										if (
-											onclick.indexOf("set(" + obj.mode + ",") !== -1 ||
-											onclick.indexOf("set('" + obj.mode + "'") !== -1
-										) {
-											foundBtn = c as Element;
-											break;
+							// try to find a matching button inside the configured root
+							let foundBtn: Element | null = null;
+							try {
+								const candidates = Array.from(
+									(root as Element).querySelectorAll("." + (cfg.btnClass || "")),
+								);
+								for (const c of candidates) {
+									const onclick = c.getAttribute("onclick") || "";
+									if (
+										onclick.indexOf("set(" + obj.mode + ",") !== -1 ||
+										onclick.indexOf("set('" + obj.mode + "'") !== -1
+									) {
+										foundBtn = c as Element;
+										break;
+									}
+								}
+							} catch (e) {}
+							// Set visual state and inputs only
+							try {
+								const rootEl = cfg.rootSelector
+									? document.querySelector(cfg.rootSelector) || document
+									: document;
+								btns(rootEl).forEach((b: Element) => {
+									b.classList.remove(activeClass());
+									b.classList.add("btn-ghost");
+								});
+								if (foundBtn) {
+									foundBtn.classList.add(activeClass());
+									foundBtn.classList.remove("btn-ghost");
+								}
+							} catch (e) {}
+							// update inputs (no submit) so hidden instant inputs are present
+							applyRangeNoSubmit(obj.start || "", obj.end || "", obj.mode || "");
+
+							// One-time apply: call callback or submit form once per-fragment to ensure data loads
+							try {
+								const appliedKey = '__globalDateRangeApplied:' + (cfg.formId || cfg.rootSelector || cfg.btnClass || '');
+								if (!sessionStorage.getItem(appliedKey)) {
+									if (isCallback()) {
+										// ensure internal state matches session then invoke callback
+										try {
+											_s.start = obj.start || '';
+											_s.end = obj.end || '';
+											_s.mode = obj.mode || '';
+											if (typeof cfg.onApply === 'function') {
+												cfg.onApply(_s.start, _s.end, _s.mode);
+											}
+										} catch (e) {}
+									} else {
+										// non-callback (form) mode: submit the configured form so server-side fragment loads with session range
+										const formEl = el(cfg.formId) as HTMLFormElement | null;
+										if (formEl) {
+											try {
+												if (typeof formEl.requestSubmit === 'function') formEl.requestSubmit();
+												else formEl.submit();
+											} catch (e) {}
+										} else {
+											// fallback: call applyRange which will set inputs and attempt submission
+											try { applyRange(obj.start || '', obj.end || '', obj.mode || ''); } catch (e) {}
 										}
 									}
-								} catch (e) {}
-								// Set visual state and inputs only — do NOT submit form to avoid HTMX reload loops
-								try {
-									// activate matching button visuals
-									const rootEl = cfg.rootSelector
-										? document.querySelector(cfg.rootSelector) || document
-										: document;
-									btns(rootEl).forEach((b: Element) => {
-										b.classList.remove(activeClass());
-										b.classList.add("btn-ghost");
-									});
-									if (foundBtn) {
-										foundBtn.classList.add(activeClass());
-										foundBtn.classList.remove("btn-ghost");
-									}
-								} catch (e) {}
-								applyRangeNoSubmit(
-									obj.start || "",
-									obj.end || "",
-									obj.mode || "",
-								);
-							} else if (obj.start && obj.end) {
-								applyRangeNoSubmit(obj.start, obj.end, obj.mode || "");
-							}
+									try { sessionStorage.setItem(appliedKey, '1'); } catch (e) {}
+								}
+							} catch (e) {}
 						}
 					} catch (e) {}
 				}
@@ -659,24 +748,48 @@ const DateRangePicker = (function () {
 				if (isCallback()) {
 					_s.start = start;
 					_s.end = end;
-					_s.mode = mode;
+					// only overwrite internal mode when a non-empty mode is provided
+					if (mode !== undefined && mode !== null && mode !== '') {
+						_s.mode = mode;
+					}
 				}
-					// Clear active styling and ensure non-active buttons use ghost style
-					clearActive();
+				// Update button visuals only when caller explicitly provides a mode value.
+				// This prevents accidental clearing of active state during chart-driven
+				// view syncs that pass an empty mode string.
+				if (mode !== undefined) {
 					try {
-						const root = cfg.rootSelector ? document.querySelector(cfg.rootSelector) || document : document;
+						const root = cfg.rootSelector
+							? document.querySelector(cfg.rootSelector) || document
+							: document;
+						// clear and set ghost style
 						btns(root).forEach((b: Element) => {
 							try {
 								b.classList.remove(activeClass());
 								b.classList.add('btn-ghost');
 							} catch (e) {}
 						});
+						// if a concrete mode was provided, try to reactivate matching button
+						if (mode) {
+							try {
+								Array.from((root as Element).querySelectorAll('.' + (cfg.btnClass || ''))).forEach((b: Element) => {
+									const onclick = b.getAttribute && b.getAttribute('onclick') ? b.getAttribute('onclick') || '' : '';
+									if (onclick.indexOf('set(' + mode + ',') !== -1 || onclick.indexOf("set('" + mode + "'") !== -1) {
+										try { b.classList.add(activeClass()); b.classList.remove('btn-ghost'); } catch (e) {}
+									}
+								});
+							} catch (e) {}
+						}
 					} catch (e) {}
+				}
 			},
-				getState: () => ({ start: getStart(), end: getEnd(), mode: getMode() }),
-				canShift: (dir: number) => {
-					try { return canShift(dir); } catch (e) { return false; }
-				},
+			getState: () => ({ start: getStart(), end: getEnd(), mode: getMode() }),
+			canShift: (dir: number) => {
+				try {
+					return canShift(dir);
+				} catch (e) {
+					return false;
+				}
+			},
 		};
 	}
 
@@ -685,3 +798,249 @@ const DateRangePicker = (function () {
 
 // expose to global
 (globalThis as any).DateRangePicker = DateRangePicker as any;
+
+// --- Global sync helpers: ensure session-stored global range is applied to forms ---
+(function () {
+	function parseGlobal() {
+		try {
+			if (typeof sessionStorage === "undefined") return null;
+			var raw = sessionStorage.getItem("globalDateRange");
+			if (!raw) return null;
+			return JSON.parse(raw);
+		} catch (e) {
+			return null;
+		}
+	}
+
+	function localDateToInstantIso(ds: string, addDays?: number) {
+		if (!ds) return "";
+		try {
+			var parts = ds.split("-");
+			var y = Number.parseInt(parts[0], 10);
+			var m = Number.parseInt(parts[1], 10) - 1;
+			var d = Number.parseInt(parts[2], 10);
+			var dt = new Date(y, m, d + (addDays || 0), 0, 0, 0, 0);
+			return dt.toISOString();
+		} catch (e) {
+			return "";
+		}
+	}
+
+	function ensureHiddenInput(
+		form: HTMLFormElement,
+		name: string,
+		value: string,
+	) {
+		try {
+			var el = form.querySelector(
+				'input[name="' + name + '"]',
+			) as HTMLInputElement | null;
+			if (!el) {
+				el = document.createElement("input");
+				el.type = "hidden";
+				el.name = name;
+				form.appendChild(el);
+			}
+			if (el.value !== (value || "")) el.value = value || "";
+		} catch (e) {}
+	}
+
+	function applyToForm(form: HTMLFormElement) {
+		var g = parseGlobal();
+		if (!g) return;
+		// server expects ISO instants for startDate/endDate
+		var sIso = g.start ? localDateToInstantIso(g.start, 0) : "";
+		var eIso = g.end ? localDateToInstantIso(g.end, 1) : "";
+		ensureHiddenInput(form, "startDate", sIso);
+		ensureHiddenInput(form, "endDate", eIso);
+		ensureHiddenInput(form, "rangeMode", g.mode || "");
+		ensureHiddenInput(form, "timeZone", g.timeZone || "");
+	}
+
+	function shouldApplyToForm(form: HTMLFormElement) {
+		try {
+			if (!form) return false;
+			// Apply to forms that either opt-in via class or target stock/htmx endpoints
+			if (form.classList.contains("global-date-range-form")) return true;
+			var a = form.getAttribute("action") || "";
+			if (a.indexOf("/stock/htmx") !== -1) return true;
+			// also apply to forms that have hx-get or hx-post pointing to stock htmx
+			var hx =
+				form.getAttribute("hx-get") || form.getAttribute("hx-post") || "";
+			if (hx.indexOf("/stock/htmx") !== -1) return true;
+			return false;
+		} catch (e) {
+			return false;
+		}
+	}
+
+	function syncAll() {
+		try {
+			var forms = Array.from(
+				document.getElementsByTagName("form"),
+			) as HTMLFormElement[];
+			forms.forEach(function (f) {
+				if (shouldApplyToForm(f)) applyToForm(f);
+			});
+		} catch (e) {}
+	}
+
+	// Update a specific form (closest ancestor) before HTMX request
+	try {
+		document.addEventListener("htmx:beforeRequest", function (evt: any) {
+			try {
+				var el = evt && evt.detail && evt.detail.elt ? evt.detail.elt : null;
+				if (!el) return;
+				// If the triggering element sits inside a form, update that form's hidden inputs
+				var form =
+					el.closest && el.closest("form")
+						? (el.closest("form") as HTMLFormElement)
+						: null;
+				if (form && shouldApplyToForm(form)) {
+					applyToForm(form);
+					return;
+				}
+				// If this is an element with hx-get/hx-post pointing to /stock/htmx, set hx-vals so htmx includes params
+				var hxget =
+					el.getAttribute &&
+					(el.getAttribute("hx-get") || el.getAttribute("hx-post"));
+				if (hxget && hxget.indexOf("/stock/htmx") !== -1) {
+					var g = parseGlobal();
+					if (!g) return;
+					var sIso = g.start ? localDateToInstantIso(g.start, 0) : "";
+					var eIso = g.end ? localDateToInstantIso(g.end, 1) : "";
+					var vals = {
+						startDate: sIso,
+						endDate: eIso,
+						rangeMode: g.mode || "",
+						timeZone: g.timeZone || "",
+					};
+					try {
+						// merge with existing hx-vals if present
+						var existing = el.getAttribute("hx-vals");
+						if (existing) {
+							try {
+								var exObj = JSON.parse(existing);
+								for (var k in exObj) {
+									if (!(k in vals)) (vals as any)[k] = exObj[k];
+								}
+							} catch (e) {}
+						}
+						el.setAttribute("hx-vals", JSON.stringify(vals));
+					} catch (e) {}
+				}
+			} catch (e) {}
+		});
+	} catch (e) {}
+
+	// Intercept clicks on anchor links to stock pages and append global date params when missing
+	function appendQueryParamsToLink(a: HTMLAnchorElement) {
+		try {
+			if (!a || !a.href) return;
+			if (
+				a.target === "_blank" ||
+				a.hasAttribute("download") ||
+				a.hasAttribute("data-no-global")
+			)
+				return;
+			var loc = window.location;
+			var url: URL;
+			try {
+				url = new URL(a.href, loc.origin);
+			} catch (e) {
+				return;
+			}
+			if (url.origin !== loc.origin) return;
+			if (url.pathname.indexOf("/stock") === -1) return;
+			var params = new URLSearchParams(url.search);
+			if (
+				params.has("startDate") ||
+				params.has("endDate") ||
+				params.has("rangeMode")
+			)
+				return;
+			var g = parseGlobal();
+			if (!g) return;
+			if (g.start) params.set("startDate", localDateToInstantIso(g.start, 0));
+			if (g.end) params.set("endDate", localDateToInstantIso(g.end, 1));
+			if (g.mode) params.set("rangeMode", g.mode || "");
+			if (g.timeZone) params.set("timeZone", g.timeZone || "");
+			url.search = params.toString();
+			a.href = url.toString();
+		} catch (e) {}
+	}
+
+	try {
+		document.addEventListener(
+			"click",
+			function (evt: MouseEvent) {
+				try {
+					if (!evt || evt.defaultPrevented) return;
+					// ignore modifier clicks (open in new tab/window)
+					if (evt.metaKey || evt.ctrlKey || evt.shiftKey || evt.altKey) return;
+					if (evt.button && evt.button !== 0) return;
+					var target = evt.target as Element | null;
+					if (!target) return;
+					var a =
+						target.closest && (target.closest as any)("a")
+							? ((target.closest as any)("a") as HTMLAnchorElement)
+							: null;
+					if (!a) return;
+					appendQueryParamsToLink(a);
+				} catch (e) {}
+			},
+			true,
+		);
+	} catch (e) {}
+
+	// On full page load / PJAX / initial render
+	try {
+		document.addEventListener("DOMContentLoaded", function() {
+			syncAll();
+			// After syncing hidden inputs, submit forms that target /stock/htmx so fragments
+			// load with the session-stored range. Use a short timeout to allow DOM to finish.
+			setTimeout(function() {
+				try {
+					var forms = Array.from(document.getElementsByTagName('form')) as HTMLFormElement[];
+					forms.forEach(function(f) {
+						try {
+							if (shouldApplyToForm(f)) {
+								// if the form contains visible UI date inputs and the session has range,
+								// prefer submitting to load fragment data consistently
+								var g = parseGlobal();
+								if (g && (g.start || g.end)) {
+									try {
+										if (typeof f.requestSubmit === 'function') f.requestSubmit();
+										else f.submit();
+									} catch(e) {}
+								}
+							}
+						} catch(e) {}
+					});
+				} catch(e) {}
+			}, 30);
+		});
+	} catch (e) {}
+
+	// Also sync after HTMX swaps (when new fragments loaded)
+	try {
+		document.addEventListener("htmx:afterSwap", function () {
+			setTimeout(syncAll, 20);
+		});
+	} catch (e) {}
+
+	// When DateRangePicker updates session storage, it dispatches this event — react by syncing forms
+	try {
+		window.addEventListener("globalDateRange:changed", function () {
+			setTimeout(syncAll, 10);
+		});
+	} catch (e) {}
+
+	// expose for debugging
+	try {
+		(window as any).GlobalDateRangeSync = {
+			syncAll: syncAll,
+			applyToForm: applyToForm,
+		};
+	} catch (e) {}
+})();

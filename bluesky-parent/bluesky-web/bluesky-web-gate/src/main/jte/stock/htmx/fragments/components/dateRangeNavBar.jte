@@ -12,14 +12,14 @@
     <span class="text-xs opacity-50 mr-1">기간</span>
     <button type="button" class="btn btn-xs btn-ghost date-range-prev${!canPrev ? " btn-disabled opacity-40" : ""}" $unsafe{!canPrev ? "disabled" : ""} onclick="${pickerName}.jumpToEdge('start')">«</button>
     <button type="button" class="btn btn-xs btn-ghost date-range-prev${!canPrev ? " btn-disabled opacity-40" : ""}" $unsafe{!canPrev ? "disabled" : ""} onclick="${pickerName}.shift(-1)">‹ 이전</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("mtd") ? "btn-primary" : ""}" onclick="${pickerName}.set('mtd',this)">이번달</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : ""}" onclick="${pickerName}.set(1,this)">1개월</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("3") ? "btn-primary" : ""}" onclick="${pickerName}.set(3,this)">3개월</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("6") ? "btn-primary" : ""}" onclick="${pickerName}.set(6,this)">6개월</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("ytd") ? "btn-primary" : ""}" onclick="${pickerName}.set('ytd',this)">올해</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("12") ? "btn-primary" : ""}" onclick="${pickerName}.set(12,this)">1년</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("36") ? "btn-primary" : ""}" onclick="${pickerName}.set(36,this)">3년</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("all") ? "btn-primary" : ""}" onclick="${pickerName}.set(0,this)">전체</button>
+    <button type="button" class="btn btn-xs ${btnClass} btn-ghost" onclick="${pickerName}.set('mtd',this)">이번달</button>
+    <button type="button" class="btn btn-xs ${btnClass} btn-ghost" onclick="${pickerName}.set(1,this)">1개월</button>
+    <button type="button" class="btn btn-xs ${btnClass} btn-ghost" onclick="${pickerName}.set(3,this)">3개월</button>
+    <button type="button" class="btn btn-xs ${btnClass} btn-ghost" onclick="${pickerName}.set(6,this)">6개월</button>
+    <button type="button" class="btn btn-xs ${btnClass} btn-ghost" onclick="${pickerName}.set('ytd',this)">올해</button>
+    <button type="button" class="btn btn-xs ${btnClass} btn-ghost" onclick="${pickerName}.set(12,this)">1년</button>
+    <button type="button" class="btn btn-xs ${btnClass} btn-ghost" onclick="${pickerName}.set(36,this)">3년</button>
+    <button type="button" class="btn btn-xs ${btnClass} btn-ghost" onclick="${pickerName}.set(0,this)">전체</button>
     <button type="button" class="btn btn-xs btn-ghost date-range-next${!canNext ? " btn-disabled opacity-40" : ""}" $unsafe{!canNext ? "disabled" : ""} onclick="${pickerName}.shift(1)">다음 ›</button>
     <button type="button" class="btn btn-xs btn-ghost date-range-next${!canNext ? " btn-disabled opacity-40" : ""}" $unsafe{!canNext ? "disabled" : ""} onclick="${pickerName}.jumpToEdge('end')">»</button>
     @if(startDate != null || endDate != null)

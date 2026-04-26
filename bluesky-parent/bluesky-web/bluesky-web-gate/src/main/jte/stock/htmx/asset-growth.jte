@@ -51,7 +51,7 @@
                             <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(1,this)">1개월</button>
                             <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(3,this)">3개월</button>
                             <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(6,this)">6개월</button>
-                            <button type="button" class="btn btn-xs ${rangeMode != null && rangeMode.equals("ytd") ? "btn-primary" : "btn-ghost"} asset-range-btn" onclick="assetPicker.set('ytd',this)">올해</button>
+                            <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set('ytd',this)">올해</button>
                             <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(12,this)">1년</button>
                             <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(36,this)">3년</button>
                             <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(0,this)">전체</button>
@@ -1029,8 +1029,24 @@
                 }, 500);
             };
 
-            // 초기 로드: 기본 표시 범위 기준으로 매매 내역 로드
-            refreshTradeHistory(defaultMinDate, defaultMaxDate);
+            // 초기 로드: 세션 전역 기간이 있으면 우선 사용하고, 없으면 기본 표시 범위를 사용
+            try {
+                var __initialFrom = defaultMinDate;
+                var __initialTo = defaultMaxDate;
+                try {
+                    var __raw = (typeof sessionStorage !== 'undefined') ? sessionStorage.getItem('globalDateRange') : null;
+                    if (__raw) {
+                        var __g = JSON.parse(__raw);
+                        if (__g && __g.start && __g.end) {
+                            __initialFrom = __g.start;
+                            __initialTo = __g.end;
+                        }
+                    }
+                } catch(e) { /* ignore */ }
+                refreshTradeHistory(__initialFrom, __initialTo);
+            } catch(e) {
+                refreshTradeHistory(defaultMinDate, defaultMaxDate);
+            }
         })();
     </script>
     @endif
