@@ -369,7 +369,8 @@
             };
 
             var checkAndFetchDetail = function() {
-                if (!mainChart || isFetching) { setLoading(false); return; }
+                console.debug('[asset-growth] checkAndFetchDetail start', { mainChartExists: !!mainChart, isFetching: isFetching, labelsLen: labels.length, baseTier: baseDataTierNum, currentTier: currentTierNum });
+                if (!mainChart || isFetching) { setLoading(false); console.debug('[asset-growth] aborted: no chart or already fetching'); return; }
 
                 // pendingVisStart/End 가 있으면 우선 사용 (shiftView/setViewRange 가 명시적으로 지정한 날짜)
                 // 없으면 scales.x 에서 읽음 (zoom/pan 콜백)
@@ -385,8 +386,9 @@
                     visEnd   = od.visEnd;
                 }
                 var visibleDays = (new Date(visEnd) - new Date(visStart)) / 86400000;
-                if (visibleDays < 0) { setLoading(false); return; }
+                if (visibleDays < 0) { setLoading(false); console.debug('[asset-growth] aborted: visibleDays<0', visStart, visEnd); return; }
                 var neededTier = visibleDays <= 180 ? 2 : (visibleDays <= 730 ? 1 : 0);
+                console.debug('[asset-growth] visStart/visEnd', visStart, visEnd, 'visibleDays', visibleDays, 'neededTier', neededTier);
 
                 if (currentTierNum > baseDataTierNum) {
                     // ── DETAIL 모드 ──────────────────────────────────────────
@@ -395,6 +397,7 @@
                     // → 이 시점을 BASE 복원 트리거로 사용 (% 비교보다 명확하고 신뢰성 높음)
                     var atDetailEdge = visStart <= labels[0] && visEnd >= labels[labels.length - 1];
                     if (atDetailEdge) {
+                        console.debug('[asset-growth] atDetailEdge -> restore baseData');
                         applyChartData(baseData, baseData.labels[0], baseData.labels[baseData.labels.length - 1]);
                         currentTierNum = baseDataTierNum;
                         setLoading(false);
@@ -403,18 +406,37 @@
 
                     // 현재 DETAIL 데이터가 뷰포트를 완전히 커버하고 충분히 세밀하면 종료
                     var detailCoversView = visStart >= labels[0] && visEnd <= labels[labels.length - 1];
-                    if (detailCoversView && neededTier <= currentTierNum) { setLoading(false); return; }
+                    if (detailCoversView && neededTier <= currentTierNum) { console.debug('[asset-growth] detailCoversView && neededTier <= currentTierNum -> no fetch'); setLoading(false); return; }
 
                     // 커버 바깥이거나 더 세밀한 데이터 필요 → cache/fetch 로 fall through
                     // (아래 BASE 모드 조기 return 체크는 건너뜀)
                 } else {
-                    // ── BASE 모드 ─────────────────────────────────────────────
-                    // 현재 granularity 로 충분 → fetch 불필요
-                    if (neededTier <= baseDataTierNum) { setLoading(false); return; }
-                    if (neededTier <= currentTierNum) { setLoading(false); return; }
+                        // ── BASE 모드 ─────────────────────────────────────────────
+                        // 기본 데이터(baseData) 해상도가 충분하더라도 요청한 뷰가 baseData 범위 밖이면
+                        // 서버에서 더 넓은 범위의 데이터를 가져와야 함. 따라서 baseData가 실제로 범위를
+                        // 커버하는지 확인 후에만 조기 종료한다.
+                        var baseCoversRange = false;
+                        try {
+                            baseCoversRange = baseData && baseData.labels && baseData.labels.length > 0
+                                && visStart >= baseData.labels[0] && visEnd <= baseData.labels[baseData.labels.length - 1];
+                        } catch (e) { baseCoversRange = false; }
+                        if (baseCoversRange && neededTier <= baseDataTierNum) {
+                            console.debug('[asset-growth] BASE mode: baseData covers requested range and granularity sufficient -> apply baseData view and no fetch');
+                            try { applyChartData(baseData, visStart, visEnd); } catch (e) { /* noop */ }
+                            currentTierNum = baseDataTierNum;
+                            setLoading(false);
+                            return;
+                        }
+                        if (baseCoversRange && neededTier <= currentTierNum) {
+                            console.debug('[asset-growth] BASE mode: neededTier <= currentTierNum and baseData covers range -> apply baseData view and no fetch');
+                            try { applyChartData(baseData, visStart, visEnd); } catch (e) { /* noop */ }
+                            setLoading(false);
+                            return;
+                        }
                 }
 
                 // 클라이언트 캐시 확인
+                console.debug('[asset-growth] checking cache entries', detailCacheEntries.length);
                 for (var i = 0; i < detailCacheEntries.length; i++) {
                     var c = detailCacheEntries[i];
                     if (c.tier >= neededTier && c.start <= visStart && c.end >= visEnd) {
@@ -437,6 +459,8 @@
                     fetchEnd.setDate(fetchEnd.getDate() + 30);
                     var startStr = fetchStart.toISOString().split('T')[0];
                     var endStr = fetchEnd.toISOString().split('T')[0];
+
+                    console.debug('[asset-growth] fetching detail', { startStr: startStr, endStr: endStr, gran: capturedNeededTier === 2 ? 'DAILY' : 'WEEKLY' });
 
                     isFetching = true;
                     var granStr = capturedNeededTier === 2 ? 'DAILY' : 'WEEKLY';
@@ -464,9 +488,14 @@
                             var viewIsNarrowEnough =
                                 (entry.tier === 2 && curVD <= 180) ||
                                 (entry.tier === 1 && curVD <= 730);
-                            if (viewIsNarrowEnough) {
+                            var entryCoversView = entry.start <= capturedVisStart && entry.end >= capturedVisEnd;
+                            console.debug && console.debug('[asset-growth] fetched entry', { tier: entry.tier, start: entry.start, end: entry.end, curVD: curVD, entryCoversView: entryCoversView, viewIsNarrowEnough: viewIsNarrowEnough });
+                            // Apply immediately if the fetched entry actually covers the requested view
+                            if (entryCoversView || viewIsNarrowEnough) {
                                 applyChartData(entry, capturedVisStart, capturedVisEnd);
                                 currentTierNum = entry.tier;
+                            } else {
+                                console.debug && console.debug('[asset-growth] fetched entry cached only (will apply when view narrows or when cache covers view)');
                             }
                         })
                         .catch(function(e) { console.warn('Detail fetch failed:', e); })
@@ -943,7 +972,15 @@
                     var __gApply = JSON.parse(__rawApply);
                     if (__gApply && (__gApply.start || __gApply.end || __gApply.mode)) {
                         try { assetPicker.setState(__gApply.start || '', __gApply.end || '', __gApply.mode || ''); } catch (e) {}
-                        try { applyRangeToChart(__gApply.start || '', __gApply.end || ''); } catch (e) {}
+                        try {
+                            // If a saved mode exists (e.g. 6, 'mtd', 'ytd'), prefer re-computing
+                            // the start/end from the mode (so it uses current maxDate/minDate)
+                            if (__gApply.mode) {
+                                try { assetPicker.set(__gApply.mode); } catch (e) { applyRangeToChart(__gApply.start || '', __gApply.end || ''); }
+                            } else {
+                                try { applyRangeToChart(__gApply.start || '', __gApply.end || ''); } catch (e) {}
+                            }
+                        } catch (e) {}
                     }
                 }
             } catch (e) {}
