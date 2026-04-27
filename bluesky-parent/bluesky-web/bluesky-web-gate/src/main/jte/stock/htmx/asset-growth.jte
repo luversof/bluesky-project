@@ -936,6 +936,18 @@
 
             });
 
+            // 세션에 저장된 전역 기간이 있으면 차트 생성 직후 적용
+            try {
+                var __rawApply = (typeof sessionStorage !== 'undefined') ? sessionStorage.getItem('globalDateRange') : null;
+                if (__rawApply) {
+                    var __gApply = JSON.parse(__rawApply);
+                    if (__gApply && (__gApply.start || __gApply.end || __gApply.mode)) {
+                        try { assetPicker.setState(__gApply.start || '', __gApply.end || '', __gApply.mode || ''); } catch (e) {}
+                        try { applyRangeToChart(__gApply.start || '', __gApply.end || ''); } catch (e) {}
+                    }
+                }
+            } catch (e) {}
+
             // 초기 버튼 상태 업데이트
             checkNavButtons();
 
