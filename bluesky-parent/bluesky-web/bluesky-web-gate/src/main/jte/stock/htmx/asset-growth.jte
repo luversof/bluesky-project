@@ -6,10 +6,35 @@
 @param Object timeSeries
 @param String rangeMode
 @param String dataFirstDate = null
+@param java.time.Instant startDate = null
+@param java.time.Instant endDate = null
+@param String timeZone = null
 
 !{
     java.util.List ts = (java.util.List) timeSeries;
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    boolean isAllMode = "all".equals(rangeMode);
+    java.time.ZoneId zone = (timeZone != null && !timeZone.isEmpty())
+        ? java.time.ZoneId.of(timeZone)
+        : java.time.ZoneId.systemDefault();
+    java.time.LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
+    java.time.LocalDate endLocal = endDate != null ? endDate.atZone(zone).toLocalDate() : null;
+    if (startLocal == null && ts != null && !ts.isEmpty()) {
+        try {
+            TradeProfitTimeSeriesPoint firstPt = (TradeProfitTimeSeriesPoint) ts.get(0);
+            if (firstPt != null && firstPt.timestamp() != null) startLocal = firstPt.timestamp().atZone(zone).toLocalDate();
+        } catch (Exception e) { }
+    }
+    if (endLocal == null && ts != null && !ts.isEmpty()) {
+        try {
+            TradeProfitTimeSeriesPoint lastPt = (TradeProfitTimeSeriesPoint) ts.get(ts.size() - 1);
+            if (lastPt != null && lastPt.timestamp() != null) endLocal = lastPt.timestamp().atZone(zone).toLocalDate();
+        } catch (Exception e) { }
+    }
+    java.time.LocalDate today = java.time.LocalDate.now(zone);
+    boolean canNext = !isAllMode && endLocal != null && endLocal.isBefore(today);
+    boolean canPrev = !isAllMode && startLocal != null && dataFirstDate != null && !dataFirstDate.isEmpty()
+        && startLocal.isAfter(java.time.LocalDate.parse(dataFirstDate));
 }
 
 <div id="assetGrowthFragment" class="card bg-base-100 shadow-xl">
@@ -39,32 +64,21 @@
                 </div>
             @else
                 <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center gap-1">
-                        <button type="button" id="btnFirst" class="btn btn-xs btn-ghost btn-circle date-range-prev" style="opacity:0.2;" onclick="assetPicker.jumpToEdge('start')" title="제일 앞으로">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
-                        </button>
-                        <button type="button" id="btnPrev" class="btn btn-xs btn-ghost btn-circle date-range-prev" style="opacity:0.2;" onclick="assetPicker.shift(-1)" title="이전 기간">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-                        </button>
-                        <div class="flex gap-1" id="quickRangeButtons">
-                            <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set('mtd',this)">이번달</button>
-                            <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(1,this)">1개월</button>
-                            <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(3,this)">3개월</button>
-                            <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(6,this)">6개월</button>
-                            <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set('ytd',this)">올해</button>
-                            <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(12,this)">1년</button>
-                            <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(36,this)">3년</button>
-                            <button type="button" class="btn btn-xs btn-ghost asset-range-btn" onclick="assetPicker.set(0,this)">전체</button>
-                        </div>
-                        <button type="button" id="btnNext" class="btn btn-xs btn-ghost btn-circle date-range-next" onclick="assetPicker.shift(1)" title="다음 기간">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-                        </button>
-                        <button type="button" id="btnLast" class="btn btn-xs btn-ghost btn-circle date-range-next" onclick="assetPicker.jumpToEdge('end')" title="제일 뒤로">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
-                        </button>
+                    <div class="flex items-center gap-1 asset-growth-nav-wrapper">
+                        @template.stock.htmx.fragments.dateRangeNavBar(
+                            pickerName = "assetPicker",
+                            btnClass = "asset-range-btn",
+                            canPrev = canPrev,
+                            canNext = canNext,
+                            rangeMode = rangeMode
+                        )
                         <span id="assetRangeDisplay" class="text-xs text-base-content/40 ml-1"></span>
                     </div>
                     <p class="text-xs text-base-content/50">📈 자산 추이 &mdash; 투자 원금(점선) 대비 총 평가액(실선), 색상 면적이 현재 손익 규모 &bull; <span class="text-info">날짜 클릭 시 해당일 보유 종목 조회</span></p>
+                    <style>
+                        /* Remove default bottom margin from the included nav component so it aligns with the description */
+                        .asset-growth-nav-wrapper > div { margin-bottom: 0 !important; }
+                    </style>
                 </div>
                 <div class="w-full relative" style="height: 450px;">
                     <canvas id="assetGrowthChart" class="amount-chart"></canvas>
@@ -154,6 +168,8 @@
             };
             var detailFetchTimer = null;
             var checkDetailTimer = null;
+            var forceDetailFetch = false;
+            var deferRangeDisplay = false;
             // DateRangePicker(콜백모드)가 내부 상태로 관리 — activeMonths 불필요
             var pendingVisStart = null;
             var pendingVisEnd   = null;
@@ -170,7 +186,40 @@
             };
 
             // 기간 선택 피커 onApply 콜백: 날짜 문자열 → 차트 인덱스 적용
-            var applyRangeToChart = function(startStr, endStr) {
+            // Accept optional third arg `mode` (e.g. 'all') when DateRangePicker
+            // calls the callback with a mode value. If mode==='all' or both
+            // start/end are empty, treat as '전체' and apply baseData immediately.
+            var applyRangeToChart = function(startStr, endStr, mode) {
+                try {
+                    if ((mode === 'all') || (!startStr && !endStr)) {
+                        if (baseData && baseData.labels && baseData.labels.length > 0) {
+                            // Treat 'all' as the entire available span. Prefer server-provided
+                            // earliest date (`df`) if available; otherwise fall back to
+                            // baseData's first label.
+                            var rawStart = (typeof df !== 'undefined' && df) ? df : baseData.labels[0];
+                            startStr = rawStart;
+                            endStr = baseData.labels[baseData.labels.length - 1];
+                            try { applyChartData(baseData, startStr, endStr); currentTierNum = baseDataTierNum; } catch (e) {}
+                            updateRangeDisplay(startStr, endStr);
+                            // mark that caller explicitly requested full-range; bypass
+                            // the "base covers range" early-exit in checkAndFetchDetail
+                            forceDetailFetch = true;
+                        }
+                    }
+
+                    // If caller passed a numeric preset (e.g. '6' months) that is
+                    // large enough, prefer to force a detail fetch so the chart can
+                    // obtain daily-resolution data and align precisely to the
+                    // requested dates instead of snapping to coarse base labels.
+                    try {
+                        if (mode && (/^\d+$/.test(String(mode)))) {
+                            var _monthsNum = Number(mode);
+                            if (!isNaN(_monthsNum) && _monthsNum >= 6) {
+                                forceDetailFetch = true;
+                            }
+                        }
+                    } catch (e) {}
+                } catch (e) {}
                 if (!mainChart || !dividendChart) return;
                 // DETAIL 범위를 벗어나면 BASE 로 복원
                 if (currentTierNum > baseDataTierNum && labels.length > 0) {
@@ -186,12 +235,47 @@
                 if (newMaxIdx < newMinIdx) newMaxIdx = Math.min(newMinIdx + 1, labels.length - 1);
                 pendingVisStart = startStr;
                 pendingVisEnd   = endStr;
-                updateRangeDisplay(startStr, endStr);
+                // Align the UI/trade-history window to the chart labels rather than
+                // the raw requested dates to avoid snapping mismatches.
+                var displayStart = (labels && labels.length > 0) ? labels[newMinIdx] : startStr;
+                var displayEnd = (labels && labels.length > 0) ? labels[newMaxIdx] : endStr;
+                // Defer visual text update until the chart animation / nav check
+                // settles so we only update once (avoids double-flash).
+                deferRangeDisplay = true;
+                // Update the shared globalDateRange with the label-aligned values
+                // so subsequent reloads or other fragments will see the same
+                // normalized range instead of the raw requested dates.
+                try {
+                    if (typeof sessionStorage !== 'undefined') {
+                        var __tz = (Intl && Intl.DateTimeFormat) ? Intl.DateTimeFormat().resolvedOptions().timeZone : null;
+                        sessionStorage.setItem('globalDateRange', JSON.stringify({ start: displayStart || '', end: displayEnd || '', mode: mode || '', timeZone: __tz || '' }));
+                    }
+                } catch (e) {}
                 setLoading(true);
                 clearTimeout(checkDetailTimer);
                 checkDetailTimer = setTimeout(checkAndFetchDetail, 200);
                 animateScaleChange(newMinIdx, newMaxIdx, 320);
-                refreshTradeHistory(startStr, endStr);
+                // When a full-range ('all') was requested we expand the trade-history
+                // window by 30 days on both sides so it matches the data fetch buffer
+                // used by `checkAndFetchDetail`. Otherwise use the visible range.
+                try {
+                    // Use the label-aligned dates for trade-history to keep both
+                    // components in sync and avoid showing a different (raw)
+                    // requested range while the chart snaps to label boundaries.
+                    var thFrom = displayStart || defaultMinDate;
+                    var thTo = displayEnd || defaultMaxDate;
+                    if (mode === 'all') {
+                        try {
+                            var _fs = new Date((startStr || defaultMinDate) + 'T00:00:00');
+                            var _fe = new Date((endStr || defaultMaxDate) + 'T00:00:00');
+                            _fs.setDate(_fs.getDate() - 30);
+                            _fe.setDate(_fe.getDate() + 30);
+                            thFrom = _fs.toISOString().split('T')[0];
+                            thTo = _fe.toISOString().split('T')[0];
+                        } catch (e) {}
+                    }
+                    refreshTradeHistory(thFrom, thTo);
+                } catch (e) { refreshTradeHistory(startStr, endStr); }
             };
                         var assetPicker = window.DateRangePicker
                                             ? window.DateRangePicker.create({
@@ -420,14 +504,14 @@
                             baseCoversRange = baseData && baseData.labels && baseData.labels.length > 0
                                 && visStart >= baseData.labels[0] && visEnd <= baseData.labels[baseData.labels.length - 1];
                         } catch (e) { baseCoversRange = false; }
-                        if (baseCoversRange && neededTier <= baseDataTierNum) {
+                        if (!forceDetailFetch && baseCoversRange && neededTier <= baseDataTierNum) {
                             console.debug('[asset-growth] BASE mode: baseData covers requested range and granularity sufficient -> apply baseData view and no fetch');
                             try { applyChartData(baseData, visStart, visEnd); } catch (e) { /* noop */ }
                             currentTierNum = baseDataTierNum;
                             setLoading(false);
                             return;
                         }
-                        if (baseCoversRange && neededTier <= currentTierNum) {
+                        if (!forceDetailFetch && baseCoversRange && neededTier <= currentTierNum) {
                             console.debug('[asset-growth] BASE mode: neededTier <= currentTierNum and baseData covers range -> apply baseData view and no fetch');
                             try { applyChartData(baseData, visStart, visEnd); } catch (e) { /* noop */ }
                             setLoading(false);
@@ -448,7 +532,7 @@
                 }
 
                 // 서버 조회 스케줄 (debounce 400ms) — 현 시점 날짜를 캡처해서 사용
-                var capturedNeededTier = neededTier;
+                var capturedNeededTier = forceDetailFetch ? 2 : neededTier;
                 var capturedVisStart = visStart;
                 var capturedVisEnd = visEnd;
                 clearTimeout(detailFetchTimer);
@@ -499,7 +583,7 @@
                             }
                         })
                         .catch(function(e) { console.warn('Detail fetch failed:', e); })
-                        .finally(function() { setFetching(false); });
+                        .finally(function() { setFetching(false); forceDetailFetch = false; });
                 }, 400);
             };
             // ─────────────────────────────────────────────────────────────────
@@ -558,15 +642,37 @@
                     disablePrev = disableNext = false;
                 }
 
-                var btnFirst = document.getElementById('btnFirst');
-                var btnPrev = document.getElementById('btnPrev');
-                var btnNext = document.getElementById('btnNext');
-                var btnLast = document.getElementById('btnLast');
+                // scope to this fragment to avoid touching other navs on the page
+                var rootEl = document.getElementById('assetGrowthFragment') || document;
+                var prevEls = Array.from(rootEl.querySelectorAll('.date-range-prev'));
+                var nextEls = Array.from(rootEl.querySelectorAll('.date-range-next'));
+                // include legacy ID buttons if present
+                ['btnFirst','btnPrev'].forEach(function(id){ var e = document.getElementById(id); if (e && prevEls.indexOf(e) === -1) prevEls.push(e); });
+                ['btnNext','btnLast'].forEach(function(id){ var e = document.getElementById(id); if (e && nextEls.indexOf(e) === -1) nextEls.push(e); });
 
-                if (btnFirst) { btnFirst.style.opacity = disablePrev ? '0.2' : '1'; btnFirst.style.pointerEvents = disablePrev ? 'none' : 'auto'; btnFirst.disabled = disablePrev; }
-                if (btnPrev)  { btnPrev.style.opacity  = disablePrev ? '0.2' : '1'; btnPrev.style.pointerEvents  = disablePrev ? 'none' : 'auto'; btnPrev.disabled = disablePrev; }
-                if (btnNext)  { btnNext.style.opacity  = disableNext ? '0.2' : '1'; btnNext.style.pointerEvents  = disableNext ? 'none' : 'auto'; btnNext.disabled = disableNext; }
-                if (btnLast)  { btnLast.style.opacity  = disableNext ? '0.2' : '1'; btnLast.style.pointerEvents  = disableNext ? 'none' : 'auto'; btnLast.disabled = disableNext; }
+                var applyDisableToList = function(list, disabled) {
+                    list.forEach(function(el){
+                        try {
+                            el.style.opacity = disabled ? '0.2' : '1';
+                            el.style.pointerEvents = disabled ? 'none' : 'auto';
+                            el.disabled = disabled;
+                            if (disabled) {
+                                el.classList.add('btn-disabled');
+                                el.classList.add('opacity-40');
+                            } else {
+                                el.classList.remove('btn-disabled');
+                                el.classList.remove('opacity-40');
+                            }
+                        } catch (e) { /* ignore */ }
+                    });
+                };
+
+                applyDisableToList(prevEls, disablePrev);
+                applyDisableToList(nextEls, disableNext);
+                // If a range update was deferred while the chart animated, allow
+                // the nav check to perform the single visible update and clear
+                // the defer flag so subsequent interactions update normally.
+                try { if (deferRangeDisplay) { deferRangeDisplay = false; } } catch (e) {}
                 updateRangeDisplay(visMinDate, visMaxDate);
             };
 
@@ -976,9 +1082,27 @@
                             // If a saved mode exists (e.g. 6, 'mtd', 'ytd'), prefer re-computing
                             // the start/end from the mode (so it uses current maxDate/minDate)
                             if (__gApply.mode) {
-                                try { assetPicker.set(__gApply.mode); } catch (e) { applyRangeToChart(__gApply.start || '', __gApply.end || ''); }
+                                try {
+                                    var __modeArg = (__gApply.mode === 'all') ? 0 : __gApply.mode;
+                                    // Find the corresponding quick-button element and pass it
+                                    // to assetPicker.set so the picker's internal visual
+                                    // state update doesn't clear the active class.
+                                    var __foundBtn = null;
+                                    try {
+                                        var __rootBtn = document.querySelector('#assetGrowthFragment') || document;
+                                        var __cands = Array.from((__rootBtn).querySelectorAll('.asset-range-btn')) || [];
+                                        for (var __i = 0; __i < __cands.length; __i++) {
+                                            var __c = __cands[__i];
+                                            var __onclick = __c.getAttribute && __c.getAttribute('onclick') ? __c.getAttribute('onclick') || '' : '';
+                                            if (__onclick.indexOf('set(' + __gApply.mode + ',') !== -1 || __onclick.indexOf("set('" + __gApply.mode + "'") !== -1 || __onclick.indexOf('set(' + __modeArg + ',') !== -1) { __foundBtn = __c; break; }
+                                        }
+                                    } catch (e) {}
+                                    assetPicker.set(__modeArg, __foundBtn);
+                                } catch (e) {
+                                    applyRangeToChart(__gApply.start || '', __gApply.end || '', __gApply.mode || '');
+                                }
                             } else {
-                                try { applyRangeToChart(__gApply.start || '', __gApply.end || ''); } catch (e) {}
+                                try { applyRangeToChart(__gApply.start || '', __gApply.end || '', __gApply.mode || ''); } catch (e) {}
                             }
                         } catch (e) {}
                     }
@@ -987,6 +1111,8 @@
 
             // 초기 버튼 상태 업데이트
             checkNavButtons();
+
+ 
 
             // canvas 에 opacity 부드러운 전환 적용 (데이터 로딩 시 fade in/out 효과)
             var c1El = document.getElementById('assetGrowthChart');
@@ -1086,9 +1212,23 @@
                     var __raw = (typeof sessionStorage !== 'undefined') ? sessionStorage.getItem('globalDateRange') : null;
                     if (__raw) {
                         var __g = JSON.parse(__raw);
-                        if (__g && __g.start && __g.end) {
-                            __initialFrom = __g.start;
-                            __initialTo = __g.end;
+                        if (__g) {
+                            if (__g.start && __g.end) {
+                                __initialFrom = __g.start;
+                                __initialTo = __g.end;
+                            } else if (__g.mode === 'all' && baseData && baseData.labels && baseData.labels.length > 0) {
+                                try {
+                                        var __rawStart = (typeof df !== 'undefined' && df) ? df : baseData.labels[0];
+                                        var __rawEnd = baseData.labels[baseData.labels.length - 1];
+                                    var __bfs = new Date(__rawStart + 'T00:00:00'); __bfs.setDate(__bfs.getDate() - 30);
+                                    var __bfe = new Date(__rawEnd + 'T00:00:00'); __bfe.setDate(__bfe.getDate() + 30);
+                                    __initialFrom = __bfs.toISOString().split('T')[0];
+                                    __initialTo = __bfe.toISOString().split('T')[0];
+                                } catch (e) {
+                                    __initialFrom = baseData.labels[0];
+                                    __initialTo = baseData.labels[baseData.labels.length - 1];
+                                }
+                            }
                         }
                     }
                 } catch(e) { /* ignore */ }
