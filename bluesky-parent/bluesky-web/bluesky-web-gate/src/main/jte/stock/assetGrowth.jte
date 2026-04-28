@@ -16,7 +16,7 @@
             <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
             <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
             <div class="mb-8">
-                <div hx-get="/stock/htmx/asset-growth/view" hx-trigger="load" hx-swap="outerHTML">
+                <div hx-get="/stock/htmx/asset-growth/view" hx-trigger="load" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
                     <div class="flex justify-center p-10">
                         <span class="loading loading-spinner text-primary loading-lg"></span>
                     </div>

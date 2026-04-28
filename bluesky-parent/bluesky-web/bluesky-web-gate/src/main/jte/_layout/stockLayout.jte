@@ -23,6 +23,41 @@
 			</div>
 		</div>
 
+		<!-- Global date-range inputs (used by HTMX initial fragment loads) -->
+		<div id="globalDateRangeInputs" style="display:none">
+			<input type="hidden" id="globalStartInstantInput" name="startDate" value="">
+			<input type="hidden" id="globalEndInstantInput" name="endDate" value="">
+			<input type="hidden" id="globalTimeZoneInput" name="timeZone" value="">
+			<input type="hidden" id="globalRangeModeInput" name="rangeMode" value="">
+		</div>
+
+		<script>
+		(function(){
+			try {
+				const raw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('globalDateRange') : null;
+				if (raw) {
+					const obj = JSON.parse(raw);
+					function localToIso(ds, addDays) {
+						if (!ds) return '';
+						const parts = ds.split('-');
+						const y = Number(parts[0]);
+						const m = Number(parts[1]) - 1;
+						const d = Number(parts[2]) + (addDays || 0);
+						return new Date(y, m, d, 0, 0, 0, 0).toISOString();
+					}
+					var gStart = document.getElementById('globalStartInstantInput');
+					var gEnd = document.getElementById('globalEndInstantInput');
+					var gTz = document.getElementById('globalTimeZoneInput');
+					var gMode = document.getElementById('globalRangeModeInput');
+					if (gStart) gStart.value = obj.start ? localToIso(obj.start, 0) : '';
+					if (gEnd) gEnd.value = obj.end ? localToIso(obj.end, 1) : '';
+					if (gTz) gTz.value = obj.timeZone || '';
+					if (gMode) gMode.value = obj.mode || '';
+				}
+			} catch (e) {}
+		})();
+		</script>
+
 		<!-- stock charts helper (loaded after page content to ensure Chart.js is available when pages include it) -->
 		<script src="/js/stock-charts.js"></script>
 

@@ -67,8 +67,8 @@
         <div class="form-control w-full sm:w-auto">
             <label class="label p-1"><span class="label-text text-xs">기간</span></label>
             <div class="join">
-                <input type="date" name="activityUiStartDate" id="activityStartDateInput" class="input input-sm input-bordered join-item" value="${startDate != null ? startDate.atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString() : ""}">
-                <input type="date" name="activityUiEndDate" id="activityEndDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString() : ""}">
+                <input type="date" name="activityUiStartDate" id="activityStartDateInput" class="input input-sm input-bordered join-item" value="${startDate != null ? startDate.atZone(zone).toLocalDate().toString() : ""}">
+                <input type="date" name="activityUiEndDate" id="activityEndDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1).toString() : ""}">
             </div>
         </div>
         <input type="hidden" name="rangeMode" id="activityRangeModeInput" value="${rangeMode != null ? rangeMode : ""}">
@@ -200,7 +200,8 @@
             rangeModeId: 'activityRangeModeInput',
             btnClass:    'date-range-btn',
             minDate:     '${dataFirstDate != null ? dataFirstDate : ""}',
-            globalKey:   'globalDateRange'
+            globalKey:   'globalDateRange',
+            rootSelector: '#activityListFragment'
         });
         window.activityPicker = activityPicker;
         // 기본값: 페이지 진입 시 기간 미지정이면 '이번달(mtd)'을 선택 (한번만 적용하도록 세션 가드)

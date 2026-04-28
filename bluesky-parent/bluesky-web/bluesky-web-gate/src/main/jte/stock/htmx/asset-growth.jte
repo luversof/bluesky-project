@@ -113,6 +113,14 @@
             var buyCountData = [];
             var dailyRealizedProfitData = [];
 
+            // Lightweight logging helper to trace sequence and values
+            var agLogSeq = 0;
+            var agLog = function(msg, obj) {
+                try {
+                    agLogSeq++;
+                    console.debug && console.debug('[asset-growth][' + agLogSeq + '] ' + msg, obj || {});
+                } catch(e) {}
+            };
             @for(Object _pt : ts)
             !{ var pt = (TradeProfitTimeSeriesPoint) _pt; }
                 labels.push("$unsafe{formatter.format(pt.timestamp())}");
@@ -170,6 +178,11 @@
             var checkDetailTimer = null;
             var forceDetailFetch = false;
             var deferRangeDisplay = false;
+            var deferredDisplayStart = null;
+            var deferredDisplayEnd = null;
+            var pendingBaseApply = null;
+            var suppressDeferredDisplay = false;
+            var deferredDisplayFallbackTimer = null;
             // DateRangePicker(콜백모드)가 내부 상태로 관리 — activeMonths 불필요
             var pendingVisStart = null;
             var pendingVisEnd   = null;
@@ -219,6 +232,21 @@
                             }
                         }
                     } catch (e) {}
+                    // If we are explicitly forcing a detail fetch (large numeric preset),
+                    // suppress applying the deferred label-aligned display text until
+                    // the fetch completes to avoid a transient, incorrect label snap.
+                    try {
+                        suppressDeferredDisplay = !!forceDetailFetch;
+                        if (suppressDeferredDisplay) {
+                            if (deferredDisplayFallbackTimer) { clearTimeout(deferredDisplayFallbackTimer); deferredDisplayFallbackTimer = null; }
+                            deferredDisplayFallbackTimer = setTimeout(function() {
+                                suppressDeferredDisplay = false;
+                                deferredDisplayFallbackTimer = null;
+                                try { agLog('deferredDisplayFallback timer fired'); } catch(e) {}
+                                setTimeout(checkNavButtons, 0);
+                            }, 1000);
+                        }
+                    } catch (e) {}
                 } catch (e) {}
                 if (!mainChart || !dividendChart) return;
                 // DETAIL 범위를 벗어나면 BASE 로 복원
@@ -235,12 +263,34 @@
                 if (newMaxIdx < newMinIdx) newMaxIdx = Math.min(newMinIdx + 1, labels.length - 1);
                 pendingVisStart = startStr;
                 pendingVisEnd   = endStr;
-                // Align the UI/trade-history window to the chart labels rather than
-                // the raw requested dates to avoid snapping mismatches.
-                var displayStart = (labels && labels.length > 0) ? labels[newMinIdx] : startStr;
-                var displayEnd = (labels && labels.length > 0) ? labels[newMaxIdx] : endStr;
+                // Prefer the raw requested dates for display when the requested
+                // start/end fall outside the current `labels` (e.g. when the
+                // chart currently contains a narrower detail window). If the
+                // requested dates are inside the current labels range, align
+                // them to the nearest label to keep trade-history/chart label
+                // snapping consistent.
+                var displayStart, displayEnd;
+                if (labels && labels.length > 0) {
+                    var firstLabel = labels[0];
+                    var lastLabel = labels[labels.length - 1];
+                    if (startStr >= firstLabel && startStr <= lastLabel) {
+                        displayStart = labels[newMinIdx];
+                    } else {
+                        displayStart = startStr;
+                    }
+                    if (endStr >= firstLabel && endStr <= lastLabel) {
+                        displayEnd = labels[newMaxIdx];
+                    } else {
+                        displayEnd = endStr;
+                    }
+                } else {
+                    displayStart = startStr;
+                    displayEnd = endStr;
+                }
                 // Defer visual text update until the chart animation / nav check
                 // settles so we only update once (avoids double-flash).
+                deferredDisplayStart = displayStart;
+                deferredDisplayEnd = displayEnd;
                 deferRangeDisplay = true;
                 // Update the shared globalDateRange with the label-aligned values
                 // so subsequent reloads or other fragments will see the same
@@ -248,34 +298,17 @@
                 try {
                     if (typeof sessionStorage !== 'undefined') {
                         var __tz = (Intl && Intl.DateTimeFormat) ? Intl.DateTimeFormat().resolvedOptions().timeZone : null;
-                        sessionStorage.setItem('globalDateRange', JSON.stringify({ start: displayStart || '', end: displayEnd || '', mode: mode || '', timeZone: __tz || '' }));
+                        // Persist the original requested range (startStr/endStr) so
+                        // other fragments receive the searched period, not the
+                        // label-aligned display range which may be snapped.
+                        sessionStorage.setItem('globalDateRange', JSON.stringify({ start: startStr || '', end: endStr || '', mode: mode || '', timeZone: __tz || '' }));
                     }
                 } catch (e) {}
+                try { agLog('applyRangeToChart scheduled', { reqStart: startStr, reqEnd: endStr, mode: mode || '', displayStart: displayStart, displayEnd: displayEnd }); } catch(e) {}
                 setLoading(true);
                 clearTimeout(checkDetailTimer);
                 checkDetailTimer = setTimeout(checkAndFetchDetail, 200);
                 animateScaleChange(newMinIdx, newMaxIdx, 320);
-                // When a full-range ('all') was requested we expand the trade-history
-                // window by 30 days on both sides so it matches the data fetch buffer
-                // used by `checkAndFetchDetail`. Otherwise use the visible range.
-                try {
-                    // Use the label-aligned dates for trade-history to keep both
-                    // components in sync and avoid showing a different (raw)
-                    // requested range while the chart snaps to label boundaries.
-                    var thFrom = displayStart || defaultMinDate;
-                    var thTo = displayEnd || defaultMaxDate;
-                    if (mode === 'all') {
-                        try {
-                            var _fs = new Date((startStr || defaultMinDate) + 'T00:00:00');
-                            var _fe = new Date((endStr || defaultMaxDate) + 'T00:00:00');
-                            _fs.setDate(_fs.getDate() - 30);
-                            _fe.setDate(_fe.getDate() + 30);
-                            thFrom = _fs.toISOString().split('T')[0];
-                            thTo = _fe.toISOString().split('T')[0];
-                        } catch (e) {}
-                    }
-                    refreshTradeHistory(thFrom, thTo);
-                } catch (e) { refreshTradeHistory(startStr, endStr); }
             };
                         var assetPicker = window.DateRangePicker
                                             ? window.DateRangePicker.create({
@@ -474,6 +507,25 @@
                 var neededTier = visibleDays <= 180 ? 2 : (visibleDays <= 730 ? 1 : 0);
                 console.debug('[asset-growth] visStart/visEnd', visStart, visEnd, 'visibleDays', visibleDays, 'neededTier', neededTier);
 
+                // Quick client cache check BEFORE applying baseData fallback.
+                // If we already have a cached detail entry that fully covers the
+                // requested view at the needed granularity, apply it immediately
+                // to avoid reverting to baseData and causing a UI flicker.
+                try {
+                    if (detailCacheEntries && detailCacheEntries.length > 0) {
+                        for (var ci = 0; ci < detailCacheEntries.length; ci++) {
+                            var ce = detailCacheEntries[ci];
+                            if (ce.tier >= neededTier && ce.start <= visStart && ce.end >= visEnd) {
+                                console.debug('[asset-growth] pre-base cache hit', { idx: ci, tier: ce.tier, start: ce.start, end: ce.end, neededTier: neededTier });
+                                applyChartData(ce, visStart, visEnd);
+                                currentTierNum = ce.tier;
+                                setLoading(false);
+                                return;
+                            }
+                        }
+                    }
+                } catch (e) { console.debug && console.debug('[asset-growth] pre-base cache check failed', e); }
+
                 if (currentTierNum > baseDataTierNum) {
                     // ── DETAIL 모드 ──────────────────────────────────────────
                     // zoom limits = [0, DETAIL_labels.length-1] 이므로
@@ -504,8 +556,114 @@
                             baseCoversRange = baseData && baseData.labels && baseData.labels.length > 0
                                 && visStart >= baseData.labels[0] && visEnd <= baseData.labels[baseData.labels.length - 1];
                         } catch (e) { baseCoversRange = false; }
+                        // If base covers the range but we have a cached detail entry
+                        // that partially overlaps the requested view, build a
+                        // merged dataset preferring detail values where present
+                        // and falling back to baseData otherwise. This avoids a
+                        // full baseData replace (which causes visible flicker)
+                        // when only part of the view requires base coverage.
+                        try {
+                            if (detailCacheEntries && detailCacheEntries.length > 0) {
+                                var bestEntry = null;
+                                var bestOverlap = 0;
+                                var vStartTs = new Date(visStart).getTime();
+                                var vEndTs = new Date(visEnd).getTime();
+                                for (var di = 0; di < detailCacheEntries.length; di++) {
+                                    var ent = detailCacheEntries[di];
+                                    if (!ent || ent.tier < neededTier) continue;
+                                    try {
+                                        var es = new Date(ent.start).getTime();
+                                        var ee = new Date(ent.end).getTime();
+                                        var ovStart = Math.max(es, vStartTs);
+                                        var ovEnd = Math.min(ee, vEndTs);
+                                        var ov = Math.max(0, Math.round((ovEnd - ovStart) / 86400000));
+                                        if (ov > bestOverlap) { bestOverlap = ov; bestEntry = ent; }
+                                    } catch (ee) { /* ignore parse errors */ }
+                                }
+                                if (bestEntry && bestOverlap > 0) {
+                                    // construct merged labels (detail first, then base labels)
+                                    var seen = {};
+                                    var mergedLabels = [];
+                                    for (var m = 0; m < bestEntry.labels.length; m++) {
+                                        var d = bestEntry.labels[m];
+                                        if (d >= visStart && d <= visEnd && !seen[d]) { mergedLabels.push(d); seen[d] = true; }
+                                    }
+                                    for (var m2 = 0; m2 < baseData.labels.length; m2++) {
+                                        var d2 = baseData.labels[m2];
+                                        if (d2 >= visStart && d2 <= visEnd && !seen[d2]) { mergedLabels.push(d2); seen[d2] = true; }
+                                    }
+                                    mergedLabels.sort();
+                                    // build lookup maps for values
+                                    var beMap = {};
+                                    for (var ii = 0; ii < bestEntry.labels.length; ii++) {
+                                        beMap[bestEntry.labels[ii]] = {
+                                            tv: bestEntry.totalValueData[ii],
+                                            tc: bestEntry.totalCostData[ii],
+                                            cr: bestEntry.cumulativeRealizedProfitData[ii],
+                                            cd: bestEntry.cumulativeDividendData[ii],
+                                            tcnt: (bestEntry.tradeCountData || [])[ii] || 0,
+                                            bcnt: (bestEntry.buyCountData || [])[ii] || 0,
+                                            drp: (bestEntry.dailyRealizedProfitData || [])[ii] || 0
+                                        };
+                                    }
+                                    var bdMap = {};
+                                    for (var ii2 = 0; ii2 < baseData.labels.length; ii2++) {
+                                        bdMap[baseData.labels[ii2]] = {
+                                            tv: baseData.totalValueData[ii2],
+                                            tc: baseData.totalCostData[ii2],
+                                            cr: baseData.cumulativeRealizedProfitData[ii2],
+                                            cd: baseData.cumulativeDividendData[ii2],
+                                            tcnt: (baseData.tradeCountData || [])[ii2] || 0,
+                                            bcnt: (baseData.buyCountData || [])[ii2] || 0,
+                                            drp: (baseData.dailyRealizedProfitData || [])[ii2] || 0
+                                        };
+                                    }
+                                    var newTotalValueData = [];
+                                    var newTotalCostData = [];
+                                    var newCumulativeRealizedProfitData = [];
+                                    var newCumulativeDividendData = [];
+                                    var newTradeCountData = [];
+                                    var newBuyCountData = [];
+                                    var newDailyRealizedProfitData = [];
+                                    for (var mi = 0; mi < mergedLabels.length; mi++) {
+                                        var ld = mergedLabels[mi];
+                                        var src = beMap[ld] || bdMap[ld] || { tv: 0, tc: 0, cr: 0, cd: 0, tcnt: 0, bcnt: 0, drp: 0 };
+                                        newTotalValueData.push(src.tv);
+                                        newTotalCostData.push(src.tc);
+                                        newCumulativeRealizedProfitData.push(src.cr);
+                                        newCumulativeDividendData.push(src.cd);
+                                        newTradeCountData.push(src.tcnt);
+                                        newBuyCountData.push(src.bcnt);
+                                        newDailyRealizedProfitData.push(src.drp);
+                                    }
+                                    var mergedData = {
+                                        labels: mergedLabels,
+                                        totalValueData: newTotalValueData,
+                                        totalCostData: newTotalCostData,
+                                        cumulativeRealizedProfitData: newCumulativeRealizedProfitData,
+                                        cumulativeDividendData: newCumulativeDividendData,
+                                        tradeCountData: newTradeCountData,
+                                        buyCountData: newBuyCountData,
+                                        dailyRealizedProfitData: newDailyRealizedProfitData
+                                    };
+                                    try { agLog('applying merged detail+base', { entryStart: bestEntry.start, entryEnd: bestEntry.end, overlapDays: bestOverlap }); } catch (e) {}
+                                    applyChartData(mergedData, visStart, visEnd);
+                                    currentTierNum = bestEntry.tier;
+                                    setLoading(false);
+                                    return;
+                                }
+                            }
+                        } catch (e) { console.debug && console.debug('[asset-growth] merge attempt failed', e); }
                         if (!forceDetailFetch && baseCoversRange && neededTier <= baseDataTierNum) {
                             console.debug('[asset-growth] BASE mode: baseData covers requested range and granularity sufficient -> apply baseData view and no fetch');
+                            if (deferRangeDisplay) {
+                                // Defer applying baseData until after chart animation/nav
+                                // settle to avoid transient incorrect date display.
+                                pendingBaseApply = { data: baseData, start: visStart, end: visEnd, tier: baseDataTierNum };
+                                try { agLog('deferring baseData apply', pendingBaseApply); } catch(e) {}
+                                setLoading(false);
+                                return;
+                            }
                             try { applyChartData(baseData, visStart, visEnd); } catch (e) { /* noop */ }
                             currentTierNum = baseDataTierNum;
                             setLoading(false);
@@ -513,6 +671,12 @@
                         }
                         if (!forceDetailFetch && baseCoversRange && neededTier <= currentTierNum) {
                             console.debug('[asset-growth] BASE mode: neededTier <= currentTierNum and baseData covers range -> apply baseData view and no fetch');
+                            if (deferRangeDisplay) {
+                                pendingBaseApply = { data: baseData, start: visStart, end: visEnd, tier: currentTierNum };
+                                try { agLog('deferring baseData apply (currentTier)', pendingBaseApply); } catch(e) {}
+                                setLoading(false);
+                                return;
+                            }
                             try { applyChartData(baseData, visStart, visEnd); } catch (e) { /* noop */ }
                             setLoading(false);
                             return;
@@ -543,6 +707,11 @@
                     fetchEnd.setDate(fetchEnd.getDate() + 30);
                     var startStr = fetchStart.toISOString().split('T')[0];
                     var endStr = fetchEnd.toISOString().split('T')[0];
+
+                    // Ensure trade-history updates use the same requested (non-buffered)
+                    // visible range as the upcoming detail fetch so both components
+                    // remain in sync and avoid flicker from out-of-order responses.
+                    try { agLog('refreshTradeHistory (checkAndFetchDetail)', { from: capturedVisStart, to: capturedVisEnd }); refreshTradeHistory(capturedVisStart, capturedVisEnd); } catch (e) {}
 
                     console.debug('[asset-growth] fetching detail', { startStr: startStr, endStr: endStr, gran: capturedNeededTier === 2 ? 'DAILY' : 'WEEKLY' });
 
@@ -576,6 +745,10 @@
                             console.debug && console.debug('[asset-growth] fetched entry', { tier: entry.tier, start: entry.start, end: entry.end, curVD: curVD, entryCoversView: entryCoversView, viewIsNarrowEnough: viewIsNarrowEnough });
                             // Apply immediately if the fetched entry actually covers the requested view
                             if (entryCoversView || viewIsNarrowEnough) {
+                                try { agLog('applying fetched entry to chart', { tier: entry.tier, entryStart: entry.start, entryEnd: entry.end, visStart: capturedVisStart, visEnd: capturedVisEnd }); } catch(e) {}
+                                // Clear any deferred base application since fetched detail
+                                // supersedes it.
+                                pendingBaseApply = null;
                                 applyChartData(entry, capturedVisStart, capturedVisEnd);
                                 currentTierNum = entry.tier;
                             } else {
@@ -583,7 +756,16 @@
                             }
                         })
                         .catch(function(e) { console.warn('Detail fetch failed:', e); })
-                        .finally(function() { setFetching(false); forceDetailFetch = false; });
+                        .finally(function() {
+                            setFetching(false);
+                            forceDetailFetch = false;
+                            try {
+                                if (deferredDisplayFallbackTimer) { clearTimeout(deferredDisplayFallbackTimer); deferredDisplayFallbackTimer = null; }
+                            } catch (e) {}
+                            suppressDeferredDisplay = false;
+                            // Ensure nav/buttons/display update now that fetch completed
+                            setTimeout(checkNavButtons, 0);
+                        });
                 }, 400);
             };
             // ─────────────────────────────────────────────────────────────────
@@ -669,11 +851,41 @@
 
                 applyDisableToList(prevEls, disablePrev);
                 applyDisableToList(nextEls, disableNext);
-                // If a range update was deferred while the chart animated, allow
-                // the nav check to perform the single visible update and clear
-                // the defer flag so subsequent interactions update normally.
-                try { if (deferRangeDisplay) { deferRangeDisplay = false; } } catch (e) {}
-                updateRangeDisplay(visMinDate, visMaxDate);
+                // If a range update was deferred while the chart animated, prefer
+                // to show the requested display range (captured earlier) rather
+                // than the label-aligned chart labels which can cause a brief
+                // incorrect date to appear. Clear the deferred values after use.
+                try {
+                    if (deferRangeDisplay) {
+                        // If suppression requested (we expect a detail fetch), hold
+                        // off on showing the deferred label-aligned display to avoid
+                        // a transient wrong date. The fallback timer will clear
+                        // suppression if fetch doesn't complete in time.
+                        if (suppressDeferredDisplay) {
+                            try { agLog('suppressing deferred display until fetch completes'); } catch(e) {}
+                            return;
+                        }
+                        // If a pending base apply exists for the deferred range,
+                        // apply it now (prefer the requested display values
+                        // and avoid transient label-snapping).
+                        var _ds = deferredDisplayStart || visMinDate;
+                        var _de = deferredDisplayEnd || visMaxDate;
+                        if (pendingBaseApply) {
+                            try { agLog('applying pendingBaseApply from checkNavButtons', pendingBaseApply); } catch (e) {}
+                            var p = pendingBaseApply; pendingBaseApply = null;
+                            deferRangeDisplay = false; deferredDisplayStart = deferredDisplayEnd = null;
+                            applyChartData(p.data, p.start, p.end);
+                            currentTierNum = p.tier;
+                            // applyChartData will call checkNavButtons again; bail out now
+                            return;
+                        }
+                        deferRangeDisplay = false;
+                        deferredDisplayStart = deferredDisplayEnd = null;
+                        updateRangeDisplay(_ds, _de);
+                    } else {
+                        updateRangeDisplay(visMinDate, visMaxDate);
+                    }
+                } catch (e) {}
             };
 
             var syncZoomPan = function({chart}) {
@@ -687,9 +899,9 @@
                 var od = getOptDates();
                 assetPicker.setState(od.visStart, od.visEnd, '');
                 setTimeout(checkNavButtons, 50);
+                try { agLog('syncZoomPan scheduling checkAndFetchDetail', { visStart: od.visStart, visEnd: od.visEnd }); } catch(e) {}
                 clearTimeout(checkDetailTimer);
                 checkDetailTimer = setTimeout(checkAndFetchDetail, 200);
-                refreshTradeHistory(od.visStart, od.visEnd);
             };
 
             // 팬(alt+drag) 이 현재 데이터 끝에 닿았을 때 baseData 에 더 많은 데이터가 있으면
@@ -1232,6 +1444,7 @@
                         }
                     }
                 } catch(e) { /* ignore */ }
+                try { agLog('initial refreshTradeHistory', { from: __initialFrom, to: __initialTo }); } catch(e) {}
                 refreshTradeHistory(__initialFrom, __initialTo);
             } catch(e) {
                 refreshTradeHistory(defaultMinDate, defaultMaxDate);

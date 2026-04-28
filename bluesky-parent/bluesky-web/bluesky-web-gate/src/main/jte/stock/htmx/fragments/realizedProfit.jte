@@ -72,8 +72,8 @@
         <div class="form-control w-full sm:w-auto">
             <label class="label p-1"><span class="label-text text-xs">기간</span></label>
             <div class="join">
-                <input type="date" name="realizedUiStartDate" id="realizedStartDateInput" class="input input-sm input-bordered join-item" value="${startDate != null ? startDate.atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString() : ""}">
-                <input type="date" name="realizedUiEndDate" id="realizedEndDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString() : ""}">
+                <input type="date" name="realizedUiStartDate" id="realizedStartDateInput" class="input input-sm input-bordered join-item" value="${startDate != null ? startDate.atZone(zone).toLocalDate().toString() : ""}">
+                <input type="date" name="realizedUiEndDate" id="realizedEndDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1).toString() : ""}">
             </div>
         </div>
         <input type="hidden" name="startDate" id="realizedStartInstantInput" value="${startDate != null ? startDate.toString() : ""}">
@@ -570,9 +570,24 @@
             rangeModeId: 'realizedRangeModeInput',
             btnClass:    'date-range-btn',
             minDate:     '${dataFirstDate != null ? dataFirstDate : ""}',
-            globalKey:   'globalDateRange'
+            globalKey:   'globalDateRange',
+            rootSelector: '#realizedProfitFragment'
         });
         window.realizedProfitPicker = realizedProfitPicker;
+        // Prevent infinite auto-submit loops: if the DateRangePicker already
+        // recorded a one-time apply for this form and it matches current
+        // globalDateRange, skip auto-apply. Otherwise continue and re-apply.
+        try {
+            var __appliedKey = '__globalDateRangeApplied:' + ('realizedProfitSearchForm');
+            var __existingApplied = null;
+            try { __existingApplied = sessionStorage.getItem(__appliedKey); } catch(e) {}
+            var __currentGlobal = null;
+            try { __currentGlobal = sessionStorage.getItem('globalDateRange'); } catch(e) {}
+            if (__existingApplied && __currentGlobal && __existingApplied === __currentGlobal) {
+                try { console.debug('[realized-profit] appliedKey matches current global, skipping auto-apply'); } catch(e) {}
+                return;
+            }
+        } catch(e) {}
         // 기본값: 페이지 진입 시 기간 미지정이면 '이번달(mtd)'을 선택 (한번만 적용하도록 세션 가드)
         try {
             if (window.realizedProfitPicker && typeof window.realizedProfitPicker.getState === 'function') {
@@ -587,6 +602,112 @@
                             }
                     } catch(e) { window.realizedProfitPicker.set('mtd', null); }
                 }
+            }
+        } catch(e) {}
+
+        // Ensure any globally requested range (from other fragments) is applied
+        // when this fragment loads. This forces the server-side search to use
+        // the same requested start/end instead of falling back to server defaults.
+        try {
+            var __raw = (typeof sessionStorage !== 'undefined') ? sessionStorage.getItem('globalDateRange') : null;
+            if (__raw) {
+                try {
+                    var __g = JSON.parse(__raw);
+                    if (__g && (__g.start || __g.end || __g.mode)) {
+                        try { console.debug('[realized-profit] globalDateRange found on load', __g); } catch(e) {}
+                        var __cur = window.realizedProfitPicker && typeof window.realizedProfitPicker.getState === 'function' ? window.realizedProfitPicker.getState() : { start: '', end: '', mode: '' };
+                        var needApply = (__cur.start !== (__g.start || '') || __cur.end !== (__g.end || '') || __cur.mode !== (__g.mode || ''));
+                        // If the server-rendered header range differs from the requested
+                        // global range, force a submit even if input values already match
+                        // (some fragments are rendered with label-snapped dates on server).
+                        var headerRangeText = null;
+                        try {
+                            var spans = document.querySelectorAll('#realizedProfitFragment span');
+                            for (var i = 0; i < spans.length; i++) {
+                                var t = (spans[i].textContent || '').trim();
+                                if (/\d{4}-\d{2}-\d{2}\s*~\s*\d{4}-\d{2}-\d{2}/.test(t)) { headerRangeText = t; break; }
+                            }
+                        } catch (e) {}
+                        var headerStart = '', headerEnd = '';
+                        try {
+                            if (headerRangeText) {
+                                var mm = headerRangeText.match(/(\d{4}-\d{2}-\d{2})\s*~\s*(\d{4}-\d{2}-\d{2})/);
+                                if (mm) { headerStart = mm[1]; headerEnd = mm[2]; }
+                            }
+                        } catch (e) {}
+                        var forceApply = false;
+                        try {
+                            if (headerStart || headerEnd) {
+                                if (headerStart !== (__g.start || '') || headerEnd !== (__g.end || '')) {
+                                    forceApply = true;
+                                }
+                            }
+                        } catch (e) {}
+
+                        var shouldApply = needApply || forceApply;
+                        try { console.debug('[realized-profit] needApply=%o forceApply=%o header=%o', needApply, forceApply, headerRangeText); } catch(e) {}
+                        if (shouldApply) {
+                            try { console.debug('[realized-profit] applying globalDateRange to form and submitting', __g); } catch(e) {}
+                            var sEl = document.getElementById('realizedStartDateInput');
+                            var eEl = document.getElementById('realizedEndDateInput');
+                            var mEl = document.getElementById('realizedRangeModeInput');
+                            if (sEl) sEl.value = __g.start || '';
+                            if (eEl) eEl.value = __g.end || '';
+                            if (mEl) mEl.value = __g.mode || '';
+                            try {
+                                function localDateToInstantIso(ds, addDays) {
+                                    if (!ds) return "";
+                                    var parts = ds.split("-");
+                                    var y = Number.parseInt(parts[0], 10);
+                                    var m = Number.parseInt(parts[1], 10) - 1;
+                                    var d = Number.parseInt(parts[2], 10);
+                                    var dt = new Date(y, m, d + (addDays || 0), 0, 0, 0, 0);
+                                    return dt.toISOString();
+                                }
+                                var instS = document.getElementById('realizedStartInstantInput');
+                                var instE = document.getElementById('realizedEndInstantInput');
+                                var tzEl = document.getElementById('realizedTimeZoneInput');
+                                if (instS) instS.value = __g.start ? localDateToInstantIso(__g.start, 0) : '';
+                                if (instE) instE.value = __g.end ? localDateToInstantIso(__g.end, 1) : '';
+                                try {
+                                    var tz = (typeof Intl !== 'undefined' && Intl.DateTimeFormat) ? Intl.DateTimeFormat().resolvedOptions().timeZone : null;
+                                    if (tzEl && tz) tzEl.value = tz;
+                                    else if (tzEl && __g.timeZone) tzEl.value = __g.timeZone;
+                                } catch (ee) {}
+                            } catch (e) {}
+                            var form = document.getElementById('realizedProfitSearchForm');
+                            // Prevent repeated auto-submits: mark this fragment as applied
+                            // before submitting so subsequent fragment loads won't re-trigger.
+                            try {
+                                var __appliedKey = '__globalDateRangeApplied:realizedProfitSearchForm';
+                                try { sessionStorage.setItem(__appliedKey, __raw || JSON.stringify(__g)); } catch(e) {}
+                            } catch(e) {}
+                            if (form) {
+                                try {
+                                    try { console.debug('[realized-profit] submitting form values', {start: sEl && sEl.value, end: eEl && eEl.value, instantStart: instS && instS.value, instantEnd: instE && instE.value, mode: mEl && mEl.value}); } catch(e) {}
+                                    if (typeof form.requestSubmit === 'function') {
+                                        form.requestSubmit();
+                                    } else {
+                                        try {
+                                            var ev = new Event('submit', { bubbles: true, cancelable: true });
+                                            var prevented = !form.dispatchEvent(ev);
+                                            if (!prevented) {
+                                                var tmp = document.createElement('button');
+                                                tmp.type = 'submit';
+                                                tmp.style.display = 'none';
+                                                form.appendChild(tmp);
+                                                tmp.click();
+                                                tmp.remove();
+                                            }
+                                        } catch (e2) {
+                                            try { form.submit(); } catch (e3) {}
+                                        }
+                                    }
+                                } catch(e) { try { form.submit(); } catch(_) {} }
+                            }
+                        }
+                    }
+                } catch(e) {}
             }
         } catch(e) {}
     })();

@@ -24,7 +24,7 @@
     <button type="button" class="btn btn-xs btn-ghost date-range-next${!canNext ? " btn-disabled opacity-40" : ""}" $unsafe{!canNext ? "disabled" : ""} onclick="${pickerName}.jumpToEdge('end')">»</button>
     @if(startDate != null || endDate != null)
         <span class="text-xs text-base-content/40 ml-1">
-            ${startDate != null ? startDate.toString() : "?"} ~ ${endDate != null ? endDate.toString() : "?"}
+            ${startDate != null ? startDate.toString() : "?"} ~ ${endDate != null ? endDate.minusDays(1).toString() : "?"}
         </span>
     @endif
 </div>

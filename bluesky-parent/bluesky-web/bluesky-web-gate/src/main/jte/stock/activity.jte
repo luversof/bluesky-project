@@ -14,7 +14,7 @@
 				<h1 class="text-2xl font-bold">활동 내역</h1>
 			</div>
 
-			<div hx-get="/stock/htmx/activity-list" hx-trigger="load" hx-swap="outerHTML">
+			<div hx-get="/stock/htmx/activity-list" hx-trigger="load" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
 				<div class="flex justify-center p-10">
 					<span class="loading loading-spinner loading-lg"></span>
 				</div>

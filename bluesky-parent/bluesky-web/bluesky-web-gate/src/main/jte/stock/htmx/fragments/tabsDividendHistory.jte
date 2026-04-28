@@ -131,8 +131,8 @@
         <div class="form-control w-full sm:w-auto">
             <label class="label p-1"><span class="label-text text-xs">기간</span></label>
             <div class="join">
-                <input type="date" name="dividendUiStartDate" id="startDateInput" class="input input-sm input-bordered join-item" value="${startDate != null ? startDate.atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString() : ""}">
-                <input type="date" name="dividendUiEndDate" id="endDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString() : ""}">
+                <input type="date" name="dividendUiStartDate" id="startDateInput" class="input input-sm input-bordered join-item" value="${startDate != null ? startDate.atZone(zone).toLocalDate().toString() : ""}">
+                <input type="date" name="dividendUiEndDate" id="endDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1).toString() : ""}">
             </div>
         </div>
         <input type="hidden" name="startDate" id="dividendStartInstantInput" value="${startDate != null ? startDate.toString() : ""}">
@@ -564,7 +564,8 @@
                 rangeModeId: 'dividendRangeModeInput',
                 btnClass:    'date-range-btn',
                 minDate:     '${dataFirstDate != null ? dataFirstDate : ""}',
-                globalKey:   'globalDateRange'
+                globalKey:   'globalDateRange',
+                rootSelector: '#dividendListFragment'
             })
             : { set: function(){}, shift: function(){}, jumpToEdge: function(){} };
 
