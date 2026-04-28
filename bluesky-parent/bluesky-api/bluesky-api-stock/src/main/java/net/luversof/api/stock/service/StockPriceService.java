@@ -9,21 +9,13 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import net.luversof.api.stock.domain.StockPrice;
 import net.luversof.api.stock.domain.StockPriceHistory;
 import net.luversof.api.stock.repository.StockPriceHistoryRepository;
-import net.luversof.api.stock.repository.StockPriceRepository;
 
 @Service
 public class StockPriceService {
 
-  @Autowired private StockPriceRepository stockPriceRepository;
-
   @Autowired private StockPriceHistoryRepository stockPriceHistoryRepository;
-
-  public void setStockPriceRepository(StockPriceRepository stockPriceRepository) {
-    this.stockPriceRepository = stockPriceRepository;
-  }
 
   public void setStockPriceHistoryRepository(
       StockPriceHistoryRepository stockPriceHistoryRepository) {
@@ -31,9 +23,9 @@ public class StockPriceService {
   }
 
   public BigDecimal getCurrentPrice(UUID stockItemId) {
-    return stockPriceRepository
-        .findByStockItemId(stockItemId)
-        .map(StockPrice::getPrice)
+    return stockPriceHistoryRepository
+        .findTopByStockItemIdOrderByTradeDateDesc(stockItemId)
+        .map(StockPriceHistory::getClosePrice)
         .orElse(BigDecimal.ZERO);
   }
 
@@ -43,16 +35,6 @@ public class StockPriceService {
         .findTopByStockItemIdAndTradeDateLessThanEqualOrderByTradeDateDesc(stockItemId, at)
         .map(StockPriceHistory::getClosePrice)
         .orElseGet(() -> getCurrentPrice(stockItemId));
-  }
-
-  public StockPrice savePrice(UUID stockItemId, BigDecimal price) {
-    StockPrice stockPrice =
-        stockPriceRepository.findByStockItemId(stockItemId).orElse(new StockPrice());
-
-    stockPrice.setStockItemId(stockItemId);
-    stockPrice.setPrice(price);
-
-    return stockPriceRepository.save(stockPrice);
   }
 
   public List<StockPriceHistory> getPriceHistory(

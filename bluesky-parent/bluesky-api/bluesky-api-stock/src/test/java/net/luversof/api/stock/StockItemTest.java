@@ -14,7 +14,7 @@ import net.luversof.GeneralTest;
 import net.luversof.api.stock.constant.TestConstant;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.repository.StockItemRepository;
-import net.luversof.api.stock.repository.StockPriceRepository;
+// StockPriceRepository removed
 import net.luversof.api.stock.service.StockAdminService;
 import net.luversof.api.stock.service.StockItemService;
 import net.luversof.api.stock.service.StockPriceService;
@@ -40,7 +40,7 @@ class StockItemTest implements GeneralTest {
 
   @Autowired StockItemRepository stockItemRepository;
 
-  @Autowired StockPriceRepository stockPriceRepository;
+  // StockPriceRepository removed; no longer needed in tests
 
   @Autowired StockAdminService stockAdminService;
 

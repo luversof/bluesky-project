@@ -54,15 +54,6 @@ CREATE TABLE "Dividend" (
 CREATE INDEX idx_dividend_accountId ON "Dividend" ("account_id");
 CREATE INDEX idx_dividend_accountId_stockItemId ON "Dividend" ("account_id", "stockItem_id");
 
-CREATE TABLE "StockPrice" (
-	"id" UUID NOT NULL PRIMARY KEY,
-	"stockItem_id" UUID NOT NULL,
-	"price" NUMERIC NOT NULL,
-	"updatedDate" TIMESTAMP WITH TIME ZONE NOT NULL
-);
-
-CREATE UNIQUE INDEX uk_stockPrice_stockItemId ON "StockPrice" ("stockItem_id");
-
 CREATE TABLE "StockPriceHistory" (
 	"id" UUID NOT NULL PRIMARY KEY,
 	"stockItem_id" UUID NOT NULL,

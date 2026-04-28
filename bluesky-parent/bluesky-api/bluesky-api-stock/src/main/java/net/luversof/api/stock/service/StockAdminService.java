@@ -28,7 +28,7 @@ import net.luversof.api.stock.constant.TradeType;
 import net.luversof.api.stock.domain.Account;
 import net.luversof.api.stock.domain.Dividend;
 import net.luversof.api.stock.domain.StockItem;
-import net.luversof.api.stock.domain.StockPrice;
+// StockPrice removed: use direct JDBC batch args instead of domain DTO
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.repository.DividendRepository;
 import net.luversof.api.stock.repository.StockItemRepository;
@@ -64,27 +64,9 @@ public class StockAdminService {
 			DO NOTHING
 			""";
 
-  private static final String INSERT_STOCK_PRICE_SQL =
-"""
-INSERT INTO "StockPrice" (id, "stockItem_id", price, "updatedDate")
-VALUES (?, ?, ?, ?)
-ON CONFLICT ("stockItem_id")
-DO UPDATE SET
-price = EXCLUDED.price,
-"updatedDate" = NOW()
-""";
+  // Price history insertion is handled by the price update pipeline; removed here.
 
-  private static final String INSERT_TRADE_SQL =
-"""
-INSERT INTO "Trade" (id, account_id, "stockItem_id", type, quantity, price, fee, tax, "tradeDate", "realizedProfit", "exchangeRate")
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-""";
-
-  private static final String INSERT_DIVIDEND_SQL =
-"""
-INSERT INTO "Dividend" (id, account_id, "stockItem_id", type, quantity, "amountPerShare", "taxPerShare", "grossAmount", tax, fee, "recordDate", "payDate")
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-""";
+  // Trade and Dividend batch SQL removed — persisted via repositories.
 
   private static final ZoneId KST = ZoneId.of("Asia/Seoul");
   private static final List<DateTimeFormatter> DATE_FORMATTERS =
@@ -125,38 +107,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 
     var savedStockItemList = stockItemRepository.findAll();
 
-    var stockPriceList =
-        StreamSupport.stream(savedStockItemList.spliterator(), false)
-            .map(
-                item -> {
-                  var stockPrice = new StockPrice();
-                  stockPrice.setId(UuidGeneratorUtil.getUuid());
-                  stockPrice.setStockItemId(item.getId());
-                  stockPrice.setPrice(
-                      allStockItems.stream()
-                          .filter(x -> x.get종목코드().equals(item.getSymbol()))
-                          .findFirst()
-                          .map(GoogleSheetStockItem::get현재가)
-                          .orElse(BigDecimal.ZERO));
-                  stockPrice.setUpdatedDate(Instant.now());
-                  return stockPrice;
-                })
-            .toList();
-
-    int[][] result =
-        jdbcTemplate.batchUpdate(
-            INSERT_STOCK_PRICE_SQL,
-            stockPriceList,
-            stockPriceList.size(),
-            (ps, item) -> {
-              ps.setObject(1, item.getId());
-              ps.setObject(2, item.getStockItemId());
-              ps.setObject(3, item.getPrice());
-              ps.setTimestamp(4, java.sql.Timestamp.from(item.getUpdatedDate()));
-            });
-
-    log.debug("Processed {} stock prices", result.length);
-    return result.length;
+    // Price history is managed by a separate update process; return count of saved stock items.
+    log.debug("Skipped initial price history insert; handled by price pipeline");
+    return (int) StreamSupport.stream(savedStockItemList.spliterator(), false).count();
   }
 
   public void tradeBulkInsert(UUID userId) {

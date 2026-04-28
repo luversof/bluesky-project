@@ -169,6 +169,22 @@ const DateRangePicker = (function () {
         function maxDateStr() { return cfg.maxDate || fmtDate(new Date()); }
 
         function applyRange(startStr: string, endStr: string, modeStr: string) {
+            // helper to update shared hidden inputs used by layout/HTMX
+            function setGlobalHiddenInputs(sStr: string, eStr: string, mStr: string) {
+                try {
+                    function localDateToInstantIso(ds: string, addDays?: number) { if (!ds) return ''; const parts = ds.split('-'); const y = Number.parseInt(parts[0], 10); const m = Number.parseInt(parts[1], 10) - 1; const d = Number.parseInt(parts[2], 10); const dt = new Date(y, m, d + (addDays || 0), 0, 0, 0, 0); return dt.toISOString(); }
+                    const gStart = document.getElementById('globalStartInstantInput') as HTMLInputElement | null;
+                    const gEnd = document.getElementById('globalEndInstantInput') as HTMLInputElement | null;
+                    const gTz = document.getElementById('globalTimeZoneInput') as HTMLInputElement | null;
+                    const gMode = document.getElementById('globalRangeModeInput') as HTMLInputElement | null;
+                    const tzVal = (Intl && (Intl as any).DateTimeFormat && (Intl as any).DateTimeFormat().resolvedOptions && (Intl as any).DateTimeFormat().resolvedOptions().timeZone) || '';
+                    if (gStart) gStart.value = sStr ? localDateToInstantIso(sStr, 0) : '';
+                    if (gEnd) gEnd.value = eStr ? localDateToInstantIso(eStr, 1) : '';
+                    if (gTz) gTz.value = tzVal || '';
+                    if (gMode) gMode.value = mStr || '';
+                } catch (e) {}
+            }
+
             try {
                 if (isCallback()) {
                     _s.start = startStr; _s.end = endStr; _s.mode = modeStr;
@@ -179,6 +195,7 @@ const DateRangePicker = (function () {
                             sessionStorage.setItem(cfg.globalKey, JSON.stringify({ start: startStr || "", end: endStr || "", mode: modeStr || "", timeZone: tz || "" }));
                         }
                     } catch (e) {}
+                    try { setGlobalHiddenInputs(startStr || '', endStr || '', modeStr || ''); } catch (e) {}
                     try { if (typeof window !== 'undefined' && typeof (window as any).dispatchEvent === 'function') { window.dispatchEvent(new CustomEvent('globalDateRange:changed', { detail: { start: startStr || '', end: endStr || '', mode: modeStr || '' } })); } } catch (e) {}
                     try { updatePrevNextState(); setTimeout(() => { try { updatePrevNextState(); } catch (e) {} }, 80); } catch (e) {}
                 } else {
@@ -190,6 +207,7 @@ const DateRangePicker = (function () {
                         if (cfg.instantEndId) { const instEe = el(cfg.instantEndId) as HTMLInputElement | null; if (instEe) instEe.value = endStr ? localDateToInstantIso(endStr, 1) : ''; }
                         try { const tz = Intl?.DateTimeFormat?.().resolvedOptions().timeZone || 'UTC'; if (cfg.timeZoneId) { const tzEl = el(cfg.timeZoneId) as HTMLInputElement | null; if (tzEl) tzEl.value = tz || 'UTC'; } } catch (e) {}
                         try { if (cfg.globalKey && typeof sessionStorage !== 'undefined') { const tz2 = Intl?.DateTimeFormat?.().resolvedOptions().timeZone || null; sessionStorage.setItem(cfg.globalKey, JSON.stringify({ start: startStr || '', end: endStr || '', mode: modeStr || '', timeZone: tz2 || '' })); } } catch (e) {}
+                        try { setGlobalHiddenInputs(startStr || '', endStr || '', modeStr || ''); } catch (e) {}
                         try { if (typeof window !== 'undefined' && typeof (window as any).dispatchEvent === 'function') { window.dispatchEvent(new CustomEvent('globalDateRange:changed', { detail: { start: startStr || '', end: endStr || '', mode: modeStr || '' } })); } } catch (e) {}
                     } catch (e) {}
                     try { updatePrevNextState(); setTimeout(() => { try { updatePrevNextState(); } catch (e) {} }, 80); } catch (e) {}
@@ -260,10 +278,58 @@ const DateRangePicker = (function () {
 
         function doShift(dir: number) {
             const start = getStart(), end = getEnd(), mode = getMode(); if (!start || mode === 'all') return; const maxStr = maxDateStr(); const maxDate = new Date(maxStr + 'T00:00:00'); clearActive(); const isMtd = mode === 'mtd'; const isYtd = !isMtd && (mode === 'ytd' || (mode === '' && start.slice(5) === '01-01'));
-            let newStart = '', newEnd = ''; const newMode = isMtd ? '1' : isYtd ? '12' : mode;
+            let newStart = '', newEnd = ''; let newMode = isMtd ? '1' : isYtd ? '12' : mode;
             if (isMtd) { const curFirst = new Date(start + 'T00:00:00'); const newFirst = new Date(curFirst.getFullYear(), curFirst.getMonth() + dir, 1); const newLast = new Date(curFirst.getFullYear(), curFirst.getMonth() + dir + 1, 0); const thisMonthFirst = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1); if (dir > 0 && newFirst > thisMonthFirst) return; newStart = fmtDate(newFirst); newEnd = fmtDate(newLast > maxDate ? maxDate : newLast); }
             else if (isYtd) { const newYear = Number.parseInt(start.slice(0, 4), 10) + dir; if (dir > 0 && newYear > maxDate.getFullYear()) return; newStart = newYear + '-01-01'; newEnd = newYear === maxDate.getFullYear() ? maxStr : newYear + '-12-31'; }
-            else if (mode && !isNaN(+mode) && +mode > 0) { const months = +mode; const s = new Date(start + 'T00:00:00'); const e = end ? new Date(end + 'T00:00:00') : new Date(s); s.setMonth(s.getMonth() + dir * months); e.setMonth(e.getMonth() + dir * months); if (dir > 0 && s > maxDate) return; if (dir > 0 && e > maxDate) e.setTime(maxDate.getTime()); newStart = fmtDate(s); newEnd = fmtDate(e); }
+            else if (mode && !isNaN(+mode) && +mode > 0) {
+                const months = +mode;
+                // Special-case 12-month presets: if the current view appears to be
+                // a calendar year (start == Jan-01 or end == Dec-31) treat the shift
+                // as a calendar-year shift instead of a relative month shift. This
+                // avoids incorrect results when the picker's internal start/end were
+                // snapped to label boundaries (e.g. '2024-12-01').
+                try {
+                    const isCalendarYearView = (start && start.slice(5) === '01-01') || (end && end.slice(5) === '12-31');
+                    if (months === 12 && isCalendarYearView) {
+                        // Anchor to the year from either start (Jan-01) or end (Dec-31).
+                        let anchorYear: number | null = null;
+                        try {
+                            if (start && start.slice(5) === '01-01') anchorYear = Number.parseInt(start.slice(0, 4), 10);
+                            else if (end && end.slice(5) === '12-31') anchorYear = Number.parseInt(end.slice(0, 4), 10);
+                        } catch (e) { anchorYear = null; }
+                        if (anchorYear === null || isNaN(anchorYear as any)) {
+                            anchorYear = start ? Number.parseInt(start.slice(0, 4), 10) : null;
+                        }
+                        if (anchorYear !== null && !isNaN(anchorYear as any)) {
+                            const newYear = anchorYear + dir;
+                            newStart = newYear + '-01-01';
+                            newEnd = newYear === maxDate.getFullYear() ? maxStr : newYear + '-12-31';
+                            newMode = newEnd === maxStr && newStart.slice(5) === '01-01' ? 'ytd' : String(months);
+                        } else {
+                            const s = new Date(start + 'T00:00:00');
+                            const e = end ? new Date(end + 'T00:00:00') : new Date(s);
+                            s.setMonth(s.getMonth() + dir * months);
+                            e.setMonth(e.getMonth() + dir * months);
+                            if (dir > 0 && s > maxDate) return;
+                            if (dir > 0 && e > maxDate) e.setTime(maxDate.getTime());
+                            newStart = fmtDate(s);
+                            newEnd = fmtDate(e);
+                        }
+                    } else {
+                        const s = new Date(start + 'T00:00:00');
+                        const e = end ? new Date(end + 'T00:00:00') : new Date(s);
+                        s.setMonth(s.getMonth() + dir * months);
+                        e.setMonth(e.getMonth() + dir * months);
+                        if (dir > 0 && s > maxDate) return;
+                        if (dir > 0 && e > maxDate) e.setTime(maxDate.getTime());
+                        newStart = fmtDate(s);
+                        newEnd = fmtDate(e);
+                    }
+                } catch (e) {
+                    // On any unexpected error, gracefully bail out
+                    return;
+                }
+            }
             else { if (!end) return; const s = new Date(start + 'T00:00:00'); const e = new Date(end + 'T00:00:00'); const ms = e.getTime() - s.getTime(); if (ms <= 0) return; const ns = new Date(s.getTime() + dir * ms); const ne = new Date(e.getTime() + dir * ms); if (dir > 0 && ns > maxDate) return; if (dir > 0 && ne > maxDate) ne.setTime(maxDate.getTime()); newStart = fmtDate(ns); newEnd = fmtDate(ne); }
             try { const root = cfg.rootSelector ? document.querySelector(cfg.rootSelector) || document : document; btns(root).forEach((b: Element) => { b.classList.remove(activeClass()); b.classList.add('btn-ghost'); }); Array.from((root as Element).querySelectorAll('.' + cfg.btnClass)).forEach((b: Element) => { if ((b.getAttribute('onclick') || '').indexOf('set(' + newMode + ',') !== -1) { b.classList.add(activeClass()); b.classList.remove('btn-ghost'); } }); } catch (e) {}
             applyRange(newStart, newEnd, newMode);
