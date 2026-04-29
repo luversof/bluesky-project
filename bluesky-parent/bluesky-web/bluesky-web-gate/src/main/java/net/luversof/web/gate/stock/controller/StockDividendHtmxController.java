@@ -146,24 +146,52 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     Map<UUID, String> stockItemNames =
         stockItemList.stream().collect(Collectors.toMap(StockItem::id, StockItem::name));
 
-    // 요청된 필터가 현재 기간에 존재하지 않으면 필터 자동 해제 (이전/다음 기간 이동 시 빈 결과 방지)
-    Set<UUID> filteredAccountIds =
-        filteredAccountList.stream().map(Account::id).collect(Collectors.toSet());
-    List<UUID> effectiveAccountIdList =
-        (accountIdList != null
-                && !accountIdList.isEmpty()
-                && filteredAccountIds.containsAll(accountIdList))
-            ? accountIdList
-            : null;
+        // Validate requested filters against full lists (so we can preserve previous
+        // selections) and build final lists that show date-available items but keep
+        // any previously selected items visible.
+        Set<UUID> availableAccountIds = accounts.stream().map(Account::id).collect(Collectors.toSet());
+        List<UUID> requestedAccountIds = accountIdList;
+        List<UUID> effectiveAccountIdList =
+                (requestedAccountIds != null && !requestedAccountIds.isEmpty() && availableAccountIds.containsAll(requestedAccountIds))
+                        ? requestedAccountIds
+                        : null;
 
-    Set<UUID> filteredStockIds =
-        filteredStockItemList.stream().map(StockItem::id).collect(Collectors.toSet());
-    List<UUID> effectiveStockItemIdList =
-        (stockItemIdList != null
-                && !stockItemIdList.isEmpty()
-                && filteredStockIds.containsAll(stockItemIdList))
-            ? stockItemIdList
-            : null;
+        Set<UUID> availableStockIds = stockItemList.stream().map(StockItem::id).collect(Collectors.toSet());
+        List<UUID> requestedStockItemIds = stockItemIdList;
+        List<UUID> effectiveStockItemIdList =
+                (requestedStockItemIds != null && !requestedStockItemIds.isEmpty() && availableStockIds.containsAll(requestedStockItemIds))
+                        ? requestedStockItemIds
+                        : null;
+
+        List<Account> finalAccountList;
+        if (startInstant != null || endInstant != null) {
+            finalAccountList = new ArrayList<>(filteredAccountList);
+            if (requestedAccountIds != null) {
+                for (UUID sel : requestedAccountIds) {
+                    if (sel == null) continue;
+                    if (!finalAccountList.stream().anyMatch(a -> a.id().equals(sel))) {
+                        accounts.stream().filter(a -> a.id().equals(sel)).findFirst().ifPresent(a -> finalAccountList.add(0, a));
+                    }
+                }
+            }
+        } else {
+            finalAccountList = accounts;
+        }
+
+        List<StockItem> finalStockItemList;
+        if (startInstant != null || endInstant != null) {
+            finalStockItemList = new ArrayList<>(filteredStockItemList);
+            if (requestedStockItemIds != null) {
+                for (UUID sel : requestedStockItemIds) {
+                    if (sel == null) continue;
+                    if (!finalStockItemList.stream().anyMatch(s -> s.id().equals(sel))) {
+                        stockItemList.stream().filter(s -> s.id().equals(sel)).findFirst().ifPresent(s -> finalStockItemList.add(0, s));
+                    }
+                }
+            }
+        } else {
+            finalStockItemList = stockItemList;
+        }
 
     List<DividendView> viewList =
         dividends.stream()
@@ -367,8 +395,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     model.addAttribute("totalPages", totalPages);
     model.addAttribute("currentPage", currentPage);
     model.addAttribute("size", size);
-    model.addAttribute("accountList", filteredAccountList);
-    model.addAttribute("stockItemList", filteredStockItemList);
+    model.addAttribute("accountList", finalAccountList);
+    model.addAttribute("stockItemList", finalStockItemList);
     model.addAttribute(
         "selectedAccountId",
         (effectiveAccountIdList != null && !effectiveAccountIdList.isEmpty())

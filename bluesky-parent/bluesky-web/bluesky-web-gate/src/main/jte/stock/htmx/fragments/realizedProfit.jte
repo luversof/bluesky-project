@@ -21,6 +21,13 @@
 @param java.time.Instant startDate = null
 @param java.time.Instant endDate = null
 @param String timeZone = null
+@param java.util.List<net.luversof.web.gate.stock.domain.Account> accountList = null
+@param java.util.List<net.luversof.web.gate.stock.domain.StockItem> stockItemList = null
+@param java.util.UUID selectedAccountId = null
+@param java.util.UUID selectedStockItemId = null
+@param String debugTradeAccountIds = null
+@param Integer debugFinalAccountListSize = null
+@param Integer debugFinalStockItemListSize = null
 
 <%-- 수익률 기준: 매도한 주식의 취득원가 = 매도수령액 - 실현손익 --%>
 !{BigDecimal totalSoldCost = totalSellProceeds != null && totalRealizedProfit != null
@@ -31,6 +38,7 @@
     : 0.0;}
 
 <div id="realizedProfitFragment" class="flex flex-col gap-6">
+    <!-- DEBUG: tradeAccountIds=${debugTradeAccountIds} finalAccountListSize=${debugFinalAccountListSize} finalStockItemListSize=${debugFinalStockItemListSize} -->
 
     !{
         boolean isAllMode = "all".equals(rangeMode);
@@ -76,6 +84,29 @@
                 <input type="date" name="realizedUiEndDate" id="realizedEndDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1).toString() : ""}">
             </div>
         </div>
+            <div class="form-control w-full sm:w-auto">
+                <label class="label p-1"><span class="label-text text-xs">계좌</span></label>
+                <select name="accountIdList" class="select select-sm select-bordered">
+                    <option value="">전체</option>
+                    @if(accountList != null)
+                        @for(net.luversof.web.gate.stock.domain.Account account : accountList)
+                            <option value="${account.id().toString()}" selected="${selectedAccountId != null && account.id().equals(selectedAccountId)}">${account.name()}</option>
+                        @endfor
+                    @endif
+                </select>
+            </div>
+
+            <div class="form-control w-full sm:w-auto">
+                <label class="label p-1"><span class="label-text text-xs">종목</span></label>
+                <select name="stockItemIdList" class="select select-sm select-bordered">
+                    <option value="">전체</option>
+                    @if(stockItemList != null)
+                        @for(net.luversof.web.gate.stock.domain.StockItem stockItem : stockItemList)
+                            <option value="${stockItem.id().toString()}" selected="${selectedStockItemId != null && stockItem.id().equals(selectedStockItemId)}">${stockItem.name()}</option>
+                        @endfor
+                    @endif
+                </select>
+            </div>
         <input type="hidden" name="startDate" id="realizedStartInstantInput" value="${startDate != null ? startDate.toString() : ""}">
         <input type="hidden" name="endDate" id="realizedEndInstantInput" value="${endDate != null ? endDate.toString() : ""}">
         <input type="hidden" name="timeZone" id="realizedTimeZoneInput" value="${timeZone != null ? timeZone : ""}">
