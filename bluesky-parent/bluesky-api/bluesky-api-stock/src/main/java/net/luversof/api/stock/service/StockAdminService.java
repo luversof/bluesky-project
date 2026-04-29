@@ -28,7 +28,6 @@ import net.luversof.api.stock.constant.TradeType;
 import net.luversof.api.stock.domain.Account;
 import net.luversof.api.stock.domain.Dividend;
 import net.luversof.api.stock.domain.StockItem;
-// StockPrice removed: use direct JDBC batch args instead of domain DTO
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.repository.DividendRepository;
 import net.luversof.api.stock.repository.StockItemRepository;

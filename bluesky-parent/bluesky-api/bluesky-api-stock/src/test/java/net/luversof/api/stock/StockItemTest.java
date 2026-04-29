@@ -14,7 +14,6 @@ import net.luversof.GeneralTest;
 import net.luversof.api.stock.constant.TestConstant;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.repository.StockItemRepository;
-// StockPriceRepository removed
 import net.luversof.api.stock.service.StockAdminService;
 import net.luversof.api.stock.service.StockItemService;
 import net.luversof.api.stock.service.StockPriceService;

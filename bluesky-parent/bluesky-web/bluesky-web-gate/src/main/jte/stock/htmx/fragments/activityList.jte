@@ -1,5 +1,8 @@
 @import java.util.List
 @import net.luversof.web.gate.stock.controller.StockTradeHtmxController.Activity
+@import net.luversof.web.gate.stock.domain.Account
+@import net.luversof.web.gate.stock.domain.StockItem
+@import java.util.UUID
 @import java.time.ZoneId
 @import java.time.format.DateTimeFormatter
 @import java.time.Instant
@@ -12,6 +15,10 @@
 @param String timeZone = null
 @param String rangeMode = null
 @param String dataFirstDate = null
+@param List<Account> accountList = null
+@param List<StockItem> stockItemList = null
+@param UUID selectedAccountId = null
+@param UUID selectedStockItemId = null
 @param long buyCount = 0
 @param long sellCount = 0
 @param BigDecimal buyAmount = BigDecimal.ZERO
@@ -70,6 +77,29 @@
                 <input type="date" name="activityUiStartDate" id="activityStartDateInput" class="input input-sm input-bordered join-item" value="${startDate != null ? startDate.atZone(zone).toLocalDate().toString() : ""}">
                 <input type="date" name="activityUiEndDate" id="activityEndDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1).toString() : ""}">
             </div>
+        </div>
+        <div class="form-control w-full sm:w-auto">
+            <label class="label p-1"><span class="label-text text-xs">계좌</span></label>
+            <select name="accountIdList" class="select select-sm select-bordered">
+                <option value="">전체</option>
+                @if(accountList != null)
+                    @for(Account account : accountList)
+                        <option value="${account.id().toString()}" selected="${selectedAccountId != null && account.id().equals(selectedAccountId)}">${account.name()}</option>
+                    @endfor
+                @endif
+            </select>
+        </div>
+
+        <div class="form-control w-full sm:w-auto">
+            <label class="label p-1"><span class="label-text text-xs">종목</span></label>
+            <select name="stockItemIdList" class="select select-sm select-bordered">
+                <option value="">전체</option>
+                @if(stockItemList != null)
+                    @for(StockItem stockItem : stockItemList)
+                        <option value="${stockItem.id().toString()}" selected="${selectedStockItemId != null && stockItem.id().equals(selectedStockItemId)}">${stockItem.name()}</option>
+                    @endfor
+                @endif
+            </select>
         </div>
         <input type="hidden" name="rangeMode" id="activityRangeModeInput" value="${rangeMode != null ? rangeMode : ""}">
         <input type="hidden" name="startDate" id="activityStartInstantInput" value="${startDate != null ? startDate.toString() : ""}">
