@@ -418,9 +418,7 @@
                             !{double itemRate = itemSoldCost.compareTo(BigDecimal.ZERO) > 0 && item.realizedProfitNet() != null
                                 ? item.realizedProfitNet().doubleValue() / itemSoldCost.doubleValue() * 100
                                 : 0.0;}
-                            !{double barWidth = totalRealizedProfit != null && totalRealizedProfit.compareTo(BigDecimal.ZERO) != 0 && item.realizedProfitNet() != null
-                                ? Math.min(100.0, Math.abs(item.realizedProfitNet().doubleValue()) / Math.abs(totalRealizedProfit.doubleValue()) * 100)
-                                : 0.0;}
+                            
                             <tr class="hover stock-row" data-initial="${rowIdx[0]}">
                                 <td data-val="${item.stockItemName() != null ? item.stockItemName() : ""}">
                                     <div class="font-semibold">${item.stockItemName() != null ? item.stockItemName() : "-"}</div>
@@ -436,10 +434,7 @@
                                     <div class="font-bold font-mono amount-value ${item.realizedProfitNet() != null && item.realizedProfitNet().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                                         ${String.format("%+,d", item.realizedProfitNet() != null ? item.realizedProfitNet().longValue() : 0)}
                                     </div>
-                                    <div class="w-full bg-base-200 rounded-full h-1 mt-1">
-                                        <div class="h-1 rounded-full ${item.realizedProfitNet() != null && item.realizedProfitNet().compareTo(BigDecimal.ZERO) >= 0 ? "bg-success" : "bg-error"}"
-                                             style="width: ${String.format("%.1f", barWidth)}%"></div>
-                                    </div>
+                                    
                                 </td>
                                 <td class="text-right font-mono hidden sm:table-cell font-semibold ${itemRate >= 0 ? "text-profit" : "text-loss"}"
                                     data-val="$unsafe{String.format("%.6f", itemRate)}">
