@@ -138,14 +138,13 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                 Set<UUID> tradeAccountIds;
                 Set<UUID> tradeStockIds;
                 if (clientProvidedRange) {
-                        net.luversof.web.gate.stock.dto.request.TradeProfitRequest dateOnlyReq =
-                                        new net.luversof.web.gate.stock.dto.request.TradeProfitRequest();
+                        net.luversof.web.gate.stock.dto.request.TradeProfitRequest dateOnlyReq = new net.luversof.web.gate.stock.dto.request.TradeProfitRequest();
                         dateOnlyReq.setUserId(userId);
                         dateOnlyReq.setStartDate(startDate);
                         dateOnlyReq.setEndDate(endDate);
                         dateOnlyReq.setTimeZone(timeZone);
-                        List<net.luversof.web.gate.stock.domain.TradeProfit> dateRangeEnriched =
-                                        new ArrayList<>(getEnrichedTradeProfits(dateOnlyReq));
+                        List<net.luversof.web.gate.stock.domain.TradeProfit> dateRangeEnriched = new ArrayList<>(
+                                        getEnrichedTradeProfits(dateOnlyReq));
                         tradeAccountIds = dateRangeEnriched.stream()
                                         .map(net.luversof.web.gate.stock.domain.TradeProfit::accountId)
                                         .filter(Objects::nonNull)
@@ -191,12 +190,14 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                         finalAccountList = new ArrayList<>(filteredAccountList);
                         if (requestedAccountIds != null) {
                                 for (UUID sel : requestedAccountIds) {
-                                        if (sel == null) continue;
+                                        if (sel == null)
+                                                continue;
                                         if (!tradeAccountIds.contains(sel)) {
                                                 accountList.stream().filter(a -> a.id().equals(sel)).findFirst()
                                                                 .ifPresent(a -> {
                                                                         if (finalAccountList.stream()
-                                                                                        .noneMatch(x -> x.id().equals(a.id())))
+                                                                                        .noneMatch(x -> x.id().equals(
+                                                                                                        a.id())))
                                                                                 finalAccountList.add(0, a);
                                                                 });
                                         }
@@ -211,12 +212,14 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                         finalStockItemList = new ArrayList<>(filteredStockItemList);
                         if (requestedStockItemIds != null) {
                                 for (UUID sel : requestedStockItemIds) {
-                                        if (sel == null) continue;
+                                        if (sel == null)
+                                                continue;
                                         if (!tradeStockIds.contains(sel)) {
                                                 stockItemList.stream().filter(s -> s.id().equals(sel)).findFirst()
                                                                 .ifPresent(s -> {
                                                                         if (finalStockItemList.stream()
-                                                                                        .noneMatch(x -> x.id().equals(s.id())))
+                                                                                        .noneMatch(x -> x.id().equals(
+                                                                                                        s.id())))
                                                                                 finalStockItemList.add(0, s);
                                                                 });
                                         }
@@ -695,36 +698,52 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                         dateOnlyReq.setStartDate(startInstant);
                         dateOnlyReq.setEndDate(endInstant);
                         dateOnlyReq.setTimeZone(timeZone);
-                        List<net.luversof.web.gate.stock.domain.TradeProfit> dateRangeEnriched = new ArrayList<>(getEnrichedTradeProfits(dateOnlyReq));
-                        activityAccountIds.addAll(dateRangeEnriched.stream().map(net.luversof.web.gate.stock.domain.TradeProfit::accountId).filter(Objects::nonNull).collect(Collectors.toSet()));
-                        activityStockIds.addAll(dateRangeEnriched.stream().map(net.luversof.web.gate.stock.domain.TradeProfit::stockItemId).filter(Objects::nonNull).collect(Collectors.toSet()));
+                        List<net.luversof.web.gate.stock.domain.TradeProfit> dateRangeEnriched = new ArrayList<>(
+                                        getEnrichedTradeProfits(dateOnlyReq));
+                        activityAccountIds.addAll(dateRangeEnriched.stream()
+                                        .map(net.luversof.web.gate.stock.domain.TradeProfit::accountId)
+                                        .filter(Objects::nonNull).collect(Collectors.toSet()));
+                        activityStockIds.addAll(dateRangeEnriched.stream()
+                                        .map(net.luversof.web.gate.stock.domain.TradeProfit::stockItemId)
+                                        .filter(Objects::nonNull).collect(Collectors.toSet()));
 
                         var divReq = new net.luversof.web.gate.stock.dto.request.DividendRequest();
                         divReq.setUserId(userId);
                         divReq.setStartDate(startInstant);
                         divReq.setEndDate(endInstant);
-                        List<net.luversof.web.gate.stock.dto.response.DividendResponse> dateDivs = dividendClient.findDividends(divReq.toParams());
-                        activityAccountIds.addAll(dateDivs.stream().map(net.luversof.web.gate.stock.dto.response.DividendResponse::accountId).filter(Objects::nonNull).collect(Collectors.toSet()));
-                        activityStockIds.addAll(dateDivs.stream().map(net.luversof.web.gate.stock.dto.response.DividendResponse::stockItemId).filter(Objects::nonNull).collect(Collectors.toSet()));
+                        List<net.luversof.web.gate.stock.dto.response.DividendResponse> dateDivs = dividendClient
+                                        .findDividends(divReq.toParams());
+                        activityAccountIds.addAll(dateDivs.stream()
+                                        .map(net.luversof.web.gate.stock.dto.response.DividendResponse::accountId)
+                                        .filter(Objects::nonNull).collect(Collectors.toSet()));
+                        activityStockIds.addAll(dateDivs.stream()
+                                        .map(net.luversof.web.gate.stock.dto.response.DividendResponse::stockItemId)
+                                        .filter(Objects::nonNull).collect(Collectors.toSet()));
 
-                        filteredAccountList = accountList.stream().filter(a -> activityAccountIds.contains(a.id())).toList();
-                        filteredStockItemList = stockItemList.stream().filter(s -> activityStockIds.contains(s.id())).toList();
+                        filteredAccountList = accountList.stream().filter(a -> activityAccountIds.contains(a.id()))
+                                        .toList();
+                        filteredStockItemList = stockItemList.stream().filter(s -> activityStockIds.contains(s.id()))
+                                        .toList();
                 } else {
                         filteredAccountList = accountList;
                         filteredStockItemList = stockItemList;
                 }
 
                 // Validate requested filters against full lists so selection can be preserved
-                Set<UUID> availableAccountIdsForActivity = accountList.stream().map(Account::id).collect(Collectors.toSet());
+                Set<UUID> availableAccountIdsForActivity = accountList.stream().map(Account::id)
+                                .collect(Collectors.toSet());
                 List<UUID> requestedAccountIdsForActivity = accountIdList;
-                List<UUID> effectiveAccountIdListForActivity = (requestedAccountIdsForActivity != null && !requestedAccountIdsForActivity.isEmpty()
+                List<UUID> effectiveAccountIdListForActivity = (requestedAccountIdsForActivity != null
+                                && !requestedAccountIdsForActivity.isEmpty()
                                 && availableAccountIdsForActivity.containsAll(requestedAccountIdsForActivity))
                                                 ? requestedAccountIdsForActivity
                                                 : null;
 
-                Set<UUID> availableStockIdsForActivity = stockItemList.stream().map(StockItem::id).collect(Collectors.toSet());
+                Set<UUID> availableStockIdsForActivity = stockItemList.stream().map(StockItem::id)
+                                .collect(Collectors.toSet());
                 List<UUID> requestedStockIdsForActivity = stockItemIdList;
-                List<UUID> effectiveStockItemIdListForActivity = (requestedStockIdsForActivity != null && !requestedStockIdsForActivity.isEmpty()
+                List<UUID> effectiveStockItemIdListForActivity = (requestedStockIdsForActivity != null
+                                && !requestedStockIdsForActivity.isEmpty()
                                 && availableStockIdsForActivity.containsAll(requestedStockIdsForActivity))
                                                 ? requestedStockIdsForActivity
                                                 : null;
@@ -735,11 +754,16 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                         finalAccountListForActivity = new ArrayList<>(filteredAccountList);
                         if (requestedAccountIdsForActivity != null) {
                                 for (UUID sel : requestedAccountIdsForActivity) {
-                                        if (sel == null) continue;
+                                        if (sel == null)
+                                                continue;
                                         if (!activityAccountIds.contains(sel)) {
-                                                accountList.stream().filter(a -> a.id().equals(sel)).findFirst().ifPresent(a -> {
-                                                        if (finalAccountListForActivity.stream().noneMatch(x -> x.id().equals(a.id()))) finalAccountListForActivity.add(0, a);
-                                                });
+                                                accountList.stream().filter(a -> a.id().equals(sel)).findFirst()
+                                                                .ifPresent(a -> {
+                                                                        if (finalAccountListForActivity.stream()
+                                                                                        .noneMatch(x -> x.id().equals(
+                                                                                                        a.id())))
+                                                                                finalAccountListForActivity.add(0, a);
+                                                                });
                                         }
                                 }
                         }
@@ -752,11 +776,16 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                         finalStockItemListForActivity = new ArrayList<>(filteredStockItemList);
                         if (requestedStockIdsForActivity != null) {
                                 for (UUID sel : requestedStockIdsForActivity) {
-                                        if (sel == null) continue;
+                                        if (sel == null)
+                                                continue;
                                         if (!activityStockIds.contains(sel)) {
-                                                stockItemList.stream().filter(s -> s.id().equals(sel)).findFirst().ifPresent(s -> {
-                                                        if (finalStockItemListForActivity.stream().noneMatch(x -> x.id().equals(s.id()))) finalStockItemListForActivity.add(0, s);
-                                                });
+                                                stockItemList.stream().filter(s -> s.id().equals(sel)).findFirst()
+                                                                .ifPresent(s -> {
+                                                                        if (finalStockItemListForActivity.stream()
+                                                                                        .noneMatch(x -> x.id().equals(
+                                                                                                        s.id())))
+                                                                                finalStockItemListForActivity.add(0, s);
+                                                                });
                                         }
                                 }
                         }
@@ -789,14 +818,16 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                 model.addAttribute("stockItemList", finalStockItemListForActivity);
                 model.addAttribute(
                                 "selectedAccountId",
-                                (effectiveAccountIdListForActivity != null && !effectiveAccountIdListForActivity.isEmpty())
-                                                ? effectiveAccountIdListForActivity.get(0)
-                                                : null);
+                                (effectiveAccountIdListForActivity != null
+                                                && !effectiveAccountIdListForActivity.isEmpty())
+                                                                ? effectiveAccountIdListForActivity.get(0)
+                                                                : null);
                 model.addAttribute(
                                 "selectedStockItemId",
-                                (effectiveStockItemIdListForActivity != null && !effectiveStockItemIdListForActivity.isEmpty())
-                                                ? effectiveStockItemIdListForActivity.get(0)
-                                                : null);
+                                (effectiveStockItemIdListForActivity != null
+                                                && !effectiveStockItemIdListForActivity.isEmpty())
+                                                                ? effectiveStockItemIdListForActivity.get(0)
+                                                                : null);
                 model.addAttribute("startDate", startInstant);
                 model.addAttribute("endDate", endInstant);
                 model.addAttribute("timeZone", timeZone);

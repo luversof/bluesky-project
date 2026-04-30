@@ -22,6 +22,8 @@
 	<script src="https://unpkg.com/htmx-ext-json-enc/json-enc.js"></script>
 	<script src="/js/common.js"></script>
 	<script src="/js/date-range-picker.js"></script>
+	<script type="module" src="/js/stock/selectionStorage.js"></script>
+	<script type="module" src="/js/stock/multiSelectInit.js"></script>
 
 	<script>
 		// Ensure stock-charts helper is available; loads /js/stock-charts.js on demand

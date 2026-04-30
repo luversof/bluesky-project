@@ -80,7 +80,7 @@
         </div>
         <div class="form-control w-full sm:w-auto">
             <label class="label p-1"><span class="label-text text-xs">계좌</span></label>
-            <select name="accountIdList" class="select select-sm select-bordered">
+            <select name="accountIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="8">
                 <option value="">전체</option>
                 @if(accountList != null)
                     @for(Account account : accountList)
@@ -92,7 +92,7 @@
 
         <div class="form-control w-full sm:w-auto">
             <label class="label p-1"><span class="label-text text-xs">종목</span></label>
-            <select name="stockItemIdList" class="select select-sm select-bordered">
+            <select name="stockItemIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="8">
                 <option value="">전체</option>
                 @if(stockItemList != null)
                     @for(StockItem stockItem : stockItemList)
@@ -105,14 +105,23 @@
         <input type="hidden" name="startDate" id="activityStartInstantInput" value="${startDate != null ? startDate.toString() : ""}">
         <input type="hidden" name="endDate" id="activityEndInstantInput" value="${endDate != null ? endDate.toString() : ""}">
         <input type="hidden" name="timeZone" id="activityTimeZoneInput" value="${timeZone != null ? timeZone : ""}">
-        <button type="submit" class="btn btn-sm btn-primary">조회</button>
+        <button type="button" class="btn btn-sm btn-primary" data-selection-save="true"
+            hx-get="/stock/htmx/activity-list"
+            hx-target="#activityListFragment"
+            hx-select="#activityListFragment"
+            hx-swap="outerHTML"
+            hx-include="#activitySearchForm">조회</button>
         <button type="button" class="btn btn-sm text-xs"
-                hx-get="/stock/htmx/activity-list"
-                hx-target="#activityListFragment"
-                hx-select="#activityListFragment"
-                hx-swap="outerHTML">초기화</button>
+            hx-get="/stock/htmx/activity-list"
+            hx-target="#activityListFragment"
+            hx-select="#activityListFragment"
+                hx-swap="outerHTML"
+                hx-include="#activitySearchForm"
+            data-selection-reset="true">초기화</button>
     </form>
     </details>
+
+    <script type="module" src="/js/stock/selectionStorage.js"></script>
 
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">

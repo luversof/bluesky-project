@@ -86,7 +86,7 @@
         </div>
             <div class="form-control w-full sm:w-auto">
                 <label class="label p-1"><span class="label-text text-xs">계좌</span></label>
-                <select name="accountIdList" class="select select-sm select-bordered">
+                <select name="accountIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="8">
                     <option value="">전체</option>
                     @if(accountList != null)
                         @for(net.luversof.web.gate.stock.domain.Account account : accountList)
@@ -98,7 +98,7 @@
 
             <div class="form-control w-full sm:w-auto">
                 <label class="label p-1"><span class="label-text text-xs">종목</span></label>
-                <select name="stockItemIdList" class="select select-sm select-bordered">
+                <select name="stockItemIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="8">
                     <option value="">전체</option>
                     @if(stockItemList != null)
                         @for(net.luversof.web.gate.stock.domain.StockItem stockItem : stockItemList)
@@ -111,14 +111,23 @@
         <input type="hidden" name="endDate" id="realizedEndInstantInput" value="${endDate != null ? endDate.toString() : ""}">
         <input type="hidden" name="timeZone" id="realizedTimeZoneInput" value="${timeZone != null ? timeZone : ""}">
         <input type="hidden" name="rangeMode" id="realizedRangeModeInput" value="${rangeMode != null ? rangeMode : ""}">
-        <button type="submit" class="btn btn-sm btn-primary">조회</button>
+        <button type="button" class="btn btn-sm btn-primary" data-selection-save="true"
+            hx-get="/stock/htmx/realized-profit"
+            hx-target="#realizedProfitFragment"
+            hx-select="#realizedProfitFragment"
+            hx-swap="outerHTML"
+            hx-include="#realizedProfitSearchForm">조회</button>
         <button type="button" class="btn btn-sm text-xs"
-                hx-get="/stock/htmx/realized-profit"
-                hx-target="#realizedProfitFragment"
-                hx-select="#realizedProfitFragment"
-                hx-swap="outerHTML">초기화</button>
+            hx-get="/stock/htmx/realized-profit"
+            hx-target="#realizedProfitFragment"
+            hx-select="#realizedProfitFragment"
+                hx-swap="outerHTML"
+                hx-include="#realizedProfitSearchForm"
+            data-selection-reset="true">초기화</button>
     </form>
     </details>
+
+    <script type="module" src="/js/stock/selectionStorage.js"></script>
 
     <!-- Section 0: 요약 카드 -->
     <div class="stats stats-vertical lg:stats-horizontal shadow w-full bg-base-100">

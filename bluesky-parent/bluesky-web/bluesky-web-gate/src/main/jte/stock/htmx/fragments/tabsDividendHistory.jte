@@ -142,7 +142,7 @@
 
         <div class="form-control w-full sm:w-auto">
             <label class="label p-1"><span class="label-text text-xs">계좌</span></label>
-            <select name="accountIdList" class="select select-sm select-bordered">
+            <select name="accountIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="8">
                 <option value="">전체</option>
                 @for(Account account : accountList)
                 <option value="${account.id().toString()}" selected="${account.id().equals(selectedAccountId)}">${account.name()}</option>
@@ -152,7 +152,7 @@
 
         <div class="form-control w-full sm:w-auto">
             <label class="label p-1"><span class="label-text text-xs">종목</span></label>
-            <select name="stockItemIdList" class="select select-sm select-bordered">
+            <select name="stockItemIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="8">
                 <option value="">전체</option>
                 @for(StockItem stockItem : stockItemList)
                 <option value="${stockItem.id().toString()}" selected="${stockItem.id().equals(selectedStockItemId)}">${stockItem.name()}</option>
@@ -160,14 +160,23 @@
             </select>
         </div>
 
-        <button type="submit" class="btn btn-sm btn-primary">조회</button>
+        <button type="button" class="btn btn-sm btn-primary" data-selection-save="true"
+            hx-get="/stock/htmx/dividend/list"
+            hx-target="#dividendListFragment"
+            hx-select="#dividendListFragment"
+            hx-swap="outerHTML"
+            hx-include="#dividendSearchForm">조회</button>
         <button type="button" class="btn btn-sm text-xs"
-                hx-get="/stock/htmx/dividend/list"
-                hx-target="#dividendListFragment"
-                hx-select="#dividendListFragment"
-                hx-swap="outerHTML">초기화</button>
+            hx-get="/stock/htmx/dividend/list"
+            hx-target="#dividendListFragment"
+            hx-select="#dividendListFragment"
+                hx-swap="outerHTML"
+                hx-include="#dividendSearchForm"
+            data-selection-reset="true">초기화</button>
     </form>
     </details>
+
+    <script type="module" src="/js/stock/selectionStorage.js"></script>
 
     <!-- Dashboard -->
 

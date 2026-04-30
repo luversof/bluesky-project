@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
@@ -41,6 +43,7 @@ import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 @Controller
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
 public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
+  private static final Logger logger = LoggerFactory.getLogger(StockAssetGrowthHtmxController.class);
   public StockAssetGrowthHtmxController(
       TradeProfitClient tradeProfitClient,
       TradeClient tradeClient,
@@ -131,6 +134,10 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     var params = request.toParams();
     params.add("granularity", gran != null ? gran : "AUTO");
     var timeSeries = tradeProfitClient.timeSeries(params);
+    try {
+      logger.debug("assetGrowthData called: from={} to={} gran={} requestStart={} requestEnd={}",
+          from, to, gran, request.getStartDate(), request.getEndDate());
+    } catch (Exception _e) { /* ignore logging errors */ }
     var fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     var labelsList = new ArrayList<String>();
     var tvList = new ArrayList<Long>();
@@ -165,6 +172,18 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
               ? pt.dailyRealizedProfit().setScale(0, RoundingMode.HALF_UP).longValue()
               : 0L);
     }
+    try {
+      long sumTv = 0L;
+      long sumTc = 0L;
+      long sumCrp = 0L;
+      for (Long v : tvList) sumTv += v == null ? 0L : v;
+      for (Long v : tcList) sumTc += v == null ? 0L : v;
+      for (Long v : crpList) sumCrp += v == null ? 0L : v;
+      String first = labelsList.isEmpty() ? "" : labelsList.get(0);
+      String last = labelsList.isEmpty() ? "" : labelsList.get(labelsList.size() - 1);
+      logger.debug("assetGrowthData summary: count={} first={} last={} sumTv={} sumTc={} sumCrp={}",
+          labelsList.size(), first, last, sumTv, sumTc, sumCrp);
+    } catch (Exception _e) { /* ignore */ }
     return Map.of(
         "labels", labelsList,
         "totalValueData", tvList,

@@ -11,30 +11,36 @@
 @param String timeZone = null
 
 !{
-    java.util.List ts = (java.util.List) timeSeries;
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     boolean isAllMode = "all".equals(rangeMode);
-    java.time.ZoneId zone = (timeZone != null && !timeZone.isEmpty())
-        ? java.time.ZoneId.of(timeZone)
-        : java.time.ZoneId.systemDefault();
+    java.time.ZoneId zone = (timeZone != null && !timeZone.isEmpty()) ? java.time.ZoneId.of(timeZone) : java.time.ZoneId.systemDefault();
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(zone);
+
     java.time.LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
     java.time.LocalDate endLocal = endDate != null ? endDate.atZone(zone).toLocalDate() : null;
+
+    // Normalize model-provided `timeSeries` into `ts` for template use
+    List<TradeProfitTimeSeriesPoint> ts = null;
+    if (timeSeries instanceof List) {
+        ts = (List<TradeProfitTimeSeriesPoint>) timeSeries;
+    }
+
     if (startLocal == null && ts != null && !ts.isEmpty()) {
         try {
-            TradeProfitTimeSeriesPoint firstPt = (TradeProfitTimeSeriesPoint) ts.get(0);
+            TradeProfitTimeSeriesPoint firstPt = ts.get(0);
             if (firstPt != null && firstPt.timestamp() != null) startLocal = firstPt.timestamp().atZone(zone).toLocalDate();
         } catch (Exception e) { }
     }
     if (endLocal == null && ts != null && !ts.isEmpty()) {
         try {
-            TradeProfitTimeSeriesPoint lastPt = (TradeProfitTimeSeriesPoint) ts.get(ts.size() - 1);
+            TradeProfitTimeSeriesPoint lastPt = ts.get(ts.size() - 1);
             if (lastPt != null && lastPt.timestamp() != null) endLocal = lastPt.timestamp().atZone(zone).toLocalDate();
         } catch (Exception e) { }
     }
+
     java.time.LocalDate today = java.time.LocalDate.now(zone);
     boolean canNext = !isAllMode && endLocal != null && endLocal.isBefore(today);
     boolean canPrev = !isAllMode && startLocal != null && dataFirstDate != null && !dataFirstDate.isEmpty()
-        && startLocal.isAfter(java.time.LocalDate.parse(dataFirstDate));
+            && startLocal.isAfter(java.time.LocalDate.parse(dataFirstDate));
 }
 
 <div id="assetGrowthFragment" class="card bg-base-100 shadow-xl">
@@ -91,7 +97,7 @@
                     <canvas id="dividendChart" class="amount-chart"></canvas>
                 </div>
                 <div id="holdings-snapshot-container"></div>
-                <div id="trade-history-container"></div>
+                <div id="trade-history-panel"></div>
             @endif
         </div>
     </div>
@@ -122,7 +128,7 @@
                 } catch(e) {}
             };
             @for(Object _pt : ts)
-            !{ var pt = (TradeProfitTimeSeriesPoint) _pt; }
+            !{ TradeProfitTimeSeriesPoint pt = (TradeProfitTimeSeriesPoint) _pt; }
                 labels.push("$unsafe{formatter.format(pt.timestamp())}");
                 totalValueData.push($unsafe{pt.totalHoldingsValue() != null ? pt.totalHoldingsValue().setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0"});
                 totalCostData.push($unsafe{pt.totalHoldingsCost() != null ? pt.totalHoldingsCost().setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0"});
@@ -137,6 +143,15 @@
             var currentUnrealizedProfitData = totalValueData.map(function(v, i) {
                 return parseFloat(v) - parseFloat(totalCostData[i]);
             });
+            try {
+                console.debug && console.debug('[asset-growth] arrays', {
+                    labels: labels.length,
+                    totalValueData: totalValueData.length,
+                    totalCostData: totalCostData.length,
+                    currentUnrealizedProfitData: currentUnrealizedProfitData.length
+                });
+                console.debug && console.debug('[asset-growth] sample currentUnrealizedProfitData', currentUnrealizedProfitData.slice(0, 6));
+            } catch (e) {}
             // 총 누적 이익 = 누적 결산 손익 + 누적 배당금
             var totalCumulativeProfitData = cumulativeRealizedProfitData.map(function(v, i) {
                 return parseFloat(v) + parseFloat(cumulativeDividendData[i]);
@@ -221,11 +236,14 @@
                     }
 
                     // If caller passed a numeric preset (e.g. '6' months) that is
-                    // large enough, prefer to force a detail fetch so the chart can
-                    // obtain daily-resolution data and align precisely to the
-                    // requested dates instead of snapping to coarse base labels.
+                    // large enough, or special presets like 'ytd', prefer to force
+                    // a detail fetch so the chart can obtain daily-resolution data
+                    // and align precisely to the requested dates instead of
+                    // snapping to coarse base labels.
                     try {
-                        if (mode && (/^\d+$/.test(String(mode)))) {
+                        if (mode === 'ytd') {
+                            forceDetailFetch = true;
+                        } else if (mode && (/^\d+$/.test(String(mode)))) {
                             var _monthsNum = Number(mode);
                             if (!isNaN(_monthsNum) && _monthsNum >= 6) {
                                 forceDetailFetch = true;
@@ -302,6 +320,7 @@
                         // other fragments receive the searched period, not the
                         // label-aligned display range which may be snapped.
                         sessionStorage.setItem('globalDateRange', JSON.stringify({ start: startStr || '', end: endStr || '', mode: mode || '', timeZone: __tz || '' }));
+                        // trade-history refresh is handled by the global layout listener
                     }
                 } catch (e) {}
                 try { agLog('applyRangeToChart scheduled', { reqStart: startStr, reqEnd: endStr, mode: mode || '', displayStart: displayStart, displayEnd: displayEnd }); } catch(e) {}
@@ -580,7 +599,7 @@
                                         if (ov > bestOverlap) { bestOverlap = ov; bestEntry = ent; }
                                     } catch (ee) { /* ignore parse errors */ }
                                 }
-                                if (bestEntry && bestOverlap > 0) {
+                                if (bestEntry && bestOverlap > 0 && !forceDetailFetch && neededTier > 0) {
                                     // construct merged labels (detail first, then base labels)
                                     var seen = {};
                                     var mergedLabels = [];
@@ -651,6 +670,8 @@
                                     currentTierNum = bestEntry.tier;
                                     setLoading(false);
                                     return;
+                                } else {
+                                    try { console.debug && console.debug('[asset-growth] merge skipped (forceDetailFetch=' + !!forceDetailFetch + ', neededTier=' + neededTier + ', bestEntryTier=' + (bestEntry ? bestEntry.tier : 'n/a') + ')'); } catch(e) {}
                                 }
                             }
                         } catch (e) { console.debug && console.debug('[asset-growth] merge attempt failed', e); }
@@ -711,7 +732,9 @@
                     // Ensure trade-history updates use the same requested (non-buffered)
                     // visible range as the upcoming detail fetch so both components
                     // remain in sync and avoid flicker from out-of-order responses.
-                    try { agLog('refreshTradeHistory (checkAndFetchDetail)', { from: capturedVisStart, to: capturedVisEnd }); refreshTradeHistory(capturedVisStart, capturedVisEnd); } catch (e) {}
+                    try {
+                        agLog('skipping local refreshTradeHistory; global listener will refresh trade-history', { from: capturedVisStart, to: capturedVisEnd });
+                    } catch (e) {}
 
                     console.debug('[asset-growth] fetching detail', { startStr: startStr, endStr: endStr, gran: capturedNeededTier === 2 ? 'DAILY' : 'WEEKLY' });
 
@@ -1410,45 +1433,13 @@
                         url += '?from=' + from + '&to=' + to;
                     }
                     htmx.ajax('GET', url, {
-                        target: '#trade-history-container',
-                        swap: 'innerHTML'
+                        target: '#trade-history-panel',
+                        swap: 'outerHTML'
                     });
                 }, 500);
             };
 
-            // 초기 로드: 세션 전역 기간이 있으면 우선 사용하고, 없으면 기본 표시 범위를 사용
-            try {
-                var __initialFrom = defaultMinDate;
-                var __initialTo = defaultMaxDate;
-                try {
-                    var __raw = (typeof sessionStorage !== 'undefined') ? sessionStorage.getItem('globalDateRange') : null;
-                    if (__raw) {
-                        var __g = JSON.parse(__raw);
-                        if (__g) {
-                            if (__g.start && __g.end) {
-                                __initialFrom = __g.start;
-                                __initialTo = __g.end;
-                            } else if (__g.mode === 'all' && baseData && baseData.labels && baseData.labels.length > 0) {
-                                try {
-                                        var __rawStart = (typeof df !== 'undefined' && df) ? df : baseData.labels[0];
-                                        var __rawEnd = baseData.labels[baseData.labels.length - 1];
-                                    var __bfs = new Date(__rawStart + 'T00:00:00'); __bfs.setDate(__bfs.getDate() - 30);
-                                    var __bfe = new Date(__rawEnd + 'T00:00:00'); __bfe.setDate(__bfe.getDate() + 30);
-                                    __initialFrom = __bfs.toISOString().split('T')[0];
-                                    __initialTo = __bfe.toISOString().split('T')[0];
-                                } catch (e) {
-                                    __initialFrom = baseData.labels[0];
-                                    __initialTo = baseData.labels[baseData.labels.length - 1];
-                                }
-                            }
-                        }
-                    }
-                } catch(e) { /* ignore */ }
-                try { agLog('initial refreshTradeHistory', { from: __initialFrom, to: __initialTo }); } catch(e) {}
-                refreshTradeHistory(__initialFrom, __initialTo);
-            } catch(e) {
-                refreshTradeHistory(defaultMinDate, defaultMaxDate);
-            }
+            // 초기 로드: trade-history 갱신은 전역 레이아웃의 globalDateRange 핸들러에서 수행합니다.
         })();
     </script>
     @endif
