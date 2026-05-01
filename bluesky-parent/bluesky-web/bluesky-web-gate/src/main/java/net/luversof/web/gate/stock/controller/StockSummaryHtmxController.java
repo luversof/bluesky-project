@@ -127,7 +127,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
       value4Label = "TOTAL".equals(timeScale) ? "보유 손익" : null;
       value5Label = "매도 금액";
       value6Label = "실현 손익";
-      totalLabel = null; // Hide Total for Profit view
+      totalLabel = "TOTAL".equals(timeScale) ? "합산 손익" : null;
 
       TradeProfitRequest request = new TradeProfitRequest();
       request.setUserId(userId);
@@ -268,7 +268,8 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
                             ? totalCost.divide(hQty, 0, RoundingMode.HALF_UP)
                             : BigDecimal.ZERO;
 
-                    return new AnalyticsRow("전체", name, hQty, avgPrice, e, u, s, r, b);
+                    BigDecimal combined = u.add(r); // 합산 손익 = 보유 손익 + 실현 손익
+                    return new AnalyticsRow("전체", name, hQty, avgPrice, e, u, s, r, combined);
                   })
               .filter(
                   row -> {
@@ -297,10 +298,10 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
         datasets.add(new ChartDataset("보유 손익", uData, "#f28e2b", "#f28e2b", 1, List.of()));
       }
     } else if ("DIVIDEND".equals(type)) {
-      value1Label = "배당(세전)";
-      value2Label = "지급액";
-      value3Label = null;
-      value4Label = "과세금액";
+      value1Label = "배당금(세전)";
+      value2Label = "배당금(세후)";
+      value3Label = "세금";
+      value4Label = "과세 금액";
 
       totalLabel = null;
 

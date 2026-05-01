@@ -39,6 +39,9 @@ select[multiple]:focus, select.select[multiple]:focus, select.select-bordered[mu
     const HARD_CAP = 50; // safety cap to avoid extremely tall controls
     function applySize(sel) {
         try {
+            // Skip selects that explicitly opt out
+            if (sel.dataset.noMulti === "1" || sel.hasAttribute("data-no-multi"))
+                return;
             sel.multiple = true;
             const opts = Array.from(sel.options);
             const attr = sel.getAttribute("data-max-visible");

@@ -64,18 +64,14 @@ function updateDailySummaryFilters() {
     if (accountWrapper) accountWrapper.style.display = "inline-flex";
   }
 
-  /* 
-  // Trigger HTMX Request REMOVED to prevent double triggering (hx-trigger="change" handles it)
+  // Trigger HTMX form submit after UI state is updated
   const form = document.getElementById("daily-summary-filter-form");
   if (form && window.htmx) {
     htmx.trigger(form, "submit");
   }
-  */
 }
 
-// Rename function to reflect its purpose (UI update only)
 window.updateDailySummaryUI = updateDailySummaryFilters;
-// Keep old name for compatibility if needed (but we will update HTML)
 window.updateDailySummaryFilters = updateDailySummaryFilters;
 
 // If we want to auto-init when this script is loaded:

@@ -243,8 +243,8 @@ const DateRangePicker = (function () {
             const maxStr = maxDateStr(); const maxDate = new Date(maxStr + 'T00:00:00'); const today = new Date(); today.setHours(0,0,0,0);
             let startStr = '', endStr = '', modeStr = '';
             if (months === 0) { startStr = ''; endStr = ''; modeStr = 'all'; }
-            else if (months === 'mtd') { startStr = fmtDate(new Date(maxDate.getFullYear(), maxDate.getMonth(), 1)); endStr = maxStr; modeStr = 'mtd'; }
-            else if (months === 'ytd') { startStr = maxDate.getFullYear() + '-01-01'; endStr = maxStr; modeStr = 'ytd'; }
+            else if (months === 'mtd') { startStr = fmtDate(new Date(today.getFullYear(), today.getMonth(), 1)); endStr = fmtDate(today); modeStr = 'mtd'; }
+            else if (months === 'ytd') { startStr = today.getFullYear() + '-01-01'; endStr = fmtDate(today); modeStr = 'ytd'; }
             else {
                 const curEnd = getEnd(); const curStart = getStart(); const todayStr = fmtDate(today);
                 const atDataEnd = !curEnd || curEnd >= todayStr;

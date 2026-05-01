@@ -89,14 +89,10 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
 
         List<DividendResponse> dividends = dividendClient.findDividends(request.toParams());
 
-        List<DividendResponse> globalDividends;
-        if (startDate == null && endDate == null) {
-            globalDividends = dividends;
-        } else {
-            var globalReq = new DividendRequest();
-            globalReq.setUserId(userId);
-            globalDividends = dividendClient.findDividends(globalReq.toParams());
-        }
+                // Always fetch the global/all dividend set so we can offer "전체 기간" filtering
+                var globalReq = new DividendRequest();
+                globalReq.setUserId(userId);
+                List<DividendResponse> globalDividends = dividendClient.findDividends(globalReq.toParams());
         ZoneId zone = (timeZone != null && !timeZone.isEmpty()) ? ZoneId.of(timeZone) : ZoneId.systemDefault();
         LocalDate dataFirstDate = globalDividends.stream()
                 .map(
@@ -118,6 +114,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
 
         var dividendAccountIds = dividends.stream().map(DividendResponse::accountId).collect(Collectors.toSet());
         var dividendStockIds = dividends.stream().map(DividendResponse::stockItemId).collect(Collectors.toSet());
+        var globalDividendStockIds = globalDividends.stream().map(DividendResponse::stockItemId).collect(Collectors.toSet());
 
         List<Account> accounts = accountClient.getAccountsByUserId(userId);
         List<Account> filteredAccountList = accounts.stream().filter(a -> dividendAccountIds.contains(a.id())).toList();
@@ -136,6 +133,10 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
 
         List<StockItem> stockItemList = stockItemClient.getStockItems();
         List<StockItem> filteredStockItemList = stockItemList.stream().filter(s -> dividendStockIds.contains(s.id()))
+                .toList();
+        // Stocks that have any dividends in the global timeframe (used for 전체/no-range)
+        List<StockItem> filteredStockItemListAll = stockItemList.stream()
+                .filter(s -> globalDividendStockIds.contains(s.id()))
                 .toList();
         Map<UUID, String> stockItemNames = stockItemList.stream()
                 .collect(Collectors.toMap(StockItem::id, StockItem::name));
@@ -175,21 +176,33 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         }
 
         List<StockItem> finalStockItemList;
-        if (startInstant != null || endInstant != null) {
-            finalStockItemList = new ArrayList<>(filteredStockItemList);
-            if (requestedStockItemIds != null) {
-                for (UUID sel : requestedStockItemIds) {
-                    if (sel == null)
-                        continue;
-                    if (!finalStockItemList.stream().anyMatch(s -> s.id().equals(sel))) {
-                        stockItemList.stream().filter(s -> s.id().equals(sel)).findFirst()
-                                .ifPresent(s -> finalStockItemList.add(0, s));
-                    }
+                if (startInstant != null || endInstant != null) {
+                        // Date-specific search -> show only stocks that had dividends in the requested period
+                        finalStockItemList = new ArrayList<>(filteredStockItemList);
+                        if (requestedStockItemIds != null) {
+                                for (UUID sel : requestedStockItemIds) {
+                                        if (sel == null)
+                                                continue;
+                                        if (!finalStockItemList.stream().anyMatch(s -> s.id().equals(sel))) {
+                                                stockItemList.stream().filter(s -> s.id().equals(sel)).findFirst()
+                                                                .ifPresent(s -> finalStockItemList.add(0, s));
+                                        }
+                                }
+                        }
+                } else {
+                        // No explicit date range (or rangeMode='all') -> show stocks that have any dividend history
+                        finalStockItemList = new ArrayList<>(filteredStockItemListAll);
+                        if (requestedStockItemIds != null) {
+                                for (UUID sel : requestedStockItemIds) {
+                                        if (sel == null)
+                                                continue;
+                                        if (!finalStockItemList.stream().anyMatch(s -> s.id().equals(sel))) {
+                                                stockItemList.stream().filter(s -> s.id().equals(sel)).findFirst()
+                                                                .ifPresent(s -> finalStockItemList.add(0, s));
+                                        }
+                                }
+                        }
                 }
-            }
-        } else {
-            finalStockItemList = stockItemList;
-        }
 
         List<DividendView> viewList = dividends.stream()
                 .filter(

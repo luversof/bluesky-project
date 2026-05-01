@@ -408,13 +408,13 @@ const DateRangePicker = (function () {
                 modeStr = 'all';
             }
             else if (months === 'mtd') {
-                startStr = fmtDate(new Date(maxDate.getFullYear(), maxDate.getMonth(), 1));
-                endStr = maxStr;
+                startStr = fmtDate(new Date(today.getFullYear(), today.getMonth(), 1));
+                endStr = fmtDate(today);
                 modeStr = 'mtd';
             }
             else if (months === 'ytd') {
-                startStr = maxDate.getFullYear() + '-01-01';
-                endStr = maxStr;
+                startStr = today.getFullYear() + '-01-01';
+                endStr = fmtDate(today);
                 modeStr = 'ytd';
             }
             else {
