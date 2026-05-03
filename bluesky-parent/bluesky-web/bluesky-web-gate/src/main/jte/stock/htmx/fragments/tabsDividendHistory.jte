@@ -115,6 +115,10 @@
     String accountLabel = MessageUtil.getMessage("common.label.account");
     String stockNameLabel = MessageUtil.getMessage("stock.activity.label.stock.name");
     String tagLabel = MessageUtil.getMessage("common.label.tag");
+    String tagHelperLabel = MessageUtil.getMessage("stock.filter.tag.helper");
+    String tagSummaryLabel = MessageUtil.getMessage("stock.filter.tag.summary.selected");
+    String tagStockSummaryPattern = MessageUtil.getMessage("stock.filter.tag.summary.stocks");
+    String tagMorePattern = MessageUtil.getMessage("stock.filter.tag.summary.more");
     String allLabel = MessageUtil.getMessage("common.label.all");
     String searchLabel = MessageUtil.getMessage("common.button.search");
     String resetLabel = MessageUtil.getMessage("common.button.reset");
@@ -178,7 +182,7 @@
     )
 
     <!-- Filter & Search Form (collapsible) -->
-    <details class="mb-4"$unsafe{((selectedAccountIds != null && !selectedAccountIds.isEmpty()) || (selectedStockItemIds != null && !selectedStockItemIds.isEmpty()) || (selectedStockTags != null && !selectedStockTags.isEmpty()) || startDate != null) ? " open" : ""}>
+    <details class="mb-4" open>
         <summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
             ${detailSearchLabel}
@@ -189,71 +193,85 @@
                 endDate = endDate
             )
         </summary>
-    <form id="dividendSearchForm" class="flex flex-wrap gap-2 mt-2 mb-2 items-end bg-base-100 p-2 rounded-box shadow-sm"
+    <form id="dividendSearchForm" class="mt-2 mb-2 rounded-2xl bg-base-100 p-3 shadow-sm"
           hx-get="/stock/htmx/dividend/list"
           hx-target="#dividendListFragment"
           hx-select="#dividendListFragment"
           hx-swap="outerHTML"
           hx-trigger="submit">
 
-        <div class="form-control w-full sm:w-auto">
-            <label class="label p-1"><span class="label-text text-xs">${periodLabel}</span></label>
-            <div class="join">
-                <input type="date" name="dividendUiStartDate" id="startDateInput" class="input input-sm input-bordered join-item" value="${startDate != null ? startDate.atZone(zone).toLocalDate().toString() : ""}">
-                <input type="date" name="dividendUiEndDate" id="endDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1).toString() : ""}">
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,18rem)_minmax(0,22rem)_minmax(0,1fr)_minmax(0,19rem)] xl:items-start">
+            <div class="form-control w-full">
+                <label class="label p-1"><span class="label-text text-xs">${periodLabel}</span></label>
+                <div class="join w-full">
+                    <input type="date" name="dividendUiStartDate" id="startDateInput" class="input input-sm input-bordered join-item w-1/2" value="${startDate != null ? startDate.atZone(zone).toLocalDate().toString() : ""}">
+                    <input type="date" name="dividendUiEndDate" id="endDateInput" class="input input-sm input-bordered join-item w-1/2" value="${endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1).toString() : ""}">
+                </div>
+            </div>
+
+            <div class="form-control w-full">
+                <label class="label p-1"><span class="label-text text-xs">${accountLabel}</span></label>
+                <select name="accountIdList" class="select select-bordered w-full max-h-40 overflow-auto" multiple size="${Math.min(accountList != null ? accountList.size() + 1 : 1, 7)}" data-max-visible="7">
+                    <option value="">${allLabel}</option>
+                    @for(Account account : accountList)
+                    <option value="${account.id().toString()}" selected="${selectedAccountIds != null && selectedAccountIds.contains(account.id())}">${account.name()}</option>
+                    @endfor
+                </select>
+            </div>
+
+            <div class="form-control w-full">
+                <label class="label p-1"><span class="label-text text-xs">${stockNameLabel}</span></label>
+                <select name="stockItemIdList" class="select select-bordered w-full max-h-40 overflow-auto bg-base-100" multiple size="${Math.min(stockItemList != null ? stockItemList.size() + 1 : 1, 7)}" data-max-visible="7">
+                    <option value="">${allLabel}</option>
+                    @for(StockItem stockItem : stockItemList)
+                    !{String stockItemTags = stockItem.tags() != null ? String.join("|", stockItem.tags()) : "";}
+                    <option value="${stockItem.id().toString()}"
+                            selected="${selectedStockItemIds != null && selectedStockItemIds.contains(stockItem.id())}"
+                            data-stock-tags="${stockItemTags}">${stockItem.name()}</option>
+                    @endfor
+                </select>
+            </div>
+
+            <div class="flex h-full min-h-0 flex-col gap-3 xl:justify-between">
+                @template.stock.htmx.fragments.components.stockSelectionPanel(
+                    tagLabel = tagLabel,
+                    stockLabel = stockNameLabel,
+                    allLabel = allLabel,
+                    helperLabel = tagHelperLabel,
+                    selectedTagSummaryLabel = tagSummaryLabel,
+                    selectedStockSummaryPattern = tagStockSummaryPattern,
+                    stockPreviewMorePattern = tagMorePattern,
+                    stockTagList = stockTagList,
+                    selectedStockTags = selectedStockTags,
+                    stockItemList = stockItemList
+                )
+
+                <div class="flex justify-end gap-2 xl:mt-auto">
+                    <button type="button" class="btn btn-sm btn-primary" data-selection-save="true"
+                        hx-get="/stock/htmx/dividend/list"
+                        hx-target="#dividendListFragment"
+                        hx-select="#dividendListFragment"
+                        hx-swap="outerHTML"
+                        hx-include="#dividendSearchForm">${searchLabel}</button>
+                    <button type="button" class="btn btn-sm text-xs"
+                        hx-get="/stock/htmx/dividend/list"
+                        hx-target="#dividendListFragment"
+                        hx-select="#dividendListFragment"
+                            hx-swap="outerHTML"
+                            hx-include="#dividendSearchForm"
+                        data-selection-reset="true">${resetLabel}</button>
+                </div>
             </div>
         </div>
         <input type="hidden" name="startDate" id="dividendStartInstantInput" value="${startDate != null ? startDate.toString() : ""}">
         <input type="hidden" name="endDate" id="dividendEndInstantInput" value="${endDate != null ? endDate.toString() : ""}">
         <input type="hidden" name="timeZone" id="dividendTimeZoneInput" value="${timeZone != null ? timeZone : ""}">
         <input type="hidden" name="rangeMode" id="dividendRangeModeInput" value="${rangeMode != null ? rangeMode : ""}">
-
-        <div class="form-control w-full sm:w-auto">
-            <label class="label p-1"><span class="label-text text-xs">${accountLabel}</span></label>
-            <select name="accountIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="6">
-                <option value="">${allLabel}</option>
-                @for(Account account : accountList)
-                <option value="${account.id().toString()}" selected="${selectedAccountIds != null && selectedAccountIds.contains(account.id())}">${account.name()}</option>
-                @endfor
-            </select>
-        </div>
-
-        <div class="form-control w-full sm:w-auto">
-            <label class="label p-1"><span class="label-text text-xs">${tagLabel}</span></label>
-            <select name="stockTagList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="6">
-                @for(String stockTag : stockTagList)
-                <option value="${stockTag}" selected="${selectedStockTags != null && selectedStockTags.contains(stockTag)}">${stockTag}</option>
-                @endfor
-            </select>
-        </div>
-
-        <div class="form-control w-full sm:w-auto">
-            <label class="label p-1"><span class="label-text text-xs">${stockNameLabel}</span></label>
-            <select name="stockItemIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="6">
-                <option value="">${allLabel}</option>
-                @for(StockItem stockItem : stockItemList)
-                <option value="${stockItem.id().toString()}" selected="${selectedStockItemIds != null && selectedStockItemIds.contains(stockItem.id())}">${stockItem.name()}</option>
-                @endfor
-            </select>
-        </div>
-
-        <button type="button" class="btn btn-sm btn-primary" data-selection-save="true"
-            hx-get="/stock/htmx/dividend/list"
-            hx-target="#dividendListFragment"
-            hx-select="#dividendListFragment"
-            hx-swap="outerHTML"
-            hx-include="#dividendSearchForm">${searchLabel}</button>
-        <button type="button" class="btn btn-sm text-xs"
-            hx-get="/stock/htmx/dividend/list"
-            hx-target="#dividendListFragment"
-            hx-select="#dividendListFragment"
-                hx-swap="outerHTML"
-                hx-include="#dividendSearchForm"
-            data-selection-reset="true">${resetLabel}</button>
     </form>
     </details>
 
     <script type="module" src="/js/stock/selectionStorage.js"></script>
+    <script type="module" src="/js/stock/tagFilterChips.js"></script>
 
     <!-- Dashboard -->
 
@@ -387,8 +405,8 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">
-        <div class="card bg-base-100 shadow-sm border border-base-200">
+    <div class="grid grid-cols-1 gap-4 mb-4">
+        <div class="card min-w-0 bg-base-100 shadow-sm border border-base-200">
             <div class="card-body p-4">
                 <div class="text-sm font-bold mb-3">${yearlyYieldSectionLabel}</div>
                 @if(yearlyYieldRows == null || yearlyYieldRows.isEmpty())
@@ -422,7 +440,7 @@
             </div>
         </div>
 
-        <div class="card bg-base-100 shadow-sm border border-base-200">
+        <div class="card min-w-0 bg-base-100 shadow-sm border border-base-200">
             <div class="card-body p-4">
                 <div class="text-sm font-bold mb-3">${stockYieldSectionLabel}</div>
                 @if(stockYieldRows == null || stockYieldRows.isEmpty())
@@ -458,7 +476,7 @@
             </div>
         </div>
 
-        <div class="card bg-base-100 shadow-sm border border-base-200">
+        <div class="card min-w-0 bg-base-100 shadow-sm border border-base-200">
             <div class="card-body p-4">
                 <div class="text-sm font-bold mb-3">${accountYieldSectionLabel}</div>
                 @if(accountYieldRows == null || accountYieldRows.isEmpty())

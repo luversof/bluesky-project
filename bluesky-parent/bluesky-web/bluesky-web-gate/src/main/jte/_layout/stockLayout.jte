@@ -111,10 +111,11 @@
 							var tkey = (obj.start || '') + '::' + (obj.end || '');
 							if (!window.lastGlobalTradeKey || window.lastGlobalTradeKey !== tkey) {
 								try { window.lastGlobalTradeKey = tkey; } catch(e){}
-								if (typeof htmx !== 'undefined' && htmx && typeof htmx.ajax === 'function') {
+								var tradeHistoryPanel = document.getElementById('trade-history-panel');
+								if (tradeHistoryPanel && typeof htmx !== 'undefined' && htmx && typeof htmx.ajax === 'function') {
 									var url = '/stock/htmx/trade-history';
 									if (obj.start && obj.end) url += '?from=' + obj.start + '&to=' + obj.end;
-									htmx.ajax('GET', url, { target: '#trade-history-panel', swap: 'outerHTML' });
+									htmx.ajax('GET', url, { target: tradeHistoryPanel, swap: 'outerHTML' });
 								}
 							}
 						} catch(e) {}

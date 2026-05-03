@@ -14,6 +14,38 @@ const PROFIT_COLORS_NEG = [
     'rgba(59,130,246,0.85)', 'rgba(14,165,233,0.8)', 'rgba(99,102,241,0.8)'
 ];
 function fmtAmt(v) { return Number(v).toLocaleString('ko-KR'); }
+function resolveLocale() {
+    var _a, _b;
+    return ((_a = document.body) === null || _a === void 0 ? void 0 : _a.dataset.locale) || ((_b = document.documentElement) === null || _b === void 0 ? void 0 : _b.lang) || navigator.language || 'ko-KR';
+}
+function compactNumber(value) {
+    const numeric = Number(value) || 0;
+    const abs = Math.abs(numeric);
+    const sign = numeric < 0 ? '-' : '';
+    const locale = resolveLocale();
+    if (abs >= 100000000) {
+        const digits = abs >= 1000000000 ? 0 : 1;
+        return sign + new Intl.NumberFormat(locale, { maximumFractionDigits: digits }).format(abs / 100000000) + '억';
+    }
+    if (abs >= 10000) {
+        const digits = abs >= 1000000 ? 0 : 1;
+        return sign + new Intl.NumberFormat(locale, { maximumFractionDigits: digits }).format(abs / 10000) + '만';
+    }
+    return sign + new Intl.NumberFormat(locale).format(abs);
+}
+StockCharts.getLocale = function () {
+    return resolveLocale();
+};
+StockCharts.formatNumber = function (value) {
+    return new Intl.NumberFormat(resolveLocale()).format(Number(value) || 0);
+};
+StockCharts.formatCurrency = function (value) {
+    const numeric = Math.round(Number(value) || 0);
+    return '₩' + StockCharts.formatNumber(numeric);
+};
+StockCharts.formatCompactNumber = function (value) {
+    return compactNumber(value);
+};
 function buildMonthlyData(tradeData = []) {
     const buyMap = {}, sellMap = {};
     tradeData.forEach((d) => {

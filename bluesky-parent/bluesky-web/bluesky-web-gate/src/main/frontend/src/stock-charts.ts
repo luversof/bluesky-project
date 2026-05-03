@@ -5,6 +5,10 @@ interface StockChartsAPI {
   initMonthlyFromData?: (tradeData: any[], canvasId?: string, existingInstance?: any) => any;
   initDonutFromData?: (tradeData: any[], opts?: any, existingInstance?: any) => any;
   createChart?: (canvasId: string, config: any, existingInstance?: any) => any;
+  getLocale?: () => string;
+  formatNumber?: (value: any) => string;
+  formatCurrency?: (value: any) => string;
+  formatCompactNumber?: (value: any) => string;
 }
 
 const StockCharts: StockChartsAPI = {};
@@ -25,6 +29,46 @@ const PROFIT_COLORS_NEG = [
 ];
 
 function fmtAmt(v: any): string { return Number(v).toLocaleString('ko-KR'); }
+
+function resolveLocale(): string {
+  return document.body?.dataset?.locale || document.documentElement?.lang || navigator.language || 'ko-KR';
+}
+
+function compactNumber(value: any): string {
+  const numeric = Number(value) || 0;
+  const abs = Math.abs(numeric);
+  const sign = numeric < 0 ? '-' : '';
+  const locale = resolveLocale();
+
+  if (abs >= 100000000) {
+    const digits = abs >= 1000000000 ? 0 : 1;
+    return sign + new Intl.NumberFormat(locale, { maximumFractionDigits: digits }).format(abs / 100000000) + '억';
+  }
+
+  if (abs >= 10000) {
+    const digits = abs >= 1000000 ? 0 : 1;
+    return sign + new Intl.NumberFormat(locale, { maximumFractionDigits: digits }).format(abs / 10000) + '만';
+  }
+
+  return sign + new Intl.NumberFormat(locale).format(abs);
+}
+
+StockCharts.getLocale = function() {
+  return resolveLocale();
+};
+
+StockCharts.formatNumber = function(value: any) {
+  return new Intl.NumberFormat(resolveLocale()).format(Number(value) || 0);
+};
+
+StockCharts.formatCurrency = function(value: any) {
+  const numeric = Math.round(Number(value) || 0);
+  return '₩' + StockCharts.formatNumber!(numeric);
+};
+
+StockCharts.formatCompactNumber = function(value: any) {
+  return compactNumber(value);
+};
 
 function buildMonthlyData(tradeData: any[] = []) {
   const buyMap: Record<string, number> = {}, sellMap: Record<string, number> = {};

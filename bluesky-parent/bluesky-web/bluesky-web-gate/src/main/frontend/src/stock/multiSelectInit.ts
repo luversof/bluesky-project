@@ -6,16 +6,14 @@ function ensureMultiSelectStyle() {
 	s.id = "simple-multi-style";
 	s.appendChild(
 		document.createTextNode(`
-/* Ensure multi selects can expand despite .select-sm height overrides */
+/* Remove fixed DaisyUI sizing without overriding native multi-select row height */
 .select[multiple], select.select[multiple], .form-control select[multiple] {
-	height: auto !important;
 	min-height: unset !important;
 	max-height: 50vh !important;
 	overflow: auto !important;
 }
 /* Also handle cases where select has size-specific small class */
 select.select.select-sm[multiple], .select.select-sm[multiple] {
-	height: auto !important;
 	min-height: unset !important;
 }
 /* Make native multi-selects visually match an input box */
@@ -40,6 +38,30 @@ select[multiple]:focus, select.select[multiple]:focus, select.select-bordered[mu
 	const SELECTOR =
 		'select[name="accountIdList"], select[name="stockItemIdList"], select.select';
 	const HARD_CAP = 50; // safety cap to avoid extremely tall controls
+
+	function syncLinkedSelectHeights(scope: ParentNode | Document): void {
+		const forms = Array.from(
+			(scope instanceof Element ? scope : document).querySelectorAll("form"),
+		) as HTMLFormElement[];
+
+		forms.forEach((form) => {
+			const accountSelect = form.querySelector<HTMLSelectElement>(
+				'select[name="accountIdList"]',
+			);
+			const stockSelect = form.querySelector<HTMLSelectElement>(
+				'select[name="stockItemIdList"]',
+			);
+
+			if (!accountSelect || !stockSelect) return;
+
+			const accountHeight = accountSelect.getBoundingClientRect().height;
+			if (!accountHeight || accountHeight <= 0) return;
+
+			stockSelect.style.height = `${accountHeight}px`;
+			stockSelect.style.maxHeight = `${accountHeight}px`;
+			stockSelect.style.overflowY = "auto";
+		});
+	}
 
 	function applySize(sel: HTMLSelectElement) {
 		try {
@@ -83,6 +105,7 @@ select[multiple]:focus, select.select[multiple]:focus, select.select-bordered[mu
 				/* ignore per-select errors */
 			}
 		});
+		syncLinkedSelectHeights(scope);
 	}
 
 	document.addEventListener("DOMContentLoaded", () => init(document));
