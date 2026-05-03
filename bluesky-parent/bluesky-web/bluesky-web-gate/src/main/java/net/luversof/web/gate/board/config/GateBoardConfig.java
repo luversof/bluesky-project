@@ -24,19 +24,22 @@ public class GateBoardConfig {
 
   @Bean
   BoardArticleClient boardArticleClient(
-      @Qualifier("boardHttpServiceProxyFactory") HttpServiceProxyFactory boardHttpServiceProxyFactory) {
+      @Qualifier("boardHttpServiceProxyFactory")
+          HttpServiceProxyFactory boardHttpServiceProxyFactory) {
     return boardHttpServiceProxyFactory.createClient(BoardArticleClient.class);
   }
 
   @Bean
   BoardArticleCommentClient boardArticleCommentClient(
-      @Qualifier("boardHttpServiceProxyFactory") HttpServiceProxyFactory boardHttpServiceProxyFactory) {
+      @Qualifier("boardHttpServiceProxyFactory")
+          HttpServiceProxyFactory boardHttpServiceProxyFactory) {
     return boardHttpServiceProxyFactory.createClient(BoardArticleCommentClient.class);
   }
 
   @Bean
   BoardClient boardClient(
-      @Qualifier("boardHttpServiceProxyFactory") HttpServiceProxyFactory boardHttpServiceProxyFactory) {
+      @Qualifier("boardHttpServiceProxyFactory")
+          HttpServiceProxyFactory boardHttpServiceProxyFactory) {
     return boardHttpServiceProxyFactory.createClient(BoardClient.class);
   }
 }

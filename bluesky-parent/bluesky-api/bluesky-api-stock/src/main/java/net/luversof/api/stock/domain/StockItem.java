@@ -28,8 +28,7 @@ public class StockItem {
   @Column("name")
   private String name;
 
-  @Transient
-  private List<String> tags = List.of();
+  @Transient private List<String> tags = List.of();
 
   public UUID getId() {
     return id;
@@ -73,12 +72,9 @@ public class StockItem {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (obj == null)
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
+    if (this == obj) return true;
+    if (obj == null) return false;
+    if (getClass() != obj.getClass()) return false;
     StockItem other = (StockItem) obj;
     return Objects.equals(id, other.id)
         && Objects.equals(market, other.market)

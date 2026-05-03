@@ -47,7 +47,13 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
       StockItemClient stockItemClient,
       DividendClient dividendClient,
       MessageSource messageSource) {
-    super(tradeProfitClient, tradeClient, accountClient, stockItemClient, dividendClient, messageSource);
+    super(
+        tradeProfitClient,
+        tradeClient,
+        accountClient,
+        stockItemClient,
+        dividendClient,
+        messageSource);
   }
 
   @BlueskyPreAuthorize
@@ -92,8 +98,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
       Model model) {
 
     UUID userId = UserUtil.getUserId();
-    if (userId == null)
-      return ERROR_VIEW;
+    if (userId == null) return ERROR_VIEW;
 
     if (year == null) {
       year = LocalDate.now().getYear();
@@ -119,9 +124,10 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     String chartType = "bar";
     boolean isStacked = false;
 
-    List<String> palette = List.of(
-        "#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f", "#edc948", "#b07aa1", "#ff9da7",
-        "#9c755f", "#bab0ac");
+    List<String> palette =
+        List.of(
+            "#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f", "#edc948", "#b07aa1", "#ff9da7",
+            "#9c755f", "#bab0ac");
 
     // --- 1. PROFIT LOGIC ---
     if ("PROFIT".equals(type)) {
@@ -133,8 +139,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
 
       TradeProfitRequest request = new TradeProfitRequest();
       request.setUserId(userId);
-      if (accountId != null)
-        request.setAccountIdList(List.of(accountId));
+      if (accountId != null) request.setAccountIdList(List.of(accountId));
 
       // 1. Get Current Snapshot (for Holding Quantity and Unrealized Profit)
       List<TradeProfit> currentProfits = getEnrichedTradeProfits(request);
@@ -159,19 +164,26 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
         keyLabel = msg("stock.label.period.all");
       }
 
-      List<TradeProfit> periodProfits = "TOTAL".equals(timeScale) ? currentProfits : getEnrichedTradeProfits(request);
+      List<TradeProfit> periodProfits =
+          "TOTAL".equals(timeScale) ? currentProfits : getEnrichedTradeProfits(request);
 
-      String groupLabel = "ACCOUNT".equals(groupBy) ? msg("stock.label.by.account")
-          : "SUMMARY".equals(groupBy) ? msg("stock.label.summary")
-              : msg("stock.label.by.stock");
+      String groupLabel =
+          "ACCOUNT".equals(groupBy)
+              ? msg("stock.label.by.account")
+              : "SUMMARY".equals(groupBy)
+                  ? msg("stock.label.summary")
+                  : msg("stock.label.by.stock");
       chartTitle = msg("stock.chart.profit.title", groupLabel);
       if (!"TOTAL".equals(timeScale)) {
         chartTitle = keyLabel + " " + chartTitle;
       }
 
-      subKeyLabel = "SUMMARY".equals(groupBy) ? null
-          : "ACCOUNT".equals(groupBy) ? msg("stock.label.by.account")
-              : msg("stock.label.by.stock");
+      subKeyLabel =
+          "SUMMARY".equals(groupBy)
+              ? null
+              : "ACCOUNT".equals(groupBy)
+                  ? msg("stock.label.by.account")
+                  : msg("stock.label.by.stock");
 
       Map<String, BigDecimal> realizedMap = new HashMap<>();
       Map<String, BigDecimal> unrealizedMap = new HashMap<>();
@@ -191,9 +203,10 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
               if ("SUMMARY".equals(groupBy)) {
                 name = summaryKey;
               } else {
-                name = "ACCOUNT".equals(groupBy)
-                    ? (p.accountName() != null ? p.accountName() : "Unknown")
-                    : (p.stockItemName() != null ? p.stockItemName() : unknownLabel);
+                name =
+                    "ACCOUNT".equals(groupBy)
+                        ? (p.accountName() != null ? p.accountName() : "Unknown")
+                        : (p.stockItemName() != null ? p.stockItemName() : unknownLabel);
               }
 
               unrealizedMap.merge(
@@ -225,9 +238,10 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
             if ("SUMMARY".equals(groupBy)) {
               name = summaryKey;
             } else {
-              name = "ACCOUNT".equals(groupBy)
-                  ? (p.accountName() != null ? p.accountName() : "Unknown")
-                  : (p.stockItemName() != null ? p.stockItemName() : unknownLabel);
+              name =
+                  "ACCOUNT".equals(groupBy)
+                      ? (p.accountName() != null ? p.accountName() : "Unknown")
+                      : (p.stockItemName() != null ? p.stockItemName() : unknownLabel);
             }
             realizedMap.merge(
                 name,
@@ -263,9 +277,10 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
 
                     BigDecimal hQty = holdingQuantityMap.getOrDefault(name, BigDecimal.ZERO);
                     BigDecimal totalCost = costBasisMap.getOrDefault(name, BigDecimal.ZERO);
-                    BigDecimal avgPrice = (hQty.compareTo(BigDecimal.ZERO) > 0)
-                        ? totalCost.divide(hQty, 0, RoundingMode.HALF_UP)
-                        : BigDecimal.ZERO;
+                    BigDecimal avgPrice =
+                        (hQty.compareTo(BigDecimal.ZERO) > 0)
+                            ? totalCost.divide(hQty, 0, RoundingMode.HALF_UP)
+                            : BigDecimal.ZERO;
 
                     BigDecimal combined = u.add(r);
                     return new AnalyticsRow(totalKey, name, hQty, avgPrice, e, u, s, r, combined);
@@ -276,7 +291,8 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
                     boolean hasHolding = row.value1().compareTo(BigDecimal.ZERO) != 0;
                     boolean hasSell = row.value5().compareTo(BigDecimal.ZERO) != 0;
                     boolean hasRealized = row.value6().compareTo(BigDecimal.ZERO) != 0;
-                    boolean hasBuy = row.value7() != null && row.value7().compareTo(BigDecimal.ZERO) != 0;
+                    boolean hasBuy =
+                        row.value7() != null && row.value7().compareTo(BigDecimal.ZERO) != 0;
 
                     if (isTotal) {
                       return hasHolding || hasSell || hasRealized || hasBuy;
@@ -291,11 +307,23 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
       List<BigDecimal> rData = rows.stream().map(AnalyticsRow::value6).toList();
       List<BigDecimal> uData = rows.stream().map(AnalyticsRow::value4).toList();
 
-      datasets
-          .add(new ChartDataset(msg("stock.chart.dataset.realized.profit"), rData, "#4e79a7", "#4e79a7", 1, List.of()));
+      datasets.add(
+          new ChartDataset(
+              msg("stock.chart.dataset.realized.profit"),
+              rData,
+              "#4e79a7",
+              "#4e79a7",
+              1,
+              List.of()));
       if ("TOTAL".equals(timeScale)) {
         datasets.add(
-            new ChartDataset(msg("stock.chart.dataset.unrealized.profit"), uData, "#f28e2b", "#f28e2b", 1, List.of()));
+            new ChartDataset(
+                msg("stock.chart.dataset.unrealized.profit"),
+                uData,
+                "#f28e2b",
+                "#f28e2b",
+                1,
+                List.of()));
       }
     } else if ("DIVIDEND".equals(type)) {
       value1Label = msg("stock.dividend.gross");
@@ -305,12 +333,14 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
 
       DividendRequest request = new DividendRequest();
       request.setUserId(userId);
-      if (accountId != null)
-        request.setAccountIdList(List.of(accountId));
+      if (accountId != null) request.setAccountIdList(List.of(accountId));
 
-      subKeyLabel = "SUMMARY".equals(groupBy) ? null
-          : "ACCOUNT".equals(groupBy) ? msg("stock.label.by.account")
-              : msg("stock.label.by.stock");
+      subKeyLabel =
+          "SUMMARY".equals(groupBy)
+              ? null
+              : "ACCOUNT".equals(groupBy)
+                  ? msg("stock.label.by.account")
+                  : msg("stock.label.by.stock");
 
       if ("YEARLY".equals(timeScale)) {
         int startYear = DIVIDEND_CHART_START_YEAR;
@@ -360,28 +390,30 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
         chartTitle = msg("stock.chart.dividend.total.title");
       }
 
-      List<DividendResponse> dividends = Optional.ofNullable(dividendClient.findDividends(request.toParams()))
-          .orElse(new ArrayList<>());
+      List<DividendResponse> dividends =
+          Optional.ofNullable(dividendClient.findDividends(request.toParams()))
+              .orElse(new ArrayList<>());
 
       final Map<UUID, String> stockNames = new HashMap<>();
 
       List<Account> accounts = accountClient.getAccountsByUserId(userId);
-      final Map<UUID, String> accountNames = accounts.stream()
-          .collect(
-              Collectors.toMap(
-                  Account::id, Account::name, (left, right) -> left, LinkedHashMap::new));
-      final Map<UUID, Boolean> taxDeferredMap = accounts.stream()
-          .collect(
-              Collectors.toMap(
-                  Account::id,
-                  (Account account) -> {
-                    if (account.jsonConfig() == null)
-                      return false;
-                    Object val = account.jsonConfig().get("isTaxDeferred");
-                    return Boolean.TRUE.equals(val)
-                        || "true".equalsIgnoreCase(String.valueOf(val));
-                  },
-                  (l, r) -> l));
+      final Map<UUID, String> accountNames =
+          accounts.stream()
+              .collect(
+                  Collectors.toMap(
+                      Account::id, Account::name, (left, right) -> left, LinkedHashMap::new));
+      final Map<UUID, Boolean> taxDeferredMap =
+          accounts.stream()
+              .collect(
+                  Collectors.toMap(
+                      Account::id,
+                      (Account account) -> {
+                        if (account.jsonConfig() == null) return false;
+                        Object val = account.jsonConfig().get("isTaxDeferred");
+                        return Boolean.TRUE.equals(val)
+                            || "true".equalsIgnoreCase(String.valueOf(val));
+                      },
+                      (l, r) -> l));
 
       String unknownLabel = msg("stock.label.unknown");
       if (dividends.stream().anyMatch(d -> d.stockItemName() == null)) {
@@ -390,43 +422,47 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
             .filter(Objects::nonNull)
             .distinct()
             .forEach(
-                id -> stockNames.put(
-                    id,
-                    stockItemClient
-                        .getStockItemById(id)
-                        .map(StockItem::name)
-                        .orElse(unknownLabel)));
+                id ->
+                    stockNames.put(
+                        id,
+                        stockItemClient
+                            .getStockItemById(id)
+                            .map(StockItem::name)
+                            .orElse(unknownLabel)));
       }
 
       String summaryKey = msg("stock.label.summary");
-      java.util.function.Function<DividendResponse, String> getSeriesName = d -> {
-        if ("SUMMARY".equals(groupBy))
-          return summaryKey;
-        if ("ACCOUNT".equals(groupBy))
-          return accountNames.getOrDefault(d.accountId(), "Unknown");
-        return d.stockItemName() != null
-            ? d.stockItemName()
-            : stockNames.getOrDefault(d.stockItemId(), unknownLabel);
-      };
+      java.util.function.Function<DividendResponse, String> getSeriesName =
+          d -> {
+            if ("SUMMARY".equals(groupBy)) return summaryKey;
+            if ("ACCOUNT".equals(groupBy))
+              return accountNames.getOrDefault(d.accountId(), "Unknown");
+            return d.stockItemName() != null
+                ? d.stockItemName()
+                : stockNames.getOrDefault(d.stockItemId(), unknownLabel);
+          };
 
       if (!"TOTAL".equals(timeScale)) {
-        Map<String, List<DividendResponse>> bySeries = dividends.stream()
-            .filter(d -> d.payDate() != null)
-            .collect(Collectors.groupingBy(getSeriesName));
+        Map<String, List<DividendResponse>> bySeries =
+            dividends.stream()
+                .filter(d -> d.payDate() != null)
+                .collect(Collectors.groupingBy(getSeriesName));
 
         Map<String, BigDecimal> seriesTotals = new HashMap<>();
         bySeries.forEach(
             (name, list) -> {
-              BigDecimal sum = list.stream()
-                  .map(d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO)
-                  .reduce(BigDecimal.ZERO, BigDecimal::add);
+              BigDecimal sum =
+                  list.stream()
+                      .map(d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO)
+                      .reduce(BigDecimal.ZERO, BigDecimal::add);
               seriesTotals.put(name, sum);
             });
 
-        List<String> topSeries = seriesTotals.entrySet().stream()
-            .sorted((a, b) -> b.getValue().compareTo(a.getValue()))
-            .map(Map.Entry::getKey)
-            .toList();
+        List<String> topSeries =
+            seriesTotals.entrySet().stream()
+                .sorted((a, b) -> b.getValue().compareTo(a.getValue()))
+                .map(Map.Entry::getKey)
+                .toList();
 
         int colorIdx = 0;
         for (String series : topSeries) {
@@ -438,16 +474,22 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
             BigDecimal pointSum = BigDecimal.ZERO;
             if ("YEARLY".equals(timeScale)) {
               final int y = timeValue;
-              pointSum = seriesData.stream()
-                  .filter(d -> d.payDate().atZone(java.time.ZoneId.systemDefault()).getYear() == y)
-                  .map(d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO)
-                  .reduce(BigDecimal.ZERO, BigDecimal::add);
+              pointSum =
+                  seriesData.stream()
+                      .filter(
+                          d -> d.payDate().atZone(java.time.ZoneId.systemDefault()).getYear() == y)
+                      .map(d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO)
+                      .reduce(BigDecimal.ZERO, BigDecimal::add);
             } else if ("MONTHLY".equals(timeScale)) {
               final int m = timeValue;
-              pointSum = seriesData.stream()
-                  .filter(d -> d.payDate().atZone(java.time.ZoneId.systemDefault()).getMonthValue() == m)
-                  .map(d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO)
-                  .reduce(BigDecimal.ZERO, BigDecimal::add);
+              pointSum =
+                  seriesData.stream()
+                      .filter(
+                          d ->
+                              d.payDate().atZone(java.time.ZoneId.systemDefault()).getMonthValue()
+                                  == m)
+                      .map(d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO)
+                      .reduce(BigDecimal.ZERO, BigDecimal::add);
             }
             dataPoints.add(pointSum);
           }
@@ -464,8 +506,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
           Map<String, BigDecimal> periodTaxableMap = new HashMap<>();
 
           for (DividendResponse d : dividends) {
-            if (d.payDate() == null)
-              continue;
+            if (d.payDate() == null) continue;
             boolean match = false;
 
             if ("YEARLY".equals(timeScale)) {
@@ -518,47 +559,63 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
                         Collectors.collectingAndThen(
                             Collectors.toList(),
                             list -> {
-                              BigDecimal g = list.stream()
-                                  .map(d -> d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO)
-                                  .reduce(BigDecimal.ZERO, BigDecimal::add);
-                              BigDecimal t = list.stream()
-                                  .map(d -> {
-                                    boolean isDeferred = taxDeferredMap.getOrDefault(d.accountId(), false);
-                                    return calculateDividendTax(d, isDeferred);
-                                  })
-                                  .reduce(BigDecimal.ZERO, BigDecimal::add);
-                              BigDecimal taxable = list.stream()
-                                  .map(d -> {
-                                    boolean isDeferred = taxDeferredMap.getOrDefault(d.accountId(), false);
-                                    return calculateDividendTaxable(d, isDeferred);
-                                  })
-                                  .reduce(BigDecimal.ZERO, BigDecimal::add);
-                              return new java.math.BigDecimal[] { g, t, taxable };
+                              BigDecimal g =
+                                  list.stream()
+                                      .map(
+                                          d ->
+                                              d.grossAmount() != null
+                                                  ? d.grossAmount()
+                                                  : BigDecimal.ZERO)
+                                      .reduce(BigDecimal.ZERO, BigDecimal::add);
+                              BigDecimal t =
+                                  list.stream()
+                                      .map(
+                                          d -> {
+                                            boolean isDeferred =
+                                                taxDeferredMap.getOrDefault(d.accountId(), false);
+                                            return calculateDividendTax(d, isDeferred);
+                                          })
+                                      .reduce(BigDecimal.ZERO, BigDecimal::add);
+                              BigDecimal taxable =
+                                  list.stream()
+                                      .map(
+                                          d -> {
+                                            boolean isDeferred =
+                                                taxDeferredMap.getOrDefault(d.accountId(), false);
+                                            return calculateDividendTaxable(d, isDeferred);
+                                          })
+                                      .reduce(BigDecimal.ZERO, BigDecimal::add);
+                              return new java.math.BigDecimal[] {g, t, taxable};
                             })))
                 .entrySet()
                 .stream()
-                .map(e -> {
-                  BigDecimal g = e.getValue()[0];
-                  BigDecimal t = e.getValue()[1];
-                  BigDecimal taxable = e.getValue()[2];
-                  BigDecimal net = g.subtract(t);
-                  return new AnalyticsRow(totalKey, e.getKey(), g, net, t, taxable, null, null, null);
-                })
+                .map(
+                    e -> {
+                      BigDecimal g = e.getValue()[0];
+                      BigDecimal t = e.getValue()[1];
+                      BigDecimal taxable = e.getValue()[2];
+                      BigDecimal net = g.subtract(t);
+                      return new AnalyticsRow(
+                          totalKey, e.getKey(), g, net, t, taxable, null, null, null);
+                    })
                 .sorted((a, b) -> b.value1().compareTo(a.value1()))
                 .toList());
 
         labels = rows.stream().map(AnalyticsRow::subKey).toList();
         List<BigDecimal> data = rows.stream().map(AnalyticsRow::value1).toList();
-        datasets.add(new ChartDataset(msg("stock.chart.dataset.dividend.gross"), data, null, null, null, List.of()));
+        datasets.add(
+            new ChartDataset(
+                msg("stock.chart.dataset.dividend.gross"), data, null, null, null, List.of()));
       }
     }
 
     BigDecimal totalValue = BigDecimal.ZERO;
     if (totalLabel != null) {
-      totalValue = rows.stream()
-          .map(AnalyticsRow::value4)
-          .filter(Objects::nonNull)
-          .reduce(BigDecimal.ZERO, BigDecimal::add);
+      totalValue =
+          rows.stream()
+              .map(AnalyticsRow::value4)
+              .filter(Objects::nonNull)
+              .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     model.addAttribute("chartTitle", chartTitle);
@@ -574,18 +631,19 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     model.addAttribute("tableData", rows);
     model.addAttribute("totalValue", totalValue);
     if ("DIVIDEND".equals(type) && "TOTAL".equals(timeScale)) {
-      List<BigDecimal> taxableTotalList = rows.stream().map(r -> r.value4() != null ? r.value4() : BigDecimal.ZERO)
-          .toList();
+      List<BigDecimal> taxableTotalList =
+          rows.stream().map(r -> r.value4() != null ? r.value4() : BigDecimal.ZERO).toList();
       model.addAttribute("taxableTotals", taxableTotalList);
     } else if ("DIVIDEND".equals(type) && !"TOTAL".equals(timeScale)) {
-      Map<String, BigDecimal> sumMap = rows.stream()
-          .collect(
-              Collectors.groupingBy(
-                  AnalyticsRow::key,
-                  Collectors.reducing(
-                      BigDecimal.ZERO,
-                      r -> r.value4() != null ? r.value4() : BigDecimal.ZERO,
-                      BigDecimal::add)));
+      Map<String, BigDecimal> sumMap =
+          rows.stream()
+              .collect(
+                  Collectors.groupingBy(
+                      AnalyticsRow::key,
+                      Collectors.reducing(
+                          BigDecimal.ZERO,
+                          r -> r.value4() != null ? r.value4() : BigDecimal.ZERO,
+                          BigDecimal::add)));
 
       List<BigDecimal> taxableTotalList = new ArrayList<>();
       for (String lbl : labels) {
@@ -649,62 +707,70 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
       @RequestParam(defaultValue = "true") boolean showCharts,
       Model model) {
     UUID userId = UserUtil.getUserId();
-    if (userId == null)
-      return ERROR_VIEW;
+    if (userId == null) return ERROR_VIEW;
     request.setUserId(userId);
 
     List<TradeProfit> profitList = getEnrichedTradeProfits(request);
 
-    Map<String, BigDecimal> allocation = profitList.stream()
-        .filter(
-            p -> p.evaluationAmount() != null
-                && p.evaluationAmount().compareTo(BigDecimal.ZERO) > 0)
-        .collect(
-            Collectors.groupingBy(
-                p -> p.stockItemName() != null ? p.stockItemName() : msg("stock.label.unknown"),
-                Collectors.reducing(
-                    BigDecimal.ZERO, TradeProfit::evaluationAmount, BigDecimal::add)))
-        .entrySet()
-        .stream()
-        .sorted(Map.Entry.<String, BigDecimal>comparingByValue().reversed())
-        .collect(
-            Collectors.toMap(
-                Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+    Map<String, BigDecimal> allocation =
+        profitList.stream()
+            .filter(
+                p ->
+                    p.evaluationAmount() != null
+                        && p.evaluationAmount().compareTo(BigDecimal.ZERO) > 0)
+            .collect(
+                Collectors.groupingBy(
+                    p -> p.stockItemName() != null ? p.stockItemName() : msg("stock.label.unknown"),
+                    Collectors.reducing(
+                        BigDecimal.ZERO, TradeProfit::evaluationAmount, BigDecimal::add)))
+            .entrySet()
+            .stream()
+            .sorted(Map.Entry.<String, BigDecimal>comparingByValue().reversed())
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
 
-    Map<String, BigDecimal> accountAllocation = profitList.stream()
-        .filter(
-            p -> p.evaluationAmount() != null
-                && p.evaluationAmount().compareTo(BigDecimal.ZERO) > 0)
-        .collect(
-            Collectors.groupingBy(
-                p -> p.accountName() != null ? p.accountName() : "Unknown",
-                Collectors.reducing(
-                    BigDecimal.ZERO, TradeProfit::evaluationAmount, BigDecimal::add)))
-        .entrySet()
-        .stream()
-        .sorted(Map.Entry.<String, BigDecimal>comparingByValue().reversed())
-        .collect(
-            Collectors.toMap(
-                Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+    Map<String, BigDecimal> accountAllocation =
+        profitList.stream()
+            .filter(
+                p ->
+                    p.evaluationAmount() != null
+                        && p.evaluationAmount().compareTo(BigDecimal.ZERO) > 0)
+            .collect(
+                Collectors.groupingBy(
+                    p -> p.accountName() != null ? p.accountName() : "Unknown",
+                    Collectors.reducing(
+                        BigDecimal.ZERO, TradeProfit::evaluationAmount, BigDecimal::add)))
+            .entrySet()
+            .stream()
+            .sorted(Map.Entry.<String, BigDecimal>comparingByValue().reversed())
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
 
-    BigDecimal totalAsset = profitList.stream()
-        .map(TradeProfit::evaluationAmount)
-        .filter(Objects::nonNull)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalAsset =
+        profitList.stream()
+            .map(TradeProfit::evaluationAmount)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    BigDecimal totalRealizedVal = profitList.stream()
-        .map(TradeProfit::realizedProfitNet)
-        .filter(Objects::nonNull)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalUnrealizedVal = profitList.stream()
-        .map(TradeProfit::evaluationProfitNet)
-        .filter(Objects::nonNull)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalRealizedVal =
+        profitList.stream()
+            .map(TradeProfit::realizedProfitNet)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalUnrealizedVal =
+        profitList.stream()
+            .map(TradeProfit::evaluationProfitNet)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    long winCount = profitList.stream()
-        .filter(
-            p -> p.totalProfitNet() != null && p.totalProfitNet().compareTo(BigDecimal.ZERO) > 0)
-        .count();
+    long winCount =
+        profitList.stream()
+            .filter(
+                p ->
+                    p.totalProfitNet() != null && p.totalProfitNet().compareTo(BigDecimal.ZERO) > 0)
+            .count();
     double winRate = profitList.isEmpty() ? 0.0 : (double) winCount / profitList.size() * 100;
 
     DividendRequest dividendRequest = new DividendRequest();
@@ -718,71 +784,81 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
           .filter(Objects::nonNull)
           .distinct()
           .forEach(
-              id -> stockNames.put(
-                  id,
-                  stockItemClient
-                      .getStockItemById(id)
-                      .map(StockItem::name)
-                      .orElse(msg("stock.label.unknown"))));
+              id ->
+                  stockNames.put(
+                      id,
+                      stockItemClient
+                          .getStockItemById(id)
+                          .map(StockItem::name)
+                          .orElse(msg("stock.label.unknown"))));
     }
 
-    BigDecimal totalDividendVal = dividendList.stream()
-        .map(DividendResponse::netAmount)
-        .filter(Objects::nonNull)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalDividendVal =
+        dividendList.stream()
+            .map(DividendResponse::netAmount)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    List<TradeProfit> topBuying = profitList.stream()
-        .filter(p -> p.totalBuyCost() != null)
-        .sorted((p1, p2) -> p2.totalBuyCost().compareTo(p1.totalBuyCost()))
-        .limit(4)
-        .toList();
+    List<TradeProfit> topBuying =
+        profitList.stream()
+            .filter(p -> p.totalBuyCost() != null)
+            .sorted((p1, p2) -> p2.totalBuyCost().compareTo(p1.totalBuyCost()))
+            .limit(4)
+            .toList();
 
-    List<TradeProfit> bottomBuying = profitList.stream()
-        .filter(p -> p.totalBuyCost() != null)
-        .sorted((p1, p2) -> p1.totalBuyCost().compareTo(p2.totalBuyCost()))
-        .limit(4)
-        .toList();
+    List<TradeProfit> bottomBuying =
+        profitList.stream()
+            .filter(p -> p.totalBuyCost() != null)
+            .sorted((p1, p2) -> p1.totalBuyCost().compareTo(p2.totalBuyCost()))
+            .limit(4)
+            .toList();
 
-    Map<String, BigDecimal> realizedByStock = profitList.stream()
-        .filter(p -> p.realizedProfitNet() != null)
-        .collect(
-            Collectors.groupingBy(
-                p -> p.stockItemName() != null ? p.stockItemName() : msg("stock.label.unknown"),
-                Collectors.reducing(
-                    BigDecimal.ZERO, TradeProfit::realizedProfitNet, BigDecimal::add)));
+    Map<String, BigDecimal> realizedByStock =
+        profitList.stream()
+            .filter(p -> p.realizedProfitNet() != null)
+            .collect(
+                Collectors.groupingBy(
+                    p -> p.stockItemName() != null ? p.stockItemName() : msg("stock.label.unknown"),
+                    Collectors.reducing(
+                        BigDecimal.ZERO, TradeProfit::realizedProfitNet, BigDecimal::add)));
 
-    List<TradeProfit> topRealized = realizedByStock.entrySet().stream()
-        .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
-        .limit(4)
-        .map(e -> TradeProfit.ofRealizedSummary(e.getKey(), e.getValue()))
-        .toList();
+    List<TradeProfit> topRealized =
+        realizedByStock.entrySet().stream()
+            .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
+            .limit(4)
+            .map(e -> TradeProfit.ofRealizedSummary(e.getKey(), e.getValue()))
+            .toList();
 
-    List<TradeProfit> bottomRealized = realizedByStock.entrySet().stream()
-        .sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
-        .limit(4)
-        .map(e -> TradeProfit.ofRealizedSummary(e.getKey(), e.getValue()))
-        .toList();
+    List<TradeProfit> bottomRealized =
+        realizedByStock.entrySet().stream()
+            .sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
+            .limit(4)
+            .map(e -> TradeProfit.ofRealizedSummary(e.getKey(), e.getValue()))
+            .toList();
 
-    Map<String, BigDecimal> unrealizedByStock = profitList.stream()
-        .filter(p -> p.evaluationProfitNet() != null)
-        .collect(
-            Collectors.groupingBy(
-                p -> p.stockItemName() != null ? p.stockItemName() : msg("stock.label.unknown"),
-                Collectors.reducing(
-                    BigDecimal.ZERO, TradeProfit::evaluationProfitNet, BigDecimal::add)));
+    Map<String, BigDecimal> unrealizedByStock =
+        profitList.stream()
+            .filter(p -> p.evaluationProfitNet() != null)
+            .collect(
+                Collectors.groupingBy(
+                    p -> p.stockItemName() != null ? p.stockItemName() : msg("stock.label.unknown"),
+                    Collectors.reducing(
+                        BigDecimal.ZERO, TradeProfit::evaluationProfitNet, BigDecimal::add)));
 
-    List<TradeProfit> topUnrealized = unrealizedByStock.entrySet().stream()
-        .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
-        .limit(4)
-        .map(e -> TradeProfit.ofEvaluationSummary(e.getKey(), e.getValue()))
-        .toList();
+    List<TradeProfit> topUnrealized =
+        unrealizedByStock.entrySet().stream()
+            .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
+            .limit(4)
+            .map(e -> TradeProfit.ofEvaluationSummary(e.getKey(), e.getValue()))
+            .toList();
 
-    List<TradeProfit> bottomUnrealized = unrealizedByStock.entrySet().stream()
-        .filter(e -> e.getValue().compareTo(BigDecimal.ZERO) < 0)
-        .sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
-        .limit(4)
-        .map(e -> TradeProfit.ofEvaluationSummary(e.getKey(), e.getValue()))
-        .toList();
+    List<TradeProfit> bottomUnrealized =
+        unrealizedByStock.entrySet().stream()
+            .filter(e -> e.getValue().compareTo(BigDecimal.ZERO) < 0)
+            .sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
+            .limit(4)
+            .map(e -> TradeProfit.ofEvaluationSummary(e.getKey(), e.getValue()))
+            .toList();
 
     Map<String, BigDecimal> dividendBySeries = new HashMap<>();
     dividendList.forEach(
@@ -794,17 +870,19 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
               name, d.grossAmount() != null ? d.grossAmount() : BigDecimal.ZERO, BigDecimal::add);
         });
 
-    List<TradeProfit> topDividend = dividendBySeries.entrySet().stream()
-        .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
-        .limit(4)
-        .map(e -> TradeProfit.ofRealizedSummary(e.getKey(), e.getValue()))
-        .toList();
+    List<TradeProfit> topDividend =
+        dividendBySeries.entrySet().stream()
+            .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
+            .limit(4)
+            .map(e -> TradeProfit.ofRealizedSummary(e.getKey(), e.getValue()))
+            .toList();
 
-    List<TradeProfit> bottomDividend = dividendBySeries.entrySet().stream()
-        .sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
-        .limit(4)
-        .map(e -> TradeProfit.ofRealizedSummary(e.getKey(), e.getValue()))
-        .toList();
+    List<TradeProfit> bottomDividend =
+        dividendBySeries.entrySet().stream()
+            .sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
+            .limit(4)
+            .map(e -> TradeProfit.ofRealizedSummary(e.getKey(), e.getValue()))
+            .toList();
 
     model.addAttribute("totalAsset", totalAsset);
     model.addAttribute("totalRealizedProfit", totalRealizedVal);

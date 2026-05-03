@@ -25,25 +25,29 @@ public class GateBlogConfig {
 
   @Bean
   BlogArticleCategoryClient blogArticleCategoryClient(
-      @Qualifier("blogHttpServiceProxyFactory") HttpServiceProxyFactory blogHttpServiceProxyFactory) {
+      @Qualifier("blogHttpServiceProxyFactory")
+          HttpServiceProxyFactory blogHttpServiceProxyFactory) {
     return blogHttpServiceProxyFactory.createClient(BlogArticleCategoryClient.class);
   }
 
   @Bean
   BlogArticleClient blogArticleClient(
-      @Qualifier("blogHttpServiceProxyFactory") HttpServiceProxyFactory blogHttpServiceProxyFactory) {
+      @Qualifier("blogHttpServiceProxyFactory")
+          HttpServiceProxyFactory blogHttpServiceProxyFactory) {
     return blogHttpServiceProxyFactory.createClient(BlogArticleClient.class);
   }
 
   @Bean
   BlogArticleCommentClient blogArticleCommentClient(
-      @Qualifier("blogHttpServiceProxyFactory") HttpServiceProxyFactory blogHttpServiceProxyFactory) {
+      @Qualifier("blogHttpServiceProxyFactory")
+          HttpServiceProxyFactory blogHttpServiceProxyFactory) {
     return blogHttpServiceProxyFactory.createClient(BlogArticleCommentClient.class);
   }
 
   @Bean
   BlogClient blogClient(
-      @Qualifier("blogHttpServiceProxyFactory") HttpServiceProxyFactory blogHttpServiceProxyFactory) {
+      @Qualifier("blogHttpServiceProxyFactory")
+          HttpServiceProxyFactory blogHttpServiceProxyFactory) {
     return blogHttpServiceProxyFactory.createClient(BlogClient.class);
   }
 }

@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public record StockItem(UUID id, String symbol, String name, String market, List<String> tags) {
 
-	public StockItem {
-		tags = tags != null ? List.copyOf(tags) : List.of();
-	}
+  public StockItem {
+    tags = tags != null ? List.copyOf(tags) : List.of();
+  }
 }

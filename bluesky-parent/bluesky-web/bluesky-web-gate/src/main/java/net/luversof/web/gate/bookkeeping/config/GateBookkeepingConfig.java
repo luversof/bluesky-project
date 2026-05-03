@@ -26,31 +26,36 @@ public class GateBookkeepingConfig {
 
   @Bean
   AssetClient assetClient(
-      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
+      @Qualifier("bookkeepingHttpServiceProxyFactory")
+          HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
     return bookkeepingHttpServiceProxyFactory.createClient(AssetClient.class);
   }
 
   @Bean
   AssetGroupClient assetGroupClient(
-      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
+      @Qualifier("bookkeepingHttpServiceProxyFactory")
+          HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
     return bookkeepingHttpServiceProxyFactory.createClient(AssetGroupClient.class);
   }
 
   @Bean
   BookkeepingClient bookkeepingClient(
-      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
+      @Qualifier("bookkeepingHttpServiceProxyFactory")
+          HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
     return bookkeepingHttpServiceProxyFactory.createClient(BookkeepingClient.class);
   }
 
   @Bean
   EntryClient entryClient(
-      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
+      @Qualifier("bookkeepingHttpServiceProxyFactory")
+          HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
     return bookkeepingHttpServiceProxyFactory.createClient(EntryClient.class);
   }
 
   @Bean
   EntryGroupClient entryGroupClient(
-      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
+      @Qualifier("bookkeepingHttpServiceProxyFactory")
+          HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
     return bookkeepingHttpServiceProxyFactory.createClient(EntryGroupClient.class);
   }
 }

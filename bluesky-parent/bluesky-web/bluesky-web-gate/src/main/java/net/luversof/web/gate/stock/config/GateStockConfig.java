@@ -27,37 +27,43 @@ public class GateStockConfig {
 
   @Bean
   AccountClient accountClient(
-      @Qualifier("stockHttpServiceProxyFactory") HttpServiceProxyFactory stockHttpServiceProxyFactory) {
+      @Qualifier("stockHttpServiceProxyFactory")
+          HttpServiceProxyFactory stockHttpServiceProxyFactory) {
     return stockHttpServiceProxyFactory.createClient(AccountClient.class);
   }
 
   @Bean
   DividendClient dividendClient(
-      @Qualifier("stockHttpServiceProxyFactory") HttpServiceProxyFactory stockHttpServiceProxyFactory) {
+      @Qualifier("stockHttpServiceProxyFactory")
+          HttpServiceProxyFactory stockHttpServiceProxyFactory) {
     return stockHttpServiceProxyFactory.createClient(DividendClient.class);
   }
 
   @Bean
   StockAdminClient stockAdminClient(
-      @Qualifier("stockHttpServiceProxyFactory") HttpServiceProxyFactory stockHttpServiceProxyFactory) {
+      @Qualifier("stockHttpServiceProxyFactory")
+          HttpServiceProxyFactory stockHttpServiceProxyFactory) {
     return stockHttpServiceProxyFactory.createClient(StockAdminClient.class);
   }
 
   @Bean
   StockItemClient stockItemClient(
-      @Qualifier("stockHttpServiceProxyFactory") HttpServiceProxyFactory stockHttpServiceProxyFactory) {
+      @Qualifier("stockHttpServiceProxyFactory")
+          HttpServiceProxyFactory stockHttpServiceProxyFactory) {
     return stockHttpServiceProxyFactory.createClient(StockItemClient.class);
   }
 
   @Bean
   TradeClient tradeClient(
-      @Qualifier("stockHttpServiceProxyFactory") HttpServiceProxyFactory stockHttpServiceProxyFactory) {
+      @Qualifier("stockHttpServiceProxyFactory")
+          HttpServiceProxyFactory stockHttpServiceProxyFactory) {
     return stockHttpServiceProxyFactory.createClient(TradeClient.class);
   }
 
   @Bean
   TradeProfitClient tradeProfitClient(
-      @Qualifier("stockHttpServiceProxyFactory") HttpServiceProxyFactory stockHttpServiceProxyFactory) {
+      @Qualifier("stockHttpServiceProxyFactory")
+          HttpServiceProxyFactory stockHttpServiceProxyFactory) {
     return stockHttpServiceProxyFactory.createClient(TradeProfitClient.class);
   }
 }

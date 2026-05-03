@@ -10,26 +10,26 @@ import io.github.luversof.boot.context.support.BlueskyReloadableResourceBundleMe
 
 class GateMessageSourceFallbackTest {
 
-	@Test
-	void usesBaseEnglishBundleWhenSystemLocaleFallbackIsDisabled() {
-		var previousDefaultLocale = Locale.getDefault();
+  @Test
+  void usesBaseEnglishBundleWhenSystemLocaleFallbackIsDisabled() {
+    var previousDefaultLocale = Locale.getDefault();
 
-		try {
-			Locale.setDefault(Locale.KOREA);
+    try {
+      Locale.setDefault(Locale.KOREA);
 
-			assertThat(resolveTradeTitle(true, Locale.US)).isEqualTo("매매 내역");
-			assertThat(resolveTradeTitle(false, Locale.US)).isEqualTo("Trade History");
-		} finally {
-			Locale.setDefault(previousDefaultLocale);
-		}
-	}
+      assertThat(resolveTradeTitle(true, Locale.US)).isEqualTo("매매 내역");
+      assertThat(resolveTradeTitle(false, Locale.US)).isEqualTo("Trade History");
+    } finally {
+      Locale.setDefault(previousDefaultLocale);
+    }
+  }
 
-	private String resolveTradeTitle(boolean fallbackToSystemLocale, Locale locale) {
-		var messageSource = new BlueskyReloadableResourceBundleMessageSource();
-		messageSource.setBasenames("classpath:gateMessage", "classpath:uiMessage");
-		messageSource.setDefaultEncoding("UTF-8");
-		messageSource.setFallbackToSystemLocale(fallbackToSystemLocale);
+  private String resolveTradeTitle(boolean fallbackToSystemLocale, Locale locale) {
+    var messageSource = new BlueskyReloadableResourceBundleMessageSource();
+    messageSource.setBasenames("classpath:gateMessage", "classpath:uiMessage");
+    messageSource.setDefaultEncoding("UTF-8");
+    messageSource.setFallbackToSystemLocale(fallbackToSystemLocale);
 
-		return messageSource.getMessage("stock.page.trade.title", null, locale);
-	}
+    return messageSource.getMessage("stock.page.trade.title", null, locale);
+  }
 }

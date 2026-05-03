@@ -26,11 +26,9 @@ import net.luversof.api.stock.repository.StockItemTagRepository;
 @Service
 public class StockItemService {
 
-  @Autowired
-  private StockItemRepository stockItemRepository;
+  @Autowired private StockItemRepository stockItemRepository;
 
-  @Autowired
-  private StockItemTagRepository stockItemTagRepository;
+  @Autowired private StockItemTagRepository stockItemTagRepository;
 
   public void setStockItemRepository(StockItemRepository stockItemRepository) {
     this.stockItemRepository = stockItemRepository;
@@ -78,28 +76,33 @@ public class StockItemService {
       return;
     }
 
-    Set<UUID> stockItemIds = stockItems.stream().map(StockItem::getId).filter(Objects::nonNull)
-        .collect(Collectors.toSet());
+    Set<UUID> stockItemIds =
+        stockItems.stream()
+            .map(StockItem::getId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
     if (stockItemIds.isEmpty()) {
       stockItems.forEach(stockItem -> stockItem.setTags(List.of()));
       return;
     }
 
-    Map<UUID, List<String>> tagsByStockItemId = StreamSupport
-        .stream(stockItemTagRepository.findAll().spliterator(), false)
-        .filter(tag -> tag.getStockItemId() != null && stockItemIds.contains(tag.getStockItemId()))
-        .filter(tag -> StringUtils.hasText(tag.getTag()))
-        .collect(
-            Collectors.groupingBy(
-                StockItemTag::getStockItemId,
-                LinkedHashMap::new,
-                Collectors.collectingAndThen(
-                    Collectors.mapping(
-                        stockItemTag -> stockItemTag.getTag().trim(),
-                        Collectors.toCollection(LinkedHashSet::new)),
-                    ArrayList::new)));
+    Map<UUID, List<String>> tagsByStockItemId =
+        StreamSupport.stream(stockItemTagRepository.findAll().spliterator(), false)
+            .filter(
+                tag -> tag.getStockItemId() != null && stockItemIds.contains(tag.getStockItemId()))
+            .filter(tag -> StringUtils.hasText(tag.getTag()))
+            .collect(
+                Collectors.groupingBy(
+                    StockItemTag::getStockItemId,
+                    LinkedHashMap::new,
+                    Collectors.collectingAndThen(
+                        Collectors.mapping(
+                            stockItemTag -> stockItemTag.getTag().trim(),
+                            Collectors.toCollection(LinkedHashSet::new)),
+                        ArrayList::new)));
 
     stockItems.forEach(
-        stockItem -> stockItem.setTags(tagsByStockItemId.getOrDefault(stockItem.getId(), List.of())));
+        stockItem ->
+            stockItem.setTags(tagsByStockItemId.getOrDefault(stockItem.getId(), List.of())));
   }
 }

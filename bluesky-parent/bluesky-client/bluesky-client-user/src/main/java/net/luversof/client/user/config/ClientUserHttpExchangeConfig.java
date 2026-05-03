@@ -24,7 +24,8 @@ public class ClientUserHttpExchangeConfig {
 
   @Bean
   UserInfoApiClient userInfoApiClient(
-      @Qualifier("clientUserHttpServiceProxyFactory") HttpServiceProxyFactory clientUserHttpServiceProxyFactory) {
+      @Qualifier("clientUserHttpServiceProxyFactory")
+          HttpServiceProxyFactory clientUserHttpServiceProxyFactory) {
     return clientUserHttpServiceProxyFactory.createClient(UserInfoApiClient.class);
   }
 }
