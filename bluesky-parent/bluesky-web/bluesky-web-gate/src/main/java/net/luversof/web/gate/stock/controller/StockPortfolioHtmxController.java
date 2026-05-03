@@ -602,6 +602,12 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         model.addAttribute("accountList", finalAccountList);
         model.addAttribute("stockItemList", finalStockItemList);
         model.addAttribute(
+                "selectedAccountIds",
+                effectiveAccountIdList != null ? effectiveAccountIdList : List.of());
+        model.addAttribute(
+                "selectedStockItemIds",
+                effectiveStockItemIdList != null ? effectiveStockItemIdList : List.of());
+        model.addAttribute(
                 "selectedAccountId",
                 (effectiveAccountIdList != null && !effectiveAccountIdList.isEmpty())
                         ? effectiveAccountIdList.get(0)

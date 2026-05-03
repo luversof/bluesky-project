@@ -338,6 +338,12 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                 model.addAttribute("stockItemList", finalStockItemList);
                 model.addAttribute("accountNames", accountNames);
                 model.addAttribute(
+                                "selectedAccountIds",
+                                effectiveAccountIdList != null ? effectiveAccountIdList : List.of());
+                model.addAttribute(
+                                "selectedStockItemIds",
+                                effectiveStockItemIdList != null ? effectiveStockItemIdList : List.of());
+                model.addAttribute(
                                 "selectedAccountId",
                                 (effectiveAccountIdList != null && !effectiveAccountIdList.isEmpty())
                                                 ? effectiveAccountIdList.get(0)
@@ -818,6 +824,16 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                 model.addAttribute("activities", activities);
                 model.addAttribute("accountList", finalAccountListForActivity);
                 model.addAttribute("stockItemList", finalStockItemListForActivity);
+                model.addAttribute(
+                                "selectedAccountIds",
+                                effectiveAccountIdListForActivity != null
+                                                ? effectiveAccountIdListForActivity
+                                                : List.of());
+                model.addAttribute(
+                                "selectedStockItemIds",
+                                effectiveStockItemIdListForActivity != null
+                                                ? effectiveStockItemIdListForActivity
+                                                : List.of());
                 model.addAttribute(
                                 "selectedAccountId",
                                 (effectiveAccountIdListForActivity != null

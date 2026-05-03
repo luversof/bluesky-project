@@ -9,6 +9,7 @@
 @import net.luversof.web.common.menu.domain.Pagination
 @import net.luversof.web.gate.stock.domain.Account
 @import net.luversof.web.gate.stock.domain.StockItem
+@import net.luversof.web.gate.stock.dto.view.DividendYieldGroupView
 @import java.time.format.DateTimeFormatter
 @import java.text.DecimalFormat
 @import io.github.luversof.boot.context.support.MessageUtil
@@ -24,6 +25,8 @@
 @param List<StockItem> stockItemList
 @param UUID selectedAccountId
 @param UUID selectedStockItemId
+@param List<UUID> selectedAccountIds = java.util.List.of()
+@param List<UUID> selectedStockItemIds = java.util.List.of()
 @param java.time.Instant startDate
 @param java.time.Instant endDate
 @param String timeZone = null
@@ -38,6 +41,13 @@
 @param BigDecimal prevPeriodNetAmount = null
 @param LocalDate prevStartDate = null
 @param LocalDate prevEndDate = null
+@param BigDecimal portfolioYieldOnCostPct = null
+@param BigDecimal portfolioYieldOnMarketPct = null
+@param DividendYieldGroupView bestYieldStock = null
+@param DividendYieldGroupView bestYieldAccount = null
+@param List<DividendYieldGroupView> stockYieldRows = java.util.List.of()
+@param List<DividendYieldGroupView> accountYieldRows = java.util.List.of()
+@param List<DividendYieldGroupView> yearlyYieldRows = java.util.List.of()
 @param String rangeMode = null
 @param String dataFirstDate = null
 
@@ -129,7 +139,27 @@
     String noPeriodHistoryLabel = MessageUtil.getMessage("stock.dividend.message.no.period.history");
     String averageNoDataLabel = MessageUtil.getMessage("stock.dividend.summary.no.data");
     String averageDescTemplate = MessageUtil.getMessage("stock.dividend.summary.average.desc");
+    String quantityLabel = MessageUtil.getMessage("common.label.quantity");
+    String referencePriceLabel = MessageUtil.getMessage("stock.column.reference.price");
+    String dividendYieldTitle = MessageUtil.getMessage("stock.dividend.yield.summary.title");
+    String dividendYieldPeriodLabel = MessageUtil.getMessage("stock.dividend.yield.summary.period");
+    String bestYieldStockLabel = MessageUtil.getMessage("stock.dividend.yield.summary.best.stock");
+    String bestYieldAccountLabel = MessageUtil.getMessage("stock.dividend.yield.summary.best.account");
+    String yearlyYieldSectionLabel = MessageUtil.getMessage("stock.dividend.yield.section.yearly");
+    String stockYieldSectionLabel = MessageUtil.getMessage("stock.dividend.yield.section.stock");
+    String accountYieldSectionLabel = MessageUtil.getMessage("stock.dividend.yield.section.account");
+    String yearLabel = MessageUtil.getMessage("stock.dividend.yield.column.year");
+    String investedCapitalLabel = MessageUtil.getMessage("stock.dividend.yield.column.invested.capital");
+    String marketValueLabel = MessageUtil.getMessage("stock.dividend.yield.column.market.value");
+    String yieldOnCostLabel = MessageUtil.getMessage("stock.dividend.yield.column.yield.on.cost");
+    String yieldOnMarketLabel = MessageUtil.getMessage("stock.dividend.yield.column.yield.on.market");
+    String dividendCountLabel = MessageUtil.getMessage("stock.dividend.yield.column.dividend.count");
+    String latestDividendDateLabel = MessageUtil.getMessage("stock.dividend.yield.column.latest.date");
+    String noYieldAnalyticsLabel = MessageUtil.getMessage("stock.dividend.yield.message.no.analytics");
+    String yieldBasisNoteLabel = MessageUtil.getMessage("stock.dividend.yield.basis.note");
     String countPattern = MessageUtil.getMessage("common.count");
+    java.util.function.Function<BigDecimal, String> percentFormat = value -> value != null ? String.format("%.2f%%", value.doubleValue()) : "-";
+    java.util.function.Function<Long, String> countFormat = count -> java.text.MessageFormat.format(countPattern, count);
 }
 
 <div id="dividendListFragment">
@@ -145,7 +175,7 @@
     )
 
     <!-- Filter & Search Form (collapsible) -->
-    <details class="mb-4"$unsafe{(selectedAccountId != null || selectedStockItemId != null || startDate != null) ? " open" : ""}>
+    <details class="mb-4"$unsafe{((selectedAccountIds != null && !selectedAccountIds.isEmpty()) || (selectedStockItemIds != null && !selectedStockItemIds.isEmpty()) || startDate != null) ? " open" : ""}>
         <summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
             ${detailSearchLabel}
@@ -180,7 +210,7 @@
             <select name="accountIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="6">
                 <option value="">${allLabel}</option>
                 @for(Account account : accountList)
-                <option value="${account.id().toString()}" selected="${account.id().equals(selectedAccountId)}">${account.name()}</option>
+                <option value="${account.id().toString()}" selected="${selectedAccountIds != null && selectedAccountIds.contains(account.id())}">${account.name()}</option>
                 @endfor
             </select>
         </div>
@@ -190,7 +220,7 @@
             <select name="stockItemIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="6">
                 <option value="">${allLabel}</option>
                 @for(StockItem stockItem : stockItemList)
-                <option value="${stockItem.id().toString()}" selected="${stockItem.id().equals(selectedStockItemId)}">${stockItem.name()}</option>
+                <option value="${stockItem.id().toString()}" selected="${selectedStockItemIds != null && selectedStockItemIds.contains(stockItem.id())}">${stockItem.name()}</option>
                 @endfor
             </select>
         </div>
@@ -303,6 +333,156 @@
 
     </div>
 
+    <!-- Row 3: Yield Analytics -->
+    <div class="mb-3 px-1">
+        <div class="text-sm font-bold">${dividendYieldTitle}</div>
+        <div class="text-xs text-base-content/50 mt-1">${yieldBasisNoteLabel}</div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+        <div class="card bg-base-100 shadow-sm border border-base-200">
+            <div class="card-body p-4">
+                <div class="text-xs text-base-content/50 mb-1">${dividendYieldPeriodLabel}</div>
+                <div class="text-xl font-bold text-dividend">${percentFormat.apply(portfolioYieldOnCostPct)}</div>
+                <div class="text-xs text-base-content/40 mt-1">${yieldOnMarketLabel} <span class="font-medium">${percentFormat.apply(portfolioYieldOnMarketPct)}</span></div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-base-200">
+            <div class="card-body p-4">
+                <div class="text-xs text-base-content/50 mb-1">${bestYieldStockLabel}</div>
+                @if(bestYieldStock != null)
+                    <div class="text-sm font-semibold truncate">${bestYieldStock.label()}</div>
+                    <div class="text-xl font-bold text-dividend">${percentFormat.apply(bestYieldStock.yieldOnCostPct())}</div>
+                    <div class="text-xs text-base-content/40 mt-1">${netAmountLabel} <span class="font-medium amount-value">₩ ${decimalFormat.format(bestYieldStock.totalNetAmount())}</span></div>
+                @else
+                    <div class="text-sm text-base-content/40">${noYieldAnalyticsLabel}</div>
+                @endif
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-base-200">
+            <div class="card-body p-4">
+                <div class="text-xs text-base-content/50 mb-1">${bestYieldAccountLabel}</div>
+                @if(bestYieldAccount != null)
+                    <div class="text-sm font-semibold truncate">${bestYieldAccount.label()}</div>
+                    <div class="text-xl font-bold text-dividend">${percentFormat.apply(bestYieldAccount.yieldOnCostPct())}</div>
+                    <div class="text-xs text-base-content/40 mt-1">${netAmountLabel} <span class="font-medium amount-value">₩ ${decimalFormat.format(bestYieldAccount.totalNetAmount())}</span></div>
+                @else
+                    <div class="text-sm text-base-content/40">${noYieldAnalyticsLabel}</div>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">
+        <div class="card bg-base-100 shadow-sm border border-base-200">
+            <div class="card-body p-4">
+                <div class="text-sm font-bold mb-3">${yearlyYieldSectionLabel}</div>
+                @if(yearlyYieldRows == null || yearlyYieldRows.isEmpty())
+                    <div class="text-sm text-base-content/40">${noYieldAnalyticsLabel}</div>
+                @else
+                    <div class="overflow-x-auto">
+                        <table class="table table-xs w-full">
+                            <thead>
+                                <tr class="text-base-content/60">
+                                    <th>${yearLabel}</th>
+                                    <th class="text-right">${netAmountLabel}</th>
+                                    <th class="text-right">${investedCapitalLabel}</th>
+                                    <th class="text-right">${yieldOnCostLabel}</th>
+                                    <th class="text-right">${dividendCountLabel}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for(DividendYieldGroupView row : yearlyYieldRows)
+                                    <tr>
+                                        <td class="font-medium">${row.label()}</td>
+                                        <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
+                                        <td class="text-right amount-value">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}</td>
+                                        <td class="text-right text-dividend font-medium">${percentFormat.apply(row.yieldOnCostPct())}</td>
+                                        <td class="text-right">${countFormat.apply(row.dividendCount())}</td>
+                                    </tr>
+                                @endfor
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-base-200">
+            <div class="card-body p-4">
+                <div class="text-sm font-bold mb-3">${stockYieldSectionLabel}</div>
+                @if(stockYieldRows == null || stockYieldRows.isEmpty())
+                    <div class="text-sm text-base-content/40">${noYieldAnalyticsLabel}</div>
+                @else
+                    <div class="overflow-x-auto">
+                        <table class="table table-xs w-full">
+                            <thead>
+                                <tr class="text-base-content/60">
+                                    <th>${stockNameLabel}</th>
+                                    <th class="text-right">${netAmountLabel}</th>
+                                    <th class="text-right">${investedCapitalLabel}</th>
+                                    <th class="text-right">${yieldOnCostLabel}</th>
+                                    <th class="text-right">${yieldOnMarketLabel}</th>
+                                    <th class="text-right">${dividendCountLabel}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for(DividendYieldGroupView row : stockYieldRows)
+                                    <tr>
+                                        <td class="font-medium">${row.label()}</td>
+                                        <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
+                                        <td class="text-right amount-value">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}</td>
+                                        <td class="text-right text-dividend font-medium">${percentFormat.apply(row.yieldOnCostPct())}</td>
+                                        <td class="text-right text-base-content/70">${percentFormat.apply(row.yieldOnMarketPct())}</td>
+                                        <td class="text-right">${countFormat.apply(row.dividendCount())}</td>
+                                    </tr>
+                                @endfor
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-base-200">
+            <div class="card-body p-4">
+                <div class="text-sm font-bold mb-3">${accountYieldSectionLabel}</div>
+                @if(accountYieldRows == null || accountYieldRows.isEmpty())
+                    <div class="text-sm text-base-content/40">${noYieldAnalyticsLabel}</div>
+                @else
+                    <div class="overflow-x-auto">
+                        <table class="table table-xs w-full">
+                            <thead>
+                                <tr class="text-base-content/60">
+                                    <th>${accountLabel}</th>
+                                    <th class="text-right">${netAmountLabel}</th>
+                                    <th class="text-right">${investedCapitalLabel}</th>
+                                    <th class="text-right">${yieldOnCostLabel}</th>
+                                    <th class="text-right">${yieldOnMarketLabel}</th>
+                                    <th class="text-right">${dividendCountLabel}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for(DividendYieldGroupView row : accountYieldRows)
+                                    <tr>
+                                        <td class="font-medium">${row.label()}</td>
+                                        <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
+                                        <td class="text-right amount-value">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}</td>
+                                        <td class="text-right text-dividend font-medium">${percentFormat.apply(row.yieldOnCostPct())}</td>
+                                        <td class="text-right text-base-content/70">${percentFormat.apply(row.yieldOnMarketPct())}</td>
+                                        <td class="text-right">${countFormat.apply(row.dividendCount())}</td>
+                                    </tr>
+                                @endfor
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
     <!-- Collapsible Detail List -->
     <details id="detailSection" class="mb-4">
         <summary class="cursor-pointer select-none flex items-center gap-2 font-semibold text-sm p-3 bg-base-200 rounded-box hover:bg-base-300 transition-colors">
@@ -337,6 +517,10 @@
                             hx-vals='{"sort": "netAmount,${sortField.equals("netAmount") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
                             ${netAmountLabel} @if(sortField.equals("netAmount"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
                         </th>
+                        <th class="text-right hidden md:table-cell">${quantityLabel}</th>
+                        <th class="text-right hidden xl:table-cell">${referencePriceLabel}</th>
+                        <th class="text-right hidden xl:table-cell">${investedCapitalLabel}</th>
+                        <th class="text-right">${yieldOnCostLabel}</th>
                         <th class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
                             hx-vals='{"sort": "tax,${sortField.equals("tax") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
                             ${taxLabel} @if(sortField.equals("tax"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
@@ -355,13 +539,17 @@
                         <td class="font-bold">${item.stockItemName()}</td>
                         <td class="text-right amount-value">${item.grossAmount() != null ? decimalFormat.format(item.grossAmount()) : "0"}</td>
                         <td class="text-right text-dividend font-bold amount-value">${item.netAmount() != null ? decimalFormat.format(item.netAmount()) : "0"}</td>
+                        <td class="text-right hidden md:table-cell amount-value">${item.quantity() != null ? decimalFormat.format(item.quantity()) : "-"}</td>
+                        <td class="text-right hidden xl:table-cell amount-value">${item.referencePrice() != null ? decimalFormat.format(item.referencePrice()) : "-"}</td>
+                        <td class="text-right hidden xl:table-cell amount-value">${item.principalCost() != null ? decimalFormat.format(item.principalCost()) : "-"}</td>
+                        <td class="text-right text-dividend font-medium">${percentFormat.apply(item.yieldOnCostPct())}</td>
                         <td class="text-right hidden lg:table-cell amount-value">${item.tax() != null ? decimalFormat.format(item.tax()) : "0"}</td>
                         <td class="text-right amount-value">${item.taxableAmount() != null ? decimalFormat.format(item.taxableAmount()) : "0"}</td>
                     </tr>
                     @endfor
                     @if(dividendList == null || dividendList.isEmpty())
                     <tr>
-                        <td colspan="7" class="text-center py-10 opacity-50">${noDividendHistoryLabel}</td>
+                        <td colspan="11" class="text-center py-10 opacity-50">${noDividendHistoryLabel}</td>
                     </tr>
                     @endif
                     </tbody>
@@ -370,6 +558,10 @@
                             <td colspan="3" class="text-center sm:text-right sm:pr-4">${totalLabel}</td>
                             <td class="text-right font-mono amount-value">${totalGrossAmount != null ? decimalFormat.format(totalGrossAmount) : "0"}</td>
                             <td class="text-right font-mono text-dividend amount-value">${totalNetAmount != null ? decimalFormat.format(totalNetAmount) : "0"}</td>
+                            <td class="text-right hidden md:table-cell">-</td>
+                            <td class="text-right hidden xl:table-cell">-</td>
+                            <td class="text-right hidden xl:table-cell">-</td>
+                            <td class="text-right">-</td>
                             <td class="text-right font-mono hidden lg:table-cell amount-value">${totalTax != null ? decimalFormat.format(totalTax) : "0"}</td>
                             <td class="text-right font-mono amount-value">${totalTaxableAmount != null ? decimalFormat.format(totalTaxableAmount) : "0"}</td>
                         </tr>

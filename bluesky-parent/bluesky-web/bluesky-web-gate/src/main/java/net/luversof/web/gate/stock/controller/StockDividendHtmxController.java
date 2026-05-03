@@ -1,6 +1,7 @@
 package net.luversof.web.gate.stock.controller;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -8,11 +9,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -32,13 +36,17 @@ import net.luversof.web.common.menu.domain.Pagination;
 import net.luversof.web.gate.stock.domain.Account;
 import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.dto.request.DividendRequest;
+import net.luversof.web.gate.stock.dto.request.TradeSearchRequest;
 import net.luversof.web.gate.stock.dto.response.DividendResponse;
 import net.luversof.web.gate.stock.dto.response.DividendView;
+import net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem;
+import net.luversof.web.gate.stock.dto.view.DividendYieldGroupView;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
+import net.luversof.web.gate.stock.dto.response.TradeResponse;
 
 @Controller
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
@@ -257,14 +265,30 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
                                     accountName,
                                     dividend.stockItemId(),
                                     stockItemName,
+                                    dividend.quantity(),
+                                    dividend.amountPerShare(),
                                     grossAmount,
                                     tax,
                                     taxableAmount,
                                     netAmount,
                                     dividend.recordDate(),
-                                    dividend.payDate());
+                                    dividend.payDate(),
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null);
                         })
                 .collect(Collectors.toCollection(ArrayList::new));
+
+        DividendAnalyticsResult analyticsResult = buildDividendAnalytics(
+                userId,
+                viewList,
+                effectiveAccountIdList,
+                effectiveStockItemIdList,
+                zone);
+        viewList = analyticsResult.dividendViews();
 
         if (sort != null && !sort.isEmpty()) {
             String[] parts = sort.split(",");
@@ -405,6 +429,12 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         model.addAttribute("accountList", finalAccountList);
         model.addAttribute("stockItemList", finalStockItemList);
         model.addAttribute(
+                "selectedAccountIds",
+                effectiveAccountIdList != null ? effectiveAccountIdList : List.of());
+        model.addAttribute(
+                "selectedStockItemIds",
+                effectiveStockItemIdList != null ? effectiveStockItemIdList : List.of());
+        model.addAttribute(
                 "selectedAccountId",
                 (effectiveAccountIdList != null && !effectiveAccountIdList.isEmpty())
                         ? effectiveAccountIdList.get(0)
@@ -429,11 +459,403 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         model.addAttribute("prevPeriodNetAmount", prevPeriodNetAmount);
         model.addAttribute("prevStartDate", prevStartDate);
         model.addAttribute("prevEndDate", prevEndDate);
+        model.addAttribute(
+                "portfolioYieldOnCostPct",
+                analyticsResult.portfolioYield() != null
+                        ? analyticsResult.portfolioYield().yieldOnCostPct()
+                        : null);
+        model.addAttribute(
+                "portfolioYieldOnMarketPct",
+                analyticsResult.portfolioYield() != null
+                        ? analyticsResult.portfolioYield().yieldOnMarketPct()
+                        : null);
+        model.addAttribute(
+                "bestYieldStock",
+                analyticsResult.stockYieldRows().isEmpty() ? null : analyticsResult.stockYieldRows().get(0));
+        model.addAttribute(
+                "bestYieldAccount",
+                analyticsResult.accountYieldRows().isEmpty() ? null : analyticsResult.accountYieldRows().get(0));
+        model.addAttribute("stockYieldRows", analyticsResult.stockYieldRows());
+        model.addAttribute("accountYieldRows", analyticsResult.accountYieldRows());
+        model.addAttribute("yearlyYieldRows", analyticsResult.yearlyYieldRows());
         model.addAttribute("rangeMode", rangeMode);
         model.addAttribute("dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");
         // reflect rangeMode back into model (may have been defaulted above)
         model.addAttribute("rangeMode", rangeMode);
 
         return "stock/htmx/fragments/tabsDividendHistory";
+    }
+
+    private DividendAnalyticsResult buildDividendAnalytics(
+            UUID userId,
+            List<DividendView> dividendViews,
+            List<UUID> accountIdList,
+            List<UUID> stockItemIdList,
+            ZoneId zone) {
+        if (dividendViews == null || dividendViews.isEmpty()) {
+            return DividendAnalyticsResult.empty(
+                    dividendViews != null ? dividendViews : new ArrayList<>());
+        }
+
+        Set<LocalDate> basisDates = dividendViews.stream()
+                .map(dividend -> resolveBasisDate(dividend, zone))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(TreeSet::new));
+
+        Map<LocalDate, Map<UUID, HoldingsSnapshotItem>> snapshotByDate = loadSnapshotsByDate(userId, basisDates);
+        LocalDate maxBasisDate = basisDates.stream().max(Comparator.naturalOrder()).orElse(null);
+        Instant tradeEndDate = maxBasisDate != null ? maxBasisDate.plusDays(1).atStartOfDay(zone).toInstant() : null;
+
+        List<TradeResponse> trades = tradeClient.findTrades(
+                new TradeSearchRequest(userId, accountIdList, stockItemIdList, null, tradeEndDate).toParams());
+
+        Map<PositionKey, List<TradeResponse>> tradesByKey = trades.stream()
+                .filter(trade -> trade.accountId() != null && trade.stockItemId() != null && trade.tradeDate() != null)
+                .collect(Collectors.groupingBy(
+                        trade -> new PositionKey(trade.accountId(), trade.stockItemId()),
+                        Collectors.collectingAndThen(Collectors.toCollection(ArrayList::new), list -> {
+                            list.sort(Comparator
+                                    .comparing((TradeResponse trade) -> trade.tradeDate().atZone(zone).toLocalDate())
+                                    .thenComparing(
+                                            trade -> trade.type() == net.luversof.web.gate.stock.constant.TradeType.BUY
+                                                    ? 0
+                                                    : 1)
+                                    .thenComparing(TradeResponse::tradeDate));
+                            return list;
+                        })));
+
+        Map<PositionKey, List<DividendView>> dividendsByKey = dividendViews.stream()
+                .filter(dividend -> dividend.accountId() != null && dividend.stockItemId() != null)
+                .collect(Collectors.groupingBy(
+                        dividend -> new PositionKey(dividend.accountId(), dividend.stockItemId()),
+                        Collectors.collectingAndThen(Collectors.toCollection(ArrayList::new), list -> {
+                            list.sort(Comparator
+                                    .comparing((DividendView dividend) -> resolveBasisDate(dividend, zone),
+                                            Comparator.nullsLast(Comparator.naturalOrder()))
+                                    .thenComparing(
+                                            dividend -> Optional.ofNullable(dividend.payDate())
+                                                    .orElse(dividend.recordDate()),
+                                            Comparator.nullsLast(Comparator.naturalOrder())));
+                            return list;
+                        })));
+
+        Map<UUID, DividendView> enrichedById = new HashMap<>();
+        Map<UUID, YieldAccumulator> stockAccumulators = new LinkedHashMap<>();
+        Map<UUID, YieldAccumulator> accountAccumulators = new LinkedHashMap<>();
+        Map<Integer, YieldAccumulator> yearlyAccumulators = new LinkedHashMap<>();
+        YieldAccumulator portfolioAccumulator = new YieldAccumulator("portfolio");
+
+        for (Map.Entry<PositionKey, List<DividendView>> entry : dividendsByKey.entrySet()) {
+            PositionKey key = entry.getKey();
+            List<TradeResponse> tradeList = tradesByKey.getOrDefault(key, List.of());
+            CostBasisState costBasisState = new CostBasisState();
+            int tradeIndex = 0;
+
+            for (DividendView dividend : entry.getValue()) {
+                LocalDate basisDate = resolveBasisDate(dividend, zone);
+                if (basisDate == null) {
+                    enrichedById.put(dividend.id(), dividend);
+                    continue;
+                }
+
+                while (tradeIndex < tradeList.size()) {
+                    TradeResponse trade = tradeList.get(tradeIndex);
+                    LocalDate tradeDate = trade.tradeDate().atZone(zone).toLocalDate();
+                    if (tradeDate.isAfter(basisDate)) {
+                        break;
+                    }
+                    costBasisState.apply(trade);
+                    tradeIndex++;
+                }
+
+                Integer quantity = dividend.quantity() != null && dividend.quantity() > 0
+                        ? dividend.quantity()
+                        : (costBasisState.rawQuantity() > 0 ? (int) costBasisState.rawQuantity() : null);
+                BigDecimal averageCostBasis = quantity != null && quantity > 0 ? costBasisState.averageCost() : null;
+                BigDecimal principalCost = multiplyQuantity(averageCostBasis, quantity);
+
+                HoldingsSnapshotItem snapshotItem = snapshotByDate.getOrDefault(basisDate, Map.of())
+                        .get(dividend.stockItemId());
+                BigDecimal referencePrice = snapshotItem != null ? snapshotItem.priceAtDate() : null;
+                BigDecimal principalMarketValue = multiplyQuantity(referencePrice, quantity);
+
+                BigDecimal yieldOnCostPct = percentage(dividend.netAmount(), principalCost);
+                BigDecimal yieldOnMarketPct = percentage(dividend.netAmount(), principalMarketValue);
+
+                DividendView enrichedDividend = new DividendView(
+                        dividend.id(),
+                        dividend.accountId(),
+                        dividend.accountName(),
+                        dividend.stockItemId(),
+                        dividend.stockItemName(),
+                        quantity,
+                        dividend.amountPerShare(),
+                        dividend.grossAmount(),
+                        dividend.tax(),
+                        dividend.taxableAmount(),
+                        dividend.netAmount(),
+                        dividend.recordDate(),
+                        dividend.payDate(),
+                        referencePrice,
+                        averageCostBasis,
+                        principalCost,
+                        principalMarketValue,
+                        yieldOnCostPct,
+                        yieldOnMarketPct);
+                enrichedById.put(enrichedDividend.id(), enrichedDividend);
+
+                portfolioAccumulator.accept(enrichedDividend);
+                stockAccumulators.computeIfAbsent(
+                        dividend.stockItemId(),
+                        ignored -> new YieldAccumulator(dividend.stockItemName()))
+                        .accept(enrichedDividend);
+                accountAccumulators.computeIfAbsent(
+                        dividend.accountId(),
+                        ignored -> new YieldAccumulator(dividend.accountName()))
+                        .accept(enrichedDividend);
+                yearlyAccumulators.computeIfAbsent(
+                        basisDate.getYear(),
+                        year -> new YieldAccumulator(String.valueOf(year)))
+                        .accept(enrichedDividend);
+            }
+        }
+
+        List<DividendView> enrichedDividends = dividendViews.stream()
+                .map(dividend -> enrichedById.getOrDefault(dividend.id(), dividend))
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        List<DividendYieldGroupView> stockYieldRows = sortYieldRows(stockAccumulators.values());
+        List<DividendYieldGroupView> accountYieldRows = sortYieldRows(accountAccumulators.values());
+        List<DividendYieldGroupView> yearlyYieldRows = yearlyAccumulators.entrySet().stream()
+                .sorted(Map.Entry.<Integer, YieldAccumulator>comparingByKey().reversed())
+                .map(entry -> entry.getValue().toView())
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        return new DividendAnalyticsResult(
+                enrichedDividends,
+                portfolioAccumulator.hasData() ? portfolioAccumulator.toView() : null,
+                yearlyYieldRows,
+                stockYieldRows,
+                accountYieldRows);
+    }
+
+    private Map<LocalDate, Map<UUID, HoldingsSnapshotItem>> loadSnapshotsByDate(UUID userId,
+            Set<LocalDate> basisDates) {
+        Map<LocalDate, Map<UUID, HoldingsSnapshotItem>> result = new LinkedHashMap<>();
+        for (LocalDate basisDate : basisDates) {
+            var params = new org.springframework.util.LinkedMultiValueMap<String, String>();
+            params.add("userId", userId.toString());
+            params.add("date", basisDate.toString());
+            List<HoldingsSnapshotItem> snapshotItems = tradeProfitClient.holdingsSnapshot(params);
+            Map<UUID, HoldingsSnapshotItem> itemsByStockId = snapshotItems.stream()
+                    .filter(item -> item.stockItemId() != null)
+                    .collect(Collectors.toMap(
+                            HoldingsSnapshotItem::stockItemId,
+                            item -> item,
+                            (left, right) -> left,
+                            LinkedHashMap::new));
+            result.put(basisDate, itemsByStockId);
+        }
+        return result;
+    }
+
+    private List<DividendYieldGroupView> sortYieldRows(Iterable<YieldAccumulator> accumulators) {
+        List<DividendYieldGroupView> rows = new ArrayList<>();
+        for (YieldAccumulator accumulator : accumulators) {
+            if (accumulator.hasData()) {
+                rows.add(accumulator.toView());
+            }
+        }
+        rows.sort(Comparator
+                .comparing(DividendYieldGroupView::yieldOnCostPct, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(DividendYieldGroupView::totalNetAmount,
+                        Comparator.nullsLast(Comparator.reverseOrder())));
+        return rows;
+    }
+
+    private static LocalDate resolveBasisDate(DividendView dividend, ZoneId zone) {
+        Instant basisInstant = dividend.recordDate() != null ? dividend.recordDate() : dividend.payDate();
+        return basisInstant != null ? basisInstant.atZone(zone).toLocalDate() : null;
+    }
+
+    private static BigDecimal multiplyQuantity(BigDecimal price, Integer quantity) {
+        if (price == null || quantity == null || quantity <= 0) {
+            return null;
+        }
+        return price.multiply(BigDecimal.valueOf(quantity));
+    }
+
+    private static BigDecimal percentage(BigDecimal amount, BigDecimal principal) {
+        if (amount == null || principal == null || principal.compareTo(BigDecimal.ZERO) <= 0) {
+            return null;
+        }
+        return amount.multiply(BigDecimal.valueOf(100)).divide(principal, 4, RoundingMode.HALF_UP);
+    }
+
+    private static BigDecimal nz(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
+    }
+
+    private record PositionKey(UUID accountId, UUID stockItemId) {
+    }
+
+    private record DividendAnalyticsResult(
+            List<DividendView> dividendViews,
+            DividendYieldGroupView portfolioYield,
+            List<DividendYieldGroupView> yearlyYieldRows,
+            List<DividendYieldGroupView> stockYieldRows,
+            List<DividendYieldGroupView> accountYieldRows) {
+
+        private static DividendAnalyticsResult empty(List<DividendView> dividendViews) {
+            return new DividendAnalyticsResult(dividendViews, null, List.of(), List.of(), List.of());
+        }
+    }
+
+    private static final class CostBasisState {
+        private long rawQuantity;
+        private BigDecimal totalCost = BigDecimal.ZERO;
+
+        private void apply(TradeResponse trade) {
+            int quantity = trade.quantity();
+            if (quantity <= 0) {
+                return;
+            }
+
+            BigDecimal amount = nz(trade.price()).multiply(BigDecimal.valueOf(quantity));
+            if (trade.type() == net.luversof.web.gate.stock.constant.TradeType.BUY) {
+                rawQuantity += quantity;
+                totalCost = totalCost.add(amount);
+                return;
+            }
+
+            if (trade.type() == net.luversof.web.gate.stock.constant.TradeType.SELL && rawQuantity > 0) {
+                BigDecimal sellProceeds = amount.subtract(nz(trade.fee())).subtract(nz(trade.tax()));
+                BigDecimal cogs = sellProceeds.subtract(nz(trade.realizedProfit()));
+                totalCost = totalCost.subtract(cogs);
+                if (totalCost.compareTo(BigDecimal.ZERO) < 0) {
+                    totalCost = BigDecimal.ZERO;
+                }
+                rawQuantity -= quantity;
+                if (rawQuantity <= 0) {
+                    rawQuantity = 0;
+                    totalCost = BigDecimal.ZERO;
+                }
+            }
+        }
+
+        private long rawQuantity() {
+            return rawQuantity;
+        }
+
+        private BigDecimal averageCost() {
+            if (rawQuantity <= 0 || totalCost.compareTo(BigDecimal.ZERO) <= 0) {
+                return null;
+            }
+            return totalCost.divide(BigDecimal.valueOf(rawQuantity), 2, RoundingMode.HALF_UP);
+        }
+    }
+
+    private static final class YieldAccumulator {
+        private final String label;
+        private BigDecimal totalNetAmount = BigDecimal.ZERO;
+        private final Map<PositionKey, PrincipalAccumulator> principalByPosition = new LinkedHashMap<>();
+        private long dividendCount;
+        private Instant lastDividendDate;
+
+        private YieldAccumulator(String label) {
+            this.label = label;
+        }
+
+        private void accept(DividendView dividend) {
+            totalNetAmount = totalNetAmount.add(nz(dividend.netAmount()));
+            dividendCount++;
+
+            if (dividend.accountId() != null && dividend.stockItemId() != null) {
+                principalByPosition
+                        .computeIfAbsent(
+                                new PositionKey(dividend.accountId(), dividend.stockItemId()),
+                                ignored -> new PrincipalAccumulator())
+                        .accept(dividend);
+            }
+
+            Instant displayDate = dividend.payDate() != null ? dividend.payDate() : dividend.recordDate();
+            if (displayDate != null && (lastDividendDate == null || displayDate.isAfter(lastDividendDate))) {
+                lastDividendDate = displayDate;
+            }
+        }
+
+        private boolean hasData() {
+            return dividendCount > 0;
+        }
+
+        private DividendYieldGroupView toView() {
+            BigDecimal averagePrincipalCost = null;
+            BigDecimal averagePrincipalMarketValue = null;
+
+            for (PrincipalAccumulator principalAccumulator : principalByPosition.values()) {
+                BigDecimal positionAveragePrincipalCost = principalAccumulator.averagePrincipalCost();
+                if (positionAveragePrincipalCost != null) {
+                    averagePrincipalCost = averagePrincipalCost == null
+                            ? positionAveragePrincipalCost
+                            : averagePrincipalCost.add(positionAveragePrincipalCost);
+                }
+
+                BigDecimal positionAveragePrincipalMarketValue = principalAccumulator.averagePrincipalMarketValue();
+                if (positionAveragePrincipalMarketValue != null) {
+                    averagePrincipalMarketValue = averagePrincipalMarketValue == null
+                            ? positionAveragePrincipalMarketValue
+                            : averagePrincipalMarketValue.add(positionAveragePrincipalMarketValue);
+                }
+            }
+
+            BigDecimal yieldOnCostPct = averagePrincipalCost != null
+                    ? percentage(totalNetAmount, averagePrincipalCost)
+                    : null;
+            BigDecimal yieldOnMarketPct = averagePrincipalMarketValue != null
+                    ? percentage(totalNetAmount, averagePrincipalMarketValue)
+                    : null;
+            return new DividendYieldGroupView(
+                    label,
+                    totalNetAmount,
+                    averagePrincipalCost,
+                    averagePrincipalMarketValue,
+                    yieldOnCostPct,
+                    yieldOnMarketPct,
+                    dividendCount,
+                    lastDividendDate);
+        }
+    }
+
+    private static final class PrincipalAccumulator {
+        private BigDecimal principalCostSum = BigDecimal.ZERO;
+        private long principalCostCount;
+        private BigDecimal principalMarketSum = BigDecimal.ZERO;
+        private long principalMarketCount;
+
+        private void accept(DividendView dividend) {
+            if (dividend.principalCost() != null && dividend.principalCost().compareTo(BigDecimal.ZERO) > 0) {
+                principalCostSum = principalCostSum.add(dividend.principalCost());
+                principalCostCount++;
+            }
+            if (dividend.principalMarketValue() != null
+                    && dividend.principalMarketValue().compareTo(BigDecimal.ZERO) > 0) {
+                principalMarketSum = principalMarketSum.add(dividend.principalMarketValue());
+                principalMarketCount++;
+            }
+        }
+
+        private BigDecimal averagePrincipalCost() {
+            if (principalCostCount <= 0) {
+                return null;
+            }
+            return principalCostSum.divide(BigDecimal.valueOf(principalCostCount), 2, RoundingMode.HALF_UP);
+        }
+
+        private BigDecimal averagePrincipalMarketValue() {
+            if (principalMarketCount <= 0) {
+                return null;
+            }
+            return principalMarketSum.divide(BigDecimal.valueOf(principalMarketCount), 2, RoundingMode.HALF_UP);
+        }
     }
 }

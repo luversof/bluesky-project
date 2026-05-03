@@ -26,6 +26,8 @@
 @param java.util.List<net.luversof.web.gate.stock.domain.StockItem> stockItemList = null
 @param java.util.UUID selectedAccountId = null
 @param java.util.UUID selectedStockItemId = null
+@param java.util.List<java.util.UUID> selectedAccountIds = java.util.List.of()
+@param java.util.List<java.util.UUID> selectedStockItemIds = java.util.List.of()
 @param String debugTradeAccountIds = null
 @param Integer debugFinalAccountListSize = null
 @param Integer debugFinalStockItemListSize = null
@@ -99,7 +101,7 @@
         endDate = endLocal
     )
 
-    <details class="mb-4"$unsafe{startDate != null ? " open" : ""}>
+    <details class="mb-4"$unsafe{((selectedAccountIds != null && !selectedAccountIds.isEmpty()) || (selectedStockItemIds != null && !selectedStockItemIds.isEmpty()) || startDate != null) ? " open" : ""}>
         <summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
             ${detailSearchLabel}
@@ -127,7 +129,7 @@
                     <option value="">${allLabel}</option>
                     @if(accountList != null)
                         @for(net.luversof.web.gate.stock.domain.Account account : accountList)
-                            <option value="${account.id().toString()}" selected="${selectedAccountId != null && account.id().equals(selectedAccountId)}">${account.name()}</option>
+                            <option value="${account.id().toString()}" selected="${selectedAccountIds != null && selectedAccountIds.contains(account.id())}">${account.name()}</option>
                         @endfor
                     @endif
                 </select>
@@ -139,7 +141,7 @@
                     <option value="">${allLabel}</option>
                     @if(stockItemList != null)
                         @for(net.luversof.web.gate.stock.domain.StockItem stockItem : stockItemList)
-                            <option value="${stockItem.id().toString()}" selected="${selectedStockItemId != null && stockItem.id().equals(selectedStockItemId)}">${stockItem.name()}</option>
+                            <option value="${stockItem.id().toString()}" selected="${selectedStockItemIds != null && selectedStockItemIds.contains(stockItem.id())}">${stockItem.name()}</option>
                         @endfor
                     @endif
                 </select>

@@ -524,21 +524,27 @@ const DateRangePicker = (function () {
       if (mode === "all") return;
       const maxStr = maxDateStr();
       const maxDate = new Date(maxStr + "T00:00:00");
+      const start = getStart();
+      const isMtd = mode === "mtd";
+      const isYtd =
+        !isMtd &&
+        (mode === "ytd" || (mode === "" && !!start && start.slice(5) === "01-01"));
+      const edgeMode = isMtd ? "1" : isYtd ? "12" : mode;
       clearActive();
       let startStr = "",
         endStr = "";
       if (direction === "end") {
         endStr = maxStr;
-        if (mode && !isNaN(Number(mode)) && +mode > 0) {
-          const s = new Date(maxDate);
-          s.setMonth(s.getMonth() - +mode);
-          startStr = fmtDate(s);
-        } else if (mode === "mtd") {
+        if (isMtd) {
           startStr = fmtDate(
             new Date(maxDate.getFullYear(), maxDate.getMonth(), 1),
           );
-        } else if (mode === "ytd") {
+        } else if (isYtd) {
           startStr = maxDate.getFullYear() + "-01-01";
+        } else if (edgeMode && !isNaN(Number(edgeMode)) && +edgeMode > 0) {
+          const s = new Date(maxDate);
+          s.setMonth(s.getMonth() - +edgeMode);
+          startStr = fmtDate(s);
         } else {
           const cs = getStart(),
             ce = getEnd();
@@ -552,22 +558,22 @@ const DateRangePicker = (function () {
       } else {
         if (!cfg.minDate) return;
         const minD = new Date(cfg.minDate + "T00:00:00");
-        if (mode && !isNaN(Number(mode)) && +mode > 0) {
-          let e = new Date(minD);
-          e.setMonth(e.getMonth() + +mode);
-          if (e > maxDate) e = new Date(maxDate);
-          startStr = fmtDate(minD);
-          endStr = fmtDate(e);
-        } else if (mode === "mtd") {
+        if (isMtd) {
           const first = new Date(minD.getFullYear(), minD.getMonth(), 1);
           const last = new Date(minD.getFullYear(), minD.getMonth() + 1, 0);
           startStr = fmtDate(first);
           endStr = fmtDate(last > maxDate ? maxDate : last);
-        } else if (mode === "ytd") {
+        } else if (isYtd) {
           const minYear = minD.getFullYear();
           startStr = minYear + "-01-01";
           endStr =
             minYear === maxDate.getFullYear() ? maxStr : minYear + "-12-31";
+        } else if (edgeMode && !isNaN(Number(edgeMode)) && +edgeMode > 0) {
+          let e = new Date(minD);
+          e.setMonth(e.getMonth() + +edgeMode);
+          if (e > maxDate) e = new Date(maxDate);
+          startStr = fmtDate(minD);
+          endStr = fmtDate(e);
         } else {
           const cs = getStart(),
             ce = getEnd();
@@ -582,7 +588,7 @@ const DateRangePicker = (function () {
           endStr = fmtDate(ne);
         }
       }
-      applyRange(startStr, endStr, getMode());
+      applyRange(startStr, endStr, edgeMode);
     }
     function doShift(dir) {
       const start = getStart(),

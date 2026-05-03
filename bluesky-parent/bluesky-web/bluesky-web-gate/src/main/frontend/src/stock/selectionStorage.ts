@@ -482,6 +482,24 @@ type SelectionObject = {
 					/* ignore */
 				}
 
+				try {
+					if (triggerElt instanceof Element) {
+						const attrSave =
+							triggerElt.getAttribute &&
+							triggerElt.getAttribute("data-selection-save");
+						const searchLabel = getAppConfigValue(
+							"commonButtonSearch",
+							"Search",
+						);
+						const triggerText = (triggerElt.textContent || "").trim();
+						if (attrSave === "true" || triggerText === searchLabel) {
+							saveFromForm(getFormForElement(triggerElt));
+						}
+					}
+				} catch (err) {
+					/* ignore */
+				}
+
 				// If this request targets an endpoint that should NOT receive account/stock filters
 				// (e.g. asset-growth or trade-history), skip injection entirely. We must handle both
 				// declarative HX attributes (hx-get on elements) and programmatic calls which set
