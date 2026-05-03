@@ -196,7 +196,9 @@ interface Window {
 			roots.push(scope);
 		}
 		if ("querySelectorAll" in scope) {
-			roots.push(...Array.from(scope.querySelectorAll<HTMLElement>(ROOT_SELECTOR)));
+			roots.push(
+				...Array.from(scope.querySelectorAll<HTMLElement>(ROOT_SELECTOR)),
+			);
 		}
 		return roots;
 	}
@@ -254,7 +256,9 @@ interface Window {
 		}
 
 		if (target.matches(STOCK_SELECT_SELECTOR)) {
-			const root = target.closest("form")?.querySelector<HTMLElement>(ROOT_SELECTOR);
+			const root = target
+				.closest("form")
+				?.querySelector<HTMLElement>(ROOT_SELECTOR);
 			if (!root) return;
 
 			rememberManualStockSelection(root);

@@ -25,9 +25,11 @@
   }
   function getStockSelect(root) {
     var _a;
-    return ((_a = root.closest("form")) === null || _a === void 0
-      ? void 0
-      : _a.querySelector(STOCK_SELECT_SELECTOR)) || null;
+    return (
+      ((_a = root.closest("form")) === null || _a === void 0
+        ? void 0
+        : _a.querySelector(STOCK_SELECT_SELECTOR)) || null
+    );
   }
   function getSelectedTagValues(select) {
     return new Set(
@@ -61,7 +63,9 @@
     const tagSelect = getTagSelect(root);
     const stockSelect = getStockSelect(root);
     if (!stockSelect) return;
-    const selectedValues = tagSelect ? getSelectedTagValues(tagSelect) : new Set();
+    const selectedValues = tagSelect
+      ? getSelectedTagValues(tagSelect)
+      : new Set();
     Array.from(stockSelect.options).forEach((option) => {
       if (!option.value) return;
       const autoSelected =
@@ -203,9 +207,10 @@
     }
     if (target.matches(STOCK_SELECT_SELECTOR)) {
       var _a;
-      const root = (_a = target.closest("form")) === null || _a === void 0
-        ? void 0
-        : _a.querySelector(ROOT_SELECTOR);
+      const root =
+        (_a = target.closest("form")) === null || _a === void 0
+          ? void 0
+          : _a.querySelector(ROOT_SELECTOR);
       if (!root) return;
       rememberManualStockSelection(root);
     }

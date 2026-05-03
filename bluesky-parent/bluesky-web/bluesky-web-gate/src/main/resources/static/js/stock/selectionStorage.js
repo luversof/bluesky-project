@@ -6,6 +6,14 @@
   const injectedForms = new WeakSet();
   let lastInjectionTimestamp = 0;
   const INJECTION_WINDOW_MS = 3000;
+  function getAppConfigValue(name, fallback = "") {
+    try {
+      const appConfig = document.getElementById("app-config");
+      return (appConfig === null || appConfig === void 0 ? void 0 : appConfig.dataset[name]) || fallback;
+    } catch (e) {
+      return fallback;
+    }
+  }
   function getFormForElement(el) {
     if (!(el instanceof Element)) return null;
     return el.closest("form");
