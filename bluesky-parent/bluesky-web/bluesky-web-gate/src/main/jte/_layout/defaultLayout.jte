@@ -26,6 +26,7 @@
 	<script src="/js/date-range-picker.js"></script>
 	<script type="module" src="/js/stock/selectionStorage.js"></script>
 	<script type="module" src="/js/stock/multiSelectInit.js"></script>
+	<script type="module" src="/js/stock/tagFilterChips.js"></script>
 
 	<script>
 		// Ensure stock-charts helper is available; loads /js/stock-charts.js on demand
