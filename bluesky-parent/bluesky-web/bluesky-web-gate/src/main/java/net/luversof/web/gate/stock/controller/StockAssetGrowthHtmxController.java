@@ -1,4 +1,4 @@
-package net.luversof.web.gate.stock.controller;
+﻿package net.luversof.web.gate.stock.controller;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -15,6 +15,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.MessageSource;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -22,8 +25,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
@@ -50,8 +51,9 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
             TradeClient tradeClient,
             AccountClient accountClient,
             StockItemClient stockItemClient,
-            DividendClient dividendClient) {
-        super(tradeProfitClient, tradeClient, accountClient, stockItemClient, dividendClient);
+            DividendClient dividendClient,
+            MessageSource messageSource) {
+        super(tradeProfitClient, tradeClient, accountClient, stockItemClient, dividendClient, messageSource);
     }
 
     @BlueskyPreAuthorize
@@ -261,7 +263,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
                                 t.id(),
                                 t.accountId(),
                                 t.stockItemId(),
-                                stockItemNames.getOrDefault(t.stockItemId(), UNKNOWN_LABEL),
+                                stockItemNames.getOrDefault(t.stockItemId(), msg("stock.label.unknown")),
                                 t.type(),
                                 t.quantity(),
                                 t.price(),
@@ -307,7 +309,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
         String periodFrom = (from != null && !from.isBlank()) ? from : "";
         String periodTo = (to != null && !to.isBlank()) ? to : "";
         String tradePeriod = periodFrom.isEmpty() && periodTo.isEmpty()
-                ? "전체"
+                ? msg("stock.label.period.all")
                 : periodFrom + (periodTo.isEmpty() ? "" : " ~ " + periodTo);
 
         model.addAttribute("trades", pagedTrades);

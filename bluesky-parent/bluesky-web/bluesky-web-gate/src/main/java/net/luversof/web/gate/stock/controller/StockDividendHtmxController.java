@@ -1,4 +1,4 @@
-package net.luversof.web.gate.stock.controller;
+﻿package net.luversof.web.gate.stock.controller;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -16,6 +16,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.context.MessageSource;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
@@ -48,8 +49,9 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
             TradeClient tradeClient,
             AccountClient accountClient,
             StockItemClient stockItemClient,
-            DividendClient dividendClient) {
-        super(tradeProfitClient, tradeClient, accountClient, stockItemClient, dividendClient);
+            DividendClient dividendClient,
+            MessageSource messageSource) {
+        super(tradeProfitClient, tradeClient, accountClient, stockItemClient, dividendClient, messageSource);
     }
 
     @BlueskyPreAuthorize
@@ -67,7 +69,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
             Model model) {
         UUID userId = UserUtil.getUserId();
         if (userId == null) {
-            model.addAttribute(ERROR_ATTRIBUTE, LOGIN_REQUIRED_MESSAGE);
+            model.addAttribute(ERROR_ATTRIBUTE, msg("stock.label.login.required"));
             return ERROR_VIEW;
         }
 
@@ -89,10 +91,10 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
 
         List<DividendResponse> dividends = dividendClient.findDividends(request.toParams());
 
-                // Always fetch the global/all dividend set so we can offer "전체 기간" filtering
-                var globalReq = new DividendRequest();
-                globalReq.setUserId(userId);
-                List<DividendResponse> globalDividends = dividendClient.findDividends(globalReq.toParams());
+        // Always fetch the global/all dividend set so we can offer "전체 기간" filtering
+        var globalReq = new DividendRequest();
+        globalReq.setUserId(userId);
+        List<DividendResponse> globalDividends = dividendClient.findDividends(globalReq.toParams());
         ZoneId zone = (timeZone != null && !timeZone.isEmpty()) ? ZoneId.of(timeZone) : ZoneId.systemDefault();
         LocalDate dataFirstDate = globalDividends.stream()
                 .map(
@@ -114,7 +116,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
 
         var dividendAccountIds = dividends.stream().map(DividendResponse::accountId).collect(Collectors.toSet());
         var dividendStockIds = dividends.stream().map(DividendResponse::stockItemId).collect(Collectors.toSet());
-        var globalDividendStockIds = globalDividends.stream().map(DividendResponse::stockItemId).collect(Collectors.toSet());
+        var globalDividendStockIds = globalDividends.stream().map(DividendResponse::stockItemId)
+                .collect(Collectors.toSet());
 
         List<Account> accounts = accountClient.getAccountsByUserId(userId);
         List<Account> filteredAccountList = accounts.stream().filter(a -> dividendAccountIds.contains(a.id())).toList();
@@ -176,33 +179,35 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         }
 
         List<StockItem> finalStockItemList;
-                if (startInstant != null || endInstant != null) {
-                        // Date-specific search -> show only stocks that had dividends in the requested period
-                        finalStockItemList = new ArrayList<>(filteredStockItemList);
-                        if (requestedStockItemIds != null) {
-                                for (UUID sel : requestedStockItemIds) {
-                                        if (sel == null)
-                                                continue;
-                                        if (!finalStockItemList.stream().anyMatch(s -> s.id().equals(sel))) {
-                                                stockItemList.stream().filter(s -> s.id().equals(sel)).findFirst()
-                                                                .ifPresent(s -> finalStockItemList.add(0, s));
-                                        }
-                                }
-                        }
-                } else {
-                        // No explicit date range (or rangeMode='all') -> show stocks that have any dividend history
-                        finalStockItemList = new ArrayList<>(filteredStockItemListAll);
-                        if (requestedStockItemIds != null) {
-                                for (UUID sel : requestedStockItemIds) {
-                                        if (sel == null)
-                                                continue;
-                                        if (!finalStockItemList.stream().anyMatch(s -> s.id().equals(sel))) {
-                                                stockItemList.stream().filter(s -> s.id().equals(sel)).findFirst()
-                                                                .ifPresent(s -> finalStockItemList.add(0, s));
-                                        }
-                                }
-                        }
+        if (startInstant != null || endInstant != null) {
+            // Date-specific search -> show only stocks that had dividends in the requested
+            // period
+            finalStockItemList = new ArrayList<>(filteredStockItemList);
+            if (requestedStockItemIds != null) {
+                for (UUID sel : requestedStockItemIds) {
+                    if (sel == null)
+                        continue;
+                    if (!finalStockItemList.stream().anyMatch(s -> s.id().equals(sel))) {
+                        stockItemList.stream().filter(s -> s.id().equals(sel)).findFirst()
+                                .ifPresent(s -> finalStockItemList.add(0, s));
+                    }
                 }
+            }
+        } else {
+            // No explicit date range (or rangeMode='all') -> show stocks that have any
+            // dividend history
+            finalStockItemList = new ArrayList<>(filteredStockItemListAll);
+            if (requestedStockItemIds != null) {
+                for (UUID sel : requestedStockItemIds) {
+                    if (sel == null)
+                        continue;
+                    if (!finalStockItemList.stream().anyMatch(s -> s.id().equals(sel))) {
+                        stockItemList.stream().filter(s -> s.id().equals(sel)).findFirst()
+                                .ifPresent(s -> finalStockItemList.add(0, s));
+                    }
+                }
+            }
+        }
 
         List<DividendView> viewList = dividends.stream()
                 .filter(
@@ -215,12 +220,14 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
                                 || effectiveStockItemIdList.contains(d.stockItemId())))
                 .map(
                         dividend -> {
-                            String accountName = accountNames.getOrDefault(dividend.accountId(), UNKNOWN_LABEL);
+                            String accountName = accountNames.getOrDefault(dividend.accountId(),
+                                    msg("stock.label.unknown"));
                             String stockItemName = Optional.ofNullable(dividend.stockItemName())
                                     .orElse(
                                             Optional.ofNullable(dividend.stockItemId())
-                                                    .map(id -> stockItemNames.getOrDefault(id, UNKNOWN_LABEL))
-                                                    .orElse(UNKNOWN_LABEL));
+                                                    .map(id -> stockItemNames.getOrDefault(id,
+                                                            msg("stock.label.unknown")))
+                                                    .orElse(msg("stock.label.unknown")));
 
                             boolean isDeferred = taxDeferredMap.getOrDefault(dividend.accountId(), false);
 

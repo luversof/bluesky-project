@@ -80,7 +80,7 @@
         </div>
         <div class="form-control w-full sm:w-auto">
             <label class="label p-1"><span class="label-text text-xs">계좌</span></label>
-            <select name="accountIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="8">
+            <select name="accountIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="6">
                 <option value="">전체</option>
                 @if(accountList != null)
                     @for(Account account : accountList)
@@ -92,7 +92,7 @@
 
         <div class="form-control w-full sm:w-auto">
             <label class="label p-1"><span class="label-text text-xs">종목</span></label>
-            <select name="stockItemIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="8">
+            <select name="stockItemIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="6">
                 <option value="">전체</option>
                 @if(stockItemList != null)
                     @for(StockItem stockItem : stockItemList)

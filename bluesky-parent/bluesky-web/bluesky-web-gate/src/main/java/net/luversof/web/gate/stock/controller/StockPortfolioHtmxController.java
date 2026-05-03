@@ -1,4 +1,4 @@
-package net.luversof.web.gate.stock.controller;
+﻿package net.luversof.web.gate.stock.controller;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.context.MessageSource;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -45,8 +46,9 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
             TradeClient tradeClient,
             AccountClient accountClient,
             StockItemClient stockItemClient,
-            DividendClient dividendClient) {
-        super(tradeProfitClient, tradeClient, accountClient, stockItemClient, dividendClient);
+            DividendClient dividendClient,
+            MessageSource messageSource) {
+        super(tradeProfitClient, tradeClient, accountClient, stockItemClient, dividendClient, messageSource);
     }
 
     @BlueskyPreAuthorize
@@ -58,7 +60,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
             Model model) {
         UUID userId = UserUtil.getUserId();
         if (userId == null) {
-            model.addAttribute(ERROR_ATTRIBUTE, LOGIN_REQUIRED_MESSAGE);
+            model.addAttribute(ERROR_ATTRIBUTE, msg("stock.label.login.required"));
             return ERROR_VIEW;
         }
         request.setUserId(userId);
@@ -633,7 +635,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
                 .filter(p -> p.evaluationAmount() != null)
                 .collect(
                         Collectors.toMap(
-                                p -> p.stockItemName() != null ? p.stockItemName() : UNKNOWN_LABEL,
+                                p -> p.stockItemName() != null ? p.stockItemName() : msg("stock.label.unknown"),
                                 TradeProfit::evaluationAmount,
                                 BigDecimal::add));
 

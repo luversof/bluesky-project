@@ -1,4 +1,4 @@
-package net.luversof.web.gate.stock.controller;
+﻿package net.luversof.web.gate.stock.controller;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -16,6 +16,7 @@ import java.util.UUID;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.springframework.context.MessageSource;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
@@ -50,8 +51,9 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                         TradeClient tradeClient,
                         AccountClient accountClient,
                         StockItemClient stockItemClient,
-                        DividendClient dividendClient) {
-                super(tradeProfitClient, tradeClient, accountClient, stockItemClient, dividendClient);
+                        DividendClient dividendClient,
+                        MessageSource messageSource) {
+                super(tradeProfitClient, tradeClient, accountClient, stockItemClient, dividendClient, messageSource);
         }
 
         @BlueskyPreAuthorize
@@ -70,7 +72,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
 
                 UUID userId = UserUtil.getUserId();
                 if (userId == null) {
-                        model.addAttribute(ERROR_ATTRIBUTE, LOGIN_REQUIRED_MESSAGE);
+                        model.addAttribute(ERROR_ATTRIBUTE, msg("stock.label.login.required"));
                         return ERROR_VIEW;
                 }
 
@@ -115,7 +117,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                                                                 t.accountId(),
                                                                 t.stockItemId(),
                                                                 stockItemNames.getOrDefault(t.stockItemId(),
-                                                                                UNKNOWN_LABEL),
+                                                                                msg("stock.label.unknown")),
                                                                 t.type(),
                                                                 t.quantity(),
                                                                 t.price(),
@@ -408,7 +410,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                 List<Activity> rawActivities = new ArrayList<>();
 
                 for (TradeResponse t : trades) {
-                        String stockName = stockItemNames.getOrDefault(t.stockItemId(), UNKNOWN_LABEL);
+                        String stockName = stockItemNames.getOrDefault(t.stockItemId(), msg("stock.label.unknown"));
                         String accountName = accountNamesMap.getOrDefault(t.accountId(), "Unknown Account");
                         rawActivities.add(
                                         new Activity(
@@ -425,7 +427,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                 for (DividendResponse d : dividends) {
                         String stockName = d.stockItemName() != null
                                         ? d.stockItemName()
-                                        : stockItemNames.getOrDefault(d.stockItemId(), UNKNOWN_LABEL);
+                                        : stockItemNames.getOrDefault(d.stockItemId(), msg("stock.label.unknown"));
                         String accountName = accountNamesMap.getOrDefault(d.accountId(), "Unknown Account");
                         rawActivities.add(
                                         new Activity(
@@ -510,7 +512,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                 List<Activity> rawActivities = new ArrayList<>();
 
                 for (TradeResponse t : trades) {
-                        String stockName = stockItemNames.getOrDefault(t.stockItemId(), UNKNOWN_LABEL);
+                        String stockName = stockItemNames.getOrDefault(t.stockItemId(), msg("stock.label.unknown"));
                         String accountName = accountNamesMap.getOrDefault(t.accountId(), "Unknown Account");
                         rawActivities.add(
                                         new Activity(
@@ -527,7 +529,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                 for (DividendResponse d : dividends) {
                         String stockName = d.stockItemName() != null
                                         ? d.stockItemName()
-                                        : stockItemNames.getOrDefault(d.stockItemId(), UNKNOWN_LABEL);
+                                        : stockItemNames.getOrDefault(d.stockItemId(), msg("stock.label.unknown"));
                         String accountName = accountNamesMap.getOrDefault(d.accountId(), "Unknown Account");
                         rawActivities.add(
                                         new Activity(
@@ -871,7 +873,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                 List<Activity> rawActivities = new ArrayList<>();
 
                 for (TradeResponse t : trades) {
-                        String stockName = stockItemNames.getOrDefault(t.stockItemId(), UNKNOWN_LABEL);
+                        String stockName = stockItemNames.getOrDefault(t.stockItemId(), msg("stock.label.unknown"));
                         String accountName = accountNamesMap.getOrDefault(t.accountId(), "Unknown Account");
                         rawActivities.add(
                                         new Activity(
@@ -888,7 +890,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                 for (DividendResponse d : dividends) {
                         String stockName = d.stockItemName() != null
                                         ? d.stockItemName()
-                                        : stockItemNames.getOrDefault(d.stockItemId(), UNKNOWN_LABEL);
+                                        : stockItemNames.getOrDefault(d.stockItemId(), msg("stock.label.unknown"));
                         String accountName = accountNamesMap.getOrDefault(d.accountId(), "Unknown Account");
                         rawActivities.add(
                                         new Activity(
