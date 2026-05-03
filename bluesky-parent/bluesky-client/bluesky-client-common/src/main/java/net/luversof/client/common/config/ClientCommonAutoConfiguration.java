@@ -26,7 +26,7 @@ public class ClientCommonAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  RestClient restClient(RestClient.Builder builder) {
+  RestClient restClient(@Qualifier("restClientBuilder") RestClient.Builder builder) {
     return builder.build();
   }
 

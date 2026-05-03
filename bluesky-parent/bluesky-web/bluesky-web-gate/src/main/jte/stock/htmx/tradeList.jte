@@ -11,6 +11,7 @@
 @import net.luversof.web.gate.stock.constant.TradeType
 @import java.time.format.DateTimeFormatter
 @import java.text.DecimalFormat
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param List<TradeResponse> tradeList
 @param List<TradeResponse> allTradeList = java.util.List.of()
@@ -44,6 +45,32 @@
     String sortDir = sort != null && sort.contains(",") ? sort.split(",")[1] : "";
     DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     DecimalFormat decimalFormat = new DecimalFormat("#,##0");
+    java.util.function.Function<Object, String> countMessage = value -> java.text.MessageFormat.format(MessageUtil.getMessage("common.count"), value);
+    String advancedSearchLabel = MessageUtil.getMessage("stock.trade.label.advanced.search");
+    String periodLabel = MessageUtil.getMessage("common.label.period");
+    String accountLabel = MessageUtil.getMessage("common.label.account");
+    String stockLabel = MessageUtil.getMessage("common.label.stock");
+    String allLabel = MessageUtil.getMessage("stock.label.period.all");
+    String searchLabel = MessageUtil.getMessage("common.button.search");
+    String resetLabel = MessageUtil.getMessage("common.button.reset");
+    String buyLabel = MessageUtil.getMessage("stock.trade.label.buy");
+    String sellLabel = MessageUtil.getMessage("stock.trade.label.sell");
+    String periodStatusLabel = MessageUtil.getMessage("stock.trade.label.period.status");
+    String realizedProfitLabel = MessageUtil.getMessage("stock.trade.label.realized.profit");
+    String tradingCostLabel = MessageUtil.getMessage("stock.trade.label.trading.cost");
+    String feeLabel = MessageUtil.getMessage("stock.trade.label.fee");
+    String tradingTaxLabel = MessageUtil.getMessage("stock.trade.label.trading.tax");
+    String buyConcentrationTitle = MessageUtil.getMessage("stock.trade.chart.title.buy.concentration");
+    String monthlyTradeAmountTitle = MessageUtil.getMessage("stock.trade.chart.title.monthly.trade.amount");
+    String detailListLabel = MessageUtil.getMessage("stock.trade.label.detail.list");
+    String dateLabel = MessageUtil.getMessage("common.label.date");
+    String typeLabel = MessageUtil.getMessage("common.label.type");
+    String unitPriceLabel = MessageUtil.getMessage("stock.trade.column.unit.price");
+    String quantityLabel = MessageUtil.getMessage("common.label.quantity");
+    String amountLabel = MessageUtil.getMessage("common.label.amount");
+    String noTradeDataLabel = MessageUtil.getMessage("stock.trade.message.no.data");
+    String totalLabelText = MessageUtil.getMessage("common.label.total");
+    java.util.function.Function<TradeType, String> tradeTypeLabel = type -> type == TradeType.BUY ? buyLabel : sellLabel;
 
     BigDecimal safeBuy = totalAllBuyAmount != null ? totalAllBuyAmount : BigDecimal.ZERO;
     BigDecimal safeSell = totalAllSellAmount != null ? totalAllSellAmount : BigDecimal.ZERO;
@@ -103,7 +130,7 @@
     <details class="mb-4"$unsafe{(selectedAccountId != null || selectedStockItemId != null || startDate != null) ? " open" : ""}>
         <summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
-            상세 검색
+            ${advancedSearchLabel}
             @template.stock.htmx.fragments.components.filterBadge(
                 selectedAccountId = selectedAccountId,
                 selectedStockItemId = selectedStockItemId,
@@ -119,7 +146,7 @@
           hx-trigger="submit">
 
         <div class="form-control w-full sm:w-auto">
-            <label class="label p-1"><span class="label-text text-xs">기간</span></label>
+            <label class="label p-1"><span class="label-text text-xs">${periodLabel}</span></label>
             <div class="join">
                 <input type="date" name="tradeUiStartDate" id="tradeStartDateInput" class="input input-sm input-bordered join-item" value="${startDate != null ? startDate.atZone(zone).toLocalDate().toString() : ""}">
                 <input type="date" name="tradeUiEndDate" id="tradeEndDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1).toString() : ""}">
@@ -131,9 +158,9 @@
         <input type="hidden" name="rangeMode" id="tradeRangeModeInput" value="${rangeMode != null ? rangeMode : ""}">
 
         <div class="form-control w-full sm:w-auto">
-            <label class="label p-1"><span class="label-text text-xs">계좌</span></label>
+            <label class="label p-1"><span class="label-text text-xs">${accountLabel}</span></label>
             <select name="accountIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="6">
-                <option value="">전체</option>
+                <option value="">${allLabel}</option>
                 @for(Account account : accountList)
                 <option value="${account.id().toString()}" selected="${account.id().equals(selectedAccountId)}">${account.name()}</option>
                 @endfor
@@ -141,9 +168,9 @@
         </div>
 
         <div class="form-control w-full sm:w-auto">
-            <label class="label p-1"><span class="label-text text-xs">종목</span></label>
+            <label class="label p-1"><span class="label-text text-xs">${stockLabel}</span></label>
             <select name="stockItemIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="6">
-                <option value="">전체</option>
+                <option value="">${allLabel}</option>
                 @for(StockItem stockItem : stockItemList)
                 <option value="${stockItem.id().toString()}" selected="${stockItem.id().equals(selectedStockItemId)}">${stockItem.name()}</option>
                 @endfor
@@ -155,14 +182,14 @@
             hx-target="#tradeListFragment"
             hx-select="#tradeListFragment"
             hx-swap="outerHTML"
-            hx-include="#tradeSearchForm">조회</button>
+            hx-include="#tradeSearchForm">${searchLabel}</button>
         <button type="button" class="btn btn-sm text-xs"
             hx-get="/stock/htmx/trade/list"
             hx-target="#tradeListFragment"
             hx-select="#tradeListFragment"
                 hx-swap="outerHTML"
                 hx-include="#tradeSearchForm"
-            data-selection-reset="true">초기화</button>
+            data-selection-reset="true">${resetLabel}</button>
     </form>
     </details>
 
@@ -174,14 +201,14 @@
         <!-- Card 1: 매수/매도 금액 -->
         <div class="card bg-base-100 shadow-sm border border-base-200">
             <div class="card-body p-4">
-                <div class="text-xs text-base-content/50 mb-1">기간 매매 현황</div>
+                <div class="text-xs text-base-content/50 mb-1">${periodStatusLabel}</div>
                 <div class="flex items-baseline gap-1 mb-2">
                     <span class="text-xl font-bold text-error amount-value">&#8361; ${decimalFormat.format(safeBuy)}</span>
-                    <span class="text-xs text-base-content/40">매수</span>
+                    <span class="text-xs text-base-content/40">${buyLabel}</span>
                 </div>
                 <div class="flex gap-4 text-xs text-base-content/50">
-                    <span>매도 <span class="font-medium text-info amount-value">&#8361; ${decimalFormat.format(safeSell)}</span></span>
-                    <span class="ml-auto">${totalItems}건</span>
+                    <span>${sellLabel} <span class="font-medium text-info amount-value">&#8361; ${decimalFormat.format(safeSell)}</span></span>
+                    <span class="ml-auto">${countMessage.apply(totalItems)}</span>
                 </div>
             </div>
         </div>
@@ -189,7 +216,7 @@
         <!-- Card 2: 실현손익 -->
         <div class="card bg-base-100 shadow-sm border border-base-200">
             <div class="card-body p-4">
-                <div class="text-xs text-base-content/50 mb-1">실현손익</div>
+                <div class="text-xs text-base-content/50 mb-1">${realizedProfitLabel}</div>
                 <div class="text-xl font-bold ${rpPositive ? "text-success" : "text-error"} amount-value">
                     ${rpPositive ? "+" : ""}&#8361; ${decimalFormat.format(safeRp)}
                 </div>
@@ -198,18 +225,18 @@
                         .filter(t -> t.type() == net.luversof.web.gate.stock.constant.TradeType.SELL)
                         .count() : 0L;
                 }
-                <div class="text-xs text-base-content/40 mt-1">매도 ${sellCount}건</div>
+                <div class="text-xs text-base-content/40 mt-1">${sellLabel} ${countMessage.apply(sellCount)}</div>
             </div>
         </div>
 
         <!-- Card 3: 거래 비용 -->
         <div class="card bg-base-100 shadow-sm border border-base-200">
             <div class="card-body p-4">
-                <div class="text-xs text-base-content/50 mb-1">거래 비용</div>
+                <div class="text-xs text-base-content/50 mb-1">${tradingCostLabel}</div>
                 <div class="text-xl font-bold amount-value">&#8361; ${decimalFormat.format(safeFee.add(safeTax))}</div>
                 <div class="flex gap-4 text-xs text-base-content/50 mt-1">
-                    <span>수수료 <span class="font-medium text-base-content/70 amount-value">&#8361; ${decimalFormat.format(safeFee)}</span></span>
-                    <span>거래세 <span class="font-medium text-base-content/70 amount-value">&#8361; ${decimalFormat.format(safeTax)}</span></span>
+                    <span>${feeLabel} <span class="font-medium text-base-content/70 amount-value">&#8361; ${decimalFormat.format(safeFee)}</span></span>
+                    <span>${tradingTaxLabel} <span class="font-medium text-base-content/70 amount-value">&#8361; ${decimalFormat.format(safeTax)}</span></span>
                 </div>
             </div>
         </div>
@@ -220,7 +247,7 @@
     <div class="flex flex-wrap gap-4 mb-4 overflow-visible">
 
         @template.stock.htmx.fragments.components.doughnutShell(
-            title = "매수 집중도",
+            title = buyConcentrationTitle,
             canvasId = "tradeDonutChart",
             legendId = "tradeDonutLegend",
             titleId = "tradeDonutTitle",
@@ -231,7 +258,7 @@
         )
 
         @template.stock.htmx.fragments.components.barShell(
-            title = "월별 매매 금액",
+            title = monthlyTradeAmountTitle,
             canvasId = "tradeMonthlyChart"
         )
 
@@ -243,7 +270,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform detail-arrow" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
             </svg>
-            상세 목록 (${totalItems}건)
+            ${detailListLabel} (${countMessage.apply(totalItems)})
         </summary>
 
         <div id="tradeListContainer" class="flex flex-col relative mt-2">
@@ -254,32 +281,32 @@
                         <th class="cursor-pointer hover:bg-base-300"
                             hx-get="/stock/htmx/trade/list" hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML" hx-include="#tradeSearchForm"
                             hx-vals='{"sort": "tradeDate,${sortField.equals("tradeDate") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-                            날짜 @if(sortField.equals("tradeDate"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
+                            ${dateLabel} @if(sortField.equals("tradeDate"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
                         </th>
                         <th class="cursor-pointer hover:bg-base-300"
                             hx-get="/stock/htmx/trade/list" hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML" hx-include="#tradeSearchForm"
                             hx-vals='{"sort": "stockItemName,${sortField.equals("stockItemName") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-                            종목 @if(sortField.equals("stockItemName"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
+                            ${stockLabel} @if(sortField.equals("stockItemName"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
                         </th>
-                        <th>구분</th>
-                        <th class="hidden sm:table-cell">계좌</th>
-                        <th class="text-right">단가</th>
-                        <th class="text-right">수량</th>
+                        <th>${typeLabel}</th>
+                        <th class="hidden sm:table-cell">${accountLabel}</th>
+                        <th class="text-right">${unitPriceLabel}</th>
+                        <th class="text-right">${quantityLabel}</th>
                         <th class="text-right cursor-pointer hover:bg-base-300"
                             hx-get="/stock/htmx/trade/list" hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML" hx-include="#tradeSearchForm"
                             hx-vals='{"sort": "amount,${sortField.equals("amount") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-                            금액 @if(sortField.equals("amount"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
+                            ${amountLabel} @if(sortField.equals("amount"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
                         </th>
                         <th class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell"
                             hx-get="/stock/htmx/trade/list" hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML" hx-include="#tradeSearchForm"
                             hx-vals='{"sort": "fee,${sortField.equals("fee") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-                            수수료 @if(sortField.equals("fee"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
+                            ${feeLabel} @if(sortField.equals("fee"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
                         </th>
-                        <th class="text-right hidden lg:table-cell">거래세</th>
+                        <th class="text-right hidden lg:table-cell">${tradingTaxLabel}</th>
                         <th class="text-right cursor-pointer hover:bg-base-300"
                             hx-get="/stock/htmx/trade/list" hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML" hx-include="#tradeSearchForm"
                             hx-vals='{"sort": "realizedProfit,${sortField.equals("realizedProfit") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-                            실현손익 @if(sortField.equals("realizedProfit"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
+                            ${realizedProfitLabel} @if(sortField.equals("realizedProfit"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
                         </th>
                     </tr>
                     </thead>
@@ -290,7 +317,7 @@
                         <td class="font-bold whitespace-nowrap">${trade.stockItemName()}</td>
                         <td>
                             <span class="${trade.type() == TradeType.BUY ? "badge badge-error badge-outline badge-sm" : "badge badge-info badge-outline badge-sm"}">
-                                ${trade.type() == TradeType.BUY ? "매수" : "매도"}
+                                ${tradeTypeLabel.apply(trade.type())}
                             </span>
                         </td>
                         <td class="whitespace-nowrap hidden sm:table-cell">${accountNames != null ? accountNames.getOrDefault(trade.accountId(), "") : ""}</td>
@@ -306,13 +333,13 @@
                     @endfor
                     @if(tradeList == null || tradeList.isEmpty())
                     <tr>
-                        <td colspan="10" class="text-center py-10 opacity-50">거래 내역이 없습니다.</td>
+                        <td colspan="10" class="text-center py-10 opacity-50">${noTradeDataLabel}</td>
                     </tr>
                     @endif
                     </tbody>
                     <tfoot>
                         <tr class="font-bold bg-base-200">
-                            <td colspan="6" class="text-right pr-4">합계</td>
+                            <td colspan="6" class="text-right pr-4">${totalLabelText}</td>
                             <td class="text-right font-mono amount-value"></td>
                             <td class="text-right font-mono amount-value hidden lg:table-cell">${totalFee != null ? decimalFormat.format(totalFee) : "0"}</td>
                             <td class="text-right font-mono amount-value hidden lg:table-cell">${totalTax != null ? decimalFormat.format(totalTax) : "0"}</td>

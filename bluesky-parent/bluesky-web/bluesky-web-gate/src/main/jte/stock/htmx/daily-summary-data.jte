@@ -2,6 +2,7 @@
 @import java.math.BigDecimal
 @import net.luversof.web.gate.stock.controller.StockBaseHtmxController.AnalyticsRow
 @import net.luversof.web.gate.stock.controller.StockBaseHtmxController.ChartDataset
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param String chartTitle
 @param String keyLabel
@@ -18,6 +19,8 @@
 @param List<String> chartLabels
 @param List<ChartDataset> chartDatasets
 @param String canvasId
+
+!{String topItemsLimitMessage = java.text.MessageFormat.format(MessageUtil.getMessage("stock.chart.message.top.items.limit"), 20);}
 
 <!-- 2. Data Content Fragment -->
 <div class="flex flex-col gap-6 animate-fade-in">
@@ -99,7 +102,7 @@
                 <div class="h-[300px] w-full relative">
                      <canvas id="${canvasId}" class="amount-chart"></canvas>
                 </div>
-                <div class="text-xs text-right opacity-50 mt-2">* 상위 20개 항목만 표시됩니다.</div>
+                <div class="text-xs text-right opacity-50 mt-2">* ${topItemsLimitMessage}</div>
             </div>
         </div>
     @endif
@@ -142,8 +145,8 @@
                     @if(tableData == null || tableData.isEmpty())
                         <tr>
                             <td colspan="7" class="text-center py-10 text-base-content/50">
-                                <div>데이터가 없습니다.</div>
-                                <div class="text-xs mt-1">기간이나 조건을 변경해보세요.</div>
+                                <div>${MessageUtil.getMessage("common.message.no.data")}</div>
+                                <div class="text-xs mt-1">${MessageUtil.getMessage("common.message.try.other.filters")}</div>
                             </td>
                         </tr>
                     @else
@@ -211,7 +214,7 @@
                 @if(tableData != null && !tableData.isEmpty())
                     <tfoot class="bg-base-200 font-bold">
                         <tr>
-                            <td colspan="${subKeyLabel != null ? 2 : 1}" class="text-center text-base-content">합계</td>
+                            <td colspan="${subKeyLabel != null ? 2 : 1}" class="text-center text-base-content">${MessageUtil.getMessage("common.label.total")}</td>
                             
                             <!-- Total Value 1 -->
                             @if(value1Label != null && !value1Label.isEmpty())
@@ -360,7 +363,7 @@
                                     label += ": ";
                                 }
                                 if (context.parsed.y !== null) {
-                                    label += new Intl.NumberFormat("ko-KR").format(context.parsed.y);
+                                    label += window.StockCharts ? window.StockCharts.formatNumber(context.parsed.y) : new Intl.NumberFormat().format(context.parsed.y);
                                 }
                                 return label;
                             }
@@ -372,12 +375,10 @@
                         beginAtZero: true,
                         ticks: {
                             callback: function(value) {
-                                if (value >= 100000000 || value <= -100000000) {
-                                    return (value / 100000000).toFixed(1) + "억";
-                                } else if (value >= 10000 || value <= -10000) {
-                                    return (value / 10000).toFixed(0) + "만";
+                                if (window.StockCharts) {
+                                    return window.StockCharts.formatCompactNumber(value);
                                 }
-                                return new Intl.NumberFormat("ko-KR").format(value);
+                                return new Intl.NumberFormat().format(value);
                             }
                         }
                     }

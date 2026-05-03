@@ -2,25 +2,43 @@
 @import java.util.List
 @import java.util.Map
 @import net.luversof.web.gate.stock.domain.TradeProfit
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param Map<String, TradeProfit> accountTotalMap
 @param List<TradeProfit> stockAggregated
 @param BigDecimal totalEvaluationAmount
 @param BigDecimal totalEvaluationProfit
 
+!{
+    String accountSectionTitle = MessageUtil.getMessage("stock.analytics.section.account.status");
+    String stockSectionTitle = MessageUtil.getMessage("stock.analytics.section.stock.status");
+    String allAccountsLabel = MessageUtil.getMessage("stock.analytics.section.all.accounts");
+    String accountLabel = MessageUtil.getMessage("common.label.account");
+    String stockMenuLabel = MessageUtil.getMessage("layout.menu.main.stock");
+    String stockNameLabel = MessageUtil.getMessage("stock.activity.label.stock.name");
+    String quantityLabel = MessageUtil.getMessage("common.label.quantity");
+    String averageCostLabel = MessageUtil.getMessage("stock.column.average.cost");
+    String currentPriceLabel = MessageUtil.getMessage("stock.column.current.price");
+    String evaluationAmountLabel = MessageUtil.getMessage("stock.profit.evaluation.amount");
+    String principalLabel = MessageUtil.getMessage("stock.label.principal");
+    String evaluationProfitLabel = MessageUtil.getMessage("stock.profit.unrealized");
+    String totalLabel = MessageUtil.getMessage("common.label.total");
+    String noHoldingsLabel = MessageUtil.getMessage("stock.message.no.holdings");
+}
+
 <div class="flex flex-col gap-6">
 
     <!-- Section 1: 계좌별 현황 테이블 -->
     <div>
-        <h2 class="text-lg font-semibold mb-3 opacity-70">계좌별 현황</h2>
+        <h2 class="text-lg font-semibold mb-3 opacity-70">${accountSectionTitle}</h2>
         <div class="card bg-base-100 shadow-md overflow-x-auto">
             <table class="table table-sm w-full">
                 <thead class="bg-base-200">
                     <tr>
-                        <th>계좌명</th>
-                        <th class="text-right">평가금액</th>
-                        <th class="text-right hidden sm:table-cell">투자원금</th>
-                        <th class="text-right">평가손익</th>
+                        <th>${accountLabel}</th>
+                        <th class="text-right">${evaluationAmountLabel}</th>
+                        <th class="text-right hidden sm:table-cell">${principalLabel}</th>
+                        <th class="text-right">${evaluationProfitLabel}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -35,7 +53,7 @@
                     <tr class="hover">
                         <td>
                             <div class="font-semibold">${entry.getKey()}</div>
-                            <div class="text-xs opacity-50">주식</div>
+                            <div class="text-xs opacity-50">${stockMenuLabel}</div>
                         </td>
                         <td class="text-right font-bold font-mono amount-value text-principal">
                             ${String.format("%,d", acc.evaluationAmount() != null ? acc.evaluationAmount().longValue() : 0)}
@@ -59,7 +77,7 @@
                         ? totalEvaluationAmount.subtract(totalEvaluationProfit)
                         : BigDecimal.ZERO;}
                     <tr>
-                        <td>합계</td>
+                        <td>${totalLabel}</td>
                         <td class="text-right font-mono amount-value text-principal">
                             ${String.format("%,d", totalEvaluationAmount != null ? totalEvaluationAmount.longValue() : 0)}
                         </td>
@@ -77,24 +95,24 @@
 
     <!-- Section 2: 종목별 집계 테이블 (계좌 통합) -->
     <div>
-        <h2 class="text-lg font-semibold mb-3 opacity-70">종목별 현황 <span class="text-xs font-normal opacity-60">(전체 계좌 합산)</span></h2>
+        <h2 class="text-lg font-semibold mb-3 opacity-70">${stockSectionTitle} <span class="text-xs font-normal opacity-60">(${allAccountsLabel})</span></h2>
         <div class="card bg-base-100 shadow-md overflow-x-auto">
             <table class="table table-sm table-zebra w-full">
                 <thead class="bg-base-200">
                     <tr>
-                        <th>종목명</th>
-                        <th class="text-right hidden lg:table-cell">보유수량</th>
-                        <th class="text-right hidden xl:table-cell">평균단가</th>
-                        <th class="text-right hidden lg:table-cell">현재가</th>
-                        <th class="text-right">평가금액</th>
-                        <th class="text-right hidden sm:table-cell">투자원금</th>
-                        <th class="text-right">평가손익</th>
+                        <th>${stockNameLabel}</th>
+                        <th class="text-right hidden lg:table-cell">${quantityLabel}</th>
+                        <th class="text-right hidden xl:table-cell">${averageCostLabel}</th>
+                        <th class="text-right hidden lg:table-cell">${currentPriceLabel}</th>
+                        <th class="text-right">${evaluationAmountLabel}</th>
+                        <th class="text-right hidden sm:table-cell">${principalLabel}</th>
+                        <th class="text-right">${evaluationProfitLabel}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if(stockAggregated == null || stockAggregated.isEmpty())
                         <tr>
-                            <td colspan="7" class="text-center py-8 opacity-50">보유 종목이 없습니다.</td>
+                            <td colspan="7" class="text-center py-8 opacity-50">${noHoldingsLabel}</td>
                         </tr>
                     @else
                         @for(TradeProfit item : stockAggregated)
@@ -123,7 +141,7 @@
                         ? stockAggregated.stream().map(i -> i.totalBuyCost() != null ? i.totalBuyCost() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add)
                         : BigDecimal.ZERO;}
                     <tr>
-                        <td>합계</td>
+                        <td>${totalLabel}</td>
                         <td class="hidden lg:table-cell"></td>
                         <td class="hidden xl:table-cell"></td>
                         <td class="hidden lg:table-cell"></td>

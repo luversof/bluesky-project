@@ -3,6 +3,7 @@
 @import java.util.List
 @import java.util.Map
 @import net.luversof.web.gate.stock.domain.TradeProfit
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param Map<String, TradeProfit> accountRealizedMap
 @param List<TradeProfit> stockRealizedList
@@ -51,6 +52,42 @@
         boolean canNext = !isAllMode && endLocal != null && endLocal.isBefore(today);
         boolean canPrev = !isAllMode && startLocal != null && dataFirstDate != null && !dataFirstDate.isEmpty()
             && startLocal.isAfter(java.time.LocalDate.parse(dataFirstDate));
+
+            String detailSearchLabel = MessageUtil.getMessage("common.label.detail") + " " + MessageUtil.getMessage("common.button.search");
+            String periodLabel = MessageUtil.getMessage("common.label.period");
+            String accountLabel = MessageUtil.getMessage("common.label.account");
+            String stockNameLabel = MessageUtil.getMessage("stock.activity.label.stock.name");
+            String allLabel = MessageUtil.getMessage("common.label.all");
+            String searchLabel = MessageUtil.getMessage("common.button.search");
+            String resetLabel = MessageUtil.getMessage("common.button.reset");
+            String stockMenuLabel = MessageUtil.getMessage("layout.menu.main.stock");
+            String realizedProfitLabel = MessageUtil.getMessage("stock.profit.realized");
+            String unrealizedProfitLabel = MessageUtil.getMessage("stock.profit.unrealized");
+            String returnRateLabel = MessageUtil.getMessage("stock.label.return.rate");
+            String totalLabel = MessageUtil.getMessage("common.label.total");
+            String sharesLabel = MessageUtil.getMessage("stock.activity.label.shares");
+            String totalRealizedNetLabel = MessageUtil.getMessage("stock.realized.summary.total.net");
+            String soldCostLabel = MessageUtil.getMessage("stock.realized.summary.sold.cost");
+            String bestStockLabel = MessageUtil.getMessage("stock.realized.summary.best.stock");
+            String worstStockLabel = MessageUtil.getMessage("stock.realized.summary.worst.stock");
+            String totalFeesLabel = MessageUtil.getMessage("stock.realized.summary.total.fees");
+            String totalFeesDescLabel = MessageUtil.getMessage("stock.realized.summary.total.fees.desc");
+            String profitableStockRatioLabel = MessageUtil.getMessage("stock.summary.label.profitable.stock.ratio");
+            String winCountLabel = java.text.MessageFormat.format(
+                MessageUtil.getMessage("stock.realized.summary.win.count"),
+                stockRealizedList != null ? stockRealizedList.stream().filter(tp -> tp.realizedProfitNet() != null && tp.realizedProfitNet().compareTo(BigDecimal.ZERO) > 0).count() : 0,
+                stockRealizedList != null ? stockRealizedList.size() : 0);
+            String topProfitChartLabel = java.text.MessageFormat.format(MessageUtil.getMessage("stock.realized.chart.profit.top"), chartProfitLabels != null ? chartProfitLabels.size() : 0);
+            String topLossChartLabel = java.text.MessageFormat.format(MessageUtil.getMessage("stock.realized.chart.loss.top"), chartLossLabels != null ? chartLossLabels.size() : 0);
+            String byAccountSectionLabel = MessageUtil.getMessage("stock.realized.section.by.account");
+            String byStockSectionLabel = MessageUtil.getMessage("stock.realized.section.by.stock");
+            String byStockSectionSubtitle = MessageUtil.getMessage("stock.realized.section.by.stock.subtitle");
+            String showAllLabel = java.text.MessageFormat.format(MessageUtil.getMessage("stock.realized.button.show.all"), stockRealizedList != null ? stockRealizedList.size() : 0);
+            String collapseLabel = MessageUtil.getMessage("stock.realized.button.collapse");
+            String soldCostColumnLabel = MessageUtil.getMessage("stock.realized.column.sold.cost");
+            String sellQuantityLabel = MessageUtil.getMessage("stock.realized.column.sell.quantity");
+            String noRealizedHistoryLabel = MessageUtil.getMessage("stock.realized.message.no.history");
+            String fullySoldLabel = MessageUtil.getMessage("stock.realized.badge.fully.sold");
     }
     @template.stock.htmx.fragments.dateRangeNavBar(
         pickerName = "realizedProfitPicker",
@@ -65,7 +102,7 @@
     <details class="mb-4"$unsafe{startDate != null ? " open" : ""}>
         <summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
-            상세 검색
+            ${detailSearchLabel}
             @template.stock.htmx.fragments.components.filterBadge(
                 startDate = startDate,
                 endDate = endDate
@@ -78,16 +115,16 @@
           hx-swap="outerHTML"
           hx-trigger="submit">
         <div class="form-control w-full sm:w-auto">
-            <label class="label p-1"><span class="label-text text-xs">기간</span></label>
+            <label class="label p-1"><span class="label-text text-xs">${periodLabel}</span></label>
             <div class="join">
                 <input type="date" name="realizedUiStartDate" id="realizedStartDateInput" class="input input-sm input-bordered join-item" value="${startDate != null ? startDate.atZone(zone).toLocalDate().toString() : ""}">
                 <input type="date" name="realizedUiEndDate" id="realizedEndDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1).toString() : ""}">
             </div>
         </div>
             <div class="form-control w-full sm:w-auto">
-                <label class="label p-1"><span class="label-text text-xs">계좌</span></label>
+                <label class="label p-1"><span class="label-text text-xs">${accountLabel}</span></label>
                 <select name="accountIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="6">
-                    <option value="">전체</option>
+                    <option value="">${allLabel}</option>
                     @if(accountList != null)
                         @for(net.luversof.web.gate.stock.domain.Account account : accountList)
                             <option value="${account.id().toString()}" selected="${selectedAccountId != null && account.id().equals(selectedAccountId)}">${account.name()}</option>
@@ -97,9 +134,9 @@
             </div>
 
             <div class="form-control w-full sm:w-auto">
-                <label class="label p-1"><span class="label-text text-xs">종목</span></label>
+                <label class="label p-1"><span class="label-text text-xs">${stockNameLabel}</span></label>
                 <select name="stockItemIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="6">
-                    <option value="">전체</option>
+                    <option value="">${allLabel}</option>
                     @if(stockItemList != null)
                         @for(net.luversof.web.gate.stock.domain.StockItem stockItem : stockItemList)
                             <option value="${stockItem.id().toString()}" selected="${selectedStockItemId != null && stockItem.id().equals(selectedStockItemId)}">${stockItem.name()}</option>
@@ -116,14 +153,14 @@
             hx-target="#realizedProfitFragment"
             hx-select="#realizedProfitFragment"
             hx-swap="outerHTML"
-            hx-include="#realizedProfitSearchForm">조회</button>
+            hx-include="#realizedProfitSearchForm">${searchLabel}</button>
         <button type="button" class="btn btn-sm text-xs"
             hx-get="/stock/htmx/realized-profit"
             hx-target="#realizedProfitFragment"
             hx-select="#realizedProfitFragment"
                 hx-swap="outerHTML"
                 hx-include="#realizedProfitSearchForm"
-            data-selection-reset="true">초기화</button>
+            data-selection-reset="true">${resetLabel}</button>
     </form>
     </details>
 
@@ -136,12 +173,12 @@
             <div class="stat-figure text-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
             </div>
-            <div class="stat-title">총 실현손익 (순)</div>
+            <div class="stat-title">${totalRealizedNetLabel}</div>
             <div class="stat-value font-bold amount-value ${totalRealizedProfit != null && totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                 ${String.format("%+,d", totalRealizedProfit != null ? totalRealizedProfit.longValue() : 0)}
             </div>
             <div class="stat-desc mt-1 opacity-60">
-                매도 원가: <span class="amount-value">${String.format("%,d", totalSoldCost.longValue())}</span>
+                ${soldCostLabel}: <span class="amount-value">${String.format("%,d", totalSoldCost.longValue())}</span>
             </div>
         </div>
 
@@ -154,7 +191,7 @@
             <div class="stat-figure text-success">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
             </div>
-            <div class="stat-title">최고 수익 종목</div>
+            <div class="stat-title">${bestStockLabel}</div>
             <div class="stat-value text-base font-bold text-profit">
                 ${bestStock.stockItemName() != null ? bestStock.stockItemName() : "-"}
             </div>
@@ -174,7 +211,7 @@
             <div class="stat-figure text-error">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>
             </div>
-            <div class="stat-title">최대 손실 종목</div>
+            <div class="stat-title">${worstStockLabel}</div>
             <div class="stat-value text-base font-bold text-loss">
                 ${worstStock.stockItemName() != null ? worstStock.stockItemName() : "-"}
             </div>
@@ -189,23 +226,20 @@
             <div class="stat-figure text-warning">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
             </div>
-            <div class="stat-title">총 거래비용 (수수료+세금)</div>
+            <div class="stat-title">${totalFeesLabel}</div>
             <div class="stat-value text-base font-bold amount-value text-warning">
                 ${String.format("%,d", totalFees != null ? totalFees.longValue() : 0)}
             </div>
-            <div class="stat-desc mt-1 opacity-70">매수·매도 수수료 + 거래세</div>
+            <div class="stat-desc mt-1 opacity-70">${totalFeesDescLabel}</div>
         </div>
 
         <div class="stat">
             <div class="stat-figure text-accent">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
             </div>
-            <div class="stat-title">수익 종목 비율</div>
+            <div class="stat-title">${profitableStockRatioLabel}</div>
             <div class="stat-value font-bold text-accent">${String.format("%.1f%%", winRate)}</div>
-            <div class="stat-desc mt-1">
-                ${(long)(stockRealizedList != null ? stockRealizedList.stream().filter(tp -> tp.realizedProfitNet() != null && tp.realizedProfitNet().compareTo(BigDecimal.ZERO) > 0).count() : 0)}승 /
-                ${stockRealizedList != null ? stockRealizedList.size() : 0}종목
-            </div>
+            <div class="stat-desc mt-1">${winCountLabel}</div>
         </div>
 
     </div>
@@ -216,7 +250,7 @@
         @if(chartProfitLabels != null && !chartProfitLabels.isEmpty())
         <div class="card bg-base-100 shadow-md">
             <div class="card-body p-4">
-                <h2 class="text-base font-semibold mb-2 text-profit">수익 Top ${chartProfitLabels.size()}</h2>
+                <h2 class="text-base font-semibold mb-2 text-profit">${topProfitChartLabel}</h2>
                 <div class="relative w-full amount-chart" style="height: ${Math.max(160, chartProfitLabels.size() * 40)}px;">
                     <canvas id="chartProfit"></canvas>
                 </div>
@@ -232,11 +266,14 @@
             @for(Long val : chartProfitValues)
                 values.push($unsafe{String.valueOf(val)});
             @endfor
+            var formatCurrency = function(value) { return window.StockCharts ? window.StockCharts.formatCurrency(value) : ('₩' + Math.round(value).toLocaleString()); };
+            var formatSignedCurrency = function(value) { return (value >= 0 ? '+' : '-') + formatCurrency(Math.abs(value)); };
+            var formatNumber = function(value) { return window.StockCharts ? window.StockCharts.formatNumber(value) : new Intl.NumberFormat(window.StockCharts ? window.StockCharts.getLocale() : undefined).format(value); };
             var config = {
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{ label: '실현손익', data: values,
+                    datasets: [{ label: '${realizedProfitLabel}', data: values,
                         backgroundColor: 'rgba(34,197,94,0.7)', borderColor: 'rgb(34,197,94)',
                         borderWidth: 1, borderRadius: 4 }]
                 },
@@ -244,10 +281,10 @@
                     indexAxis: 'y', responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { display: false },
                         tooltip: { callbacks: { label: function(c) {
-                            return ' +' + c.parsed.x.toLocaleString() + '원'; } } } },
+                            return ' ' + formatSignedCurrency(c.parsed.x); } } } },
                     scales: {
                         x: { ticks: { callback: function(v) {
-                            return v.toLocaleString(); } } },
+                            return window.StockCharts ? window.StockCharts.formatCompactNumber(v) : formatNumber(v); } } },
                         y: { ticks: { font: { size: 12 } } }
                     }
                 }
@@ -260,7 +297,7 @@
         @if(chartLossLabels != null && !chartLossLabels.isEmpty())
         <div class="card bg-base-100 shadow-md">
             <div class="card-body p-4">
-                <h2 class="text-base font-semibold mb-2 text-loss">손실 Worst ${chartLossLabels.size()}</h2>
+                <h2 class="text-base font-semibold mb-2 text-loss">${topLossChartLabel}</h2>
                 <div class="relative w-full amount-chart" style="height: ${Math.max(160, chartLossLabels.size() * 40)}px;">
                     <canvas id="chartLoss"></canvas>
                 </div>
@@ -276,11 +313,13 @@
             @for(Long val : chartLossValues)
                 values.push($unsafe{String.valueOf(val)});
             @endfor
+            var formatCurrency = function(value) { return window.StockCharts ? window.StockCharts.formatCurrency(value) : ('₩' + Math.round(value).toLocaleString()); };
+            var formatNumber = function(value) { return window.StockCharts ? window.StockCharts.formatNumber(value) : new Intl.NumberFormat(window.StockCharts ? window.StockCharts.getLocale() : undefined).format(value); };
             var config = {
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{ label: '실현손익', data: values,
+                    datasets: [{ label: '${realizedProfitLabel}', data: values,
                         backgroundColor: 'rgba(239,68,68,0.7)', borderColor: 'rgb(239,68,68)',
                         borderWidth: 1, borderRadius: 4 }]
                 },
@@ -288,10 +327,10 @@
                     indexAxis: 'y', responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { display: false },
                         tooltip: { callbacks: { label: function(c) {
-                            return ' ' + c.parsed.x.toLocaleString() + '원'; } } } },
+                            return ' ' + formatCurrency(c.parsed.x); } } } },
                     scales: {
                         x: { ticks: { callback: function(v) {
-                            return v.toLocaleString(); } } },
+                            return window.StockCharts ? window.StockCharts.formatCompactNumber(v) : formatNumber(v); } } },
                         y: { ticks: { font: { size: 12 } } }
                     }
                 }
@@ -305,21 +344,21 @@
 
     <!-- Section 2: 계좌별 실현손익 -->
     <div>
-        <h2 class="text-lg font-semibold mb-3 opacity-70">계좌별 실현손익</h2>
+        <h2 class="text-lg font-semibold mb-3 opacity-70">${byAccountSectionLabel}</h2>
         <div class="card bg-base-100 shadow-md overflow-x-auto">
             <table id="accountRealizedTable" class="table table-sm w-full">
                 <thead class="bg-base-200">
                     <tr>
-                        <th class="cursor-pointer select-none" onclick="sortAccountTable(0)" title="계좌명 정렬">
-                            계좌명 <span id="acc-sort-icon-0" class="opacity-40">↕</span>
+                        <th class="cursor-pointer select-none" onclick="sortAccountTable(0)">
+                            ${accountLabel} <span id="acc-sort-icon-0" class="opacity-40">↕</span>
                         </th>
-                        <th class="text-right cursor-pointer select-none" onclick="sortAccountTable(1)" title="실현손익 정렬">
-                            실현손익 <span id="acc-sort-icon-1" class="opacity-40">↕</span>
+                        <th class="text-right cursor-pointer select-none" onclick="sortAccountTable(1)">
+                            ${realizedProfitLabel} <span id="acc-sort-icon-1" class="opacity-40">↕</span>
                         </th>
-                        <th class="text-right hidden sm:table-cell cursor-pointer select-none" onclick="sortAccountTable(2)" title="수익률 정렬">
-                            수익률 <span id="acc-sort-icon-2" class="opacity-40">↕</span>
+                        <th class="text-right hidden sm:table-cell cursor-pointer select-none" onclick="sortAccountTable(2)">
+                            ${returnRateLabel} <span id="acc-sort-icon-2" class="opacity-40">↕</span>
                         </th>
-                        <th class="text-right hidden sm:table-cell">평가손익</th>
+                        <th class="text-right hidden sm:table-cell">${unrealizedProfitLabel}</th>
                     </tr>
                 </thead>
                 <tbody id="accountRealizedTbody">
@@ -333,7 +372,7 @@
                     <tr class="hover account-row" data-initial="${accIdx[0]}">
                         <td data-val="${entry.getKey()}">
                             <div class="font-semibold">${entry.getKey()}</div>
-                            <div class="text-xs opacity-50">주식</div>
+                            <div class="text-xs opacity-50">${stockMenuLabel}</div>
                         </td>
                         <td class="text-right font-bold font-mono amount-value ${acc.realizedProfit() != null && acc.realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}"
                             data-val="$unsafe{acc.realizedProfit() != null ? acc.realizedProfit().toPlainString() : "0"}">
@@ -354,7 +393,7 @@
                         .map(acc -> acc.realizedProfit() != null ? acc.realizedProfit() : BigDecimal.ZERO)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);}
                     <tr>
-                        <td>합계</td>
+                        <td>${totalLabel}</td>
                         <td class="text-right font-mono amount-value ${totalAccountRealized.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                             ${String.format("%+,d", totalAccountRealized.longValue())}
                         </td>
@@ -369,13 +408,13 @@
     <!-- Section 3: 종목별 실현손익 -->
     <div>
         <div class="flex items-center justify-between mb-3">
-            <h2 class="text-lg font-semibold opacity-70">종목별 실현손익
-                <span class="text-xs font-normal opacity-60">(실현손익 발생 종목 · 전체 계좌 합산)</span>
+            <h2 class="text-lg font-semibold opacity-70">${byStockSectionLabel}
+                <span class="text-xs font-normal opacity-60">(${byStockSectionSubtitle})</span>
             </h2>
             @if(stockRealizedList != null && stockRealizedList.size() > 10)
             <button id="toggleStockTable" data-expanded="false" onclick="toggleStockRows()"
                 class="btn btn-xs btn-ghost opacity-70">
-                전체 ${stockRealizedList.size()}개 보기 ▼
+                ${showAllLabel} ▼
             </button>
             @endif
         </div>
@@ -383,26 +422,26 @@
             <table id="stockRealizedTable" class="table table-sm table-zebra w-full">
                 <thead class="bg-base-200">
                     <tr>
-                        <th class="cursor-pointer select-none" onclick="sortStockTable(0)" title="종목명 정렬">
-                            종목명 <span id="sort-icon-0" class="opacity-40">↕</span>
+                        <th class="cursor-pointer select-none" onclick="sortStockTable(0)">
+                            ${stockNameLabel} <span id="sort-icon-0" class="opacity-40">↕</span>
                         </th>
-                        <th class="text-right cursor-pointer select-none" onclick="sortStockTable(1)" title="실현손익 정렬">
-                            실현손익 <span id="sort-icon-1" class="opacity-40">↕</span>
+                        <th class="text-right cursor-pointer select-none" onclick="sortStockTable(1)">
+                            ${realizedProfitLabel} <span id="sort-icon-1" class="opacity-40">↕</span>
                         </th>
-                        <th class="text-right hidden sm:table-cell cursor-pointer select-none" onclick="sortStockTable(2)" title="수익률 정렬">
-                            수익률 <span id="sort-icon-2" class="opacity-40">↕</span>
+                        <th class="text-right hidden sm:table-cell cursor-pointer select-none" onclick="sortStockTable(2)">
+                            ${returnRateLabel} <span id="sort-icon-2" class="opacity-40">↕</span>
                         </th>
-                        <th class="text-right hidden md:table-cell cursor-pointer select-none" onclick="sortStockTable(3)" title="매도분 원가 정렬">
-                            매도분 원가 <span id="sort-icon-3" class="opacity-40">↕</span>
+                        <th class="text-right hidden md:table-cell cursor-pointer select-none" onclick="sortStockTable(3)">
+                            ${soldCostColumnLabel} <span id="sort-icon-3" class="opacity-40">↕</span>
                         </th>
-                        <th class="text-right hidden lg:table-cell">총 거래비용</th>
-                        <th class="text-right hidden xl:table-cell">매도수량</th>
+                        <th class="text-right hidden lg:table-cell">${totalFeesLabel}</th>
+                        <th class="text-right hidden xl:table-cell">${sellQuantityLabel}</th>
                     </tr>
                 </thead>
                 <tbody id="stockRealizedTbody">
                     @if(stockRealizedList == null || stockRealizedList.isEmpty())
                         <tr>
-                            <td colspan="6" class="text-center py-8 opacity-50">실현손익 내역이 없습니다.</td>
+                            <td colspan="6" class="text-center py-8 opacity-50">${noRealizedHistoryLabel}</td>
                         </tr>
                     @else
                         !{int[] rowIdx = {0};}
@@ -424,9 +463,9 @@
                                     <div class="font-semibold">${item.stockItemName() != null ? item.stockItemName() : "-"}</div>
                                     <div class="flex items-center gap-1 mt-0.5">
                                         @if(item.holdingQuantity() == 0)
-                                            <span class="badge badge-xs badge-ghost opacity-60">전량매도</span>
+                                            <span class="badge badge-xs badge-ghost opacity-60">${fullySoldLabel}</span>
                                         @else
-                                            <span class="badge badge-xs badge-outline opacity-60">보유 ${item.holdingQuantity()}주</span>
+                                            <span class="badge badge-xs badge-outline opacity-60">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.realized.badge.holding"), item.holdingQuantity())}</span>
                                         @endif
                                     </div>
                                 </td>
@@ -448,7 +487,7 @@
                                     ${String.format("%,d", itemFees.longValue())}
                                 </td>
                                 <td class="text-right font-mono hidden xl:table-cell opacity-70">
-                                    ${item.totalSellQuantity()}주
+                                    ${item.totalSellQuantity()}${sharesLabel}
                                 </td>
                             </tr>
                         @endfor
@@ -465,7 +504,7 @@
                           }).reduce(BigDecimal.ZERO, BigDecimal::add)
                         : BigDecimal.ZERO;}
                     <tr>
-                        <td>합계</td>
+                        <td>${totalLabel}</td>
                         <td class="text-right font-mono amount-value ${totalRealizedProfit != null && totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                             ${String.format("%+,d", totalRealizedProfit != null ? totalRealizedProfit.longValue() : 0)}
                         </td>
@@ -487,6 +526,9 @@
     (function() {
         var sortState = { col: -1, asc: false };
         var INITIAL_SHOW = 10;
+        var compareLocale = window.StockCharts ? window.StockCharts.getLocale() : undefined;
+        var showAllLabel = '${showAllLabel}';
+        var collapseLabel = '${collapseLabel}';
 
         function applyVisibility() {
             var rows = document.querySelectorAll('#stockRealizedTbody .stock-row');
@@ -502,8 +544,7 @@
             if (!btn) return;
             var expanded = btn.dataset.expanded === 'true';
             btn.dataset.expanded = expanded ? 'false' : 'true';
-            var total = document.querySelectorAll('#stockRealizedTbody .stock-row').length;
-            btn.textContent = (!expanded) ? '접기 ▲' : '전체 ' + total + '개 보기 ▼';
+            btn.textContent = (!expanded) ? (collapseLabel + ' ▲') : (showAllLabel + ' ▼');
             applyVisibility();
         };
 
@@ -538,7 +579,7 @@
                     var va = tds_a[colIdx] ? tds_a[colIdx].dataset.val || '' : '';
                     var vb = tds_b[colIdx] ? tds_b[colIdx].dataset.val || '' : '';
                     if (colIdx === 0) {
-                        return asc ? va.localeCompare(vb, 'ko') : vb.localeCompare(va, 'ko');
+                        return asc ? va.localeCompare(vb, compareLocale) : vb.localeCompare(va, compareLocale);
                     }
                     return asc ? parseFloat(va) - parseFloat(vb) : parseFloat(vb) - parseFloat(va);
                 });
@@ -583,7 +624,7 @@
                 var va = tds_a[colIdx] ? tds_a[colIdx].dataset.val || '' : '';
                 var vb = tds_b[colIdx] ? tds_b[colIdx].dataset.val || '' : '';
                 if (colIdx === 0) {
-                    return asc ? va.localeCompare(vb, 'ko') : vb.localeCompare(va, 'ko');
+                        return asc ? va.localeCompare(vb, compareLocale) : vb.localeCompare(va, compareLocale);
                 }
                 return asc ? parseFloat(va) - parseFloat(vb) : parseFloat(vb) - parseFloat(va);
             });

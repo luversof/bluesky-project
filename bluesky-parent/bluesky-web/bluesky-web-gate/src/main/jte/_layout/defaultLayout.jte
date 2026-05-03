@@ -1,3 +1,5 @@
+@import io.github.luversof.boot.context.support.MessageUtil
+
 @param gg.jte.Content content
 @param String title = "Bluesky"
 @param boolean isAuthenticated = false
@@ -7,7 +9,7 @@
 @param boolean hideHamburger = false
 
 <!DOCTYPE html>
-<html lang="ko" data-theme="light">
+<html lang="${org.springframework.context.i18n.LocaleContextHolder.getLocale().toLanguageTag()}" data-theme="light">
 <head>
 	<title>${title}</title>
 	<script>
@@ -42,7 +44,19 @@
 </head>
 
 <body>
-	<div id="app-config" data-login-url="/login"></div>
+	<div
+		id="app-config"
+		data-login-url="/login"
+		data-locale="${org.springframework.context.i18n.LocaleContextHolder.getLocale().toLanguageTag()}"
+		data-common-button-search="${MessageUtil.getMessage("common.button.search")}"
+		data-common-button-reset="${MessageUtil.getMessage("common.button.reset")}"
+		data-common-message-load-error="${MessageUtil.getMessage("common.message.load.error")}"
+		data-stock-label-buy="${MessageUtil.getMessage("stock.trade.label.buy")}"
+		data-stock-label-sell="${MessageUtil.getMessage("stock.trade.label.sell")}"
+		data-stock-chart-title-profit-contribution="${MessageUtil.getMessage("stock.trade.chart.title.profit.contribution")}"
+		data-stock-chart-title-buy-concentration="${MessageUtil.getMessage("stock.trade.chart.title.buy.concentration")}"
+		data-stock-chart-message-no-sell-data="${MessageUtil.getMessage("stock.trade.chart.message.no.sell.data")}"
+		data-stock-chart-message-no-buy-data="${MessageUtil.getMessage("stock.trade.chart.message.no.buy.data")}"></div>
 
 	@template._components.body.navbar.navbar(isAuthenticated = isAuthenticated, username = username, loginUrl = loginUrl, profile = profile, hideHamburger = hideHamburger)
 

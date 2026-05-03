@@ -57,6 +57,7 @@
 			<input type="checkbox" class="toggle toggle-xs toggle-primary" id="hideAmountsToggle" />
 		</label>
 		@template._components.body.navbar.end.profileArea(isAuthenticated = isAuthenticated, username = username, loginUrl = loginUrl)
+		@template._components.body.navbar.end.locale()
 		@template._components.body.navbar.end.theme()
 	</div>
 	<script>

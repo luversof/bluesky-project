@@ -2,6 +2,7 @@ package net.luversof.web.gate.board.config;
 
 import java.util.function.Function;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,18 +23,20 @@ public class GateBoardConfig {
   }
 
   @Bean
-  BoardArticleClient boardArticleClient(HttpServiceProxyFactory boardHttpServiceProxyFactory) {
+  BoardArticleClient boardArticleClient(
+      @Qualifier("boardHttpServiceProxyFactory") HttpServiceProxyFactory boardHttpServiceProxyFactory) {
     return boardHttpServiceProxyFactory.createClient(BoardArticleClient.class);
   }
 
   @Bean
   BoardArticleCommentClient boardArticleCommentClient(
-      HttpServiceProxyFactory boardHttpServiceProxyFactory) {
+      @Qualifier("boardHttpServiceProxyFactory") HttpServiceProxyFactory boardHttpServiceProxyFactory) {
     return boardHttpServiceProxyFactory.createClient(BoardArticleCommentClient.class);
   }
 
   @Bean
-  BoardClient boardClient(HttpServiceProxyFactory boardHttpServiceProxyFactory) {
+  BoardClient boardClient(
+      @Qualifier("boardHttpServiceProxyFactory") HttpServiceProxyFactory boardHttpServiceProxyFactory) {
     return boardHttpServiceProxyFactory.createClient(BoardClient.class);
   }
 }

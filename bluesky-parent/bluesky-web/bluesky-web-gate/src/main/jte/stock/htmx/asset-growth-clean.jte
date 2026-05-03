@@ -2,19 +2,28 @@
 @import java.time.ZoneId
 @import java.time.format.DateTimeFormatter
 @import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param List<TradeProfitTimeSeriesPoint> timeSeries
 
 !{
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    String assetGrowthTitle = MessageUtil.getMessage("stock.page.asset.growth.title");
+    String noDataLabel = MessageUtil.getMessage("common.message.no.data");
+    String principalLabel = MessageUtil.getMessage("stock.label.principal");
+    String totalAssetDatasetLabel = MessageUtil.getMessage("stock.asset.growth.dataset.total.asset");
+    String dailyRealizedProfitLabel = MessageUtil.getMessage("stock.asset.growth.tooltip.daily.realized.profit");
+    String cumulativeTotalDatasetLabel = MessageUtil.getMessage("stock.asset.growth.dataset.cumulative.total");
+    String totalAssetAxisLabel = MessageUtil.getMessage("stock.asset.growth.axis.total.asset");
+    String cumulativeProfitAxisLabel = MessageUtil.getMessage("stock.asset.growth.axis.cumulative.profit");
 }
 
 <div class="card bg-base-100 shadow-xl">
     <div class="card-body">
-        <h2 class="card-title text-base-content/70">누적 자산 성장 차트</h2>
+        <h2 class="card-title text-base-content/70">${assetGrowthTitle}</h2>
         <div class="h-96 w-full flex justify-center items-center">
             @if(timeSeries == null || timeSeries.isEmpty())
-                <p class="text-gray-500">데이터가 없습니다.</p>
+                <p class="text-gray-500">${noDataLabel}</p>
             @else
                 <canvas id="assetGrowthChart"></canvas>
             @endif
@@ -53,7 +62,7 @@
                     datasets: [
                         {
                             type: 'line',
-                            label: '총 자산 평가액',
+                            label: '${totalAssetDatasetLabel}',
                             data: totalValueData,
                             borderColor: 'rgba(75, 192, 192, 1)',
                             backgroundColor: 'rgba(75, 192, 192, 0.1)',
@@ -64,7 +73,7 @@
                         },
                         {
                             type: 'line',
-                            label: '투자 원금',
+                            label: '${principalLabel}',
                             data: totalCostData,
                             borderColor: 'rgba(201, 203, 207, 1)',
                             borderWidth: 2,
@@ -75,7 +84,7 @@
                         },
                         {
                             type: 'bar',
-                            label: '일일 실현 손익',
+                            label: '${dailyRealizedProfitLabel}',
                             data: dailyData,
                             backgroundColor: 'rgba(54, 162, 235, 0.5)',
                             borderColor: 'rgba(54, 162, 235, 1)',
@@ -84,7 +93,7 @@
                         },
                         {
                             type: 'line',
-                            label: '누적 총 손실/이익(평가포함)',
+                            label: '${cumulativeTotalDatasetLabel}',
                             data: cumulativeTotalProfitData,
                             borderColor: 'rgba(153, 102, 255, 1)',
                             backgroundColor: 'rgba(153, 102, 255, 0.2)',
@@ -111,7 +120,7 @@
                                         label += ': ';
                                     }
                                     if (context.parsed.y !== null) {
-                                        label += new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(context.parsed.y);
+                                        label += window.StockCharts ? window.StockCharts.formatCurrency(context.parsed.y) : new Intl.NumberFormat(undefined, { style: 'currency', currency: 'KRW' }).format(context.parsed.y);
                                     }
                                     return label;
                                 }
@@ -125,13 +134,13 @@
                         y: {
                             display: true,
                             position: 'left',
-                            title: { display: true, text: '총액' }
+                            title: { display: true, text: '${totalAssetAxisLabel}' }
                         },
                         y1: {
                             display: true,
                             position: 'right',
                             grid: { drawOnChartArea: false },
-                            title: { display: true, text: '손익' }
+                            title: { display: true, text: '${cumulativeProfitAxisLabel}' }
                         }
                     }
                 }

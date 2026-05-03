@@ -1,3 +1,5 @@
+@import io.github.luversof.boot.context.support.MessageUtil
+
 @param boolean isAuthenticated = false
 @param String username = ""
 @param String loginUrl = "https://user.web.bluesky.local/login/redirect"
@@ -12,7 +14,7 @@
 		<div class="container mx-auto p-4 space-y-6">
 			<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-			<h1 class="text-2xl font-bold mb-4 ml-1">자산 현황</h1>
+			<h1 class="text-2xl font-bold mb-4 ml-1">${MessageUtil.getMessage("stock.page.analytics.title")}</h1>
 
 			<!-- Section 1: 요약 카드 + 비중 차트 -->
 			<div hx-get="/stock/htmx/summary?showCharts=true" hx-trigger="load" hx-swap="innerHTML">

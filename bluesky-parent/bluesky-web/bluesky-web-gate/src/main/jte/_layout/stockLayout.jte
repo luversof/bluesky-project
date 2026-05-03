@@ -152,7 +152,7 @@
 				@if(menuItem instanceof net.luversof.web.common.menu.domain.Menu m)
 					@if(m.isDisplay())
 						<a href="${m.getUrl()}" class="${m.isCurrentMenu() ? "active text-primary" : "text-base-content/60"}">
-							@template._components.menuIcon(name = m.getName())
+							@template._components.menuIcon(messageCode = m.getMessageCode(), name = m.getName())
 							<span class="btm-nav-label text-[10px]">${m.getName()}</span>
 						</a>
 					@endif

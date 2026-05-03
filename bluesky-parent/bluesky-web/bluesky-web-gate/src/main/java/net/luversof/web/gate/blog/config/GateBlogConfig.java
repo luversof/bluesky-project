@@ -2,6 +2,7 @@ package net.luversof.web.gate.blog.config;
 
 import java.util.function.Function;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,23 +25,25 @@ public class GateBlogConfig {
 
   @Bean
   BlogArticleCategoryClient blogArticleCategoryClient(
-      HttpServiceProxyFactory blogHttpServiceProxyFactory) {
+      @Qualifier("blogHttpServiceProxyFactory") HttpServiceProxyFactory blogHttpServiceProxyFactory) {
     return blogHttpServiceProxyFactory.createClient(BlogArticleCategoryClient.class);
   }
 
   @Bean
-  BlogArticleClient blogArticleClient(HttpServiceProxyFactory blogHttpServiceProxyFactory) {
+  BlogArticleClient blogArticleClient(
+      @Qualifier("blogHttpServiceProxyFactory") HttpServiceProxyFactory blogHttpServiceProxyFactory) {
     return blogHttpServiceProxyFactory.createClient(BlogArticleClient.class);
   }
 
   @Bean
   BlogArticleCommentClient blogArticleCommentClient(
-      HttpServiceProxyFactory blogHttpServiceProxyFactory) {
+      @Qualifier("blogHttpServiceProxyFactory") HttpServiceProxyFactory blogHttpServiceProxyFactory) {
     return blogHttpServiceProxyFactory.createClient(BlogArticleCommentClient.class);
   }
 
   @Bean
-  BlogClient blogClient(HttpServiceProxyFactory blogHttpServiceProxyFactory) {
+  BlogClient blogClient(
+      @Qualifier("blogHttpServiceProxyFactory") HttpServiceProxyFactory blogHttpServiceProxyFactory) {
     return blogHttpServiceProxyFactory.createClient(BlogClient.class);
   }
 }

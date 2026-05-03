@@ -2,6 +2,7 @@
 @import java.util.List
 @import java.util.Map
 @import net.luversof.web.gate.stock.domain.TradeProfit
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param BigDecimal totalAsset
 @param BigDecimal totalUnrealizedProfit
@@ -20,6 +21,28 @@
 @param Map<String, BigDecimal> accountAllocation
 @param boolean showCharts = true
 
+!{
+    String currentTotalAssetLabel = MessageUtil.getMessage("stock.summary.label.current.total.asset");
+    String principalLabel = MessageUtil.getMessage("stock.label.principal");
+    String currentEvaluationProfitLabel = MessageUtil.getMessage("stock.summary.label.current.evaluation.profit");
+    String returnRateLabel = MessageUtil.getMessage("stock.label.return.rate");
+    String cumulativeRealizedIncomeLabel = MessageUtil.getMessage("stock.summary.label.cumulative.realized.income");
+    String realizedProfitLabel = MessageUtil.getMessage("stock.profit.realized");
+    String cumulativeDividendLabel = MessageUtil.getMessage("stock.summary.label.cumulative.dividend");
+    String totalCombinedProfitLabel = MessageUtil.getMessage("stock.summary.label.total.combined.profit");
+    String winRateLabel = MessageUtil.getMessage("stock.summary.label.win.rate");
+    String profitableStockRatioLabel = MessageUtil.getMessage("stock.summary.label.profitable.stock.ratio");
+    String topBuyingLabel = MessageUtil.getMessage("stock.summary.card.top.buying");
+    String bottomBuyingLabel = MessageUtil.getMessage("stock.summary.card.bottom.buying");
+    String topRealizedLabel = MessageUtil.getMessage("stock.summary.card.top.realized");
+    String bottomRealizedLabel = MessageUtil.getMessage("stock.summary.card.bottom.realized");
+    String topUnrealizedLabel = MessageUtil.getMessage("stock.summary.card.top.unrealized");
+    String bottomUnrealizedLabel = MessageUtil.getMessage("stock.summary.card.bottom.unrealized");
+    String noUnrealizedLossLabel = MessageUtil.getMessage("stock.summary.card.no.unrealized.loss");
+    String topDividendLabel = MessageUtil.getMessage("stock.summary.card.top.dividend");
+    String bottomDividendLabel = MessageUtil.getMessage("stock.summary.card.bottom.dividend");
+}
+
 <div class="flex flex-col gap-4">
     <!-- Stats -->
     <div class="stats stats-vertical lg:stats-horizontal shadow w-full bg-base-100">
@@ -31,20 +54,20 @@
             <div class="stat-figure text-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </div>
-            <div class="stat-title">현재 총 자산</div>
+            <div class="stat-title">${currentTotalAssetLabel}</div>
             <div class="stat-value text-principal font-bold amount-value">${String.format("%,d", totalAsset.longValue())}</div>
             <div class="stat-desc font-semibold mt-1">
-                투자 원금: <span class="amount-value">${String.format("%,d", totalPrincipal.longValue())}</span>
+                ${principalLabel}: <span class="amount-value">${String.format("%,d", totalPrincipal.longValue())}</span>
             </div>
         </div>
 
         <div class="stat">
-            <div class="stat-title">현재 평가 손익</div>
+            <div class="stat-title">${currentEvaluationProfitLabel}</div>
              <div class="stat-value font-bold amount-value ${totalUnrealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                  ${String.format("%,d", totalUnrealizedProfit.longValue())}
              </div>
             <div class="stat-desc font-bold mt-1 ${totalUnrealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                수익률: <span>${String.format("%+.2f%%", unrealizedRate)}</span>
+                ${returnRateLabel}: <span>${String.format("%+.2f%%", unrealizedRate)}</span>
             </div>
         </div>
 
@@ -54,15 +77,15 @@
             <div class="stat-figure text-secondary">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
             </div>
-            <div class="stat-title">누적 확정 수익</div>
+            <div class="stat-title">${cumulativeRealizedIncomeLabel}</div>
             <div class="stat-value font-bold amount-value ${totalRealizedIncome.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                  ${String.format("%,d", totalRealizedIncome.longValue())}
             </div>
             <div class="stat-desc mt-1">
-                실현 손익: <span class="amount-value">${String.format("%,d", totalRealizedProfit.longValue())}</span>
+                ${realizedProfitLabel}: <span class="amount-value">${String.format("%,d", totalRealizedProfit.longValue())}</span>
             </div>
             <div class="stat-desc">
-                누적 배당: <span class="amount-value">${String.format("%,d", totalDividend.longValue())}</span>
+                ${cumulativeDividendLabel}: <span class="amount-value">${String.format("%,d", totalDividend.longValue())}</span>
             </div>
         </div>
 
@@ -73,20 +96,20 @@
             <div class="stat-figure text-accent">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
             </div>
-            <div class="stat-title">총 합산 수익</div>
+            <div class="stat-title">${totalCombinedProfitLabel}</div>
             <div class="stat-value font-bold amount-value ${totalCombinedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                  ${String.format("%,d", totalCombinedProfit.longValue())}
             </div>
             <div class="stat-desc font-bold mt-1 ${totalCombinedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                수익률: <span>${String.format("%+.2f%%", combinedRate)}</span>
+                ${returnRateLabel}: <span>${String.format("%+.2f%%", combinedRate)}</span>
             </div>
         </div>
 
         <!-- 승률 -->
         <div class="stat hidden 2xl:grid border-l border-base-200">
-            <div class="stat-title">종목 승률</div>
+            <div class="stat-title">${winRateLabel}</div>
             <div class="stat-value font-bold">${String.format("%.1f", winRate)}%</div>
-            <div class="stat-desc mt-1">수익권 종목 비율</div>
+            <div class="stat-desc mt-1">${profitableStockRatioLabel}</div>
         </div>
     </div>
 
@@ -107,7 +130,7 @@
             @if(topBuying != null && !topBuying.isEmpty())
             <div class="card bg-base-100 shadow-sm compact border border-base-200">
                 <div class="card-body p-3">
-                    <h3 class="card-title text-sm opacity-70 mb-2">💰 매수 상위</h3>
+                    <h3 class="card-title text-sm opacity-70 mb-2">💰 ${topBuyingLabel}</h3>
                     <div class="space-y-1">
                         !{int count = 1;}
                         @for(TradeProfit item : topBuying)
@@ -129,7 +152,7 @@
             @if(bottomBuying != null && !bottomBuying.isEmpty())
             <div class="card bg-base-100 shadow-sm compact border border-base-200">
                 <div class="card-body p-3">
-                    <h3 class="card-title text-sm opacity-70 mb-2">📉 매수 하위</h3>
+                    <h3 class="card-title text-sm opacity-70 mb-2">📉 ${bottomBuyingLabel}</h3>
                     <div class="space-y-1">
                         !{int count = 1;}
                         @for(TradeProfit item : bottomBuying)
@@ -155,7 +178,7 @@
             @if(topRealized != null && !topRealized.isEmpty())
             <div class="card bg-base-100 shadow-sm compact border border-base-200">
                 <div class="card-body p-3">
-                    <h3 class="card-title text-sm opacity-70 mb-2">🏆 실현수익 상위</h3>
+                    <h3 class="card-title text-sm opacity-70 mb-2">🏆 ${topRealizedLabel}</h3>
                     <div class="space-y-1">
                         !{int count = 1;}
                         @for(TradeProfit item : topRealized)
@@ -177,7 +200,7 @@
             @if(bottomRealized != null && !bottomRealized.isEmpty())
             <div class="card bg-base-100 shadow-sm compact border border-base-200">
                 <div class="card-body p-3">
-                    <h3 class="card-title text-sm opacity-70 mb-2">💔 실현손실 하위</h3>
+                    <h3 class="card-title text-sm opacity-70 mb-2">💔 ${bottomRealizedLabel}</h3>
                     <div class="space-y-1">
                         !{int count = 1;}
                         @for(TradeProfit item : bottomRealized)
@@ -203,7 +226,7 @@
             @if(topUnrealized != null && !topUnrealized.isEmpty())
             <div class="card bg-base-100 shadow-sm compact border border-base-200">
                 <div class="card-body p-3">
-                    <h3 class="card-title text-sm opacity-70 mb-2">🚀 평가수익 상위</h3>
+                    <h3 class="card-title text-sm opacity-70 mb-2">🚀 ${topUnrealizedLabel}</h3>
                     <div class="space-y-1">
                         !{int count = 1;}
                         @for(TradeProfit item : topUnrealized)
@@ -225,7 +248,7 @@
             @if(bottomUnrealized != null && !bottomUnrealized.isEmpty())
             <div class="card bg-base-100 shadow-sm compact border border-base-200">
                 <div class="card-body p-3">
-                    <h3 class="card-title text-sm opacity-70 mb-2">⚓ 평가손실 하위</h3>
+                    <h3 class="card-title text-sm opacity-70 mb-2">⚓ ${bottomUnrealizedLabel}</h3>
                     <div class="space-y-1">
                         !{int count = 1;}
                         @for(TradeProfit item : bottomUnrealized)
@@ -254,10 +277,10 @@
             @else
             <div class="card bg-base-100 shadow-sm compact border border-base-200">
                 <div class="card-body p-3">
-                    <h3 class="card-title text-sm opacity-70 mb-2">⚓ 평가손실 하위</h3>
+                    <h3 class="card-title text-sm opacity-70 mb-2">⚓ ${bottomUnrealizedLabel}</h3>
                     <div class="space-y-1">
                         <div class="flex justify-between items-center text-xs opacity-40">
-                            <span>평가손실 종목 없음</span>
+                            <span>${noUnrealizedLossLabel}</span>
                         </div>
                         @for(int i = 1; i < 4; i++)
                         <div class="flex justify-between items-center text-xs invisible">
@@ -280,7 +303,7 @@
             @if(topDividend != null && !topDividend.isEmpty())
             <div class="card bg-base-100 shadow-sm compact border border-base-200">
                 <div class="card-body p-3">
-                    <h3 class="card-title text-sm opacity-70 mb-2">💸 배당 상위</h3>
+                    <h3 class="card-title text-sm opacity-70 mb-2">💸 ${topDividendLabel}</h3>
                     <div class="space-y-1">
                         !{int count = 1;}
                         @for(TradeProfit item : topDividend)
@@ -302,7 +325,7 @@
             @if(bottomDividend != null && !bottomDividend.isEmpty())
             <div class="card bg-base-100 shadow-sm compact border border-base-200">
                 <div class="card-body p-3">
-                    <h3 class="card-title text-sm opacity-70 mb-2">💧 배당 하위</h3>
+                    <h3 class="card-title text-sm opacity-70 mb-2">💧 ${bottomDividendLabel}</h3>
                     <div class="space-y-1">
                         !{int count = 1;}
                         @for(TradeProfit item : bottomDividend)

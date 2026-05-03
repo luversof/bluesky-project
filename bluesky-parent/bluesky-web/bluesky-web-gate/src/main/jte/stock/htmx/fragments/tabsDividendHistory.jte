@@ -11,6 +11,7 @@
 @import net.luversof.web.gate.stock.domain.StockItem
 @import java.time.format.DateTimeFormatter
 @import java.text.DecimalFormat
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param List<DividendView> dividendList
 @param List<DividendView> allDividendList = java.util.List.of()
@@ -95,6 +96,40 @@
     boolean canPrev = !isAllMode && startLocal != null
         && dataFirstDate != null && !dataFirstDate.isEmpty()
         && startLocal.isAfter(java.time.LocalDate.parse(dataFirstDate));
+
+    java.util.function.Function<Object, String> countMessage = value -> java.text.MessageFormat.format(MessageUtil.getMessage("common.count"), value);
+    String detailSearchLabel = MessageUtil.getMessage("common.label.detail") + " " + MessageUtil.getMessage("common.button.search");
+    String periodLabel = MessageUtil.getMessage("common.label.period");
+    String accountLabel = MessageUtil.getMessage("common.label.account");
+    String stockNameLabel = MessageUtil.getMessage("stock.activity.label.stock.name");
+    String allLabel = MessageUtil.getMessage("common.label.all");
+    String searchLabel = MessageUtil.getMessage("common.button.search");
+    String resetLabel = MessageUtil.getMessage("common.button.reset");
+    String periodDividendLabel = MessageUtil.getMessage("stock.dividend.summary.period.total");
+    String netLabel = MessageUtil.getMessage("common.label.net");
+    String grossLabel = MessageUtil.getMessage("common.label.gross");
+    String taxableLabel = MessageUtil.getMessage("common.label.taxable");
+    String previousComparisonLabel = MessageUtil.getMessage("stock.dividend.summary.previous.comparison");
+    String previousPeriodLabel = MessageUtil.getMessage("stock.dividend.summary.previous.period");
+    String comparisonEmptyLabel = MessageUtil.getMessage("stock.dividend.summary.select.period.compare");
+    String monthlyAverageLabel = MessageUtil.getMessage("stock.dividend.summary.monthly.average");
+    String weightAnalysisLabel = MessageUtil.getMessage("stock.chart.title.weight.analysis");
+    String byStockLabel = MessageUtil.getMessage("stock.label.by.stock");
+    String byAccountLabel = MessageUtil.getMessage("stock.label.by.account");
+    String monthlyDividendsLabel = MessageUtil.getMessage("stock.dividend.chart.title.monthly.simple");
+    String detailSummaryLabel = java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.detail.summary"), countMessage.apply(totalItems));
+    String dateLabel = MessageUtil.getMessage("common.label.date");
+    String grossAmountLabel = MessageUtil.getMessage("stock.dividend.gross");
+    String netAmountLabel = MessageUtil.getMessage("stock.dividend.net");
+    String taxLabel = MessageUtil.getMessage("stock.dividend.tax");
+    String taxableAmountLabel = MessageUtil.getMessage("stock.dividend.taxable.amount");
+    String noDividendHistoryLabel = MessageUtil.getMessage("stock.dividend.message.no.history");
+    String totalLabel = MessageUtil.getMessage("common.label.total");
+    String noDataLabel = MessageUtil.getMessage("common.message.no.data");
+    String noPeriodHistoryLabel = MessageUtil.getMessage("stock.dividend.message.no.period.history");
+    String averageNoDataLabel = MessageUtil.getMessage("stock.dividend.summary.no.data");
+    String averageDescTemplate = MessageUtil.getMessage("stock.dividend.summary.average.desc");
+    String countPattern = MessageUtil.getMessage("common.count");
 }
 
 <div id="dividendListFragment">
@@ -113,7 +148,7 @@
     <details class="mb-4"$unsafe{(selectedAccountId != null || selectedStockItemId != null || startDate != null) ? " open" : ""}>
         <summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
-            상세 검색
+            ${detailSearchLabel}
             @template.stock.htmx.fragments.components.filterBadge(
                 selectedAccountId = selectedAccountId,
                 selectedStockItemId = selectedStockItemId,
@@ -129,7 +164,7 @@
           hx-trigger="submit">
 
         <div class="form-control w-full sm:w-auto">
-            <label class="label p-1"><span class="label-text text-xs">기간</span></label>
+            <label class="label p-1"><span class="label-text text-xs">${periodLabel}</span></label>
             <div class="join">
                 <input type="date" name="dividendUiStartDate" id="startDateInput" class="input input-sm input-bordered join-item" value="${startDate != null ? startDate.atZone(zone).toLocalDate().toString() : ""}">
                 <input type="date" name="dividendUiEndDate" id="endDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1).toString() : ""}">
@@ -141,9 +176,9 @@
         <input type="hidden" name="rangeMode" id="dividendRangeModeInput" value="${rangeMode != null ? rangeMode : ""}">
 
         <div class="form-control w-full sm:w-auto">
-            <label class="label p-1"><span class="label-text text-xs">계좌</span></label>
+            <label class="label p-1"><span class="label-text text-xs">${accountLabel}</span></label>
             <select name="accountIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="6">
-                <option value="">전체</option>
+                <option value="">${allLabel}</option>
                 @for(Account account : accountList)
                 <option value="${account.id().toString()}" selected="${account.id().equals(selectedAccountId)}">${account.name()}</option>
                 @endfor
@@ -151,9 +186,9 @@
         </div>
 
         <div class="form-control w-full sm:w-auto">
-            <label class="label p-1"><span class="label-text text-xs">종목</span></label>
+            <label class="label p-1"><span class="label-text text-xs">${stockNameLabel}</span></label>
             <select name="stockItemIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="6">
-                <option value="">전체</option>
+                <option value="">${allLabel}</option>
                 @for(StockItem stockItem : stockItemList)
                 <option value="${stockItem.id().toString()}" selected="${stockItem.id().equals(selectedStockItemId)}">${stockItem.name()}</option>
                 @endfor
@@ -165,14 +200,14 @@
             hx-target="#dividendListFragment"
             hx-select="#dividendListFragment"
             hx-swap="outerHTML"
-            hx-include="#dividendSearchForm">조회</button>
+            hx-include="#dividendSearchForm">${searchLabel}</button>
         <button type="button" class="btn btn-sm text-xs"
             hx-get="/stock/htmx/dividend/list"
             hx-target="#dividendListFragment"
             hx-select="#dividendListFragment"
                 hx-swap="outerHTML"
                 hx-include="#dividendSearchForm"
-            data-selection-reset="true">초기화</button>
+            data-selection-reset="true">${resetLabel}</button>
     </form>
     </details>
 
@@ -186,15 +221,15 @@
         <!-- Card 1: 기간 합계 (세전/세후/과세) -->
         <div class="card bg-base-100 shadow-sm border border-base-200">
             <div class="card-body p-4">
-                <div class="text-xs text-base-content/50 mb-1">기간 배당금</div>
+                <div class="text-xs text-base-content/50 mb-1">${periodDividendLabel}</div>
                 <div class="flex items-baseline gap-1 mb-2">
                     <span class="text-xl font-bold text-dividend amount-value">₩ ${decimalFormat.format(safeAllNet)}</span>
-                    <span class="text-xs text-base-content/40">세후</span>
+                    <span class="text-xs text-base-content/40">${netLabel}</span>
                 </div>
                 <div class="flex gap-4 text-xs text-base-content/50">
-                    <span>세전 <span class="font-medium text-base-content/70 amount-value">₩ ${decimalFormat.format(safeAllGross)}</span></span>
-                    <span>과세 <span class="font-medium text-base-content/70 amount-value">₩ ${decimalFormat.format(safeAllTaxable)}</span></span>
-                    <span class="ml-auto">${totalItems}건</span>
+                    <span>${grossLabel} <span class="font-medium text-base-content/70 amount-value">₩ ${decimalFormat.format(safeAllGross)}</span></span>
+                    <span>${taxableLabel} <span class="font-medium text-base-content/70 amount-value">₩ ${decimalFormat.format(safeAllTaxable)}</span></span>
+                    <span class="ml-auto">${countMessage.apply(totalItems)}</span>
                 </div>
             </div>
         </div>
@@ -203,22 +238,22 @@
         @if(hasComparison)
         <div class="card bg-base-100 shadow-sm border border-base-200">
             <div class="card-body p-4">
-                <div class="text-xs text-base-content/50 mb-1">전기 대비
+                <div class="text-xs text-base-content/50 mb-1">${previousComparisonLabel}
                     @if(prevStartDate != null && prevEndDate != null)
                     <span class="opacity-40">(${prevStartDate.toString()} ~ ${prevEndDate.toString()})</span>
                     @endif
                 </div>
                 <div class="flex items-baseline gap-2 mb-1">
                     <span class="text-xl font-bold ${diffPositive ? "text-success" : "text-error"}">${diffPositive ? "▲" : "▼"} ${diffPct}%</span>
-                    <span class="text-xs amount-value ${diffPositive ? "text-success" : "text-error"}">${diffPositive ? "+" : ""}${decimalFormat.format(diffAmount)}원</span>
+                    <span class="text-xs amount-value ${diffPositive ? "text-success" : "text-error"}">${diffPositive ? "+" : "-"}₩${decimalFormat.format(diffAmount.abs())}</span>
                 </div>
-                <div class="text-xs text-base-content/40">전기 <span class="amount-value">₩ ${decimalFormat.format(safePrevNet)}</span></div>
+                <div class="text-xs text-base-content/40">${previousPeriodLabel} <span class="amount-value">₩ ${decimalFormat.format(safePrevNet)}</span></div>
             </div>
         </div>
         @else
         <div class="card bg-base-100 shadow-sm border border-base-200">
             <div class="card-body p-4 items-center justify-center text-center">
-                <div class="text-xs text-base-content/30">기간을 선택하면<br>전기 대비를 표시합니다</div>
+                <div class="text-xs text-base-content/30">${comparisonEmptyLabel}</div>
             </div>
         </div>
         @endif
@@ -226,8 +261,8 @@
         <!-- Card 3: 월평균 -->
         <div class="card bg-base-100 shadow-sm border border-base-200">
             <div class="card-body p-4">
-                <div class="text-xs text-base-content/50 mb-1">월평균 배당금</div>
-                <div class="text-xl font-bold">₩ <span id="avgAmountDisplay" class="amount-value">-</span></div>
+                <div class="text-xs text-base-content/50 mb-1">${monthlyAverageLabel}</div>
+                <div class="text-xl font-bold"><span id="avgAmountDisplay" class="amount-value">-</span></div>
                 <div class="text-xs text-base-content/40 mt-1" id="avgAmountDesc"></div>
             </div>
         </div>
@@ -240,15 +275,15 @@
         <!-- Left: 비중 분석 -->
         <div class="card bg-base-100 shadow-sm border border-base-200 flex-[2] min-w-[200px]">
             <div class="card-body p-4">
-                <div class="text-sm font-bold mb-3">비중 분석</div>
+                <div class="text-sm font-bold mb-3">${weightAnalysisLabel}</div>
                 <div class="flex gap-3">
                     <div class="flex-shrink-0 w-[200px] h-[200px]">
                         <canvas id="donutChart" class="amount-chart"></canvas>
                     </div>
                     <div class="flex flex-col w-0 flex-1 h-[200px] overflow-hidden">
                         <div class="tabs tabs-boxed tabs-xs mb-1 w-fit flex-shrink-0">
-                            <a class="tab tab-active" id="donutTabStock" onclick="switchDonut('stock')">종목별</a>
-                            <a class="tab" id="donutTabAccount" onclick="switchDonut('account')">계좌별</a>
+                            <a class="tab tab-active" id="donutTabStock" onclick="switchDonut('stock')">${byStockLabel}</a>
+                            <a class="tab" id="donutTabAccount" onclick="switchDonut('account')">${byAccountLabel}</a>
                         </div>
                         <div id="donutLegend" class="flex-1 min-h-0 overflow-y-auto text-[0.72rem]"></div>
                     </div>
@@ -259,7 +294,7 @@
         <!-- Right: Monthly Bar Chart -->
         <div class="card bg-base-100 shadow-sm border border-base-200 flex-[3] min-w-[280px] overflow-visible">
             <div class="card-body p-4">
-                <h3 class="font-bold text-sm mb-3">월별 배당금</h3>
+                <h3 class="font-bold text-sm mb-3">${monthlyDividendsLabel}</h3>
                 <div class="relative h-[220px]">
                     <canvas id="monthlyBarChart" class="amount-chart"></canvas>
                 </div>
@@ -274,7 +309,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform detail-arrow" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
             </svg>
-            상세 목록 (${totalItems}건)
+            ${detailSummaryLabel}
         </summary>
 
         <div id="dividendListContainer" class="flex flex-col relative mt-2">
@@ -284,31 +319,31 @@
                     <tr class="bg-base-200">
                         <th class="cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
                             hx-vals='{"sort": "payDate,${sortField.equals("payDate") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-                            지급일 @if(sortField.equals("payDate"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
+                            ${dateLabel} @if(sortField.equals("payDate"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
                         </th>
                         <th class="cursor-pointer hover:bg-base-300 hidden sm:table-cell" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
                             hx-vals='{"sort": "accountName,${sortField.equals("accountName") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-                            계좌 @if(sortField.equals("accountName"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
+                            ${accountLabel} @if(sortField.equals("accountName"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
                         </th>
                         <th class="cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
                             hx-vals='{"sort": "stockItemName,${sortField.equals("stockItemName") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-                            종목명 @if(sortField.equals("stockItemName"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
+                            ${stockNameLabel} @if(sortField.equals("stockItemName"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
                         </th>
                         <th class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
                             hx-vals='{"sort": "grossAmount,${sortField.equals("grossAmount") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-                            배당금(세전) @if(sortField.equals("grossAmount"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
+                            ${grossAmountLabel} @if(sortField.equals("grossAmount"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
                         </th>
                         <th class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
                             hx-vals='{"sort": "netAmount,${sortField.equals("netAmount") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-                            배당금(세후) @if(sortField.equals("netAmount"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
+                            ${netAmountLabel} @if(sortField.equals("netAmount"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
                         </th>
                         <th class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
                             hx-vals='{"sort": "tax,${sortField.equals("tax") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-                            세금 @if(sortField.equals("tax"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
+                            ${taxLabel} @if(sortField.equals("tax"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
                         </th>
                         <th class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
                             hx-vals='{"sort": "taxableAmount,${sortField.equals("taxableAmount") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-                            과세금액 @if(sortField.equals("taxableAmount"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
+                            ${taxableAmountLabel} @if(sortField.equals("taxableAmount"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
                         </th>
                     </tr>
                     </thead>
@@ -326,13 +361,13 @@
                     @endfor
                     @if(dividendList == null || dividendList.isEmpty())
                     <tr>
-                        <td colspan="7" class="text-center py-10 opacity-50">배당 내역이 없습니다.</td>
+                        <td colspan="7" class="text-center py-10 opacity-50">${noDividendHistoryLabel}</td>
                     </tr>
                     @endif
                     </tbody>
                     <tfoot>
                         <tr class="font-bold bg-base-200">
-                            <td colspan="3" class="text-center sm:text-right sm:pr-4">합계</td>
+                            <td colspan="3" class="text-center sm:text-right sm:pr-4">${totalLabel}</td>
                             <td class="text-right font-mono amount-value">${totalGrossAmount != null ? decimalFormat.format(totalGrossAmount) : "0"}</td>
                             <td class="text-right font-mono text-dividend amount-value">${totalNetAmount != null ? decimalFormat.format(totalNetAmount) : "0"}</td>
                             <td class="text-right font-mono hidden lg:table-cell amount-value">${totalTax != null ? decimalFormat.format(totalTax) : "0"}</td>
@@ -397,6 +432,12 @@
         $unsafe{dividendDataJs}
         const filterStartDate = "${startLocal != null ? startLocal.format(DateTimeFormatter.ofPattern("yyyy-MM")) : ""}";
         const filterEndDate = "${endLocal != null ? endLocal.format(DateTimeFormatter.ofPattern("yyyy-MM")) : ""}";
+        const countPattern = "${countPattern}";
+        const noDataLabel = "${noDataLabel}";
+        const noPeriodHistoryLabel = "${noPeriodHistoryLabel}";
+        const averageNoDataLabel = "${averageNoDataLabel}";
+        const averageDescTemplate = "${averageDescTemplate}";
+        const netAmountLabel = "${netAmountLabel}";
 
         const CHART_COLORS = [
             'rgba(99,102,241,0.8)','rgba(34,197,94,0.8)','rgba(251,191,36,0.8)',
@@ -404,6 +445,18 @@
             'rgba(14,165,233,0.8)','rgba(249,115,22,0.8)','rgba(168,85,247,0.8)',
             'rgba(20,184,166,0.8)','rgba(245,158,11,0.8)','rgba(16,185,129,0.8)'
         ];
+
+        function formatNumber(value) {
+            return window.StockCharts ? window.StockCharts.formatNumber(value) : new Intl.NumberFormat().format(value);
+        }
+
+        function formatCurrency(value) {
+            return window.StockCharts ? window.StockCharts.formatCurrency(value) : ('₩' + Math.round(value).toLocaleString());
+        }
+
+        function formatCount(value) {
+            return countPattern.replace('{0}', formatNumber(value));
+        }
 
         let monthlyChart = null;
         let donutChart = null;
@@ -450,7 +503,7 @@
                 data: {
                     labels: m.labels,
                     datasets: [{
-                        label: '배당금(세후)',
+                        label: netAmountLabel,
                         data: m.data,
                         backgroundColor: 'rgba(34,197,94,0.55)',
                         borderColor: 'rgba(34,197,94,0.9)',
@@ -465,7 +518,7 @@
                     plugins: { legend: { display: false } },
                     scales: {
                         x: { grid: { color: gridColor }, ticks: { maxRotation: 45, font: { size: 11 } } },
-                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { callback: v => '₩' + Math.round(v).toLocaleString(), font: { size: 11 } } }
+                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { callback: v => window.StockCharts ? window.StockCharts.formatCompactNumber(v) : Math.round(v).toLocaleString(), font: { size: 11 } } }
                     }
                 }
             };
@@ -481,7 +534,7 @@
             const legend = document.getElementById('donutLegend');
             if (d.labels.length === 0) {
                 canvasEl.style.display = 'none';
-                if (legend) legend.innerHTML = '<div class="text-xs opacity-40 pt-4 text-center">해당 기간 배당 내역이 없습니다.</div>';
+                if (legend) legend.innerHTML = '<div class="text-xs opacity-40 pt-4 text-center">' + noPeriodHistoryLabel + '</div>';
                 return;
             }
             if (canvasEl.parentElement) canvasEl.parentElement.style.display = '';
@@ -501,7 +554,7 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: { display: false },
-                        tooltip: { callbacks: { label: ctx => ' ₩' + Math.round(ctx.parsed).toLocaleString() } }
+                        tooltip: { callbacks: { label: ctx => ' ' + formatCurrency(Math.round(ctx.parsed)) } }
                     },
                     cutout: '62%'
                 }
@@ -526,8 +579,8 @@
             const descEl = document.getElementById('avgAmountDesc');
             if (!displayEl) return;
             if (dividendData.length === 0) {
-                displayEl.textContent = '0';
-                if (descEl) descEl.textContent = '데이터 없음';
+                displayEl.textContent = formatCurrency(0);
+                if (descEl) descEl.textContent = averageNoDataLabel;
                 return;
             }
             const totalNet = dividendData.reduce((s, d) => s + Number(d.net), 0);
@@ -541,8 +594,13 @@
                 monthCount = monthSet.size || 1;
             }
             const avgPerMonth = totalNet / monthCount;
-            displayEl.textContent = Math.round(avgPerMonth).toLocaleString();
-            if (descEl) descEl.innerHTML = monthCount + '개월 평균 · 총 <span class="amount-value">' + Math.round(totalNet).toLocaleString() + '원</span> / ' + dividendData.length + '건';
+            displayEl.textContent = formatCurrency(Math.round(avgPerMonth));
+            if (descEl) {
+                descEl.innerHTML = averageDescTemplate
+                    .replace('{0}', formatNumber(monthCount))
+                    .replace('{1}', formatCurrency(Math.round(totalNet)))
+                    .replace('{2}', formatCount(dividendData.length));
+            }
         }
 
         function updateNavButtons() {

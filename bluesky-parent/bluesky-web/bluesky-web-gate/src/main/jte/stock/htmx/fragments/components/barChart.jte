@@ -1,14 +1,19 @@
 @import java.util.List
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param List<String> labels
 @param java.util.List values
-@param String title = "막대 차트"
+@param String title = null
 @param String canvasId = "barChart"
 @param String barColor = "#36A2EB"
 
+!{
+    String resolvedTitle = title != null ? title : MessageUtil.getMessage("stock.chart.title.bar.default");
+}
+
 <div class="card bg-base-100 shadow-xl h-full">
     <div class="card-body p-4">
-        <h2 class="card-title text-base-content/70 text-sm mb-2">${title}</h2>
+        <h2 class="card-title text-base-content/70 text-sm mb-2">${resolvedTitle}</h2>
         <div class="relative w-full amount-chart h-64">
             <canvas id="${canvasId}" class="amount-chart"></canvas>
         </div>
@@ -32,7 +37,7 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: '${title}',
+                        label: '${resolvedTitle}',
                         data: values,
                         backgroundColor: '${barColor}',
                         borderRadius: 4

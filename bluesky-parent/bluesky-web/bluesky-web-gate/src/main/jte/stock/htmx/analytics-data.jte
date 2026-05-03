@@ -2,6 +2,7 @@
 @import java.math.BigDecimal
 @import net.luversof.web.gate.stock.controller.StockBaseHtmxController.AnalyticsRow
 @import net.luversof.web.gate.stock.controller.StockBaseHtmxController.ChartDataset
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param String totalLabel = null
 @param BigDecimal totalValue = null
@@ -14,6 +15,20 @@
 @param String chartTitle = null
 @param String type = "PROFIT"
 
+!{
+    java.util.function.Function<Object, String> countMessage = value -> java.text.MessageFormat.format(MessageUtil.getMessage("common.count"), value);
+    String totalLabelText = MessageUtil.getMessage("common.label.total");
+    String selectedLabel = MessageUtil.getMessage("stock.analytics.stat.selected");
+    String dataPointsLabel = MessageUtil.getMessage("stock.analytics.stat.data.points");
+    String detailCountLabel = MessageUtil.getMessage("stock.analytics.stat.detail.count");
+    String barChartTitle = MessageUtil.getMessage("stock.analytics.chart.title.bar");
+    String lineChartTitle = MessageUtil.getMessage("stock.analytics.chart.title.line");
+    String numberLabel = MessageUtil.getMessage("common.label.no");
+    String dateLabel = MessageUtil.getMessage("common.label.date");
+    String itemAccountLabel = MessageUtil.getMessage("stock.analytics.table.header.item.account");
+    String noDataLabel = MessageUtil.getMessage("common.message.no.data");
+}
+
 <!-- 2. Data Content Fragment (Loaded via HTMX) -->
 <div class="fade-in space-y-6">
 
@@ -23,25 +38,25 @@
             <div class="stat-figure text-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
             </div>
-            <div class="stat-title">${totalLabel != null ? totalLabel : "총 합계"}</div>
+            <div class="stat-title">${totalLabel != null ? totalLabel : totalLabelText}</div>
             <div class="stat-value amount-value">${totalValue != null ? String.format("%,d", totalValue.longValue()) : "0"}</div>
-            <div class="stat-desc">선택 기간/기준</div>
+            <div class="stat-desc">${selectedLabel}</div>
         </div>
         
         <div class="stat">
             <div class="stat-figure text-secondary">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
             </div>
-            <div class="stat-title">데이터 포인트</div>
-            <div class="stat-value text-secondary">${tableData != null ? tableData.size() : 0} 개</div>
-            <div class="stat-desc">상세 내역 수</div>
+            <div class="stat-title">${dataPointsLabel}</div>
+            <div class="stat-value text-secondary">${countMessage.apply(tableData != null ? tableData.size() : 0)}</div>
+            <div class="stat-desc">${detailCountLabel}</div>
         </div>
     </div>
 
     <!-- 2. Chart Area (Large) -->
     <div class="card bg-base-100 shadow-xl overflow-hidden">
         <div class="card-body p-4 sm:p-6" style="min-height: 400px;">
-            <h2 class="card-title text-base opacity-70 mb-4">${chartTitle != null ? chartTitle : ("bar".equals(chartType) ? "기간별 추이 (Bar)" : "누적 성장 (Line)")}</h2>
+            <h2 class="card-title text-base opacity-70 mb-4">${chartTitle != null ? chartTitle : ("bar".equals(chartType) ? barChartTitle : lineChartTitle)}</h2>
             <div class="relative w-full h-[350px] sm:h-[450px]">
                 <canvas id="${canvasId}" class="amount-chart"></canvas>
             </div>
@@ -55,24 +70,24 @@
                 <!-- Head -->
                 <thead class="bg-base-200">
                     <tr>
-                        <th class="w-16">No</th>
-                        <th>${value4Label != null ? value4Label : "날짜"}</th>
-                        <th class="text-left">항목/계좌</th>
+                        <th class="w-16">${numberLabel}</th>
+                        <th>${value4Label != null ? value4Label : dateLabel}</th>
+                        <th class="text-left">${itemAccountLabel}</th>
                         @if("PROFIT".equals(type))
-                            <th class="text-right">매도금액</th>
-                            <th class="text-right font-bold">실현손익</th>
-                            <th class="text-right hidden sm:table-cell">보유손익</th>
+                            <th class="text-right">${MessageUtil.getMessage("stock.profit.sell.amount")}</th>
+                            <th class="text-right font-bold">${MessageUtil.getMessage("stock.profit.realized")}</th>
+                            <th class="text-right hidden sm:table-cell">${MessageUtil.getMessage("stock.profit.unrealized")}</th>
                         @else
-                            <th class="text-right">배당금(세전)</th>
-                            <th class="text-right font-bold">실지급액</th>
-                            <th class="text-right hidden sm:table-cell">세금</th>
+                            <th class="text-right">${MessageUtil.getMessage("stock.dividend.gross")}</th>
+                            <th class="text-right font-bold">${MessageUtil.getMessage("stock.dividend.net")}</th>
+                            <th class="text-right hidden sm:table-cell">${MessageUtil.getMessage("stock.dividend.tax")}</th>
                         @endif
                     </tr>
                 </thead>
                 <tbody>
                     @if(tableData == null || tableData.isEmpty())
                         <tr>
-                            <td colspan="6" class="py-6 text-base-content/50">데이터가 없습니다.</td>
+                            <td colspan="6" class="py-6 text-base-content/50">${noDataLabel}</td>
                         </tr>
                     @else
                         !{int count = 1;}
@@ -188,7 +203,9 @@
                                         label += ': ';
                                     }
                                     if (context.parsed.y !== null) {
-                                        label += new Intl.NumberFormat('ko-KR').format(context.parsed.y);
+                                        label += window.StockCharts && typeof window.StockCharts.formatNumber === 'function'
+                                            ? window.StockCharts.formatNumber(context.parsed.y)
+                                            : new Intl.NumberFormat(document.documentElement.lang || navigator.language || 'en-US').format(context.parsed.y);
                                     }
                                     return label;
                                 }

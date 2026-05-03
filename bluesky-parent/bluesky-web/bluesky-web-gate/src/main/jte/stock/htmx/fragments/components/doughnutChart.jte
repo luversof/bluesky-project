@@ -1,16 +1,21 @@
 @import java.util.List
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param List<String> labels
 @param java.util.List values
-@param String title = "비중 분석"
+@param String title = null
 @param String canvasId = "doughnutChart"
 @param String legendId = "doughnutLegend"
 @param java.util.List<String> colors = null
 @param String cutout = "60%"
 
+!{
+    String resolvedTitle = title != null ? title : MessageUtil.getMessage("stock.chart.title.weight.analysis");
+}
+
 <div class="card bg-base-100 shadow-xl h-full">
     <div class="card-body p-4">
-        <h2 class="card-title text-base-content/70 text-sm mb-2">${title}</h2>
+        <h2 class="card-title text-base-content/70 text-sm mb-2">${resolvedTitle}</h2>
         <div class="flex h-60">
             <div class="w-1/2 h-full flex items-center justify-center relative">
                 <canvas id="${canvasId}" class="amount-chart"></canvas>
@@ -89,7 +94,7 @@
                     + '<span class="truncate font-medium text-base-content/80" title="' + label + '">' + label + '</span>'
                     + '</div>'
                     + '<div class="text-right flex-shrink-0">'
-                    + '<div class="font-bold text-base-content">' + new Intl.NumberFormat("ko-KR").format(value) + '</div>'
+                    + '<div class="font-bold text-base-content">' + window.StockCharts.formatNumber(value) + '</div>'
                     + '<div class="text-[10px] text-base-content/50">' + percent + '</div>'
                     + '</div>'
                     + '</li>';

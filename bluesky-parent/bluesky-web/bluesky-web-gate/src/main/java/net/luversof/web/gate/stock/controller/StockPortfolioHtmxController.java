@@ -1,4 +1,4 @@
-﻿package net.luversof.web.gate.stock.controller;
+package net.luversof.web.gate.stock.controller;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

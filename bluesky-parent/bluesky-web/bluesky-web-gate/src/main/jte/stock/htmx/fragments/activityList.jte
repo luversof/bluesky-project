@@ -8,6 +8,7 @@
 @import java.time.Instant
 @import java.math.BigDecimal
 @import java.text.DecimalFormat
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param List<Activity> activities
 @param java.time.Instant startDate = null
@@ -31,6 +32,28 @@
     BigDecimal safeBuy = buyAmount != null ? buyAmount : BigDecimal.ZERO;
     BigDecimal safeSell = sellAmount != null ? sellAmount : BigDecimal.ZERO;
     BigDecimal safeDividend = dividendAmount != null ? dividendAmount : BigDecimal.ZERO;
+    java.util.function.Function<Object, String> countMessage = value -> java.text.MessageFormat.format(MessageUtil.getMessage("common.count"), value);
+    String advancedSearchLabel = MessageUtil.getMessage("stock.activity.label.advanced.search");
+    String periodLabel = MessageUtil.getMessage("common.label.period");
+    String accountLabel = MessageUtil.getMessage("common.label.account");
+    String stockLabel = MessageUtil.getMessage("common.label.stock");
+    String allLabel = MessageUtil.getMessage("stock.label.period.all");
+    String searchLabel = MessageUtil.getMessage("common.button.search");
+    String resetLabel = MessageUtil.getMessage("common.button.reset");
+    String buyLabel = MessageUtil.getMessage("stock.trade.label.buy");
+    String sellLabel = MessageUtil.getMessage("stock.trade.label.sell");
+    String tradeLabel = MessageUtil.getMessage("stock.activity.label.trade");
+    String dividendLabel = MessageUtil.getMessage("stock.activity.label.dividend");
+    String tradeStatusLabel = MessageUtil.getMessage("stock.activity.card.trade.status");
+    String dividendReceivedLabel = MessageUtil.getMessage("stock.activity.card.dividend.received");
+    String totalActivityLabel = MessageUtil.getMessage("stock.activity.card.total.activity");
+    String noActivityDataLabel = MessageUtil.getMessage("stock.activity.message.no.data");
+    String dateLabel = MessageUtil.getMessage("common.label.date");
+    String typeLabel = MessageUtil.getMessage("common.label.type");
+    String stockNameLabel = MessageUtil.getMessage("stock.activity.label.stock.name");
+    String detailLabel = MessageUtil.getMessage("common.label.detail");
+    String amountLabel = MessageUtil.getMessage("common.label.amount");
+    String sharesLabel = MessageUtil.getMessage("stock.activity.label.shares");
 }
 
 <div id="activityListFragment">
@@ -59,7 +82,7 @@
     <details class="mb-4"$unsafe{startDate != null ? " open" : ""}>
         <summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
-            상세 검색
+            ${advancedSearchLabel}
             @template.stock.htmx.fragments.components.filterBadge(
                 startDate = startDate,
                 endDate = endDate
@@ -72,16 +95,16 @@
           hx-swap="outerHTML"
           hx-trigger="submit">
         <div class="form-control w-full sm:w-auto">
-            <label class="label p-1"><span class="label-text text-xs">기간</span></label>
+            <label class="label p-1"><span class="label-text text-xs">${periodLabel}</span></label>
             <div class="join">
                 <input type="date" name="activityUiStartDate" id="activityStartDateInput" class="input input-sm input-bordered join-item" value="${startDate != null ? startDate.atZone(zone).toLocalDate().toString() : ""}">
                 <input type="date" name="activityUiEndDate" id="activityEndDateInput" class="input input-sm input-bordered join-item" value="${endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1).toString() : ""}">
             </div>
         </div>
         <div class="form-control w-full sm:w-auto">
-            <label class="label p-1"><span class="label-text text-xs">계좌</span></label>
+            <label class="label p-1"><span class="label-text text-xs">${accountLabel}</span></label>
             <select name="accountIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="6">
-                <option value="">전체</option>
+                <option value="">${allLabel}</option>
                 @if(accountList != null)
                     @for(Account account : accountList)
                         <option value="${account.id().toString()}" selected="${selectedAccountId != null && account.id().equals(selectedAccountId)}">${account.name()}</option>
@@ -91,9 +114,9 @@
         </div>
 
         <div class="form-control w-full sm:w-auto">
-            <label class="label p-1"><span class="label-text text-xs">종목</span></label>
+            <label class="label p-1"><span class="label-text text-xs">${stockLabel}</span></label>
             <select name="stockItemIdList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="6">
-                <option value="">전체</option>
+                <option value="">${allLabel}</option>
                 @if(stockItemList != null)
                     @for(StockItem stockItem : stockItemList)
                         <option value="${stockItem.id().toString()}" selected="${selectedStockItemId != null && stockItem.id().equals(selectedStockItemId)}">${stockItem.name()}</option>
@@ -110,14 +133,14 @@
             hx-target="#activityListFragment"
             hx-select="#activityListFragment"
             hx-swap="outerHTML"
-            hx-include="#activitySearchForm">조회</button>
+            hx-include="#activitySearchForm">${searchLabel}</button>
         <button type="button" class="btn btn-sm text-xs"
             hx-get="/stock/htmx/activity-list"
             hx-target="#activityListFragment"
             hx-select="#activityListFragment"
                 hx-swap="outerHTML"
                 hx-include="#activitySearchForm"
-            data-selection-reset="true">초기화</button>
+            data-selection-reset="true">${resetLabel}</button>
     </form>
     </details>
 
@@ -129,14 +152,14 @@
         <!-- Card 1: 매매 현황 -->
         <div class="card bg-base-100 shadow-sm border border-base-200">
             <div class="card-body p-4">
-                <div class="text-xs text-base-content/50 mb-1">매매 현황</div>
+                <div class="text-xs text-base-content/50 mb-1">${tradeStatusLabel}</div>
                 <div class="flex items-baseline gap-1 mb-2">
                     <span class="text-xl font-bold text-error amount-value">₩ ${df.format(safeBuy)}</span>
-                    <span class="text-xs text-base-content/40">매수</span>
+                    <span class="text-xs text-base-content/40">${buyLabel}</span>
                 </div>
                 <div class="flex gap-4 text-xs text-base-content/50">
-                    <span>매수 <span class="font-medium text-base-content/70">${buyCount}건</span></span>
-                    <span>매도 <span class="font-medium text-info amount-value">₩ ${df.format(safeSell)}</span> <span class="text-base-content/70">${sellCount}건</span></span>
+                    <span>${buyLabel} <span class="font-medium text-base-content/70">${countMessage.apply(buyCount)}</span></span>
+                    <span>${sellLabel} <span class="font-medium text-info amount-value">₩ ${df.format(safeSell)}</span> <span class="text-base-content/70">${countMessage.apply(sellCount)}</span></span>
                 </div>
             </div>
         </div>
@@ -144,39 +167,39 @@
         <!-- Card 2: 배당 수령 -->
         <div class="card bg-base-100 shadow-sm border border-base-200">
             <div class="card-body p-4">
-                <div class="text-xs text-base-content/50 mb-1">배당 수령</div>
+                <div class="text-xs text-base-content/50 mb-1">${dividendReceivedLabel}</div>
                 <div class="flex items-baseline gap-1 mb-2">
                     <span class="text-xl font-bold text-dividend amount-value">₩ ${df.format(safeDividend)}</span>
                 </div>
-                <div class="text-xs text-base-content/50">${dividendCount}건</div>
+                <div class="text-xs text-base-content/50">${countMessage.apply(dividendCount)}</div>
             </div>
         </div>
 
         <!-- Card 3: 전체 활동 -->
         <div class="card bg-base-100 shadow-sm border border-base-200">
             <div class="card-body p-4">
-                <div class="text-xs text-base-content/50 mb-1">전체 활동</div>
-                <div class="text-xl font-bold">${activities != null ? activities.size() : 0}<span class="text-sm font-normal text-base-content/50 ml-1">건</span></div>
+                <div class="text-xs text-base-content/50 mb-1">${totalActivityLabel}</div>
+                <div class="text-xl font-bold">${countMessage.apply(activities != null ? activities.size() : 0)}</div>
                 <div class="flex gap-4 text-xs text-base-content/50 mt-1">
-                    <span>매매 <span class="font-medium text-base-content/70">${buyCount + sellCount}건</span></span>
-                    <span>배당 <span class="font-medium text-base-content/70">${dividendCount}건</span></span>
+                    <span>${tradeLabel} <span class="font-medium text-base-content/70">${countMessage.apply(buyCount + sellCount)}</span></span>
+                    <span>${dividendLabel} <span class="font-medium text-base-content/70">${countMessage.apply(dividendCount)}</span></span>
                 </div>
             </div>
         </div>
     </div>
         <div class="card-body">
             @if(activities == null || activities.isEmpty())
-                <div class="text-center text-base-content/50 py-10">활동 내역이 없습니다.</div>
+                <div class="text-center text-base-content/50 py-10">${noActivityDataLabel}</div>
             @else
                 <div class="overflow-x-auto">
                     <table class="table table-zebra w-full">
                         <thead>
                             <tr>
-                                <th>일자</th>
-                                <th>유형</th>
-                                <th>종목명</th>
-                                <th>상세</th>
-                                <th class="text-right">금액</th>
+                                <th>${dateLabel}</th>
+                                <th>${typeLabel}</th>
+                                <th>${stockNameLabel}</th>
+                                <th>${detailLabel}</th>
+                                <th class="text-right">${amountLabel}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -187,15 +210,15 @@
                                     </td>
                                     <td>
                                         @if("TRADE".equals(activity.type()))
-                                            <span class="badge badge-sm badge-outline ${"BUY".equals(activity.tradeType()) ? "badge-error" : "badge-info"}">${"BUY".equals(activity.tradeType()) ? "매수" : "매도"}</span>
+                                            <span class="badge badge-sm badge-outline ${"BUY".equals(activity.tradeType()) ? "badge-error" : "badge-info"}">${"BUY".equals(activity.tradeType()) ? buyLabel : sellLabel}</span>
                                         @else
-                                            <span class="badge badge-sm badge-outline badge-success">배당</span>
+                                            <span class="badge badge-sm badge-outline badge-success">${dividendLabel}</span>
                                         @endif
                                     </td>
                                     <td class="font-bold">${activity.stockItemName()}</td>
                                     <td>
                                         @if("TRADE".equals(activity.type()))
-                                            <span class="amount-value">${activity.quantity()}</span>주
+                                            <span class="amount-value">${activity.quantity()}</span> ${sharesLabel}
                                         @else
                                             ${activity.description()}
                                         @endif
@@ -216,7 +239,7 @@
                                         @endif
                                     </td>
                                     <td class="text-right font-mono font-bold amount-value ${"DIVIDEND".equals(activity.type()) ? "text-dividend" : ""}">
-                                        ${String.format("%,d", activity.amount() != null ? activity.amount().longValue() : 0)} 원
+                                        ₩ ${String.format("%,d", activity.amount() != null ? activity.amount().longValue() : 0)}
                                     </td>
                                 </tr>
                             @endfor

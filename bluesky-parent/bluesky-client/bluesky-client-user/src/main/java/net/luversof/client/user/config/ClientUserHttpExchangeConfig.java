@@ -2,6 +2,7 @@ package net.luversof.client.user.config;
 
 import java.util.function.Function;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -22,7 +23,8 @@ public class ClientUserHttpExchangeConfig {
   }
 
   @Bean
-  UserInfoApiClient userInfoApiClient(HttpServiceProxyFactory clientUserHttpServiceProxyFactory) {
+  UserInfoApiClient userInfoApiClient(
+      @Qualifier("clientUserHttpServiceProxyFactory") HttpServiceProxyFactory clientUserHttpServiceProxyFactory) {
     return clientUserHttpServiceProxyFactory.createClient(UserInfoApiClient.class);
   }
 }

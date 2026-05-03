@@ -1,3 +1,5 @@
+@import io.github.luversof.boot.context.support.MessageUtil
+
 @import java.util.UUID
 @import java.time.Instant
 
@@ -13,7 +15,7 @@
         || (startDate != null)
         || (endDate != null)
         || (badgeText != null && !badgeText.isEmpty());
-    String finalBadge = (badgeText != null && !badgeText.isEmpty()) ? badgeText : "필터 적용 중";
+    String finalBadge = (badgeText != null && !badgeText.isEmpty()) ? badgeText : MessageUtil.getMessage("stock.label.filter.applied");
 }
 
 @if(hasFilter)

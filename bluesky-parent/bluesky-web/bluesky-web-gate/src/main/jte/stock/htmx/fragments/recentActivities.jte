@@ -3,6 +3,7 @@
 @import net.luversof.web.gate.stock.controller.StockTradeHtmxController.Activity
 @import java.time.ZoneId
 @import java.time.format.DateTimeFormatter
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param List<Activity> activities
 @param String thisMonthLabel
@@ -13,17 +14,29 @@
 @param long dividendCount
 @param BigDecimal dividendAmount
 
+!{
+    java.util.function.Function<Object, String> countMessage = value -> java.text.MessageFormat.format(MessageUtil.getMessage("common.count"), value);
+    String recentActivityTitle = MessageUtil.getMessage("stock.recent.activity.title");
+    String viewAllLabel = MessageUtil.getMessage("common.button.view.all");
+    String noActivityLabel = MessageUtil.getMessage("stock.activity.message.no.data");
+    String dividendLabel = MessageUtil.getMessage("stock.activity.label.dividend");
+    String buyLabel = MessageUtil.getMessage("stock.trade.label.buy");
+    String sellLabel = MessageUtil.getMessage("stock.trade.label.sell");
+    String sharesLabel = MessageUtil.getMessage("stock.activity.label.shares");
+    String monthSummaryLabel = java.text.MessageFormat.format(MessageUtil.getMessage("stock.recent.activity.month.summary"), thisMonthLabel);
+}
+
 <div class="card bg-base-100 shadow-xl">
     <div class="card-body">
         <div class="flex justify-between items-center mb-3">
-            <h2 class="card-title text-xl">최근 활동</h2>
-            <a href="/stock/activity" class="btn btn-sm btn-ghost">전체보기</a>
+            <h2 class="card-title text-xl">${recentActivityTitle}</h2>
+            <a href="/stock/activity" class="btn btn-sm btn-ghost">${viewAllLabel}</a>
         </div>
         <div class="flex gap-4">
             <%-- 좌: 활동 목록 --%>
             <div class="flex-1 min-w-0">
                 @if(activities == null || activities.isEmpty())
-                    <div class="text-center text-base-content/50 py-4">최근 활동 내역이 없습니다.</div>
+                    <div class="text-center text-base-content/50 py-4">${noActivityLabel}</div>
                 @else
                     <ul class="space-y-0">
                         @for(Activity activity : activities)
@@ -36,18 +49,18 @@
                                 if ("DIVIDEND".equals(activity.type())) {
                                     dotColor = "bg-success";
                                     badgeClass = "badge-success badge-outline";
-                                    badgeText = "배당";
+                                    badgeText = dividendLabel;
                                     amountColor = "text-dividend";
                                 } else if ("TRADE".equals(activity.type())) {
                                     if ("BUY".equals(activity.tradeType())) {
                                         dotColor = "bg-error";
                                         badgeClass = "badge-error badge-outline";
-                                        badgeText = "매수";
+                                        badgeText = buyLabel;
                                         amountColor = "text-base-content/60";
                                     } else {
                                         dotColor = "bg-info";
                                         badgeClass = "badge-info badge-outline";
-                                        badgeText = "매도";
+                                        badgeText = sellLabel;
                                         amountColor = "text-info";
                                     }
                                 }
@@ -63,7 +76,7 @@
                                     </div>
                                     <div class="text-xs text-base-content/50">
                                         @if("TRADE".equals(activity.type()))
-                                            <span class="amount-value">${activity.quantity()}</span>주
+                                            <span class="amount-value">${activity.quantity()}</span>${sharesLabel}
                                         @else
                                             ${activity.description()}
                                         @endif
@@ -71,7 +84,7 @@
                                 </div>
                                 <div class="text-right shrink-0">
                                     <div class="font-mono font-bold text-xs amount-value ${amountColor}">
-                                        ${String.format("%,d", activity.amount() != null ? activity.amount().longValue() : 0)}원
+                                        ₩${String.format("%,d", activity.amount() != null ? activity.amount().longValue() : 0)}
                                     </div>
                                     <div class="text-xs text-base-content/40 mt-0.5">
                                         ${activity.date() != null ? activity.date().atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("MM-dd")) : ""}
@@ -84,32 +97,32 @@
             </div>
             <%-- 우: 이번 달 요약 --%>
             <div class="w-44 shrink-0 border-l border-base-200 pl-4">
-                <div class="text-xs font-semibold text-base-content/50 mb-2">${thisMonthLabel} 요약</div>
+                <div class="text-xs font-semibold text-base-content/50 mb-2">${monthSummaryLabel}</div>
                 <div class="space-y-2">
                     <div class="flex justify-between items-center">
-                        <span class="badge badge-xs badge-error badge-outline">매수</span>
+                        <span class="badge badge-xs badge-error badge-outline">${buyLabel}</span>
                         <div class="text-right">
-                            <div class="text-xs text-base-content/50">${buyCount}건</div>
+                            <div class="text-xs text-base-content/50">${countMessage.apply(buyCount)}</div>
                             <div class="font-mono text-xs font-bold amount-value text-base-content/70">
-                                ${String.format("%,d", buyAmount != null ? buyAmount.longValue() : 0)}원
+                                ₩${String.format("%,d", buyAmount != null ? buyAmount.longValue() : 0)}
                             </div>
                         </div>
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="badge badge-xs badge-info badge-outline">매도</span>
+                        <span class="badge badge-xs badge-info badge-outline">${sellLabel}</span>
                         <div class="text-right">
-                            <div class="text-xs text-base-content/50">${sellCount}건</div>
+                            <div class="text-xs text-base-content/50">${countMessage.apply(sellCount)}</div>
                             <div class="font-mono text-xs font-bold amount-value text-info">
-                                ${String.format("%,d", sellAmount != null ? sellAmount.longValue() : 0)}원
+                                ₩${String.format("%,d", sellAmount != null ? sellAmount.longValue() : 0)}
                             </div>
                         </div>
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="badge badge-xs badge-success badge-outline">배당</span>
+                        <span class="badge badge-xs badge-success badge-outline">${dividendLabel}</span>
                         <div class="text-right">
-                            <div class="text-xs text-base-content/50">${dividendCount}건</div>
+                            <div class="text-xs text-base-content/50">${countMessage.apply(dividendCount)}</div>
                             <div class="font-mono text-xs font-bold amount-value text-dividend">
-                                ${String.format("%,d", dividendAmount != null ? dividendAmount.longValue() : 0)}원
+                                ₩${String.format("%,d", dividendAmount != null ? dividendAmount.longValue() : 0)}
                             </div>
                         </div>
                     </div>

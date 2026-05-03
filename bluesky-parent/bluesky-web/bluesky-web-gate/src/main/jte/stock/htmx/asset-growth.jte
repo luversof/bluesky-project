@@ -2,6 +2,7 @@
 @import java.time.ZoneId
 @import java.time.format.DateTimeFormatter
 @import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param Object timeSeries
 @param String rangeMode
@@ -41,23 +42,44 @@
     boolean canNext = !isAllMode && endLocal != null && endLocal.isBefore(today);
     boolean canPrev = !isAllMode && startLocal != null && dataFirstDate != null && !dataFirstDate.isEmpty()
             && startLocal.isAfter(java.time.LocalDate.parse(dataFirstDate));
+
+    String assetGrowthTitle = MessageUtil.getMessage("stock.page.asset.growth.title");
+    String chartHelpTitle = MessageUtil.getMessage("stock.asset.growth.help.title");
+    String chartHelpWheel = MessageUtil.getMessage("stock.asset.growth.help.zoom.wheel");
+    String chartHelpDrag = MessageUtil.getMessage("stock.asset.growth.help.zoom.drag");
+    String chartHelpPan = MessageUtil.getMessage("stock.asset.growth.help.pan.alt.drag");
+    String noDataLabel = MessageUtil.getMessage("common.message.no.data");
+    String chartDescriptionLabel = MessageUtil.getMessage("stock.asset.growth.chart.description");
+    String clickDateHoldingsLabel = MessageUtil.getMessage("stock.asset.growth.chart.click.date");
+    String profitAnalysisLabel = MessageUtil.getMessage("stock.asset.growth.profit.analysis");
+    String principalLabel = MessageUtil.getMessage("stock.label.principal");
+    String totalAssetDatasetLabel = MessageUtil.getMessage("stock.asset.growth.dataset.total.asset");
+    String cumulativeRealizedDatasetLabel = MessageUtil.getMessage("stock.asset.growth.dataset.cumulative.realized");
+    String cumulativeDividendLabel = MessageUtil.getMessage("stock.summary.label.cumulative.dividend");
+    String cumulativeTotalDatasetLabel = MessageUtil.getMessage("stock.asset.growth.dataset.cumulative.total");
+    String unrealizedProfitLabel = MessageUtil.getMessage("stock.asset.growth.tooltip.unrealized.profit");
+    String clickTradeHistoryLabel = MessageUtil.getMessage("stock.asset.growth.tooltip.click.trade.history");
+    String tradeCountLabel = MessageUtil.getMessage("stock.asset.growth.tooltip.trade.count");
+    String dailyRealizedProfitLabel = MessageUtil.getMessage("stock.asset.growth.tooltip.daily.realized.profit");
+    String totalAssetAxisLabel = MessageUtil.getMessage("stock.asset.growth.axis.total.asset");
+    String cumulativeProfitAxisLabel = MessageUtil.getMessage("stock.asset.growth.axis.cumulative.profit");
 }
 
 <div id="assetGrowthFragment" class="card bg-base-100 shadow-xl">
     <div class="card-body">
         <div class="flex items-center gap-2 mb-2">
-            <h2 class="card-title text-base-content/70 m-0">누적 자산 성장 차트</h2>
+            <h2 class="card-title text-base-content/70 m-0">${assetGrowthTitle}</h2>
             <div class="dropdown dropdown-hover dropdown-right">
                 <label tabindex="0" class="btn btn-circle btn-ghost btn-xs text-info">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-5 h-5 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </label>
                 <div tabindex="0" class="card compact dropdown-content z-[10] shadow-lg bg-base-200 rounded-box w-max">
                     <div class="card-body">
-                        <h3 class="card-title text-sm mb-1">차트 조작 도움말</h3>
+                        <h3 class="card-title text-sm mb-1">${chartHelpTitle}</h3>
                         <ul class="text-xs list-disc pl-4 space-y-1 whitespace-nowrap">
-                            <li><strong>마우스 휠:</strong> 차트 확대 및 축소 (Zoom)</li>
-                            <li><strong>클릭 후 드래그:</strong> 선택한 특정 구간 확대</li>
-                            <li><strong>Alt + 드래그:</strong> 차트 좌우 이동 (Pan)</li>
+                            <li>${chartHelpWheel}</li>
+                            <li>${chartHelpDrag}</li>
+                            <li>${chartHelpPan}</li>
                         </ul>
                     </div>
                 </div>
@@ -66,7 +88,7 @@
         <div class="w-full flex flex-col gap-4">
             @if(ts == null || ts.isEmpty())
                 <div class="w-full flex justify-center items-center" style="height: 600px;">
-                    <p class="text-gray-500">데이터가 없습니다.</p>
+                    <p class="text-gray-500">${noDataLabel}</p>
                 </div>
             @else
                 <div class="flex items-center justify-between mb-2">
@@ -80,7 +102,7 @@
                         )
                         <span id="assetRangeDisplay" class="text-xs text-base-content/40 ml-1"></span>
                     </div>
-                    <p class="text-xs text-base-content/50">📈 자산 추이 &mdash; 투자 원금(점선) 대비 총 평가액(실선), 색상 면적이 현재 손익 규모 &bull; <span class="text-info">날짜 클릭 시 해당일 보유 종목 조회</span></p>
+                    <p class="text-xs text-base-content/50">📈 ${chartDescriptionLabel} &bull; <span class="text-info">${clickDateHoldingsLabel}</span></p>
                     <style>
                         /* Remove default bottom margin from the included nav component so it aligns with the description */
                         .asset-growth-nav-wrapper > div { margin-bottom: 0 !important; }
@@ -92,7 +114,7 @@
                         <span class="loading loading-spinner loading-md text-primary"></span>
                     </div>
                 </div>
-                <p class="text-xs text-base-content/50 text-center py-1">💰 손익 분석 &mdash; <span class="text-indigo-400">■</span> 누적 결산 손익 + <span class="text-green-400">■</span> 누적 배당금 = 수익 합산 선</p>
+                <p class="text-xs text-base-content/50 text-center py-1">💰 ${profitAnalysisLabel} &mdash; <span class="text-indigo-400">■</span> ${cumulativeRealizedDatasetLabel} + <span class="text-green-400">■</span> ${cumulativeDividendLabel} = ${cumulativeTotalDatasetLabel}</p>
                 <div class="w-full" style="height: 250px;">
                     <canvas id="dividendChart" class="amount-chart"></canvas>
                 </div>
@@ -962,9 +984,26 @@
             };
 
             var yTicksCallback = function(value) {
-                if (value >= 100000000 || value <= -100000000) return (value / 100000000).toFixed(1) + '억';
-                if (value >= 10000 || value <= -10000) return (value / 10000).toFixed(0) + '만';
-                return new Intl.NumberFormat('ko-KR').format(value);
+                if (window.StockCharts) return window.StockCharts.formatCompactNumber(value);
+                return new Intl.NumberFormat().format(value);
+            };
+
+            var locale = window.StockCharts ? window.StockCharts.getLocale() : undefined;
+            var percentFormatter = new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            var formatNumber = function(value) {
+                return window.StockCharts ? window.StockCharts.formatNumber(value) : new Intl.NumberFormat(locale).format(value);
+            };
+            var formatCurrency = function(value) {
+                return window.StockCharts ? window.StockCharts.formatCurrency(Math.round(value)) : ('₩' + Math.round(value).toLocaleString());
+            };
+            var formatSignedCurrency = function(value) {
+                var rounded = Math.round(value || 0);
+                var sign = rounded >= 0 ? '+' : '-';
+                return sign + formatCurrency(Math.abs(rounded));
+            };
+            var formatSignedPercent = function(value) {
+                var sign = value >= 0 ? '+' : '-';
+                return sign + percentFormatter.format(Math.abs(value)) + '%';
             };
 
             // \ub9e4\uc218/\ub9e4\ub3c4 \ub9c8\ucee4 \ub370\uc774\ud130 \uc0dd\uc131: tradeCount > 0 \uc778 \uc778\ub371\uc2a4\ub97c scatter \ud3ec\uc778\ud2b8\ub85c \ubcc0\ud658
@@ -1059,7 +1098,7 @@
                     datasets: [
                         {
                             type: 'line',
-                            label: '투자 원금',
+                            label: '${principalLabel}',
                             data: totalCostData,
                             borderColor: 'rgba(156, 163, 175, 1)',
                             borderWidth: 2,
@@ -1070,7 +1109,7 @@
                         },
                         {
                             type: 'line',
-                            label: '총 자산 평가액',
+                            label: '${totalAssetDatasetLabel}',
                             data: totalValueData,
                             borderColor: 'rgba(75, 192, 192, 1)',
                             borderWidth: 2,
@@ -1109,7 +1148,7 @@
                                     var label = context.dataset.label || '';
                                     if (label) label += ': ';
                                     if (context.parsed.y !== null) {
-                                        label += new Intl.NumberFormat('ko-KR').format(context.parsed.y) + '원';
+                                        label += formatCurrency(context.parsed.y);
                                     }
                                     return label;
                                 },
@@ -1121,16 +1160,14 @@
                                     var value = parseFloat(totalValueData[idx]);
                                     var cost = parseFloat(totalCostData[idx]);
                                     var diff = value - cost;
-                                    var sign = diff >= 0 ? '+' : '-';
-                                    var pct = cost !== 0 ? ((diff / cost) * 100).toFixed(2) : '0.00';
-                                    var lines = ['─────────────────', '평가 손익: ' + sign + new Intl.NumberFormat('ko-KR').format(Math.abs(diff)) + '원 (' + sign + pct + '%)']; 
+                                    var pct = cost !== 0 ? ((diff / cost) * 100) : 0;
+                                    var lines = ['─────────────────', '${unrealizedProfitLabel}: ' + formatSignedCurrency(diff) + ' (' + formatSignedPercent(pct) + ')']; 
                                     if (tradeCountData[idx] > 0) {
                                         var drp = parseFloat(dailyRealizedProfitData[idx]);
-                                        var tradeSign = drp >= 0 ? '+' : '';
                                         lines.push('─────────────────');
-                                        lines.push('클릭하면 매매 내역 확인 ↓');
-                                        lines.push('거래 횟수: ' + tradeCountData[idx] + '건');
-                                        if (drp !== 0) lines.push('당일 실현손익: ' + tradeSign + new Intl.NumberFormat('ko-KR').format(drp) + '원');
+                                        lines.push('${clickTradeHistoryLabel}');
+                                        lines.push('${tradeCountLabel}'.replace('{0}', formatNumber(tradeCountData[idx])));
+                                        if (drp !== 0) lines.push('${dailyRealizedProfitLabel}: ' + formatSignedCurrency(drp));
                                     }
                                     return lines;
                                 }
@@ -1152,7 +1189,7 @@
                             display: true,
                             position: 'left',
                             beginAtZero: false,
-                            title: { display: true, text: '금융 자산 총액' },
+                            title: { display: true, text: '${totalAssetAxisLabel}' },
                             ticks: { callback: yTicksCallback }
                         },
 
@@ -1195,7 +1232,7 @@
                     labels: labels,
                     datasets: [
                         {
-                            label: '누적 결산 손익(실현)',
+                            label: '${cumulativeRealizedDatasetLabel}',
                             data: cumulativeRealizedProfitData,
                             borderColor: 'rgba(99, 102, 241, 1)',
                             backgroundColor: 'rgba(99, 102, 241, 0.25)',
@@ -1207,7 +1244,7 @@
                             yAxisID: 'y'
                         },
                         {
-                            label: '수익 합산(결산+배당)',
+                            label: '${cumulativeTotalDatasetLabel}',
                             data: totalCumulativeProfitData,
                             borderColor: 'rgba(34, 197, 94, 1)',
                             backgroundColor: 'rgba(34, 197, 94, 0.25)',
@@ -1242,18 +1279,14 @@
                                 afterBody: function(tooltipItems) {
                                     if (!tooltipItems.length) return [];
                                     var idx = tooltipItems[0].dataIndex;
-                                    var fmt = function(val) {
-                                        var v = Math.round(parseFloat(val) || 0);
-                                        return (v >= 0 ? '+' : '-') + new Intl.NumberFormat('ko-KR').format(Math.abs(v)) + '원';
-                                    };
                                     var realized  = cumulativeRealizedProfitData[idx];
                                     var dividend  = cumulativeDividendData[idx];
                                     var total     = (parseFloat(realized) || 0) + (parseFloat(dividend) || 0);
                                     return [
-                                        '누적 결산 손익: ' + fmt(realized),
-                                        '누적 배당금:    ' + fmt(dividend),
+                                        '${cumulativeRealizedDatasetLabel}: ' + formatSignedCurrency(realized),
+                                        '${cumulativeDividendLabel}: ' + formatSignedCurrency(dividend),
                                         '─────────────────────',
-                                        '수익 합산:      ' + fmt(total)
+                                        '${cumulativeTotalDatasetLabel}: ' + formatSignedCurrency(total)
                                     ];
                                 }
                             }
@@ -1273,7 +1306,7 @@
                         y: {
                             display: true,
                             position: 'left',
-                            title: { display: true, text: '누적 손익 / 이익' },
+                            title: { display: true, text: '${cumulativeProfitAxisLabel}' },
                             ticks: { callback: yTicksCallback }
                         }
                     },

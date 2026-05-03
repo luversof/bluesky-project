@@ -2,6 +2,7 @@
 @import java.math.BigDecimal
 @import java.util.List
 @import java.util.ArrayList
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param Map<String, BigDecimal> accountAllocation
 
@@ -19,7 +20,7 @@
 @template.stock.htmx.fragments.components.doughnutChart(
     labels = labels,
     values = vals,
-    title = "계좌 비중",
+    title = MessageUtil.getMessage("stock.chart.title.account.allocation"),
     canvasId = "accountAllocationChart",
     legendId = "accountAllocationLegend"
 )

@@ -1,4 +1,5 @@
 @import java.time.LocalDate
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param String pickerName
 @param String btnClass
@@ -8,19 +9,33 @@
 @param LocalDate startDate = null
 @param LocalDate endDate = null
 
+!{
+    String periodLabel = MessageUtil.getMessage("common.label.period");
+    String previousLabel = MessageUtil.getMessage("common.button.previous");
+    String nextLabel = MessageUtil.getMessage("common.button.next");
+    String thisMonthLabel = MessageUtil.getMessage("stock.range.this.month");
+    String oneMonthLabel = MessageUtil.getMessage("stock.range.one.month");
+    String threeMonthsLabel = MessageUtil.getMessage("stock.range.three.months");
+    String sixMonthsLabel = MessageUtil.getMessage("stock.range.six.months");
+    String thisYearLabel = MessageUtil.getMessage("stock.range.this.year");
+    String oneYearLabel = MessageUtil.getMessage("stock.range.one.year");
+    String threeYearsLabel = MessageUtil.getMessage("stock.range.three.years");
+    String allLabel = MessageUtil.getMessage("stock.label.period.all");
+}
+
 <div class="flex flex-wrap gap-2 mb-3 items-center">
-    <span class="text-xs opacity-50 mr-1">기간</span>
+    <span class="text-xs opacity-50 mr-1">${periodLabel}</span>
     <button type="button" class="btn btn-xs btn-ghost date-range-prev${!canPrev ? " btn-disabled opacity-40" : ""}" $unsafe{!canPrev ? "disabled" : ""} onclick="${pickerName}.jumpToEdge('start')">«</button>
-    <button type="button" class="btn btn-xs btn-ghost date-range-prev${!canPrev ? " btn-disabled opacity-40" : ""}" $unsafe{!canPrev ? "disabled" : ""} onclick="${pickerName}.shift(-1)">‹ 이전</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("mtd") ? "btn-primary" : "btn-ghost"}" onclick="${pickerName}.set('mtd',this)">이번달</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : "btn-ghost"}" onclick="${pickerName}.set(1,this)">1개월</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("3") ? "btn-primary" : "btn-ghost"}" onclick="${pickerName}.set(3,this)">3개월</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("6") ? "btn-primary" : "btn-ghost"}" onclick="${pickerName}.set(6,this)">6개월</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("ytd") ? "btn-primary" : "btn-ghost"}" onclick="${pickerName}.set('ytd',this)">올해</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("12") ? "btn-primary" : "btn-ghost"}" onclick="${pickerName}.set(12,this)">1년</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("36") ? "btn-primary" : "btn-ghost"}" onclick="${pickerName}.set(36,this)">3년</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("all") ? "btn-primary" : "btn-ghost"}" onclick="${pickerName}.set(0,this)">전체</button>
-    <button type="button" class="btn btn-xs btn-ghost date-range-next${!canNext ? " btn-disabled opacity-40" : ""}" $unsafe{!canNext ? "disabled" : ""} onclick="${pickerName}.shift(1)">다음 ›</button>
+    <button type="button" class="btn btn-xs btn-ghost date-range-prev${!canPrev ? " btn-disabled opacity-40" : ""}" $unsafe{!canPrev ? "disabled" : ""} onclick="${pickerName}.shift(-1)">‹ ${previousLabel}</button>
+    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("mtd") ? "btn-primary" : "btn-ghost"}" onclick="${pickerName}.set('mtd',this)">${thisMonthLabel}</button>
+    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : "btn-ghost"}" onclick="${pickerName}.set(1,this)">${oneMonthLabel}</button>
+    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("3") ? "btn-primary" : "btn-ghost"}" onclick="${pickerName}.set(3,this)">${threeMonthsLabel}</button>
+    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("6") ? "btn-primary" : "btn-ghost"}" onclick="${pickerName}.set(6,this)">${sixMonthsLabel}</button>
+    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("ytd") ? "btn-primary" : "btn-ghost"}" onclick="${pickerName}.set('ytd',this)">${thisYearLabel}</button>
+    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("12") ? "btn-primary" : "btn-ghost"}" onclick="${pickerName}.set(12,this)">${oneYearLabel}</button>
+    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("36") ? "btn-primary" : "btn-ghost"}" onclick="${pickerName}.set(36,this)">${threeYearsLabel}</button>
+    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("all") ? "btn-primary" : "btn-ghost"}" onclick="${pickerName}.set(0,this)">${allLabel}</button>
+    <button type="button" class="btn btn-xs btn-ghost date-range-next${!canNext ? " btn-disabled opacity-40" : ""}" $unsafe{!canNext ? "disabled" : ""} onclick="${pickerName}.shift(1)">${nextLabel} ›</button>
     <button type="button" class="btn btn-xs btn-ghost date-range-next${!canNext ? " btn-disabled opacity-40" : ""}" $unsafe{!canNext ? "disabled" : ""} onclick="${pickerName}.jumpToEdge('end')">»</button>
     @if(startDate != null || endDate != null)
         <span class="text-xs text-base-content/40 ml-1">

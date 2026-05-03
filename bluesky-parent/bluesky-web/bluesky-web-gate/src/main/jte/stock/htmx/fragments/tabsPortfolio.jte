@@ -2,6 +2,7 @@
 @import java.util.Map
 @import java.math.BigDecimal
 @import net.luversof.web.gate.stock.domain.TradeProfit
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param String sort = ""
 @param String viewGroupBy = "ACCOUNT"
@@ -13,6 +14,16 @@
 
 !{String sortField = sort != null && !sort.isEmpty() ? sort.split(",")[0] : "";}
 !{String sortDir = sort != null && sort.contains(",") ? sort.split(",")[1] : "";}
+!{String accountLabel = MessageUtil.getMessage("common.label.account");}
+!{String stockNameLabel = MessageUtil.getMessage("stock.activity.label.stock.name");}
+!{String quantityLabel = MessageUtil.getMessage("common.label.quantity");}
+!{String averageCostLabel = MessageUtil.getMessage("stock.column.average.cost");}
+!{String currentPriceLabel = MessageUtil.getMessage("stock.column.current.price");}
+!{String evaluationAmountLabel = MessageUtil.getMessage("stock.profit.evaluation.amount");}
+!{String evaluationProfitLabel = MessageUtil.getMessage("stock.profit.unrealized");}
+!{String realizedProfitLabel = MessageUtil.getMessage("stock.profit.realized");}
+!{String subtotalLabel = MessageUtil.getMessage("stock.label.subtotal");}
+!{String totalLabel = MessageUtil.getMessage("common.label.total");}
 
 <div class="overflow-x-auto">
     <table class="table table-hover table-striped w-full">
@@ -21,35 +32,35 @@
             <th class="cursor-pointer hover:bg-base-300 ${"STOCK".equals(viewGroupBy) || "ACCOUNT".equals(viewGroupBy) ? "hidden" : ""}" 
                 hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
                 hx-vals='{"sort": "accountName,${"accountName".equals(sortField) && "asc".equals(sortDir) ? "desc" : "asc"}", "viewGroupBy": "${viewGroupBy}"}'>
-                계좌 @if("accountName".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
+                ${accountLabel} @if("accountName".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
             </th>
             <th class="cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
                 hx-vals='{"sort": "stockItemName,${"stockItemName".equals(sortField) && "asc".equals(sortDir) ? "desc" : "asc"}", "viewGroupBy": "${viewGroupBy}"}'>
-                종목명 @if("stockItemName".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
+                ${stockNameLabel} @if("stockItemName".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
             </th>
             <th class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
                 hx-vals='{"sort": "holdingQuantity,${"holdingQuantity".equals(sortField) && "asc".equals(sortDir) ? "desc" : "asc"}", "viewGroupBy": "${viewGroupBy}"}'>
-                보유수량 @if("holdingQuantity".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
+                ${quantityLabel} @if("holdingQuantity".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
             </th>
             <th class="text-right cursor-pointer hover:bg-base-300 hidden xl:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
                 hx-vals='{"sort": "averageBuyPrice,${"averageBuyPrice".equals(sortField) && "asc".equals(sortDir) ? "desc" : "asc"}", "viewGroupBy": "${viewGroupBy}"}'>
-                평균단가 @if("averageBuyPrice".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
+                ${averageCostLabel} @if("averageBuyPrice".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
             </th>
             <th class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
                 hx-vals='{"sort": "currentPrice,${"currentPrice".equals(sortField) && "asc".equals(sortDir) ? "desc" : "asc"}", "viewGroupBy": "${viewGroupBy}"}'>
-                현재가 @if("currentPrice".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
+                ${currentPriceLabel} @if("currentPrice".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
             </th>
             <th class="text-right cursor-pointer hover:bg-base-300 hidden md:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
                 hx-vals='{"sort": "evaluationAmount,${"evaluationAmount".equals(sortField) && "asc".equals(sortDir) ? "desc" : "asc"}", "viewGroupBy": "${viewGroupBy}"}'>
-                평가금액 @if("evaluationAmount".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
+                ${evaluationAmountLabel} @if("evaluationAmount".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
             </th>
             <th class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
                 hx-vals='{"sort": "evaluationProfit,${"evaluationProfit".equals(sortField) && "asc".equals(sortDir) ? "desc" : "asc"}", "viewGroupBy": "${viewGroupBy}"}'>
-                평가손익 @if("evaluationProfit".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
+                ${evaluationProfitLabel} @if("evaluationProfit".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
             </th>
             <th class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
                 hx-vals='{"sort": "realizedProfit,${"realizedProfit".equals(sortField) && "asc".equals(sortDir) ? "desc" : "asc"}", "viewGroupBy": "${viewGroupBy}"}'>
-                실현손익 @if("realizedProfit".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
+                ${realizedProfitLabel} @if("realizedProfit".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
             </th>
         </tr>
         </thead>
@@ -80,7 +91,7 @@
                 @if("ACCOUNT".equals(viewGroupBy) && (index == tradeProfitList.size() - 1 || !item.accountName().equals(tradeProfitList.get(index + 1).accountName())))
                     <tr class="bg-base-200/50 font-bold border-t border-base-300">
                         <td class="${"STOCK".equals(viewGroupBy) || "ACCOUNT".equals(viewGroupBy) ? "hidden" : ""}"></td>
-                        <td class="text-right pr-4">소계</td> <!-- Right Align Label adjacent to values -->
+                        <td class="text-right pr-4">${subtotalLabel}</td> <!-- Right Align Label adjacent to values -->
                         <td class="hidden lg:table-cell"></td>
                         <td class="hidden xl:table-cell"></td>
                         <td class="hidden lg:table-cell"></td>
@@ -102,7 +113,7 @@
         <tfoot>
         <tr class="bg-base-200 font-bold">
             <td class="${"STOCK".equals(viewGroupBy) || "ACCOUNT".equals(viewGroupBy) ? "hidden" : ""} text-center text-base-content"></td>
-            <td class="text-center text-base-content">합계</td>
+            <td class="text-center text-base-content">${totalLabel}</td>
             <td class="hidden lg:table-cell"></td>
             <td class="hidden xl:table-cell"></td>
             <td class="hidden lg:table-cell"></td>

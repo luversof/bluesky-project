@@ -2,6 +2,7 @@ package net.luversof.web.gate.bookkeeping.config;
 
 import java.util.function.Function;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,27 +25,32 @@ public class GateBookkeepingConfig {
   }
 
   @Bean
-  AssetClient assetClient(HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
+  AssetClient assetClient(
+      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
     return bookkeepingHttpServiceProxyFactory.createClient(AssetClient.class);
   }
 
   @Bean
-  AssetGroupClient assetGroupClient(HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
+  AssetGroupClient assetGroupClient(
+      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
     return bookkeepingHttpServiceProxyFactory.createClient(AssetGroupClient.class);
   }
 
   @Bean
-  BookkeepingClient bookkeepingClient(HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
+  BookkeepingClient bookkeepingClient(
+      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
     return bookkeepingHttpServiceProxyFactory.createClient(BookkeepingClient.class);
   }
 
   @Bean
-  EntryClient entryClient(HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
+  EntryClient entryClient(
+      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
     return bookkeepingHttpServiceProxyFactory.createClient(EntryClient.class);
   }
 
   @Bean
-  EntryGroupClient entryGroupClient(HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
+  EntryGroupClient entryGroupClient(
+      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
     return bookkeepingHttpServiceProxyFactory.createClient(EntryGroupClient.class);
   }
 }

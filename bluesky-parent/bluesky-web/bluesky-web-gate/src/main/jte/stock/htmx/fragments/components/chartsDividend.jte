@@ -2,6 +2,7 @@
 @import java.math.BigDecimal
 @import java.util.List
 @import java.util.ArrayList
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param Map<String, BigDecimal> monthlyDividends
 
@@ -19,6 +20,6 @@
 @template.stock.htmx.fragments.components.barChart(
     labels = labels,
     values = vals,
-    title = "월별 배당금",
+    title = MessageUtil.getMessage("stock.dividend.chart.title.monthly.simple"),
     canvasId = "dividendChart"
 )

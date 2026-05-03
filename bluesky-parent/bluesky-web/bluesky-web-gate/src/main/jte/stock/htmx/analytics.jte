@@ -1,18 +1,24 @@
 @import java.util.List
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param List<Integer> years
 @param int currentYear
 @param int currentMonth
+
+!{
+    java.util.function.Function<Object, String> yearLabel = value -> java.text.MessageFormat.format(MessageUtil.getMessage("stock.label.year"), value);
+    java.util.function.Function<Object, String> monthLabel = value -> java.text.MessageFormat.format(MessageUtil.getMessage("stock.label.month"), value);
+}
 
 <div class="flex flex-col gap-6">
     <!-- Tabs -->
     <div role="tablist" class="tabs tabs-box bg-base-200 p-1">
          <a role="tab" class="tab tab-lg flex-1 transition-all duration-300 tab-active !bg-primary !text-primary-content font-bold" 
             id="tab-profit" 
-            onclick="selectAnalyticsTab('PROFIT')">손익 추이</a>
+            onclick="selectAnalyticsTab('PROFIT')">${MessageUtil.getMessage("stock.analytics.tab.profit")}</a>
          <a role="tab" class="tab tab-lg flex-1 transition-all duration-300 font-bold" 
             id="tab-dividend" 
-            onclick="selectAnalyticsTab('DIVIDEND')">배당 추이</a>
+            onclick="selectAnalyticsTab('DIVIDEND')">${MessageUtil.getMessage("stock.analytics.tab.dividend")}</a>
     </div>
 
     <!-- Filter Form -->
@@ -27,9 +33,9 @@
         <div class="flex flex-wrap gap-4 items-center justify-between bg-base-100 p-2 rounded-lg border border-base-200">
              <!-- Time Scale -->
              <div class="join shadow-sm">
-                <input class="join-item btn btn-sm" type="radio" name="timeScale" value="YEARLY" aria-label="연도별 흐름" checked onchange="updateAnalyticsVis()"/>
-                <input class="join-item btn btn-sm" type="radio" name="timeScale" value="MONTHLY" aria-label="월별 상세" onchange="updateAnalyticsVis()"/>
-                <input class="join-item btn btn-sm" type="radio" name="timeScale" value="TOTAL" aria-label="전체 누적" onchange="updateAnalyticsVis()"/>
+                    <input class="join-item btn btn-sm" type="radio" name="timeScale" value="YEARLY" aria-label="${MessageUtil.getMessage("stock.analytics.scale.yearly")}" checked onchange="updateAnalyticsVis()"/>
+                    <input class="join-item btn btn-sm" type="radio" name="timeScale" value="MONTHLY" aria-label="${MessageUtil.getMessage("stock.analytics.scale.monthly")}" onchange="updateAnalyticsVis()"/>
+                    <input class="join-item btn btn-sm" type="radio" name="timeScale" value="TOTAL" aria-label="${MessageUtil.getMessage("stock.analytics.scale.total")}" onchange="updateAnalyticsVis()"/>
              </div>
 
              <!-- Details -->
@@ -37,7 +43,7 @@
                  <div id="wrapper-year" style="display:block;">
                      <select name="year" id="select-year" class="select select-bordered select-sm w-24" onchange="updateAnalyticsVis()">
                          @for(Integer y : years)
-                             <option value="${y}" selected="${y == currentYear}">${y}년</option>
+                                 <option value="${y}" selected="${y == currentYear}">${yearLabel.apply(y)}</option>
                          @endfor
                      </select>
                  </div>
@@ -45,7 +51,7 @@
                  <div id="wrapper-month" style="display:none;">
                      <select name="month" id="select-month" class="select select-bordered select-sm w-20" onchange="updateAnalyticsVis()">
                          @for(int m = 1; m <= 12; m++)
-                             <option value="${m}" selected="${m == currentMonth}">${m}월</option>
+                                 <option value="${m}" selected="${m == currentMonth}">${monthLabel.apply(m)}</option>
                          @endfor
                      </select>
                  </div>
@@ -55,8 +61,8 @@
 
                  <!-- Group By -->
                  <div class="join shadow-sm">
-                    <input class="join-item btn btn-sm" type="radio" name="groupBy" value="STOCK" aria-label="종목별" checked />
-                    <input class="join-item btn btn-sm" type="radio" name="groupBy" value="ACCOUNT" aria-label="계좌별" />
+                        <input class="join-item btn btn-sm" type="radio" name="groupBy" value="STOCK" aria-label="${MessageUtil.getMessage("stock.label.by.stock")}" checked />
+                        <input class="join-item btn btn-sm" type="radio" name="groupBy" value="ACCOUNT" aria-label="${MessageUtil.getMessage("stock.label.by.account")}" />
                 </div>
              </div>
         </div>

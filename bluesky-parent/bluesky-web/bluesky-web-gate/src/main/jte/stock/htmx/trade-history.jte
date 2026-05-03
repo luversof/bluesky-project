@@ -5,6 +5,7 @@
 @import java.text.DecimalFormat
 @import net.luversof.web.gate.stock.dto.response.TradeResponse
 @import net.luversof.web.gate.stock.constant.TradeType
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param List<TradeResponse> trades
 @param int totalItems
@@ -35,59 +36,75 @@ BigDecimal safeRp = totalRealizedProfit != null ? totalRealizedProfit : BigDecim
 BigDecimal safeFee = totalFee != null ? totalFee : BigDecimal.ZERO;
 BigDecimal safeTax = totalTax != null ? totalTax : BigDecimal.ZERO;
 boolean rpPositive = safeRp.compareTo(BigDecimal.ZERO) >= 0;
+long sellCount = trades != null ? trades.stream().filter(t -> t.type() == TradeType.SELL).count() : 0L;
+
+java.util.function.Function<Object, String> countMessage = value -> java.text.MessageFormat.format(MessageUtil.getMessage("common.count"), value);
+String historyTitle = MessageUtil.getMessage("stock.page.trade.title");
+String noTradeInPeriodLabel = MessageUtil.getMessage("stock.trade.message.no.period.data");
+String periodStatusLabel = MessageUtil.getMessage("stock.trade.label.period.status");
+String buyLabel = MessageUtil.getMessage("stock.trade.label.buy");
+String sellLabel = MessageUtil.getMessage("stock.trade.label.sell");
+String realizedProfitLabel = MessageUtil.getMessage("stock.trade.label.realized.profit");
+String tradingCostLabel = MessageUtil.getMessage("stock.trade.label.trading.cost");
+String feeLabel = MessageUtil.getMessage("stock.trade.label.fee");
+String tradingTaxLabel = MessageUtil.getMessage("stock.trade.label.trading.tax");
+String dateLabel = MessageUtil.getMessage("common.label.date");
+String stockLabel = MessageUtil.getMessage("common.label.stock");
+String typeLabel = MessageUtil.getMessage("common.label.type");
+String unitPriceLabel = MessageUtil.getMessage("stock.trade.column.unit.price");
+String quantityLabel = MessageUtil.getMessage("common.label.quantity");
+String amountLabel = MessageUtil.getMessage("common.label.amount");
+String noTradeDataLabel = MessageUtil.getMessage("stock.trade.message.no.data");
+String sellCountPageLabel = java.text.MessageFormat.format(MessageUtil.getMessage("stock.trade.history.sell.count.page"), sellLabel, countMessage.apply(sellCount));
 }
 
 <div class="card bg-base-100 shadow-xl mt-4" id="trade-history-panel">
 <div class="card-body p-4">
 <div class="flex items-center justify-between mb-3">
 <h3 class="card-title text-base">
-매매 내역
+${historyTitle}
 <span class="text-sm font-normal text-base-content/60 ml-2">${tradePeriod}</span>
 </h3>
 @if(totalItems > 0)
-<span class="badge badge-ghost badge-sm">${totalItems}건</span>
+<span class="badge badge-ghost badge-sm">${countMessage.apply(totalItems)}</span>
 @endif
 </div>
 
 @if(totalItems == 0)
 <div class="text-center py-6 text-base-content/50">
-<p>해당 기간의 매매 내역이 없습니다.</p>
+<p>${noTradeInPeriodLabel}</p>
 </div>
 @else
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
 <div class="card bg-base-100 shadow-sm border border-base-200">
 <div class="card-body p-4">
-<div class="text-xs text-base-content/50 mb-1">기간 매매 현황</div>
+<div class="text-xs text-base-content/50 mb-1">${periodStatusLabel}</div>
 <div class="flex items-baseline gap-1 mb-2">
 <span class="text-xl font-bold text-error amount-value">&#x20A9;${df.format(safeBuy)}</span>
-<span class="text-xs text-base-content/40">매수</span>
+<span class="text-xs text-base-content/40">${buyLabel}</span>
 </div>
 <div class="flex gap-4 text-xs text-base-content/50">
-<span>매도 <span class="font-medium text-info amount-value">&#x20A9;${df.format(safeSell)}</span></span>
-<span class="ml-auto">${totalItems}건</span>
+<span>${sellLabel} <span class="font-medium text-info amount-value">&#x20A9;${df.format(safeSell)}</span></span>
+<span class="ml-auto">${countMessage.apply(totalItems)}</span>
 </div>
 </div>
 </div>
 <div class="card bg-base-100 shadow-sm border border-base-200">
 <div class="card-body p-4">
-<div class="text-xs text-base-content/50 mb-1">실현손익</div>
+<div class="text-xs text-base-content/50 mb-1">${realizedProfitLabel}</div>
 <div class="text-xl font-bold ${rpPositive ? "text-success" : "text-error"} amount-value">
 ${rpPositive ? "+" : ""}&#x20A9;${df.format(safeRp)}
 </div>
-!{
-long sellCount = trades != null ? trades.stream()
-.filter(t -> t.type() == TradeType.SELL).count() : 0L;
-}
-<div class="text-xs text-base-content/40 mt-1">매도 ${sellCount}건(페이지 기준)</div>
+<div class="text-xs text-base-content/40 mt-1">${sellCountPageLabel}</div>
 </div>
 </div>
 <div class="card bg-base-100 shadow-sm border border-base-200">
 <div class="card-body p-4">
-<div class="text-xs text-base-content/50 mb-1">매매 비용</div>
+<div class="text-xs text-base-content/50 mb-1">${tradingCostLabel}</div>
 <div class="text-xl font-bold amount-value">&#x20A9;${df.format(safeFee.add(safeTax))}</div>
 <div class="flex gap-4 text-xs text-base-content/50 mt-1">
-<span>수수료 <span class="font-medium text-base-content/70 amount-value">&#x20A9;${df.format(safeFee)}</span></span>
-<span>거래세 <span class="font-medium text-base-content/70 amount-value">&#x20A9;${df.format(safeTax)}</span></span>
+<span>${feeLabel} <span class="font-medium text-base-content/70 amount-value">&#x20A9;${df.format(safeFee)}</span></span>
+<span>${tradingTaxLabel} <span class="font-medium text-base-content/70 amount-value">&#x20A9;${df.format(safeTax)}</span></span>
 </div>
 </div>
 </div>
@@ -97,15 +114,15 @@ long sellCount = trades != null ? trades.stream()
 <table class="table table-hover table-striped w-full table-sm table-pin-rows">
 <thead>
 <tr class="bg-base-200">
-<th>날짜</th>
-<th>종목</th>
-<th>구분</th>
-<th class="text-right">단가</th>
-<th class="text-right">수량</th>
-<th class="text-right">금액</th>
-<th class="text-right hidden lg:table-cell">수수료</th>
-<th class="text-right hidden lg:table-cell">거래세</th>
-<th class="text-right">실현손익</th>
+<th>${dateLabel}</th>
+<th>${stockLabel}</th>
+<th>${typeLabel}</th>
+<th class="text-right">${unitPriceLabel}</th>
+<th class="text-right">${quantityLabel}</th>
+<th class="text-right">${amountLabel}</th>
+<th class="text-right hidden lg:table-cell">${feeLabel}</th>
+<th class="text-right hidden lg:table-cell">${tradingTaxLabel}</th>
+<th class="text-right">${realizedProfitLabel}</th>
 </tr>
 </thead>
 <tbody>
@@ -121,7 +138,7 @@ String tradeDateStr = trade.tradeDate() != null ? fmt.format(trade.tradeDate()) 
 <td class="font-bold whitespace-nowrap">${trade.stockItemName() != null ? trade.stockItemName() : "-"}</td>
 <td>
 <span class="${isBuy ? "badge badge-error badge-outline badge-sm" : "badge badge-info badge-outline badge-sm"}">
-${isBuy ? "매수" : "매도"}
+${isBuy ? buyLabel : sellLabel}
 </span>
 </td>
 <td class="text-right font-mono amount-value">${trade.price() != null ? df.format(trade.price()) : "0"}</td>
@@ -136,7 +153,7 @@ ${hasProfit && !isBuy ? df.format(trade.realizedProfit()) : ""}
 @endfor
 @if(trades == null || trades.isEmpty())
 <tr>
-<td colspan="9" class="text-center py-10 opacity-50">매매 내역이 없습니다.</td>
+<td colspan="9" class="text-center py-10 opacity-50">${noTradeDataLabel}</td>
 </tr>
 @endif
 </tbody>
