@@ -311,11 +311,22 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     @BlueskyPreAuthorize
     @GetMapping("/realized-profit")
     public String realizedProfit(
-            TradeProfitRequest request, @RequestParam(required = false) String rangeMode, Model model) {
+            TradeProfitRequest request,
+            @RequestParam(required = false) List<String> stockTagList,
+            @RequestParam(required = false) String rangeMode,
+            Model model) {
         UUID userId = UserUtil.getUserId();
         if (userId == null)
             return ERROR_VIEW;
         request.setUserId(userId);
+
+        List<net.luversof.web.gate.stock.domain.StockItem> stockItemList = stockItemClient.getStockItems();
+        StockTagSelection stockTagSelection = resolveStockTagSelection(
+                stockItemList,
+                request.getStockItemIdList(),
+                stockTagList);
+        List<String> selectedStockTags = stockTagSelection.selectedStockTags();
+        request.setStockItemIdList(stockTagSelection.requestedStockItemIds());
 
         // Remember whether the client actually provided a date range (before we
         // possibly default to YTD). This lets the UI treat server-default ranges
@@ -339,7 +350,10 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         }
 
         // 보유량 0인 것도 포함 (전량 매도한 종목의 실현손익도 표시)
-        List<TradeProfit> enrichedList = new ArrayList<>(getEnrichedTradeProfits(request));
+        List<TradeProfit> enrichedList = stockTagSelection.hasFilter() && request.getStockItemIdList() != null
+                && request.getStockItemIdList().isEmpty()
+                        ? new ArrayList<>()
+                        : new ArrayList<>(getEnrichedTradeProfits(request));
 
         // 계좌별 집계
         Map<String, TradeProfit> accountRealizedMap = new LinkedHashMap<>();
@@ -487,7 +501,6 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         // Prepare account/stock lists for filter controls (limit to items present
         // in the current result set to avoid showing filters that yield no data)
         List<net.luversof.web.gate.stock.domain.Account> accountList = accountClient.getAccountsByUserId(userId);
-        List<net.luversof.web.gate.stock.domain.StockItem> stockItemList = stockItemClient.getStockItems();
 
         // Derive accounts/stocks that exist within the selected date range. IMPORTANT:
         // - Use a request that DOES NOT include the user's current account/stock
@@ -529,10 +542,10 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         Set<UUID> availableStockIds = stockItemList.stream().map(net.luversof.web.gate.stock.domain.StockItem::id)
                 .collect(Collectors.toSet());
         List<UUID> requestedStockItemIds = request.getStockItemIdList();
-        List<UUID> effectiveStockItemIdList = (requestedStockItemIds != null && !requestedStockItemIds.isEmpty()
-                && availableStockIds.containsAll(requestedStockItemIds))
+        List<UUID> effectiveStockItemIdList = requestedStockItemIds != null
+                && availableStockIds.containsAll(requestedStockItemIds)
                         ? requestedStockItemIds
-                        : null;
+                        : stockTagSelection.hasFilter() ? List.of() : null;
 
         // Determine what to show in the dropdowns:
         // - If the client actually selected a date range, show only accounts/stocks
@@ -601,12 +614,14 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         // previously selected items that may not exist in the current range)
         model.addAttribute("accountList", finalAccountList);
         model.addAttribute("stockItemList", finalStockItemList);
+        model.addAttribute("stockTagList", getAvailableStockTags(stockItemList));
         model.addAttribute(
                 "selectedAccountIds",
                 effectiveAccountIdList != null ? effectiveAccountIdList : List.of());
         model.addAttribute(
                 "selectedStockItemIds",
                 effectiveStockItemIdList != null ? effectiveStockItemIdList : List.of());
+        model.addAttribute("selectedStockTags", selectedStockTags);
         model.addAttribute(
                 "selectedAccountId",
                 (effectiveAccountIdList != null && !effectiveAccountIdList.isEmpty())

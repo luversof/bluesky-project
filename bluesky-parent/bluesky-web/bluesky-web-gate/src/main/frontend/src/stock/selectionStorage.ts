@@ -13,6 +13,7 @@ type SelectionEntry = { id: string; text?: string };
 type SelectionObject = {
 	accountIdList: SelectionEntry[];
 	stockItemIdList: SelectionEntry[];
+	stockTagList: SelectionEntry[];
 };
 
 (() => {
@@ -24,6 +25,17 @@ type SelectionObject = {
 	const injectedForms = new WeakSet<HTMLFormElement>();
 	let lastInjectionTimestamp = 0;
 	const INJECTION_WINDOW_MS = 3000;
+
+	function getAppConfigValue(name: string, fallback = ""): string {
+		try {
+			const appConfig = document.getElementById(
+				"app-config",
+			) as HTMLElement | null;
+			return (appConfig?.dataset?.[name] as string | undefined) || fallback;
+		} catch (e) {
+			return fallback;
+		}
+	}
 
 	function getFormForElement(el: EventTarget | null): HTMLFormElement | null {
 		if (!(el instanceof Element)) return null;
@@ -39,7 +51,14 @@ type SelectionObject = {
 			const stk = form.querySelector<HTMLSelectElement>(
 				'select[name="stockItemIdList"]',
 			);
-			const out: SelectionObject = { accountIdList: [], stockItemIdList: [] };
+			const tag = form.querySelector<HTMLSelectElement>(
+				'select[name="stockTagList"]',
+			);
+			const out: SelectionObject = {
+				accountIdList: [],
+				stockItemIdList: [],
+				stockTagList: [],
+			};
 			if (acc) {
 				if (acc.multiple) {
 					for (const o of Array.from(acc.selectedOptions)) {
@@ -68,6 +87,20 @@ type SelectionObject = {
 					out.stockItemIdList.push({ id: stk.value, text: txt });
 				}
 			}
+			if (tag) {
+				if (tag.multiple) {
+					for (const o of Array.from(tag.selectedOptions)) {
+						if (o && o.value)
+							out.stockTagList.push({ id: o.value, text: o.text });
+					}
+				} else if (tag.value) {
+					const txt =
+						(tag.options[tag.selectedIndex] &&
+							tag.options[tag.selectedIndex].text) ||
+						tag.value;
+					out.stockTagList.push({ id: tag.value, text: txt });
+				}
+			}
 			try {
 				sessionStorage.setItem(GLOBAL_KEY, JSON.stringify(out));
 			} catch (e) {
@@ -89,6 +122,9 @@ type SelectionObject = {
 			);
 			const stk = form.querySelector<HTMLSelectElement>(
 				'select[name="stockItemIdList"]',
+			);
+			const tag = form.querySelector<HTMLSelectElement>(
+				'select[name="stockTagList"]',
 			);
 			let restored = false;
 			if (DEBUG)
@@ -195,6 +231,55 @@ type SelectionObject = {
 						restored,
 					);
 			}
+			if (
+				tag &&
+				obj &&
+				Array.isArray(obj.stockTagList) &&
+				obj.stockTagList.length > 0
+			) {
+				if (tag.multiple) {
+					const current = new Set(
+						Array.from(tag.selectedOptions).map((o) => o.value),
+					);
+					for (const sel of obj.stockTagList) {
+						if (!current.has(sel.id)) {
+							restored = true;
+							break;
+						}
+					}
+					Array.from(tag.options).forEach((o) => (o.selected = false));
+					for (const sel of obj.stockTagList) {
+						let opt = Array.from(tag.options).find((o) => o.value === sel.id);
+						if (!opt) {
+							opt = document.createElement("option");
+							opt.value = sel.id;
+							opt.text = sel.text || sel.id;
+							tag.insertBefore(opt, tag.firstChild);
+							restored = true;
+						}
+						opt.selected = true;
+					}
+				} else {
+					const sel = obj.stockTagList[0];
+					if (tag.value !== sel.id) restored = true;
+					let opt = Array.from(tag.options).find((o) => o.value === sel.id);
+					if (!opt) {
+						opt = document.createElement("option");
+						opt.value = sel.id;
+						opt.text = sel.text || sel.id;
+						tag.insertBefore(opt, tag.firstChild);
+						restored = true;
+					}
+					tag.value = sel.id;
+				}
+				tag.dispatchEvent(new Event("change", { bubbles: true }));
+				if (DEBUG)
+					console.debug(
+						"[selectionStorage] restored tag",
+						form && form.id,
+						restored,
+					);
+			}
 
 			// 자동 제출: 복원으로 인해 값이 변경되었고 폼에 HTMX 속성이 있으면 submit 트리거
 			try {
@@ -272,7 +357,8 @@ type SelectionObject = {
 			forms.forEach((f) => {
 				if (
 					f.querySelector('select[name="accountIdList"]') ||
-					f.querySelector('select[name="stockItemIdList"]')
+					f.querySelector('select[name="stockItemIdList"]') ||
+					f.querySelector('select[name="stockTagList"]')
 				) {
 					restoreToForm(f);
 				}
@@ -287,6 +373,7 @@ type SelectionObject = {
 			const prefix = "__stockSelection:";
 			const accMap = new Map<string, string>();
 			const stkMap = new Map<string, string>();
+			const tagMap = new Map<string, string>();
 
 			try {
 				const curRaw = sessionStorage.getItem(GLOBAL_KEY);
@@ -298,6 +385,9 @@ type SelectionObject = {
 					if (cur && Array.isArray(cur.stockItemIdList))
 						for (const s of cur.stockItemIdList)
 							stkMap.set(String(s.id), s.text || s.id);
+					if (cur && Array.isArray(cur.stockTagList))
+						for (const s of cur.stockTagList)
+							tagMap.set(String(s.id), s.text || s.id);
 				}
 			} catch (e) {
 				/* ignore */
@@ -323,6 +413,10 @@ type SelectionObject = {
 							for (const s of obj.stockItemIdList)
 								if (s && s.id) stkMap.set(String(s.id), s.text || s.id);
 						}
+						if (obj && Array.isArray(obj.stockTagList)) {
+							for (const s of obj.stockTagList)
+								if (s && s.id) tagMap.set(String(s.id), s.text || s.id);
+						}
 						keysToRemove.push(key);
 					} catch (e) {
 						/* ignore malformed */
@@ -330,10 +424,15 @@ type SelectionObject = {
 				}
 			}
 
-			if (accMap.size > 0 || stkMap.size > 0) {
-				const out: SelectionObject = { accountIdList: [], stockItemIdList: [] };
+			if (accMap.size > 0 || stkMap.size > 0 || tagMap.size > 0) {
+				const out: SelectionObject = {
+					accountIdList: [],
+					stockItemIdList: [],
+					stockTagList: [],
+				};
 				for (const [id, text] of accMap) out.accountIdList.push({ id, text });
 				for (const [id, text] of stkMap) out.stockItemIdList.push({ id, text });
+				for (const [id, text] of tagMap) out.stockTagList.push({ id, text });
 				try {
 					sessionStorage.setItem(GLOBAL_KEY, JSON.stringify(out));
 				} catch (e) {
@@ -414,6 +513,7 @@ type SelectionObject = {
 								if (params) {
 									delete (params as any).accountIdList;
 									delete (params as any).stockItemIdList;
+									delete (params as any).stockTagList;
 								}
 							} catch (err) {
 								/* ignore */
@@ -432,6 +532,9 @@ type SelectionObject = {
 									);
 									const stkSel = formEl.querySelector<HTMLSelectElement>(
 										'select[name="stockItemIdList"]',
+									);
+									const tagSel = formEl.querySelector<HTMLSelectElement>(
+										'select[name="stockTagList"]',
 									);
 									if (accSel) {
 										if (accSel.multiple) {
@@ -462,6 +565,22 @@ type SelectionObject = {
 											}
 										}
 										stkSel.dispatchEvent(
+											new Event("change", { bubbles: true }),
+										);
+									}
+									if (tagSel) {
+										if (tagSel.multiple) {
+											Array.from(tagSel.options).forEach(
+												(o) => (o.selected = false),
+											);
+										} else {
+											try {
+												tagSel.value = "";
+											} catch (e) {
+												/* ignore */
+											}
+										}
+										tagSel.dispatchEvent(
 											new Event("change", { bubbles: true }),
 										);
 									}
@@ -527,6 +646,10 @@ type SelectionObject = {
 											url.searchParams.delete("stockItemIdList");
 											changed = true;
 										}
+										if (url.searchParams.has("stockTagList")) {
+											url.searchParams.delete("stockTagList");
+											changed = true;
+										}
 										if (changed) {
 											const newPath =
 												url.pathname +
@@ -541,6 +664,11 @@ type SelectionObject = {
 												}
 												try {
 													delete (params as any).stockItemIdList;
+												} catch (e) {
+													/* ignore */
+												}
+												try {
+													delete (params as any).stockTagList;
 												} catch (e) {
 													/* ignore */
 												}
@@ -616,6 +744,15 @@ type SelectionObject = {
 					!params.stockItemIdList
 				) {
 					params.stockItemIdList = obj.stockItemIdList.map((s) => s.id);
+					injected = true;
+				}
+				if (
+					obj &&
+					Array.isArray(obj.stockTagList) &&
+					obj.stockTagList.length > 0 &&
+					!params.stockTagList
+				) {
+					params.stockTagList = obj.stockTagList.map((s) => s.id);
 					injected = true;
 				}
 				if (injected) {
@@ -765,7 +902,8 @@ type SelectionObject = {
 							if (
 								shouldSave &&
 								(form.querySelector('select[name="accountIdList"]') ||
-									form.querySelector('select[name="stockItemIdList"]'))
+									form.querySelector('select[name="stockItemIdList"]') ||
+									form.querySelector('select[name="stockTagList"]'))
 							) {
 								saveFromForm(form);
 							}
@@ -785,7 +923,8 @@ type SelectionObject = {
 				if (
 					shouldSave &&
 					(form.querySelector('select[name="accountIdList"]') ||
-						form.querySelector('select[name="stockItemIdList"]'))
+						form.querySelector('select[name="stockItemIdList"]') ||
+						form.querySelector('select[name="stockTagList"]'))
 				) {
 					saveFromForm(form);
 				}

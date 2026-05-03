@@ -67,6 +67,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     public String dividendList(
             @RequestParam(required = false) List<UUID> accountIdList,
             @RequestParam(required = false) List<UUID> stockItemIdList,
+            @RequestParam(required = false) List<String> stockTagList,
             @RequestParam(required = false) Instant startDate,
             @RequestParam(required = false) Instant endDate,
             @RequestParam(required = false) String timeZone,
@@ -143,6 +144,9 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
                                 (l, r) -> l));
 
         List<StockItem> stockItemList = stockItemClient.getStockItems();
+        StockTagSelection stockTagSelection = resolveStockTagSelection(stockItemList, stockItemIdList,
+                stockTagList);
+        List<String> selectedStockTags = stockTagSelection.selectedStockTags();
         List<StockItem> filteredStockItemList = stockItemList.stream().filter(s -> dividendStockIds.contains(s.id()))
                 .toList();
         // Stocks that have any dividends in the global timeframe (used for 전체/no-range)
@@ -163,11 +167,11 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
                         : null;
 
         Set<UUID> availableStockIds = stockItemList.stream().map(StockItem::id).collect(Collectors.toSet());
-        List<UUID> requestedStockItemIds = stockItemIdList;
-        List<UUID> effectiveStockItemIdList = (requestedStockItemIds != null && !requestedStockItemIds.isEmpty()
-                && availableStockIds.containsAll(requestedStockItemIds))
+        List<UUID> requestedStockItemIds = stockTagSelection.requestedStockItemIds();
+        List<UUID> effectiveStockItemIdList = requestedStockItemIds != null
+                && availableStockIds.containsAll(requestedStockItemIds)
                         ? requestedStockItemIds
-                        : null;
+                        : stockTagSelection.hasFilter() ? List.of() : null;
 
         List<Account> finalAccountList;
         if (startInstant != null || endInstant != null) {
@@ -224,7 +228,6 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
                                 || effectiveAccountIdList.contains(d.accountId())))
                 .filter(
                         d -> (effectiveStockItemIdList == null
-                                || effectiveStockItemIdList.isEmpty()
                                 || effectiveStockItemIdList.contains(d.stockItemId())))
                 .map(
                         dividend -> {
@@ -428,12 +431,14 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         model.addAttribute("size", size);
         model.addAttribute("accountList", finalAccountList);
         model.addAttribute("stockItemList", finalStockItemList);
+        model.addAttribute("stockTagList", getAvailableStockTags(stockItemList));
         model.addAttribute(
                 "selectedAccountIds",
                 effectiveAccountIdList != null ? effectiveAccountIdList : List.of());
         model.addAttribute(
                 "selectedStockItemIds",
                 effectiveStockItemIdList != null ? effectiveStockItemIdList : List.of());
+        model.addAttribute("selectedStockTags", selectedStockTags);
         model.addAttribute(
                 "selectedAccountId",
                 (effectiveAccountIdList != null && !effectiveAccountIdList.isEmpty())

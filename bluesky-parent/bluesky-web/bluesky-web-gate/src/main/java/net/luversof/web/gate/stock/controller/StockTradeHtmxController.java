@@ -61,6 +61,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
         public String tradeList(
                         @RequestParam(required = false) List<UUID> accountIdList,
                         @RequestParam(required = false) List<UUID> stockItemIdList,
+                        @RequestParam(required = false) List<String> stockTagList,
                         @RequestParam(required = false) Instant startDate,
                         @RequestParam(required = false) Instant endDate,
                         @RequestParam(required = false) String timeZone,
@@ -107,6 +108,9 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                                 .collect(Collectors.toMap(Account::id, Account::name, (l, r) -> l, LinkedHashMap::new));
 
                 List<StockItem> stockItemList = stockItemClient.getStockItems();
+                StockTagSelection stockTagSelection = resolveStockTagSelection(stockItemList, stockItemIdList,
+                                stockTagList);
+                List<String> selectedStockTags = stockTagSelection.selectedStockTags();
                 Map<UUID, String> stockItemNames = stockItemList.stream()
                                 .collect(Collectors.toMap(StockItem::id, StockItem::name));
 
@@ -177,11 +181,11 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                                                 : null;
 
                 Set<UUID> availableStockIds = stockItemList.stream().map(StockItem::id).collect(Collectors.toSet());
-                List<UUID> requestedStockItemIds = stockItemIdList;
-                List<UUID> effectiveStockItemIdList = (requestedStockItemIds != null && !requestedStockItemIds.isEmpty()
-                                && availableStockIds.containsAll(requestedStockItemIds))
+                List<UUID> requestedStockItemIds = stockTagSelection.requestedStockItemIds();
+                List<UUID> effectiveStockItemIdList = requestedStockItemIds != null
+                                && availableStockIds.containsAll(requestedStockItemIds)
                                                 ? requestedStockItemIds
-                                                : null;
+                                                : stockTagSelection.hasFilter() ? List.of() : null;
 
                 // Build final lists for UI selects: when client provided a range, show
                 // only date-available items but prepend any previously selected items
@@ -238,7 +242,6 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                                                                 || effectiveAccountIdList.contains(t.accountId()))
                                 .filter(
                                                 t -> effectiveStockItemIdList == null
-                                                                || effectiveStockItemIdList.isEmpty()
                                                                 || effectiveStockItemIdList.contains(t.stockItemId()))
                                 .collect(Collectors.toCollection(ArrayList::new));
 
@@ -336,6 +339,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                 model.addAttribute("size", size);
                 model.addAttribute("accountList", finalAccountList);
                 model.addAttribute("stockItemList", finalStockItemList);
+                model.addAttribute("stockTagList", getAvailableStockTags(stockItemList));
                 model.addAttribute("accountNames", accountNames);
                 model.addAttribute(
                                 "selectedAccountIds",
@@ -343,6 +347,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                 model.addAttribute(
                                 "selectedStockItemIds",
                                 effectiveStockItemIdList != null ? effectiveStockItemIdList : List.of());
+                model.addAttribute("selectedStockTags", selectedStockTags);
                 model.addAttribute(
                                 "selectedAccountId",
                                 (effectiveAccountIdList != null && !effectiveAccountIdList.isEmpty())
@@ -656,6 +661,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
         public String activityList(
                         @RequestParam(required = false) List<UUID> accountIdList,
                         @RequestParam(required = false) List<UUID> stockItemIdList,
+                        @RequestParam(required = false) List<String> stockTagList,
                         @RequestParam(required = false) Instant startDate,
                         @RequestParam(required = false) Instant endDate,
                         @RequestParam(required = false) String timeZone,
@@ -684,12 +690,15 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                         endInstant = now.plusDays(1).atStartOfDay(zone).toInstant();
                         rangeMode = "ytd";
                 }
-                List<Activity> activities = getAllActivities(userId, startInstant, endInstant, accountIdList,
-                                stockItemIdList);
-
                 // provide account/stock lists for filter UI
                 List<Account> accountList = accountClient.getAccountsByUserId(userId);
                 List<StockItem> stockItemList = stockItemClient.getStockItems();
+                StockTagSelection stockTagSelection = resolveStockTagSelection(stockItemList, stockItemIdList,
+                                stockTagList);
+                List<String> selectedStockTags = stockTagSelection.selectedStockTags();
+                List<UUID> requestedStockIdsForActivity = stockTagSelection.requestedStockItemIds();
+                List<Activity> activities = getAllActivities(userId, startInstant, endInstant, accountIdList,
+                                requestedStockIdsForActivity);
 
                 // Determine date-only availability for activities (trades + dividends)
                 boolean clientProvidedRangeForActivity = !((startInstant == null || startInstant.toEpochMilli() == 0)
@@ -749,12 +758,10 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
 
                 Set<UUID> availableStockIdsForActivity = stockItemList.stream().map(StockItem::id)
                                 .collect(Collectors.toSet());
-                List<UUID> requestedStockIdsForActivity = stockItemIdList;
-                List<UUID> effectiveStockItemIdListForActivity = (requestedStockIdsForActivity != null
-                                && !requestedStockIdsForActivity.isEmpty()
-                                && availableStockIdsForActivity.containsAll(requestedStockIdsForActivity))
+                List<UUID> effectiveStockItemIdListForActivity = requestedStockIdsForActivity != null
+                                && availableStockIdsForActivity.containsAll(requestedStockIdsForActivity)
                                                 ? requestedStockIdsForActivity
-                                                : null;
+                                                : stockTagSelection.hasFilter() ? List.of() : null;
 
                 // Build final lists and preserve selected items
                 List<Account> finalAccountListForActivity;
@@ -824,6 +831,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                 model.addAttribute("activities", activities);
                 model.addAttribute("accountList", finalAccountListForActivity);
                 model.addAttribute("stockItemList", finalStockItemListForActivity);
+                model.addAttribute("stockTagList", getAvailableStockTags(stockItemList));
                 model.addAttribute(
                                 "selectedAccountIds",
                                 effectiveAccountIdListForActivity != null
@@ -834,6 +842,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                                 effectiveStockItemIdListForActivity != null
                                                 ? effectiveStockItemIdListForActivity
                                                 : List.of());
+                model.addAttribute("selectedStockTags", selectedStockTags);
                 model.addAttribute(
                                 "selectedAccountId",
                                 (effectiveAccountIdListForActivity != null

@@ -3261,6 +3261,11 @@
       width: calc(var(--size-selector, 0.25rem) * 6);
     }
   }
+  .loading-sm {
+    @layer daisyui.l1.l2 {
+      width: calc(var(--size-selector, 0.25rem) * 5);
+    }
+  }
   .w-0 {
     width: calc(var(--spacing) * 0);
   }
@@ -3305,6 +3310,9 @@
   }
   .w-44 {
     width: calc(var(--spacing) * 44);
+  }
+  .w-48 {
+    width: calc(var(--spacing) * 48);
   }
   .w-52 {
     width: calc(var(--spacing) * 52);
@@ -4409,6 +4417,11 @@
   .xl\:grid-cols-2 {
     @media (width >= 80rem) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .xl\:grid-cols-3 {
+    @media (width >= 80rem) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
   .xl\:grid-cols-4 {

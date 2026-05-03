@@ -21,6 +21,9 @@ public class GoogleSheetStockItem {
   @JsonDeserialize(using = StockCurrencyDeserializer.class)
   private BigDecimal 현재가;
 
+  @JsonProperty("태그")
+  private String 태그;
+
   public String get종목코드() {
     return 종목코드;
   }
@@ -45,8 +48,24 @@ public class GoogleSheetStockItem {
     this.현재가 = 현재가;
   }
 
+  public String get태그() {
+    return 태그;
+  }
+
+  public void set태그(String 태그) {
+    this.태그 = 태그;
+  }
+
   @Override
   public String toString() {
-    return "GoogleSheetStockItem [종목코드=" + 종목코드 + ", 종목이름=" + 종목이름 + ", 현재가=" + 현재가 + "]";
+    return "GoogleSheetStockItem [종목코드="
+        + 종목코드
+        + ", 종목이름="
+        + 종목이름
+        + ", 현재가="
+        + 현재가
+        + ", 태그="
+        + 태그
+        + "]";
   }
 }

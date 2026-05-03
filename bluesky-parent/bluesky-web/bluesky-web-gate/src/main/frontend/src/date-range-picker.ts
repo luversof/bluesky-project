@@ -536,7 +536,8 @@ const DateRangePicker = (function () {
 			const isMtd = mode === "mtd";
 			const isYtd =
 				!isMtd &&
-				(mode === "ytd" || (mode === "" && !!start && start.slice(5) === "01-01"));
+				(mode === "ytd" ||
+					(mode === "" && !!start && start.slice(5) === "01-01"));
 			const edgeMode = isMtd ? "1" : isYtd ? "12" : mode;
 			clearActive();
 			let startStr = "",

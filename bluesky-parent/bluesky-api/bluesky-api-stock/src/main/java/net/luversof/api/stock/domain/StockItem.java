@@ -1,9 +1,11 @@
 package net.luversof.api.stock.domain;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -25,6 +27,9 @@ public class StockItem {
 
   @Column("name")
   private String name;
+
+  @Transient
+  private List<String> tags = List.of();
 
   public UUID getId() {
     return id;
@@ -58,11 +63,22 @@ public class StockItem {
     this.name = name;
   }
 
+  public List<String> getTags() {
+    return tags;
+  }
+
+  public void setTags(List<String> tags) {
+    this.tags = tags != null ? List.copyOf(tags) : List.of();
+  }
+
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (obj == null) return false;
-    if (getClass() != obj.getClass()) return false;
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
     StockItem other = (StockItem) obj;
     return Objects.equals(id, other.id)
         && Objects.equals(market, other.market)
@@ -85,6 +101,8 @@ public class StockItem {
         + name
         + ", market="
         + market
+        + ", tags="
+        + tags
         + "]";
   }
 }

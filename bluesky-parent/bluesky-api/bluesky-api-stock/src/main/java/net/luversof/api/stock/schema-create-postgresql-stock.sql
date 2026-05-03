@@ -18,6 +18,15 @@ CREATE TABLE "StockItem" (
 
 CREATE UNIQUE INDEX uk_stockItem_symbol ON "StockItem" ("symbol");
 
+CREATE TABLE "StockItemTag" (
+	"id" UUID NOT NULL PRIMARY KEY,
+	"stockItem_id" UUID NOT NULL,
+	"tag" VARCHAR(255) NOT NULL
+);
+
+CREATE INDEX idx_stockItemTag_stockItemId ON "StockItemTag" ("stockItem_id");
+CREATE UNIQUE INDEX uk_stockItemTag_stockItemId_tag ON "StockItemTag" ("stockItem_id", "tag");
+
 CREATE TABLE "Trade" (
 	"id" UUID NOT NULL PRIMARY KEY,
 	"account_id" UUID NOT NULL,

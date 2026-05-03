@@ -6,16 +6,6 @@
   const injectedForms = new WeakSet();
   let lastInjectionTimestamp = 0;
   const INJECTION_WINDOW_MS = 3000;
-  function getAppConfigValue(name, fallback = "") {
-    try {
-      const appConfig = document.getElementById("app-config");
-      return (
-        (appConfig && appConfig.dataset && appConfig.dataset[name]) || fallback
-      );
-    } catch (e) {
-      return fallback;
-    }
-  }
   function getFormForElement(el) {
     if (!(el instanceof Element)) return null;
     return el.closest("form");
@@ -25,7 +15,12 @@
       if (!form) return;
       const acc = form.querySelector('select[name="accountIdList"]');
       const stk = form.querySelector('select[name="stockItemIdList"]');
-      const out = { accountIdList: [], stockItemIdList: [] };
+      const tag = form.querySelector('select[name="stockTagList"]');
+      const out = {
+        accountIdList: [],
+        stockItemIdList: [],
+        stockTagList: [],
+      };
       if (acc) {
         if (acc.multiple) {
           for (const o of Array.from(acc.selectedOptions)) {
@@ -54,6 +49,20 @@
           out.stockItemIdList.push({ id: stk.value, text: txt });
         }
       }
+      if (tag) {
+        if (tag.multiple) {
+          for (const o of Array.from(tag.selectedOptions)) {
+            if (o && o.value)
+              out.stockTagList.push({ id: o.value, text: o.text });
+          }
+        } else if (tag.value) {
+          const txt =
+            (tag.options[tag.selectedIndex] &&
+              tag.options[tag.selectedIndex].text) ||
+            tag.value;
+          out.stockTagList.push({ id: tag.value, text: txt });
+        }
+      }
       try {
         sessionStorage.setItem(GLOBAL_KEY, JSON.stringify(out));
       } catch (e) {
@@ -71,6 +80,7 @@
       const obj = JSON.parse(raw);
       const acc = form.querySelector('select[name="accountIdList"]');
       const stk = form.querySelector('select[name="stockItemIdList"]');
+      const tag = form.querySelector('select[name="stockTagList"]');
       let restored = false;
       if (DEBUG)
         console.debug(
@@ -176,6 +186,55 @@
             restored,
           );
       }
+      if (
+        tag &&
+        obj &&
+        Array.isArray(obj.stockTagList) &&
+        obj.stockTagList.length > 0
+      ) {
+        if (tag.multiple) {
+          const current = new Set(
+            Array.from(tag.selectedOptions).map((o) => o.value),
+          );
+          for (const sel of obj.stockTagList) {
+            if (!current.has(sel.id)) {
+              restored = true;
+              break;
+            }
+          }
+          Array.from(tag.options).forEach((o) => (o.selected = false));
+          for (const sel of obj.stockTagList) {
+            let opt = Array.from(tag.options).find((o) => o.value === sel.id);
+            if (!opt) {
+              opt = document.createElement("option");
+              opt.value = sel.id;
+              opt.text = sel.text || sel.id;
+              tag.insertBefore(opt, tag.firstChild);
+              restored = true;
+            }
+            opt.selected = true;
+          }
+        } else {
+          const sel = obj.stockTagList[0];
+          if (tag.value !== sel.id) restored = true;
+          let opt = Array.from(tag.options).find((o) => o.value === sel.id);
+          if (!opt) {
+            opt = document.createElement("option");
+            opt.value = sel.id;
+            opt.text = sel.text || sel.id;
+            tag.insertBefore(opt, tag.firstChild);
+            restored = true;
+          }
+          tag.value = sel.id;
+        }
+        tag.dispatchEvent(new Event("change", { bubbles: true }));
+        if (DEBUG)
+          console.debug(
+            "[selectionStorage] restored tag",
+            form && form.id,
+            restored,
+          );
+      }
       // 자동 제출: 복원으로 인해 값이 변경되었고 폼에 HTMX 속성이 있으면 submit 트리거
       try {
         if (
@@ -250,7 +309,8 @@
       forms.forEach((f) => {
         if (
           f.querySelector('select[name="accountIdList"]') ||
-          f.querySelector('select[name="stockItemIdList"]')
+          f.querySelector('select[name="stockItemIdList"]') ||
+          f.querySelector('select[name="stockTagList"]')
         ) {
           restoreToForm(f);
         }
@@ -264,6 +324,7 @@
       const prefix = "__stockSelection:";
       const accMap = new Map();
       const stkMap = new Map();
+      const tagMap = new Map();
       try {
         const curRaw = sessionStorage.getItem(GLOBAL_KEY);
         if (curRaw) {
@@ -274,6 +335,9 @@
           if (cur && Array.isArray(cur.stockItemIdList))
             for (const s of cur.stockItemIdList)
               stkMap.set(String(s.id), s.text || s.id);
+          if (cur && Array.isArray(cur.stockTagList))
+            for (const s of cur.stockTagList)
+              tagMap.set(String(s.id), s.text || s.id);
         }
       } catch (e) {
         /* ignore */
@@ -298,16 +362,25 @@
               for (const s of obj.stockItemIdList)
                 if (s && s.id) stkMap.set(String(s.id), s.text || s.id);
             }
+            if (obj && Array.isArray(obj.stockTagList)) {
+              for (const s of obj.stockTagList)
+                if (s && s.id) tagMap.set(String(s.id), s.text || s.id);
+            }
             keysToRemove.push(key);
           } catch (e) {
             /* ignore malformed */
           }
         }
       }
-      if (accMap.size > 0 || stkMap.size > 0) {
-        const out = { accountIdList: [], stockItemIdList: [] };
+      if (accMap.size > 0 || stkMap.size > 0 || tagMap.size > 0) {
+        const out = {
+          accountIdList: [],
+          stockItemIdList: [],
+          stockTagList: [],
+        };
         for (const [id, text] of accMap) out.accountIdList.push({ id, text });
         for (const [id, text] of stkMap) out.stockItemIdList.push({ id, text });
+        for (const [id, text] of tagMap) out.stockTagList.push({ id, text });
         try {
           sessionStorage.setItem(GLOBAL_KEY, JSON.stringify(out));
         } catch (e) {
@@ -361,7 +434,7 @@
           if (ev.detail) ev.detail.parameters = params;
         }
         // If the trigger element explicitly requests a reset (data-selection-reset="true")
-        // or its visible text matches the localized reset label, treat this as a reset action.
+        // or its visible text is the localized '초기화', treat this as a reset action:
         // clear stored selection and do not inject saved params.
         try {
           if (triggerElt instanceof Element) {
@@ -369,8 +442,7 @@
             const attrReset =
               triggerElt.getAttribute &&
               triggerElt.getAttribute("data-selection-reset");
-            const resetLabel = getAppConfigValue("commonButtonReset", "Reset");
-            if (attrReset === "true" || t === resetLabel) {
+            if (attrReset === "true" || t === "초기화") {
               try {
                 sessionStorage.removeItem(GLOBAL_KEY);
               } catch (err) {
@@ -382,6 +454,7 @@
                 if (params) {
                   delete params.accountIdList;
                   delete params.stockItemIdList;
+                  delete params.stockTagList;
                 }
               } catch (err) {
                 /* ignore */
@@ -396,6 +469,9 @@
                   );
                   const stkSel = formEl.querySelector(
                     'select[name="stockItemIdList"]',
+                  );
+                  const tagSel = formEl.querySelector(
+                    'select[name="stockTagList"]',
                   );
                   if (accSel) {
                     if (accSel.multiple) {
@@ -426,6 +502,22 @@
                       }
                     }
                     stkSel.dispatchEvent(
+                      new Event("change", { bubbles: true }),
+                    );
+                  }
+                  if (tagSel) {
+                    if (tagSel.multiple) {
+                      Array.from(tagSel.options).forEach(
+                        (o) => (o.selected = false),
+                      );
+                    } else {
+                      try {
+                        tagSel.value = "";
+                      } catch (e) {
+                        /* ignore */
+                      }
+                    }
+                    tagSel.dispatchEvent(
                       new Event("change", { bubbles: true }),
                     );
                   }
@@ -487,6 +579,10 @@
                       url.searchParams.delete("stockItemIdList");
                       changed = true;
                     }
+                    if (url.searchParams.has("stockTagList")) {
+                      url.searchParams.delete("stockTagList");
+                      changed = true;
+                    }
                     if (changed) {
                       const newPath =
                         url.pathname +
@@ -501,6 +597,11 @@
                         }
                         try {
                           delete params.stockItemIdList;
+                        } catch (e) {
+                          /* ignore */
+                        }
+                        try {
+                          delete params.stockTagList;
                         } catch (e) {
                           /* ignore */
                         }
@@ -575,6 +676,15 @@
           !params.stockItemIdList
         ) {
           params.stockItemIdList = obj.stockItemIdList.map((s) => s.id);
+          injected = true;
+        }
+        if (
+          obj &&
+          Array.isArray(obj.stockTagList) &&
+          obj.stockTagList.length > 0 &&
+          !params.stockTagList
+        ) {
+          params.stockTagList = obj.stockTagList.map((s) => s.id);
           injected = true;
         }
         if (injected) {
@@ -653,7 +763,7 @@
     }
   });
   // Previously we saved selection on every select `change` event. User requested
-  // saving only when the user intentionally runs the search action — therefore
+  // saving only when the user intentionally runs the search ('조회') — therefore
   // we no longer persist on change. Persistence happens on submit below when
   // the submitter indicates an explicit save intent.
   document.addEventListener(
@@ -665,7 +775,7 @@
         // Decide whether this submit should persist selection. We persist only when
         // the submitter (the button that triggered the submit) explicitly indicates
         // save intent. This can be either a `data-selection-save="true"` attribute
-        // (recommended) or the visible localized search label (legacy). Programmatic submits
+        // (recommended) or the visible text '조회' (legacy). Programmatic submits
         // without a submitter will NOT persist unless we detect a primary htmx button.
         const submitter = e.submitter;
         let shouldSave = false;
@@ -675,11 +785,7 @@
               submitter.getAttribute &&
               submitter.getAttribute("data-selection-save");
             const txt = (submitter.textContent || "").trim();
-            const searchLabel = getAppConfigValue(
-              "commonButtonSearch",
-              "Search",
-            );
-            if (attrSave === "true" || txt === searchLabel) shouldSave = true;
+            if (attrSave === "true" || txt === "조회") shouldSave = true;
           } catch (err) {
             /* ignore */
           }
@@ -713,7 +819,8 @@
               if (
                 shouldSave &&
                 (form.querySelector('select[name="accountIdList"]') ||
-                  form.querySelector('select[name="stockItemIdList"]'))
+                  form.querySelector('select[name="stockItemIdList"]') ||
+                  form.querySelector('select[name="stockTagList"]'))
               ) {
                 saveFromForm(form);
               }
@@ -732,7 +839,8 @@
         if (
           shouldSave &&
           (form.querySelector('select[name="accountIdList"]') ||
-            form.querySelector('select[name="stockItemIdList"]'))
+            form.querySelector('select[name="stockItemIdList"]') ||
+            form.querySelector('select[name="stockTagList"]'))
         ) {
           saveFromForm(form);
         }

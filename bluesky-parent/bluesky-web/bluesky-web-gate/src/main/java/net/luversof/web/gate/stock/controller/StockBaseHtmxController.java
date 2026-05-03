@@ -1,14 +1,18 @@
 package net.luversof.web.gate.stock.controller;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.util.StringUtils;
 
 import net.luversof.web.gate.stock.domain.Account;
 import net.luversof.web.gate.stock.domain.StockItem;
@@ -102,6 +106,62 @@ public abstract class StockBaseHtmxController {
         .toList();
   }
 
+  protected List<String> getAvailableStockTags(List<StockItem> stockItemList) {
+    if (stockItemList == null || stockItemList.isEmpty()) {
+      return List.of();
+    }
+
+    return stockItemList.stream()
+        .filter(Objects::nonNull)
+        .flatMap(stockItem -> stockItem.tags() != null ? stockItem.tags().stream() : Stream.empty())
+        .filter(StringUtils::hasText)
+        .map(String::trim)
+        .distinct()
+        .sorted(String::compareToIgnoreCase)
+        .toList();
+  }
+
+  protected StockTagSelection resolveStockTagSelection(
+      List<StockItem> stockItemList, List<UUID> stockItemIdList, List<String> stockTagList) {
+    List<String> selectedStockTags = normalizeStockTags(stockTagList);
+    boolean hasFilter = (stockItemIdList != null && !stockItemIdList.isEmpty()) || !selectedStockTags.isEmpty();
+
+    if (!hasFilter) {
+      return new StockTagSelection(selectedStockTags, null, false);
+    }
+
+    var requestedStockItemIds = new LinkedHashSet<UUID>();
+    if (stockItemIdList != null) {
+      stockItemIdList.stream().filter(Objects::nonNull).forEach(requestedStockItemIds::add);
+    }
+
+    if (!selectedStockTags.isEmpty() && stockItemList != null) {
+      stockItemList.stream()
+          .filter(Objects::nonNull)
+          .filter(stockItem -> stockItem.id() != null)
+          .filter(stockItem -> stockItem.tags() != null && !stockItem.tags().isEmpty())
+          .filter(
+              stockItem -> stockItem.tags().stream()
+                  .filter(StringUtils::hasText)
+                  .map(String::trim)
+                  .anyMatch(selectedStockTags::contains))
+          .map(StockItem::id)
+          .forEach(requestedStockItemIds::add);
+    }
+
+    return new StockTagSelection(selectedStockTags, new ArrayList<>(requestedStockItemIds), true);
+  }
+
+  private List<String> normalizeStockTags(List<String> stockTagList) {
+    if (stockTagList == null || stockTagList.isEmpty()) {
+      return List.of();
+    }
+
+    var normalizedStockTags = new LinkedHashSet<String>();
+    stockTagList.stream().filter(StringUtils::hasText).map(String::trim).forEach(normalizedStockTags::add);
+    return new ArrayList<>(normalizedStockTags);
+  }
+
   public record AnalyticsRow(
       String key,
       String subKey,
@@ -121,5 +181,9 @@ public abstract class StockBaseHtmxController {
       String borderColor,
       Integer borderWidth,
       List<Integer> borderDash) {
+  }
+
+  protected record StockTagSelection(
+      List<String> selectedStockTags, List<UUID> requestedStockItemIds, boolean hasFilter) {
   }
 }

@@ -24,10 +24,12 @@
 @param String timeZone = null
 @param java.util.List<net.luversof.web.gate.stock.domain.Account> accountList = null
 @param java.util.List<net.luversof.web.gate.stock.domain.StockItem> stockItemList = null
+@param java.util.List<String> stockTagList = java.util.List.of()
 @param java.util.UUID selectedAccountId = null
 @param java.util.UUID selectedStockItemId = null
 @param java.util.List<java.util.UUID> selectedAccountIds = java.util.List.of()
 @param java.util.List<java.util.UUID> selectedStockItemIds = java.util.List.of()
+@param java.util.List<String> selectedStockTags = java.util.List.of()
 @param String debugTradeAccountIds = null
 @param Integer debugFinalAccountListSize = null
 @param Integer debugFinalStockItemListSize = null
@@ -59,6 +61,7 @@
             String periodLabel = MessageUtil.getMessage("common.label.period");
             String accountLabel = MessageUtil.getMessage("common.label.account");
             String stockNameLabel = MessageUtil.getMessage("stock.activity.label.stock.name");
+            String tagLabel = MessageUtil.getMessage("common.label.tag");
             String allLabel = MessageUtil.getMessage("common.label.all");
             String searchLabel = MessageUtil.getMessage("common.button.search");
             String resetLabel = MessageUtil.getMessage("common.button.reset");
@@ -101,7 +104,7 @@
         endDate = endLocal
     )
 
-    <details class="mb-4"$unsafe{((selectedAccountIds != null && !selectedAccountIds.isEmpty()) || (selectedStockItemIds != null && !selectedStockItemIds.isEmpty()) || startDate != null) ? " open" : ""}>
+    <details class="mb-4"$unsafe{((selectedAccountIds != null && !selectedAccountIds.isEmpty()) || (selectedStockItemIds != null && !selectedStockItemIds.isEmpty()) || (selectedStockTags != null && !selectedStockTags.isEmpty()) || startDate != null) ? " open" : ""}>
         <summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
             ${detailSearchLabel}
@@ -132,6 +135,15 @@
                             <option value="${account.id().toString()}" selected="${selectedAccountIds != null && selectedAccountIds.contains(account.id())}">${account.name()}</option>
                         @endfor
                     @endif
+                </select>
+            </div>
+
+            <div class="form-control w-full sm:w-auto">
+                <label class="label p-1"><span class="label-text text-xs">${tagLabel}</span></label>
+                <select name="stockTagList" class="select-bordered w-full max-h-52 overflow-auto" multiple data-max-visible="6">
+                    @for(String stockTag : stockTagList)
+                        <option value="${stockTag}" selected="${selectedStockTags != null && selectedStockTags.contains(stockTag)}">${stockTag}</option>
+                    @endfor
                 </select>
             </div>
 

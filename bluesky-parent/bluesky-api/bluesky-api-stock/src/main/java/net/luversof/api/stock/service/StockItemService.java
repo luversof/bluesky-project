@@ -1,20 +1,36 @@
 package net.luversof.api.stock.service;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import net.luversof.api.stock.domain.StockItem;
+import net.luversof.api.stock.domain.StockItemTag;
 import net.luversof.api.stock.repository.StockItemRepository;
+import net.luversof.api.stock.repository.StockItemTagRepository;
 
 @Service
 public class StockItemService {
 
-  @Autowired private StockItemRepository stockItemRepository;
+  @Autowired
+  private StockItemRepository stockItemRepository;
+
+  @Autowired
+  private StockItemTagRepository stockItemTagRepository;
 
   public void setStockItemRepository(StockItemRepository stockItemRepository) {
     this.stockItemRepository = stockItemRepository;
@@ -27,21 +43,63 @@ public class StockItemService {
 
   @Cacheable(value = "stockItems", key = "#id")
   public Optional<StockItem> findById(UUID id) {
-    return stockItemRepository.findById(id);
+    return stockItemRepository.findById(id).map(this::attachTags);
   }
 
   @Cacheable(value = "stockItems", key = "#name")
   public StockItem findByName(String name) {
-    return stockItemRepository.findByName(name);
+    return attachTags(stockItemRepository.findByName(name));
   }
 
   public Iterable<StockItem> findAllById(Iterable<UUID> ids) {
-    return stockItemRepository.findAllById(ids);
+    List<StockItem> list = new ArrayList<>();
+    stockItemRepository.findAllById(ids).forEach(list::add);
+    attachTags(list);
+    return list;
   }
 
-  public java.util.List<StockItem> findAll() {
-    java.util.List<StockItem> list = new java.util.ArrayList<>();
+  public List<StockItem> findAll() {
+    List<StockItem> list = new ArrayList<>();
     stockItemRepository.findAll().forEach(list::add);
+    attachTags(list);
     return list;
+  }
+
+  private StockItem attachTags(StockItem stockItem) {
+    if (stockItem == null) {
+      return null;
+    }
+    attachTags(List.of(stockItem));
+    return stockItem;
+  }
+
+  private void attachTags(List<StockItem> stockItems) {
+    if (stockItems == null || stockItems.isEmpty()) {
+      return;
+    }
+
+    Set<UUID> stockItemIds = stockItems.stream().map(StockItem::getId).filter(Objects::nonNull)
+        .collect(Collectors.toSet());
+    if (stockItemIds.isEmpty()) {
+      stockItems.forEach(stockItem -> stockItem.setTags(List.of()));
+      return;
+    }
+
+    Map<UUID, List<String>> tagsByStockItemId = StreamSupport
+        .stream(stockItemTagRepository.findAll().spliterator(), false)
+        .filter(tag -> tag.getStockItemId() != null && stockItemIds.contains(tag.getStockItemId()))
+        .filter(tag -> StringUtils.hasText(tag.getTag()))
+        .collect(
+            Collectors.groupingBy(
+                StockItemTag::getStockItemId,
+                LinkedHashMap::new,
+                Collectors.collectingAndThen(
+                    Collectors.mapping(
+                        stockItemTag -> stockItemTag.getTag().trim(),
+                        Collectors.toCollection(LinkedHashSet::new)),
+                    ArrayList::new)));
+
+    stockItems.forEach(
+        stockItem -> stockItem.setTags(tagsByStockItemId.getOrDefault(stockItem.getId(), List.of())));
   }
 }
