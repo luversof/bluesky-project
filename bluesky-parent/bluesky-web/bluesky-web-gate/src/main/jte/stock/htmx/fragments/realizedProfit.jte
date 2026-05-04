@@ -42,7 +42,7 @@
     ? totalRealizedProfit.doubleValue() / totalSoldCost.doubleValue() * 100
     : 0.0;}
 
-<div id="realizedProfitFragment" class="flex flex-col gap-6">
+<div id="realizedProfitFragment">
     <!-- DEBUG: tradeAccountIds=${debugTradeAccountIds} finalAccountListSize=${debugFinalAccountListSize} finalStockItemListSize=${debugFinalStockItemListSize} -->
 
     !{

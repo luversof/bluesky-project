@@ -104,6 +104,7 @@
     java.time.LocalDate today = java.time.LocalDate.now(zone);
     java.time.LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
     java.time.LocalDate endLocal = endDate != null ? endDate.atZone(zone).toLocalDate() : null;
+    java.time.LocalDate endLocalInclusive = endLocal != null ? endLocal.minusDays(1) : null;
     boolean canNext = !isAllMode && endLocal != null && endLocal.isBefore(today);
     boolean canPrev = !isAllMode && startLocal != null
         && dataFirstDate != null && !dataFirstDate.isEmpty()
@@ -653,7 +654,7 @@
     (function() {
         $unsafe{dividendDataJs}
         const filterStartDate = "${startLocal != null ? startLocal.format(DateTimeFormatter.ofPattern("yyyy-MM")) : ""}";
-        const filterEndDate = "${endLocal != null ? endLocal.format(DateTimeFormatter.ofPattern("yyyy-MM")) : ""}";
+        const filterEndDate = "${endLocalInclusive != null ? endLocalInclusive.format(DateTimeFormatter.ofPattern("yyyy-MM")) : ""}";
         const countPattern = "${countPattern}";
         const noDataLabel = "${noDataLabel}";
         const noPeriodHistoryLabel = "${noPeriodHistoryLabel}";
@@ -806,15 +807,7 @@
                 return;
             }
             const totalNet = dividendData.reduce((s, d) => s + Number(d.net), 0);
-            let monthCount;
-            if (filterStartDate && filterEndDate) {
-                const [sy, sm] = filterStartDate.split('-').map(Number);
-                const [ey, em] = filterEndDate.split('-').map(Number);
-                monthCount = (ey - sy) * 12 + (em - sm) + 1;
-            } else {
-                const monthSet = new Set(dividendData.filter(d => d.payDate).map(d => d.payDate.slice(0, 7)));
-                monthCount = monthSet.size || 1;
-            }
+            const monthCount = buildMonthlyData().labels.length || 1;
             const avgPerMonth = totalNet / monthCount;
             displayEl.textContent = formatCurrency(Math.round(avgPerMonth));
             if (descEl) {

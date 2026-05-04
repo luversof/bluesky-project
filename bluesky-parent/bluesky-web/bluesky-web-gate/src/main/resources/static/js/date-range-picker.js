@@ -11,6 +11,57 @@ const DateRangePicker = (function () {
         const _s = { start: "", end: "", mode: "" };
         const isCallback = () => typeof cfg.onApply === "function";
         const activeClass = () => cfg.activeClass || "btn-primary";
+        const resolvedTimeZone = () => {
+            try {
+                var _a;
+                return ((_a = Intl === null || Intl === void 0 ? void 0 : Intl.DateTimeFormat) === null || _a === void 0 ? void 0 : _a.call(Intl).resolvedOptions().timeZone) || "";
+            }
+            catch (e) {
+                return "";
+            }
+        };
+        const parseLocalDate = (value) => new Date(value + "T00:00:00");
+        const isLastDayOfMonth = (date) => date.getDate() === new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+        const addMonthsClamped = (date, months) => {
+            const targetFirst = new Date(date.getFullYear(), date.getMonth() + months, 1);
+            const targetLastDay = new Date(targetFirst.getFullYear(), targetFirst.getMonth() + 1, 0).getDate();
+            return new Date(targetFirst.getFullYear(), targetFirst.getMonth(), Math.min(date.getDate(), targetLastDay));
+        };
+        const isWholeMonthRange = (startStr, endStr) => {
+            if (!startStr || !endStr)
+                return false;
+            const startDate = parseLocalDate(startStr);
+            const endDate = parseLocalDate(endStr);
+            return startDate.getDate() === 1 && isLastDayOfMonth(endDate);
+        };
+        const shiftNumericMonthRange = (startStr, endStr, months, dir, maxDate, minDate) => {
+            if (!startStr || !endStr)
+                return null;
+            const startDate = parseLocalDate(startStr);
+            const endDate = parseLocalDate(endStr);
+            let nextStart;
+            let nextEnd;
+            if (isWholeMonthRange(startStr, endStr)) {
+                nextStart = new Date(startDate.getFullYear(), startDate.getMonth() + dir * months, 1);
+                nextEnd = new Date(nextStart.getFullYear(), nextStart.getMonth() + months, 0);
+            }
+            else {
+                nextStart = addMonthsClamped(startDate, dir * months);
+                nextEnd = addMonthsClamped(endDate, dir * months);
+            }
+            if (dir > 0 && maxDate) {
+                if (nextStart > maxDate)
+                    return null;
+                if (nextEnd > maxDate)
+                    nextEnd = new Date(maxDate);
+            }
+            if (dir < 0 && minDate && nextStart < minDate)
+                return null;
+            return {
+                start: fmtDate(nextStart),
+                end: fmtDate(nextEnd),
+            };
+        };
         const el = (id) => (id ? document.getElementById(id) : null);
         const btns = (root) => cfg.btnClass
             ? Array.from((root || document).querySelectorAll("." + cfg.btnClass))
@@ -67,15 +118,7 @@ const DateRangePicker = (function () {
                 }
                 if (mode && !isNaN(+mode) && +mode > 0) {
                     const months = +mode;
-                    const s = new Date(start + "T00:00:00");
-                    const e = end ? new Date(end + "T00:00:00") : new Date(s);
-                    s.setMonth(s.getMonth() + dir * months);
-                    e.setMonth(e.getMonth() + dir * months);
-                    if (dir > 0 && s > maxDate)
-                        return false;
-                    if (dir < 0 && minDate)
-                        return s >= minDate;
-                    return true;
+                    return !!shiftNumericMonthRange(start, end || start, months, dir, maxDate, minDate);
                 }
                 // Free range
                 if (!end)
@@ -220,11 +263,7 @@ const DateRangePicker = (function () {
                     const gEnd = document.getElementById("globalEndInstantInput");
                     const gTz = document.getElementById("globalTimeZoneInput");
                     const gMode = document.getElementById("globalRangeModeInput");
-                    const tzVal = (Intl &&
-                        Intl.DateTimeFormat &&
-                        Intl.DateTimeFormat().resolvedOptions &&
-                        Intl.DateTimeFormat().resolvedOptions().timeZone) ||
-                        "";
+                    const tzVal = resolvedTimeZone();
                     if (gStart)
                         gStart.value = sStr ? localDateToInstantIso(sStr, 0) : "";
                     if (gEnd)
@@ -244,7 +283,7 @@ const DateRangePicker = (function () {
                     cfg.onApply(startStr, endStr, modeStr);
                     try {
                         if (cfg.globalKey && typeof sessionStorage !== "undefined") {
-                            const tz = ((_a = Intl === null || Intl === void 0 ? void 0 : Intl.DateTimeFormat) === null || _a === void 0 ? void 0 : _a.call(Intl).resolvedOptions().timeZone) || null;
+                            const tz = resolvedTimeZone() || null;
                             sessionStorage.setItem(cfg.globalKey, JSON.stringify({
                                 start: startStr || "",
                                 end: endStr || "",
@@ -266,6 +305,7 @@ const DateRangePicker = (function () {
                                     start: startStr || "",
                                     end: endStr || "",
                                     mode: modeStr || "",
+                                    timeZone: resolvedTimeZone() || "",
                                 },
                             }));
                         }
@@ -316,7 +356,7 @@ const DateRangePicker = (function () {
                                 instEe.value = endStr ? localDateToInstantIso(endStr, 1) : "";
                         }
                         try {
-                            const tz = ((_b = Intl === null || Intl === void 0 ? void 0 : Intl.DateTimeFormat) === null || _b === void 0 ? void 0 : _b.call(Intl).resolvedOptions().timeZone) || "UTC";
+                            const tz = resolvedTimeZone() || "UTC";
                             if (cfg.timeZoneId) {
                                 const tzEl = el(cfg.timeZoneId);
                                 if (tzEl)
@@ -326,7 +366,7 @@ const DateRangePicker = (function () {
                         catch (e) { }
                         try {
                             if (cfg.globalKey && typeof sessionStorage !== "undefined") {
-                                const tz2 = ((_c = Intl === null || Intl === void 0 ? void 0 : Intl.DateTimeFormat) === null || _c === void 0 ? void 0 : _c.call(Intl).resolvedOptions().timeZone) || null;
+                                const tz2 = resolvedTimeZone() || null;
                                 sessionStorage.setItem(cfg.globalKey, JSON.stringify({
                                     start: startStr || "",
                                     end: endStr || "",
@@ -348,6 +388,7 @@ const DateRangePicker = (function () {
                                         start: startStr || "",
                                         end: endStr || "",
                                         mode: modeStr || "",
+                                        timeZone: resolvedTimeZone() || "",
                                     },
                                 }));
                             }
@@ -439,7 +480,7 @@ const DateRangePicker = (function () {
                             instEe.value = endStr ? localDateToInstantIso(endStr, 1) : "";
                     }
                     try {
-                        const tz = ((_a = Intl === null || Intl === void 0 ? void 0 : Intl.DateTimeFormat) === null || _a === void 0 ? void 0 : _a.call(Intl).resolvedOptions().timeZone) || "UTC";
+                        const tz = resolvedTimeZone() || "UTC";
                         if (cfg.timeZoneId) {
                             const tzEl = el(cfg.timeZoneId);
                             if (tzEl)
@@ -499,16 +540,14 @@ const DateRangePicker = (function () {
                 const atDataStart = !atDataEnd && !!cfg.minDate && !!curStart && curStart <= cfg.minDate;
                 if (atDataStart) {
                     const minD = new Date(cfg.minDate + "T00:00:00");
-                    let e = new Date(minD);
-                    e.setMonth(e.getMonth() + months);
+                    let e = addMonthsClamped(minD, months);
                     if (e > maxDate)
                         e = new Date(maxDate);
                     startStr = fmtDate(minD);
                     endStr = fmtDate(e);
                 }
                 else {
-                    const s = new Date(maxDate);
-                    s.setMonth(s.getMonth() - months);
+                    const s = addMonthsClamped(maxDate, -months);
                     startStr = fmtDate(s);
                     endStr = maxStr;
                 }
@@ -553,8 +592,7 @@ const DateRangePicker = (function () {
                     startStr = maxDate.getFullYear() + "-01-01";
                 }
                 else if (edgeMode && !isNaN(Number(edgeMode)) && +edgeMode > 0) {
-                    const s = new Date(maxDate);
-                    s.setMonth(s.getMonth() - +edgeMode);
+                    const s = addMonthsClamped(maxDate, -+edgeMode);
                     startStr = fmtDate(s);
                 }
                 else {
@@ -585,8 +623,7 @@ const DateRangePicker = (function () {
                         minYear === maxDate.getFullYear() ? maxStr : minYear + "-12-31";
                 }
                 else if (edgeMode && !isNaN(Number(edgeMode)) && +edgeMode > 0) {
-                    let e = new Date(minD);
-                    e.setMonth(e.getMonth() + +edgeMode);
+                    let e = addMonthsClamped(minD, +edgeMode);
                     if (e > maxDate)
                         e = new Date(maxDate);
                     startStr = fmtDate(minD);
@@ -677,29 +714,19 @@ const DateRangePicker = (function () {
                                     : String(months);
                         }
                         else {
-                            const s = new Date(start + "T00:00:00");
-                            const e = end ? new Date(end + "T00:00:00") : new Date(s);
-                            s.setMonth(s.getMonth() + dir * months);
-                            e.setMonth(e.getMonth() + dir * months);
-                            if (dir > 0 && s > maxDate)
+                            const shifted = shiftNumericMonthRange(start, end || start, months, dir, maxDate, null);
+                            if (!shifted)
                                 return;
-                            if (dir > 0 && e > maxDate)
-                                e.setTime(maxDate.getTime());
-                            newStart = fmtDate(s);
-                            newEnd = fmtDate(e);
+                            newStart = shifted.start;
+                            newEnd = shifted.end;
                         }
                     }
                     else {
-                        const s = new Date(start + "T00:00:00");
-                        const e = end ? new Date(end + "T00:00:00") : new Date(s);
-                        s.setMonth(s.getMonth() + dir * months);
-                        e.setMonth(e.getMonth() + dir * months);
-                        if (dir > 0 && s > maxDate)
+                        const shifted = shiftNumericMonthRange(start, end || start, months, dir, maxDate, null);
+                        if (!shifted)
                             return;
-                        if (dir > 0 && e > maxDate)
-                            e.setTime(maxDate.getTime());
-                        newStart = fmtDate(s);
-                        newEnd = fmtDate(e);
+                        newStart = shifted.start;
+                        newEnd = shifted.end;
                     }
                 }
                 catch (e) {
@@ -815,16 +842,14 @@ const DateRangePicker = (function () {
                                                         curStart <= cfg.minDate;
                                                     if (atDataStart) {
                                                         const minD = new Date(cfg.minDate + "T00:00:00");
-                                                        let e = new Date(minD);
-                                                        e.setMonth(e.getMonth() + monthsParam);
+                                                        let e = addMonthsClamped(minD, monthsParam);
                                                         if (e > maxDate)
                                                             e = new Date(maxDate);
                                                         startStr = fmtDate(minD);
                                                         endStr = fmtDate(e);
                                                     }
                                                     else {
-                                                        const s = new Date(maxDate);
-                                                        s.setMonth(s.getMonth() - monthsParam);
+                                                        const s = addMonthsClamped(maxDate, -monthsParam);
                                                         startStr = fmtDate(s);
                                                         endStr = maxStr;
                                                     }

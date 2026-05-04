@@ -12,8 +12,9 @@
 	profile = profile,
 	contentStock = @`
 		<div class="container mx-auto p-4 space-y-6">
-
-			<h1 class="text-2xl font-bold mb-4 ml-1">${MessageUtil.getMessage("stock.page.realized.profit.title")}</h1>
+			<div class="flex justify-between items-center mb-6">
+				<h1 class="text-2xl font-bold">${MessageUtil.getMessage("stock.page.realized.profit.title")}</h1>
+			</div>
 
 			<!-- Chart.js: fragment 내 차트 사용 -->
 			<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

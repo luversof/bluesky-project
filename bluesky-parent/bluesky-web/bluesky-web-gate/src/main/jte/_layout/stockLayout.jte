@@ -77,15 +77,25 @@
 						var gEnd = document.getElementById('globalEndInstantInput');
 						var gTz = document.getElementById('globalTimeZoneInput');
 						var gMode = document.getElementById('globalRangeModeInput');
+						var nextTimeZone = obj.timeZone || obj.timezone || (gTz && gTz.value) || '';
+						if (!nextTimeZone) {
+							try {
+								var savedRaw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('globalDateRange') : null;
+								if (savedRaw) {
+									var saved = JSON.parse(savedRaw);
+									nextTimeZone = saved && (saved.timeZone || saved.timezone) ? (saved.timeZone || saved.timezone) : '';
+								}
+							} catch (e) {}
+						}
 						if (gStart) gStart.value = obj.start ? localToIso(obj.start, 0) : '';
 						if (gEnd) gEnd.value = obj.end ? localToIso(obj.end, 1) : '';
-						if (gTz) gTz.value = obj.timeZone || '';
+						if (gTz) gTz.value = nextTimeZone || '';
 						if (gMode) gMode.value = obj.mode || '';
 
 						// update per-form inputs so HTMX includes the new range when forms submit
 						document.querySelectorAll('input[name="startDate"]').forEach(function(inp){ inp.value = obj.start ? localToIso(obj.start, 0) : ''; });
 						document.querySelectorAll('input[name="endDate"]').forEach(function(inp){ inp.value = obj.end ? localToIso(obj.end, 1) : ''; });
-						document.querySelectorAll('input[name="timeZone"]').forEach(function(inp){ inp.value = obj.timeZone || ''; });
+						document.querySelectorAll('input[name="timeZone"]').forEach(function(inp){ inp.value = nextTimeZone || ''; });
 						document.querySelectorAll('input[name="rangeMode"]').forEach(function(inp){ inp.value = obj.mode || ''; });
 					} catch (e) {}
 				}

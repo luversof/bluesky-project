@@ -620,12 +620,20 @@ type SelectionObject = {
 				}
 
 				// If this request targets an endpoint that should NOT receive account/stock filters
-				// (e.g. asset-growth or trade-history), skip injection entirely. We must handle both
+				// (e.g. dashboards or pages without explicit search UI), skip injection entirely. We must handle both
 				// declarative HX attributes (hx-get on elements) and programmatic calls which set
 				// the request `path` directly (ev.detail.path). For programmatic calls, also strip
 				// any existing `accountIdList`/`stockItemIdList` query params from the path.
 				try {
-					const excluded = ["asset-growth", "trade-history"];
+					const excluded = [
+						"/stock/htmx/summary",
+						"/stock/htmx/asset-status",
+						"/stock/htmx/recent-activities",
+						"/stock/htmx/daily-summary/view",
+						"/stock/htmx/analytics/data",
+						"asset-growth",
+						"trade-history",
+					];
 
 					// 1) If the path (set by htmx or provided programmatically) mentions an excluded
 					// endpoint, remove account/stock query params from the path and skip injection.
