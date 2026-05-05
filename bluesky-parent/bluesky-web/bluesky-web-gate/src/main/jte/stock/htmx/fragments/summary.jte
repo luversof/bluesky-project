@@ -19,6 +19,8 @@
 @param List<TradeProfit> bottomDividend
 @param Map<String, BigDecimal> allocation
 @param Map<String, BigDecimal> accountAllocation
+@param BigDecimal displayPrincipal
+@param BigDecimal displayCurrentEvaluationProfit
 @param boolean showCharts = true
 
 !{
@@ -48,8 +50,9 @@
     <div class="stats stats-vertical lg:stats-horizontal shadow w-full bg-base-100">
         
         <!-- 1. 현재 자산 상태 (원금 + 평가손익) -->
-        !{BigDecimal totalPrincipal = totalAsset.subtract(totalUnrealizedProfit);}
-        !{double unrealizedRate = totalPrincipal.compareTo(BigDecimal.ZERO) > 0 ? totalUnrealizedProfit.doubleValue() / totalPrincipal.doubleValue() * 100 : 0.0;}
+        !{BigDecimal currentPrincipal = displayPrincipal != null ? displayPrincipal : totalAsset.subtract(totalUnrealizedProfit);}
+        !{BigDecimal currentEvaluationProfit = displayCurrentEvaluationProfit != null ? displayCurrentEvaluationProfit : totalUnrealizedProfit;}
+        !{double unrealizedRate = currentPrincipal.compareTo(BigDecimal.ZERO) > 0 ? currentEvaluationProfit.doubleValue() / currentPrincipal.doubleValue() * 100 : 0.0;}
         <div class="stat">
             <div class="stat-figure text-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -57,16 +60,16 @@
             <div class="stat-title">${currentTotalAssetLabel}</div>
             <div class="stat-value text-principal font-bold amount-value">${String.format("%,d", totalAsset.longValue())}</div>
             <div class="stat-desc font-semibold mt-1">
-                ${principalLabel}: <span class="amount-value">${String.format("%,d", totalPrincipal.longValue())}</span>
+                ${principalLabel}: <span class="amount-value">${String.format("%,d", currentPrincipal.longValue())}</span>
             </div>
         </div>
 
         <div class="stat">
             <div class="stat-title">${currentEvaluationProfitLabel}</div>
-             <div class="stat-value font-bold amount-value ${totalUnrealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                 ${String.format("%,d", totalUnrealizedProfit.longValue())}
+             <div class="stat-value font-bold amount-value ${currentEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                 ${String.format("%,d", currentEvaluationProfit.longValue())}
              </div>
-            <div class="stat-desc font-bold mt-1 ${totalUnrealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+            <div class="stat-desc font-bold mt-1 ${currentEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                 ${returnRateLabel}: <span>${String.format("%+.2f%%", unrealizedRate)}</span>
             </div>
         </div>
@@ -91,7 +94,8 @@
 
         <!-- 3. 총 합산 수익 (평가손익 + 확정수익) -->
         !{BigDecimal totalCombinedProfit = totalUnrealizedProfit.add(totalRealizedIncome);}
-        !{double combinedRate = totalPrincipal.compareTo(BigDecimal.ZERO) > 0 ? totalCombinedProfit.doubleValue() / totalPrincipal.doubleValue() * 100 : 0.0;}
+        !{BigDecimal combinedPrincipal = totalAsset.subtract(totalUnrealizedProfit);}
+        !{double combinedRate = combinedPrincipal.compareTo(BigDecimal.ZERO) > 0 ? totalCombinedProfit.doubleValue() / combinedPrincipal.doubleValue() * 100 : 0.0;}
         <div class="stat border-l border-base-200">
             <div class="stat-figure text-accent">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>

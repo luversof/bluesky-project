@@ -39,13 +39,20 @@ public class AccountService {
   }
 
   public Account createAccount(Account account) {
-    if (account.getName().contains("ISA") || account.getName().contains("?곌툑")) {
-      if (account.getJsonConfig() == null) {
-        account.setJsonConfig(new HashMap<>());
-      }
-      account.getJsonConfig().put("isTaxDeferred", true);
-    }
+    appendJsonConfig(account);
     return accountRepository.save(account);
+  }
+
+  private void appendJsonConfig(Account account) {
+    var jsonConfig =
+        account.getJsonConfig() == null ? new HashMap<String, Object>() : account.getJsonConfig();
+    if (account.getName().contains("ISA") || account.getName().contains("연금")) {
+      jsonConfig.put("isTaxDeferred", true);
+    }
+
+    if (!jsonConfig.isEmpty()) {
+      account.setJsonConfig(jsonConfig);
+    }
   }
 
   public Optional<Account> findById(UUID id) {
@@ -61,7 +68,7 @@ public class AccountService {
   }
 
   /**
-   * UserId 湲곗? ?곗씠???쇨큵 ??젣
+   * UserId 기준 데이터 일괄 삭제
    *
    * @param userId
    */

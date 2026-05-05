@@ -31,6 +31,8 @@ public abstract class StockBaseHtmxController {
   protected static final String ERROR_ATTRIBUTE = "error";
   protected static final String ERROR_VIEW = "stock/htmx/error";
   protected static final int DIVIDEND_CHART_START_YEAR = 2015;
+  protected static final List<String> ACCOUNT_PRINCIPAL_CONFIG_KEYS =
+      List.of("manualPrincipalAmount", "manualPrincipal", "principalAmount", "principal");
 
   protected final TradeProfitClient tradeProfitClient;
   protected final TradeClient tradeClient;
@@ -78,6 +80,54 @@ public abstract class StockBaseHtmxController {
       return d.taxPerShare().multiply(BigDecimal.valueOf(d.quantity()));
     }
     return BigDecimal.ZERO;
+  }
+
+  protected BigDecimal resolveAccountManualPrincipal(Account account) {
+    if (account == null || account.jsonConfig() == null || account.jsonConfig().isEmpty()) {
+      return null;
+    }
+
+    for (String key : ACCOUNT_PRINCIPAL_CONFIG_KEYS) {
+      BigDecimal parsed = parseJsonBigDecimal(account.jsonConfig().get(key));
+      if (parsed != null && parsed.compareTo(BigDecimal.ZERO) >= 0) {
+        return parsed;
+      }
+    }
+
+    return null;
+  }
+
+  private BigDecimal parseJsonBigDecimal(Object value) {
+    if (value == null) {
+      return null;
+    }
+
+    if (value instanceof BigDecimal decimalValue) {
+      return decimalValue;
+    }
+
+    if (value instanceof Number numberValue) {
+      try {
+        return new BigDecimal(numberValue.toString());
+      } catch (NumberFormatException ignored) {
+        return null;
+      }
+    }
+
+    if (value instanceof String stringValue) {
+      String normalized = stringValue.replace(",", "").trim();
+      if (normalized.isEmpty()) {
+        return null;
+      }
+
+      try {
+        return new BigDecimal(normalized);
+      } catch (NumberFormatException ignored) {
+        return null;
+      }
+    }
+
+    return null;
   }
 
   // Helper to get enriched data

@@ -27,6 +27,7 @@ import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.stock.domain.Account;
 import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.domain.TradeProfit;
+import net.luversof.web.gate.stock.domain.TradeProfitAggregator;
 import net.luversof.web.gate.stock.dto.request.DividendRequest;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
 import net.luversof.web.gate.stock.dto.response.DividendResponse;
@@ -765,6 +766,42 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
             .filter(Objects::nonNull)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+    Map<UUID, BigDecimal> accountPrincipalOverrideMap =
+      accountClient.getAccountsByUserId(userId).stream()
+        .filter(account -> account.id() != null)
+        .flatMap(
+          account -> {
+            BigDecimal principal = resolveAccountManualPrincipal(account);
+            return principal != null
+              ? java.util.stream.Stream.of(Map.entry(account.id(), principal))
+              : java.util.stream.Stream.empty();
+          })
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (left, right) -> left));
+
+    BigDecimal displayPrincipal =
+      profitList.stream()
+        .filter(profit -> profit.accountId() != null)
+        .collect(Collectors.groupingBy(TradeProfit::accountId))
+        .entrySet()
+        .stream()
+        .map(
+          entry -> {
+            BigDecimal defaultPrincipal =
+              Optional.ofNullable(TradeProfitAggregator.aggregate(entry.getValue()).totalBuyCost())
+                .orElse(BigDecimal.ZERO);
+            return Optional.ofNullable(accountPrincipalOverrideMap.get(entry.getKey()))
+              .orElse(defaultPrincipal);
+          })
+        .reduce(BigDecimal.ZERO, BigDecimal::add)
+        .add(
+          profitList.stream()
+            .filter(profit -> profit.accountId() == null)
+            .map(TradeProfit::totalBuyCost)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add));
+
+    BigDecimal displayCurrentEvaluationProfit = totalAsset.subtract(displayPrincipal);
+
     long winCount =
         profitList.stream()
             .filter(
@@ -887,6 +924,8 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     model.addAttribute("totalAsset", totalAsset);
     model.addAttribute("totalRealizedProfit", totalRealizedVal);
     model.addAttribute("totalUnrealizedProfit", totalUnrealizedVal);
+    model.addAttribute("displayPrincipal", displayPrincipal);
+    model.addAttribute("displayCurrentEvaluationProfit", displayCurrentEvaluationProfit);
     model.addAttribute("totalDividend", totalDividendVal);
     model.addAttribute("winRate", winRate);
 

@@ -252,26 +252,65 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     List<TradeProfit> enrichedList = new ArrayList<>(getEnrichedTradeProfits(request));
     enrichedList.removeIf(tp -> tp.holdingQuantity() == 0);
 
+    Map<UUID, BigDecimal> accountPrincipalOverrideMap =
+        accountClient.getAccountsByUserId(userId).stream()
+            .filter(account -> account.id() != null)
+            .flatMap(
+                account -> {
+                  BigDecimal principal = resolveAccountManualPrincipal(account);
+                  return principal != null
+                      ? java.util.stream.Stream.of(Map.entry(account.id(), principal))
+                      : java.util.stream.Stream.empty();
+                })
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (left, right) -> left));
+
     // 계좌별 집계
     Map<String, TradeProfit> accountTotalMap = new LinkedHashMap<>();
     enrichedList.stream()
-        .collect(Collectors.groupingBy(TradeProfit::accountName))
+        .collect(Collectors.groupingBy(TradeProfit::accountId))
         .entrySet()
         .stream()
-        .sorted(Map.Entry.comparingByKey(Comparator.nullsLast(Comparator.naturalOrder())))
+        .sorted(
+            Comparator.comparing(
+                entry -> {
+                  List<TradeProfit> list = entry.getValue();
+                  if (list == null || list.isEmpty()) {
+                    return null;
+                  }
+                  return list.get(0).accountName();
+                },
+                Comparator.nullsLast(Comparator.naturalOrder())))
         .forEach(
             entry -> {
-              String accountName = entry.getKey();
+              UUID accountId = entry.getKey();
               List<TradeProfit> list = entry.getValue();
+              TradeProfit first = list.get(0);
+              String accountName = first.accountName();
               var s = TradeProfitAggregator.aggregate(list);
+              BigDecimal evaluationAmount =
+                  s.evaluationAmount() != null ? s.evaluationAmount() : BigDecimal.ZERO;
+              BigDecimal defaultEvaluationProfit =
+                  s.evaluationProfit() != null ? s.evaluationProfit() : BigDecimal.ZERO;
+              BigDecimal defaultPrincipal =
+                  s.evaluationAmount() != null && s.evaluationProfit() != null
+                      ? s.evaluationAmount().subtract(s.evaluationProfit())
+                      : (s.totalBuyCost() != null ? s.totalBuyCost() : BigDecimal.ZERO);
+              BigDecimal manualPrincipal =
+                  accountId != null ? accountPrincipalOverrideMap.get(accountId) : null;
+              BigDecimal effectivePrincipal =
+                  manualPrincipal != null ? manualPrincipal : defaultPrincipal;
+              BigDecimal effectiveEvaluationProfit =
+                  manualPrincipal != null
+                      ? evaluationAmount.subtract(manualPrincipal)
+                      : defaultEvaluationProfit;
               accountTotalMap.put(
                   accountName,
                   TradeProfit.ofAccountStatus(
                       accountName,
-                      s.evaluationAmount(),
-                      s.evaluationProfit(),
+                      evaluationAmount,
+                      effectiveEvaluationProfit,
                       s.realizedProfit(),
-                      s.totalBuyCost()));
+                      effectivePrincipal));
             });
 
     // 종목별 집계 (계좌 통합)

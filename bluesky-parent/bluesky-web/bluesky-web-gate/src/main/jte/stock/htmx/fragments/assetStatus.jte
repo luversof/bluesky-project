@@ -44,9 +44,7 @@
                 <tbody>
                 @for(Map.Entry<String, TradeProfit> entry : accountTotalMap.entrySet())
                     !{TradeProfit acc = entry.getValue();}
-                    !{BigDecimal principal = acc.evaluationAmount() != null && acc.evaluationProfit() != null
-                        ? acc.evaluationAmount().subtract(acc.evaluationProfit())
-                        : (acc.totalBuyCost() != null ? acc.totalBuyCost() : BigDecimal.ZERO);}
+                    !{BigDecimal principal = acc.totalBuyCost() != null ? acc.totalBuyCost() : BigDecimal.ZERO;}
                     !{double rate = principal.compareTo(BigDecimal.ZERO) > 0 && acc.evaluationProfit() != null
                         ? acc.evaluationProfit().doubleValue() / principal.doubleValue() * 100
                         : 0.0;}
@@ -73,19 +71,25 @@
                 @endfor
                 </tbody>
                 <tfoot class="bg-base-200 font-bold">
-                    !{BigDecimal totalPrincipal = totalEvaluationAmount != null && totalEvaluationProfit != null
-                        ? totalEvaluationAmount.subtract(totalEvaluationProfit)
+                    !{BigDecimal totalAccountEvaluationAmount = accountTotalMap != null
+                        ? accountTotalMap.values().stream().map(acc -> acc.evaluationAmount() != null ? acc.evaluationAmount() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add)
+                        : BigDecimal.ZERO;}
+                    !{BigDecimal totalPrincipal = accountTotalMap != null
+                        ? accountTotalMap.values().stream().map(acc -> acc.totalBuyCost() != null ? acc.totalBuyCost() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add)
+                        : BigDecimal.ZERO;}
+                    !{BigDecimal totalAccountEvaluationProfit = accountTotalMap != null
+                        ? accountTotalMap.values().stream().map(acc -> acc.evaluationProfit() != null ? acc.evaluationProfit() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add)
                         : BigDecimal.ZERO;}
                     <tr>
                         <td>${totalLabel}</td>
                         <td class="text-right font-mono amount-value text-principal">
-                            ${String.format("%,d", totalEvaluationAmount != null ? totalEvaluationAmount.longValue() : 0)}
+                            ${String.format("%,d", totalAccountEvaluationAmount.longValue())}
                         </td>
                         <td class="text-right font-mono hidden sm:table-cell amount-value opacity-70">
                             ${String.format("%,d", totalPrincipal.longValue())}
                         </td>
-                        <td class="text-right font-mono amount-value ${totalEvaluationProfit != null && totalEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                            ${String.format("%+,d", totalEvaluationProfit != null ? totalEvaluationProfit.longValue() : 0)}
+                        <td class="text-right font-mono amount-value ${totalAccountEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                            ${String.format("%+,d", totalAccountEvaluationProfit.longValue())}
                         </td>
                     </tr>
                 </tfoot>
