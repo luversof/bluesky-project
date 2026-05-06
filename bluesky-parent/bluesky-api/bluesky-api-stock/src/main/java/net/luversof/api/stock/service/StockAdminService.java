@@ -131,13 +131,15 @@ public class StockAdminService {
     var stockItemList =
         StreamSupport.stream(stockItemRepository.findAll().spliterator(), false).toList();
     var googleSheetsTradeList = stockGoogleSheetService.getGoogleSheetTradeList(userId);
+    var importableGoogleSheetsTradeList =
+      googleSheetsTradeList.stream().filter(this::hasTradePriceAndQuantity).toList();
 
     var accountMap = new HashMap<String, UUID>();
     var existingAccounts = accountService.findByUserId(userId);
 
     existingAccounts.forEach(account -> accountMap.put(account.getName(), account.getId()));
 
-    googleSheetsTradeList.stream()
+    importableGoogleSheetsTradeList.stream()
         .map(GoogleSheetTrade::get계좌)
         .filter(accountName -> accountName != null && !accountName.isBlank())
         .distinct()
@@ -153,10 +155,15 @@ public class StockAdminService {
             });
 
     var tradeList =
-        googleSheetsTradeList.stream()
+        importableGoogleSheetsTradeList.stream()
             .map(t -> toTrade(t, accountMap, stockItemList))
             .filter(Objects::nonNull)
             .toList();
+
+    int skippedTradeCount = googleSheetsTradeList.size() - importableGoogleSheetsTradeList.size();
+    if (skippedTradeCount > 0) {
+      log.debug("Skipped {} trade rows without price or quantity", skippedTradeCount);
+    }
 
     log.debug("Importing {} trades", tradeList.size());
     tradeRepository.saveAll(tradeList);
@@ -282,8 +289,12 @@ public class StockAdminService {
       GoogleSheetTrade googleSheetTrade,
       HashMap<String, UUID> accountMap,
       List<StockItem> stockItemList) {
+    if (!hasTradePriceAndQuantity(googleSheetTrade)) {
+      return null;
+    }
+
     Trade trade = new Trade();
-    trade.setType(googleSheetTrade.get구분().equals("매수") ? TradeType.BUY : TradeType.SELL);
+    trade.setType("매수".equals(googleSheetTrade.get구분()) ? TradeType.BUY : TradeType.SELL);
     trade.setQuantity(googleSheetTrade.get매매_수량());
     trade.setPrice(googleSheetTrade.get매매가());
     trade.setFee(googleSheetTrade.get수수료() == null ? BigDecimal.ZERO : googleSheetTrade.get수수료());
@@ -314,6 +325,24 @@ public class StockAdminService {
 
     trade.setStockItemId(stockItem.getId());
     return trade;
+  }
+
+  private boolean hasTradePriceAndQuantity(GoogleSheetTrade googleSheetTrade) {
+    if (googleSheetTrade == null) {
+      return false;
+    }
+
+    if (googleSheetTrade.get매매가() != null && googleSheetTrade.get매매_수량() != null) {
+      return true;
+    }
+
+    log.debug(
+        "Skipping trade row without price or quantity: date={}, stock={}, type={}, account={}",
+        googleSheetTrade.get날짜(),
+        googleSheetTrade.get종목(),
+        googleSheetTrade.get구분(),
+        googleSheetTrade.get계좌());
+    return false;
   }
 
   private Map<String, UUID> prepareAccountMap(UUID userId, List<GoogleSheetDividend> records) {
