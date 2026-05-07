@@ -148,6 +148,23 @@
 		background-position: center;
 		pointer-events: none;
 	}
+
+	.tooltip-bottom-end {
+		> .tooltip-content,
+		&[data-tip]:before {
+			left: auto;
+			right: 0;
+			inset: var(--tt-off) 0 auto auto;
+			transform: translateY(var(--tt-pos, -0.25rem));
+		}
+
+		&:after {
+			left: auto;
+			right: 0.625rem;
+			inset: var(--tt-tail) 0.625rem auto auto;
+			transform: translateY(var(--tt-pos, -0.25rem)) rotate(180deg);
+		}
+	}
 }
 
 /* Hide Amounts Feature */

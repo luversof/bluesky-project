@@ -21,6 +21,9 @@
 @param Map<String, BigDecimal> accountAllocation
 @param BigDecimal displayPrincipal
 @param BigDecimal displayCurrentEvaluationProfit
+@param BigDecimal combinedAdjustmentAmount
+@param BigDecimal holdingFeeAdjustment
+@param BigDecimal manualPrincipalAdjustment
 @param boolean showCharts = true
 
 !{
@@ -32,6 +35,12 @@
     String realizedProfitLabel = MessageUtil.getMessage("stock.profit.realized");
     String cumulativeDividendLabel = MessageUtil.getMessage("stock.summary.label.cumulative.dividend");
     String totalCombinedProfitLabel = MessageUtil.getMessage("stock.summary.label.total.combined.profit");
+    String calculationDetailsLabel = MessageUtil.getMessage("stock.summary.label.calculation.details");
+    String combinedAdjustmentLabel = MessageUtil.getMessage("stock.summary.label.combined.adjustment");
+    String holdingFeeAdjustmentLabel = MessageUtil.getMessage("stock.summary.label.holding.fee.adjustment");
+    String manualPrincipalAdjustmentLabel = MessageUtil.getMessage("stock.summary.label.manual.principal.adjustment");
+    String combinedAdjustmentAddedLabel = MessageUtil.getMessage("stock.summary.label.combined.adjustment.added");
+    String combinedAdjustmentSubtractedLabel = MessageUtil.getMessage("stock.summary.label.combined.adjustment.subtracted");
     String winRateLabel = MessageUtil.getMessage("stock.summary.label.win.rate");
     String profitableStockRatioLabel = MessageUtil.getMessage("stock.summary.label.profitable.stock.ratio");
     String topBuyingLabel = MessageUtil.getMessage("stock.summary.card.top.buying");
@@ -47,7 +56,7 @@
 
 <div class="flex flex-col gap-4">
     <!-- Stats -->
-    <div class="stats stats-vertical lg:stats-horizontal shadow w-full bg-base-100">
+    <div class="stats stats-vertical lg:stats-horizontal shadow w-full bg-base-100 overflow-visible">
         
         <!-- 1. 현재 자산 상태 (원금 + 평가손익) -->
         !{BigDecimal currentPrincipal = displayPrincipal != null ? displayPrincipal : totalAsset.subtract(totalUnrealizedProfit);}
@@ -93,18 +102,67 @@
         </div>
 
         <!-- 3. 총 합산 수익 (평가손익 + 확정수익) -->
-        !{BigDecimal totalCombinedProfit = totalUnrealizedProfit.add(totalRealizedIncome);}
+        !{BigDecimal totalCombinedProfit = currentEvaluationProfit.add(totalRealizedIncome).subtract(combinedAdjustmentAmount);}
         !{BigDecimal combinedPrincipal = totalAsset.subtract(totalUnrealizedProfit);}
+        !{boolean hasCombinedAdjustment = combinedAdjustmentAmount != null && combinedAdjustmentAmount.compareTo(BigDecimal.ZERO) != 0;}
+        !{BigDecimal combinedAdjustmentAbs = combinedAdjustmentAmount != null ? combinedAdjustmentAmount.abs() : BigDecimal.ZERO;}
+        !{String combinedAdjustmentOperator = combinedAdjustmentAmount != null && combinedAdjustmentAmount.compareTo(BigDecimal.ZERO) < 0 ? "+" : "-";}
+        !{String combinedAdjustmentMeaning = hasCombinedAdjustment ? (combinedAdjustmentAmount.compareTo(BigDecimal.ZERO) < 0 ? combinedAdjustmentAddedLabel : combinedAdjustmentSubtractedLabel) : "";}
         !{double combinedRate = combinedPrincipal.compareTo(BigDecimal.ZERO) > 0 ? totalCombinedProfit.doubleValue() / combinedPrincipal.doubleValue() * 100 : 0.0;}
         <div class="stat border-l border-base-200">
             <div class="stat-figure text-accent">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
             </div>
-            <div class="stat-title">${totalCombinedProfitLabel}</div>
+            <div class="stat-title flex items-center gap-1">
+                <span>${totalCombinedProfitLabel}</span>
+                <div class="tooltip tooltip-bottom-end shrink-0">
+                    <div class="tooltip-content z-[20] w-64 sm:w-72 lg:w-80 max-w-[calc(100vw-2rem)] rounded-box bg-neutral text-neutral-content shadow-lg">
+                        <div class="space-y-1 text-left text-xs leading-5">
+                            <div class="font-semibold mb-1">${calculationDetailsLabel}</div>
+                            <div class="flex items-center justify-between gap-3">
+                                <span>${currentEvaluationProfitLabel}</span>
+                                <span class="amount-value font-medium">${String.format("%,d", currentEvaluationProfit.longValue())}</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-3">
+                                <span>+ ${cumulativeRealizedIncomeLabel}</span>
+                                <span class="amount-value font-medium">${String.format("%,d", totalRealizedIncome.longValue())}</span>
+                            </div>
+                            @if(hasCombinedAdjustment)
+                            <div class="flex items-center justify-between gap-3">
+                                <span>${combinedAdjustmentOperator} ${combinedAdjustmentLabel}</span>
+                                <span class="amount-value font-medium">${String.format("%,d", combinedAdjustmentAbs.longValue())}</span>
+                            </div>
+                            <div class="border-t border-neutral-content/20 pt-1 text-neutral-content/80">
+                                ${combinedAdjustmentMeaning}
+                            </div>
+                            @endif
+                            @if(holdingFeeAdjustment != null && holdingFeeAdjustment.compareTo(BigDecimal.ZERO) != 0)
+                            <div class="flex items-center justify-between gap-3 text-neutral-content/80">
+                                <span>${holdingFeeAdjustmentLabel}</span>
+                                <span class="amount-value">${String.format("%+,d", holdingFeeAdjustment.longValue())}</span>
+                            </div>
+                            @endif
+                            @if(manualPrincipalAdjustment != null && manualPrincipalAdjustment.compareTo(BigDecimal.ZERO) != 0)
+                            <div class="flex items-center justify-between gap-3 text-neutral-content/80">
+                                <span>${manualPrincipalAdjustmentLabel}</span>
+                                <span class="amount-value">${String.format("%+,d", manualPrincipalAdjustment.longValue())}</span>
+                            </div>
+                            @endif
+                            <div class="flex items-center justify-between gap-3 border-t border-neutral-content/20 pt-1 font-semibold">
+                                <span>= ${totalCombinedProfitLabel}</span>
+                                <span class="amount-value">${String.format("%,d", totalCombinedProfit.longValue())}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-circle btn-ghost btn-xs text-info">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-4 h-4 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </button>
+                </div>
+            </div>
             <div class="stat-value font-bold amount-value ${totalCombinedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                  ${String.format("%,d", totalCombinedProfit.longValue())}
             </div>
-            <div class="stat-desc font-bold mt-1 ${totalCombinedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+            <div class="stat-desc font-bold mt-2 ${totalCombinedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                 ${returnRateLabel}: <span>${String.format("%+.2f%%", combinedRate)}</span>
             </div>
         </div>

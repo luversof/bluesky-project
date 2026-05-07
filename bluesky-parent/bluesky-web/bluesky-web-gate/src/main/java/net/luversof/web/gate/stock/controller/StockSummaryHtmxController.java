@@ -787,22 +787,80 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
             .stream()
             .map(
                 entry -> {
-                  BigDecimal defaultPrincipal =
-                      Optional.ofNullable(
-                              TradeProfitAggregator.aggregate(entry.getValue()).totalBuyCost())
-                          .orElse(BigDecimal.ZERO);
-                  return Optional.ofNullable(accountPrincipalOverrideMap.get(entry.getKey()))
-                      .orElse(defaultPrincipal);
+                var sums = TradeProfitAggregator.aggregate(entry.getValue());
+                BigDecimal evaluationAmount =
+                  Optional.ofNullable(sums.evaluationAmount()).orElse(BigDecimal.ZERO);
+                BigDecimal defaultEvaluationProfit =
+                  Optional.ofNullable(sums.evaluationProfit()).orElse(BigDecimal.ZERO);
+                BigDecimal defaultPrincipal =
+                  sums.evaluationAmount() != null && sums.evaluationProfit() != null
+                    ? evaluationAmount.subtract(defaultEvaluationProfit)
+                    : Optional.ofNullable(sums.totalBuyCost()).orElse(BigDecimal.ZERO);
+                return Optional.ofNullable(accountPrincipalOverrideMap.get(entry.getKey()))
+                  .orElse(defaultPrincipal);
                 })
             .reduce(BigDecimal.ZERO, BigDecimal::add)
             .add(
                 profitList.stream()
                     .filter(profit -> profit.accountId() == null)
-                    .map(TradeProfit::totalBuyCost)
+                .map(
+                  profit ->
+                    profit.evaluationAmount() != null && profit.evaluationProfit() != null
+                      ? profit.evaluationAmount().subtract(profit.evaluationProfit())
+                      : profit.totalBuyCost())
+                .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add));
+
+    BigDecimal grossCurrentEvaluationProfit =
+        profitList.stream()
+            .filter(profit -> profit.accountId() != null)
+            .collect(Collectors.groupingBy(TradeProfit::accountId))
+            .entrySet()
+            .stream()
+            .map(
+              entry -> {
+                var sums = TradeProfitAggregator.aggregate(entry.getValue());
+                return Optional.ofNullable(sums.evaluationProfit()).orElse(BigDecimal.ZERO);
+              })
+            .reduce(BigDecimal.ZERO, BigDecimal::add)
+            .add(
+              profitList.stream()
+                .filter(profit -> profit.accountId() == null)
+                .map(TradeProfit::evaluationProfit)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+
+    BigDecimal displayCurrentEvaluationProfit =
+        profitList.stream()
+            .filter(profit -> profit.accountId() != null)
+            .collect(Collectors.groupingBy(TradeProfit::accountId))
+            .entrySet()
+            .stream()
+            .map(
+                entry -> {
+                  var sums = TradeProfitAggregator.aggregate(entry.getValue());
+                  BigDecimal evaluationAmount =
+                      Optional.ofNullable(sums.evaluationAmount()).orElse(BigDecimal.ZERO);
+                  BigDecimal defaultEvaluationProfit =
+                      Optional.ofNullable(sums.evaluationProfit()).orElse(BigDecimal.ZERO);
+                  BigDecimal manualPrincipal = accountPrincipalOverrideMap.get(entry.getKey());
+                  return manualPrincipal != null
+                      ? evaluationAmount.subtract(manualPrincipal)
+                      : defaultEvaluationProfit;
+                })
+            .reduce(BigDecimal.ZERO, BigDecimal::add)
+            .add(
+                profitList.stream()
+                    .filter(profit -> profit.accountId() == null)
+                    .map(TradeProfit::evaluationProfit)
                     .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add));
 
-    BigDecimal displayCurrentEvaluationProfit = totalAsset.subtract(displayPrincipal);
+    BigDecimal holdingFeeAdjustment = grossCurrentEvaluationProfit.subtract(totalUnrealizedVal);
+    BigDecimal manualPrincipalAdjustment =
+        displayCurrentEvaluationProfit.subtract(grossCurrentEvaluationProfit);
+    BigDecimal combinedAdjustmentAmount =
+        displayCurrentEvaluationProfit.subtract(totalUnrealizedVal);
 
     long winCount =
         profitList.stream()
@@ -928,6 +986,9 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     model.addAttribute("totalUnrealizedProfit", totalUnrealizedVal);
     model.addAttribute("displayPrincipal", displayPrincipal);
     model.addAttribute("displayCurrentEvaluationProfit", displayCurrentEvaluationProfit);
+    model.addAttribute("combinedAdjustmentAmount", combinedAdjustmentAmount);
+    model.addAttribute("holdingFeeAdjustment", holdingFeeAdjustment);
+    model.addAttribute("manualPrincipalAdjustment", manualPrincipalAdjustment);
     model.addAttribute("totalDividend", totalDividendVal);
     model.addAttribute("winRate", winRate);
 
