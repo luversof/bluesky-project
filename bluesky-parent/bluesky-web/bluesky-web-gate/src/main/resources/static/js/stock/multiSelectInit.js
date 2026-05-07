@@ -35,6 +35,45 @@ select[multiple]:focus, select.select[multiple]:focus, select.select-bordered[mu
 (() => {
     const SELECTOR = 'select[name="accountIdList"], select[name="stockItemIdList"], select.select';
     const HARD_CAP = 50; // safety cap to avoid extremely tall controls
+    const ALL_OPTION_SELECTORS = 'select[name="accountIdList"], select[name="stockItemIdList"]';
+    const selectionSnapshots = new WeakMap();
+    function isAllOptionSelect(sel) {
+        return sel.matches(ALL_OPTION_SELECTORS);
+    }
+    function getSelectedValues(sel) {
+        return Array.from(sel.selectedOptions).map((option) => option.value);
+    }
+    function rememberSelectionSnapshot(sel) {
+        selectionSnapshots.set(sel, getSelectedValues(sel));
+    }
+    function enforceExclusiveAllOption(sel) {
+        var _a;
+        if (!sel.multiple || !isAllOptionSelect(sel)) {
+            rememberSelectionSnapshot(sel);
+            return;
+        }
+        const allOption = Array.from(sel.options).find((option) => option.value === "");
+        if (!allOption) {
+            rememberSelectionSnapshot(sel);
+            return;
+        }
+        const selectedOptions = Array.from(sel.selectedOptions);
+        const selectedSpecificOptions = selectedOptions.filter((option) => option.value !== "");
+        const hasAllSelected = selectedOptions.some((option) => option.value === "");
+        if (hasAllSelected && selectedSpecificOptions.length > 0) {
+            const previousSelection = (_a = selectionSnapshots.get(sel)) !== null && _a !== void 0 ? _a : [];
+            const previouslyAllOnly = previousSelection.length === 1 && previousSelection[0] === "";
+            if (previouslyAllOnly) {
+                allOption.selected = false;
+            }
+            else {
+                selectedSpecificOptions.forEach((option) => {
+                    option.selected = false;
+                });
+            }
+        }
+        rememberSelectionSnapshot(sel);
+    }
     function syncLinkedSelectHeights(scope) {
         const forms = Array.from((scope instanceof Element ? scope : document).querySelectorAll("form"));
         forms.forEach((form) => {
@@ -81,6 +120,7 @@ select[multiple]:focus, select.select[multiple]:focus, select.select-bordered[mu
         sels.forEach((sel) => {
             try {
                 applySize(sel);
+                enforceExclusiveAllOption(sel);
                 // observe option list changes
                 if (!sel._simpleMultiObserver) {
                     const mo = new MutationObserver(() => applySize(sel));
@@ -95,6 +135,14 @@ select[multiple]:focus, select.select[multiple]:focus, select.select-bordered[mu
         syncLinkedSelectHeights(scope);
     }
     document.addEventListener("DOMContentLoaded", () => init(document));
+    document.addEventListener("change", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLSelectElement))
+            return;
+        if (!isAllOptionSelect(target))
+            return;
+        enforceExclusiveAllOption(target);
+    });
     document.addEventListener("htmx:afterSwap", (evt) => {
         try {
             const target = evt && evt.detail && evt.detail.target ? evt.detail.target : document;
