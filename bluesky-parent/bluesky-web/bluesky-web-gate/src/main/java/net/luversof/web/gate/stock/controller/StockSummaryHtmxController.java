@@ -787,28 +787,28 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
             .stream()
             .map(
                 entry -> {
-                var sums = TradeProfitAggregator.aggregate(entry.getValue());
-                BigDecimal evaluationAmount =
-                  Optional.ofNullable(sums.evaluationAmount()).orElse(BigDecimal.ZERO);
-                BigDecimal defaultEvaluationProfit =
-                  Optional.ofNullable(sums.evaluationProfit()).orElse(BigDecimal.ZERO);
-                BigDecimal defaultPrincipal =
-                  sums.evaluationAmount() != null && sums.evaluationProfit() != null
-                    ? evaluationAmount.subtract(defaultEvaluationProfit)
-                    : Optional.ofNullable(sums.totalBuyCost()).orElse(BigDecimal.ZERO);
-                return Optional.ofNullable(accountPrincipalOverrideMap.get(entry.getKey()))
-                  .orElse(defaultPrincipal);
+                  var sums = TradeProfitAggregator.aggregate(entry.getValue());
+                  BigDecimal evaluationAmount =
+                      Optional.ofNullable(sums.evaluationAmount()).orElse(BigDecimal.ZERO);
+                  BigDecimal defaultEvaluationProfit =
+                      Optional.ofNullable(sums.evaluationProfit()).orElse(BigDecimal.ZERO);
+                  BigDecimal defaultPrincipal =
+                      sums.evaluationAmount() != null && sums.evaluationProfit() != null
+                          ? evaluationAmount.subtract(defaultEvaluationProfit)
+                          : Optional.ofNullable(sums.totalBuyCost()).orElse(BigDecimal.ZERO);
+                  return Optional.ofNullable(accountPrincipalOverrideMap.get(entry.getKey()))
+                      .orElse(defaultPrincipal);
                 })
             .reduce(BigDecimal.ZERO, BigDecimal::add)
             .add(
                 profitList.stream()
                     .filter(profit -> profit.accountId() == null)
-                .map(
-                  profit ->
-                    profit.evaluationAmount() != null && profit.evaluationProfit() != null
-                      ? profit.evaluationAmount().subtract(profit.evaluationProfit())
-                      : profit.totalBuyCost())
-                .filter(Objects::nonNull)
+                    .map(
+                        profit ->
+                            profit.evaluationAmount() != null && profit.evaluationProfit() != null
+                                ? profit.evaluationAmount().subtract(profit.evaluationProfit())
+                                : profit.totalBuyCost())
+                    .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add));
 
     BigDecimal grossCurrentEvaluationProfit =
@@ -818,17 +818,17 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
             .entrySet()
             .stream()
             .map(
-              entry -> {
-                var sums = TradeProfitAggregator.aggregate(entry.getValue());
-                return Optional.ofNullable(sums.evaluationProfit()).orElse(BigDecimal.ZERO);
-              })
+                entry -> {
+                  var sums = TradeProfitAggregator.aggregate(entry.getValue());
+                  return Optional.ofNullable(sums.evaluationProfit()).orElse(BigDecimal.ZERO);
+                })
             .reduce(BigDecimal.ZERO, BigDecimal::add)
             .add(
-              profitList.stream()
-                .filter(profit -> profit.accountId() == null)
-                .map(TradeProfit::evaluationProfit)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add));
+                profitList.stream()
+                    .filter(profit -> profit.accountId() == null)
+                    .map(TradeProfit::evaluationProfit)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add));
 
     BigDecimal displayCurrentEvaluationProfit =
         profitList.stream()

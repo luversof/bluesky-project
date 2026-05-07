@@ -65,13 +65,15 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
 
   @BlueskyPreAuthorize
   @GetMapping("/asset-growth/view")
-  public String assetGrowthView(TradeProfitRequest request, Model model) {
+  public String assetGrowthView(
+      TradeProfitRequest request, @RequestParam(required = false) String rangeMode, Model model) {
     var userId = UserUtil.getUserId();
     if (userId == null) {
       return ERROR_VIEW;
     }
 
     request.setUserId(userId);
+    String effectiveRangeMode = rangeMode;
 
     // If no date range provided, default to this year (ytd)
     if (request.getStartDate() == null && request.getEndDate() == null) {
@@ -82,9 +84,9 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       LocalDate now = LocalDate.now(zone);
       request.setStartDate(LocalDate.of(now.getYear(), 1, 1).atStartOfDay(zone).toInstant());
       request.setEndDate(now.plusDays(1).atStartOfDay(zone).toInstant());
-      model.addAttribute("rangeMode", "ytd");
-      model.addAttribute("startDate", request.getStartDate());
-      model.addAttribute("endDate", request.getEndDate());
+      if (effectiveRangeMode == null || effectiveRangeMode.isBlank()) {
+        effectiveRangeMode = "ytd";
+      }
     }
 
     var params = request.toParams();
@@ -114,6 +116,10 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
 
     model.addAttribute("timeSeries", timeSeries);
     model.addAttribute("dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");
+    model.addAttribute("rangeMode", effectiveRangeMode);
+    model.addAttribute("startDate", request.getStartDate());
+    model.addAttribute("endDate", request.getEndDate());
+    model.addAttribute("timeZone", request.getTimeZone());
     return "stock/htmx/asset-growth";
   }
 

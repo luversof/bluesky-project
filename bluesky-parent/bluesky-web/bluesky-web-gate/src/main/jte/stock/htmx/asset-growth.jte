@@ -98,7 +98,9 @@
                             btnClass = "asset-range-btn",
                             canPrev = canPrev,
                             canNext = canNext,
-                            rangeMode = rangeMode
+                            rangeMode = rangeMode,
+                            startDate = startLocal,
+                            endDate = endLocal
                         )
                         <span id="assetRangeDisplay" class="text-xs text-base-content/40 ml-1"></span>
                     </div>

@@ -49,28 +49,22 @@ public class StockAdminService {
 
   private static final Logger log = LoggerFactory.getLogger(StockAdminService.class);
 
-  @Autowired
-  private StockGoogleSheetService stockGoogleSheetService;
+  @Autowired private StockGoogleSheetService stockGoogleSheetService;
 
-  @Autowired
-  private StockItemRepository stockItemRepository;
+  @Autowired private StockItemRepository stockItemRepository;
 
-  @Autowired
-  private StockItemTagRepository stockItemTagRepository;
+  @Autowired private StockItemTagRepository stockItemTagRepository;
 
-  @Autowired
-  private TradeRepository tradeRepository;
+  @Autowired private TradeRepository tradeRepository;
 
-  @Autowired
-  private DividendRepository dividendRepository;
+  @Autowired private DividendRepository dividendRepository;
 
-  @Autowired
-  private AccountService accountService;
+  @Autowired private AccountService accountService;
 
-  @Autowired
-  private JdbcTemplate jdbcTemplate;
+  @Autowired private JdbcTemplate jdbcTemplate;
 
-  private static final String INSERT_STOCK_ITEM_SQL = """
+  private static final String INSERT_STOCK_ITEM_SQL =
+      """
       INSERT INTO "StockItem" (id, symbol, name, market)
       VALUES (?, ?, ?, ?)
       ON CONFLICT (symbol)
@@ -83,10 +77,11 @@ public class StockAdminService {
   // Trade and Dividend batch SQL removed — persisted via repositories.
 
   private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-  private static final List<DateTimeFormatter> DATE_FORMATTERS = List.of(
-      DateTimeFormatter.ofPattern("yyyy. M. d"),
-      DateTimeFormatter.ofPattern("yyyy-M-d"),
-      DateTimeFormatter.ISO_LOCAL_DATE);
+  private static final List<DateTimeFormatter> DATE_FORMATTERS =
+      List.of(
+          DateTimeFormatter.ofPattern("yyyy. M. d"),
+          DateTimeFormatter.ofPattern("yyyy-M-d"),
+          DateTimeFormatter.ISO_LOCAL_DATE);
 
   @CacheEvict(value = "stockItems", allEntries = true)
   public int stockItemBulkInsert(UUID userId) {
@@ -101,10 +96,11 @@ public class StockAdminService {
       allStockItems.add(googleSheetStockItem);
     }
 
-    var stockItemList = allStockItems.stream()
-        .map(this::toStockItem)
-        .filter(item -> item.getName() != null)
-        .collect(Collectors.toList());
+    var stockItemList =
+        allStockItems.stream()
+            .map(this::toStockItem)
+            .filter(item -> item.getName() != null)
+            .collect(Collectors.toList());
 
     jdbcTemplate.batchUpdate(
         INSERT_STOCK_ITEM_SQL,
@@ -118,7 +114,8 @@ public class StockAdminService {
           ps.setString(4, item.getMarket());
         });
 
-    var savedStockItemList = StreamSupport.stream(stockItemRepository.findAll().spliterator(), false).toList();
+    var savedStockItemList =
+        StreamSupport.stream(stockItemRepository.findAll().spliterator(), false).toList();
 
     syncStockItemTags(googleSheetStockItemList, savedStockItemList);
 
@@ -131,10 +128,11 @@ public class StockAdminService {
   public void tradeBulkInsert(UUID userId) {
     tradeRepository.deleteAll();
 
-    var stockItemList = StreamSupport.stream(stockItemRepository.findAll().spliterator(), false).toList();
+    var stockItemList =
+        StreamSupport.stream(stockItemRepository.findAll().spliterator(), false).toList();
     var googleSheetsTradeList = stockGoogleSheetService.getGoogleSheetTradeList(userId);
-    var importableGoogleSheetsTradeList = googleSheetsTradeList.stream().filter(this::hasTradePriceAndQuantity)
-        .toList();
+    var importableGoogleSheetsTradeList =
+        googleSheetsTradeList.stream().filter(this::hasTradePriceAndQuantity).toList();
 
     var accountMap = new HashMap<String, UUID>();
     var existingAccounts = accountService.findByUserId(userId);
@@ -156,10 +154,11 @@ public class StockAdminService {
               log.debug("Created new account: {} with id: {}", accountName, savedAccount.getId());
             });
 
-    var tradeList = importableGoogleSheetsTradeList.stream()
-        .map(t -> toTrade(t, accountMap, stockItemList))
-        .filter(Objects::nonNull)
-        .toList();
+    var tradeList =
+        importableGoogleSheetsTradeList.stream()
+            .map(t -> toTrade(t, accountMap, stockItemList))
+            .filter(Objects::nonNull)
+            .toList();
 
     int skippedTradeCount = googleSheetsTradeList.size() - importableGoogleSheetsTradeList.size();
     if (skippedTradeCount > 0) {
@@ -178,10 +177,11 @@ public class StockAdminService {
     var accountMap = prepareAccountMap(userId, googleSheetsDividendList);
     var stockItemMap = prepareStockItemMap(googleSheetsDividendList);
 
-    var dividends = googleSheetsDividendList.stream()
-        .map(googleSheetsDividend -> toDividend(googleSheetsDividend, accountMap, stockItemMap))
-        .filter(Objects::nonNull)
-        .toList();
+    var dividends =
+        googleSheetsDividendList.stream()
+            .map(googleSheetsDividend -> toDividend(googleSheetsDividend, accountMap, stockItemMap))
+            .filter(Objects::nonNull)
+            .toList();
 
     log.debug("Importing {} dividends", dividends.size());
     dividendRepository.saveAll(dividends);
@@ -199,28 +199,31 @@ public class StockAdminService {
       List<GoogleSheetStockItem> googleSheetStockItemList, List<StockItem> savedStockItemList) {
     stockItemTagRepository.deleteAll();
 
-    Map<String, StockItem> stockItemBySymbol = savedStockItemList.stream()
-        .filter(stockItem -> StringUtils.hasText(stockItem.getSymbol()))
-        .collect(
-            Collectors.toMap(
-                stockItem -> stockItem.getSymbol().trim(),
-                stockItem -> stockItem,
-                (left, right) -> left,
-                LinkedHashMap::new));
-    Map<String, StockItem> stockItemByName = savedStockItemList.stream()
-        .filter(stockItem -> StringUtils.hasText(stockItem.getName()))
-        .collect(
-            Collectors.toMap(
-                stockItem -> stockItem.getName().trim(),
-                stockItem -> stockItem,
-                (left, right) -> left,
-                LinkedHashMap::new));
+    Map<String, StockItem> stockItemBySymbol =
+        savedStockItemList.stream()
+            .filter(stockItem -> StringUtils.hasText(stockItem.getSymbol()))
+            .collect(
+                Collectors.toMap(
+                    stockItem -> stockItem.getSymbol().trim(),
+                    stockItem -> stockItem,
+                    (left, right) -> left,
+                    LinkedHashMap::new));
+    Map<String, StockItem> stockItemByName =
+        savedStockItemList.stream()
+            .filter(stockItem -> StringUtils.hasText(stockItem.getName()))
+            .collect(
+                Collectors.toMap(
+                    stockItem -> stockItem.getName().trim(),
+                    stockItem -> stockItem,
+                    (left, right) -> left,
+                    LinkedHashMap::new));
 
     List<StockItemTag> stockItemTags = new ArrayList<>();
     var uniqueTagKeys = new LinkedHashSet<String>();
 
     for (var googleSheetStockItem : googleSheetStockItemList) {
-      StockItem stockItem = resolveStockItem(googleSheetStockItem, stockItemBySymbol, stockItemByName);
+      StockItem stockItem =
+          resolveStockItem(googleSheetStockItem, stockItemBySymbol, stockItemByName);
       if (stockItem == null) {
         continue;
       }
@@ -309,10 +312,11 @@ public class StockAdminService {
       }
     }
 
-    var stockItem = stockItemList.stream()
-        .filter(s -> s.getName().equals(googleSheetTrade.get종목()))
-        .findFirst()
-        .orElse(null);
+    var stockItem =
+        stockItemList.stream()
+            .filter(s -> s.getName().equals(googleSheetTrade.get종목()))
+            .findFirst()
+            .orElse(null);
 
     if (stockItem == null) {
       log.debug("stockItem not found : {}", googleSheetTrade.get종목());
@@ -342,64 +346,69 @@ public class StockAdminService {
   }
 
   private Map<String, UUID> prepareAccountMap(UUID userId, List<GoogleSheetDividend> records) {
-    var accountMap = accountService.findByUserId(userId).stream()
-        .collect(
-            Collectors.toMap(
-                Account::getName,
-                Account::getId,
-                (left, right) -> left,
-                java.util.LinkedHashMap::new));
+    var accountMap =
+        accountService.findByUserId(userId).stream()
+            .collect(
+                Collectors.toMap(
+                    Account::getName,
+                    Account::getId,
+                    (left, right) -> left,
+                    java.util.LinkedHashMap::new));
 
     records.stream()
         .map(GoogleSheetDividend::get계좌)
         .filter(StringUtils::hasText)
         .map(String::trim)
         .forEach(
-            accountName -> accountMap.computeIfAbsent(
-                accountName,
-                name -> {
-                  var newAccount = new Account();
-                  newAccount.setUserId(userId);
-                  newAccount.setName(name);
-                  var savedAccount = accountService.createAccount(newAccount);
-                  log.debug("Created account for dividend import: {}", name);
-                  return savedAccount.getId();
-                }));
+            accountName ->
+                accountMap.computeIfAbsent(
+                    accountName,
+                    name -> {
+                      var newAccount = new Account();
+                      newAccount.setUserId(userId);
+                      newAccount.setName(name);
+                      var savedAccount = accountService.createAccount(newAccount);
+                      log.debug("Created account for dividend import: {}", name);
+                      return savedAccount.getId();
+                    }));
 
     return accountMap;
   }
 
   private Map<String, UUID> prepareStockItemMap(List<GoogleSheetDividend> records) {
-    var stockItemMap = StreamSupport.stream(stockItemRepository.findAll().spliterator(), false)
-        .collect(
-            Collectors.toMap(
-                StockItem::getName,
-                StockItem::getId,
-                (left, right) -> left,
-                java.util.LinkedHashMap::new));
+    var stockItemMap =
+        StreamSupport.stream(stockItemRepository.findAll().spliterator(), false)
+            .collect(
+                Collectors.toMap(
+                    StockItem::getName,
+                    StockItem::getId,
+                    (left, right) -> left,
+                    java.util.LinkedHashMap::new));
 
     records.stream()
         .map(GoogleSheetDividend::get종목)
         .filter(StringUtils::hasText)
         .map(String::trim)
         .forEach(
-            stockName -> stockItemMap.computeIfAbsent(
-                stockName,
-                name -> {
-                  var newStockItem = new StockItem();
-                  newStockItem.setName(name);
-                  newStockItem.setMarket("KOSPI");
-                  newStockItem.setSymbol(generateSymbol(name));
-                  var savedStockItem = stockItemRepository.save(newStockItem);
-                  log.debug("Created stock item for dividend import: {}", name);
-                  return savedStockItem.getId();
-                }));
+            stockName ->
+                stockItemMap.computeIfAbsent(
+                    stockName,
+                    name -> {
+                      var newStockItem = new StockItem();
+                      newStockItem.setName(name);
+                      newStockItem.setMarket("KOSPI");
+                      newStockItem.setSymbol(generateSymbol(name));
+                      var savedStockItem = stockItemRepository.save(newStockItem);
+                      log.debug("Created stock item for dividend import: {}", name);
+                      return savedStockItem.getId();
+                    }));
 
     return stockItemMap;
   }
 
   private String generateSymbol(String baseName) {
-    var alphanumeric = baseName == null ? "" : baseName.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
+    var alphanumeric =
+        baseName == null ? "" : baseName.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
     if (!StringUtils.hasText(alphanumeric)) {
       alphanumeric = "DIV";
     }
