@@ -132,7 +132,7 @@ public class StockAdminService {
         StreamSupport.stream(stockItemRepository.findAll().spliterator(), false).toList();
     var googleSheetsTradeList = stockGoogleSheetService.getGoogleSheetTradeList(userId);
     var importableGoogleSheetsTradeList =
-      googleSheetsTradeList.stream().filter(this::hasTradePriceAndQuantity).toList();
+        googleSheetsTradeList.stream().filter(this::hasTradePriceAndQuantity).toList();
 
     var accountMap = new HashMap<String, UUID>();
     var existingAccounts = accountService.findByUserId(userId);

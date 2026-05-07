@@ -36,6 +36,16 @@ interface Window {
 		return root.closest("form")?.querySelector(STOCK_SELECT_SELECTOR) ?? null;
 	}
 
+	function getStockOptions(stockSelect: HTMLSelectElement): HTMLOptionElement[] {
+		return Array.from(stockSelect.options).filter((option) => !!option.value);
+	}
+
+	function getAllStockOption(
+		stockSelect: HTMLSelectElement,
+	): HTMLOptionElement | null {
+		return Array.from(stockSelect.options).find((option) => !option.value) ?? null;
+	}
+
 	function getSelectedTagValues(select: HTMLSelectElement): Set<string> {
 		return new Set(
 			Array.from(select.selectedOptions)
@@ -84,8 +94,7 @@ interface Window {
 			? getSelectedTagValues(tagSelect)
 			: new Set<string>();
 
-		Array.from(stockSelect.options).forEach((option) => {
-			if (!option.value) return;
+		getStockOptions(stockSelect).forEach((option) => {
 
 			const autoSelected =
 				option.selected && optionMatchesSelectedTags(option, selectedValues);
@@ -104,16 +113,77 @@ interface Window {
 		});
 	}
 
+	function applyAllStockSelection(root: HTMLElement): void {
+		const tagSelect = getTagSelect(root);
+		const stockSelect = getStockSelect(root);
+		if (!stockSelect) return;
+
+		if (tagSelect) {
+			Array.from(tagSelect.options).forEach((option) => {
+				option.selected = false;
+			});
+		}
+
+		getStockOptions(stockSelect).forEach((option) => {
+			option.selected = false;
+			delete option.dataset.tagAutoSelected;
+			delete option.dataset.tagManualSelected;
+		});
+
+		const allOption = getAllStockOption(stockSelect);
+		if (allOption) {
+			allOption.selected = true;
+		}
+
+		syncButtons(root);
+		syncStockSelection(root);
+	}
+
 	function syncStockSelection(root: HTMLElement): void {
 		const tagSelect = getTagSelect(root);
 		const stockSelect = getStockSelect(root);
 		if (!tagSelect || !stockSelect) return;
 
 		const selectedValues = getSelectedTagValues(tagSelect);
+		const stockOptions = getStockOptions(stockSelect);
+		const allOption = getAllStockOption(stockSelect);
 		let changed = false;
 
-		Array.from(stockSelect.options).forEach((option) => {
-			if (!option.value) return;
+		if (!selectedValues.size) {
+			const hasManualSelection = stockOptions.some(
+				(option) => option.dataset.tagManualSelected === "1",
+			);
+
+			stockOptions.forEach((option) => {
+				delete option.dataset.tagAutoSelected;
+				const shouldSelect = hasManualSelection
+					? option.dataset.tagManualSelected === "1"
+					: false;
+
+				if (option.selected !== shouldSelect) {
+					option.selected = shouldSelect;
+					changed = true;
+				}
+			});
+
+			if (allOption && allOption.selected !== !hasManualSelection) {
+				allOption.selected = !hasManualSelection;
+				changed = true;
+			}
+
+			if (changed) {
+				stockSelect.dataset.tagSyncing = "1";
+				stockSelect.dispatchEvent(new Event("change", { bubbles: true }));
+			}
+			return;
+		}
+
+		if (allOption && allOption.selected) {
+			allOption.selected = false;
+			changed = true;
+		}
+
+		stockOptions.forEach((option) => {
 
 			const manualSelected = option.dataset.tagManualSelected === "1";
 			const autoSelected = optionMatchesSelectedTags(option, selectedValues);
@@ -132,6 +202,7 @@ interface Window {
 		});
 
 		if (changed) {
+			stockSelect.dataset.tagSyncing = "1";
 			stockSelect.dispatchEvent(new Event("change", { bubbles: true }));
 		}
 	}
@@ -140,8 +211,17 @@ interface Window {
 		const stockSelect = getStockSelect(root);
 		if (!stockSelect) return;
 
-		Array.from(stockSelect.options).forEach((option) => {
-			if (!option.value || option.dataset.tagAutoSelected === "1") return;
+		if (getAllStockOption(stockSelect)?.selected) {
+			getStockOptions(stockSelect).forEach((option) => {
+				option.selected = false;
+				delete option.dataset.tagAutoSelected;
+				delete option.dataset.tagManualSelected;
+			});
+			return;
+		}
+
+		getStockOptions(stockSelect).forEach((option) => {
+			if (option.dataset.tagAutoSelected === "1") return;
 
 			if (option.selected) {
 				option.dataset.tagManualSelected = "1";
@@ -256,10 +336,22 @@ interface Window {
 		}
 
 		if (target.matches(STOCK_SELECT_SELECTOR)) {
-			const root = target
+			const stockSelect = target as HTMLSelectElement;
+			const root = stockSelect
 				.closest("form")
 				?.querySelector<HTMLElement>(ROOT_SELECTOR);
 			if (!root) return;
+
+			if (stockSelect.dataset.tagSyncing === "1") {
+				delete stockSelect.dataset.tagSyncing;
+				rememberManualStockSelection(root);
+				return;
+			}
+
+			if (getAllStockOption(stockSelect)?.selected) {
+				applyAllStockSelection(root);
+				return;
+			}
 
 			rememberManualStockSelection(root);
 		}

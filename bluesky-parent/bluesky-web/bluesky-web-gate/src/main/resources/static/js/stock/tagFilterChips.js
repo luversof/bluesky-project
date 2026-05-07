@@ -28,6 +28,13 @@
         var _a, _b;
         return (_b = (_a = root.closest("form")) === null || _a === void 0 ? void 0 : _a.querySelector(STOCK_SELECT_SELECTOR)) !== null && _b !== void 0 ? _b : null;
     }
+    function getStockOptions(stockSelect) {
+        return Array.from(stockSelect.options).filter((option) => !!option.value);
+    }
+    function getAllStockOption(stockSelect) {
+        var _a;
+        return (_a = Array.from(stockSelect.options).find((option) => !option.value)) !== null && _a !== void 0 ? _a : null;
+    }
     function getSelectedTagValues(select) {
         return new Set(Array.from(select.selectedOptions)
             .map((option) => option.value)
@@ -59,9 +66,7 @@
         const selectedValues = tagSelect
             ? getSelectedTagValues(tagSelect)
             : new Set();
-        Array.from(stockSelect.options).forEach((option) => {
-            if (!option.value)
-                return;
+        getStockOptions(stockSelect).forEach((option) => {
             const autoSelected = option.selected && optionMatchesSelectedTags(option, selectedValues);
             if (autoSelected) {
                 option.dataset.tagAutoSelected = "1";
@@ -77,16 +82,64 @@
             }
         });
     }
+    function applyAllStockSelection(root) {
+        const tagSelect = getTagSelect(root);
+        const stockSelect = getStockSelect(root);
+        if (!stockSelect)
+            return;
+        if (tagSelect) {
+            Array.from(tagSelect.options).forEach((option) => {
+                option.selected = false;
+            });
+        }
+        getStockOptions(stockSelect).forEach((option) => {
+            option.selected = false;
+            delete option.dataset.tagAutoSelected;
+            delete option.dataset.tagManualSelected;
+        });
+        const allOption = getAllStockOption(stockSelect);
+        if (allOption) {
+            allOption.selected = true;
+        }
+        syncButtons(root);
+        syncStockSelection(root);
+    }
     function syncStockSelection(root) {
         const tagSelect = getTagSelect(root);
         const stockSelect = getStockSelect(root);
         if (!tagSelect || !stockSelect)
             return;
         const selectedValues = getSelectedTagValues(tagSelect);
+        const stockOptions = getStockOptions(stockSelect);
+        const allOption = getAllStockOption(stockSelect);
         let changed = false;
-        Array.from(stockSelect.options).forEach((option) => {
-            if (!option.value)
-                return;
+        if (!selectedValues.size) {
+            const hasManualSelection = stockOptions.some((option) => option.dataset.tagManualSelected === "1");
+            stockOptions.forEach((option) => {
+                delete option.dataset.tagAutoSelected;
+                const shouldSelect = hasManualSelection
+                    ? option.dataset.tagManualSelected === "1"
+                    : false;
+                if (option.selected !== shouldSelect) {
+                    option.selected = shouldSelect;
+                    changed = true;
+                }
+            });
+            if (allOption && allOption.selected !== !hasManualSelection) {
+                allOption.selected = !hasManualSelection;
+                changed = true;
+            }
+            if (changed) {
+                stockSelect.dataset.tagSyncing = "1";
+                stockSelect.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            return;
+        }
+        if (allOption && allOption.selected) {
+            allOption.selected = false;
+            changed = true;
+        }
+        stockOptions.forEach((option) => {
             const manualSelected = option.dataset.tagManualSelected === "1";
             const autoSelected = optionMatchesSelectedTags(option, selectedValues);
             const shouldSelect = manualSelected || autoSelected;
@@ -102,15 +155,25 @@
             }
         });
         if (changed) {
+            stockSelect.dataset.tagSyncing = "1";
             stockSelect.dispatchEvent(new Event("change", { bubbles: true }));
         }
     }
     function rememberManualStockSelection(root) {
+        var _a;
         const stockSelect = getStockSelect(root);
         if (!stockSelect)
             return;
-        Array.from(stockSelect.options).forEach((option) => {
-            if (!option.value || option.dataset.tagAutoSelected === "1")
+        if ((_a = getAllStockOption(stockSelect)) === null || _a === void 0 ? void 0 : _a.selected) {
+            getStockOptions(stockSelect).forEach((option) => {
+                option.selected = false;
+                delete option.dataset.tagAutoSelected;
+                delete option.dataset.tagManualSelected;
+            });
+            return;
+        }
+        getStockOptions(stockSelect).forEach((option) => {
+            if (option.dataset.tagAutoSelected === "1")
                 return;
             if (option.selected) {
                 option.dataset.tagManualSelected = "1";
@@ -202,7 +265,7 @@
         }
     });
     document.addEventListener("change", (event) => {
-        var _a;
+        var _a, _b;
         const target = event.target;
         if (!(target instanceof Element))
             return;
@@ -215,10 +278,20 @@
             return;
         }
         if (target.matches(STOCK_SELECT_SELECTOR)) {
-            const root = (_a = target
+            const stockSelect = target;
+            const root = (_a = stockSelect
                 .closest("form")) === null || _a === void 0 ? void 0 : _a.querySelector(ROOT_SELECTOR);
             if (!root)
                 return;
+            if (stockSelect.dataset.tagSyncing === "1") {
+                delete stockSelect.dataset.tagSyncing;
+                rememberManualStockSelection(root);
+                return;
+            }
+            if ((_b = getAllStockOption(stockSelect)) === null || _b === void 0 ? void 0 : _b.selected) {
+                applyAllStockSelection(root);
+                return;
+            }
             rememberManualStockSelection(root);
         }
     });
