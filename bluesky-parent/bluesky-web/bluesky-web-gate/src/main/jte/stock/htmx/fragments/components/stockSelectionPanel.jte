@@ -11,12 +11,13 @@
 @param List<String> stockTagList = java.util.List.of()
 @param List<String> selectedStockTags = java.util.List.of()
 @param List<StockItem> stockItemList = java.util.List.of()
+@param List<StockItem> tagCountStockItemList = stockItemList
 
 !{
     boolean hasTagOptions = stockTagList != null && !stockTagList.isEmpty();
     boolean hasSelectedTags = selectedStockTags != null && !selectedStockTags.isEmpty();
-    java.util.function.Function<String, Long> stockTagCount = tag -> stockItemList != null
-        ? stockItemList.stream()
+    java.util.function.Function<String, Long> stockTagCount = tag -> tagCountStockItemList != null
+        ? tagCountStockItemList.stream()
             .filter(stockItem -> stockItem != null && stockItem.tags() != null && stockItem.tags().contains(tag))
             .count()
         : 0L;

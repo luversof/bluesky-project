@@ -22,6 +22,7 @@
 @param int size
 @param List<Account> accountList
 @param List<StockItem> stockItemList
+@param List<StockItem> tagCountStockItemList = stockItemList
 @param List<String> stockTagList = java.util.List.of()
 @param Map<UUID, String> accountNames
 @param UUID selectedAccountId
@@ -197,7 +198,8 @@
                     stockPreviewMorePattern = tagMorePattern,
                     stockTagList = stockTagList,
                     selectedStockTags = selectedStockTags,
-                    stockItemList = stockItemList
+                    stockItemList = stockItemList,
+                    tagCountStockItemList = tagCountStockItemList
                 )
 
                 <div class="flex justify-end gap-2 xl:mt-auto">

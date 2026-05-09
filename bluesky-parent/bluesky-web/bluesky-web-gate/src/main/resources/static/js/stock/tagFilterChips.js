@@ -208,13 +208,7 @@
         select.dispatchEvent(new Event("change", { bubbles: true }));
     }
     function clearTags(root) {
-        const select = getTagSelect(root);
-        if (!select)
-            return;
-        Array.from(select.options).forEach((option) => {
-            option.selected = false;
-        });
-        select.dispatchEvent(new Event("change", { bubbles: true }));
+        applyAllStockSelection(root);
     }
     function findRoots(scope = document) {
         const roots = [];

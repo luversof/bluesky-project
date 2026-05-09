@@ -361,6 +361,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     model.addAttribute("size", size);
     model.addAttribute("accountList", finalAccountList);
     model.addAttribute("stockItemList", finalStockItemList);
+    model.addAttribute(
+        "tagCountStockItemList", clientProvidedRange ? filteredStockItemList : stockItemList);
     model.addAttribute("stockTagList", getAvailableStockTags(stockItemList));
     model.addAttribute("accountNames", accountNames);
     model.addAttribute(

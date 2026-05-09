@@ -945,6 +945,7 @@
                 // 줌/팬 시 퀵셀렉터 비활성화 — 현재 뷰 span 으로 이전/다음 이동
                 var od = getOptDates();
                 assetPicker.setState(od.visStart, od.visEnd, '');
+                syncDraggedRangeToGlobal(od.visStart, od.visEnd);
                 setTimeout(checkNavButtons, 50);
                 try { agLog('syncZoomPan scheduling checkAndFetchDetail', { visStart: od.visStart, visEnd: od.visEnd }); } catch(e) {}
                 clearTimeout(checkDetailTimer);
@@ -1460,6 +1461,49 @@
 
             // ── 매매 내역 자동 갱신 ──────────────────────────────────────────
             var tradeHistoryTimer = null;
+            var chartRangeSyncTimer = null;
+            var lastChartRangeSyncKey = '';
+            var syncDraggedRangeToGlobal = function(from, to) {
+                if (!from || !to) return;
+                clearTimeout(chartRangeSyncTimer);
+                chartRangeSyncTimer = setTimeout(function() {
+                    var nextKey = from + '::' + to;
+                    if (nextKey === lastChartRangeSyncKey) {
+                        return;
+                    }
+                    lastChartRangeSyncKey = nextKey;
+
+                    var nextTimeZone = '';
+                    try {
+                        var raw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('globalDateRange') : null;
+                        var saved = raw ? JSON.parse(raw) : null;
+                        nextTimeZone = saved && (saved.timeZone || saved.timezone)
+                            ? (saved.timeZone || saved.timezone)
+                            : ((Intl && Intl.DateTimeFormat) ? Intl.DateTimeFormat().resolvedOptions().timeZone : '');
+                        if (typeof sessionStorage !== 'undefined') {
+                            sessionStorage.setItem('globalDateRange', JSON.stringify({
+                                start: from,
+                                end: to,
+                                mode: '',
+                                timeZone: nextTimeZone || ''
+                            }));
+                        }
+                    } catch (e) {}
+
+                    try {
+                        if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+                            window.dispatchEvent(new CustomEvent('globalDateRange:changed', {
+                                detail: {
+                                    start: from,
+                                    end: to,
+                                    mode: '',
+                                    timeZone: nextTimeZone || ''
+                                }
+                            }));
+                        }
+                    } catch (e) {}
+                }, 450);
+            };
             var refreshTradeHistory = function(from, to) {
                 clearTimeout(tradeHistoryTimer);
                 tradeHistoryTimer = setTimeout(function() {
