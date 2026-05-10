@@ -24,8 +24,8 @@
 		<script type="module" src="/js/board/board.js"></script>
 
 		<div class="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)]">
-			<div class="lg:w-56 shrink-0 border-r border-base-200 bg-base-100">
-				<div class="sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto py-4">
+			<div class="lg:w-56 shrink-0">
+				<div class="fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-56 overflow-y-auto border-r border-base-200 bg-base-100 py-4">
 					@template._components.navmenu(menu = "board", classAppend = "w-full")
 				</div>
 			</div>
