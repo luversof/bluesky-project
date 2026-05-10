@@ -36,14 +36,18 @@ interface Window {
 		return root.closest("form")?.querySelector(STOCK_SELECT_SELECTOR) ?? null;
 	}
 
-	function getStockOptions(stockSelect: HTMLSelectElement): HTMLOptionElement[] {
+	function getStockOptions(
+		stockSelect: HTMLSelectElement,
+	): HTMLOptionElement[] {
 		return Array.from(stockSelect.options).filter((option) => !!option.value);
 	}
 
 	function getAllStockOption(
 		stockSelect: HTMLSelectElement,
 	): HTMLOptionElement | null {
-		return Array.from(stockSelect.options).find((option) => !option.value) ?? null;
+		return (
+			Array.from(stockSelect.options).find((option) => !option.value) ?? null
+		);
 	}
 
 	function getSelectedTagValues(select: HTMLSelectElement): Set<string> {
@@ -95,7 +99,6 @@ interface Window {
 			: new Set<string>();
 
 		getStockOptions(stockSelect).forEach((option) => {
-
 			const autoSelected =
 				option.selected && optionMatchesSelectedTags(option, selectedValues);
 			if (autoSelected) {
@@ -184,7 +187,6 @@ interface Window {
 		}
 
 		stockOptions.forEach((option) => {
-
 			const manualSelected = option.dataset.tagManualSelected === "1";
 			const autoSelected = optionMatchesSelectedTags(option, selectedValues);
 			const shouldSelect = manualSelected || autoSelected;

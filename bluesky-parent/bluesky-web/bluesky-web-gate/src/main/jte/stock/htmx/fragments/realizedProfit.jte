@@ -97,6 +97,10 @@
             String sellQuantityLabel = MessageUtil.getMessage("stock.realized.column.sell.quantity");
             String noRealizedHistoryLabel = MessageUtil.getMessage("stock.realized.message.no.history");
             String fullySoldLabel = MessageUtil.getMessage("stock.realized.badge.fully.sold");
+                boolean hasProfitChart = chartProfitLabels != null && !chartProfitLabels.isEmpty();
+                boolean hasLossChart = chartLossLabels != null && !chartLossLabels.isEmpty();
+                boolean hasAnyChart = hasProfitChart || hasLossChart;
+                boolean useDualChartLayout = hasProfitChart && hasLossChart;
     }
     @template.stock.htmx.fragments.dateRangeNavBar(
         pickerName = "realizedProfitPicker",
@@ -278,10 +282,11 @@
 
     </div>
 
+    @if(hasAnyChart)
     <!-- Section 1: 수익 Top5 / 손실 Worst5 차트 -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="${useDualChartLayout ? "grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6" : "mt-6"}">
 
-        @if(chartProfitLabels != null && !chartProfitLabels.isEmpty())
+        @if(hasProfitChart)
         <div class="card bg-base-100 shadow-md">
             <div class="card-body p-4">
                 <h2 class="text-base font-semibold mb-2 text-profit">${topProfitChartLabel}</h2>
@@ -328,7 +333,7 @@
         </script>
         @endif
 
-        @if(chartLossLabels != null && !chartLossLabels.isEmpty())
+        @if(hasLossChart)
         <div class="card bg-base-100 shadow-md">
             <div class="card-body p-4">
                 <h2 class="text-base font-semibold mb-2 text-loss">${topLossChartLabel}</h2>
@@ -375,9 +380,10 @@
         @endif
 
     </div>
+    @endif
 
     <!-- Section 2: 계좌별 실현손익 -->
-    <div>
+    <div class="mt-6">
         <h2 class="text-lg font-semibold mb-3 opacity-70">${byAccountSectionLabel}</h2>
         <div class="card bg-base-100 shadow-md overflow-x-auto">
             <table id="accountRealizedTable" class="table table-sm w-full">
@@ -440,7 +446,7 @@
     </div>
 
     <!-- Section 3: 종목별 실현손익 -->
-    <div>
+    <div class="mt-6">
         <div class="flex items-center justify-between mb-3">
             <h2 class="text-lg font-semibold opacity-70">${byStockSectionLabel}
                 <span class="text-xs font-normal opacity-60">(${byStockSectionSubtitle})</span>
@@ -521,7 +527,7 @@
                                     ${String.format("%,d", itemFees.longValue())}
                                 </td>
                                 <td class="text-right font-mono hidden xl:table-cell opacity-70">
-                                    ${item.totalSellQuantity()}${sharesLabel}
+                                    <span class="amount-value">${item.totalSellQuantity()}${sharesLabel}</span>
                                 </td>
                             </tr>
                         @endfor
