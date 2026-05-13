@@ -339,12 +339,21 @@
                                 <span data-sort-indicator class="opacity-60">↕</span>
                             </button>
                         </th>
+                        <th class="text-right">
+                            <button type="button"
+                                    class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+                                    data-sort-key="weight"
+                                    data-sort-type="number">
+                                <span>${weightLabel}</span>
+                                <span data-sort-indicator class="opacity-60">↕</span>
+                            </button>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
                     @if(stockAggregated == null || stockAggregated.isEmpty())
                         <tr>
-                            <td colspan="7" class="text-center py-8 opacity-50">${noHoldingsLabel}</td>
+                            <td colspan="8" class="text-center py-8 opacity-50">${noHoldingsLabel}</td>
                         </tr>
                     @else
                         @for(TradeProfit item : stockAggregated)
@@ -352,6 +361,11 @@
                                 && item.totalBuyCost().compareTo(BigDecimal.ZERO) > 0
                                 && item.evaluationProfit() != null
                                 ? item.evaluationProfit().divide(item.totalBuyCost(), 4, java.math.RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
+                                : BigDecimal.ZERO;}
+                            !{BigDecimal totalWeightPct = totalEvaluationAmount != null
+                                && totalEvaluationAmount.compareTo(BigDecimal.ZERO) > 0
+                                && item.evaluationAmount() != null
+                                ? item.evaluationAmount().divide(totalEvaluationAmount, 4, java.math.RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
                                 : BigDecimal.ZERO;}
                             <tr class="hover"
                                 data-sortable-row
@@ -361,17 +375,19 @@
                                 data-buy-amount="${item.totalBuyCost() != null ? item.totalBuyCost().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                 data-current-price="${item.currentPrice() != null ? item.currentPrice().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                 data-evaluation-amount="${item.evaluationAmount() != null ? item.evaluationAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
-                                data-evaluation-profit="${item.evaluationProfit() != null ? item.evaluationProfit().toPlainString() : BigDecimal.ZERO.toPlainString()}">
+                                data-evaluation-profit="${item.evaluationProfit() != null ? item.evaluationProfit().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                data-weight="${totalWeightPct.toPlainString()}">
                                 <td class="font-semibold">${item.stockItemName() != null ? item.stockItemName() : "-"}</td>
                                 <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", item.holdingQuantity())}</td>
                                 <td class="text-right font-mono hidden xl:table-cell amount-value">${String.format("%,d", item.averageBuyPrice() != null ? item.averageBuyPrice().longValue() : 0)}</td>
                                 <td class="text-right font-mono hidden sm:table-cell amount-value opacity-70">${String.format("%,d", item.totalBuyCost() != null ? item.totalBuyCost().longValue() : 0)}</td>
                                 <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", item.currentPrice() != null ? item.currentPrice().longValue() : 0)}</td>
                                 <td class="text-right font-mono font-semibold amount-value text-principal">${String.format("%,d", item.evaluationAmount() != null ? item.evaluationAmount().longValue() : 0)}</td>
-                                <td class="text-right font-mono font-bold amount-value ${item.evaluationProfit() != null && item.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                                    ${String.format("%+,d", item.evaluationProfit() != null ? item.evaluationProfit().longValue() : 0)}
+                                <td class="text-right font-mono font-bold ${item.evaluationProfit() != null && item.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+                                    <span class="amount-value">${String.format("%+,d", item.evaluationProfit() != null ? item.evaluationProfit().longValue() : 0)}</span>
                                     <span class="text-xs opacity-70">(${String.format("%+.1f%%", evalProfitRate.doubleValue())})</span>
                                 </td>
+                                <td class="text-right font-mono text-base-content/70">${String.format("%.1f%%", totalWeightPct.doubleValue())}</td>
                             </tr>
                         @endfor
                     @endif
@@ -388,6 +404,7 @@
                         <td class="hidden lg:table-cell"></td>
                         <td class="text-right font-mono amount-value text-principal">${String.format("%,d", totalEvaluationAmount != null ? totalEvaluationAmount.longValue() : 0)}</td>
                         <td class="text-right font-mono font-bold amount-value ${totalEvaluationProfit != null && totalEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">${String.format("%+,d", totalEvaluationProfit != null ? totalEvaluationProfit.longValue() : 0)}</td>
+                        <td class="text-right font-mono text-base-content/70">${totalEvaluationAmount != null && totalEvaluationAmount.compareTo(BigDecimal.ZERO) > 0 ? "100.0%" : "0.0%"}</td>
                     </tr>
                 </tfoot>
             </table>

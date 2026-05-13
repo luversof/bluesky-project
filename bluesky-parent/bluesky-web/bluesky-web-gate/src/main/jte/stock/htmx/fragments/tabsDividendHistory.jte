@@ -449,7 +449,9 @@
                             <thead>
                                 <tr class="text-base-content/60">
                                     <th>${yearLabel}</th>
+                                    <th class="text-right">${grossAmountLabel}</th>
                                     <th class="text-right">${netAmountLabel}</th>
+                                    <th class="text-right">${taxLabel}</th>
                                     <th class="text-right">${dailyAverageInvestedCapitalLabel}</th>
                                     <th class="text-right">${yieldOnDailyAverageCostLabel}</th>
                                     <th class="text-right hidden xl:table-cell">${basisAverageInvestedCapitalLabel}</th>
@@ -459,9 +461,12 @@
                             </thead>
                             <tbody>
                                 @for(DividendYieldGroupView row : yearlyYieldRows)
+                                    !{BigDecimal rowTaxAmount = row.totalGrossAmount() != null && row.totalNetAmount() != null ? row.totalGrossAmount().subtract(row.totalNetAmount()) : null;}
                                     <tr>
                                         <td class="font-medium">${row.label()}</td>
+                                        <td class="text-right amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
+                                        <td class="text-right amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
                                         <td class="text-right amount-value">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}</td>
                                         <td class="text-right text-dividend font-medium">${percentFormat.apply(row.yieldOnDailyAverageCostPct())}</td>
                                         <td class="text-right hidden xl:table-cell amount-value">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}</td>
@@ -487,7 +492,9 @@
                             <thead>
                                 <tr class="text-base-content/60">
                                     <th>${stockNameLabel}</th>
+                                    <th class="text-right">${grossAmountLabel}</th>
                                     <th class="text-right">${netAmountLabel}</th>
+                                    <th class="text-right">${taxLabel}</th>
                                     <th class="text-right">${dailyAverageInvestedCapitalLabel}</th>
                                     <th class="text-right">${yieldOnDailyAverageCostLabel}</th>
                                     <th class="text-right hidden xl:table-cell">${basisAverageInvestedCapitalLabel}</th>
@@ -498,9 +505,12 @@
                             </thead>
                             <tbody>
                                 @for(DividendYieldGroupView row : stockYieldRows)
+                                    !{BigDecimal rowTaxAmount = row.totalGrossAmount() != null && row.totalNetAmount() != null ? row.totalGrossAmount().subtract(row.totalNetAmount()) : null;}
                                     <tr>
                                         <td class="font-medium">${row.label()}</td>
+                                        <td class="text-right amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
+                                        <td class="text-right amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
                                         <td class="text-right amount-value">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}</td>
                                         <td class="text-right text-dividend font-medium">${percentFormat.apply(row.yieldOnDailyAverageCostPct())}</td>
                                         <td class="text-right hidden xl:table-cell amount-value">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}</td>
@@ -527,7 +537,9 @@
                             <thead>
                                 <tr class="text-base-content/60">
                                     <th>${accountLabel}</th>
+                                    <th class="text-right">${grossAmountLabel}</th>
                                     <th class="text-right">${netAmountLabel}</th>
+                                    <th class="text-right">${taxLabel}</th>
                                     <th class="text-right">${dailyAverageInvestedCapitalLabel}</th>
                                     <th class="text-right">${yieldOnDailyAverageCostLabel}</th>
                                     <th class="text-right hidden xl:table-cell">${basisAverageInvestedCapitalLabel}</th>
@@ -538,9 +550,12 @@
                             </thead>
                             <tbody>
                                 @for(DividendYieldGroupView row : accountYieldRows)
+                                    !{BigDecimal rowTaxAmount = row.totalGrossAmount() != null && row.totalNetAmount() != null ? row.totalGrossAmount().subtract(row.totalNetAmount()) : null;}
                                     <tr>
                                         <td class="font-medium">${row.label()}</td>
+                                        <td class="text-right amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
+                                        <td class="text-right amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
                                         <td class="text-right amount-value">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}</td>
                                         <td class="text-right text-dividend font-medium">${percentFormat.apply(row.yieldOnDailyAverageCostPct())}</td>
                                         <td class="text-right hidden xl:table-cell amount-value">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}</td>

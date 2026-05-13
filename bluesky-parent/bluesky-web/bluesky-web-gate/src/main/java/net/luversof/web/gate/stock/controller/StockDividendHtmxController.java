@@ -973,6 +973,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
   private static final class YieldAccumulator {
     private final String label;
     private final long periodDayCount;
+    private BigDecimal totalGrossAmount = BigDecimal.ZERO;
     private BigDecimal totalNetAmount = BigDecimal.ZERO;
     private BigDecimal dailyPrincipalCostSum = BigDecimal.ZERO;
     private final Map<PositionKey, PrincipalAccumulator> principalByPosition =
@@ -986,6 +987,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     }
 
     private void accept(DividendView dividend) {
+      totalGrossAmount = totalGrossAmount.add(nz(dividend.grossAmount()));
       totalNetAmount = totalNetAmount.add(nz(dividend.netAmount()));
       dividendCount++;
 
@@ -1054,6 +1056,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
               : null;
       return new DividendYieldGroupView(
           label,
+          totalGrossAmount,
           totalNetAmount,
       averageDailyPrincipalCost,
           averagePrincipalCost,

@@ -5,6 +5,7 @@ import java.time.Instant;
 
 public record DividendYieldGroupView(
     String label,
+    BigDecimal totalGrossAmount,
     BigDecimal totalNetAmount,
     BigDecimal averageDailyPrincipalCost,
     BigDecimal averagePrincipalCost,
