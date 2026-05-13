@@ -110,6 +110,11 @@
                         .asset-growth-nav-wrapper > div { margin-bottom: 0 !important; }
                     </style>
                 </div>
+                <div id="assetGrowthPeriodReturnSummary" class="rounded-2xl border border-base-300/60 bg-base-100/80 px-4 py-3 mb-3">
+                    <div class="skeleton h-4 w-32 mb-2"></div>
+                    <div class="skeleton h-8 w-24 mb-2"></div>
+                    <div class="skeleton h-3 w-56"></div>
+                </div>
                 <div class="w-full relative" style="height: 450px;">
                     <canvas id="assetGrowthChart" class="amount-chart"></canvas>
                     <div id="chartLoadingOverlay" class="absolute inset-0 flex items-center justify-center hidden" style="z-index:10; background-color:color-mix(in oklch, var(--color-base-100) 80%, transparent);">
@@ -225,6 +230,10 @@
             // DateRangePicker(콜백모드)가 내부 상태로 관리 — activeMonths 불필요
             var pendingVisStart = null;
             var pendingVisEnd   = null;
+            var periodReturnTimer = null;
+            var periodReturnAbortController = null;
+            var loadedPeriodReturnKey = '';
+            var requestedPeriodReturnKey = '';
 
             // 기간 표시 업데이트
             var updateRangeDisplay = function(startStr, endStr) {
@@ -235,6 +244,68 @@
                 } else {
                     el.textContent = '';
                 }
+            };
+
+            var refreshPeriodReturnSummary = function(startStr, endStr) {
+                if (!startStr || !endStr) return;
+
+                var zone = '${timeZone != null ? timeZone.replace("\\", "\\\\").replace("'", "\\'") : ""}';
+                if (!zone) {
+                    try {
+                        zone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+                    } catch (e) {
+                        zone = '';
+                    }
+                }
+
+                var key = startStr + '|' + endStr + '|' + zone;
+                if (key === loadedPeriodReturnKey || key === requestedPeriodReturnKey) {
+                    return;
+                }
+
+                clearTimeout(periodReturnTimer);
+                periodReturnTimer = setTimeout(function() {
+                    var container = document.getElementById('assetGrowthPeriodReturnSummary');
+                    if (!container) return;
+
+                    requestedPeriodReturnKey = key;
+                    if (periodReturnAbortController) {
+                        try { periodReturnAbortController.abort(); } catch (e) {}
+                    }
+                    periodReturnAbortController = typeof AbortController !== 'undefined'
+                        ? new AbortController()
+                        : null;
+
+                    var options = {};
+                    if (periodReturnAbortController) {
+                        options.signal = periodReturnAbortController.signal;
+                    }
+
+                    fetch(
+                        '/stock/htmx/asset-growth/period-return?from=' + encodeURIComponent(startStr)
+                            + '&to=' + encodeURIComponent(endStr)
+                            + '&timeZone=' + encodeURIComponent(zone),
+                        options)
+                        .then(function(response) { return response.text(); })
+                        .then(function(html) {
+                            requestedPeriodReturnKey = '';
+                            loadedPeriodReturnKey = key;
+                            if (container && html) {
+                                container.outerHTML = html;
+                            }
+                        })
+                        .catch(function(error) {
+                            requestedPeriodReturnKey = '';
+                            if (error && error.name === 'AbortError') {
+                                return;
+                            }
+                            try {
+                                agLog('asset growth period return fetch failed', {
+                                    message: error && error.message ? error.message : String(error)
+                                });
+                            } catch (e) {}
+                        });
+                }, 120);
             };
 
             // 기간 선택 피커 onApply 콜백: 날짜 문자열 → 차트 인덱스 적용
@@ -929,8 +1000,10 @@
                         deferRangeDisplay = false;
                         deferredDisplayStart = deferredDisplayEnd = null;
                         updateRangeDisplay(_ds, _de);
+                        refreshPeriodReturnSummary(_ds, _de);
                     } else {
                         updateRangeDisplay(visMinDate, visMaxDate);
+                        refreshPeriodReturnSummary(visMinDate, visMaxDate);
                     }
                 } catch (e) {}
             };

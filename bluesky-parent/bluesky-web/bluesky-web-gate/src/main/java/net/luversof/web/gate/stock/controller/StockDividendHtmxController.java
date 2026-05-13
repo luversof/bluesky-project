@@ -313,13 +313,13 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
 
     DividendAnalyticsResult analyticsResult =
         buildDividendAnalytics(
-        userId,
-        viewList,
-        effectiveAccountIdList,
-        effectiveStockItemIdList,
-        startInstant,
-        endInstant,
-        zone);
+            userId,
+            viewList,
+            effectiveAccountIdList,
+            effectiveStockItemIdList,
+            startInstant,
+            endInstant,
+            zone);
     viewList = analyticsResult.dividendViews();
 
     if (sort != null && !sort.isEmpty()) {
@@ -502,10 +502,10 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
             ? analyticsResult.portfolioYield().yieldOnCostPct()
             : null);
     model.addAttribute(
-      "portfolioYieldOnDailyAverageCostPct",
-      analyticsResult.portfolioYield() != null
-        ? analyticsResult.portfolioYield().yieldOnDailyAverageCostPct()
-        : null);
+        "portfolioYieldOnDailyAverageCostPct",
+        analyticsResult.portfolioYield() != null
+            ? analyticsResult.portfolioYield().yieldOnDailyAverageCostPct()
+            : null);
     model.addAttribute(
         "portfolioYieldOnMarketPct",
         analyticsResult.portfolioYield() != null
@@ -555,19 +555,21 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         loadSnapshotsByDate(userId, basisDates);
     LocalDate maxBasisDate = basisDates.stream().max(Comparator.naturalOrder()).orElse(null);
     LocalDate periodStartDate =
-      startInstant != null ? startInstant.atZone(zone).toLocalDate() : maxBasisDate;
+        startInstant != null ? startInstant.atZone(zone).toLocalDate() : maxBasisDate;
     LocalDate periodEndDate = resolvePeriodEndDate(endInstant, maxBasisDate, zone);
-    Map<Integer, Long> periodDayCountsByYear = buildPeriodDayCountsByYear(periodStartDate, periodEndDate);
-    long totalPeriodDayCount = periodDayCountsByYear.values().stream().mapToLong(Long::longValue).sum();
+    Map<Integer, Long> periodDayCountsByYear =
+        buildPeriodDayCountsByYear(periodStartDate, periodEndDate);
+    long totalPeriodDayCount =
+        periodDayCountsByYear.values().stream().mapToLong(Long::longValue).sum();
     LocalDate tradeCoverageEndDate =
-      Stream.of(maxBasisDate, periodEndDate)
-        .filter(Objects::nonNull)
-        .max(Comparator.naturalOrder())
-        .orElse(null);
+        Stream.of(maxBasisDate, periodEndDate)
+            .filter(Objects::nonNull)
+            .max(Comparator.naturalOrder())
+            .orElse(null);
     Instant tradeEndDate =
-      tradeCoverageEndDate != null
-        ? tradeCoverageEndDate.plusDays(1).atStartOfDay(zone).toInstant()
-        : null;
+        tradeCoverageEndDate != null
+            ? tradeCoverageEndDate.plusDays(1).atStartOfDay(zone).toInstant()
+            : null;
 
     List<TradeResponse> trades =
         tradeClient.findTrades(
@@ -694,53 +696,52 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         portfolioAccumulator.accept(enrichedDividend);
         stockAccumulators
             .computeIfAbsent(
-            dividend.stockItemId(),
-            ignored -> new YieldAccumulator(dividend.stockItemName(), totalPeriodDayCount))
+                dividend.stockItemId(),
+                ignored -> new YieldAccumulator(dividend.stockItemName(), totalPeriodDayCount))
             .accept(enrichedDividend);
         accountAccumulators
             .computeIfAbsent(
-            dividend.accountId(),
-            ignored -> new YieldAccumulator(dividend.accountName(), totalPeriodDayCount))
+                dividend.accountId(),
+                ignored -> new YieldAccumulator(dividend.accountName(), totalPeriodDayCount))
             .accept(enrichedDividend);
         yearlyAccumulators
             .computeIfAbsent(
-            basisDate.getYear(),
-            year ->
-              new YieldAccumulator(
-                String.valueOf(year), periodDayCountsByYear.getOrDefault(year, 0L)))
+                basisDate.getYear(),
+                year ->
+                    new YieldAccumulator(
+                        String.valueOf(year), periodDayCountsByYear.getOrDefault(year, 0L)))
             .accept(enrichedDividend);
       }
 
-        PeriodPrincipalSummary periodPrincipalSummary =
+      PeriodPrincipalSummary periodPrincipalSummary =
           summarizePeriodPrincipalCosts(tradeList, periodStartDate, periodEndDate, zone);
 
-        stockAccumulators
+      stockAccumulators
           .computeIfAbsent(
-            key.stockItemId(),
-            ignored ->
-              new YieldAccumulator(
-                entry.getValue().get(0).stockItemName(), totalPeriodDayCount))
+              key.stockItemId(),
+              ignored ->
+                  new YieldAccumulator(
+                      entry.getValue().get(0).stockItemName(), totalPeriodDayCount))
           .acceptDailyPrincipalCostSum(periodPrincipalSummary.principalCostSum());
-        accountAccumulators
+      accountAccumulators
           .computeIfAbsent(
-            key.accountId(),
-            ignored ->
-              new YieldAccumulator(
-                entry.getValue().get(0).accountName(), totalPeriodDayCount))
+              key.accountId(),
+              ignored ->
+                  new YieldAccumulator(entry.getValue().get(0).accountName(), totalPeriodDayCount))
           .acceptDailyPrincipalCostSum(periodPrincipalSummary.principalCostSum());
-        portfolioAccumulator.acceptDailyPrincipalCostSum(periodPrincipalSummary.principalCostSum());
-        periodPrincipalSummary
+      portfolioAccumulator.acceptDailyPrincipalCostSum(periodPrincipalSummary.principalCostSum());
+      periodPrincipalSummary
           .principalCostSumByYear()
           .forEach(
-            (year, principalCostSum) ->
-              yearlyAccumulators
-                .computeIfAbsent(
-                  year,
-                  ignored ->
-                    new YieldAccumulator(
-                      String.valueOf(year),
-                      periodDayCountsByYear.getOrDefault(year, 0L)))
-                .acceptDailyPrincipalCostSum(principalCostSum));
+              (year, principalCostSum) ->
+                  yearlyAccumulators
+                      .computeIfAbsent(
+                          year,
+                          ignored ->
+                              new YieldAccumulator(
+                                  String.valueOf(year),
+                                  periodDayCountsByYear.getOrDefault(year, 0L)))
+                      .acceptDailyPrincipalCostSum(principalCostSum));
     }
 
     List<DividendView> enrichedDividends =
@@ -806,7 +807,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     return rows;
   }
 
-  private static LocalDate resolvePeriodEndDate(Instant endInstant, LocalDate fallback, ZoneId zone) {
+  private static LocalDate resolvePeriodEndDate(
+      Instant endInstant, LocalDate fallback, ZoneId zone) {
     if (endInstant != null) {
       return endInstant.minusNanos(1).atZone(zone).toLocalDate();
     }
@@ -816,7 +818,9 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
   private static Map<Integer, Long> buildPeriodDayCountsByYear(
       LocalDate periodStartDate, LocalDate periodEndDate) {
     Map<Integer, Long> dayCountsByYear = new LinkedHashMap<>();
-    if (periodStartDate == null || periodEndDate == null || periodEndDate.isBefore(periodStartDate)) {
+    if (periodStartDate == null
+        || periodEndDate == null
+        || periodEndDate.isBefore(periodStartDate)) {
       return dayCountsByYear;
     }
 
@@ -829,8 +833,13 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
   }
 
   private static PeriodPrincipalSummary summarizePeriodPrincipalCosts(
-      List<TradeResponse> tradeList, LocalDate periodStartDate, LocalDate periodEndDate, ZoneId zone) {
-    if (periodStartDate == null || periodEndDate == null || periodEndDate.isBefore(periodStartDate)) {
+      List<TradeResponse> tradeList,
+      LocalDate periodStartDate,
+      LocalDate periodEndDate,
+      ZoneId zone) {
+    if (periodStartDate == null
+        || periodEndDate == null
+        || periodEndDate.isBefore(periodStartDate)) {
       return PeriodPrincipalSummary.empty();
     }
 
@@ -1018,10 +1027,10 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
 
     private DividendYieldGroupView toView() {
       BigDecimal averageDailyPrincipalCost =
-        periodDayCount > 0 && dailyPrincipalCostSum.compareTo(BigDecimal.ZERO) > 0
-          ? dailyPrincipalCostSum.divide(
-            BigDecimal.valueOf(periodDayCount), 2, RoundingMode.HALF_UP)
-          : null;
+          periodDayCount > 0 && dailyPrincipalCostSum.compareTo(BigDecimal.ZERO) > 0
+              ? dailyPrincipalCostSum.divide(
+                  BigDecimal.valueOf(periodDayCount), 2, RoundingMode.HALF_UP)
+              : null;
       BigDecimal averagePrincipalCost = null;
       BigDecimal averagePrincipalMarketValue = null;
 
@@ -1044,10 +1053,10 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         }
       }
 
-    BigDecimal yieldOnDailyAverageCostPct =
-      averageDailyPrincipalCost != null
-        ? percentage(totalNetAmount, averageDailyPrincipalCost)
-        : null;
+      BigDecimal yieldOnDailyAverageCostPct =
+          averageDailyPrincipalCost != null
+              ? percentage(totalNetAmount, averageDailyPrincipalCost)
+              : null;
       BigDecimal yieldOnCostPct =
           averagePrincipalCost != null ? percentage(totalNetAmount, averagePrincipalCost) : null;
       BigDecimal yieldOnMarketPct =
@@ -1058,10 +1067,10 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
           label,
           totalGrossAmount,
           totalNetAmount,
-      averageDailyPrincipalCost,
+          averageDailyPrincipalCost,
           averagePrincipalCost,
           averagePrincipalMarketValue,
-      yieldOnDailyAverageCostPct,
+          yieldOnDailyAverageCostPct,
           yieldOnCostPct,
           yieldOnMarketPct,
           dividendCount,
