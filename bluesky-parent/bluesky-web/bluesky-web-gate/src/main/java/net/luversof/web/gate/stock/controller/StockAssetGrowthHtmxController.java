@@ -91,15 +91,14 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       }
     }
 
-    var params = request.toParams();
-    params.add("granularity", "AUTO");
-    List<TradeProfitTimeSeriesPoint> timeSeries = tradeProfitClient.timeSeries(params);
-
-    // compute overall dataFirstDate (earliest available timestamp) so client can
-    // enable Prev when earlier data exists outside the current timeSeries
-    var allReq = new TradeProfitRequest();
-    allReq.setUserId(userId);
-    var allParams = allReq.toParams();
+    // Asset-growth values depend on holdings that may have been built before the
+    // currently selected range. If we request only the visible range, the upstream
+    // timeSeries endpoint can omit the opening carried balance and the first days
+    // of the chart start from zero. Load the full filtered history once and let the
+    // client open the requested window on top of that base data.
+    var allParams = request.toParams();
+    allParams.remove("startDate");
+    allParams.remove("endDate");
     allParams.add("granularity", "AUTO");
     List<TradeProfitTimeSeriesPoint> allSeries = tradeProfitClient.timeSeries(allParams);
     java.time.LocalDate dataFirstDate = null;
@@ -116,7 +115,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
               .orElse(null);
     }
 
-    model.addAttribute("timeSeries", timeSeries);
+    model.addAttribute("timeSeries", allSeries);
     model.addAttribute("dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");
     model.addAttribute("rangeMode", effectiveRangeMode);
     model.addAttribute("startDate", request.getStartDate());

@@ -18,6 +18,8 @@
 
     java.time.LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
     java.time.LocalDate endLocal = endDate != null ? endDate.atZone(zone).toLocalDate() : null;
+    java.time.LocalDate requestedStartLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
+    java.time.LocalDate requestedEndDisplayLocal = endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1) : null;
 
     // Normalize model-provided `timeSeries` into `ts` for template use
     List<TradeProfitTimeSeriesPoint> ts = null;
@@ -898,9 +900,31 @@
             };
             var maxIndex = labels.length - 1;
             var todayMaxIdx = getTodayMaxIdx();
+            var requestedStartLabel = '${requestedStartLocal != null ? requestedStartLocal.toString() : ""}';
+            var requestedEndLabel = '${requestedEndDisplayLocal != null ? requestedEndDisplayLocal.toString() : ""}';
             var defaultMinIndex = todayMaxIdx > 365 ? todayMaxIdx - 365 : 0;
+            if (requestedStartLabel) {
+                for (var si = 0; si < labels.length; si++) {
+                    if (labels[si] >= requestedStartLabel) {
+                        defaultMinIndex = si;
+                        break;
+                    }
+                }
+            }
+            var defaultMaxIndex = todayMaxIdx;
+            if (requestedEndLabel) {
+                for (var ei = labels.length - 1; ei >= 0; ei--) {
+                    if (labels[ei] <= requestedEndLabel) {
+                        defaultMaxIndex = ei;
+                        break;
+                    }
+                }
+            }
+            if (defaultMaxIndex < defaultMinIndex) {
+                defaultMaxIndex = Math.min(todayMaxIdx, defaultMinIndex + 1);
+            }
             var defaultMinDate = labels[defaultMinIndex];
-            var defaultMaxDate = labels[todayMaxIdx];
+            var defaultMaxDate = labels[defaultMaxIndex];
 
             var mainChart, dividendChart;
 
