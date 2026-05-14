@@ -773,12 +773,12 @@
                 // Consider the form to be HTMX-driven if the form itself has hx-* attributes
                 // or if any descendant element (button/link) declares hx-* attributes.
                 const hxTriggerElt = form.querySelector("[hx-get], [hx-post], [hx-put], [hx-delete]");
-                const hasHx = !!hxTriggerElt ||
-                    form.hasAttribute("hx-get") ||
+                const formHasHx = form.hasAttribute("hx-get") ||
                     form.hasAttribute("hx-post") ||
                     form.hasAttribute("hx-put") ||
                     form.hasAttribute("hx-delete");
-                if (hasHx) {
+                const hasDescendantHx = !!hxTriggerElt;
+                if (!formHasHx && hasDescendantHx) {
                     // Prefer an explicit data-selection-save button, otherwise use the first
                     // hx-triggering element inside the form, or fall back to a submit button.
                     const primary = form.querySelector('[data-selection-save="true"]') ||

@@ -284,12 +284,21 @@ const DateRangePicker = (function () {
                     try {
                         if (cfg.globalKey && typeof sessionStorage !== "undefined") {
                             const tz = resolvedTimeZone() || null;
-                            sessionStorage.setItem(cfg.globalKey, JSON.stringify({
+                            const globalRangeRaw = JSON.stringify({
                                 start: startStr || "",
                                 end: endStr || "",
                                 mode: modeStr || "",
                                 timeZone: tz || "",
-                            }));
+                            });
+                            sessionStorage.setItem(cfg.globalKey, globalRangeRaw);
+                            try {
+                                const appliedKey = "__globalDateRangeApplied:" +
+                                    (cfg.formId || cfg.rootSelector || cfg.btnClass || "");
+                                if (appliedKey !== "__globalDateRangeApplied:") {
+                                    sessionStorage.setItem(appliedKey, globalRangeRaw);
+                                }
+                            }
+                            catch (e) { }
                         }
                     }
                     catch (e) { }
@@ -306,6 +315,8 @@ const DateRangePicker = (function () {
                                     end: endStr || "",
                                     mode: modeStr || "",
                                     timeZone: resolvedTimeZone() || "",
+                                    sourceFormId: cfg.formId || "",
+                                    sourceRootSelector: cfg.rootSelector || "",
                                 },
                             }));
                         }
@@ -367,12 +378,21 @@ const DateRangePicker = (function () {
                         try {
                             if (cfg.globalKey && typeof sessionStorage !== "undefined") {
                                 const tz2 = resolvedTimeZone() || null;
-                                sessionStorage.setItem(cfg.globalKey, JSON.stringify({
+                                const globalRangeRaw = JSON.stringify({
                                     start: startStr || "",
                                     end: endStr || "",
                                     mode: modeStr || "",
                                     timeZone: tz2 || "",
-                                }));
+                                });
+                                sessionStorage.setItem(cfg.globalKey, globalRangeRaw);
+                                try {
+                                    const appliedKey = "__globalDateRangeApplied:" +
+                                        (cfg.formId || cfg.rootSelector || cfg.btnClass || "");
+                                    if (appliedKey !== "__globalDateRangeApplied:") {
+                                        sessionStorage.setItem(appliedKey, globalRangeRaw);
+                                    }
+                                }
+                                catch (e) { }
                             }
                         }
                         catch (e) { }
@@ -389,6 +409,8 @@ const DateRangePicker = (function () {
                                         end: endStr || "",
                                         mode: modeStr || "",
                                         timeZone: resolvedTimeZone() || "",
+                                        sourceFormId: cfg.formId || "",
+                                        sourceRootSelector: cfg.rootSelector || "",
                                     },
                                 }));
                             }

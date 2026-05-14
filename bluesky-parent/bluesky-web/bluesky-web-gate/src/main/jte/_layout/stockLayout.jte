@@ -135,6 +135,7 @@
 							var formsToTrigger = ['tradeSearchForm', 'realizedProfitSearchForm'];
 							formsToTrigger.forEach(function(id){
 								try {
+									if (detail && detail.sourceFormId && detail.sourceFormId === id) return;
 									var f = document.getElementById(id);
 									if (!f) return;
 									var hasHx = f.hasAttribute('hx-get') || f.hasAttribute('hx-post') || f.querySelector('[hx-get], [hx-post], [hx-put], [hx-delete]');

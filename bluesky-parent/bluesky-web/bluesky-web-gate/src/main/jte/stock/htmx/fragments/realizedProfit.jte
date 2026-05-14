@@ -290,13 +290,16 @@
         <div class="card bg-base-100 shadow-md">
             <div class="card-body p-4">
                 <h2 class="text-base font-semibold mb-2 text-profit">${topProfitChartLabel}</h2>
-                <div class="relative w-full amount-chart" style="height: ${Math.max(160, chartProfitLabels.size() * 40)}px;">
+                <div class="relative w-full amount-chart" style="height: ${Math.max(190, chartProfitLabels.size() * 44)}px;">
                     <canvas id="chartProfit"></canvas>
                 </div>
             </div>
         </div>
         <script>
         (function() {
+            var __script = document.currentScript;
+            var __card = __script ? __script.previousElementSibling : null;
+            var __canvas = __card ? __card.querySelector('canvas') : null;
             var labels = [];
             @for(String lbl : chartProfitLabels)
                 labels.push("${lbl.replace("\"", "\\\"").replace("\\", "\\\\")} ");
@@ -318,6 +321,7 @@
                 },
                 options: {
                     indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    layout: { padding: { top: 4, right: 10, bottom: 12, left: 4 } },
                     plugins: { legend: { display: false },
                         tooltip: { callbacks: { label: function(c) {
                             return ' ' + formatSignedCurrency(c.parsed.x); } } } },
@@ -328,7 +332,7 @@
                     }
                 }
             };
-            window.ensureStockCharts(function() { window['chartProfitInstance'] = window.StockCharts.createChart('chartProfit', config, window['chartProfitInstance']); });
+            window.ensureStockCharts(function() { window['chartProfitInstance'] = window.StockCharts.createChart(__canvas || 'chartProfit', config, window['chartProfitInstance']); });
         })();
         </script>
         @endif
@@ -337,13 +341,16 @@
         <div class="card bg-base-100 shadow-md">
             <div class="card-body p-4">
                 <h2 class="text-base font-semibold mb-2 text-loss">${topLossChartLabel}</h2>
-                <div class="relative w-full amount-chart" style="height: ${Math.max(160, chartLossLabels.size() * 40)}px;">
+                <div class="relative w-full amount-chart" style="height: ${Math.max(190, chartLossLabels.size() * 44)}px;">
                     <canvas id="chartLoss"></canvas>
                 </div>
             </div>
         </div>
         <script>
         (function() {
+            var __script = document.currentScript;
+            var __card = __script ? __script.previousElementSibling : null;
+            var __canvas = __card ? __card.querySelector('canvas') : null;
             var labels = [];
             @for(String lbl : chartLossLabels)
                 labels.push("${lbl.replace("\"", "\\\"").replace("\\", "\\\\")} ");
@@ -364,6 +371,7 @@
                 },
                 options: {
                     indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    layout: { padding: { top: 4, right: 10, bottom: 12, left: 4 } },
                     plugins: { legend: { display: false },
                         tooltip: { callbacks: { label: function(c) {
                             return ' ' + formatCurrency(c.parsed.x); } } } },
@@ -374,12 +382,50 @@
                     }
                 }
             };
-            window.ensureStockCharts(function() { window['chartLossInstance'] = window.StockCharts.createChart('chartLoss', config, window['chartLossInstance']); });
+            window.ensureStockCharts(function() { window['chartLossInstance'] = window.StockCharts.createChart(__canvas || 'chartLoss', config, window['chartLossInstance']); });
         })();
         </script>
         @endif
 
     </div>
+    @endif
+
+    @if(hasAnyChart)
+    <script>
+    (function() {
+        function resizeRealizedProfitCharts() {
+            try {
+                ['chartProfitInstance', 'chartLossInstance'].forEach(function(key) {
+                    var chart = window[key];
+                    if (!chart || !chart.canvas || !chart.canvas.isConnected) return;
+                    try {
+                        chart.resize();
+                        chart.update('none');
+                    } catch (e) {}
+                });
+            } catch (e) {}
+        }
+
+        setTimeout(resizeRealizedProfitCharts, 0);
+        setTimeout(resizeRealizedProfitCharts, 200);
+        setTimeout(resizeRealizedProfitCharts, 500);
+
+        function handleAfterSettle(event) {
+            try {
+                var fragment = document.getElementById('realizedProfitFragment');
+                var target = event && event.target ? event.target : null;
+                if (!fragment || !target) return;
+                if (target === fragment || fragment.contains(target) || (target.contains && target.contains(fragment))) {
+                    resizeRealizedProfitCharts();
+                    setTimeout(resizeRealizedProfitCharts, 200);
+                    document.body.removeEventListener('htmx:afterSettle', handleAfterSettle);
+                }
+            } catch (e) {}
+        }
+
+        document.body.addEventListener('htmx:afterSettle', handleAfterSettle);
+    })();
+    </script>
     @endif
 
     <!-- Section 2: 계좌별 실현손익 -->

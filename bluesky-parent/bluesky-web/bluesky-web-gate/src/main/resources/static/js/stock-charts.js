@@ -337,9 +337,29 @@ StockCharts.initDonutFromData = function (tradeData, opts = {}, existingInstance
     return inst;
 };
 StockCharts.createChart = function (canvasId, config, existingInstance) {
-    const canvas = document.getElementById(canvasId);
+    const canvas = typeof canvasId === "string"
+        ? document.getElementById(canvasId)
+        : canvasId;
     if (!canvas)
         return null;
+    try {
+        if (existingInstance && Array.isArray(existingInstance.__copilotResizeTimers)) {
+            existingInstance.__copilotResizeTimers.forEach((timerId) => clearTimeout(timerId));
+        }
+        if (existingInstance && existingInstance.__copilotResizeObserver) {
+            existingInstance.__copilotResizeObserver.disconnect();
+        }
+    }
+    catch (e) { }
+    try {
+        const attachedInstance = typeof Chart.getChart === "function"
+            ? Chart.getChart(canvas)
+            : null;
+        if (attachedInstance && attachedInstance !== existingInstance) {
+            attachedInstance.destroy();
+        }
+    }
+    catch (e) { }
     if (existingInstance && typeof existingInstance.destroy === "function") {
         try {
             existingInstance.destroy();
@@ -348,6 +368,68 @@ StockCharts.createChart = function (canvasId, config, existingInstance) {
     }
     const ctx = canvas.getContext("2d");
     const inst = new Chart(ctx, config);
+    const resizeTimers = [];
+    const stabilizeLayout = () => {
+        try {
+            if (!inst || !canvas.isConnected)
+                return;
+            inst.resize();
+            inst.update("none");
+        }
+        catch (e) { }
+    };
+    const scheduleResize = (delayMs) => {
+        const timerId = setTimeout(stabilizeLayout, delayMs);
+        resizeTimers.push(timerId);
+    };
+    if (typeof requestAnimationFrame === "function") {
+        requestAnimationFrame(() => {
+            stabilizeLayout();
+            requestAnimationFrame(() => {
+                stabilizeLayout();
+            });
+        });
+    }
+    else {
+        scheduleResize(0);
+    }
+    scheduleResize(50);
+    scheduleResize(150);
+    scheduleResize(300);
+    scheduleResize(600);
+    try {
+        const resizeTarget = canvas.closest(".amount-chart") || canvas.parentElement || canvas;
+        if (resizeTarget && typeof ResizeObserver === "function") {
+            let lastWidth = 0;
+            const observer = new ResizeObserver((entries) => {
+                try {
+                    const entry = entries && entries[0] ? entries[0] : null;
+                    if (!entry)
+                        return;
+                    const width = Math.round(entry.contentRect && entry.contentRect.width ? entry.contentRect.width : 0);
+                    if (!width || width === lastWidth)
+                        return;
+                    lastWidth = width;
+                    stabilizeLayout();
+                }
+                catch (e) { }
+            });
+            observer.observe(resizeTarget);
+            inst.__copilotResizeObserver = observer;
+            scheduleResize(900);
+            scheduleResize(1200);
+            scheduleResize(1500);
+            const disconnectTimer = setTimeout(() => {
+                try {
+                    observer.disconnect();
+                }
+                catch (e) { }
+            }, 1800);
+            resizeTimers.push(disconnectTimer);
+        }
+    }
+    catch (e) { }
+    inst.__copilotResizeTimers = resizeTimers;
     return inst;
 };
 // Attach to window so templates can use <script src="/js/stock-charts.js"></script>
