@@ -2,6 +2,7 @@ package net.luversof.api.stock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -22,6 +23,8 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import net.luversof.api.stock.constant.TradeType;
+import net.luversof.api.stock.domain.Account;
+import net.luversof.api.stock.domain.StockPriceHistory;
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.repository.DailyAccountSnapshotRepository;
 import net.luversof.api.stock.service.AccountService;
@@ -34,23 +37,33 @@ import net.luversof.api.stock.service.strategy.AverageCostProfitCalculator;
 import net.luversof.api.stock.service.strategy.ProfitCalculator;
 import net.luversof.api.stock.web.dto.request.TradeProfitRequest;
 import net.luversof.api.stock.web.dto.request.TradeProfitRequestGroup;
+import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesPoint;
 
 /**
- * Reproduction test for Realized Profit calculation issue. Scenario: Buy in 2025, Sell in 2026.
+ * Reproduction test for Realized Profit calculation issue. Scenario: Buy in
+ * 2025, Sell in 2026.
  * Calculate Profit for 2026.
  */
 @ExtendWith(MockitoExtension.class)
 public class TradeProfitServiceReproductionTest {
 
-  @Mock private AccountService accountService;
-  @Mock private TradeService tradeService;
-  @Mock private StockPriceService stockPriceService;
-  @Spy private ProfitCalculator profitCalculator = new AverageCostProfitCalculator();
-  @Mock private StockItemService stockItemService;
-  @Mock private DividendService dividendService;
-  @Mock private DailyAccountSnapshotRepository dailyAccountSnapshotRepository;
+  @Mock
+  private AccountService accountService;
+  @Mock
+  private TradeService tradeService;
+  @Mock
+  private StockPriceService stockPriceService;
+  @Spy
+  private ProfitCalculator profitCalculator = new AverageCostProfitCalculator();
+  @Mock
+  private StockItemService stockItemService;
+  @Mock
+  private DividendService dividendService;
+  @Mock
+  private DailyAccountSnapshotRepository dailyAccountSnapshotRepository;
 
-  @InjectMocks private TradeProfitService tradeProfitService;
+  @InjectMocks
+  private TradeProfitService tradeProfitService;
 
   @BeforeEach
   void setUp() {
@@ -130,6 +143,108 @@ public class TradeProfitServiceReproductionTest {
     assertThat(p.getRealizedProfitNet()).isEqualByComparingTo(expectedNetProfit);
 
     System.out.println("Realized Profit Net: " + p.getRealizedProfitNet());
+  }
+
+  @Test
+  void aggregateTimeSeriesKeepsRawQuantityForNormalPriceMoves() {
+    UUID userId = UUID.randomUUID();
+    UUID accountId = UUID.randomUUID();
+    UUID stockItemId = UUID.randomUUID();
+
+    stubAggregateTimeSeriesDefaults();
+    when(accountService.findByIdIn(List.of(accountId))).thenReturn(List.of(new Account()));
+    when(tradeService.findByAccountIdIn(List.of(accountId)))
+        .thenReturn(
+            new ArrayList<>(List.of(createTrade(stockItemId, accountId, TradeType.BUY, 10, "100", "2026-05-14"))));
+    when(stockPriceService.getPriceHistory(any(), any(), any()))
+        .thenReturn(
+            List.of(
+                createPriceHistory(stockItemId, LocalDate.of(2026, 5, 14), "98"),
+                createPriceHistory(stockItemId, LocalDate.of(2026, 5, 15), "99")));
+
+    TradeProfitRequest request = createUserAccountRequest(userId, accountId, "2026-05-14", "2026-05-16");
+
+    List<TradeProfitTimeSeriesPoint> series = tradeProfitService.aggregateTimeSeries(request, "DAILY");
+
+    assertThat(series).hasSize(2);
+    assertThat(series.get(0).totalHoldingsValue()).isEqualByComparingTo("980");
+    assertThat(series.get(1).totalHoldingsValue()).isEqualByComparingTo("990");
+  }
+
+  @Test
+  void aggregateTimeSeriesAdjustsQuantityForLikelyStockSplit() {
+    UUID userId = UUID.randomUUID();
+    UUID accountId = UUID.randomUUID();
+    UUID stockItemId = UUID.randomUUID();
+
+    stubAggregateTimeSeriesDefaults();
+    when(accountService.findByIdIn(List.of(accountId))).thenReturn(List.of(new Account()));
+    when(tradeService.findByAccountIdIn(List.of(accountId)))
+        .thenReturn(
+            new ArrayList<>(List.of(createTrade(stockItemId, accountId, TradeType.BUY, 10, "100", "2026-05-14"))));
+    when(stockPriceService.getPriceHistory(any(), any(), any()))
+        .thenReturn(
+            List.of(
+                createPriceHistory(stockItemId, LocalDate.of(2026, 5, 14), "50"),
+                createPriceHistory(stockItemId, LocalDate.of(2026, 5, 15), "60")));
+
+    TradeProfitRequest request = createUserAccountRequest(userId, accountId, "2026-05-14", "2026-05-16");
+
+    List<TradeProfitTimeSeriesPoint> series = tradeProfitService.aggregateTimeSeries(request, "DAILY");
+
+    assertThat(series).hasSize(2);
+    assertThat(series.get(0).totalHoldingsValue()).isEqualByComparingTo("1000");
+    assertThat(series.get(1).totalHoldingsValue()).isEqualByComparingTo("1200");
+  }
+
+  private void stubAggregateTimeSeriesDefaults() {
+    when(dividendService.findDividends(any())).thenReturn(Collections.emptyList());
+    when(dailyAccountSnapshotRepository.findTopByAccountIdAndDateLessThanOrderByDateDesc(any(), any()))
+        .thenReturn(null);
+    when(dailyAccountSnapshotRepository.findDatesByAccountIdAndDateBetween(any(), any(), any()))
+        .thenReturn(Collections.emptyList());
+  }
+
+  private TradeProfitRequest createUserAccountRequest(
+      UUID userId, UUID accountId, String startDate, String endDateExclusive) {
+    TradeProfitRequest request = new TradeProfitRequest();
+    request.setUserId(userId);
+    request.setAccountIdList(List.of(accountId));
+    request.setStartDate(LocalDate.parse(startDate).atStartOfDay(ZoneId.of("Asia/Seoul")).toInstant());
+    request.setEndDate(
+        LocalDate.parse(endDateExclusive).atStartOfDay(ZoneId.of("Asia/Seoul")).toInstant());
+    request.setGroupBy(TradeProfitRequestGroup.STOCKITEM);
+    return request;
+  }
+
+  private Trade createTrade(
+      UUID stockItemId,
+      UUID accountId,
+      TradeType type,
+      int quantity,
+      String price,
+      String tradeDate) {
+    Trade trade = new Trade();
+    setField(trade, "stockItemId", stockItemId);
+    setField(trade, "accountId", accountId);
+    setField(trade, "type", type);
+    setField(trade, "quantity", quantity);
+    setField(trade, "price", new BigDecimal(price));
+    setField(trade, "fee", BigDecimal.ZERO);
+    setField(trade, "tax", BigDecimal.ZERO);
+    setField(
+        trade,
+        "tradeDate",
+        LocalDate.parse(tradeDate).atStartOfDay(ZoneId.of("Asia/Seoul")).toInstant());
+    return trade;
+  }
+
+  private StockPriceHistory createPriceHistory(UUID stockItemId, LocalDate tradeDate, String closePrice) {
+    StockPriceHistory history = new StockPriceHistory();
+    history.setStockItemId(stockItemId);
+    history.setTradeDate(tradeDate);
+    history.setClosePrice(new BigDecimal(closePrice));
+    return history;
   }
 
   private void setField(Object obj, String fieldName, Object value) {

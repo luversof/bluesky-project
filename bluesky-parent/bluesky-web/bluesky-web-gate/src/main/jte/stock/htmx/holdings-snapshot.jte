@@ -16,6 +16,7 @@
     String savedDateOnlyLabel = MessageUtil.getMessage("stock.holdings.snapshot.message.saved.dates.only");
     String totalValueLabel = MessageUtil.getMessage("stock.profit.evaluation.amount");
     String totalUnrealizedLabel = MessageUtil.getMessage("stock.profit.unrealized");
+    String principalLabel = MessageUtil.getMessage("stock.label.principal");
     String stockNameLabel = MessageUtil.getMessage("stock.activity.label.stock.name");
     String quantityLabel = MessageUtil.getMessage("common.label.quantity");
     String averageCostLabel = MessageUtil.getMessage("stock.column.average.cost");
@@ -46,6 +47,11 @@
             </div>
         @else
             !{
+                BigDecimal totalPrincipal = holdings.stream()
+                    .map(item -> item.avgCost() != null && item.quantity() != null && item.quantity().compareTo(BigDecimal.ZERO) > 0
+                        ? item.avgCost().multiply(item.quantity())
+                        : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
                 BigDecimal totalValue = holdings.stream()
                     .map(HoldingsSnapshotItem::value)
                     .filter(v -> v != null)
@@ -56,12 +62,16 @@
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
                 boolean totalPositive = totalUnrealized.compareTo(BigDecimal.ZERO) >= 0;
             }
-            <div class="flex gap-4 mb-3 text-sm">
-                <div class="stat bg-base-200 rounded-box py-2 px-4 flex-1">
+            <div class="grid gap-4 mb-3 text-sm md:grid-cols-3">
+                <div class="stat bg-base-200 rounded-box py-2 px-4">
+                    <div class="stat-title text-xs">${principalLabel}</div>
+                    <div class="stat-value text-base amount-value">&#x20A9;${String.format("%,d", totalPrincipal.longValue())}</div>
+                </div>
+                <div class="stat bg-base-200 rounded-box py-2 px-4">
                     <div class="stat-title text-xs">${totalValueLabel}</div>
                     <div class="stat-value text-base amount-value">&#x20A9;${String.format("%,d", totalValue.longValue())}</div>
                 </div>
-                <div class="stat bg-base-200 rounded-box py-2 px-4 flex-1">
+                <div class="stat bg-base-200 rounded-box py-2 px-4">
                     <div class="stat-title text-xs">${totalUnrealizedLabel}</div>
                     <div class="stat-value text-base amount-value ${totalPositive ? "text-red-500" : "text-blue-500"}">
                         ${totalPositive ? "+" : ""}&#x20A9;${String.format("%,d", totalUnrealized.longValue())}
@@ -75,6 +85,7 @@
                             <th>${stockNameLabel}</th>
                             <th class="text-right">${quantityLabel}</th>
                             <th class="text-right">${averageCostLabel}</th>
+                            <th class="text-right">${principalLabel}</th>
                             <th class="text-right">${referencePriceLabel}</th>
                             <th class="text-right">${evaluationAmountLabel}</th>
                             <th class="text-right">${evaluationProfitLabel}</th>
@@ -107,6 +118,7 @@
                             </td>
                             <td class="text-right amount-value">${qtyDisplay}</td>
                             <td class="text-right amount-value">${item.avgCost() != null ? "₩" + String.format("%,d", item.avgCost().longValue()) : "-"}</td>
+                            <td class="text-right amount-value">${cost.compareTo(BigDecimal.ZERO) > 0 ? "₩" + String.format("%,d", cost.longValue()) : "-"}</td>
                             <td class="text-right amount-value">${item.priceAtDate() != null ? "₩" + String.format("%,d", item.priceAtDate().longValue()) : "-"}</td>
                             <td class="text-right font-medium amount-value">${item.value() != null ? "₩" + String.format("%,d", item.value().longValue()) : "-"}</td>
                             <td class="text-right font-medium ${colorClass} amount-value">

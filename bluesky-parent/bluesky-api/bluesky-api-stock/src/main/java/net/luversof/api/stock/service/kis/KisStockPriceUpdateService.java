@@ -36,17 +36,23 @@ import net.luversof.api.stock.service.kis.dto.KisDailyPriceResponse;
 @Service
 public class KisStockPriceUpdateService {
 
-  @Autowired private DailyAccountSnapshotRepository dailyAccountSnapshotRepository;
+  @Autowired
+  private DailyAccountSnapshotRepository dailyAccountSnapshotRepository;
 
-  @Autowired private DividendRepository dividendRepository;
+  @Autowired
+  private DividendRepository dividendRepository;
 
-  @Autowired private TradeRepository tradeRepository;
+  @Autowired
+  private TradeRepository tradeRepository;
 
-  @Autowired private StockItemRepository stockItemRepository;
+  @Autowired
+  private StockItemRepository stockItemRepository;
 
-  @Autowired private StockPriceHistoryRepository stockPriceHistoryRepository;
+  @Autowired
+  private StockPriceHistoryRepository stockPriceHistoryRepository;
 
-  @Autowired private KisAuthService kisAuthService;
+  @Autowired
+  private KisAuthService kisAuthService;
 
   private final RestTemplate restTemplate = new RestTemplate();
 
@@ -57,22 +63,20 @@ public class KisStockPriceUpdateService {
     ZoneId zoneId = ZoneId.systemDefault();
 
     for (StockItemDateRange range : dividendRepository.findDividendDateRanges()) {
-      if (range.stockItemId() == null) continue;
-      LocalDate minDate =
-          range.minDate() != null ? range.minDate().atZone(zoneId).toLocalDate() : null;
-      LocalDate maxDate =
-          range.maxDate() != null ? range.maxDate().atZone(zoneId).toLocalDate() : null;
+      if (range.stockItemId() == null)
+        continue;
+      LocalDate minDate = range.minDate() != null ? range.minDate().atZone(zoneId).toLocalDate() : null;
+      LocalDate maxDate = range.maxDate() != null ? range.maxDate().atZone(zoneId).toLocalDate() : null;
 
       updateMinMaxMap(
           stockItemMinDateMap, stockItemMaxDateMap, range.stockItemId(), minDate, maxDate);
     }
 
     for (StockItemDateRange range : tradeRepository.findTradeDateRanges()) {
-      if (range.stockItemId() == null) continue;
-      LocalDate minDate =
-          range.minDate() != null ? range.minDate().atZone(zoneId).toLocalDate() : null;
-      LocalDate maxDate =
-          range.maxDate() != null ? range.maxDate().atZone(zoneId).toLocalDate() : null;
+      if (range.stockItemId() == null)
+        continue;
+      LocalDate minDate = range.minDate() != null ? range.minDate().atZone(zoneId).toLocalDate() : null;
+      LocalDate maxDate = range.maxDate() != null ? range.maxDate().atZone(zoneId).toLocalDate() : null;
 
       updateMinMaxMap(
           stockItemMinDateMap, stockItemMaxDateMap, range.stockItemId(), minDate, maxDate);
@@ -81,8 +85,8 @@ public class KisStockPriceUpdateService {
     LocalDate today = LocalDate.now(zoneId);
 
     // 현재 보유 중인 종목 ID 집합 (net quantity > 0)
-    java.util.Set<UUID> currentlyHeldStockItemIds =
-        new java.util.HashSet<>(tradeRepository.findCurrentlyHeldStockItemIds());
+    java.util.Set<UUID> currentlyHeldStockItemIds = new java.util.HashSet<>(
+        tradeRepository.findCurrentlyHeldStockItemIds());
 
     // Trade 또는 Dividend 이력이 있는 종목만 갱신 대상
     java.util.Set<UUID> targetStockItemIds = new java.util.HashSet<>();
@@ -93,17 +97,16 @@ public class KisStockPriceUpdateService {
     for (UUID id : targetStockItemIds) {
       stockItemRepository.findById(id).ifPresent(stockItemsAssigned::add);
     }
-    Map<UUID, StockItem> stockItemMap =
-        stockItemsAssigned.stream().collect(Collectors.toMap(StockItem::getId, item -> item));
+    Map<UUID, StockItem> stockItemMap = stockItemsAssigned.stream()
+        .collect(Collectors.toMap(StockItem::getId, item -> item));
 
     for (StockItem stockItem : stockItemsAssigned) {
       UUID stockItemId = stockItem.getId();
       LocalDate minDate = stockItemMinDateMap.getOrDefault(stockItemId, today);
       // 현재 보유 중이면 오늘까지, 더 이상 보유하지 않으면 마지막 거래/배당 날짜까지만 갱신
-      LocalDate maxDate =
-          currentlyHeldStockItemIds.contains(stockItemId)
-              ? today
-              : stockItemMaxDateMap.getOrDefault(stockItemId, today);
+      LocalDate maxDate = currentlyHeldStockItemIds.contains(stockItemId)
+          ? today
+          : stockItemMaxDateMap.getOrDefault(stockItemId, today);
 
       if (stockItem.getSymbol() == null
           || (!"KRX".equalsIgnoreCase(stockItem.getMarket())
@@ -112,10 +115,10 @@ public class KisStockPriceUpdateService {
         continue;
       }
 
-      Optional<StockPriceHistory> topAsc =
-          stockPriceHistoryRepository.findTopByStockItemIdOrderByTradeDateAsc(stockItemId);
-      Optional<StockPriceHistory> topDesc =
-          stockPriceHistoryRepository.findTopByStockItemIdOrderByTradeDateDesc(stockItemId);
+      Optional<StockPriceHistory> topAsc = stockPriceHistoryRepository
+          .findTopByStockItemIdOrderByTradeDateAsc(stockItemId);
+      Optional<StockPriceHistory> topDesc = stockPriceHistoryRepository
+          .findTopByStockItemIdOrderByTradeDateDesc(stockItemId);
 
       if (topAsc.isPresent() && topDesc.isPresent()) {
         LocalDate dbMin = topAsc.get().getTradeDate();
@@ -129,11 +132,32 @@ public class KisStockPriceUpdateService {
         // dbMax 이후 오늘까지 업데이트 해야할 최신 데이터가 있는 경우
         if (maxDate.isAfter(dbMax)) {
           fetchRangesInBlocks(stockItemId, stockItem.getSymbol(), dbMax.plusDays(1), maxDate);
+        } else if (shouldRefreshLatestTradeDate(topDesc.get(), maxDate, zoneId)) {
+          // When the latest stored row was updated on the same local trade date,
+          // it may have been collected intraday before the final close settled.
+          // Re-fetch that last stored day itself; otherwise the same-day refresh
+          // path never runs because the range starts at dbMax + 1.
+          fetchRangesInBlocks(stockItemId, stockItem.getSymbol(), dbMax, maxDate);
         }
       } else {
         fetchRangesInBlocks(stockItemId, stockItem.getSymbol(), minDate, maxDate);
       }
     }
+  }
+
+  private boolean shouldRefreshLatestTradeDate(
+      StockPriceHistory latestHistory, LocalDate maxDate, ZoneId zoneId) {
+    if (latestHistory == null || latestHistory.getTradeDate() == null || maxDate == null) {
+      return false;
+    }
+    if (!maxDate.equals(latestHistory.getTradeDate())) {
+      return false;
+    }
+    if (latestHistory.getUpdatedDate() == null) {
+      return true;
+    }
+    LocalDate updatedLocalDate = latestHistory.getUpdatedDate().atZone(zoneId).toLocalDate();
+    return updatedLocalDate.equals(maxDate);
   }
 
   private void fetchRangesInBlocks(
@@ -172,14 +196,18 @@ public class KisStockPriceUpdateService {
   }
 
   private LocalDate getMin(LocalDate d1, LocalDate d2) {
-    if (d1 == null) return d2;
-    if (d2 == null) return d1;
+    if (d1 == null)
+      return d2;
+    if (d2 == null)
+      return d1;
     return d1.isBefore(d2) ? d1 : d2;
   }
 
   private LocalDate getMax(LocalDate d1, LocalDate d2) {
-    if (d1 == null) return d2;
-    if (d2 == null) return d1;
+    if (d1 == null)
+      return d2;
+    if (d2 == null)
+      return d1;
     return d1.isAfter(d2) ? d1 : d2;
   }
 
@@ -204,21 +232,20 @@ public class KisStockPriceUpdateService {
 
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
 
-    String url =
-        UriComponentsBuilder.fromUriString(baseUrl + path)
-            .queryParam("FID_COND_MRKT_DIV_CODE", "J")
-            .queryParam("FID_INPUT_ISCD", symbol)
-            .queryParam("FID_INPUT_DATE_1", startDate.format(formatter))
-            .queryParam("FID_INPUT_DATE_2", endDate.format(formatter))
-            .queryParam("FID_PERIOD_DIV_CODE", "D")
-            .queryParam("FID_ORG_ADJ_PRC", "0")
-            .build()
-            .toUriString();
+    String url = UriComponentsBuilder.fromUriString(baseUrl + path)
+        .queryParam("FID_COND_MRKT_DIV_CODE", "J")
+        .queryParam("FID_INPUT_ISCD", symbol)
+        .queryParam("FID_INPUT_DATE_1", startDate.format(formatter))
+        .queryParam("FID_INPUT_DATE_2", endDate.format(formatter))
+        .queryParam("FID_PERIOD_DIV_CODE", "D")
+        .queryParam("FID_ORG_ADJ_PRC", "0")
+        .build()
+        .toUriString();
 
     try {
       HttpEntity<?> entity = new HttpEntity<>(headers);
-      ResponseEntity<KisDailyPriceResponse> response =
-          restTemplate.exchange(url, HttpMethod.GET, entity, KisDailyPriceResponse.class);
+      ResponseEntity<KisDailyPriceResponse> response = restTemplate.exchange(url, HttpMethod.GET, entity,
+          KisDailyPriceResponse.class);
 
       if (response.getBody() == null || response.getBody().getOutput2() == null) {
         return;
@@ -226,15 +253,15 @@ public class KisStockPriceUpdateService {
 
       List<KisDailyPriceItem> items = response.getBody().getOutput2();
 
-      List<StockPriceHistory> existingHistories =
-          stockPriceHistoryRepository.findByStockItemIdAndTradeDateBetween(
-              stockItemId, startDate, endDate);
-      Map<LocalDate, StockPriceHistory> existingHistoryMap =
-          existingHistories.stream()
-              .collect(Collectors.toMap(StockPriceHistory::getTradeDate, h -> h));
+      List<StockPriceHistory> existingHistories = stockPriceHistoryRepository.findByStockItemIdAndTradeDateBetween(
+          stockItemId, startDate, endDate);
+      Map<LocalDate, StockPriceHistory> existingHistoryMap = existingHistories.stream()
+          .collect(Collectors.toMap(StockPriceHistory::getTradeDate, h -> h));
 
       List<StockPriceHistory> newHistories = new ArrayList<>();
       ZoneId zoneId = ZoneId.systemDefault();
+      LocalDate snapshotInvalidationFromDate = null;
+      boolean priceAdjustmentDetected = false;
 
       for (KisDailyPriceItem item : items) {
         if (item.getStck_bsop_date() == null || item.getStck_bsop_date().isEmpty()) {
@@ -264,7 +291,20 @@ public class KisStockPriceUpdateService {
         }
 
         if (shouldSave) {
+          BigDecimal newOpen = new BigDecimal(item.getStck_oprc());
+          BigDecimal newHigh = new BigDecimal(item.getStck_hgpr());
+          BigDecimal newLow = new BigDecimal(item.getStck_lwpr());
           BigDecimal newClose = new BigDecimal(item.getStck_clpr());
+          long newVolume = Long.parseLong(item.getAcml_vol());
+
+          boolean shouldInvalidateSnapshots = history.getId() == null;
+          if (!shouldInvalidateSnapshots) {
+            shouldInvalidateSnapshots = hasMeaningfulHistoryChange(history, newOpen, newHigh, newLow, newClose,
+                newVolume);
+          }
+          if (shouldInvalidateSnapshots) {
+            snapshotInvalidationFromDate = getMin(snapshotInvalidationFromDate, tradeDate);
+          }
 
           // 수정주가 재조정 감지: 기존 종가와 신규 종가 차이가 2% 초과이고,
           // 오늘 날짜(장중 업데이트)가 아닌 과거 날짜인 경우 → 분할/합병 등 이벤트로 판단
@@ -273,45 +313,20 @@ public class KisStockPriceUpdateService {
               && !tradeDate.isEqual(LocalDate.now(zoneId))) {
             BigDecimal oldClose = history.getClosePrice();
             // 변동률 = |신규 - 기존| / 기존
-            java.math.BigDecimal changeRatio =
-                newClose
-                    .subtract(oldClose)
-                    .abs()
-                    .divide(oldClose, 6, java.math.RoundingMode.HALF_UP);
+            java.math.BigDecimal changeRatio = newClose
+                .subtract(oldClose)
+                .abs()
+                .divide(oldClose, 6, java.math.RoundingMode.HALF_UP);
             if (changeRatio.compareTo(new java.math.BigDecimal("0.02")) > 0) {
-              // 수정주가 재조정 감지 → 이 stockItem이 포함된 스냅샷 전체 무효화
-              try {
-                dailyAccountSnapshotRepository.deleteByWmaStateContainingStockItemId(
-                    stockItemId.toString());
-                System.out.println(
-                    "Invalidated DailyAccountSnapshots for stockItemId "
-                        + stockItemId
-                        + " due to price adjustment on "
-                        + tradeDate
-                        + " (old="
-                        + oldClose
-                        + ", new="
-                        + newClose
-                        + ", change="
-                        + changeRatio
-                            .multiply(java.math.BigDecimal.valueOf(100))
-                            .setScale(2, java.math.RoundingMode.HALF_UP)
-                        + "%)");
-              } catch (Exception ex) {
-                System.out.println(
-                    "Failed to invalidate snapshots for stockItemId "
-                        + stockItemId
-                        + ": "
-                        + ex.getMessage());
-              }
+              priceAdjustmentDetected = true;
             }
           }
 
-          history.setOpenPrice(new BigDecimal(item.getStck_oprc()));
-          history.setHighPrice(new BigDecimal(item.getStck_hgpr()));
-          history.setLowPrice(new BigDecimal(item.getStck_lwpr()));
+          history.setOpenPrice(newOpen);
+          history.setHighPrice(newHigh);
+          history.setLowPrice(newLow);
           history.setClosePrice(newClose);
-          history.setVolume(Long.parseLong(item.getAcml_vol()));
+          history.setVolume(newVolume);
 
           newHistories.add(history);
         }
@@ -319,6 +334,8 @@ public class KisStockPriceUpdateService {
 
       if (!newHistories.isEmpty()) {
         stockPriceHistoryRepository.saveAll(newHistories);
+        invalidateSnapshotsFromChangedDate(
+            stockItemId, snapshotInvalidationFromDate, priceAdjustmentDetected);
       }
     } catch (Exception e) {
       System.out.println(
@@ -330,6 +347,58 @@ public class KisStockPriceUpdateService {
               + endDate
               + ": "
               + e.getMessage());
+    }
+  }
+
+  private boolean hasMeaningfulHistoryChange(
+      StockPriceHistory history,
+      BigDecimal newOpen,
+      BigDecimal newHigh,
+      BigDecimal newLow,
+      BigDecimal newClose,
+      long newVolume) {
+    return history.getOpenPrice() == null
+        || history.getHighPrice() == null
+        || history.getLowPrice() == null
+        || history.getClosePrice() == null
+        || history.getOpenPrice().compareTo(newOpen) != 0
+        || history.getHighPrice().compareTo(newHigh) != 0
+        || history.getLowPrice().compareTo(newLow) != 0
+        || history.getClosePrice().compareTo(newClose) != 0
+        || history.getVolume() != newVolume;
+  }
+
+  private void invalidateSnapshotsFromChangedDate(
+      UUID stockItemId, LocalDate fromDate, boolean priceAdjustmentDetected) {
+    if (fromDate == null) {
+      return;
+    }
+    try {
+      dailyAccountSnapshotRepository.deleteByWmaStateContainingStockItemIdAndDateGreaterThanEqual(
+          stockItemId.toString(), fromDate);
+      if (priceAdjustmentDetected) {
+        System.out.println(
+            "Invalidated DailyAccountSnapshots for stockItemId "
+                + stockItemId
+                + " from "
+                + fromDate
+                + " due to price adjustment or corrected history.");
+      } else {
+        System.out.println(
+            "Invalidated DailyAccountSnapshots for stockItemId "
+                + stockItemId
+                + " from "
+                + fromDate
+                + " due to inserted/updated price history.");
+      }
+    } catch (Exception ex) {
+      System.out.println(
+          "Failed to invalidate snapshots for stockItemId "
+              + stockItemId
+              + " from "
+              + fromDate
+              + ": "
+              + ex.getMessage());
     }
   }
 }
