@@ -236,6 +236,7 @@
             var periodReturnAbortController = null;
             var loadedPeriodReturnKey = '';
             var requestedPeriodReturnKey = '';
+            var zoomOutLockRange = null;
 
             // 기간 표시 업데이트
             var updateRangeDisplay = function(startStr, endStr) {
@@ -315,6 +316,7 @@
             // calls the callback with a mode value. If mode==='all' or both
             // start/end are empty, treat as '전체' and apply baseData immediately.
             var applyRangeToChart = function(startStr, endStr, mode) {
+                zoomOutLockRange = null;
                 try {
                     if ((mode === 'all') || (!startStr && !endStr)) {
                         if (baseData && baseData.labels && baseData.labels.length > 0) {
@@ -324,6 +326,7 @@
                             var rawStart = (typeof df !== 'undefined' && df) ? df : baseData.labels[0];
                             startStr = rawStart;
                             endStr = baseData.labels[baseData.labels.length - 1];
+                            zoomOutLockRange = { start: startStr, end: endStr };
                             try { applyChartData(baseData, startStr, endStr); currentTierNum = baseDataTierNum; } catch (e) {}
                             updateRangeDisplay(startStr, endStr);
                             // mark that caller explicitly requested full-range; bypass
@@ -566,10 +569,9 @@
                 mainChart.options.scales.x.max = newMax;
                 // DETAIL 데이터 교체 시 zoom limits 를 새 데이터 범위로 맞춤
                 // BASE 복원 시에도 항상 0 ~ todayMaxIdx 로 갱신 (미래 날짜 차단)
-                var newLabelLen = labels.length;
-                var newTodayMaxIdx = getTodayMaxIdx();
-                mainChart.options.plugins.zoom.limits.x.min = 0;
-                mainChart.options.plugins.zoom.limits.x.max = newLabelLen > 0 ? newTodayMaxIdx : 0;
+                var zoomBounds = resolveZoomLimitBounds();
+                mainChart.options.plugins.zoom.limits.x.min = zoomBounds.min;
+                mainChart.options.plugins.zoom.limits.x.max = zoomBounds.max;
 
                 dividendChart.data.labels = labels;
                 dividendChart.data.datasets[0].data = cumulativeRealizedProfitData.slice();
@@ -578,8 +580,8 @@
                 });
                 dividendChart.options.scales.x.min = newMin;
                 dividendChart.options.scales.x.max = newMax;
-                dividendChart.options.plugins.zoom.limits.x.min = 0;
-                dividendChart.options.plugins.zoom.limits.x.max = newLabelLen > 0 ? newTodayMaxIdx : 0;
+                dividendChart.options.plugins.zoom.limits.x.min = zoomBounds.min;
+                dividendChart.options.plugins.zoom.limits.x.max = zoomBounds.max;
 
                 mainChart.update('none');
                 dividendChart.update('none');
@@ -928,6 +930,36 @@
 
             var mainChart, dividendChart;
 
+            var resolveZoomLimitBounds = function() {
+                if (!labels || labels.length === 0) {
+                    return { min: 0, max: 0 };
+                }
+
+                var minBound = 0;
+                var maxBound = getTodayMaxIdx();
+
+                if (zoomOutLockRange && zoomOutLockRange.start && zoomOutLockRange.end) {
+                    for (var leftIdx = 0; leftIdx < labels.length; leftIdx++) {
+                        if (labels[leftIdx] >= zoomOutLockRange.start) {
+                            minBound = leftIdx;
+                            break;
+                        }
+                    }
+                    for (var rightIdx = Math.min(maxBound, labels.length - 1); rightIdx >= minBound; rightIdx--) {
+                        if (labels[rightIdx] <= zoomOutLockRange.end) {
+                            maxBound = rightIdx;
+                            break;
+                        }
+                    }
+                    if (maxBound < minBound) {
+                        minBound = 0;
+                        maxBound = getTodayMaxIdx();
+                    }
+                }
+
+                return { min: minBound, max: maxBound };
+            };
+
             var checkNavButtons = function() {
                 if (!mainChart) return;
                 var xAxis = mainChart.scales.x;
@@ -1205,7 +1237,7 @@
                             borderDash: [5, 5],
                             fill: false,
                             yAxisID: 'y',
-                            order: 1
+                            order: 0
                         },
                         {
                             type: 'line',
@@ -1219,7 +1251,7 @@
                                 below: 'rgba(54, 162, 235, 0.25)'
                             },
                             yAxisID: 'y',
-                            order: 0
+                            order: 1
                         },
 
                     ]
@@ -1241,8 +1273,23 @@
                         intersect: false
                     },
                     plugins: {
+                        legend: {
+                            labels: {
+                                sort: function(a, b) {
+                                    return a.datasetIndex - b.datasetIndex;
+                                }
+                            }
+                        },
                         zoom: commonZoomOptions,
                         tooltip: {
+                            itemSort: function(a, b) {
+                                var aValue = a && a.parsed ? parseFloat(a.parsed.y) : 0;
+                                var bValue = b && b.parsed ? parseFloat(b.parsed.y) : 0;
+                                if (aValue === bValue) {
+                                    return a.datasetIndex - b.datasetIndex;
+                                }
+                                return bValue - aValue;
+                            },
                             callbacks: {
                                 label: function(context) {
                                     var label = context.dataset.label || '';
@@ -1261,7 +1308,10 @@
                                     var cost = parseFloat(totalCostData[idx]);
                                     var diff = value - cost;
                                     var pct = cost !== 0 ? ((diff / cost) * 100) : 0;
-                                    var lines = ['─────────────────', '${unrealizedProfitLabel}: ' + formatSignedCurrency(diff) + ' (' + formatSignedPercent(pct) + ')']; 
+                                    var lines = [
+                                        '─────────────────',
+                                        '${unrealizedProfitLabel}: ' + formatSignedCurrency(diff) + ' (' + formatSignedPercent(pct) + ')'
+                                    ];
                                     if (tradeCountData[idx] > 0) {
                                         var drp = parseFloat(dailyRealizedProfitData[idx]);
                                         lines.push('─────────────────');
@@ -1519,13 +1569,22 @@
                 var currentMax = xAxis.max;
                 var currentRange = currentMax - currentMin;
                 var limits = chart.options.plugins.zoom.limits.x;
-                var maxRange = Math.min(limits.max, getTodayMaxIdx());
+                var minBound = typeof limits.min === 'number' ? limits.min : 0;
+                var maxBound = typeof limits.max === 'number' ? Math.min(limits.max, getTodayMaxIdx()) : getTodayMaxIdx();
+                if (maxBound < minBound) {
+                    minBound = 0;
+                    maxBound = getTodayMaxIdx();
+                }
                 var minRange = limits.minRange || 9;
+                var maxRange = Math.max(minRange, maxBound - minBound);
                 // deltaY > 0: 축소, < 0: 확대
                 var speed = 0.15;
                 var zoomFactor = event.deltaY > 0 ? (1 + speed) : (1 - speed);
                 var newRange = currentRange * zoomFactor;
                 newRange = Math.max(minRange, Math.min(maxRange, newRange));
+                if (event.deltaY > 0 && currentMin <= minBound && currentMax >= maxBound) {
+                    return;
+                }
                 // 마우스가 위치한 데이터 인덱스를 구해서 새 뷰의 중앙으로 배치
                 var rect = chart.canvas.getBoundingClientRect();
                 var mouseX = event.clientX - rect.left;
@@ -1534,8 +1593,8 @@
                 var newMin = mouseIndex - newRange / 2;
                 var newMax = mouseIndex + newRange / 2;
                 // 경계 보정
-                if (newMin < 0) { newMax = Math.min(maxRange, newMax - newMin); newMin = 0; }
-                if (newMax > maxRange) { newMin = Math.max(0, newMin - (newMax - maxRange)); newMax = maxRange; }
+                if (newMin < minBound) { newMax = Math.min(maxBound, newMax + (minBound - newMin)); newMin = minBound; }
+                if (newMax > maxBound) { newMin = Math.max(minBound, newMin - (newMax - maxBound)); newMax = maxBound; }
                 chart.options.scales.x.min = newMin;
                 chart.options.scales.x.max = newMax;
                 chart.update('none');
