@@ -147,6 +147,15 @@ public class StockViewController {
   }
 
   @BlueskyPreAuthorize
+  @GetMapping("/simulator")
+  public String simulatorPage(HttpServletRequest request, Model model) {
+    if (isNotAuthenticated()) {
+      return getLoginRedirectUrl(request);
+    }
+    return "stock/simulator";
+  }
+
+  @BlueskyPreAuthorize
   @GetMapping("/admin")
   public String adminPage(HttpServletRequest request, Model model) {
     if (isNotAuthenticated()) {
