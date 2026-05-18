@@ -452,6 +452,7 @@
                                     <th class="text-right">${grossAmountLabel}</th>
                                     <th class="text-right">${netAmountLabel}</th>
                                     <th class="text-right">${taxLabel}</th>
+                                    <th class="text-right">${taxableAmountLabel}</th>
                                     <th class="text-right">${dailyAverageInvestedCapitalLabel}</th>
                                     <th class="text-right">${yieldOnDailyAverageCostLabel}</th>
                                     <th class="text-right hidden xl:table-cell">${basisAverageInvestedCapitalLabel}</th>
@@ -467,6 +468,7 @@
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
                                         <td class="text-right amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
+                                        <td class="text-right amount-value">${decimalFormat.format(row.totalTaxableAmount())}</td>
                                         <td class="text-right amount-value">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}</td>
                                         <td class="text-right text-dividend font-medium">${percentFormat.apply(row.yieldOnDailyAverageCostPct())}</td>
                                         <td class="text-right hidden xl:table-cell amount-value">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}</td>
@@ -495,6 +497,7 @@
                                     <th class="text-right">${grossAmountLabel}</th>
                                     <th class="text-right">${netAmountLabel}</th>
                                     <th class="text-right">${taxLabel}</th>
+                                    <th class="text-right">${taxableAmountLabel}</th>
                                     <th class="text-right">${dailyAverageInvestedCapitalLabel}</th>
                                     <th class="text-right">${yieldOnDailyAverageCostLabel}</th>
                                     <th class="text-right hidden xl:table-cell">${basisAverageInvestedCapitalLabel}</th>
@@ -511,6 +514,7 @@
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
                                         <td class="text-right amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
+                                        <td class="text-right amount-value">${decimalFormat.format(row.totalTaxableAmount())}</td>
                                         <td class="text-right amount-value">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}</td>
                                         <td class="text-right text-dividend font-medium">${percentFormat.apply(row.yieldOnDailyAverageCostPct())}</td>
                                         <td class="text-right hidden xl:table-cell amount-value">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}</td>
@@ -540,6 +544,7 @@
                                     <th class="text-right">${grossAmountLabel}</th>
                                     <th class="text-right">${netAmountLabel}</th>
                                     <th class="text-right">${taxLabel}</th>
+                                    <th class="text-right">${taxableAmountLabel}</th>
                                     <th class="text-right">${dailyAverageInvestedCapitalLabel}</th>
                                     <th class="text-right">${yieldOnDailyAverageCostLabel}</th>
                                     <th class="text-right hidden xl:table-cell">${basisAverageInvestedCapitalLabel}</th>
@@ -556,6 +561,7 @@
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
                                         <td class="text-right amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
+                                        <td class="text-right amount-value">${decimalFormat.format(row.totalTaxableAmount())}</td>
                                         <td class="text-right amount-value">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}</td>
                                         <td class="text-right text-dividend font-medium">${percentFormat.apply(row.yieldOnDailyAverageCostPct())}</td>
                                         <td class="text-right hidden xl:table-cell amount-value">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}</td>

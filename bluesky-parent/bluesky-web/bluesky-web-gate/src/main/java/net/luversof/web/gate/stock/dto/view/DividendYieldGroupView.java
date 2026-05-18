@@ -7,6 +7,7 @@ public record DividendYieldGroupView(
     String label,
     BigDecimal totalGrossAmount,
     BigDecimal totalNetAmount,
+    BigDecimal totalTaxableAmount,
     BigDecimal averageDailyPrincipalCost,
     BigDecimal averagePrincipalCost,
     BigDecimal averagePrincipalMarketValue,

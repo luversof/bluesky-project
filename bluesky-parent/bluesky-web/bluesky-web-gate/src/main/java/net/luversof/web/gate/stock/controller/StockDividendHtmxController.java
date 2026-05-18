@@ -984,6 +984,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     private final long periodDayCount;
     private BigDecimal totalGrossAmount = BigDecimal.ZERO;
     private BigDecimal totalNetAmount = BigDecimal.ZERO;
+    private BigDecimal totalTaxableAmount = BigDecimal.ZERO;
     private BigDecimal dailyPrincipalCostSum = BigDecimal.ZERO;
     private final Map<PositionKey, PrincipalAccumulator> principalByPosition =
         new LinkedHashMap<>();
@@ -998,6 +999,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     private void accept(DividendView dividend) {
       totalGrossAmount = totalGrossAmount.add(nz(dividend.grossAmount()));
       totalNetAmount = totalNetAmount.add(nz(dividend.netAmount()));
+      totalTaxableAmount = totalTaxableAmount.add(nz(dividend.taxableAmount()));
       dividendCount++;
 
       if (dividend.accountId() != null && dividend.stockItemId() != null) {
@@ -1067,6 +1069,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
           label,
           totalGrossAmount,
           totalNetAmount,
+          totalTaxableAmount,
           averageDailyPrincipalCost,
           averagePrincipalCost,
           averagePrincipalMarketValue,
