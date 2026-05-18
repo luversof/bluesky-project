@@ -47,22 +47,22 @@
 					emptyTable: '${MessageUtil.getMessage("stock.simulator.empty.no.table")}',
 					deleteConfirm: '${MessageUtil.getMessage("stock.simulator.dialog.delete.confirm")}',
 					maxScenarios: '${MessageUtil.getMessage("stock.simulator.alert.max.scenarios")}',
-					summaryFinalWealth: '${MessageUtil.getMessage("stock.simulator.summary.final.wealth")}',
-					summaryAnnualDividend: '${MessageUtil.getMessage("stock.simulator.summary.annual.dividend")}',
-					summaryCumulativeDividend: '${MessageUtil.getMessage("stock.simulator.summary.cumulative.dividend")}',
+					summarySustainablePeriod: '${MessageUtil.getMessage("stock.simulator.summary.sustainable.period")}',
 					summaryDepletionYear: '${MessageUtil.getMessage("stock.simulator.summary.depletion.year")}',
 					summaryNotDepleted: '${MessageUtil.getMessage("stock.simulator.summary.not.depleted")}',
 					summaryDeficitStart: '${MessageUtil.getMessage("stock.simulator.summary.deficit.start")}',
 					summaryNoDeficit: '${MessageUtil.getMessage("stock.simulator.summary.no.deficit")}',
+					summaryWealthDeclineStart: '${MessageUtil.getMessage("stock.simulator.summary.wealth.decline.start")}',
+					summaryNoWealthDecline: '${MessageUtil.getMessage("stock.simulator.summary.no.wealth.decline")}',
+					summaryCapitalDrawdownStart: '${MessageUtil.getMessage("stock.simulator.summary.capital.drawdown.start")}',
+					summaryNoPrincipalDrawdown: '${MessageUtil.getMessage("stock.simulator.summary.no.capital.drawdown")}',
 					summaryYearsLater: '${MessageUtil.getMessage("stock.simulator.summary.years.later")}',
-					summaryYieldOnCost: '${MessageUtil.getMessage("stock.simulator.summary.yield.on.cost")}',
-					tooltipPrincipalReturn: '${MessageUtil.getMessage("stock.simulator.tooltip.principal.return")}',
-					tableScenario: '${MessageUtil.getMessage("stock.simulator.table.header.scenario")}',
-					tableTotalReturn: '${MessageUtil.getMessage("stock.simulator.table.header.total.return")}',
-					tableFinalWealth: '${MessageUtil.getMessage("stock.simulator.table.header.final.wealth")}',
-					tableFinalAnnualDividend: '${MessageUtil.getMessage("stock.simulator.table.header.final.annual.dividend")}',
-					tableCumulativeDividends: '${MessageUtil.getMessage("stock.simulator.table.header.cumulative.dividends")}',
-					tableShareCount: '${MessageUtil.getMessage("stock.simulator.table.header.share.count")}'
+					summaryYearsOrMore: '${MessageUtil.getMessage("stock.simulator.summary.years.or.more")}',
+					summaryWithinHorizon: '${MessageUtil.getMessage("stock.simulator.summary.within.horizon")}',
+					summaryLatestCoverage: '${MessageUtil.getMessage("stock.simulator.summary.latest.coverage")}',
+					summaryNoSpending: '${MessageUtil.getMessage("stock.simulator.summary.no.spending")}',
+					metricAnnualGap: '${MessageUtil.getMessage("stock.simulator.metric.annual.gap")}',
+					tooltipCoverage: '${MessageUtil.getMessage("stock.simulator.tooltip.coverage")}'
 				};
 			</script>
 
@@ -177,11 +177,12 @@
 									<p class="text-sm leading-6 text-base-content/60">${chartDescription}</p>
 								</div>
 								<div id="stockSimulatorMetricSelector" class="flex flex-wrap gap-2">
-									<button type="button" class="btn btn-sm" data-metric="totalWealth">${MessageUtil.getMessage("stock.simulator.metric.total.wealth")}</button>
+									<button type="button" class="btn btn-sm" data-metric="spendingCoveragePct">${MessageUtil.getMessage("stock.simulator.metric.spending.coverage")}</button>
+									<button type="button" class="btn btn-sm" data-metric="annualGap">${MessageUtil.getMessage("stock.simulator.metric.annual.gap")}</button>
+									<button type="button" class="btn btn-sm" data-metric="cashReserve">${MessageUtil.getMessage("stock.simulator.metric.cash.reserve")}</button>
 									<button type="button" class="btn btn-sm" data-metric="marketValue">${MessageUtil.getMessage("stock.simulator.metric.market.value")}</button>
-									<button type="button" class="btn btn-sm" data-metric="annualDividend">${MessageUtil.getMessage("stock.simulator.metric.annual.dividend")}</button>
-									<button type="button" class="btn btn-sm" data-metric="cumulativeDividends">${MessageUtil.getMessage("stock.simulator.metric.cumulative.dividend")}</button>
 									<button type="button" class="btn btn-sm" data-metric="shareCount">${MessageUtil.getMessage("stock.simulator.metric.share.count")}</button>
+									<button type="button" class="btn btn-sm" data-metric="soldSharesForSpending">${MessageUtil.getMessage("stock.simulator.metric.sold.shares")}</button>
 								</div>
 							</div>
 							<div class="h-96 w-full rounded-2xl bg-base-100 p-2">
@@ -204,11 +205,11 @@
 								<thead>
 									<tr>
 										<th>${MessageUtil.getMessage("stock.simulator.table.header.scenario")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.table.header.total.return")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.table.header.final.wealth")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.table.header.final.annual.dividend")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.table.header.cumulative.dividends")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.table.header.share.count")}</th>
+										<th>${MessageUtil.getMessage("stock.simulator.summary.sustainable.period")}</th>
+										<th>${MessageUtil.getMessage("stock.simulator.summary.deficit.start")}</th>
+										<th>${MessageUtil.getMessage("stock.simulator.summary.capital.drawdown.start")}</th>
+										<th>${MessageUtil.getMessage("stock.simulator.summary.depletion.year")}</th>
+										<th>${MessageUtil.getMessage("stock.simulator.summary.latest.coverage")}</th>
 									</tr>
 								</thead>
 								<tbody id="stockSimulatorCompareTableBody"></tbody>
@@ -242,13 +243,13 @@
 							<thead>
 								<tr>
 									<th>${MessageUtil.getMessage("stock.simulator.table.header.year")}</th>
-									<th>${MessageUtil.getMessage("stock.simulator.table.header.share.price")}</th>
-									<th>${MessageUtil.getMessage("stock.simulator.table.header.shares")}</th>
-									<th>${MessageUtil.getMessage("stock.simulator.table.header.reinvested.shares")}</th>
+										<th>${MessageUtil.getMessage("stock.simulator.table.header.shares")}</th>
 									<th>${MessageUtil.getMessage("stock.simulator.table.header.annual.dividend")}</th>
 									<th>${MessageUtil.getMessage("stock.simulator.table.header.annual.spending")}</th>
-									<th>${MessageUtil.getMessage("stock.simulator.table.header.reinvestable.dividend")}</th>
-									<th>${MessageUtil.getMessage("stock.simulator.table.header.cumulative.dividend")}</th>
+										<th>${MessageUtil.getMessage("stock.simulator.metric.spending.coverage")}</th>
+										<th>${MessageUtil.getMessage("stock.simulator.metric.annual.gap")}</th>
+										<th>${MessageUtil.getMessage("stock.simulator.metric.sold.shares")}</th>
+										<th>${MessageUtil.getMessage("stock.simulator.metric.cash.reserve")}</th>
 									<th>${MessageUtil.getMessage("stock.simulator.table.header.market.value")}</th>
 									<th>${MessageUtil.getMessage("stock.simulator.table.header.total.wealth")}</th>
 								</tr>

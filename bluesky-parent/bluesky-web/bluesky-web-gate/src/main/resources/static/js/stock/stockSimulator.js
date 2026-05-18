@@ -24,11 +24,12 @@
     { border: "#7c3aed", background: "rgba(124, 58, 237, 0.15)" },
   ];
   const METRICS = {
-    totalWealth: "totalWealth",
+    spendingCoveragePct: "spendingCoveragePct",
+    annualGap: "annualGap",
+    cashReserve: "cashReserve",
     marketValue: "marketValue",
-    annualDividend: "annualDividend",
-    cumulativeDividends: "cumulativeDividends",
     shareCount: "shares",
+    soldSharesForSpending: "soldSharesForSpending",
   };
   const i18nOverrides =
     globalThis.stockSimulatorI18n &&
@@ -46,22 +47,22 @@
     emptyTable: "No yearly data is available.",
     deleteConfirm: "Delete the current scenario?",
     maxScenarios: "You can compare up to five scenarios at once.",
-    summaryFinalWealth: "Final Total Wealth",
-    summaryAnnualDividend: "Final Annual Dividend",
-    summaryCumulativeDividend: "Cumulative Dividend",
+    summarySustainablePeriod: "Sustainable Period",
     summaryDepletionYear: "Depletion",
     summaryNotDepleted: "Not Depleted",
     summaryDeficitStart: "Deficit Starts",
     summaryNoDeficit: "No Deficit",
+    summaryWealthDeclineStart: "Total Wealth Decline Starts",
+    summaryNoWealthDecline: "No Wealth Decline",
+    summaryCapitalDrawdownStart: "Principal Drawdown Starts",
+    summaryNoPrincipalDrawdown: "No Principal Drawdown",
     summaryYearsLater: "In {0} years",
-    summaryYieldOnCost: "Yield on Cost",
-    tooltipPrincipalReturn: "Return vs Principal",
-    tableScenario: "Scenario",
-    tableTotalReturn: "Total Return",
-    tableFinalWealth: "Final Total Wealth",
-    tableFinalAnnualDividend: "Final Annual Dividend",
-    tableCumulativeDividends: "Cumulative Dividend",
-    tableShareCount: "Final Shares",
+    summaryYearsOrMore: "{0}+ years",
+    summaryWithinHorizon: "Sustainable within the simulation horizon",
+    summaryLatestCoverage: "Latest Spending Coverage",
+    summaryNoSpending: "No Spending",
+    metricAnnualGap: "Annual Gap",
+    tooltipCoverage: "Coverage",
     ...i18nOverrides,
   };
 
@@ -169,7 +170,7 @@
       version: STORAGE_SCHEMA_VERSION,
       scenarios: [defaultScenario],
       activeScenarioId: defaultScenario.id,
-      metric: "totalWealth",
+      metric: "spendingCoveragePct",
     };
   }
 
@@ -200,7 +201,7 @@
       version: STORAGE_SCHEMA_VERSION,
       scenarios,
       activeScenarioId,
-      metric: METRICS[raw.metric] ? raw.metric : "totalWealth",
+      metric: METRICS[raw.metric] ? raw.metric : "spendingCoveragePct",
     };
   }
 
@@ -478,11 +479,14 @@
     };
     let state = createSimulationState(scenario, principal);
     let firstDeficitYear = null;
+    let firstWealthDeclineYear = null;
+    let firstShareSaleYear = null;
     let depletionYear = null;
 
     const years = [buildInitialSimulationRecord(principal, state)];
 
     for (let year = 1; year <= scenario.years; year += 1) {
+      const previousRecord = years.at(-1);
       const result = simulateYear(
         year,
         state,
@@ -495,6 +499,19 @@
 
       if (firstDeficitYear === null && result.hadDeficit) {
         firstDeficitYear = year;
+      }
+      if (
+        firstWealthDeclineYear === null &&
+        previousRecord &&
+        result.record.totalWealth < previousRecord.totalWealth
+      ) {
+        firstWealthDeclineYear = year;
+      }
+      if (
+        firstShareSaleYear === null &&
+        result.record.soldSharesForSpending > 0
+      ) {
+        firstShareSaleYear = year;
       }
       if (depletionYear === null && result.depleted) {
         depletionYear = year;
@@ -509,17 +526,12 @@
     return {
       records: years,
       summary: {
-        finalWealth: finalYear.totalWealth,
-        finalAnnualDividend: finalYear.annualDividend,
-        cumulativeDividends: finalYear.cumulativeDividends,
-        finalShares: finalYear.shares,
+        sustainableYears: depletionYear || scenario.years,
         firstDeficitYear,
+        firstWealthDeclineYear,
+        firstShareSaleYear,
         depletionYear,
-        totalReturnPct:
-          principal > 0
-            ? ((finalYear.totalWealth - principal) * 100) / principal
-            : 0,
-        yieldOnCostPct: finalYear.yieldOnCostPct,
+        finalSpendingCoveragePct: finalYear.spendingCoveragePct,
       },
     };
   }
@@ -547,6 +559,8 @@
       reinvestedShares: 0,
       annualDividend: 0,
       annualSpending: 0,
+      annualGap: 0,
+      spendingCoveragePct: null,
       netDividendAfterSpending: 0,
       cumulativeDividends: 0,
       cashReserve: state.cashReserve,
@@ -590,6 +604,11 @@
         reinvestedShares: settledCashFlow.reinvestedShares,
         annualDividend,
         annualSpending: plannedAnnualSpending,
+        annualGap: netDividendAfterSpending,
+        spendingCoveragePct:
+          plannedAnnualSpending > 0
+            ? (annualDividend * 100) / plannedAnnualSpending
+            : null,
         netDividendAfterSpending,
         cumulativeDividends,
         cashReserve: settledCashFlow.cashReserve,
@@ -756,12 +775,12 @@
             </div>
             <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
               <div>
-                <p class="text-xs text-base-content/50">${i18n.summaryFinalWealth}</p>
-                <p class="mt-1 font-semibold text-base-content">${summary ? formatCurrency(summary.finalWealth) : "-"}</p>
+                <p class="text-xs text-base-content/50">${i18n.summarySustainablePeriod}</p>
+                <p class="mt-1 font-semibold text-base-content">${summary ? formatSustainablePeriod(summary, scenario.years) : "-"}</p>
               </div>
               <div>
-                <p class="text-xs text-base-content/50">${i18n.summaryAnnualDividend}</p>
-                <p class="mt-1 font-semibold text-base-content">${summary ? formatCurrency(summary.finalAnnualDividend) : "-"}</p>
+                <p class="text-xs text-base-content/50">${i18n.summaryDeficitStart}</p>
+                <p class="mt-1 font-semibold text-base-content">${summary ? formatOptionalYear(summary.firstDeficitYear, i18n.summaryNoDeficit) : "-"}</p>
               </div>
             </div>
           </button>`;
@@ -797,6 +816,7 @@
       ? simulations.get(activeScenario.id)
       : null;
     const summary = simulation ? simulation.summary : null;
+    const finalRecord = simulation?.records?.at(-1);
     if (!summary) {
       elements.summaryCards.innerHTML = "";
       return;
@@ -804,27 +824,43 @@
 
     const cards = [
       {
-        label: i18n.summaryFinalWealth,
-        value: formatCurrency(summary.finalWealth),
+        label: i18n.summarySustainablePeriod,
+        value: formatSustainablePeriod(summary, activeScenario.years),
+        note: summary.depletionYear
+          ? `${i18n.summaryDepletionYear}: ${formatYearOffset(summary.depletionYear)}`
+          : i18n.summaryWithinHorizon,
       },
       {
-        label: i18n.summaryAnnualDividend,
-        value: formatCurrency(summary.finalAnnualDividend),
+        label: i18n.summaryDeficitStart,
+        value: formatOptionalYear(summary.firstDeficitYear, i18n.summaryNoDeficit),
       },
       {
-        label: i18n.summaryCumulativeDividend,
-        value: formatCurrency(summary.cumulativeDividends),
+        label: i18n.summaryWealthDeclineStart,
+        value: formatOptionalYear(
+          summary.firstWealthDeclineYear,
+          i18n.summaryNoWealthDecline,
+        ),
+      },
+      {
+        label: i18n.summaryCapitalDrawdownStart,
+        value: formatOptionalYear(
+          summary.firstShareSaleYear,
+          i18n.summaryNoPrincipalDrawdown,
+        ),
       },
       {
         label: i18n.summaryDepletionYear,
         value: formatDepletionValue(summary.depletionYear),
-        note: summary.firstDeficitYear
-          ? `${i18n.summaryDeficitStart}: ${formatYearOffset(summary.firstDeficitYear)}`
-          : i18n.summaryNoDeficit,
+        note: summary.firstShareSaleYear
+          ? `${i18n.summaryCapitalDrawdownStart}: ${formatYearOffset(summary.firstShareSaleYear)}`
+          : i18n.summaryNoPrincipalDrawdown,
       },
       {
-        label: i18n.summaryYieldOnCost,
-        value: formatPercent(summary.yieldOnCostPct),
+        label: i18n.summaryLatestCoverage,
+        value: formatCoveragePercent(summary.finalSpendingCoveragePct),
+        note: finalRecord
+          ? `${formatCurrency(finalRecord.annualDividend)} / ${formatCurrency(finalRecord.annualSpending)}`
+          : activeScenario.name,
       },
     ];
 
@@ -852,11 +888,11 @@
         return `
           <tr class="${active ? "bg-primary/5" : ""}">
             <td class="font-medium">${escapeHtml(scenario.name)}</td>
-            <td class="${summary.totalReturnPct >= 0 ? "text-success" : "text-error"}">${formatSignedPercent(summary.totalReturnPct)}</td>
-            <td>${formatCurrency(summary.finalWealth)}</td>
-            <td>${formatCurrency(summary.finalAnnualDividend)}</td>
-            <td>${formatCurrency(summary.cumulativeDividends)}</td>
-            <td>${formatShares(summary.finalShares)}</td>
+            <td>${formatSustainablePeriod(summary, scenario.years)}</td>
+            <td>${formatOptionalYear(summary.firstDeficitYear, i18n.summaryNoDeficit)}</td>
+            <td>${formatOptionalYear(summary.firstShareSaleYear, i18n.summaryNoPrincipalDrawdown)}</td>
+            <td>${formatDepletionValue(summary.depletionYear)}</td>
+            <td>${formatCoveragePercent(summary.finalSpendingCoveragePct)}</td>
           </tr>`;
       })
       .join("");
@@ -886,13 +922,13 @@
         (record) => `
           <tr class="${resolveYearlyRowClass(record, firstDeficitYear)}">
             <td class="font-medium">${record.year}</td>
-            <td>${formatCurrency(record.sharePrice)}</td>
             <td>${formatShares(record.shares)}</td>
-            <td>${formatShares(record.reinvestedShares)}</td>
             <td>${formatCurrency(record.annualDividend)}</td>
             <td>${formatCurrency(record.annualSpending)}</td>
-            <td class="${record.netDividendAfterSpending < 0 ? "font-semibold text-red-700" : ""}">${formatCurrency(record.netDividendAfterSpending)}</td>
-            <td>${formatCurrency(record.cumulativeDividends)}</td>
+            <td class="${record.spendingCoveragePct !== null && record.spendingCoveragePct < 100 ? "font-semibold text-amber-700" : ""}">${formatCoveragePercent(record.spendingCoveragePct)}</td>
+            <td class="${record.annualGap < 0 ? "font-semibold text-red-700" : "text-success"}">${formatCurrency(record.annualGap)}</td>
+            <td>${formatShares(record.soldSharesForSpending)}</td>
+            <td>${formatCurrency(record.cashReserve)}</td>
             <td>${formatCurrency(record.marketValue)}</td>
             <td>${formatCurrency(record.totalWealth)}</td>
           </tr>`,
@@ -914,7 +950,8 @@
       0,
     );
     const labels = Array.from({ length: maxYears + 1 }, (_, index) => index);
-    const metricKey = METRICS[state.metric] || METRICS.totalWealth;
+    const metricKey = METRICS[state.metric] || METRICS.spendingCoveragePct;
+    const metricType = resolveMetricType(metricKey);
 
     const datasets = state.scenarios.map((scenario, index) => {
       const records = simulations.get(scenario.id).records;
@@ -935,7 +972,6 @@
       };
     });
 
-    const currencyMetric = metricKey !== "shares";
     if (!chart) {
       chart = new Chart(elements.chartCanvas, {
         type: "line",
@@ -956,15 +992,10 @@
                 label(context) {
                   const value = Number(context.parsed.y || 0);
                   const prefix = `${context.dataset.label}: `;
-                  return (
-                    prefix +
-                    (currencyMetric
-                      ? formatCurrency(value)
-                      : formatShares(value))
-                  );
+                  return prefix + formatMetricValue(value, metricType);
                 },
                 afterLabel(context) {
-                  return buildPrincipalReturnTooltip(context, simulations);
+                  return buildCoverageTooltip(context, simulations);
                 },
               },
             },
@@ -977,12 +1008,10 @@
               },
             },
             y: {
-              min: 0,
+              min: resolveMetricMin(metricKey),
               ticks: {
                 callback(value) {
-                  return currencyMetric
-                    ? formatCompactCurrency(Number(value))
-                    : formatCompactShares(Number(value));
+                  return formatCompactMetricValue(Number(value), metricType);
                 },
               },
             },
@@ -997,21 +1026,17 @@
     chart.options.plugins.tooltip.callbacks.label = function label(context) {
       const value = Number(context.parsed.y || 0);
       const prefix = `${context.dataset.label}: `;
-      return (
-        prefix + (currencyMetric ? formatCurrency(value) : formatShares(value))
-      );
+      return prefix + formatMetricValue(value, metricType);
     };
     chart.options.plugins.tooltip.callbacks.afterLabel = function afterLabel(
       context,
     ) {
-      return buildPrincipalReturnTooltip(context, simulations);
+      return buildCoverageTooltip(context, simulations);
     };
     chart.options.scales.y.ticks.callback = function callback(value) {
-      return currencyMetric
-        ? formatCompactCurrency(Number(value))
-        : formatCompactShares(Number(value));
+      return formatCompactMetricValue(Number(value), metricType);
     };
-    chart.options.scales.y.min = 0;
+    chart.options.scales.y.min = resolveMetricMin(metricKey);
     chart.update();
   }
 
@@ -1034,14 +1059,17 @@
     return currencyFormatter.format(Math.round(number));
   }
 
-  function buildPrincipalReturnTooltip(context, simulations) {
+  function buildCoverageTooltip(context, simulations) {
     const simulation = simulations.get(context.dataset.scenarioId);
     const record = simulation?.records?.[context.dataIndex];
     if (!record) {
       return "";
     }
 
-    return `${i18n.tooltipPrincipalReturn}: ${formatSignedPercent(record.principalReturnPct)}`;
+    return [
+      `${i18n.tooltipCoverage}: ${formatCoveragePercent(record.spendingCoveragePct)}`,
+      `${i18n.metricAnnualGap}: ${formatCurrency(record.annualGap)}`,
+    ];
   }
 
   function formatCompactCurrency(value) {
@@ -1063,6 +1091,21 @@
     );
   }
 
+  function formatOptionalYear(year, emptyLabel) {
+    return year ? formatYearOffset(year) : emptyLabel;
+  }
+
+  function formatSustainablePeriod(summary, simulationYears) {
+    if (summary.depletionYear) {
+      return formatYearOffset(summary.depletionYear);
+    }
+
+    return i18n.summaryYearsOrMore.replace(
+      "{0}",
+      currencyFormatter.format(simulationYears || 0),
+    );
+  }
+
   function formatDepletionValue(depletionYear) {
     if (!depletionYear) {
       return i18n.summaryNotDepleted;
@@ -1073,6 +1116,15 @@
 
   function formatPercent(value) {
     return `${percentFormatter.format(value || 0)}%`;
+  }
+
+  function formatCoveragePercent(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) {
+      return i18n.summaryNoSpending;
+    }
+
+    return formatPercent(number);
   }
 
   function formatSignedPercent(value) {
@@ -1093,9 +1145,67 @@
     return formatShares(value);
   }
 
+  function formatCompactPercent(value) {
+    return `${Math.round(Number(value || 0))}%`;
+  }
+
+  function resolveMetricType(metricKey) {
+    if (metricKey === METRICS.spendingCoveragePct) {
+      return "percent";
+    }
+
+    if (
+      metricKey === METRICS.shareCount ||
+      metricKey === METRICS.soldSharesForSpending
+    ) {
+      return "shares";
+    }
+
+    return "currency";
+  }
+
+  function formatMetricValue(value, metricType) {
+    if (metricType === "percent") {
+      return formatPercent(value);
+    }
+
+    if (metricType === "shares") {
+      return formatShares(value);
+    }
+
+    return formatCurrency(value);
+  }
+
+  function formatCompactMetricValue(value, metricType) {
+    if (metricType === "percent") {
+      return formatCompactPercent(value);
+    }
+
+    if (metricType === "shares") {
+      return formatCompactShares(value);
+    }
+
+    return formatCompactCurrency(value);
+  }
+
+  function resolveMetricMin(metricKey) {
+    if (
+      metricKey === METRICS.annualGap ||
+      metricKey === METRICS.cashReserve
+    ) {
+      return undefined;
+    }
+
+    return 0;
+  }
+
   function resolveYearlyRowClass(record, firstDeficitYear) {
     if (record.totalWealth <= 0) {
       return "bg-red-50 text-red-900";
+    }
+
+    if (record.soldSharesForSpending > 0) {
+      return "bg-orange-50";
     }
 
     if (firstDeficitYear && record.year >= firstDeficitYear) {
