@@ -303,18 +303,14 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
                                   Comparator.nullsLast(Comparator.naturalOrder())))
                       .toList();
               var s = TradeProfitAggregator.aggregate(list);
-              BigDecimal buyAmount =
-                  s.totalBuyAmount() != null ? s.totalBuyAmount() : BigDecimal.ZERO;
               BigDecimal evaluationAmount =
                   s.evaluationAmount() != null ? s.evaluationAmount() : BigDecimal.ZERO;
               BigDecimal holdingCost =
-                  s.totalBuyCost() != null ? s.totalBuyCost() : BigDecimal.ZERO;
+                  resolveCurrentHoldingCost(
+                      evaluationAmount, s.evaluationProfit(), s.totalBuyAmount());
               BigDecimal defaultEvaluationProfit =
                   s.evaluationProfit() != null ? s.evaluationProfit() : BigDecimal.ZERO;
-              BigDecimal defaultPrincipal =
-                  s.evaluationAmount() != null && s.evaluationProfit() != null
-                      ? s.evaluationAmount().subtract(s.evaluationProfit())
-                      : buyAmount;
+              BigDecimal defaultPrincipal = holdingCost;
               BigDecimal manualPrincipal =
                   accountId != null ? accountPrincipalOverrideMap.get(accountId) : null;
               BigDecimal profitBasis = manualPrincipal != null ? manualPrincipal : defaultPrincipal;
@@ -330,7 +326,8 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
                       evaluationAmount,
                       defaultEvaluationProfit,
                       s.realizedProfit(),
-                      buyAmount));
+                      holdingCost,
+                      s.totalSellProceeds()));
             });
 
     // 종목별 집계 (계좌 통합)
@@ -343,6 +340,9 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
                   List<TradeProfit> list = entry.getValue();
                   TradeProfit first = list.get(0);
                   var s = TradeProfitAggregator.aggregate(list);
+                  BigDecimal holdingCost =
+                      resolveCurrentHoldingCost(
+                          s.evaluationAmount(), s.evaluationProfit(), s.totalBuyAmount());
                   return TradeProfit.ofStockStatus(
                       entry.getKey(),
                       first.stockItemName(),
@@ -352,7 +352,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
                       s.evaluationAmount(),
                       s.evaluationProfit(),
                       s.realizedProfit(),
-                      s.totalBuyAmount());
+                      holdingCost);
                 })
             .sorted(
                 Comparator.comparing(
@@ -389,8 +389,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     for (TradeProfit holding : holdings) {
       BigDecimal evaluationAmount =
           holding.evaluationAmount() != null ? holding.evaluationAmount() : BigDecimal.ZERO;
-      BigDecimal buyAmount =
-          holding.totalBuyAmount() != null ? holding.totalBuyAmount() : BigDecimal.ZERO;
+      BigDecimal buyAmount = resolveCurrentHoldingCost(holding);
       BigDecimal averageBuyPrice = resolveHoldingAverageBuyPrice(holding, buyAmount);
       BigDecimal evaluationProfit =
           holding.evaluationProfit() != null ? holding.evaluationProfit() : BigDecimal.ZERO;
@@ -411,6 +410,28 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
 
     return views;
   }
+
+    private BigDecimal resolveCurrentHoldingCost(TradeProfit holding) {
+        if (holding == null) {
+            return BigDecimal.ZERO;
+        }
+
+        return resolveCurrentHoldingCost(
+                holding.evaluationAmount(), holding.evaluationProfit(), holding.totalBuyAmount());
+    }
+
+    private BigDecimal resolveCurrentHoldingCost(
+            BigDecimal evaluationAmount, BigDecimal evaluationProfit, BigDecimal fallbackBuyAmount) {
+        if (evaluationAmount != null && evaluationProfit != null) {
+            return evaluationAmount.subtract(evaluationProfit);
+        }
+
+        if (fallbackBuyAmount != null) {
+            return fallbackBuyAmount;
+        }
+
+        return BigDecimal.ZERO;
+    }
 
   private BigDecimal resolveHoldingAverageBuyPrice(TradeProfit holding, BigDecimal buyAmount) {
     if (holding == null) {
@@ -509,7 +530,8 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
                       s.evaluationAmount(),
                       s.evaluationProfit(),
                       s.realizedProfitNet(),
-                      s.totalBuyCost()));
+                      s.totalBuyCost(),
+                      s.totalSellProceeds()));
             });
 
     // 종목별 집계 (계좌 통합, 보유량 0 포함) - ofStockRealized 사용으로 상세 필드 포함
@@ -657,18 +679,19 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         accountClient.getAccountsByUserId(userId);
 
     // Derive accounts/stocks that exist within the selected date range. IMPORTANT:
-    // - Use a request that DOES NOT include the user's current account/stock
-    // filters so we compute availability by date-range only.
+    // use a date-only request here so the dropdown options reflect the chosen period,
+    // not the current account/stock filters.
     List<net.luversof.web.gate.stock.domain.Account> filteredAccountList;
     List<net.luversof.web.gate.stock.domain.StockItem> filteredStockItemList;
-    java.util.Set<UUID> tradeAccountIds;
-    java.util.Set<UUID> tradeStockIds;
+    Set<UUID> tradeAccountIds;
+    Set<UUID> tradeStockIds;
     if (clientProvidedRange) {
       TradeProfitRequest dateOnlyReq = new TradeProfitRequest();
       dateOnlyReq.setUserId(userId);
       dateOnlyReq.setStartDate(request.getStartDate());
       dateOnlyReq.setEndDate(request.getEndDate());
       dateOnlyReq.setTimeZone(request.getTimeZone());
+
       List<TradeProfit> dateRangeEnriched = new ArrayList<>(getEnrichedTradeProfits(dateOnlyReq));
       tradeAccountIds =
           dateRangeEnriched.stream()

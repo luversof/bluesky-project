@@ -119,7 +119,8 @@ public record TradeProfit(
       BigDecimal evalAmt,
       BigDecimal evalProfit,
       BigDecimal realizedProfit,
-      BigDecimal totalBuyCost) {
+      BigDecimal totalBuyCost,
+      BigDecimal totalSellProceeds) {
     return new TradeProfit(
         null,
         null,
@@ -140,7 +141,7 @@ public record TradeProfit(
         null,
         null,
         totalBuyCost,
-        null,
+        totalSellProceeds,
         null,
         null,
         null,

@@ -45,6 +45,13 @@
 					defaultScenarioName: '${MessageUtil.getMessage("stock.simulator.default.scenario.name")}',
 					activeScenario: '${MessageUtil.getMessage("stock.simulator.state.active")}',
 					localOnly: '${MessageUtil.getMessage("stock.simulator.state.local.only")}',
+					fieldPrincipal: '${MessageUtil.getMessage("stock.simulator.field.principal")}',
+					fieldCurrentPrice: '${MessageUtil.getMessage("stock.simulator.field.current.price")}',
+					fieldAnnualPriceGrowth: '${MessageUtil.getMessage("stock.simulator.field.annual.price.growth")}',
+					fieldDividendYield: '${MessageUtil.getMessage("stock.simulator.field.dividend.yield")}',
+					fieldAnnualDividendGrowth: '${MessageUtil.getMessage("stock.simulator.field.annual.dividend.growth")}',
+					fieldAnnualSpending: '${MessageUtil.getMessage("stock.simulator.field.annual.spending")}',
+					fieldAnnualSpendingGrowth: '${MessageUtil.getMessage("stock.simulator.field.annual.spending.growth")}',
 					reinvestOn: '${MessageUtil.getMessage("stock.simulator.state.reinvest.on")}',
 					reinvestOff: '${MessageUtil.getMessage("stock.simulator.state.reinvest.off")}',
 					emptyScenario: '${MessageUtil.getMessage("stock.simulator.empty.no.scenario")}',
@@ -224,26 +231,11 @@
 						<div class="flex flex-wrap gap-2 text-xs text-base-content/70">
 							<span class="badge border-emerald-500 bg-emerald-50 text-emerald-700">${MessageUtil.getMessage("stock.simulator.timeline.phase.stable")}</span>
 							<span class="badge border-amber-500 bg-amber-50 text-amber-700">${MessageUtil.getMessage("stock.simulator.timeline.phase.deficit")}</span>
-							<span class="badge border-yellow-500 bg-yellow-50 text-yellow-700">${MessageUtil.getMessage("stock.simulator.timeline.phase.wealth.decline")}</span>
 							<span class="badge border-orange-500 bg-orange-50 text-orange-700">${MessageUtil.getMessage("stock.simulator.timeline.phase.drawdown")}</span>
+							<span class="badge border-yellow-500 bg-yellow-50 text-yellow-700">${MessageUtil.getMessage("stock.simulator.timeline.phase.wealth.decline")}</span>
 							<span class="badge border-red-500 bg-red-50 text-red-700">${MessageUtil.getMessage("stock.simulator.timeline.phase.depleted")}</span>
 						</div>
 						<div id="stockSimulatorTimelineList" class="space-y-3"></div>
-						<div class="overflow-x-auto">
-							<table class="table table-zebra table-sm">
-								<thead>
-									<tr>
-										<th>${MessageUtil.getMessage("stock.simulator.table.header.scenario")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.summary.deficit.start")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.summary.wealth.decline.start")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.summary.capital.drawdown.start")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.summary.depletion.year")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.summary.sustainable.period")}</th>
-									</tr>
-								</thead>
-								<tbody id="stockSimulatorCompareTableBody"></tbody>
-							</table>
-						</div>
 					</div>
 				</section>
 

@@ -332,7 +332,7 @@
                     }
                 }
             };
-            window.ensureStockCharts(function() { window['chartProfitInstance'] = window.StockCharts.createChart(__canvas || 'chartProfit', config, window['chartProfitInstance']); });
+            window.ensureStockCharts(function() { window['chartProfitInstance'] = window.StockCharts.createChart((__canvas && __canvas.id) || 'chartProfit', config, window['chartProfitInstance']); });
         })();
         </script>
         @endif
@@ -382,7 +382,7 @@
                     }
                 }
             };
-            window.ensureStockCharts(function() { window['chartLossInstance'] = window.StockCharts.createChart(__canvas || 'chartLoss', config, window['chartLossInstance']); });
+            window.ensureStockCharts(function() { window['chartLossInstance'] = window.StockCharts.createChart((__canvas && __canvas.id) || 'chartLoss', config, window['chartLossInstance']); });
         })();
         </script>
         @endif
@@ -452,8 +452,11 @@
                 @for(Map.Entry<String, TradeProfit> entry : accountRealizedMap.entrySet())
                     !{accIdx[0]++;}
                     !{TradeProfit acc = entry.getValue();}
-                    !{double accRate = acc.totalBuyCost() != null && acc.totalBuyCost().compareTo(BigDecimal.ZERO) > 0 && acc.realizedProfit() != null
-                        ? acc.realizedProfit().doubleValue() / acc.totalBuyCost().doubleValue() * 100
+                    !{BigDecimal accSoldCost = acc.totalSellProceeds() != null && acc.realizedProfit() != null
+                        ? acc.totalSellProceeds().subtract(acc.realizedProfit())
+                        : BigDecimal.ZERO;}
+                    !{double accRate = accSoldCost.compareTo(BigDecimal.ZERO) > 0 && acc.realizedProfit() != null
+                        ? acc.realizedProfit().doubleValue() / accSoldCost.doubleValue() * 100
                         : 0.0;}
                     <tr class="hover account-row" data-initial="${accIdx[0]}">
                         <td data-val="${entry.getKey()}">

@@ -43,6 +43,13 @@
 		defaultScenarioName: "Base Scenario",
 		activeScenario: "Editing",
 		localOnly: "localStorage only",
+		fieldPrincipal: "Principal",
+		fieldCurrentPrice: "Price",
+		fieldAnnualPriceGrowth: "Price Growth",
+		fieldDividendYield: "Dividend Yield",
+		fieldAnnualDividendGrowth: "Dividend Growth",
+		fieldAnnualSpending: "Spending",
+		fieldAnnualSpendingGrowth: "Spending Growth",
 		reinvestOn: "Reinvest ON",
 		reinvestOff: "Cash Dividend",
 		emptyScenario: "A default scenario has been created.",
@@ -97,7 +104,6 @@
 		form: document.getElementById("stockSimulatorForm"),
 		summaryCards: document.getElementById("stockSimulatorSummaryCards"),
 		timelineList: document.getElementById("stockSimulatorTimelineList"),
-		compareTableBody: document.getElementById("stockSimulatorCompareTableBody"),
 		yearlyTableBody: document.getElementById("stockSimulatorYearlyTableBody"),
 		cashFlowChartCanvas: document.getElementById("stockSimulatorCashFlowChart"),
 		assetChartCanvas: document.getElementById("stockSimulatorAssetChart"),
@@ -675,7 +681,6 @@
 		renderCashFlowChart(simulations);
 		renderAssetChart(simulations);
 		renderTimelineComparison(simulations);
-		renderComparisonTable(simulations);
 		renderYearlyTable(simulations);
 	}
 
@@ -894,6 +899,9 @@
 								<p class="text-xs text-base-content/55">${scenario.years}y · ${
 									scenario.reinvestDividends ? i18n.reinvestOn : i18n.reinvestOff
 								}</p>
+								<div class="mt-2 flex flex-wrap gap-2 text-[11px] leading-5 text-base-content/70">
+									${buildScenarioConfigurationBadges(scenario)}
+								</div>
 							</div>
 							<div class="text-sm font-medium text-base-content/70">${formatSustainablePeriod(summary, scenario.years)}</div>
 						</div>
@@ -929,30 +937,6 @@
 			.join("");
 
 		bindScenarioSelection(elements.timelineList);
-	}
-
-	function renderComparisonTable(simulations) {
-		if (!elements.compareTableBody) {
-			return;
-		}
-
-		elements.compareTableBody.innerHTML = state.scenarios
-			.map((scenario) => {
-				const summary = simulations.get(scenario.id).summary;
-				const active = scenario.id === state.activeScenarioId;
-				return `
-					<tr class="cursor-pointer ${active ? "bg-primary/5" : ""}" data-scenario-id="${scenario.id}">
-						<td class="font-medium">${escapeHtml(scenario.name)}</td>
-						<td>${formatOptionalYear(summary.firstDeficitYear, i18n.summaryNoDeficit)}</td>
-						<td>${formatOptionalYear(summary.firstWealthDeclineYear, i18n.summaryNoWealthDecline)}</td>
-						<td>${formatOptionalYear(summary.firstShareSaleYear, i18n.summaryNoPrincipalDrawdown)}</td>
-						<td>${formatDepletionValue(summary.depletionYear)}</td>
-						<td>${formatSustainablePeriod(summary, scenario.years)}</td>
-					</tr>`;
-			})
-			.join("");
-
-		bindScenarioSelection(elements.compareTableBody);
 	}
 
 	function renderYearlyTable(simulations) {
@@ -1224,8 +1208,8 @@
 	function buildTimelineMarkers(summary, scenarioYears, maxYears) {
 		return [
 			summary.firstDeficitYear,
-			summary.firstWealthDeclineYear,
 			summary.firstShareSaleYear,
+			summary.firstWealthDeclineYear,
 			summary.depletionYear,
 		]
 			.filter((year, index, values) => year && year <= scenarioYears && values.indexOf(year) === index)
@@ -1247,22 +1231,22 @@
 			);
 		}
 
-		if (summary.firstWealthDeclineYear) {
-			badges.push(
-				buildTimelineEventBadge(
-					i18n.timelinePhaseWealthDecline,
-					summary.firstWealthDeclineYear,
-					"bg-yellow-50 text-yellow-700",
-				),
-			);
-		}
-
 		if (summary.firstShareSaleYear) {
 			badges.push(
 				buildTimelineEventBadge(
 					i18n.timelinePhaseDrawdown,
 					summary.firstShareSaleYear,
 					"bg-orange-50 text-orange-700",
+				),
+			);
+		}
+
+		if (summary.firstWealthDeclineYear) {
+			badges.push(
+				buildTimelineEventBadge(
+					i18n.timelinePhaseWealthDecline,
+					summary.firstWealthDeclineYear,
+					"bg-yellow-50 text-yellow-700",
 				),
 			);
 		}
@@ -1365,6 +1349,40 @@
 			return `${sign}₩${(abs / 10000).toFixed(0)}만`;
 		}
 		return formatCurrency(value);
+	}
+
+	function formatSignedPercent(value) {
+		const number = Number(value);
+		if (!Number.isFinite(number)) {
+			return formatPercent(0);
+		}
+
+		return `${number > 0 ? "+" : ""}${percentFormatter.format(number)}%`;
+	}
+
+	function buildScenarioConfigurationSegments(scenario) {
+		return [
+			`${i18n.fieldPrincipal} ${formatCompactCurrency(scenario.principal)}`,
+			`${i18n.fieldCurrentPrice} ${formatCompactCurrency(scenario.currentPrice)}`,
+			`${i18n.fieldDividendYield} ${formatPercent(scenario.dividendYieldPct)}`,
+			`${i18n.fieldAnnualDividendGrowth} ${formatSignedPercent(scenario.annualDividendGrowthPct)}`,
+			`${i18n.fieldAnnualPriceGrowth} ${formatSignedPercent(scenario.annualPriceGrowthPct)}`,
+			`${i18n.fieldAnnualSpending} ${formatCompactCurrency(scenario.annualSpending)}`,
+			`${i18n.fieldAnnualSpendingGrowth} ${formatSignedPercent(scenario.annualSpendingGrowthPct)}`,
+		];
+	}
+
+	function buildScenarioConfigurationBadges(scenario) {
+		return buildScenarioConfigurationSegments(scenario)
+			.map(
+				(segment) =>
+					`<span class="rounded-full border border-base-300 bg-base-200/70 px-2 py-1">${escapeHtml(segment)}</span>`,
+			)
+			.join("");
+	}
+
+	function buildScenarioConfigurationText(scenario) {
+		return buildScenarioConfigurationSegments(scenario).join(" · ");
 	}
 
 	function formatYearOffset(year) {
