@@ -21,6 +21,10 @@
 	String inputsDescription = MessageUtil.getMessage("stock.simulator.section.inputs.desc");
 	String chartTitle = MessageUtil.getMessage("stock.simulator.section.chart.title");
 	String chartDescription = MessageUtil.getMessage("stock.simulator.section.chart.desc");
+	String cashFlowTitle = MessageUtil.getMessage("stock.simulator.section.cashflow.title");
+	String cashFlowDescription = MessageUtil.getMessage("stock.simulator.section.cashflow.desc");
+	String assetTitle = MessageUtil.getMessage("stock.simulator.section.asset.title");
+	String assetDescription = MessageUtil.getMessage("stock.simulator.section.asset.desc");
 	String compareTitle = MessageUtil.getMessage("stock.simulator.section.compare.title");
 	String compareDescription = MessageUtil.getMessage("stock.simulator.section.compare.desc");
 	String assumptionsTitle = MessageUtil.getMessage("stock.simulator.section.assumptions.title");
@@ -59,10 +63,18 @@
 					summaryYearsLater: '${MessageUtil.getMessage("stock.simulator.summary.years.later")}',
 					summaryYearsOrMore: '${MessageUtil.getMessage("stock.simulator.summary.years.or.more")}',
 					summaryWithinHorizon: '${MessageUtil.getMessage("stock.simulator.summary.within.horizon")}',
-					summaryLatestCoverage: '${MessageUtil.getMessage("stock.simulator.summary.latest.coverage")}',
 					summaryNoSpending: '${MessageUtil.getMessage("stock.simulator.summary.no.spending")}',
-					metricAnnualGap: '${MessageUtil.getMessage("stock.simulator.metric.annual.gap")}',
-					tooltipCoverage: '${MessageUtil.getMessage("stock.simulator.tooltip.coverage")}'
+					seriesAnnualDividend: '${MessageUtil.getMessage("stock.simulator.table.header.annual.dividend")}',
+					seriesAnnualSpending: '${MessageUtil.getMessage("stock.simulator.table.header.annual.spending")}',
+					seriesAnnualGap: '${MessageUtil.getMessage("stock.simulator.metric.annual.gap")}',
+					seriesTotalWealth: '${MessageUtil.getMessage("stock.simulator.table.header.total.wealth")}',
+					seriesMarketValue: '${MessageUtil.getMessage("stock.simulator.table.header.market.value")}',
+					seriesCashReserve: '${MessageUtil.getMessage("stock.simulator.metric.cash.reserve")}',
+					timelinePhaseStable: '${MessageUtil.getMessage("stock.simulator.timeline.phase.stable")}',
+					timelinePhaseDeficit: '${MessageUtil.getMessage("stock.simulator.timeline.phase.deficit")}',
+					timelinePhaseWealthDecline: '${MessageUtil.getMessage("stock.simulator.timeline.phase.wealth.decline")}',
+					timelinePhaseDrawdown: '${MessageUtil.getMessage("stock.simulator.timeline.phase.drawdown")}',
+					timelinePhaseDepleted: '${MessageUtil.getMessage("stock.simulator.timeline.phase.depleted")}'
 				};
 			</script>
 
@@ -169,25 +181,34 @@
 
 					<div id="stockSimulatorSummaryCards" class="grid gap-4 md:grid-cols-2 xl:grid-cols-5"></div>
 
-					<section class="card border border-base-300 bg-base-100 shadow-sm">
-						<div class="card-body gap-4">
-							<div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-								<div class="space-y-2">
-									<h2 class="card-title text-lg">${chartTitle}</h2>
-									<p class="text-sm leading-6 text-base-content/60">${chartDescription}</p>
+					<section class="space-y-4">
+						<div class="space-y-2">
+							<h2 class="text-lg font-semibold text-base-content">${chartTitle}</h2>
+							<p class="text-sm leading-6 text-base-content/60">${chartDescription}</p>
+						</div>
+						<div class="grid gap-4 xl:grid-cols-2">
+							<section class="card border border-base-300 bg-base-100 shadow-sm">
+								<div class="card-body gap-4">
+									<div class="space-y-2">
+										<h3 class="card-title text-base">${cashFlowTitle}</h3>
+										<p class="text-sm leading-6 text-base-content/60">${cashFlowDescription}</p>
+									</div>
+									<div class="h-80 w-full rounded-2xl bg-base-100 p-2">
+										<canvas id="stockSimulatorCashFlowChart"></canvas>
+									</div>
 								</div>
-								<div id="stockSimulatorMetricSelector" class="flex flex-wrap gap-2">
-									<button type="button" class="btn btn-sm" data-metric="spendingCoveragePct">${MessageUtil.getMessage("stock.simulator.metric.spending.coverage")}</button>
-									<button type="button" class="btn btn-sm" data-metric="annualGap">${MessageUtil.getMessage("stock.simulator.metric.annual.gap")}</button>
-									<button type="button" class="btn btn-sm" data-metric="cashReserve">${MessageUtil.getMessage("stock.simulator.metric.cash.reserve")}</button>
-									<button type="button" class="btn btn-sm" data-metric="marketValue">${MessageUtil.getMessage("stock.simulator.metric.market.value")}</button>
-									<button type="button" class="btn btn-sm" data-metric="shareCount">${MessageUtil.getMessage("stock.simulator.metric.share.count")}</button>
-									<button type="button" class="btn btn-sm" data-metric="soldSharesForSpending">${MessageUtil.getMessage("stock.simulator.metric.sold.shares")}</button>
+							</section>
+							<section class="card border border-base-300 bg-base-100 shadow-sm">
+								<div class="card-body gap-4">
+									<div class="space-y-2">
+										<h3 class="card-title text-base">${assetTitle}</h3>
+										<p class="text-sm leading-6 text-base-content/60">${assetDescription}</p>
+									</div>
+									<div class="h-80 w-full rounded-2xl bg-base-100 p-2">
+										<canvas id="stockSimulatorAssetChart"></canvas>
+									</div>
 								</div>
-							</div>
-							<div class="h-96 w-full rounded-2xl bg-base-100 p-2">
-								<canvas id="stockSimulatorChart"></canvas>
-							</div>
+							</section>
 						</div>
 					</section>
 				</div>
@@ -200,16 +221,24 @@
 							<h2 class="card-title text-lg">${compareTitle}</h2>
 							<p class="text-sm leading-6 text-base-content/60">${compareDescription}</p>
 						</div>
+						<div class="flex flex-wrap gap-2 text-xs text-base-content/70">
+							<span class="badge border-emerald-500 bg-emerald-50 text-emerald-700">${MessageUtil.getMessage("stock.simulator.timeline.phase.stable")}</span>
+							<span class="badge border-amber-500 bg-amber-50 text-amber-700">${MessageUtil.getMessage("stock.simulator.timeline.phase.deficit")}</span>
+							<span class="badge border-yellow-500 bg-yellow-50 text-yellow-700">${MessageUtil.getMessage("stock.simulator.timeline.phase.wealth.decline")}</span>
+							<span class="badge border-orange-500 bg-orange-50 text-orange-700">${MessageUtil.getMessage("stock.simulator.timeline.phase.drawdown")}</span>
+							<span class="badge border-red-500 bg-red-50 text-red-700">${MessageUtil.getMessage("stock.simulator.timeline.phase.depleted")}</span>
+						</div>
+						<div id="stockSimulatorTimelineList" class="space-y-3"></div>
 						<div class="overflow-x-auto">
 							<table class="table table-zebra table-sm">
 								<thead>
 									<tr>
 										<th>${MessageUtil.getMessage("stock.simulator.table.header.scenario")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.summary.sustainable.period")}</th>
 										<th>${MessageUtil.getMessage("stock.simulator.summary.deficit.start")}</th>
+										<th>${MessageUtil.getMessage("stock.simulator.summary.wealth.decline.start")}</th>
 										<th>${MessageUtil.getMessage("stock.simulator.summary.capital.drawdown.start")}</th>
 										<th>${MessageUtil.getMessage("stock.simulator.summary.depletion.year")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.summary.latest.coverage")}</th>
+										<th>${MessageUtil.getMessage("stock.simulator.summary.sustainable.period")}</th>
 									</tr>
 								</thead>
 								<tbody id="stockSimulatorCompareTableBody"></tbody>

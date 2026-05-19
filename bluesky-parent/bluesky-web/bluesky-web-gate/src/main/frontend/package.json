@@ -2,7 +2,9 @@
 	"name": "frontend",
 	"private": true,
 	"scripts": {
-		"build": "tailwindcss -i ./main.css -o ../resources/static/main.css",
+		"build": "npm-run-all build:ts build:css",
+		"build:ts": "tsc",
+		"build:css": "tailwindcss -i ./main.css -o ../resources/static/main.css",
 		"watch:css": "tailwindcss -i ./main.css -o ../resources/static/main.css --watch",
 		"watch:format": "chokidar \"src/**/*.ts\" -c \"prettier --write {path}\"",
 		"watch:ts": "tsc --watch",
