@@ -102,7 +102,8 @@
                             canNext = canNext,
                             rangeMode = rangeMode,
                             startDate = startLocal,
-                            endDate = endLocal
+                            endDate = endLocal,
+                            showRangeText = false
                         )
                         <span id="assetRangeDisplay" class="text-xs text-base-content/40 ml-1"></span>
                     </div>
@@ -232,6 +233,11 @@
             // DateRangePicker(콜백모드)가 내부 상태로 관리 — activeMonths 불필요
             var pendingVisStart = null;
             var pendingVisEnd   = null;
+            var requestedStartLabel = '${requestedStartLocal != null ? requestedStartLocal.toString() : ""}';
+            var requestedEndLabel = '${requestedEndDisplayLocal != null ? requestedEndDisplayLocal.toString() : ""}';
+            var selectedRangeStart = requestedStartLabel || '';
+            var selectedRangeEnd = requestedEndLabel || '';
+            var selectedRangeMode = '${rangeMode != null ? rangeMode.replace("\\", "\\\\").replace("'", "\\'") : ""}';
             var periodReturnTimer = null;
             var periodReturnAbortController = null;
             var loadedPeriodReturnKey = '';
@@ -366,6 +372,9 @@
                         }
                     } catch (e) {}
                 } catch (e) {}
+                selectedRangeStart = startStr || '';
+                selectedRangeEnd = endStr || '';
+                selectedRangeMode = mode || '';
                 if (!mainChart || !dividendChart) return;
                 // DETAIL 범위를 벗어나면 BASE 로 복원
                 if (currentTierNum > baseDataTierNum && labels.length > 0) {
@@ -478,6 +487,7 @@
             } catch(e) {}
 
             var scaleAnimFrame = null; // requestAnimationFrame handle for scale transition
+            var programmaticViewportChange = false;
 
             // 뷰 구간을 부드럽게(easeOutCubic) 전환하는 헬퍼
             // shiftView / setViewRange / jumpToEdge 에서 사용
@@ -486,6 +496,7 @@
                     cancelAnimationFrame(scaleAnimFrame);
                     scaleAnimFrame = null;
                 }
+                programmaticViewportChange = true;
                 var fromMin = mainChart.scales.x.min;
                 var fromMax = mainChart.scales.x.max;
                 // 이미 목표값에 매우 가까우면 즉시 적용
@@ -496,6 +507,7 @@
                     dividendChart.options.scales.x.max = toMax;
                     mainChart.update('none');
                     dividendChart.update('none');
+                    programmaticViewportChange = false;
                     checkNavButtons();
                     return;
                 }
@@ -516,6 +528,7 @@
                         scaleAnimFrame = requestAnimationFrame(step);
                     } else {
                         scaleAnimFrame = null;
+                        programmaticViewportChange = false;
                         checkNavButtons();
                     }
                 };
@@ -973,11 +986,17 @@
 
                 var visMinDate = labels[minIdx] || '';
                 var visMaxDate = labels[maxIdx] || '';
+                var pickerRangeStart = selectedRangeStart || visMinDate;
+                var pickerRangeEnd = selectedRangeEnd || visMaxDate;
 
                 // Ensure picker internal state matches current view so canShift uses correct values
                 try {
                     if (typeof assetPicker !== 'undefined' && assetPicker && typeof assetPicker.setState === 'function') {
-                        assetPicker.setState(visMinDate, visMaxDate, '');
+                        assetPicker.setState(
+                            pickerRangeStart,
+                            pickerRangeEnd,
+                            selectedRangeMode || '',
+                        );
                     }
                 } catch (e) {}
 
@@ -1040,10 +1059,8 @@
                             return;
                         }
                         // If a pending base apply exists for the deferred range,
-                        // apply it now (prefer the requested display values
-                        // and avoid transient label-snapping).
-                        var _ds = deferredDisplayStart || visMinDate;
-                        var _de = deferredDisplayEnd || visMaxDate;
+                        // apply it now, but keep the user-selected range for the
+                        // summary/period text instead of label-aligned chart dates.
                         if (pendingBaseApply) {
                             try { agLog('applying pendingBaseApply from checkNavButtons', pendingBaseApply); } catch (e) {}
                             var p = pendingBaseApply; pendingBaseApply = null;
@@ -1055,16 +1072,19 @@
                         }
                         deferRangeDisplay = false;
                         deferredDisplayStart = deferredDisplayEnd = null;
-                        updateRangeDisplay(_ds, _de);
-                        refreshPeriodReturnSummary(_ds, _de);
+                        updateRangeDisplay(pickerRangeStart, pickerRangeEnd);
+                        refreshPeriodReturnSummary(pickerRangeStart, pickerRangeEnd);
                     } else {
-                        updateRangeDisplay(visMinDate, visMaxDate);
-                        refreshPeriodReturnSummary(visMinDate, visMaxDate);
+                        updateRangeDisplay(pickerRangeStart, pickerRangeEnd);
+                        refreshPeriodReturnSummary(pickerRangeStart, pickerRangeEnd);
                     }
                 } catch (e) {}
             };
 
             var syncZoomPan = function({chart}) {
+                if (syncing || programmaticViewportChange) {
+                    return;
+                }
                 var target = (chart.canvas.id === 'assetGrowthChart') ? dividendChart : mainChart;
                 if(target) {
                     target.options.scales.x.min = chart.scales.x.min;
@@ -1073,6 +1093,9 @@
                 }
                 // 줌/팬 시 퀵셀렉터 비활성화 — 현재 뷰 span 으로 이전/다음 이동
                 var od = getOptDates();
+                selectedRangeStart = od.visStart || '';
+                selectedRangeEnd = od.visEnd || '';
+                selectedRangeMode = '';
                 assetPicker.setState(od.visStart, od.visEnd, '');
                 syncDraggedRangeToGlobal(od.visStart, od.visEnd);
                 setTimeout(checkNavButtons, 50);

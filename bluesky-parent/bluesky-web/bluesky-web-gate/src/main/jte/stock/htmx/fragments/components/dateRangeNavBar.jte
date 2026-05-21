@@ -8,6 +8,7 @@
 @param String rangeMode = null
 @param LocalDate startDate = null
 @param LocalDate endDate = null
+@param boolean showRangeText = true
 
 !{
     String periodLabel = MessageUtil.getMessage("common.label.period");
@@ -37,7 +38,7 @@
     <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("all") ? "btn-primary" : "btn-ghost"}" onclick="${pickerName}.set(0,this)">${allLabel}</button>
     <button type="button" class="btn btn-xs btn-ghost date-range-next${!canNext ? " btn-disabled opacity-40" : ""}" $unsafe{!canNext ? "disabled" : ""} onclick="${pickerName}.shift(1)">${nextLabel} ›</button>
     <button type="button" class="btn btn-xs btn-ghost date-range-next${!canNext ? " btn-disabled opacity-40" : ""}" $unsafe{!canNext ? "disabled" : ""} onclick="${pickerName}.jumpToEdge('end')">»</button>
-    @if(startDate != null || endDate != null)
+    @if(showRangeText && (startDate != null || endDate != null))
         <span class="text-xs text-base-content/40 ml-1">
             ${startDate != null ? startDate.toString() : "?"} ~ ${endDate != null ? endDate.minusDays(1).toString() : "?"}
         </span>
