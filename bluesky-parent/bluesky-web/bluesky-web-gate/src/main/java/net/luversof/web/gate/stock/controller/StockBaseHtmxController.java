@@ -18,6 +18,7 @@ import net.luversof.web.gate.stock.domain.Account;
 import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.domain.TradeProfit;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
+import net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup;
 import net.luversof.web.gate.stock.dto.response.DividendResponse;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
@@ -155,6 +156,29 @@ public abstract class StockBaseHtmxController {
                 stockItemNames.getOrDefault(profit.stockItemId(), unknownLabel),
                 profit.accountId() != null ? accountNames.get(profit.accountId()) : null))
         .toList();
+  }
+
+  protected List<TradeProfit> getEnrichedTradeProfits(
+      TradeProfitRequest request, TradeProfitRequestGroup groupBy) {
+    if (groupBy == null || groupBy == request.getGroupBy()) {
+      return getEnrichedTradeProfits(request);
+    }
+
+    TradeProfitRequest requestCopy = copyTradeProfitRequest(request);
+    requestCopy.setGroupBy(groupBy);
+    return getEnrichedTradeProfits(requestCopy);
+  }
+
+  private TradeProfitRequest copyTradeProfitRequest(TradeProfitRequest request) {
+    TradeProfitRequest requestCopy = new TradeProfitRequest();
+    requestCopy.setUserId(request.getUserId());
+    requestCopy.setAccountIdList(request.getAccountIdList());
+    requestCopy.setStockItemIdList(request.getStockItemIdList());
+    requestCopy.setStartDate(request.getStartDate());
+    requestCopy.setEndDate(request.getEndDate());
+    requestCopy.setTimeZone(request.getTimeZone());
+    requestCopy.setGroupBy(request.getGroupBy());
+    return requestCopy;
   }
 
   protected List<String> getAvailableStockTags(List<StockItem> stockItemList) {

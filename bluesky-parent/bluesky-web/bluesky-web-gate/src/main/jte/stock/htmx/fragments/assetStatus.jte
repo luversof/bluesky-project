@@ -1,6 +1,7 @@
 @import java.math.BigDecimal
 @import java.util.List
 @import java.util.Map
+@import net.luversof.web.gate.stock.domain.StockItem
 @import net.luversof.web.gate.stock.domain.TradeProfit
 @import net.luversof.web.gate.stock.dto.response.AssetStatusAccountHoldingView
 @import io.github.luversof.boot.context.support.MessageUtil
@@ -8,6 +9,7 @@
 @param Map<String, TradeProfit> accountTotalMap
 @param Map<String, BigDecimal> accountProfitBasisMap
 @param Map<String, List<AssetStatusAccountHoldingView>> accountHoldingMap
+@param List<StockItem> stockItemList = java.util.List.of()
 @param List<TradeProfit> stockAggregated
 @param BigDecimal totalEvaluationAmount
 @param BigDecimal totalEvaluationProfit
@@ -43,6 +45,21 @@
     String stockSelectionCountTemplate = MessageUtil.getMessage("stock.analytics.selection.count");
     String stockSelectionClearLabel = MessageUtil.getMessage("stock.analytics.selection.clear");
     String stockSelectionWeightLabel = MessageUtil.getMessage("stock.analytics.selection.weight");
+    String tagLabel = MessageUtil.getMessage("common.label.tag");
+    String noDataLabel = MessageUtil.getMessage("common.message.no.data");
+    java.util.function.Function<java.util.UUID, String> stockTagTooltipById = stockItemId -> {
+        if (stockItemId == null || stockItemList == null) {
+            return tagLabel + ": " + noDataLabel;
+        }
+
+        return stockItemList.stream()
+            .filter(stockItem -> stockItem != null && stockItemId.equals(stockItem.id()))
+            .findFirst()
+            .map(stockItem -> stockItem.tags() != null && !stockItem.tags().isEmpty()
+                ? tagLabel + ": " + String.join(", ", stockItem.tags())
+                : tagLabel + ": " + noDataLabel)
+            .orElse(tagLabel + ": " + noDataLabel);
+    };
 }
 
 <div class="flex flex-col gap-6">
@@ -403,6 +420,7 @@
             <table class="table table-sm table-zebra w-full" data-sortable-table data-asset-status-stock-table>
                 <thead class="bg-base-200">
                     <tr>
+                        <th class="w-10"></th>
                         <th>
                             <button type="button"
                                     class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
@@ -480,7 +498,7 @@
                 <tbody>
                     @if(stockAggregated == null || stockAggregated.isEmpty())
                         <tr>
-                            <td colspan="8" class="text-center py-8 opacity-50">${noHoldingsLabel}</td>
+                            <td colspan="9" class="text-center py-8 opacity-50">${noHoldingsLabel}</td>
                         </tr>
                     @else
                         @for(TradeProfit item : stockAggregated)
@@ -494,6 +512,7 @@
                                 && item.evaluationAmount() != null
                                 ? item.evaluationAmount().divide(totalEvaluationAmount, 4, java.math.RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
                                 : BigDecimal.ZERO;}
+                            !{String stockTagTooltip = stockTagTooltipById.apply(item.stockItemId());}
                             <tr class="hover asset-status-stock-row"
                                 data-sortable-row
                                 data-stock-selectable-row
@@ -508,7 +527,13 @@
                                 data-evaluation-amount="${item.evaluationAmount() != null ? item.evaluationAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                 data-evaluation-profit="${item.evaluationProfit() != null ? item.evaluationProfit().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                 data-weight="${totalWeightPct.toPlainString()}">
-                                <td class="font-semibold">${item.stockItemName() != null ? item.stockItemName() : "-"}</td>
+                                <td class="align-top pt-3">
+                                    <input type="checkbox"
+                                           class="checkbox checkbox-sm"
+                                           data-stock-selection-toggle
+                                           aria-label="${item.stockItemName() != null ? item.stockItemName() : stockNameLabel}">
+                                </td>
+                                <td class="font-semibold"><span title="${stockTagTooltip}">${item.stockItemName() != null ? item.stockItemName() : "-"}</span></td>
                                 <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", item.holdingQuantity())}</td>
                                 <td class="text-right font-mono hidden xl:table-cell amount-value">${String.format("%,d", item.averageBuyPrice() != null ? item.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
                                 <td class="text-right font-mono hidden sm:table-cell amount-value opacity-70">${String.format("%,d", item.totalBuyCost() != null ? item.totalBuyCost().longValue() : 0)}</td>
@@ -528,6 +553,7 @@
                         ? stockAggregated.stream().map(i -> i.totalBuyCost() != null ? i.totalBuyCost() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add)
                         : BigDecimal.ZERO;}
                     <tr>
+                        <td></td>
                         <td>${totalLabel}</td>
                         <td class="hidden lg:table-cell"></td>
                         <td class="hidden xl:table-cell"></td>
@@ -749,6 +775,11 @@
 
         row.classList.toggle('asset-status-stock-row-selected', selected);
         row.setAttribute('aria-pressed', selected ? 'true' : 'false');
+
+        var checkbox = row.querySelector('[data-stock-selection-toggle]');
+        if (checkbox) {
+            checkbox.checked = selected;
+        }
     }
 
     function setAssetStatusAccountRowSelection(row, selected) {
@@ -968,6 +999,10 @@
                 });
 
                 row.addEventListener('keydown', function(event) {
+                    if (event.target && event.target.closest('button, a, input, label, select, textarea')) {
+                        return;
+                    }
+
                     if (event.key !== 'Enter' && event.key !== ' ') {
                         return;
                     }
@@ -977,6 +1012,20 @@
                     setAssetStatusStockRowSelection(this, !isSelected);
                     updateAssetStatusStockSelectionSummary(section);
                 });
+
+                var checkbox = row.querySelector('[data-stock-selection-toggle]');
+                if (checkbox) {
+                    checkbox.addEventListener('click', function(event) {
+                        event.stopPropagation();
+                    });
+
+                    checkbox.addEventListener('change', function(event) {
+                        event.stopPropagation();
+                        var targetRow = this.closest('[data-stock-selectable-row]');
+                        setAssetStatusStockRowSelection(targetRow, this.checked);
+                        updateAssetStatusStockSelectionSummary(section);
+                    });
+                }
             }
 
             var clearButton = section.querySelector('[data-selection-clear]');

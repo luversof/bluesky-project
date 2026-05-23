@@ -28,6 +28,7 @@ import net.luversof.web.gate.stock.domain.TradeProfit;
 import net.luversof.web.gate.stock.domain.TradeProfitAggregator;
 import net.luversof.web.gate.stock.dto.request.DividendRequest;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
+import net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup;
 import net.luversof.web.gate.stock.dto.request.TradeSearchRequest;
 import net.luversof.web.gate.stock.dto.response.AssetStatusAccountHoldingView;
 import net.luversof.web.gate.stock.dto.response.DividendResponse;
@@ -90,47 +91,9 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         enrichedList.removeIf(tp -> tp.holdingQuantity() == 0);
 
         if ("STOCK".equals(viewGroupBy)) {
-            Map<UUID, List<TradeProfit>> byStock = enrichedList.stream()
-                    .collect(Collectors.groupingBy(TradeProfit::stockItemId));
-
-            List<TradeProfit> aggregatedList = new ArrayList<>();
-            byStock.forEach(
-                    (stockId, list) -> {
-                        if (list.isEmpty())
-                            return;
-
-                        TradeProfit first = list.get(0);
-                        String stockName = first.stockItemName();
-                        BigDecimal currentPrice = first.currentPrice();
-
-                        var s = TradeProfitAggregator.aggregate(list);
-                        aggregatedList.add(
-                                TradeProfit.ofPortfolioStock(
-                                        stockId,
-                                        stockName,
-                                        s.totalBuyAmount(),
-                                        s.avgBuyPrice(),
-                                        s.totalSellQuantity(),
-                                        s.avgSellPrice(),
-                                        s.totalSellAmount(),
-                                        s.realizedProfit(),
-                                        s.holdingQuantity(),
-                                        currentPrice,
-                                        s.evaluationAmount(),
-                                        s.evaluationProfit(),
-                                        s.totalProfit(),
-                                        s.totalBuyFee(),
-                                        s.totalSellFee(),
-                                        s.totalSellTax(),
-                                        s.totalBuyCost(),
-                                        s.totalSellProceeds(),
-                                        s.avgBuyPriceNet(),
-                                        s.avgSellPriceNet(),
-                                        s.realizedProfitNet(),
-                                        s.evaluationProfitNet(),
-                                        s.totalProfitNet()));
-                    });
-            enrichedList = aggregatedList;
+            enrichedList = getStockGroupedTradeProfits(request, false).stream()
+                    .map(this::toPortfolioStock)
+                    .collect(Collectors.toCollection(ArrayList::new));
         }
 
         Comparator<TradeProfit> comparator = null;
@@ -246,6 +209,8 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
             return ERROR_VIEW;
         request.setUserId(userId);
 
+        List<net.luversof.web.gate.stock.domain.StockItem> stockItemList = emptyIfNull(stockItemClient.getStockItems());
+
         List<TradeProfit> enrichedList = new ArrayList<>(getEnrichedTradeProfits(request));
         enrichedList.removeIf(tp -> tp.holdingQuantity() == 0);
         BigDecimal totalEvaluationAmount = enrichedList.stream()
@@ -323,28 +288,9 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
                                             s.totalSellProceeds()));
                         });
 
-        // 종목별 집계 (계좌 통합)
-        Map<UUID, List<TradeProfit>> byStock = enrichedList.stream()
-                .collect(Collectors.groupingBy(TradeProfit::stockItemId));
-        List<TradeProfit> stockAggregated = byStock.entrySet().stream()
-                .map(
-                        entry -> {
-                            List<TradeProfit> list = entry.getValue();
-                            TradeProfit first = list.get(0);
-                            var s = TradeProfitAggregator.aggregate(list);
-                            BigDecimal holdingCost = resolveCurrentHoldingCost(
-                                    s.evaluationAmount(), s.evaluationProfit(), s.totalBuyAmount());
-                            return TradeProfit.ofStockStatus(
-                                    entry.getKey(),
-                                    first.stockItemName(),
-                                    s.avgBuyPrice(),
-                                    s.holdingQuantity(),
-                                    first.currentPrice(),
-                                    s.evaluationAmount(),
-                                    s.evaluationProfit(),
-                                    s.realizedProfit(),
-                                    holdingCost);
-                        })
+        // 종목별 집계 (계좌 무시)
+        List<TradeProfit> stockAggregated = getStockGroupedTradeProfits(request, false).stream()
+                .map(this::toAssetStatusStock)
                 .sorted(
                         Comparator.comparing(
                                 TradeProfit::evaluationAmount,
@@ -361,6 +307,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         model.addAttribute("accountTotalMap", accountTotalMap);
         model.addAttribute("accountProfitBasisMap", accountProfitBasisMap);
         model.addAttribute("accountHoldingMap", accountHoldingMap);
+        model.addAttribute("stockItemList", stockItemList);
         model.addAttribute("stockAggregated", stockAggregated);
         model.addAttribute("totalEvaluationAmount", totalEvaluationAmount);
         model.addAttribute("totalEvaluationProfit", totalEvaluationProfit);
@@ -444,6 +391,73 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         return BigDecimal.ZERO;
     }
 
+    private List<TradeProfit> getStockGroupedTradeProfits(TradeProfitRequest request, boolean includeZeroHoldings) {
+        List<TradeProfit> stockGroupedTradeProfits = new ArrayList<>(
+                getEnrichedTradeProfits(request, TradeProfitRequestGroup.STOCKITEM));
+        if (!includeZeroHoldings) {
+            stockGroupedTradeProfits.removeIf(tp -> tp.holdingQuantity() == 0);
+        }
+        return stockGroupedTradeProfits;
+    }
+
+    private TradeProfit toPortfolioStock(TradeProfit profit) {
+        return TradeProfit.ofPortfolioStock(
+                profit.stockItemId(),
+                profit.stockItemName(),
+                profit.totalBuyAmount(),
+                profit.averageBuyPrice(),
+                profit.totalSellQuantity(),
+                profit.averageSellPrice(),
+                profit.totalSellAmount(),
+                profit.realizedProfit(),
+                profit.holdingQuantity(),
+                profit.currentPrice(),
+                profit.evaluationAmount(),
+                profit.evaluationProfit(),
+                profit.totalProfit(),
+                profit.totalBuyFee(),
+                profit.totalSellFee(),
+                profit.totalSellTax(),
+                profit.totalBuyCost(),
+                profit.totalSellProceeds(),
+                profit.averageBuyPriceNet(),
+                profit.averageSellPriceNet(),
+                profit.realizedProfitNet(),
+                profit.evaluationProfitNet(),
+                profit.totalProfitNet());
+    }
+
+    private TradeProfit toAssetStatusStock(TradeProfit profit) {
+        BigDecimal holdingCost = resolveCurrentHoldingCost(
+                profit.evaluationAmount(), profit.evaluationProfit(), profit.totalBuyAmount());
+        return TradeProfit.ofStockStatus(
+                profit.stockItemId(),
+                profit.stockItemName(),
+                profit.averageBuyPrice(),
+                profit.holdingQuantity(),
+                profit.currentPrice(),
+                profit.evaluationAmount(),
+                profit.evaluationProfit(),
+                profit.realizedProfit(),
+                holdingCost);
+    }
+
+    private TradeProfit toStockRealized(TradeProfit profit) {
+        return TradeProfit.ofStockRealized(
+                profit.stockItemId(),
+                profit.stockItemName(),
+                profit.holdingQuantity(),
+                profit.totalSellQuantity(),
+                profit.evaluationAmount(),
+                profit.evaluationProfit(),
+                profit.realizedProfitNet(),
+                profit.totalBuyCost(),
+                profit.totalSellProceeds(),
+                profit.totalBuyFee(),
+                profit.totalSellFee(),
+                profit.totalSellTax());
+    }
+
     private BigDecimal percentage(BigDecimal amount, BigDecimal base) {
         if (amount == null || base == null || base.compareTo(BigDecimal.ZERO) <= 0) {
             return BigDecimal.ZERO;
@@ -521,29 +535,14 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
                                             s.totalSellProceeds()));
                         });
 
-        // 종목별 집계 (계좌 통합, 보유량 0 포함) - ofStockRealized 사용으로 상세 필드 포함
-        Map<UUID, List<TradeProfit>> byStock = enrichedList.stream()
-                .collect(Collectors.groupingBy(TradeProfit::stockItemId));
-        List<TradeProfit> stockRealizedList = byStock.entrySet().stream()
-                .map(
-                        entry -> {
-                            List<TradeProfit> list = entry.getValue();
-                            TradeProfit first = list.get(0);
-                            var s = TradeProfitAggregator.aggregate(list);
-                            return TradeProfit.ofStockRealized(
-                                    entry.getKey(),
-                                    first.stockItemName(),
-                                    s.holdingQuantity(),
-                                    s.totalSellQuantity(),
-                                    s.evaluationAmount(),
-                                    s.evaluationProfit(),
-                                    s.realizedProfitNet(),
-                                    s.totalBuyCost(),
-                                    s.totalSellProceeds(),
-                                    s.totalBuyFee(),
-                                    s.totalSellFee(),
-                                    s.totalSellTax());
-                        })
+        // 종목별 집계 (계좌 무시, 보유량 0 포함) - ofStockRealized 사용으로 상세 필드 포함
+        List<TradeProfit> stockRealizedList = (stockTagSelection.hasFilter()
+                && request.getStockItemIdList() != null
+                && request.getStockItemIdList().isEmpty()
+                        ? new ArrayList<TradeProfit>()
+                        : getStockGroupedTradeProfits(request, true))
+                .stream()
+                .map(this::toStockRealized)
                 .filter(
                         tp -> tp.realizedProfitNet() != null
                                 && tp.realizedProfitNet().compareTo(BigDecimal.ZERO) != 0)

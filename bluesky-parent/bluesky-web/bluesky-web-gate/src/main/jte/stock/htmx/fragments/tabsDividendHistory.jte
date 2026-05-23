@@ -176,6 +176,27 @@
     String latestDividendDateLabel = MessageUtil.getMessage("stock.dividend.yield.column.latest.date");
     String noYieldAnalyticsLabel = MessageUtil.getMessage("stock.dividend.yield.message.no.analytics");
     String yieldBasisNoteLabel = MessageUtil.getMessage("stock.dividend.yield.basis.note");
+    String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.yield.selection.stock.helper");
+    String stockYieldSelectionSummaryLabel = MessageUtil.getMessage("stock.dividend.yield.selection.stock.summary");
+    String stockYieldSelectionCountLabel = MessageUtil.getMessage("stock.dividend.yield.selection.stock.count");
+    String accountYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.yield.selection.account.helper");
+    String accountYieldSelectionSummaryLabel = MessageUtil.getMessage("stock.dividend.yield.selection.account.summary");
+    String accountYieldSelectionCountLabel = MessageUtil.getMessage("stock.dividend.yield.selection.account.count");
+    String dividendYieldSelectionClearLabel = MessageUtil.getMessage("stock.analytics.selection.clear");
+    String dividendYieldSelectionWeightLabel = MessageUtil.getMessage("stock.analytics.selection.weight");
+    java.util.function.Function<String, String> stockTagTooltipByName = stockName -> {
+        if (stockName == null || stockName.isBlank() || stockItemList == null) {
+            return tagLabel + ": " + noDataLabel;
+        }
+
+        return stockItemList.stream()
+            .filter(stockItem -> stockItem != null && stockName.equals(stockItem.name()))
+            .findFirst()
+            .map(stockItem -> stockItem.tags() != null && !stockItem.tags().isEmpty()
+                ? tagLabel + ": " + String.join(", ", stockItem.tags())
+                : tagLabel + ": " + noDataLabel)
+            .orElse(tagLabel + ": " + noDataLabel);
+    };
     String countPattern = MessageUtil.getMessage("common.count");
     java.util.function.Function<BigDecimal, String> percentFormat = value -> value != null ? String.format("%.2f%%", value.doubleValue()) : "-";
     java.util.function.Function<Long, String> countFormat = count -> java.text.MessageFormat.format(countPattern, count);
@@ -484,15 +505,62 @@
         </div>
 
         <div class="card min-w-0 bg-base-100 shadow-sm border border-base-200">
-            <div class="card-body p-4">
+            <div class="card-body p-4" data-dividend-yield-selection-section>
                 <div class="text-sm font-bold mb-3">${stockYieldSectionLabel}</div>
                 @if(stockYieldRows == null || stockYieldRows.isEmpty())
                     <div class="text-sm text-base-content/40">${noYieldAnalyticsLabel}</div>
                 @else
+                    <div class="mb-3 flex flex-col gap-3">
+                        <p class="text-xs text-base-content/50">${stockYieldSelectionHelperLabel}</p>
+                        <div class="hidden rounded-2xl border border-info/15 bg-info/5 px-4 py-3"
+                             data-dividend-yield-selection-summary
+                             data-count-template="${stockYieldSelectionCountLabel}"
+                             data-total-net-amount="${safeAllNet.toPlainString()}"
+                             data-weight-label="${dividendYieldSelectionWeightLabel}"
+                             data-basis-label="${yieldOnBasisAverageCostLabel}"
+                             aria-live="polite">
+                            <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h3 class="text-sm font-semibold">${stockYieldSelectionSummaryLabel}</h3>
+                                    <span class="badge badge-info badge-outline" data-dividend-yield-selection-count>${stockYieldSelectionSummaryLabel}</span>
+                                    <span class="badge badge-ghost" data-dividend-yield-selection-weight-badge>${dividendYieldSelectionWeightLabel} 0.0%</span>
+                                </div>
+                                <button type="button" class="btn btn-ghost btn-xs self-start" data-dividend-yield-selection-clear>${dividendYieldSelectionClearLabel}</button>
+                            </div>
+                            <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                    <div class="text-xs text-base-content/60">${grossAmountLabel}</div>
+                                    <div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-gross>0</div>
+                                </div>
+                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                    <div class="text-xs text-base-content/60">${netAmountLabel}</div>
+                                    <div class="mt-1 font-mono font-semibold amount-value text-dividend" data-dividend-yield-selection-net>0</div>
+                                </div>
+                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                    <div class="text-xs text-base-content/60">${taxLabel}</div>
+                                    <div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-tax>0</div>
+                                </div>
+                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                    <div class="text-xs text-base-content/60">${taxableAmountLabel}</div>
+                                    <div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-taxable>0</div>
+                                </div>
+                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                    <div class="text-xs text-base-content/60">${dailyAverageInvestedCapitalLabel}</div>
+                                    <div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-daily-capital>0</div>
+                                </div>
+                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                    <div class="text-xs text-base-content/60">${yieldOnDailyAverageCostLabel}</div>
+                                    <div class="mt-1 font-mono font-semibold text-dividend" data-dividend-yield-selection-yield>0.00%</div>
+                                    <div class="text-xs text-base-content/60" data-dividend-yield-selection-basis-yield>${yieldOnBasisAverageCostLabel} 0.00%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="overflow-x-auto">
-                        <table class="table table-xs w-full">
+                        <table class="table table-xs w-full" data-dividend-yield-selection-table>
                             <thead>
                                 <tr class="text-base-content/60">
+                                    <th class="w-10"></th>
                                     <th>${stockNameLabel}</th>
                                     <th class="text-right">${grossAmountLabel}</th>
                                     <th class="text-right">${netAmountLabel}</th>
@@ -509,8 +577,26 @@
                             <tbody>
                                 @for(DividendYieldGroupView row : stockYieldRows)
                                     !{BigDecimal rowTaxAmount = row.totalGrossAmount() != null && row.totalNetAmount() != null ? row.totalGrossAmount().subtract(row.totalNetAmount()) : null;}
-                                    <tr>
-                                        <td class="font-medium">${row.label()}</td>
+                                    !{String stockTagTooltip = stockTagTooltipByName.apply(row.label());}
+                                    <tr class="dividend-yield-stock-row hover"
+                                        data-dividend-yield-row
+                                        data-selection-class="dividend-yield-stock-row-selected"
+                                        tabindex="0"
+                                        role="button"
+                                        aria-pressed="false"
+                                        data-gross-amount="${row.totalGrossAmount() != null ? row.totalGrossAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-net-amount="${row.totalNetAmount() != null ? row.totalNetAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-tax-amount="${rowTaxAmount != null ? rowTaxAmount.toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-taxable-amount="${row.totalTaxableAmount() != null ? row.totalTaxableAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-average-daily-principal-cost="${row.averageDailyPrincipalCost() != null ? row.averageDailyPrincipalCost().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-average-principal-cost="${row.averagePrincipalCost() != null ? row.averagePrincipalCost().toPlainString() : BigDecimal.ZERO.toPlainString()}">
+                                        <td class="align-top pt-2">
+                                            <input type="checkbox"
+                                                   class="checkbox checkbox-sm"
+                                                   data-dividend-yield-selection-toggle
+                                                   aria-label="${row.label() != null ? row.label() : stockNameLabel}">
+                                        </td>
+                                        <td class="font-medium"><span title="${stockTagTooltip}">${row.label()}</span></td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
                                         <td class="text-right amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
@@ -531,15 +617,62 @@
         </div>
 
         <div class="card min-w-0 bg-base-100 shadow-sm border border-base-200">
-            <div class="card-body p-4">
+            <div class="card-body p-4" data-dividend-yield-selection-section>
                 <div class="text-sm font-bold mb-3">${accountYieldSectionLabel}</div>
                 @if(accountYieldRows == null || accountYieldRows.isEmpty())
                     <div class="text-sm text-base-content/40">${noYieldAnalyticsLabel}</div>
                 @else
+                    <div class="mb-3 flex flex-col gap-3">
+                        <p class="text-xs text-base-content/50">${accountYieldSelectionHelperLabel}</p>
+                        <div class="hidden rounded-2xl border border-secondary/15 bg-secondary/5 px-4 py-3"
+                             data-dividend-yield-selection-summary
+                             data-count-template="${accountYieldSelectionCountLabel}"
+                             data-total-net-amount="${safeAllNet.toPlainString()}"
+                             data-weight-label="${dividendYieldSelectionWeightLabel}"
+                             data-basis-label="${yieldOnBasisAverageCostLabel}"
+                             aria-live="polite">
+                            <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h3 class="text-sm font-semibold">${accountYieldSelectionSummaryLabel}</h3>
+                                    <span class="badge badge-secondary badge-outline" data-dividend-yield-selection-count>${accountYieldSelectionSummaryLabel}</span>
+                                    <span class="badge badge-ghost" data-dividend-yield-selection-weight-badge>${dividendYieldSelectionWeightLabel} 0.0%</span>
+                                </div>
+                                <button type="button" class="btn btn-ghost btn-xs self-start" data-dividend-yield-selection-clear>${dividendYieldSelectionClearLabel}</button>
+                            </div>
+                            <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                    <div class="text-xs text-base-content/60">${grossAmountLabel}</div>
+                                    <div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-gross>0</div>
+                                </div>
+                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                    <div class="text-xs text-base-content/60">${netAmountLabel}</div>
+                                    <div class="mt-1 font-mono font-semibold amount-value text-dividend" data-dividend-yield-selection-net>0</div>
+                                </div>
+                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                    <div class="text-xs text-base-content/60">${taxLabel}</div>
+                                    <div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-tax>0</div>
+                                </div>
+                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                    <div class="text-xs text-base-content/60">${taxableAmountLabel}</div>
+                                    <div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-taxable>0</div>
+                                </div>
+                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                    <div class="text-xs text-base-content/60">${dailyAverageInvestedCapitalLabel}</div>
+                                    <div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-daily-capital>0</div>
+                                </div>
+                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                    <div class="text-xs text-base-content/60">${yieldOnDailyAverageCostLabel}</div>
+                                    <div class="mt-1 font-mono font-semibold text-dividend" data-dividend-yield-selection-yield>0.00%</div>
+                                    <div class="text-xs text-base-content/60" data-dividend-yield-selection-basis-yield>${yieldOnBasisAverageCostLabel} 0.00%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="overflow-x-auto">
-                        <table class="table table-xs w-full">
+                        <table class="table table-xs w-full" data-dividend-yield-selection-table>
                             <thead>
                                 <tr class="text-base-content/60">
+                                    <th class="w-10"></th>
                                     <th>${accountLabel}</th>
                                     <th class="text-right">${grossAmountLabel}</th>
                                     <th class="text-right">${netAmountLabel}</th>
@@ -556,7 +689,24 @@
                             <tbody>
                                 @for(DividendYieldGroupView row : accountYieldRows)
                                     !{BigDecimal rowTaxAmount = row.totalGrossAmount() != null && row.totalNetAmount() != null ? row.totalGrossAmount().subtract(row.totalNetAmount()) : null;}
-                                    <tr>
+                                    <tr class="dividend-yield-account-row hover"
+                                        data-dividend-yield-row
+                                        data-selection-class="dividend-yield-account-row-selected"
+                                        tabindex="0"
+                                        role="button"
+                                        aria-pressed="false"
+                                        data-gross-amount="${row.totalGrossAmount() != null ? row.totalGrossAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-net-amount="${row.totalNetAmount() != null ? row.totalNetAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-tax-amount="${rowTaxAmount != null ? rowTaxAmount.toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-taxable-amount="${row.totalTaxableAmount() != null ? row.totalTaxableAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-average-daily-principal-cost="${row.averageDailyPrincipalCost() != null ? row.averageDailyPrincipalCost().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-average-principal-cost="${row.averagePrincipalCost() != null ? row.averagePrincipalCost().toPlainString() : BigDecimal.ZERO.toPlainString()}">
+                                        <td class="align-top pt-2">
+                                            <input type="checkbox"
+                                                   class="checkbox checkbox-sm"
+                                                   data-dividend-yield-selection-toggle
+                                                   aria-label="${row.label() != null ? row.label() : accountLabel}">
+                                        </td>
                                         <td class="font-medium">${row.label()}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
@@ -577,6 +727,35 @@
             </div>
         </div>
     </div>
+
+    <style>
+        .dividend-yield-stock-row,
+        .dividend-yield-account-row {
+            cursor: pointer;
+        }
+
+        .dividend-yield-stock-row.dividend-yield-stock-row-selected > td {
+            background-color: color-mix(in oklch, var(--color-info) 10%, var(--color-base-100));
+        }
+
+        .dividend-yield-stock-row.dividend-yield-stock-row-selected > td:first-child {
+            box-shadow: inset 3px 0 0 color-mix(in oklch, var(--color-info) 65%, transparent);
+        }
+
+        .dividend-yield-account-row.dividend-yield-account-row-selected > td {
+            background-color: color-mix(in oklch, var(--color-secondary) 10%, var(--color-base-100));
+        }
+
+        .dividend-yield-account-row.dividend-yield-account-row-selected > td:first-child {
+            box-shadow: inset 3px 0 0 color-mix(in oklch, var(--color-secondary) 65%, transparent);
+        }
+
+        .dividend-yield-stock-row:focus-visible,
+        .dividend-yield-account-row:focus-visible {
+            outline: 2px solid color-mix(in oklch, var(--color-info) 35%, transparent);
+            outline-offset: -2px;
+        }
+    </style>
 
     <!-- Collapsible Detail List -->
     <details id="detailSection" class="mb-4">
@@ -743,6 +922,196 @@
 
         function formatCount(value) {
             return countPattern.replace('{0}', formatNumber(value));
+        }
+
+        function formatFixedNumber(value, fractionDigits) {
+            return new Intl.NumberFormat(undefined, {
+                minimumFractionDigits: fractionDigits,
+                maximumFractionDigits: fractionDigits
+            }).format(value);
+        }
+
+        function setDividendYieldRowSelection(row, selected) {
+            if (!row) {
+                return;
+            }
+
+            const selectionClass = row.dataset.selectionClass || 'dividend-yield-row-selected';
+            row.classList.toggle(selectionClass, selected);
+            row.setAttribute('aria-pressed', selected ? 'true' : 'false');
+
+            const checkbox = row.querySelector('[data-dividend-yield-selection-toggle]');
+            if (checkbox) {
+                checkbox.checked = selected;
+            }
+        }
+
+        function updateDividendYieldSelectionSummary(section) {
+            if (!section) {
+                return;
+            }
+
+            const summary = section.querySelector('[data-dividend-yield-selection-summary]');
+            const table = section.querySelector('[data-dividend-yield-selection-table]');
+            if (!summary || !table || !table.tBodies || table.tBodies.length === 0) {
+                return;
+            }
+
+            const selectedRows = table.tBodies[0].querySelectorAll('[data-dividend-yield-row][aria-pressed="true"]');
+            const selectedCount = selectedRows.length;
+            summary.classList.toggle('hidden', selectedCount === 0);
+
+            if (selectedCount === 0) {
+                return;
+            }
+
+            let totalGrossAmount = 0;
+            let totalNetAmount = 0;
+            let totalTaxAmount = 0;
+            let totalTaxableAmount = 0;
+            let totalDailyPrincipalCost = 0;
+            let totalAveragePrincipalCost = 0;
+
+            for (let i = 0; i < selectedRows.length; i++) {
+                const row = selectedRows[i];
+                totalGrossAmount += Number(row.dataset.grossAmount || '0');
+                totalNetAmount += Number(row.dataset.netAmount || '0');
+                totalTaxAmount += Number(row.dataset.taxAmount || '0');
+                totalTaxableAmount += Number(row.dataset.taxableAmount || '0');
+                totalDailyPrincipalCost += Number(row.dataset.averageDailyPrincipalCost || '0');
+                totalAveragePrincipalCost += Number(row.dataset.averagePrincipalCost || '0');
+            }
+
+            const totalNetReference = Number(summary.dataset.totalNetAmount || '0');
+            const selectionWeight = totalNetReference > 0
+                ? (totalNetAmount / totalNetReference) * 100
+                : 0;
+            const yieldOnDailyAverageCost = totalDailyPrincipalCost > 0
+                ? (totalNetAmount / totalDailyPrincipalCost) * 100
+                : 0;
+            const yieldOnBasisAverageCost = totalAveragePrincipalCost > 0
+                ? (totalNetAmount / totalAveragePrincipalCost) * 100
+                : 0;
+
+            const countLabel = summary.querySelector('[data-dividend-yield-selection-count]');
+            if (countLabel) {
+                countLabel.textContent = summary.dataset.countTemplate.replace('{0}', formatNumber(selectedCount));
+            }
+
+            const weightBadge = summary.querySelector('[data-dividend-yield-selection-weight-badge]');
+            if (weightBadge) {
+                weightBadge.textContent = summary.dataset.weightLabel + ' ' + formatFixedNumber(selectionWeight, 1) + '%';
+            }
+
+            const grossLabel = summary.querySelector('[data-dividend-yield-selection-gross]');
+            if (grossLabel) {
+                grossLabel.textContent = formatFixedNumber(totalGrossAmount, 0);
+            }
+
+            const netLabel = summary.querySelector('[data-dividend-yield-selection-net]');
+            if (netLabel) {
+                netLabel.textContent = formatFixedNumber(totalNetAmount, 0);
+            }
+
+            const taxLabelEl = summary.querySelector('[data-dividend-yield-selection-tax]');
+            if (taxLabelEl) {
+                taxLabelEl.textContent = formatFixedNumber(totalTaxAmount, 0);
+            }
+
+            const taxableLabelEl = summary.querySelector('[data-dividend-yield-selection-taxable]');
+            if (taxableLabelEl) {
+                taxableLabelEl.textContent = formatFixedNumber(totalTaxableAmount, 0);
+            }
+
+            const dailyCapitalLabel = summary.querySelector('[data-dividend-yield-selection-daily-capital]');
+            if (dailyCapitalLabel) {
+                dailyCapitalLabel.textContent = formatFixedNumber(totalDailyPrincipalCost, 0);
+            }
+
+            const yieldLabel = summary.querySelector('[data-dividend-yield-selection-yield]');
+            if (yieldLabel) {
+                yieldLabel.textContent = formatFixedNumber(yieldOnDailyAverageCost, 2) + '%';
+            }
+
+            const basisYieldLabel = summary.querySelector('[data-dividend-yield-selection-basis-yield]');
+            if (basisYieldLabel) {
+                basisYieldLabel.textContent = summary.dataset.basisLabel + ' ' + formatFixedNumber(yieldOnBasisAverageCost, 2) + '%';
+            }
+        }
+
+        function initializeDividendYieldSelection() {
+            const sections = document.querySelectorAll('[data-dividend-yield-selection-section]');
+            for (let i = 0; i < sections.length; i++) {
+                const section = sections[i];
+                if (section.dataset.selectionInitialized === 'true') {
+                    continue;
+                }
+
+                const table = section.querySelector('[data-dividend-yield-selection-table]');
+                if (!table || !table.tBodies || table.tBodies.length === 0) {
+                    continue;
+                }
+
+                section.dataset.selectionInitialized = 'true';
+
+                const rows = table.tBodies[0].querySelectorAll('[data-dividend-yield-row]');
+                for (let j = 0; j < rows.length; j++) {
+                    const row = rows[j];
+
+                    row.addEventListener('click', function(event) {
+                        if (event.target && event.target.closest('button, a, input, label, select, textarea')) {
+                            return;
+                        }
+
+                        const isSelected = this.getAttribute('aria-pressed') === 'true';
+                        setDividendYieldRowSelection(this, !isSelected);
+                        updateDividendYieldSelectionSummary(section);
+                    });
+
+                    row.addEventListener('keydown', function(event) {
+                        if (event.target && event.target.closest('button, a, input, label, select, textarea')) {
+                            return;
+                        }
+
+                        if (event.key !== 'Enter' && event.key !== ' ') {
+                            return;
+                        }
+
+                        event.preventDefault();
+                        const isSelected = this.getAttribute('aria-pressed') === 'true';
+                        setDividendYieldRowSelection(this, !isSelected);
+                        updateDividendYieldSelectionSummary(section);
+                    });
+
+                    const checkbox = row.querySelector('[data-dividend-yield-selection-toggle]');
+                    if (checkbox) {
+                        checkbox.addEventListener('click', function(event) {
+                            event.stopPropagation();
+                        });
+
+                        checkbox.addEventListener('change', function(event) {
+                            event.stopPropagation();
+                            const targetRow = this.closest('[data-dividend-yield-row]');
+                            setDividendYieldRowSelection(targetRow, this.checked);
+                            updateDividendYieldSelectionSummary(section);
+                        });
+                    }
+                }
+
+                const clearButton = section.querySelector('[data-dividend-yield-selection-clear]');
+                if (clearButton) {
+                    clearButton.addEventListener('click', function() {
+                        const selectedRows = table.tBodies[0].querySelectorAll('[data-dividend-yield-row][aria-pressed="true"]');
+                        for (let k = 0; k < selectedRows.length; k++) {
+                            setDividendYieldRowSelection(selectedRows[k], false);
+                        }
+
+                        updateDividendYieldSelectionSummary(section);
+                    });
+                }
+
+                updateDividendYieldSelectionSummary(section);
+            }
         }
 
         let monthlyChart = null;
@@ -940,6 +1309,8 @@
                 if (arrow) arrow.style.transform = detailSection.open ? 'rotate(90deg)' : '';
             });
         }
+
+        initializeDividendYieldSelection();
 
         if (window.Chart) {
             setTimeout(initAll, 0);
