@@ -3,6 +3,7 @@
 @import java.text.DecimalFormat
 @import java.time.LocalDate
 @import java.util.List
+@import java.util.Map
 @import net.luversof.web.gate.stock.domain.StockItem
 @import net.luversof.web.gate.stock.dto.request.MonthlyDividendSnapshotUpsertRequest
 @import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse
@@ -16,16 +17,20 @@
 @param String monthlyDividendErrorMessage = ""
 @param String monthlyDividendResult = ""
 @param Integer monthlyDividendSavedCount = null
-@param String monthlyDividendSort = "combined-return"
-@param String monthlyDividendDirection = "desc"
+@param String monthlyDividendSort = "display-order"
+@param String monthlyDividendDirection = "asc"
 @param String monthlyDividendKeyword = ""
 @param BigDecimal monthlyDividendMinAnnualYield = null
 @param boolean monthlyDividendPositiveOnly = false
 @param boolean monthlyDividendHasSavedRows = false
+@param Map<String, Integer> monthlyDividendProfileDisplayOrders = java.util.Map.of()
+@param List<String> monthlyDividendProfileOrderedSymbols = java.util.List.of()
+@param boolean monthlyDividendReorderEnabled = false
 
 !{
 	DecimalFormat amountFormat = new DecimalFormat("#,##0");
 	DecimalFormat percentFormat = new DecimalFormat("#,##0.00");
+	boolean monthlyDividendDisplayOrderSort = "display-order".equals(monthlyDividendSort);
 	MonthlyDividendSnapshotResponse bestChoice = monthlyDividendSummary != null ? monthlyDividendSummary.bestChoice() : null;
 	BigDecimal totalLatestMonthlyDividend = monthlyDividendSummary != null ? monthlyDividendSummary.totalLatestMonthlyDividend() : BigDecimal.ZERO;
 	BigDecimal totalExpectedMonthlyDividend = monthlyDividendSummary != null ? monthlyDividendSummary.totalExpectedMonthlyDividend() : BigDecimal.ZERO;
@@ -49,10 +54,21 @@
 	String totalTaxableBaseSummaryLabel = MessageUtil.getMessage("stock.simulator.monthly.summary.total.taxable.base");
 	String totalTaxableBaseSummaryDesc = MessageUtil.getMessage("stock.simulator.monthly.summary.total.taxable.base.desc");
 	String monthlySelectionHelperLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.helper");
+	String monthlyDividendReorderEnabledLabel = MessageUtil.getMessage("stock.simulator.monthly.reorder.enabled");
+	String monthlyDividendReorderDisabledLabel = MessageUtil.getMessage("stock.simulator.monthly.reorder.disabled");
 	String selectionSummaryLabel = MessageUtil.getMessage("stock.analytics.selection.summary");
 	String selectionCountTemplate = MessageUtil.getMessage("stock.analytics.selection.count");
 	String selectionClearLabel = MessageUtil.getMessage("stock.analytics.selection.clear");
 	String selectionWeightLabel = MessageUtil.getMessage("stock.analytics.selection.weight");
+	String monthlyDividendTableBaseUrl = "/stock/simulator?tab=monthly-dividend";
+	String currentDirectionLabel = MessageUtil.getMessage("asc".equals(monthlyDividendDirection) ? "stock.simulator.monthly.direction.asc" : "stock.simulator.monthly.direction.desc");
+	String displayOrderDirection = "display-order".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "asc";
+	String monthlyDividendDirectionToggle = "monthly-dividend".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "desc";
+	String taxableBaseDirectionToggle = "taxable-base".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "asc";
+	String annualYieldDirectionToggle = "annual-yield".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "desc";
+	String annualYieldOnCostDirectionToggle = "annual-yield-on-cost".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "desc";
+	String combinedReturnDirectionToggle = "combined-return".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "desc";
+	String monthlyDividendOrderEndpoint = "/stock/dividend/monthly-reference/profile/order";
 	String successMessage = "";
 	if ("single-saved".equals(monthlyDividendResult)) {
 		successMessage = "월배당 데이터를 저장했습니다.";
@@ -89,11 +105,6 @@
 						<input type="hidden" name="tab" value="monthly-dividend" />
 						<input type="hidden" name="sort" value="${monthlyDividendSort}" />
 						<input type="hidden" name="direction" value="${monthlyDividendDirection}" />
-						<input type="hidden" name="keyword" value="${monthlyDividendKeyword}" />
-						<input type="hidden" name="minAnnualYield" value="${minAnnualYieldValue}" />
-						@if(monthlyDividendPositiveOnly)
-							<input type="hidden" name="positiveOnly" value="true" />
-						@endif
 						<div class="space-y-1">
 							<p class="text-sm font-medium text-base-content">${MessageUtil.getMessage("stock.simulator.monthly.prefill.title")}</p>
 							<p class="text-xs leading-5 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.prefill.desc")}</p>
@@ -142,11 +153,6 @@
 					<form method="post" action="/stock/simulator/monthly-dividend" class="grid gap-4">
 						<input type="hidden" name="sort" value="${monthlyDividendSort}" />
 						<input type="hidden" name="direction" value="${monthlyDividendDirection}" />
-						<input type="hidden" name="keyword" value="${monthlyDividendKeyword}" />
-						<input type="hidden" name="minAnnualYield" value="${minAnnualYieldValue}" />
-						@if(monthlyDividendPositiveOnly)
-							<input type="hidden" name="positiveOnly" value="true" />
-						@endif
 						<label class="form-control">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.symbol")}</span></div>
 							<input name="symbol" type="text" list="monthlyDividendStockOptions" value="${symbolValue}" placeholder="O" class="input input-bordered w-full uppercase" required />
@@ -218,86 +224,11 @@
 
 			<section class="card border border-base-300 bg-base-100 shadow-sm">
 				<div class="card-body gap-5">
-					<div class="flex flex-col gap-2 xl:flex-row xl:items-start xl:justify-between">
+					<div class="space-y-2">
 						<div class="space-y-2">
 							<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.simulator.monthly.section.table.title")}</h2>
 							<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.section.table.desc")}</p>
 						</div>
-						<form method="get" action="/stock/simulator" class="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-							<input type="hidden" name="tab" value="monthly-dividend" />
-							<label class="form-control">
-								<div class="label py-1"><span class="label-text text-xs font-medium">${MessageUtil.getMessage("stock.simulator.monthly.filter.keyword")}</span></div>
-								<input name="keyword" type="text" value="${monthlyDividendKeyword}" class="input input-bordered input-sm w-full" />
-							</label>
-							<label class="form-control">
-								<div class="label py-1"><span class="label-text text-xs font-medium">${MessageUtil.getMessage("stock.simulator.monthly.filter.min.annual.yield")}</span></div>
-								<input name="minAnnualYield" type="number" min="0" step="0.01" value="${minAnnualYieldValue}" class="input input-bordered input-sm w-full" />
-							</label>
-							<label class="form-control">
-								<div class="label py-1"><span class="label-text text-xs font-medium">${MessageUtil.getMessage("stock.simulator.monthly.filter.sort")}</span></div>
-								<select name="sort" class="select select-bordered select-sm w-full">
-									@if("combined-return".equals(monthlyDividendSort))
-										<option value="combined-return" selected>${MessageUtil.getMessage("stock.simulator.monthly.sort.combined.return")}</option>
-									@else
-										<option value="combined-return">${MessageUtil.getMessage("stock.simulator.monthly.sort.combined.return")}</option>
-									@endif
-									@if("annual-yield-on-cost".equals(monthlyDividendSort))
-										<option value="annual-yield-on-cost" selected>${MessageUtil.getMessage("stock.simulator.monthly.sort.annual.yield.on.cost")}</option>
-									@else
-										<option value="annual-yield-on-cost">${MessageUtil.getMessage("stock.simulator.monthly.sort.annual.yield.on.cost")}</option>
-									@endif
-									@if("annual-yield".equals(monthlyDividendSort))
-										<option value="annual-yield" selected>${MessageUtil.getMessage("stock.simulator.monthly.sort.annual.yield")}</option>
-									@else
-										<option value="annual-yield">${MessageUtil.getMessage("stock.simulator.monthly.sort.annual.yield")}</option>
-									@endif
-									@if("monthly-dividend".equals(monthlyDividendSort))
-										<option value="monthly-dividend" selected>${MessageUtil.getMessage("stock.simulator.monthly.sort.monthly.dividend")}</option>
-									@else
-										<option value="monthly-dividend">${MessageUtil.getMessage("stock.simulator.monthly.sort.monthly.dividend")}</option>
-									@endif
-									@if("taxable-base".equals(monthlyDividendSort))
-										<option value="taxable-base" selected>${MessageUtil.getMessage("stock.simulator.monthly.sort.taxable.base")}</option>
-									@else
-										<option value="taxable-base">${MessageUtil.getMessage("stock.simulator.monthly.sort.taxable.base")}</option>
-									@endif
-									@if("updated-date".equals(monthlyDividendSort))
-										<option value="updated-date" selected>${MessageUtil.getMessage("stock.simulator.monthly.sort.updated.date")}</option>
-									@else
-										<option value="updated-date">${MessageUtil.getMessage("stock.simulator.monthly.sort.updated.date")}</option>
-									@endif
-								</select>
-							</label>
-							<label class="form-control">
-								<div class="label py-1"><span class="label-text text-xs font-medium">${MessageUtil.getMessage("stock.simulator.monthly.filter.direction")}</span></div>
-								<select name="direction" class="select select-bordered select-sm w-full">
-									@if("desc".equals(monthlyDividendDirection))
-										<option value="desc" selected>${MessageUtil.getMessage("stock.simulator.monthly.direction.desc")}</option>
-									@else
-										<option value="desc">${MessageUtil.getMessage("stock.simulator.monthly.direction.desc")}</option>
-									@endif
-									@if("asc".equals(monthlyDividendDirection))
-										<option value="asc" selected>${MessageUtil.getMessage("stock.simulator.monthly.direction.asc")}</option>
-									@else
-										<option value="asc">${MessageUtil.getMessage("stock.simulator.monthly.direction.asc")}</option>
-									@endif
-								</select>
-							</label>
-							<div class="flex flex-col justify-end gap-2">
-								<label class="label cursor-pointer justify-start gap-2 rounded-xl border border-base-300 px-3 py-2">
-									@if(monthlyDividendPositiveOnly)
-										<input name="positiveOnly" type="checkbox" value="true" class="checkbox checkbox-primary checkbox-sm" checked />
-									@else
-										<input name="positiveOnly" type="checkbox" value="true" class="checkbox checkbox-primary checkbox-sm" />
-									@endif
-									<span class="label-text text-sm">${MessageUtil.getMessage("stock.simulator.monthly.filter.positive.only")}</span>
-								</label>
-								<div class="flex gap-2">
-									<button type="submit" class="btn btn-primary btn-sm flex-1">${MessageUtil.getMessage("stock.simulator.monthly.filter.apply")}</button>
-									<a href="/stock/simulator?tab=monthly-dividend" class="btn btn-ghost btn-sm flex-1">${MessageUtil.getMessage("stock.simulator.monthly.filter.reset")}</a>
-								</div>
-							</div>
-						</form>
 					</div>
 
 					@if(monthlyDividendRows == null || monthlyDividendRows.isEmpty())
@@ -313,6 +244,8 @@
 					@else
 						<div class="space-y-4" data-monthly-simulator-selection-section>
 							<p class="text-xs text-base-content/50">${monthlySelectionHelperLabel}</p>
+							<div id="monthlyDividendSimulatorOrderStatus" class="hidden"></div>
+							<p class="text-xs ${monthlyDividendReorderEnabled ? "text-primary/70" : "text-base-content/40"}">${monthlyDividendReorderEnabled ? monthlyDividendReorderEnabledLabel : monthlyDividendReorderDisabledLabel}</p>
 							<div class="hidden rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3"
 								 data-monthly-selection-summary
 								 data-count-template="${selectionCountTemplate}"
@@ -355,32 +288,80 @@
 								<thead>
 									<tr>
 										<th class="w-10"></th>
-										<th>${MessageUtil.getMessage("stock.simulator.monthly.table.header.symbol")}</th>
+										<th>
+											<a href="${monthlyDividendTableBaseUrl}&sort=display-order&direction=${displayOrderDirection}" class="link link-hover font-medium no-underline">
+												${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.display.order")} / ${MessageUtil.getMessage("stock.simulator.monthly.table.header.symbol")}
+												@if("display-order".equals(monthlyDividendSort))
+													<span class="ml-1 text-xs text-base-content/60">${currentDirectionLabel}</span>
+												@endif
+											</a>
+										</th>
 										<th>${MessageUtil.getMessage("stock.simulator.monthly.table.header.name")}</th>
 										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.current.price")}</th>
 										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.latest.monthly.dividend")}</th>
 										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.average.monthly.dividend")}</th>
-										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.taxable.base.ratio")}</th>
+										<th class="text-right">
+											<a href="${monthlyDividendTableBaseUrl}&sort=taxable-base&direction=${taxableBaseDirectionToggle}" class="link link-hover font-medium no-underline">
+												${MessageUtil.getMessage("stock.simulator.monthly.table.header.taxable.base.ratio")}
+												@if("taxable-base".equals(monthlyDividendSort))
+													<span class="ml-1 text-xs text-base-content/60">${currentDirectionLabel}</span>
+												@endif
+											</a>
+										</th>
 										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.quantity")}</th>
 										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.average.buy.price")}</th>
-										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.monthly.dividend")}</th>
+										<th class="text-right">
+											<a href="${monthlyDividendTableBaseUrl}&sort=monthly-dividend&direction=${monthlyDividendDirectionToggle}" class="link link-hover font-medium no-underline">
+												${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.monthly.dividend")}
+												@if("monthly-dividend".equals(monthlyDividendSort))
+													<span class="ml-1 text-xs text-base-content/60">${currentDirectionLabel}</span>
+												@endif
+											</a>
+										</th>
 										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.monthly.yield")}</th>
-										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.annual.yield")}</th>
+										<th class="text-right">
+											<a href="${monthlyDividendTableBaseUrl}&sort=annual-yield&direction=${annualYieldDirectionToggle}" class="link link-hover font-medium no-underline">
+												${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.annual.yield")}
+												@if("annual-yield".equals(monthlyDividendSort))
+													<span class="ml-1 text-xs text-base-content/60">${currentDirectionLabel}</span>
+												@endif
+											</a>
+										</th>
 										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.monthly.yield.on.cost")}</th>
-										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.annual.yield.on.cost")}</th>
+										<th class="text-right">
+											<a href="${monthlyDividendTableBaseUrl}&sort=annual-yield-on-cost&direction=${annualYieldOnCostDirectionToggle}" class="link link-hover font-medium no-underline">
+												${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.annual.yield.on.cost")}
+												@if("annual-yield-on-cost".equals(monthlyDividendSort))
+													<span class="ml-1 text-xs text-base-content/60">${currentDirectionLabel}</span>
+												@endif
+											</a>
+										</th>
 										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.taxable.base")}</th>
 										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.total.return.on.cost")}</th>
-										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.combined.return")}</th>
+										<th class="text-right">
+											<a href="${monthlyDividendTableBaseUrl}&sort=combined-return&direction=${combinedReturnDirectionToggle}" class="link link-hover font-medium no-underline">
+												${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.combined.return")}
+												@if("combined-return".equals(monthlyDividendSort))
+													<span class="ml-1 text-xs text-base-content/60">${currentDirectionLabel}</span>
+												@endif
+											</a>
+										</th>
 									</tr>
 								</thead>
-								<tbody>
+								<tbody data-profile-order-list="true" data-profile-order-status-id="monthlyDividendSimulatorOrderStatus" data-profile-order-endpoint="${monthlyDividendOrderEndpoint}" data-profile-order-row-selector="tr[data-profile-order-row='true']" data-profile-order-handle-selector="[data-profile-order-handle]" data-profile-order-all-symbols="${String.join(",", monthlyDividendProfileOrderedSymbols)}" data-profile-reorder-enabled="${monthlyDividendReorderEnabled}" data-success-message="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.reordered.profile")}" data-fallback-error-message="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.reordered.profile.failed")}">
 									@for(MonthlyDividendSnapshotResponse row : monthlyDividendRows)
 											!{BigDecimal latestMonthlyDividendAmount = (row.latestMonthlyDividendPerShare() != null ? row.latestMonthlyDividendPerShare() : BigDecimal.ZERO).multiply(BigDecimal.valueOf(row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L));}
-											<tr class="monthly-dividend-row hover"
+											!{String normalizedRowSymbol = row.stockItemSymbol() != null ? row.stockItemSymbol().trim().toUpperCase(java.util.Locale.ROOT) : "";}
+											!{Integer rowDisplayOrder = monthlyDividendProfileDisplayOrders != null ? monthlyDividendProfileDisplayOrders.get(normalizedRowSymbol) : null;}
+											!{boolean rowReorderable = monthlyDividendReorderEnabled && rowDisplayOrder != null;}
+											<tr class="monthly-dividend-row hover${rowReorderable ? " cursor-move" : ""}"
 												data-monthly-selection-row
+												data-profile-order-row="${rowDisplayOrder != null ? "true" : "false"}"
+												data-symbol="${normalizedRowSymbol}"
 												tabindex="0"
 												role="button"
 												aria-pressed="false"
+												draggable="${rowReorderable}"
 												data-latest-monthly-dividend="${latestMonthlyDividendAmount.toPlainString()}"
 												data-expected-monthly-dividend="${(row.expectedMonthlyDividend() != null ? row.expectedMonthlyDividend() : BigDecimal.ZERO).toPlainString()}"
 												data-expected-taxable-base="${(row.expectedTaxableBaseAmount() != null ? row.expectedTaxableBaseAmount() : BigDecimal.ZERO).toPlainString()}"
@@ -391,7 +372,19 @@
 														data-monthly-selection-toggle
 														aria-label="${row.stockItemName() != null ? row.stockItemName() : row.stockItemSymbol()}">
 												</td>
-												<td class="font-medium">@if(bestChoice != null && bestChoice.id() != null && bestChoice.id().equals(row.id()))<span class="badge badge-success badge-xs mr-2">${MessageUtil.getMessage("stock.simulator.compare.best.choice")}</span>@endif${row.stockItemSymbol()}</td>
+												<td class="font-medium">
+													<div class="flex items-center gap-2">
+														<span class="inline-flex items-center gap-1 rounded-full border border-base-300/70 bg-base-200/60 px-2 py-0.5 text-xs text-base-content/60">
+															@if(rowReorderable)
+																<span class="font-mono select-none" data-profile-order-handle>::</span>
+															@else
+																<span class="font-mono select-none opacity-40">--</span>
+															@endif
+															<span data-profile-order-value>${rowDisplayOrder != null ? String.valueOf(rowDisplayOrder) : "-"}</span>
+														</span>
+														<span>@if(bestChoice != null && bestChoice.id() != null && bestChoice.id().equals(row.id()))<span class="badge badge-success badge-xs mr-2">${MessageUtil.getMessage("stock.simulator.compare.best.choice")}</span>@endif${row.stockItemSymbol()}</span>
+													</div>
+												</td>
 											<td>${row.stockItemName()}</td>
 											<td class="text-right">₩${amountFormat.format(row.currentPrice() != null ? row.currentPrice() : BigDecimal.ZERO)}</td>
 											<td class="text-right">₩${amountFormat.format(row.latestMonthlyDividendPerShare() != null ? row.latestMonthlyDividendPerShare() : BigDecimal.ZERO)}</td>
@@ -567,7 +560,7 @@
 					const row = rows[j];
 
 					row.addEventListener('click', function(event) {
-						if (event.target && event.target.closest('button, a, input, label, select, textarea')) {
+						if (event.target && event.target.closest('button, a, input, label, select, textarea, [data-profile-order-handle]')) {
 							return;
 						}
 
@@ -577,7 +570,7 @@
 					});
 
 					row.addEventListener('keydown', function(event) {
-						if (event.target && event.target.closest('button, a, input, label, select, textarea')) {
+						if (event.target && event.target.closest('button, a, input, label, select, textarea, [data-profile-order-handle]')) {
 							return;
 						}
 

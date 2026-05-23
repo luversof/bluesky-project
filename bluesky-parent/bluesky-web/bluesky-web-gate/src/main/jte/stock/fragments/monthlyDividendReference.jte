@@ -374,13 +374,13 @@
 										</th>
 									</tr>
 								</thead>
-								<tbody id="monthlyDividendProfileOrderList" data-profile-order-endpoint="${profileOrderEndpoint}" data-profile-reorder-enabled="${profileReorderEnabled}" data-success-message="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.reordered.profile")}" data-fallback-error-message="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.reordered.profile.failed")}">
+								<tbody id="monthlyDividendProfileOrderList" data-profile-order-list="true" data-profile-order-status-id="monthlyDividendProfileOrderStatus" data-profile-order-endpoint="${profileOrderEndpoint}" data-profile-order-handle-selector="[data-profile-order-handle]" data-profile-reorder-enabled="${profileReorderEnabled}" data-success-message="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.reordered.profile")}" data-fallback-error-message="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.reordered.profile.failed")}">
 									@for(MonthlyDividendProfileResponse row : monthlyDividendProfiles)
 										<tr data-profile-order-row data-symbol="${row.stockItemSymbol()}" draggable="${profileReorderEnabled}" class="${selectedMonthlyDividendSymbol.equalsIgnoreCase(row.stockItemSymbol()) ? "bg-base-200/60" : ""}${profileReorderEnabled ? " cursor-move" : ""}">
 											<td>
 												<div class="flex items-center gap-2">
 													@if(profileReorderEnabled)
-														<span class="font-mono text-xs text-base-content/40 select-none">::</span>
+														<span class="font-mono text-xs text-base-content/40 select-none" data-profile-order-handle>::</span>
 													@endif
 													<span data-profile-order-value>${row.displayOrder() != null ? String.valueOf(row.displayOrder()) : "-"}</span>
 												</div>
@@ -390,7 +390,7 @@
 												<div class="text-xs text-base-content/50">${row.stockItemName()}</div>
 												<div class="mt-2 flex flex-wrap gap-2">
 													<a href="/stock/dividend?tab=monthly-reference&symbol=${row.stockItemSymbol()}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}" class="btn btn-xs btn-outline">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.select")}</a>
-													<a href="/stock/simulator?tab=monthly-dividend&symbol=${row.stockItemSymbol()}" class="btn btn-xs btn-primary">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator")}</a>
+													<a href="/stock/simulator?tab=monthly-dividend&symbol=${row.stockItemSymbol()}&sort=display-order&direction=asc" class="btn btn-xs btn-primary">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator")}</a>
 												</div>
 											</td>
 											<td>${row.payoutWindow()}</td>

@@ -1,6 +1,7 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 @import java.math.BigDecimal
 @import java.util.List
+@import java.util.Map
 @import net.luversof.web.gate.stock.domain.StockItem
 @import net.luversof.web.gate.stock.dto.request.MonthlyDividendSnapshotUpsertRequest
 @import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse
@@ -19,12 +20,15 @@
 @param String monthlyDividendErrorMessage = ""
 @param String monthlyDividendResult = ""
 @param Integer monthlyDividendSavedCount = null
-@param String monthlyDividendSort = "combined-return"
-@param String monthlyDividendDirection = "desc"
+@param String monthlyDividendSort = "display-order"
+@param String monthlyDividendDirection = "asc"
 @param String monthlyDividendKeyword = ""
 @param BigDecimal monthlyDividendMinAnnualYield = null
 @param boolean monthlyDividendPositiveOnly = false
 @param boolean monthlyDividendHasSavedRows = false
+@param Map<String, Integer> monthlyDividendProfileDisplayOrders = java.util.Map.of()
+@param List<String> monthlyDividendProfileOrderedSymbols = java.util.List.of()
+@param boolean monthlyDividendReorderEnabled = false
 
 !{
 	String pageTitle = MessageUtil.getMessage("stock.page.simulator.title");
@@ -158,8 +162,12 @@
 					monthlyDividendKeyword = monthlyDividendKeyword,
 					monthlyDividendMinAnnualYield = monthlyDividendMinAnnualYield,
 					monthlyDividendPositiveOnly = monthlyDividendPositiveOnly,
-					monthlyDividendHasSavedRows = monthlyDividendHasSavedRows
+					monthlyDividendHasSavedRows = monthlyDividendHasSavedRows,
+					monthlyDividendProfileDisplayOrders = monthlyDividendProfileDisplayOrders,
+					monthlyDividendProfileOrderedSymbols = monthlyDividendProfileOrderedSymbols,
+					monthlyDividendReorderEnabled = monthlyDividendReorderEnabled
 				)
+				<script type="module" src="/js/stock/monthlyDividendProfileOrder.js"></script>
 			@else
 			<div class="grid gap-6 xl:grid-cols-[20rem_minmax(0,1fr)]">
 				<section class="card border border-base-300 bg-base-100 shadow-sm">
