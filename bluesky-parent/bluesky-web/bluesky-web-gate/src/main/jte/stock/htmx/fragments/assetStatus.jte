@@ -193,7 +193,7 @@
                                                     <tr>
                                                         <td class="font-semibold">${holding.stockItemName() != null ? holding.stockItemName() : "-"}</td>
                                                         <td class="text-right font-mono hidden sm:table-cell amount-value">${String.format("%,d", holding.holdingQuantity())}</td>
-                                                        <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", holding.averageBuyPrice() != null ? holding.averageBuyPrice().longValue() : 0)}</td>
+                                                        <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", holding.averageBuyPrice() != null ? holding.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
                                                         <td class="text-right font-mono hidden md:table-cell amount-value opacity-70">${String.format("%,d", holding.buyAmount() != null ? holding.buyAmount().longValue() : 0)}</td>
                                                         <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", holding.currentPrice() != null ? holding.currentPrice().longValue() : 0)}</td>
                                                         <td class="text-right font-mono amount-value text-principal">${String.format("%,d", holding.evaluationAmount() != null ? holding.evaluationAmount().longValue() : 0)}</td>
@@ -379,7 +379,7 @@
                                 data-weight="${totalWeightPct.toPlainString()}">
                                 <td class="font-semibold">${item.stockItemName() != null ? item.stockItemName() : "-"}</td>
                                 <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", item.holdingQuantity())}</td>
-                                <td class="text-right font-mono hidden xl:table-cell amount-value">${String.format("%,d", item.averageBuyPrice() != null ? item.averageBuyPrice().longValue() : 0)}</td>
+                                <td class="text-right font-mono hidden xl:table-cell amount-value">${String.format("%,d", item.averageBuyPrice() != null ? item.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
                                 <td class="text-right font-mono hidden sm:table-cell amount-value opacity-70">${String.format("%,d", item.totalBuyCost() != null ? item.totalBuyCost().longValue() : 0)}</td>
                                 <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", item.currentPrice() != null ? item.currentPrice().longValue() : 0)}</td>
                                 <td class="text-right font-mono font-semibold amount-value text-principal">${String.format("%,d", item.evaluationAmount() != null ? item.evaluationAmount().longValue() : 0)}</td>

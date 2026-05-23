@@ -78,7 +78,7 @@
                     <td class="${"STOCK".equals(viewGroupBy) || "ACCOUNT".equals(viewGroupBy) ? "hidden" : ""}">${item.accountName()}</td>
                     <td class="font-bold pl-8">${item.stockItemName()}</td> <!-- Indent Item -->
                     <td class="text-right hidden lg:table-cell text-principal amount-value">${String.format("%,d", item.holdingQuantity())}</td>
-                    <td class="text-right hidden xl:table-cell text-principal amount-value">${String.format("%,d", item.averageBuyPrice() != null ? item.averageBuyPrice().longValue() : 0)}</td>
+                    <td class="text-right hidden xl:table-cell text-principal amount-value">${String.format("%,d", item.averageBuyPrice() != null ? item.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
                     <td class="text-right hidden lg:table-cell text-principal amount-value">${String.format("%,d", item.currentPrice() != null ? item.currentPrice().longValue() : 0)}</td>
                     <td class="text-right hidden md:table-cell text-principal amount-value">${String.format("%,d", item.evaluationAmount() != null ? item.evaluationAmount().longValue() : 0)}</td>
                     <td class="text-right font-bold amount-value ${item.evaluationProfit() != null && item.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">

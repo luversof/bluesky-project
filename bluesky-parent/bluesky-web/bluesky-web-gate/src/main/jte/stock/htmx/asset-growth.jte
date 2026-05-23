@@ -93,8 +93,8 @@
                     <p class="text-gray-500">${noDataLabel}</p>
                 </div>
             @else
-                <div class="mb-2 flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
-                    <div class="asset-growth-nav-wrapper flex min-w-0 flex-1 items-center gap-1">
+                <div class="mb-2 flex flex-col gap-2 xl:flex-row xl:items-start xl:gap-4">
+                    <div class="asset-growth-nav-wrapper flex min-w-0 flex-col gap-1 xl:flex-none xl:flex-row xl:items-center xl:gap-3">
                         @template.stock.htmx.fragments.dateRangeNavBar(
                             pickerName = "assetPicker",
                             btnClass = "asset-range-btn",
@@ -105,18 +105,25 @@
                             endDate = endLocal,
                             showRangeText = false
                         )
-                        <span id="assetRangeDisplay" class="ml-1 whitespace-nowrap text-xs text-base-content/40"></span>
+                        <span id="assetRangeDisplay" class="whitespace-nowrap text-xs text-base-content/40"></span>
                     </div>
-                    <p class="text-xs text-base-content/50 xl:text-right">📈 ${chartDescriptionLabel} &bull; <span class="text-info">${clickDateHoldingsLabel}</span></p>
+                    <p class="min-w-0 text-xs text-base-content/50 xl:pt-1 xl:text-right">
+                        <span class="xl:whitespace-nowrap">📈 ${chartDescriptionLabel} &bull;</span>
+                        <span class="inline-block whitespace-nowrap text-info">${clickDateHoldingsLabel}</span>
+                    </p>
                     <style>
-                        /* Remove default bottom margin from the included nav component so it aligns with the description */
+                        /* Keep the period controls content-sized on wide screens so the help text uses the remaining width. */
                         .asset-growth-nav-wrapper > div {
                             margin-bottom: 0 !important;
-                            flex-wrap: nowrap !important;
-                            overflow-x: auto;
-                            scrollbar-width: thin;
+                            min-width: 0;
                         }
                         .asset-growth-nav-wrapper > div > * { flex-shrink: 0; }
+                        @media (min-width: 1280px) {
+                            .asset-growth-nav-wrapper > div {
+                                flex: 0 0 auto;
+                                flex-wrap: nowrap !important;
+                            }
+                        }
                     </style>
                 </div>
                 <div id="assetGrowthPeriodReturnSummary" class="rounded-2xl border border-base-300/60 bg-base-100/80 px-4 py-3 mb-3">

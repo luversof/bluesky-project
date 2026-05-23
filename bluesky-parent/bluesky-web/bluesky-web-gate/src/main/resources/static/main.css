@@ -5022,6 +5022,11 @@
       display: table-cell;
     }
   }
+  .xl\:flex-none {
+    @media (width >= 80rem) {
+      flex: none;
+    }
+  }
   .xl\:grid-cols-2 {
     @media (width >= 80rem) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -5082,9 +5087,29 @@
       justify-content: space-between;
     }
   }
+  .xl\:gap-3 {
+    @media (width >= 80rem) {
+      gap: calc(var(--spacing) * 3);
+    }
+  }
+  .xl\:gap-4 {
+    @media (width >= 80rem) {
+      gap: calc(var(--spacing) * 4);
+    }
+  }
+  .xl\:pt-1 {
+    @media (width >= 80rem) {
+      padding-top: calc(var(--spacing) * 1);
+    }
+  }
   .xl\:text-right {
     @media (width >= 80rem) {
       text-align: right;
+    }
+  }
+  .xl\:whitespace-nowrap {
+    @media (width >= 80rem) {
+      white-space: nowrap;
     }
   }
   .\32 xl\:grid {
