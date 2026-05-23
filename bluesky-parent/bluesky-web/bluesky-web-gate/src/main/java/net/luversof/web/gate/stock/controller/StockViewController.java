@@ -1213,33 +1213,32 @@ public class StockViewController {
     String monthlyDividendDirection = resolveMonthlyDividendDirection(monthlyDividendSort, direction);
     String monthlyDividendKeyword = keyword != null ? keyword.trim() : "";
     List<MonthlyDividendSnapshotResponse> allRows = loadMonthlyDividendRows(userId);
-    List<MonthlyDividendProfileResponse> monthlyDividendProfiles =
-      sortMonthlyDividendProfiles(
+    List<MonthlyDividendProfileResponse> monthlyDividendProfiles = sortMonthlyDividendProfiles(
         loadMonthlyDividendProfiles(), MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER, "asc");
-    Map<String, Integer> monthlyDividendProfileDisplayOrders =
-      buildMonthlyDividendProfileDisplayOrderMap(monthlyDividendProfiles);
+    Map<String, Integer> monthlyDividendProfileDisplayOrders = buildMonthlyDividendProfileDisplayOrderMap(
+        monthlyDividendProfiles);
     List<MonthlyDividendSnapshotResponse> filteredRows = sortMonthlyDividendRows(
         filterMonthlyDividendRows(
             allRows, monthlyDividendKeyword, minAnnualYield, positiveOnly),
         monthlyDividendSort,
-      monthlyDividendDirection,
-      monthlyDividendProfileDisplayOrders);
+        monthlyDividendDirection,
+        monthlyDividendProfileDisplayOrders);
 
     model.addAttribute("monthlyDividendRows", filteredRows);
     model.addAttribute("monthlyDividendSummary", buildMonthlyDividendSummary(filteredRows));
     model.addAttribute("monthlyDividendProfileDisplayOrders", monthlyDividendProfileDisplayOrders);
     model.addAttribute(
-      "monthlyDividendProfileOrderedSymbols",
-      monthlyDividendProfiles.stream()
-        .map(MonthlyDividendProfileResponse::stockItemSymbol)
-        .map(this::normalizeMonthlyDividendSymbol)
-        .filter(StringUtils::hasText)
-        .distinct()
-        .toList());
+        "monthlyDividendProfileOrderedSymbols",
+        monthlyDividendProfiles.stream()
+            .map(MonthlyDividendProfileResponse::stockItemSymbol)
+            .map(this::normalizeMonthlyDividendSymbol)
+            .filter(StringUtils::hasText)
+            .distinct()
+            .toList());
     model.addAttribute(
-      "monthlyDividendReorderEnabled",
-      MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER.equals(monthlyDividendSort)
-        && "asc".equals(monthlyDividendDirection));
+        "monthlyDividendReorderEnabled",
+        MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER.equals(monthlyDividendSort)
+            && "asc".equals(monthlyDividendDirection));
     model.addAttribute("stockItems", loadMonthlyDividendStockItems());
     model.addAttribute("monthlyDividendSort", monthlyDividendSort);
     model.addAttribute("monthlyDividendDirection", monthlyDividendDirection);
@@ -1348,8 +1347,11 @@ public class StockViewController {
       case MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER ->
         Comparator.comparing(
             row -> resolveMonthlyDividendProfileDisplayOrder(row, monthlyDividendProfileDisplayOrders));
+      case "monthly-yield-on-cost" ->
+        Comparator.comparing(row -> safe(row.expectedMonthlyYieldOnCostPct()));
       case "annual-yield-on-cost" ->
         Comparator.comparing(row -> safe(row.expectedAnnualYieldOnCostPct()));
+      case "monthly-yield" -> Comparator.comparing(row -> safe(row.expectedMonthlyYieldPct()));
       case "annual-yield" -> Comparator.comparing(row -> safe(row.expectedAnnualYieldPct()));
       case "monthly-dividend" ->
         Comparator.comparing(row -> safe(row.expectedMonthlyDividend()));
@@ -1414,7 +1416,9 @@ public class StockViewController {
 
     return switch (sort) {
       case MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER,
+          "monthly-yield-on-cost",
           "annual-yield-on-cost",
+          "monthly-yield",
           "annual-yield",
           "monthly-dividend",
           "taxable-base",
@@ -1430,9 +1434,9 @@ public class StockViewController {
     }
 
     return MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER.equals(sort)
-            || "taxable-base".equals(sort)
-        ? "asc"
-        : "desc";
+        || "taxable-base".equals(sort)
+            ? "asc"
+            : "desc";
   }
 
   private String buildMonthlyDividendRedirect(

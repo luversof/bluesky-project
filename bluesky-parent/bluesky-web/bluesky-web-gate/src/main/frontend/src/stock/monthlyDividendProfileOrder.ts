@@ -3,7 +3,9 @@ import { handleApiError } from "../errorHandler.js";
 
 (() => {
 	const lists = Array.from(
-		document.querySelectorAll<HTMLTableSectionElement>("[data-profile-order-list]"),
+		document.querySelectorAll<HTMLTableSectionElement>(
+			"[data-profile-order-list]",
+		),
 	);
 
 	lists.forEach((list) => initializeProfileOrderList(list));
@@ -29,8 +31,7 @@ import { handleApiError } from "../errorHandler.js";
 			"표시 순서를 저장하지 못했습니다. 다시 시도해 주세요.";
 		const rowSelector =
 			orderList.dataset.profileOrderRowSelector || "tr[data-profile-order-row]";
-		const handleSelector =
-			orderList.dataset.profileOrderHandleSelector || "";
+		const handleSelector = orderList.dataset.profileOrderHandleSelector || "";
 		let currentAllSymbols = parseSymbols(
 			orderList.dataset.profileOrderAllSymbols,
 		);
@@ -148,7 +149,9 @@ import { handleApiError } from "../errorHandler.js";
 			}
 		});
 
-		function findDragStartRow(target: EventTarget | null): HTMLTableRowElement | null {
+		function findDragStartRow(
+			target: EventTarget | null,
+		): HTMLTableRowElement | null {
 			if (!(target instanceof HTMLElement)) {
 				return null;
 			}
@@ -166,7 +169,9 @@ import { handleApiError } from "../errorHandler.js";
 			return row instanceof HTMLTableRowElement ? row : null;
 		}
 
-		function findHandleRow(target: EventTarget | null): HTMLTableRowElement | null {
+		function findHandleRow(
+			target: EventTarget | null,
+		): HTMLTableRowElement | null {
 			if (!(target instanceof HTMLElement) || !handleSelector) {
 				return null;
 			}
@@ -180,7 +185,9 @@ import { handleApiError } from "../errorHandler.js";
 			return row instanceof HTMLTableRowElement ? row : null;
 		}
 
-		function findDropTargetRow(target: EventTarget | null): HTMLTableRowElement | null {
+		function findDropTargetRow(
+			target: EventTarget | null,
+		): HTMLTableRowElement | null {
 			if (!(target instanceof HTMLElement)) {
 				return null;
 			}
@@ -276,7 +283,6 @@ import { handleApiError } from "../errorHandler.js";
 					: "alert alert-error border border-error/20 bg-error/10 text-error-content";
 			status.textContent = message;
 		}
-
 	}
 
 	function parseSymbols(rawValue: string | undefined): string[] {
@@ -298,7 +304,9 @@ import { handleApiError } from "../errorHandler.js";
 		return left.every((value, index) => value === right[index]);
 	}
 
-	function resolveStatusElement(statusId: string | undefined): HTMLDivElement | null {
+	function resolveStatusElement(
+		statusId: string | undefined,
+	): HTMLDivElement | null {
 		if (!statusId) {
 			return null;
 		}

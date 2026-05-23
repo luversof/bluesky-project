@@ -63,9 +63,11 @@
 	String monthlyDividendTableBaseUrl = "/stock/simulator?tab=monthly-dividend";
 	String currentDirectionLabel = MessageUtil.getMessage("asc".equals(monthlyDividendDirection) ? "stock.simulator.monthly.direction.asc" : "stock.simulator.monthly.direction.desc");
 	String displayOrderDirection = "display-order".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "asc";
+	String monthlyYieldDirectionToggle = "monthly-yield".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "desc";
 	String monthlyDividendDirectionToggle = "monthly-dividend".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "desc";
 	String taxableBaseDirectionToggle = "taxable-base".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "asc";
 	String annualYieldDirectionToggle = "annual-yield".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "desc";
+	String monthlyYieldOnCostDirectionToggle = "monthly-yield-on-cost".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "desc";
 	String annualYieldOnCostDirectionToggle = "annual-yield-on-cost".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "desc";
 	String combinedReturnDirectionToggle = "combined-return".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "desc";
 	String monthlyDividendOrderEndpoint = "/stock/dividend/monthly-reference/profile/order";
@@ -287,8 +289,8 @@
 								<table class="table table-pin-rows table-zebra table-sm whitespace-nowrap" data-monthly-selection-table>
 								<thead>
 									<tr>
-										<th class="w-10"></th>
-										<th>
+										<th class="w-10" rowspan="2"></th>
+										<th rowspan="2">
 											<a href="${monthlyDividendTableBaseUrl}&sort=display-order&direction=${displayOrderDirection}" class="link link-hover font-medium no-underline">
 												${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.display.order")} / ${MessageUtil.getMessage("stock.simulator.monthly.table.header.symbol")}
 												@if("display-order".equals(monthlyDividendSort))
@@ -296,10 +298,25 @@
 												@endif
 											</a>
 										</th>
-										<th>${MessageUtil.getMessage("stock.simulator.monthly.table.header.name")}</th>
-										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.current.price")}</th>
-										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.latest.monthly.dividend")}</th>
-										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.average.monthly.dividend")}</th>
+										<th rowspan="2">${MessageUtil.getMessage("stock.simulator.monthly.table.header.name")}</th>
+										<th class="text-center text-[11px] font-medium uppercase tracking-wide text-base-content/45" colspan="2">${MessageUtil.getMessage("stock.simulator.monthly.table.group.reference")}</th>
+										<th class="text-center text-[11px] font-medium uppercase tracking-wide text-base-content/45" colspan="2">${MessageUtil.getMessage("stock.simulator.monthly.table.group.input")}</th>
+										<th rowspan="2" class="min-w-[9rem] align-bottom text-right">
+											<div class="space-y-1 whitespace-normal text-right">
+												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-dividend&direction=${monthlyDividendDirectionToggle}" class="link link-hover block text-sm font-medium no-underline">
+													${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.monthly.dividend")}
+													@if("monthly-dividend".equals(monthlyDividendSort))
+														<span class="mt-1 block text-[11px] text-base-content/60">${currentDirectionLabel}</span>
+													@endif
+												</a>
+												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.taxable.base")}</div>
+											</div>
+										</th>
+										<th class="text-center text-[11px] font-medium uppercase tracking-wide text-base-content/45" colspan="2">${MessageUtil.getMessage("stock.simulator.monthly.table.group.yield")}</th>
+										<th class="text-center text-[11px] font-medium uppercase tracking-wide text-base-content/45" colspan="2">${MessageUtil.getMessage("stock.simulator.monthly.table.group.result")}</th>
+									</tr>
+									<tr>
+										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.dividend.per.share")}</th>
 										<th class="text-right">
 											<a href="${monthlyDividendTableBaseUrl}&sort=taxable-base&direction=${taxableBaseDirectionToggle}" class="link link-hover font-medium no-underline">
 												${MessageUtil.getMessage("stock.simulator.monthly.table.header.taxable.base.ratio")}
@@ -308,35 +325,42 @@
 												@endif
 											</a>
 										</th>
-										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.quantity")}</th>
-										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.average.buy.price")}</th>
-										<th class="text-right">
-											<a href="${monthlyDividendTableBaseUrl}&sort=monthly-dividend&direction=${monthlyDividendDirectionToggle}" class="link link-hover font-medium no-underline">
-												${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.monthly.dividend")}
-												@if("monthly-dividend".equals(monthlyDividendSort))
-													<span class="ml-1 text-xs text-base-content/60">${currentDirectionLabel}</span>
-												@endif
-											</a>
+										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.current.price")}</th>
+										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.quantity.and.buy.price")}</th>
+										<th class="min-w-[8rem] align-bottom text-right">
+											<div class="space-y-1 whitespace-normal text-right">
+												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.market.price.basis")}</div>
+												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-yield&direction=${monthlyYieldDirectionToggle}" class="link link-hover block text-xs font-medium leading-4 no-underline">
+													${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.yield.short")}
+													@if("monthly-yield".equals(monthlyDividendSort))
+														<span class="mt-1 block text-[11px] text-base-content/60">${currentDirectionLabel}</span>
+													@endif
+												</a>
+												<a href="${monthlyDividendTableBaseUrl}&sort=annual-yield&direction=${annualYieldDirectionToggle}" class="link link-hover block text-xs font-medium leading-4 no-underline">
+													${MessageUtil.getMessage("stock.simulator.monthly.table.header.annual.yield.short")}
+													@if("annual-yield".equals(monthlyDividendSort))
+														<span class="mt-1 block text-[11px] text-base-content/60">${currentDirectionLabel}</span>
+													@endif
+												</a>
+											</div>
 										</th>
-										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.monthly.yield")}</th>
-										<th class="text-right">
-											<a href="${monthlyDividendTableBaseUrl}&sort=annual-yield&direction=${annualYieldDirectionToggle}" class="link link-hover font-medium no-underline">
-												${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.annual.yield")}
-												@if("annual-yield".equals(monthlyDividendSort))
-													<span class="ml-1 text-xs text-base-content/60">${currentDirectionLabel}</span>
-												@endif
-											</a>
+										<th class="min-w-[8rem] align-bottom text-right">
+											<div class="space-y-1 whitespace-normal text-right">
+												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.on.cost")}</div>
+												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-yield-on-cost&direction=${monthlyYieldOnCostDirectionToggle}" class="link link-hover block text-xs font-medium leading-4 no-underline">
+													${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.yield.short")}
+													@if("monthly-yield-on-cost".equals(monthlyDividendSort))
+														<span class="mt-1 block text-[11px] text-base-content/60">${currentDirectionLabel}</span>
+													@endif
+												</a>
+												<a href="${monthlyDividendTableBaseUrl}&sort=annual-yield-on-cost&direction=${annualYieldOnCostDirectionToggle}" class="link link-hover block text-xs font-medium leading-4 no-underline">
+													${MessageUtil.getMessage("stock.simulator.monthly.table.header.annual.yield.short")}
+													@if("annual-yield-on-cost".equals(monthlyDividendSort))
+														<span class="mt-1 block text-[11px] text-base-content/60">${currentDirectionLabel}</span>
+													@endif
+												</a>
+											</div>
 										</th>
-										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.monthly.yield.on.cost")}</th>
-										<th class="text-right">
-											<a href="${monthlyDividendTableBaseUrl}&sort=annual-yield-on-cost&direction=${annualYieldOnCostDirectionToggle}" class="link link-hover font-medium no-underline">
-												${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.annual.yield.on.cost")}
-												@if("annual-yield-on-cost".equals(monthlyDividendSort))
-													<span class="ml-1 text-xs text-base-content/60">${currentDirectionLabel}</span>
-												@endif
-											</a>
-										</th>
-										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.taxable.base")}</th>
 										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.total.return.on.cost")}</th>
 										<th class="text-right">
 											<a href="${monthlyDividendTableBaseUrl}&sort=combined-return&direction=${combinedReturnDirectionToggle}" class="link link-hover font-medium no-underline">
@@ -386,18 +410,56 @@
 													</div>
 												</td>
 											<td>${row.stockItemName()}</td>
-											<td class="text-right">₩${amountFormat.format(row.currentPrice() != null ? row.currentPrice() : BigDecimal.ZERO)}</td>
-											<td class="text-right">₩${amountFormat.format(row.latestMonthlyDividendPerShare() != null ? row.latestMonthlyDividendPerShare() : BigDecimal.ZERO)}</td>
-											<td class="text-right">₩${amountFormat.format(row.averageMonthlyDividendPerShare1y() != null ? row.averageMonthlyDividendPerShare1y() : BigDecimal.ZERO)}</td>
+											<td class="align-top text-right">
+												<div class="space-y-1 tabular-nums">
+													<div>
+														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.latest.short")}</span>
+														₩${amountFormat.format(row.latestMonthlyDividendPerShare() != null ? row.latestMonthlyDividendPerShare() : BigDecimal.ZERO)}
+													</div>
+													<div class="text-sm text-base-content/80">
+														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.short")}</span>
+														₩${amountFormat.format(row.averageMonthlyDividendPerShare1y() != null ? row.averageMonthlyDividendPerShare1y() : BigDecimal.ZERO)}
+													</div>
+												</div>
+											</td>
 											<td class="text-right">${percentFormat.format(row.averageTaxableBaseRatio1y() != null ? row.averageTaxableBaseRatio1y() : BigDecimal.ZERO)}%</td>
-											<td class="text-right">${amountFormat.format(row.heldQuantity() != null ? row.heldQuantity() : 0)}</td>
-											<td class="text-right">₩${amountFormat.format(row.averageBuyPrice() != null ? row.averageBuyPrice() : BigDecimal.ZERO)}</td>
-											<td class="text-right">₩${amountFormat.format(row.expectedMonthlyDividend() != null ? row.expectedMonthlyDividend() : BigDecimal.ZERO)}</td>
-											<td class="text-right">${percentFormat.format(row.expectedMonthlyYieldPct() != null ? row.expectedMonthlyYieldPct() : BigDecimal.ZERO)}%</td>
-											<td class="text-right">${percentFormat.format(row.expectedAnnualYieldPct() != null ? row.expectedAnnualYieldPct() : BigDecimal.ZERO)}%</td>
-											<td class="text-right">${percentFormat.format(row.expectedMonthlyYieldOnCostPct() != null ? row.expectedMonthlyYieldOnCostPct() : BigDecimal.ZERO)}%</td>
-											<td class="text-right">${percentFormat.format(row.expectedAnnualYieldOnCostPct() != null ? row.expectedAnnualYieldOnCostPct() : BigDecimal.ZERO)}%</td>
-											<td class="text-right">₩${amountFormat.format(row.expectedTaxableBaseAmount() != null ? row.expectedTaxableBaseAmount() : BigDecimal.ZERO)}</td>
+											<td class="text-right">₩${amountFormat.format(row.currentPrice() != null ? row.currentPrice() : BigDecimal.ZERO)}</td>
+											<td class="align-top text-right">
+												<div class="space-y-1 tabular-nums">
+													<div>
+														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.quantity.short")}</span>
+														${amountFormat.format(row.heldQuantity() != null ? row.heldQuantity() : 0)}
+													</div>
+													<div class="text-sm text-base-content/80">
+														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.buy.price.short")}</span>
+														₩${amountFormat.format(row.averageBuyPrice() != null ? row.averageBuyPrice() : BigDecimal.ZERO)}
+													</div>
+												</div>
+											</td>
+											<td class="align-top text-right">
+												<div class="space-y-1 tabular-nums">
+													<div class="font-medium">
+														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.expected.monthly.dividend.short")}</span>
+														₩${amountFormat.format(row.expectedMonthlyDividend() != null ? row.expectedMonthlyDividend() : BigDecimal.ZERO)}
+													</div>
+													<div class="text-sm text-base-content/80">
+														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.expected.taxable.base.short")}</span>
+														₩${amountFormat.format(row.expectedTaxableBaseAmount() != null ? row.expectedTaxableBaseAmount() : BigDecimal.ZERO)}
+													</div>
+												</div>
+											</td>
+											<td class="align-top text-right">
+												<div class="space-y-1 tabular-nums">
+													<div>${percentFormat.format(row.expectedMonthlyYieldPct() != null ? row.expectedMonthlyYieldPct() : BigDecimal.ZERO)}%</div>
+													<div class="text-sm text-base-content/80">${percentFormat.format(row.expectedAnnualYieldPct() != null ? row.expectedAnnualYieldPct() : BigDecimal.ZERO)}%</div>
+												</div>
+											</td>
+											<td class="align-top text-right">
+												<div class="space-y-1 tabular-nums">
+													<div>${percentFormat.format(row.expectedMonthlyYieldOnCostPct() != null ? row.expectedMonthlyYieldOnCostPct() : BigDecimal.ZERO)}%</div>
+													<div class="text-sm text-base-content/80">${percentFormat.format(row.expectedAnnualYieldOnCostPct() != null ? row.expectedAnnualYieldOnCostPct() : BigDecimal.ZERO)}%</div>
+												</div>
+											</td>
 											<td class="text-right ${row.totalReturnOnCostPct() != null && row.totalReturnOnCostPct().signum() >= 0 ? "text-success" : "text-error"}">${percentFormat.format(row.totalReturnOnCostPct() != null ? row.totalReturnOnCostPct() : BigDecimal.ZERO)}%</td>
 											<td class="text-right font-semibold ${row.expectedCombinedReturnPct() != null && row.expectedCombinedReturnPct().signum() >= 0 ? "text-success" : "text-error"}">${percentFormat.format(row.expectedCombinedReturnPct() != null ? row.expectedCombinedReturnPct() : BigDecimal.ZERO)}%</td>
 										</tr>
