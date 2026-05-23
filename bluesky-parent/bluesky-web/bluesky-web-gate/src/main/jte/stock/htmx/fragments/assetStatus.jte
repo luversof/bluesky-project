@@ -34,17 +34,79 @@
     String showHoldingsLabel = MessageUtil.getMessage("stock.analytics.account.holdings.show");
     String hideHoldingsLabel = MessageUtil.getMessage("stock.analytics.account.holdings.hide");
     String accountHoldingsDetailLabel = MessageUtil.getMessage("stock.analytics.account.holdings.detail");
+    String accountSelectionHelpLabel = MessageUtil.getMessage("stock.analytics.account.selection.helper");
+    String accountSelectionSummaryLabel = MessageUtil.getMessage("stock.analytics.account.selection.summary");
+    String accountSelectionCountTemplate = MessageUtil.getMessage("stock.analytics.account.selection.count");
+    String accountSelectionWeightLabel = MessageUtil.getMessage("stock.analytics.account.selection.weight");
+    String stockSelectionHelpLabel = MessageUtil.getMessage("stock.analytics.selection.helper");
+    String stockSelectionSummaryLabel = MessageUtil.getMessage("stock.analytics.selection.summary");
+    String stockSelectionCountTemplate = MessageUtil.getMessage("stock.analytics.selection.count");
+    String stockSelectionClearLabel = MessageUtil.getMessage("stock.analytics.selection.clear");
+    String stockSelectionWeightLabel = MessageUtil.getMessage("stock.analytics.selection.weight");
 }
 
 <div class="flex flex-col gap-6">
 
     <!-- Section 1: 계좌별 현황 테이블 -->
-    <div>
+    <div data-asset-status-account-section>
         <h2 class="text-lg font-semibold mb-3 opacity-70">${accountSectionTitle}</h2>
+        @if(accountTotalMap != null && !accountTotalMap.isEmpty())
+            <div class="mb-3 flex flex-col gap-3">
+                <p class="text-xs text-base-content/50">${accountSelectionHelpLabel}</p>
+                <div class="hidden rounded-2xl border border-secondary/15 bg-secondary/5 px-4 py-3"
+                     data-asset-status-account-selection-summary
+                     data-count-template="${accountSelectionCountTemplate}"
+                     data-total-evaluation-amount="${totalEvaluationAmount != null ? totalEvaluationAmount.toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                     aria-live="polite">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h3 class="text-sm font-semibold">${accountSelectionSummaryLabel}</h3>
+                            <span class="badge badge-secondary badge-outline" data-account-selection-count>${accountSelectionSummaryLabel}</span>
+                            <span class="badge badge-ghost" data-account-selection-weight-badge>${accountSelectionWeightLabel} 0.0%</span>
+                        </div>
+                        <button type="button" class="btn btn-ghost btn-xs self-start" data-account-selection-clear>${stockSelectionClearLabel}</button>
+                    </div>
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                        <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                            <div class="text-xs text-base-content/60">${buyAmountLabel}</div>
+                            <div class="mt-1 font-mono font-semibold amount-value" data-account-selection-buy-amount>0</div>
+                        </div>
+                        <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                            <div class="text-xs text-base-content/60">${evaluationAmountLabel}</div>
+                            <div class="mt-1 font-mono font-semibold amount-value text-principal" data-account-selection-evaluation-amount>0</div>
+                        </div>
+                        <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                            <div class="text-xs text-base-content/60">${evaluationProfitLabel}</div>
+                            <div class="mt-1 font-mono font-semibold amount-value" data-account-selection-evaluation-profit>0</div>
+                            <div class="text-xs text-base-content/60" data-account-selection-profit-rate>(0.0%)</div>
+                        </div>
+                        <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                            <div class="text-xs text-base-content/60">${principalLabel}</div>
+                            <div class="mt-1 font-mono font-semibold amount-value" data-account-selection-principal>0</div>
+                        </div>
+                        <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                            <div class="text-xs text-base-content/60">${principalReturnLabel}</div>
+                            <div class="mt-1 font-mono font-semibold amount-value" data-account-selection-principal-return>0</div>
+                            <div class="text-xs text-base-content/60" data-account-selection-principal-return-rate>(0.0%)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+        <style>
+            .asset-status-account-row-selected > td {
+                background-color: color-mix(in oklch, var(--color-secondary) 10%, var(--color-base-100));
+            }
+
+            .asset-status-account-row-selected > td:first-child {
+                box-shadow: inset 3px 0 0 color-mix(in oklch, var(--color-secondary) 65%, transparent);
+            }
+        </style>
         <div class="card bg-base-100 shadow-md overflow-x-auto">
-            <table class="table table-sm w-full" data-sortable-table>
+            <table class="table table-sm w-full" data-sortable-table data-asset-status-account-table>
                 <thead class="bg-base-200">
                     <tr>
+                        <th class="w-10"></th>
                         <th>
                             <button type="button"
                                     class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
@@ -118,7 +180,10 @@
                         : 0.0;}
                     !{String detailRowId = "asset-status-account-detail-" + Math.abs((entry.getKey() != null ? entry.getKey() : "account").hashCode());}
                     <tr class="hover"
+                        data-account-selectable-row
                         data-sortable-row
+                        data-selected="false"
+                        aria-selected="false"
                         data-account="${entry.getKey() != null ? entry.getKey() : ""}"
                         data-buy-amount="${buyAmount.toPlainString()}"
                         data-evaluation-amount="${evaluationAmount.toPlainString()}"
@@ -126,6 +191,12 @@
                         data-principal="${profitBasis.toPlainString()}"
                         data-principal-return="${principalReturnAmount.toPlainString()}"
                         data-detail-row-id="${detailRowId}">
+                        <td class="align-top pt-3">
+                            <input type="checkbox"
+                                   class="checkbox checkbox-sm"
+                                   data-account-selection-toggle
+                                   aria-label="${entry.getKey() != null ? entry.getKey() : accountLabel}">
+                        </td>
                         <td>
                             <div class="font-semibold">${entry.getKey()}</div>
                             @if(holdings.isEmpty())
@@ -171,7 +242,7 @@
                     </tr>
                     @if(!holdings.isEmpty())
                         <tr id="${detailRowId}" class="hidden bg-base-200/40">
-                            <td colspan="6" class="p-0">
+                            <td colspan="7" class="p-0">
                                 <div class="px-3 py-3">
                                     <div class="text-xs font-semibold text-base-content/60 mb-2">${accountHoldingsDetailLabel}</div>
                                     <div class="overflow-x-auto rounded-box border border-base-300/60 bg-base-100">
@@ -237,6 +308,7 @@
                         ? totalPrincipalReturnAmount.doubleValue() / totalPrincipal.doubleValue() * 100
                         : 0.0;}
                     <tr>
+                        <td></td>
                         <td>${totalLabel}</td>
                         <td class="text-right font-mono amount-value opacity-70">
                             ${String.format("%,d", totalBuyAmount.longValue())}
@@ -270,10 +342,65 @@
     </div>
 
     <!-- Section 2: 종목별 집계 테이블 (계좌 통합) -->
-    <div>
+    <div data-asset-status-stock-section>
         <h2 class="text-lg font-semibold mb-3 opacity-70">${stockSectionTitle} <span class="text-xs font-normal opacity-60">(${allAccountsLabel})</span></h2>
+        @if(stockAggregated != null && !stockAggregated.isEmpty())
+            <div class="mb-3 flex flex-col gap-3">
+                <p class="text-xs text-base-content/50">${stockSelectionHelpLabel}</p>
+                <div class="hidden rounded-2xl border border-info/15 bg-info/5 px-4 py-3"
+                     data-asset-status-stock-selection-summary
+                     data-count-template="${stockSelectionCountTemplate}"
+                     data-total-evaluation-amount="${totalEvaluationAmount != null ? totalEvaluationAmount.toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                     aria-live="polite">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h3 class="text-sm font-semibold">${stockSelectionSummaryLabel}</h3>
+                            <span class="badge badge-info badge-outline" data-selection-count>${stockSelectionSummaryLabel}</span>
+                        </div>
+                        <button type="button" class="btn btn-ghost btn-xs self-start" data-selection-clear>${stockSelectionClearLabel}</button>
+                    </div>
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                            <div class="text-xs text-base-content/60">${buyAmountLabel}</div>
+                            <div class="mt-1 font-mono font-semibold amount-value" data-selection-buy-amount>0</div>
+                        </div>
+                        <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                            <div class="text-xs text-base-content/60">${evaluationAmountLabel}</div>
+                            <div class="mt-1 font-mono font-semibold amount-value text-principal" data-selection-evaluation-amount>0</div>
+                        </div>
+                        <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                            <div class="text-xs text-base-content/60">${evaluationProfitLabel}</div>
+                            <div class="mt-1 font-mono font-semibold amount-value" data-selection-evaluation-profit>0</div>
+                            <div class="text-xs text-base-content/60" data-selection-profit-rate>(0.0%)</div>
+                        </div>
+                        <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                            <div class="text-xs text-base-content/60">${stockSelectionWeightLabel}</div>
+                            <div class="mt-1 font-mono font-semibold amount-value" data-selection-weight>0.0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+        <style>
+            .asset-status-stock-row {
+                cursor: pointer;
+            }
+
+            .asset-status-stock-row.asset-status-stock-row-selected > td {
+                background-color: color-mix(in oklch, var(--color-info) 10%, var(--color-base-100));
+            }
+
+            .asset-status-stock-row.asset-status-stock-row-selected > td:first-child {
+                box-shadow: inset 3px 0 0 color-mix(in oklch, var(--color-info) 65%, transparent);
+            }
+
+            .asset-status-stock-row:focus-visible {
+                outline: 2px solid color-mix(in oklch, var(--color-info) 35%, transparent);
+                outline-offset: -2px;
+            }
+        </style>
         <div class="card bg-base-100 shadow-md overflow-x-auto">
-            <table class="table table-sm table-zebra w-full" data-sortable-table>
+            <table class="table table-sm table-zebra w-full" data-sortable-table data-asset-status-stock-table>
                 <thead class="bg-base-200">
                     <tr>
                         <th>
@@ -367,8 +494,12 @@
                                 && item.evaluationAmount() != null
                                 ? item.evaluationAmount().divide(totalEvaluationAmount, 4, java.math.RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
                                 : BigDecimal.ZERO;}
-                            <tr class="hover"
+                            <tr class="hover asset-status-stock-row"
                                 data-sortable-row
+                                data-stock-selectable-row
+                                tabindex="0"
+                                role="button"
+                                aria-pressed="false"
                                 data-stock-name="${item.stockItemName() != null ? item.stockItemName() : ""}"
                                 data-quantity="${BigDecimal.valueOf(item.holdingQuantity()).toPlainString()}"
                                 data-average-cost="${item.averageBuyPrice() != null ? item.averageBuyPrice().toPlainString() : BigDecimal.ZERO.toPlainString()}"
@@ -581,5 +712,350 @@
         }
     }
 
+    function formatAssetStatusMessage(template, value) {
+        return String(template || '').replace('{0}', String(value));
+    }
+
+    function getAssetStatusLocale() {
+        return document.documentElement.getAttribute('lang') || 'ko-KR';
+    }
+
+    function formatAssetStatusNumber(value, fractionDigits) {
+        return new Intl.NumberFormat(getAssetStatusLocale(), {
+            minimumFractionDigits: fractionDigits,
+            maximumFractionDigits: fractionDigits
+        }).format(value);
+    }
+
+    function formatAssetStatusSignedNumber(value, fractionDigits) {
+        var absoluteValue = Math.abs(value);
+        var formattedValue = formatAssetStatusNumber(absoluteValue, fractionDigits);
+
+        if (value > 0) {
+            return '+' + formattedValue;
+        }
+
+        if (value < 0) {
+            return '-' + formattedValue;
+        }
+
+        return formatAssetStatusNumber(0, fractionDigits);
+    }
+
+    function setAssetStatusStockRowSelection(row, selected) {
+        if (!row) {
+            return;
+        }
+
+        row.classList.toggle('asset-status-stock-row-selected', selected);
+        row.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    }
+
+    function setAssetStatusAccountRowSelection(row, selected) {
+        if (!row) {
+            return;
+        }
+
+        row.classList.toggle('asset-status-account-row-selected', selected);
+        row.dataset.selected = selected ? 'true' : 'false';
+        row.setAttribute('aria-selected', selected ? 'true' : 'false');
+
+        var checkbox = row.querySelector('[data-account-selection-toggle]');
+        if (checkbox) {
+            checkbox.checked = selected;
+        }
+    }
+
+    function updateAssetStatusAccountSelectionSummary(section) {
+        if (!section) {
+            return;
+        }
+
+        var summary = section.querySelector('[data-asset-status-account-selection-summary]');
+        var table = section.querySelector('[data-asset-status-account-table]');
+        if (!summary || !table || !table.tBodies || table.tBodies.length === 0) {
+            return;
+        }
+
+        var selectedRows = table.tBodies[0].querySelectorAll('[data-account-selectable-row][data-selected="true"]');
+        var selectedCount = selectedRows.length;
+        summary.classList.toggle('hidden', selectedCount === 0);
+
+        if (selectedCount === 0) {
+            return;
+        }
+
+        var totalBuyAmount = 0;
+        var totalEvaluationAmountValue = 0;
+        var totalEvaluationProfitValue = 0;
+        var totalPrincipalValue = 0;
+        var totalPrincipalReturnValue = 0;
+
+        for (var i = 0; i < selectedRows.length; i++) {
+            var row = selectedRows[i];
+            totalBuyAmount += Number(row.dataset.buyAmount || '0');
+            totalEvaluationAmountValue += Number(row.dataset.evaluationAmount || '0');
+            totalEvaluationProfitValue += Number(row.dataset.evaluationProfit || '0');
+            totalPrincipalValue += Number(row.dataset.principal || '0');
+            totalPrincipalReturnValue += Number(row.dataset.principalReturn || '0');
+        }
+
+        var totalEvaluationAmount = Number(summary.dataset.totalEvaluationAmount || '0');
+        var totalWeightValue = totalEvaluationAmount > 0
+            ? (totalEvaluationAmountValue / totalEvaluationAmount) * 100
+            : 0;
+        var evaluationProfitRateValue = totalBuyAmount > 0
+            ? (totalEvaluationProfitValue / totalBuyAmount) * 100
+            : 0;
+        var principalReturnRateValue = totalPrincipalValue > 0
+            ? (totalPrincipalReturnValue / totalPrincipalValue) * 100
+            : 0;
+
+        var countLabel = summary.querySelector('[data-account-selection-count]');
+        if (countLabel) {
+            countLabel.textContent = formatAssetStatusMessage(summary.dataset.countTemplate, selectedCount);
+        }
+
+        var weightBadge = summary.querySelector('[data-account-selection-weight-badge]');
+        if (weightBadge) {
+            weightBadge.textContent = '${accountSelectionWeightLabel} ' + formatAssetStatusNumber(totalWeightValue, 1) + '%';
+        }
+
+        var buyAmountLabel = summary.querySelector('[data-account-selection-buy-amount]');
+        if (buyAmountLabel) {
+            buyAmountLabel.textContent = formatAssetStatusNumber(totalBuyAmount, 0);
+        }
+
+        var evaluationAmountLabel = summary.querySelector('[data-account-selection-evaluation-amount]');
+        if (evaluationAmountLabel) {
+            evaluationAmountLabel.textContent = formatAssetStatusNumber(totalEvaluationAmountValue, 0);
+        }
+
+        var evaluationProfitLabel = summary.querySelector('[data-account-selection-evaluation-profit]');
+        if (evaluationProfitLabel) {
+            evaluationProfitLabel.textContent = formatAssetStatusSignedNumber(totalEvaluationProfitValue, 0);
+            evaluationProfitLabel.classList.toggle('text-profit', totalEvaluationProfitValue >= 0);
+            evaluationProfitLabel.classList.toggle('text-loss', totalEvaluationProfitValue < 0);
+        }
+
+        var evaluationProfitRateLabel = summary.querySelector('[data-account-selection-profit-rate]');
+        if (evaluationProfitRateLabel) {
+            evaluationProfitRateLabel.textContent = '(' + formatAssetStatusSignedNumber(evaluationProfitRateValue, 1) + '%)';
+            evaluationProfitRateLabel.classList.toggle('text-profit', totalEvaluationProfitValue >= 0);
+            evaluationProfitRateLabel.classList.toggle('text-loss', totalEvaluationProfitValue < 0);
+        }
+
+        var principalLabelEl = summary.querySelector('[data-account-selection-principal]');
+        if (principalLabelEl) {
+            principalLabelEl.textContent = formatAssetStatusNumber(totalPrincipalValue, 0);
+        }
+
+        var principalReturnLabelEl = summary.querySelector('[data-account-selection-principal-return]');
+        if (principalReturnLabelEl) {
+            principalReturnLabelEl.textContent = formatAssetStatusSignedNumber(totalPrincipalReturnValue, 0);
+            principalReturnLabelEl.classList.toggle('text-profit', totalPrincipalReturnValue >= 0);
+            principalReturnLabelEl.classList.toggle('text-loss', totalPrincipalReturnValue < 0);
+        }
+
+        var principalReturnRateLabel = summary.querySelector('[data-account-selection-principal-return-rate]');
+        if (principalReturnRateLabel) {
+            principalReturnRateLabel.textContent = '(' + formatAssetStatusSignedNumber(principalReturnRateValue, 1) + '%)';
+            principalReturnRateLabel.classList.toggle('text-profit', totalPrincipalReturnValue >= 0);
+            principalReturnRateLabel.classList.toggle('text-loss', totalPrincipalReturnValue < 0);
+        }
+    }
+
+    function updateAssetStatusStockSelectionSummary(section) {
+        if (!section) {
+            return;
+        }
+
+        var summary = section.querySelector('[data-asset-status-stock-selection-summary]');
+        var table = section.querySelector('[data-asset-status-stock-table]');
+        if (!summary || !table || !table.tBodies || table.tBodies.length === 0) {
+            return;
+        }
+
+        var selectedRows = table.tBodies[0].querySelectorAll('[data-stock-selectable-row][aria-pressed="true"]');
+        var selectedCount = selectedRows.length;
+        summary.classList.toggle('hidden', selectedCount === 0);
+
+        if (selectedCount === 0) {
+            return;
+        }
+
+        var totalBuyAmount = 0;
+        var totalEvaluationAmountValue = 0;
+        var totalEvaluationProfitValue = 0;
+
+        for (var i = 0; i < selectedRows.length; i++) {
+            var row = selectedRows[i];
+            totalBuyAmount += Number(row.dataset.buyAmount || '0');
+            totalEvaluationAmountValue += Number(row.dataset.evaluationAmount || '0');
+            totalEvaluationProfitValue += Number(row.dataset.evaluationProfit || '0');
+        }
+
+        var totalEvaluationAmount = Number(summary.dataset.totalEvaluationAmount || '0');
+        var totalWeightValue = totalEvaluationAmount > 0
+            ? (totalEvaluationAmountValue / totalEvaluationAmount) * 100
+            : 0;
+        var profitRateValue = totalBuyAmount > 0
+            ? (totalEvaluationProfitValue / totalBuyAmount) * 100
+            : 0;
+
+        var countLabel = summary.querySelector('[data-selection-count]');
+        if (countLabel) {
+            countLabel.textContent = formatAssetStatusMessage(summary.dataset.countTemplate, selectedCount);
+        }
+
+        var buyAmountLabel = summary.querySelector('[data-selection-buy-amount]');
+        if (buyAmountLabel) {
+            buyAmountLabel.textContent = formatAssetStatusNumber(totalBuyAmount, 0);
+        }
+
+        var evaluationAmountLabel = summary.querySelector('[data-selection-evaluation-amount]');
+        if (evaluationAmountLabel) {
+            evaluationAmountLabel.textContent = formatAssetStatusNumber(totalEvaluationAmountValue, 0);
+        }
+
+        var evaluationProfitLabel = summary.querySelector('[data-selection-evaluation-profit]');
+        if (evaluationProfitLabel) {
+            evaluationProfitLabel.textContent = formatAssetStatusSignedNumber(totalEvaluationProfitValue, 0);
+            evaluationProfitLabel.classList.toggle('text-profit', totalEvaluationProfitValue >= 0);
+            evaluationProfitLabel.classList.toggle('text-loss', totalEvaluationProfitValue < 0);
+        }
+
+        var profitRateLabel = summary.querySelector('[data-selection-profit-rate]');
+        if (profitRateLabel) {
+            profitRateLabel.textContent = '(' + formatAssetStatusSignedNumber(profitRateValue, 1) + '%)';
+            profitRateLabel.classList.toggle('text-profit', totalEvaluationProfitValue >= 0);
+            profitRateLabel.classList.toggle('text-loss', totalEvaluationProfitValue < 0);
+        }
+
+        var weightLabel = summary.querySelector('[data-selection-weight]');
+        if (weightLabel) {
+            weightLabel.textContent = formatAssetStatusNumber(totalWeightValue, 1) + '%';
+        }
+    }
+
+    function initializeAssetStatusStockSelection() {
+        var sections = document.querySelectorAll('[data-asset-status-stock-section]');
+        for (var i = 0; i < sections.length; i++) {
+            var section = sections[i];
+            if (section.dataset.selectionInitialized === 'true') {
+                continue;
+            }
+
+            var table = section.querySelector('[data-asset-status-stock-table]');
+            if (!table || !table.tBodies || table.tBodies.length === 0) {
+                continue;
+            }
+
+            section.dataset.selectionInitialized = 'true';
+
+            var rows = table.tBodies[0].querySelectorAll('[data-stock-selectable-row]');
+            for (var j = 0; j < rows.length; j++) {
+                var row = rows[j];
+
+                row.addEventListener('click', function(event) {
+                    if (event.target && event.target.closest('button, a, input, label, select, textarea')) {
+                        return;
+                    }
+
+                    var isSelected = this.getAttribute('aria-pressed') === 'true';
+                    setAssetStatusStockRowSelection(this, !isSelected);
+                    updateAssetStatusStockSelectionSummary(section);
+                });
+
+                row.addEventListener('keydown', function(event) {
+                    if (event.key !== 'Enter' && event.key !== ' ') {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    var isSelected = this.getAttribute('aria-pressed') === 'true';
+                    setAssetStatusStockRowSelection(this, !isSelected);
+                    updateAssetStatusStockSelectionSummary(section);
+                });
+            }
+
+            var clearButton = section.querySelector('[data-selection-clear]');
+            if (clearButton) {
+                clearButton.addEventListener('click', function() {
+                    var selectedRows = table.tBodies[0].querySelectorAll('[data-stock-selectable-row][aria-pressed="true"]');
+                    for (var k = 0; k < selectedRows.length; k++) {
+                        setAssetStatusStockRowSelection(selectedRows[k], false);
+                    }
+
+                    updateAssetStatusStockSelectionSummary(section);
+                });
+            }
+
+            updateAssetStatusStockSelectionSummary(section);
+        }
+    }
+
+    function initializeAssetStatusAccountSelection() {
+        var sections = document.querySelectorAll('[data-asset-status-account-section]');
+        for (var i = 0; i < sections.length; i++) {
+            var section = sections[i];
+            if (section.dataset.accountSelectionInitialized === 'true') {
+                continue;
+            }
+
+            var table = section.querySelector('[data-asset-status-account-table]');
+            if (!table || !table.tBodies || table.tBodies.length === 0) {
+                continue;
+            }
+
+            section.dataset.accountSelectionInitialized = 'true';
+
+            var rows = table.tBodies[0].querySelectorAll('[data-account-selectable-row]');
+            for (var j = 0; j < rows.length; j++) {
+                var row = rows[j];
+
+                row.addEventListener('click', function(event) {
+                    if (event.target && event.target.closest('button, a, input, label, select, textarea')) {
+                        return;
+                    }
+
+                    var isSelected = this.dataset.selected === 'true';
+                    setAssetStatusAccountRowSelection(this, !isSelected);
+                    updateAssetStatusAccountSelectionSummary(section);
+                });
+
+                var checkbox = row.querySelector('[data-account-selection-toggle]');
+                if (checkbox) {
+                    checkbox.addEventListener('click', function(event) {
+                        event.stopPropagation();
+                    });
+
+                    checkbox.addEventListener('change', function(event) {
+                        event.stopPropagation();
+                        var targetRow = this.closest('[data-account-selectable-row]');
+                        setAssetStatusAccountRowSelection(targetRow, this.checked);
+                        updateAssetStatusAccountSelectionSummary(section);
+                    });
+                }
+            }
+
+            var clearButton = section.querySelector('[data-account-selection-clear]');
+            if (clearButton) {
+                clearButton.addEventListener('click', function() {
+                    var selectedRows = table.tBodies[0].querySelectorAll('[data-account-selectable-row][data-selected="true"]');
+                    for (var k = 0; k < selectedRows.length; k++) {
+                        setAssetStatusAccountRowSelection(selectedRows[k], false);
+                    }
+
+                    updateAssetStatusAccountSelectionSummary(section);
+                });
+            }
+
+            updateAssetStatusAccountSelectionSummary(section);
+        }
+    }
+
     initializeAssetStatusSortableTables();
+    initializeAssetStatusAccountSelection();
+    initializeAssetStatusStockSelection();
 </script>
