@@ -27,8 +27,10 @@
 	DecimalFormat amountFormat = new DecimalFormat("#,##0");
 	DecimalFormat percentFormat = new DecimalFormat("#,##0.00");
 	MonthlyDividendSnapshotResponse bestChoice = monthlyDividendSummary != null ? monthlyDividendSummary.bestChoice() : null;
+	BigDecimal totalLatestMonthlyDividend = monthlyDividendSummary != null ? monthlyDividendSummary.totalLatestMonthlyDividend() : BigDecimal.ZERO;
 	BigDecimal totalExpectedMonthlyDividend = monthlyDividendSummary != null ? monthlyDividendSummary.totalExpectedMonthlyDividend() : BigDecimal.ZERO;
 	BigDecimal totalExpectedAnnualDividend = monthlyDividendSummary != null ? monthlyDividendSummary.totalExpectedAnnualDividend() : BigDecimal.ZERO;
+	BigDecimal totalExpectedTaxableBaseAmount = monthlyDividendSummary != null ? monthlyDividendSummary.totalExpectedTaxableBaseAmount() : BigDecimal.ZERO;
 	BigDecimal portfolioExpectedAnnualYieldPct = monthlyDividendSummary != null ? monthlyDividendSummary.portfolioExpectedAnnualYieldPct() : BigDecimal.ZERO;
 	int itemCount = monthlyDividendSummary != null ? monthlyDividendSummary.itemCount() : 0;
 	MonthlyDividendSnapshotUpsertRequest form = monthlyDividendForm != null ? monthlyDividendForm : new MonthlyDividendSnapshotUpsertRequest();
@@ -42,6 +44,15 @@
 	String averageBuyPriceValue = form.getAverageBuyPrice() != null ? form.getAverageBuyPrice().stripTrailingZeros().toPlainString() : "";
 	String minAnnualYieldValue = monthlyDividendMinAnnualYield != null ? monthlyDividendMinAnnualYield.stripTrailingZeros().toPlainString() : "";
 	String monthlyDividendReferenceManageUrl = "/stock/dividend?tab=monthly-reference";
+	String totalLatestMonthlyDividendLabel = MessageUtil.getMessage("stock.simulator.monthly.summary.latest.monthly.dividend");
+	String totalLatestMonthlyDividendDesc = MessageUtil.getMessage("stock.simulator.monthly.summary.latest.monthly.dividend.desc");
+	String totalTaxableBaseSummaryLabel = MessageUtil.getMessage("stock.simulator.monthly.summary.total.taxable.base");
+	String totalTaxableBaseSummaryDesc = MessageUtil.getMessage("stock.simulator.monthly.summary.total.taxable.base.desc");
+	String monthlySelectionHelperLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.helper");
+	String selectionSummaryLabel = MessageUtil.getMessage("stock.analytics.selection.summary");
+	String selectionCountTemplate = MessageUtil.getMessage("stock.analytics.selection.count");
+	String selectionClearLabel = MessageUtil.getMessage("stock.analytics.selection.clear");
+	String selectionWeightLabel = MessageUtil.getMessage("stock.analytics.selection.weight");
 	String successMessage = "";
 	if ("single-saved".equals(monthlyDividendResult)) {
 		successMessage = "월배당 데이터를 저장했습니다.";
@@ -168,11 +179,16 @@
 		</div>
 
 		<div class="space-y-6">
-			<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+			<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
 				<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
 					<p class="text-xs font-medium uppercase tracking-wide text-base-content/50">${MessageUtil.getMessage("stock.simulator.monthly.summary.item.count")}</p>
 					<p class="mt-3 text-2xl font-semibold text-base-content">${amountFormat.format(itemCount)}</p>
 					<p class="mt-2 text-sm text-base-content/60">${MessageUtil.getMessage("stock.simulator.tab.monthly.dividend")}</p>
+				</div>
+				<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
+					<p class="text-xs font-medium uppercase tracking-wide text-base-content/50">${totalLatestMonthlyDividendLabel}</p>
+					<p class="mt-3 text-2xl font-semibold text-base-content">₩${amountFormat.format(totalLatestMonthlyDividend)}</p>
+					<p class="mt-2 text-sm text-base-content/60">${totalLatestMonthlyDividendDesc}</p>
 				</div>
 				<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
 					<p class="text-xs font-medium uppercase tracking-wide text-base-content/50">${MessageUtil.getMessage("stock.simulator.monthly.summary.total.monthly.dividend")}</p>
@@ -183,6 +199,11 @@
 					<p class="text-xs font-medium uppercase tracking-wide text-base-content/50">${MessageUtil.getMessage("stock.simulator.monthly.summary.total.annual.dividend")}</p>
 					<p class="mt-3 text-2xl font-semibold text-base-content">₩${amountFormat.format(totalExpectedAnnualDividend)}</p>
 					<p class="mt-2 text-sm text-base-content/60">12 x ${MessageUtil.getMessage("stock.simulator.monthly.summary.total.monthly.dividend")}</p>
+				</div>
+				<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
+					<p class="text-xs font-medium uppercase tracking-wide text-base-content/50">${totalTaxableBaseSummaryLabel}</p>
+					<p class="mt-3 text-2xl font-semibold text-base-content">₩${amountFormat.format(totalExpectedTaxableBaseAmount)}</p>
+					<p class="mt-2 text-sm text-base-content/60">${totalTaxableBaseSummaryDesc}</p>
 				</div>
 				<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
 					<p class="text-xs font-medium uppercase tracking-wide text-base-content/50">${MessageUtil.getMessage("stock.simulator.monthly.summary.portfolio.annual.yield")}</p>
@@ -290,10 +311,50 @@
 							@endif
 						</div>
 					@else
-						<div class="overflow-x-auto">
-							<table class="table table-pin-rows table-zebra table-sm whitespace-nowrap">
+						<div class="space-y-4" data-monthly-simulator-selection-section>
+							<p class="text-xs text-base-content/50">${monthlySelectionHelperLabel}</p>
+							<div class="hidden rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3"
+								 data-monthly-selection-summary
+								 data-count-template="${selectionCountTemplate}"
+								 data-total-expected-monthly-dividend="${totalExpectedMonthlyDividend.toPlainString()}"
+								 data-weight-label="${selectionWeightLabel}"
+								 aria-live="polite">
+								<div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+									<div class="flex flex-wrap items-center gap-2">
+										<h3 class="text-sm font-semibold">${selectionSummaryLabel}</h3>
+										<span class="badge badge-primary badge-outline" data-monthly-selection-count>${selectionSummaryLabel}</span>
+										<span class="badge badge-ghost" data-monthly-selection-weight>${selectionWeightLabel} 0.0%</span>
+									</div>
+									<button type="button" class="btn btn-ghost btn-xs self-start" data-monthly-selection-clear>${selectionClearLabel}</button>
+								</div>
+								<div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+									<div class="rounded-xl bg-base-100/80 px-3 py-2">
+										<div class="text-xs text-base-content/60">${totalLatestMonthlyDividendLabel}</div>
+										<div class="mt-1 font-mono font-semibold amount-value" data-monthly-selection-latest>₩0</div>
+									</div>
+									<div class="rounded-xl bg-base-100/80 px-3 py-2">
+										<div class="text-xs text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.total.monthly.dividend")}</div>
+										<div class="mt-1 font-mono font-semibold amount-value" data-monthly-selection-monthly>₩0</div>
+									</div>
+									<div class="rounded-xl bg-base-100/80 px-3 py-2">
+										<div class="text-xs text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.total.annual.dividend")}</div>
+										<div class="mt-1 font-mono font-semibold amount-value" data-monthly-selection-annual>₩0</div>
+									</div>
+									<div class="rounded-xl bg-base-100/80 px-3 py-2">
+										<div class="text-xs text-base-content/60">${totalTaxableBaseSummaryLabel}</div>
+										<div class="mt-1 font-mono font-semibold amount-value" data-monthly-selection-taxable>₩0</div>
+									</div>
+									<div class="rounded-xl bg-base-100/80 px-3 py-2">
+										<div class="text-xs text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.portfolio.annual.yield")}</div>
+										<div class="mt-1 font-mono font-semibold" data-monthly-selection-annual-yield>0.00%</div>
+									</div>
+								</div>
+							</div>
+							<div class="overflow-x-auto">
+								<table class="table table-pin-rows table-zebra table-sm whitespace-nowrap" data-monthly-selection-table>
 								<thead>
 									<tr>
+										<th class="w-10"></th>
 										<th>${MessageUtil.getMessage("stock.simulator.monthly.table.header.symbol")}</th>
 										<th>${MessageUtil.getMessage("stock.simulator.monthly.table.header.name")}</th>
 										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.current.price")}</th>
@@ -314,8 +375,23 @@
 								</thead>
 								<tbody>
 									@for(MonthlyDividendSnapshotResponse row : monthlyDividendRows)
-										<tr>
-											<td class="font-medium">@if(bestChoice != null && bestChoice.id() != null && bestChoice.id().equals(row.id()))<span class="badge badge-success badge-xs mr-2">${MessageUtil.getMessage("stock.simulator.compare.best.choice")}</span>@endif${row.stockItemSymbol()}</td>
+											!{BigDecimal latestMonthlyDividendAmount = (row.latestMonthlyDividendPerShare() != null ? row.latestMonthlyDividendPerShare() : BigDecimal.ZERO).multiply(BigDecimal.valueOf(row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L));}
+											<tr class="monthly-dividend-row hover"
+												data-monthly-selection-row
+												tabindex="0"
+												role="button"
+												aria-pressed="false"
+												data-latest-monthly-dividend="${latestMonthlyDividendAmount.toPlainString()}"
+												data-expected-monthly-dividend="${(row.expectedMonthlyDividend() != null ? row.expectedMonthlyDividend() : BigDecimal.ZERO).toPlainString()}"
+												data-expected-taxable-base="${(row.expectedTaxableBaseAmount() != null ? row.expectedTaxableBaseAmount() : BigDecimal.ZERO).toPlainString()}"
+												data-current-market-value="${(row.currentMarketValue() != null ? row.currentMarketValue() : BigDecimal.ZERO).toPlainString()}">
+												<td class="align-top pt-2">
+													<input type="checkbox"
+														class="checkbox checkbox-primary checkbox-sm"
+														data-monthly-selection-toggle
+														aria-label="${row.stockItemName() != null ? row.stockItemName() : row.stockItemSymbol()}">
+												</td>
+												<td class="font-medium">@if(bestChoice != null && bestChoice.id() != null && bestChoice.id().equals(row.id()))<span class="badge badge-success badge-xs mr-2">${MessageUtil.getMessage("stock.simulator.compare.best.choice")}</span>@endif${row.stockItemSymbol()}</td>
 											<td>${row.stockItemName()}</td>
 											<td class="text-right">₩${amountFormat.format(row.currentPrice() != null ? row.currentPrice() : BigDecimal.ZERO)}</td>
 											<td class="text-right">₩${amountFormat.format(row.latestMonthlyDividendPerShare() != null ? row.latestMonthlyDividendPerShare() : BigDecimal.ZERO)}</td>
@@ -334,7 +410,8 @@
 										</tr>
 									@endfor
 								</tbody>
-							</table>
+								</table>
+							</div>
 						</div>
 					@endif
 				</div>
@@ -342,3 +419,209 @@
 		</div>
 	</div>
 </div>
+
+<style>
+	.monthly-dividend-row {
+		cursor: pointer;
+	}
+
+	.monthly-dividend-row.monthly-dividend-row-selected > td {
+		background-color: color-mix(in oklch, var(--color-primary) 10%, var(--color-base-100));
+	}
+
+	.monthly-dividend-row.monthly-dividend-row-selected > td:first-child {
+		box-shadow: inset 3px 0 0 color-mix(in oklch, var(--color-primary) 65%, transparent);
+	}
+
+	.monthly-dividend-row:focus-visible {
+		outline: 2px solid color-mix(in oklch, var(--color-primary) 35%, transparent);
+		outline-offset: -2px;
+	}
+</style>
+
+<script>
+	(function() {
+		function getMonthlyDividendSimulatorLocale() {
+			return document.documentElement.getAttribute('lang') || 'ko-KR';
+		}
+
+		function formatMonthlyDividendSimulatorNumber(value, fractionDigits) {
+			return new Intl.NumberFormat(getMonthlyDividendSimulatorLocale(), {
+				minimumFractionDigits: fractionDigits,
+				maximumFractionDigits: fractionDigits
+			}).format(value);
+		}
+
+		function formatMonthlyDividendSimulatorCurrency(value) {
+			return '₩' + formatMonthlyDividendSimulatorNumber(value, 0);
+		}
+
+		function setMonthlyDividendSimulatorRowSelection(row, selected) {
+			if (!row) {
+				return;
+			}
+
+			row.classList.toggle('monthly-dividend-row-selected', selected);
+			row.setAttribute('aria-pressed', selected ? 'true' : 'false');
+
+			const checkbox = row.querySelector('[data-monthly-selection-toggle]');
+			if (checkbox) {
+				checkbox.checked = selected;
+			}
+		}
+
+		function updateMonthlyDividendSimulatorSelectionSummary(section) {
+			if (!section) {
+				return;
+			}
+
+			const summary = section.querySelector('[data-monthly-selection-summary]');
+			const table = section.querySelector('[data-monthly-selection-table]');
+			if (!summary || !table || !table.tBodies || table.tBodies.length === 0) {
+				return;
+			}
+
+			const selectedRows = table.tBodies[0].querySelectorAll('[data-monthly-selection-row][aria-pressed="true"]');
+			const selectedCount = selectedRows.length;
+			summary.classList.toggle('hidden', selectedCount === 0);
+
+			if (selectedCount === 0) {
+				return;
+			}
+
+			let totalLatestMonthlyDividend = 0;
+			let totalExpectedMonthlyDividend = 0;
+			let totalExpectedTaxableBase = 0;
+			let totalCurrentMarketValue = 0;
+
+			for (let i = 0; i < selectedRows.length; i++) {
+				const row = selectedRows[i];
+				totalLatestMonthlyDividend += Number(row.dataset.latestMonthlyDividend || '0');
+				totalExpectedMonthlyDividend += Number(row.dataset.expectedMonthlyDividend || '0');
+				totalExpectedTaxableBase += Number(row.dataset.expectedTaxableBase || '0');
+				totalCurrentMarketValue += Number(row.dataset.currentMarketValue || '0');
+			}
+
+			const totalExpectedAnnualDividend = totalExpectedMonthlyDividend * 12;
+			const totalExpectedMonthlyReference = Number(summary.dataset.totalExpectedMonthlyDividend || '0');
+			const selectionWeight = totalExpectedMonthlyReference > 0
+				? (totalExpectedMonthlyDividend / totalExpectedMonthlyReference) * 100
+				: 0;
+			const portfolioExpectedAnnualYield = totalCurrentMarketValue > 0
+				? (totalExpectedAnnualDividend / totalCurrentMarketValue) * 100
+				: 0;
+
+			const countLabel = summary.querySelector('[data-monthly-selection-count]');
+			if (countLabel) {
+				countLabel.textContent = String(summary.dataset.countTemplate || '').replace('{0}', String(selectedCount));
+			}
+
+			const weightLabel = summary.querySelector('[data-monthly-selection-weight]');
+			if (weightLabel) {
+				weightLabel.textContent = (summary.dataset.weightLabel || '') + ' ' + formatMonthlyDividendSimulatorNumber(selectionWeight, 1) + '%';
+			}
+
+			const latestLabel = summary.querySelector('[data-monthly-selection-latest]');
+			if (latestLabel) {
+				latestLabel.textContent = formatMonthlyDividendSimulatorCurrency(totalLatestMonthlyDividend);
+			}
+
+			const monthlyLabel = summary.querySelector('[data-monthly-selection-monthly]');
+			if (monthlyLabel) {
+				monthlyLabel.textContent = formatMonthlyDividendSimulatorCurrency(totalExpectedMonthlyDividend);
+			}
+
+			const annualLabel = summary.querySelector('[data-monthly-selection-annual]');
+			if (annualLabel) {
+				annualLabel.textContent = formatMonthlyDividendSimulatorCurrency(totalExpectedAnnualDividend);
+			}
+
+			const taxableLabel = summary.querySelector('[data-monthly-selection-taxable]');
+			if (taxableLabel) {
+				taxableLabel.textContent = formatMonthlyDividendSimulatorCurrency(totalExpectedTaxableBase);
+			}
+
+			const annualYieldLabel = summary.querySelector('[data-monthly-selection-annual-yield]');
+			if (annualYieldLabel) {
+				annualYieldLabel.textContent = formatMonthlyDividendSimulatorNumber(portfolioExpectedAnnualYield, 2) + '%';
+			}
+		}
+
+		function initializeMonthlyDividendSimulatorSelection() {
+			const sections = document.querySelectorAll('[data-monthly-simulator-selection-section]');
+			for (let i = 0; i < sections.length; i++) {
+				const section = sections[i];
+				if (section.dataset.selectionInitialized === 'true') {
+					continue;
+				}
+
+				const table = section.querySelector('[data-monthly-selection-table]');
+				if (!table || !table.tBodies || table.tBodies.length === 0) {
+					continue;
+				}
+
+				section.dataset.selectionInitialized = 'true';
+
+				const rows = table.tBodies[0].querySelectorAll('[data-monthly-selection-row]');
+				for (let j = 0; j < rows.length; j++) {
+					const row = rows[j];
+
+					row.addEventListener('click', function(event) {
+						if (event.target && event.target.closest('button, a, input, label, select, textarea')) {
+							return;
+						}
+
+						const isSelected = this.getAttribute('aria-pressed') === 'true';
+						setMonthlyDividendSimulatorRowSelection(this, !isSelected);
+						updateMonthlyDividendSimulatorSelectionSummary(section);
+					});
+
+					row.addEventListener('keydown', function(event) {
+						if (event.target && event.target.closest('button, a, input, label, select, textarea')) {
+							return;
+						}
+
+						if (event.key !== 'Enter' && event.key !== ' ') {
+							return;
+						}
+
+						event.preventDefault();
+						const isSelected = this.getAttribute('aria-pressed') === 'true';
+						setMonthlyDividendSimulatorRowSelection(this, !isSelected);
+						updateMonthlyDividendSimulatorSelectionSummary(section);
+					});
+
+					const checkbox = row.querySelector('[data-monthly-selection-toggle]');
+					if (checkbox) {
+						checkbox.addEventListener('click', function(event) {
+							event.stopPropagation();
+						});
+
+						checkbox.addEventListener('change', function(event) {
+							event.stopPropagation();
+							const targetRow = this.closest('[data-monthly-selection-row]');
+							setMonthlyDividendSimulatorRowSelection(targetRow, this.checked);
+							updateMonthlyDividendSimulatorSelectionSummary(section);
+						});
+					}
+				}
+
+				const clearButton = section.querySelector('[data-monthly-selection-clear]');
+				if (clearButton) {
+					clearButton.addEventListener('click', function() {
+						const selectedRows = table.tBodies[0].querySelectorAll('[data-monthly-selection-row][aria-pressed="true"]');
+						for (let k = 0; k < selectedRows.length; k++) {
+							setMonthlyDividendSimulatorRowSelection(selectedRows[k], false);
+						}
+
+						updateMonthlyDividendSimulatorSelectionSummary(section);
+					});
+				}
+
+				updateMonthlyDividendSimulatorSelectionSummary(section);
+			}
+		}
+
+		initializeMonthlyDividendSimulatorSelection();
+	})();
+</script>

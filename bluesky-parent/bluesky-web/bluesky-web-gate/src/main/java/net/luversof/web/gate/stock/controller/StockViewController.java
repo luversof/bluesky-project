@@ -1684,11 +1684,19 @@ public class StockViewController {
 
   private MonthlyDividendSimulatorSummaryView buildMonthlyDividendSummary(
       List<MonthlyDividendSnapshotResponse> rows) {
+    BigDecimal totalLatestMonthlyDividend = rows.stream()
+        .map(row -> safe(row.latestMonthlyDividendPerShare())
+            .multiply(BigDecimal.valueOf(row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L)))
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
     BigDecimal totalExpectedMonthlyDividend = rows.stream()
         .map(MonthlyDividendSnapshotResponse::expectedMonthlyDividend)
         .map(this::safe)
         .reduce(BigDecimal.ZERO, BigDecimal::add);
     BigDecimal totalExpectedAnnualDividend = totalExpectedMonthlyDividend.multiply(BigDecimal.valueOf(12));
+    BigDecimal totalExpectedTaxableBaseAmount = rows.stream()
+        .map(MonthlyDividendSnapshotResponse::expectedTaxableBaseAmount)
+        .map(this::safe)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
     BigDecimal totalCurrentMarketValue = rows.stream()
         .map(MonthlyDividendSnapshotResponse::currentMarketValue)
         .map(this::safe)
@@ -1704,8 +1712,10 @@ public class StockViewController {
     MonthlyDividendSnapshotResponse bestChoice = rows.isEmpty() ? null : rows.get(0);
     return new MonthlyDividendSimulatorSummaryView(
         rows.size(),
+        totalLatestMonthlyDividend,
         totalExpectedMonthlyDividend,
         totalExpectedAnnualDividend,
+        totalExpectedTaxableBaseAmount,
         portfolioExpectedAnnualYieldPct,
         bestChoice);
   }

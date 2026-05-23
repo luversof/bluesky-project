@@ -197,6 +197,51 @@
                 : tagLabel + ": " + noDataLabel)
             .orElse(tagLabel + ": " + noDataLabel);
     };
+    java.util.function.BiFunction<List<DividendYieldGroupView>, java.util.function.Function<DividendYieldGroupView, BigDecimal>, BigDecimal> sumDividendYieldValue = (rows, extractor) ->
+        rows != null
+            ? rows.stream()
+                .filter(row -> row != null)
+                .map(row -> {
+                    BigDecimal value = extractor.apply(row);
+                    return value != null ? value : BigDecimal.ZERO;
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+            : BigDecimal.ZERO;
+    java.util.function.Function<List<DividendYieldGroupView>, Long> sumDividendYieldCount = rows ->
+        rows != null
+            ? rows.stream()
+                .filter(row -> row != null)
+                .mapToLong(DividendYieldGroupView::dividendCount)
+                .sum()
+            : 0L;
+    java.util.function.BiFunction<BigDecimal, BigDecimal, BigDecimal> computeYieldPct = (netAmount, baseAmount) ->
+        baseAmount != null && baseAmount.compareTo(BigDecimal.ZERO) > 0
+            ? (netAmount != null ? netAmount : BigDecimal.ZERO)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(baseAmount, 2, RoundingMode.HALF_UP)
+            : BigDecimal.ZERO;
+    BigDecimal stockYieldFooterGrossAmount = sumDividendYieldValue.apply(stockYieldRows, DividendYieldGroupView::totalGrossAmount);
+    BigDecimal stockYieldFooterNetAmount = sumDividendYieldValue.apply(stockYieldRows, DividendYieldGroupView::totalNetAmount);
+    BigDecimal stockYieldFooterTaxAmount = stockYieldFooterGrossAmount.subtract(stockYieldFooterNetAmount);
+    BigDecimal stockYieldFooterTaxableAmount = sumDividendYieldValue.apply(stockYieldRows, DividendYieldGroupView::totalTaxableAmount);
+    BigDecimal stockYieldFooterDailyPrincipalCost = sumDividendYieldValue.apply(stockYieldRows, DividendYieldGroupView::averageDailyPrincipalCost);
+    BigDecimal stockYieldFooterPrincipalCost = sumDividendYieldValue.apply(stockYieldRows, DividendYieldGroupView::averagePrincipalCost);
+    BigDecimal stockYieldFooterMarketValue = sumDividendYieldValue.apply(stockYieldRows, DividendYieldGroupView::averagePrincipalMarketValue);
+    BigDecimal stockYieldFooterYieldOnDailyAverageCostPct = computeYieldPct.apply(stockYieldFooterNetAmount, stockYieldFooterDailyPrincipalCost);
+    BigDecimal stockYieldFooterYieldOnCostPct = computeYieldPct.apply(stockYieldFooterNetAmount, stockYieldFooterPrincipalCost);
+    BigDecimal stockYieldFooterYieldOnMarketPct = computeYieldPct.apply(stockYieldFooterNetAmount, stockYieldFooterMarketValue);
+    long stockYieldFooterDividendCount = sumDividendYieldCount.apply(stockYieldRows);
+    BigDecimal accountYieldFooterGrossAmount = sumDividendYieldValue.apply(accountYieldRows, DividendYieldGroupView::totalGrossAmount);
+    BigDecimal accountYieldFooterNetAmount = sumDividendYieldValue.apply(accountYieldRows, DividendYieldGroupView::totalNetAmount);
+    BigDecimal accountYieldFooterTaxAmount = accountYieldFooterGrossAmount.subtract(accountYieldFooterNetAmount);
+    BigDecimal accountYieldFooterTaxableAmount = sumDividendYieldValue.apply(accountYieldRows, DividendYieldGroupView::totalTaxableAmount);
+    BigDecimal accountYieldFooterDailyPrincipalCost = sumDividendYieldValue.apply(accountYieldRows, DividendYieldGroupView::averageDailyPrincipalCost);
+    BigDecimal accountYieldFooterPrincipalCost = sumDividendYieldValue.apply(accountYieldRows, DividendYieldGroupView::averagePrincipalCost);
+    BigDecimal accountYieldFooterMarketValue = sumDividendYieldValue.apply(accountYieldRows, DividendYieldGroupView::averagePrincipalMarketValue);
+    BigDecimal accountYieldFooterYieldOnDailyAverageCostPct = computeYieldPct.apply(accountYieldFooterNetAmount, accountYieldFooterDailyPrincipalCost);
+    BigDecimal accountYieldFooterYieldOnCostPct = computeYieldPct.apply(accountYieldFooterNetAmount, accountYieldFooterPrincipalCost);
+    BigDecimal accountYieldFooterYieldOnMarketPct = computeYieldPct.apply(accountYieldFooterNetAmount, accountYieldFooterMarketValue);
+    long accountYieldFooterDividendCount = sumDividendYieldCount.apply(accountYieldRows);
     String countPattern = MessageUtil.getMessage("common.count");
     java.util.function.Function<BigDecimal, String> percentFormat = value -> value != null ? String.format("%.2f%%", value.doubleValue()) : "-";
     java.util.function.Function<Long, String> countFormat = count -> java.text.MessageFormat.format(countPattern, count);
@@ -557,21 +602,109 @@
                         </div>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="table table-xs w-full" data-dividend-yield-selection-table>
+                        <table class="table table-xs w-full" data-dividend-yield-selection-table data-dividend-yield-sortable-table>
                             <thead>
                                 <tr class="text-base-content/60">
                                     <th class="w-10"></th>
-                                    <th>${stockNameLabel}</th>
-                                    <th class="text-right">${grossAmountLabel}</th>
-                                    <th class="text-right">${netAmountLabel}</th>
-                                    <th class="text-right">${taxLabel}</th>
-                                    <th class="text-right">${taxableAmountLabel}</th>
-                                    <th class="text-right">${dailyAverageInvestedCapitalLabel}</th>
-                                    <th class="text-right">${yieldOnDailyAverageCostLabel}</th>
-                                    <th class="text-right hidden xl:table-cell">${basisAverageInvestedCapitalLabel}</th>
-                                    <th class="text-right hidden xl:table-cell">${yieldOnBasisAverageCostLabel}</th>
-                                    <th class="text-right hidden 2xl:table-cell">${yieldOnBasisMarketLabel}</th>
-                                    <th class="text-right">${dividendCountLabel}</th>
+                                    <th>
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-start px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="label"
+                                                data-sort-type="text">
+                                            <span>${stockNameLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="grossAmount"
+                                                data-sort-type="number">
+                                            <span>${grossAmountLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="netAmount"
+                                                data-sort-type="number">
+                                            <span>${netAmountLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="taxAmount"
+                                                data-sort-type="number">
+                                            <span>${taxLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="taxableAmount"
+                                                data-sort-type="number">
+                                            <span>${taxableAmountLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="averageDailyPrincipalCost"
+                                                data-sort-type="number">
+                                            <span>${dailyAverageInvestedCapitalLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="yieldOnDailyAverageCost"
+                                                data-sort-type="number">
+                                            <span>${yieldOnDailyAverageCostLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right hidden xl:table-cell">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="averagePrincipalCost"
+                                                data-sort-type="number">
+                                            <span>${basisAverageInvestedCapitalLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right hidden xl:table-cell">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="yieldOnCost"
+                                                data-sort-type="number">
+                                            <span>${yieldOnBasisAverageCostLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right hidden 2xl:table-cell">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="yieldOnMarket"
+                                                data-sort-type="number">
+                                            <span>${yieldOnBasisMarketLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="dividendCount"
+                                                data-sort-type="number">
+                                            <span>${dividendCountLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -584,19 +717,24 @@
                                         tabindex="0"
                                         role="button"
                                         aria-pressed="false"
+                                        data-label="${row.label() != null ? row.label() : ""}"
                                         data-gross-amount="${row.totalGrossAmount() != null ? row.totalGrossAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-net-amount="${row.totalNetAmount() != null ? row.totalNetAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-tax-amount="${rowTaxAmount != null ? rowTaxAmount.toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-taxable-amount="${row.totalTaxableAmount() != null ? row.totalTaxableAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-average-daily-principal-cost="${row.averageDailyPrincipalCost() != null ? row.averageDailyPrincipalCost().toPlainString() : BigDecimal.ZERO.toPlainString()}"
-                                        data-average-principal-cost="${row.averagePrincipalCost() != null ? row.averagePrincipalCost().toPlainString() : BigDecimal.ZERO.toPlainString()}">
+                                        data-yield-on-daily-average-cost="${row.yieldOnDailyAverageCostPct() != null ? row.yieldOnDailyAverageCostPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-average-principal-cost="${row.averagePrincipalCost() != null ? row.averagePrincipalCost().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-yield-on-cost="${row.yieldOnCostPct() != null ? row.yieldOnCostPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-yield-on-market="${row.yieldOnMarketPct() != null ? row.yieldOnMarketPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-dividend-count="${String.valueOf(row.dividendCount())}">
                                         <td class="align-top pt-2">
                                             <input type="checkbox"
                                                    class="checkbox checkbox-sm"
                                                    data-dividend-yield-selection-toggle
                                                    aria-label="${row.label() != null ? row.label() : stockNameLabel}">
                                         </td>
-                                        <td class="font-medium"><span title="${stockTagTooltip}">${row.label()}</span></td>
+                                        <td class="font-medium"><span class="cursor-help" data-stock-tag-tooltip="${stockTagTooltip}">${row.label()}</span></td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
                                         <td class="text-right amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
@@ -610,6 +748,22 @@
                                     </tr>
                                 @endfor
                             </tbody>
+                            <tfoot>
+                                <tr class="bg-base-200 font-bold">
+                                    <td></td>
+                                    <td>${totalLabel}</td>
+                                    <td class="text-right font-mono amount-value">${decimalFormat.format(stockYieldFooterGrossAmount)}</td>
+                                    <td class="text-right font-mono text-dividend amount-value">${decimalFormat.format(stockYieldFooterNetAmount)}</td>
+                                    <td class="text-right font-mono amount-value">${decimalFormat.format(stockYieldFooterTaxAmount)}</td>
+                                    <td class="text-right font-mono amount-value">${decimalFormat.format(stockYieldFooterTaxableAmount)}</td>
+                                    <td class="text-right font-mono amount-value">${decimalFormat.format(stockYieldFooterDailyPrincipalCost)}</td>
+                                    <td class="text-right text-dividend font-medium">${percentFormat.apply(stockYieldFooterYieldOnDailyAverageCostPct)}</td>
+                                    <td class="text-right hidden xl:table-cell font-mono amount-value">${decimalFormat.format(stockYieldFooterPrincipalCost)}</td>
+                                    <td class="text-right hidden xl:table-cell text-base-content/70">${percentFormat.apply(stockYieldFooterYieldOnCostPct)}</td>
+                                    <td class="text-right hidden 2xl:table-cell text-base-content/70">${percentFormat.apply(stockYieldFooterYieldOnMarketPct)}</td>
+                                    <td class="text-right">${countFormat.apply(stockYieldFooterDividendCount)}</td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 @endif
@@ -669,21 +823,109 @@
                         </div>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="table table-xs w-full" data-dividend-yield-selection-table>
+                        <table class="table table-xs w-full" data-dividend-yield-selection-table data-dividend-yield-sortable-table>
                             <thead>
                                 <tr class="text-base-content/60">
                                     <th class="w-10"></th>
-                                    <th>${accountLabel}</th>
-                                    <th class="text-right">${grossAmountLabel}</th>
-                                    <th class="text-right">${netAmountLabel}</th>
-                                    <th class="text-right">${taxLabel}</th>
-                                    <th class="text-right">${taxableAmountLabel}</th>
-                                    <th class="text-right">${dailyAverageInvestedCapitalLabel}</th>
-                                    <th class="text-right">${yieldOnDailyAverageCostLabel}</th>
-                                    <th class="text-right hidden xl:table-cell">${basisAverageInvestedCapitalLabel}</th>
-                                    <th class="text-right hidden xl:table-cell">${yieldOnBasisAverageCostLabel}</th>
-                                    <th class="text-right hidden 2xl:table-cell">${yieldOnBasisMarketLabel}</th>
-                                    <th class="text-right">${dividendCountLabel}</th>
+                                    <th>
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-start px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="label"
+                                                data-sort-type="text">
+                                            <span>${accountLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="grossAmount"
+                                                data-sort-type="number">
+                                            <span>${grossAmountLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="netAmount"
+                                                data-sort-type="number">
+                                            <span>${netAmountLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="taxAmount"
+                                                data-sort-type="number">
+                                            <span>${taxLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="taxableAmount"
+                                                data-sort-type="number">
+                                            <span>${taxableAmountLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="averageDailyPrincipalCost"
+                                                data-sort-type="number">
+                                            <span>${dailyAverageInvestedCapitalLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="yieldOnDailyAverageCost"
+                                                data-sort-type="number">
+                                            <span>${yieldOnDailyAverageCostLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right hidden xl:table-cell">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="averagePrincipalCost"
+                                                data-sort-type="number">
+                                            <span>${basisAverageInvestedCapitalLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right hidden xl:table-cell">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="yieldOnCost"
+                                                data-sort-type="number">
+                                            <span>${yieldOnBasisAverageCostLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right hidden 2xl:table-cell">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="yieldOnMarket"
+                                                data-sort-type="number">
+                                            <span>${yieldOnBasisMarketLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
+                                    <th class="text-right">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+                                                data-sort-key="dividendCount"
+                                                data-sort-type="number">
+                                            <span>${dividendCountLabel}</span>
+                                            <span data-sort-indicator class="opacity-60">↕</span>
+                                        </button>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -695,12 +937,17 @@
                                         tabindex="0"
                                         role="button"
                                         aria-pressed="false"
+                                        data-label="${row.label() != null ? row.label() : ""}"
                                         data-gross-amount="${row.totalGrossAmount() != null ? row.totalGrossAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-net-amount="${row.totalNetAmount() != null ? row.totalNetAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-tax-amount="${rowTaxAmount != null ? rowTaxAmount.toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-taxable-amount="${row.totalTaxableAmount() != null ? row.totalTaxableAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-average-daily-principal-cost="${row.averageDailyPrincipalCost() != null ? row.averageDailyPrincipalCost().toPlainString() : BigDecimal.ZERO.toPlainString()}"
-                                        data-average-principal-cost="${row.averagePrincipalCost() != null ? row.averagePrincipalCost().toPlainString() : BigDecimal.ZERO.toPlainString()}">
+                                        data-yield-on-daily-average-cost="${row.yieldOnDailyAverageCostPct() != null ? row.yieldOnDailyAverageCostPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-average-principal-cost="${row.averagePrincipalCost() != null ? row.averagePrincipalCost().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-yield-on-cost="${row.yieldOnCostPct() != null ? row.yieldOnCostPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-yield-on-market="${row.yieldOnMarketPct() != null ? row.yieldOnMarketPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-dividend-count="${String.valueOf(row.dividendCount())}">
                                         <td class="align-top pt-2">
                                             <input type="checkbox"
                                                    class="checkbox checkbox-sm"
@@ -721,6 +968,22 @@
                                     </tr>
                                 @endfor
                             </tbody>
+                            <tfoot>
+                                <tr class="bg-base-200 font-bold">
+                                    <td></td>
+                                    <td>${totalLabel}</td>
+                                    <td class="text-right font-mono amount-value">${decimalFormat.format(accountYieldFooterGrossAmount)}</td>
+                                    <td class="text-right font-mono text-dividend amount-value">${decimalFormat.format(accountYieldFooterNetAmount)}</td>
+                                    <td class="text-right font-mono amount-value">${decimalFormat.format(accountYieldFooterTaxAmount)}</td>
+                                    <td class="text-right font-mono amount-value">${decimalFormat.format(accountYieldFooterTaxableAmount)}</td>
+                                    <td class="text-right font-mono amount-value">${decimalFormat.format(accountYieldFooterDailyPrincipalCost)}</td>
+                                    <td class="text-right text-dividend font-medium">${percentFormat.apply(accountYieldFooterYieldOnDailyAverageCostPct)}</td>
+                                    <td class="text-right hidden xl:table-cell font-mono amount-value">${decimalFormat.format(accountYieldFooterPrincipalCost)}</td>
+                                    <td class="text-right hidden xl:table-cell text-base-content/70">${percentFormat.apply(accountYieldFooterYieldOnCostPct)}</td>
+                                    <td class="text-right hidden 2xl:table-cell text-base-content/70">${percentFormat.apply(accountYieldFooterYieldOnMarketPct)}</td>
+                                    <td class="text-right">${countFormat.apply(accountYieldFooterDividendCount)}</td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 @endif
@@ -1039,6 +1302,126 @@
             }
         }
 
+        function getDividendYieldSortValue(row, sortKey, sortType) {
+            if (!row || !sortKey) {
+                return sortType === 'number' ? 0 : '';
+            }
+
+            const rawValue = row.dataset[sortKey];
+            if (sortType === 'number') {
+                const parsedValue = Number(rawValue);
+                return Number.isFinite(parsedValue) ? parsedValue : 0;
+            }
+
+            return rawValue || '';
+        }
+
+        function compareDividendYieldSortValues(leftValue, rightValue, sortType) {
+            if (sortType === 'number') {
+                return leftValue - rightValue;
+            }
+
+            return String(leftValue).localeCompare(String(rightValue), 'ko', {
+                numeric: true,
+                sensitivity: 'base'
+            });
+        }
+
+        function updateDividendYieldSortIndicators(table) {
+            if (!table) {
+                return;
+            }
+
+            const activeKey = table.dataset.sortKey;
+            const direction = table.dataset.sortDirection;
+            const buttons = table.querySelectorAll('[data-sort-key]');
+            for (let i = 0; i < buttons.length; i++) {
+                const button = buttons[i];
+                const indicator = button.querySelector('[data-sort-indicator]');
+                const headerCell = button.parentElement;
+                const isActive = activeKey && button.dataset.sortKey === activeKey;
+
+                if (indicator) {
+                    indicator.textContent = isActive
+                        ? (direction === 'asc' ? '▲' : '▼')
+                        : '↕';
+                }
+
+                if (headerCell) {
+                    headerCell.setAttribute(
+                        'aria-sort',
+                        isActive
+                            ? (direction === 'asc' ? 'ascending' : 'descending')
+                            : 'none'
+                    );
+                }
+            }
+        }
+
+        function sortDividendYieldTable(table, sortKey, sortType) {
+            if (!table || !sortKey || !sortType || !table.tBodies || table.tBodies.length === 0) {
+                return;
+            }
+
+            let nextDirection;
+            if (table.dataset.sortKey === sortKey) {
+                nextDirection = table.dataset.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                nextDirection = sortType === 'text' ? 'asc' : 'desc';
+            }
+
+            table.dataset.sortKey = sortKey;
+            table.dataset.sortDirection = nextDirection;
+
+            const tbody = table.tBodies[0];
+            const rows = Array.from(tbody.querySelectorAll('[data-dividend-yield-row]'));
+            rows.sort(function(left, right) {
+                let compared = compareDividendYieldSortValues(
+                    getDividendYieldSortValue(left, sortKey, sortType),
+                    getDividendYieldSortValue(right, sortKey, sortType),
+                    sortType
+                );
+
+                if (compared === 0) {
+                    compared = compareDividendYieldSortValues(
+                        left.dataset.label || '',
+                        right.dataset.label || '',
+                        'text'
+                    );
+                }
+
+                return nextDirection === 'asc' ? compared : -compared;
+            });
+
+            for (let i = 0; i < rows.length; i++) {
+                tbody.appendChild(rows[i]);
+            }
+
+            updateDividendYieldSortIndicators(table);
+        }
+
+        function initializeDividendYieldSortableTables() {
+            const tables = document.querySelectorAll('[data-dividend-yield-sortable-table]');
+            for (let i = 0; i < tables.length; i++) {
+                const table = tables[i];
+                if (table.dataset.sortableInitialized === 'true') {
+                    continue;
+                }
+
+                table.dataset.sortableInitialized = 'true';
+
+                const buttons = table.querySelectorAll('[data-sort-key]');
+                for (let j = 0; j < buttons.length; j++) {
+                    buttons[j].addEventListener('click', function() {
+                        const targetTable = this.closest('[data-dividend-yield-sortable-table]');
+                        sortDividendYieldTable(targetTable, this.dataset.sortKey, this.dataset.sortType);
+                    });
+                }
+
+                updateDividendYieldSortIndicators(table);
+            }
+        }
+
         function initializeDividendYieldSelection() {
             const sections = document.querySelectorAll('[data-dividend-yield-selection-section]');
             for (let i = 0; i < sections.length; i++) {
@@ -1112,6 +1495,94 @@
 
                 updateDividendYieldSelectionSummary(section);
             }
+        }
+
+        if (typeof window.initializeStockTagHoverTooltips !== 'function') {
+            window.initializeStockTagHoverTooltips = function(root) {
+                let tooltip = window.stockTagHoverTooltip;
+                if (!tooltip) {
+                    const tooltipEl = document.createElement('div');
+                    tooltipEl.id = 'stockTagHoverTooltip';
+                    tooltipEl.className = 'pointer-events-none fixed left-0 top-0 z-50 hidden w-64 max-w-[calc(100vw-2rem)] rounded-box bg-neutral px-3 py-2 text-left text-xs leading-5 text-neutral-content shadow-lg sm:w-72';
+                    document.body.appendChild(tooltipEl);
+
+                    tooltip = {
+                        element: tooltipEl,
+                        show(message, clientX, clientY) {
+                            if (!message) {
+                                this.hide();
+                                return;
+                            }
+
+                            this.element.textContent = message;
+                            this.element.classList.remove('hidden');
+                            this.move(clientX, clientY);
+                        },
+                        move(clientX, clientY) {
+                            if (this.element.classList.contains('hidden')) {
+                                return;
+                            }
+
+                            const offsetX = 12;
+                            const offsetY = 18;
+                            const viewportPadding = 12;
+                            let left = clientX + offsetX;
+                            let top = clientY + offsetY;
+                            const rect = this.element.getBoundingClientRect();
+
+                            if (left + rect.width + viewportPadding > window.innerWidth) {
+                                left = Math.max(viewportPadding, window.innerWidth - rect.width - viewportPadding);
+                            }
+
+                            if (top + rect.height + viewportPadding > window.innerHeight) {
+                                top = Math.max(viewportPadding, clientY - rect.height - offsetY);
+                            }
+
+                            this.element.style.left = left + 'px';
+                            this.element.style.top = top + 'px';
+                        },
+                        hide() {
+                            this.element.classList.add('hidden');
+                            this.element.textContent = '';
+                        }
+                    };
+
+                    window.stockTagHoverTooltip = tooltip;
+                    window.addEventListener('scroll', function() {
+                        if (window.stockTagHoverTooltip) {
+                            window.stockTagHoverTooltip.hide();
+                        }
+                    }, true);
+                    window.addEventListener('resize', function() {
+                        if (window.stockTagHoverTooltip) {
+                            window.stockTagHoverTooltip.hide();
+                        }
+                    });
+                }
+
+                const scope = root || document;
+                const targets = scope.querySelectorAll('[data-stock-tag-tooltip]');
+                for (let i = 0; i < targets.length; i++) {
+                    const target = targets[i];
+                    if (target.dataset.stockTagTooltipInitialized === 'true') {
+                        continue;
+                    }
+
+                    target.dataset.stockTagTooltipInitialized = 'true';
+
+                    target.addEventListener('mouseenter', function(event) {
+                        tooltip.show(this.dataset.stockTagTooltip, event.clientX, event.clientY);
+                    });
+
+                    target.addEventListener('mousemove', function(event) {
+                        tooltip.move(event.clientX, event.clientY);
+                    });
+
+                    target.addEventListener('mouseleave', function() {
+                        tooltip.hide();
+                    });
+                }
+            };
         }
 
         let monthlyChart = null;
@@ -1310,7 +1781,9 @@
             });
         }
 
+        initializeDividendYieldSortableTables();
         initializeDividendYieldSelection();
+        window.initializeStockTagHoverTooltips(document);
 
         if (window.Chart) {
             setTimeout(initAll, 0);

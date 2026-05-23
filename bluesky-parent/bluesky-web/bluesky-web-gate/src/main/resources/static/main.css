@@ -861,6 +861,9 @@
       }
     }
   }
+  .pointer-events-none {
+    pointer-events: none;
+  }
   .collapse {
     &:not(td, tr, colgroup) {
       visibility: revert-layer;
@@ -3611,6 +3614,9 @@
   .cursor-pointer {
     cursor: pointer;
   }
+  .resize {
+    resize: both;
+  }
   .list-disc {
     list-style-type: disc;
   }
@@ -3888,6 +3894,12 @@
   }
   .border-primary {
     border-color: var(--color-primary);
+  }
+  .border-primary\/15 {
+    border-color: var(--color-primary);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--color-primary) 15%, transparent);
+    }
   }
   .border-primary\/20 {
     border-color: var(--color-primary);
@@ -5252,6 +5264,11 @@
   .\32 xl\:table-cell {
     @media (width >= 96rem) {
       display: table-cell;
+    }
+  }
+  .\32 xl\:grid-cols-6 {
+    @media (width >= 96rem) {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
     }
   }
   .\[\&_svg\]\:visible {

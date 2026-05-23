@@ -533,7 +533,7 @@
                                            data-stock-selection-toggle
                                            aria-label="${item.stockItemName() != null ? item.stockItemName() : stockNameLabel}">
                                 </td>
-                                <td class="font-semibold"><span title="${stockTagTooltip}">${item.stockItemName() != null ? item.stockItemName() : "-"}</span></td>
+                                <td class="font-semibold"><span class="cursor-help" data-stock-tag-tooltip="${stockTagTooltip}">${item.stockItemName() != null ? item.stockItemName() : "-"}</span></td>
                                 <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", item.holdingQuantity())}</td>
                                 <td class="text-right font-mono hidden xl:table-cell amount-value">${String.format("%,d", item.averageBuyPrice() != null ? item.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
                                 <td class="text-right font-mono hidden sm:table-cell amount-value opacity-70">${String.format("%,d", item.totalBuyCost() != null ? item.totalBuyCost().longValue() : 0)}</td>
@@ -1104,7 +1104,96 @@
         }
     }
 
+    if (typeof window.initializeStockTagHoverTooltips !== 'function') {
+        window.initializeStockTagHoverTooltips = function(root) {
+            var tooltip = window.stockTagHoverTooltip;
+            if (!tooltip) {
+                var tooltipEl = document.createElement('div');
+                tooltipEl.id = 'stockTagHoverTooltip';
+                tooltipEl.className = 'pointer-events-none fixed left-0 top-0 z-50 hidden w-64 max-w-[calc(100vw-2rem)] rounded-box bg-neutral px-3 py-2 text-left text-xs leading-5 text-neutral-content shadow-lg sm:w-72';
+                document.body.appendChild(tooltipEl);
+
+                tooltip = {
+                    element: tooltipEl,
+                    show: function(message, clientX, clientY) {
+                        if (!message) {
+                            this.hide();
+                            return;
+                        }
+
+                        this.element.textContent = message;
+                        this.element.classList.remove('hidden');
+                        this.move(clientX, clientY);
+                    },
+                    move: function(clientX, clientY) {
+                        if (this.element.classList.contains('hidden')) {
+                            return;
+                        }
+
+                        var offsetX = 12;
+                        var offsetY = 18;
+                        var viewportPadding = 12;
+                        var left = clientX + offsetX;
+                        var top = clientY + offsetY;
+                        var rect = this.element.getBoundingClientRect();
+
+                        if (left + rect.width + viewportPadding > window.innerWidth) {
+                            left = Math.max(viewportPadding, window.innerWidth - rect.width - viewportPadding);
+                        }
+
+                        if (top + rect.height + viewportPadding > window.innerHeight) {
+                            top = Math.max(viewportPadding, clientY - rect.height - offsetY);
+                        }
+
+                        this.element.style.left = left + 'px';
+                        this.element.style.top = top + 'px';
+                    },
+                    hide: function() {
+                        this.element.classList.add('hidden');
+                        this.element.textContent = '';
+                    }
+                };
+
+                window.stockTagHoverTooltip = tooltip;
+                window.addEventListener('scroll', function() {
+                    if (window.stockTagHoverTooltip) {
+                        window.stockTagHoverTooltip.hide();
+                    }
+                }, true);
+                window.addEventListener('resize', function() {
+                    if (window.stockTagHoverTooltip) {
+                        window.stockTagHoverTooltip.hide();
+                    }
+                });
+            }
+
+            var scope = root || document;
+            var targets = scope.querySelectorAll('[data-stock-tag-tooltip]');
+            for (var i = 0; i < targets.length; i++) {
+                var target = targets[i];
+                if (target.dataset.stockTagTooltipInitialized === 'true') {
+                    continue;
+                }
+
+                target.dataset.stockTagTooltipInitialized = 'true';
+
+                target.addEventListener('mouseenter', function(event) {
+                    tooltip.show(this.dataset.stockTagTooltip, event.clientX, event.clientY);
+                });
+
+                target.addEventListener('mousemove', function(event) {
+                    tooltip.move(event.clientX, event.clientY);
+                });
+
+                target.addEventListener('mouseleave', function() {
+                    tooltip.hide();
+                });
+            }
+        };
+    }
+
     initializeAssetStatusSortableTables();
     initializeAssetStatusAccountSelection();
     initializeAssetStatusStockSelection();
+    window.initializeStockTagHoverTooltips(document);
 </script>
