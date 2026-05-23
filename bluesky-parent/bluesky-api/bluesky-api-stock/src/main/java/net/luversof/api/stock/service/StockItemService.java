@@ -63,6 +63,30 @@ public class StockItemService {
     return list;
   }
 
+  public List<StockItem> findAllByTag(String tag) {
+    if (!StringUtils.hasText(tag)) {
+      return List.of();
+    }
+
+    String normalizedTag = tag.trim();
+    List<UUID> stockItemIds =
+        StreamSupport.stream(stockItemTagRepository.findAll().spliterator(), false)
+            .filter(stockItemTag -> stockItemTag.getStockItemId() != null)
+            .filter(stockItemTag -> StringUtils.hasText(stockItemTag.getTag()))
+            .filter(stockItemTag -> normalizedTag.equals(stockItemTag.getTag().trim()))
+            .map(StockItemTag::getStockItemId)
+            .distinct()
+            .toList();
+    if (stockItemIds.isEmpty()) {
+      return List.of();
+    }
+
+    List<StockItem> list = new ArrayList<>();
+    stockItemRepository.findAllById(stockItemIds).forEach(list::add);
+    attachTags(list);
+    return list;
+  }
+
   private StockItem attachTags(StockItem stockItem) {
     if (stockItem == null) {
       return null;

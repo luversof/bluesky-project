@@ -10,6 +10,9 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
+import net.luversof.web.gate.stock.httpexchange.MonthlyDividendPayoutClient;
+import net.luversof.web.gate.stock.httpexchange.MonthlyDividendProfileClient;
+import net.luversof.web.gate.stock.httpexchange.MonthlyDividendSnapshotClient;
 import net.luversof.web.gate.stock.httpexchange.StockAdminClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
@@ -51,6 +54,27 @@ public class GateStockConfig {
       @Qualifier("stockHttpServiceProxyFactory")
           HttpServiceProxyFactory stockHttpServiceProxyFactory) {
     return stockHttpServiceProxyFactory.createClient(StockItemClient.class);
+  }
+
+  @Bean
+  MonthlyDividendSnapshotClient monthlyDividendSnapshotClient(
+      @Qualifier("stockHttpServiceProxyFactory")
+          HttpServiceProxyFactory stockHttpServiceProxyFactory) {
+    return stockHttpServiceProxyFactory.createClient(MonthlyDividendSnapshotClient.class);
+  }
+
+  @Bean
+  MonthlyDividendProfileClient monthlyDividendProfileClient(
+      @Qualifier("stockHttpServiceProxyFactory")
+          HttpServiceProxyFactory stockHttpServiceProxyFactory) {
+    return stockHttpServiceProxyFactory.createClient(MonthlyDividendProfileClient.class);
+  }
+
+  @Bean
+  MonthlyDividendPayoutClient monthlyDividendPayoutClient(
+      @Qualifier("stockHttpServiceProxyFactory")
+          HttpServiceProxyFactory stockHttpServiceProxyFactory) {
+    return stockHttpServiceProxyFactory.createClient(MonthlyDividendPayoutClient.class);
   }
 
   @Bean

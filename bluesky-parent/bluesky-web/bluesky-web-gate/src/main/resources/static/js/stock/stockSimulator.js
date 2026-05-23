@@ -36,7 +36,7 @@
         typeof globalThis.stockSimulatorI18n === "object"
         ? globalThis.stockSimulatorI18n
         : {};
-    const i18n = Object.assign({ defaultScenarioName: "Base Scenario", activeScenario: "Editing", localOnly: "localStorage only", fieldPrincipal: "Principal", fieldCurrentPrice: "Price", fieldAnnualPriceGrowth: "Price Growth", fieldDividendYield: "Dividend Yield", fieldAnnualDividendGrowth: "Dividend Growth", fieldAnnualSpending: "Spending", fieldAnnualSpendingGrowth: "Spending Growth", reinvestOn: "Reinvest ON", reinvestOff: "Cash Dividend", emptyScenario: "A default scenario has been created.", emptyTable: "No yearly data is available.", deleteConfirm: "Delete the current scenario?", maxScenarios: "You can compare up to five scenarios at once.", summarySustainablePeriod: "Sustainable Period", summaryDepletionYear: "Depletion", summaryNotDepleted: "Not Depleted", summaryDeficitStart: "Deficit Starts", summaryNoDeficit: "No Deficit", summaryWealthDeclineStart: "Total Wealth Decline Starts", summaryNoWealthDecline: "No Wealth Decline", summaryCapitalDrawdownStart: "Principal Drawdown Starts", summaryNoPrincipalDrawdown: "No Principal Drawdown", summaryYearsLater: "In {0} years", summaryYearsOrMore: "{0}+ years", summaryWithinHorizon: "Sustainable within the simulation horizon", summaryNoSpending: "No Spending", seriesAnnualDividend: "Annual Dividend", seriesAnnualSpending: "Annual Spending", seriesAnnualGap: "Annual Gap", seriesTotalWealth: "Total Wealth", seriesMarketValue: "Market Value", seriesCashReserve: "Cash Reserve", timelinePhaseStable: "Spending Covered", timelinePhaseDeficit: "Deficit", timelinePhaseWealthDecline: "Wealth Decline", timelinePhaseDrawdown: "Principal Drawdown", timelinePhaseDepleted: "Depleted" }, i18nOverrides);
+    const i18n = Object.assign({ defaultScenarioName: "Base Scenario", activeScenario: "Editing", localOnly: "localStorage only", compareBestChoice: "More Favorable", fieldPrincipal: "Principal", fieldCurrentPrice: "Price", fieldAnnualPriceGrowth: "Price Growth", fieldDividendYield: "Dividend Yield", fieldAnnualDividendGrowth: "Dividend Growth", fieldAnnualSpending: "Spending", fieldAnnualSpendingGrowth: "Spending Growth", reinvestOn: "Reinvest ON", reinvestOff: "Cash Dividend", emptyScenario: "A default scenario has been created.", emptyTable: "No yearly data is available.", deleteConfirm: "Delete the current scenario?", maxScenarios: "You can compare up to five scenarios at once.", summarySustainablePeriod: "Sustainable Period", summaryFinalWealth: "Final Total Wealth", summaryDepletionYear: "Depletion", summaryNotDepleted: "Not Depleted", summaryDeficitStart: "Deficit Starts", summaryNoDeficit: "No Deficit", summaryWealthDeclineStart: "Total Wealth Decline Starts", summaryNoWealthDecline: "No Wealth Decline", summaryCapitalDrawdownStart: "Principal Drawdown Starts", summaryNoPrincipalDrawdown: "No Principal Drawdown", summaryYearsLater: "In {0} years", summaryYearsOrMore: "{0}+ years", summaryWithinHorizon: "Sustainable within the simulation horizon", summaryLatestCoverage: "Latest Spending Coverage", summaryNoSpending: "No Spending", seriesAnnualDividend: "Annual Dividend", seriesAnnualSpending: "Annual Spending", seriesAnnualGap: "Annual Gap", seriesTotalWealth: "Total Wealth", seriesMarketValue: "Market Value", seriesCashReserve: "Cash Reserve", timelinePhaseStable: "Spending Covered", timelinePhaseDeficit: "Deficit", timelinePhaseWealthDecline: "Wealth Decline", timelinePhaseDrawdown: "Principal Drawdown", timelinePhaseDepleted: "Depleted" }, i18nOverrides);
     const currencyFormatter = new Intl.NumberFormat(undefined, {
         maximumFractionDigits: 0,
     });
@@ -363,6 +363,7 @@
                 firstWealthDeclineYear,
                 firstShareSaleYear,
                 depletionYear,
+                finalWealth: finalYear.totalWealth,
                 finalSpendingCoveragePct: finalYear.spendingCoveragePct,
             },
         };
@@ -633,11 +634,13 @@
             return;
         }
         const maxYears = state.scenarios.reduce((accumulator, scenario) => Math.max(accumulator, scenario.years), 1);
+        const bestScenarioIds = buildBestScenarioSet(simulations);
         elements.timelineList.innerHTML = state.scenarios
             .map((scenario) => {
             const simulation = simulations.get(scenario.id);
             const summary = simulation.summary;
             const active = scenario.id === state.activeScenarioId;
+            const isBestChoice = state.scenarios.length > 1 && bestScenarioIds.has(scenario.id);
             const segments = buildTimelineSegments(simulation.records, scenario.years, maxYears);
             const markers = buildTimelineMarkers(summary, scenario.years, maxYears);
             return `
@@ -648,8 +651,19 @@
 						data-scenario-id="${scenario.id}">
 						<div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 							<div class="space-y-1">
-								<p class="font-semibold text-base-content">${escapeHtml(scenario.name)}</p>
-								<p class="text-xs text-base-content/55">${scenario.years}y · ${scenario.reinvestDividends ? i18n.reinvestOn : i18n.reinvestOff}</p>
+								<div class="flex flex-wrap items-center gap-2">
+									<p class="font-semibold text-base-content">${escapeHtml(scenario.name)}</p>
+									${isBestChoice
+                ? `<span class="badge badge-success badge-sm">${escapeHtml(i18n.compareBestChoice)}</span>`
+                : ""}
+								</div>
+								<p class="text-xs text-base-content/55">${scenario.years}y · ${scenario.reinvestDividends
+                ? i18n.reinvestOn
+                : i18n.reinvestOff}</p>
+								<div class="flex flex-wrap gap-2 text-[11px] leading-5 text-base-content/70">
+									<span class="rounded-full border border-base-300 bg-base-200/70 px-2 py-1">${escapeHtml(i18n.summaryLatestCoverage)} ${escapeHtml(formatCoveragePercent(summary.finalSpendingCoveragePct))}</span>
+									<span class="rounded-full border border-base-300 bg-base-200/70 px-2 py-1">${escapeHtml(i18n.summaryFinalWealth)} ${escapeHtml(formatCompactCurrency(summary.finalWealth))}</span>
+								</div>
 								<div class="mt-2 flex flex-wrap gap-2 text-[11px] leading-5 text-base-content/70">
 									${buildScenarioConfigurationBadges(scenario)}
 								</div>
@@ -683,6 +697,57 @@
         })
             .join("");
         bindScenarioSelection(elements.timelineList);
+    }
+    function buildBestScenarioSet(simulations) {
+        const entries = state.scenarios
+            .map((scenario) => {
+            var _a;
+            return ({
+                scenarioId: scenario.id,
+                values: buildComparisonValues((_a = simulations.get(scenario.id)) === null || _a === void 0 ? void 0 : _a.summary, scenario.years),
+            });
+        })
+            .sort(compareComparisonEntries);
+        if (!entries.length) {
+            return new Set();
+        }
+        const bestEntry = entries[0];
+        return new Set(entries
+            .filter((entry) => compareComparisonEntries(entry, bestEntry) === 0)
+            .map((entry) => entry.scenarioId));
+    }
+    function buildComparisonValues(summary, simulationYears) {
+        return {
+            sustainableYears: Number((summary === null || summary === void 0 ? void 0 : summary.sustainableYears) || 0),
+            drawdownStartYear: normalizeComparisonYear(summary === null || summary === void 0 ? void 0 : summary.firstShareSaleYear, simulationYears),
+            finalCoveragePct: normalizeComparisonCoverage(summary === null || summary === void 0 ? void 0 : summary.finalSpendingCoveragePct),
+            finalWealth: Number((summary === null || summary === void 0 ? void 0 : summary.finalWealth) || 0),
+            firstDeficitYear: normalizeComparisonYear(summary === null || summary === void 0 ? void 0 : summary.firstDeficitYear, simulationYears),
+            firstWealthDeclineYear: normalizeComparisonYear(summary === null || summary === void 0 ? void 0 : summary.firstWealthDeclineYear, simulationYears),
+        };
+    }
+    function normalizeComparisonYear(year, simulationYears) {
+        return year ? Number(year) : simulationYears + 1;
+    }
+    function normalizeComparisonCoverage(value) {
+        if (value === null || value === undefined) {
+            return Number.POSITIVE_INFINITY;
+        }
+        return Number(value);
+    }
+    function compareComparisonEntries(left, right) {
+        return (compareDescendingNumber(left.values.sustainableYears, right.values.sustainableYears) ||
+            compareDescendingNumber(left.values.drawdownStartYear, right.values.drawdownStartYear) ||
+            compareDescendingNumber(left.values.finalCoveragePct, right.values.finalCoveragePct) ||
+            compareDescendingNumber(left.values.finalWealth, right.values.finalWealth) ||
+            compareDescendingNumber(left.values.firstDeficitYear, right.values.firstDeficitYear) ||
+            compareDescendingNumber(left.values.firstWealthDeclineYear, right.values.firstWealthDeclineYear));
+    }
+    function compareDescendingNumber(left, right) {
+        if (left === right) {
+            return 0;
+        }
+        return left > right ? -1 : 1;
     }
     function renderYearlyTable(simulations) {
         if (!elements.yearlyTableBody) {

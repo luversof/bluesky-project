@@ -2,7 +2,6 @@ package net.luversof.api.stock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -40,30 +39,21 @@ import net.luversof.api.stock.web.dto.request.TradeProfitRequestGroup;
 import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesPoint;
 
 /**
- * Reproduction test for Realized Profit calculation issue. Scenario: Buy in
- * 2025, Sell in 2026.
+ * Reproduction test for Realized Profit calculation issue. Scenario: Buy in 2025, Sell in 2026.
  * Calculate Profit for 2026.
  */
 @ExtendWith(MockitoExtension.class)
 public class TradeProfitServiceReproductionTest {
 
-  @Mock
-  private AccountService accountService;
-  @Mock
-  private TradeService tradeService;
-  @Mock
-  private StockPriceService stockPriceService;
-  @Spy
-  private ProfitCalculator profitCalculator = new AverageCostProfitCalculator();
-  @Mock
-  private StockItemService stockItemService;
-  @Mock
-  private DividendService dividendService;
-  @Mock
-  private DailyAccountSnapshotRepository dailyAccountSnapshotRepository;
+  @Mock private AccountService accountService;
+  @Mock private TradeService tradeService;
+  @Mock private StockPriceService stockPriceService;
+  @Spy private ProfitCalculator profitCalculator = new AverageCostProfitCalculator();
+  @Mock private StockItemService stockItemService;
+  @Mock private DividendService dividendService;
+  @Mock private DailyAccountSnapshotRepository dailyAccountSnapshotRepository;
 
-  @InjectMocks
-  private TradeProfitService tradeProfitService;
+  @InjectMocks private TradeProfitService tradeProfitService;
 
   @BeforeEach
   void setUp() {
@@ -155,16 +145,20 @@ public class TradeProfitServiceReproductionTest {
     when(accountService.findByIdIn(List.of(accountId))).thenReturn(List.of(new Account()));
     when(tradeService.findByAccountIdIn(List.of(accountId)))
         .thenReturn(
-            new ArrayList<>(List.of(createTrade(stockItemId, accountId, TradeType.BUY, 10, "100", "2026-05-14"))));
+            new ArrayList<>(
+                List.of(
+                    createTrade(stockItemId, accountId, TradeType.BUY, 10, "100", "2026-05-14"))));
     when(stockPriceService.getPriceHistory(any(), any(), any()))
         .thenReturn(
             List.of(
                 createPriceHistory(stockItemId, LocalDate.of(2026, 5, 14), "98"),
                 createPriceHistory(stockItemId, LocalDate.of(2026, 5, 15), "99")));
 
-    TradeProfitRequest request = createUserAccountRequest(userId, accountId, "2026-05-14", "2026-05-16");
+    TradeProfitRequest request =
+        createUserAccountRequest(userId, accountId, "2026-05-14", "2026-05-16");
 
-    List<TradeProfitTimeSeriesPoint> series = tradeProfitService.aggregateTimeSeries(request, "DAILY");
+    List<TradeProfitTimeSeriesPoint> series =
+        tradeProfitService.aggregateTimeSeries(request, "DAILY");
 
     assertThat(series).hasSize(2);
     assertThat(series.get(0).totalHoldingsValue()).isEqualByComparingTo("980");
@@ -181,16 +175,20 @@ public class TradeProfitServiceReproductionTest {
     when(accountService.findByIdIn(List.of(accountId))).thenReturn(List.of(new Account()));
     when(tradeService.findByAccountIdIn(List.of(accountId)))
         .thenReturn(
-            new ArrayList<>(List.of(createTrade(stockItemId, accountId, TradeType.BUY, 10, "100", "2026-05-14"))));
+            new ArrayList<>(
+                List.of(
+                    createTrade(stockItemId, accountId, TradeType.BUY, 10, "100", "2026-05-14"))));
     when(stockPriceService.getPriceHistory(any(), any(), any()))
         .thenReturn(
             List.of(
                 createPriceHistory(stockItemId, LocalDate.of(2026, 5, 14), "50"),
                 createPriceHistory(stockItemId, LocalDate.of(2026, 5, 15), "60")));
 
-    TradeProfitRequest request = createUserAccountRequest(userId, accountId, "2026-05-14", "2026-05-16");
+    TradeProfitRequest request =
+        createUserAccountRequest(userId, accountId, "2026-05-14", "2026-05-16");
 
-    List<TradeProfitTimeSeriesPoint> series = tradeProfitService.aggregateTimeSeries(request, "DAILY");
+    List<TradeProfitTimeSeriesPoint> series =
+        tradeProfitService.aggregateTimeSeries(request, "DAILY");
 
     assertThat(series).hasSize(2);
     assertThat(series.get(0).totalHoldingsValue()).isEqualByComparingTo("1000");
@@ -199,7 +197,8 @@ public class TradeProfitServiceReproductionTest {
 
   private void stubAggregateTimeSeriesDefaults() {
     when(dividendService.findDividends(any())).thenReturn(Collections.emptyList());
-    when(dailyAccountSnapshotRepository.findTopByAccountIdAndDateLessThanOrderByDateDesc(any(), any()))
+    when(dailyAccountSnapshotRepository.findTopByAccountIdAndDateLessThanOrderByDateDesc(
+            any(), any()))
         .thenReturn(null);
     when(dailyAccountSnapshotRepository.findDatesByAccountIdAndDateBetween(any(), any(), any()))
         .thenReturn(Collections.emptyList());
@@ -210,7 +209,8 @@ public class TradeProfitServiceReproductionTest {
     TradeProfitRequest request = new TradeProfitRequest();
     request.setUserId(userId);
     request.setAccountIdList(List.of(accountId));
-    request.setStartDate(LocalDate.parse(startDate).atStartOfDay(ZoneId.of("Asia/Seoul")).toInstant());
+    request.setStartDate(
+        LocalDate.parse(startDate).atStartOfDay(ZoneId.of("Asia/Seoul")).toInstant());
     request.setEndDate(
         LocalDate.parse(endDateExclusive).atStartOfDay(ZoneId.of("Asia/Seoul")).toInstant());
     request.setGroupBy(TradeProfitRequestGroup.STOCKITEM);
@@ -239,7 +239,8 @@ public class TradeProfitServiceReproductionTest {
     return trade;
   }
 
-  private StockPriceHistory createPriceHistory(UUID stockItemId, LocalDate tradeDate, String closePrice) {
+  private StockPriceHistory createPriceHistory(
+      UUID stockItemId, LocalDate tradeDate, String closePrice) {
     StockPriceHistory history = new StockPriceHistory();
     history.setStockItemId(stockItemId);
     history.setTradeDate(tradeDate);

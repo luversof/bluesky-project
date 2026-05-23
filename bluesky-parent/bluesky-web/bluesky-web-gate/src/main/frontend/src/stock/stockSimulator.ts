@@ -43,6 +43,7 @@
 		defaultScenarioName: "Base Scenario",
 		activeScenario: "Editing",
 		localOnly: "localStorage only",
+		compareBestChoice: "More Favorable",
 		fieldPrincipal: "Principal",
 		fieldCurrentPrice: "Price",
 		fieldAnnualPriceGrowth: "Price Growth",
@@ -57,6 +58,7 @@
 		deleteConfirm: "Delete the current scenario?",
 		maxScenarios: "You can compare up to five scenarios at once.",
 		summarySustainablePeriod: "Sustainable Period",
+		summaryFinalWealth: "Final Total Wealth",
 		summaryDepletionYear: "Depletion",
 		summaryNotDepleted: "Not Depleted",
 		summaryDeficitStart: "Deficit Starts",
@@ -68,6 +70,7 @@
 		summaryYearsLater: "In {0} years",
 		summaryYearsOrMore: "{0}+ years",
 		summaryWithinHorizon: "Sustainable within the simulation horizon",
+		summaryLatestCoverage: "Latest Spending Coverage",
 		summaryNoSpending: "No Spending",
 		seriesAnnualDividend: "Annual Dividend",
 		seriesAnnualSpending: "Annual Spending",
@@ -535,6 +538,7 @@
 				firstWealthDeclineYear,
 				firstShareSaleYear,
 				depletionYear,
+				finalWealth: finalYear.totalWealth,
 				finalSpendingCoveragePct: finalYear.spendingCoveragePct,
 			},
 		};
@@ -827,7 +831,10 @@
 			},
 			{
 				label: i18n.summaryDeficitStart,
-				value: formatOptionalYear(summary.firstDeficitYear, i18n.summaryNoDeficit),
+				value: formatOptionalYear(
+					summary.firstDeficitYear,
+					i18n.summaryNoDeficit,
+				),
 			},
 			{
 				label: i18n.summaryWealthDeclineStart,
@@ -873,12 +880,15 @@
 			(accumulator, scenario) => Math.max(accumulator, scenario.years),
 			1,
 		);
+		const bestScenarioIds = buildBestScenarioSet(simulations);
 
 		elements.timelineList.innerHTML = state.scenarios
 			.map((scenario) => {
 				const simulation = simulations.get(scenario.id);
 				const summary = simulation.summary;
 				const active = scenario.id === state.activeScenarioId;
+				const isBestChoice =
+					state.scenarios.length > 1 && bestScenarioIds.has(scenario.id);
 				const segments = buildTimelineSegments(
 					simulation.records,
 					scenario.years,
@@ -895,10 +905,23 @@
 						data-scenario-id="${scenario.id}">
 						<div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 							<div class="space-y-1">
-								<p class="font-semibold text-base-content">${escapeHtml(scenario.name)}</p>
+								<div class="flex flex-wrap items-center gap-2">
+									<p class="font-semibold text-base-content">${escapeHtml(scenario.name)}</p>
+									${
+										isBestChoice
+											? `<span class="badge badge-success badge-sm">${escapeHtml(i18n.compareBestChoice)}</span>`
+											: ""
+									}
+								</div>
 								<p class="text-xs text-base-content/55">${scenario.years}y · ${
-									scenario.reinvestDividends ? i18n.reinvestOn : i18n.reinvestOff
+									scenario.reinvestDividends
+										? i18n.reinvestOn
+										: i18n.reinvestOff
 								}</p>
+								<div class="flex flex-wrap gap-2 text-[11px] leading-5 text-base-content/70">
+									<span class="rounded-full border border-base-300 bg-base-200/70 px-2 py-1">${escapeHtml(i18n.summaryLatestCoverage)} ${escapeHtml(formatCoveragePercent(summary.finalSpendingCoveragePct))}</span>
+									<span class="rounded-full border border-base-300 bg-base-200/70 px-2 py-1">${escapeHtml(i18n.summaryFinalWealth)} ${escapeHtml(formatCompactCurrency(summary.finalWealth))}</span>
+								</div>
 								<div class="mt-2 flex flex-wrap gap-2 text-[11px] leading-5 text-base-content/70">
 									${buildScenarioConfigurationBadges(scenario)}
 								</div>
@@ -937,6 +960,100 @@
 			.join("");
 
 		bindScenarioSelection(elements.timelineList);
+	}
+
+	function buildBestScenarioSet(simulations) {
+		const entries = state.scenarios
+			.map((scenario) => ({
+				scenarioId: scenario.id,
+				values: buildComparisonValues(
+					simulations.get(scenario.id)?.summary,
+					scenario.years,
+				),
+			}))
+			.sort(compareComparisonEntries);
+
+		if (!entries.length) {
+			return new Set();
+		}
+
+		const bestEntry = entries[0];
+		return new Set(
+			entries
+				.filter((entry) => compareComparisonEntries(entry, bestEntry) === 0)
+				.map((entry) => entry.scenarioId),
+		);
+	}
+
+	function buildComparisonValues(summary, simulationYears) {
+		return {
+			sustainableYears: Number(summary?.sustainableYears || 0),
+			drawdownStartYear: normalizeComparisonYear(
+				summary?.firstShareSaleYear,
+				simulationYears,
+			),
+			finalCoveragePct: normalizeComparisonCoverage(
+				summary?.finalSpendingCoveragePct,
+			),
+			finalWealth: Number(summary?.finalWealth || 0),
+			firstDeficitYear: normalizeComparisonYear(
+				summary?.firstDeficitYear,
+				simulationYears,
+			),
+			firstWealthDeclineYear: normalizeComparisonYear(
+				summary?.firstWealthDeclineYear,
+				simulationYears,
+			),
+		};
+	}
+
+	function normalizeComparisonYear(year, simulationYears) {
+		return year ? Number(year) : simulationYears + 1;
+	}
+
+	function normalizeComparisonCoverage(value) {
+		if (value === null || value === undefined) {
+			return Number.POSITIVE_INFINITY;
+		}
+
+		return Number(value);
+	}
+
+	function compareComparisonEntries(left, right) {
+		return (
+			compareDescendingNumber(
+				left.values.sustainableYears,
+				right.values.sustainableYears,
+			) ||
+			compareDescendingNumber(
+				left.values.drawdownStartYear,
+				right.values.drawdownStartYear,
+			) ||
+			compareDescendingNumber(
+				left.values.finalCoveragePct,
+				right.values.finalCoveragePct,
+			) ||
+			compareDescendingNumber(
+				left.values.finalWealth,
+				right.values.finalWealth,
+			) ||
+			compareDescendingNumber(
+				left.values.firstDeficitYear,
+				right.values.firstDeficitYear,
+			) ||
+			compareDescendingNumber(
+				left.values.firstWealthDeclineYear,
+				right.values.firstWealthDeclineYear,
+			)
+		);
+	}
+
+	function compareDescendingNumber(left, right) {
+		if (left === right) {
+			return 0;
+		}
+
+		return left > right ? -1 : 1;
 	}
 
 	function renderYearlyTable(simulations) {
@@ -1060,7 +1177,13 @@
 		);
 	}
 
-	function buildLineDataset(label, data, borderColor, backgroundColor, borderDash) {
+	function buildLineDataset(
+		label,
+		data,
+		borderColor,
+		backgroundColor,
+		borderDash,
+	) {
 		return {
 			label,
 			data,
@@ -1184,14 +1307,24 @@
 			}
 
 			segments.push(
-				createTimelineSegment(segmentStart, record.year, currentStage, maxYears),
+				createTimelineSegment(
+					segmentStart,
+					record.year,
+					currentStage,
+					maxYears,
+				),
 			);
 			currentStage = nextStage;
 			segmentStart = record.year;
 		}
 
 		segments.push(
-			createTimelineSegment(segmentStart, scenarioYears, currentStage, maxYears),
+			createTimelineSegment(
+				segmentStart,
+				scenarioYears,
+				currentStage,
+				maxYears,
+			),
 		);
 
 		return segments.filter((segment) => segment.widthPct > 0);
@@ -1212,7 +1345,10 @@
 			summary.firstWealthDeclineYear,
 			summary.depletionYear,
 		]
-			.filter((year, index, values) => year && year <= scenarioYears && values.indexOf(year) === index)
+			.filter(
+				(year, index, values) =>
+					year && year <= scenarioYears && values.indexOf(year) === index,
+			)
 			.map((year) => ({
 				leftPct: toTimelinePercent(year, maxYears),
 			}));

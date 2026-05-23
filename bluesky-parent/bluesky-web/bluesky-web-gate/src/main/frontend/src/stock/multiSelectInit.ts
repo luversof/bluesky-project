@@ -36,7 +36,7 @@ select[multiple]:focus, select.select[multiple]:focus, select.select-bordered[mu
 
 (() => {
 	const SELECTOR =
-		'select[name="accountIdList"], select[name="stockItemIdList"], select.select';
+		'select[multiple], select[data-max-visible], select[name="accountIdList"], select[name="stockItemIdList"], select[name="stockTagList"]';
 	const HARD_CAP = 50; // safety cap to avoid extremely tall controls
 	const ALL_OPTION_SELECTORS =
 		'select[name="accountIdList"], select[name="stockItemIdList"]';
@@ -60,7 +60,9 @@ select[multiple]:focus, select.select[multiple]:focus, select.select-bordered[mu
 			return;
 		}
 
-		const allOption = Array.from(sel.options).find((option) => option.value === "");
+		const allOption = Array.from(sel.options).find(
+			(option) => option.value === "",
+		);
 		if (!allOption) {
 			rememberSelectionSnapshot(sel);
 			return;
@@ -70,7 +72,9 @@ select[multiple]:focus, select.select[multiple]:focus, select.select-bordered[mu
 		const selectedSpecificOptions = selectedOptions.filter(
 			(option) => option.value !== "",
 		);
-		const hasAllSelected = selectedOptions.some((option) => option.value === "");
+		const hasAllSelected = selectedOptions.some(
+			(option) => option.value === "",
+		);
 
 		if (hasAllSelected && selectedSpecificOptions.length > 0) {
 			const previousSelection = selectionSnapshots.get(sel) ?? [];

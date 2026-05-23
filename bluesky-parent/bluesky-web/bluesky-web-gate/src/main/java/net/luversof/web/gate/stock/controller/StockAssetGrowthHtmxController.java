@@ -254,7 +254,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     var params = new org.springframework.util.LinkedMultiValueMap<String, String>();
     params.add("userId", userId.toString());
     params.add("date", date);
-    List<HoldingsSnapshotItem> holdings = tradeProfitClient.holdingsSnapshot(params);
+    List<HoldingsSnapshotItem> holdings = emptyIfNull(tradeProfitClient.holdingsSnapshot(params));
     model.addAttribute("holdings", holdings);
     model.addAttribute("date", date);
     return "stock/htmx/holdings-snapshot";
@@ -291,9 +291,9 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
         : null;
 
     var tradeReq = new TradeSearchRequest(userId, null, null, tradeStart, tradeEnd);
-    var allFromApi = tradeClient.findTrades(tradeReq.toParams());
+    var allFromApi = emptyIfNull(tradeClient.findTrades(tradeReq.toParams()));
 
-    List<StockItem> stockItems = stockItemClient.getStockItems();
+    List<StockItem> stockItems = emptyIfNull(stockItemClient.getStockItems());
     Map<UUID, String> stockItemNames = stockItems.stream()
         .collect(Collectors.toMap(StockItem::id, StockItem::name, (l, r) -> l));
 
@@ -471,7 +471,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     List<PeriodCashFlow> cashFlows = new ArrayList<>();
 
     TradeSearchRequest tradeRequest = new TradeSearchRequest(userId, null, null, periodStart, periodEndExclusive);
-    List<TradeResponse> trades = tradeClient.findTrades(tradeRequest.toParams());
+    List<TradeResponse> trades = emptyIfNull(tradeClient.findTrades(tradeRequest.toParams()));
     for (TradeResponse trade : trades) {
       BigDecimal amount = resolveTradeAmount(trade);
       BigDecimal fee = trade.fee() != null ? trade.fee() : BigDecimal.ZERO;
@@ -495,7 +495,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     dividendRequest.setUserId(userId);
     dividendRequest.setStartDate(periodStart);
     dividendRequest.setEndDate(periodEndExclusive);
-    List<DividendResponse> dividends = dividendClient.findDividends(dividendRequest.toParams());
+    List<DividendResponse> dividends = emptyIfNull(dividendClient.findDividends(dividendRequest.toParams()));
     for (DividendResponse dividend : dividends) {
       BigDecimal netAmount = resolveDividendNetAmount(dividend);
       if (netAmount.compareTo(BigDecimal.ZERO) == 0) {

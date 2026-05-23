@@ -93,8 +93,8 @@
                     <p class="text-gray-500">${noDataLabel}</p>
                 </div>
             @else
-                <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center gap-1 asset-growth-nav-wrapper">
+                <div class="mb-2 flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+                    <div class="asset-growth-nav-wrapper flex min-w-0 flex-1 items-center gap-1">
                         @template.stock.htmx.fragments.dateRangeNavBar(
                             pickerName = "assetPicker",
                             btnClass = "asset-range-btn",
@@ -105,12 +105,18 @@
                             endDate = endLocal,
                             showRangeText = false
                         )
-                        <span id="assetRangeDisplay" class="text-xs text-base-content/40 ml-1"></span>
+                        <span id="assetRangeDisplay" class="ml-1 whitespace-nowrap text-xs text-base-content/40"></span>
                     </div>
-                    <p class="text-xs text-base-content/50">📈 ${chartDescriptionLabel} &bull; <span class="text-info">${clickDateHoldingsLabel}</span></p>
+                    <p class="text-xs text-base-content/50 xl:text-right">📈 ${chartDescriptionLabel} &bull; <span class="text-info">${clickDateHoldingsLabel}</span></p>
                     <style>
                         /* Remove default bottom margin from the included nav component so it aligns with the description */
-                        .asset-growth-nav-wrapper > div { margin-bottom: 0 !important; }
+                        .asset-growth-nav-wrapper > div {
+                            margin-bottom: 0 !important;
+                            flex-wrap: nowrap !important;
+                            overflow-x: auto;
+                            scrollbar-width: thin;
+                        }
+                        .asset-growth-nav-wrapper > div > * { flex-shrink: 0; }
                     </style>
                 </div>
                 <div id="assetGrowthPeriodReturnSummary" class="rounded-2xl border border-base-300/60 bg-base-100/80 px-4 py-3 mb-3">

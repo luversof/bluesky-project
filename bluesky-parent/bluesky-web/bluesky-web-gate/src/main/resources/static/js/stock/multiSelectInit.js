@@ -33,7 +33,7 @@ select[multiple]:focus, select.select[multiple]:focus, select.select-bordered[mu
     (document.head || document.documentElement).appendChild(s);
 }
 (() => {
-    const SELECTOR = 'select[name="accountIdList"], select[name="stockItemIdList"], select.select';
+    const SELECTOR = 'select[multiple], select[data-max-visible], select[name="accountIdList"], select[name="stockItemIdList"], select[name="stockTagList"]';
     const HARD_CAP = 50; // safety cap to avoid extremely tall controls
     const ALL_OPTION_SELECTORS = 'select[name="accountIdList"], select[name="stockItemIdList"]';
     const selectionSnapshots = new WeakMap();

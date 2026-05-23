@@ -27,6 +27,40 @@ CREATE TABLE "StockItemTag" (
 CREATE INDEX idx_stockItemTag_stockItemId ON "StockItemTag" ("stockItem_id");
 CREATE UNIQUE INDEX uk_stockItemTag_stockItemId_tag ON "StockItemTag" ("stockItem_id", "tag");
 
+CREATE TABLE "MonthlyDividendProfile" (
+	"id" UUID NOT NULL PRIMARY KEY,
+	"stockItem_id" UUID NOT NULL,
+	"sourceUrl" VARCHAR(2000),
+	"payoutWindow" VARCHAR(20) NOT NULL,
+	"displayOrder" INTEGER NOT NULL DEFAULT 0,
+	"active" BOOLEAN NOT NULL,
+	"note" VARCHAR(1000),
+	"lastVerifiedDate" DATE,
+	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL,
+	"updatedDate" TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE UNIQUE INDEX uk_monthlyDividendProfile_stockItemId ON "MonthlyDividendProfile" ("stockItem_id");
+CREATE INDEX idx_monthlyDividendProfile_displayOrder ON "MonthlyDividendProfile" ("displayOrder");
+CREATE INDEX idx_monthlyDividendProfile_payoutWindow ON "MonthlyDividendProfile" ("payoutWindow");
+CREATE INDEX idx_monthlyDividendProfile_active ON "MonthlyDividendProfile" ("active");
+
+CREATE TABLE "MonthlyDividendPayout" (
+	"id" UUID NOT NULL PRIMARY KEY,
+	"stockItem_id" UUID NOT NULL,
+	"recordDate" DATE NOT NULL,
+	"payDate" DATE NOT NULL,
+	"distributionRatePct" NUMERIC,
+	"dividendAmountPerShare" NUMERIC NOT NULL,
+	"taxableBasePerShare" NUMERIC NOT NULL,
+	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL,
+	"updatedDate" TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE INDEX idx_monthlyDividendPayout_stockItemId ON "MonthlyDividendPayout" ("stockItem_id");
+CREATE INDEX idx_monthlyDividendPayout_payDate ON "MonthlyDividendPayout" ("payDate");
+CREATE UNIQUE INDEX uk_monthlyDividendPayout_stockItemId_recordDate_payDate ON "MonthlyDividendPayout" ("stockItem_id", "recordDate", "payDate");
+
 CREATE TABLE "Trade" (
 	"id" UUID NOT NULL PRIMARY KEY,
 	"account_id" UUID NOT NULL,
@@ -62,6 +96,24 @@ CREATE TABLE "Dividend" (
 
 CREATE INDEX idx_dividend_accountId ON "Dividend" ("account_id");
 CREATE INDEX idx_dividend_accountId_stockItemId ON "Dividend" ("account_id", "stockItem_id");
+
+CREATE TABLE "MonthlyDividendSnapshot" (
+	"id" UUID NOT NULL PRIMARY KEY,
+	"user_id" UUID NOT NULL,
+	"stockItem_id" UUID NOT NULL,
+	"asOfDate" DATE NOT NULL,
+	"latestMonthlyDividendPerShare" NUMERIC NOT NULL,
+	"averageMonthlyDividendPerShare1y" NUMERIC NOT NULL,
+	"averageTaxableBaseRatio1y" NUMERIC NOT NULL,
+	"heldQuantity" INTEGER NOT NULL,
+	"averageBuyPrice" NUMERIC NOT NULL,
+	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL,
+	"updatedDate" TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE INDEX idx_monthlyDividendSnapshot_userId ON "MonthlyDividendSnapshot" ("user_id");
+CREATE INDEX idx_monthlyDividendSnapshot_stockItemId ON "MonthlyDividendSnapshot" ("stockItem_id");
+CREATE UNIQUE INDEX uk_monthlyDividendSnapshot_userId_stockItemId ON "MonthlyDividendSnapshot" ("user_id", "stockItem_id");
 
 CREATE TABLE "StockPriceHistory" (
 	"id" UUID NOT NULL PRIMARY KEY,

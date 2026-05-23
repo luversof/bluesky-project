@@ -26,4 +26,7 @@ public interface StockItemClient {
 
   @GetExchange("/search/findAll")
   java.util.List<StockItem> getStockItems();
+
+  @GetExchange("/search/findAllByTag/{tag}")
+  java.util.List<StockItem> getStockItemsByTag(@PathVariable String tag);
 }

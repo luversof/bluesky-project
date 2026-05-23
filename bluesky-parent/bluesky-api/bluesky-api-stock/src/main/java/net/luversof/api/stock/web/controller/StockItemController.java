@@ -43,4 +43,10 @@ public class StockItemController {
   public java.util.List<net.luversof.api.stock.domain.StockItem> findAll() {
     return stockItemService.findAll();
   }
+
+  @GetMapping("/search/findAllByTag/{tag}")
+  public java.util.List<net.luversof.api.stock.domain.StockItem> findAllByTag(
+      @PathVariable String tag) {
+    return stockItemService.findAllByTag(tag);
+  }
 }
