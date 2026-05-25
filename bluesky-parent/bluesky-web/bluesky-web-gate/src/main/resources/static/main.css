@@ -3034,9 +3034,6 @@
   .mr-1 {
     margin-right: calc(var(--spacing) * 1);
   }
-  .mr-2 {
-    margin-right: calc(var(--spacing) * 2);
-  }
   .mb-0\.5 {
     margin-bottom: calc(var(--spacing) * 0.5);
   }
@@ -3412,6 +3409,9 @@
   .min-h-0 {
     min-height: calc(var(--spacing) * 0);
   }
+  .min-h-\[4\.5rem\] {
+    min-height: 4.5rem;
+  }
   .min-h-\[200px\] {
     min-height: 200px;
   }
@@ -3540,6 +3540,15 @@
   }
   .min-w-0 {
     min-width: calc(var(--spacing) * 0);
+  }
+  .min-w-\[8rem\] {
+    min-width: 8rem;
+  }
+  .min-w-\[9rem\] {
+    min-width: 9rem;
+  }
+  .min-w-\[18rem\] {
+    min-width: 18rem;
   }
   .min-w-\[200px\] {
     min-width: 200px;
@@ -3859,6 +3868,12 @@
   .border-base-200 {
     border-color: var(--color-base-200);
   }
+  .border-base-200\/70 {
+    border-color: var(--color-base-200);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--color-base-200) 70%, transparent);
+    }
+  }
   .border-base-300 {
     border-color: var(--color-base-300);
   }
@@ -3866,12 +3881,6 @@
     border-color: var(--color-base-300);
     @supports (color: color-mix(in lab, red, red)) {
       border-color: color-mix(in oklab, var(--color-base-300) 60%, transparent);
-    }
-  }
-  .border-base-300\/70 {
-    border-color: var(--color-base-300);
-    @supports (color: color-mix(in lab, red, red)) {
-      border-color: color-mix(in oklab, var(--color-base-300) 70%, transparent);
     }
   }
   .border-emerald-500 {
@@ -4304,6 +4313,9 @@
   .pr-4 {
     padding-right: calc(var(--spacing) * 4);
   }
+  .pb-0 {
+    padding-bottom: calc(var(--spacing) * 0);
+  }
   .pb-4 {
     padding-bottom: calc(var(--spacing) * 4);
   }
@@ -4333,6 +4345,12 @@
   }
   .text-start {
     text-align: start;
+  }
+  .align-bottom {
+    vertical-align: bottom;
+  }
+  .align-middle {
+    vertical-align: middle;
   }
   .align-top {
     vertical-align: top;
@@ -4454,6 +4472,9 @@
   }
   .break-all {
     word-break: break-all;
+  }
+  .whitespace-normal {
+    white-space: normal;
   }
   .whitespace-nowrap {
     white-space: nowrap;

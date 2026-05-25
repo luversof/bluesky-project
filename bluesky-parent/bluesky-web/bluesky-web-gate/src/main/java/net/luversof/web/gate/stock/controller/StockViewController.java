@@ -63,6 +63,7 @@ public class StockViewController {
   private static final String MONTHLY_DIVIDEND_TAG = "월배당";
   private static final String DIVIDEND_TAB_MONTHLY_REFERENCE = "monthly-reference";
   private static final String MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER = "display-order";
+  private static final String MONTHLY_DIVIDEND_SORT_SYMBOL = "symbol";
 
   private AccountClient accountClient;
 
@@ -1347,6 +1348,9 @@ public class StockViewController {
       case MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER ->
         Comparator.comparing(
             row -> resolveMonthlyDividendProfileDisplayOrder(row, monthlyDividendProfileDisplayOrders));
+      case MONTHLY_DIVIDEND_SORT_SYMBOL ->
+        Comparator.comparing(
+            row -> safeString(row.stockItemSymbol()), String.CASE_INSENSITIVE_ORDER);
       case "monthly-yield-on-cost" ->
         Comparator.comparing(row -> safe(row.expectedMonthlyYieldOnCostPct()));
       case "annual-yield-on-cost" ->
@@ -1416,6 +1420,7 @@ public class StockViewController {
 
     return switch (sort) {
       case MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER,
+          MONTHLY_DIVIDEND_SORT_SYMBOL,
           "monthly-yield-on-cost",
           "annual-yield-on-cost",
           "monthly-yield",
@@ -1752,6 +1757,10 @@ public class StockViewController {
         .map(row -> safe(row.latestMonthlyDividendPerShare())
             .multiply(BigDecimal.valueOf(row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L)))
         .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalBuyAmount = rows.stream()
+        .map(row -> safe(row.averageBuyPrice())
+            .multiply(BigDecimal.valueOf(row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L)))
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
     BigDecimal totalExpectedMonthlyDividend = rows.stream()
         .map(MonthlyDividendSnapshotResponse::expectedMonthlyDividend)
         .map(this::safe)
@@ -1780,6 +1789,8 @@ public class StockViewController {
         totalExpectedMonthlyDividend,
         totalExpectedAnnualDividend,
         totalExpectedTaxableBaseAmount,
+        totalBuyAmount,
+        totalCurrentMarketValue,
         portfolioExpectedAnnualYieldPct,
         bestChoice);
   }
