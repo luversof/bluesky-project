@@ -42,41 +42,11 @@
 			<div class="flex justify-between items-center mb-6">
 				<h2 class="text-2xl font-bold">${MessageUtil.getMessage("stock.page.dividend.title")}</h2>
 			</div>
-			<div class="space-y-6">
-				<div class="tabs tabs-boxed w-full bg-base-200/70 p-1">
-					<a href="/stock/dividend" class="${"history".equals(dividendTab) ? "tab tab-lg flex-1 font-bold tab-active !bg-primary !text-primary-content shadow-sm" : "tab tab-lg flex-1 text-base-content/60 hover:text-base-content"}">${MessageUtil.getMessage("stock.page.dividend.tab.history")}</a>
-					<a href="/stock/dividend?tab=monthly-reference" class="${"monthly-reference".equals(dividendTab) ? "tab tab-lg flex-1 font-bold tab-active !bg-primary !text-primary-content shadow-sm" : "tab tab-lg flex-1 text-base-content/60 hover:text-base-content"}">${MessageUtil.getMessage("stock.page.dividend.tab.monthly.reference")}</a>
+			<div class="min-h-[200px]" hx-get="/stock/htmx/dividend/list" hx-trigger="load" hx-target="this" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
+				<div class="flex items-center gap-2 text-base-content/60">
+					<span class="loading loading-spinner loading-sm"></span>
+					<span>${MessageUtil.getMessage("common.message.loading")}</span>
 				</div>
-
-				@if("monthly-reference".equals(dividendTab))
-					@template.stock.fragments.monthlyDividendReference(
-						stockItems = stockItems,
-						monthlyDividendProfiles = monthlyDividendProfiles,
-						monthlyDividendPayouts = monthlyDividendPayouts,
-						monthlyDividendReferenceSummary = monthlyDividendReferenceSummary,
-						monthlyDividendProfileForm = monthlyDividendProfileForm,
-						monthlyDividendPayoutForm = monthlyDividendPayoutForm,
-						monthlyDividendPayoutImportForm = monthlyDividendPayoutImportForm,
-						selectedMonthlyDividendSymbol = selectedMonthlyDividendSymbol,
-						selectedMonthlyDividendSourceUrl = selectedMonthlyDividendSourceUrl,
-						monthlyDividendProfileSort = monthlyDividendProfileSort,
-						monthlyDividendProfileDirection = monthlyDividendProfileDirection,
-						monthlyDividendProfileExists = monthlyDividendProfileExists,
-						monthlyDividendPayoutExists = monthlyDividendPayoutExists,
-						selectedMonthlyDividendPayoutKey = selectedMonthlyDividendPayoutKey,
-						selectedMonthlyDividendPayoutRecordDate = selectedMonthlyDividendPayoutRecordDate,
-						selectedMonthlyDividendPayoutPayDate = selectedMonthlyDividendPayoutPayDate,
-						monthlyDividendReferenceErrorMessage = monthlyDividendReferenceErrorMessage,
-						monthlyDividendReferenceResult = monthlyDividendReferenceResult)
-					<script type="module" src="/js/stock/monthlyDividendProfileOrder.js"></script>
-				@else
-					<div class="min-h-[200px]" hx-get="/stock/htmx/dividend/list" hx-trigger="load" hx-target="this" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
-						<div class="flex items-center gap-2 text-base-content/60">
-							<span class="loading loading-spinner loading-sm"></span>
-							<span>${MessageUtil.getMessage("common.message.loading")}</span>
-						</div>
-					</div>
-				@endif
 			</div>
 		</div>
 	`

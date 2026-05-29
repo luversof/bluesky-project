@@ -61,6 +61,7 @@ import net.luversof.web.gate.stock.util.MonthlyDividendPayoutSourceImportService
 public class StockViewController {
 
   private static final String MONTHLY_DIVIDEND_TAG = "월배당";
+  private static final String ADMIN_TAB_DATA_MANAGEMENT = "data-management";
   private static final String DIVIDEND_TAB_MONTHLY_REFERENCE = "monthly-reference";
   private static final String MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER = "display-order";
   private static final String MONTHLY_DIVIDEND_SORT_SYMBOL = "symbol";
@@ -204,13 +205,18 @@ public class StockViewController {
     }
 
     String dividendTab = resolveDividendTab(tab);
-    model.addAttribute("dividendTab", dividendTab);
 
     if (DIVIDEND_TAB_MONTHLY_REFERENCE.equals(dividendTab)) {
-      populateMonthlyDividendReferenceModel(
-          model, symbol, profileSort, profileDirection, payoutRecordDate, payoutPayDate);
-      model.addAttribute("monthlyDividendReferenceResult", result != null ? result : "");
+      return buildMonthlyDividendReferencePageRedirect(
+          symbol,
+          profileSort,
+          profileDirection,
+          result,
+          payoutRecordDate,
+          payoutPayDate);
     }
+
+    model.addAttribute("dividendTab", dividendTab);
 
     return "stock/dividend";
   }
@@ -654,6 +660,12 @@ public class StockViewController {
     return DIVIDEND_TAB_MONTHLY_REFERENCE.equalsIgnoreCase(tab)
         ? DIVIDEND_TAB_MONTHLY_REFERENCE
         : "history";
+  }
+
+  private String resolveAdminTab(String tab) {
+    return DIVIDEND_TAB_MONTHLY_REFERENCE.equalsIgnoreCase(tab)
+        ? DIVIDEND_TAB_MONTHLY_REFERENCE
+        : ADMIN_TAB_DATA_MANAGEMENT;
   }
 
   private void populateMonthlyDividendReferenceModel(
@@ -1159,6 +1171,27 @@ public class StockViewController {
     return buildMonthlyDividendReferenceRedirect(request, symbol, result, null, null);
   }
 
+  private String buildMonthlyDividendReferencePageRedirect(
+      String symbol,
+      String profileSort,
+      String profileDirection,
+      String result,
+      LocalDate payoutRecordDate,
+      LocalDate payoutPayDate) {
+    String resolvedProfileSort = resolveMonthlyDividendProfileSort(profileSort);
+    String resolvedProfileDirection =
+        resolveMonthlyDividendProfileDirection(resolvedProfileSort, profileDirection);
+    StringBuilder redirectUrl =
+        new StringBuilder("redirect:/stock/admin?tab=").append(DIVIDEND_TAB_MONTHLY_REFERENCE);
+    appendQueryParam(redirectUrl, "symbol", symbol);
+    appendQueryParam(redirectUrl, "profileSort", resolvedProfileSort);
+    appendQueryParam(redirectUrl, "profileDirection", resolvedProfileDirection);
+    appendQueryParam(redirectUrl, "payoutRecordDate", payoutRecordDate);
+    appendQueryParam(redirectUrl, "payoutPayDate", payoutPayDate);
+    appendQueryParam(redirectUrl, "result", result);
+    return redirectUrl.toString();
+  }
+
   private String buildMonthlyDividendReferenceRedirect(
       HttpServletRequest request,
       String symbol,
@@ -1169,15 +1202,13 @@ public class StockViewController {
     String profileDirection =
         resolveMonthlyDividendProfileDirection(
             profileSort, request.getParameter("profileDirection"));
-    StringBuilder redirectUrl =
-        new StringBuilder("redirect:/stock/dividend?tab=").append(DIVIDEND_TAB_MONTHLY_REFERENCE);
-    appendQueryParam(redirectUrl, "symbol", symbol);
-    appendQueryParam(redirectUrl, "profileSort", profileSort);
-    appendQueryParam(redirectUrl, "profileDirection", profileDirection);
-    appendQueryParam(redirectUrl, "payoutRecordDate", payoutRecordDate);
-    appendQueryParam(redirectUrl, "payoutPayDate", payoutPayDate);
-    appendQueryParam(redirectUrl, "result", result);
-    return redirectUrl.toString();
+    return buildMonthlyDividendReferencePageRedirect(
+        symbol,
+        profileSort,
+        profileDirection,
+        result,
+        payoutRecordDate,
+        payoutPayDate);
   }
 
   private String renderMonthlyDividendReferenceError(
@@ -1205,7 +1236,7 @@ public class StockViewController {
       MonthlyDividendProfileUpsertRequest monthlyDividendProfileForm,
       MonthlyDividendPayoutUpsertRequest monthlyDividendPayoutForm,
       MonthlyDividendPayoutImportRequest monthlyDividendPayoutImportForm) {
-    model.addAttribute("dividendTab", DIVIDEND_TAB_MONTHLY_REFERENCE);
+    model.addAttribute("adminTab", DIVIDEND_TAB_MONTHLY_REFERENCE);
     model.addAttribute("monthlyDividendProfileForm", monthlyDividendProfileForm);
     model.addAttribute("monthlyDividendPayoutForm", monthlyDividendPayoutForm);
     model.addAttribute("monthlyDividendPayoutImportForm", monthlyDividendPayoutImportForm);
@@ -1218,7 +1249,7 @@ public class StockViewController {
         request.getParameter("profileDirection"),
         monthlyDividendPayoutForm != null ? monthlyDividendPayoutForm.getRecordDate() : null,
         monthlyDividendPayoutForm != null ? monthlyDividendPayoutForm.getPayDate() : null);
-    return "stock/dividend";
+      return "stock/admin";
   }
 
   private void populateMonthlyDividendModel(
@@ -1913,10 +1944,29 @@ public class StockViewController {
 
   @BlueskyPreAuthorize
   @GetMapping("/admin")
-  public String adminPage(HttpServletRequest request, Model model) {
+  public String adminPage(
+      HttpServletRequest request,
+      Model model,
+      @RequestParam(required = false) String tab,
+      @RequestParam(required = false) String symbol,
+      @RequestParam(required = false) String profileSort,
+      @RequestParam(required = false) String profileDirection,
+      @RequestParam(required = false) LocalDate payoutRecordDate,
+      @RequestParam(required = false) LocalDate payoutPayDate,
+      @RequestParam(required = false) String result) {
     if (isNotAuthenticated()) {
       return getLoginRedirectUrl(request);
     }
+
+    String adminTab = resolveAdminTab(tab);
+    model.addAttribute("adminTab", adminTab);
+
+    if (DIVIDEND_TAB_MONTHLY_REFERENCE.equals(adminTab)) {
+      populateMonthlyDividendReferenceModel(
+          model, symbol, profileSort, profileDirection, payoutRecordDate, payoutPayDate);
+      model.addAttribute("monthlyDividendReferenceResult", result != null ? result : "");
+    }
+
     return "stock/admin";
   }
 }

@@ -59,7 +59,11 @@
 	String profileDirectionValue = monthlyDividendProfileDirection != null ? monthlyDividendProfileDirection : "asc";
 	boolean profileReorderEnabled = "display-order".equals(profileSortValue) && "asc".equals(profileDirectionValue);
 	String profileOrderEndpoint = "/stock/dividend/monthly-reference/profile/order";
-	String referenceListBaseUrl = "/stock/dividend?tab=monthly-reference";
+	String referenceListBaseUrl = "/stock/admin?tab=monthly-reference";
+	String monthlyDividendSimulatorUrl = "/stock/simulator?tab=monthly-dividend";
+	if (selectedMonthlyDividendSymbol != null && !selectedMonthlyDividendSymbol.isEmpty()) {
+		monthlyDividendSimulatorUrl += "&symbol=" + URLEncoder.encode(selectedMonthlyDividendSymbol, StandardCharsets.UTF_8);
+	}
 	if (selectedMonthlyDividendSymbol != null && !selectedMonthlyDividendSymbol.isEmpty()) {
 		referenceListBaseUrl += "&symbol=" + URLEncoder.encode(selectedMonthlyDividendSymbol, StandardCharsets.UTF_8);
 	}
@@ -113,10 +117,13 @@
 	@endif
 
 	<div class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm">
-		<div class="space-y-2">
-			<h3 class="text-lg font-semibold">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.title")}</h3>
-			<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.desc")}</p>
-			<p class="text-xs leading-5 text-base-content/50">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.selection.desc")}</p>
+		<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+			<div class="space-y-2">
+				<h3 class="text-lg font-semibold">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.title")}</h3>
+				<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.desc")}</p>
+				<p class="text-xs leading-5 text-base-content/50">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.selection.desc")}</p>
+			</div>
+			<a href="${monthlyDividendSimulatorUrl}" class="btn btn-outline btn-sm">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator")}</a>
 		</div>
 	</div>
 
@@ -386,10 +393,10 @@
 												</div>
 											</td>
 											<td>
-												<a href="/stock/dividend?tab=monthly-reference&symbol=${row.stockItemSymbol()}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}" class="link link-hover font-medium">${row.stockItemSymbol()}</a>
+												<a href="/stock/admin?tab=monthly-reference&symbol=${row.stockItemSymbol()}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}" class="link link-hover font-medium">${row.stockItemSymbol()}</a>
 												<div class="text-xs text-base-content/50">${row.stockItemName()}</div>
 												<div class="mt-2 flex flex-wrap gap-2">
-													<a href="/stock/dividend?tab=monthly-reference&symbol=${row.stockItemSymbol()}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}" class="btn btn-xs btn-outline">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.select")}</a>
+													<a href="/stock/admin?tab=monthly-reference&symbol=${row.stockItemSymbol()}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}" class="btn btn-xs btn-outline">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.select")}</a>
 													<a href="/stock/simulator?tab=monthly-dividend&symbol=${row.stockItemSymbol()}&sort=display-order&direction=asc" class="btn btn-xs btn-primary">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator")}</a>
 												</div>
 											</td>
@@ -439,7 +446,7 @@
 									@for(MonthlyDividendPayoutResponse row : monthlyDividendPayouts)
 										<tr class="${selectedMonthlyDividendPayoutKey.equals(String.valueOf(row.recordDate()) + "|" + String.valueOf(row.payDate())) ? "bg-base-200/60" : ""}">
 											<td class="whitespace-nowrap tabular-nums">
-												<a href="/stock/dividend?tab=monthly-reference&symbol=${row.stockItemSymbol()}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}&payoutRecordDate=${String.valueOf(row.recordDate())}&payoutPayDate=${String.valueOf(row.payDate())}" class="link link-hover font-medium tabular-nums">${String.valueOf(row.recordDate())}</a>
+												<a href="/stock/admin?tab=monthly-reference&symbol=${row.stockItemSymbol()}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}&payoutRecordDate=${String.valueOf(row.recordDate())}&payoutPayDate=${String.valueOf(row.payDate())}" class="link link-hover font-medium tabular-nums">${String.valueOf(row.recordDate())}</a>
 											</td>
 											<td class="whitespace-nowrap tabular-nums">${String.valueOf(row.payDate())}</td>
 											<td class="text-right tabular-nums">@if(row.distributionRatePct() != null)${percentFormat.format(row.distributionRatePct())}%@else-@endif</td>
