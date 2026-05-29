@@ -6,14 +6,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-/**
- * List&lt;TradeProfit&gt;의 필드별 합계를 한 번에 계산하는 유틸리티. 컨트롤러 곳곳에 흩어진 동일한
- * stream-reduce 패턴을 제거한다.
- */
+/** List&lt;TradeProfit&gt;의 필드별 합계를 한 번에 계산하는 유틸리티. 컨트롤러 곳곳에 흩어진 동일한 stream-reduce 패턴을 제거한다. */
 public final class TradeProfitAggregator {
 
-  private TradeProfitAggregator() {
-  }
+  private TradeProfitAggregator() {}
 
   /** 집계 결과를 담는 값 객체. 합산 필드 외에 평균 단가 계산 편의 메서드를 제공한다. */
   public record Sums(

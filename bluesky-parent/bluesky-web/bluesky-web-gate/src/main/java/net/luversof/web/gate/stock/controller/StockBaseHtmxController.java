@@ -32,8 +32,8 @@ public abstract class StockBaseHtmxController {
   protected static final String ERROR_ATTRIBUTE = "error";
   protected static final String ERROR_VIEW = "stock/htmx/error";
   protected static final int DIVIDEND_CHART_START_YEAR = 2015;
-  protected static final List<String> ACCOUNT_PRINCIPAL_CONFIG_KEYS = List.of("manualPrincipalAmount",
-      "manualPrincipal", "principalAmount", "principal");
+  protected static final List<String> ACCOUNT_PRINCIPAL_CONFIG_KEYS =
+      List.of("manualPrincipalAmount", "manualPrincipal", "principalAmount", "principal");
 
   protected final TradeProfitClient tradeProfitClient;
   protected final TradeClient tradeClient;
@@ -133,28 +133,32 @@ public abstract class StockBaseHtmxController {
 
   // Helper to get enriched data
   protected List<TradeProfit> getEnrichedTradeProfits(TradeProfitRequest request) {
-    List<TradeProfit> tradeProfitList = emptyIfNull(tradeProfitClient.calculateProfit(request.toParams()));
+    List<TradeProfit> tradeProfitList =
+        emptyIfNull(tradeProfitClient.calculateProfit(request.toParams()));
     String unknownLabel = msg("stock.label.unknown");
 
-    Map<UUID, String> accountNames = tradeProfitList.stream()
-        .map(TradeProfit::accountId)
-        .filter(Objects::nonNull)
-        .distinct()
-        .collect(
-            Collectors.toMap(
-                id -> id,
-                id -> accountClient.getAccountById(id).map(Account::name).orElse(unknownLabel),
-                (a, b) -> a));
+    Map<UUID, String> accountNames =
+        tradeProfitList.stream()
+            .map(TradeProfit::accountId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .collect(
+                Collectors.toMap(
+                    id -> id,
+                    id -> accountClient.getAccountById(id).map(Account::name).orElse(unknownLabel),
+                    (a, b) -> a));
 
-    Map<UUID, String> stockItemNames = emptyIfNull(stockItemClient.getStockItems()).stream()
-        .collect(Collectors.toMap(StockItem::id, StockItem::name, (a, b) -> a));
+    Map<UUID, String> stockItemNames =
+        emptyIfNull(stockItemClient.getStockItems()).stream()
+            .collect(Collectors.toMap(StockItem::id, StockItem::name, (a, b) -> a));
 
     return tradeProfitList.stream()
         .map(
-            profit -> TradeProfit.withNames(
-                profit,
-                stockItemNames.getOrDefault(profit.stockItemId(), unknownLabel),
-                profit.accountId() != null ? accountNames.get(profit.accountId()) : null))
+            profit ->
+                TradeProfit.withNames(
+                    profit,
+                    stockItemNames.getOrDefault(profit.stockItemId(), unknownLabel),
+                    profit.accountId() != null ? accountNames.get(profit.accountId()) : null))
         .toList();
   }
 
@@ -203,7 +207,8 @@ public abstract class StockBaseHtmxController {
   protected StockTagSelection resolveStockTagSelection(
       List<StockItem> stockItemList, List<UUID> stockItemIdList, List<String> stockTagList) {
     List<String> selectedStockTags = normalizeStockTags(stockTagList);
-    boolean hasFilter = (stockItemIdList != null && !stockItemIdList.isEmpty()) || !selectedStockTags.isEmpty();
+    boolean hasFilter =
+        (stockItemIdList != null && !stockItemIdList.isEmpty()) || !selectedStockTags.isEmpty();
 
     if (!hasFilter) {
       return new StockTagSelection(selectedStockTags, null, false);
@@ -220,10 +225,11 @@ public abstract class StockBaseHtmxController {
           .filter(stockItem -> stockItem.id() != null)
           .filter(stockItem -> stockItem.tags() != null && !stockItem.tags().isEmpty())
           .filter(
-              stockItem -> stockItem.tags().stream()
-                  .filter(StringUtils::hasText)
-                  .map(String::trim)
-                  .anyMatch(selectedStockTags::contains))
+              stockItem ->
+                  stockItem.tags().stream()
+                      .filter(StringUtils::hasText)
+                      .map(String::trim)
+                      .anyMatch(selectedStockTags::contains))
           .map(StockItem::id)
           .forEach(requestedStockItemIds::add);
     }
@@ -253,8 +259,7 @@ public abstract class StockBaseHtmxController {
       BigDecimal value4,
       BigDecimal value5,
       BigDecimal value6,
-      BigDecimal value7) {
-  }
+      BigDecimal value7) {}
 
   public record ChartDataset(
       String label,
@@ -262,10 +267,8 @@ public abstract class StockBaseHtmxController {
       String backgroundColor,
       String borderColor,
       Integer borderWidth,
-      List<Integer> borderDash) {
-  }
+      List<Integer> borderDash) {}
 
   protected record StockTagSelection(
-      List<String> selectedStockTags, List<UUID> requestedStockItemIds, boolean hasFilter) {
-  }
+      List<String> selectedStockTags, List<UUID> requestedStockItemIds, boolean hasFilter) {}
 }

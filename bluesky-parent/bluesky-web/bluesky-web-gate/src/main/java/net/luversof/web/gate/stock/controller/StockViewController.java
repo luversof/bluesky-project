@@ -283,7 +283,10 @@ public class StockViewController {
   }
 
   @BlueskyPreAuthorize
-  @PutMapping(value = "/dividend/monthly-reference/profile/order", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PutMapping(
+      value = "/dividend/monthly-reference/profile/order",
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseBody
   public ResponseEntity<?> reorderMonthlyDividendProfiles(
       HttpServletRequest request,
@@ -362,9 +365,10 @@ public class StockViewController {
       normalizeMonthlyDividendPayoutImportRequest(monthlyDividendPayoutImportForm);
       validateMonthlyDividendSymbol(monthlyDividendPayoutImportForm.getSymbol());
 
-      List<MonthlyDividendPayoutUpsertRequest> importRequests = monthlyDividendPayoutImportParser.parse(
-          monthlyDividendPayoutImportForm.getSymbol(),
-          monthlyDividendPayoutImportForm.getBulkInput());
+      List<MonthlyDividendPayoutUpsertRequest> importRequests =
+          monthlyDividendPayoutImportParser.parse(
+              monthlyDividendPayoutImportForm.getSymbol(),
+              monthlyDividendPayoutImportForm.getBulkInput());
       saveMonthlyDividendPayoutRequests(importRequests);
 
       return buildMonthlyDividendReferenceRedirect(
@@ -409,8 +413,8 @@ public class StockViewController {
         throw new IllegalArgumentException("저장된 출처 URL이 없습니다.");
       }
 
-      List<MonthlyDividendPayoutUpsertRequest> importRequests = monthlyDividendPayoutSourceImportService
-          .fetchImportRequests(
+      List<MonthlyDividendPayoutUpsertRequest> importRequests =
+          monthlyDividendPayoutSourceImportService.fetchImportRequests(
               normalizedSymbol, profile.sourceUrl());
       saveMonthlyDividendPayoutRequests(importRequests);
       return buildMonthlyDividendReferenceRedirect(
@@ -453,7 +457,8 @@ public class StockViewController {
     }
 
     String normalizedSymbol = normalizeMonthlyDividendSymbol(symbol);
-    MonthlyDividendPayoutUpsertRequest payoutForm = buildDefaultMonthlyDividendPayoutForm(normalizedSymbol);
+    MonthlyDividendPayoutUpsertRequest payoutForm =
+        buildDefaultMonthlyDividendPayoutForm(normalizedSymbol);
     payoutForm.setRecordDate(recordDate);
     payoutForm.setPayDate(payDate);
 
@@ -660,20 +665,25 @@ public class StockViewController {
       LocalDate requestedPayoutPayDate) {
     List<StockItem> stockItems = loadMonthlyDividendStockItems();
     String profileSort = resolveMonthlyDividendProfileSort(requestedProfileSort);
-    String profileDirection = resolveMonthlyDividendProfileDirection(profileSort, requestedProfileDirection);
-    List<MonthlyDividendProfileResponse> profiles = sortMonthlyDividendProfiles(loadMonthlyDividendProfiles(),
-        profileSort, profileDirection);
-    List<StockItem> selectableStockItems = mergeMonthlyDividendReferenceStockItems(stockItems, profiles);
-    String selectedSymbol = resolveMonthlyDividendReferenceSymbol(
-        model, requestedSymbol, profiles, selectableStockItems);
-    MonthlyDividendProfileResponse selectedProfile = profiles.stream()
-        .filter(
-            profile -> selectedSymbol.equalsIgnoreCase(safeString(profile.stockItemSymbol())))
-        .findFirst()
-        .orElse(null);
+    String profileDirection =
+        resolveMonthlyDividendProfileDirection(profileSort, requestedProfileDirection);
+    List<MonthlyDividendProfileResponse> profiles =
+        sortMonthlyDividendProfiles(loadMonthlyDividendProfiles(), profileSort, profileDirection);
+    List<StockItem> selectableStockItems =
+        mergeMonthlyDividendReferenceStockItems(stockItems, profiles);
+    String selectedSymbol =
+        resolveMonthlyDividendReferenceSymbol(
+            model, requestedSymbol, profiles, selectableStockItems);
+    MonthlyDividendProfileResponse selectedProfile =
+        profiles.stream()
+            .filter(
+                profile -> selectedSymbol.equalsIgnoreCase(safeString(profile.stockItemSymbol())))
+            .findFirst()
+            .orElse(null);
     List<MonthlyDividendPayoutResponse> payouts = loadMonthlyDividendPayouts(selectedSymbol);
-    MonthlyDividendPayoutResponse selectedPayout = resolveSelectedMonthlyDividendPayout(
-        model, payouts, requestedPayoutRecordDate, requestedPayoutPayDate);
+    MonthlyDividendPayoutResponse selectedPayout =
+        resolveSelectedMonthlyDividendPayout(
+            model, payouts, requestedPayoutRecordDate, requestedPayoutPayDate);
 
     model.addAttribute("stockItems", selectableStockItems);
     model.addAttribute("monthlyDividendProfiles", profiles);
@@ -728,8 +738,8 @@ public class StockViewController {
       List<MonthlyDividendPayoutResponse> payouts,
       LocalDate requestedPayoutRecordDate,
       LocalDate requestedPayoutPayDate) {
-    MonthlyDividendPayoutResponse selectedPayout = findMonthlyDividendPayout(payouts, requestedPayoutRecordDate,
-        requestedPayoutPayDate);
+    MonthlyDividendPayoutResponse selectedPayout =
+        findMonthlyDividendPayout(payouts, requestedPayoutRecordDate, requestedPayoutPayDate);
     if (selectedPayout != null) {
       return selectedPayout;
     }
@@ -770,8 +780,8 @@ public class StockViewController {
   }
 
   private List<MonthlyDividendProfileResponse> loadMonthlyDividendProfiles() {
-    List<MonthlyDividendProfileResponse> profiles = monthlyDividendProfileClient
-        .findProfiles(new LinkedMultiValueMap<>());
+    List<MonthlyDividendProfileResponse> profiles =
+        monthlyDividendProfileClient.findProfiles(new LinkedMultiValueMap<>());
     return profiles != null ? profiles : List.of();
   }
 
@@ -820,26 +830,27 @@ public class StockViewController {
     return profiles.stream()
         .sorted(
             (left, right) -> {
-              int result = switch (sort) {
-                case "symbol" ->
-                  compareProfileText(
-                      left.stockItemSymbol(), right.stockItemSymbol(), direction);
-                case "payout-window" ->
-                  compareProfileText(left.payoutWindow(), right.payoutWindow(), direction);
-                case "source-url" ->
-                  compareProfileText(left.sourceUrl(), right.sourceUrl(), direction);
-                case "last-verified-date" ->
-                  compareNullableProfileValue(
-                      left.lastVerifiedDate(), right.lastVerifiedDate(), direction);
-                case "active" ->
-                  compareProfileBoolean(left.active(), right.active(), direction);
-                case MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER ->
-                  compareNullableProfileValue(
-                      left.displayOrder(), right.displayOrder(), direction);
-                default ->
-                  compareNullableProfileValue(
-                      left.displayOrder(), right.displayOrder(), direction);
-              };
+              int result =
+                  switch (sort) {
+                    case "symbol" ->
+                        compareProfileText(
+                            left.stockItemSymbol(), right.stockItemSymbol(), direction);
+                    case "payout-window" ->
+                        compareProfileText(left.payoutWindow(), right.payoutWindow(), direction);
+                    case "source-url" ->
+                        compareProfileText(left.sourceUrl(), right.sourceUrl(), direction);
+                    case "last-verified-date" ->
+                        compareNullableProfileValue(
+                            left.lastVerifiedDate(), right.lastVerifiedDate(), direction);
+                    case "active" ->
+                        compareProfileBoolean(left.active(), right.active(), direction);
+                    case MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER ->
+                        compareNullableProfileValue(
+                            left.displayOrder(), right.displayOrder(), direction);
+                    default ->
+                        compareNullableProfileValue(
+                            left.displayOrder(), right.displayOrder(), direction);
+                  };
 
               if (result != 0) {
                 return result;
@@ -862,7 +873,7 @@ public class StockViewController {
           "source-url",
           "last-verified-date",
           "active" ->
-        sort;
+          sort;
       default -> MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER;
     };
   }
@@ -942,15 +953,16 @@ public class StockViewController {
       String requestedSymbol,
       List<MonthlyDividendProfileResponse> profiles,
       List<StockItem> stockItems) {
-    String normalizedRequestedSymbol = normalizeMonthlyDividendReferenceSymbol(requestedSymbol, profiles, stockItems);
+    String normalizedRequestedSymbol =
+        normalizeMonthlyDividendReferenceSymbol(requestedSymbol, profiles, stockItems);
     if (normalizedRequestedSymbol != null) {
       return normalizedRequestedSymbol;
     }
 
     Object profileFormAttr = model.asMap().get("monthlyDividendProfileForm");
     if (profileFormAttr instanceof MonthlyDividendProfileUpsertRequest profileForm) {
-      String normalizedProfileSymbol = normalizeMonthlyDividendReferenceSymbol(profileForm.getSymbol(), profiles,
-          stockItems);
+      String normalizedProfileSymbol =
+          normalizeMonthlyDividendReferenceSymbol(profileForm.getSymbol(), profiles, stockItems);
       if (normalizedProfileSymbol != null) {
         return normalizedProfileSymbol;
       }
@@ -958,8 +970,8 @@ public class StockViewController {
 
     Object payoutFormAttr = model.asMap().get("monthlyDividendPayoutForm");
     if (payoutFormAttr instanceof MonthlyDividendPayoutUpsertRequest payoutForm) {
-      String normalizedPayoutSymbol = normalizeMonthlyDividendReferenceSymbol(payoutForm.getSymbol(), profiles,
-          stockItems);
+      String normalizedPayoutSymbol =
+          normalizeMonthlyDividendReferenceSymbol(payoutForm.getSymbol(), profiles, stockItems);
       if (normalizedPayoutSymbol != null) {
         return normalizedPayoutSymbol;
       }
@@ -967,8 +979,9 @@ public class StockViewController {
 
     Object payoutImportFormAttr = model.asMap().get("monthlyDividendPayoutImportForm");
     if (payoutImportFormAttr instanceof MonthlyDividendPayoutImportRequest payoutImportForm) {
-      String normalizedPayoutImportSymbol = normalizeMonthlyDividendReferenceSymbol(
-          payoutImportForm.getSymbol(), profiles, stockItems);
+      String normalizedPayoutImportSymbol =
+          normalizeMonthlyDividendReferenceSymbol(
+              payoutImportForm.getSymbol(), profiles, stockItems);
       if (normalizedPayoutImportSymbol != null) {
         return normalizedPayoutImportSymbol;
       }
@@ -992,18 +1005,20 @@ public class StockViewController {
     }
 
     String normalizedSymbol = symbol.trim().toUpperCase(Locale.ROOT);
-    boolean existsInProfiles = profiles != null
-        && profiles.stream()
-            .map(MonthlyDividendProfileResponse::stockItemSymbol)
-            .filter(StringUtils::hasText)
-            .map(value -> value.trim().toUpperCase(Locale.ROOT))
-            .anyMatch(normalizedSymbol::equals);
-    boolean existsInStockItems = stockItems != null
-        && stockItems.stream()
-            .map(StockItem::symbol)
-            .filter(StringUtils::hasText)
-            .map(value -> value.trim().toUpperCase(Locale.ROOT))
-            .anyMatch(normalizedSymbol::equals);
+    boolean existsInProfiles =
+        profiles != null
+            && profiles.stream()
+                .map(MonthlyDividendProfileResponse::stockItemSymbol)
+                .filter(StringUtils::hasText)
+                .map(value -> value.trim().toUpperCase(Locale.ROOT))
+                .anyMatch(normalizedSymbol::equals);
+    boolean existsInStockItems =
+        stockItems != null
+            && stockItems.stream()
+                .map(StockItem::symbol)
+                .filter(StringUtils::hasText)
+                .map(value -> value.trim().toUpperCase(Locale.ROOT))
+                .anyMatch(normalizedSymbol::equals);
     return existsInProfiles || existsInStockItems ? normalizedSymbol : null;
   }
 
@@ -1015,26 +1030,30 @@ public class StockViewController {
     }
 
     List<MonthlyDividendPayoutResponse> lastYearRows = payouts.stream().limit(12).toList();
-    BigDecimal latestDividendAmountPerShare = safe(lastYearRows.get(0).dividendAmountPerShare()).setScale(4,
-        RoundingMode.HALF_UP);
-    BigDecimal averageDividendAmountPerShare1y = lastYearRows.stream()
-        .map(MonthlyDividendPayoutResponse::dividendAmountPerShare)
-        .map(this::safe)
-        .reduce(BigDecimal.ZERO, BigDecimal::add)
-        .divide(BigDecimal.valueOf(lastYearRows.size()), 4, RoundingMode.HALF_UP);
-
-    List<BigDecimal> taxableBaseRatios = lastYearRows.stream()
-        .filter(row -> safe(row.dividendAmountPerShare()).signum() > 0)
-        .map(
-            row -> safe(row.taxableBasePerShare())
-                .multiply(BigDecimal.valueOf(100))
-                .divide(safe(row.dividendAmountPerShare()), 2, RoundingMode.HALF_UP))
-        .toList();
-    BigDecimal averageTaxableBaseRatio1y = taxableBaseRatios.isEmpty()
-        ? BigDecimal.ZERO
-        : taxableBaseRatios.stream()
+    BigDecimal latestDividendAmountPerShare =
+        safe(lastYearRows.get(0).dividendAmountPerShare()).setScale(4, RoundingMode.HALF_UP);
+    BigDecimal averageDividendAmountPerShare1y =
+        lastYearRows.stream()
+            .map(MonthlyDividendPayoutResponse::dividendAmountPerShare)
+            .map(this::safe)
             .reduce(BigDecimal.ZERO, BigDecimal::add)
-            .divide(BigDecimal.valueOf(taxableBaseRatios.size()), 2, RoundingMode.HALF_UP);
+            .divide(BigDecimal.valueOf(lastYearRows.size()), 4, RoundingMode.HALF_UP);
+
+    List<BigDecimal> taxableBaseRatios =
+        lastYearRows.stream()
+            .filter(row -> safe(row.dividendAmountPerShare()).signum() > 0)
+            .map(
+                row ->
+                    safe(row.taxableBasePerShare())
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(safe(row.dividendAmountPerShare()), 2, RoundingMode.HALF_UP))
+            .toList();
+    BigDecimal averageTaxableBaseRatio1y =
+        taxableBaseRatios.isEmpty()
+            ? BigDecimal.ZERO
+            : taxableBaseRatios.stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .divide(BigDecimal.valueOf(taxableBaseRatios.size()), 2, RoundingMode.HALF_UP);
 
     MonthlyDividendPayoutResponse latestRow = lastYearRows.get(0);
     return new MonthlyDividendReferenceSummaryView(
@@ -1147,10 +1166,11 @@ public class StockViewController {
       LocalDate payoutRecordDate,
       LocalDate payoutPayDate) {
     String profileSort = resolveMonthlyDividendProfileSort(request.getParameter("profileSort"));
-    String profileDirection = resolveMonthlyDividendProfileDirection(
-        profileSort, request.getParameter("profileDirection"));
-    StringBuilder redirectUrl = new StringBuilder("redirect:/stock/dividend?tab=")
-        .append(DIVIDEND_TAB_MONTHLY_REFERENCE);
+    String profileDirection =
+        resolveMonthlyDividendProfileDirection(
+            profileSort, request.getParameter("profileDirection"));
+    StringBuilder redirectUrl =
+        new StringBuilder("redirect:/stock/dividend?tab=").append(DIVIDEND_TAB_MONTHLY_REFERENCE);
     appendQueryParam(redirectUrl, "symbol", symbol);
     appendQueryParam(redirectUrl, "profileSort", profileSort);
     appendQueryParam(redirectUrl, "profileDirection", profileDirection);
@@ -1211,19 +1231,22 @@ public class StockViewController {
       boolean positiveOnly,
       String prefillSymbol) {
     String monthlyDividendSort = resolveMonthlyDividendSort(sort);
-    String monthlyDividendDirection = resolveMonthlyDividendDirection(monthlyDividendSort, direction);
+    String monthlyDividendDirection =
+        resolveMonthlyDividendDirection(monthlyDividendSort, direction);
     String monthlyDividendKeyword = keyword != null ? keyword.trim() : "";
     List<MonthlyDividendSnapshotResponse> allRows = loadMonthlyDividendRows(userId);
-    List<MonthlyDividendProfileResponse> monthlyDividendProfiles = sortMonthlyDividendProfiles(
-        loadMonthlyDividendProfiles(), MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER, "asc");
-    Map<String, Integer> monthlyDividendProfileDisplayOrders = buildMonthlyDividendProfileDisplayOrderMap(
-        monthlyDividendProfiles);
-    List<MonthlyDividendSnapshotResponse> filteredRows = sortMonthlyDividendRows(
-        filterMonthlyDividendRows(
-            allRows, monthlyDividendKeyword, minAnnualYield, positiveOnly),
-        monthlyDividendSort,
-        monthlyDividendDirection,
-        monthlyDividendProfileDisplayOrders);
+    List<MonthlyDividendProfileResponse> monthlyDividendProfiles =
+        sortMonthlyDividendProfiles(
+            loadMonthlyDividendProfiles(), MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER, "asc");
+    Map<String, Integer> monthlyDividendProfileDisplayOrders =
+        buildMonthlyDividendProfileDisplayOrderMap(monthlyDividendProfiles);
+    List<MonthlyDividendSnapshotResponse> filteredRows =
+        sortMonthlyDividendRows(
+            filterMonthlyDividendRows(
+                allRows, monthlyDividendKeyword, minAnnualYield, positiveOnly),
+            monthlyDividendSort,
+            monthlyDividendDirection,
+            monthlyDividendProfileDisplayOrders);
 
     model.addAttribute("monthlyDividendRows", filteredRows);
     model.addAttribute("monthlyDividendSummary", buildMonthlyDividendSummary(filteredRows));
@@ -1322,8 +1345,9 @@ public class StockViewController {
     return rows.stream()
         .filter(row -> matchesMonthlyDividendKeyword(row, keyword))
         .filter(
-            row -> minAnnualYield == null
-                || safe(row.expectedAnnualYieldPct()).compareTo(minAnnualYield) >= 0)
+            row ->
+                minAnnualYield == null
+                    || safe(row.expectedAnnualYieldPct()).compareTo(minAnnualYield) >= 0)
         .filter(row -> !positiveOnly || safe(row.expectedCombinedReturnPct()).signum() >= 0)
         .toList();
   }
@@ -1344,27 +1368,30 @@ public class StockViewController {
       String sort,
       String direction,
       Map<String, Integer> monthlyDividendProfileDisplayOrders) {
-    Comparator<MonthlyDividendSnapshotResponse> comparator = switch (sort) {
-      case MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER ->
-        Comparator.comparing(
-            row -> resolveMonthlyDividendProfileDisplayOrder(row, monthlyDividendProfileDisplayOrders));
-      case MONTHLY_DIVIDEND_SORT_SYMBOL ->
-        Comparator.comparing(
-            row -> safeString(row.stockItemSymbol()), String.CASE_INSENSITIVE_ORDER);
-      case "monthly-yield-on-cost" ->
-        Comparator.comparing(row -> safe(row.expectedMonthlyYieldOnCostPct()));
-      case "annual-yield-on-cost" ->
-        Comparator.comparing(row -> safe(row.expectedAnnualYieldOnCostPct()));
-      case "monthly-yield" -> Comparator.comparing(row -> safe(row.expectedMonthlyYieldPct()));
-      case "annual-yield" -> Comparator.comparing(row -> safe(row.expectedAnnualYieldPct()));
-      case "monthly-dividend" ->
-        Comparator.comparing(row -> safe(row.expectedMonthlyDividend()));
-      case "taxable-base" -> Comparator.comparing(row -> safe(row.averageTaxableBaseRatio1y()));
-      case "updated-date" ->
-        Comparator.comparing(
-            row -> row.updatedDate() != null ? row.updatedDate() : Instant.EPOCH);
-      default -> Comparator.comparing(row -> safe(row.expectedCombinedReturnPct()));
-    };
+    Comparator<MonthlyDividendSnapshotResponse> comparator =
+        switch (sort) {
+          case MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER ->
+              Comparator.comparing(
+                  row ->
+                      resolveMonthlyDividendProfileDisplayOrder(
+                          row, monthlyDividendProfileDisplayOrders));
+          case MONTHLY_DIVIDEND_SORT_SYMBOL ->
+              Comparator.comparing(
+                  row -> safeString(row.stockItemSymbol()), String.CASE_INSENSITIVE_ORDER);
+          case "monthly-yield-on-cost" ->
+              Comparator.comparing(row -> safe(row.expectedMonthlyYieldOnCostPct()));
+          case "annual-yield-on-cost" ->
+              Comparator.comparing(row -> safe(row.expectedAnnualYieldOnCostPct()));
+          case "monthly-yield" -> Comparator.comparing(row -> safe(row.expectedMonthlyYieldPct()));
+          case "annual-yield" -> Comparator.comparing(row -> safe(row.expectedAnnualYieldPct()));
+          case "monthly-dividend" ->
+              Comparator.comparing(row -> safe(row.expectedMonthlyDividend()));
+          case "taxable-base" -> Comparator.comparing(row -> safe(row.averageTaxableBaseRatio1y()));
+          case "updated-date" ->
+              Comparator.comparing(
+                  row -> row.updatedDate() != null ? row.updatedDate() : Instant.EPOCH);
+          default -> Comparator.comparing(row -> safe(row.expectedCombinedReturnPct()));
+        };
 
     if (!"asc".equals(direction)) {
       comparator = comparator.reversed();
@@ -1428,7 +1455,7 @@ public class StockViewController {
           "monthly-dividend",
           "taxable-base",
           "updated-date" ->
-        sort;
+          sort;
       default -> MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER;
     };
   }
@@ -1438,10 +1465,9 @@ public class StockViewController {
       return direction.toLowerCase(Locale.ROOT);
     }
 
-    return MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER.equals(sort)
-        || "taxable-base".equals(sort)
-            ? "asc"
-            : "desc";
+    return MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER.equals(sort) || "taxable-base".equals(sort)
+        ? "asc"
+        : "desc";
   }
 
   private String buildMonthlyDividendRedirect(
@@ -1515,10 +1541,11 @@ public class StockViewController {
     String normalizedSymbol = symbol.trim().toUpperCase(Locale.ROOT);
     request.setSymbol(normalizedSymbol);
 
-    MonthlyDividendSnapshotResponse savedRow = allRows.stream()
-        .filter(row -> normalizedSymbol.equalsIgnoreCase(safeString(row.stockItemSymbol())))
-        .findFirst()
-        .orElse(null);
+    MonthlyDividendSnapshotResponse savedRow =
+        allRows.stream()
+            .filter(row -> normalizedSymbol.equalsIgnoreCase(safeString(row.stockItemSymbol())))
+            .findFirst()
+            .orElse(null);
     if (savedRow != null) {
       request.setAsOfDate(
           savedRow.asOfDate() != null ? savedRow.asOfDate() : request.getAsOfDate());
@@ -1527,9 +1554,11 @@ public class StockViewController {
     }
 
     List<MonthlyDividendPayoutResponse> payouts = loadMonthlyDividendPayouts(normalizedSymbol);
-    MonthlyDividendReferenceSummaryView summary = buildMonthlyDividendReferenceSummary(normalizedSymbol, payouts);
+    MonthlyDividendReferenceSummaryView summary =
+        buildMonthlyDividendReferenceSummary(normalizedSymbol, payouts);
     if (summary.payoutCount() > 0) {
-      LocalDate referenceDate = summary.latestPayDate() != null ? summary.latestPayDate() : summary.latestRecordDate();
+      LocalDate referenceDate =
+          summary.latestPayDate() != null ? summary.latestPayDate() : summary.latestRecordDate();
       if (referenceDate != null) {
         request.setAsOfDate(referenceDate);
       }
@@ -1545,12 +1574,14 @@ public class StockViewController {
     validateMonthlyDividendSymbol(request.getSymbol());
 
     List<MonthlyDividendPayoutResponse> payouts = loadMonthlyDividendPayouts(request.getSymbol());
-    MonthlyDividendReferenceSummaryView summary = buildMonthlyDividendReferenceSummary(request.getSymbol(), payouts);
+    MonthlyDividendReferenceSummaryView summary =
+        buildMonthlyDividendReferenceSummary(request.getSymbol(), payouts);
     if (summary.payoutCount() <= 0) {
       throw new IllegalArgumentException("월배당 기준 데이터가 없습니다. 배당 메뉴의 월배당 기준 데이터에서 먼저 등록해 주세요.");
     }
 
-    LocalDate referenceDate = summary.latestPayDate() != null ? summary.latestPayDate() : summary.latestRecordDate();
+    LocalDate referenceDate =
+        summary.latestPayDate() != null ? summary.latestPayDate() : summary.latestRecordDate();
     if (referenceDate == null) {
       throw new IllegalArgumentException("기준 데이터에 사용할 지급일 정보가 없습니다.");
     }
@@ -1753,33 +1784,48 @@ public class StockViewController {
 
   private MonthlyDividendSimulatorSummaryView buildMonthlyDividendSummary(
       List<MonthlyDividendSnapshotResponse> rows) {
-    BigDecimal totalLatestMonthlyDividend = rows.stream()
-        .map(row -> safe(row.latestMonthlyDividendPerShare())
-            .multiply(BigDecimal.valueOf(row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L)))
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalBuyAmount = rows.stream()
-        .map(row -> safe(row.averageBuyPrice())
-            .multiply(BigDecimal.valueOf(row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L)))
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalExpectedMonthlyDividend = rows.stream()
-        .map(MonthlyDividendSnapshotResponse::expectedMonthlyDividend)
-        .map(this::safe)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalExpectedAnnualDividend = totalExpectedMonthlyDividend.multiply(BigDecimal.valueOf(12));
-    BigDecimal totalExpectedTaxableBaseAmount = rows.stream()
-        .map(MonthlyDividendSnapshotResponse::expectedTaxableBaseAmount)
-        .map(this::safe)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalCurrentMarketValue = rows.stream()
-        .map(MonthlyDividendSnapshotResponse::currentMarketValue)
-        .map(this::safe)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalLatestMonthlyDividend =
+        rows.stream()
+            .map(
+                row ->
+                    safe(row.latestMonthlyDividendPerShare())
+                        .multiply(
+                            BigDecimal.valueOf(
+                                row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L)))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalBuyAmount =
+        rows.stream()
+            .map(
+                row ->
+                    safe(row.averageBuyPrice())
+                        .multiply(
+                            BigDecimal.valueOf(
+                                row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L)))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalExpectedMonthlyDividend =
+        rows.stream()
+            .map(MonthlyDividendSnapshotResponse::expectedMonthlyDividend)
+            .map(this::safe)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalExpectedAnnualDividend =
+        totalExpectedMonthlyDividend.multiply(BigDecimal.valueOf(12));
+    BigDecimal totalExpectedTaxableBaseAmount =
+        rows.stream()
+            .map(MonthlyDividendSnapshotResponse::expectedTaxableBaseAmount)
+            .map(this::safe)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalCurrentMarketValue =
+        rows.stream()
+            .map(MonthlyDividendSnapshotResponse::currentMarketValue)
+            .map(this::safe)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     BigDecimal portfolioExpectedAnnualYieldPct = BigDecimal.ZERO;
     if (totalCurrentMarketValue.signum() > 0) {
-      portfolioExpectedAnnualYieldPct = totalExpectedAnnualDividend
-          .multiply(BigDecimal.valueOf(100))
-          .divide(totalCurrentMarketValue, 2, RoundingMode.HALF_UP);
+      portfolioExpectedAnnualYieldPct =
+          totalExpectedAnnualDividend
+              .multiply(BigDecimal.valueOf(100))
+              .divide(totalCurrentMarketValue, 2, RoundingMode.HALF_UP);
     }
 
     MonthlyDividendSnapshotResponse bestChoice = resolveMonthlyDividendBestChoice(rows);
@@ -1801,17 +1847,16 @@ public class StockViewController {
       return null;
     }
 
-    Comparator<MonthlyDividendSnapshotResponse> comparator = Comparator
-        .comparing(
-            (MonthlyDividendSnapshotResponse row) -> safe(row.expectedCombinedReturnPct()))
-        .thenComparing(row -> safe(row.expectedAnnualYieldOnCostPct()))
-        .thenComparing(row -> safe(row.expectedAnnualYieldPct()))
-        .thenComparing(
-            (MonthlyDividendSnapshotResponse row) -> safe(row.averageTaxableBaseRatio1y()),
-            Comparator.reverseOrder())
-        .thenComparing(
-            row -> safeString(row.stockItemSymbol()),
-            String.CASE_INSENSITIVE_ORDER.reversed());
+    Comparator<MonthlyDividendSnapshotResponse> comparator =
+        Comparator.comparing(
+                (MonthlyDividendSnapshotResponse row) -> safe(row.expectedCombinedReturnPct()))
+            .thenComparing(row -> safe(row.expectedAnnualYieldOnCostPct()))
+            .thenComparing(row -> safe(row.expectedAnnualYieldPct()))
+            .thenComparing(
+                (MonthlyDividendSnapshotResponse row) -> safe(row.averageTaxableBaseRatio1y()),
+                Comparator.reverseOrder())
+            .thenComparing(
+                row -> safeString(row.stockItemSymbol()), String.CASE_INSENSITIVE_ORDER.reversed());
 
     return rows.stream().max(comparator).orElse(null);
   }
@@ -1843,16 +1888,17 @@ public class StockViewController {
           "종목코드에는 URL이 아니라 종목 심볼을 입력해 주세요. 출처 URL은 출처 URL 칸에 넣으면 됩니다.");
     }
 
-    boolean knownStockSymbol = loadStockItems().stream()
-        .map(StockItem::symbol)
-        .filter(StringUtils::hasText)
-        .map(value -> value.trim().toUpperCase(Locale.ROOT))
-        .anyMatch(normalizedSymbol::equals)
-        || loadMonthlyDividendProfiles().stream()
-            .map(MonthlyDividendProfileResponse::stockItemSymbol)
-            .filter(StringUtils::hasText)
-            .map(value -> value.trim().toUpperCase(Locale.ROOT))
-            .anyMatch(normalizedSymbol::equals);
+    boolean knownStockSymbol =
+        loadStockItems().stream()
+                .map(StockItem::symbol)
+                .filter(StringUtils::hasText)
+                .map(value -> value.trim().toUpperCase(Locale.ROOT))
+                .anyMatch(normalizedSymbol::equals)
+            || loadMonthlyDividendProfiles().stream()
+                .map(MonthlyDividendProfileResponse::stockItemSymbol)
+                .filter(StringUtils::hasText)
+                .map(value -> value.trim().toUpperCase(Locale.ROOT))
+                .anyMatch(normalizedSymbol::equals);
     if (!knownStockSymbol) {
       throw new IllegalArgumentException("등록되지 않은 종목코드입니다. 종목 심볼을 다시 확인해 주세요.");
     }

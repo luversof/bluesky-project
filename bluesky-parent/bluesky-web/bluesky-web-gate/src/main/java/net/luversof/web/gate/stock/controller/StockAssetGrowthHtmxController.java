@@ -46,7 +46,8 @@ import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 @Controller
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
 public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
-  private static final Logger logger = LoggerFactory.getLogger(StockAssetGrowthHtmxController.class);
+  private static final Logger logger =
+      LoggerFactory.getLogger(StockAssetGrowthHtmxController.class);
 
   public StockAssetGrowthHtmxController(
       TradeProfitClient tradeProfitClient,
@@ -78,9 +79,10 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
 
     // If no date range provided, default to this year (ytd)
     if (request.getStartDate() == null && request.getEndDate() == null) {
-      ZoneId zone = (request.getTimeZone() != null && !request.getTimeZone().isEmpty())
-          ? ZoneId.of(request.getTimeZone())
-          : ZoneId.systemDefault();
+      ZoneId zone =
+          (request.getTimeZone() != null && !request.getTimeZone().isEmpty())
+              ? ZoneId.of(request.getTimeZone())
+              : ZoneId.systemDefault();
       LocalDate now = LocalDate.now(zone);
       request.setStartDate(LocalDate.of(now.getYear(), 1, 1).atStartOfDay(zone).toInstant());
       request.setEndDate(now.plusDays(1).atStartOfDay(zone).toInstant());
@@ -101,14 +103,16 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     List<TradeProfitTimeSeriesPoint> allSeries = tradeProfitClient.timeSeries(allParams);
     java.time.LocalDate dataFirstDate = null;
     if (allSeries != null && !allSeries.isEmpty()) {
-      var zone = (request.getTimeZone() != null && !request.getTimeZone().isEmpty())
-          ? java.time.ZoneId.of(request.getTimeZone())
-          : java.time.ZoneId.systemDefault();
-      dataFirstDate = allSeries.stream()
-          .filter(pt -> pt.timestamp() != null)
-          .map(pt -> pt.timestamp().atZone(zone).toLocalDate())
-          .min(java.util.Comparator.naturalOrder())
-          .orElse(null);
+      var zone =
+          (request.getTimeZone() != null && !request.getTimeZone().isEmpty())
+              ? java.time.ZoneId.of(request.getTimeZone())
+              : java.time.ZoneId.systemDefault();
+      dataFirstDate =
+          allSeries.stream()
+              .filter(pt -> pt.timestamp() != null)
+              .map(pt -> pt.timestamp().atZone(zone).toLocalDate())
+              .min(java.util.Comparator.naturalOrder())
+              .orElse(null);
     }
 
     model.addAttribute("timeSeries", allSeries);
@@ -195,12 +199,9 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       long sumTv = 0L;
       long sumTc = 0L;
       long sumCrp = 0L;
-      for (Long v : tvList)
-        sumTv += v == null ? 0L : v;
-      for (Long v : tcList)
-        sumTc += v == null ? 0L : v;
-      for (Long v : crpList)
-        sumCrp += v == null ? 0L : v;
+      for (Long v : tvList) sumTv += v == null ? 0L : v;
+      for (Long v : tcList) sumTc += v == null ? 0L : v;
+      for (Long v : crpList) sumCrp += v == null ? 0L : v;
       String first = labelsList.isEmpty() ? "" : labelsList.get(0);
       String last = labelsList.isEmpty() ? "" : labelsList.get(labelsList.size() - 1);
       logger.debug(
@@ -283,74 +284,83 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       return "stock/htmx/trade-history";
     }
 
-    Instant tradeStart = (from != null && !from.isBlank())
-        ? LocalDate.parse(from).atStartOfDay(ZoneOffset.UTC).toInstant()
-        : null;
-    Instant tradeEnd = (to != null && !to.isBlank())
-        ? LocalDate.parse(to).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()
-        : null;
+    Instant tradeStart =
+        (from != null && !from.isBlank())
+            ? LocalDate.parse(from).atStartOfDay(ZoneOffset.UTC).toInstant()
+            : null;
+    Instant tradeEnd =
+        (to != null && !to.isBlank())
+            ? LocalDate.parse(to).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()
+            : null;
 
     var tradeReq = new TradeSearchRequest(userId, null, null, tradeStart, tradeEnd);
     var allFromApi = emptyIfNull(tradeClient.findTrades(tradeReq.toParams()));
 
     List<StockItem> stockItems = emptyIfNull(stockItemClient.getStockItems());
-    Map<UUID, String> stockItemNames = stockItems.stream()
-        .collect(Collectors.toMap(StockItem::id, StockItem::name, (l, r) -> l));
+    Map<UUID, String> stockItemNames =
+        stockItems.stream().collect(Collectors.toMap(StockItem::id, StockItem::name, (l, r) -> l));
 
-    var allTrades = allFromApi.stream()
-        .map(
-            t -> new TradeResponse(
-                t.id(),
-                t.accountId(),
-                t.stockItemId(),
-                stockItemNames.getOrDefault(t.stockItemId(), msg("stock.label.unknown")),
-                t.type(),
-                t.quantity(),
-                t.price(),
-                t.fee(),
-                t.tax(),
-                t.amount(),
-                t.realizedProfit(),
-                t.tradeDate()))
-        .sorted(
-            Comparator.comparing(
-                TradeResponse::tradeDate, Comparator.nullsLast(Comparator.reverseOrder())))
-        .collect(Collectors.toCollection(ArrayList::new));
+    var allTrades =
+        allFromApi.stream()
+            .map(
+                t ->
+                    new TradeResponse(
+                        t.id(),
+                        t.accountId(),
+                        t.stockItemId(),
+                        stockItemNames.getOrDefault(t.stockItemId(), msg("stock.label.unknown")),
+                        t.type(),
+                        t.quantity(),
+                        t.price(),
+                        t.fee(),
+                        t.tax(),
+                        t.amount(),
+                        t.realizedProfit(),
+                        t.tradeDate()))
+            .sorted(
+                Comparator.comparing(
+                    TradeResponse::tradeDate, Comparator.nullsLast(Comparator.reverseOrder())))
+            .collect(Collectors.toCollection(ArrayList::new));
 
-    BigDecimal totalBuy = allTrades.stream()
-        .filter(t -> t.type() == TradeType.BUY)
-        .map(t -> t.amount() != null ? t.amount() : BigDecimal.ZERO)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalSell = allTrades.stream()
-        .filter(t -> t.type() == TradeType.SELL)
-        .map(t -> t.amount() != null ? t.amount() : BigDecimal.ZERO)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalRealizedProfit = allTrades.stream()
-        .filter(t -> t.type() == TradeType.SELL)
-        .map(t -> t.realizedProfit() != null ? t.realizedProfit() : BigDecimal.ZERO)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalFee = allTrades.stream()
-        .map(t -> t.fee() != null ? t.fee() : BigDecimal.ZERO)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalTax = allTrades.stream()
-        .map(t -> t.tax() != null ? t.tax() : BigDecimal.ZERO)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalBuy =
+        allTrades.stream()
+            .filter(t -> t.type() == TradeType.BUY)
+            .map(t -> t.amount() != null ? t.amount() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalSell =
+        allTrades.stream()
+            .filter(t -> t.type() == TradeType.SELL)
+            .map(t -> t.amount() != null ? t.amount() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalRealizedProfit =
+        allTrades.stream()
+            .filter(t -> t.type() == TradeType.SELL)
+            .map(t -> t.realizedProfit() != null ? t.realizedProfit() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalFee =
+        allTrades.stream()
+            .map(t -> t.fee() != null ? t.fee() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalTax =
+        allTrades.stream()
+            .map(t -> t.tax() != null ? t.tax() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     int totalItems = allTrades.size();
-    if (size <= 0)
-      size = 20;
+    if (size <= 0) size = 20;
     int totalPages = totalItems > 0 ? (int) Math.ceil((double) totalItems / size) : 0;
     int currentPage = Math.max(1, Math.min(page, Math.max(1, totalPages)));
     int fromIdx = (currentPage - 1) * size;
     int toIdx = Math.min(fromIdx + size, totalItems);
-    List<TradeResponse> pagedTrades = fromIdx < totalItems ? allTrades.subList(fromIdx, toIdx)
-        : Collections.emptyList();
+    List<TradeResponse> pagedTrades =
+        fromIdx < totalItems ? allTrades.subList(fromIdx, toIdx) : Collections.emptyList();
 
     String periodFrom = (from != null && !from.isBlank()) ? from : "";
     String periodTo = (to != null && !to.isBlank()) ? to : "";
-    String tradePeriod = periodFrom.isEmpty() && periodTo.isEmpty()
-        ? msg("stock.label.period.all")
-        : periodFrom + (periodTo.isEmpty() ? "" : " ~ " + periodTo);
+    String tradePeriod =
+        periodFrom.isEmpty() && periodTo.isEmpty()
+            ? msg("stock.label.period.all")
+            : periodFrom + (periodTo.isEmpty() ? "" : " ~ " + periodTo);
 
     model.addAttribute("trades", pagedTrades);
     model.addAttribute("totalItems", totalItems);
@@ -391,13 +401,16 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
 
     try {
       ZoneId zone = resolveZoneId(timeZone);
-      HoldingsValueWindow holdingsValueWindow = loadHoldingsValueWindow(userId, fromDate, toDate, timeZone, zone);
+      HoldingsValueWindow holdingsValueWindow =
+          loadHoldingsValueWindow(userId, fromDate, toDate, timeZone, zone);
 
-      Double periodReturnRate = calculatePeriodGrowthRate(
-          holdingsValueWindow.openingValue(), holdingsValueWindow.closingValue());
-      Double periodReturnRatePct = periodReturnRate != null && Double.isFinite(periodReturnRate)
-          ? periodReturnRate * 100.0d
-          : null;
+      Double periodReturnRate =
+          calculatePeriodGrowthRate(
+              holdingsValueWindow.openingValue(), holdingsValueWindow.closingValue());
+      Double periodReturnRatePct =
+          periodReturnRate != null && Double.isFinite(periodReturnRate)
+              ? periodReturnRate * 100.0d
+              : null;
 
       return new AssetGrowthPeriodReturnSummary(
           fromDate.toString(), toDate.toString(), periodReturnRatePct, periodReturnRatePct != null);
@@ -440,7 +453,8 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       if (pointDate.isBefore(fromDate) || pointDate.isAfter(toDate)) {
         continue;
       }
-      BigDecimal holdingsValue = point.totalHoldingsValue() != null ? point.totalHoldingsValue() : BigDecimal.ZERO;
+      BigDecimal holdingsValue =
+          point.totalHoldingsValue() != null ? point.totalHoldingsValue() : BigDecimal.ZERO;
       if (openingValue == null) {
         openingValue = holdingsValue;
       }
@@ -470,7 +484,8 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       UUID userId, Instant periodStart, Instant periodEndExclusive) {
     List<PeriodCashFlow> cashFlows = new ArrayList<>();
 
-    TradeSearchRequest tradeRequest = new TradeSearchRequest(userId, null, null, periodStart, periodEndExclusive);
+    TradeSearchRequest tradeRequest =
+        new TradeSearchRequest(userId, null, null, periodStart, periodEndExclusive);
     List<TradeResponse> trades = emptyIfNull(tradeClient.findTrades(tradeRequest.toParams()));
     for (TradeResponse trade : trades) {
       BigDecimal amount = resolveTradeAmount(trade);
@@ -495,7 +510,8 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     dividendRequest.setUserId(userId);
     dividendRequest.setStartDate(periodStart);
     dividendRequest.setEndDate(periodEndExclusive);
-    List<DividendResponse> dividends = emptyIfNull(dividendClient.findDividends(dividendRequest.toParams()));
+    List<DividendResponse> dividends =
+        emptyIfNull(dividendClient.findDividends(dividendRequest.toParams()));
     for (DividendResponse dividend : dividends) {
       BigDecimal netAmount = resolveDividendNetAmount(dividend);
       if (netAmount.compareTo(BigDecimal.ZERO) == 0) {
@@ -523,7 +539,8 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
 
     BigDecimal netCashFlow = BigDecimal.ZERO;
     BigDecimal weightedCashFlow = BigDecimal.ZERO;
-    double totalMillis = Math.max(1d, periodEndExclusive.toEpochMilli() - periodStart.toEpochMilli());
+    double totalMillis =
+        Math.max(1d, periodEndExclusive.toEpochMilli() - periodStart.toEpochMilli());
 
     for (PeriodCashFlow cashFlow : cashFlows) {
       BigDecimal amount = cashFlow.amount() != null ? cashFlow.amount() : BigDecimal.ZERO;
@@ -557,7 +574,8 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     if (dividend.netAmount() != null) {
       return dividend.netAmount();
     }
-    BigDecimal grossAmount = dividend.grossAmount() != null ? dividend.grossAmount() : BigDecimal.ZERO;
+    BigDecimal grossAmount =
+        dividend.grossAmount() != null ? dividend.grossAmount() : BigDecimal.ZERO;
     BigDecimal fee = dividend.fee() != null ? dividend.fee() : BigDecimal.ZERO;
     BigDecimal tax = dividend.tax() != null ? dividend.tax() : BigDecimal.ZERO;
     return grossAmount.subtract(fee).subtract(tax);
@@ -585,13 +603,10 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     }
   }
 
-  private record HoldingsValueWindow(BigDecimal openingValue, BigDecimal closingValue) {
-  }
+  private record HoldingsValueWindow(BigDecimal openingValue, BigDecimal closingValue) {}
 
-  private record PeriodCashFlow(Instant occurredAt, BigDecimal amount) {
-  }
+  private record PeriodCashFlow(Instant occurredAt, BigDecimal amount) {}
 
   private record AssetGrowthPeriodReturnSummary(
-      String fromDate, String toDate, Double periodReturnRatePct, boolean returnCalculable) {
-  }
+      String fromDate, String toDate, Double periodReturnRatePct, boolean returnCalculable) {}
 }
