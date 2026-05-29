@@ -1,5 +1,6 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 @import java.math.BigDecimal
+@import java.math.RoundingMode
 @import java.text.DecimalFormat
 @import java.time.LocalDate
 @import java.util.List
@@ -36,8 +37,13 @@
 	BigDecimal totalExpectedMonthlyDividend = monthlyDividendSummary != null ? monthlyDividendSummary.totalExpectedMonthlyDividend() : BigDecimal.ZERO;
 	BigDecimal totalExpectedAnnualDividend = monthlyDividendSummary != null ? monthlyDividendSummary.totalExpectedAnnualDividend() : BigDecimal.ZERO;
 	BigDecimal totalExpectedTaxableBaseAmount = monthlyDividendSummary != null ? monthlyDividendSummary.totalExpectedTaxableBaseAmount() : BigDecimal.ZERO;
+	BigDecimal totalExpectedAnnualTaxableBaseAmount = monthlyDividendSummary != null ? monthlyDividendSummary.totalExpectedAnnualTaxableBaseAmount() : BigDecimal.ZERO;
 	BigDecimal totalBuyAmount = monthlyDividendSummary != null ? monthlyDividendSummary.totalBuyAmount() : BigDecimal.ZERO;
 	BigDecimal totalCurrentMarketValue = monthlyDividendSummary != null ? monthlyDividendSummary.totalCurrentMarketValue() : BigDecimal.ZERO;
+	BigDecimal totalEvaluationProfit = totalCurrentMarketValue.subtract(totalBuyAmount);
+	BigDecimal totalEvaluationReturnPct = totalBuyAmount.signum() > 0
+		? totalEvaluationProfit.multiply(BigDecimal.valueOf(100)).divide(totalBuyAmount, 2, RoundingMode.HALF_UP)
+		: BigDecimal.ZERO;
 	BigDecimal portfolioExpectedAnnualYieldPct = monthlyDividendSummary != null ? monthlyDividendSummary.portfolioExpectedAnnualYieldPct() : BigDecimal.ZERO;
 	int itemCount = monthlyDividendSummary != null ? monthlyDividendSummary.itemCount() : 0;
 	MonthlyDividendSnapshotUpsertRequest form = monthlyDividendForm != null ? monthlyDividendForm : new MonthlyDividendSnapshotUpsertRequest();
@@ -52,9 +58,8 @@
 	String minAnnualYieldValue = monthlyDividendMinAnnualYield != null ? monthlyDividendMinAnnualYield.stripTrailingZeros().toPlainString() : "";
 	String monthlyDividendReferenceManageUrl = "/stock/dividend?tab=monthly-reference";
 	String totalLatestMonthlyDividendLabel = MessageUtil.getMessage("stock.simulator.monthly.summary.latest.monthly.dividend");
-	String totalLatestMonthlyDividendDesc = MessageUtil.getMessage("stock.simulator.monthly.summary.latest.monthly.dividend.desc");
-	String totalTaxableBaseSummaryLabel = MessageUtil.getMessage("stock.simulator.monthly.summary.total.taxable.base");
-	String totalTaxableBaseSummaryDesc = MessageUtil.getMessage("stock.simulator.monthly.summary.total.taxable.base.desc");
+	String totalMonthlyTaxableBaseSummaryLabel = MessageUtil.getMessage("stock.simulator.monthly.summary.total.taxable.base");
+	String totalAnnualTaxableBaseSummaryLabel = MessageUtil.getMessage("stock.simulator.monthly.summary.total.annual.taxable.base");
 	String totalBuyAmountLabel = MessageUtil.getMessage("stock.simulator.monthly.table.header.buy.amount");
 	String totalCurrentMarketValueLabel = MessageUtil.getMessage("stock.simulator.monthly.table.header.market.value");
 	String monthlySelectionHelperLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.helper");
@@ -67,9 +72,9 @@
 	String selectionDividendLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.card.dividend");
 	String selectionInvestmentLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.card.investment");
 	String selectionEfficiencyLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.card.efficiency");
+	String selectionItemCountLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.item.count");
 	String selectionMonthlyWeightLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.weight.monthly");
 	String selectionMarketWeightLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.weight.market.value");
-	String selectionDividendDeltaLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.dividend.delta");
 	String selectionInvestmentProfitLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.investment.profit");
 	String selectionInvestmentReturnLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.investment.return");
 	String monthlyDividendTableBaseUrl = "/stock/simulator?tab=monthly-dividend";
@@ -108,7 +113,7 @@
 		@endfor
 	</datalist>
 
-	<div class="grid gap-6 xl:grid-cols-[24rem_minmax(0,1fr)]">
+	<div class="space-y-6">
 		<div class="space-y-6">
 			<section class="card border border-base-300 bg-base-100 shadow-sm">
 				<div class="card-body gap-4">
@@ -185,65 +190,79 @@
 					</form>
 				</div>
 			</section>
-
-			<aside class="card border border-base-300 bg-base-100 shadow-sm">
-				<div class="card-body gap-4">
-					<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.simulator.monthly.section.criteria.title")}</h2>
-					<ul class="list-disc space-y-3 pl-5 text-sm leading-6 text-base-content/70">
-						<li>${MessageUtil.getMessage("stock.simulator.monthly.criteria.one")}</li>
-						<li>${MessageUtil.getMessage("stock.simulator.monthly.criteria.two")}</li>
-						<li>${MessageUtil.getMessage("stock.simulator.monthly.criteria.three")}</li>
-						<li>${MessageUtil.getMessage("stock.simulator.monthly.criteria.four")}</li>
-					</ul>
-				</div>
-			</aside>
 		</div>
 
 		<div class="space-y-6">
-			<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+			<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 				<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
-					<p class="text-xs font-medium uppercase tracking-wide text-base-content/50">${MessageUtil.getMessage("stock.simulator.monthly.summary.item.count")}</p>
-					<p class="mt-3 text-2xl font-semibold text-base-content">${amountFormat.format(itemCount)}</p>
-					<p class="mt-2 text-sm text-base-content/60">${MessageUtil.getMessage("stock.simulator.tab.monthly.dividend")}</p>
-				</div>
-				<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
-					<div>
-						<p class="text-xs font-medium uppercase tracking-wide text-base-content/50">${totalLatestMonthlyDividendLabel}</p>
-						<p class="mt-2 text-2xl font-semibold text-base-content">₩${amountFormat.format(totalLatestMonthlyDividend)}</p>
-					</div>
-					<div class="mt-3 border-t border-base-200 pt-3">
-						<p class="text-xs font-medium uppercase tracking-wide text-base-content/50">${MessageUtil.getMessage("stock.simulator.monthly.summary.total.monthly.dividend")}</p>
-						<p class="mt-2 text-2xl font-semibold text-base-content">₩${amountFormat.format(totalExpectedMonthlyDividend)}</p>
+					<div class="text-xs text-base-content/60">${selectionOverviewLabel}</div>
+					<div class="mt-3 space-y-3">
+						<div class="flex items-center justify-between gap-3 text-sm">
+							<span class="text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.item.count")}</span>
+							<span class="font-mono font-semibold">${amountFormat.format(itemCount)}</span>
+						</div>
+						<div class="flex items-start justify-between gap-3 text-sm">
+							<span class="text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.best.choice")}</span>
+							<span class="text-right font-semibold">${bestChoice != null ? bestChoice.stockItemSymbol() : MessageUtil.getMessage("stock.simulator.monthly.summary.no.best.choice")}</span>
+						</div>
 					</div>
 				</div>
 				<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
-					<p class="text-xs font-medium uppercase tracking-wide text-base-content/50">${MessageUtil.getMessage("stock.simulator.monthly.summary.total.annual.dividend")}</p>
-					<p class="mt-3 text-2xl font-semibold text-base-content">₩${amountFormat.format(totalExpectedAnnualDividend)}</p>
-					<p class="mt-2 text-sm text-base-content/60">12 x ${MessageUtil.getMessage("stock.simulator.monthly.summary.total.monthly.dividend")}</p>
-				</div>
-				<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
-					<p class="text-xs font-medium uppercase tracking-wide text-base-content/50">${totalTaxableBaseSummaryLabel}</p>
-					<p class="mt-3 text-2xl font-semibold text-base-content">₩${amountFormat.format(totalExpectedTaxableBaseAmount)}</p>
-					<p class="mt-2 text-sm text-base-content/60">${totalTaxableBaseSummaryDesc}</p>
-				</div>
-				<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
-					<div>
-						<p class="text-xs font-medium uppercase tracking-wide text-base-content/50">${totalBuyAmountLabel}</p>
-						<p class="mt-2 text-2xl font-semibold text-base-content">₩${amountFormat.format(totalBuyAmount)}</p>
-					</div>
-					<div class="mt-3 border-t border-base-200 pt-3">
-						<p class="text-xs font-medium uppercase tracking-wide text-base-content/50">${totalCurrentMarketValueLabel}</p>
-						<p class="mt-2 text-2xl font-semibold text-base-content">₩${amountFormat.format(totalCurrentMarketValue)}</p>
+					<div class="text-xs text-base-content/60">${selectionDividendLabel}</div>
+					<div class="mt-3 space-y-3">
+						<div>
+							<div class="text-[11px] text-base-content/60">${totalLatestMonthlyDividendLabel}</div>
+							<div class="mt-1 font-mono font-semibold amount-value">₩${amountFormat.format(totalLatestMonthlyDividend)}</div>
+						</div>
+						<div>
+							<div class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.total.monthly.dividend")}</div>
+							<div class="mt-1 font-mono font-semibold amount-value">₩${amountFormat.format(totalExpectedMonthlyDividend)}</div>
+						</div>
+						<div>
+							<div class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.total.annual.dividend")}</div>
+							<div class="mt-1 font-mono font-semibold amount-value">₩${amountFormat.format(totalExpectedAnnualDividend)}</div>
+						</div>
 					</div>
 				</div>
 				<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
-					<p class="text-xs font-medium uppercase tracking-wide text-base-content/50">${MessageUtil.getMessage("stock.simulator.monthly.summary.portfolio.annual.yield")}</p>
-					<p class="mt-3 text-2xl font-semibold text-base-content">${percentFormat.format(portfolioExpectedAnnualYieldPct)}%</p>
-					@if(bestChoice != null)
-						<p class="mt-2 text-sm text-base-content/60">${bestChoice.stockItemSymbol()} · ${MessageUtil.getMessage("stock.simulator.monthly.summary.best.choice")}</p>
-					@else
-						<p class="mt-2 text-sm text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.no.best.choice")}</p>
-					@endif
+					<div class="text-xs text-base-content/60">${selectionInvestmentLabel}</div>
+					<div class="mt-3 space-y-3">
+						<div>
+							<div class="text-[11px] text-base-content/60">${totalBuyAmountLabel}</div>
+							<div class="mt-1 font-mono font-semibold amount-value">₩${amountFormat.format(totalBuyAmount)}</div>
+						</div>
+						<div>
+							<div class="text-[11px] text-base-content/60">${totalCurrentMarketValueLabel}</div>
+							<div class="mt-1 font-mono font-semibold amount-value">₩${amountFormat.format(totalCurrentMarketValue)}</div>
+						</div>
+						<div class="border-t border-base-200/70 pt-3 space-y-2">
+							<div class="flex items-center justify-between gap-3 text-sm">
+								<span class="text-base-content/60">${selectionInvestmentProfitLabel}</span>
+								<span class="font-mono font-semibold ${totalEvaluationProfit.signum() > 0 ? "text-success" : totalEvaluationProfit.signum() < 0 ? "text-error" : ""}">${totalEvaluationProfit.signum() > 0 ? "+₩" : totalEvaluationProfit.signum() < 0 ? "-₩" : "₩"}${amountFormat.format(totalEvaluationProfit.abs())}</span>
+							</div>
+							<div class="flex items-center justify-between gap-3 text-sm">
+								<span class="text-base-content/60">${selectionInvestmentReturnLabel}</span>
+								<span class="font-mono font-semibold ${totalEvaluationReturnPct.signum() > 0 ? "text-success" : totalEvaluationReturnPct.signum() < 0 ? "text-error" : ""}">${totalEvaluationReturnPct.signum() > 0 ? "+" : totalEvaluationReturnPct.signum() < 0 ? "-" : ""}${percentFormat.format(totalEvaluationReturnPct.abs())}%</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
+					<div class="text-xs text-base-content/60">${selectionEfficiencyLabel}</div>
+					<div class="mt-3 space-y-3">
+						<div>
+							<div class="text-[11px] text-base-content/60">${totalMonthlyTaxableBaseSummaryLabel}</div>
+							<div class="mt-1 font-mono font-semibold amount-value">₩${amountFormat.format(totalExpectedTaxableBaseAmount)}</div>
+						</div>
+						<div>
+							<div class="text-[11px] text-base-content/60">${totalAnnualTaxableBaseSummaryLabel}</div>
+							<div class="mt-1 font-mono font-semibold amount-value">₩${amountFormat.format(totalExpectedAnnualTaxableBaseAmount)}</div>
+						</div>
+						<div>
+							<div class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.portfolio.annual.yield")}</div>
+							<div class="mt-1 font-mono font-semibold">${percentFormat.format(portfolioExpectedAnnualYieldPct)}%</div>
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -289,6 +308,10 @@
 										<div class="text-xs text-base-content/60">${selectionOverviewLabel}</div>
 										<div class="mt-3 space-y-2">
 											<div class="flex items-center justify-between gap-3 text-sm">
+												<span class="text-base-content/60">${selectionItemCountLabel}</span>
+												<span class="font-mono font-semibold" data-monthly-selection-item-count>0</span>
+											</div>
+											<div class="flex items-center justify-between gap-3 text-sm">
 												<span class="text-base-content/60">${selectionMonthlyWeightLabel}</span>
 												<span class="font-mono font-semibold" data-monthly-selection-monthly-weight>0.0%</span>
 											</div>
@@ -309,9 +332,9 @@
 												<div class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.total.monthly.dividend")}</div>
 												<div class="mt-1 font-mono font-semibold amount-value" data-monthly-selection-monthly>₩0</div>
 											</div>
-											<div class="flex items-center justify-between gap-3 border-t border-base-200/70 pt-3 text-sm">
-												<span class="text-base-content/60">${selectionDividendDeltaLabel}</span>
-												<span class="font-mono font-semibold" data-monthly-selection-dividend-delta>₩0</span>
+											<div>
+												<div class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.total.annual.dividend")}</div>
+												<div class="mt-1 font-mono font-semibold amount-value" data-monthly-selection-annual-dividend>₩0</div>
 											</div>
 										</div>
 									</div>
@@ -342,8 +365,12 @@
 										<div class="text-xs text-base-content/60">${selectionEfficiencyLabel}</div>
 										<div class="mt-3 space-y-3">
 											<div>
-												<div class="text-[11px] text-base-content/60">${totalTaxableBaseSummaryLabel}</div>
+												<div class="text-[11px] text-base-content/60">${totalMonthlyTaxableBaseSummaryLabel}</div>
 												<div class="mt-1 font-mono font-semibold amount-value" data-monthly-selection-taxable>₩0</div>
+											</div>
+											<div>
+												<div class="text-[11px] text-base-content/60">${totalAnnualTaxableBaseSummaryLabel}</div>
+												<div class="mt-1 font-mono font-semibold amount-value" data-monthly-selection-annual-taxable>₩0</div>
 											</div>
 											<div>
 												<div class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.portfolio.annual.yield")}</div>
@@ -393,16 +420,18 @@
 												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.taxable.base")}</div>
 											</div>
 										</th>
-										<th class="text-center text-[11px] font-medium uppercase tracking-wide text-base-content/45" colspan="2">${MessageUtil.getMessage("stock.simulator.monthly.table.group.yield")}</th>
-										<th class="text-center text-[11px] font-medium uppercase tracking-wide text-base-content/45" colspan="2">${MessageUtil.getMessage("stock.simulator.monthly.table.group.result")}</th>
+										<th class="text-center text-[11px] font-medium uppercase tracking-wide text-base-content/45" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.yield")}</th>
 									</tr>
 									<tr>
 										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.dividend.per.share")}</th>
 										<th class="text-right">
-											<a href="${monthlyDividendTableBaseUrl}&sort=taxable-base&direction=${taxableBaseDirectionToggle}" class="link link-hover font-medium no-underline">
-												${MessageUtil.getMessage("stock.simulator.monthly.table.header.taxable.base.ratio")}
+											<a href="${monthlyDividendTableBaseUrl}&sort=taxable-base&direction=${taxableBaseDirectionToggle}" class="link link-hover inline-flex items-end gap-1 font-medium no-underline">
+												<span class="inline-flex flex-col items-end whitespace-normal leading-4 text-right">
+													<span class="whitespace-nowrap">${MessageUtil.getMessage("stock.simulator.monthly.table.header.taxable.base.ratio.line.one")}</span>
+													<span class="whitespace-nowrap">${MessageUtil.getMessage("stock.simulator.monthly.table.header.taxable.base.ratio.line.two")}</span>
+												</span>
 												@if("taxable-base".equals(monthlyDividendSort))
-													<span class="ml-1 text-xs text-base-content/60">${currentDirectionIndicator}</span>
+													<span class="text-xs text-base-content/60">${currentDirectionIndicator}</span>
 												@endif
 											</a>
 										</th>
@@ -453,14 +482,16 @@
 												</a>
 											</div>
 										</th>
-										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.total.return.on.cost")}</th>
-										<th class="text-right">
-											<a href="${monthlyDividendTableBaseUrl}&sort=combined-return&direction=${combinedReturnDirectionToggle}" class="link link-hover font-medium no-underline">
-												${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.combined.return")}
-												@if("combined-return".equals(monthlyDividendSort))
-													<span class="ml-1 text-xs text-base-content/60">${currentDirectionIndicator}</span>
-												@endif
-											</a>
+										<th class="min-w-[7rem] align-bottom text-right">
+											<div class="space-y-1 whitespace-normal text-right">
+												<div class="whitespace-nowrap">${MessageUtil.getMessage("stock.simulator.monthly.table.header.total.return.on.cost.line.one")}</div>
+												<a href="${monthlyDividendTableBaseUrl}&sort=combined-return&direction=${combinedReturnDirectionToggle}" class="link link-hover inline-flex items-center justify-end gap-1 font-medium no-underline">
+													<span class="whitespace-nowrap">${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.combined.return.line.one")}</span>
+													@if("combined-return".equals(monthlyDividendSort))
+														<span class="text-xs text-base-content/60">${currentDirectionIndicator}</span>
+													@endif
+												</a>
+											</div>
 										</th>
 									</tr>
 								</thead>
@@ -572,8 +603,12 @@
 													<div class="text-sm text-base-content/80">${percentFormat.format(row.expectedAnnualYieldOnCostPct() != null ? row.expectedAnnualYieldOnCostPct() : BigDecimal.ZERO)}%</div>
 												</div>
 											</td>
-											<td class="text-right ${row.totalReturnOnCostPct() != null && row.totalReturnOnCostPct().signum() >= 0 ? "text-success" : "text-error"}">${percentFormat.format(row.totalReturnOnCostPct() != null ? row.totalReturnOnCostPct() : BigDecimal.ZERO)}%</td>
-											<td class="text-right font-semibold ${row.expectedCombinedReturnPct() != null && row.expectedCombinedReturnPct().signum() >= 0 ? "text-success" : "text-error"}">${percentFormat.format(row.expectedCombinedReturnPct() != null ? row.expectedCombinedReturnPct() : BigDecimal.ZERO)}%</td>
+											<td class="align-top text-right">
+												<div class="space-y-1 tabular-nums">
+													<div class="${row.totalReturnOnCostPct() != null && row.totalReturnOnCostPct().signum() >= 0 ? "text-success" : "text-error"}">${percentFormat.format(row.totalReturnOnCostPct() != null ? row.totalReturnOnCostPct() : BigDecimal.ZERO)}%</div>
+													<div class="font-semibold ${row.expectedCombinedReturnPct() != null && row.expectedCombinedReturnPct().signum() >= 0 ? "text-success" : "text-error"}">${percentFormat.format(row.expectedCombinedReturnPct() != null ? row.expectedCombinedReturnPct() : BigDecimal.ZERO)}%</div>
+												</div>
+											</td>
 										</tr>
 									@endfor
 								</tbody>
@@ -583,6 +618,18 @@
 					@endif
 				</div>
 			</section>
+
+			<aside class="card border border-base-300 bg-base-100 shadow-sm">
+				<div class="card-body gap-4">
+					<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.simulator.monthly.section.criteria.title")}</h2>
+					<ul class="list-disc space-y-3 pl-5 text-sm leading-6 text-base-content/70">
+						<li>${MessageUtil.getMessage("stock.simulator.monthly.criteria.one")}</li>
+						<li>${MessageUtil.getMessage("stock.simulator.monthly.criteria.two")}</li>
+						<li>${MessageUtil.getMessage("stock.simulator.monthly.criteria.three")}</li>
+						<li>${MessageUtil.getMessage("stock.simulator.monthly.criteria.four")}</li>
+					</ul>
+				</div>
+			</aside>
 		</div>
 	</div>
 </div>
@@ -703,6 +750,7 @@
 			}
 
 			const totalExpectedAnnualDividend = totalExpectedMonthlyDividend * 12;
+			const totalExpectedAnnualTaxableBase = totalExpectedTaxableBase * 12;
 			const totalExpectedMonthlyReference = Number(summary.dataset.totalExpectedMonthlyDividend || '0');
 			const totalCurrentMarketValueReference = Number(summary.dataset.totalCurrentMarketValue || '0');
 			const selectionMonthlyWeight = totalExpectedMonthlyReference > 0
@@ -711,7 +759,6 @@
 			const selectionMarketWeight = totalCurrentMarketValueReference > 0
 				? (totalCurrentMarketValue / totalCurrentMarketValueReference) * 100
 				: 0;
-			const dividendDelta = totalExpectedMonthlyDividend - totalLatestMonthlyDividend;
 			const evaluationProfit = totalCurrentMarketValue - totalBuyAmount;
 			const evaluationReturn = totalBuyAmount > 0
 				? (evaluationProfit / totalBuyAmount) * 100
@@ -723,6 +770,11 @@
 			const countLabel = summary.querySelector('[data-monthly-selection-count]');
 			if (countLabel) {
 				countLabel.textContent = String(summary.dataset.countTemplate || '').replace('{0}', String(selectedCount));
+			}
+
+			const itemCountLabel = summary.querySelector('[data-monthly-selection-item-count]');
+			if (itemCountLabel) {
+				itemCountLabel.textContent = formatMonthlyDividendSimulatorNumber(selectedCount, 0);
 			}
 
 			const monthlyWeightLabel = summary.querySelector('[data-monthly-selection-monthly-weight]');
@@ -745,15 +797,19 @@
 				monthlyLabel.textContent = formatMonthlyDividendSimulatorCurrency(totalExpectedMonthlyDividend);
 			}
 
+			const annualDividendLabel = summary.querySelector('[data-monthly-selection-annual-dividend]');
+			if (annualDividendLabel) {
+				annualDividendLabel.textContent = formatMonthlyDividendSimulatorCurrency(totalExpectedAnnualDividend);
+			}
+
 			const taxableLabel = summary.querySelector('[data-monthly-selection-taxable]');
 			if (taxableLabel) {
 				taxableLabel.textContent = formatMonthlyDividendSimulatorCurrency(totalExpectedTaxableBase);
 			}
 
-			const dividendDeltaLabel = summary.querySelector('[data-monthly-selection-dividend-delta]');
-			if (dividendDeltaLabel) {
-				dividendDeltaLabel.textContent = formatMonthlyDividendSimulatorSignedCurrency(dividendDelta);
-				setMonthlyDividendSimulatorSignedTone(dividendDeltaLabel, dividendDelta);
+			const annualTaxableLabel = summary.querySelector('[data-monthly-selection-annual-taxable]');
+			if (annualTaxableLabel) {
+				annualTaxableLabel.textContent = formatMonthlyDividendSimulatorCurrency(totalExpectedAnnualTaxableBase);
 			}
 
 			const buyLabel = summary.querySelector('[data-monthly-selection-buy]');

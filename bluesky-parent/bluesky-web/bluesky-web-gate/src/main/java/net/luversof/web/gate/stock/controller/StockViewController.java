@@ -1814,6 +1814,8 @@ public class StockViewController {
             .map(MonthlyDividendSnapshotResponse::expectedTaxableBaseAmount)
             .map(this::safe)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalExpectedAnnualTaxableBaseAmount =
+      totalExpectedTaxableBaseAmount.multiply(BigDecimal.valueOf(12));
     BigDecimal totalCurrentMarketValue =
         rows.stream()
             .map(MonthlyDividendSnapshotResponse::currentMarketValue)
@@ -1835,6 +1837,7 @@ public class StockViewController {
         totalExpectedMonthlyDividend,
         totalExpectedAnnualDividend,
         totalExpectedTaxableBaseAmount,
+        totalExpectedAnnualTaxableBaseAmount,
         totalBuyAmount,
         totalCurrentMarketValue,
         portfolioExpectedAnnualYieldPct,

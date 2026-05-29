@@ -10,6 +10,7 @@ public record MonthlyDividendSimulatorSummaryView(
     BigDecimal totalExpectedMonthlyDividend,
     BigDecimal totalExpectedAnnualDividend,
     BigDecimal totalExpectedTaxableBaseAmount,
+    BigDecimal totalExpectedAnnualTaxableBaseAmount,
     BigDecimal totalBuyAmount,
     BigDecimal totalCurrentMarketValue,
     BigDecimal portfolioExpectedAnnualYieldPct,
