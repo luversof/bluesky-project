@@ -37,13 +37,14 @@ public class MonthlyDividendPayoutSourceImportService {
   private final TigerMonthlyDividendPayoutSourceParser tigerMonthlyDividendPayoutSourceParser;
 
   public MonthlyDividendPayoutSourceImportService(
+	  RestClient.Builder restClientBuilder,
       MonthlyDividendPayoutImportParser monthlyDividendPayoutImportParser,
       KodexMonthlyDividendPayoutSourceParser kodexMonthlyDividendPayoutSourceParser,
       PlusMonthlyDividendPayoutSourceParser plusMonthlyDividendPayoutSourceParser,
       RiseMonthlyDividendPayoutSourceParser riseMonthlyDividendPayoutSourceParser,
       TigerMonthlyDividendPayoutSourceParser tigerMonthlyDividendPayoutSourceParser) {
     this.restClient =
-        RestClient.builder()
+    		restClientBuilder
             .defaultHeader(
                 HttpHeaders.USER_AGENT,
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0 Safari/537.36")
