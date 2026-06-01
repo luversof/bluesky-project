@@ -132,9 +132,11 @@ public class KisStockPriceUpdateService {
         } else if (shouldRefreshLatestTradeDate(topDesc.get(), maxDate, zoneId)) {
           // When the latest stored row was updated on the same local trade date,
           // it may have been collected intraday before the final close settled.
-          // Re-fetch that last stored day itself; otherwise the same-day refresh
-          // path never runs because the range starts at dbMax + 1.
-          fetchRangesInBlocks(stockItemId, stockItem.getSymbol(), dbMax, maxDate);
+          fetchRangesInBlocks(
+              stockItemId,
+              stockItem.getSymbol(),
+              resolveLatestRefreshStartDate(stockItemId, dbMax),
+              maxDate);
         }
       } else {
         fetchRangesInBlocks(stockItemId, stockItem.getSymbol(), minDate, maxDate);
@@ -155,6 +157,18 @@ public class KisStockPriceUpdateService {
     }
     LocalDate updatedLocalDate = latestHistory.getUpdatedDate().atZone(zoneId).toLocalDate();
     return updatedLocalDate.equals(maxDate);
+  }
+
+  private LocalDate resolveLatestRefreshStartDate(UUID stockItemId, LocalDate latestTradeDate) {
+    if (stockItemId == null || latestTradeDate == null) {
+      return latestTradeDate;
+    }
+
+    return stockPriceHistoryRepository
+        .findTopByStockItemIdAndTradeDateLessThanEqualOrderByTradeDateDesc(
+            stockItemId, latestTradeDate.minusDays(1))
+        .map(StockPriceHistory::getTradeDate)
+        .orElse(latestTradeDate);
   }
 
   private void fetchRangesInBlocks(
