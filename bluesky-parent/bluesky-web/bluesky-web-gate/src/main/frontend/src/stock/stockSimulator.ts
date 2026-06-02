@@ -11,6 +11,7 @@
 	const STORAGE_SCHEMA_VERSION = 3;
 	const MAX_SIMULATION_YEARS = 100;
 	const MAX_SCENARIOS = 5;
+	const MONTHS_PER_YEAR = 12;
 	const SIMULATION_MODE = {
 		TOTAL_RETURN: "total-return",
 		CASH_FLOW: "cash-flow",
@@ -50,15 +51,34 @@
 		fieldAnnualSpending: "Spending",
 		fieldAnnualSpendingGrowth: "Spending Growth",
 		simulationModeHelp:
-			"Total Return mode lets price growth expand both market value and dividend capacity, while Dividend Cash Flow mode keeps dividend-per-share growth as the main cash-flow driver.",
-		modeTotalReturn: "Total Return",
-		modeCashFlow: "Dividend Cash Flow",
+			"Market-Linked Income assumes dividend capacity moves with market value and yield, while Dividend Per Share Growth keeps the first-year dividend per share and grows that cash flow over time.",
+		modeTotalReturn: "Market-Linked Income",
+		modeCashFlow: "Dividend Per Share Growth",
 		reinvestOn: "Reinvest ON",
 		reinvestOff: "Cash Dividend",
 		emptyScenario: "A default scenario has been created.",
 		emptyTable: "No yearly data is available.",
+		emptyMonthlyTable: "No monthly data is available.",
 		deleteConfirm: "Delete the current scenario?",
 		maxScenarios: "You can compare up to five scenarios at once.",
+		yearlyToggleOpen: "Show monthly details",
+		yearlyToggleClose: "Hide monthly details",
+		monthlyDetailsTitle: "Monthly Details",
+		tableHeaderMonth: "Month",
+		tableHeaderSpendingCoverage: "Spending Coverage",
+		tableHeaderYearEndPrice: "Year-End Price",
+		tableHeaderMonthlyDividend: "Monthly Dividend",
+		tableHeaderMonthlySpending: "Monthly Spending",
+		tableHeaderMonthlyGap: "Monthly Gap",
+		tableHeaderSoldShares: "Sold Shares",
+		tableHeaderReinvestedShares: "Reinvested Shares",
+		tableHeaderMonthEndPrice: "Month-End Price",
+		tableHeaderMonthEndShares: "Month-End Shares",
+		tableHeaderMonthEndCashReserve: "Month-End Cash Reserve",
+		tableHeaderMonthEndMarketValue: "Month-End Market Value",
+		tableHeaderMonthEndTotalWealth: "Month-End Total Wealth",
+		yearlyDetailGuide:
+			"Yearly and monthly tables use the same column family. Dividend, spending, coverage, gap, sold shares, and reinvested shares are period totals, while price, shares, cash reserve, market value, and total wealth are period-end values.",
 		summarySustainablePeriod: "Sustainable Period",
 		summaryFinalWealth: "Final Total Wealth",
 		summaryDepletionYear: "Depletion",
@@ -125,6 +145,7 @@
 	let cashFlowChart = null;
 	let assetChart = null;
 	let hydratingForm = false;
+	const expandedYearRows = new Map();
 
 	bindEvents();
 	render();
@@ -148,6 +169,9 @@
 		if (elements.form) {
 			elements.form.addEventListener("input", handleFormChange);
 			elements.form.addEventListener("change", handleFormChange);
+		}
+		if (elements.yearlyTableBody) {
+			elements.yearlyTableBody.addEventListener("click", handleYearlyTableToggle);
 		}
 	}
 
@@ -499,6 +523,10 @@
 			dividendGrowthRate: scenario.annualDividendGrowthPct / 100,
 			annualSpendingGrowthRate: scenario.annualSpendingGrowthPct / 100,
 		};
+		const monthlyRates = {
+			priceGrowthRate: annualRateToMonthlyRate(growthRates.annualPriceGrowthRate),
+			dividendGrowthRate: annualRateToMonthlyRate(growthRates.dividendGrowthRate),
+		};
 		let state = createSimulationState(scenario, principal);
 		let firstDeficitYear = null;
 		let firstWealthDeclineYear = null;
@@ -516,6 +544,7 @@
 				scenario.reinvestDividends,
 				principal,
 				growthRates,
+				monthlyRates,
 			);
 			years.push(result.record);
 			state = result.nextState;
@@ -594,6 +623,7 @@
 			totalWealth: state.shares * state.sharePrice + state.cashReserve,
 			principalReturnPct: 0,
 			yieldOnCostPct: 0,
+			monthlyRecords: [],
 		};
 	}
 
@@ -604,77 +634,195 @@
 		reinvestDividends,
 		principal,
 		growthRates,
+		monthlyRates,
 	) {
-		const annualDividend = calculateAnnualDividend(state, simulationMode);
 		const plannedAnnualSpending = state.annualSpending;
-		const netDividendAfterSpending = annualDividend - plannedAnnualSpending;
-		const sharePrice =
-			state.sharePrice * (1 + growthRates.annualPriceGrowthRate);
-		const settledCashFlow = settleCashFlow({
-			sharePrice,
+		const plannedMonthlySpending = plannedAnnualSpending / MONTHS_PER_YEAR;
+		let rollingState = {
+			sharePrice: state.sharePrice,
 			shares: state.shares,
-			cashReserve: state.cashReserve + netDividendAfterSpending,
-			reinvestDividends,
-		});
-		const cumulativeDividends = state.cumulativeDividends + annualDividend;
-		const marketValue = settledCashFlow.shares * sharePrice;
-		const totalWealth = marketValue + settledCashFlow.cashReserve;
-		const nextDividendYieldRate = Math.max(
-			0,
-			state.dividendYieldRate * (1 + growthRates.dividendGrowthRate),
-		);
-		const nextAnnualDividendPerShare =
-			simulationMode === SIMULATION_MODE.TOTAL_RETURN
-				? sharePrice * nextDividendYieldRate
-				: Math.max(
-						0,
-						state.annualDividendPerShare * (1 + growthRates.dividendGrowthRate),
-					);
+			annualDividendPerShare: state.annualDividendPerShare,
+			dividendYieldRate: state.dividendYieldRate,
+			annualSpending: plannedAnnualSpending,
+			cumulativeDividends: state.cumulativeDividends,
+			cashReserve: state.cashReserve,
+		};
+		let annualDividend = 0;
+		let annualGap = 0;
+		let soldSharesForSpending = 0;
+		let reinvestedShares = 0;
+		let depleted = false;
+		const monthlyRecords = [];
 
-		return {
-			hadDeficit: netDividendAfterSpending < 0,
-			depleted: totalWealth <= 0,
-			record: {
-				year,
+		for (let month = 1; month <= MONTHS_PER_YEAR; month += 1) {
+			const monthlyDividend = calculateMonthlyDividend(
+				rollingState,
+				simulationMode,
+			);
+			const monthlyGap = monthlyDividend - plannedMonthlySpending;
+			const sharePrice =
+				rollingState.sharePrice * (1 + monthlyRates.priceGrowthRate);
+			const settledCashFlow = settleCashFlow({
+				sharePrice,
+				shares: rollingState.shares,
+				cashReserve: rollingState.cashReserve + monthlyGap,
+				reinvestDividends,
+			});
+			const cumulativeDividends =
+				rollingState.cumulativeDividends + monthlyDividend;
+			const marketValue = settledCashFlow.shares * sharePrice;
+			const totalWealth = marketValue + settledCashFlow.cashReserve;
+			const nextDividendYieldRate = Math.max(
+				0,
+				rollingState.dividendYieldRate * (1 + monthlyRates.dividendGrowthRate),
+			);
+			const nextAnnualDividendPerShare =
+				simulationMode === SIMULATION_MODE.TOTAL_RETURN
+					? sharePrice * nextDividendYieldRate
+					: Math.max(
+							0,
+							rollingState.annualDividendPerShare *
+								(1 + monthlyRates.dividendGrowthRate),
+						);
+
+			annualDividend += monthlyDividend;
+			annualGap += monthlyGap;
+			soldSharesForSpending += settledCashFlow.soldSharesForSpending;
+			reinvestedShares += settledCashFlow.reinvestedShares;
+			monthlyRecords.push({
+				month,
 				sharePrice,
 				shares: settledCashFlow.shares,
+				monthlyDividend,
+				monthlySpending: plannedMonthlySpending,
+				monthlyCoveragePct:
+					plannedMonthlySpending > 0
+						? (monthlyDividend * 100) / plannedMonthlySpending
+						: null,
+				monthlyGap,
 				soldSharesForSpending: settledCashFlow.soldSharesForSpending,
 				reinvestedShares: settledCashFlow.reinvestedShares,
+				cashReserve: settledCashFlow.cashReserve,
+				marketValue,
+				totalWealth,
+			});
+
+			rollingState = {
+				sharePrice,
+				shares: settledCashFlow.shares,
+				annualDividendPerShare: nextAnnualDividendPerShare,
+				dividendYieldRate: nextDividendYieldRate,
+				annualSpending: plannedAnnualSpending,
+				cumulativeDividends,
+				cashReserve: settledCashFlow.cashReserve,
+			};
+
+			if (!depleted && totalWealth <= 0) {
+				depleted = true;
+			}
+		}
+
+		const finalMonth = monthlyRecords.at(-1);
+		const cumulativeDividends = rollingState.cumulativeDividends;
+		const marketValue = finalMonth ? finalMonth.marketValue : 0;
+		const totalWealth = finalMonth ? finalMonth.totalWealth : 0;
+
+		return {
+			hadDeficit: annualGap < 0,
+			depleted,
+			record: {
+				year,
+				sharePrice: finalMonth ? finalMonth.sharePrice : rollingState.sharePrice,
+				shares: finalMonth ? finalMonth.shares : rollingState.shares,
+				soldSharesForSpending,
+				reinvestedShares,
 				annualDividend,
 				annualSpending: plannedAnnualSpending,
-				annualGap: netDividendAfterSpending,
+				annualGap,
 				spendingCoveragePct:
 					plannedAnnualSpending > 0
 						? (annualDividend * 100) / plannedAnnualSpending
 						: null,
-				netDividendAfterSpending,
+				netDividendAfterSpending: annualGap,
 				cumulativeDividends,
-				cashReserve: settledCashFlow.cashReserve,
+				cashReserve: rollingState.cashReserve,
 				marketValue,
 				totalWealth,
 				principalReturnPct:
 					principal > 0 ? ((totalWealth - principal) * 100) / principal : 0,
 				yieldOnCostPct: principal > 0 ? (annualDividend * 100) / principal : 0,
+				monthlyRecords,
 			},
 			nextState: {
-				sharePrice,
-				shares: settledCashFlow.shares,
-				annualDividendPerShare: nextAnnualDividendPerShare,
-				dividendYieldRate: nextDividendYieldRate,
+				sharePrice: rollingState.sharePrice,
+				shares: rollingState.shares,
+				annualDividendPerShare: rollingState.annualDividendPerShare,
+				dividendYieldRate: rollingState.dividendYieldRate,
 				annualSpending:
 					state.annualSpending * (1 + growthRates.annualSpendingGrowthRate),
 				cumulativeDividends,
-				cashReserve: settledCashFlow.cashReserve,
+				cashReserve: rollingState.cashReserve,
 			},
 		};
 	}
 
-	function calculateAnnualDividend(state, simulationMode) {
+	function calculateMonthlyDividend(state, simulationMode) {
 		if (simulationMode === SIMULATION_MODE.TOTAL_RETURN) {
-			return state.shares * state.sharePrice * state.dividendYieldRate;
+			return (
+				(state.shares * state.sharePrice * state.dividendYieldRate) /
+				MONTHS_PER_YEAR
+			);
 		}
 
-		return state.shares * state.annualDividendPerShare;
+		return (state.shares * state.annualDividendPerShare) / MONTHS_PER_YEAR;
+	}
+
+	function annualRateToMonthlyRate(annualRate) {
+		const numericAnnualRate = Number(annualRate);
+		if (!Number.isFinite(numericAnnualRate)) {
+			return 0;
+		}
+		if (numericAnnualRate <= -1) {
+			return -1;
+		}
+
+		return Math.pow(1 + numericAnnualRate, 1 / MONTHS_PER_YEAR) - 1;
+	}
+
+	function handleYearlyTableToggle(event) {
+		const toggleButton = event.target?.closest?.("[data-year-toggle]");
+		if (!toggleButton) {
+			return;
+		}
+
+		const year = Number(toggleButton.getAttribute("data-year-toggle"));
+		if (!Number.isFinite(year)) {
+			return;
+		}
+
+		toggleYearlyDetails(year);
+	}
+
+	function toggleYearlyDetails(year) {
+		const activeScenario = getActiveScenario();
+		if (!activeScenario) {
+			return;
+		}
+
+		const existingYears = expandedYearRows.get(activeScenario.id) || new Set();
+		const nextYears = new Set(existingYears);
+		if (nextYears.has(year)) {
+			nextYears.delete(year);
+		} else {
+			nextYears.add(year);
+		}
+
+		expandedYearRows.set(activeScenario.id, nextYears);
+		render({ skipForm: true });
+	}
+
+	function isYearExpanded(scenarioId, year) {
+		return expandedYearRows.get(scenarioId)?.has(year) === true;
 	}
 
 	function settleCashFlow({
@@ -1108,30 +1256,124 @@
 		if (!yearlyRecords.length) {
 			elements.yearlyTableBody.innerHTML = `
 				<tr>
-					<td colspan="10" class="py-8 text-center text-sm text-base-content/60">${i18n.emptyTable}</td>
+					<td colspan="12" class="py-8 text-center text-sm text-base-content/60">${i18n.emptyTable}</td>
 				</tr>`;
 			return;
 		}
 
 		const firstDeficitYear = simulation.summary.firstDeficitYear;
 		const firstWealthDeclineYear = simulation.summary.firstWealthDeclineYear;
+		const activeScenarioId = activeScenario?.id;
 		elements.yearlyTableBody.innerHTML = yearlyRecords
 			.map(
-				(record) => `
+				(record) => {
+					const expanded = isYearExpanded(activeScenarioId, record.year);
+					return `
 					<tr class="${resolveYearlyRowClass(record, firstDeficitYear, firstWealthDeclineYear)}">
-						<td class="font-medium">${record.year}</td>
-						<td>${formatShares(record.shares)}</td>
+						<td class="font-medium">
+							<button
+								type="button"
+								class="inline-flex items-center gap-2 rounded-full px-2 py-1 text-left hover:bg-base-200"
+								data-year-toggle="${record.year}"
+								aria-expanded="${expanded ? "true" : "false"}"
+								aria-label="${escapeHtml(expanded ? i18n.yearlyToggleClose : i18n.yearlyToggleOpen)}"
+							>
+								<span class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-base-300 bg-base-100 text-xs">${expanded ? "-" : "+"}</span>
+								<span>${record.year}</span>
+							</button>
+						</td>
+						<td>${formatCurrency(record.sharePrice)}</td>
 						<td>${formatCurrency(record.annualDividend)}</td>
 						<td>${formatCurrency(record.annualSpending)}</td>
 						<td class="${record.spendingCoveragePct !== null && record.spendingCoveragePct < 100 ? "font-semibold text-amber-700" : ""}">${formatCoveragePercent(record.spendingCoveragePct)}</td>
 						<td class="${record.annualGap < 0 ? "font-semibold text-red-700" : "text-success"}">${formatCurrency(record.annualGap)}</td>
 						<td>${formatShares(record.soldSharesForSpending)}</td>
+						<td>${formatShares(record.reinvestedShares)}</td>
+						<td>${formatShares(record.shares)}</td>
 						<td>${formatCurrency(record.cashReserve)}</td>
 						<td>${formatCurrency(record.marketValue)}</td>
 						<td>${formatCurrency(record.totalWealth)}</td>
-					</tr>`,
+					</tr>
+					<tr class="${expanded ? "" : "hidden"}">
+						<td colspan="12" class="bg-base-100/80 px-4 py-4">${renderMonthlyDetailsTable(record)}</td>
+					</tr>`;
+				},
 			)
 			.join("");
+	}
+
+	function renderMonthlyDetailsTable(record) {
+		const monthlyRecords = Array.isArray(record?.monthlyRecords)
+			? record.monthlyRecords
+			: [];
+		if (!monthlyRecords.length) {
+			return `<div class="rounded-2xl border border-dashed border-base-300 px-4 py-6 text-center text-sm text-base-content/60">${escapeHtml(i18n.emptyMonthlyTable)}</div>`;
+		}
+
+		return `
+			<div class="space-y-3">
+				<div class="text-sm font-semibold text-base-content">${escapeHtml(i18n.monthlyDetailsTitle)}</div>
+				<p class="text-xs leading-5 text-base-content/60">${escapeHtml(i18n.yearlyDetailGuide)}</p>
+				<div class="overflow-x-auto">
+					<table class="table table-zebra">
+						<thead>
+							<tr>
+								<th>${escapeHtml(i18n.tableHeaderMonth)}</th>
+								<th>${escapeHtml(i18n.tableHeaderMonthEndPrice)}</th>
+								<th>${escapeHtml(i18n.tableHeaderMonthlyDividend)}</th>
+								<th>${escapeHtml(i18n.tableHeaderMonthlySpending)}</th>
+								<th>${escapeHtml(i18n.tableHeaderSpendingCoverage)}</th>
+								<th>${escapeHtml(i18n.tableHeaderMonthlyGap)}</th>
+								<th>${escapeHtml(i18n.tableHeaderSoldShares)}</th>
+								<th>${escapeHtml(i18n.tableHeaderReinvestedShares)}</th>
+								<th>${escapeHtml(i18n.tableHeaderMonthEndShares)}</th>
+								<th>${escapeHtml(i18n.tableHeaderMonthEndCashReserve)}</th>
+								<th>${escapeHtml(i18n.tableHeaderMonthEndMarketValue)}</th>
+								<th>${escapeHtml(i18n.tableHeaderMonthEndTotalWealth)}</th>
+							</tr>
+						</thead>
+						<tbody>
+							${monthlyRecords
+								.map(
+									(monthRecord) => `
+										<tr class="${resolveMonthlyRowClass(monthRecord)}">
+											<td>${escapeHtml(formatMonthLabel(monthRecord.month))}</td>
+											<td>${formatCurrency(monthRecord.sharePrice)}</td>
+											<td>${formatCurrency(monthRecord.monthlyDividend)}</td>
+											<td>${formatCurrency(monthRecord.monthlySpending)}</td>
+											<td class="${monthRecord.monthlyCoveragePct !== null && monthRecord.monthlyCoveragePct < 100 ? "font-semibold text-amber-700" : ""}">${formatCoveragePercent(monthRecord.monthlyCoveragePct)}</td>
+											<td class="${monthRecord.monthlyGap < 0 ? "font-semibold text-red-700" : "text-success"}">${formatCurrency(monthRecord.monthlyGap)}</td>
+											<td>${formatShares(monthRecord.soldSharesForSpending)}</td>
+											<td>${formatShares(monthRecord.reinvestedShares)}</td>
+											<td>${formatShares(monthRecord.shares)}</td>
+											<td>${formatCurrency(monthRecord.cashReserve)}</td>
+											<td>${formatCurrency(monthRecord.marketValue)}</td>
+											<td>${formatCurrency(monthRecord.totalWealth)}</td>
+										</tr>`,
+								)
+								.join("")}
+						</tbody>
+					</table>
+				</div>
+			</div>`;
+	}
+
+	function resolveMonthlyRowClass(monthRecord) {
+		if (monthRecord.totalWealth <= 0) {
+			return "bg-red-50/80";
+		}
+		if (monthRecord.soldSharesForSpending > 0) {
+			return "bg-orange-50/70";
+		}
+		if (monthRecord.monthlyGap < 0) {
+			return "bg-amber-50/70";
+		}
+
+		return "";
+	}
+
+	function formatMonthLabel(month) {
+		return currencyFormatter.format(month || 0);
 	}
 
 	function renderCashFlowChart(simulations) {

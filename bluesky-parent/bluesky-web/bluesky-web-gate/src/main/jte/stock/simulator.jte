@@ -99,8 +99,26 @@
 						reinvestOff: '${MessageUtil.getMessage("stock.simulator.state.reinvest.off")}',
 						emptyScenario: '${MessageUtil.getMessage("stock.simulator.empty.no.scenario")}',
 						emptyTable: '${MessageUtil.getMessage("stock.simulator.empty.no.table")}',
+						emptyMonthlyTable: '${MessageUtil.getMessage("stock.simulator.empty.no.monthly.table")}',
 						deleteConfirm: '${MessageUtil.getMessage("stock.simulator.dialog.delete.confirm")}',
 						maxScenarios: '${MessageUtil.getMessage("stock.simulator.alert.max.scenarios")}',
+						yearlyToggleOpen: '${MessageUtil.getMessage("stock.simulator.toggle.open.monthly")}',
+						yearlyToggleClose: '${MessageUtil.getMessage("stock.simulator.toggle.close.monthly")}',
+						monthlyDetailsTitle: '${MessageUtil.getMessage("stock.simulator.monthly.details.title")}',
+						tableHeaderMonth: '${MessageUtil.getMessage("stock.simulator.table.header.month")}',
+						tableHeaderSpendingCoverage: '${MessageUtil.getMessage("stock.simulator.metric.spending.coverage")}',
+						tableHeaderYearEndPrice: '${MessageUtil.getMessage("stock.simulator.table.header.year.end.price")}',
+						tableHeaderMonthlyDividend: '${MessageUtil.getMessage("stock.simulator.table.header.monthly.dividend")}',
+						tableHeaderMonthlySpending: '${MessageUtil.getMessage("stock.simulator.table.header.monthly.spending")}',
+						tableHeaderMonthlyGap: '${MessageUtil.getMessage("stock.simulator.table.header.monthly.gap")}',
+						tableHeaderSoldShares: '${MessageUtil.getMessage("stock.simulator.metric.sold.shares")}',
+						tableHeaderReinvestedShares: '${MessageUtil.getMessage("stock.simulator.table.header.reinvested.shares")}',
+						tableHeaderMonthEndPrice: '${MessageUtil.getMessage("stock.simulator.table.header.month.end.price")}',
+						tableHeaderMonthEndShares: '${MessageUtil.getMessage("stock.simulator.table.header.month.end.shares")}',
+						tableHeaderMonthEndCashReserve: '${MessageUtil.getMessage("stock.simulator.table.header.month.end.cash.reserve")}',
+						tableHeaderMonthEndMarketValue: '${MessageUtil.getMessage("stock.simulator.table.header.month.end.market.value")}',
+						tableHeaderMonthEndTotalWealth: '${MessageUtil.getMessage("stock.simulator.table.header.month.end.total.wealth")}',
+						yearlyDetailGuide: '${MessageUtil.getMessage("stock.simulator.yearly.detail.guide")}',
 						compareBestChoice: '${MessageUtil.getMessage("stock.simulator.compare.best.choice")}',
 						summarySustainablePeriod: '${MessageUtil.getMessage("stock.simulator.summary.sustainable.period")}',
 						summaryFinalWealth: '${MessageUtil.getMessage("stock.simulator.summary.final.wealth")}',
@@ -348,15 +366,17 @@
 							<thead>
 								<tr>
 									<th>${MessageUtil.getMessage("stock.simulator.table.header.year")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.table.header.shares")}</th>
+									<th>${MessageUtil.getMessage("stock.simulator.table.header.year.end.price")}</th>
 									<th>${MessageUtil.getMessage("stock.simulator.table.header.annual.dividend")}</th>
 									<th>${MessageUtil.getMessage("stock.simulator.table.header.annual.spending")}</th>
 										<th>${MessageUtil.getMessage("stock.simulator.metric.spending.coverage")}</th>
 										<th>${MessageUtil.getMessage("stock.simulator.metric.annual.gap")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.metric.sold.shares")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.metric.cash.reserve")}</th>
-									<th>${MessageUtil.getMessage("stock.simulator.table.header.market.value")}</th>
-									<th>${MessageUtil.getMessage("stock.simulator.table.header.total.wealth")}</th>
+										<th>${MessageUtil.getMessage("stock.simulator.table.header.annual.sold.shares")}</th>
+										<th>${MessageUtil.getMessage("stock.simulator.table.header.annual.reinvested.shares")}</th>
+										<th>${MessageUtil.getMessage("stock.simulator.table.header.year.end.shares")}</th>
+										<th>${MessageUtil.getMessage("stock.simulator.table.header.year.end.cash.reserve")}</th>
+									<th>${MessageUtil.getMessage("stock.simulator.table.header.year.end.market.value")}</th>
+									<th>${MessageUtil.getMessage("stock.simulator.table.header.year.end.total.wealth")}</th>
 								</tr>
 							</thead>
 							<tbody id="stockSimulatorYearlyTableBody"></tbody>
