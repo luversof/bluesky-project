@@ -208,12 +208,7 @@ public class StockViewController {
 
     if (DIVIDEND_TAB_MONTHLY_REFERENCE.equals(dividendTab)) {
       return buildMonthlyDividendReferencePageRedirect(
-          symbol,
-          profileSort,
-          profileDirection,
-          result,
-          payoutRecordDate,
-          payoutPayDate);
+          symbol, profileSort, profileDirection, result, payoutRecordDate, payoutPayDate);
     }
 
     model.addAttribute("dividendTab", dividendTab);
@@ -1203,12 +1198,7 @@ public class StockViewController {
         resolveMonthlyDividendProfileDirection(
             profileSort, request.getParameter("profileDirection"));
     return buildMonthlyDividendReferencePageRedirect(
-        symbol,
-        profileSort,
-        profileDirection,
-        result,
-        payoutRecordDate,
-        payoutPayDate);
+        symbol, profileSort, profileDirection, result, payoutRecordDate, payoutPayDate);
   }
 
   private String renderMonthlyDividendReferenceError(
@@ -1249,7 +1239,7 @@ public class StockViewController {
         request.getParameter("profileDirection"),
         monthlyDividendPayoutForm != null ? monthlyDividendPayoutForm.getRecordDate() : null,
         monthlyDividendPayoutForm != null ? monthlyDividendPayoutForm.getPayDate() : null);
-      return "stock/admin";
+    return "stock/admin";
   }
 
   private void populateMonthlyDividendModel(
@@ -1846,7 +1836,7 @@ public class StockViewController {
             .map(this::safe)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     BigDecimal totalExpectedAnnualTaxableBaseAmount =
-      totalExpectedTaxableBaseAmount.multiply(BigDecimal.valueOf(12));
+        totalExpectedTaxableBaseAmount.multiply(BigDecimal.valueOf(12));
     BigDecimal totalCurrentMarketValue =
         rows.stream()
             .map(MonthlyDividendSnapshotResponse::currentMarketValue)

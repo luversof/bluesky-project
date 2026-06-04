@@ -1,11 +1,13 @@
 package net.luversof.api.stock.service.kis;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -24,6 +26,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import net.luversof.api.stock.domain.OpenApiConfig;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.domain.StockItemDateRange;
+import net.luversof.api.stock.domain.StockItemTradeDate;
 import net.luversof.api.stock.domain.StockPriceHistory;
 import net.luversof.api.stock.repository.DailyAccountSnapshotRepository;
 import net.luversof.api.stock.repository.DividendRepository;
@@ -35,6 +38,8 @@ import net.luversof.api.stock.service.kis.dto.KisDailyPriceResponse;
 
 @Service
 public class KisStockPriceUpdateService {
+
+  private static final ZoneId MARKET_ZONE_ID = ZoneId.of("Asia/Seoul");
 
   @Autowired private DailyAccountSnapshotRepository dailyAccountSnapshotRepository;
 
@@ -54,7 +59,7 @@ public class KisStockPriceUpdateService {
     Map<UUID, LocalDate> stockItemMinDateMap = new HashMap<>();
     Map<UUID, LocalDate> stockItemMaxDateMap = new HashMap<>();
 
-    ZoneId zoneId = ZoneId.systemDefault();
+    ZoneId zoneId = MARKET_ZONE_ID;
 
     for (StockItemDateRange range : dividendRepository.findDividendDateRanges()) {
       if (range.stockItemId() == null) continue;
@@ -82,12 +87,20 @@ public class KisStockPriceUpdateService {
 
     // 현재 보유 중인 종목 ID 집합 (net quantity > 0)
     java.util.Set<UUID> currentlyHeldStockItemIds =
-        new java.util.HashSet<>(tradeRepository.findCurrentlyHeldStockItemIds());
+        new HashSet<>(tradeRepository.findCurrentlyHeldStockItemIds());
+
+    Map<UUID, List<LocalDate>> historyRefreshTargetDatesByStockItemId =
+        stockPriceHistoryRepository.findRefreshTargetTradeDates().stream()
+            .collect(
+                Collectors.groupingBy(
+                    StockItemTradeDate::stockItemId,
+                    Collectors.mapping(StockItemTradeDate::tradeDate, Collectors.toList())));
 
     // Trade 또는 Dividend 이력이 있는 종목만 갱신 대상
     java.util.Set<UUID> targetStockItemIds = new java.util.HashSet<>();
     targetStockItemIds.addAll(stockItemMinDateMap.keySet());
     targetStockItemIds.addAll(currentlyHeldStockItemIds);
+    targetStockItemIds.addAll(historyRefreshTargetDatesByStockItemId.keySet());
 
     List<StockItem> stockItemsAssigned = new ArrayList<>();
     for (UUID id : targetStockItemIds) {
@@ -104,6 +117,7 @@ public class KisStockPriceUpdateService {
           currentlyHeldStockItemIds.contains(stockItemId)
               ? today
               : stockItemMaxDateMap.getOrDefault(stockItemId, today);
+      List<LocalDate> refreshTargetDates = historyRefreshTargetDatesByStockItemId.get(stockItemId);
 
       if (stockItem.getSymbol() == null
           || (!"KRX".equalsIgnoreCase(stockItem.getMarket())
@@ -126,17 +140,11 @@ public class KisStockPriceUpdateService {
           fetchRangesInBlocks(stockItemId, stockItem.getSymbol(), minDate, dbMin.minusDays(1));
         }
 
-        // dbMax 이후 오늘까지 업데이트 해야할 최신 데이터가 있는 경우
-        if (maxDate.isAfter(dbMax)) {
+        if (refreshTargetDates != null && !refreshTargetDates.isEmpty()) {
+          // tradeDate와 updatedDate가 같은 history의 날짜들만 다시 조회한다.
+          fetchRangesInBlocksForDates(stockItemId, stockItem.getSymbol(), refreshTargetDates);
+        } else if (maxDate.isAfter(dbMax)) {
           fetchRangesInBlocks(stockItemId, stockItem.getSymbol(), dbMax.plusDays(1), maxDate);
-        } else if (shouldRefreshLatestTradeDate(topDesc.get(), maxDate, zoneId)) {
-          // When the latest stored row was updated on the same local trade date,
-          // it may have been collected intraday before the final close settled.
-          fetchRangesInBlocks(
-              stockItemId,
-              stockItem.getSymbol(),
-              resolveLatestRefreshStartDate(stockItemId, dbMax),
-              maxDate);
         }
       } else {
         fetchRangesInBlocks(stockItemId, stockItem.getSymbol(), minDate, maxDate);
@@ -144,31 +152,27 @@ public class KisStockPriceUpdateService {
     }
   }
 
-  private boolean shouldRefreshLatestTradeDate(
-      StockPriceHistory latestHistory, LocalDate maxDate, ZoneId zoneId) {
-    if (latestHistory == null || latestHistory.getTradeDate() == null || maxDate == null) {
-      return false;
-    }
-    if (!maxDate.equals(latestHistory.getTradeDate())) {
-      return false;
-    }
-    if (latestHistory.getUpdatedDate() == null) {
-      return true;
-    }
-    LocalDate updatedLocalDate = latestHistory.getUpdatedDate().atZone(zoneId).toLocalDate();
-    return updatedLocalDate.equals(maxDate);
-  }
-
-  private LocalDate resolveLatestRefreshStartDate(UUID stockItemId, LocalDate latestTradeDate) {
-    if (stockItemId == null || latestTradeDate == null) {
-      return latestTradeDate;
+  private void fetchRangesInBlocksForDates(
+      UUID stockItemId, String symbol, List<LocalDate> tradeDates) {
+    if (tradeDates == null || tradeDates.isEmpty()) {
+      return;
     }
 
-    return stockPriceHistoryRepository
-        .findTopByStockItemIdAndTradeDateLessThanEqualOrderByTradeDateDesc(
-            stockItemId, latestTradeDate.minusDays(1))
-        .map(StockPriceHistory::getTradeDate)
-        .orElse(latestTradeDate);
+    List<LocalDate> sortedDates = tradeDates.stream().distinct().sorted().toList();
+    LocalDate rangeStart = sortedDates.get(0);
+    LocalDate previousDate = sortedDates.get(0);
+
+    for (int index = 1; index < sortedDates.size(); index++) {
+      LocalDate currentDate = sortedDates.get(index);
+      // 주말/휴장일 간격(1~2일)은 같은 조회 구간으로 묶어 API 호출 수를 줄인다.
+      if (currentDate.isAfter(previousDate.plusDays(3))) {
+        fetchRangesInBlocks(stockItemId, symbol, rangeStart, previousDate);
+        rangeStart = currentDate;
+      }
+      previousDate = currentDate;
+    }
+
+    fetchRangesInBlocks(stockItemId, symbol, rangeStart, previousDate);
   }
 
   private void fetchRangesInBlocks(
@@ -269,7 +273,9 @@ public class KisStockPriceUpdateService {
               .collect(Collectors.toMap(StockPriceHistory::getTradeDate, h -> h));
 
       List<StockPriceHistory> newHistories = new ArrayList<>();
-      ZoneId zoneId = ZoneId.systemDefault();
+      ZoneId zoneId = MARKET_ZONE_ID;
+      LocalDate today = LocalDate.now(zoneId);
+      Instant updatedNow = Instant.now();
       LocalDate snapshotInvalidationFromDate = null;
       boolean priceAdjustmentDetected = false;
 
@@ -280,7 +286,12 @@ public class KisStockPriceUpdateService {
 
         LocalDate tradeDate = LocalDate.parse(item.getStck_bsop_date(), formatter);
         StockPriceHistory history = existingHistoryMap.get(tradeDate);
-        boolean shouldSave = false;
+        BigDecimal newOpen = new BigDecimal(item.getStck_oprc());
+        BigDecimal newHigh = new BigDecimal(item.getStck_hgpr());
+        BigDecimal newLow = new BigDecimal(item.getStck_lwpr());
+        BigDecimal newClose = new BigDecimal(item.getStck_clpr());
+        long newVolume = Long.parseLong(item.getAcml_vol());
+        boolean shouldSave;
 
         if (history == null) {
           history = new StockPriceHistory();
@@ -288,25 +299,23 @@ public class KisStockPriceUpdateService {
           history.setTradeDate(tradeDate);
           shouldSave = true;
         } else {
-          // 기존 데이터가 존재하는 경우, updatedDate의 날짜가 tradeDate와 같다면
-          // 장 중에 수집되어 아직 종가가 아닐 수 있으므로 갱신 대상에 포함합니다.
+          boolean updatedOnSameTradeDate = false;
           if (history.getUpdatedDate() != null) {
             LocalDate updatedLocalDate = history.getUpdatedDate().atZone(zoneId).toLocalDate();
-            if (updatedLocalDate.equals(tradeDate)) {
-              shouldSave = true;
-            }
-          } else {
-            shouldSave = true;
+            updatedOnSameTradeDate = updatedLocalDate.equals(tradeDate);
           }
+
+          // 오래된 날짜라도 KIS 응답 값이 바뀌면 재저장한다.
+          // 이렇게 해야 과거 거래일의 수정주가/거래량 보정이 다음 실행 때 반영된다.
+          shouldSave =
+              history.getUpdatedDate() == null
+                  || updatedOnSameTradeDate
+                  || history.getVolume() == 0L && tradeDate.isBefore(today)
+                  || hasMeaningfulHistoryChange(
+                      history, newOpen, newHigh, newLow, newClose, newVolume);
         }
 
         if (shouldSave) {
-          BigDecimal newOpen = new BigDecimal(item.getStck_oprc());
-          BigDecimal newHigh = new BigDecimal(item.getStck_hgpr());
-          BigDecimal newLow = new BigDecimal(item.getStck_lwpr());
-          BigDecimal newClose = new BigDecimal(item.getStck_clpr());
-          long newVolume = Long.parseLong(item.getAcml_vol());
-
           boolean shouldInvalidateSnapshots = history.getId() == null;
           if (!shouldInvalidateSnapshots) {
             shouldInvalidateSnapshots =
@@ -338,6 +347,8 @@ public class KisStockPriceUpdateService {
           history.setLowPrice(newLow);
           history.setClosePrice(newClose);
           history.setVolume(newVolume);
+          // Auditing 설정 유무와 무관하게 갱신 시각이 확실히 반영되도록 명시적으로 세팅한다.
+          history.setUpdatedDate(updatedNow);
 
           newHistories.add(history);
         }
