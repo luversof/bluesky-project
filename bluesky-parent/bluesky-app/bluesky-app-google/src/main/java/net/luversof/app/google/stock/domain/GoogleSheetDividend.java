@@ -21,7 +21,7 @@ public class GoogleSheetDividend {
   private String 계좌;
 
   @JsonProperty("주식 수")
-  private int 주식수;
+  private Integer 주식수;
 
   @JsonProperty("분배금액")
   @JsonDeserialize(using = StockCurrencyDeserializer.class)
@@ -71,11 +71,11 @@ public class GoogleSheetDividend {
     this.계좌 = 계좌;
   }
 
-  public int get주식수() {
+  public Integer get주식수() {
     return 주식수;
   }
 
-  public void set주식수(int 주식수) {
+  public void set주식수(Integer 주식수) {
     this.주식수 = 주식수;
   }
 
