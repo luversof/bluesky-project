@@ -605,7 +605,6 @@
                         <table class="table table-xs w-full" data-dividend-yield-selection-table data-dividend-yield-sortable-table>
                             <thead>
                                 <tr class="text-base-content/60">
-                                    <th class="w-10"></th>
                                     <th>
                                         <button type="button"
                                                 class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-start px-1 text-xs text-base-content/60 hover:text-base-content"
@@ -728,12 +727,6 @@
                                         data-yield-on-cost="${row.yieldOnCostPct() != null ? row.yieldOnCostPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-yield-on-market="${row.yieldOnMarketPct() != null ? row.yieldOnMarketPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-dividend-count="${String.valueOf(row.dividendCount())}">
-                                        <td class="align-top pt-2">
-                                            <input type="checkbox"
-                                                   class="checkbox checkbox-sm"
-                                                   data-dividend-yield-selection-toggle
-                                                   aria-label="${row.label() != null ? row.label() : stockNameLabel}">
-                                        </td>
                                         <td class="font-medium"><span class="cursor-help" data-stock-tag-tooltip="${stockTagTooltip}">${row.label()}</span></td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
@@ -750,7 +743,6 @@
                             </tbody>
                             <tfoot>
                                 <tr class="bg-base-200 font-bold">
-                                    <td></td>
                                     <td>${totalLabel}</td>
                                     <td class="text-right font-mono amount-value">${decimalFormat.format(stockYieldFooterGrossAmount)}</td>
                                     <td class="text-right font-mono text-dividend amount-value">${decimalFormat.format(stockYieldFooterNetAmount)}</td>
@@ -826,7 +818,6 @@
                         <table class="table table-xs w-full" data-dividend-yield-selection-table data-dividend-yield-sortable-table>
                             <thead>
                                 <tr class="text-base-content/60">
-                                    <th class="w-10"></th>
                                     <th>
                                         <button type="button"
                                                 class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-start px-1 text-xs text-base-content/60 hover:text-base-content"
@@ -948,12 +939,6 @@
                                         data-yield-on-cost="${row.yieldOnCostPct() != null ? row.yieldOnCostPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-yield-on-market="${row.yieldOnMarketPct() != null ? row.yieldOnMarketPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-dividend-count="${String.valueOf(row.dividendCount())}">
-                                        <td class="align-top pt-2">
-                                            <input type="checkbox"
-                                                   class="checkbox checkbox-sm"
-                                                   data-dividend-yield-selection-toggle
-                                                   aria-label="${row.label() != null ? row.label() : accountLabel}">
-                                        </td>
                                         <td class="font-medium">${row.label()}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
@@ -970,7 +955,6 @@
                             </tbody>
                             <tfoot>
                                 <tr class="bg-base-200 font-bold">
-                                    <td></td>
                                     <td>${totalLabel}</td>
                                     <td class="text-right font-mono amount-value">${decimalFormat.format(accountYieldFooterGrossAmount)}</td>
                                     <td class="text-right font-mono text-dividend amount-value">${decimalFormat.format(accountYieldFooterNetAmount)}</td>

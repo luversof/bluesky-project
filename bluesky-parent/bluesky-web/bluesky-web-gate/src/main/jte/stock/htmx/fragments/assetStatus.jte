@@ -123,7 +123,6 @@
             <table class="table table-sm w-full" data-sortable-table data-asset-status-account-table>
                 <thead class="bg-base-200">
                     <tr>
-                        <th class="w-10"></th>
                         <th>
                             <button type="button"
                                     class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
@@ -208,12 +207,6 @@
                         data-principal="${profitBasis.toPlainString()}"
                         data-principal-return="${principalReturnAmount.toPlainString()}"
                         data-detail-row-id="${detailRowId}">
-                        <td class="align-top pt-3">
-                            <input type="checkbox"
-                                   class="checkbox checkbox-sm"
-                                   data-account-selection-toggle
-                                   aria-label="${entry.getKey() != null ? entry.getKey() : accountLabel}">
-                        </td>
                         <td>
                             <div class="font-semibold">${entry.getKey()}</div>
                             @if(holdings.isEmpty())
@@ -259,7 +252,7 @@
                     </tr>
                     @if(!holdings.isEmpty())
                         <tr id="${detailRowId}" class="hidden bg-base-200/40">
-                            <td colspan="7" class="p-0">
+                            <td colspan="6" class="p-0">
                                 <div class="px-3 py-3">
                                     <div class="text-xs font-semibold text-base-content/60 mb-2">${accountHoldingsDetailLabel}</div>
                                     <div class="overflow-x-auto rounded-box border border-base-300/60 bg-base-100">
@@ -325,7 +318,6 @@
                         ? totalPrincipalReturnAmount.doubleValue() / totalPrincipal.doubleValue() * 100
                         : 0.0;}
                     <tr>
-                        <td></td>
                         <td>${totalLabel}</td>
                         <td class="text-right font-mono amount-value opacity-70">
                             ${String.format("%,d", totalBuyAmount.longValue())}
@@ -420,7 +412,6 @@
             <table class="table table-sm table-zebra w-full" data-sortable-table data-asset-status-stock-table>
                 <thead class="bg-base-200">
                     <tr>
-                        <th class="w-10"></th>
                         <th>
                             <button type="button"
                                     class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
@@ -498,7 +489,7 @@
                 <tbody>
                     @if(stockAggregated == null || stockAggregated.isEmpty())
                         <tr>
-                            <td colspan="9" class="text-center py-8 opacity-50">${noHoldingsLabel}</td>
+                            <td colspan="8" class="text-center py-8 opacity-50">${noHoldingsLabel}</td>
                         </tr>
                     @else
                         @for(TradeProfit item : stockAggregated)
@@ -527,12 +518,6 @@
                                 data-evaluation-amount="${item.evaluationAmount() != null ? item.evaluationAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                 data-evaluation-profit="${item.evaluationProfit() != null ? item.evaluationProfit().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                 data-weight="${totalWeightPct.toPlainString()}">
-                                <td class="align-top pt-3">
-                                    <input type="checkbox"
-                                           class="checkbox checkbox-sm"
-                                           data-stock-selection-toggle
-                                           aria-label="${item.stockItemName() != null ? item.stockItemName() : stockNameLabel}">
-                                </td>
                                 <td class="font-semibold"><span class="cursor-help" data-stock-tag-tooltip="${stockTagTooltip}">${item.stockItemName() != null ? item.stockItemName() : "-"}</span></td>
                                 <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", item.holdingQuantity())}</td>
                                 <td class="text-right font-mono hidden xl:table-cell amount-value">${String.format("%,d", item.averageBuyPrice() != null ? item.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
@@ -553,7 +538,6 @@
                         ? stockAggregated.stream().map(i -> i.totalBuyCost() != null ? i.totalBuyCost() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add)
                         : BigDecimal.ZERO;}
                     <tr>
-                        <td></td>
                         <td>${totalLabel}</td>
                         <td class="hidden lg:table-cell"></td>
                         <td class="hidden xl:table-cell"></td>
