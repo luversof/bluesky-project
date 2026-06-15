@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -140,11 +141,21 @@ public class KisStockPriceUpdateService {
           fetchRangesInBlocks(stockItemId, stockItem.getSymbol(), minDate, dbMin.minusDays(1));
         }
 
+        // 과거 보정(refreshTargetDates)과 전진 갱신(dbMax+1 ~ today)을 하나의 구간 집합으로 모은다.
+        // - 과거 보정 여부와 무관하게 전진 갱신을 항상 포함시켜, 한 번의 실행으로 오늘자까지 반영한다.
+        //   (둘을 else if로 묶으면 refreshTargetDates가 있는 동안 오늘자 갱신이 스킵되어
+        //    갱신을 2번 실행해야 반영되는 한 박자 지연이 발생한다.)
+        // - 겹치거나 인접한(주말·휴장 ≤ 3일) 구간은 병합해 KIS API 호출 수를 줄인다.
+        //   refreshTargetDates의 최근 날짜와 전진 구간은 대개 인접하므로 1콜로 합쳐진다.
+        List<DateRange> fetchRanges = new ArrayList<>();
         if (refreshTargetDates != null && !refreshTargetDates.isEmpty()) {
-          // tradeDate와 updatedDate가 같은 history의 날짜들만 다시 조회한다.
-          fetchRangesInBlocksForDates(stockItemId, stockItem.getSymbol(), refreshTargetDates);
-        } else if (maxDate.isAfter(dbMax)) {
-          fetchRangesInBlocks(stockItemId, stockItem.getSymbol(), dbMax.plusDays(1), maxDate);
+          fetchRanges.addAll(toContiguousRanges(refreshTargetDates));
+        }
+        if (maxDate.isAfter(dbMax)) {
+          fetchRanges.add(new DateRange(dbMax.plusDays(1), maxDate));
+        }
+        for (DateRange range : mergeAdjacentRanges(fetchRanges)) {
+          fetchRangesInBlocks(stockItemId, stockItem.getSymbol(), range.start(), range.end());
         }
       } else {
         fetchRangesInBlocks(stockItemId, stockItem.getSymbol(), minDate, maxDate);
@@ -152,27 +163,62 @@ public class KisStockPriceUpdateService {
     }
   }
 
-  private void fetchRangesInBlocksForDates(
-      UUID stockItemId, String symbol, List<LocalDate> tradeDates) {
+  /** 조회 구간 [start, end] (양끝 포함). */
+  private record DateRange(LocalDate start, LocalDate end) {}
+
+  /**
+   * 정렬된 날짜 목록을 연속 구간으로 묶는다. 주말/휴장일 간격(1~3일)은 같은 조회 구간으로 묶어 API 호출 수를 줄인다.
+   */
+  private List<DateRange> toContiguousRanges(List<LocalDate> tradeDates) {
     if (tradeDates == null || tradeDates.isEmpty()) {
-      return;
+      return List.of();
     }
 
     List<LocalDate> sortedDates = tradeDates.stream().distinct().sorted().toList();
+    List<DateRange> ranges = new ArrayList<>();
     LocalDate rangeStart = sortedDates.get(0);
     LocalDate previousDate = sortedDates.get(0);
 
     for (int index = 1; index < sortedDates.size(); index++) {
       LocalDate currentDate = sortedDates.get(index);
-      // 주말/휴장일 간격(1~2일)은 같은 조회 구간으로 묶어 API 호출 수를 줄인다.
       if (currentDate.isAfter(previousDate.plusDays(3))) {
-        fetchRangesInBlocks(stockItemId, symbol, rangeStart, previousDate);
+        ranges.add(new DateRange(rangeStart, previousDate));
         rangeStart = currentDate;
       }
       previousDate = currentDate;
     }
 
-    fetchRangesInBlocks(stockItemId, symbol, rangeStart, previousDate);
+    ranges.add(new DateRange(rangeStart, previousDate));
+    return ranges;
+  }
+
+  /** 겹치거나 인접한(주말·휴장 ≤ 3일) 구간을 하나로 병합해 중복/연속 조회를 1콜로 합친다. */
+  private List<DateRange> mergeAdjacentRanges(List<DateRange> ranges) {
+    if (ranges.size() <= 1) {
+      return ranges;
+    }
+
+    List<DateRange> sorted =
+        ranges.stream().sorted(Comparator.comparing(DateRange::start)).toList();
+    List<DateRange> merged = new ArrayList<>();
+    LocalDate currentStart = sorted.get(0).start();
+    LocalDate currentEnd = sorted.get(0).end();
+
+    for (int index = 1; index < sorted.size(); index++) {
+      DateRange range = sorted.get(index);
+      if (!range.start().isAfter(currentEnd.plusDays(3))) {
+        if (range.end().isAfter(currentEnd)) {
+          currentEnd = range.end();
+        }
+      } else {
+        merged.add(new DateRange(currentStart, currentEnd));
+        currentStart = range.start();
+        currentEnd = range.end();
+      }
+    }
+
+    merged.add(new DateRange(currentStart, currentEnd));
+    return merged;
   }
 
   private void fetchRangesInBlocks(
