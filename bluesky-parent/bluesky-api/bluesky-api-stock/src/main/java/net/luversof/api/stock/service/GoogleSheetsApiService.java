@@ -12,7 +12,6 @@ import java.util.function.Function;
 
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
@@ -24,16 +23,17 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 
 import net.luversof.api.stock.provider.InputStreamProvider;
+import tools.jackson.databind.json.JsonMapper;
 
 @Service
 public class GoogleSheetsApiService {
 
   private InputStreamProvider inputStreamProvider;
 
-  private ObjectMapper objectMapper;
+  private JsonMapper objectMapper;
 
   public GoogleSheetsApiService(
-      InputStreamProvider inputStreamProvider, ObjectMapper objectMapper) {
+      InputStreamProvider inputStreamProvider, JsonMapper objectMapper) {
     this.inputStreamProvider = inputStreamProvider;
     this.objectMapper = objectMapper;
   }

@@ -7,15 +7,15 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendPayoutUpsertRequest;
 import net.luversof.web.gate.stock.util.PlusMonthlyDividendPayoutSourceParser.PlusDividendPage;
+
+import tools.jackson.databind.json.JsonMapper;
 
 class PlusMonthlyDividendPayoutSourceParserTest {
 
   private final PlusMonthlyDividendPayoutSourceParser parser =
-      new PlusMonthlyDividendPayoutSourceParser(new ObjectMapper());
+      new PlusMonthlyDividendPayoutSourceParser(JsonMapper.builder().build());
 
   private final MonthlyDividendPayoutImportParser importParser =
       new MonthlyDividendPayoutImportParser();

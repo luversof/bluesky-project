@@ -7,15 +7,15 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendPayoutUpsertRequest;
 import net.luversof.web.gate.stock.util.KodexMonthlyDividendPayoutSourceParser.KodexDividendResponse;
+
+import tools.jackson.databind.json.JsonMapper;
 
 class KodexMonthlyDividendPayoutSourceParserTest {
 
   private final KodexMonthlyDividendPayoutSourceParser parser =
-      new KodexMonthlyDividendPayoutSourceParser(new ObjectMapper());
+      new KodexMonthlyDividendPayoutSourceParser(JsonMapper.builder().build());
 
   private final MonthlyDividendPayoutImportParser importParser =
       new MonthlyDividendPayoutImportParser();

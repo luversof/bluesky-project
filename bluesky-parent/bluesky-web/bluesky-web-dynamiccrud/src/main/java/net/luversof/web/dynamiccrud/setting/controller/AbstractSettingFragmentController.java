@@ -15,10 +15,6 @@ import org.springframework.ui.Model;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.servlet.View;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
@@ -26,13 +22,15 @@ import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 import net.luversof.web.dynamiccrud.use.domain.ContentInfo;
 import net.luversof.web.dynamiccrud.use.service.UseServiceDecorator;
 import net.luversof.web.dynamiccrud.use.view.UseExcelView;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 public abstract class AbstractSettingFragmentController
     implements SettingFragmentControllerInterface {
 
   @Autowired private UseServiceDecorator useService;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired private JsonMapper objectMapper;
 
   @Override
   public String list(
@@ -138,8 +136,7 @@ public abstract class AbstractSettingFragmentController
       String subMenuId,
       String modalMode,
       Map<String, String> dataMap,
-      Model model)
-      throws JsonProcessingException {
+      Model model) {
     var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
     var dataMapList =
         objectMapper.readValue(

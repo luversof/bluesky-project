@@ -6,16 +6,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+import tools.jackson.databind.json.JsonMapper;
 
 @Component
 public class PlusMonthlyDividendPayoutSourceParser {
 
   private static final String BULK_INPUT_HEADER = "지급기준일\t실지급일\t분배금액(원)\t주당과세표준액(원)";
 
-  private final ObjectMapper objectMapper;
+  private final JsonMapper objectMapper;
 
-  public PlusMonthlyDividendPayoutSourceParser(ObjectMapper objectMapper) {
+  public PlusMonthlyDividendPayoutSourceParser(JsonMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 

@@ -14,9 +14,6 @@ import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import net.luversof.GeneralTest;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuerySqlCommandType;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
@@ -24,6 +21,7 @@ import net.luversof.web.dynamiccrud.setting.util.SettingStringUtil;
 import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 import net.luversof.web.dynamiccrud.use.domain.ContentInfo;
 import net.luversof.web.dynamiccrud.use.service.UseServiceDecorator;
+import tools.jackson.databind.json.JsonMapper;
 
 public class UseTest implements GeneralTest {
 
@@ -31,10 +29,10 @@ public class UseTest implements GeneralTest {
 
   @Autowired private UseServiceDecorator useService;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired private JsonMapper objectMapper;
 
   @Test
-  void contentInfoTest() throws JsonProcessingException {
+  void contentInfoTest() {
 
     // var product = "setting";
     // var mainMenu = "menu";

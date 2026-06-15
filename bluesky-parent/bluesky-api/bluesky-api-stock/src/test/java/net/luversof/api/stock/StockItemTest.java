@@ -23,7 +23,7 @@ import tools.jackson.core.exc.StreamReadException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DatabindException;
 import tools.jackson.databind.MappingIterator;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.dataformat.csv.CsvMapper;
 import tools.jackson.dataformat.csv.CsvSchema;
 
@@ -70,7 +70,7 @@ class StockItemTest implements GeneralTest {
 
   List<StockItem> loadJsonStockItemList()
       throws StreamReadException, DatabindException, IOException {
-    ObjectMapper mapper = new ObjectMapper();
+    JsonMapper mapper = JsonMapper.builder().build();
     var stockItemList =
         mapper.readValue(
             new ClassPathResource("data/stockItem.json").getInputStream(),

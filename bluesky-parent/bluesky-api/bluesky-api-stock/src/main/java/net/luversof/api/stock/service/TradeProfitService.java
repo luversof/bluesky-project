@@ -24,8 +24,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 import net.luversof.api.stock.constant.StockErrorCode;
 import net.luversof.api.stock.constant.TradeType;
@@ -51,8 +51,8 @@ import net.luversof.api.stock.web.dto.response.TradeResponse;
 public class TradeProfitService {
 
   private static final Logger log = LoggerFactory.getLogger(TradeProfitService.class);
-  // WmaState (de)serialization에 재사용하는 thread-safe ObjectMapper. 호출마다 new 하지 않는다.
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  // WmaState (de)serialization에 재사용하는 thread-safe JsonMapper. 호출마다 new 하지 않는다.
+  private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
   private static final BigDecimal MIN_CORPORATE_ACTION_FACTOR = BigDecimal.valueOf(2);
   private static final BigDecimal CORPORATE_ACTION_FACTOR_TOLERANCE = new BigDecimal("0.15");
 
@@ -428,7 +428,7 @@ public class TradeProfitService {
           try {
             TypeReference<HashMap<String, WmaState>> typeRef =
                 new TypeReference<HashMap<String, WmaState>>() {};
-            stateMap = OBJECT_MAPPER.convertValue(snap.getWmaState(), typeRef);
+            stateMap = JSON_MAPPER.convertValue(snap.getWmaState(), typeRef);
           } catch (Exception ex) {
             log.error("Failed to deserialize WmaState", ex);
           }
@@ -716,7 +716,7 @@ public class TradeProfitService {
     }
     try {
       Map<String, Object> wmaStateMap =
-          OBJECT_MAPPER.convertValue(stateMap, new TypeReference<Map<String, Object>>() {});
+          JSON_MAPPER.convertValue(stateMap, new TypeReference<Map<String, Object>>() {});
 
       DailyAccountSnapshot snap = new DailyAccountSnapshot();
 
@@ -1028,7 +1028,7 @@ public class TradeProfitService {
     Map<String, WmaState> stateMap;
     try {
       TypeReference<HashMap<String, WmaState>> typeRef = new TypeReference<>() {};
-      stateMap = OBJECT_MAPPER.convertValue(snapshot.get().getWmaState(), typeRef);
+      stateMap = JSON_MAPPER.convertValue(snapshot.get().getWmaState(), typeRef);
     } catch (Exception ex) {
       log.error("Failed to deserialize WmaState for holdingsSnapshot", ex);
       return List.of();
