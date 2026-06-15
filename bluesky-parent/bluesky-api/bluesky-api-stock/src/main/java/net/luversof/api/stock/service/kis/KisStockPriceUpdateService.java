@@ -15,7 +15,10 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -40,6 +43,8 @@ import net.luversof.api.stock.service.kis.dto.KisDailyPriceResponse;
 @Service
 public class KisStockPriceUpdateService {
 
+  private static final Logger log = LoggerFactory.getLogger(KisStockPriceUpdateService.class);
+
   private static final ZoneId MARKET_ZONE_ID = ZoneId.of("Asia/Seoul");
 
   @Autowired private DailyAccountSnapshotRepository dailyAccountSnapshotRepository;
@@ -54,7 +59,10 @@ public class KisStockPriceUpdateService {
 
   @Autowired private KisAuthService kisAuthService;
 
-  private final RestTemplate restTemplate = new RestTemplate();
+  @Autowired private RestTemplate kisRestTemplate;
+
+  @Value("${kis.api.base-url:https://openapi.koreainvestment.com:9443}")
+  private String baseUrl;
 
   public void updatePriceHistory() {
     Map<UUID, LocalDate> stockItemMinDateMap = new HashMap<>();
@@ -104,9 +112,8 @@ public class KisStockPriceUpdateService {
     targetStockItemIds.addAll(historyRefreshTargetDatesByStockItemId.keySet());
 
     List<StockItem> stockItemsAssigned = new ArrayList<>();
-    for (UUID id : targetStockItemIds) {
-      stockItemRepository.findById(id).ifPresent(stockItemsAssigned::add);
-    }
+    // 대상 종목을 단건 findById 루프(N+1) 대신 한 번의 findAllById로 조회한다.
+    stockItemRepository.findAllById(targetStockItemIds).forEach(stockItemsAssigned::add);
     Map<UUID, StockItem> stockItemMap =
         stockItemsAssigned.stream().collect(Collectors.toMap(StockItem::getId, item -> item));
 
@@ -262,23 +269,16 @@ public class KisStockPriceUpdateService {
     return d1.isBefore(d2) ? d1 : d2;
   }
 
-  private LocalDate getMax(LocalDate d1, LocalDate d2) {
-    if (d1 == null) return d2;
-    if (d2 == null) return d1;
-    return d1.isAfter(d2) ? d1 : d2;
-  }
-
   private void fetchAndSavePriceHistory(
       UUID stockItemId, String symbol, LocalDate startDate, LocalDate endDate) {
     OpenApiConfig config;
     try {
       config = kisAuthService.getValidConfig();
     } catch (Exception e) {
-      System.out.println("KIS API Auth is not configured: " + e.getMessage());
+      log.warn("KIS API Auth is not configured: {}", e.getMessage());
       return;
     }
 
-    String baseUrl = "https://openapi.koreainvestment.com:9443";
     String path = "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice";
 
     HttpHeaders headers = new HttpHeaders();
@@ -303,7 +303,7 @@ public class KisStockPriceUpdateService {
     try {
       HttpEntity<?> entity = new HttpEntity<>(headers);
       ResponseEntity<KisDailyPriceResponse> response =
-          restTemplate.exchange(url, HttpMethod.GET, entity, KisDailyPriceResponse.class);
+          kisRestTemplate.exchange(url, HttpMethod.GET, entity, KisDailyPriceResponse.class);
 
       if (response.getBody() == null || response.getBody().getOutput2() == null) {
         return;
@@ -351,14 +351,20 @@ public class KisStockPriceUpdateService {
             updatedOnSameTradeDate = updatedLocalDate.equals(tradeDate);
           }
 
-          // 오래된 날짜라도 KIS 응답 값이 바뀌면 재저장한다.
-          // 이렇게 해야 과거 거래일의 수정주가/거래량 보정이 다음 실행 때 반영된다.
+          // KIS 응답 값이 기존과 실제로 다를 때만 재저장한다(과거 수정주가/거래량 보정 반영).
+          boolean meaningfulChange =
+              hasMeaningfulHistoryChange(history, newOpen, newHigh, newLow, newClose, newVolume);
+
+          // 장중에 저장되어(updatedDate==tradeDate) refresh 대상으로 남아있는 "과거" 거래일 레코드는,
+          // 장 마감 후 값이 동일하더라도 updatedDate를 한 번 갱신해 refresh 대상에서 제외시킨다.
+          // (그렇지 않으면 매 실행마다 재조회·재저장되는 무한 루프가 된다.)
+          // 오늘자 레코드는 장중 변동을 계속 반영해야 하므로 여기서 제외 → 값이 바뀔 때만 저장한다.
+          boolean needsFinalityConfirmation = updatedOnSameTradeDate && tradeDate.isBefore(today);
+
+          // 값이 동일하면 저장하지 않는다. 단, updatedDate가 없는 레거시 레코드와
+          // finality 확정이 필요한 과거 장중 레코드는 1회 저장한다.
           shouldSave =
-              history.getUpdatedDate() == null
-                  || updatedOnSameTradeDate
-                  || history.getVolume() == 0L && tradeDate.isBefore(today)
-                  || hasMeaningfulHistoryChange(
-                      history, newOpen, newHigh, newLow, newClose, newVolume);
+              history.getUpdatedDate() == null || meaningfulChange || needsFinalityConfirmation;
         }
 
         if (shouldSave) {
@@ -406,15 +412,8 @@ public class KisStockPriceUpdateService {
             stockItemId, snapshotInvalidationFromDate, priceAdjustmentDetected);
       }
     } catch (Exception e) {
-      System.out.println(
-          "Failed to fetch history for symbol "
-              + symbol
-              + " range "
-              + startDate
-              + " to "
-              + endDate
-              + ": "
-              + e.getMessage());
+      log.warn(
+          "Failed to fetch history for symbol {} range {} to {}", symbol, startDate, endDate, e);
     }
   }
 
@@ -445,28 +444,18 @@ public class KisStockPriceUpdateService {
       dailyAccountSnapshotRepository.deleteByWmaStateContainingStockItemIdAndDateGreaterThanEqual(
           stockItemId.toString(), fromDate);
       if (priceAdjustmentDetected) {
-        System.out.println(
-            "Invalidated DailyAccountSnapshots for stockItemId "
-                + stockItemId
-                + " from "
-                + fromDate
-                + " due to price adjustment or corrected history.");
+        log.info(
+            "Invalidated DailyAccountSnapshots for stockItemId {} from {} due to price adjustment or corrected history.",
+            stockItemId,
+            fromDate);
       } else {
-        System.out.println(
-            "Invalidated DailyAccountSnapshots for stockItemId "
-                + stockItemId
-                + " from "
-                + fromDate
-                + " due to inserted/updated price history.");
+        log.info(
+            "Invalidated DailyAccountSnapshots for stockItemId {} from {} due to inserted/updated price history.",
+            stockItemId,
+            fromDate);
       }
     } catch (Exception ex) {
-      System.out.println(
-          "Failed to invalidate snapshots for stockItemId "
-              + stockItemId
-              + " from "
-              + fromDate
-              + ": "
-              + ex.getMessage());
+      log.warn("Failed to invalidate snapshots for stockItemId {} from {}", stockItemId, fromDate, ex);
     }
   }
 }

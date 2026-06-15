@@ -19,7 +19,10 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 public class GateRestClientConfig {
 
   @Bean
-  @Profile({"localdev", "k8sdev"}) // ⚠️ 중요: 로컬 프로필 환경에서만 작동하도록 제한 (운영 환경 적용 방지)
+  // ⚠️ 모든 인증서를 신뢰(TLS 검증 무력화)하므로 운영 환경에는 절대 적용 금지.
+  // 개발용 프로필(localdev, k8sdev)에서만 활성화된다. k8sdev는 로컬이 아닌 개발 클러스터이므로,
+  // 인터넷에 노출되지 않고 자체 서명 인증서를 의도적으로 사용하는 환경인지 반드시 확인할 것.
+  @Profile({"localdev", "k8sdev"})
   RestClientCustomizer 이중인증우회Customizer() {
     return restClientBuilder -> {
       try {

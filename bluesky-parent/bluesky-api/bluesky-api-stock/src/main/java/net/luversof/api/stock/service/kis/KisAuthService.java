@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -21,8 +22,11 @@ public class KisAuthService {
 
   @Autowired private OpenApiConfigRepository openApiConfigRepository;
 
-  private final RestTemplate restTemplate = new RestTemplate();
-  private final String baseUrl = "https://openapi.koreainvestment.com:9443";
+  @Autowired private RestTemplate kisRestTemplate;
+
+  @Value("${kis.api.base-url:https://openapi.koreainvestment.com:9443}")
+  private String baseUrl;
+
   private final String tokenPath = "/oauth2/tokenP";
 
   /** KIS 토큰을 조회하거나 만료된 경우(24시간) 재발급 받습니다. */
@@ -57,7 +61,7 @@ public class KisAuthService {
 
     @SuppressWarnings("rawtypes")
     ResponseEntity<Map> response =
-        restTemplate.postForEntity(baseUrl + tokenPath, request, Map.class);
+        kisRestTemplate.postForEntity(baseUrl + tokenPath, request, Map.class);
 
     if (response.getBody() != null && response.getBody().containsKey("access_token")) {
       String newToken = (String) response.getBody().get("access_token");
