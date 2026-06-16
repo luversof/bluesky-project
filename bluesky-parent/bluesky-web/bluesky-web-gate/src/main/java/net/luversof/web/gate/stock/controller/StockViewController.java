@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.text.MessageFormat;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -15,6 +16,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -32,7 +35,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import io.github.luversof.boot.context.support.MessageUtil;
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import jakarta.servlet.http.HttpServletRequest;
 import net.luversof.client.user.util.UserUtil;
@@ -59,6 +64,8 @@ import net.luversof.web.gate.stock.util.MonthlyDividendPayoutSourceImportService
 @Controller
 @RequestMapping(value = "/stock", produces = MediaType.TEXT_HTML_VALUE)
 public class StockViewController {
+
+  private static final Logger log = LoggerFactory.getLogger(StockViewController.class);
 
   private static final String MONTHLY_DIVIDEND_TAG = "월배당";
   private static final String ADMIN_TAB_DATA_MANAGEMENT = "data-management";
@@ -443,6 +450,115 @@ public class StockViewController {
           buildDefaultMonthlyDividendPayoutForm(normalizedSymbol),
           buildDefaultMonthlyDividendPayoutImportForm(normalizedSymbol));
     }
+  }
+
+  @BlueskyPreAuthorize
+  @PostMapping("/dividend/monthly-reference/payout/import/source/bulk")
+  public String importMonthlyDividendPayoutsFromSourceBulk(
+      HttpServletRequest request,
+      RedirectAttributes redirectAttributes,
+      @RequestParam String payoutWindow) {
+    if (isNotAuthenticated()) {
+      return getLoginRedirectUrl(request);
+    }
+
+    String normalizedWindow =
+        payoutWindow != null ? payoutWindow.trim().toUpperCase(Locale.ROOT) : "";
+    if (!"MID_MONTH".equals(normalizedWindow) && !"MONTH_END".equals(normalizedWindow)) {
+      redirectAttributes.addFlashAttribute(
+          "monthlyDividendReferenceResultMessage",
+          MessageUtil.getMessage(
+              "stock.page.dividend.monthly.reference.payout.import.source.bulk.window.invalid"));
+      redirectAttributes.addFlashAttribute("monthlyDividendReferenceResultIsError", true);
+      return buildMonthlyDividendReferenceBulkRedirect(request);
+    }
+
+    // 선택한 지급 시기(월 중/월말) + 활성 + 출처 URL이 있는 프로필만 대상으로 한다.
+    List<MonthlyDividendProfileResponse> targets =
+        loadMonthlyDividendProfiles().stream()
+            .filter(MonthlyDividendProfileResponse::active)
+            .filter(profile -> normalizedWindow.equals(safeString(profile.payoutWindow())))
+            .filter(profile -> StringUtils.hasText(profile.sourceUrl()))
+            .toList();
+
+    String windowLabel = resolveMonthlyDividendPayoutWindowLabel(normalizedWindow);
+
+    if (targets.isEmpty()) {
+      redirectAttributes.addFlashAttribute(
+          "monthlyDividendReferenceResultMessage",
+          MessageFormat.format(
+              MessageUtil.getMessage(
+                  "stock.page.dividend.monthly.reference.payout.import.source.bulk.empty"),
+              windowLabel));
+      redirectAttributes.addFlashAttribute("monthlyDividendReferenceResultIsError", false);
+      return buildMonthlyDividendReferenceBulkRedirect(request);
+    }
+
+    // 건별 실패는 잡아서 계속 진행하고, 성공/실패 건수와 실패 심볼을 집계해 결과로 안내한다.
+    int successCount = 0;
+    List<String> failedSymbols = new ArrayList<>();
+    for (MonthlyDividendProfileResponse profile : targets) {
+      String symbol = normalizeMonthlyDividendSymbol(profile.stockItemSymbol());
+      try {
+        List<MonthlyDividendPayoutUpsertRequest> importRequests =
+            monthlyDividendPayoutSourceImportService.fetchImportRequests(
+                symbol, profile.sourceUrl());
+        saveMonthlyDividendPayoutRequests(importRequests);
+        successCount++;
+      } catch (Exception ex) {
+        failedSymbols.add(symbol);
+        log.warn(
+            "월배당 출처 일괄 가져오기 실패: window={}, symbol={}, sourceUrl={}",
+            normalizedWindow,
+            symbol,
+            profile.sourceUrl(),
+            ex);
+      }
+    }
+
+    String message =
+        MessageFormat.format(
+            MessageUtil.getMessage(
+                "stock.page.dividend.monthly.reference.payout.import.source.bulk.result"),
+            windowLabel,
+            targets.size(),
+            successCount,
+            failedSymbols.size());
+    if (!failedSymbols.isEmpty()) {
+      message +=
+          " "
+              + MessageFormat.format(
+                  MessageUtil.getMessage(
+                      "stock.page.dividend.monthly.reference.payout.import.source.bulk.failed.symbols"),
+                  String.join(", ", failedSymbols));
+    }
+    redirectAttributes.addFlashAttribute("monthlyDividendReferenceResultMessage", message);
+    redirectAttributes.addFlashAttribute("monthlyDividendReferenceResultIsError", successCount == 0);
+
+    return buildMonthlyDividendReferenceBulkRedirect(request);
+  }
+
+  private String resolveMonthlyDividendPayoutWindowLabel(String payoutWindow) {
+    if ("MID_MONTH".equals(payoutWindow)) {
+      return MessageUtil.getMessage(
+          "stock.page.dividend.monthly.reference.profile.payout.window.mid.month");
+    }
+    if ("MONTH_END".equals(payoutWindow)) {
+      return MessageUtil.getMessage(
+          "stock.page.dividend.monthly.reference.profile.payout.window.month.end");
+    }
+    return payoutWindow;
+  }
+
+  private String buildMonthlyDividendReferenceBulkRedirect(HttpServletRequest request) {
+    String profileSort = resolveMonthlyDividendProfileSort(request.getParameter("profileSort"));
+    String profileDirection =
+        resolveMonthlyDividendProfileDirection(profileSort, request.getParameter("profileDirection"));
+    StringBuilder redirectUrl =
+        new StringBuilder("redirect:/stock/admin?tab=").append(DIVIDEND_TAB_MONTHLY_REFERENCE);
+    appendQueryParam(redirectUrl, "profileSort", profileSort);
+    appendQueryParam(redirectUrl, "profileDirection", profileDirection);
+    return redirectUrl.toString();
   }
 
   @BlueskyPreAuthorize

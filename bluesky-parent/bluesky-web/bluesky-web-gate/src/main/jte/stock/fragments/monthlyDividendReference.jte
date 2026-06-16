@@ -31,6 +31,8 @@
 @param String selectedMonthlyDividendPayoutPayDate = ""
 @param String monthlyDividendReferenceErrorMessage = ""
 @param String monthlyDividendReferenceResult = ""
+@param String monthlyDividendReferenceResultMessage = ""
+@param boolean monthlyDividendReferenceResultIsError = false
 
 !{
 	DecimalFormat amountFormat = new DecimalFormat("#,##0.####");
@@ -113,6 +115,11 @@
 	@if(monthlyDividendReferenceErrorMessage != null && !monthlyDividendReferenceErrorMessage.isEmpty())
 		<div class="alert alert-error border border-error/20 bg-error/10 text-error-content">
 			<span>${monthlyDividendReferenceErrorMessage}</span>
+		</div>
+	@endif
+	@if(monthlyDividendReferenceResultMessage != null && !monthlyDividendReferenceResultMessage.isEmpty())
+		<div class="alert ${monthlyDividendReferenceResultIsError ? "alert-error border border-error/20 bg-error/10 text-error-content" : "alert-success border border-success/20 bg-success/10 text-success-content"}">
+			<span>${monthlyDividendReferenceResultMessage}</span>
 		</div>
 	@endif
 
@@ -322,6 +329,26 @@
 						<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.title")}</h2>
 						<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.desc")}</p>
 						<p class="text-xs leading-5 text-base-content/50">${profileReorderEnabled ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.reorder.enabled") : MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.reorder.disabled")}</p>
+					</div>
+					<div class="rounded-2xl border border-base-300 bg-base-50/70 p-4">
+						<div class="space-y-1">
+							<h3 class="text-sm font-semibold text-base-content">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.title")}</h3>
+							<p class="text-xs leading-5 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.desc")}</p>
+						</div>
+						<div class="mt-3 flex flex-wrap gap-2">
+							<form method="post" action="/stock/dividend/monthly-reference/payout/import/source/bulk">
+								<input type="hidden" name="profileSort" value="${profileSortValue}" />
+								<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
+								<input type="hidden" name="payoutWindow" value="MID_MONTH" />
+								<button type="submit" class="btn btn-secondary btn-sm">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.mid.month")}</button>
+							</form>
+							<form method="post" action="/stock/dividend/monthly-reference/payout/import/source/bulk">
+								<input type="hidden" name="profileSort" value="${profileSortValue}" />
+								<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
+								<input type="hidden" name="payoutWindow" value="MONTH_END" />
+								<button type="submit" class="btn btn-secondary btn-sm">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.month.end")}</button>
+							</form>
+						</div>
 					</div>
 					<div id="monthlyDividendProfileOrderStatus" class="hidden"></div>
 					@if(monthlyDividendProfiles == null || monthlyDividendProfiles.isEmpty())

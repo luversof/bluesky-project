@@ -31,6 +31,8 @@
 @param String selectedMonthlyDividendPayoutPayDate = ""
 @param String monthlyDividendReferenceErrorMessage = ""
 @param String monthlyDividendReferenceResult = ""
+@param String monthlyDividendReferenceResultMessage = ""
+@param boolean monthlyDividendReferenceResultIsError = false
 
 @template._layout.stockLayout(
 	isAuthenticated = isAuthenticated,
@@ -67,7 +69,9 @@
 						selectedMonthlyDividendPayoutRecordDate = selectedMonthlyDividendPayoutRecordDate,
 						selectedMonthlyDividendPayoutPayDate = selectedMonthlyDividendPayoutPayDate,
 						monthlyDividendReferenceErrorMessage = monthlyDividendReferenceErrorMessage,
-						monthlyDividendReferenceResult = monthlyDividendReferenceResult)
+						monthlyDividendReferenceResult = monthlyDividendReferenceResult,
+						monthlyDividendReferenceResultMessage = monthlyDividendReferenceResultMessage,
+						monthlyDividendReferenceResultIsError = monthlyDividendReferenceResultIsError)
 					<script type="module" src="/js/stock/monthlyDividendProfileOrder.js"></script>
 				@else
 					@template.stock.htmx.fragments.adminActions(isAuthenticated = isAuthenticated)
