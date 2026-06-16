@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendPayoutUpsertRequest;
 import net.luversof.web.gate.stock.util.PlusMonthlyDividendPayoutSourceParser.PlusDividendPage;
-
 import tools.jackson.databind.json.JsonMapper;
 
 class PlusMonthlyDividendPayoutSourceParserTest {

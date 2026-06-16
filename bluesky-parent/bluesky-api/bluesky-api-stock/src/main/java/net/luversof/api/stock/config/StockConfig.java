@@ -18,8 +18,7 @@ public class StockConfig {
   }
 
   /**
-   * 외부(KIS) API 호출용 RestTemplate. connect/read 타임아웃을 지정해 응답이 없는 엔드포인트에서 호출 스레드가 무한 대기하는 것을
-   * 방지한다.
+   * 외부(KIS) API 호출용 RestTemplate. connect/read 타임아웃을 지정해 응답이 없는 엔드포인트에서 호출 스레드가 무한 대기하는 것을 방지한다.
    */
   @Bean
   RestTemplate kisRestTemplate() {

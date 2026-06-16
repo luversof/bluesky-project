@@ -173,9 +173,7 @@ public class KisStockPriceUpdateService {
   /** 조회 구간 [start, end] (양끝 포함). */
   private record DateRange(LocalDate start, LocalDate end) {}
 
-  /**
-   * 정렬된 날짜 목록을 연속 구간으로 묶는다. 주말/휴장일 간격(1~3일)은 같은 조회 구간으로 묶어 API 호출 수를 줄인다.
-   */
+  /** 정렬된 날짜 목록을 연속 구간으로 묶는다. 주말/휴장일 간격(1~3일)은 같은 조회 구간으로 묶어 API 호출 수를 줄인다. */
   private List<DateRange> toContiguousRanges(List<LocalDate> tradeDates) {
     if (tradeDates == null || tradeDates.isEmpty()) {
       return List.of();
@@ -455,7 +453,8 @@ public class KisStockPriceUpdateService {
             fromDate);
       }
     } catch (Exception ex) {
-      log.warn("Failed to invalidate snapshots for stockItemId {} from {}", stockItemId, fromDate, ex);
+      log.warn(
+          "Failed to invalidate snapshots for stockItemId {} from {}", stockItemId, fromDate, ex);
     }
   }
 }

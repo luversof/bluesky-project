@@ -32,8 +32,7 @@ public class GoogleSheetsApiService {
 
   private JsonMapper objectMapper;
 
-  public GoogleSheetsApiService(
-      InputStreamProvider inputStreamProvider, JsonMapper objectMapper) {
+  public GoogleSheetsApiService(InputStreamProvider inputStreamProvider, JsonMapper objectMapper) {
     this.inputStreamProvider = inputStreamProvider;
     this.objectMapper = objectMapper;
   }
