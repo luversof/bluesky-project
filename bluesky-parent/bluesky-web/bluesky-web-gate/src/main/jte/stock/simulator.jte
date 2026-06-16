@@ -86,15 +86,11 @@
 						localOnly: '${MessageUtil.getMessage("stock.simulator.state.local.only")}',
 						fieldPrincipal: '${MessageUtil.getMessage("stock.simulator.field.principal")}',
 						fieldCurrentPrice: '${MessageUtil.getMessage("stock.simulator.field.current.price")}',
-						fieldSimulationMode: '${MessageUtil.getMessage("stock.simulator.field.simulation.mode")}',
 						fieldAnnualPriceGrowth: '${MessageUtil.getMessage("stock.simulator.field.annual.price.growth")}',
 						fieldDividendYield: '${MessageUtil.getMessage("stock.simulator.field.dividend.yield")}',
 						fieldAnnualDividendGrowth: '${MessageUtil.getMessage("stock.simulator.field.annual.dividend.growth")}',
 						fieldAnnualSpending: '${MessageUtil.getMessage("stock.simulator.field.annual.spending")}',
 						fieldAnnualSpendingGrowth: '${MessageUtil.getMessage("stock.simulator.field.annual.spending.growth")}',
-						simulationModeHelp: '${MessageUtil.getMessage("stock.simulator.field.simulation.mode.help")}',
-						modeTotalReturn: '${MessageUtil.getMessage("stock.simulator.state.mode.total.return")}',
-						modeCashFlow: '${MessageUtil.getMessage("stock.simulator.state.mode.cash.flow")}',
 						reinvestOn: '${MessageUtil.getMessage("stock.simulator.state.reinvest.on")}',
 						reinvestOff: '${MessageUtil.getMessage("stock.simulator.state.reinvest.off")}',
 						emptyScenario: '${MessageUtil.getMessage("stock.simulator.empty.no.scenario")}',
@@ -239,16 +235,6 @@
 									<input id="stockSimulatorCurrentPrice" name="currentPrice" type="number" min="1" step="1" class="input input-bordered w-full" />
 								</label>
 								<label class="form-control">
-									<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.field.simulation.mode")}</span></div>
-									<select id="stockSimulatorSimulationMode" name="simulationMode" class="select select-bordered w-full">
-										<option value="total-return">${MessageUtil.getMessage("stock.simulator.state.mode.total.return")}</option>
-										<option value="cash-flow">${MessageUtil.getMessage("stock.simulator.state.mode.cash.flow")}</option>
-									</select>
-									<div class="label pb-0 pt-2">
-										<span class="label-text-alt leading-5 text-base-content/60">${MessageUtil.getMessage("stock.simulator.field.simulation.mode.help")}</span>
-									</div>
-								</label>
-								<label class="form-control">
 									<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.field.annual.price.growth")}</span></div>
 									<input id="stockSimulatorAnnualPriceGrowthPct" name="annualPriceGrowthPct" type="number" min="-100" max="200" step="0.1" class="input input-bordered w-full" />
 								</label>
@@ -350,6 +336,7 @@
 							<li>${MessageUtil.getMessage("stock.simulator.assumption.three")}</li>
 							<li>${MessageUtil.getMessage("stock.simulator.assumption.four")}</li>
 							<li>${MessageUtil.getMessage("stock.simulator.assumption.five")}</li>
+							<li>${MessageUtil.getMessage("stock.simulator.assumption.six")}</li>
 						</ul>
 					</div>
 				</aside>

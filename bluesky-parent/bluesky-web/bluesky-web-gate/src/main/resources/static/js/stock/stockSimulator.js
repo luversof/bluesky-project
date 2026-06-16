@@ -11,10 +11,6 @@
     const MAX_SIMULATION_YEARS = 100;
     const MAX_SCENARIOS = 5;
     const MONTHS_PER_YEAR = 12;
-    const SIMULATION_MODE = {
-        TOTAL_RETURN: "total-return",
-        CASH_FLOW: "cash-flow",
-    };
     const COLOR_CLASSES = [
         "bg-primary",
         "bg-secondary",
@@ -34,7 +30,7 @@
         typeof globalThis.stockSimulatorI18n === "object"
         ? globalThis.stockSimulatorI18n
         : {};
-    const i18n = Object.assign({ defaultScenarioName: "Base Scenario", activeScenario: "Editing", localOnly: "localStorage only", compareBestChoice: "More Favorable", fieldPrincipal: "Principal", fieldCurrentPrice: "Price", fieldSimulationMode: "Simulation Mode", fieldAnnualPriceGrowth: "Price Growth", fieldDividendYield: "Dividend Yield", fieldAnnualDividendGrowth: "Dividend Growth", fieldAnnualSpending: "Spending", fieldAnnualSpendingGrowth: "Spending Growth", simulationModeHelp: "Market-Linked Income assumes dividend capacity moves with market value and yield, while Dividend Per Share Growth keeps the first-year dividend per share and grows that cash flow over time.", modeTotalReturn: "Market-Linked Income", modeCashFlow: "Dividend Per Share Growth", reinvestOn: "Reinvest ON", reinvestOff: "Cash Dividend", emptyScenario: "A default scenario has been created.", emptyTable: "No yearly data is available.", emptyMonthlyTable: "No monthly data is available.", deleteConfirm: "Delete the current scenario?", maxScenarios: "You can compare up to five scenarios at once.", yearlyToggleOpen: "Show monthly details", yearlyToggleClose: "Hide monthly details", monthlyDetailsTitle: "Monthly Details", tableHeaderMonth: "Month", tableHeaderSpendingCoverage: "Spending Coverage", tableHeaderYearEndPrice: "Year-End Price", tableHeaderMonthlyDividend: "Monthly Dividend", tableHeaderMonthlySpending: "Monthly Spending", tableHeaderMonthlyGap: "Monthly Gap", tableHeaderSoldShares: "Sold Shares", tableHeaderReinvestedShares: "Reinvested Shares", tableHeaderMonthEndPrice: "Month-End Price", tableHeaderMonthEndShares: "Month-End Shares", tableHeaderMonthEndCashReserve: "Month-End Cash Reserve", tableHeaderMonthEndMarketValue: "Month-End Market Value", tableHeaderMonthEndTotalWealth: "Month-End Total Wealth", yearlyDetailGuide: "Yearly and monthly tables use the same column family. Dividend, spending, coverage, gap, sold shares, and reinvested shares are period totals, while price, shares, cash reserve, market value, and total wealth are period-end values.", summarySustainablePeriod: "Sustainable Period", summaryFinalWealth: "Final Total Wealth", summaryDepletionYear: "Depletion", summaryNotDepleted: "Not Depleted", summaryDeficitStart: "Deficit Starts", summaryNoDeficit: "No Deficit", summaryWealthDeclineStart: "Total Wealth Decline Starts", summaryNoWealthDecline: "No Wealth Decline", summaryCapitalDrawdownStart: "Principal Drawdown Starts", summaryNoPrincipalDrawdown: "No Principal Drawdown", summaryYearsLater: "In {0} years", summaryYearsOrMore: "{0}+ years", summaryWithinHorizon: "Sustainable within the simulation horizon", summaryLatestCoverage: "Latest Spending Coverage", summaryNoSpending: "No Spending", seriesAnnualDividend: "Annual Dividend", seriesAnnualSpending: "Annual Spending", seriesAnnualGap: "Annual Gap", seriesTotalWealth: "Total Wealth", seriesMarketValue: "Market Value", seriesCashReserve: "Cash Reserve", timelinePhaseStable: "Spending Covered", timelinePhaseDeficit: "Deficit", timelinePhaseWealthDecline: "Wealth Decline", timelinePhaseDrawdown: "Principal Drawdown", timelinePhaseDepleted: "Depleted" }, i18nOverrides);
+    const i18n = Object.assign({ defaultScenarioName: "Base Scenario", activeScenario: "Editing", localOnly: "localStorage only", compareBestChoice: "More Favorable", fieldPrincipal: "Principal", fieldCurrentPrice: "Price", fieldAnnualPriceGrowth: "Price Growth", fieldDividendYield: "Dividend Yield", fieldAnnualDividendGrowth: "Dividend Growth", fieldAnnualSpending: "Spending", fieldAnnualSpendingGrowth: "Spending Growth", reinvestOn: "Reinvest ON", reinvestOff: "Cash Dividend", emptyScenario: "A default scenario has been created.", emptyTable: "No yearly data is available.", emptyMonthlyTable: "No monthly data is available.", deleteConfirm: "Delete the current scenario?", maxScenarios: "You can compare up to five scenarios at once.", yearlyToggleOpen: "Show monthly details", yearlyToggleClose: "Hide monthly details", monthlyDetailsTitle: "Monthly Details", tableHeaderMonth: "Month", tableHeaderSpendingCoverage: "Spending Coverage", tableHeaderYearEndPrice: "Year-End Price", tableHeaderMonthlyDividend: "Monthly Dividend", tableHeaderMonthlySpending: "Monthly Spending", tableHeaderMonthlyGap: "Monthly Gap", tableHeaderSoldShares: "Sold Shares", tableHeaderReinvestedShares: "Reinvested Shares", tableHeaderMonthEndPrice: "Month-End Price", tableHeaderMonthEndShares: "Month-End Shares", tableHeaderMonthEndCashReserve: "Month-End Cash Reserve", tableHeaderMonthEndMarketValue: "Month-End Market Value", tableHeaderMonthEndTotalWealth: "Month-End Total Wealth", yearlyDetailGuide: "Yearly and monthly tables use the same column family. Dividend, spending, coverage, gap, sold shares, and reinvested shares are period totals, while price, shares, cash reserve, market value, and total wealth are period-end values.", summarySustainablePeriod: "Sustainable Period", summaryFinalWealth: "Final Total Wealth", summaryDepletionYear: "Depletion", summaryNotDepleted: "Not Depleted", summaryDeficitStart: "Deficit Starts", summaryNoDeficit: "No Deficit", summaryWealthDeclineStart: "Total Wealth Decline Starts", summaryNoWealthDecline: "No Wealth Decline", summaryCapitalDrawdownStart: "Principal Drawdown Starts", summaryNoPrincipalDrawdown: "No Principal Drawdown", summaryYearsLater: "In {0} years", summaryYearsOrMore: "{0}+ years", summaryWithinHorizon: "Sustainable within the simulation horizon", summaryLatestCoverage: "Latest Spending Coverage", summaryNoSpending: "No Spending", seriesAnnualDividend: "Annual Dividend", seriesAnnualSpending: "Annual Spending", seriesAnnualGap: "Annual Gap", seriesTotalWealth: "Total Wealth", seriesMarketValue: "Market Value", seriesCashReserve: "Cash Reserve", timelinePhaseStable: "Spending Covered", timelinePhaseDeficit: "Deficit", timelinePhaseWealthDecline: "Wealth Decline", timelinePhaseDrawdown: "Principal Drawdown", timelinePhaseDepleted: "Depleted" }, i18nOverrides);
     const currencyFormatter = new Intl.NumberFormat(undefined, {
         maximumFractionDigits: 0,
     });
@@ -162,14 +158,8 @@
             annualSpending: clampNumber(scenario.annualSpending, 0, 100000000000, 30000000),
             annualSpendingGrowthPct: clampNumber(scenario.annualSpendingGrowthPct, -100, 300, 7.2),
             years: Math.round(clampNumber(scenario.years, 1, MAX_SIMULATION_YEARS, 100)),
-            simulationMode: normalizeSimulationMode(scenario.simulationMode),
             reinvestDividends: Boolean(scenario.reinvestDividends),
         };
-    }
-    function normalizeSimulationMode(value) {
-        return value === SIMULATION_MODE.CASH_FLOW
-            ? SIMULATION_MODE.CASH_FLOW
-            : SIMULATION_MODE.TOTAL_RETURN;
     }
     function normalizeName(value, index) {
         const trimmed = typeof value === "string" ? value.trim() : "";
@@ -190,7 +180,6 @@
             annualSpending: 30000000,
             annualSpendingGrowthPct: 7.2,
             years: 100,
-            simulationMode: SIMULATION_MODE.TOTAL_RETURN,
             reinvestDividends: true,
         }, index);
     }
@@ -293,10 +282,6 @@
             nextScenario.reinvestDividends = Boolean(target.checked);
             return normalizeScenario(nextScenario, index);
         }
-        if (field === "simulationMode") {
-            nextScenario.simulationMode = normalizeSimulationMode(target.value);
-            return normalizeScenario(nextScenario, index);
-        }
         if (field === "years") {
             nextScenario.years = Math.round(clampNumber(target.value, 1, MAX_SIMULATION_YEARS, scenario.years));
             return normalizeScenario(nextScenario, index);
@@ -349,7 +334,7 @@
         const years = [buildInitialSimulationRecord(principal, state)];
         for (let year = 1; year <= scenario.years; year += 1) {
             const previousRecord = years.at(-1);
-            const result = simulateYear(year, state, scenario.simulationMode, scenario.reinvestDividends, principal, growthRates, monthlyRates);
+            const result = simulateYear(year, state, scenario.reinvestDividends, principal, growthRates, monthlyRates);
             years.push(result.record);
             state = result.nextState;
             if (firstDeficitYear === null && result.hadDeficit) {
@@ -393,8 +378,9 @@
         return {
             sharePrice,
             shares,
+            // 배당수익률은 "첫 해 주당 배당금"의 초기값을 정하는 용도로만 쓴다.
+            // 이후 주당 배당금은 배당성장률로 성장하며, 주가와 무관하다.
             annualDividendPerShare: sharePrice * dividendYieldRate,
-            dividendYieldRate,
             annualSpending: scenario.annualSpending,
             cumulativeDividends: 0,
             cashReserve,
@@ -421,14 +407,13 @@
             monthlyRecords: [],
         };
     }
-    function simulateYear(year, state, simulationMode, reinvestDividends, principal, growthRates, monthlyRates) {
+    function simulateYear(year, state, reinvestDividends, principal, growthRates, monthlyRates) {
         const plannedAnnualSpending = state.annualSpending;
         const plannedMonthlySpending = plannedAnnualSpending / MONTHS_PER_YEAR;
         let rollingState = {
             sharePrice: state.sharePrice,
             shares: state.shares,
             annualDividendPerShare: state.annualDividendPerShare,
-            dividendYieldRate: state.dividendYieldRate,
             annualSpending: plannedAnnualSpending,
             cumulativeDividends: state.cumulativeDividends,
             cashReserve: state.cashReserve,
@@ -440,7 +425,7 @@
         let depleted = false;
         const monthlyRecords = [];
         for (let month = 1; month <= MONTHS_PER_YEAR; month += 1) {
-            const monthlyDividend = calculateMonthlyDividend(rollingState, simulationMode);
+            const monthlyDividend = calculateMonthlyDividend(rollingState);
             const monthlyGap = monthlyDividend - plannedMonthlySpending;
             const sharePrice = rollingState.sharePrice * (1 + monthlyRates.priceGrowthRate);
             const settledCashFlow = settleCashFlow({
@@ -452,11 +437,9 @@
             const cumulativeDividends = rollingState.cumulativeDividends + monthlyDividend;
             const marketValue = settledCashFlow.shares * sharePrice;
             const totalWealth = marketValue + settledCashFlow.cashReserve;
-            const nextDividendYieldRate = Math.max(0, rollingState.dividendYieldRate * (1 + monthlyRates.dividendGrowthRate));
-            const nextAnnualDividendPerShare = simulationMode === SIMULATION_MODE.TOTAL_RETURN
-                ? sharePrice * nextDividendYieldRate
-                : Math.max(0, rollingState.annualDividendPerShare *
-                    (1 + monthlyRates.dividendGrowthRate));
+            // 주당 배당금은 주가와 무관하게 배당성장률로만 성장한다.
+            const nextAnnualDividendPerShare = Math.max(0, rollingState.annualDividendPerShare *
+                (1 + monthlyRates.dividendGrowthRate));
             annualDividend += monthlyDividend;
             annualGap += monthlyGap;
             soldSharesForSpending += settledCashFlow.soldSharesForSpending;
@@ -481,7 +464,6 @@
                 sharePrice,
                 shares: settledCashFlow.shares,
                 annualDividendPerShare: nextAnnualDividendPerShare,
-                dividendYieldRate: nextDividendYieldRate,
                 annualSpending: plannedAnnualSpending,
                 cumulativeDividends,
                 cashReserve: settledCashFlow.cashReserve,
@@ -522,18 +504,13 @@
                 sharePrice: rollingState.sharePrice,
                 shares: rollingState.shares,
                 annualDividendPerShare: rollingState.annualDividendPerShare,
-                dividendYieldRate: rollingState.dividendYieldRate,
                 annualSpending: state.annualSpending * (1 + growthRates.annualSpendingGrowthRate),
                 cumulativeDividends,
                 cashReserve: rollingState.cashReserve,
             },
         };
     }
-    function calculateMonthlyDividend(state, simulationMode) {
-        if (simulationMode === SIMULATION_MODE.TOTAL_RETURN) {
-            return ((state.shares * state.sharePrice * state.dividendYieldRate) /
-                MONTHS_PER_YEAR);
-        }
+    function calculateMonthlyDividend(state) {
         return (state.shares * state.annualDividendPerShare) / MONTHS_PER_YEAR;
     }
     function annualRateToMonthlyRate(annualRate) {
@@ -623,7 +600,6 @@
         elements.form.elements.name.value = activeScenario.name;
         elements.form.elements.principal.value = activeScenario.principal;
         elements.form.elements.currentPrice.value = activeScenario.currentPrice;
-        elements.form.elements.simulationMode.value = activeScenario.simulationMode;
         elements.form.elements.annualPriceGrowthPct.value =
             activeScenario.annualPriceGrowthPct;
         elements.form.elements.dividendYieldPct.value =
@@ -680,7 +656,7 @@
 								<span class="mt-1 h-3 w-3 rounded-full ${COLOR_CLASSES[index % COLOR_CLASSES.length]}"></span>
 								<div class="space-y-1">
 									<p class="font-semibold text-base-content">${escapeHtml(scenario.name)}</p>
-									<p class="text-xs text-base-content/55">${scenario.years}y · ${escapeHtml(formatSimulationModeLabel(scenario.simulationMode))} · ${scenario.reinvestDividends
+									<p class="text-xs text-base-content/55">${scenario.years}y · ${scenario.reinvestDividends
                 ? i18n.reinvestOn
                 : i18n.reinvestOff}</p>
 								</div>
@@ -788,7 +764,7 @@
                 ? `<span class="badge badge-success badge-sm">${escapeHtml(i18n.compareBestChoice)}</span>`
                 : ""}
 								</div>
-									<p class="text-xs text-base-content/55">${scenario.years}y · ${escapeHtml(formatSimulationModeLabel(scenario.simulationMode))} · ${scenario.reinvestDividends
+									<p class="text-xs text-base-content/55">${scenario.years}y · ${scenario.reinvestDividends
                 ? i18n.reinvestOn
                 : i18n.reinvestOff}</p>
 								<div class="flex flex-wrap gap-2 text-[11px] leading-5 text-base-content/70">
@@ -1258,7 +1234,6 @@
     }
     function buildScenarioConfigurationSegments(scenario) {
         return [
-            `${i18n.fieldSimulationMode} ${formatSimulationModeLabel(scenario.simulationMode)}`,
             `${i18n.fieldPrincipal} ${formatCompactCurrency(scenario.principal)}`,
             `${i18n.fieldCurrentPrice} ${formatCompactCurrency(scenario.currentPrice)}`,
             `${i18n.fieldDividendYield} ${formatPercent(scenario.dividendYieldPct)}`,
@@ -1275,11 +1250,6 @@
     }
     function buildScenarioConfigurationText(scenario) {
         return buildScenarioConfigurationSegments(scenario).join(" · ");
-    }
-    function formatSimulationModeLabel(simulationMode) {
-        return normalizeSimulationMode(simulationMode) === SIMULATION_MODE.CASH_FLOW
-            ? i18n.modeCashFlow
-            : i18n.modeTotalReturn;
     }
     function formatYearOffset(year) {
         return i18n.summaryYearsLater.replace("{0}", currencyFormatter.format(year || 0));
