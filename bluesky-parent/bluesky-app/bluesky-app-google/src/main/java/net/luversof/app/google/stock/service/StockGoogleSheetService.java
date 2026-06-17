@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import net.luversof.app.google.constant.GoogleSpreadSheetInfoType;
 import net.luversof.app.google.service.sheets.GoogleSheetService;
 import net.luversof.app.google.stock.domain.GoogleSheetDividend;
+import net.luversof.app.google.stock.domain.GoogleSheetDividendSearch;
 import net.luversof.app.google.stock.domain.GoogleSheetStockItem;
 import net.luversof.app.google.stock.domain.GoogleSheetTrade;
 
@@ -30,5 +31,10 @@ public class StockGoogleSheetService {
   public List<GoogleSheetTrade> getGoogleSheetTradeList(UUID userId) {
     return googleSheetService.getSpreadSheetValueList(
         userId, GoogleSpreadSheetInfoType.STOCK_TRADE);
+  }
+
+  public List<GoogleSheetDividendSearch> getGoogleSheetDividendSearchList(UUID userId) {
+    return googleSheetService.getSpreadSheetValueList(
+        userId, GoogleSpreadSheetInfoType.STOCK_DIVIDEND_SEARCH);
   }
 }

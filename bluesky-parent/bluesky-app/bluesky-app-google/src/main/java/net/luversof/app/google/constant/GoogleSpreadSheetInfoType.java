@@ -1,6 +1,7 @@
 package net.luversof.app.google.constant;
 
 import net.luversof.app.google.stock.domain.GoogleSheetDividend;
+import net.luversof.app.google.stock.domain.GoogleSheetDividendSearch;
 import net.luversof.app.google.stock.domain.GoogleSheetStockItem;
 import net.luversof.app.google.stock.domain.GoogleSheetTrade;
 
@@ -8,7 +9,8 @@ import net.luversof.app.google.stock.domain.GoogleSheetTrade;
 public enum GoogleSpreadSheetInfoType {
   STOCK_DIVIDEND(GoogleSheetDividend.class),
   STOCK_STOCKITEM(GoogleSheetStockItem.class),
-  STOCK_TRADE(GoogleSheetTrade.class);
+  STOCK_TRADE(GoogleSheetTrade.class),
+  STOCK_DIVIDEND_SEARCH(GoogleSheetDividendSearch.class);
 
   private Class<?> targetClass;
 

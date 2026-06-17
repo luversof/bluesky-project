@@ -92,6 +92,8 @@
 	String successMessage = "";
 	if ("single-saved".equals(monthlyDividendResult)) {
 		successMessage = "월배당 데이터를 저장했습니다.";
+	} else if ("sheet-imported".equals(monthlyDividendResult)) {
+		successMessage = "배당주 검색 시트에서 " + (monthlyDividendSavedCount != null ? monthlyDividendSavedCount : 0) + "건의 보유/평단가를 가져왔습니다.";
 	}
 }
 
@@ -122,7 +124,7 @@
 							<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.simulator.monthly.form.title")}</h2>
 							<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.form.desc")}</p>
 						</div>
-						<a href="${monthlyDividendReferenceManageUrl}" class="btn btn-outline btn-sm">${MessageUtil.getMessage("stock.simulator.monthly.reference.manage")}</a>
+						<div class="flex flex-wrap items-center gap-2"><form method="post" action="/stock/simulator/monthly-dividend/import-sheet" class="inline"><input type="hidden" name="sort" value="${monthlyDividendSort}" /><input type="hidden" name="direction" value="${monthlyDividendDirection}" /><button type="submit" class="btn btn-secondary btn-sm">${MessageUtil.getMessage("stock.simulator.monthly.import.sheet")}</button></form><a href="${monthlyDividendReferenceManageUrl}" class="btn btn-outline btn-sm">${MessageUtil.getMessage("stock.simulator.monthly.reference.manage")}</a></div>
 					</div>
 					@if(symbolValue != null && !symbolValue.isEmpty() && !referenceValuesAvailable)
 						<div class="alert border border-warning/20 bg-warning/10 text-warning-content">

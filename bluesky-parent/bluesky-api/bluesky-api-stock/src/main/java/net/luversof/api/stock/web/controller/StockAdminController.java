@@ -42,6 +42,12 @@ public class StockAdminController {
     kisStockPriceUpdateService.updatePriceHistory();
   }
 
+  /** "배당주 검색" 시트의 보유/평단가를 월배당 기준 등록 종목에 한해 월배당 스냅샷에 추가/갱신한다. */
+  @PostMapping("/monthly-dividend-snapshots/import-from-sheet")
+  public int monthlyDividendSnapshotImportFromSheet(@RequestParam UUID userId) {
+    return stockAdminService.importMonthlyDividendSnapshotsFromGoogleSheet(userId);
+  }
+
   /**
    * WmaState 스키마 변경(quantity: long→BigDecimal) 또는 수정주가 재조정 이후 전체 스냅샷을 초기화합니다. 다음
    * aggregateTimeSeries() 호출 시 처음부터 재계산됩니다.

@@ -142,12 +142,39 @@ public class MonthlyDividendPayoutService {
       return;
     }
 
-    List<MonthlyDividendPayout> payouts =
-        monthlyDividendPayoutRepository.findByStockItemIdOrderByPayDateDescRecordDateDesc(
-            stockItem.getId());
-    if (payouts.isEmpty()) {
+    SnapshotStats stats = computeSnapshotStats(stockItem.getId());
+    if (stats == null) {
       monthlyDividendSnapshotRepository.deleteAll(snapshots);
       return;
+    }
+
+    Instant now = Instant.now();
+    snapshots.forEach(
+        snapshot -> {
+          snapshot.setAsOfDate(
+              stats.asOfDate() != null ? stats.asOfDate() : snapshot.getAsOfDate());
+          snapshot.setLatestMonthlyDividendPerShare(stats.latestPerShare());
+          snapshot.setAverageMonthlyDividendPerShare1y(stats.averagePerShare1y());
+          snapshot.setAverageTaxableBaseRatio1y(stats.taxableBaseRatio1y());
+          snapshot.setUpdatedDate(now);
+        });
+    monthlyDividendSnapshotRepository.saveAll(snapshots);
+  }
+
+  /**
+   * 종목의 최근 12개월 지급 이력으로 월배당 통계(최신/평균 주당 배당, 과세표준 비율)를 계산한다. 지급 이력이 없으면 null을 반환한다. 스냅샷 갱신과 외부
+   * import에서 동일한 계산을 재사용한다.
+   */
+  public SnapshotStats computeSnapshotStats(UUID stockItemId) {
+    if (stockItemId == null) {
+      return null;
+    }
+
+    List<MonthlyDividendPayout> payouts =
+        monthlyDividendPayoutRepository.findByStockItemIdOrderByPayDateDescRecordDateDesc(
+            stockItemId);
+    if (payouts.isEmpty()) {
+      return null;
     }
 
     List<MonthlyDividendPayout> lastYearRows = payouts.stream().limit(12).toList();
@@ -181,17 +208,19 @@ public class MonthlyDividendPayoutService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .divide(BigDecimal.valueOf(taxableBaseRatios.size()), 2, RoundingMode.HALF_UP);
 
-    Instant now = Instant.now();
-    snapshots.forEach(
-        snapshot -> {
-          snapshot.setAsOfDate(asOfDate != null ? asOfDate : snapshot.getAsOfDate());
-          snapshot.setLatestMonthlyDividendPerShare(latestDividendAmountPerShare);
-          snapshot.setAverageMonthlyDividendPerShare1y(averageDividendAmountPerShare1y);
-          snapshot.setAverageTaxableBaseRatio1y(averageTaxableBaseRatio1y);
-          snapshot.setUpdatedDate(now);
-        });
-    monthlyDividendSnapshotRepository.saveAll(snapshots);
+    return new SnapshotStats(
+        asOfDate,
+        latestDividendAmountPerShare,
+        averageDividendAmountPerShare1y,
+        averageTaxableBaseRatio1y);
   }
+
+  /** 월배당 스냅샷 통계 계산 결과(최근 1년 기준). */
+  public record SnapshotStats(
+      LocalDate asOfDate,
+      BigDecimal latestPerShare,
+      BigDecimal averagePerShare1y,
+      BigDecimal taxableBaseRatio1y) {}
 
   private MonthlyDividendPayoutResponse toResponse(
       MonthlyDividendPayout payout, StockItem providedStockItem) {

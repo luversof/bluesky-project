@@ -57,6 +57,7 @@ import net.luversof.web.gate.stock.httpexchange.AccountClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendPayoutClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendProfileClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendSnapshotClient;
+import net.luversof.web.gate.stock.httpexchange.StockAdminClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.util.MonthlyDividendPayoutImportParser;
 import net.luversof.web.gate.stock.util.MonthlyDividendPayoutSourceImportService;
@@ -87,9 +88,16 @@ public class StockViewController {
 
   private MonthlyDividendPayoutSourceImportService monthlyDividendPayoutSourceImportService;
 
+  private StockAdminClient stockAdminClient;
+
   @Autowired
   public void setAccountClient(AccountClient accountClient) {
     this.accountClient = accountClient;
+  }
+
+  @Autowired
+  public void setStockAdminClient(StockAdminClient stockAdminClient) {
+    this.stockAdminClient = stockAdminClient;
   }
 
   @Autowired
@@ -533,7 +541,8 @@ public class StockViewController {
                   String.join(", ", failedSymbols));
     }
     redirectAttributes.addFlashAttribute("monthlyDividendReferenceResultMessage", message);
-    redirectAttributes.addFlashAttribute("monthlyDividendReferenceResultIsError", successCount == 0);
+    redirectAttributes.addFlashAttribute(
+        "monthlyDividendReferenceResultIsError", successCount == 0);
 
     return buildMonthlyDividendReferenceBulkRedirect(request);
   }
@@ -553,7 +562,8 @@ public class StockViewController {
   private String buildMonthlyDividendReferenceBulkRedirect(HttpServletRequest request) {
     String profileSort = resolveMonthlyDividendProfileSort(request.getParameter("profileSort"));
     String profileDirection =
-        resolveMonthlyDividendProfileDirection(profileSort, request.getParameter("profileDirection"));
+        resolveMonthlyDividendProfileDirection(
+            profileSort, request.getParameter("profileDirection"));
     StringBuilder redirectUrl =
         new StringBuilder("redirect:/stock/admin?tab=").append(DIVIDEND_TAB_MONTHLY_REFERENCE);
     appendQueryParam(redirectUrl, "profileSort", profileSort);
@@ -751,6 +761,41 @@ public class StockViewController {
         "월배당 기준 데이터 등록은 배당 메뉴의 월배당 기준 데이터 탭에서 관리합니다.",
         buildDefaultMonthlyDividendForm(),
         bulkInput);
+  }
+
+  @BlueskyPreAuthorize
+  @PostMapping("/simulator/monthly-dividend/import-sheet")
+  public String importMonthlyDividendFromSheet(
+      HttpServletRequest request,
+      Model model,
+      @RequestParam(required = false) String sort,
+      @RequestParam(required = false) String direction,
+      @RequestParam(required = false) String keyword,
+      @RequestParam(required = false) BigDecimal minAnnualYield,
+      @RequestParam(defaultValue = "false") boolean positiveOnly) {
+    if (isNotAuthenticated()) {
+      return getLoginRedirectUrl(request);
+    }
+
+    UUID userId = UserUtil.getUserId();
+    try {
+      int processed = stockAdminClient.monthlyDividendSnapshotImportFromSheet(userId);
+      return buildMonthlyDividendRedirect(
+          sort, direction, keyword, minAnnualYield, positiveOnly, "sheet-imported", processed);
+    } catch (Exception ex) {
+      log.warn("배당주 검색 시트에서 월배당 보유/평단가 가져오기 실패: userId={}", userId, ex);
+      return renderMonthlyDividendError(
+          model,
+          userId,
+          sort,
+          direction,
+          keyword,
+          minAnnualYield,
+          positiveOnly,
+          "배당주 검색 시트에서 보유/평단가를 가져오지 못했습니다. 시트 설정과 권한을 확인해 주세요.",
+          buildDefaultMonthlyDividendForm(),
+          "");
+    }
   }
 
   private String resolveSimulatorTab(String tab) {

@@ -21,4 +21,7 @@ public interface StockAdminClient {
 
   @PostExchange("/price-histories")
   void priceHistoriesUpdate(@RequestParam UUID userId);
+
+  @PostExchange("/monthly-dividend-snapshots/import-from-sheet")
+  int monthlyDividendSnapshotImportFromSheet(@RequestParam UUID userId);
 }

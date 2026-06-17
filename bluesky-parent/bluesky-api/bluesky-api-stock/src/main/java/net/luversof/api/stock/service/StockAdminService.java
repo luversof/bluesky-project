@@ -31,10 +31,14 @@ import net.luversof.api.stock.constant.DelistedStocks;
 import net.luversof.api.stock.constant.TradeType;
 import net.luversof.api.stock.domain.Account;
 import net.luversof.api.stock.domain.Dividend;
+import net.luversof.api.stock.domain.MonthlyDividendProfile;
+import net.luversof.api.stock.domain.MonthlyDividendSnapshot;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.domain.StockItemTag;
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.repository.DividendRepository;
+import net.luversof.api.stock.repository.MonthlyDividendProfileRepository;
+import net.luversof.api.stock.repository.MonthlyDividendSnapshotRepository;
 import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.repository.StockItemTagRepository;
 import net.luversof.api.stock.repository.TradeRepository;
@@ -58,6 +62,12 @@ public class StockAdminService {
   @Autowired private TradeRepository tradeRepository;
 
   @Autowired private DividendRepository dividendRepository;
+
+  @Autowired private MonthlyDividendProfileRepository monthlyDividendProfileRepository;
+
+  @Autowired private MonthlyDividendSnapshotRepository monthlyDividendSnapshotRepository;
+
+  @Autowired private MonthlyDividendPayoutService monthlyDividendPayoutService;
 
   @Autowired private AccountService accountService;
 
@@ -185,6 +195,74 @@ public class StockAdminService {
 
     log.debug("Importing {} dividends", dividends.size());
     dividendRepository.saveAll(dividends);
+  }
+
+  /**
+   * "배당주 검색" 시트에서 종목코드/보유 주식수/매수 평단가를 읽어, 월배당 기준(프로필)에 등록된 종목에 한해 사용자의 월배당 스냅샷(시뮬레이터 데이터)을 추가/갱신한다.
+   * 배당 통계는 지급 이력에서 계산해 함께 반영하여 기존 통계가 0으로 덮이는 것을 방지한다.
+   *
+   * @return 추가/갱신한 스냅샷 건수
+   */
+  public int importMonthlyDividendSnapshotsFromGoogleSheet(UUID userId) {
+    var rows = stockGoogleSheetService.getGoogleSheetDividendSearchList(userId);
+    if (rows == null || rows.isEmpty()) {
+      return 0;
+    }
+
+    // 월배당 기준(프로필)에 등록된 종목 ID 집합 — 이 종목들만 대상으로 한다.
+    var profileStockItemIds =
+        monthlyDividendProfileRepository.findAllByOrderByDisplayOrderAscUpdatedDateDesc().stream()
+            .map(MonthlyDividendProfile::getStockItemId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+    if (profileStockItemIds.isEmpty()) {
+      return 0;
+    }
+
+    Instant now = Instant.now();
+    int processed = 0;
+    for (var row : rows) {
+      String symbol = row.get종목코드() != null ? row.get종목코드().trim() : "";
+      Integer heldQuantity = row.get보유_주식수();
+      if (symbol.isEmpty() || heldQuantity == null || heldQuantity <= 0) {
+        continue;
+      }
+
+      StockItem stockItem = stockItemRepository.findBySymbol(symbol);
+      if (stockItem == null || !profileStockItemIds.contains(stockItem.getId())) {
+        continue;
+      }
+
+      MonthlyDividendSnapshot snapshot =
+          monthlyDividendSnapshotRepository
+              .findByUserIdAndStockItemId(userId, stockItem.getId())
+              .orElseGet(MonthlyDividendSnapshot::new);
+      if (snapshot.getId() == null) {
+        snapshot.setCreatedDate(now);
+      }
+      snapshot.setUserId(userId);
+      snapshot.setStockItemId(stockItem.getId());
+      snapshot.setHeldQuantity(heldQuantity);
+      snapshot.setAverageBuyPrice(row.get매수_평단가() != null ? row.get매수_평단가() : BigDecimal.ZERO);
+
+      // 배당 통계는 지급 이력에서 계산해 함께 반영(없으면 기존 값 보존).
+      MonthlyDividendPayoutService.SnapshotStats stats =
+          monthlyDividendPayoutService.computeSnapshotStats(stockItem.getId());
+      if (stats != null) {
+        snapshot.setAsOfDate(stats.asOfDate());
+        snapshot.setLatestMonthlyDividendPerShare(stats.latestPerShare());
+        snapshot.setAverageMonthlyDividendPerShare1y(stats.averagePerShare1y());
+        snapshot.setAverageTaxableBaseRatio1y(stats.taxableBaseRatio1y());
+      } else if (snapshot.getAsOfDate() == null) {
+        snapshot.setAsOfDate(LocalDate.now());
+      }
+      snapshot.setUpdatedDate(now);
+
+      monthlyDividendSnapshotRepository.save(snapshot);
+      processed++;
+    }
+
+    return processed;
   }
 
   private StockItem toStockItem(GoogleSheetStockItem googleSheetStockItem) {
