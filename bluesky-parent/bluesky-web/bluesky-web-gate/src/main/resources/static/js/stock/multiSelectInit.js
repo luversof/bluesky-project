@@ -11,6 +11,9 @@ function ensureMultiSelectStyle() {
 	min-height: unset !important;
 	max-height: 50vh !important;
 	overflow: auto !important;
+	/* daisyUI v5 .select 는 display:inline-flex 라서 multiple 셀렉트의 option 들이
+	   flex 아이템으로 1글자 폭까지 줄어 세로로 쌓인다. 네이티브 listbox(block)로 되돌린다. */
+	display: block !important;
 }
 /* Also handle cases where select has size-specific small class */
 select.select.select-sm[multiple], .select.select-sm[multiple] {

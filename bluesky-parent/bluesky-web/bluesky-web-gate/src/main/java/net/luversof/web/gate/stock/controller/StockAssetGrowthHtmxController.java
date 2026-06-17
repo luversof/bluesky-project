@@ -30,10 +30,8 @@ import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.stock.constant.TradeType;
 import net.luversof.web.gate.stock.domain.StockItem;
-import net.luversof.web.gate.stock.dto.request.DividendRequest;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
 import net.luversof.web.gate.stock.dto.request.TradeSearchRequest;
-import net.luversof.web.gate.stock.dto.response.DividendResponse;
 import net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem;
 import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint;
 import net.luversof.web.gate.stock.dto.response.TradeResponse;
@@ -480,117 +478,6 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
         .doubleValue();
   }
 
-  private List<PeriodCashFlow> buildPeriodCashFlows(
-      UUID userId, Instant periodStart, Instant periodEndExclusive) {
-    List<PeriodCashFlow> cashFlows = new ArrayList<>();
-
-    TradeSearchRequest tradeRequest =
-        new TradeSearchRequest(userId, null, null, periodStart, periodEndExclusive);
-    List<TradeResponse> trades = emptyIfNull(tradeClient.findTrades(tradeRequest.toParams()));
-    for (TradeResponse trade : trades) {
-      BigDecimal amount = resolveTradeAmount(trade);
-      BigDecimal fee = trade.fee() != null ? trade.fee() : BigDecimal.ZERO;
-      BigDecimal tax = trade.tax() != null ? trade.tax() : BigDecimal.ZERO;
-      Instant occurredAt = clampInstant(trade.tradeDate(), periodStart, periodEndExclusive);
-
-      if (trade.type() == TradeType.BUY) {
-        BigDecimal contribution = amount.add(fee);
-        if (contribution.compareTo(BigDecimal.ZERO) != 0) {
-          cashFlows.add(new PeriodCashFlow(occurredAt, contribution));
-        }
-      } else if (trade.type() == TradeType.SELL) {
-        BigDecimal withdrawal = amount.subtract(fee).subtract(tax);
-        if (withdrawal.compareTo(BigDecimal.ZERO) != 0) {
-          cashFlows.add(new PeriodCashFlow(occurredAt, withdrawal.negate()));
-        }
-      }
-    }
-
-    DividendRequest dividendRequest = new DividendRequest();
-    dividendRequest.setUserId(userId);
-    dividendRequest.setStartDate(periodStart);
-    dividendRequest.setEndDate(periodEndExclusive);
-    List<DividendResponse> dividends =
-        emptyIfNull(dividendClient.findDividends(dividendRequest.toParams()));
-    for (DividendResponse dividend : dividends) {
-      BigDecimal netAmount = resolveDividendNetAmount(dividend);
-      if (netAmount.compareTo(BigDecimal.ZERO) == 0) {
-        continue;
-      }
-      cashFlows.add(
-          new PeriodCashFlow(
-              clampInstant(dividend.payDate(), periodStart, periodEndExclusive),
-              netAmount.negate()));
-    }
-
-    cashFlows.sort(Comparator.comparing(PeriodCashFlow::occurredAt));
-    return cashFlows;
-  }
-
-  private Double calculateModifiedDietzReturnRate(
-      BigDecimal openingValue,
-      BigDecimal closingValue,
-      List<PeriodCashFlow> cashFlows,
-      Instant periodStart,
-      Instant periodEndExclusive) {
-    if (openingValue == null || closingValue == null) {
-      return null;
-    }
-
-    BigDecimal netCashFlow = BigDecimal.ZERO;
-    BigDecimal weightedCashFlow = BigDecimal.ZERO;
-    double totalMillis =
-        Math.max(1d, periodEndExclusive.toEpochMilli() - periodStart.toEpochMilli());
-
-    for (PeriodCashFlow cashFlow : cashFlows) {
-      BigDecimal amount = cashFlow.amount() != null ? cashFlow.amount() : BigDecimal.ZERO;
-      netCashFlow = netCashFlow.add(amount);
-
-      double elapsedMillis = cashFlow.occurredAt().toEpochMilli() - periodStart.toEpochMilli();
-      double weight = 1d - Math.max(0d, Math.min(1d, elapsedMillis / totalMillis));
-      weightedCashFlow = weightedCashFlow.add(amount.multiply(BigDecimal.valueOf(weight)));
-    }
-
-    BigDecimal denominator = openingValue.add(weightedCashFlow);
-    if (denominator.abs().compareTo(new BigDecimal("0.000001")) <= 0) {
-      return null;
-    }
-
-    BigDecimal numerator = closingValue.subtract(openingValue).subtract(netCashFlow);
-    return numerator.divide(denominator, 8, RoundingMode.HALF_UP).doubleValue();
-  }
-
-  private BigDecimal resolveTradeAmount(TradeResponse trade) {
-    if (trade.amount() != null) {
-      return trade.amount();
-    }
-    if (trade.price() != null) {
-      return trade.price().multiply(BigDecimal.valueOf(trade.quantity()));
-    }
-    return BigDecimal.ZERO;
-  }
-
-  private BigDecimal resolveDividendNetAmount(DividendResponse dividend) {
-    if (dividend.netAmount() != null) {
-      return dividend.netAmount();
-    }
-    BigDecimal grossAmount =
-        dividend.grossAmount() != null ? dividend.grossAmount() : BigDecimal.ZERO;
-    BigDecimal fee = dividend.fee() != null ? dividend.fee() : BigDecimal.ZERO;
-    BigDecimal tax = dividend.tax() != null ? dividend.tax() : BigDecimal.ZERO;
-    return grossAmount.subtract(fee).subtract(tax);
-  }
-
-  private Instant clampInstant(Instant instant, Instant min, Instant max) {
-    if (instant == null || instant.isBefore(min)) {
-      return min;
-    }
-    if (instant.isAfter(max)) {
-      return max;
-    }
-    return instant;
-  }
-
   private ZoneId resolveZoneId(String timeZone) {
     if (timeZone == null || timeZone.isBlank()) {
       return ZoneId.systemDefault();
@@ -604,8 +491,6 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
   }
 
   private record HoldingsValueWindow(BigDecimal openingValue, BigDecimal closingValue) {}
-
-  private record PeriodCashFlow(Instant occurredAt, BigDecimal amount) {}
 
   private record AssetGrowthPeriodReturnSummary(
       String fromDate, String toDate, Double periodReturnRatePct, boolean returnCalculable) {}

@@ -178,8 +178,8 @@
     <!-- Charts Row -->
     @if(showCharts)
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 w-full">
-         @template.stock.htmx.fragments.chartsAllocation(allocation = allocation)
-         @template.stock.htmx.fragments.chartsAccountAllocation(accountAllocation = accountAllocation)
+         @template.stock.htmx.fragments.components.chartsAllocation(allocation = allocation)
+         @template.stock.htmx.fragments.components.chartsAccountAllocation(accountAllocation = accountAllocation)
     </div>
     @endif
     

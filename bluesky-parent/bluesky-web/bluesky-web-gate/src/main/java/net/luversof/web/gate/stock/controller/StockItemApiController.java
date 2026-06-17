@@ -29,6 +29,7 @@ public class StockItemApiController {
     return stockItemClient.createStockItem(stockItem);
   }
 
+  @BlueskyPreAuthorize
   @GetMapping("/search/findByName/{name}")
   public StockItem findByName(@PathVariable String name) {
     return stockItemClient.findByName(name);
