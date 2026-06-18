@@ -28,7 +28,7 @@
 			
 			<!-- 게시글 목록 -->
 			<div id="boardList"
-				class="bg-base-100 rounded-lg shadow-xl"
+				class="bg-base-100 rounded-box shadow-xl"
 				hx-get="/board/htmx/${board.alias()}/list"
 				hx-trigger="load delay:0s, listHtmxTrigger"
 				hx-swap="transition:true"

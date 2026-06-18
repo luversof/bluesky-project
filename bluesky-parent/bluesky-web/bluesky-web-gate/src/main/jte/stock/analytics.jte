@@ -12,8 +12,6 @@
 	profile = profile,
 	contentStock = @`
 		<div class="container mx-auto p-4 space-y-6">
-			<script src="/js/vendor/chart.umd.min.js"></script>
-
 			<h1 class="text-2xl font-bold mb-4 ml-1">${MessageUtil.getMessage("stock.page.analytics.title")}</h1>
 
 			<!-- Section 1: 요약 카드 + 비중 차트 -->

@@ -36,7 +36,7 @@
 			
 			<div class="max-w-4xl mx-auto">
 				<!-- 게시글 헤더 -->
-				<div class="bg-base-100 rounded-lg shadow-xl p-6 mb-4">
+				<div class="bg-base-100 rounded-box shadow-xl p-6 mb-4">
 					<h1 class="text-3xl font-bold mb-4">${boardArticle.title()}</h1>
 					
 					<div class="flex items-center justify-between text-sm text-gray-600 pb-4 border-b">
@@ -58,14 +58,14 @@
 				</div>
 				
 				<!-- 게시글 내용 -->
-				<div class="bg-base-100 rounded-lg shadow-xl p-6 mb-4">
+				<div class="bg-base-100 rounded-box shadow-xl p-6 mb-4">
 					<article class="prose max-w-none">
 						<div>$unsafe{boardArticle.content()}</div>
 					</article>
 				</div>
 				
 				<!-- 댓글 영역 -->
-				<div class="bg-base-100 rounded-lg shadow-xl p-6 mb-6" id="commentSection">
+				<div class="bg-base-100 rounded-box shadow-xl p-6 mb-6" id="commentSection">
 					<div class="flex items-center justify-between mb-4">
 						<h2 class="text-2xl font-bold">${MessageUtil.getMessage("board.comment.title")}</h2>
 						<div class="text-sm text-gray-500">

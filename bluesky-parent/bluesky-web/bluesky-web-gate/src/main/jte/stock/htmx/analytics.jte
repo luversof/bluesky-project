@@ -30,7 +30,7 @@
         <!-- Hidden Type -->
         <input type="hidden" name="type" id="input-type" value="PROFIT">
         
-        <div class="flex flex-wrap gap-4 items-center justify-between bg-base-100 p-2 rounded-lg border border-base-200">
+        <div class="flex flex-wrap gap-4 items-center justify-between bg-base-100 p-2 rounded-box border border-base-200">
              <!-- Time Scale -->
              <div class="join shadow-sm">
                     <input class="join-item btn btn-sm" type="radio" name="timeScale" value="YEARLY" aria-label="${MessageUtil.getMessage("stock.analytics.scale.yearly")}" checked onchange="updateAnalyticsVis()"/>

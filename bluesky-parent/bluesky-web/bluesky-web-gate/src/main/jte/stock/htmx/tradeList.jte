@@ -498,24 +498,12 @@
                 }
             }
         } catch(e) {}
-        if (window.Chart && window.StockCharts) {
-            setTimeout(initAll, 0);
-            setTimeout(function() {
-                if (window.tradeMonthlyChartInst && window.tradeMonthlyChartInst.resize) window.tradeMonthlyChartInst.resize();
-                if (window.tradeDonutChartInst && window.tradeDonutChartInst.resize) window.tradeDonutChartInst.resize();
-            }, 200);
-        } else {
-            var s = document.createElement('script');
-            s.src = '/js/vendor/chart.umd.min.js';
-            s.onload = function() {
-                setTimeout(initAll, 0);
-                setTimeout(function() {
-                    if (window.tradeMonthlyChartInst && window.tradeMonthlyChartInst.resize) window.tradeMonthlyChartInst.resize();
-                    if (window.tradeDonutChartInst && window.tradeDonutChartInst.resize) window.tradeDonutChartInst.resize();
-                }, 200);
-            };
-            document.head.appendChild(s);
-        }
+        // Chart.js / StockCharts 는 stockLayout 에서 1회 로드되어 항상 존재한다. (initAll 내부에서도 자체 가드)
+        setTimeout(initAll, 0);
+        setTimeout(function() {
+            if (window.tradeMonthlyChartInst && window.tradeMonthlyChartInst.resize) window.tradeMonthlyChartInst.resize();
+            if (window.tradeDonutChartInst && window.tradeDonutChartInst.resize) window.tradeDonutChartInst.resize();
+        }, 200);
 
         const detail = document.getElementById('tradeDetailSection');
         if (detail) {

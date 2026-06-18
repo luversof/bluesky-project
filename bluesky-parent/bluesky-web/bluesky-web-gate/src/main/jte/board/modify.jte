@@ -29,7 +29,7 @@
 				</div>
 				
 				<!-- 수정 폼 -->
-				<div class="bg-base-100 rounded-lg shadow-xl p-6">
+				<div class="bg-base-100 rounded-box shadow-xl p-6">
 					<input type="hidden" id="boardArticleId" value="${boardArticle.id() != null ? boardArticle.id().toString() : ""}" />
 					
 					<div class="form-control mb-6">

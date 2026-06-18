@@ -75,7 +75,7 @@
     </div>
     
     <div id="update-loading" class="htmx-indicator fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-        <div class="bg-base-100 p-8 rounded-lg shadow-xl flex flex-col items-center gap-4">
+        <div class="bg-base-100 p-8 rounded-box shadow-xl flex flex-col items-center gap-4">
             <span class="loading loading-spinner loading-lg text-primary"></span>
             <div class="text-lg font-bold">${updatingLabel}</div>
             <div class="text-sm opacity-70">${pleaseWaitLabel}</div>

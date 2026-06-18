@@ -247,12 +247,12 @@
 								<input type="hidden" name="symbol" value="${payoutImportSymbolValue}" />
 								<label class="form-control">
 									<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.url")}</span></div>
-									<div class="rounded-xl border border-base-300 bg-base-200/40 px-4 py-3 text-sm text-base-content break-all">${sourceImportUrlValue}</div>
+									<div class="rounded-box border border-base-300 bg-base-200/40 px-4 py-3 text-sm text-base-content break-all">${sourceImportUrlValue}</div>
 								</label>
 								<button type="submit" class="btn btn-secondary w-full">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.submit")}</button>
 							</form>
 						@else
-							<div class="mt-4 rounded-xl border border-base-300 bg-base-100 px-4 py-3 text-sm text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.empty")}</div>
+							<div class="mt-4 rounded-box border border-base-300 bg-base-100 px-4 py-3 text-sm text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.empty")}</div>
 						@endif
 						<div class="divider my-4 text-xs text-base-content/40">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.title")}</div>
 						<div class="space-y-2">
@@ -265,7 +265,7 @@
 							<label class="form-control">
 								<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.symbol")}</span></div>
 								<input type="hidden" name="symbol" value="${payoutImportSymbolValue}" />
-								<div class="rounded-xl border border-base-300 bg-base-200/40 px-4 py-3 text-sm text-base-content">${payoutSymbolLabel}</div>
+								<div class="rounded-box border border-base-300 bg-base-200/40 px-4 py-3 text-sm text-base-content">${payoutSymbolLabel}</div>
 								<p class="mt-2 text-xs leading-5 text-base-content/50">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.symbol.desc")}</p>
 							</label>
 							<label class="form-control">
@@ -283,7 +283,7 @@
 						<label class="form-control">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.symbol")}</span></div>
 							<input type="hidden" name="symbol" value="${payoutSymbolValue}" />
-							<div class="rounded-xl border border-base-300 bg-base-200/40 px-4 py-3 text-sm text-base-content">${payoutSymbolLabel}</div>
+							<div class="rounded-box border border-base-300 bg-base-200/40 px-4 py-3 text-sm text-base-content">${payoutSymbolLabel}</div>
 							<p class="mt-2 text-xs leading-5 text-base-content/50">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.symbol.desc")}</p>
 						</label>
 						<label class="form-control">

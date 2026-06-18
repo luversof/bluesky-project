@@ -62,8 +62,6 @@
     --tracking-tight: -0.025em;
     --tracking-wide: 0.025em;
     --radius-md: 0.375rem;
-    --radius-lg: 0.5rem;
-    --radius-xl: 0.75rem;
     --radius-2xl: 1rem;
     --radius-3xl: 1.5rem;
     --default-transition-duration: 150ms;
@@ -3899,11 +3897,14 @@
   .rounded-box {
     border-radius: var(--radius-box);
   }
+  .rounded-field {
+    border-radius: var(--radius-field);
+  }
+  .rounded-field {
+    border-radius: var(--radius-field);
+  }
   .rounded-full {
     border-radius: calc(infinity * 1px);
-  }
-  .rounded-lg {
-    border-radius: var(--radius-lg);
   }
   .rounded-md {
     border-radius: var(--radius-md);
@@ -3911,8 +3912,11 @@
   .rounded-none {
     border-radius: 0;
   }
-  .rounded-xl {
-    border-radius: var(--radius-xl);
+  .rounded-selector {
+    border-radius: var(--radius-selector);
+  }
+  .rounded-selector {
+    border-radius: var(--radius-selector);
   }
   .border {
     border-style: var(--tw-border-style);

@@ -16,9 +16,6 @@
 				<h1 class="text-2xl font-bold">${MessageUtil.getMessage("stock.page.realized.profit.title")}</h1>
 			</div>
 
-			<!-- Chart.js: fragment 내 차트 사용 -->
-			<script src="/js/vendor/chart.umd.min.js"></script>
-
 			<div hx-get="/stock/htmx/realized-profit" hx-trigger="load" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
 				<div class="flex justify-center p-10">
 					<span class="loading loading-spinner text-primary loading-lg"></span>

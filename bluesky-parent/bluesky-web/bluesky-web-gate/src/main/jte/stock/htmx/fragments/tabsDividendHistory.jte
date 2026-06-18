@@ -573,27 +573,27 @@
                                 <button type="button" class="btn btn-ghost btn-xs self-start" data-dividend-yield-selection-clear>${dividendYieldSelectionClearLabel}</button>
                             </div>
                             <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                <div class="rounded-box bg-base-100/80 px-3 py-2">
                                     <div class="text-xs text-base-content/60">${grossAmountLabel}</div>
                                     <div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-gross>0</div>
                                 </div>
-                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                <div class="rounded-box bg-base-100/80 px-3 py-2">
                                     <div class="text-xs text-base-content/60">${netAmountLabel}</div>
                                     <div class="mt-1 font-mono font-semibold amount-value text-dividend" data-dividend-yield-selection-net>0</div>
                                 </div>
-                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                <div class="rounded-box bg-base-100/80 px-3 py-2">
                                     <div class="text-xs text-base-content/60">${taxLabel}</div>
                                     <div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-tax>0</div>
                                 </div>
-                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                <div class="rounded-box bg-base-100/80 px-3 py-2">
                                     <div class="text-xs text-base-content/60">${taxableAmountLabel}</div>
                                     <div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-taxable>0</div>
                                 </div>
-                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                <div class="rounded-box bg-base-100/80 px-3 py-2">
                                     <div class="text-xs text-base-content/60">${dailyAverageInvestedCapitalLabel}</div>
                                     <div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-daily-capital>0</div>
                                 </div>
-                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                <div class="rounded-box bg-base-100/80 px-3 py-2">
                                     <div class="text-xs text-base-content/60">${yieldOnDailyAverageCostLabel}</div>
                                     <div class="mt-1 font-mono font-semibold text-dividend" data-dividend-yield-selection-yield>0.00%</div>
                                     <div class="text-xs text-base-content/60" data-dividend-yield-selection-basis-yield>${yieldOnBasisAverageCostLabel} 0.00%</div>
@@ -786,27 +786,27 @@
                                 <button type="button" class="btn btn-ghost btn-xs self-start" data-dividend-yield-selection-clear>${dividendYieldSelectionClearLabel}</button>
                             </div>
                             <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                <div class="rounded-box bg-base-100/80 px-3 py-2">
                                     <div class="text-xs text-base-content/60">${grossAmountLabel}</div>
                                     <div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-gross>0</div>
                                 </div>
-                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                <div class="rounded-box bg-base-100/80 px-3 py-2">
                                     <div class="text-xs text-base-content/60">${netAmountLabel}</div>
                                     <div class="mt-1 font-mono font-semibold amount-value text-dividend" data-dividend-yield-selection-net>0</div>
                                 </div>
-                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                <div class="rounded-box bg-base-100/80 px-3 py-2">
                                     <div class="text-xs text-base-content/60">${taxLabel}</div>
                                     <div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-tax>0</div>
                                 </div>
-                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                <div class="rounded-box bg-base-100/80 px-3 py-2">
                                     <div class="text-xs text-base-content/60">${taxableAmountLabel}</div>
                                     <div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-taxable>0</div>
                                 </div>
-                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                <div class="rounded-box bg-base-100/80 px-3 py-2">
                                     <div class="text-xs text-base-content/60">${dailyAverageInvestedCapitalLabel}</div>
                                     <div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-daily-capital>0</div>
                                 </div>
-                                <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                                <div class="rounded-box bg-base-100/80 px-3 py-2">
                                     <div class="text-xs text-base-content/60">${yieldOnDailyAverageCostLabel}</div>
                                     <div class="mt-1 font-mono font-semibold text-dividend" data-dividend-yield-selection-yield>0.00%</div>
                                     <div class="text-xs text-base-content/60" data-dividend-yield-selection-basis-yield>${yieldOnBasisAverageCostLabel} 0.00%</div>
@@ -1769,18 +1769,9 @@
         initializeDividendYieldSelection();
         window.initializeStockTagHoverTooltips(document);
 
-        if (window.Chart) {
-            setTimeout(initAll, 0);
-            setTimeout(() => { if (monthlyChart) monthlyChart.resize(); if (donutChart) donutChart.resize(); }, 200);
-        } else {
-            const s = document.createElement('script');
-            s.src = '/js/vendor/chart.umd.min.js';
-            s.onload = () => {
-                setTimeout(initAll, 0);
-                setTimeout(() => { if (monthlyChart) monthlyChart.resize(); if (donutChart) donutChart.resize(); }, 200);
-            };
-            document.head.appendChild(s);
-        }
+        // Chart.js 는 stockLayout 에서 1회 로드되어 항상 존재한다. (initAll 은 ensureStockCharts 로 헬퍼 보장)
+        setTimeout(initAll, 0);
+        setTimeout(() => { if (monthlyChart) monthlyChart.resize(); if (donutChart) donutChart.resize(); }, 200);
 
         // 페이징 클릭 시 fragment 상단 스크롤
         if (window.__pendingScrollTo === 'dividendListFragment') {

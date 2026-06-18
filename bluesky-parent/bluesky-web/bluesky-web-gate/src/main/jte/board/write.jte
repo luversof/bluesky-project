@@ -27,7 +27,7 @@
 				</div>
 				
 				<!-- 작성 폼 -->
-				<div class="bg-base-100 rounded-lg shadow-xl p-6">
+				<div class="bg-base-100 rounded-box shadow-xl p-6">
 					<div class="form-control mb-6">
 						<label class="label" for="title">
 							<span class="label-text font-semibold">제목</span>

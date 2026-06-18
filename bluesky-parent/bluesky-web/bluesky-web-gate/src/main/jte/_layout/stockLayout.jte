@@ -12,6 +12,10 @@
 	profile = profile,
 	hideHamburger = true,
 	content = @`
+		<!-- 차트 라이브러리/헬퍼: 페이지·프래그먼트 스크립트보다 먼저 1회만 로드 -->
+		<script src="/js/vendor/chart.umd.min.js"></script>
+		<script src="/js/stock-charts.js"></script>
+
 		<div class="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)]">
 			<div class="hidden lg:block lg:w-56 shrink-0">
 				<div class="fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-56 overflow-y-auto border-r border-base-200 bg-base-100 py-4">
@@ -32,9 +36,6 @@
 		</div>
 
 		<script src="/js/stock/globalDateRange.js"></script>
-
-		<!-- stock charts helper (loaded after page content to ensure Chart.js is available when pages include it) -->
-		<script src="/js/stock-charts.js"></script>
 
 		<!-- 모바일 하단 탭바 (lg 이상에서 숨김) -->
 		<nav class="dock dock-sm lg:hidden z-50 border-t border-base-200 bg-base-100/95 backdrop-blur">

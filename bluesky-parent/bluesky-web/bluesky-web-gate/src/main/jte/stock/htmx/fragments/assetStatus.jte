@@ -84,24 +84,24 @@
                         <button type="button" class="btn btn-ghost btn-xs self-start" data-account-selection-clear>${stockSelectionClearLabel}</button>
                     </div>
                     <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                        <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                        <div class="rounded-box bg-base-100/80 px-3 py-2">
                             <div class="text-xs text-base-content/60">${buyAmountLabel}</div>
                             <div class="mt-1 font-mono font-semibold amount-value" data-account-selection-buy-amount>0</div>
                         </div>
-                        <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                        <div class="rounded-box bg-base-100/80 px-3 py-2">
                             <div class="text-xs text-base-content/60">${evaluationAmountLabel}</div>
                             <div class="mt-1 font-mono font-semibold amount-value text-principal" data-account-selection-evaluation-amount>0</div>
                         </div>
-                        <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                        <div class="rounded-box bg-base-100/80 px-3 py-2">
                             <div class="text-xs text-base-content/60">${evaluationProfitLabel}</div>
                             <div class="mt-1 font-mono font-semibold amount-value" data-account-selection-evaluation-profit>0</div>
                             <div class="text-xs text-base-content/60" data-account-selection-profit-rate>(0.0%)</div>
                         </div>
-                        <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                        <div class="rounded-box bg-base-100/80 px-3 py-2">
                             <div class="text-xs text-base-content/60">${principalLabel}</div>
                             <div class="mt-1 font-mono font-semibold amount-value" data-account-selection-principal>0</div>
                         </div>
-                        <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                        <div class="rounded-box bg-base-100/80 px-3 py-2">
                             <div class="text-xs text-base-content/60">${principalReturnLabel}</div>
                             <div class="mt-1 font-mono font-semibold amount-value" data-account-selection-principal-return>0</div>
                             <div class="text-xs text-base-content/60" data-account-selection-principal-return-rate>(0.0%)</div>
@@ -369,20 +369,20 @@
                         <button type="button" class="btn btn-ghost btn-xs self-start" data-selection-clear>${stockSelectionClearLabel}</button>
                     </div>
                     <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                        <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                        <div class="rounded-box bg-base-100/80 px-3 py-2">
                             <div class="text-xs text-base-content/60">${buyAmountLabel}</div>
                             <div class="mt-1 font-mono font-semibold amount-value" data-selection-buy-amount>0</div>
                         </div>
-                        <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                        <div class="rounded-box bg-base-100/80 px-3 py-2">
                             <div class="text-xs text-base-content/60">${evaluationAmountLabel}</div>
                             <div class="mt-1 font-mono font-semibold amount-value text-principal" data-selection-evaluation-amount>0</div>
                         </div>
-                        <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                        <div class="rounded-box bg-base-100/80 px-3 py-2">
                             <div class="text-xs text-base-content/60">${evaluationProfitLabel}</div>
                             <div class="mt-1 font-mono font-semibold amount-value" data-selection-evaluation-profit>0</div>
                             <div class="text-xs text-base-content/60" data-selection-profit-rate>(0.0%)</div>
                         </div>
-                        <div class="rounded-xl bg-base-100/80 px-3 py-2">
+                        <div class="rounded-box bg-base-100/80 px-3 py-2">
                             <div class="text-xs text-base-content/60">${stockSelectionWeightLabel}</div>
                             <div class="mt-1 font-mono font-semibold amount-value" data-selection-weight>0.0%</div>
                         </div>

@@ -9,7 +9,7 @@
 		<div class="grid gap-3 p-3">
 			@for(String theme : net.luversof.web.gate.util.TemplateUtil.getThemeList())
 			<button class="text-start" data-set-theme="${theme}" data-act-class="[&_svg]:visible">
-				<span data-theme="${theme}" class="rounded-btn block w-full font-sans">
+				<span data-theme="${theme}" class="rounded-field block w-full font-sans">
 					<span class="grid">
 						<span class="flex gap-2 px-4 py-3">
 							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="invisible h-3 w-3 shrink-0">
@@ -17,10 +17,10 @@
 							</svg>
 							<span class="flex-grow text-sm">${theme}</span>
 							<span class="flex h-full gap-1">
-								<span class="bg-primary rounded-badge w-2"></span>
-								<span class="bg-secondary rounded-badge w-2"></span>
-								<span class="bg-accent rounded-badge w-2"></span>
-								<span class="bg-neutral rounded-badge w-2"></span>
+								<span class="bg-primary rounded-selector w-2"></span>
+								<span class="bg-secondary rounded-selector w-2"></span>
+								<span class="bg-accent rounded-selector w-2"></span>
+								<span class="bg-neutral rounded-selector w-2"></span>
 							</span>
 						</span>
 					</span>

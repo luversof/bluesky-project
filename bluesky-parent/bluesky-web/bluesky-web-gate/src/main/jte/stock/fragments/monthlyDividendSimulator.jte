@@ -270,7 +270,7 @@
 									<button type="button" class="btn btn-ghost btn-xs self-start" data-monthly-selection-clear>${selectionClearLabel}</button>
 								</div>
 								<div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-									<div class="rounded-xl bg-base-100/80 px-3 py-3">
+									<div class="rounded-box bg-base-100/80 px-3 py-3">
 										<div class="text-xs text-base-content/60">${selectionOverviewLabel}</div>
 										<div class="mt-3 space-y-2">
 											<div class="flex items-center justify-between gap-3 text-sm">
@@ -287,7 +287,7 @@
 											</div>
 										</div>
 									</div>
-									<div class="rounded-xl bg-base-100/80 px-3 py-2">
+									<div class="rounded-box bg-base-100/80 px-3 py-2">
 										<div class="text-xs text-base-content/60">${selectionDividendLabel}</div>
 										<div class="mt-3 space-y-3">
 											<div>
@@ -304,7 +304,7 @@
 											</div>
 										</div>
 									</div>
-									<div class="rounded-xl bg-base-100/80 px-3 py-2">
+									<div class="rounded-box bg-base-100/80 px-3 py-2">
 										<div class="text-xs text-base-content/60">${selectionInvestmentLabel}</div>
 										<div class="mt-3 space-y-3">
 											<div>
@@ -327,7 +327,7 @@
 											</div>
 										</div>
 									</div>
-									<div class="rounded-xl bg-base-100/80 px-3 py-2">
+									<div class="rounded-box bg-base-100/80 px-3 py-2">
 										<div class="text-xs text-base-content/60">${selectionEfficiencyLabel}</div>
 										<div class="mt-3 space-y-3">
 											<div>

@@ -1,7 +1,5 @@
 @param boolean isAuthenticated = false
 
-<!-- Chart.js is required for chart fragments -->
-<script src="/js/vendor/chart.umd.min.js"></script>
 <!-- Dashboard Layout -->
 <div class="container mx-auto p-4 space-y-6">
     <!-- 1. Summary Cards + Charts + Top/Bottom Rankings -->
