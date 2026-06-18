@@ -35,7 +35,7 @@ public class KisApiExampleTest {
   void testFetchAndSaveKisDailyPrice() {
     OpenApiConfig config;
     try {
-      config = kisAuthService.getValidConfig();
+      config = kisAuthService.getValidConfig(java.util.UUID.randomUUID());
     } catch (Exception e) {
       System.out.println("KIS API is not configured. Skipping test: " + e.getMessage());
       return;

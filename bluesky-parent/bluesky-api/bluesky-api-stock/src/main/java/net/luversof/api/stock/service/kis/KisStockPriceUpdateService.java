@@ -64,7 +64,7 @@ public class KisStockPriceUpdateService {
   @Value("${kis.api.base-url:https://openapi.koreainvestment.com:9443}")
   private String baseUrl;
 
-  public void updatePriceHistory() {
+  public void updatePriceHistory(UUID userId) {
     Map<UUID, LocalDate> stockItemMinDateMap = new HashMap<>();
     Map<UUID, LocalDate> stockItemMaxDateMap = new HashMap<>();
 
@@ -145,7 +145,8 @@ public class KisStockPriceUpdateService {
 
         // dbMin 이전에 가져와야할 과거 데이터가 있는 경우
         if (minDate.isBefore(dbMin)) {
-          fetchRangesInBlocks(stockItemId, stockItem.getSymbol(), minDate, dbMin.minusDays(1));
+          fetchRangesInBlocks(
+              userId, stockItemId, stockItem.getSymbol(), minDate, dbMin.minusDays(1));
         }
 
         // 과거 보정(refreshTargetDates)과 전진 갱신(dbMax+1 ~ today)을 하나의 구간 집합으로 모은다.
@@ -162,10 +163,11 @@ public class KisStockPriceUpdateService {
           fetchRanges.add(new DateRange(dbMax.plusDays(1), maxDate));
         }
         for (DateRange range : mergeAdjacentRanges(fetchRanges)) {
-          fetchRangesInBlocks(stockItemId, stockItem.getSymbol(), range.start(), range.end());
+          fetchRangesInBlocks(
+              userId, stockItemId, stockItem.getSymbol(), range.start(), range.end());
         }
       } else {
-        fetchRangesInBlocks(stockItemId, stockItem.getSymbol(), minDate, maxDate);
+        fetchRangesInBlocks(userId, stockItemId, stockItem.getSymbol(), minDate, maxDate);
       }
     }
   }
@@ -227,7 +229,7 @@ public class KisStockPriceUpdateService {
   }
 
   private void fetchRangesInBlocks(
-      UUID stockItemId, String symbol, LocalDate startDate, LocalDate endDate) {
+      UUID userId, UUID stockItemId, String symbol, LocalDate startDate, LocalDate endDate) {
     LocalDate currentStartDate = startDate;
     while (!currentStartDate.isAfter(endDate)) {
       LocalDate currentEndDate = currentStartDate.plusDays(99);
@@ -235,7 +237,7 @@ public class KisStockPriceUpdateService {
         currentEndDate = endDate;
       }
 
-      fetchAndSavePriceHistory(stockItemId, symbol, currentStartDate, currentEndDate);
+      fetchAndSavePriceHistory(userId, stockItemId, symbol, currentStartDate, currentEndDate);
 
       currentStartDate = currentEndDate.plusDays(1);
 
@@ -268,10 +270,10 @@ public class KisStockPriceUpdateService {
   }
 
   private void fetchAndSavePriceHistory(
-      UUID stockItemId, String symbol, LocalDate startDate, LocalDate endDate) {
+      UUID userId, UUID stockItemId, String symbol, LocalDate startDate, LocalDate endDate) {
     OpenApiConfig config;
     try {
-      config = kisAuthService.getValidConfig();
+      config = kisAuthService.getValidConfig(userId);
     } catch (Exception e) {
       log.warn("KIS API Auth is not configured: {}", e.getMessage());
       return;

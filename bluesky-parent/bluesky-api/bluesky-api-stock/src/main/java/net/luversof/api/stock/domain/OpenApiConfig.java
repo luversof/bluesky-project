@@ -23,6 +23,10 @@ public class OpenApiConfig {
   private UUID id;
 
   @NotNull(groups = {Create.class, Update.class})
+  @Column("user_id")
+  private UUID userId;
+
+  @NotNull(groups = {Create.class, Update.class})
   @Column("provider")
   private String provider;
 
@@ -56,6 +60,14 @@ public class OpenApiConfig {
 
   public void setId(UUID id) {
     this.id = id;
+  }
+
+  public UUID getUserId() {
+    return userId;
+  }
+
+  public void setUserId(UUID userId) {
+    this.userId = userId;
   }
 
   public String getProvider() {
@@ -111,11 +123,13 @@ public class OpenApiConfig {
     if (this == obj) return true;
     if (obj == null || getClass() != obj.getClass()) return false;
     OpenApiConfig other = (OpenApiConfig) obj;
-    return Objects.equals(id, other.id) && Objects.equals(provider, other.provider);
+    return Objects.equals(id, other.id)
+        && Objects.equals(userId, other.userId)
+        && Objects.equals(provider, other.provider);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, provider);
+    return Objects.hash(id, userId, provider);
   }
 }

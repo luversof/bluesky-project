@@ -131,6 +131,7 @@ CREATE UNIQUE INDEX uk_stockPriceHistory_stockItemId_tradeDate ON "StockPriceHis
 
 CREATE TABLE "OpenApiConfig" (
 	"id" UUID NOT NULL PRIMARY KEY,
+	"user_id" UUID NOT NULL,
 	"provider" VARCHAR(50) NOT NULL,
 	"appKey" VARCHAR(255) NOT NULL,
 	"appSecret" VARCHAR(255) NOT NULL,
@@ -139,7 +140,7 @@ CREATE TABLE "OpenApiConfig" (
 	"updatedDate" TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
-CREATE UNIQUE INDEX uk_openApiConfig_provider ON "OpenApiConfig" ("provider");
+CREATE UNIQUE INDEX uk_openApiConfig_provider_userId ON "OpenApiConfig" ("provider", "user_id");
 CREATE TABLE "DailyAccountSnapshot" (
         "id" UUID NOT NULL PRIMARY KEY,
         "user_id" UUID NOT NULL,

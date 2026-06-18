@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,12 +30,15 @@ public class KisAuthService {
 
   private final String tokenPath = "/oauth2/tokenP";
 
-  /** KIS 토큰을 조회하거나 만료된 경우(24시간) 재발급 받습니다. */
-  public OpenApiConfig getValidConfig() {
+  /** 사용자의 KIS 토큰을 조회하거나 만료된 경우(24시간) 재발급 받습니다. */
+  public OpenApiConfig getValidConfig(UUID userId) {
     OpenApiConfig config =
         openApiConfigRepository
-            .findByProvider("KIS")
-            .orElseThrow(() -> new RuntimeException("KIS API 설정이 DB에 없습니다. (provider='KIS')"));
+            .findByProviderAndUserId("KIS", userId)
+            .orElseThrow(
+                () ->
+                    new RuntimeException(
+                        "KIS API 설정이 DB에 없습니다. (provider='KIS', userId=" + userId + ")"));
 
     Instant now = Instant.now();
     // 토큰이 없거나 발행된지 23시간이 넘었으면 재발급 (KIS 토큰 유효기간 24시간)

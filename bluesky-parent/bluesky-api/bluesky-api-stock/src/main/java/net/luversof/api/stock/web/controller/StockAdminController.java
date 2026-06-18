@@ -39,7 +39,7 @@ public class StockAdminController {
 
   @PostMapping("/price-histories")
   public void priceHistoryUpdate(@RequestParam UUID userId) {
-    kisStockPriceUpdateService.updatePriceHistory();
+    kisStockPriceUpdateService.updatePriceHistory(userId);
   }
 
   /** "배당주 검색" 시트의 보유/평단가를 월배당 기준 등록 종목에 한해 월배당 스냅샷에 추가/갱신한다. */
