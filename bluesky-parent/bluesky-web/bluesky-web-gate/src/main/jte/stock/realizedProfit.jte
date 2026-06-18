@@ -17,7 +17,7 @@
 			</div>
 
 			<!-- Chart.js: fragment 내 차트 사용 -->
-			<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+			<script src="/js/vendor/chart.umd.min.js"></script>
 
 			<div hx-get="/stock/htmx/realized-profit" hx-trigger="load" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
 				<div class="flex justify-center p-10">

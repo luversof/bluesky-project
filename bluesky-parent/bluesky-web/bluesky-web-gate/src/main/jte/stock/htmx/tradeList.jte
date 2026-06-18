@@ -506,7 +506,7 @@
             }, 200);
         } else {
             var s = document.createElement('script');
-            s.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+            s.src = '/js/vendor/chart.umd.min.js';
             s.onload = function() {
                 setTimeout(initAll, 0);
                 setTimeout(function() {

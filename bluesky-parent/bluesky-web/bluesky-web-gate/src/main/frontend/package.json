@@ -2,9 +2,10 @@
 	"name": "frontend",
 	"private": true,
 	"scripts": {
-		"build": "npm-run-all build:ts build:css",
+		"build": "npm-run-all build:ts build:css build:vendor",
 		"build:ts": "tsc",
 		"build:css": "tailwindcss -i ./main.css -o ../resources/static/main.css",
+		"build:vendor": "node copy-vendor.mjs",
 		"watch:css": "tailwindcss -i ./main.css -o ../resources/static/main.css --watch",
 		"watch:format": "chokidar \"src/**/*.ts\" -c \"prettier --write {path}\"",
 		"watch:ts": "tsc --watch",
@@ -21,7 +22,15 @@
 	},
 	"dependencies": {
 		"@tailwindcss/cli": "^4.0.10",
-		"tailwindcss": "^4.0.10"
+		"chart.js": "4.5.1",
+		"chartjs-plugin-zoom": "2.0.1",
+		"dayjs": "1.11.18",
+		"easymde": "2.20.0",
+		"hammerjs": "2.0.8",
+		"htmx-ext-json-enc": "2.0.3",
+		"htmx.org": "2.0.10",
+		"tailwindcss": "^4.0.10",
+		"theme-change": "3.0.4"
 	},
 	"prettier": {
 		"useTabs": true

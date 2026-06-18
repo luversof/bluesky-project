@@ -15,8 +15,8 @@
 	loginUrl = loginUrl,
 	profile = profile,
 	content = @`
-		<link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
-		<script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+		<link rel="stylesheet" href="/css/vendor/easymde.min.css">
+		<script src="/js/vendor/easymde.min.js"></script>
 
 		<div class="container mx-auto px-4 py-8" data-board-mode="write" data-board-id="${board.id() != null ? board.id().toString() : ""}" data-board-alias="${board.alias()}">
 			<div class="max-w-4xl mx-auto">

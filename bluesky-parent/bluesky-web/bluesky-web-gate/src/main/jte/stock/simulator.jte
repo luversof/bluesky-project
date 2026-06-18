@@ -78,7 +78,7 @@
 	contentStock = @`
 		<div id="stockSimulatorApp" class="container mx-auto space-y-6 p-4">
 			@if(!monthlyDividendTab)
-				<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+				<script src="/js/vendor/chart.umd.min.js"></script>
 				<script>
 					window.stockSimulatorI18n = {
 						defaultScenarioName: '${MessageUtil.getMessage("stock.simulator.default.scenario.name")}',

@@ -1774,7 +1774,7 @@
             setTimeout(() => { if (monthlyChart) monthlyChart.resize(); if (donutChart) donutChart.resize(); }, 200);
         } else {
             const s = document.createElement('script');
-            s.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+            s.src = '/js/vendor/chart.umd.min.js';
             s.onload = () => {
                 setTimeout(initAll, 0);
                 setTimeout(() => { if (monthlyChart) monthlyChart.resize(); if (donutChart) donutChart.resize(); }, 200);

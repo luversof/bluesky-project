@@ -19,9 +19,9 @@
 		})();
 	</script>
 	<link href="/main.css" rel="stylesheet" />
-	<script src="https://unpkg.com/theme-change/index.js"></script>
-	<script src="https://unpkg.com/htmx.org"></script>
-	<script src="https://unpkg.com/htmx-ext-json-enc/json-enc.js"></script>
+	<script src="/js/vendor/theme-change.js"></script>
+	<script src="/js/vendor/htmx.min.js"></script>
+	<script src="/js/vendor/json-enc.js"></script>
 	<script src="/js/common.js"></script>
 	<script src="/js/date-range-picker.js"></script>
 	<script type="module" src="/js/stock/selectionStorage.js"></script>

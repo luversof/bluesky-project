@@ -12,12 +12,12 @@
 	loginUrl = loginUrl,
 	profile = profile,
 	content = @`
-		<script src="https://unpkg.com/dayjs"></script>
-		<script src="https://unpkg.com/dayjs/locale/ko"></script>
+		<script src="/js/vendor/dayjs.min.js"></script>
+		<script src="/js/vendor/dayjs.locale.ko.js"></script>
 		<script>
 			dayjs.locale('ko');
 		</script>
-		<script src="https://unpkg.com/dayjs/plugin/relativeTime"></script>
+		<script src="/js/vendor/dayjs.plugin.relativeTime.js"></script>
 		<script>
 			dayjs.extend(globalThis.dayjs_plugin_relativeTime);
 		</script>
