@@ -419,7 +419,7 @@
                         <canvas id="donutChart" class="amount-chart"></canvas>
                     </div>
                     <div class="flex flex-col w-0 flex-1 h-[200px] overflow-hidden">
-                        <div class="tabs tabs-boxed tabs-xs mb-1 w-fit flex-shrink-0">
+                        <div class="tabs tabs-box tabs-xs mb-1 w-fit flex-shrink-0">
                             <a class="tab tab-active" id="donutTabStock" onclick="switchDonut('stock')">${byStockLabel}</a>
                             <a class="tab" id="donutTabAccount" onclick="switchDonut('account')">${byAccountLabel}</a>
                         </div>

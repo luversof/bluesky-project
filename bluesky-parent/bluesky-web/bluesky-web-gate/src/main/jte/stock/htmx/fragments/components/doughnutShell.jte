@@ -21,7 +21,7 @@
     <div class="card-body p-4">
         <div class="flex items-center justify-between mb-2">
             <div class="text-sm font-bold" id="${titleId}">${resolvedTitle}</div>
-            <div class="tabs tabs-boxed tabs-xs">
+            <div class="tabs tabs-box tabs-xs">
                 <a class="tab" id="${metricProfitId}" onclick="switchTradeDonut('profit', null)">${profitLabel}</a>
                 <a class="tab tab-active" id="${metricBuyId}" onclick="switchTradeDonut('buy', null)">${buyAmountLabel}</a>
             </div>
@@ -31,7 +31,7 @@
                 <canvas id="${canvasId}" class="amount-chart"></canvas>
             </div>
             <div class="flex flex-col w-0 flex-1 h-[200px] overflow-hidden">
-                <div class="tabs tabs-boxed tabs-xs mb-1 w-fit flex-shrink-0">
+                <div class="tabs tabs-box tabs-xs mb-1 w-fit flex-shrink-0">
                     <a class="tab tab-active" id="${tabStockId}" onclick="switchTradeDonut(null, 'stock')">${byStockLabel}</a>
                     <a class="tab" id="${tabAccountId}" onclick="switchTradeDonut(null, 'account')">${byAccountLabel}</a>
                 </div>

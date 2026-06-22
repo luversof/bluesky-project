@@ -159,7 +159,7 @@
 				</div>
 			</div>
 
-			<div class="tabs tabs-boxed w-full bg-base-200/70 p-1">
+			<div class="tabs tabs-box w-full bg-base-200/70 p-1">
 				<a href="/stock/simulator?tab=sustainability" class="${!monthlyDividendTab ? activeSimulatorTabClass : inactiveSimulatorTabClass}">${sustainabilityTabLabel}</a>
 				<a href="/stock/simulator?tab=monthly-dividend" class="${monthlyDividendTab ? activeSimulatorTabClass : inactiveSimulatorTabClass}">${monthlyDividendTabLabel}</a>
 			</div>
