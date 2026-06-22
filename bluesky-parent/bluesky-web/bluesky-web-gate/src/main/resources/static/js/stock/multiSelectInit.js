@@ -19,18 +19,24 @@ function ensureMultiSelectStyle() {
 select.select.select-sm[multiple], .select.select-sm[multiple] {
 	min-height: unset !important;
 }
-/* Make native multi-selects visually match an input box */
+/* Make native multi-selects visually match an input box (테마 변수 사용 → light/dark 모두 대응) */
 select[multiple], select.select[multiple], select.select-bordered[multiple] {
-	background: #ffffff !important;
-	border: 1px solid #d1d5db !important; /* gray-300 */
-	border-radius: 0.375rem !important; /* rounded-md */
+	background-color: var(--color-base-100) !important;
+	color: var(--color-base-content) !important;
+	border: 1px solid var(--color-base-300) !important;
+	border-radius: var(--radius-field, 0.375rem) !important;
 	padding: 0.25rem 0.4rem !important;
 	box-shadow: none !important;
 }
+select[multiple] option {
+	background-color: var(--color-base-100);
+	color: var(--color-base-content);
+}
 select[multiple]:focus, select.select[multiple]:focus, select.select-bordered[multiple]:focus {
-	outline: none !important;
-	border-color: #6366f1 !important; /* indigo-500 */
-	box-shadow: 0 0 0 3px rgba(99,102,241,0.12) !important;
+	border-color: var(--color-primary) !important;
+	outline: 2px solid var(--color-primary) !important;
+	outline-offset: 0 !important;
+	box-shadow: none !important;
 }
 `));
     (document.head || document.documentElement).appendChild(s);

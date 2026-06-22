@@ -4,42 +4,9 @@
 @source "./src";
 @plugin "@tailwindcss/typography";
 
+/* 테마는 light/dark 2개만 제공한다. light=기본, dark=OS 다크 선호 시 자동(명시 토글이 우선). */
 @plugin "daisyui" {
-	themes: all;
-}
-
-@plugin "daisyui/theme" {
-	name: "bluesky";
-	default: true;
-	/* set as default */
-	prefersdark: false;
-	/* set as default dark mode (prefers-color-scheme:dark) */
-	color-scheme: light;
-	/* color of browser-provided UI */
-	--font-family: "'Inter','Noto Sans KR','Noto Sans JP','Microsoft YaHei','Microsoft JhengHei','Segoe UI','Roboto','Arial','sans-serif','Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol','Noto Color Emoji'";
-	--color-primary: "#3e6cdf";
-	--color-primary-content: "#ffffff";
-	--color-secondary: "#4b5563";
-	--color-secondary-content: "#ffffff";
-	--color-accent: "#ffffff";
-	--color-neutral: "#111827";
-	--color-neutral-content: "#ffffff";
-	--color-base-100: "#ffffff";
-	--color-info: "#e3f1fa";
-	--color-info-content: "#2062ab";
-	--color-success: "#d0fbca";
-	--color-success-content: "#008a00";
-	--color-warning: "#fffac3";
-	--color-warning-content: "#e07303";
-	--color-error: "#ffebee";
-	--color-error-content: "#c30115";
-	--radius-selector: 0rem;
-	--radius-field: 0rem;
-	--radius-box: 0rem;
-	--tab-radius: "0";
-	--animation-btn: "0";
-	--animation-input: "0";
-	--btn-focus-scale: "1";
+	themes: light --default, dark --prefersdark;
 }
 
 /* pagination 비활성화 버튼 배경색 처리 제거 */
@@ -66,11 +33,8 @@
 /* Financial Text Colors (Modern Fintech Style with Theme Support) */
 @layer utilities {
 	.text-profit {
-		/* Light Mode: Soft Red / Dark Mode: Brighter Pastel Red */
-		color: #f04452; 
-		@media (prefers-color-scheme: dark) {
-			color: #ff6b6b;
-		}
+		/* Light: Soft Red (한국 관례: 상승/수익=빨강) */
+		color: #f04452;
 		font-weight: 600;
 	}
 	[data-theme="dark"] .text-profit {
@@ -78,11 +42,8 @@
 	}
 
 	.text-loss {
-		/* Light Mode: Primary Blue / Dark Mode: Brighter Blue */
+		/* Light: Primary Blue (한국 관례: 하락/손실=파랑) */
 		color: #3e6cdf;
-		@media (prefers-color-scheme: dark) {
-			color: #4dabf7;
-		}
 		font-weight: 600;
 	}
 	[data-theme="dark"] .text-loss {
@@ -95,11 +56,8 @@
 	}
 
 	.text-dividend {
-		/* Light Mode: Mint / Dark Mode: Brighter Mint */
+		/* Light: Mint */
 		color: #26c281;
-		@media (prefers-color-scheme: dark) {
-			color: #69db7c;
-		}
 		font-weight: 600;
 	}
 	[data-theme="dark"] .text-dividend {
@@ -166,6 +124,17 @@
 			transform: translateY(var(--tt-pos, -0.25rem)) rotate(180deg);
 		}
 	}
+}
+
+/* light/dark 토글 버튼 아이콘 (현재 테마에 맞는 아이콘만 표시) */
+.theme-icon-dark {
+	display: none;
+}
+[data-theme="dark"] .theme-icon-light {
+	display: none;
+}
+[data-theme="dark"] .theme-icon-dark {
+	display: inline;
 }
 
 /* Hide Amounts Feature */
