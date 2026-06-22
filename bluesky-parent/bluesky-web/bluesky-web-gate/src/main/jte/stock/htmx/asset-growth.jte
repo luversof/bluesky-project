@@ -67,7 +67,7 @@
     String cumulativeProfitAxisLabel = MessageUtil.getMessage("stock.asset.growth.axis.cumulative.profit");
 }
 
-<div id="assetGrowthFragment" class="card bg-base-100 shadow-xl">
+<div id="assetGrowthFragment" class="card bg-base-100 border border-base-200 rounded-box shadow-sm">
     <div class="card-body">
         <div class="flex items-center gap-2 mb-2">
             <h2 class="card-title text-base-content/70 m-0">${assetGrowthTitle}</h2>

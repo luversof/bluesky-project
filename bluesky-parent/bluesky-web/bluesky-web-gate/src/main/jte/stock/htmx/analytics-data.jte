@@ -54,7 +54,7 @@
     </div>
 
     <!-- 2. Chart Area (Large) -->
-    <div class="card bg-base-100 shadow-xl overflow-hidden">
+    <div class="card bg-base-100 border border-base-200 rounded-box shadow-sm overflow-hidden">
         <div class="card-body p-4 sm:p-6" style="min-height: 400px;">
             <h2 class="card-title text-base opacity-70 mb-4">${chartTitle != null ? chartTitle : ("bar".equals(chartType) ? barChartTitle : lineChartTitle)}</h2>
             <div class="relative w-full h-[350px] sm:h-[450px]">
@@ -64,7 +64,7 @@
     </div>
 
     <!-- 3. Detailed Data Table -->
-    <div class="card bg-base-100 shadow-xl">
+    <div class="card bg-base-100 border border-base-200 rounded-box shadow-sm">
         <div class="card-body p-0 overflow-x-auto">
             <table class="table table-zebra w-full text-center">
                 <!-- Head -->

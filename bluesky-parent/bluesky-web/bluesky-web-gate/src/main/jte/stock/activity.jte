@@ -12,9 +12,7 @@
 	profile = profile,
 	contentStock = @`
 		<div class="container mx-auto p-4 space-y-6">
-			<div class="flex justify-between items-center mb-6">
-				<h1 class="text-2xl font-bold">${MessageUtil.getMessage("stock.page.activity.title")}</h1>
-			</div>
+			@template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.page.activity.title"))
 
 			<div hx-get="/stock/htmx/activity-list" hx-trigger="load" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
 				<div class="flex justify-center p-10">

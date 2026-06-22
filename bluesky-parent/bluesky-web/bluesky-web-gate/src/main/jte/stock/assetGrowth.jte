@@ -12,7 +12,7 @@
     profile = profile,
     contentStock = @`
         <div class="container mx-auto p-4 space-y-6">
-            <h1 class="text-2xl font-bold mb-4 ml-1">${MessageUtil.getMessage("stock.page.asset.growth.title")}</h1>
+            @template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.page.asset.growth.title"))
             <!-- Chart.js 는 stockLayout 에서 1회 로드됨. zoom 플러그인만 이 페이지에서 추가 로드 -->
             <script src="/js/vendor/hammer.min.js"></script>
             <script src="/js/vendor/chartjs-plugin-zoom.min.js"></script>

@@ -23,10 +23,7 @@
 		<div class="container mx-auto px-4 py-8" data-board-mode="modify" data-board-id="${board.id() != null ? board.id().toString() : ""}" data-board-alias="${board.alias()}">
 			<div class="max-w-4xl mx-auto">
 				<!-- 헤더 -->
-				<div class="mb-6">
-					<h1 class="text-3xl font-bold">글 수정</h1>
-					<p class="text-gray-600 mt-2">게시글을 수정해주세요</p>
-				</div>
+				@template._components.ui.pageHeader(title = "글 수정", description = "게시글을 수정해주세요", size = "text-3xl")
 				
 				<!-- 수정 폼 -->
 				<div class="bg-base-100 rounded-box shadow-xl p-6">

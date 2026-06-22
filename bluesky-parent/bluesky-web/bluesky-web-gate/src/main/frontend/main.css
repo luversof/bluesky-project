@@ -9,6 +9,60 @@
 	themes: light --default, dark --prefersdark;
 }
 
+/* 브랜드 팔레트(light) — daisyUI 기본 대신 우리 색으로 확정. radius/animation 은 기본 유지. */
+@plugin "daisyui/theme" {
+	name: "light";
+	default: true;
+	color-scheme: light;
+	--color-base-100: #ffffff;
+	--color-base-200: #f5f7fa;
+	--color-base-300: #e5e9f0;
+	--color-base-content: #1a2233;
+	--color-primary: #3e6cdf;
+	--color-primary-content: #ffffff;
+	--color-secondary: #4b5563;
+	--color-secondary-content: #ffffff;
+	--color-accent: #0ea5e9;
+	--color-accent-content: #ffffff;
+	--color-neutral: #1f2937;
+	--color-neutral-content: #ffffff;
+	--color-info: #2062ab;
+	--color-info-content: #ffffff;
+	--color-success: #15803d;
+	--color-success-content: #ffffff;
+	--color-warning: #b45309;
+	--color-warning-content: #ffffff;
+	--color-error: #c30115;
+	--color-error-content: #ffffff;
+}
+
+/* 브랜드 팔레트(dark) — 어두운 슬레이트 베이스 + 밝은 브랜드 블루. */
+@plugin "daisyui/theme" {
+	name: "dark";
+	prefersdark: true;
+	color-scheme: dark;
+	--color-base-100: #0f1623;
+	--color-base-200: #161f2e;
+	--color-base-300: #232f42;
+	--color-base-content: #e6eaf2;
+	--color-primary: #4dabf7;
+	--color-primary-content: #07101f;
+	--color-secondary: #94a3b8;
+	--color-secondary-content: #0b1220;
+	--color-accent: #38bdf8;
+	--color-accent-content: #07101f;
+	--color-neutral: #e2e8f0;
+	--color-neutral-content: #0b1220;
+	--color-info: #60a5fa;
+	--color-info-content: #07101f;
+	--color-success: #4ade80;
+	--color-success-content: #07101f;
+	--color-warning: #fbbf24;
+	--color-warning-content: #1a1203;
+	--color-error: #f87171;
+	--color-error-content: #1a0606;
+}
+
 /* pagination 비활성화 버튼 배경색 처리 제거 */
 .navButton.btn.btn-disabled {
 	--tw-bg-opacity: 0.0;

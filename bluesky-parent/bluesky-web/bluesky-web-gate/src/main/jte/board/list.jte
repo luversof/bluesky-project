@@ -16,10 +16,10 @@
 	content = @`
 		<div class="container mx-auto px-4 py-8" data-board-mode="list" data-board-alias="${board.alias()}" data-is-authenticated="${isAuthenticated}">
 			<!-- 헤더 -->
-			<div class="mb-6">
-				<h1 class="text-3xl font-bold">${board.jsonConfig() != null && board.jsonConfig().get("name") != null ? board.jsonConfig().get("name").toString() : ""}</h1>
-				<p class="text-gray-600 mt-2">${board.jsonConfig() != null && board.jsonConfig().get("description") != null ? board.jsonConfig().get("description").toString() : ""}</p>
-			</div>
+			@template._components.ui.pageHeader(
+				title = board.jsonConfig() != null && board.jsonConfig().get("name") != null ? board.jsonConfig().get("name").toString() : "",
+				description = board.jsonConfig() != null && board.jsonConfig().get("description") != null ? board.jsonConfig().get("description").toString() : "",
+				size = "text-3xl")
 			
 			<!-- 로딩 인디케이터 -->
 			<div id="indicator" class="text-center my-10 hidden">

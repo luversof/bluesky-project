@@ -12,7 +12,7 @@
 	profile = profile,
 	contentStock = @`
 		<div class="container mx-auto p-4 space-y-6">
-			<h1 class="text-2xl font-bold mb-4 ml-1">${MessageUtil.getMessage("stock.page.analytics.title")}</h1>
+			@template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.page.analytics.title"))
 
 			<!-- Section 1: 요약 카드 + 비중 차트 -->
 			<div hx-get="/stock/htmx/summary?showCharts=true" hx-trigger="load" hx-swap="innerHTML">

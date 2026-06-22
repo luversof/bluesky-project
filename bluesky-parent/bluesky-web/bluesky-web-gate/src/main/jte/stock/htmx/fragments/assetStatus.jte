@@ -119,7 +119,7 @@
                 box-shadow: inset 3px 0 0 color-mix(in oklch, var(--color-secondary) 65%, transparent);
             }
         </style>
-        <div class="card bg-base-100 shadow-md overflow-x-auto">
+        <div class="card bg-base-100 border border-base-200 rounded-box shadow-sm overflow-x-auto">
             <table class="table table-sm w-full" data-sortable-table data-asset-status-account-table>
                 <thead class="bg-base-200">
                     <tr>
@@ -408,7 +408,7 @@
                 outline-offset: -2px;
             }
         </style>
-        <div class="card bg-base-100 shadow-md overflow-x-auto">
+        <div class="card bg-base-100 border border-base-200 rounded-box shadow-sm overflow-x-auto">
             <table class="table table-sm table-zebra w-full" data-sortable-table data-asset-status-stock-table>
                 <thead class="bg-base-200">
                     <tr>

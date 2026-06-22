@@ -78,20 +78,18 @@
 
     <!-- 핵심 요약: 총자산(히어로) + 통합손익 -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div class="lg:col-span-2 card bg-base-100 border border-base-200 rounded-box shadow-sm">
-            <div class="card-body p-5">
-                <div class="flex items-center gap-1 text-sm text-base-content/60">
-                    <span>${currentTotalAssetLabel}</span>
-                    <span class="tooltip tooltip-right" data-tip="보유 종목의 현재 평가액 합계 (원금 + 평가손익)">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-4 h-4 stroke-current opacity-60"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    </span>
-                </div>
-                <div class="text-3xl lg:text-4xl font-bold text-principal amount-value mt-1" title="${String.format("%,d원", totalAsset.longValue())}">${StockFormatUtil.compactKrw(totalAsset.longValue())}</div>
-                <div class="text-sm text-base-content/70 mt-2">
-                    ${principalLabel} <span class="font-mono amount-value" title="${String.format("%,d원", currentPrincipal.longValue())}">${StockFormatUtil.compactKrw(currentPrincipal.longValue())}</span>
-                </div>
+        @template._components.ui.card(cssClass = "lg:col-span-2", bodyClass = "p-5", body = @`
+            <div class="flex items-center gap-1 text-sm text-base-content/60">
+                <span>${currentTotalAssetLabel}</span>
+                <span class="tooltip tooltip-right" data-tip="보유 종목의 현재 평가액 합계 (원금 + 평가손익)">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-4 h-4 stroke-current opacity-60"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </span>
             </div>
-        </div>
+            <div class="text-3xl lg:text-4xl font-bold text-principal amount-value mt-1" title="${String.format("%,d원", totalAsset.longValue())}">${StockFormatUtil.compactKrw(totalAsset.longValue())}</div>
+            <div class="text-sm text-base-content/70 mt-2">
+                ${principalLabel} <span class="font-mono amount-value" title="${String.format("%,d원", currentPrincipal.longValue())}">${StockFormatUtil.compactKrw(currentPrincipal.longValue())}</span>
+            </div>
+        `)
 
         <div class="card bg-base-200 rounded-box">
             <div class="card-body p-5 justify-center">
@@ -149,24 +147,27 @@
 
     <!-- 보조 지표 -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div class="bg-base-200 rounded-box p-3">
-            <div class="text-xs text-base-content/60">${currentEvaluationProfitLabel}</div>
-            <div class="text-lg font-bold font-mono amount-value ${evalColor}" title="${String.format("%,d원", currentEvaluationProfit.longValue())}">${String.format("%,d", currentEvaluationProfit.longValue())}</div>
-            <div class="text-xs font-semibold ${evalColor}">${returnRateLabel} ${String.format("%+.2f%%", unrealizedRate)}</div>
-        </div>
-        <div class="bg-base-200 rounded-box p-3">
-            <div class="text-xs text-base-content/60">${realizedProfitLabel}</div>
-            <div class="text-lg font-bold font-mono amount-value ${realizedColor}" title="${String.format("%,d원", totalRealizedProfit.longValue())}">${String.format("%,d", totalRealizedProfit.longValue())}</div>
-        </div>
-        <div class="bg-base-200 rounded-box p-3">
-            <div class="text-xs text-base-content/60">${cumulativeDividendLabel}</div>
-            <div class="text-lg font-bold font-mono text-dividend amount-value" title="${String.format("%,d원", totalDividend.longValue())}">${String.format("%,d", totalDividend.longValue())}</div>
-        </div>
-        <div class="bg-base-200 rounded-box p-3">
-            <div class="text-xs text-base-content/60">${winRateLabel}</div>
-            <div class="text-lg font-bold">${String.format("%.1f", winRate)}%</div>
-            <div class="text-xs text-base-content/50">${profitableStockRatioLabel}</div>
-        </div>
+        @template._components.ui.statCard(
+            label = currentEvaluationProfitLabel,
+            value = String.format("%,d", currentEvaluationProfit.longValue()),
+            valueTitle = String.format("%,d원", currentEvaluationProfit.longValue()),
+            sub = returnRateLabel + " " + String.format("%+.2f%%", unrealizedRate),
+            tone = evalColor)
+        @template._components.ui.statCard(
+            label = realizedProfitLabel,
+            value = String.format("%,d", totalRealizedProfit.longValue()),
+            valueTitle = String.format("%,d원", totalRealizedProfit.longValue()),
+            tone = realizedColor)
+        @template._components.ui.statCard(
+            label = cumulativeDividendLabel,
+            value = String.format("%,d", totalDividend.longValue()),
+            valueTitle = String.format("%,d원", totalDividend.longValue()),
+            tone = "text-dividend")
+        @template._components.ui.statCard(
+            label = winRateLabel,
+            value = String.format("%.1f", winRate) + "%",
+            sub = profitableStockRatioLabel,
+            amount = false)
     </div>
 
     <!-- Charts Row -->

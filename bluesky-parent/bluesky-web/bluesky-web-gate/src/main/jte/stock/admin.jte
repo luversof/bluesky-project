@@ -41,9 +41,7 @@
 	profile = profile,
 	contentStock = @`
 		<div class="container mx-auto p-4 space-y-6">
-			<div class="flex justify-between items-center mb-6">
-				<h1 class="text-2xl font-bold">${MessageUtil.getMessage("stock.page.admin.title")}</h1>
-			</div>
+			@template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.page.admin.title"))
 			<div class="space-y-6">
 				<div class="tabs tabs-box w-full bg-base-200/70 p-1">
 					<a href="/stock/admin" class="${"data-management".equals(adminTab) ? "tab tab-lg flex-1 font-bold tab-active !bg-primary !text-primary-content shadow-sm" : "tab tab-lg flex-1 text-base-content/60 hover:text-base-content"}">${MessageUtil.getMessage("stock.admin.label.data.management")}</a>

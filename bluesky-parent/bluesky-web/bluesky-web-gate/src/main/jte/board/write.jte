@@ -21,10 +21,7 @@
 		<div class="container mx-auto px-4 py-8" data-board-mode="write" data-board-id="${board.id() != null ? board.id().toString() : ""}" data-board-alias="${board.alias()}">
 			<div class="max-w-4xl mx-auto">
 				<!-- 헤더 -->
-				<div class="mb-6">
-					<h1 class="text-3xl font-bold">글쓰기</h1>
-					<p class="text-gray-600 mt-2">새로운 글을 작성해주세요</p>
-				</div>
+				@template._components.ui.pageHeader(title = "글쓰기", description = "새로운 글을 작성해주세요", size = "text-3xl")
 				
 				<!-- 작성 폼 -->
 				<div class="bg-base-100 rounded-box shadow-xl p-6">

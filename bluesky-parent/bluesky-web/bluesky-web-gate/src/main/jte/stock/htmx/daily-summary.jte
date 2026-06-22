@@ -13,7 +13,7 @@
 }
 
 <!-- Daily Summary: 컨트롤 + 데이터를 하나의 카드로 통합 -->
-<div class="card bg-base-100 shadow-xl">
+<div class="card bg-base-100 border border-base-200 rounded-box shadow-sm">
 
     <!-- Filters Form (카드 상단 고정 컨트롤 영역) -->
     <form id="daily-summary-filter-form"

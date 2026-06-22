@@ -287,7 +287,7 @@
     <div class="${useDualChartLayout ? "grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6" : "mt-6"}">
 
         @if(hasProfitChart)
-        <div class="card bg-base-100 shadow-md">
+        <div class="card bg-base-100 border border-base-200 rounded-box shadow-sm">
             <div class="card-body p-4">
                 <h2 class="text-base font-semibold mb-2 text-profit">${topProfitChartLabel}</h2>
                 <div class="relative w-full amount-chart" style="height: ${Math.max(190, chartProfitLabels.size() * 44)}px;">
@@ -338,7 +338,7 @@
         @endif
 
         @if(hasLossChart)
-        <div class="card bg-base-100 shadow-md">
+        <div class="card bg-base-100 border border-base-200 rounded-box shadow-sm">
             <div class="card-body p-4">
                 <h2 class="text-base font-semibold mb-2 text-loss">${topLossChartLabel}</h2>
                 <div class="relative w-full amount-chart" style="height: ${Math.max(190, chartLossLabels.size() * 44)}px;">
@@ -431,7 +431,7 @@
     <!-- Section 2: 계좌별 실현손익 -->
     <div class="mt-6">
         <h2 class="text-lg font-semibold mb-3 opacity-70">${byAccountSectionLabel}</h2>
-        <div class="card bg-base-100 shadow-md overflow-x-auto">
+        <div class="card bg-base-100 border border-base-200 rounded-box shadow-sm overflow-x-auto">
             <table id="accountRealizedTable" class="table table-sm w-full">
                 <thead class="bg-base-200">
                     <tr>
@@ -507,7 +507,7 @@
             </button>
             @endif
         </div>
-        <div class="card bg-base-100 shadow-md overflow-x-auto">
+        <div class="card bg-base-100 border border-base-200 rounded-box shadow-sm overflow-x-auto">
             <table id="stockRealizedTable" class="table table-sm table-zebra w-full">
                 <thead class="bg-base-200">
                     <tr>

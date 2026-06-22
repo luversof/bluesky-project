@@ -58,7 +58,7 @@ String noTradeDataLabel = MessageUtil.getMessage("stock.trade.message.no.data");
 String sellCountPageLabel = java.text.MessageFormat.format(MessageUtil.getMessage("stock.trade.history.sell.count.page"), sellLabel, countMessage.apply(sellCount));
 }
 
-<div class="card bg-base-100 shadow-xl mt-4" id="trade-history-panel">
+<div class="card bg-base-100 border border-base-200 rounded-box shadow-sm mt-4" id="trade-history-panel">
 <div class="card-body p-4">
 <div class="flex items-center justify-between mb-3">
 <h3 class="card-title text-base">

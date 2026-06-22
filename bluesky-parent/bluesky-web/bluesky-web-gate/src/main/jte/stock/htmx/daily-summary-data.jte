@@ -31,7 +31,7 @@
             !{var row = tableData.get(0);}
             
             @if(value1Label != null && !value1Label.isEmpty())
-            <div class="stat bg-base-100 shadow-xl rounded-box p-4">
+            <div class="stat bg-base-100 border border-base-200 shadow-sm rounded-box p-4">
                 <div class="stat-title text-xs opacity-70">${value1Label}</div>
                 <div class="stat-value amount-value text-lg mt-1 font-mono ${row.value1() != null && row.value1().compareTo(BigDecimal.ZERO) >= 0 ? "text-principal" : "text-loss"}">
                     ${String.format("%,d", row.value1() != null ? row.value1().longValue() : 0)}
@@ -40,7 +40,7 @@
             @endif
             
             @if(value2Label != null && !value2Label.isEmpty())
-            <div class="stat bg-base-100 shadow-xl rounded-box p-4">
+            <div class="stat bg-base-100 border border-base-200 shadow-sm rounded-box p-4">
                 <div class="stat-title text-xs opacity-70">${value2Label}</div>
                 <div class="stat-value amount-value text-lg mt-1 font-mono ${row.value2() != null && row.value2().compareTo(BigDecimal.ZERO) >= 0 ? "text-principal" : "text-loss"}">
                     ${String.format("%,d", row.value2() != null ? row.value2().longValue() : 0)}
@@ -49,7 +49,7 @@
             @endif
             
             @if(value3Label != null && !value3Label.isEmpty())
-            <div class="stat bg-base-100 shadow-xl rounded-box p-4">
+            <div class="stat bg-base-100 border border-base-200 shadow-sm rounded-box p-4">
                 <div class="stat-title text-xs opacity-70">${value3Label}</div>
                 <div class="stat-value amount-value text-lg mt-1 font-mono ${row.value3() != null && row.value3().compareTo(BigDecimal.ZERO) >= 0 ? "text-principal" : "text-loss"}">
                     ${String.format("%,d", row.value3() != null ? row.value3().longValue() : 0)}
@@ -58,7 +58,7 @@
             @endif
             
             @if(value4Label != null && !value4Label.isEmpty())
-            <div class="stat bg-base-100 shadow-xl rounded-box p-4">
+            <div class="stat bg-base-100 border border-base-200 shadow-sm rounded-box p-4">
                 <div class="stat-title text-xs opacity-70">${value4Label}</div>
                 <div class="stat-value amount-value text-lg mt-1 font-mono ${row.value4() != null && row.value4().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                     ${String.format("%,d", row.value4() != null ? row.value4().longValue() : 0)}
@@ -67,7 +67,7 @@
             @endif
             
             @if(value5Label != null && !value5Label.isEmpty())
-            <div class="stat bg-base-100 shadow-xl rounded-box p-4">
+            <div class="stat bg-base-100 border border-base-200 shadow-sm rounded-box p-4">
                 <div class="stat-title text-xs opacity-70">${value5Label}</div>
                 <div class="stat-value amount-value text-lg mt-1 font-mono">
                     ${String.format("%,d", row.value5() != null ? row.value5().longValue() : 0)}
@@ -76,7 +76,7 @@
             @endif
             
             @if(value6Label != null && !value6Label.isEmpty())
-            <div class="stat bg-base-100 shadow-xl rounded-box p-4">
+            <div class="stat bg-base-100 border border-base-200 shadow-sm rounded-box p-4">
                 <div class="stat-title text-xs opacity-70">${value6Label}</div>
                 <div class="stat-value amount-value text-lg mt-1 font-mono ${row.value6() != null && row.value6().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                     ${String.format("%,d", row.value6() != null ? row.value6().longValue() : 0)}
@@ -86,7 +86,7 @@
             
             @if(totalLabel != null && !totalLabel.isEmpty())
             !{BigDecimal total = row.value7() != null ? row.value7() : (row.value4() != null ? row.value4() : BigDecimal.ZERO).add(row.value6() != null ? row.value6() : BigDecimal.ZERO);}
-            <div class="stat bg-base-100 shadow-xl rounded-box p-4">
+            <div class="stat bg-base-100 border border-base-200 shadow-sm rounded-box p-4">
                 <div class="stat-title text-xs opacity-70 font-bold">${totalLabel}</div>
                 <div class="stat-value amount-value text-lg mt-1 font-mono font-bold ${total.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                     ${String.format("%,d", total.longValue())}
@@ -96,7 +96,7 @@
         </div>
     @else
         <!-- Chart Area -->
-        <div class="card bg-base-100 shadow-xl w-full">
+        <div class="card bg-base-100 border border-base-200 rounded-box shadow-sm w-full">
             <div class="card-body">
                 <h2 class="card-title text-sm opacity-70">${chartTitle}</h2>
                 <div class="h-[300px] w-full relative">
@@ -108,7 +108,7 @@
     @endif
 
     <!-- Summary Table Area -->
-    <div class="card bg-base-100 shadow-xl w-full">
+    <div class="card bg-base-100 border border-base-200 rounded-box shadow-sm w-full">
         <div class="card-body overflow-x-auto p-0 scrollbar-thin">
             <table class="table table-sm table-pin-rows">
                 <thead>
