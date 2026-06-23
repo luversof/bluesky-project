@@ -13,9 +13,7 @@
     contentStock = @`
         <div class="container mx-auto p-4 space-y-6">
             @template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.page.asset.growth.title"))
-            <!-- Chart.js 는 stockLayout 에서 1회 로드됨. zoom 플러그인만 이 페이지에서 추가 로드 -->
-            <script src="/js/vendor/hammer.min.js"></script>
-            <script src="/js/vendor/chartjs-plugin-zoom.min.js"></script>
+            <!-- Chart.js 는 stockLayout 에서 1회 로드됨. -->
             <div class="mb-8">
                 <div hx-get="/stock/htmx/asset-growth/view" hx-trigger="load" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
                     <div class="flex justify-center p-10">

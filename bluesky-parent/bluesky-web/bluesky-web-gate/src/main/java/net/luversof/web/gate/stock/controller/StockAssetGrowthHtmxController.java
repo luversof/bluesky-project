@@ -6,12 +6,13 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -24,7 +25,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
@@ -66,7 +66,10 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
   @BlueskyPreAuthorize
   @GetMapping("/asset-growth/view")
   public String assetGrowthView(
-      TradeProfitRequest request, @RequestParam(required = false) String rangeMode, Model model) {
+      TradeProfitRequest request,
+      @RequestParam(required = false) java.util.List<String> stockTagList,
+      @RequestParam(required = false) String rangeMode,
+      Model model) {
     var userId = UserUtil.getUserId();
     if (userId == null) {
       return ERROR_VIEW;
@@ -74,6 +77,27 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
 
     request.setUserId(userId);
     String effectiveRangeMode = rangeMode;
+
+    // Load filter source lists (full account/stock lists for the detail filter form).
+    List<StockItem> stockItemList = emptyIfNull(stockItemClient.getStockItems());
+    List<net.luversof.web.gate.stock.domain.Account> accountList =
+        emptyIfNull(accountClient.getAccountsByUserId(userId));
+
+    // Resolve tag selection -> stock item ids (tags drive the stock selection).
+    StockTagSelection stockTagSelection =
+        resolveStockTagSelection(stockItemList, request.getStockItemIdList(), stockTagList);
+    List<String> selectedStockTags = stockTagSelection.selectedStockTags();
+    request.setStockItemIdList(stockTagSelection.requestedStockItemIds());
+
+    List<UUID> requestedAccountIds = request.getAccountIdList();
+    List<UUID> requestedStockItemIds = request.getStockItemIdList();
+
+    // Remember whether the client actually provided a date range (before YTD default),
+    // so the dropdowns only narrow to in-range accounts/stocks when a range was chosen.
+    boolean clientProvidedRange =
+        !((request.getStartDate() == null || request.getStartDate().toEpochMilli() == 0)
+            && (request.getEndDate() == null || request.getEndDate().toEpochMilli() == 0)
+            && (rangeMode == null || rangeMode.isBlank()));
 
     // If no date range provided, default to this year (ytd)
     if (request.getStartDate() == null && request.getEndDate() == null) {
@@ -89,138 +113,149 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       }
     }
 
-    // Asset-growth values depend on holdings that may have been built before the
-    // currently selected range. If we request only the visible range, the upstream
-    // timeSeries endpoint can omit the opening carried balance and the first days
-    // of the chart start from zero. Load the full filtered history once and let the
-    // client open the requested window on top of that base data.
-    var allParams = request.toParams();
-    allParams.remove("startDate");
-    allParams.remove("endDate");
-    allParams.add("granularity", "AUTO");
-    List<TradeProfitTimeSeriesPoint> allSeries = tradeProfitClient.timeSeries(allParams);
+    // Chart data for the SELECTED range. The upstream aggregateTimeSeries simulates from
+    // the first trade (carrying prior holdings) and only outputs from the requested start,
+    // so a range query already reflects carried-over holdings at the right granularity
+    // (AUTO picks DAILY for short windows). No client-side x-axis windowing needed.
+    var seriesParams = request.toParams();
+    seriesParams.add("granularity", "AUTO");
+    List<TradeProfitTimeSeriesPoint> timeSeries = tradeProfitClient.timeSeries(seriesParams);
+
+    // Earliest data date (full history, no date range) for the nav bar's "previous" guard.
+    var firstDateParams = request.toParams();
+    firstDateParams.remove("startDate");
+    firstDateParams.remove("endDate");
+    firstDateParams.add("granularity", "AUTO");
+    List<TradeProfitTimeSeriesPoint> fullSeries = tradeProfitClient.timeSeries(firstDateParams);
     java.time.LocalDate dataFirstDate = null;
-    if (allSeries != null && !allSeries.isEmpty()) {
+    if (fullSeries != null && !fullSeries.isEmpty()) {
       var zone =
           (request.getTimeZone() != null && !request.getTimeZone().isEmpty())
               ? java.time.ZoneId.of(request.getTimeZone())
               : java.time.ZoneId.systemDefault();
       dataFirstDate =
-          allSeries.stream()
+          fullSeries.stream()
               .filter(pt -> pt.timestamp() != null)
               .map(pt -> pt.timestamp().atZone(zone).toLocalDate())
               .min(java.util.Comparator.naturalOrder())
               .orElse(null);
     }
 
-    model.addAttribute("timeSeries", allSeries);
+    model.addAttribute("timeSeries", timeSeries);
     model.addAttribute("dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");
     model.addAttribute("rangeMode", effectiveRangeMode);
     model.addAttribute("startDate", request.getStartDate());
     model.addAttribute("endDate", request.getEndDate());
     model.addAttribute("timeZone", request.getTimeZone());
-    return "stock/htmx/asset-growth";
-  }
 
-  @GetMapping(value = "/asset-growth/data", produces = MediaType.APPLICATION_JSON_VALUE)
-  @ResponseBody
-  public Map<String, Object> assetGrowthData(
-      TradeProfitRequest request,
-      @RequestParam(name = "from", required = false) String from,
-      @RequestParam(name = "to", required = false) String to,
-      @RequestParam(name = "gran", required = false) String gran) {
-    var userId = UserUtil.getUserId();
-    if (userId == null) {
-      return Map.of("labels", List.of());
+    // Detail filter form model. Like realized-profit: when a date range is chosen,
+    // narrow the account/stock dropdowns to items that have trades in that range,
+    // but keep previously-selected items visible even if absent from the range.
+    Set<UUID> tradeAccountIds;
+    Set<UUID> tradeStockIds;
+    List<net.luversof.web.gate.stock.domain.Account> filteredAccountList;
+    List<StockItem> filteredStockItemList;
+    if (clientProvidedRange) {
+      TradeProfitRequest dateOnlyReq = new TradeProfitRequest();
+      dateOnlyReq.setUserId(userId);
+      dateOnlyReq.setStartDate(request.getStartDate());
+      dateOnlyReq.setEndDate(request.getEndDate());
+      dateOnlyReq.setTimeZone(request.getTimeZone());
+      var dateRangeEnriched = new ArrayList<>(getEnrichedTradeProfits(dateOnlyReq));
+      tradeAccountIds =
+          dateRangeEnriched.stream()
+              .map(tp -> tp.accountId())
+              .filter(Objects::nonNull)
+              .collect(Collectors.toSet());
+      tradeStockIds =
+          dateRangeEnriched.stream()
+              .map(tp -> tp.stockItemId())
+              .filter(Objects::nonNull)
+              .collect(Collectors.toSet());
+      filteredAccountList =
+          accountList.stream().filter(a -> tradeAccountIds.contains(a.id())).toList();
+      filteredStockItemList =
+          stockItemList.stream().filter(s -> tradeStockIds.contains(s.id())).toList();
+    } else {
+      tradeAccountIds = Collections.emptySet();
+      tradeStockIds = Collections.emptySet();
+      filteredAccountList = accountList;
+      filteredStockItemList = stockItemList;
     }
-    request.setUserId(userId);
-    if (from != null) {
-      request.setStartDate(
-          LocalDate.parse(from).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+
+    Set<UUID> availableAccountIds =
+        accountList.stream().map(a -> a.id()).collect(Collectors.toSet());
+    List<UUID> effectiveAccountIds =
+        (requestedAccountIds != null
+                && !requestedAccountIds.isEmpty()
+                && availableAccountIds.containsAll(requestedAccountIds))
+            ? requestedAccountIds
+            : List.of();
+
+    Set<UUID> availableStockIds =
+        stockItemList.stream().map(s -> s.id()).collect(Collectors.toSet());
+    List<UUID> effectiveStockItemIds =
+        (requestedStockItemIds != null && availableStockIds.containsAll(requestedStockItemIds))
+            ? requestedStockItemIds
+            : (stockTagSelection.hasFilter() ? List.of() : requestedStockItemIds);
+    if (effectiveStockItemIds == null) {
+      effectiveStockItemIds = List.of();
     }
-    if (to != null) {
-      // preserve original behavior: treat 'to' as exclusive end (start of next day)
-      request.setEndDate(
-          LocalDate.parse(to)
-              .plusDays(1)
-              .atStartOfDay(java.time.ZoneId.systemDefault())
-              .toInstant());
+
+    // Final dropdown lists: narrowed list + previously-selected items not in range.
+    List<net.luversof.web.gate.stock.domain.Account> finalAccountList;
+    if (clientProvidedRange) {
+      finalAccountList = new ArrayList<>(filteredAccountList);
+      if (requestedAccountIds != null) {
+        for (UUID sel : requestedAccountIds) {
+          if (sel == null || tradeAccountIds.contains(sel)) {
+            continue;
+          }
+          accountList.stream()
+              .filter(a -> a.id().equals(sel))
+              .findFirst()
+              .ifPresent(
+                  a -> {
+                    if (finalAccountList.stream().noneMatch(x -> x.id().equals(a.id()))) {
+                      finalAccountList.add(0, a);
+                    }
+                  });
+        }
+      }
+    } else {
+      finalAccountList = new ArrayList<>(filteredAccountList);
     }
-    var params = request.toParams();
-    params.add("granularity", gran != null ? gran : "AUTO");
-    var timeSeries = tradeProfitClient.timeSeries(params);
-    try {
-      logger.debug(
-          "assetGrowthData called: from={} to={} gran={} requestStart={} requestEnd={}",
-          from,
-          to,
-          gran,
-          request.getStartDate(),
-          request.getEndDate());
-    } catch (Exception _e) {
-      /* ignore logging errors */ }
-    var fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
-    var labelsList = new ArrayList<String>();
-    var tvList = new ArrayList<Long>();
-    var tcList = new ArrayList<Long>();
-    var crpList = new ArrayList<Long>();
-    var cdList = new ArrayList<Long>();
-    var tradeCountList = new ArrayList<Long>();
-    var buyCountList = new ArrayList<Long>();
-    var dailyRealizedList = new ArrayList<Long>();
-    for (var pt : timeSeries) {
-      labelsList.add(fmt.format(pt.timestamp()));
-      tvList.add(
-          pt.totalHoldingsValue() != null
-              ? pt.totalHoldingsValue().setScale(0, RoundingMode.HALF_UP).longValue()
-              : 0L);
-      tcList.add(
-          pt.totalHoldingsCost() != null
-              ? pt.totalHoldingsCost().setScale(0, RoundingMode.HALF_UP).longValue()
-              : 0L);
-      crpList.add(
-          pt.cumulativeRealizedProfit() != null
-              ? pt.cumulativeRealizedProfit().setScale(0, RoundingMode.HALF_UP).longValue()
-              : 0L);
-      cdList.add(
-          pt.cumulativeDividend() != null
-              ? pt.cumulativeDividend().setScale(0, RoundingMode.HALF_UP).longValue()
-              : 0L);
-      tradeCountList.add(pt.tradeCount());
-      buyCountList.add(pt.buyCount());
-      dailyRealizedList.add(
-          pt.dailyRealizedProfit() != null
-              ? pt.dailyRealizedProfit().setScale(0, RoundingMode.HALF_UP).longValue()
-              : 0L);
+
+    List<StockItem> finalStockItemList;
+    if (clientProvidedRange) {
+      finalStockItemList = new ArrayList<>(filteredStockItemList);
+      if (requestedStockItemIds != null) {
+        for (UUID sel : requestedStockItemIds) {
+          if (sel == null || tradeStockIds.contains(sel)) {
+            continue;
+          }
+          stockItemList.stream()
+              .filter(s -> s.id().equals(sel))
+              .findFirst()
+              .ifPresent(
+                  s -> {
+                    if (finalStockItemList.stream().noneMatch(x -> x.id().equals(s.id()))) {
+                      finalStockItemList.add(0, s);
+                    }
+                  });
+        }
+      }
+    } else {
+      finalStockItemList = new ArrayList<>(filteredStockItemList);
     }
-    try {
-      long sumTv = 0L;
-      long sumTc = 0L;
-      long sumCrp = 0L;
-      for (Long v : tvList) sumTv += v == null ? 0L : v;
-      for (Long v : tcList) sumTc += v == null ? 0L : v;
-      for (Long v : crpList) sumCrp += v == null ? 0L : v;
-      String first = labelsList.isEmpty() ? "" : labelsList.get(0);
-      String last = labelsList.isEmpty() ? "" : labelsList.get(labelsList.size() - 1);
-      logger.debug(
-          "assetGrowthData summary: count={} first={} last={} sumTv={} sumTc={} sumCrp={}",
-          labelsList.size(),
-          first,
-          last,
-          sumTv,
-          sumTc,
-          sumCrp);
-    } catch (Exception _e) {
-      /* ignore */ }
-    return Map.of(
-        "labels", labelsList,
-        "totalValueData", tvList,
-        "totalCostData", tcList,
-        "cumulativeRealizedProfitData", crpList,
-        "cumulativeDividendData", cdList,
-        "tradeCountData", tradeCountList,
-        "buyCountData", buyCountList,
-        "dailyRealizedProfitData", dailyRealizedList);
+
+    model.addAttribute("accountList", finalAccountList);
+    model.addAttribute("stockItemList", finalStockItemList);
+    model.addAttribute("stockTagList", getAvailableStockTags(stockItemList));
+    model.addAttribute("selectedAccountIds", effectiveAccountIds);
+    model.addAttribute("selectedStockItemIds", effectiveStockItemIds);
+    model.addAttribute("selectedStockTags", selectedStockTags);
+    return "stock/htmx/asset-growth";
   }
 
   @BlueskyPreAuthorize
