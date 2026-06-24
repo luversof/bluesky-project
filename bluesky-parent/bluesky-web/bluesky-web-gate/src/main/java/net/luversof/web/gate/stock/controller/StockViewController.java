@@ -238,9 +238,76 @@ public class StockViewController {
           symbol, profileSort, profileDirection, result, payoutRecordDate, payoutPayDate);
     }
 
+    if ("calendar".equals(dividendTab)) {
+      populateDividendCalendarModel(UserUtil.getUserId(), model);
+    }
+
     model.addAttribute("dividendTab", dividendTab);
 
     return "stock/dividend";
+  }
+
+  /** 배당 캘린더 모델: 보유 월배당 종목의 예상 월 배당을 지급 시기(월중/월말)별로 그룹핑한다. */
+  private void populateDividendCalendarModel(UUID userId, Model model) {
+    List<MonthlyDividendSnapshotResponse> rows = loadMonthlyDividendRows(userId);
+    if (rows == null) {
+      rows = List.of();
+    }
+
+    Map<String, String> payoutWindowBySymbol = new LinkedHashMap<>();
+    for (MonthlyDividendProfileResponse profile : loadMonthlyDividendProfiles()) {
+      String symbol = normalizeMonthlyDividendSymbol(profile.stockItemSymbol());
+      if (symbol != null
+          && profile.payoutWindow() != null
+          && !payoutWindowBySymbol.containsKey(symbol)) {
+        payoutWindowBySymbol.put(symbol, profile.payoutWindow());
+      }
+    }
+
+    List<MonthlyDividendSnapshotResponse> midRows = new ArrayList<>();
+    List<MonthlyDividendSnapshotResponse> endRows = new ArrayList<>();
+    List<MonthlyDividendSnapshotResponse> otherRows = new ArrayList<>();
+    for (MonthlyDividendSnapshotResponse row : rows) {
+      String symbol = normalizeMonthlyDividendSymbol(row.stockItemSymbol());
+      String window = symbol != null ? payoutWindowBySymbol.get(symbol) : null;
+      if ("MID_MONTH".equals(window)) {
+        midRows.add(row);
+      } else if ("MONTH_END".equals(window)) {
+        endRows.add(row);
+      } else {
+        otherRows.add(row);
+      }
+    }
+    Comparator<MonthlyDividendSnapshotResponse> byExpectedDesc =
+        Comparator.comparing(
+                (MonthlyDividendSnapshotResponse row) ->
+                    row.expectedMonthlyDividend() != null
+                        ? row.expectedMonthlyDividend()
+                        : BigDecimal.ZERO)
+            .reversed();
+    midRows.sort(byExpectedDesc);
+    endRows.sort(byExpectedDesc);
+    otherRows.sort(byExpectedDesc);
+
+    model.addAttribute("midRows", midRows);
+    model.addAttribute("endRows", endRows);
+    model.addAttribute("otherRows", otherRows);
+    model.addAttribute("midTotal", sumExpectedMonthlyDividend(midRows));
+    model.addAttribute("endTotal", sumExpectedMonthlyDividend(endRows));
+    model.addAttribute("otherTotal", sumExpectedMonthlyDividend(otherRows));
+    model.addAttribute("monthlyTotal", sumExpectedMonthlyDividend(rows));
+    model.addAttribute(
+        "annualTotal", sumExpectedMonthlyDividend(rows).multiply(BigDecimal.valueOf(12)));
+  }
+
+  private BigDecimal sumExpectedMonthlyDividend(List<MonthlyDividendSnapshotResponse> rows) {
+    return rows.stream()
+        .map(
+            row ->
+                row.expectedMonthlyDividend() != null
+                    ? row.expectedMonthlyDividend()
+                    : BigDecimal.ZERO)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
   @BlueskyPreAuthorize
@@ -826,9 +893,13 @@ public class StockViewController {
   }
 
   private String resolveDividendTab(String tab) {
-    return DIVIDEND_TAB_MONTHLY_REFERENCE.equalsIgnoreCase(tab)
-        ? DIVIDEND_TAB_MONTHLY_REFERENCE
-        : "history";
+    if (DIVIDEND_TAB_MONTHLY_REFERENCE.equalsIgnoreCase(tab)) {
+      return DIVIDEND_TAB_MONTHLY_REFERENCE;
+    }
+    if ("calendar".equalsIgnoreCase(tab)) {
+      return "calendar";
+    }
+    return "history";
   }
 
   private String resolveAdminTab(String tab) {

@@ -12,9 +12,8 @@
 	profile = profile,
 	contentStock = @`
 		<div class="container mx-auto p-4 space-y-6">
-			<div class="flex justify-between items-center mb-6">
-				<h2 class="text-2xl font-bold">${MessageUtil.getMessage("stock.page.trade.title")}</h2>
-			</div>
+			@template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.page.trade.title"))
+
 			<div style="min-height:200px;" hx-get="/stock/htmx/trade/list" hx-trigger="load" hx-target="this" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
 				<span class="loading loading-spinner text-primary"></span>
 			</div>
