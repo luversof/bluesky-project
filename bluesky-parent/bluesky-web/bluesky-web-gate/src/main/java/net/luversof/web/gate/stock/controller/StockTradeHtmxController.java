@@ -683,7 +683,18 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
             .map(a -> a.amount() != null ? a.amount() : BigDecimal.ZERO)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+    // 활동 종목명 → stockItemId (상세 링크용)
+    Map<String, UUID> activityStockIdByName = new HashMap<>();
+    emptyIfNull(stockItemClient.getStockItems())
+        .forEach(
+            s -> {
+              if (s != null && s.name() != null && s.id() != null) {
+                activityStockIdByName.putIfAbsent(s.name(), s.id());
+              }
+            });
+
     model.addAttribute("activities", activities.stream().limit(5).toList());
+    model.addAttribute("activityStockIdByName", activityStockIdByName);
     model.addAttribute("thisMonthLabel", now.getMonthValue() + "월");
     model.addAttribute("buyCount", buyCount);
     model.addAttribute("sellCount", sellCount);
@@ -887,7 +898,17 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
             .map(a -> a.amount() != null ? a.amount() : BigDecimal.ZERO)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+    // 활동 종목명 → stockItemId (상세 링크를 id 기반으로. 한글 name 쿼리 회피)
+    Map<String, UUID> activityStockIdByName = new HashMap<>();
+    stockItemList.forEach(
+        s -> {
+          if (s != null && s.name() != null && s.id() != null) {
+            activityStockIdByName.putIfAbsent(s.name(), s.id());
+          }
+        });
+
     model.addAttribute("activities", activities);
+    model.addAttribute("activityStockIdByName", activityStockIdByName);
     model.addAttribute("accountList", finalAccountListForActivity);
     model.addAttribute("stockItemList", finalStockItemListForActivity);
     model.addAttribute("stockTagList", getAvailableStockTags(stockItemList));

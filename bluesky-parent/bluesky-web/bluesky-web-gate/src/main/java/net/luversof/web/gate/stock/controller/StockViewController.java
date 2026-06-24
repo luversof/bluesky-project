@@ -41,21 +41,30 @@ import jakarta.servlet.http.HttpServletRequest;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.stock.domain.Account;
 import net.luversof.web.gate.stock.domain.StockItem;
+import net.luversof.web.gate.stock.domain.TradeProfit;
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendPayoutImportRequest;
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendPayoutUpsertRequest;
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendProfileReorderRequest;
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendProfileUpsertRequest;
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendSnapshotUpsertRequest;
+import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
+import net.luversof.web.gate.stock.dto.request.TradeSearchRequest;
+import net.luversof.web.gate.stock.dto.response.DividendResponse;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendProfileResponse;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse;
+import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint;
+import net.luversof.web.gate.stock.dto.response.TradeResponse;
 import net.luversof.web.gate.stock.dto.view.MonthlyDividendReferenceSummaryView;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
+import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendPayoutClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendProfileClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendSnapshotClient;
 import net.luversof.web.gate.stock.httpexchange.StockAdminClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
+import net.luversof.web.gate.stock.httpexchange.TradeClient;
+import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 import net.luversof.web.gate.stock.service.MonthlyDividendCalculator;
 import net.luversof.web.gate.stock.service.MonthlyDividendViewSupport;
 import net.luversof.web.gate.stock.util.MonthlyDividendPayoutImportParser;
@@ -92,9 +101,30 @@ public class StockViewController {
 
   private MonthlyDividendViewSupport monthlyDividendViewSupport;
 
+  private TradeProfitClient tradeProfitClient;
+
+  private TradeClient tradeClient;
+
+  private DividendClient dividendClient;
+
   @Autowired
   public void setAccountClient(AccountClient accountClient) {
     this.accountClient = accountClient;
+  }
+
+  @Autowired
+  public void setTradeProfitClient(TradeProfitClient tradeProfitClient) {
+    this.tradeProfitClient = tradeProfitClient;
+  }
+
+  @Autowired
+  public void setTradeClient(TradeClient tradeClient) {
+    this.tradeClient = tradeClient;
+  }
+
+  @Autowired
+  public void setDividendClient(DividendClient dividendClient) {
+    this.dividendClient = dividendClient;
   }
 
   @Autowired
@@ -712,6 +742,147 @@ public class StockViewController {
     var stockItems = loadStockItems();
     model.addAttribute("stockItems", stockItems);
     return "stock/trade";
+  }
+
+  /** 종목 상세: 한 종목의 보유/손익 요약 + 매매·배당 내역을 모아 보여준다(기존 엔드포인트 재활용). */
+  @BlueskyPreAuthorize
+  @GetMapping("/item")
+  public String stockItemDetailPage(
+      HttpServletRequest request,
+      @RequestParam(required = false) String stockItemId,
+      @RequestParam(required = false) String name,
+      Model model) {
+    if (isNotAuthenticated()) {
+      return getLoginRedirectUrl(request);
+    }
+    UUID userId = UserUtil.getUserId();
+
+    // id 우선(잘못된/빈 값은 무시), 없으면 종목명(또는 심볼)으로 해석.
+    StockItem stockItem = null;
+    UUID parsedId = parseUuidOrNull(stockItemId);
+    if (parsedId != null) {
+      stockItem = stockItemClient.getStockItemById(parsedId).orElse(null);
+    } else if (name != null && !name.isBlank()) {
+      String target = name.trim();
+      stockItem =
+          loadStockItems().stream()
+              .filter(
+                  item ->
+                      item != null
+                          && (target.equals(item.name()) || target.equalsIgnoreCase(item.symbol())))
+              .findFirst()
+              .orElse(null);
+    }
+    if (stockItem == null || stockItem.id() == null) {
+      model.addAttribute("stockItem", null);
+      return "stock/stockItemDetail";
+    }
+    model.addAttribute("stockItem", stockItem);
+    UUID resolvedId = stockItem.id();
+
+    // 이 종목의 보유/손익 집계 (계좌 합산)
+    TradeProfitRequest profitRequest = new TradeProfitRequest();
+    profitRequest.setUserId(userId);
+    profitRequest.setStockItemIdList(List.of(resolvedId));
+    List<TradeProfit> profits = tradeProfitClient.calculateProfit(profitRequest.toParams());
+    if (profits == null) {
+      profits = List.of();
+    }
+    int holdingQuantity = profits.stream().mapToInt(TradeProfit::holdingQuantity).sum();
+    BigDecimal totalBuyCost = sumTradeProfit(profits, TradeProfit::totalBuyCost);
+    BigDecimal evaluationAmount = sumTradeProfit(profits, TradeProfit::evaluationAmount);
+    BigDecimal evaluationProfit = sumTradeProfit(profits, TradeProfit::evaluationProfitNet);
+    BigDecimal realizedProfit = sumTradeProfit(profits, TradeProfit::realizedProfitNet);
+    BigDecimal currentPrice =
+        profits.stream()
+            .map(TradeProfit::currentPrice)
+            .filter(java.util.Objects::nonNull)
+            .findFirst()
+            .orElse(BigDecimal.ZERO);
+    BigDecimal averageBuyPrice =
+        holdingQuantity > 0
+            ? totalBuyCost.divide(
+                BigDecimal.valueOf(holdingQuantity), 0, java.math.RoundingMode.HALF_UP)
+            : BigDecimal.ZERO;
+
+    // 매매 내역 (이 종목, 최신순)
+    TradeSearchRequest tradeSearchRequest =
+        new TradeSearchRequest(userId, null, List.of(resolvedId), null, null);
+    List<TradeResponse> trades = tradeClient.findTrades(tradeSearchRequest.toParams());
+    if (trades == null) {
+      trades = List.of();
+    }
+    trades =
+        trades.stream()
+            .sorted(
+                Comparator.comparing(
+                    TradeResponse::tradeDate, Comparator.nullsLast(Comparator.reverseOrder())))
+            .toList();
+
+    // 배당 내역 (이 종목, 최신순)
+    MultiValueMap<String, String> dividendParams = new LinkedMultiValueMap<>();
+    dividendParams.add("userId", userId.toString());
+    dividendParams.add("stockItemIdList", resolvedId.toString());
+    List<DividendResponse> dividends = dividendClient.findDividends(dividendParams);
+    if (dividends == null) {
+      dividends = List.of();
+    }
+    dividends =
+        dividends.stream()
+            .sorted(
+                Comparator.comparing(
+                    DividendResponse::payDate, Comparator.nullsLast(Comparator.reverseOrder())))
+            .toList();
+    BigDecimal totalDividend =
+        dividends.stream()
+            .map(dividend -> dividend.netAmount() != null ? dividend.netAmount() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    // 보유 평가액·원가 추이 (차트용, 전체 기간 AUTO 단위)
+    TradeProfitRequest seriesRequest = new TradeProfitRequest();
+    seriesRequest.setUserId(userId);
+    seriesRequest.setStockItemIdList(List.of(resolvedId));
+    MultiValueMap<String, String> seriesParams = seriesRequest.toParams();
+    seriesParams.add("granularity", "AUTO");
+    List<TradeProfitTimeSeriesPoint> timeSeries = tradeProfitClient.timeSeries(seriesParams);
+    if (timeSeries == null) {
+      timeSeries = List.of();
+    }
+    model.addAttribute("timeSeries", timeSeries);
+    model.addAttribute(
+        "chartFormatter",
+        java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            .withZone(java.time.ZoneId.systemDefault()));
+
+    model.addAttribute("holdingQuantity", holdingQuantity);
+    model.addAttribute("averageBuyPrice", averageBuyPrice);
+    model.addAttribute("currentPrice", currentPrice);
+    model.addAttribute("evaluationAmount", evaluationAmount);
+    model.addAttribute("evaluationProfit", evaluationProfit);
+    model.addAttribute("realizedProfit", realizedProfit);
+    model.addAttribute("totalBuyCost", totalBuyCost);
+    model.addAttribute("totalDividend", totalDividend);
+    model.addAttribute("trades", trades);
+    model.addAttribute("dividends", dividends);
+    return "stock/stockItemDetail";
+  }
+
+  private static UUID parseUuidOrNull(String value) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    try {
+      return UUID.fromString(value.trim());
+    } catch (IllegalArgumentException e) {
+      return null;
+    }
+  }
+
+  private BigDecimal sumTradeProfit(
+      List<TradeProfit> profits, java.util.function.Function<TradeProfit, BigDecimal> extractor) {
+    return profits.stream()
+        .map(profit -> extractor.apply(profit) != null ? extractor.apply(profit) : BigDecimal.ZERO)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
   @BlueskyPreAuthorize

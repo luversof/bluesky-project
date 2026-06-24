@@ -325,6 +325,16 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     model.addAttribute("stockAggregated", stockAggregated);
     model.addAttribute("totalEvaluationAmount", totalEvaluationAmount);
     model.addAttribute("totalEvaluationProfit", totalEvaluationProfit);
+
+    // 계좌 보유 종목명 → stockItemId (상세 링크용. AssetStatusAccountHoldingView엔 id가 없음)
+    Map<String, UUID> holdingStockIdByName = new HashMap<>();
+    stockItemList.forEach(
+        s -> {
+          if (s != null && s.name() != null && s.id() != null) {
+            holdingStockIdByName.putIfAbsent(s.name(), s.id());
+          }
+        });
+    model.addAttribute("holdingStockIdByName", holdingStockIdByName);
     return "stock/htmx/fragments/assetStatus";
   }
 

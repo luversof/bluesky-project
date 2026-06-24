@@ -231,7 +231,7 @@
             </div>
             <div class="stat-title">${bestStockLabel}</div>
             <div class="stat-value text-base font-bold text-profit">
-                ${bestStock.stockItemName() != null ? bestStock.stockItemName() : "-"}
+                <a href="/stock/item?stockItemId=${bestStock.stockItemId() != null ? bestStock.stockItemId().toString() : ""}" class="link link-hover">${bestStock.stockItemName() != null ? bestStock.stockItemName() : "-"}</a>
             </div>
             <div class="stat-desc font-semibold mt-1 text-profit">
                 <span class="amount-value">${String.format("%+,d", bestStock.realizedProfitNet() != null ? bestStock.realizedProfitNet().longValue() : 0)}</span>
@@ -251,7 +251,7 @@
             </div>
             <div class="stat-title">${worstStockLabel}</div>
             <div class="stat-value text-base font-bold text-loss">
-                ${worstStock.stockItemName() != null ? worstStock.stockItemName() : "-"}
+                <a href="/stock/item?stockItemId=${worstStock.stockItemId() != null ? worstStock.stockItemId().toString() : ""}" class="link link-hover">${worstStock.stockItemName() != null ? worstStock.stockItemName() : "-"}</a>
             </div>
             <div class="stat-desc font-semibold mt-1 text-loss">
                 <span class="amount-value">${String.format("%+,d", worstStock.realizedProfitNet() != null ? worstStock.realizedProfitNet().longValue() : 0)}</span>
@@ -549,7 +549,7 @@
                             
                             <tr class="hover stock-row" data-initial="${rowIdx[0]}">
                                 <td data-val="${item.stockItemName() != null ? item.stockItemName() : ""}">
-                                    <div class="font-semibold">${item.stockItemName() != null ? item.stockItemName() : "-"}</div>
+                                    <div class="font-semibold"><a href="/stock/item?stockItemId=${item.stockItemId() != null ? item.stockItemId().toString() : ""}" class="link link-hover">${item.stockItemName() != null ? item.stockItemName() : "-"}</a></div>
                                     <div class="flex items-center gap-1 mt-0.5">
                                         @if(item.holdingQuantity() == 0)
                                             <span class="badge badge-xs badge-ghost opacity-60">${fullySoldLabel}</span>

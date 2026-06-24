@@ -993,6 +993,24 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     model.addAttribute("totalDividend", totalDividendVal);
     model.addAttribute("winRate", winRate);
 
+    // 랭킹 종목명 → stockItemId (상세 링크를 id 기반으로 걸기 위함. 한글 name 쿼리 회피)
+    Map<String, UUID> rankStockIdByName = new HashMap<>();
+    profitList.forEach(
+        p -> {
+          if (p.stockItemName() != null && p.stockItemId() != null) {
+            rankStockIdByName.putIfAbsent(p.stockItemName(), p.stockItemId());
+          }
+        });
+    dividendList.forEach(
+        d -> {
+          String dName =
+              d.stockItemName() != null ? d.stockItemName() : stockNames.get(d.stockItemId());
+          if (dName != null && d.stockItemId() != null) {
+            rankStockIdByName.putIfAbsent(dName, d.stockItemId());
+          }
+        });
+    model.addAttribute("rankStockIdByName", rankStockIdByName);
+
     model.addAttribute("topBuying", topBuying);
     model.addAttribute("bottomBuying", bottomBuying);
 

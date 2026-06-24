@@ -26,4 +26,12 @@ public final class TemplateUtil {
       return List.of();
     }
   }
+
+  /** 쿼리 파라미터용 URL 인코딩(템플릿에서 종목명을 링크에 안전하게 넣기 위함). */
+  public static String urlEncode(String value) {
+    if (value == null) {
+      return "";
+    }
+    return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8);
+  }
 }

@@ -30,6 +30,7 @@
 @param BigDecimal sellAmount = BigDecimal.ZERO
 @param long dividendCount = 0
 @param BigDecimal dividendAmount = BigDecimal.ZERO
+@param java.util.Map<String, UUID> activityStockIdByName = java.util.Map.of()
 
 !{
     DecimalFormat df = new DecimalFormat("#,##0");
@@ -248,7 +249,7 @@
                                             <span class="badge badge-sm badge-outline badge-success">${dividendLabel}</span>
                                         @endif
                                     </td>
-                                    <td class="font-bold">${activity.stockItemName()}</td>
+                                    <td class="font-bold"><a href="/stock/item?stockItemId=${activityStockIdByName.get(activity.stockItemName()) != null ? activityStockIdByName.get(activity.stockItemName()).toString() : ""}" class="link link-hover">${activity.stockItemName()}</a></td>
                                     <td>
                                         @if("TRADE".equals(activity.type()))
                                             <span class="amount-value">${activity.quantity()}</span> ${sharesLabel}

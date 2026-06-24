@@ -524,6 +524,15 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         analyticsResult.accountYieldRows().isEmpty()
             ? null
             : analyticsResult.accountYieldRows().get(0));
+    // 배당 효율 랭킹 종목명(label) → stockItemId (상세 링크용. DividendYieldGroupView엔 id가 없음)
+    Map<String, UUID> yieldStockIdByName = new HashMap<>();
+    stockItemList.forEach(
+        s -> {
+          if (s != null && s.name() != null && s.id() != null) {
+            yieldStockIdByName.putIfAbsent(s.name(), s.id());
+          }
+        });
+    model.addAttribute("yieldStockIdByName", yieldStockIdByName);
     model.addAttribute("stockYieldRows", analyticsResult.stockYieldRows());
     model.addAttribute("accountYieldRows", analyticsResult.accountYieldRows());
     model.addAttribute("yearlyYieldRows", analyticsResult.yearlyYieldRows());

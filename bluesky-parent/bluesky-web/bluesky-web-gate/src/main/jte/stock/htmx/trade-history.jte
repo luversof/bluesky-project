@@ -135,7 +135,7 @@ String tradeDateStr = trade.tradeDate() != null ? fmt.format(trade.tradeDate()) 
 }
 <tr>
 <td class="whitespace-nowrap">${tradeDateStr}</td>
-<td class="font-bold whitespace-nowrap">${trade.stockItemName() != null ? trade.stockItemName() : "-"}</td>
+<td class="font-bold whitespace-nowrap"><a href="/stock/item?stockItemId=${trade.stockItemId() != null ? trade.stockItemId().toString() : ""}" class="link link-hover">${trade.stockItemName() != null ? trade.stockItemName() : "-"}</a></td>
 <td>
 <span class="${isBuy ? "badge badge-error badge-outline badge-sm" : "badge badge-info badge-outline badge-sm"}">
 ${isBuy ? buyLabel : sellLabel}

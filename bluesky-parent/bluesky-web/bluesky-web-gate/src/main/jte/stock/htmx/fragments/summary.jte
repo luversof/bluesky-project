@@ -19,6 +19,7 @@
 @param List<TradeProfit> bottomDividend
 @param java.util.Map<String, BigDecimal> allocation
 @param java.util.Map<String, BigDecimal> accountAllocation
+@param java.util.Map<String, java.util.UUID> rankStockIdByName = java.util.Map.of()
 @param BigDecimal displayPrincipal
 @param BigDecimal displayCurrentEvaluationProfit
 @param BigDecimal combinedAdjustmentAmount
@@ -197,7 +198,7 @@
                         @if(topBuying != null && !topBuying.isEmpty())
                         @for(TradeProfit item : topBuying)
                         <div class="flex justify-between items-center text-xs">
-                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c0a++}</span><span class="truncate">${item.stockItemName()}</span></span>
+                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c0a++}</span><a href="/stock/item?stockItemId=${rankStockIdByName.get(item.stockItemName()) != null ? rankStockIdByName.get(item.stockItemName()).toString() : ""}" class="link link-hover truncate">${item.stockItemName()}</a></span>
                             <span class="font-mono font-bold amount-value shrink-0">${String.format("%,d", item.totalBuyCost() != null ? item.totalBuyCost().longValue() : 0)}</span>
                         </div>
                         @endfor
@@ -213,7 +214,7 @@
                         @if(bottomBuying != null && !bottomBuying.isEmpty())
                         @for(TradeProfit item : bottomBuying)
                         <div class="flex justify-between items-center text-xs">
-                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c0b++}</span><span class="truncate">${item.stockItemName()}</span></span>
+                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c0b++}</span><a href="/stock/item?stockItemId=${rankStockIdByName.get(item.stockItemName()) != null ? rankStockIdByName.get(item.stockItemName()).toString() : ""}" class="link link-hover truncate">${item.stockItemName()}</a></span>
                             <span class="font-mono font-bold amount-value shrink-0">${String.format("%,d", item.totalBuyCost() != null ? item.totalBuyCost().longValue() : 0)}</span>
                         </div>
                         @endfor
@@ -233,7 +234,7 @@
                         @if(topRealized != null && !topRealized.isEmpty())
                         @for(TradeProfit item : topRealized)
                         <div class="flex justify-between items-center text-xs">
-                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c1a++}</span><span class="truncate">${item.stockItemName()}</span></span>
+                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c1a++}</span><a href="/stock/item?stockItemId=${rankStockIdByName.get(item.stockItemName()) != null ? rankStockIdByName.get(item.stockItemName()).toString() : ""}" class="link link-hover truncate">${item.stockItemName()}</a></span>
                             <span class="font-mono font-bold text-profit amount-value shrink-0">${String.format("%+,d", item.realizedProfitNet() != null ? item.realizedProfitNet().longValue() : 0)}</span>
                         </div>
                         @endfor
@@ -249,7 +250,7 @@
                         @if(bottomRealized != null && !bottomRealized.isEmpty())
                         @for(TradeProfit item : bottomRealized)
                         <div class="flex justify-between items-center text-xs">
-                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c1b++}</span><span class="truncate">${item.stockItemName()}</span></span>
+                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c1b++}</span><a href="/stock/item?stockItemId=${rankStockIdByName.get(item.stockItemName()) != null ? rankStockIdByName.get(item.stockItemName()).toString() : ""}" class="link link-hover truncate">${item.stockItemName()}</a></span>
                             <span class="font-mono font-bold text-loss amount-value shrink-0">${String.format("%+,d", item.realizedProfitNet() != null ? item.realizedProfitNet().longValue() : 0)}</span>
                         </div>
                         @endfor
@@ -269,7 +270,7 @@
                         @if(topUnrealized != null && !topUnrealized.isEmpty())
                         @for(TradeProfit item : topUnrealized)
                         <div class="flex justify-between items-center text-xs">
-                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c2a++}</span><span class="truncate">${item.stockItemName()}</span></span>
+                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c2a++}</span><a href="/stock/item?stockItemId=${rankStockIdByName.get(item.stockItemName()) != null ? rankStockIdByName.get(item.stockItemName()).toString() : ""}" class="link link-hover truncate">${item.stockItemName()}</a></span>
                             <span class="font-mono font-bold text-profit amount-value shrink-0">${String.format("%+,d", item.evaluationProfitNet() != null ? item.evaluationProfitNet().longValue() : 0)}</span>
                         </div>
                         @endfor
@@ -285,7 +286,7 @@
                         @if(bottomUnrealized != null && !bottomUnrealized.isEmpty())
                         @for(TradeProfit item : bottomUnrealized)
                         <div class="flex justify-between items-center text-xs">
-                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c2b++}</span><span class="truncate">${item.stockItemName()}</span></span>
+                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c2b++}</span><a href="/stock/item?stockItemId=${rankStockIdByName.get(item.stockItemName()) != null ? rankStockIdByName.get(item.stockItemName()).toString() : ""}" class="link link-hover truncate">${item.stockItemName()}</a></span>
                             <span class="font-mono font-bold text-loss amount-value shrink-0">${String.format("%+,d", item.evaluationProfitNet() != null ? item.evaluationProfitNet().longValue() : 0)}</span>
                         </div>
                         @endfor
@@ -305,7 +306,7 @@
                         @if(topDividend != null && !topDividend.isEmpty())
                         @for(TradeProfit item : topDividend)
                         <div class="flex justify-between items-center text-xs">
-                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c3a++}</span><span class="truncate">${item.stockItemName()}</span></span>
+                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c3a++}</span><a href="/stock/item?stockItemId=${rankStockIdByName.get(item.stockItemName()) != null ? rankStockIdByName.get(item.stockItemName()).toString() : ""}" class="link link-hover truncate">${item.stockItemName()}</a></span>
                             <span class="font-mono font-bold text-dividend amount-value shrink-0">${String.format("%,d", item.realizedProfitNet() != null ? item.realizedProfitNet().longValue() : 0)}</span>
                         </div>
                         @endfor
@@ -321,7 +322,7 @@
                         @if(bottomDividend != null && !bottomDividend.isEmpty())
                         @for(TradeProfit item : bottomDividend)
                         <div class="flex justify-between items-center text-xs">
-                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c3b++}</span><span class="truncate">${item.stockItemName()}</span></span>
+                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c3b++}</span><a href="/stock/item?stockItemId=${rankStockIdByName.get(item.stockItemName()) != null ? rankStockIdByName.get(item.stockItemName()).toString() : ""}" class="link link-hover truncate">${item.stockItemName()}</a></span>
                             <span class="font-mono font-bold text-dividend amount-value shrink-0">${String.format("%,d", item.realizedProfitNet() != null ? item.realizedProfitNet().longValue() : 0)}</span>
                         </div>
                         @endfor

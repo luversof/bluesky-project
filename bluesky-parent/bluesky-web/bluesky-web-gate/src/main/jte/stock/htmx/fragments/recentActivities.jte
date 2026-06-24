@@ -13,6 +13,7 @@
 @param BigDecimal sellAmount
 @param long dividendCount
 @param BigDecimal dividendAmount
+@param java.util.Map<String, java.util.UUID> activityStockIdByName = java.util.Map.of()
 
 !{
     java.util.function.Function<Object, String> countMessage = value -> java.text.MessageFormat.format(MessageUtil.getMessage("common.count"), value);
@@ -71,7 +72,7 @@
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-1.5 mb-0.5">
                                     <span class="badge badge-xs ${badgeClass}">${badgeText}</span>
-                                    <span class="font-bold text-sm truncate">${activity.stockItemName()}</span>
+                                    <a href="/stock/item?stockItemId=${activityStockIdByName.get(activity.stockItemName()) != null ? activityStockIdByName.get(activity.stockItemName()).toString() : ""}" class="font-bold text-sm truncate link link-hover">${activity.stockItemName()}</a>
                                 </div>
                                 <div class="text-xs text-base-content/50">
                                     @if("TRADE".equals(activity.type()))

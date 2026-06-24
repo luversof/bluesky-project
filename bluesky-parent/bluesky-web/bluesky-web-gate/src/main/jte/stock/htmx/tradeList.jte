@@ -349,7 +349,7 @@
                     @for(TradeResponse trade : tradeList)
                     <tr>
                         <td class="whitespace-nowrap">${trade.tradeDate() != null ? dateFormatter.format(trade.tradeDate().atZone(java.time.ZoneId.systemDefault())) : ""}</td>
-                        <td class="font-bold whitespace-nowrap">${trade.stockItemName()}</td>
+                        <td class="font-bold whitespace-nowrap"><a href="/stock/item?stockItemId=${trade.stockItemId() != null ? trade.stockItemId().toString() : ""}" class="link link-hover">${trade.stockItemName()}</a></td>
                         <td>
                             <span class="${trade.type() == TradeType.BUY ? "badge badge-error badge-outline badge-sm" : "badge badge-info badge-outline badge-sm"}">
                                 ${tradeTypeLabel.apply(trade.type())}

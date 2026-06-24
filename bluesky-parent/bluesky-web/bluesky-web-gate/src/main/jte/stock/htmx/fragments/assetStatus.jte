@@ -13,6 +13,7 @@
 @param List<TradeProfit> stockAggregated
 @param BigDecimal totalEvaluationAmount
 @param BigDecimal totalEvaluationProfit
+@param Map<String, java.util.UUID> holdingStockIdByName = java.util.Map.of()
 
 !{
     String accountSectionTitle = MessageUtil.getMessage("stock.analytics.section.account.status");
@@ -272,7 +273,7 @@
                                             <tbody>
                                                 @for(AssetStatusAccountHoldingView holding : holdings)
                                                     <tr>
-                                                        <td class="font-semibold">${holding.stockItemName() != null ? holding.stockItemName() : "-"}</td>
+                                                        <td class="font-semibold"><a href="/stock/item?stockItemId=${holdingStockIdByName.get(holding.stockItemName()) != null ? holdingStockIdByName.get(holding.stockItemName()).toString() : ""}" class="link link-hover">${holding.stockItemName() != null ? holding.stockItemName() : "-"}</a></td>
                                                         <td class="text-right font-mono hidden sm:table-cell amount-value">${String.format("%,d", holding.holdingQuantity())}</td>
                                                         <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", holding.averageBuyPrice() != null ? holding.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
                                                         <td class="text-right font-mono hidden md:table-cell amount-value opacity-70">${String.format("%,d", holding.buyAmount() != null ? holding.buyAmount().longValue() : 0)}</td>
@@ -518,7 +519,7 @@
                                 data-evaluation-amount="${item.evaluationAmount() != null ? item.evaluationAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                 data-evaluation-profit="${item.evaluationProfit() != null ? item.evaluationProfit().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                 data-weight="${totalWeightPct.toPlainString()}">
-                                <td class="font-semibold"><span class="cursor-help" data-stock-tag-tooltip="${stockTagTooltip}">${item.stockItemName() != null ? item.stockItemName() : "-"}</span></td>
+                                <td class="font-semibold"><a href="/stock/item?stockItemId=${item.stockItemId() != null ? item.stockItemId().toString() : ""}" class="link link-hover" data-stock-tag-tooltip="${stockTagTooltip}">${item.stockItemName() != null ? item.stockItemName() : "-"}</a></td>
                                 <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", item.holdingQuantity())}</td>
                                 <td class="text-right font-mono hidden xl:table-cell amount-value">${String.format("%,d", item.averageBuyPrice() != null ? item.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
                                 <td class="text-right font-mono hidden sm:table-cell amount-value opacity-70">${String.format("%,d", item.totalBuyCost() != null ? item.totalBuyCost().longValue() : 0)}</td>
