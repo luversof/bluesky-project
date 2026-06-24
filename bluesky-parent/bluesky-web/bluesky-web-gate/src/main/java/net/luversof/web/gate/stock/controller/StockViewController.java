@@ -752,6 +752,10 @@ public class StockViewController {
       HttpServletRequest request,
       @RequestParam(required = false) String stockItemId,
       @RequestParam(required = false) String name,
+      @RequestParam(required = false) java.time.Instant startDate,
+      @RequestParam(required = false) java.time.Instant endDate,
+      @RequestParam(required = false) String timeZone,
+      @RequestParam(required = false) String rangeMode,
       Model model) {
     if (isNotAuthenticated()) {
       return getLoginRedirectUrl(request);
@@ -781,10 +785,12 @@ public class StockViewController {
     model.addAttribute("stockItem", stockItem);
     UUID resolvedId = stockItem.id();
 
-    // 이 종목의 보유/손익 집계 (계좌 합산)
+    // 이 종목의 보유/손익 집계 (계좌 합산, 기간 적용)
     TradeProfitRequest profitRequest = new TradeProfitRequest();
     profitRequest.setUserId(userId);
     profitRequest.setStockItemIdList(List.of(resolvedId));
+    profitRequest.setStartDate(startDate);
+    profitRequest.setEndDate(endDate);
     List<TradeProfit> profits = tradeProfitClient.calculateProfit(profitRequest.toParams());
     if (profits == null) {
       profits = List.of();
@@ -806,9 +812,9 @@ public class StockViewController {
                 BigDecimal.valueOf(holdingQuantity), 0, java.math.RoundingMode.HALF_UP)
             : BigDecimal.ZERO;
 
-    // 매매 내역 (이 종목, 최신순)
+    // 매매 내역 (이 종목, 최신순, 기간 적용)
     TradeSearchRequest tradeSearchRequest =
-        new TradeSearchRequest(userId, null, List.of(resolvedId), null, null);
+        new TradeSearchRequest(userId, null, List.of(resolvedId), startDate, endDate);
     List<TradeResponse> trades = tradeClient.findTrades(tradeSearchRequest.toParams());
     if (trades == null) {
       trades = List.of();
@@ -824,6 +830,12 @@ public class StockViewController {
     MultiValueMap<String, String> dividendParams = new LinkedMultiValueMap<>();
     dividendParams.add("userId", userId.toString());
     dividendParams.add("stockItemIdList", resolvedId.toString());
+    if (startDate != null) {
+      dividendParams.add("startDate", startDate.toString());
+    }
+    if (endDate != null) {
+      dividendParams.add("endDate", endDate.toString());
+    }
     List<DividendResponse> dividends = dividendClient.findDividends(dividendParams);
     if (dividends == null) {
       dividends = List.of();
@@ -839,10 +851,12 @@ public class StockViewController {
             .map(dividend -> dividend.netAmount() != null ? dividend.netAmount() : BigDecimal.ZERO)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    // 보유 평가액·원가 추이 (차트용, 전체 기간 AUTO 단위)
+    // 보유 평가액·원가 추이 (차트용, 기간 적용 AUTO 단위)
     TradeProfitRequest seriesRequest = new TradeProfitRequest();
     seriesRequest.setUserId(userId);
     seriesRequest.setStockItemIdList(List.of(resolvedId));
+    seriesRequest.setStartDate(startDate);
+    seriesRequest.setEndDate(endDate);
     MultiValueMap<String, String> seriesParams = seriesRequest.toParams();
     seriesParams.add("granularity", "AUTO");
     List<TradeProfitTimeSeriesPoint> timeSeries = tradeProfitClient.timeSeries(seriesParams);
@@ -854,6 +868,25 @@ public class StockViewController {
         "chartFormatter",
         java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
             .withZone(java.time.ZoneId.systemDefault()));
+
+    // 기간 필터 모델 (날짜 필터 바)
+    java.time.ZoneId filterZone = java.time.ZoneId.systemDefault();
+    if (timeZone != null && !timeZone.isBlank()) {
+      try {
+        filterZone = java.time.ZoneId.of(timeZone);
+      } catch (Exception ignore) {
+        // 잘못된 타임존이면 시스템 기본값 사용
+      }
+    }
+    model.addAttribute(
+        "filterStartLocal", startDate != null ? startDate.atZone(filterZone).toLocalDate() : null);
+    model.addAttribute(
+        "filterEndLocal",
+        endDate != null ? endDate.atZone(filterZone).toLocalDate().minusDays(1) : null);
+    model.addAttribute("filterStartInstant", startDate);
+    model.addAttribute("filterEndInstant", endDate);
+    model.addAttribute("filterTimeZone", timeZone);
+    model.addAttribute("filterRangeMode", rangeMode);
 
     model.addAttribute("holdingQuantity", holdingQuantity);
     model.addAttribute("averageBuyPrice", averageBuyPrice);
@@ -872,7 +905,13 @@ public class StockViewController {
   @BlueskyPreAuthorize
   @GetMapping("/account")
   public String accountDetailPage(
-      HttpServletRequest request, @RequestParam(required = false) String accountId, Model model) {
+      HttpServletRequest request,
+      @RequestParam(required = false) String accountId,
+      @RequestParam(required = false) java.time.Instant startDate,
+      @RequestParam(required = false) java.time.Instant endDate,
+      @RequestParam(required = false) String timeZone,
+      @RequestParam(required = false) String rangeMode,
+      Model model) {
     if (isNotAuthenticated()) {
       return getLoginRedirectUrl(request);
     }
@@ -898,10 +937,12 @@ public class StockViewController {
             });
     model.addAttribute("stockNameById", stockNameById);
 
-    // 이 계좌의 종목별 보유/손익
+    // 이 계좌의 종목별 보유/손익 (기간 적용)
     TradeProfitRequest profitRequest = new TradeProfitRequest();
     profitRequest.setUserId(userId);
     profitRequest.setAccountIdList(List.of(resolvedId));
+    profitRequest.setStartDate(startDate);
+    profitRequest.setEndDate(endDate);
     List<TradeProfit> profits = tradeProfitClient.calculateProfit(profitRequest.toParams());
     if (profits == null) {
       profits = List.of();
@@ -927,9 +968,9 @@ public class StockViewController {
     BigDecimal evaluationProfit = sumTradeProfit(enriched, TradeProfit::evaluationProfitNet);
     BigDecimal realizedProfit = sumTradeProfit(enriched, TradeProfit::realizedProfitNet);
 
-    // 매매 내역 (이 계좌, 최신순)
+    // 매매 내역 (이 계좌, 최신순, 기간 적용)
     TradeSearchRequest tradeSearchRequest =
-        new TradeSearchRequest(userId, List.of(resolvedId), null, null, null);
+        new TradeSearchRequest(userId, List.of(resolvedId), null, startDate, endDate);
     List<TradeResponse> trades = tradeClient.findTrades(tradeSearchRequest.toParams());
     if (trades == null) {
       trades = List.of();
@@ -945,6 +986,12 @@ public class StockViewController {
     MultiValueMap<String, String> dividendParams = new LinkedMultiValueMap<>();
     dividendParams.add("userId", userId.toString());
     dividendParams.add("accountIdList", resolvedId.toString());
+    if (startDate != null) {
+      dividendParams.add("startDate", startDate.toString());
+    }
+    if (endDate != null) {
+      dividendParams.add("endDate", endDate.toString());
+    }
     List<DividendResponse> dividends = dividendClient.findDividends(dividendParams);
     if (dividends == null) {
       dividends = List.of();
@@ -960,16 +1007,37 @@ public class StockViewController {
             .map(dividend -> dividend.netAmount() != null ? dividend.netAmount() : BigDecimal.ZERO)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    // 평가액·원가 추이 (차트용)
+    // 평가액·원가 추이 (차트용, 기간 적용)
     TradeProfitRequest seriesRequest = new TradeProfitRequest();
     seriesRequest.setUserId(userId);
     seriesRequest.setAccountIdList(List.of(resolvedId));
+    seriesRequest.setStartDate(startDate);
+    seriesRequest.setEndDate(endDate);
     MultiValueMap<String, String> seriesParams = seriesRequest.toParams();
     seriesParams.add("granularity", "AUTO");
     List<TradeProfitTimeSeriesPoint> timeSeries = tradeProfitClient.timeSeries(seriesParams);
     if (timeSeries == null) {
       timeSeries = List.of();
     }
+
+    // 기간 필터 모델 (날짜 필터 바)
+    java.time.ZoneId filterZone = java.time.ZoneId.systemDefault();
+    if (timeZone != null && !timeZone.isBlank()) {
+      try {
+        filterZone = java.time.ZoneId.of(timeZone);
+      } catch (Exception ignore) {
+        // 잘못된 타임존이면 시스템 기본값 사용
+      }
+    }
+    model.addAttribute(
+        "filterStartLocal", startDate != null ? startDate.atZone(filterZone).toLocalDate() : null);
+    model.addAttribute(
+        "filterEndLocal",
+        endDate != null ? endDate.atZone(filterZone).toLocalDate().minusDays(1) : null);
+    model.addAttribute("filterStartInstant", startDate);
+    model.addAttribute("filterEndInstant", endDate);
+    model.addAttribute("filterTimeZone", timeZone);
+    model.addAttribute("filterRangeMode", rangeMode);
 
     model.addAttribute("holdings", holdings);
     model.addAttribute("holdingCount", holdings.size());

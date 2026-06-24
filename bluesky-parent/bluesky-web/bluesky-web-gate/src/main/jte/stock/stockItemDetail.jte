@@ -8,6 +8,8 @@
 @import net.luversof.web.gate.stock.dto.response.DividendResponse
 @import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint
 @import java.time.format.DateTimeFormatter
+@import java.time.LocalDate
+@import java.time.Instant
 
 @param boolean isAuthenticated = false
 @param String username = ""
@@ -26,6 +28,12 @@
 @param List<DividendResponse> dividends = java.util.List.of()
 @param List<TradeProfitTimeSeriesPoint> timeSeries = java.util.List.of()
 @param DateTimeFormatter chartFormatter = null
+@param LocalDate filterStartLocal = null
+@param LocalDate filterEndLocal = null
+@param Instant filterStartInstant = null
+@param Instant filterEndInstant = null
+@param String filterTimeZone = null
+@param String filterRangeMode = null
 
 !{
     ZoneId zone = ZoneId.systemDefault();
@@ -54,6 +62,22 @@
 						@endfor
 					</div>
 				@endif
+
+				<div id="stockItemDetailFragment">
+				@template.stock.htmx.fragments.components.detailDateFilter(
+					pickerVar = "stockDetailPicker",
+					formId = "stockDetailSearchForm",
+					fragmentId = "stockItemDetailFragment",
+					contentUrl = "/stock/item",
+					idPrefix = "stockDetail",
+					extraName = "stockItemId",
+					extraValue = stockItem.id() != null ? stockItem.id().toString() : "",
+					startLocal = filterStartLocal,
+					endLocal = filterEndLocal,
+					startInstant = filterStartInstant,
+					endInstant = filterEndInstant,
+					timeZone = filterTimeZone,
+					rangeMode = filterRangeMode)
 
 				<!-- 보유/손익 요약 -->
 				<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -100,7 +124,7 @@
 					<div>
 						<h2 class="text-lg font-semibold mb-2 opacity-70">${MessageUtil.getMessage("stock.item.detail.chart.title")}</h2>
 						<div class="bg-base-100 rounded-box border border-base-200 p-4">
-							<div class="h-64"><canvas id="stockDetailChart"></canvas></div>
+							<div class="h-64"><canvas id="stockDetailChart" class="amount-chart"></canvas></div>
 						</div>
 					</div>
 					<script>
@@ -119,7 +143,7 @@
 						var fmt = function(v) {
 							return window.StockCharts ? window.StockCharts.formatCompactNumber(v) : new Intl.NumberFormat().format(v);
 						};
-						new Chart(ctx, {
+						var __detailChart = new Chart(ctx, {
 							type: 'line',
 							data: {
 								labels: labels,
@@ -136,6 +160,8 @@
 								scales: { y: { ticks: { callback: function(v) { return fmt(v); } } } }
 							}
 						});
+						setTimeout(function() { try { __detailChart.resize(); } catch (e) {} }, 60);
+						setTimeout(function() { try { __detailChart.resize(); } catch (e) {} }, 250);
 					})();
 					</script>
 				@endif
@@ -209,6 +235,7 @@
 						`)
 					@endif
 				</div>
+			</div>
 			@endif
 		</div>
 	`
