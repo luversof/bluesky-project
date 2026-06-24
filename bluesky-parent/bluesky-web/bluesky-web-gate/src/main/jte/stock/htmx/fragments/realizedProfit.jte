@@ -6,6 +6,7 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 
 @param Map<String, TradeProfit> accountRealizedMap
+@param Map<String, java.util.UUID> realizedAccountIdByName = java.util.Map.of()
 @param List<TradeProfit> stockRealizedList
 @param BigDecimal totalRealizedProfit
 @param BigDecimal totalSellProceeds
@@ -460,7 +461,7 @@
                         : 0.0;}
                     <tr class="hover account-row" data-initial="${accIdx[0]}">
                         <td data-val="${entry.getKey()}">
-                            <div class="font-semibold">${entry.getKey()}</div>
+                            <div class="font-semibold"><a href="/stock/account?accountId=${realizedAccountIdByName.get(entry.getKey()) != null ? realizedAccountIdByName.get(entry.getKey()).toString() : ""}" class="link link-hover">${entry.getKey()}</a></div>
                             <div class="text-xs opacity-50">${stockMenuLabel}</div>
                         </td>
                         <td class="text-right font-bold font-mono amount-value ${acc.realizedProfit() != null && acc.realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}"

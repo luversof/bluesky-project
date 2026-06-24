@@ -335,6 +335,17 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
           }
         });
     model.addAttribute("holdingStockIdByName", holdingStockIdByName);
+
+    // 계좌명 → accountId (계좌 상세 링크용)
+    Map<String, UUID> accountIdByName = new HashMap<>();
+    emptyIfNull(accountClient.getAccountsByUserId(userId))
+        .forEach(
+            a -> {
+              if (a != null && a.name() != null && a.id() != null) {
+                accountIdByName.putIfAbsent(a.name(), a.id());
+              }
+            });
+    model.addAttribute("accountIdByName", accountIdByName);
     return "stock/htmx/fragments/assetStatus";
   }
 
@@ -817,6 +828,16 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         "debugFinalStockItemListSize", finalStockItemList != null ? finalStockItemList.size() : 0);
 
     model.addAttribute("accountRealizedMap", accountRealizedMap);
+    // 계좌별 실현손익의 계좌명 → accountId (계좌 상세 링크용)
+    Map<String, UUID> realizedAccountIdByName = new HashMap<>();
+    emptyIfNull(accountClient.getAccountsByUserId(userId))
+        .forEach(
+            a -> {
+              if (a != null && a.name() != null && a.id() != null) {
+                realizedAccountIdByName.putIfAbsent(a.name(), a.id());
+              }
+            });
+    model.addAttribute("realizedAccountIdByName", realizedAccountIdByName);
     model.addAttribute("stockRealizedList", stockRealizedList);
     model.addAttribute("totalRealizedProfit", totalRealizedProfit);
     model.addAttribute("totalSellProceeds", totalSellProceeds);

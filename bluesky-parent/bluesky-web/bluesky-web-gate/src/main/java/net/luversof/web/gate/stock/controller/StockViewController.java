@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -865,6 +866,126 @@ public class StockViewController {
     model.addAttribute("trades", trades);
     model.addAttribute("dividends", dividends);
     return "stock/stockItemDetail";
+  }
+
+  /** 계좌 상세: 한 계좌의 보유/손익 요약 + 보유 종목 + 매매·배당 내역(종목 상세와 대칭, 필터 키만 account). */
+  @BlueskyPreAuthorize
+  @GetMapping("/account")
+  public String accountDetailPage(
+      HttpServletRequest request, @RequestParam(required = false) String accountId, Model model) {
+    if (isNotAuthenticated()) {
+      return getLoginRedirectUrl(request);
+    }
+    UUID userId = UserUtil.getUserId();
+
+    UUID parsedId = parseUuidOrNull(accountId);
+    Account account = parsedId != null ? accountClient.getAccountById(parsedId).orElse(null) : null;
+    if (account == null || account.id() == null) {
+      model.addAttribute("account", null);
+      return "stock/accountDetail";
+    }
+    model.addAttribute("account", account);
+    UUID resolvedId = account.id();
+
+    // 종목 id → 종목명 (보유/내역 표의 종목명 + 종목 상세 링크용)
+    Map<UUID, String> stockNameById = new HashMap<>();
+    loadStockItems()
+        .forEach(
+            s -> {
+              if (s.id() != null) {
+                stockNameById.put(s.id(), s.name() != null ? s.name() : "-");
+              }
+            });
+    model.addAttribute("stockNameById", stockNameById);
+
+    // 이 계좌의 종목별 보유/손익
+    TradeProfitRequest profitRequest = new TradeProfitRequest();
+    profitRequest.setUserId(userId);
+    profitRequest.setAccountIdList(List.of(resolvedId));
+    List<TradeProfit> profits = tradeProfitClient.calculateProfit(profitRequest.toParams());
+    if (profits == null) {
+      profits = List.of();
+    }
+    List<TradeProfit> enriched =
+        profits.stream()
+            .map(
+                p ->
+                    TradeProfit.withNames(
+                        p, stockNameById.getOrDefault(p.stockItemId(), "-"), account.name()))
+            .toList();
+    List<TradeProfit> holdings =
+        enriched.stream()
+            .filter(p -> p.holdingQuantity() > 0)
+            .sorted(
+                Comparator.comparing(
+                        (TradeProfit p) ->
+                            p.evaluationAmount() != null ? p.evaluationAmount() : BigDecimal.ZERO)
+                    .reversed())
+            .toList();
+    BigDecimal evaluationAmount = sumTradeProfit(enriched, TradeProfit::evaluationAmount);
+    BigDecimal totalBuyCost = sumTradeProfit(enriched, TradeProfit::totalBuyCost);
+    BigDecimal evaluationProfit = sumTradeProfit(enriched, TradeProfit::evaluationProfitNet);
+    BigDecimal realizedProfit = sumTradeProfit(enriched, TradeProfit::realizedProfitNet);
+
+    // 매매 내역 (이 계좌, 최신순)
+    TradeSearchRequest tradeSearchRequest =
+        new TradeSearchRequest(userId, List.of(resolvedId), null, null, null);
+    List<TradeResponse> trades = tradeClient.findTrades(tradeSearchRequest.toParams());
+    if (trades == null) {
+      trades = List.of();
+    }
+    trades =
+        trades.stream()
+            .sorted(
+                Comparator.comparing(
+                    TradeResponse::tradeDate, Comparator.nullsLast(Comparator.reverseOrder())))
+            .toList();
+
+    // 배당 내역 (이 계좌, 최신순)
+    MultiValueMap<String, String> dividendParams = new LinkedMultiValueMap<>();
+    dividendParams.add("userId", userId.toString());
+    dividendParams.add("accountIdList", resolvedId.toString());
+    List<DividendResponse> dividends = dividendClient.findDividends(dividendParams);
+    if (dividends == null) {
+      dividends = List.of();
+    }
+    dividends =
+        dividends.stream()
+            .sorted(
+                Comparator.comparing(
+                    DividendResponse::payDate, Comparator.nullsLast(Comparator.reverseOrder())))
+            .toList();
+    BigDecimal totalDividend =
+        dividends.stream()
+            .map(dividend -> dividend.netAmount() != null ? dividend.netAmount() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    // 평가액·원가 추이 (차트용)
+    TradeProfitRequest seriesRequest = new TradeProfitRequest();
+    seriesRequest.setUserId(userId);
+    seriesRequest.setAccountIdList(List.of(resolvedId));
+    MultiValueMap<String, String> seriesParams = seriesRequest.toParams();
+    seriesParams.add("granularity", "AUTO");
+    List<TradeProfitTimeSeriesPoint> timeSeries = tradeProfitClient.timeSeries(seriesParams);
+    if (timeSeries == null) {
+      timeSeries = List.of();
+    }
+
+    model.addAttribute("holdings", holdings);
+    model.addAttribute("holdingCount", holdings.size());
+    model.addAttribute("evaluationAmount", evaluationAmount);
+    model.addAttribute("totalBuyCost", totalBuyCost);
+    model.addAttribute("evaluationProfit", evaluationProfit);
+    model.addAttribute("realizedProfit", realizedProfit);
+    model.addAttribute("totalDividend", totalDividend);
+    model.addAttribute("trades", trades);
+    model.addAttribute("dividends", dividends);
+    model.addAttribute("timeSeries", timeSeries);
+    model.addAttribute(
+        "chartFormatter",
+        java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            .withZone(java.time.ZoneId.systemDefault()));
+    return "stock/accountDetail";
   }
 
   private static UUID parseUuidOrNull(String value) {

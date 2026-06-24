@@ -907,8 +907,19 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
           }
         });
 
+    // 활동 계좌명 → accountId (계좌 상세 링크용)
+    Map<String, UUID> activityAccountIdByName = new HashMap<>();
+    emptyIfNull(accountClient.getAccountsByUserId(userId))
+        .forEach(
+            a -> {
+              if (a != null && a.name() != null && a.id() != null) {
+                activityAccountIdByName.putIfAbsent(a.name(), a.id());
+              }
+            });
+
     model.addAttribute("activities", activities);
     model.addAttribute("activityStockIdByName", activityStockIdByName);
+    model.addAttribute("activityAccountIdByName", activityAccountIdByName);
     model.addAttribute("accountList", finalAccountListForActivity);
     model.addAttribute("stockItemList", finalStockItemListForActivity);
     model.addAttribute("stockTagList", getAvailableStockTags(stockItemList));

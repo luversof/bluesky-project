@@ -14,6 +14,7 @@
 @param BigDecimal totalEvaluationAmount
 @param BigDecimal totalEvaluationProfit
 @param Map<String, java.util.UUID> holdingStockIdByName = java.util.Map.of()
+@param Map<String, java.util.UUID> accountIdByName = java.util.Map.of()
 
 !{
     String accountSectionTitle = MessageUtil.getMessage("stock.analytics.section.account.status");
@@ -209,7 +210,7 @@
                         data-principal-return="${principalReturnAmount.toPlainString()}"
                         data-detail-row-id="${detailRowId}">
                         <td>
-                            <div class="font-semibold">${entry.getKey()}</div>
+                            <div class="font-semibold"><a href="/stock/account?accountId=${accountIdByName.get(entry.getKey()) != null ? accountIdByName.get(entry.getKey()).toString() : ""}" class="link link-hover">${entry.getKey()}</a></div>
                             @if(holdings.isEmpty())
                                 <div class="text-xs opacity-50">${noHoldingsLabel}</div>
                             @else

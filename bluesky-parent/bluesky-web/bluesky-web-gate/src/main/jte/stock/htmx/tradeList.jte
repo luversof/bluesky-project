@@ -355,7 +355,7 @@
                                 ${tradeTypeLabel.apply(trade.type())}
                             </span>
                         </td>
-                        <td class="whitespace-nowrap hidden sm:table-cell">${accountNames != null ? accountNames.getOrDefault(trade.accountId(), "") : ""}</td>
+                        <td class="whitespace-nowrap hidden sm:table-cell"><a href="/stock/account?accountId=${trade.accountId() != null ? trade.accountId().toString() : ""}" class="link link-hover">${accountNames != null ? accountNames.getOrDefault(trade.accountId(), "") : ""}</a></td>
                         <td class="text-right font-mono amount-value">${trade.price() != null ? decimalFormat.format(trade.price()) : "0"}</td>
                         <td class="text-right font-mono amount-value">${decimalFormat.format(trade.quantity())}</td>
                         <td class="text-right font-mono amount-value">${trade.amount() != null ? decimalFormat.format(trade.amount()) : "0"}</td>

@@ -50,6 +50,7 @@
 @param DividendYieldGroupView bestYieldAccount = null
 @param List<DividendYieldGroupView> stockYieldRows = java.util.List.of()
 @param java.util.Map<String, UUID> yieldStockIdByName = java.util.Map.of()
+@param java.util.Map<String, UUID> yieldAccountIdByName = java.util.Map.of()
 @param List<DividendYieldGroupView> accountYieldRows = java.util.List.of()
 @param List<DividendYieldGroupView> yearlyYieldRows = java.util.List.of()
 @param String rangeMode = null
@@ -940,7 +941,7 @@
                                         data-yield-on-cost="${row.yieldOnCostPct() != null ? row.yieldOnCostPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-yield-on-market="${row.yieldOnMarketPct() != null ? row.yieldOnMarketPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-dividend-count="${String.valueOf(row.dividendCount())}">
-                                        <td class="font-medium">${row.label()}</td>
+                                        <td class="font-medium"><a href="/stock/account?accountId=${yieldAccountIdByName.get(row.label()) != null ? yieldAccountIdByName.get(row.label()).toString() : ""}" class="link link-hover">${row.label()}</a></td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
                                         <td class="text-right amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
@@ -1057,7 +1058,7 @@
                     @for(DividendView item : dividendList)
                     <tr>
                         <td>${item.payDate() != null ? dateFormatter.format(item.payDate().atZone(java.time.ZoneId.systemDefault())) : ""}</td>
-                        <td class="hidden sm:table-cell">${item.accountName()}</td>
+                        <td class="hidden sm:table-cell"><a href="/stock/account?accountId=${item.accountId() != null ? item.accountId().toString() : ""}" class="link link-hover">${item.accountName()}</a></td>
                         <td class="font-bold"><a href="/stock/item?stockItemId=${item.stockItemId() != null ? item.stockItemId().toString() : ""}" class="link link-hover">${item.stockItemName()}</a></td>
                         <td class="text-right amount-value">${item.grossAmount() != null ? decimalFormat.format(item.grossAmount()) : "0"}</td>
                         <td class="text-right text-dividend font-bold amount-value">${item.netAmount() != null ? decimalFormat.format(item.netAmount()) : "0"}</td>

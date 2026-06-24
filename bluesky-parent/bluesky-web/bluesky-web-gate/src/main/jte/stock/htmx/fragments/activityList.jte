@@ -31,6 +31,7 @@
 @param long dividendCount = 0
 @param BigDecimal dividendAmount = BigDecimal.ZERO
 @param java.util.Map<String, UUID> activityStockIdByName = java.util.Map.of()
+@param java.util.Map<String, UUID> activityAccountIdByName = java.util.Map.of()
 
 !{
     DecimalFormat df = new DecimalFormat("#,##0");
@@ -261,7 +262,7 @@
                                         @if(activity.accountNames() != null && !activity.accountNames().isEmpty())
                                             <div class="mt-1 flex flex-wrap gap-1">
                                                 @for(int i = 0; i < Math.min(2, activity.accountNames().size()); i++)
-                                                    <span class="badge badge-xs badge-outline opacity-70">${activity.accountNames().get(i)}</span>
+                                                    <a href="/stock/account?accountId=${activityAccountIdByName.get(activity.accountNames().get(i)) != null ? activityAccountIdByName.get(activity.accountNames().get(i)).toString() : ""}" class="badge badge-xs badge-outline opacity-70 link link-hover">${activity.accountNames().get(i)}</a>
                                                 @endfor
 
                                                 @if(activity.accountNames().size() > 2)

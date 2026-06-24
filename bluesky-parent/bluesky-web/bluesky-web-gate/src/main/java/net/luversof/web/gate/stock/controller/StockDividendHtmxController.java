@@ -533,6 +533,15 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
           }
         });
     model.addAttribute("yieldStockIdByName", yieldStockIdByName);
+    // 배당 효율 랭킹 계좌명(label) → accountId (계좌 상세 링크용)
+    Map<String, UUID> yieldAccountIdByName = new HashMap<>();
+    accounts.forEach(
+        a -> {
+          if (a != null && a.name() != null && a.id() != null) {
+            yieldAccountIdByName.putIfAbsent(a.name(), a.id());
+          }
+        });
+    model.addAttribute("yieldAccountIdByName", yieldAccountIdByName);
     model.addAttribute("stockYieldRows", analyticsResult.stockYieldRows());
     model.addAttribute("accountYieldRows", analyticsResult.accountYieldRows());
     model.addAttribute("yearlyYieldRows", analyticsResult.yearlyYieldRows());
