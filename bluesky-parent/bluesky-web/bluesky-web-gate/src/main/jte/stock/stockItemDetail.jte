@@ -65,6 +65,11 @@
 				@if(stockItem == null)
 					<div class="bg-base-200 rounded-box p-10 text-center text-base-content/60">${MessageUtil.getMessage("common.message.no.data")}</div>
 				@else
+					@template._components.ui.breadcrumbBack(
+						homeLabel = MessageUtil.getMessage("layout.menu.main.stock"),
+						categoryLabel = MessageUtil.getMessage("stock.item.detail.breadcrumb"),
+						backLabel = MessageUtil.getMessage("common.button.back"))
+
 					@template._components.ui.pageHeader(
 						title = stockItem.name() != null ? stockItem.name() : stockItem.symbol(),
 						description = (stockItem.symbol() != null ? stockItem.symbol() : "") + (stockItem.market() != null && !stockItem.market().isEmpty() ? " · " + stockItem.market() : ""))

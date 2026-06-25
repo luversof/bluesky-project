@@ -68,6 +68,11 @@
 				@if(account == null)
 					<div class="bg-base-200 rounded-box p-10 text-center text-base-content/60">${MessageUtil.getMessage("common.message.no.data")}</div>
 				@else
+					@template._components.ui.breadcrumbBack(
+						homeLabel = MessageUtil.getMessage("layout.menu.main.stock"),
+						categoryLabel = MessageUtil.getMessage("stock.account.detail.breadcrumb"),
+						backLabel = MessageUtil.getMessage("common.button.back"))
+
 					@template._components.ui.pageHeader(
 						title = account.name() != null ? account.name() : "-",
 						description = MessageUtil.getMessage("stock.account.detail.holdings.title"))
