@@ -319,9 +319,9 @@ const DateRangePicker = (function () {
 					_s.mode = modeStr;
 					cfg.onApply(startStr, endStr, modeStr);
 					try {
-						if (cfg.globalKey && typeof sessionStorage !== "undefined") {
+						if (cfg.globalKey && typeof localStorage !== "undefined") {
 							const tz = resolvedTimeZone() || null;
-							sessionStorage.setItem(
+							localStorage.setItem(
 								cfg.globalKey,
 								JSON.stringify({
 									start: startStr || "",
@@ -397,9 +397,9 @@ const DateRangePicker = (function () {
 							}
 						} catch (e) {}
 						try {
-							if (cfg.globalKey && typeof sessionStorage !== "undefined") {
+							if (cfg.globalKey && typeof localStorage !== "undefined") {
 								const tz2 = resolvedTimeZone() || null;
-								sessionStorage.setItem(
+								localStorage.setItem(
 									cfg.globalKey,
 									JSON.stringify({
 										start: startStr || "",
@@ -816,7 +816,11 @@ const DateRangePicker = (function () {
 		// on init: prefer sessionStorage value if cfg.globalKey provided
 		try {
 			if (cfg.globalKey) {
-				const raw = sessionStorage.getItem(cfg.globalKey);
+				// localStorage 우선(탭 간 공유), 없으면 sessionStorage 폴백(기존 세션 호환).
+				const raw =
+					(typeof localStorage !== "undefined" &&
+						localStorage.getItem(cfg.globalKey)) ||
+					sessionStorage.getItem(cfg.globalKey);
 				if (raw) {
 					try {
 						const obj = JSON.parse(raw);

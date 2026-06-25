@@ -36,6 +36,7 @@
 		</div>
 
 		<script src="/js/stock/globalDateRange.js"></script>
+		<script src="/js/stock/detailFilterState.js"></script>
 
 		<!-- 모바일 하단 탭바 (lg 이상에서 숨김) -->
 		<nav class="dock dock-sm lg:hidden z-50 border-t border-base-200 bg-base-100/95 backdrop-blur">

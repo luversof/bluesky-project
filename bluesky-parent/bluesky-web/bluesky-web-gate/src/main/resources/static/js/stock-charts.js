@@ -350,5 +350,193 @@ StockCharts.createChart = function (canvasId, config, existingInstance) {
     const inst = new Chart(ctx, config);
     return inst;
 };
+// 보유 평가액/원가 추이 공용 차트 (자산 성장 메인 차트와 동일한 표현):
+//  - 원금(cost): 회색 점선
+//  - 평가액(value): 원금 기준 위=수익(빨강)/아래=손실(파랑) 영역으로 채움
+//  - 매수(▲)/매도(▼) 마커, 평가손익 툴팁, 렌더 애니메이션
+// 자산 성장과 종목/계좌 상세가 같은 모양이 되도록 한 곳에서 구성한다.
+StockCharts.holdingsChartConfig = function (series, texts, opts) {
+    const labels = (series && series.labels) || [];
+    const valueData = (series && series.value) || [];
+    const costData = (series && series.cost) || [];
+    const buyCountData = (series && series.buyCount) || [];
+    const dailyRealizedData = (series && series.dailyRealized) || [];
+    const showMarkers = !opts || opts.showMarkers !== false;
+    const animate = !!(opts && opts.animate);
+    const t = texts || {};
+    const o = opts || {};
+    const tradeMarkersPlugin = {
+        id: "holdingsTradeMarkers",
+        afterDatasetsDraw: function (chart) {
+            if (!showMarkers) {
+                chart.$drawnMarkers = [];
+                return;
+            }
+            const ctx = chart.ctx;
+            const xAxis = chart.scales["x"];
+            const yAxis = chart.scales["y"];
+            if (!xAxis || !yAxis)
+                return;
+            const left = chart.chartArea.left;
+            const right = chart.chartArea.right;
+            const arrow = 7;
+            const drawn = [];
+            function drawArrow(cx, cy, up, color) {
+                ctx.save();
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                if (up) {
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(cx + arrow, cy + arrow * 1.4);
+                    ctx.lineTo(cx - arrow, cy + arrow * 1.4);
+                }
+                else {
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(cx + arrow, cy - arrow * 1.4);
+                    ctx.lineTo(cx - arrow, cy - arrow * 1.4);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+            for (let i = 0; i < labels.length; i++) {
+                const cost = parseFloat(costData[i]);
+                if (isNaN(cost))
+                    continue;
+                const px = xAxis.getPixelForValue(i);
+                if (px < left || px > right)
+                    continue;
+                const py = yAxis.getPixelForValue(cost);
+                if (Number(buyCountData[i]) > 0) {
+                    drawArrow(px, py + 2, true, "rgba(255, 99, 132, 0.9)");
+                    drawn.push({ px: px, py: py + 2 + arrow * 0.7, date: labels[i] });
+                }
+                if (parseFloat(dailyRealizedData[i]) > 0) {
+                    drawArrow(px, py - 2, false, "rgba(54, 162, 235, 0.9)");
+                    drawn.push({ px: px, py: py - 2 - arrow * 0.7, date: labels[i] });
+                }
+            }
+            chart.$drawnMarkers = drawn;
+        },
+    };
+    return {
+        type: "line",
+        plugins: showMarkers ? [tradeMarkersPlugin] : [],
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    type: "line",
+                    label: t.costLabel || "",
+                    data: costData,
+                    borderColor: "rgba(156, 163, 175, 1)",
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false,
+                    order: 0,
+                },
+                {
+                    type: "line",
+                    label: t.valueLabel || "",
+                    data: valueData,
+                    borderColor: "rgba(75, 192, 192, 1)",
+                    borderWidth: 2,
+                    fill: {
+                        target: "-1",
+                        above: "rgba(255, 99, 132, 0.25)",
+                        below: "rgba(54, 162, 235, 0.25)",
+                    },
+                    order: 1,
+                },
+            ],
+        },
+        options: {
+            animation: animate ? { duration: 600 } : false,
+            normalized: true,
+            elements: {
+                line: { tension: 0 },
+                point: { radius: 0, hitRadius: 10, hoverRadius: 4 },
+            },
+            layout: { padding: { top: 20, bottom: 5 } },
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: "index", intersect: false },
+            onHover: o.onHover,
+            onClick: o.onClick,
+            plugins: {
+                legend: {
+                    position: "bottom",
+                    labels: {
+                        sort: function (a, b) {
+                            return a.datasetIndex - b.datasetIndex;
+                        },
+                    },
+                },
+                tooltip: {
+                    itemSort: function (a, b) {
+                        const av = a && a.parsed ? parseFloat(a.parsed.y) : 0;
+                        const bv = b && b.parsed ? parseFloat(b.parsed.y) : 0;
+                        return av === bv ? a.datasetIndex - b.datasetIndex : bv - av;
+                    },
+                    callbacks: {
+                        label: function (context) {
+                            let label = context.dataset.label || "";
+                            if (label)
+                                label += ": ";
+                            if (context.parsed.y !== null)
+                                label += StockCharts.formatCurrency(context.parsed.y);
+                            return label;
+                        },
+                        afterBody: function (items) {
+                            const it = items && items[0];
+                            if (!it)
+                                return [];
+                            const idx = it.dataIndex;
+                            const v = parseFloat(valueData[idx]);
+                            const c = parseFloat(costData[idx]);
+                            const lines = [];
+                            if (!isNaN(v) && !isNaN(c)) {
+                                const diff = v - c;
+                                const pct = c !== 0 ? (diff / c) * 100 : 0;
+                                lines.push("─────────────────");
+                                lines.push((t.profitLabel || "") +
+                                    ": " +
+                                    (diff >= 0 ? "+" : "-") +
+                                    StockCharts.formatCurrency(Math.abs(diff)) +
+                                    " (" +
+                                    (pct >= 0 ? "+" : "-") +
+                                    Math.abs(pct).toFixed(2) +
+                                    "%)");
+                            }
+                            if (typeof o.tooltipAfterBody === "function") {
+                                const extra = o.tooltipAfterBody(idx) || [];
+                                for (let k = 0; k < extra.length; k++)
+                                    lines.push(extra[k]);
+                            }
+                            return lines;
+                        },
+                    },
+                },
+            },
+            scales: {
+                x: { display: true, ticks: { maxRotation: 45, minRotation: 45 } },
+                y: {
+                    display: true,
+                    position: "left",
+                    beginAtZero: false,
+                    title: { display: !!t.axisLabel, text: t.axisLabel || "" },
+                    ticks: {
+                        callback: function (value) {
+                            return compactNumber(value);
+                        },
+                    },
+                },
+            },
+        },
+    };
+};
+StockCharts.createHoldingsChart = function (canvasId, series, texts, opts, existingInstance) {
+    return StockCharts.createChart(canvasId, StockCharts.holdingsChartConfig(series, texts, opts), existingInstance);
+};
 // Attach to window so templates can use <script src="/js/stock-charts.js"></script>
 window.StockCharts = StockCharts;

@@ -115,8 +115,8 @@ ${rpPositive ? "+" : ""}&#x20A9;${df.format(safeRp)}
 <thead>
 <tr class="bg-base-200">
 <th>${dateLabel}</th>
-<th>${stockLabel}</th>
 <th>${typeLabel}</th>
+<th>${stockLabel}</th>
 <th class="text-right">${unitPriceLabel}</th>
 <th class="text-right">${quantityLabel}</th>
 <th class="text-right">${amountLabel}</th>
@@ -135,12 +135,12 @@ String tradeDateStr = trade.tradeDate() != null ? fmt.format(trade.tradeDate()) 
 }
 <tr>
 <td class="whitespace-nowrap">${tradeDateStr}</td>
-<td class="font-bold whitespace-nowrap"><a href="/stock/item?stockItemId=${trade.stockItemId() != null ? trade.stockItemId().toString() : ""}" class="link link-hover">${trade.stockItemName() != null ? trade.stockItemName() : "-"}</a></td>
 <td>
 <span class="${isBuy ? "badge badge-error badge-outline badge-sm" : "badge badge-info badge-outline badge-sm"}">
 ${isBuy ? buyLabel : sellLabel}
 </span>
 </td>
+<td class="font-bold whitespace-nowrap"><a href="/stock/item?stockItemId=${trade.stockItemId() != null ? trade.stockItemId().toString() : ""}" class="link link-hover">${trade.stockItemName() != null ? trade.stockItemName() : "-"}</a></td>
 <td class="text-right font-mono amount-value">${trade.price() != null ? df.format(trade.price()) : "0"}</td>
 <td class="text-right font-mono amount-value">${df.format(trade.quantity())}</td>
 <td class="text-right font-mono amount-value">${trade.amount() != null ? df.format(trade.amount()) : "0"}</td>

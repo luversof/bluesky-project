@@ -99,8 +99,11 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
             && (request.getEndDate() == null || request.getEndDate().toEpochMilli() == 0)
             && (rangeMode == null || rangeMode.isBlank()));
 
-    // If no date range provided, default to this year (ytd)
-    if (request.getStartDate() == null && request.getEndDate() == null) {
+    // If no date range provided, default to this year (ytd).
+    // 단, '전체(all)'는 빈 기간으로 전체 데이터를 의미하므로 YTD 기본값을 적용하지 않는다.
+    if (request.getStartDate() == null
+        && request.getEndDate() == null
+        && !"all".equalsIgnoreCase(rangeMode)) {
       ZoneId zone =
           (request.getTimeZone() != null && !request.getTimeZone().isEmpty())
               ? ZoneId.of(request.getTimeZone())

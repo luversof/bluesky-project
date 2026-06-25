@@ -778,6 +778,19 @@ public class StockViewController {
               .findFirst()
               .orElse(null);
     }
+    // 초기 진입(비 htmx)은 셸만 렌더하고, 콘텐츠는 전역 기간과 함께 htmx로 로드한다.
+    // (풀페이지 새로고침 시에도 선택 기간이 서버에 적용되도록.)
+    if (request.getHeader("HX-Request") == null) {
+      model.addAttribute("contentReady", false);
+      model.addAttribute(
+          "stockItemIdParam",
+          stockItem != null && stockItem.id() != null
+              ? stockItem.id().toString()
+              : (stockItemId != null ? stockItemId : ""));
+      return "stock/stockItemDetail";
+    }
+    model.addAttribute("contentReady", true);
+
     if (stockItem == null || stockItem.id() == null) {
       model.addAttribute("stockItem", null);
       return "stock/stockItemDetail";
@@ -919,6 +932,20 @@ public class StockViewController {
 
     UUID parsedId = parseUuidOrNull(accountId);
     Account account = parsedId != null ? accountClient.getAccountById(parsedId).orElse(null) : null;
+
+    // 초기 진입(비 htmx)은 셸만 렌더하고, 콘텐츠는 전역 기간과 함께 htmx로 로드한다.
+    // (풀페이지 새로고침 시에도 선택 기간이 서버에 적용되도록.)
+    if (request.getHeader("HX-Request") == null) {
+      model.addAttribute("contentReady", false);
+      model.addAttribute(
+          "accountIdParam",
+          account != null && account.id() != null
+              ? account.id().toString()
+              : (accountId != null ? accountId : ""));
+      return "stock/accountDetail";
+    }
+    model.addAttribute("contentReady", true);
+
     if (account == null || account.id() == null) {
       model.addAttribute("account", null);
       return "stock/accountDetail";

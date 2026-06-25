@@ -86,7 +86,7 @@
             showRangeText = false
         )
 
-        <details class="mb-4" open>
+        <details class="mb-4" open data-detail-filter>
             <summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
                 ${detailSearchLabel}
@@ -308,208 +308,33 @@
                 return sign + percentFormatter.format(Math.abs(value)) + '%';
             };
 
-            // 매수/매도 마커 데이터 생성: buyCount > 0 이면 매수(▲), dailyRealizedProfit > 0 이면 매도(▼)
-            var buildBuyMarkers = function(lbls, bcounts) {
-                var pts = [];
-                for (var i = 0; i < lbls.length; i++) {
-                    if (Number(bcounts[i]) > 0) {
-                        pts.push({ date: lbls[i] });
-                    }
-                }
-                return pts;
-            };
-            var buildSellMarkers = function(lbls, drealized) {
-                var pts = [];
-                for (var i = 0; i < lbls.length; i++) {
-                    if (parseFloat(drealized[i]) > 0) {
-                        pts.push({ date: lbls[i] });
-                    }
-                }
-                return pts;
-            };
-
-            var buyMarkersData = buildBuyMarkers(labels, buyCountData);
-            var sellMarkersData = buildSellMarkers(labels, dailyRealizedProfitData);
-            var drawnMarkers = []; // afterDatasetsDraw에서 갱신, { px, py, date } 형태
-
             var syncing = false;
             var mainChart, dividendChart;
 
-            var tradeMarkersPlugin = {
-                id: 'tradeMarkers',
-                afterDatasetsDraw: function(chart) { // tooltip 아래에 그리기 위해 afterDatasetsDraw 사용
-                    var ctx = chart.ctx;
-                    var xAxis = chart.scales['x'];
-                    var yAxis = chart.scales['y'];
-                    if (!xAxis || !yAxis) return;
-                    var chartLeft = chart.chartArea.left;
-                    var chartRight = chart.chartArea.right;
-                    var arrowSize = 7;
-                    // 꼬리 없는 삼각 화살표: 매수는 라인 아래(위를 가리킴 ▲), 매도는 라인 위(아래를 가리킴 ▼)
-                    function drawArrow(cx, cy, up, color) {
-                        ctx.save();
-                        ctx.fillStyle = color;
-                        ctx.beginPath();
-                        if (up) {
-                            ctx.moveTo(cx, cy);
-                            ctx.lineTo(cx + arrowSize, cy + arrowSize * 1.4);
-                            ctx.lineTo(cx - arrowSize, cy + arrowSize * 1.4);
-                        } else {
-                            ctx.moveTo(cx, cy);
-                            ctx.lineTo(cx + arrowSize, cy - arrowSize * 1.4);
-                            ctx.lineTo(cx - arrowSize, cy - arrowSize * 1.4);
-                        }
-                        ctx.closePath();
-                        ctx.fill();
-                        ctx.restore();
-                    }
-                    var buyData = buyMarkersData;
-                    var sellData = sellMarkersData;
-                    drawnMarkers = [];
-                    for (var i = 0; i < buyData.length; i++) {
-                        var xi = labels.indexOf(buyData[i].date); // 날짜로 현재 인덱스 조회
-                        if (xi < 0) continue;
-                        var pxi = xAxis.getPixelForValue(xi);
-                        if (pxi < chartLeft || pxi > chartRight) continue;
-                        var costI = parseFloat(totalCostData[xi]);
-                        if (isNaN(costI)) continue;
-                        var pyi = yAxis.getPixelForValue(costI);
-                        drawArrow(pxi, pyi + 2, true, 'rgba(255, 99, 132, 0.9)');
-                        drawnMarkers.push({ px: pxi, py: pyi + 2 + arrowSize * 0.7, date: buyData[i].date });
-                    }
-                    for (var j = 0; j < sellData.length; j++) {
-                        var xj = labels.indexOf(sellData[j].date); // 날짜로 현재 인덱스 조회
-                        if (xj < 0) continue;
-                        var pxj = xAxis.getPixelForValue(xj);
-                        if (pxj < chartLeft || pxj > chartRight) continue;
-                        var costJ = parseFloat(totalCostData[xj]);
-                        if (isNaN(costJ)) continue;
-                        var pyj = yAxis.getPixelForValue(costJ);
-                        drawArrow(pxj, pyj - 2, false, 'rgba(54, 162, 235, 0.9)');
-                        drawnMarkers.push({ px: pxj, py: pyj - 2 - arrowSize * 0.7, date: sellData[j].date });
-                    }
-                }
-            };
-
             window.ensureStockCharts(function() {
-                mainChart = window.StockCharts.createChart('assetGrowthChart', {
-                type: 'line',
-                plugins: [tradeMarkersPlugin],
-                data: {
+                var series = {
                     labels: labels,
-                    datasets: [
-                        {
-                            type: 'line',
-                            label: '${principalLabel}',
-                            data: totalCostData,
-                            borderColor: 'rgba(156, 163, 175, 1)',
-                            borderWidth: 2,
-                            borderDash: [5, 5],
-                            fill: false,
-                            yAxisID: 'y',
-                            order: 0
-                        },
-                        {
-                            type: 'line',
-                            label: '${totalAssetDatasetLabel}',
-                            data: totalValueData,
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            borderWidth: 2,
-                            fill: {
-                                target: '-1',
-                                above: 'rgba(255, 99, 132, 0.25)',
-                                below: 'rgba(54, 162, 235, 0.25)'
-                            },
-                            yAxisID: 'y',
-                            order: 1
-                        },
-
-                    ]
-                },
-                options: {
-                    animation: false,
-                    normalized: true,
-                    elements: {
-                        line: { tension: 0 },
-                        point: { radius: 0, hitRadius: 10, hoverRadius: 4 }
-                    },
-                    layout: {
-                        padding: { top: 20, bottom: 5 }
-                    },
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    },
-                    plugins: {
-                        legend: {
-                            labels: {
-                                sort: function(a, b) {
-                                    return a.datasetIndex - b.datasetIndex;
-                                }
-                            }
-                        },
-                        tooltip: {
-                            itemSort: function(a, b) {
-                                var aValue = a && a.parsed ? parseFloat(a.parsed.y) : 0;
-                                var bValue = b && b.parsed ? parseFloat(b.parsed.y) : 0;
-                                if (aValue === bValue) {
-                                    return a.datasetIndex - b.datasetIndex;
-                                }
-                                return bValue - aValue;
-                            },
-                            callbacks: {
-                                label: function(context) {
-                                    var label = context.dataset.label || '';
-                                    if (label) label += ': ';
-                                    if (context.parsed.y !== null) {
-                                        label += formatCurrency(context.parsed.y);
-                                    }
-                                    return label;
-                                },
-                                afterBody: function(tooltipItems) {
-                                    // scatter 아이템은 데이터 배열 내 인덱스라 category index가 아님 → 라인 아이템 기준
-                                    var lineItem = tooltipItems.find(function(t) { return t.datasetIndex < 2; });
-                                    if (!lineItem) return [];
-                                    var idx = lineItem.dataIndex;
-                                    var value = parseFloat(totalValueData[idx]);
-                                    var cost = parseFloat(totalCostData[idx]);
-                                    var diff = value - cost;
-                                    var pct = cost !== 0 ? ((diff / cost) * 100) : 0;
-                                    var lines = [
-                                        '─────────────────',
-                                        '${unrealizedProfitLabel}: ' + formatSignedCurrency(diff) + ' (' + formatSignedPercent(pct) + ')'
-                                    ];
-                                    if (tradeCountData[idx] > 0) {
-                                        var drp = parseFloat(dailyRealizedProfitData[idx]);
-                                        lines.push('─────────────────');
-                                        lines.push('${clickTradeHistoryLabel}');
-                                        lines.push('${tradeCountLabel}'.replace('{0}', formatNumber(tradeCountData[idx])));
-                                        if (drp !== 0) lines.push('${dailyRealizedProfitLabel}: ' + formatSignedCurrency(drp));
-                                    }
-                                    return lines;
-                                }
-                            }
+                    value: totalValueData,
+                    cost: totalCostData,
+                    buyCount: buyCountData,
+                    dailyRealized: dailyRealizedProfitData
+                };
+                mainChart = window.StockCharts.createHoldingsChart('assetGrowthChart', series, {
+                    valueLabel: '${totalAssetDatasetLabel}',
+                    costLabel: '${principalLabel}',
+                    axisLabel: '${totalAssetAxisLabel}',
+                    profitLabel: '${unrealizedProfitLabel}'
+                }, {
+                    animate: true,
+                    showMarkers: true,
+                    tooltipAfterBody: function(idx) {
+                        if (tradeCountData[idx] > 0) {
+                            var drp = parseFloat(dailyRealizedProfitData[idx]);
+                            var lines = ['─────────────────', '${clickTradeHistoryLabel}', '${tradeCountLabel}'.replace('{0}', formatNumber(tradeCountData[idx]))];
+                            if (drp !== 0) lines.push('${dailyRealizedProfitLabel}: ' + formatSignedCurrency(drp));
+                            return lines;
                         }
-                    },
-                    scales: {
-                        x: {
-                            display: true,
-                            ticks: {
-                                maxRotation: 45,
-                                minRotation: 45,
-                                maxTicksLimit: 15
-                            }
-                        },
-                        y: {
-                            display: true,
-                            position: 'left',
-                            beginAtZero: false,
-                            title: { display: true, text: '${totalAssetAxisLabel}' },
-                            ticks: { callback: yTicksCallback }
-                        },
-
+                        return [];
                     },
                     onHover: function(event, elements) {
                         if (syncing || !dividendChart) return;
@@ -530,7 +355,7 @@
                     },
                     onClick: function(event, elements) {
                         if (!elements.length) return;
-                        if (markerClicked) { markerClicked = false; return; } // 마커 클릭 시 중복 방지
+                        if (markerClicked) { markerClicked = false; return; }
                         var clicked = elements[0];
                         var date = labels[clicked.index];
                         htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + date, {
@@ -538,7 +363,6 @@
                             swap: 'innerHTML'
                         });
                     }
-                }
                 }, mainChart);
             });
 
@@ -575,7 +399,7 @@
                     ]
                 },
                 options: {
-                    animation: false,
+                    animation: { duration: 600 },
                     normalized: true,
                     elements: {
                         line: { tension: 0 },
@@ -588,6 +412,9 @@
                         intersect: false
                     },
                     plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
                         tooltip: {
                             callbacks: {
                                 // dataset label 은 숨기고 afterBody 에서 원하는 형태로 직접 구성
@@ -613,8 +440,7 @@
                             display: true,
                             ticks: {
                                 maxRotation: 45,
-                                minRotation: 45,
-                                maxTicksLimit: 15
+                                minRotation: 45
                             }
                         },
                         y: {
@@ -662,6 +488,7 @@
                     var mx = e.clientX - rect.left;
                     var my = e.clientY - rect.top;
                     var hitR = 12;
+                    var drawnMarkers = (mainChart && mainChart.$drawnMarkers) || [];
                     for (var k = 0; k < drawnMarkers.length; k++) {
                         var m = drawnMarkers[k];
                         if (Math.abs(mx - m.px) <= hitR && Math.abs(my - m.py) <= hitR) {

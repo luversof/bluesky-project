@@ -1,17 +1,33 @@
 "use strict";
-// 전역 날짜 범위(sessionStorage 'globalDateRange') ↔ 페이지 내 hidden input / HTMX 폼 동기화.
-// 원래 stockLayout.jte 에 인라인 <script> 로 있던 로직을 그대로 TS 모듈로 옮긴 것.
+// 전역 날짜 범위(localStorage 'globalDateRange') ↔ 페이지 내 hidden input / HTMX 폼 동기화.
+// localStorage 를 쓰므로 탭이 달라도(예: 종목 상세를 새 탭으로 여러 개) 같은 기간을 공유한다.
 // 파싱 중 동기 실행되어야 하므로(아래 htmx 의 load 트리거보다 먼저 hidden input 을 채워야 함)
 // classic <script src> 로 로드한다.
 function input(id) {
     return document.getElementById(id);
 }
-// 1) 최초 로드 시 sessionStorage 값을 hidden input 에 반영
+// 전역 기간 원본 읽기: localStorage 우선(탭 간 공유), 없으면 sessionStorage 폴백(기존 세션 호환).
+function readGlobalRangeRaw() {
+    try {
+        if (typeof localStorage !== "undefined") {
+            const v = localStorage.getItem("globalDateRange");
+            if (v)
+                return v;
+        }
+    }
+    catch (e) { }
+    try {
+        if (typeof sessionStorage !== "undefined") {
+            return sessionStorage.getItem("globalDateRange");
+        }
+    }
+    catch (e) { }
+    return null;
+}
+// 1) 최초 로드 시 전역 기간 값을 hidden input 에 반영
 (function () {
     try {
-        const raw = typeof sessionStorage !== "undefined"
-            ? sessionStorage.getItem("globalDateRange")
-            : null;
+        const raw = readGlobalRangeRaw();
         if (raw) {
             const obj = JSON.parse(raw);
             const localToIso = (ds, addDays) => {
@@ -61,9 +77,7 @@ function input(id) {
                 let nextTimeZone = obj.timeZone || obj.timezone || (gTz && gTz.value) || "";
                 if (!nextTimeZone) {
                     try {
-                        const savedRaw = typeof sessionStorage !== "undefined"
-                            ? sessionStorage.getItem("globalDateRange")
-                            : null;
+                        const savedRaw = readGlobalRangeRaw();
                         if (savedRaw) {
                             const saved = JSON.parse(savedRaw);
                             nextTimeZone =
@@ -121,9 +135,7 @@ function input(id) {
                     };
                 }
                 else {
-                    const raw = typeof sessionStorage !== "undefined"
-                        ? sessionStorage.getItem("globalDateRange")
-                        : null;
+                    const raw = readGlobalRangeRaw();
                     if (raw) {
                         try {
                             obj = JSON.parse(raw);
@@ -193,6 +205,28 @@ function input(id) {
             }
             catch (e) { }
         }, false);
+    }
+    catch (e) { }
+})();
+// 3) 다른 탭에서 기간이 바뀌면(localStorage 'storage' 이벤트) 이 탭에도 반영한다.
+//    storage 이벤트는 변경을 일으킨 탭이 아닌 '다른' 탭에서만 발생한다.
+(function () {
+    try {
+        window.addEventListener("storage", (ev) => {
+            try {
+                if (ev.key !== "globalDateRange")
+                    return;
+                const raw = ev.newValue || readGlobalRangeRaw();
+                if (!raw)
+                    return;
+                const obj = JSON.parse(raw);
+                if (!obj)
+                    return;
+                // 기존 changed 핸들러가 hidden input/폼 동기화 + 표준 검색폼 재조회를 처리한다.
+                window.dispatchEvent(new CustomEvent("globalDateRange:changed", { detail: obj }));
+            }
+            catch (e) { }
+        });
     }
     catch (e) { }
 })();
