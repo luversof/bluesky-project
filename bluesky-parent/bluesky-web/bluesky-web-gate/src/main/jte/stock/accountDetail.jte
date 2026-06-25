@@ -126,7 +126,9 @@
 							<div class="bg-base-100 rounded-box border border-base-200 p-4">
 								<div class="h-64"><canvas id="accountDetailChart" class="amount-chart"></canvas></div>
 							</div>
+							<p class="text-xs text-base-content/40 mt-1">${MessageUtil.getMessage("stock.account.detail.chart.click.hint")}</p>
 						</div>
+						<div id="holdings-snapshot-container"></div>
 						<script>
 						(function() {
 							if (typeof window.ensureStockCharts !== 'function') return;
@@ -138,13 +140,27 @@
 								series.buyCount.push($unsafe{String.valueOf(pt.buyCount())});
 								series.dailyRealized.push($unsafe{pt.dailyRealizedProfit() != null ? pt.dailyRealizedProfit().setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0"});
 							@endfor
+							var __acctId = '${account.id() != null ? account.id().toString() : ""}';
 							window.ensureStockCharts(function() {
 								if (!window.StockCharts || !window.StockCharts.createHoldingsChart) return;
 								var __detailChart = window.StockCharts.createHoldingsChart('accountDetailChart', series, {
 									valueLabel: '${MessageUtil.getMessage("stock.item.detail.chart.value")}',
 									costLabel: '${MessageUtil.getMessage("stock.item.detail.chart.cost")}',
 									profitLabel: '${MessageUtil.getMessage("stock.profit.unrealized")}'
-								}, { animate: true, showMarkers: true });
+								}, {
+									animate: true,
+									showMarkers: true,
+									onClick: function(event, elements) {
+										if (!elements || !elements.length) return;
+										var idx = elements[0].index;
+										var date = series.labels[idx];
+										if (!date || typeof window.htmx === 'undefined' || !window.htmx.ajax) return;
+										window.htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + encodeURIComponent(date) + '&accountId=' + encodeURIComponent(__acctId), {
+											target: '#holdings-snapshot-container',
+											swap: 'innerHTML'
+										});
+									}
+								});
 								setTimeout(function() { try { if (__detailChart) __detailChart.resize(); } catch (e) {} }, 60);
 								setTimeout(function() { try { if (__detailChart) __detailChart.resize(); } catch (e) {} }, 250);
 							});
@@ -159,7 +175,7 @@
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.account.detail.empty.holdings")}</div>
 						@else
 							@template._components.ui.tableCard(body = @`
-								<table class="table table-sm w-full">
+								<table class="table table-sm w-full" data-sortable>
 									<thead class="bg-base-200">
 										<tr>
 											<th>${MessageUtil.getMessage("stock.account.detail.col.stock")}</th>
@@ -193,7 +209,7 @@
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.account.detail.empty.trades")}</div>
 						@else
 							@template._components.ui.tableCard(body = @`
-								<table class="table table-sm w-full">
+								<table class="table table-sm w-full" data-sortable>
 									<thead class="bg-base-200">
 										<tr>
 											<th>${MessageUtil.getMessage("common.label.date")}</th>
@@ -230,7 +246,7 @@
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.account.detail.empty.dividends")}</div>
 						@else
 							@template._components.ui.tableCard(body = @`
-								<table class="table table-sm w-full">
+								<table class="table table-sm w-full" data-sortable>
 									<thead class="bg-base-200">
 										<tr>
 											<th>${MessageUtil.getMessage("common.label.date")}</th>

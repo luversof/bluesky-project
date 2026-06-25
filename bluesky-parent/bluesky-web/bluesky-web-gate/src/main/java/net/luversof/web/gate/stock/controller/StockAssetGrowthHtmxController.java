@@ -278,7 +278,10 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
   }
 
   @GetMapping("/holdings-snapshot")
-  public String holdingsSnapshot(@RequestParam(required = false) String date, Model model) {
+  public String holdingsSnapshot(
+      @RequestParam(required = false) String date,
+      @RequestParam(required = false) String accountId,
+      Model model) {
     var userId = UserUtil.getUserId();
     if (userId == null) {
       return ERROR_VIEW;
@@ -291,6 +294,9 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     var params = new org.springframework.util.LinkedMultiValueMap<String, String>();
     params.add("userId", userId.toString());
     params.add("date", date);
+    if (accountId != null && !accountId.isBlank()) {
+      params.add("accountId", accountId);
+    }
     List<HoldingsSnapshotItem> holdings = emptyIfNull(tradeProfitClient.holdingsSnapshot(params));
     model.addAttribute("holdings", holdings);
     model.addAttribute("date", date);

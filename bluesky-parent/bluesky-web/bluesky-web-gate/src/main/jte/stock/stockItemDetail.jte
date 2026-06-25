@@ -172,7 +172,7 @@
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.item.detail.empty.trades")}</div>
 						@else
 							@template._components.ui.tableCard(body = @`
-								<table class="table table-sm w-full">
+								<table class="table table-sm w-full" data-sortable>
 									<thead class="bg-base-200">
 										<tr>
 											<th>${MessageUtil.getMessage("common.label.date")}</th>
@@ -211,7 +211,7 @@
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.item.detail.empty.dividends")}</div>
 						@else
 							@template._components.ui.tableCard(body = @`
-								<table class="table table-sm w-full">
+								<table class="table table-sm w-full" data-sortable>
 									<thead class="bg-base-200">
 										<tr>
 											<th>${MessageUtil.getMessage("common.label.date")}</th>

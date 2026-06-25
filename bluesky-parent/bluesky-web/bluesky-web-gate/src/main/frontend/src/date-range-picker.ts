@@ -841,7 +841,8 @@ const DateRangePicker = (function () {
 									if (obj.mode) {
 										if (
 											onclick.indexOf("set(" + obj.mode + ",") !== -1 ||
-											onclick.indexOf("set('" + obj.mode + "'") !== -1
+											onclick.indexOf("set('" + obj.mode + "'") !== -1 ||
+											(obj.mode === "all" && onclick.indexOf("set(0,") !== -1)
 										) {
 											foundBtn = c as Element;
 											break;

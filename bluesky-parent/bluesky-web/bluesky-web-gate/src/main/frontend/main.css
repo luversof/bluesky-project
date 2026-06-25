@@ -205,3 +205,16 @@ html.hide-amounts .amount-chart {
 	user-select: none;
 	pointer-events: none;
 }
+
+/* Client-side sortable tables (detail pages) */
+table[data-sortable] thead th {
+	cursor: pointer;
+	user-select: none;
+}
+table[data-sortable] thead th:hover {
+	background-color: var(--color-base-300);
+}
+.sort-arrow {
+	font-size: 0.7em;
+	opacity: 0.7;
+}

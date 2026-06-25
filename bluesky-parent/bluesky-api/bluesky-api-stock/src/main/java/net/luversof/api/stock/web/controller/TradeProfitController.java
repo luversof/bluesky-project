@@ -42,7 +42,8 @@ public class TradeProfitController {
   @GetMapping("/holdingsSnapshot")
   public List<HoldingsSnapshotItem> holdingsSnapshot(
       @RequestParam UUID userId,
-      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-    return stockProfitService.getHoldingsSnapshot(userId, date);
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+      @RequestParam(required = false) UUID accountId) {
+    return stockProfitService.getHoldingsSnapshot(userId, date, accountId);
   }
 }

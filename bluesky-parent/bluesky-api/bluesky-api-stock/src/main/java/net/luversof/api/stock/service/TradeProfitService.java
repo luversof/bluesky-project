@@ -1018,8 +1018,18 @@ public class TradeProfitService {
 
   /** 특정 날짜의 보유 종목 스냅샷을 반환합니다. DailyAccountSnapshot의 wmaState를 활용합니다. */
   public List<HoldingsSnapshotItem> getHoldingsSnapshot(UUID userId, LocalDate date) {
+    return getHoldingsSnapshot(userId, date, null);
+  }
+
+  /** 보유 스냅샷. accountId 가 있으면 해당 계좌 스냅샷, 없으면 사용자 전체(account_id IS NULL) 스냅샷. */
+  public List<HoldingsSnapshotItem> getHoldingsSnapshot(
+      UUID userId, LocalDate date, UUID accountId) {
     var snapshot =
-        dailyAccountSnapshotRepository.findLatestByUserIdAndAccountIdIsNullOnOrBefore(userId, date);
+        accountId != null
+            ? dailyAccountSnapshotRepository.findLatestByUserIdAndAccountIdOnOrBefore(
+                userId, accountId, date)
+            : dailyAccountSnapshotRepository.findLatestByUserIdAndAccountIdIsNullOnOrBefore(
+                userId, date);
     if (snapshot.isEmpty() || snapshot.get().getWmaState() == null) {
       return List.of();
     }

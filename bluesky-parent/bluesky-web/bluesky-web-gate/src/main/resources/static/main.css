@@ -5525,6 +5525,17 @@ html.hide-amounts .amount-chart {
   user-select: none;
   pointer-events: none;
 }
+table[data-sortable] thead th {
+  cursor: pointer;
+  user-select: none;
+}
+table[data-sortable] thead th:hover {
+  background-color: var(--color-base-300);
+}
+.sort-arrow {
+  font-size: 0.7em;
+  opacity: 0.7;
+}
 @layer base {
   :where(:root),:root:has(input.theme-controller[value=light]:checked),[data-theme=light] {
     color-scheme: light;
