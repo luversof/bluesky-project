@@ -1,7 +1,7 @@
 @param boolean isAuthenticated = false
 
 <!-- Dashboard Layout -->
-<div class="container mx-auto p-4 space-y-6">
+<div class="space-y-6">
     <!-- 1. Summary Cards + Charts + Top/Bottom Rankings -->
     <div hx-get="/stock/htmx/summary?showCharts=true" hx-trigger="load" hx-swap="innerHTML">
         <div class="flex justify-center p-4">

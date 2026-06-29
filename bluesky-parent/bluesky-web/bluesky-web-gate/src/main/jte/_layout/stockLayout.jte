@@ -1,3 +1,4 @@
+@import io.github.luversof.boot.context.support.MessageUtil
 @param gg.jte.Content contentStock
 @param boolean isAuthenticated = false
 @param String username = ""
@@ -17,9 +18,19 @@
 		<script src="/js/stock-charts.js"></script>
 
 		<div class="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)]">
-			<div class="hidden lg:block lg:w-56 shrink-0">
-				<div class="fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-56 overflow-y-auto border-r border-base-200 bg-base-100 py-4">
+			<div class="hidden lg:block lg:w-56 shrink-0 stock-sidebar-spacer">
+				<div class="fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-56 overflow-y-auto border-r border-base-200 bg-base-100 py-4 flex flex-col stock-sidebar">
 					@template._components.navmenu(menu = "stock", classAppend = "w-full")
+					<div class="mt-auto border-t border-base-200 px-2 pt-2">
+						<button type="button" class="sidebar-collapse-btn w-full font-medium rounded-box flex items-center gap-3 px-4 py-3 text-base-content/60 hover:bg-base-200 hover:text-base-content transition-all duration-200"
+								onclick="document.documentElement.classList.toggle('sidebar-collapsed');try{localStorage.setItem('sidebarCollapsed',document.documentElement.classList.contains('sidebar-collapsed'));}catch(e){}"
+								title="${MessageUtil.getMessage("layout.sidebar.toggle")}" aria-label="${MessageUtil.getMessage("layout.sidebar.toggle")}">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 sidebar-toggle-icon transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+							</svg>
+							<span class="sidebar-label">${MessageUtil.getMessage("layout.sidebar.collapse")}</span>
+						</button>
+					</div>
 				</div>
 			</div>
 			<div class="flex-1 min-w-0 p-4 pb-20 lg:pb-4 relative">
@@ -38,6 +49,7 @@
 		<script src="/js/stock/globalDateRange.js"></script>
 		<script src="/js/stock/detailFilterState.js"></script>
 		<script src="/js/stock/tableSort.js"></script>
+		<script src="/js/stock/multiSelectDropdown.js"></script>
 
 		<!-- 모바일 하단 탭바 (lg 이상에서 숨김) -->
 		<nav class="dock dock-sm lg:hidden z-50 border-t border-base-200 bg-base-100/95 backdrop-blur">

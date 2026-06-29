@@ -125,7 +125,7 @@
             <table class="table table-sm w-full" data-sortable-table data-asset-status-account-table>
                 <thead class="bg-base-200">
                     <tr>
-                        <th>
+                        <th scope="col">
                             <button type="button"
                                     class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
                                     data-sort-key="account"
@@ -134,7 +134,7 @@
                                 <span data-sort-indicator class="opacity-60">↕</span>
                             </button>
                         </th>
-                        <th class="text-right">
+                        <th scope="col" class="text-right">
                             <button type="button"
                                     class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
                                     data-sort-key="buyAmount"
@@ -143,7 +143,7 @@
                                 <span data-sort-indicator class="opacity-60">↕</span>
                             </button>
                         </th>
-                        <th class="text-right">
+                        <th scope="col" class="text-right">
                             <button type="button"
                                     class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
                                     data-sort-key="evaluationAmount"
@@ -152,7 +152,7 @@
                                 <span data-sort-indicator class="opacity-60">↕</span>
                             </button>
                         </th>
-                        <th class="text-right">
+                        <th scope="col" class="text-right">
                             <button type="button"
                                     class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
                                     data-sort-key="evaluationProfit"
@@ -161,7 +161,7 @@
                                 <span data-sort-indicator class="opacity-60">↕</span>
                             </button>
                         </th>
-                        <th class="text-right hidden md:table-cell">
+                        <th scope="col" class="text-right hidden md:table-cell">
                             <button type="button"
                                     class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
                                     data-sort-key="principal"
@@ -170,7 +170,7 @@
                                 <span data-sort-indicator class="opacity-60">↕</span>
                             </button>
                         </th>
-                        <th class="text-right">
+                        <th scope="col" class="text-right">
                             <button type="button"
                                     class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
                                     data-sort-key="principalReturn"
@@ -261,14 +261,14 @@
                                         <table class="table table-xs w-full">
                                             <thead class="bg-base-200/70">
                                                 <tr>
-                                                    <th>${stockNameLabel}</th>
-                                                    <th class="text-right hidden sm:table-cell">${quantityLabel}</th>
-                                                    <th class="text-right hidden lg:table-cell">${averageCostLabel}</th>
-                                                    <th class="text-right hidden md:table-cell">${buyAmountLabel}</th>
-                                                    <th class="text-right hidden lg:table-cell">${currentPriceLabel}</th>
-                                                    <th class="text-right">${evaluationAmountLabel}</th>
-                                                    <th class="text-right">${evaluationProfitLabel}</th>
-                                                    <th class="text-right hidden xl:table-cell">${weightLabel}</th>
+                                                    <th scope="col">${stockNameLabel}</th>
+                                                    <th scope="col" class="text-right hidden sm:table-cell">${quantityLabel}</th>
+                                                    <th scope="col" class="text-right hidden lg:table-cell">${averageCostLabel}</th>
+                                                    <th scope="col" class="text-right hidden md:table-cell">${buyAmountLabel}</th>
+                                                    <th scope="col" class="text-right hidden lg:table-cell">${currentPriceLabel}</th>
+                                                    <th scope="col" class="text-right">${evaluationAmountLabel}</th>
+                                                    <th scope="col" class="text-right">${evaluationProfitLabel}</th>
+                                                    <th scope="col" class="text-right hidden xl:table-cell">${weightLabel}</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -414,7 +414,7 @@
             <table class="table table-sm table-zebra w-full" data-sortable-table data-asset-status-stock-table>
                 <thead class="bg-base-200">
                     <tr>
-                        <th>
+                        <th scope="col">
                             <button type="button"
                                     class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
                                     data-sort-key="stockName"
@@ -423,7 +423,7 @@
                                 <span data-sort-indicator class="opacity-60">↕</span>
                             </button>
                         </th>
-                        <th class="text-right hidden lg:table-cell">
+                        <th scope="col" class="text-right hidden lg:table-cell">
                             <button type="button"
                                     class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
                                     data-sort-key="quantity"
@@ -432,7 +432,7 @@
                                 <span data-sort-indicator class="opacity-60">↕</span>
                             </button>
                         </th>
-                        <th class="text-right hidden xl:table-cell">
+                        <th scope="col" class="text-right hidden xl:table-cell">
                             <button type="button"
                                     class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
                                     data-sort-key="averageCost"
@@ -441,7 +441,7 @@
                                 <span data-sort-indicator class="opacity-60">↕</span>
                             </button>
                         </th>
-                        <th class="text-right hidden sm:table-cell">
+                        <th scope="col" class="text-right hidden sm:table-cell">
                             <button type="button"
                                     class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
                                     data-sort-key="buyAmount"
@@ -450,7 +450,7 @@
                                 <span data-sort-indicator class="opacity-60">↕</span>
                             </button>
                         </th>
-                        <th class="text-right hidden lg:table-cell">
+                        <th scope="col" class="text-right hidden lg:table-cell">
                             <button type="button"
                                     class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
                                     data-sort-key="currentPrice"
@@ -459,7 +459,7 @@
                                 <span data-sort-indicator class="opacity-60">↕</span>
                             </button>
                         </th>
-                        <th class="text-right">
+                        <th scope="col" class="text-right">
                             <button type="button"
                                     class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
                                     data-sort-key="evaluationAmount"
@@ -468,7 +468,7 @@
                                 <span data-sort-indicator class="opacity-60">↕</span>
                             </button>
                         </th>
-                        <th class="text-right">
+                        <th scope="col" class="text-right">
                             <button type="button"
                                     class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
                                     data-sort-key="evaluationProfit"
@@ -477,7 +477,7 @@
                                 <span data-sort-indicator class="opacity-60">↕</span>
                             </button>
                         </th>
-                        <th class="text-right">
+                        <th scope="col" class="text-right">
                             <button type="button"
                                     class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
                                     data-sort-key="weight"
@@ -491,7 +491,7 @@
                 <tbody>
                     @if(stockAggregated == null || stockAggregated.isEmpty())
                         <tr>
-                            <td colspan="8" class="text-center py-8 opacity-50">${noHoldingsLabel}</td>
+                            <td colspan="8">@template._components.ui.emptyState(message = noHoldingsLabel)</td>
                         </tr>
                     @else
                         @for(TradeProfit item : stockAggregated)

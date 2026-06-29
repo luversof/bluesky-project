@@ -50,7 +50,7 @@
     <button type="button" class="btn btn-xs btn-ghost date-range-next${!canNext ? " btn-disabled opacity-40" : ""}" title="${nextLabel}" aria-label="${nextLabel}" $unsafe{!canNext ? "disabled" : ""} onclick="${pickerName}.shift(1)">${useCompactEnglishLabels ? nextCompactLabel : nextLabel} ›</button>
     <button type="button" class="btn btn-xs btn-ghost date-range-next${!canNext ? " btn-disabled opacity-40" : ""}" $unsafe{!canNext ? "disabled" : ""} onclick="${pickerName}.jumpToEdge('end')">»</button>
     @if(showRangeText && (startDate != null || endDate != null))
-        <span class="text-xs text-base-content/40 ml-1">
+        <span class="badge badge-ghost badge-sm font-medium text-base-content/80 ml-1 whitespace-nowrap">
             ${startDate != null ? startDate.toString() : "?"} ~ ${endDate != null ? endDate.minusDays(1).toString() : "?"}
         </span>
     @endif

@@ -11,7 +11,7 @@
 	loginUrl = loginUrl,
 	profile = profile,
 	contentStock = @`
-		<div class="container mx-auto p-4 space-y-6">
+		<div class="space-y-6">
 			@template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.page.activity.title"))
 
 			<div hx-get="/stock/htmx/activity-list" hx-trigger="load" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">

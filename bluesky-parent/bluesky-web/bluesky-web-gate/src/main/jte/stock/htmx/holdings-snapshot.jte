@@ -41,10 +41,7 @@
         </div>
 
         @if(holdings == null || holdings.isEmpty())
-            <div class="text-center py-6 text-base-content/50">
-                <p>${noDataLabel}</p>
-                <p class="text-xs mt-1">${savedDateOnlyLabel}</p>
-            </div>
+            @template._components.ui.emptyState(message = noDataLabel, hint = savedDateOnlyLabel, padding = "py-6")
         @else
             !{
                 BigDecimal totalPrincipal = holdings.stream()
@@ -73,7 +70,7 @@
                 </div>
                 <div class="stat bg-base-200 rounded-box py-2 px-4">
                     <div class="stat-title text-xs">${totalUnrealizedLabel}</div>
-                    <div class="stat-value text-base amount-value ${totalPositive ? "text-red-500" : "text-blue-500"}">
+                    <div class="stat-value text-base amount-value ${totalPositive ? "text-profit" : "text-loss"}">
                         ${totalPositive ? "+" : ""}&#x20A9;${String.format("%,d", totalUnrealized.longValue())}
                     </div>
                 </div>
@@ -82,21 +79,21 @@
                 <table class="table table-xs table-zebra w-full">
                     <thead>
                         <tr class="text-xs text-base-content/60">
-                            <th>${stockNameLabel}</th>
-                            <th class="text-right">${quantityLabel}</th>
-                            <th class="text-right">${averageCostLabel}</th>
-                            <th class="text-right">${principalLabel}</th>
-                            <th class="text-right">${referencePriceLabel}</th>
-                            <th class="text-right">${evaluationAmountLabel}</th>
-                            <th class="text-right">${evaluationProfitLabel}</th>
-                            <th class="text-right">${returnRateLabel}</th>
+                            <th scope="col">${stockNameLabel}</th>
+                            <th scope="col" class="text-right">${quantityLabel}</th>
+                            <th scope="col" class="text-right">${averageCostLabel}</th>
+                            <th scope="col" class="text-right">${principalLabel}</th>
+                            <th scope="col" class="text-right">${referencePriceLabel}</th>
+                            <th scope="col" class="text-right">${evaluationAmountLabel}</th>
+                            <th scope="col" class="text-right">${evaluationProfitLabel}</th>
+                            <th scope="col" class="text-right">${returnRateLabel}</th>
                         </tr>
                     </thead>
                     <tbody>
                         @for(HoldingsSnapshotItem item : holdings)
                         !{
                             boolean isProfit = item.unrealizedProfit() != null && item.unrealizedProfit().compareTo(BigDecimal.ZERO) >= 0;
-                            String colorClass = isProfit ? "text-red-500" : "text-blue-500";
+                            String colorClass = isProfit ? "text-profit" : "text-loss";
                             String sign = isProfit ? "+" : "";
                             BigDecimal cost = item.avgCost() != null && item.quantity() != null && item.quantity().compareTo(BigDecimal.ZERO) > 0
                                 ? item.avgCost().multiply(item.quantity())

@@ -83,7 +83,7 @@
             rangeMode = rangeMode,
             startDate = startLocal,
             endDate = endLocal,
-            showRangeText = false
+            showRangeText = true
         )
 
         <details class="mb-4" open data-detail-filter>
@@ -101,7 +101,7 @@
                   hx-select="#assetGrowthFragment"
                   hx-swap="outerHTML"
                   hx-trigger="submit">
-                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,18rem)_minmax(0,22rem)_minmax(0,1fr)_minmax(0,19rem)] xl:items-start">
+                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,18rem)_minmax(0,22rem)_minmax(0,1fr)_minmax(0,19rem)_minmax(0,auto)] xl:items-start">
                     <div class="form-control w-full">
                         <label class="label p-1"><span class="label-text text-xs">${periodLabel}</span></label>
                         <div class="join w-full">
@@ -137,7 +137,7 @@
                         </select>
                     </div>
 
-                    <div class="flex h-full min-h-0 flex-col gap-3 xl:justify-between">
+                    <div class="contents">
                         @template.stock.htmx.fragments.components.stockSelectionPanel(
                             tagLabel = tagLabel,
                             stockLabel = stockNameLabel,
@@ -151,7 +151,7 @@
                             stockItemList = stockItemList
                         )
 
-                        <div class="flex justify-end gap-2 xl:mt-auto">
+                        <div class="flex justify-end gap-2 xl:self-end">
                             <button type="button" class="btn btn-sm btn-primary" data-selection-save="true"
                                 hx-get="/stock/htmx/asset-growth/view"
                                 hx-target="#assetGrowthFragment"
@@ -181,7 +181,7 @@
         <div class="w-full flex flex-col gap-4">
             @if(ts == null || ts.isEmpty())
                 <div class="w-full flex justify-center items-center" style="height: 600px;">
-                    <p class="text-gray-500">${noDataLabel}</p>
+                    @template._components.ui.emptyState(message = noDataLabel)
                 </div>
             @else
                 <p class="min-w-0 text-xs text-base-content/50">

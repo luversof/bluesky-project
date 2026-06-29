@@ -70,24 +70,24 @@
                 <!-- Head -->
                 <thead class="bg-base-200">
                     <tr>
-                        <th class="w-16">${numberLabel}</th>
-                        <th>${value4Label != null ? value4Label : dateLabel}</th>
-                        <th class="text-left">${itemAccountLabel}</th>
+                        <th scope="col" class="w-16">${numberLabel}</th>
+                        <th scope="col">${value4Label != null ? value4Label : dateLabel}</th>
+                        <th scope="col" class="text-left">${itemAccountLabel}</th>
                         @if("PROFIT".equals(type))
-                            <th class="text-right">${MessageUtil.getMessage("stock.profit.sell.amount")}</th>
-                            <th class="text-right font-bold">${MessageUtil.getMessage("stock.profit.realized")}</th>
-                            <th class="text-right hidden sm:table-cell">${MessageUtil.getMessage("stock.profit.unrealized")}</th>
+                            <th scope="col" class="text-right">${MessageUtil.getMessage("stock.profit.sell.amount")}</th>
+                            <th scope="col" class="text-right font-bold">${MessageUtil.getMessage("stock.profit.realized")}</th>
+                            <th scope="col" class="text-right hidden sm:table-cell">${MessageUtil.getMessage("stock.profit.unrealized")}</th>
                         @else
-                            <th class="text-right">${MessageUtil.getMessage("stock.dividend.gross")}</th>
-                            <th class="text-right font-bold">${MessageUtil.getMessage("stock.dividend.net")}</th>
-                            <th class="text-right hidden sm:table-cell">${MessageUtil.getMessage("stock.dividend.tax")}</th>
+                            <th scope="col" class="text-right">${MessageUtil.getMessage("stock.dividend.gross")}</th>
+                            <th scope="col" class="text-right font-bold">${MessageUtil.getMessage("stock.dividend.net")}</th>
+                            <th scope="col" class="text-right hidden sm:table-cell">${MessageUtil.getMessage("stock.dividend.tax")}</th>
                         @endif
                     </tr>
                 </thead>
                 <tbody>
                     @if(tableData == null || tableData.isEmpty())
                         <tr>
-                            <td colspan="6" class="py-6 text-base-content/50">${noDataLabel}</td>
+                            <td colspan="6">@template._components.ui.emptyState(message = noDataLabel)</td>
                         </tr>
                     @else
                         !{int count = 1;}

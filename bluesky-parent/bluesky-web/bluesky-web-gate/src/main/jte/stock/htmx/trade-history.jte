@@ -92,7 +92,7 @@ ${historyTitle}
 <div class="card bg-base-100 shadow-sm border border-base-200">
 <div class="card-body p-4">
 <div class="text-xs text-base-content/50 mb-1">${realizedProfitLabel}</div>
-<div class="text-xl font-bold ${rpPositive ? "text-success" : "text-error"} amount-value">
+<div class="text-xl font-bold ${rpPositive ? "text-profit" : "text-loss"} amount-value">
 ${rpPositive ? "+" : ""}&#x20A9;${df.format(safeRp)}
 </div>
 <div class="text-xs text-base-content/40 mt-1">${sellCountPageLabel}</div>
@@ -114,15 +114,15 @@ ${rpPositive ? "+" : ""}&#x20A9;${df.format(safeRp)}
 <table class="table table-hover table-striped w-full table-sm table-pin-rows">
 <thead>
 <tr class="bg-base-200">
-<th>${dateLabel}</th>
-<th>${typeLabel}</th>
-<th>${stockLabel}</th>
-<th class="text-right">${unitPriceLabel}</th>
-<th class="text-right">${quantityLabel}</th>
-<th class="text-right">${amountLabel}</th>
-<th class="text-right hidden lg:table-cell">${feeLabel}</th>
-<th class="text-right hidden lg:table-cell">${tradingTaxLabel}</th>
-<th class="text-right">${realizedProfitLabel}</th>
+<th scope="col">${dateLabel}</th>
+<th scope="col">${typeLabel}</th>
+<th scope="col">${stockLabel}</th>
+<th scope="col" class="text-right">${unitPriceLabel}</th>
+<th scope="col" class="text-right">${quantityLabel}</th>
+<th scope="col" class="text-right">${amountLabel}</th>
+<th scope="col" class="text-right hidden lg:table-cell">${feeLabel}</th>
+<th scope="col" class="text-right hidden lg:table-cell">${tradingTaxLabel}</th>
+<th scope="col" class="text-right">${realizedProfitLabel}</th>
 </tr>
 </thead>
 <tbody>
@@ -130,7 +130,7 @@ ${rpPositive ? "+" : ""}&#x20A9;${df.format(safeRp)}
 !{
 boolean isBuy = trade.type() == TradeType.BUY;
 boolean hasProfit = trade.realizedProfit() != null && trade.realizedProfit().compareTo(BigDecimal.ZERO) != 0;
-String profitClass = trade.realizedProfit() != null && trade.realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-success" : "text-error";
+String profitClass = trade.realizedProfit() != null && trade.realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
 String tradeDateStr = trade.tradeDate() != null ? fmt.format(trade.tradeDate()) : "-";
 }
 <tr>
@@ -153,7 +153,7 @@ ${hasProfit && !isBuy ? df.format(trade.realizedProfit()) : ""}
 @endfor
 @if(trades == null || trades.isEmpty())
 <tr>
-<td colspan="9" class="text-center py-10 opacity-50">${noTradeDataLabel}</td>
+<td colspan="9">@template._components.ui.emptyState(message = noTradeDataLabel)</td>
 </tr>
 @endif
 </tbody>

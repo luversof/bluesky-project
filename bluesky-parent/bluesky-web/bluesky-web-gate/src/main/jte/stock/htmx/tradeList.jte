@@ -155,7 +155,7 @@
           hx-swap="outerHTML"
           hx-trigger="submit">
 
-        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,18rem)_minmax(0,22rem)_minmax(0,1fr)_minmax(0,19rem)] xl:items-start">
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,18rem)_minmax(0,22rem)_minmax(0,1fr)_minmax(0,19rem)_minmax(0,auto)] xl:items-start">
             <div class="form-control w-full">
                 <label class="label p-1"><span class="label-text text-xs">${periodLabel}</span></label>
                 <div class="join w-full">
@@ -187,7 +187,7 @@
                 </select>
             </div>
 
-            <div class="flex h-full min-h-0 flex-col gap-3 xl:justify-between">
+            <div class="contents">
                 @template.stock.htmx.fragments.components.stockSelectionPanel(
                     tagLabel = tagLabel,
                     stockLabel = stockLabel,
@@ -202,7 +202,7 @@
                     tagCountStockItemList = tagCountStockItemList
                 )
 
-                <div class="flex justify-end gap-2 xl:mt-auto">
+                <div class="flex justify-end gap-2 xl:self-end">
                     <button type="button" class="btn btn-sm btn-primary" data-selection-save="true"
                         hx-get="/stock/htmx/trade/list"
                         hx-target="#tradeListFragment"
@@ -252,7 +252,7 @@
         <div class="card bg-base-100 shadow-sm border border-base-200">
             <div class="card-body p-4">
                 <div class="text-xs text-base-content/50 mb-1">${realizedProfitLabel}</div>
-                <div class="text-xl font-bold ${rpPositive ? "text-success" : "text-error"} amount-value">
+                <div class="text-xl font-bold ${rpPositive ? "text-profit" : "text-loss"} amount-value">
                     ${rpPositive ? "+" : ""}&#8361; ${decimalFormat.format(safeRp)}
                 </div>
                 !{
@@ -313,32 +313,32 @@
                 <table class="table table-hover table-striped w-full table-sm table-pin-rows">
                     <thead>
                     <tr class="bg-base-200">
-                        <th class="cursor-pointer hover:bg-base-300"
+                        <th scope="col" class="cursor-pointer hover:bg-base-300"
                             hx-get="/stock/htmx/trade/list" hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML" hx-include="#tradeSearchForm"
                             hx-vals='{"sort": "tradeDate,${sortField.equals("tradeDate") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
                             ${dateLabel} @if(sortField.equals("tradeDate"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
                         </th>
-                        <th>${typeLabel}</th>
-                        <th class="cursor-pointer hover:bg-base-300"
+                        <th scope="col">${typeLabel}</th>
+                        <th scope="col" class="cursor-pointer hover:bg-base-300"
                             hx-get="/stock/htmx/trade/list" hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML" hx-include="#tradeSearchForm"
                             hx-vals='{"sort": "stockItemName,${sortField.equals("stockItemName") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
                             ${stockLabel} @if(sortField.equals("stockItemName"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
                         </th>
-                        <th class="hidden sm:table-cell">${accountLabel}</th>
-                        <th class="text-right">${unitPriceLabel}</th>
-                        <th class="text-right">${quantityLabel}</th>
-                        <th class="text-right cursor-pointer hover:bg-base-300"
+                        <th scope="col" class="hidden sm:table-cell">${accountLabel}</th>
+                        <th scope="col" class="text-right">${unitPriceLabel}</th>
+                        <th scope="col" class="text-right">${quantityLabel}</th>
+                        <th scope="col" class="text-right cursor-pointer hover:bg-base-300"
                             hx-get="/stock/htmx/trade/list" hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML" hx-include="#tradeSearchForm"
                             hx-vals='{"sort": "amount,${sortField.equals("amount") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
                             ${amountLabel} @if(sortField.equals("amount"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
                         </th>
-                        <th class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell"
+                        <th scope="col" class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell"
                             hx-get="/stock/htmx/trade/list" hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML" hx-include="#tradeSearchForm"
                             hx-vals='{"sort": "fee,${sortField.equals("fee") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
                             ${feeLabel} @if(sortField.equals("fee"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
                         </th>
-                        <th class="text-right hidden lg:table-cell">${tradingTaxLabel}</th>
-                        <th class="text-right cursor-pointer hover:bg-base-300"
+                        <th scope="col" class="text-right hidden lg:table-cell">${tradingTaxLabel}</th>
+                        <th scope="col" class="text-right cursor-pointer hover:bg-base-300"
                             hx-get="/stock/htmx/trade/list" hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML" hx-include="#tradeSearchForm"
                             hx-vals='{"sort": "realizedProfit,${sortField.equals("realizedProfit") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
                             ${realizedProfitLabel} @if(sortField.equals("realizedProfit"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
@@ -361,14 +361,14 @@
                         <td class="text-right font-mono amount-value">${trade.amount() != null ? decimalFormat.format(trade.amount()) : "0"}</td>
                         <td class="text-right text-xs text-base-content/60 amount-value hidden lg:table-cell">${trade.fee() != null ? decimalFormat.format(trade.fee()) : "0"}</td>
                         <td class="text-right text-xs text-base-content/60 amount-value hidden lg:table-cell">${trade.tax() != null ? decimalFormat.format(trade.tax()) : "0"}</td>
-                        <td class="text-right font-bold font-mono amount-value ${trade.realizedProfit() != null ? (trade.realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-success" : "text-error") : ""}">
+                        <td class="text-right font-bold font-mono amount-value ${trade.realizedProfit() != null ? (trade.realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss") : ""}">
                             ${trade.realizedProfit() != null && trade.type() == TradeType.SELL ? decimalFormat.format(trade.realizedProfit()) : ""}
                         </td>
                     </tr>
                     @endfor
                     @if(tradeList == null || tradeList.isEmpty())
                     <tr>
-                        <td colspan="10" class="text-center py-10 opacity-50">${noTradeDataLabel}</td>
+                        <td colspan="10">@template._components.ui.emptyState(message = noTradeDataLabel)</td>
                     </tr>
                     @endif
                     </tbody>
@@ -378,7 +378,7 @@
                             <td class="text-right font-mono amount-value"></td>
                             <td class="text-right font-mono amount-value hidden lg:table-cell">${totalFee != null ? decimalFormat.format(totalFee) : "0"}</td>
                             <td class="text-right font-mono amount-value hidden lg:table-cell">${totalTax != null ? decimalFormat.format(totalTax) : "0"}</td>
-                            <td class="text-right font-mono amount-value ${totalRealizedProfit != null && totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-success" : "text-error"}">
+                            <td class="text-right font-mono amount-value ${totalRealizedProfit != null && totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                                 ${totalRealizedProfit != null ? decimalFormat.format(totalRealizedProfit) : "0"}
                             </td>
                         </tr>

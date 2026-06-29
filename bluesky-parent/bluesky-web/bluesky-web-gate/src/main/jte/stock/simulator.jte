@@ -76,7 +76,7 @@
 	loginUrl = loginUrl,
 	profile = profile,
 	contentStock = @`
-		<div id="stockSimulatorApp" class="container mx-auto space-y-6 p-4">
+		<div id="stockSimulatorApp" class="space-y-6">
 			@if(!monthlyDividendTab)
 				<script>
 					window.stockSimulatorI18n = {
@@ -351,18 +351,18 @@
 						<table class="table table-pin-rows table-zebra table-sm">
 							<thead>
 								<tr>
-									<th>${MessageUtil.getMessage("stock.simulator.table.header.year")}</th>
-									<th>${MessageUtil.getMessage("stock.simulator.table.header.year.end.price")}</th>
-									<th>${MessageUtil.getMessage("stock.simulator.table.header.annual.dividend")}</th>
-									<th>${MessageUtil.getMessage("stock.simulator.table.header.annual.spending")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.metric.spending.coverage")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.metric.annual.gap")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.table.header.annual.sold.shares")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.table.header.annual.reinvested.shares")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.table.header.year.end.shares")}</th>
-										<th>${MessageUtil.getMessage("stock.simulator.table.header.year.end.cash.reserve")}</th>
-									<th>${MessageUtil.getMessage("stock.simulator.table.header.year.end.market.value")}</th>
-									<th>${MessageUtil.getMessage("stock.simulator.table.header.year.end.total.wealth")}</th>
+									<th scope="col">${MessageUtil.getMessage("stock.simulator.table.header.year")}</th>
+									<th scope="col">${MessageUtil.getMessage("stock.simulator.table.header.year.end.price")}</th>
+									<th scope="col">${MessageUtil.getMessage("stock.simulator.table.header.annual.dividend")}</th>
+									<th scope="col">${MessageUtil.getMessage("stock.simulator.table.header.annual.spending")}</th>
+										<th scope="col">${MessageUtil.getMessage("stock.simulator.metric.spending.coverage")}</th>
+										<th scope="col">${MessageUtil.getMessage("stock.simulator.metric.annual.gap")}</th>
+										<th scope="col">${MessageUtil.getMessage("stock.simulator.table.header.annual.sold.shares")}</th>
+										<th scope="col">${MessageUtil.getMessage("stock.simulator.table.header.annual.reinvested.shares")}</th>
+										<th scope="col">${MessageUtil.getMessage("stock.simulator.table.header.year.end.shares")}</th>
+										<th scope="col">${MessageUtil.getMessage("stock.simulator.table.header.year.end.cash.reserve")}</th>
+									<th scope="col">${MessageUtil.getMessage("stock.simulator.table.header.year.end.market.value")}</th>
+									<th scope="col">${MessageUtil.getMessage("stock.simulator.table.header.year.end.total.wealth")}</th>
 								</tr>
 							</thead>
 							<tbody id="stockSimulatorYearlyTableBody"></tbody>

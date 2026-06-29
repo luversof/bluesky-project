@@ -31,7 +31,7 @@
             @endfor
         </select>
 
-        <div class="text-xs font-semibold uppercase tracking-[0.18em] text-base-content/45">${tagLabel}</div>
+        <div class="text-xs font-semibold uppercase tracking-[0.18em] text-base-content/45" data-stock-tag-label>${tagLabel}</div>
         @if(helperLabel != null && !helperLabel.isEmpty())
             <p class="mt-1 text-[11px] leading-4 text-base-content/55">${helperLabel}</p>
         @endif

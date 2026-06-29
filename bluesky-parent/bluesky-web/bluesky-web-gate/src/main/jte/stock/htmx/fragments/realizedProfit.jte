@@ -128,7 +128,7 @@
           hx-select="#realizedProfitFragment"
           hx-swap="outerHTML"
           hx-trigger="submit">
-        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,18rem)_minmax(0,22rem)_minmax(0,1fr)_minmax(0,19rem)] xl:items-start">
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,18rem)_minmax(0,22rem)_minmax(0,1fr)_minmax(0,19rem)_minmax(0,auto)] xl:items-start">
             <div class="form-control w-full">
                 <label class="label p-1"><span class="label-text text-xs">${periodLabel}</span></label>
                 <div class="join w-full">
@@ -164,7 +164,7 @@
                 </select>
             </div>
 
-            <div class="flex h-full min-h-0 flex-col gap-3 xl:justify-between">
+            <div class="contents">
                 @template.stock.htmx.fragments.components.stockSelectionPanel(
                     tagLabel = tagLabel,
                     stockLabel = stockNameLabel,
@@ -178,7 +178,7 @@
                     stockItemList = stockItemList
                 )
 
-                <div class="flex justify-end gap-2 xl:mt-auto">
+                <div class="flex justify-end gap-2 xl:self-end">
                     <button type="button" class="btn btn-sm btn-primary" data-selection-save="true"
                         hx-get="/stock/htmx/realized-profit"
                         hx-target="#realizedProfitFragment"
@@ -227,7 +227,7 @@
             ? bestStock.realizedProfitNet().doubleValue() / bestStock.totalSellProceeds().subtract(bestStock.realizedProfitNet()).doubleValue() * 100
             : 0.0;}
         <div class="stat">
-            <div class="stat-figure text-success">
+            <div class="stat-figure text-profit">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
             </div>
             <div class="stat-title">${bestStockLabel}</div>
@@ -247,7 +247,7 @@
             ? worstStock.realizedProfitNet().doubleValue() / worstStock.totalSellProceeds().subtract(worstStock.realizedProfitNet()).doubleValue() * 100
             : 0.0;}
         <div class="stat">
-            <div class="stat-figure text-error">
+            <div class="stat-figure text-loss">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>
             </div>
             <div class="stat-title">${worstStockLabel}</div>
@@ -436,16 +436,16 @@
             <table id="accountRealizedTable" class="table table-sm w-full">
                 <thead class="bg-base-200">
                     <tr>
-                        <th class="cursor-pointer select-none" onclick="sortAccountTable(0)">
+                        <th scope="col" class="cursor-pointer select-none" onclick="sortAccountTable(0)">
                             ${accountLabel} <span id="acc-sort-icon-0" class="opacity-40">↕</span>
                         </th>
-                        <th class="text-right cursor-pointer select-none" onclick="sortAccountTable(1)">
+                        <th scope="col" class="text-right cursor-pointer select-none" onclick="sortAccountTable(1)">
                             ${realizedProfitLabel} <span id="acc-sort-icon-1" class="opacity-40">↕</span>
                         </th>
-                        <th class="text-right hidden sm:table-cell cursor-pointer select-none" onclick="sortAccountTable(2)">
+                        <th scope="col" class="text-right hidden sm:table-cell cursor-pointer select-none" onclick="sortAccountTable(2)">
                             ${returnRateLabel} <span id="acc-sort-icon-2" class="opacity-40">↕</span>
                         </th>
-                        <th class="text-right hidden sm:table-cell">${unrealizedProfitLabel}</th>
+                        <th scope="col" class="text-right hidden sm:table-cell">${unrealizedProfitLabel}</th>
                     </tr>
                 </thead>
                 <tbody id="accountRealizedTbody">
@@ -512,26 +512,26 @@
             <table id="stockRealizedTable" class="table table-sm table-zebra w-full">
                 <thead class="bg-base-200">
                     <tr>
-                        <th class="cursor-pointer select-none" onclick="sortStockTable(0)">
+                        <th scope="col" class="cursor-pointer select-none" onclick="sortStockTable(0)">
                             ${stockNameLabel} <span id="sort-icon-0" class="opacity-40">↕</span>
                         </th>
-                        <th class="text-right cursor-pointer select-none" onclick="sortStockTable(1)">
+                        <th scope="col" class="text-right cursor-pointer select-none" onclick="sortStockTable(1)">
                             ${realizedProfitLabel} <span id="sort-icon-1" class="opacity-40">↕</span>
                         </th>
-                        <th class="text-right hidden sm:table-cell cursor-pointer select-none" onclick="sortStockTable(2)">
+                        <th scope="col" class="text-right hidden sm:table-cell cursor-pointer select-none" onclick="sortStockTable(2)">
                             ${returnRateLabel} <span id="sort-icon-2" class="opacity-40">↕</span>
                         </th>
-                        <th class="text-right hidden md:table-cell cursor-pointer select-none" onclick="sortStockTable(3)">
+                        <th scope="col" class="text-right hidden md:table-cell cursor-pointer select-none" onclick="sortStockTable(3)">
                             ${soldCostColumnLabel} <span id="sort-icon-3" class="opacity-40">↕</span>
                         </th>
-                        <th class="text-right hidden lg:table-cell">${totalFeesLabel}</th>
-                        <th class="text-right hidden xl:table-cell">${sellQuantityLabel}</th>
+                        <th scope="col" class="text-right hidden lg:table-cell">${totalFeesLabel}</th>
+                        <th scope="col" class="text-right hidden xl:table-cell">${sellQuantityLabel}</th>
                     </tr>
                 </thead>
                 <tbody id="stockRealizedTbody">
                     @if(stockRealizedList == null || stockRealizedList.isEmpty())
                         <tr>
-                            <td colspan="6" class="text-center py-8 opacity-50">${noRealizedHistoryLabel}</td>
+                            <td colspan="6">@template._components.ui.emptyState(message = noRealizedHistoryLabel)</td>
                         </tr>
                     @else
                         !{int[] rowIdx = {0};}

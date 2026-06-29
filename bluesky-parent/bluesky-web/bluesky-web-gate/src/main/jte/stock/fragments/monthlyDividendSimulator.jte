@@ -204,11 +204,11 @@
 						<div class="border-t border-base-200/70 pt-3 space-y-2">
 							<div class="flex items-center justify-between gap-3 text-sm">
 								<span class="text-base-content/60">${selectionInvestmentProfitLabel}</span>
-								<span class="amount-value font-mono font-semibold ${totalEvaluationProfit.signum() > 0 ? "text-success" : totalEvaluationProfit.signum() < 0 ? "text-error" : ""}">${totalEvaluationProfit.signum() > 0 ? "+₩" : totalEvaluationProfit.signum() < 0 ? "-₩" : "₩"}${amountFormat.format(totalEvaluationProfit.abs())}</span>
+								<span class="amount-value font-mono font-semibold ${totalEvaluationProfit.signum() > 0 ? "text-profit" : totalEvaluationProfit.signum() < 0 ? "text-loss" : ""}">${totalEvaluationProfit.signum() > 0 ? "+₩" : totalEvaluationProfit.signum() < 0 ? "-₩" : "₩"}${amountFormat.format(totalEvaluationProfit.abs())}</span>
 							</div>
 							<div class="flex items-center justify-between gap-3 text-sm">
 								<span class="text-base-content/60">${selectionInvestmentReturnLabel}</span>
-								<span class="font-mono font-semibold ${totalEvaluationReturnPct.signum() > 0 ? "text-success" : totalEvaluationReturnPct.signum() < 0 ? "text-error" : ""}">${totalEvaluationReturnPct.signum() > 0 ? "+" : totalEvaluationReturnPct.signum() < 0 ? "-" : ""}${percentFormat.format(totalEvaluationReturnPct.abs())}%</span>
+								<span class="font-mono font-semibold ${totalEvaluationReturnPct.signum() > 0 ? "text-profit" : totalEvaluationReturnPct.signum() < 0 ? "text-loss" : ""}">${totalEvaluationReturnPct.signum() > 0 ? "+" : totalEvaluationReturnPct.signum() < 0 ? "-" : ""}${percentFormat.format(totalEvaluationReturnPct.abs())}%</span>
 							</div>
 						</div>
 					</div>
@@ -350,8 +350,8 @@
 								<table class="table table-pin-rows table-zebra table-sm whitespace-nowrap" data-monthly-selection-table>
 								<thead>
 									<tr>
-										<th class="w-10" rowspan="2"></th>
-										<th rowspan="2" class="min-w-[18rem] align-middle">
+										<th scope="col" class="w-10" rowspan="2"></th>
+										<th rowspan="2" scope="col" class="min-w-[18rem] align-middle">
 											<div class="flex min-h-[4.5rem] flex-col justify-center gap-1 font-medium">
 												<div class="flex items-center gap-1">
 													<a href="${monthlyDividendTableBaseUrl}&sort=display-order&direction=${displayOrderDirection}" class="link link-hover no-underline">
@@ -371,9 +371,9 @@
 												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.name")}</div>
 											</div>
 										</th>
-										<th class="text-center text-[11px] font-medium uppercase tracking-wide text-base-content/45" colspan="2">${MessageUtil.getMessage("stock.simulator.monthly.table.group.reference")}</th>
-										<th class="text-center text-[11px] font-medium uppercase tracking-wide text-base-content/45" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.input")}</th>
-										<th rowspan="2" class="min-w-[9rem] align-middle text-right">
+										<th scope="col" class="text-center text-[11px] font-medium uppercase tracking-wide text-base-content/45" colspan="2">${MessageUtil.getMessage("stock.simulator.monthly.table.group.reference")}</th>
+										<th scope="col" class="text-center text-[11px] font-medium uppercase tracking-wide text-base-content/45" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.input")}</th>
+										<th rowspan="2" scope="col" class="min-w-[9rem] align-middle text-right">
 											<div class="flex min-h-[4.5rem] flex-col justify-center gap-1 whitespace-normal text-right">
 												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-dividend&direction=${monthlyDividendDirectionToggle}" class="link link-hover block text-sm font-medium no-underline">
 													<span class="inline-flex items-center justify-end gap-1">
@@ -386,11 +386,11 @@
 												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.taxable.base")}</div>
 											</div>
 										</th>
-										<th class="text-center text-[11px] font-medium uppercase tracking-wide text-base-content/45" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.yield")}</th>
+										<th scope="col" class="text-center text-[11px] font-medium uppercase tracking-wide text-base-content/45" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.yield")}</th>
 									</tr>
 									<tr>
-										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.dividend.per.share")}</th>
-										<th class="text-right">
+										<th scope="col" class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.dividend.per.share")}</th>
+										<th scope="col" class="text-right">
 											<a href="${monthlyDividendTableBaseUrl}&sort=taxable-base&direction=${taxableBaseDirectionToggle}" class="link link-hover inline-flex items-end gap-1 font-medium no-underline">
 												<span class="inline-flex flex-col items-end whitespace-normal leading-4 text-right">
 													<span class="whitespace-nowrap">${MessageUtil.getMessage("stock.simulator.monthly.table.header.taxable.base.ratio.line.one")}</span>
@@ -401,20 +401,20 @@
 												@endif
 											</a>
 										</th>
-										<th class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.current.price")}</th>
-										<th class="min-w-[8rem] align-bottom text-right">
+										<th scope="col" class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.current.price")}</th>
+										<th scope="col" class="min-w-[8rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
 												<div>${MessageUtil.getMessage("stock.simulator.monthly.table.header.quantity")}</div>
 												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.average.buy.price")}</div>
 											</div>
 										</th>
-										<th class="min-w-[8rem] align-bottom text-right">
+										<th scope="col" class="min-w-[8rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
 												<div>${MessageUtil.getMessage("stock.simulator.monthly.table.header.buy.amount")}</div>
 												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.market.value")}</div>
 											</div>
 										</th>
-										<th class="min-w-[8rem] align-bottom text-right">
+										<th scope="col" class="min-w-[8rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
 												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.market.price.basis")}</div>
 												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-yield&direction=${monthlyYieldDirectionToggle}" class="link link-hover block text-xs font-medium leading-4 no-underline">
@@ -431,7 +431,7 @@
 												</a>
 											</div>
 										</th>
-										<th class="min-w-[8rem] align-bottom text-right">
+										<th scope="col" class="min-w-[8rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
 												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.on.cost")}</div>
 												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-yield-on-cost&direction=${monthlyYieldOnCostDirectionToggle}" class="link link-hover block text-xs font-medium leading-4 no-underline">
@@ -448,7 +448,7 @@
 												</a>
 											</div>
 										</th>
-										<th class="min-w-[7rem] align-bottom text-right">
+										<th scope="col" class="min-w-[7rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
 												<div class="whitespace-nowrap">${MessageUtil.getMessage("stock.simulator.monthly.table.header.total.return.on.cost.line.one")}</div>
 												<a href="${monthlyDividendTableBaseUrl}&sort=combined-return&direction=${combinedReturnDirectionToggle}" class="link link-hover inline-flex items-center justify-end gap-1 font-medium no-underline">
@@ -571,8 +571,8 @@
 											</td>
 											<td class="align-top text-right">
 												<div class="space-y-1 tabular-nums">
-													<div class="${row.totalReturnOnCostPct() != null && row.totalReturnOnCostPct().signum() >= 0 ? "text-success" : "text-error"}">${percentFormat.format(row.totalReturnOnCostPct() != null ? row.totalReturnOnCostPct() : BigDecimal.ZERO)}%</div>
-													<div class="font-semibold ${row.expectedCombinedReturnPct() != null && row.expectedCombinedReturnPct().signum() >= 0 ? "text-success" : "text-error"}">${percentFormat.format(row.expectedCombinedReturnPct() != null ? row.expectedCombinedReturnPct() : BigDecimal.ZERO)}%</div>
+													<div class="${row.totalReturnOnCostPct() != null && row.totalReturnOnCostPct().signum() >= 0 ? "text-profit" : "text-loss"}">${percentFormat.format(row.totalReturnOnCostPct() != null ? row.totalReturnOnCostPct() : BigDecimal.ZERO)}%</div>
+													<div class="font-semibold ${row.expectedCombinedReturnPct() != null && row.expectedCombinedReturnPct().signum() >= 0 ? "text-profit" : "text-loss"}">${percentFormat.format(row.expectedCombinedReturnPct() != null ? row.expectedCombinedReturnPct() : BigDecimal.ZERO)}%</div>
 												</div>
 											</td>
 										</tr>
@@ -663,8 +663,8 @@
 				return;
 			}
 
-			element.classList.toggle('text-success', value > 0);
-			element.classList.toggle('text-error', value < 0);
+			element.classList.toggle('text-profit', value > 0);
+			element.classList.toggle('text-loss', value < 0);
 		}
 
 		function setMonthlyDividendSimulatorRowSelection(row, selected) {

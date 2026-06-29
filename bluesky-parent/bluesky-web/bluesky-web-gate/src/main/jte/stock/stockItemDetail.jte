@@ -49,7 +49,7 @@
 	loginUrl = loginUrl,
 	profile = profile,
 	contentStock = @`
-		<div class="container mx-auto p-4">
+		<div class="w-full">
 			@if(!contentReady)
 				<!-- 셸: 콘텐츠를 전역 기간과 함께 htmx로 로드 (새로고침/이동 시에도 선택 기간 유지) -->
 				<div id="stockItemDetailFragment"
@@ -63,7 +63,7 @@
 			@else
 				<div id="stockItemDetailFragment" class="space-y-6">
 				@if(stockItem == null)
-					<div class="bg-base-200 rounded-box p-10 text-center text-base-content/60">${MessageUtil.getMessage("common.message.no.data")}</div>
+					@template._components.ui.emptyState(message = MessageUtil.getMessage("common.message.no.data"), boxed = true)
 				@else
 					@template._components.ui.breadcrumbBack(
 						homeLabel = MessageUtil.getMessage("layout.menu.main.stock"),
@@ -180,13 +180,13 @@
 								<table class="table table-sm w-full" data-sortable>
 									<thead class="bg-base-200">
 										<tr>
-											<th>${MessageUtil.getMessage("common.label.date")}</th>
-											<th>${MessageUtil.getMessage("stock.item.detail.col.type")}</th>
-											<th class="text-right">${MessageUtil.getMessage("common.label.quantity")}</th>
-											<th class="text-right">${MessageUtil.getMessage("stock.item.detail.col.price")}</th>
-											<th class="text-right">${MessageUtil.getMessage("stock.item.detail.col.amount")}</th>
-											<th class="text-right hidden sm:table-cell">${MessageUtil.getMessage("stock.item.detail.col.fees")}</th>
-											<th class="text-right">${MessageUtil.getMessage("stock.profit.realized")}</th>
+											<th scope="col">${MessageUtil.getMessage("common.label.date")}</th>
+											<th scope="col">${MessageUtil.getMessage("stock.item.detail.col.type")}</th>
+											<th scope="col" class="text-right">${MessageUtil.getMessage("common.label.quantity")}</th>
+											<th scope="col" class="text-right">${MessageUtil.getMessage("stock.item.detail.col.price")}</th>
+											<th scope="col" class="text-right">${MessageUtil.getMessage("stock.item.detail.col.amount")}</th>
+											<th scope="col" class="text-right hidden sm:table-cell">${MessageUtil.getMessage("stock.item.detail.col.fees")}</th>
+											<th scope="col" class="text-right">${MessageUtil.getMessage("stock.profit.realized")}</th>
 										</tr>
 									</thead>
 									<tbody>
@@ -219,10 +219,10 @@
 								<table class="table table-sm w-full" data-sortable>
 									<thead class="bg-base-200">
 										<tr>
-											<th>${MessageUtil.getMessage("common.label.date")}</th>
-											<th class="text-right hidden sm:table-cell">${MessageUtil.getMessage("stock.item.detail.div.gross")}</th>
-											<th class="text-right hidden sm:table-cell">${MessageUtil.getMessage("stock.item.detail.div.tax")}</th>
-											<th class="text-right">${MessageUtil.getMessage("stock.item.detail.div.net")}</th>
+											<th scope="col">${MessageUtil.getMessage("common.label.date")}</th>
+											<th scope="col" class="text-right hidden sm:table-cell">${MessageUtil.getMessage("stock.item.detail.div.gross")}</th>
+											<th scope="col" class="text-right hidden sm:table-cell">${MessageUtil.getMessage("stock.item.detail.div.tax")}</th>
+											<th scope="col" class="text-right">${MessageUtil.getMessage("stock.item.detail.div.net")}</th>
 										</tr>
 									</thead>
 									<tbody>

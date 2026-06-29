@@ -11,7 +11,7 @@
 	loginUrl = loginUrl,
 	profile = profile,
 	contentStock = @`
-		<div class="container mx-auto p-4 space-y-6">
+		<div class="space-y-6">
 			@template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.page.trade.title"))
 
 			<div style="min-height:200px;" hx-get="/stock/htmx/trade/list" hx-trigger="load" hx-target="this" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">

@@ -836,7 +836,7 @@ public class StockViewController {
         trades.stream()
             .sorted(
                 Comparator.comparing(
-                    TradeResponse::tradeDate, Comparator.nullsLast(Comparator.reverseOrder())))
+                    TradeResponse::tradeDate, Comparator.nullsLast(Comparator.naturalOrder())))
             .toList();
 
     // 배당 내역 (이 종목, 최신순)
@@ -857,7 +857,7 @@ public class StockViewController {
         dividends.stream()
             .sorted(
                 Comparator.comparing(
-                    DividendResponse::payDate, Comparator.nullsLast(Comparator.reverseOrder())))
+                    DividendResponse::payDate, Comparator.nullsLast(Comparator.naturalOrder())))
             .toList();
     BigDecimal totalDividend =
         dividends.stream()
@@ -1006,7 +1006,7 @@ public class StockViewController {
         trades.stream()
             .sorted(
                 Comparator.comparing(
-                    TradeResponse::tradeDate, Comparator.nullsLast(Comparator.reverseOrder())))
+                    TradeResponse::tradeDate, Comparator.nullsLast(Comparator.naturalOrder())))
             .toList();
 
     // 배당 내역 (이 계좌, 최신순)
@@ -1027,7 +1027,7 @@ public class StockViewController {
         dividends.stream()
             .sorted(
                 Comparator.comparing(
-                    DividendResponse::payDate, Comparator.nullsLast(Comparator.reverseOrder())))
+                    DividendResponse::payDate, Comparator.nullsLast(Comparator.naturalOrder())))
             .toList();
     BigDecimal totalDividend =
         dividends.stream()

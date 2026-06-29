@@ -40,7 +40,7 @@
 	loginUrl = loginUrl,
 	profile = profile,
 	contentStock = @`
-		<div class="container mx-auto p-4 space-y-6">
+		<div class="space-y-6">
 			@template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.page.admin.title"))
 			<div class="space-y-6">
 				<div class="tabs tabs-box w-full bg-base-200/70 p-1">

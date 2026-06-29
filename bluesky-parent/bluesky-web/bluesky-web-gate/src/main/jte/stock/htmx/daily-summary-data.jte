@@ -113,41 +113,38 @@
             <table class="table table-sm table-pin-rows">
                 <thead>
                     <tr class="bg-base-200">
-                        <th>${keyLabel}</th>
+                        <th scope="col">${keyLabel}</th>
                         <!-- Dynamic Sub Key -->
                         @if(subKeyLabel != null)
-                            <th>${subKeyLabel}</th>
+                            <th scope="col">${subKeyLabel}</th>
                         @endif
                         @if(value1Label != null && !value1Label.isEmpty())
-                            <th class="text-right">${value1Label}</th>
+                            <th scope="col" class="text-right">${value1Label}</th>
                         @endif
                         @if(value2Label != null && !value2Label.isEmpty())
-                            <th class="text-right">${value2Label}</th>
+                            <th scope="col" class="text-right">${value2Label}</th>
                         @endif
                         @if(value3Label != null && !value3Label.isEmpty())
-                            <th class="text-right">${value3Label}</th>
+                            <th scope="col" class="text-right">${value3Label}</th>
                         @endif
                         @if(value4Label != null && !value4Label.isEmpty())
-                            <th class="text-right">${value4Label}</th>
+                            <th scope="col" class="text-right">${value4Label}</th>
                         @endif
                         @if(value5Label != null && !value5Label.isEmpty())
-                            <th class="text-right">${value5Label}</th>
+                            <th scope="col" class="text-right">${value5Label}</th>
                         @endif
                         @if(value6Label != null && !value6Label.isEmpty())
-                            <th class="text-right">${value6Label}</th>
+                            <th scope="col" class="text-right">${value6Label}</th>
                         @endif
                         @if(totalLabel != null && !totalLabel.isEmpty())
-                            <th class="text-right">${totalLabel}</th>
+                            <th scope="col" class="text-right">${totalLabel}</th>
                         @endif
                     </tr>
                 </thead>
                 <tbody>
                     @if(tableData == null || tableData.isEmpty())
                         <tr>
-                            <td colspan="7" class="text-center py-10 text-base-content/50">
-                                <div>${MessageUtil.getMessage("common.message.no.data")}</div>
-                                <div class="text-xs mt-1">${MessageUtil.getMessage("common.message.try.other.filters")}</div>
-                            </td>
+                            <td colspan="7">@template._components.ui.emptyState(message = MessageUtil.getMessage("common.message.no.data"), hint = MessageUtil.getMessage("common.message.try.other.filters"))</td>
                         </tr>
                     @else
                         @for(AnalyticsRow row : tableData)

@@ -404,7 +404,10 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
             ? msg("stock.label.period.all")
             : periodFrom + (periodTo.isEmpty() ? "" : " ~ " + periodTo);
 
-    model.addAttribute("trades", pagedTrades);
+    // 화면에는 오름차순(오래된 것 위)으로 표시 — 조회/페이징은 그대로(1페이지=최신 묶음).
+    List<TradeResponse> displayTrades = new java.util.ArrayList<>(pagedTrades);
+    java.util.Collections.reverse(displayTrades);
+    model.addAttribute("trades", displayTrades);
     model.addAttribute("totalItems", totalItems);
     model.addAttribute("currentPage", currentPage);
     model.addAttribute("totalPages", totalPages);

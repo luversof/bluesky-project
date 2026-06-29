@@ -29,36 +29,36 @@
     <table class="table table-hover table-striped w-full">
         <thead>
         <tr class="bg-base-200">
-            <th class="cursor-pointer hover:bg-base-300 ${"STOCK".equals(viewGroupBy) || "ACCOUNT".equals(viewGroupBy) ? "hidden" : ""}" 
+            <th scope="col" class="cursor-pointer hover:bg-base-300 ${"STOCK".equals(viewGroupBy) || "ACCOUNT".equals(viewGroupBy) ? "hidden" : ""}" 
                 hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
                 hx-vals='{"sort": "accountName,${"accountName".equals(sortField) && "asc".equals(sortDir) ? "desc" : "asc"}", "viewGroupBy": "${viewGroupBy}"}'>
                 ${accountLabel} @if("accountName".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
             </th>
-            <th class="cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
+            <th scope="col" class="cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
                 hx-vals='{"sort": "stockItemName,${"stockItemName".equals(sortField) && "asc".equals(sortDir) ? "desc" : "asc"}", "viewGroupBy": "${viewGroupBy}"}'>
                 ${stockNameLabel} @if("stockItemName".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
             </th>
-            <th class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
+            <th scope="col" class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
                 hx-vals='{"sort": "holdingQuantity,${"holdingQuantity".equals(sortField) && "asc".equals(sortDir) ? "desc" : "asc"}", "viewGroupBy": "${viewGroupBy}"}'>
                 ${quantityLabel} @if("holdingQuantity".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
             </th>
-            <th class="text-right cursor-pointer hover:bg-base-300 hidden xl:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
+            <th scope="col" class="text-right cursor-pointer hover:bg-base-300 hidden xl:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
                 hx-vals='{"sort": "averageBuyPrice,${"averageBuyPrice".equals(sortField) && "asc".equals(sortDir) ? "desc" : "asc"}", "viewGroupBy": "${viewGroupBy}"}'>
                 ${averageCostLabel} @if("averageBuyPrice".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
             </th>
-            <th class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
+            <th scope="col" class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
                 hx-vals='{"sort": "currentPrice,${"currentPrice".equals(sortField) && "asc".equals(sortDir) ? "desc" : "asc"}", "viewGroupBy": "${viewGroupBy}"}'>
                 ${currentPriceLabel} @if("currentPrice".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
             </th>
-            <th class="text-right cursor-pointer hover:bg-base-300 hidden md:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
+            <th scope="col" class="text-right cursor-pointer hover:bg-base-300 hidden md:table-cell" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
                 hx-vals='{"sort": "evaluationAmount,${"evaluationAmount".equals(sortField) && "asc".equals(sortDir) ? "desc" : "asc"}", "viewGroupBy": "${viewGroupBy}"}'>
                 ${evaluationAmountLabel} @if("evaluationAmount".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
             </th>
-            <th class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
+            <th scope="col" class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
                 hx-vals='{"sort": "evaluationProfit,${"evaluationProfit".equals(sortField) && "asc".equals(sortDir) ? "desc" : "asc"}", "viewGroupBy": "${viewGroupBy}"}'>
                 ${evaluationProfitLabel} @if("evaluationProfit".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
             </th>
-            <th class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
+            <th scope="col" class="text-right cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/portfolio" hx-target="#tab-content"
                 hx-vals='{"sort": "realizedProfit,${"realizedProfit".equals(sortField) && "asc".equals(sortDir) ? "desc" : "asc"}", "viewGroupBy": "${viewGroupBy}"}'>
                 ${realizedProfitLabel} @if("realizedProfit".equals(sortField))<span>${"asc".equals(sortDir) ? "▲" : "▼"}</span>@endif
             </th>

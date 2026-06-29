@@ -16,6 +16,7 @@
 		(function() {
 			var t = localStorage.getItem('theme'); if (t) document.documentElement.setAttribute('data-theme', t);
 			if (localStorage.getItem('hideAmounts') === 'true') document.documentElement.classList.add('hide-amounts');
+			if (localStorage.getItem('sidebarCollapsed') === 'true') document.documentElement.classList.add('sidebar-collapsed');
 		})();
 	</script>
 	<link href="/main.css" rel="stylesheet" />
@@ -64,6 +65,50 @@
 	${content}
 	
 	@template._components.body.footer()
+
+	<!-- 전역 상단 로딩바: htmx 요청 진행 중 표시 -->
+	<div id="app-progress" aria-hidden="true"></div>
+
+	<!-- 전역 토스트: htmx 요청 실패(서버 오류/네트워크/타임아웃) 알림 -->
+	<div id="app-toast" class="toast toast-top toast-end z-[100]"></div>
+	<script>
+	(function() {
+		// 전역 로딩바: 동시 요청 카운트로 표시/숨김
+		var bar = document.getElementById('app-progress');
+		if (bar) {
+			var active = 0;
+			document.body.addEventListener('htmx:beforeRequest', function() {
+				active++;
+				bar.classList.add('active');
+			});
+			document.body.addEventListener('htmx:afterRequest', function() {
+				active = Math.max(0, active - 1);
+				if (active === 0) bar.classList.remove('active');
+			});
+		}
+	})();
+	(function() {
+		function showLoadError() {
+			var toast = document.getElementById('app-toast');
+			if (!toast) return;
+			var cfg = document.getElementById('app-config');
+			var msg = (cfg && cfg.dataset.commonMessageLoadError) || 'Failed to load.';
+			var el = document.createElement('div');
+			el.className = 'alert alert-error shadow-lg cursor-pointer max-w-sm';
+			el.setAttribute('role', 'alert');
+			var span = document.createElement('span');
+			span.className = 'text-sm';
+			span.textContent = msg;
+			el.appendChild(span);
+			el.addEventListener('click', function() { el.remove(); });
+			toast.appendChild(el);
+			setTimeout(function() { if (el.parentNode) el.remove(); }, 5000);
+		}
+		document.body.addEventListener('htmx:responseError', showLoadError);
+		document.body.addEventListener('htmx:sendError', showLoadError);
+		document.body.addEventListener('htmx:timeout', showLoadError);
+	})();
+	</script>
 
 </body>
 </html>

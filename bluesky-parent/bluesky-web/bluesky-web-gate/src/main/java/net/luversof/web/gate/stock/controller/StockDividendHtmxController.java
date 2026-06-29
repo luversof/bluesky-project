@@ -458,7 +458,12 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     var pageImpl = new PageImpl<>(pagedList, PageRequest.of(currentPage - 1, size), totalItems);
     var pagination = new Pagination(pageImpl);
 
-    model.addAttribute("dividendList", pagedList);
+    // 조회/페이징은 그대로 두고, 화면에는 그 페이지를 오름차순(오래된 것 위)으로 표시(명시 정렬 시 제외).
+    List<DividendView> displayDividendList = new java.util.ArrayList<>(pagedList);
+    if (sort == null || sort.isEmpty()) {
+      java.util.Collections.reverse(displayDividendList);
+    }
+    model.addAttribute("dividendList", displayDividendList);
     model.addAttribute("allDividendList", viewList);
     model.addAttribute("pagination", pagination);
     model.addAttribute("totalItems", totalItems);

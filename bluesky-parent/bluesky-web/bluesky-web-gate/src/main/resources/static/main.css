@@ -28,7 +28,6 @@
     --color-emerald-400: oklch(76.5% 0.177 163.223);
     --color-emerald-500: oklch(69.6% 0.17 162.48);
     --color-emerald-700: oklch(50.8% 0.118 165.612);
-    --color-blue-500: oklch(62.3% 0.214 259.815);
     --color-indigo-400: oklch(67.3% 0.182 276.935);
     --color-slate-100: oklch(96.8% 0.007 247.896);
     --color-slate-200: oklch(92.9% 0.013 255.508);
@@ -1167,6 +1166,27 @@
       }
     }
   }
+  .toast {
+    @layer daisyui.l1.l2.l3 {
+      position: fixed;
+      inset-inline-start: auto;
+      inset-inline-end: calc(0.25rem * 4);
+      top: auto;
+      bottom: calc(0.25rem * 4);
+      display: flex;
+      flex-direction: column;
+      gap: calc(0.25rem * 2);
+      background-color: transparent;
+      translate: var(--toast-x, 0) var(--toast-y, 0);
+      width: max-content;
+      max-width: calc(100vw - 2rem);
+      & > * {
+        @media (prefers-reduced-motion: no-preference) {
+          animation: toast 0.25s ease-out;
+        }
+      }
+    }
+  }
   .toggle {
     @layer daisyui.l1.l2.l3 {
       border: var(--border) solid currentColor;
@@ -2228,6 +2248,13 @@
   .inset-y-0 {
     inset-block: calc(var(--spacing) * 0);
   }
+  .toast-end {
+    @layer daisyui.l1.l2 {
+      inset-inline-start: auto;
+      inset-inline-end: calc(0.25rem * 4);
+      --toast-x: 0;
+    }
+  }
   .start {
     inset-inline-start: var(--spacing);
   }
@@ -2262,14 +2289,27 @@
   .end {
     inset-inline-end: var(--spacing);
   }
+  .toast-top {
+    @layer daisyui.l1.l2 {
+      top: calc(0.25rem * 4);
+      bottom: auto;
+      --toast-y: 0;
+    }
+  }
   .top-0 {
     top: calc(var(--spacing) * 0);
   }
   .top-16 {
     top: calc(var(--spacing) * 16);
   }
+  .top-full {
+    top: 100%;
+  }
   .top-px {
     top: 1px;
+  }
+  .right-0 {
+    right: calc(var(--spacing) * 0);
   }
   .dock-sm {
     @layer daisyui.l1.l2 {
@@ -2481,6 +2521,9 @@
   .z-1 {
     z-index: 1;
   }
+  .z-30 {
+    z-index: 30;
+  }
   .z-40 {
     z-index: 40;
   }
@@ -2492,6 +2535,9 @@
   }
   .z-\[20\] {
     z-index: 20;
+  }
+  .z-\[100\] {
+    z-index: 100;
   }
   .col-span-2 {
     grid-column: span 2 / span 2;
@@ -3204,6 +3250,9 @@
   .mt-16 {
     margin-top: calc(var(--spacing) * 16);
   }
+  .mt-auto {
+    margin-top: auto;
+  }
   .mr-1 {
     margin-right: calc(var(--spacing) * 1);
   }
@@ -3487,6 +3536,9 @@
   .block {
     display: block;
   }
+  .contents {
+    display: contents;
+  }
   .flex {
     display: flex;
   }
@@ -3579,6 +3631,12 @@
   .max-h-40 {
     max-height: calc(var(--spacing) * 40);
   }
+  .max-h-64 {
+    max-height: calc(var(--spacing) * 64);
+  }
+  .max-h-72 {
+    max-height: calc(var(--spacing) * 72);
+  }
   .min-h-0 {
     min-height: calc(var(--spacing) * 0);
   }
@@ -3604,6 +3662,11 @@
         background-color: currentcolor;
         color: currentcolor;
       }
+    }
+  }
+  .btn-block {
+    @layer daisyui.l1.l2 {
+      width: 100%;
     }
   }
   .loading-lg {
@@ -4774,9 +4837,6 @@
       color: color-mix(in oklab, var(--color-base-content) 80%, transparent);
     }
   }
-  .text-blue-500 {
-    color: var(--color-blue-500);
-  }
   .text-emerald-700 {
     color: var(--color-emerald-700);
   }
@@ -4824,9 +4884,6 @@
     @supports (color: color-mix(in lab, red, red)) {
       color: color-mix(in oklab, var(--color-primary) 70%, transparent);
     }
-  }
-  .text-red-500 {
-    color: var(--color-red-500);
   }
   .text-red-700 {
     color: var(--color-red-700);
@@ -5399,11 +5456,6 @@
       grid-column: span 4 / span 4;
     }
   }
-  .xl\:mt-auto {
-    @media (width >= 80rem) {
-      margin-top: auto;
-    }
-  }
   .xl\:table-cell {
     @media (width >= 80rem) {
       display: table-cell;
@@ -5449,9 +5501,9 @@
       grid-template-columns: minmax(0,1fr) 20rem;
     }
   }
-  .xl\:grid-cols-\[minmax\(0\,18rem\)_minmax\(0\,22rem\)_minmax\(0\,1fr\)_minmax\(0\,19rem\)\] {
+  .xl\:grid-cols-\[minmax\(0\,18rem\)_minmax\(0\,22rem\)_minmax\(0\,1fr\)_minmax\(0\,19rem\)_minmax\(0\,auto\)\] {
     @media (width >= 80rem) {
-      grid-template-columns: minmax(0,18rem) minmax(0,22rem) minmax(0,1fr) minmax(0,19rem);
+      grid-template-columns: minmax(0,18rem) minmax(0,22rem) minmax(0,1fr) minmax(0,19rem) minmax(0,auto);
     }
   }
   .xl\:items-start {
@@ -5459,9 +5511,9 @@
       align-items: flex-start;
     }
   }
-  .xl\:justify-between {
+  .xl\:self-end {
     @media (width >= 80rem) {
-      justify-content: space-between;
+      align-self: flex-end;
     }
   }
   .\32 xl\:table-cell {
@@ -5594,6 +5646,57 @@ table[data-sortable] thead th:hover {
 .sort-arrow {
   font-size: 0.7em;
   opacity: 0.7;
+}
+.stock-sidebar-spacer, .stock-sidebar {
+  transition: width 0.2s ease;
+}
+html.sidebar-collapsed .stock-sidebar-spacer, html.sidebar-collapsed .stock-sidebar {
+  width: 4rem;
+}
+html.sidebar-collapsed .stock-sidebar .sidebar-label {
+  display: none;
+}
+html.sidebar-collapsed .stock-sidebar .menu a, html.sidebar-collapsed .stock-sidebar .sidebar-collapse-btn {
+  justify-content: center;
+  gap: 0;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+html.sidebar-collapsed .sidebar-toggle-icon {
+  transform: rotate(180deg);
+}
+#app-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  z-index: 200;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+#app-progress.active {
+  opacity: 1;
+}
+#app-progress::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 40%;
+  background: var(--color-primary);
+  border-radius: 9999px;
+  animation: app-progress-slide 1.1s ease-in-out infinite;
+}
+@keyframes app-progress-slide {
+  0% {
+    left: -40%;
+  }
+  100% {
+    left: 100%;
+  }
 }
 @layer base {
   :where(:root),:root:has(input.theme-controller[value=light]:checked),[data-theme=light] {

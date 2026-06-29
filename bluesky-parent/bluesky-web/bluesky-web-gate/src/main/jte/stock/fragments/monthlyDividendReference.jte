@@ -358,7 +358,7 @@
 							<table class="table table-sm">
 								<thead>
 									<tr>
-										<th>
+										<th scope="col">
 											<a href="${referenceListBaseUrl}&profileSort=display-order&profileDirection=${displayOrderSortDirection}" class="link link-hover font-medium no-underline">
 												${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.display.order")}
 												@if("display-order".equals(profileSortValue))
@@ -366,7 +366,7 @@
 												@endif
 											</a>
 										</th>
-										<th>
+										<th scope="col">
 											<a href="${referenceListBaseUrl}&profileSort=symbol&profileDirection=${symbolSortDirection}" class="link link-hover font-medium no-underline">
 												${MessageUtil.getMessage("stock.simulator.monthly.form.field.symbol")}
 												@if("symbol".equals(profileSortValue))
@@ -374,7 +374,7 @@
 												@endif
 											</a>
 										</th>
-										<th>
+										<th scope="col">
 											<a href="${referenceListBaseUrl}&profileSort=payout-window&profileDirection=${payoutWindowSortDirection}" class="link link-hover font-medium no-underline">
 												${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window")}
 												@if("payout-window".equals(profileSortValue))
@@ -382,7 +382,7 @@
 												@endif
 											</a>
 										</th>
-										<th>
+										<th scope="col">
 											<a href="${referenceListBaseUrl}&profileSort=source-url&profileDirection=${sourceUrlSortDirection}" class="link link-hover font-medium no-underline">
 												${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.source.url")}
 												@if("source-url".equals(profileSortValue))
@@ -390,7 +390,7 @@
 												@endif
 											</a>
 										</th>
-										<th>
+										<th scope="col">
 											<a href="${referenceListBaseUrl}&profileSort=last-verified-date&profileDirection=${lastVerifiedDateSortDirection}" class="link link-hover font-medium no-underline">
 												${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.last.verified.date")}
 												@if("last-verified-date".equals(profileSortValue))
@@ -398,7 +398,7 @@
 												@endif
 											</a>
 										</th>
-										<th>
+										<th scope="col">
 											<a href="${referenceListBaseUrl}&profileSort=active&profileDirection=${activeSortDirection}" class="link link-hover font-medium no-underline">
 												${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.active")}
 												@if("active".equals(profileSortValue))
@@ -462,11 +462,11 @@
 							<table class="table table-sm">
 								<thead>
 									<tr>
-										<th class="whitespace-nowrap">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.record.date")}</th>
-										<th class="whitespace-nowrap">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.pay.date")}</th>
-										<th class="whitespace-nowrap text-right">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.distribution.rate")}</th>
-										<th class="whitespace-nowrap text-right">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.dividend.amount")}</th>
-										<th class="whitespace-nowrap text-right">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.taxable.base")}</th>
+										<th scope="col" class="whitespace-nowrap">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.record.date")}</th>
+										<th scope="col" class="whitespace-nowrap">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.pay.date")}</th>
+										<th scope="col" class="whitespace-nowrap text-right">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.distribution.rate")}</th>
+										<th scope="col" class="whitespace-nowrap text-right">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.dividend.amount")}</th>
+										<th scope="col" class="whitespace-nowrap text-right">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.taxable.base")}</th>
 									</tr>
 								</thead>
 								<tbody>

@@ -353,7 +353,13 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     var pageImpl = new PageImpl<>(pagedList, PageRequest.of(currentPage - 1, size), totalItems);
     var pagination = new Pagination(pageImpl);
 
-    model.addAttribute("tradeList", pagedList);
+    // 조회/페이징은 그대로(기본=날짜 desc, 1페이지=최신 묶음) 두고, 화면에는 그 페이지를 오름차순(오래된 것 위)으로 표시.
+    // 사용자가 컬럼 정렬을 명시한 경우(sort 존재)는 선택한 정렬을 그대로 보여준다.
+    List<TradeResponse> displayTradeList = new ArrayList<>(pagedList);
+    if (sort == null || sort.isEmpty()) {
+      Collections.reverse(displayTradeList);
+    }
+    model.addAttribute("tradeList", displayTradeList);
     model.addAttribute("allTradeList", viewList);
     model.addAttribute("pagination", pagination);
     model.addAttribute("totalItems", totalItems);
@@ -693,6 +699,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
               }
             });
 
+    // 대시보드 "최근 활동"은 최신순 5건 유지.
     model.addAttribute("activities", activities.stream().limit(5).toList());
     model.addAttribute("activityStockIdByName", activityStockIdByName);
     model.addAttribute("thisMonthLabel", now.getMonthValue() + "월");
@@ -917,7 +924,10 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
               }
             });
 
-    model.addAttribute("activities", activities);
+    // 화면에는 오름차순(오래된 것 위)으로 표시 — 조회는 그대로(날짜 desc).
+    List<Activity> displayActivities = new ArrayList<>(activities);
+    Collections.reverse(displayActivities);
+    model.addAttribute("activities", displayActivities);
     model.addAttribute("activityStockIdByName", activityStockIdByName);
     model.addAttribute("activityAccountIdByName", activityAccountIdByName);
     model.addAttribute("accountList", finalAccountListForActivity);

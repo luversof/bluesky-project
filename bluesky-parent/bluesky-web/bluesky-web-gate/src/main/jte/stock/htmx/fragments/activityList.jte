@@ -105,7 +105,7 @@
           hx-select="#activityListFragment"
           hx-swap="outerHTML"
           hx-trigger="submit">
-        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,18rem)_minmax(0,22rem)_minmax(0,1fr)_minmax(0,19rem)] xl:items-start">
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,18rem)_minmax(0,22rem)_minmax(0,1fr)_minmax(0,19rem)_minmax(0,auto)] xl:items-start">
             <div class="form-control w-full">
                 <label class="label p-1"><span class="label-text text-xs">${periodLabel}</span></label>
                 <div class="join w-full">
@@ -140,7 +140,7 @@
                 </select>
             </div>
 
-            <div class="flex h-full min-h-0 flex-col gap-3 xl:justify-between">
+            <div class="contents">
                 @template.stock.htmx.fragments.components.stockSelectionPanel(
                     tagLabel = tagLabel,
                     stockLabel = stockLabel,
@@ -154,7 +154,7 @@
                     stockItemList = stockItemList
                 )
 
-                <div class="flex justify-end gap-2 xl:mt-auto">
+                <div class="flex justify-end gap-2 xl:self-end">
                     <button type="button" class="btn btn-sm btn-primary" data-selection-save="true"
                         hx-get="/stock/htmx/activity-list"
                         hx-target="#activityListFragment"
@@ -224,17 +224,17 @@
     </div>
         <div class="card-body">
             @if(activities == null || activities.isEmpty())
-                <div class="text-center text-base-content/50 py-10">${noActivityDataLabel}</div>
+                @template._components.ui.emptyState(message = noActivityDataLabel)
             @else
                 <div class="overflow-x-auto">
                     <table class="table table-zebra w-full">
                         <thead>
                             <tr>
-                                <th>${dateLabel}</th>
-                                <th>${typeLabel}</th>
-                                <th>${stockNameLabel}</th>
-                                <th>${detailLabel}</th>
-                                <th class="text-right">${amountLabel}</th>
+                                <th scope="col">${dateLabel}</th>
+                                <th scope="col">${typeLabel}</th>
+                                <th scope="col">${stockNameLabel}</th>
+                                <th scope="col">${detailLabel}</th>
+                                <th scope="col" class="text-right">${amountLabel}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -252,26 +252,30 @@
                                     </td>
                                     <td class="font-bold"><a href="/stock/item?stockItemId=${activityStockIdByName.get(activity.stockItemName()) != null ? activityStockIdByName.get(activity.stockItemName()).toString() : ""}" class="link link-hover">${activity.stockItemName()}</a></td>
                                     <td>
-                                        @if("TRADE".equals(activity.type()))
-                                            <span class="amount-value">${activity.quantity()}</span> ${sharesLabel}
-                                        @else
-                                            ${activity.description()}
-                                        @endif
-
-                                        <!-- Account Badges (Max 2 + Tooltip) -->
-                                        @if(activity.accountNames() != null && !activity.accountNames().isEmpty())
-                                            <div class="mt-1 flex flex-wrap gap-1">
-                                                @for(int i = 0; i < Math.min(2, activity.accountNames().size()); i++)
-                                                    <a href="/stock/account?accountId=${activityAccountIdByName.get(activity.accountNames().get(i)) != null ? activityAccountIdByName.get(activity.accountNames().get(i)).toString() : ""}" class="badge badge-xs badge-outline opacity-70 link link-hover">${activity.accountNames().get(i)}</a>
-                                                @endfor
-
-                                                @if(activity.accountNames().size() > 2)
-                                                    <div class="tooltip tooltip-right" data-tip="${String.join(", ", activity.accountNames())}">
-                                                        <span class="badge badge-xs badge-outline opacity-70 cursor-help">+${activity.accountNames().size() - 2}</span>
-                                                    </div>
+                                        <div class="flex items-center gap-2 whitespace-nowrap">
+                                            <span>
+                                                @if("TRADE".equals(activity.type()))
+                                                    <span class="amount-value">${activity.quantity()}</span> ${sharesLabel}
+                                                @else
+                                                    ${activity.description()}
                                                 @endif
-                                            </div>
-                                        @endif
+                                            </span>
+
+                                            <!-- Account Badges (Max 2 + Tooltip) -->
+                                            @if(activity.accountNames() != null && !activity.accountNames().isEmpty())
+                                                <span class="flex items-center gap-1">
+                                                    @for(int i = 0; i < Math.min(2, activity.accountNames().size()); i++)
+                                                        <a href="/stock/account?accountId=${activityAccountIdByName.get(activity.accountNames().get(i)) != null ? activityAccountIdByName.get(activity.accountNames().get(i)).toString() : ""}" class="badge badge-xs badge-outline opacity-70 link link-hover">${activity.accountNames().get(i)}</a>
+                                                    @endfor
+
+                                                    @if(activity.accountNames().size() > 2)
+                                                        <div class="tooltip tooltip-right" data-tip="${String.join(", ", activity.accountNames())}">
+                                                            <span class="badge badge-xs badge-outline opacity-70 cursor-help">+${activity.accountNames().size() - 2}</span>
+                                                        </div>
+                                                    @endif
+                                                </span>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td class="text-right font-mono font-bold amount-value ${"DIVIDEND".equals(activity.type()) ? "text-dividend" : ""}">
                                         ₩ ${String.format("%,d", activity.amount() != null ? activity.amount().longValue() : 0)}
