@@ -107,15 +107,15 @@
           hx-trigger="submit">
         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,18rem)_minmax(0,22rem)_minmax(0,1fr)_minmax(0,19rem)_minmax(0,auto)] xl:items-start">
             <div class="form-control w-full">
-                <label class="label p-1"><span class="label-text text-xs">${periodLabel}</span></label>
-                <div class="join w-full">
+                <label class="label p-1" id="filterPeriodLabel"><span class="label-text text-xs">${periodLabel}</span></label>
+                <div class="join w-full" role="group" aria-labelledby="filterPeriodLabel">
                     <input type="date" name="activityUiStartDate" id="activityStartDateInput" class="input input-sm input-bordered join-item w-1/2" value="${startDate != null ? startDate.atZone(zone).toLocalDate().toString() : ""}">
                     <input type="date" name="activityUiEndDate" id="activityEndDateInput" class="input input-sm input-bordered join-item w-1/2" value="${endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1).toString() : ""}">
                 </div>
             </div>
             <div class="form-control w-full">
-                <label class="label p-1"><span class="label-text text-xs">${accountLabel}</span></label>
-                <select name="accountIdList" class="select select-bordered w-full max-h-40 overflow-auto" multiple size="${Math.min(accountList != null ? accountList.size() + 1 : 1, 7)}" data-max-visible="7">
+                <label class="label p-1" for="filterAccountSelect"><span class="label-text text-xs">${accountLabel}</span></label>
+                <select id="filterAccountSelect" name="accountIdList" class="select select-bordered w-full max-h-40 overflow-auto" multiple size="${Math.min(accountList != null ? accountList.size() + 1 : 1, 7)}" data-max-visible="7">
                     <option value="">${allLabel}</option>
                     @if(accountList != null)
                         @for(Account account : accountList)
@@ -126,8 +126,8 @@
             </div>
 
             <div class="form-control w-full">
-                <label class="label p-1"><span class="label-text text-xs">${stockLabel}</span></label>
-                <select name="stockItemIdList" class="select select-bordered w-full max-h-40 overflow-auto bg-base-100" multiple size="${Math.min(stockItemList != null ? stockItemList.size() + 1 : 1, 7)}" data-max-visible="7">
+                <label class="label p-1" for="filterStockSelect"><span class="label-text text-xs">${stockLabel}</span></label>
+                <select id="filterStockSelect" name="stockItemIdList" class="select select-bordered w-full max-h-40 overflow-auto bg-base-100" multiple size="${Math.min(stockItemList != null ? stockItemList.size() + 1 : 1, 7)}" data-max-visible="7">
                     <option value="">${allLabel}</option>
                     @if(stockItemList != null)
                         @for(StockItem stockItem : stockItemList)

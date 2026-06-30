@@ -33,6 +33,12 @@
         var emptyOpt = emptyArr.length ? emptyArr[0] : null;
         var allLabel = (emptyOpt && emptyOpt.text ? emptyOpt.text : "전체").trim();
         var isStock = select.name === "stockItemIdList";
+        // 필드 라벨(계좌/종목 등)을 읽어 커스텀 드롭다운 토글의 접근명에 포함
+        var fcEl = select.closest(".form-control");
+        var fcLabelEl = fcEl
+            ? fcEl.querySelector(".label-text")
+            : null;
+        var fieldLabel = fcLabelEl && fcLabelEl.textContent ? fcLabelEl.textContent.trim() : "";
         var wrap = document.createElement("div");
         wrap.className = "relative w-full";
         wrap.setAttribute("data-msd-wrap", "1");
@@ -108,6 +114,7 @@
                     .join(", ");
             }
             toggle.title = summary.textContent || "";
+            toggle.setAttribute("aria-label", (fieldLabel ? fieldLabel + ": " : "") + (summary.textContent || ""));
         }
         function syncFromSelect() {
             realOpts.forEach(function (o) {
@@ -225,6 +232,7 @@
             }
             summary.textContent = selected.length === 0 ? allLabel : selected.join(", ");
             toggle.title = summary.textContent || "";
+            toggle.setAttribute("aria-label", (tagLabelText ? tagLabelText + ": " : "") + (summary.textContent || ""));
         }
         if (tagSelect) {
             tagSelect.addEventListener("change", updateSummary);

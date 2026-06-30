@@ -89,7 +89,7 @@
 
         <!-- Loading Indicator -->
         <div id="daily-summary-loading" class="htmx-indicator hidden flex justify-center py-2">
-            <span class="loading loading-spinner text-secondary"></span>
+            <span class="loading loading-spinner text-primary"></span>
         </div>
 
         <script src="/js/stock/dailySummary.js"></script>

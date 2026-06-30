@@ -16,7 +16,7 @@
 
 			<div hx-get="/stock/htmx/activity-list" hx-trigger="load" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
 				<div class="flex justify-center p-10">
-					<span class="loading loading-spinner loading-lg"></span>
+					<span class="loading loading-spinner loading-lg text-primary"></span>
 				</div>
 			</div>
 		</div>

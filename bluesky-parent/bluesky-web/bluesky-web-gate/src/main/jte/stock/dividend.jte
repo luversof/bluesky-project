@@ -92,7 +92,7 @@
 			@else
 				<div class="min-h-[200px]" hx-get="/stock/htmx/dividend/list" hx-trigger="load" hx-target="this" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
 					<div class="flex items-center gap-2 text-base-content/60">
-						<span class="loading loading-spinner loading-sm"></span>
+						<span class="loading loading-spinner loading-sm text-primary"></span>
 						<span>${MessageUtil.getMessage("common.message.loading")}</span>
 					</div>
 				</div>

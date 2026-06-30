@@ -73,17 +73,25 @@
 	<div id="app-toast" class="toast toast-top toast-end z-[100]"></div>
 	<script>
 	(function() {
-		// 전역 로딩바: 동시 요청 카운트로 표시/숨김
+		// 전역 로딩바: 동시 요청 카운트로 표시/숨김.
+		// 감소는 XHR의 loadend(항상 발생)에 건다 — afterRequest는 outerHTML 스왑으로
+		// 트리거 요소가 제거되면 body까지 버블링되지 않아 카운터가 안 내려간다.
 		var bar = document.getElementById('app-progress');
 		if (bar) {
 			var active = 0;
-			document.body.addEventListener('htmx:beforeRequest', function() {
-				active++;
-				bar.classList.add('active');
-			});
-			document.body.addEventListener('htmx:afterRequest', function() {
+			var dec = function() {
 				active = Math.max(0, active - 1);
 				if (active === 0) bar.classList.remove('active');
+			};
+			document.body.addEventListener('htmx:beforeSend', function(evt) {
+				active++;
+				bar.classList.add('active');
+				var xhr = evt.detail && evt.detail.xhr;
+				if (xhr && xhr.addEventListener) {
+					xhr.addEventListener('loadend', dec, { once: true });
+				} else {
+					setTimeout(dec, 3000); // 안전장치: xhr 없으면 강제 해제
+				}
 			});
 		}
 	})();

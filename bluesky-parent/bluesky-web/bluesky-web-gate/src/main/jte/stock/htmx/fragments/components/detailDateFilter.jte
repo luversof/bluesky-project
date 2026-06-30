@@ -44,8 +44,8 @@
       hx-trigger="submit">
     <input type="hidden" name="${extraName}" value="${extraValue}">
     <div class="form-control">
-        <label class="label p-1"><span class="label-text text-xs">${periodLabel}</span></label>
-        <div class="join">
+        <label class="label p-1" id="${idPrefix}PeriodLabel"><span class="label-text text-xs">${periodLabel}</span></label>
+        <div class="join" role="group" aria-labelledby="${idPrefix}PeriodLabel">
             <input type="date" name="uiStartDate" id="${idPrefix}StartDateInput" class="input input-sm input-bordered join-item" value="${startLocal != null ? startLocal.toString() : ""}">
             <input type="date" name="uiEndDate" id="${idPrefix}EndDateInput" class="input input-sm input-bordered join-item" value="${endLocal != null ? endLocal.toString() : ""}">
         </div>
