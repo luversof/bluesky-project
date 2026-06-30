@@ -207,12 +207,14 @@ StockCharts.initMonthlyFromData = function (tradeData, canvasId = "tradeMonthlyC
                     data: m.buyData,
                     backgroundColor: "rgba(239,68,68,0.7)",
                     borderRadius: 3,
+                    maxBarThickness: 36,
                 },
                 {
                     label: "매도",
                     data: m.sellData,
                     backgroundColor: "rgba(59,130,246,0.7)",
                     borderRadius: 3,
+                    maxBarThickness: 36,
                 },
             ],
         },
@@ -347,6 +349,20 @@ StockCharts.createChart = function (canvasId, config, existingInstance) {
         catch (e) { }
     }
     const ctx = canvas.getContext("2d");
+    // 막대차트: 데이터가 적을 때 막대가 카테고리 폭을 가득 채워 과도하게 두꺼워지는 것을 방지.
+    // 명시값이 없으면 두께 상한을 기본 적용한다(개별 데이터셋이 지정했으면 존중).
+    try {
+        const datasets = config && config.data && config.data.datasets;
+        if (datasets && datasets.length) {
+            const chartIsBar = config.type === "bar";
+            datasets.forEach((d) => {
+                if ((chartIsBar || d.type === "bar") && d.maxBarThickness == null) {
+                    d.maxBarThickness = 36;
+                }
+            });
+        }
+    }
+    catch (e) { }
     const inst = new Chart(ctx, config);
     return inst;
 };

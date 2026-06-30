@@ -14,7 +14,7 @@
 <div class="card bg-base-100 border border-base-200 rounded-box shadow-sm h-full">
     <div class="card-body p-4">
         <h2 class="card-title text-base-content/70 text-sm mb-2">${resolvedTitle}</h2>
-        <div class="relative w-full amount-chart h-64">
+        <div class="relative w-full amount-chart h-52">
             <canvas id="${canvasId}" class="amount-chart"></canvas>
         </div>
     </div>

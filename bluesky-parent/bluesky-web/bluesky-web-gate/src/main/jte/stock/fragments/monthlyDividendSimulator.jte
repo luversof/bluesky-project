@@ -351,7 +351,7 @@
 								<thead>
 									<tr>
 										<th scope="col" class="w-10" rowspan="2"></th>
-										<th rowspan="2" scope="col" class="min-w-[18rem] align-middle">
+										<th rowspan="2" scope="col" class="min-w-[13rem] align-middle">
 											<div class="flex min-h-[4.5rem] flex-col justify-center gap-1 font-medium">
 												<div class="flex items-center gap-1">
 													<a href="${monthlyDividendTableBaseUrl}&sort=display-order&direction=${displayOrderDirection}" class="link link-hover no-underline">
@@ -373,7 +373,7 @@
 										</th>
 										<th scope="col" class="text-center text-[11px] font-medium uppercase tracking-wide text-base-content/45" colspan="2">${MessageUtil.getMessage("stock.simulator.monthly.table.group.reference")}</th>
 										<th scope="col" class="text-center text-[11px] font-medium uppercase tracking-wide text-base-content/45" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.input")}</th>
-										<th rowspan="2" scope="col" class="min-w-[9rem] align-middle text-right">
+										<th rowspan="2" scope="col" class="min-w-[7.5rem] align-middle text-right">
 											<div class="flex min-h-[4.5rem] flex-col justify-center gap-1 whitespace-normal text-right">
 												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-dividend&direction=${monthlyDividendDirectionToggle}" class="link link-hover block text-sm font-medium no-underline">
 													<span class="inline-flex items-center justify-end gap-1">
@@ -402,19 +402,19 @@
 											</a>
 										</th>
 										<th scope="col" class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.current.price")}</th>
-										<th scope="col" class="min-w-[8rem] align-bottom text-right">
+										<th scope="col" class="min-w-[6.5rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
 												<div>${MessageUtil.getMessage("stock.simulator.monthly.table.header.quantity")}</div>
 												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.average.buy.price")}</div>
 											</div>
 										</th>
-										<th scope="col" class="min-w-[8rem] align-bottom text-right">
+										<th scope="col" class="min-w-[6.5rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
 												<div>${MessageUtil.getMessage("stock.simulator.monthly.table.header.buy.amount")}</div>
 												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.market.value")}</div>
 											</div>
 										</th>
-										<th scope="col" class="min-w-[8rem] align-bottom text-right">
+										<th scope="col" class="min-w-[6.5rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
 												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.market.price.basis")}</div>
 												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-yield&direction=${monthlyYieldDirectionToggle}" class="link link-hover block text-xs font-medium leading-4 no-underline">
@@ -431,7 +431,7 @@
 												</a>
 											</div>
 										</th>
-										<th scope="col" class="min-w-[8rem] align-bottom text-right">
+										<th scope="col" class="min-w-[6.5rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
 												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.on.cost")}</div>
 												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-yield-on-cost&direction=${monthlyYieldOnCostDirectionToggle}" class="link link-hover block text-xs font-medium leading-4 no-underline">
@@ -448,7 +448,7 @@
 												</a>
 											</div>
 										</th>
-										<th scope="col" class="min-w-[7rem] align-bottom text-right">
+										<th scope="col" class="min-w-[6rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
 												<div class="whitespace-nowrap">${MessageUtil.getMessage("stock.simulator.monthly.table.header.total.return.on.cost.line.one")}</div>
 												<a href="${monthlyDividendTableBaseUrl}&sort=combined-return&direction=${combinedReturnDirectionToggle}" class="link link-hover inline-flex items-center justify-end gap-1 font-medium no-underline">

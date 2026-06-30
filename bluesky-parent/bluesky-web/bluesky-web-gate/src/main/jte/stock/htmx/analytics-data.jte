@@ -55,9 +55,9 @@
 
     <!-- 2. Chart Area (Large) -->
     <div class="card bg-base-100 border border-base-200 rounded-box shadow-sm overflow-hidden">
-        <div class="card-body p-4 sm:p-6" style="min-height: 400px;">
-            <h2 class="card-title text-base opacity-70 mb-4">${chartTitle != null ? chartTitle : ("bar".equals(chartType) ? barChartTitle : lineChartTitle)}</h2>
-            <div class="relative w-full h-[350px] sm:h-[450px]">
+        <div class="card-body p-4 sm:p-5" style="min-height: 300px;">
+            <h2 class="card-title text-base opacity-70 mb-3">${chartTitle != null ? chartTitle : ("bar".equals(chartType) ? barChartTitle : lineChartTitle)}</h2>
+            <div class="relative w-full h-[260px] sm:h-[340px]">
                 <canvas id="${canvasId}" class="amount-chart"></canvas>
             </div>
         </div>
