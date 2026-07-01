@@ -272,3 +272,10 @@ html.sidebar-collapsed .sidebar-toggle-icon {
 	0% { left: -40%; }
 	100% { left: 100%; }
 }
+
+/* 페이지 스크롤 시 테이블 헤더를 상단(sticky 네비바 4rem 아래)에 고정.
+   table-pin-rows(position:sticky)를 쓰되 top 을 네비바 높이만큼 내린다. */
+.pin-top-nav thead tr {
+	top: 4.5rem;
+	z-index: 20;
+}

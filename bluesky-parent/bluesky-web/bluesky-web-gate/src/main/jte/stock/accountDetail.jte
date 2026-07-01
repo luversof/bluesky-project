@@ -180,7 +180,7 @@
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.account.detail.empty.holdings")}</div>
 						@else
 							@template._components.ui.tableCard(body = @`
-								<table class="table table-sm w-full" data-sortable>
+								<table class="table table-sm w-full table-pin-rows pin-top-nav" data-sortable>
 									<thead class="bg-base-200">
 										<tr>
 											<th scope="col">${MessageUtil.getMessage("stock.account.detail.col.stock")}</th>
@@ -214,7 +214,7 @@
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.account.detail.empty.trades")}</div>
 						@else
 							@template._components.ui.tableCard(body = @`
-								<table class="table table-sm w-full" data-sortable>
+								<table class="table table-sm w-full table-pin-rows pin-top-nav" data-sortable>
 									<thead class="bg-base-200">
 										<tr>
 											<th scope="col">${MessageUtil.getMessage("common.label.date")}</th>
@@ -251,7 +251,7 @@
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.account.detail.empty.dividends")}</div>
 						@else
 							@template._components.ui.tableCard(body = @`
-								<table class="table table-sm w-full" data-sortable>
+								<table class="table table-sm w-full table-pin-rows pin-top-nav" data-sortable>
 									<thead class="bg-base-200">
 										<tr>
 											<th scope="col">${MessageUtil.getMessage("common.label.date")}</th>

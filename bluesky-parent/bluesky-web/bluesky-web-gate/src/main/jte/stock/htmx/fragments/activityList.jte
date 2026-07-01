@@ -226,10 +226,10 @@
             @if(activities == null || activities.isEmpty())
                 @template._components.ui.emptyState(message = noActivityDataLabel)
             @else
-                <div class="overflow-x-auto">
-                    <table class="table table-zebra w-full">
+                <div>
+                    <table class="table table-hover table-striped w-full table-sm table-pin-rows pin-top-nav">
                         <thead>
-                            <tr>
+                            <tr class="bg-base-200">
                                 <th scope="col">${dateLabel}</th>
                                 <th scope="col">${typeLabel}</th>
                                 <th scope="col">${stockNameLabel}</th>

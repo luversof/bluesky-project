@@ -18,7 +18,13 @@
 	}
 
 	function enhance(select: HTMLSelectElement) {
-		if (!select || select.dataset.msd === "1") return;
+		if (!select) return;
+		if (select.dataset.msd === "1") {
+			// 이미 변환됨: htmx 스왑/multiSelectInit 의 비동기 재처리로 네이티브 listbox 가
+			// 다시 보일 수 있으므로 재숨김만 보장하고 빠진다(중복 래퍼 생성 방지).
+			select.style.setProperty("display", "none", "important");
+			return;
+		}
 		if (select.getAttribute("data-no-multi") === "1") return;
 		select.dataset.msd = "1";
 
@@ -324,6 +330,18 @@
 		}, 0);
 	});
 
+	// 변환 완료된 네이티브 select 가 (multiSelectInit 의 display:block !important 등으로)
+	// 다시 보이지 않도록 재확정한다. 스왑 후 비동기 재처리보다 늦게 한 번 더 실행한다.
+	function reassertHidden() {
+		["accountIdList", "stockItemIdList", "stockTagList"].forEach(function (name) {
+			Array.prototype.slice
+				.call(document.querySelectorAll('select[name="' + name + '"][data-msd="1"]'))
+				.forEach(function (s: HTMLSelectElement) {
+					s.style.setProperty("display", "none", "important");
+				});
+		});
+	}
+
 	function enhanceAll() {
 		NAMES.forEach(function (name) {
 			var sels = document.querySelectorAll(
@@ -338,6 +356,9 @@
 			.forEach(function (c: HTMLElement) {
 				enhanceTag(c);
 			});
+		reassertHidden();
+		// 마이크로태스크(MutationObserver 등) 이후 한 번 더 보장
+		setTimeout(reassertHidden, 0);
 	}
 
 	if (document.readyState === "loading") {
@@ -346,4 +367,5 @@
 		enhanceAll();
 	}
 	document.addEventListener("htmx:afterSwap", enhanceAll);
+	document.addEventListener("htmx:afterSettle", enhanceAll);
 })();

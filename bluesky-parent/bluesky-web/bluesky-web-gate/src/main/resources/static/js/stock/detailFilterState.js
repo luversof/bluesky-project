@@ -77,8 +77,12 @@
     else {
         init();
     }
-    // htmx 스왑(정렬/필터 등) 직후 복원
-    document.addEventListener("htmx:afterSwap", function () {
+    // htmx 스왑(정렬/필터 등) 직후 복원. 스왑 후 다른 스크립트(date-range-picker 재초기화 등)가
+    // <details> 를 다시 펼칠 수 있어, settle 시점 + 마이크로태스크 이후에도 재확정한다.
+    function applyAfterSwap() {
         applyAll();
-    });
+        setTimeout(applyAll, 0);
+    }
+    document.addEventListener("htmx:afterSwap", applyAfterSwap);
+    document.addEventListener("htmx:afterSettle", applyAfterSwap);
 })();

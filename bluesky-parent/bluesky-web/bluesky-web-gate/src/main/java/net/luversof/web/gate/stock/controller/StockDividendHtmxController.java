@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -368,6 +369,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     }
 
     if (size <= 0) size = 15;
+    // 상세 목록은 페이징 없이 전체를 펼쳐서 표시(헤더 sticky로 스크롤).
+    if (!viewList.isEmpty()) size = viewList.size();
 
     boolean isSearch =
         (effectiveAccountIdList != null && !effectiveAccountIdList.isEmpty())
@@ -406,10 +409,13 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         viewList.stream().map(DividendView::netAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
     BigDecimal totalAllTaxableAmount =
         viewList.stream().map(DividendView::taxableAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalAllTax =
+        viewList.stream().map(DividendView::tax).reduce(BigDecimal.ZERO, BigDecimal::add);
 
     BigDecimal prevPeriodNetAmount = null;
     LocalDate prevStartDate = null;
     LocalDate prevEndDate = null;
+    List<DividendChange> dividendChangeContributors = java.util.List.of();
     if (startDate != null && endDate != null) {
       // convert Instants to LocalDate in the request's timezone (reuse earlier
       // `zone`)
@@ -453,6 +459,52 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
                     return Optional.ofNullable(d.netAmount()).orElse(gross.subtract(tax2));
                   })
               .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+      // 종목별 증감 분해(전기 대비): 어떤 종목이 차이를 만들었는지.
+      Map<String, BigDecimal> prevByStock = new HashMap<>();
+      prevDividends.stream()
+          .filter(
+              d ->
+                  finalAccountIdList == null
+                      || finalAccountIdList.isEmpty()
+                      || finalAccountIdList.contains(d.accountId()))
+          .filter(
+              d ->
+                  finalStockItemIdList == null
+                      || finalStockItemIdList.isEmpty()
+                      || finalStockItemIdList.contains(d.stockItemId()))
+          .forEach(
+              d -> {
+                boolean isDeferred = taxDeferredMap.getOrDefault(d.accountId(), false);
+                BigDecimal gross = nz(d.grossAmount());
+                BigDecimal net =
+                    isDeferred
+                        ? gross
+                        : Optional.ofNullable(d.netAmount()).orElse(gross.subtract(nz(d.tax())));
+                prevByStock.merge(
+                    d.stockItemName() != null ? d.stockItemName() : "-", net, BigDecimal::add);
+              });
+      Map<String, BigDecimal> curByStock = new HashMap<>();
+      viewList.forEach(
+          v ->
+              curByStock.merge(
+                  v.stockItemName() != null ? v.stockItemName() : "-",
+                  nz(v.netAmount()),
+                  BigDecimal::add));
+      Set<String> changeNames = new HashSet<>();
+      changeNames.addAll(curByStock.keySet());
+      changeNames.addAll(prevByStock.keySet());
+      dividendChangeContributors =
+          changeNames.stream()
+              .map(
+                  n -> {
+                    BigDecimal c = curByStock.getOrDefault(n, BigDecimal.ZERO);
+                    BigDecimal p = prevByStock.getOrDefault(n, BigDecimal.ZERO);
+                    return new DividendChange(n, c, p, c.subtract(p));
+                  })
+              .filter(ch -> ch.delta().signum() != 0)
+              .sorted((a, b) -> b.delta().abs().compareTo(a.delta().abs()))
+              .collect(java.util.stream.Collectors.toList());
     }
 
     var pageImpl = new PageImpl<>(pagedList, PageRequest.of(currentPage - 1, size), totalItems);
@@ -501,7 +553,9 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     model.addAttribute("totalAllGrossAmount", totalAllGrossAmount);
     model.addAttribute("totalAllNetAmount", totalAllNetAmount);
     model.addAttribute("totalAllTaxableAmount", totalAllTaxableAmount);
+    model.addAttribute("totalAllTax", totalAllTax);
     model.addAttribute("prevPeriodNetAmount", prevPeriodNetAmount);
+    model.addAttribute("dividendChangeContributors", dividendChangeContributors);
     model.addAttribute("prevStartDate", prevStartDate);
     model.addAttribute("prevEndDate", prevEndDate);
     model.addAttribute(
@@ -942,6 +996,10 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
   }
 
   private record PositionKey(UUID accountId, UUID stockItemId) {}
+
+  /** 전기 대비 종목별 배당 증감(변동 요인 분해)용. */
+  public record DividendChange(
+      String stockName, BigDecimal currentNet, BigDecimal previousNet, BigDecimal delta) {}
 
   private record PeriodPrincipalSummary(
       BigDecimal principalCostSum, Map<Integer, BigDecimal> principalCostSumByYear) {

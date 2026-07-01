@@ -10,6 +10,7 @@
 @import net.luversof.web.gate.stock.domain.Account
 @import net.luversof.web.gate.stock.domain.StockItem
 @import net.luversof.web.gate.stock.dto.view.DividendYieldGroupView
+@import net.luversof.web.gate.stock.controller.StockDividendHtmxController.DividendChange
 @import java.time.format.DateTimeFormatter
 @import java.text.DecimalFormat
 @import io.github.luversof.boot.context.support.MessageUtil
@@ -40,9 +41,11 @@
 @param BigDecimal totalAllGrossAmount = BigDecimal.ZERO
 @param BigDecimal totalAllNetAmount = BigDecimal.ZERO
 @param BigDecimal totalAllTaxableAmount = BigDecimal.ZERO
+@param BigDecimal totalAllTax = BigDecimal.ZERO
 @param BigDecimal prevPeriodNetAmount = null
 @param LocalDate prevStartDate = null
 @param LocalDate prevEndDate = null
+@param List<DividendChange> dividendChangeContributors = java.util.List.of()
 @param BigDecimal portfolioYieldOnDailyAverageCostPct = null
 @param BigDecimal portfolioYieldOnCostPct = null
 @param BigDecimal portfolioYieldOnMarketPct = null
@@ -66,6 +69,10 @@
     BigDecimal safeAllNet = totalAllNetAmount != null ? totalAllNetAmount : BigDecimal.ZERO;
     BigDecimal safeAllGross = totalAllGrossAmount != null ? totalAllGrossAmount : BigDecimal.ZERO;
     BigDecimal safeAllTaxable = totalAllTaxableAmount != null ? totalAllTaxableAmount : BigDecimal.ZERO;
+    BigDecimal safeAllTax = totalAllTax != null ? totalAllTax : BigDecimal.ZERO;
+    // 세전 − 세후 = 총 차감액(세금 + 수수료·기타). 수수료·기타 = 차감액 − 세금.
+    BigDecimal allDeduction = safeAllGross.subtract(safeAllNet);
+    BigDecimal allOtherDeduction = allDeduction.subtract(safeAllTax);
     BigDecimal safePrevNet = prevPeriodNetAmount != null ? prevPeriodNetAmount : BigDecimal.ZERO;
     boolean hasComparison = prevPeriodNetAmount != null;
     BigDecimal diffAmount = hasComparison ? safeAllNet.subtract(safePrevNet) : BigDecimal.ZERO;
@@ -138,12 +145,21 @@
     String byStockLabel = MessageUtil.getMessage("stock.label.by.stock");
     String byAccountLabel = MessageUtil.getMessage("stock.label.by.account");
     String monthlyDividendsLabel = MessageUtil.getMessage("stock.dividend.chart.title.monthly.simple");
+    String othersLabel = MessageUtil.getMessage("stock.chart.others");
+    String changeTitleLabel = MessageUtil.getMessage("stock.dividend.change.title");
+    String changeNewLabel = MessageUtil.getMessage("stock.dividend.change.new");
+    String changeStoppedLabel = MessageUtil.getMessage("stock.dividend.change.stopped");
     String detailSummaryLabel = java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.detail.summary"), countMessage.apply(totalItems));
     String dateLabel = MessageUtil.getMessage("common.label.date");
     String grossAmountLabel = MessageUtil.getMessage("stock.dividend.gross");
     String netAmountLabel = MessageUtil.getMessage("stock.dividend.net");
     String taxLabel = MessageUtil.getMessage("stock.dividend.tax");
     String taxableAmountLabel = MessageUtil.getMessage("stock.dividend.taxable.amount");
+    String deductionLabel = MessageUtil.getMessage("stock.dividend.deduction");
+    String deductionOtherLabel = MessageUtil.getMessage("stock.dividend.deduction.other");
+    String calcTitleLabel = MessageUtil.getMessage("stock.dividend.calc.title");
+    String calcNoteLabel = MessageUtil.getMessage("stock.dividend.calc.note");
+    String taxableNoteLabel = MessageUtil.getMessage("stock.dividend.taxable.note");
     String noDividendHistoryLabel = MessageUtil.getMessage("stock.dividend.message.no.history");
     String totalLabel = MessageUtil.getMessage("common.label.total");
     String noDataLabel = MessageUtil.getMessage("common.message.no.data");
@@ -361,15 +377,30 @@
         <!-- Card 1: 기간 합계 (세전/세후/과세) -->
         <div class="card bg-base-100 shadow-sm border border-base-200">
             <div class="card-body p-4">
-                <div class="text-xs text-base-content/50 mb-1">${periodDividendLabel}</div>
-                <div class="flex items-baseline gap-1 mb-2">
-                    <span class="text-xl font-bold text-dividend amount-value">₩ ${decimalFormat.format(safeAllNet)}</span>
-                    <span class="text-xs text-base-content/40">${netLabel}</span>
+                <!-- 세후 배당금 / 과세 금액: 서로 다른 개념이라 동등 비중의 별도 지표로 나란히 표시 -->
+                <div class="flex flex-wrap items-start gap-x-6 gap-y-2 mb-2">
+                    <div class="min-w-0">
+                        <div class="text-xs text-base-content/50 mb-1">${periodDividendLabel}</div>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-xl font-bold text-dividend amount-value">₩ ${decimalFormat.format(safeAllNet)}</span>
+                            <span class="text-xs text-base-content/40">${netLabel}</span>
+                        </div>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-xs text-base-content/50 mb-1">${taxableAmountLabel}</div>
+                        <div class="text-xl font-bold text-base-content/70 amount-value">₩ ${decimalFormat.format(safeAllTaxable)}</div>
+                        <div class="text-[11px] leading-4 text-base-content/40">${taxableNoteLabel}</div>
+                    </div>
                 </div>
-                <div class="flex gap-4 text-xs text-base-content/50">
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-base-content/50">
                     <span>${grossLabel} <span class="font-medium text-base-content/70 amount-value">₩ ${decimalFormat.format(safeAllGross)}</span></span>
-                    <span>${taxableLabel} <span class="font-medium text-base-content/70 amount-value">₩ ${decimalFormat.format(safeAllTaxable)}</span></span>
+                    <span>${deductionLabel} <span class="font-medium text-base-content/70 amount-value">-₩ ${decimalFormat.format(allDeduction)}</span></span>
                     <span class="ml-auto">${countMessage.apply(totalItems)}</span>
+                </div>
+                <!-- 차감 분해(항상 표시): 세전 − (세금 + 수수료·기타) = 세후. 과세 금액은 차감 항목이 아님(별도 표시). -->
+                <div class="mt-1 text-[11px] leading-4 text-base-content/40" title="${calcNoteLabel}">
+                    ${deductionLabel} = ${taxLabel} <span class="amount-value">₩${decimalFormat.format(safeAllTax)}</span>
+                    + ${deductionOtherLabel} <span class="amount-value">₩${decimalFormat.format(allOtherDeduction)}</span>
                 </div>
             </div>
         </div>
@@ -409,6 +440,43 @@
 
     </div>
 
+    <!-- 변동 요인: 전기 대비 종목별 배당 증감(왜 차이가 났는지) -->
+    @if(hasComparison && dividendChangeContributors != null && !dividendChangeContributors.isEmpty())
+    <div class="card bg-base-100 shadow-sm border border-base-200 mb-4">
+        <div class="card-body p-4">
+            <div class="flex items-baseline justify-between gap-2 mb-2">
+                <h3 class="font-bold text-sm">${changeTitleLabel}</h3>
+                @if(prevStartDate != null && prevEndDate != null)
+                <span class="text-xs text-base-content/40">vs ${prevStartDate.toString()} ~ ${prevEndDate.toString()}</span>
+                @endif
+            </div>
+            <ul class="divide-y divide-base-200">
+                @for(int ci = 0; ci < Math.min(dividendChangeContributors.size(), 8); ci++)
+                    !{
+                        DividendChange ch = dividendChangeContributors.get(ci);
+                        boolean up = ch.delta().signum() > 0;
+                        boolean isNew = ch.previousNet().signum() == 0 && ch.currentNet().signum() != 0;
+                        boolean stopped = ch.currentNet().signum() == 0 && ch.previousNet().signum() != 0;
+                    }
+                    <li class="flex items-center gap-2 py-1.5 text-sm">
+                        <span class="flex-1 min-w-0 truncate">${ch.stockName()}</span>
+                        @if(isNew)
+                        <span class="badge badge-xs badge-success badge-outline shrink-0">${changeNewLabel}</span>
+                        @elseif(stopped)
+                        <span class="badge badge-xs badge-ghost shrink-0">${changeStoppedLabel}</span>
+                        @endif
+                        <span class="hidden sm:inline text-xs text-base-content/40 amount-value">₩${decimalFormat.format(ch.previousNet())} → ₩${decimalFormat.format(ch.currentNet())}</span>
+                        <span class="w-28 text-right font-semibold amount-value ${up ? "text-profit" : "text-loss"}">${up ? "+" : "-"}₩${decimalFormat.format(ch.delta().abs())}</span>
+                    </li>
+                @endfor
+            </ul>
+            @if(dividendChangeContributors.size() > 8)
+            <div class="text-xs text-base-content/40 mt-2">+ ${dividendChangeContributors.size() - 8}</div>
+            @endif
+        </div>
+    </div>
+    @endif
+
     <!-- Row 2: Charts -->
     <div class="flex flex-wrap gap-4 mb-4">
 
@@ -435,7 +503,7 @@
         <div class="card bg-base-100 shadow-sm border border-base-200 flex-[3] min-w-[280px] overflow-visible">
             <div class="card-body p-4">
                 <h3 class="font-bold text-sm mb-3">${monthlyDividendsLabel}</h3>
-                <div class="relative h-[220px]">
+                <div class="relative h-[280px]">
                     <canvas id="monthlyBarChart" class="amount-chart"></canvas>
                 </div>
             </div>
@@ -1016,8 +1084,8 @@
         </summary>
 
         <div id="dividendListContainer" class="flex flex-col relative mt-2">
-            <div class="overflow-x-auto flex-1 min-h-0">
-                <table class="table table-hover table-striped w-full table-sm table-pin-rows">
+            <div class="flex-1 min-h-0">
+                <table class="table table-hover table-striped w-full table-sm table-pin-rows pin-top-nav">
                     <thead>
                     <tr class="bg-base-200">
                         <th scope="col" class="cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
@@ -1153,6 +1221,7 @@
         const averageNoDataLabel = "${averageNoDataLabel}";
         const averageDescTemplate = "${averageDescTemplate}";
         const netAmountLabel = "${netAmountLabel}";
+        const othersLabel = "${othersLabel}";
 
         const CHART_COLORS = [
             'rgba(99,102,241,0.8)','rgba(34,197,94,0.8)','rgba(251,191,36,0.8)',
@@ -1594,6 +1663,63 @@
             return { labels: months, data: months.map(m => map[m]) };
         }
 
+        // 월별 × 종목 누적: 어떤 종목이 각 달의 증감을 만들었는지 한눈에. 상위 N개 + 나머지는 '기타'.
+        function buildMonthlyStackedData() {
+            const monthSet = {};
+            if (filterStartDate && filterEndDate) {
+                let cur = filterStartDate;
+                while (cur <= filterEndDate) {
+                    monthSet[cur] = true;
+                    const parts = cur.split('-');
+                    const y = Number(parts[0]), mo = Number(parts[1]);
+                    cur = mo === 12 ? (y + 1) + '-01' : y + '-' + String(mo + 1).padStart(2, '0');
+                }
+            }
+            dividendData.forEach(d => { if (d.payDate) monthSet[d.payDate.slice(0, 7)] = true; });
+            const months = Object.keys(monthSet).sort();
+            const monthIndex = {};
+            months.forEach((m, i) => { monthIndex[m] = i; });
+
+            const stockTotal = {};
+            dividendData.forEach(d => { stockTotal[d.stockItem] = (stockTotal[d.stockItem] || 0) + Number(d.net); });
+            const ranked = Object.keys(stockTotal).sort((a, b) => stockTotal[b] - stockTotal[a]);
+            const TOP = 8;
+            const topStocks = ranked.slice(0, TOP);
+            const isTop = {};
+            topStocks.forEach(s => { isTop[s] = true; });
+            const hasOthers = ranked.length > TOP;
+
+            const seriesMap = {};
+            topStocks.forEach(s => { seriesMap[s] = months.map(() => 0); });
+            const othersSeries = hasOthers ? months.map(() => 0) : null;
+            dividendData.forEach(d => {
+                if (!d.payDate) return;
+                const mi = monthIndex[d.payDate.slice(0, 7)];
+                if (mi == null) return;
+                const amt = Number(d.net);
+                if (isTop[d.stockItem]) seriesMap[d.stockItem][mi] += amt;
+                else if (othersSeries) othersSeries[mi] += amt;
+            });
+
+            const datasets = topStocks.map((s, i) => ({
+                label: s,
+                data: seriesMap[s],
+                backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+                borderWidth: 0,
+                borderRadius: 2
+            }));
+            if (othersSeries) {
+                datasets.push({
+                    label: othersLabel,
+                    data: othersSeries,
+                    backgroundColor: 'rgba(148,163,184,0.6)',
+                    borderWidth: 0,
+                    borderRadius: 2
+                });
+            }
+            return { labels: months, datasets: datasets };
+        }
+
         function buildDonutData(groupBy) {
             const map = {};
             dividendData.forEach(d => {
@@ -1605,33 +1731,38 @@
         }
 
         function initMonthlyChart() {
-            const m = buildMonthlyData();
+            const m = buildMonthlyStackedData();
             const gridColor = 'rgba(128,128,128,0.1)';
             const canvasId = 'monthlyBarChart';
             const canvasEl = document.getElementById(canvasId);
             if (!canvasEl) return;
             if (monthlyChart) try { monthlyChart.destroy(); } catch(e) {}
+            const fmtFull = v => '₩' + Math.round(v).toLocaleString();
             var config = {
                 type: 'bar',
-                data: {
-                    labels: m.labels,
-                    datasets: [{
-                        label: netAmountLabel,
-                        data: m.data,
-                        backgroundColor: 'rgba(34,197,94,0.55)',
-                        borderColor: 'rgba(34,197,94,0.9)',
-                        borderWidth: 1,
-                        borderRadius: 4
-                    }]
-                },
+                data: { labels: m.labels, datasets: m.datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     layout: { padding: { right: 8, bottom: 4 } },
-                    plugins: { legend: { display: false } },
+                    // 한 달의 모든 종목 구간 + 합계를 함께 보여줌(증감 원인 파악용)
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10, boxHeight: 10, padding: 8, usePointStyle: true } },
+                        tooltip: {
+                            itemSort: (a, b) => b.parsed.y - a.parsed.y,
+                            callbacks: {
+                                label: ctx => ctx.parsed.y ? (ctx.dataset.label + ': ' + fmtFull(ctx.parsed.y)) : null,
+                                footer: items => {
+                                    let sum = 0; items.forEach(it => { sum += it.parsed.y; });
+                                    return netAmountLabel + ': ' + fmtFull(sum);
+                                }
+                            }
+                        }
+                    },
                     scales: {
-                        x: { grid: { color: gridColor }, ticks: { maxRotation: 45, font: { size: 11 } } },
-                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { callback: v => window.StockCharts ? window.StockCharts.formatCompactNumber(v) : Math.round(v).toLocaleString(), font: { size: 11 } } }
+                        x: { stacked: true, grid: { color: gridColor }, ticks: { maxRotation: 45, font: { size: 11 } } },
+                        y: { stacked: true, beginAtZero: true, grid: { color: gridColor }, ticks: { callback: v => window.StockCharts ? window.StockCharts.formatCompactNumber(v) : Math.round(v).toLocaleString(), font: { size: 11 } } }
                     }
                 }
             };

@@ -326,6 +326,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     if (size <= 0) size = 15;
+    // 상세 목록은 페이징 없이 전체를 펼쳐서 표시(헤더 sticky로 스크롤). 한 페이지에 전부 담는다.
+    if (!viewList.isEmpty()) size = viewList.size();
     int totalItems = viewList.size();
     int totalPages = (int) Math.ceil((double) totalItems / size);
     int currentPage = Math.max(1, Math.min(page, totalPages));
