@@ -548,10 +548,14 @@
 											<td class="align-top text-right">
 												<div class="space-y-1 tabular-nums">
 													<div class="font-medium">
-														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.expected.monthly.dividend.short")}</span>
+														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.short")}</span>
 														<span class="amount-value">₩${amountFormat.format(row.expectedMonthlyDividend() != null ? row.expectedMonthlyDividend() : BigDecimal.ZERO)}</span>
 													</div>
 													<div class="text-sm text-base-content/80">
+														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.latest.short")}</span>
+														<span class="amount-value">₩${amountFormat.format(latestMonthlyDividendAmount)}</span>
+													</div>
+													<div class="text-sm text-base-content/60">
 														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.expected.taxable.base.short")}</span>
 														<span class="amount-value">₩${amountFormat.format(row.expectedTaxableBaseAmount() != null ? row.expectedTaxableBaseAmount() : BigDecimal.ZERO)}</span>
 													</div>

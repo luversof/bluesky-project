@@ -13,7 +13,6 @@ const cssDest = resolve(here, "../resources/static/css/vendor");
 const jsFiles = [
 	["htmx.org/dist/htmx.min.js", "htmx.min.js"],
 	["htmx-ext-json-enc/json-enc.js", "json-enc.js"],
-	["theme-change/index.js", "theme-change.js"],
 	["chart.js/dist/chart.umd.min.js", "chart.umd.min.js"],
 	["hammerjs/hammer.min.js", "hammer.min.js"],
 	["chartjs-plugin-zoom/dist/chartjs-plugin-zoom.min.js", "chartjs-plugin-zoom.min.js"],

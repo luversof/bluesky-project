@@ -1085,7 +1085,7 @@
 
         <div id="dividendListContainer" class="flex flex-col relative mt-2">
             <div class="flex-1 min-h-0">
-                <table class="table table-hover table-striped w-full table-sm table-pin-rows pin-top-nav">
+                <table class="table table-hover w-full table-sm table-pin-rows pin-top-nav">
                     <thead>
                     <tr class="bg-base-200">
                         <th scope="col" class="cursor-pointer hover:bg-base-300" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"

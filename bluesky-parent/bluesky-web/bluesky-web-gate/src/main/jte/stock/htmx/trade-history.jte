@@ -111,7 +111,7 @@ ${rpPositive ? "+" : ""}&#x20A9;${df.format(safeRp)}
 </div>
 
 <div>
-<table class="table table-hover table-striped w-full table-sm table-pin-rows pin-top-nav">
+<table class="table table-hover w-full table-sm table-pin-rows pin-top-nav">
 <thead>
 <tr class="bg-base-200">
 <th scope="col">${dateLabel}</th>

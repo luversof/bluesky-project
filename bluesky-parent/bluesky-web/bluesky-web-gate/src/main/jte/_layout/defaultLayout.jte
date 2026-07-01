@@ -20,7 +20,6 @@
 		})();
 	</script>
 	<link href="/main.css" rel="stylesheet" />
-	<script src="/js/vendor/theme-change.js"></script>
 	<script src="/js/vendor/htmx.min.js"></script>
 	<script src="/js/vendor/json-enc.js"></script>
 	<script src="/js/common.js"></script>

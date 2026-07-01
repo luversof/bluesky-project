@@ -28,8 +28,7 @@
 		"hammerjs": "2.0.8",
 		"htmx-ext-json-enc": "2.0.3",
 		"htmx.org": "2.0.10",
-		"tailwindcss": "^4.0.10",
-		"theme-change": "3.0.4"
+		"tailwindcss": "^4.0.10"
 	},
 	"prettier": {
 		"useTabs": true

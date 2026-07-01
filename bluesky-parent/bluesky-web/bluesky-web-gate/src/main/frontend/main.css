@@ -255,7 +255,7 @@
 	/* ---- menu (sidebar / dropdown lists) ---- */
 	.menu { display: flex; flex-direction: column; gap: 0.125rem; padding: 0.5rem; list-style: none; }
 	.menu :where(li) > * { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem;
-		border-radius: var(--radius-field); color: var(--color-base-content); text-decoration: none; }
+		font-size: 0.875rem; border-radius: var(--radius-field); color: var(--color-base-content); text-decoration: none; }
 	.menu :where(li) > *:hover { background-color: var(--color-base-200); }
 	.menu-sm :where(li) > * { padding: 0.35rem 0.6rem; font-size: 0.875rem; }
 	.menu-horizontal { flex-direction: row; align-items: center; }
@@ -317,6 +317,34 @@
 	.toast { position: fixed; z-index: 100; display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem; }
 	.toast-top { top: 0; bottom: auto; }
 	.toast-end { right: 0; left: auto; align-items: flex-end; }
+
+	/* ---- footer ---- */
+	.footer { display: flex; flex-wrap: wrap; gap: 1rem; padding: 1rem; font-size: 0.875rem; }
+	.footer-center { justify-content: center; align-items: center; text-align: center; }
+
+	/* ---- skeleton (로딩 자리표시) ---- */
+	.skeleton { border-radius: var(--radius-field); background-color: var(--color-base-300); animation: skeleton-pulse 1.6s ease-in-out infinite; }
+
+	/* ---- indicator (아이콘 위 배지) ---- */
+	.indicator { position: relative; display: inline-flex; width: max-content; }
+	.indicator > .indicator-item { position: absolute; z-index: 1; top: 0; right: 0; transform: translate(50%, -50%); white-space: nowrap; }
+
+	/* ---- mockup-code (코드 블록) ---- */
+	.mockup-code { position: relative; overflow: auto; border-radius: var(--radius-box); background-color: var(--color-neutral); color: var(--color-neutral-content); padding: 1.25rem 1.5rem; font-family: var(--font-mono, monospace); font-size: 0.8125rem; line-height: 1.6; }
+
+	/* ---- loading 변형 (ring 은 spinner 로 대체) ---- */
+	.loading-ring { border-style: solid; }
+	.loading-dots { width: auto; height: auto; border: 0; animation: none; }
+
+	/* ---- tabs 크기 변형 ---- */
+	.tabs-xs .tab, .tab.tabs-xs { height: 1.5rem; padding-inline: 0.5rem; font-size: 0.75rem; }
+	.tab-lg { height: 2.5rem; padding-inline: 1rem; font-size: 1rem; }
+
+	/* ---- 색 변형 ---- */
+	.link-primary { color: var(--color-primary); }
+	.checkbox-primary:checked { background-color: var(--color-primary); border-color: var(--color-primary); }
+	.toggle-primary:checked { background-color: var(--color-primary); }
+	.badge-neutral { background-color: var(--color-neutral); color: var(--color-neutral-content); border-color: transparent; }
 }
 
 /* ============================================================
@@ -326,8 +354,6 @@
 /* htmx indicator 설정 */
 .htmx-indicator { opacity: 1 !important; display: none; }
 .htmx-request.htmx-indicator { display: inline; }
-
-.rounded-btn { border-radius: var(--radius-box, .5rem); }
 
 /* Financial Text Colors (한국 관례: 빨강=수익) */
 @layer utilities {
@@ -372,4 +398,5 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 .pin-top-nav thead tr { top: 4.5rem; z-index: 20; }
 
 @keyframes loading-spin { to { transform: rotate(360deg); } }
+@keyframes skeleton-pulse { 50% { opacity: 0.45; } }
 

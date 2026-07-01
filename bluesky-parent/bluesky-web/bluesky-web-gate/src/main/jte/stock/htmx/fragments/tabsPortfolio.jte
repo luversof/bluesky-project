@@ -26,7 +26,7 @@
 !{String totalLabel = MessageUtil.getMessage("common.label.total");}
 
 <div class="overflow-x-auto">
-    <table class="table table-hover table-striped w-full">
+    <table class="table table-hover w-full">
         <thead>
         <tr class="bg-base-200">
             <th scope="col" class="cursor-pointer hover:bg-base-300 ${"STOCK".equals(viewGroupBy) || "ACCOUNT".equals(viewGroupBy) ? "hidden" : ""}" 

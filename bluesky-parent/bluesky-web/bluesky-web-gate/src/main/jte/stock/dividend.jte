@@ -16,6 +16,11 @@
 @param BigDecimal otherTotal = java.math.BigDecimal.ZERO
 @param BigDecimal monthlyTotal = java.math.BigDecimal.ZERO
 @param BigDecimal annualTotal = java.math.BigDecimal.ZERO
+@param BigDecimal midTotalLatest = java.math.BigDecimal.ZERO
+@param BigDecimal endTotalLatest = java.math.BigDecimal.ZERO
+@param BigDecimal otherTotalLatest = java.math.BigDecimal.ZERO
+@param BigDecimal monthlyTotalLatest = java.math.BigDecimal.ZERO
+@param BigDecimal annualTotalLatest = java.math.BigDecimal.ZERO
 
 !{
     boolean isCalendar = "calendar".equals(dividendTab);
@@ -27,6 +32,8 @@
     String otherLabel = MessageUtil.getMessage("stock.dividend.calendar.window.other");
     String monthlyTotalLabel = MessageUtil.getMessage("stock.dividend.calendar.monthly.total");
     String annualTotalLabel = MessageUtil.getMessage("stock.dividend.calendar.annual.total");
+    String avgBasisLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.average");
+    String latestBasisLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.latest");
     String calendarDesc = MessageUtil.getMessage("stock.dividend.calendar.desc");
     String emptyLabel = MessageUtil.getMessage("stock.dividend.calendar.empty");
     boolean calendarEmpty = (midRows == null || midRows.isEmpty())
@@ -68,24 +75,26 @@
 					<div class="bg-base-200 rounded-box p-10 text-center text-base-content/60">${emptyLabel}</div>
 				@else
 					<div class="grid grid-cols-2 gap-3">
-						@template._components.ui.statCard(
+						@template.stock.fragments.dividendCalendarTotalCard(
 							label = monthlyTotalLabel,
-							value = String.format("%,d", monthlyTotal != null ? monthlyTotal.longValue() : 0),
-							valueTitle = String.format("%,d원", monthlyTotal != null ? monthlyTotal.longValue() : 0),
-							tone = "text-dividend")
-						@template._components.ui.statCard(
+							avgLabel = avgBasisLabel,
+							latestLabel = latestBasisLabel,
+							avgValue = monthlyTotal,
+							latestValue = monthlyTotalLatest)
+						@template.stock.fragments.dividendCalendarTotalCard(
 							label = annualTotalLabel,
-							value = String.format("%,d", annualTotal != null ? annualTotal.longValue() : 0),
-							valueTitle = String.format("%,d원", annualTotal != null ? annualTotal.longValue() : 0),
-							tone = "text-dividend")
+							avgLabel = avgBasisLabel,
+							latestLabel = latestBasisLabel,
+							avgValue = annualTotal,
+							latestValue = annualTotalLatest)
 					</div>
 					<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-						@template.stock.fragments.dividendCalendarGroup(title = midLabel, rows = midRows, subtotal = midTotal)
-						@template.stock.fragments.dividendCalendarGroup(title = endLabel, rows = endRows, subtotal = endTotal)
+						@template.stock.fragments.dividendCalendarGroup(title = midLabel, rows = midRows, subtotal = midTotal, subtotalLatest = midTotalLatest)
+						@template.stock.fragments.dividendCalendarGroup(title = endLabel, rows = endRows, subtotal = endTotal, subtotalLatest = endTotalLatest)
 					</div>
 					@if(otherRows != null && !otherRows.isEmpty())
 						<div class="grid grid-cols-1">
-							@template.stock.fragments.dividendCalendarGroup(title = otherLabel, rows = otherRows, subtotal = otherTotal)
+							@template.stock.fragments.dividendCalendarGroup(title = otherLabel, rows = otherRows, subtotal = otherTotal, subtotalLatest = otherTotalLatest)
 						</div>
 					@endif
 				@endif

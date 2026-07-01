@@ -329,6 +329,13 @@ public class StockViewController {
     model.addAttribute("monthlyTotal", sumExpectedMonthlyDividend(rows));
     model.addAttribute(
         "annualTotal", sumExpectedMonthlyDividend(rows).multiply(BigDecimal.valueOf(12)));
+    // 최근 배당금(직전 1회) 기준 합계도 병행 제공: latestMonthlyDividendPerShare × 보유수량
+    model.addAttribute("midTotalLatest", sumLatestMonthlyDividend(midRows));
+    model.addAttribute("endTotalLatest", sumLatestMonthlyDividend(endRows));
+    model.addAttribute("otherTotalLatest", sumLatestMonthlyDividend(otherRows));
+    model.addAttribute("monthlyTotalLatest", sumLatestMonthlyDividend(rows));
+    model.addAttribute(
+        "annualTotalLatest", sumLatestMonthlyDividend(rows).multiply(BigDecimal.valueOf(12)));
   }
 
   private BigDecimal sumExpectedMonthlyDividend(List<MonthlyDividendSnapshotResponse> rows) {
@@ -339,6 +346,21 @@ public class StockViewController {
                     ? row.expectedMonthlyDividend()
                     : BigDecimal.ZERO)
         .reduce(BigDecimal.ZERO, BigDecimal::add);
+  }
+
+  private BigDecimal sumLatestMonthlyDividend(List<MonthlyDividendSnapshotResponse> rows) {
+    return rows.stream()
+        .map(StockViewController::latestMonthlyDividend)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+  }
+
+  private static BigDecimal latestMonthlyDividend(MonthlyDividendSnapshotResponse row) {
+    BigDecimal perShare =
+        row.latestMonthlyDividendPerShare() != null
+            ? row.latestMonthlyDividendPerShare()
+            : BigDecimal.ZERO;
+    long quantity = row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L;
+    return perShare.multiply(BigDecimal.valueOf(quantity));
   }
 
   @BlueskyPreAuthorize
