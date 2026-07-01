@@ -4,16 +4,9 @@
 @source "./src";
 @plugin "@tailwindcss/typography";
 
-/* 테마는 light/dark 2개만 제공한다. light=기본, dark=OS 다크 선호 시 자동(명시 토글이 우선). */
-@plugin "daisyui" {
-	themes: light --default, dark --prefersdark;
-}
-
-/* 브랜드 팔레트(light) — daisyUI 기본 대신 우리 색으로 확정. radius/animation 은 기본 유지. */
-@plugin "daisyui/theme" {
-	name: "light";
-	default: true;
-	color-scheme: light;
+/* 디자인 토큰 (daisyUI 대체). light 기본, dark 는 [data-theme="dark"].
+   Tailwind @theme 이 bg-base 계열 색 유틸을 자동 생성한다. */
+@theme {
 	--color-base-100: #ffffff;
 	--color-base-200: #f5f7fa;
 	--color-base-300: #e5e9f0;
@@ -34,13 +27,12 @@
 	--color-warning-content: #ffffff;
 	--color-error: #c30115;
 	--color-error-content: #ffffff;
+	--radius-box: 0.5rem;
+	--radius-field: 0.375rem;
+	--radius-selector: 0.25rem;
 }
 
-/* 브랜드 팔레트(dark) — 어두운 슬레이트 베이스 + 밝은 브랜드 블루. */
-@plugin "daisyui/theme" {
-	name: "dark";
-	prefersdark: true;
-	color-scheme: dark;
+[data-theme="dark"] {
 	--color-base-100: #0f1623;
 	--color-base-200: #161f2e;
 	--color-base-300: #232f42;
@@ -63,219 +55,321 @@
 	--color-error-content: #1a0606;
 }
 
-/* pagination 비활성화 버튼 배경색 처리 제거 */
-.navButton.btn.btn-disabled {
-	--tw-bg-opacity: 0.0;
+@layer base {
+	html { color-scheme: light; }
+	html[data-theme="dark"] { color-scheme: dark; }
+	body {
+		background-color: var(--color-base-100);
+		color: var(--color-base-content);
+	}
 }
 
-
-/* htmx indicator 설정 */
-.htmx-indicator {
-	opacity: 1 !important;
-	display: none;
-}
-
-.htmx-request.htmx-indicator {
-	display: inline;
-}
-
-/* theme class 설정 */
-.rounded-btn {
-	border-radius: var(--radius-box, .5rem);
-}
-
-/* Financial Text Colors (Modern Fintech Style with Theme Support) */
-@layer utilities {
-	.text-profit {
-		/* Light: Soft Red (한국 관례: 상승/수익=빨강) */
-		color: #f04452;
-		font-weight: 600;
-	}
-	[data-theme="dark"] .text-profit {
-		color: #ff6b6b;
-	}
-
-	.text-loss {
-		/* Light: Primary Blue (한국 관례: 하락/손실=파랑) */
-		color: #3e6cdf;
-		font-weight: 600;
-	}
-	[data-theme="dark"] .text-loss {
-		color: #4dabf7;
-	}
-
-	.text-principal {
-		/* Use semantic color for auto light/dark adjustment */
-		@apply text-base-content/80;
-	}
-
-	.text-dividend {
-		/* Light: Mint */
-		color: #26c281;
-		font-weight: 600;
-	}
-	[data-theme="dark"] .text-dividend {
-		color: #69db7c;
-	}
-
-	/* Fix for daisyUI select-sm vertical alignment */
-	.select-sm {
-		padding-top: 0 !important;
-		padding-bottom: 0 !important;
-		height: 2rem !important;
-		min-height: 2rem !important;
-		line-height: 1.5 !important;
-		font-size: 0.875rem !important;
-		padding-left: 0.75rem !important;
-		padding-right: 2rem !important;
-	}
-	
-	.select-sm option {
-		line-height: normal;
-	}
-	
-	/* Custom select wrapper for vertical alignment */
-	.select-wrapper {
-		position: relative;
+/* ============================================================
+   컴포넌트 (daisyUI 대체) — 앱에서 쓰는 클래스만 재구현
+   ============================================================ */
+@layer components {
+	/* ---- button ---- */
+	.btn {
 		display: inline-flex;
 		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		height: 3rem;
+		min-height: 3rem;
+		padding-inline: 1rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		line-height: 1;
+		border-radius: var(--radius-field);
+		border: 1px solid transparent;
+		background-color: var(--color-base-200);
+		color: var(--color-base-content);
+		cursor: pointer;
+		user-select: none;
+		text-align: center;
+		transition: background-color .15s, border-color .15s, color .15s, box-shadow .15s;
 	}
-	
-	.select-wrapper select {
-		appearance: none;
-		-webkit-appearance: none;
-		-moz-appearance: none;
-		background-image: none;
+	.btn:hover { background-color: var(--color-base-300); }
+	.btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+	.btn-sm { height: 2rem; min-height: 2rem; padding-inline: 0.75rem; font-size: 0.8125rem; }
+	.btn-xs { height: 1.5rem; min-height: 1.5rem; padding-inline: 0.5rem; font-size: 0.75rem; }
+	.btn-lg { height: 3.5rem; min-height: 3.5rem; padding-inline: 1.25rem; font-size: 1rem; }
+	.btn-block { width: 100%; }
+	.btn-wide { width: 16rem; }
+	.btn-square { padding-inline: 0; aspect-ratio: 1 / 1; }
+	.btn-circle { padding-inline: 0; aspect-ratio: 1 / 1; border-radius: 9999px; }
+	.btn-primary { background-color: var(--color-primary); color: var(--color-primary-content); }
+	.btn-primary:hover { background-color: color-mix(in oklab, var(--color-primary) 88%, black); }
+	.btn-secondary { background-color: var(--color-secondary); color: var(--color-secondary-content); }
+	.btn-accent { background-color: var(--color-accent); color: var(--color-accent-content); }
+	.btn-info { background-color: var(--color-info); color: var(--color-info-content); }
+	.btn-success { background-color: var(--color-success); color: var(--color-success-content); }
+	.btn-warning { background-color: var(--color-warning); color: var(--color-warning-content); }
+	.btn-error { background-color: var(--color-error); color: var(--color-error-content); }
+	.btn-neutral { background-color: var(--color-neutral); color: var(--color-neutral-content); }
+	.btn-ghost { background-color: transparent; border-color: transparent; }
+	.btn-ghost:hover { background-color: color-mix(in oklab, var(--color-base-content) 10%, transparent); }
+	.btn-outline { background-color: transparent; border-color: var(--color-base-300); color: var(--color-base-content); }
+	.btn-outline:hover { background-color: var(--color-base-200); }
+	.btn-link { background-color: transparent; border-color: transparent; color: var(--color-primary); text-decoration: underline; }
+	.btn-active { background-color: var(--color-base-300); }
+	.btn-disabled, .btn:disabled, .btn[disabled] { opacity: .5; cursor: not-allowed; pointer-events: none; }
+	/* 라디오/체크박스를 버튼으로(세그먼트 컨트롤) — input 은 텍스트를 못 담으므로 aria-label 을 그린다 */
+	.btn:is(input[type="checkbox"], input[type="radio"]) { appearance: none; -webkit-appearance: none; }
+	.btn:is(input[type="checkbox"], input[type="radio"])::after { content: attr(aria-label); }
+	.btn:is(input[type="checkbox"], input[type="radio"]):checked {
+		background-color: var(--color-primary); color: var(--color-primary-content); border-color: var(--color-primary);
 	}
-	
-	.select-wrapper::after {
-		content: "";
-		position: absolute;
-		right: 0.75rem;
-		top: 50%;
-		transform: translateY(-50%);
-		width: 0.75rem;
-		height: 0.75rem;
+
+	/* ---- card ---- */
+	.card { position: relative; display: flex; flex-direction: column; border-radius: var(--radius-box); }
+	.card-body { display: flex; flex-direction: column; gap: 0.5rem; padding: 1.5rem; flex: 1 1 auto; }
+	.card-title { display: flex; align-items: center; gap: 0.5rem; font-size: 1.125rem; font-weight: 600; }
+	.card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+
+	/* ---- badge ---- */
+	.badge {
+		display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+		height: 1.5rem; padding-inline: 0.6rem; font-size: 0.8125rem; font-weight: 500;
+		border-radius: 9999px; border: 1px solid var(--color-base-300);
+		background-color: var(--color-base-200); color: var(--color-base-content); white-space: nowrap;
+	}
+	.badge-sm { height: 1.25rem; padding-inline: 0.5rem; font-size: 0.75rem; }
+	.badge-xs { height: 1rem; padding-inline: 0.4rem; font-size: 0.6875rem; }
+	.badge-lg { height: 1.75rem; padding-inline: 0.75rem; font-size: 0.875rem; }
+	.badge-primary { background-color: var(--color-primary); color: var(--color-primary-content); border-color: transparent; }
+	.badge-secondary { background-color: var(--color-secondary); color: var(--color-secondary-content); border-color: transparent; }
+	.badge-accent { background-color: var(--color-accent); color: var(--color-accent-content); border-color: transparent; }
+	.badge-info { background-color: var(--color-info); color: var(--color-info-content); border-color: transparent; }
+	.badge-success { background-color: var(--color-success); color: var(--color-success-content); border-color: transparent; }
+	.badge-warning { background-color: var(--color-warning); color: var(--color-warning-content); border-color: transparent; }
+	.badge-error { background-color: var(--color-error); color: var(--color-error-content); border-color: transparent; }
+	.badge-ghost { background-color: var(--color-base-200); color: var(--color-base-content); border-color: transparent; }
+	.badge-outline { background-color: transparent; border-color: currentColor; color: inherit; }
+
+	/* ---- table ---- */
+	.table { width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left; }
+	.table :where(th, td) { padding: 0.75rem 1rem; vertical-align: middle; }
+	.table :where(thead, tfoot) { font-size: 0.75rem; color: color-mix(in oklab, var(--color-base-content) 60%, transparent); }
+	.table :where(tbody tr) { border-top: 1px solid var(--color-base-200); }
+	.table-sm :where(th, td) { padding: 0.4rem 0.75rem; font-size: 0.8125rem; }
+	.table-xs :where(th, td) { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
+	.table-zebra tbody tr:nth-child(even) { background-color: color-mix(in oklab, var(--color-base-200) 55%, transparent); }
+	.table-pin-rows thead tr { position: sticky; top: 0; z-index: 1; background-color: var(--color-base-100); }
+	.table-pin-rows tfoot tr { position: sticky; bottom: 0; z-index: 1; background-color: var(--color-base-100); }
+	.table-hover tbody tr:hover { background-color: color-mix(in oklab, var(--color-base-200) 70%, transparent); }
+
+	/* ---- form label ---- */
+	.label { display: flex; align-items: center; gap: 0.5rem; }
+	.label-text { font-size: 0.875rem; color: var(--color-base-content); }
+	.label-text-alt { font-size: 0.75rem; color: color-mix(in oklab, var(--color-base-content) 60%, transparent); }
+	.form-control { display: flex; flex-direction: column; }
+
+	/* ---- input / textarea / select ---- */
+	.input, .textarea, .select {
+		width: auto; font-size: 0.875rem; color: var(--color-base-content);
+		background-color: var(--color-base-100); border: 1px solid var(--color-base-300);
+		border-radius: var(--radius-field);
+	}
+	.input, .select { height: 3rem; padding-inline: 0.75rem; display: inline-flex; align-items: center; }
+	.textarea { padding: 0.5rem 0.75rem; }
+	.input:focus, .textarea:focus, .select:focus { outline: 2px solid var(--color-primary); outline-offset: 0; border-color: var(--color-primary); }
+	.input-bordered, .select-bordered, .textarea-bordered { border-color: var(--color-base-300); }
+	.input-sm, .select-sm { height: 2rem; min-height: 2rem; padding-inline: 0.75rem; font-size: 0.8125rem; }
+	.input-xs, .select-xs { height: 1.5rem; min-height: 1.5rem; font-size: 0.75rem; }
+	.select {
+		appearance: none; -webkit-appearance: none; padding-right: 2rem;
 		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-		background-repeat: no-repeat;
-		background-position: center;
-		pointer-events: none;
+		background-repeat: no-repeat; background-position: right 0.6rem center; background-size: 1rem;
 	}
+	.select[multiple] { background-image: none; padding-right: 0.75rem; height: auto; align-items: stretch; }
 
-	.tooltip-bottom-end {
-		> .tooltip-content,
-		&[data-tip]:before {
-			left: auto;
-			right: 0;
-			inset: var(--tt-off) 0 auto auto;
-			transform: translateY(var(--tt-pos, -0.25rem));
-		}
-
-		&:after {
-			left: auto;
-			right: 0.625rem;
-			inset: var(--tt-tail) 0.625rem auto auto;
-			transform: translateY(var(--tt-pos, -0.25rem)) rotate(180deg);
-		}
+	/* ---- checkbox / toggle ---- */
+	.checkbox {
+		appearance: none; -webkit-appearance: none; width: 1.25rem; height: 1.25rem; flex-shrink: 0;
+		border: 2px solid var(--color-base-300); border-radius: var(--radius-selector); cursor: pointer;
+		background-color: var(--color-base-100);
 	}
+	.checkbox-sm { width: 1rem; height: 1rem; }
+	.checkbox:checked { background-color: var(--color-primary); border-color: var(--color-primary);
+		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5'%3e%3cpath d='M3 8l3.5 3.5L13 4.5'/%3e%3c/svg%3e");
+		background-repeat: no-repeat; background-position: center; background-size: 0.9rem; }
+	.toggle {
+		appearance: none; -webkit-appearance: none; position: relative; width: 3rem; height: 1.5rem; flex-shrink: 0;
+		border-radius: 9999px; background-color: var(--color-base-300); cursor: pointer; transition: background-color .15s;
+	}
+	.toggle-xs { width: 2rem; height: 1rem; }
+	.toggle::before { content: ""; position: absolute; top: 50%; left: 0.15rem; transform: translateY(-50%);
+		width: 1.2rem; height: 1.2rem; border-radius: 9999px; background: #fff; transition: left .15s; }
+	.toggle-xs::before { width: 0.8rem; height: 0.8rem; }
+	.toggle:checked { background-color: var(--color-primary); }
+	.toggle:checked::before { left: calc(100% - 1.35rem); }
+	.toggle-xs:checked::before { left: calc(100% - 0.9rem); }
+
+	/* ---- loading spinner ---- */
+	.loading { display: inline-block; width: 1.5rem; height: 1.5rem; vertical-align: middle;
+		border: 3px solid currentColor; border-right-color: transparent; border-radius: 9999px;
+		animation: loading-spin 0.7s linear infinite; }
+	.loading-spinner { /* alias */ }
+	.loading-xs { width: 1rem; height: 1rem; border-width: 2px; }
+	.loading-sm { width: 1.25rem; height: 1.25rem; border-width: 2px; }
+	.loading-lg { width: 2.5rem; height: 2.5rem; border-width: 4px; }
+
+	/* ---- alert ---- */
+	.alert {
+		display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem;
+		border-radius: var(--radius-box); border: 1px solid var(--color-base-300);
+		background-color: var(--color-base-200); color: var(--color-base-content); font-size: 0.875rem;
+	}
+	.alert-info { background-color: color-mix(in oklab, var(--color-info) 12%, var(--color-base-100)); border-color: color-mix(in oklab, var(--color-info) 30%, transparent); }
+	.alert-success { background-color: color-mix(in oklab, var(--color-success) 12%, var(--color-base-100)); border-color: color-mix(in oklab, var(--color-success) 30%, transparent); }
+	.alert-warning { background-color: color-mix(in oklab, var(--color-warning) 12%, var(--color-base-100)); border-color: color-mix(in oklab, var(--color-warning) 30%, transparent); }
+	.alert-error { background-color: color-mix(in oklab, var(--color-error) 12%, var(--color-base-100)); border-color: color-mix(in oklab, var(--color-error) 30%, transparent); }
+
+	/* ---- stat ---- */
+	.stats { display: inline-grid; grid-auto-flow: column; border-radius: var(--radius-box); }
+	.stat { display: grid; grid-template-columns: auto; gap: 0.25rem; padding: 1rem 1.5rem; }
+	.stat-figure { grid-row: span 3; place-self: center end; }
+	.stat-title { font-size: 0.75rem; color: color-mix(in oklab, var(--color-base-content) 60%, transparent); }
+	.stat-value { font-size: 1.5rem; font-weight: 700; }
+	.stat-desc { font-size: 0.75rem; color: color-mix(in oklab, var(--color-base-content) 55%, transparent); }
+
+	/* ---- join (merged controls) ---- */
+	.join { display: inline-flex; align-items: stretch; }
+	.join-vertical { flex-direction: column; }
+	.join > .join-item, .join > :where(button, input, select) { border-radius: 0; }
+	.join > *:not(:first-child) { margin-left: -1px; }
+	.join-vertical > *:not(:first-child) { margin-left: 0; margin-top: -1px; }
+	.join > *:first-child { border-start-start-radius: var(--radius-field); border-end-start-radius: var(--radius-field); }
+	.join > *:last-child { border-start-end-radius: var(--radius-field); border-end-end-radius: var(--radius-field); }
+	.join-vertical > *:first-child { border-radius: var(--radius-field) var(--radius-field) 0 0; }
+	.join-vertical > *:last-child { border-radius: 0 0 var(--radius-field) var(--radius-field); }
+
+	/* ---- tabs ---- */
+	.tabs { display: flex; flex-wrap: wrap; align-items: center; }
+	.tabs-box { background-color: var(--color-base-200); border-radius: var(--radius-box); padding: 0.25rem; gap: 0.25rem; }
+	.tab { display: inline-flex; align-items: center; gap: 0.5rem; height: 2rem; padding-inline: 0.75rem;
+		font-size: 0.875rem; cursor: pointer; border-radius: var(--radius-field); color: color-mix(in oklab, var(--color-base-content) 70%, transparent); }
+	.tab-active, .tab.tab-active, .tab[aria-selected="true"] { background-color: var(--color-base-100); color: var(--color-base-content); font-weight: 600; }
+
+	/* ---- menu (sidebar / dropdown lists) ---- */
+	.menu { display: flex; flex-direction: column; gap: 0.125rem; padding: 0.5rem; list-style: none; }
+	.menu :where(li) > * { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem;
+		border-radius: var(--radius-field); color: var(--color-base-content); text-decoration: none; }
+	.menu :where(li) > *:hover { background-color: var(--color-base-200); }
+	.menu-sm :where(li) > * { padding: 0.35rem 0.6rem; font-size: 0.875rem; }
+	.menu-horizontal { flex-direction: row; align-items: center; }
+	.menu-horizontal > li { flex-direction: row; }
+
+	/* ---- navbar ---- */
+	.navbar { display: flex; align-items: center; gap: 0.5rem; min-height: 4rem; padding: 0.5rem 1rem; width: 100%; }
+	.navbar-start { display: flex; align-items: center; gap: 0.5rem; flex: 1 1 0; justify-content: flex-start; }
+	.navbar-center { display: flex; align-items: center; gap: 0.5rem; }
+	.navbar-end { display: flex; align-items: center; gap: 0.5rem; flex: 1 1 0; justify-content: flex-end; }
+
+	/* ---- dock (mobile bottom nav) ---- */
+	.dock { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-around;
+		min-height: 4rem; background-color: var(--color-base-100); }
+	.dock > * { display: flex; flex-direction: column; align-items: center; gap: 0.125rem; flex: 1; padding: 0.25rem;
+		color: color-mix(in oklab, var(--color-base-content) 60%, transparent); }
+	.dock-active { color: var(--color-primary); }
+	.dock-label { font-size: 0.625rem; }
+	.dock-sm { min-height: 3.5rem; }
+
+	/* ---- dropdown ---- */
+	.dropdown { position: relative; display: inline-block; }
+	.dropdown-content { position: absolute; z-index: 50; display: none; }
+	.dropdown:focus-within > .dropdown-content,
+	.dropdown[open] > .dropdown-content { display: block; }
+	.dropdown-end > .dropdown-content { right: 0; left: auto; }
+
+	/* ---- tooltip (hover bubble via ::before/::after or .tooltip-content) ---- */
+	.tooltip { position: relative; display: inline-block; }
+	.tooltip > .tooltip-content, .tooltip:before {
+		position: absolute; z-index: 40; opacity: 0; visibility: hidden; transition: opacity .12s;
+		pointer-events: none; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(-0.25rem);
+	}
+	.tooltip:before {
+		content: attr(data-tip); white-space: nowrap; padding: 0.25rem 0.5rem; font-size: 0.75rem;
+		border-radius: var(--radius-field); background: var(--color-neutral); color: var(--color-neutral-content);
+	}
+	.tooltip:hover > .tooltip-content, .tooltip:hover:before { opacity: 1; visibility: visible; }
+	.tooltip-content { padding: 0; }
+	.tooltip-bottom > .tooltip-content, .tooltip-bottom:before { bottom: auto; top: 100%; transform: translateX(-50%) translateY(0.25rem); }
+	.tooltip-right > .tooltip-content, .tooltip-right:before { bottom: auto; top: 50%; left: 100%; transform: translateY(-50%) translateX(0.25rem); }
+	.tooltip-bottom-end > .tooltip-content, .tooltip-bottom-end:before { bottom: auto; top: 100%; left: auto; right: 0; transform: translateY(0.25rem); }
+
+	/* ---- collapse (details) ---- */
+	.collapse { position: relative; display: grid; overflow: hidden; }
+	.collapse-title { padding: 0.75rem 1rem; cursor: pointer; }
+	.collapse-content { padding: 0 1rem; }
+
+	/* ---- divider ---- */
+	.divider { display: flex; align-items: center; gap: 0.5rem; margin: 1rem 0; color: color-mix(in oklab, var(--color-base-content) 50%, transparent); font-size: 0.75rem; }
+	.divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--color-base-300); }
+
+	/* ---- link ---- */
+	.link { text-decoration: underline; cursor: pointer; }
+	.link-hover { text-decoration: none; }
+	.link-hover:hover { text-decoration: underline; }
+
+	/* ---- toast ---- */
+	.toast { position: fixed; z-index: 100; display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem; }
+	.toast-top { top: 0; bottom: auto; }
+	.toast-end { right: 0; left: auto; align-items: flex-end; }
 }
 
-/* light/dark 토글 버튼 아이콘 (현재 테마에 맞는 아이콘만 표시) */
-.theme-icon-dark {
-	display: none;
-}
-[data-theme="dark"] .theme-icon-light {
-	display: none;
-}
-[data-theme="dark"] .theme-icon-dark {
-	display: inline;
+/* ============================================================
+   앱 커스텀 규칙 (기존 유지)
+   ============================================================ */
+
+/* htmx indicator 설정 */
+.htmx-indicator { opacity: 1 !important; display: none; }
+.htmx-request.htmx-indicator { display: inline; }
+
+.rounded-btn { border-radius: var(--radius-box, .5rem); }
+
+/* Financial Text Colors (한국 관례: 빨강=수익) */
+@layer utilities {
+	.text-profit { color: #f04452; font-weight: 600; }
+	[data-theme="dark"] .text-profit { color: #ff6b6b; }
+	.text-loss { color: #3e6cdf; font-weight: 600; }
+	[data-theme="dark"] .text-loss { color: #4dabf7; }
+	.text-principal { color: color-mix(in oklab, var(--color-base-content) 80%, transparent); }
+	.text-dividend { color: #26c281; font-weight: 600; }
+	[data-theme="dark"] .text-dividend { color: #69db7c; }
 }
 
-/* Hide Amounts Feature */
-html.hide-amounts .amount-value {
-	filter: blur(10px);
-	opacity: 0.6;
-	user-select: none;
-	pointer-events: none;
-}
+/* light/dark 토글 버튼 아이콘 */
+.theme-icon-dark { display: none; }
+[data-theme="dark"] .theme-icon-light { display: none; }
+[data-theme="dark"] .theme-icon-dark { display: inline; }
 
-html.hide-amounts .amount-chart {
-	filter: blur(15px);
-	opacity: 0.3;
-	user-select: none;
-	pointer-events: none;
-}
+/* 금액 가리기 */
+html.hide-amounts .amount-value { filter: blur(10px); opacity: 0.6; user-select: none; pointer-events: none; }
+html.hide-amounts .amount-chart { filter: blur(15px); opacity: 0.3; user-select: none; pointer-events: none; }
 
-/* Client-side sortable tables (detail pages) */
-table[data-sortable] thead th {
-	cursor: pointer;
-	user-select: none;
-}
-table[data-sortable] thead th:hover {
-	background-color: var(--color-base-300);
-}
-.sort-arrow {
-	font-size: 0.7em;
-	opacity: 0.7;
-}
+/* 클라이언트 정렬 테이블 */
+table[data-sortable] thead th { cursor: pointer; user-select: none; }
+table[data-sortable] thead th:hover { background-color: var(--color-base-300); }
+.sort-arrow { font-size: 0.7em; opacity: 0.7; }
 
-/* Collapsible stock sidebar (icon-only when collapsed) */
-.stock-sidebar-spacer,
-.stock-sidebar {
-	transition: width 0.2s ease;
-}
-html.sidebar-collapsed .stock-sidebar-spacer,
-html.sidebar-collapsed .stock-sidebar {
-	width: 4rem;
-}
-html.sidebar-collapsed .stock-sidebar .sidebar-label {
-	display: none;
-}
+/* 접이식 사이드바 */
+.stock-sidebar-spacer, .stock-sidebar { transition: width 0.2s ease; }
+html.sidebar-collapsed .stock-sidebar-spacer, html.sidebar-collapsed .stock-sidebar { width: 4rem; }
+html.sidebar-collapsed .stock-sidebar .sidebar-label { display: none; }
 html.sidebar-collapsed .stock-sidebar .menu a,
-html.sidebar-collapsed .stock-sidebar .sidebar-collapse-btn {
-	justify-content: center;
-	gap: 0;
-	padding-left: 0.5rem;
-	padding-right: 0.5rem;
-}
-html.sidebar-collapsed .sidebar-toggle-icon {
-	transform: rotate(180deg);
-}
+html.sidebar-collapsed .stock-sidebar .sidebar-collapse-btn { justify-content: center; gap: 0; padding-left: 0.5rem; padding-right: 0.5rem; }
+html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 
-/* Global htmx loading bar (top, indeterminate) — shows during any htmx request */
-#app-progress {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 3px;
-	z-index: 200;
-	overflow: hidden;
-	opacity: 0;
-	transition: opacity 0.2s ease;
-	pointer-events: none;
-}
-#app-progress.active {
-	opacity: 1;
-}
-#app-progress::before {
-	content: "";
-	position: absolute;
-	top: 0;
-	height: 100%;
-	width: 40%;
-	background: var(--color-primary);
-	border-radius: 9999px;
-	animation: app-progress-slide 1.1s ease-in-out infinite;
-}
-@keyframes app-progress-slide {
-	0% { left: -40%; }
-	100% { left: 100%; }
-}
+/* 전역 htmx 로딩바 */
+#app-progress { position: fixed; top: 0; left: 0; width: 100%; height: 3px; z-index: 200; overflow: hidden; opacity: 0; transition: opacity 0.2s ease; pointer-events: none; }
+#app-progress.active { opacity: 1; }
+#app-progress::before { content: ""; position: absolute; top: 0; height: 100%; width: 40%; background: var(--color-primary); border-radius: 9999px; animation: app-progress-slide 1.1s ease-in-out infinite; }
+@keyframes app-progress-slide { 0% { left: -40%; } 100% { left: 100%; } }
 
-/* 페이지 스크롤 시 테이블 헤더를 상단(sticky 네비바 4rem 아래)에 고정.
-   table-pin-rows(position:sticky)를 쓰되 top 을 네비바 높이만큼 내린다. */
-.pin-top-nav thead tr {
-	top: 4.5rem;
-	z-index: 20;
-}
+/* 페이지 스크롤 시 테이블 헤더를 네비바 아래 고정 */
+.pin-top-nav thead tr { top: 4.5rem; z-index: 20; }
+
+@keyframes loading-spin { to { transform: rotate(360deg); } }
+
