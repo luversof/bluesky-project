@@ -387,36 +387,11 @@
             </div>
 
             @if(pagination != null && pagination.getTotalPage() > 1)
-            <div class="flex justify-center p-2 border-t border-base-200 bg-base-100">
-                <div class="join">
-                    <button class="join-item btn btn-sm ${!pagination.getFirstNav().isActive() ? "btn-disabled" : ""}"
-                            disabled="${!pagination.getFirstNav().isActive()}"
-                            hx-get="/stock/htmx/trade/list" hx-include="#tradeSearchForm"
-                            hx-vals='{"page": ${pagination.getFirstNav().page()}}'
-                            hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML">&#171;</button>
-                    <button class="join-item btn btn-sm ${!pagination.getPrevNav().isActive() ? "btn-disabled" : ""}"
-                            disabled="${!pagination.getPrevNav().isActive()}"
-                            hx-get="/stock/htmx/trade/list" hx-include="#tradeSearchForm"
-                            hx-vals='{"page": ${pagination.getPrevNav().page()}}'
-                            hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML">&#12296;</button>
-                    @for(Pagination.Nav nav : pagination.getNavList())
-                    <button class="join-item btn btn-sm ${nav.isActive() ? "btn-active" : ""}"
-                            hx-get="/stock/htmx/trade/list" hx-include="#tradeSearchForm"
-                            hx-vals='{"page": ${nav.page()}}'
-                            hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML">${nav.page()}</button>
-                    @endfor
-                    <button class="join-item btn btn-sm ${!pagination.getNextNav().isActive() ? "btn-disabled" : ""}"
-                            disabled="${!pagination.getNextNav().isActive()}"
-                            hx-get="/stock/htmx/trade/list" hx-include="#tradeSearchForm"
-                            hx-vals='{"page": ${pagination.getNextNav().page()}}'
-                            hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML">&#12297;</button>
-                    <button class="join-item btn btn-sm ${!pagination.getLastNav().isActive() ? "btn-disabled" : ""}"
-                            disabled="${!pagination.getLastNav().isActive()}"
-                            hx-get="/stock/htmx/trade/list" hx-include="#tradeSearchForm"
-                            hx-vals='{"page": ${pagination.getLastNav().page()}}'
-                            hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML">&#187;</button>
-                </div>
-            </div>
+            @template._components.htmxPagination(
+                pagination = pagination,
+                url = "/stock/htmx/trade/list",
+                includeSelector = "#tradeSearchForm",
+                targetSelector = "#tradeListFragment")
             @endif
         </div>
     </details>

@@ -1161,51 +1161,11 @@
             </div>
 
             @if(pagination != null && pagination.getTotalPage() > 1)
-            <div class="flex justify-center p-2 border-t border-base-200 bg-base-100">
-                <div class="join">
-                    <button class="join-item btn btn-sm ${!pagination.getFirstNav().isActive() ? "btn-disabled" : ""}"
-                            disabled="${!pagination.getFirstNav().isActive()}"
-                            hx-get="/stock/htmx/dividend/list"
-                            hx-include="#dividendSearchForm"
-                            hx-vals='{"page": ${pagination.getFirstNav().page()}}'
-                            hx-target="#dividendListFragment"
-                            hx-select="#dividendListFragment"
-                            hx-swap="outerHTML">≪</button>
-                    <button class="join-item btn btn-sm ${!pagination.getPrevNav().isActive() ? "btn-disabled" : ""}"
-                            disabled="${!pagination.getPrevNav().isActive()}"
-                            hx-get="/stock/htmx/dividend/list"
-                            hx-include="#dividendSearchForm"
-                            hx-vals='{"page": ${pagination.getPrevNav().page()}}'
-                            hx-target="#dividendListFragment"
-                            hx-select="#dividendListFragment"
-                            hx-swap="outerHTML">&lt;</button>
-                    @for(Pagination.Nav nav : pagination.getNavList())
-                    <button class="join-item btn btn-sm ${nav.isActive() ? "btn-active" : ""}"
-                            hx-get="/stock/htmx/dividend/list"
-                            hx-include="#dividendSearchForm"
-                            hx-vals='{"page": ${nav.page()}}'
-                            hx-target="#dividendListFragment"
-                            hx-select="#dividendListFragment"
-                            hx-swap="outerHTML">${nav.page()}</button>
-                    @endfor
-                    <button class="join-item btn btn-sm ${!pagination.getNextNav().isActive() ? "btn-disabled" : ""}"
-                            disabled="${!pagination.getNextNav().isActive()}"
-                            hx-get="/stock/htmx/dividend/list"
-                            hx-include="#dividendSearchForm"
-                            hx-vals='{"page": ${pagination.getNextNav().page()}}'
-                            hx-target="#dividendListFragment"
-                            hx-select="#dividendListFragment"
-                            hx-swap="outerHTML">&gt;</button>
-                    <button class="join-item btn btn-sm ${!pagination.getLastNav().isActive() ? "btn-disabled" : ""}"
-                            disabled="${!pagination.getLastNav().isActive()}"
-                            hx-get="/stock/htmx/dividend/list"
-                            hx-include="#dividendSearchForm"
-                            hx-vals='{"page": ${pagination.getLastNav().page()}}'
-                            hx-target="#dividendListFragment"
-                            hx-select="#dividendListFragment"
-                            hx-swap="outerHTML">≫</button>
-                </div>
-            </div>
+            @template._components.htmxPagination(
+                pagination = pagination,
+                url = "/stock/htmx/dividend/list",
+                includeSelector = "#dividendSearchForm",
+                targetSelector = "#dividendListFragment")
             @endif
         </div>
     </details>

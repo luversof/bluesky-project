@@ -62,6 +62,18 @@
 		background-color: var(--color-base-100);
 		color: var(--color-base-content);
 	}
+	/* 키보드 탐색 공통 포커스 링 (마우스 클릭에는 안 뜸) */
+	:focus-visible {
+		outline: 2px solid var(--color-primary);
+		outline-offset: 1px;
+	}
+	/* 모션 최소화 선호 시 장식성 "움직임"만 제거.
+	   색상 페이드(hover 트랜지션)와 로딩 스피너는 모션 부담이 아니므로 유지한다. */
+	@media (prefers-reduced-motion: reduce) {
+		.skeleton { animation: none; }
+		#app-progress::before { animation: none; }
+		.collapse { transition: none; }
+	}
 }
 
 /* ============================================================
@@ -90,20 +102,13 @@
 		transition: background-color .15s, border-color .15s, color .15s, box-shadow .15s;
 	}
 	.btn:hover { background-color: var(--color-base-300); }
-	.btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
 	.btn-sm { height: 2rem; min-height: 2rem; padding-inline: 0.75rem; font-size: 0.8125rem; }
 	.btn-xs { height: 1.5rem; min-height: 1.5rem; padding-inline: 0.5rem; font-size: 0.75rem; }
-	.btn-lg { height: 3.5rem; min-height: 3.5rem; padding-inline: 1.25rem; font-size: 1rem; }
 	.btn-block { width: 100%; }
-	.btn-wide { width: 16rem; }
-	.btn-square { padding-inline: 0; aspect-ratio: 1 / 1; }
 	.btn-circle { padding-inline: 0; aspect-ratio: 1 / 1; border-radius: 9999px; }
 	.btn-primary { background-color: var(--color-primary); color: var(--color-primary-content); }
 	.btn-primary:hover { background-color: color-mix(in oklab, var(--color-primary) 88%, black); }
 	.btn-secondary { background-color: var(--color-secondary); color: var(--color-secondary-content); }
-	.btn-accent { background-color: var(--color-accent); color: var(--color-accent-content); }
-	.btn-info { background-color: var(--color-info); color: var(--color-info-content); }
-	.btn-success { background-color: var(--color-success); color: var(--color-success-content); }
 	.btn-warning { background-color: var(--color-warning); color: var(--color-warning-content); }
 	.btn-error { background-color: var(--color-error); color: var(--color-error-content); }
 	.btn-neutral { background-color: var(--color-neutral); color: var(--color-neutral-content); }
@@ -111,7 +116,6 @@
 	.btn-ghost:hover { background-color: color-mix(in oklab, var(--color-base-content) 10%, transparent); }
 	.btn-outline { background-color: transparent; border-color: var(--color-base-300); color: var(--color-base-content); }
 	.btn-outline:hover { background-color: var(--color-base-200); }
-	.btn-link { background-color: transparent; border-color: transparent; color: var(--color-primary); text-decoration: underline; }
 	.btn-active { background-color: var(--color-base-300); }
 	.btn-disabled, .btn:disabled, .btn[disabled] { opacity: .5; cursor: not-allowed; pointer-events: none; }
 	/* 라디오/체크박스를 버튼으로(세그먼트 컨트롤) — input 은 텍스트를 못 담으므로 aria-label 을 그린다 */
@@ -139,10 +143,8 @@
 	.badge-lg { height: 1.75rem; padding-inline: 0.75rem; font-size: 0.875rem; }
 	.badge-primary { background-color: var(--color-primary); color: var(--color-primary-content); border-color: transparent; }
 	.badge-secondary { background-color: var(--color-secondary); color: var(--color-secondary-content); border-color: transparent; }
-	.badge-accent { background-color: var(--color-accent); color: var(--color-accent-content); border-color: transparent; }
 	.badge-info { background-color: var(--color-info); color: var(--color-info-content); border-color: transparent; }
 	.badge-success { background-color: var(--color-success); color: var(--color-success-content); border-color: transparent; }
-	.badge-warning { background-color: var(--color-warning); color: var(--color-warning-content); border-color: transparent; }
 	.badge-error { background-color: var(--color-error); color: var(--color-error-content); border-color: transparent; }
 	.badge-ghost { background-color: var(--color-base-200); color: var(--color-base-content); border-color: transparent; }
 	.badge-outline { background-color: transparent; border-color: currentColor; color: inherit; }
@@ -176,7 +178,6 @@
 	.input:focus, .textarea:focus, .select:focus { outline: 2px solid var(--color-primary); outline-offset: 0; border-color: var(--color-primary); }
 	.input-bordered, .select-bordered, .textarea-bordered { border-color: var(--color-base-300); }
 	.input-sm, .select-sm { height: 2rem; min-height: 2rem; padding-inline: 0.75rem; font-size: 0.8125rem; }
-	.input-xs, .select-xs { height: 1.5rem; min-height: 1.5rem; font-size: 0.75rem; }
 	.select {
 		appearance: none; -webkit-appearance: none; padding-right: 2rem;
 		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
@@ -211,7 +212,6 @@
 		border: 3px solid currentColor; border-right-color: transparent; border-radius: 9999px;
 		animation: loading-spin 0.7s linear infinite; }
 	.loading-spinner { /* alias */ }
-	.loading-xs { width: 1rem; height: 1rem; border-width: 2px; }
 	.loading-sm { width: 1.25rem; height: 1.25rem; border-width: 2px; }
 	.loading-lg { width: 2.5rem; height: 2.5rem; border-width: 4px; }
 
@@ -223,7 +223,6 @@
 	}
 	.alert-info { background-color: color-mix(in oklab, var(--color-info) 12%, var(--color-base-100)); border-color: color-mix(in oklab, var(--color-info) 30%, transparent); }
 	.alert-success { background-color: color-mix(in oklab, var(--color-success) 12%, var(--color-base-100)); border-color: color-mix(in oklab, var(--color-success) 30%, transparent); }
-	.alert-warning { background-color: color-mix(in oklab, var(--color-warning) 12%, var(--color-base-100)); border-color: color-mix(in oklab, var(--color-warning) 30%, transparent); }
 	.alert-error { background-color: color-mix(in oklab, var(--color-error) 12%, var(--color-base-100)); border-color: color-mix(in oklab, var(--color-error) 30%, transparent); }
 
 	/* ---- stat ---- */
@@ -236,14 +235,10 @@
 
 	/* ---- join (merged controls) ---- */
 	.join { display: inline-flex; align-items: stretch; }
-	.join-vertical { flex-direction: column; }
 	.join > .join-item, .join > :where(button, input, select) { border-radius: 0; }
 	.join > *:not(:first-child) { margin-left: -1px; }
-	.join-vertical > *:not(:first-child) { margin-left: 0; margin-top: -1px; }
 	.join > *:first-child { border-start-start-radius: var(--radius-field); border-end-start-radius: var(--radius-field); }
 	.join > *:last-child { border-start-end-radius: var(--radius-field); border-end-end-radius: var(--radius-field); }
-	.join-vertical > *:first-child { border-radius: var(--radius-field) var(--radius-field) 0 0; }
-	.join-vertical > *:last-child { border-radius: 0 0 var(--radius-field) var(--radius-field); }
 
 	/* ---- tabs ---- */
 	.tabs { display: flex; flex-wrap: wrap; align-items: center; }
@@ -255,8 +250,10 @@
 	/* ---- menu (sidebar / dropdown lists) ---- */
 	.menu { display: flex; flex-direction: column; gap: 0.125rem; padding: 0.5rem; list-style: none; }
 	.menu :where(li) > * { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem;
-		font-size: 0.875rem; border-radius: var(--radius-field); color: var(--color-base-content); text-decoration: none; }
-	.menu :where(li) > *:hover { background-color: var(--color-base-200); }
+		font-size: 0.875rem; border-radius: var(--radius-field); color: var(--color-base-content); text-decoration: none;
+		transition: background-color .3s ease, color .3s ease; }
+	/* hover in 은 즉각(75ms), out 은 기본 상태의 .3s 로 스르륵 빠진다 */
+	.menu :where(li) > *:hover { background-color: var(--color-base-200); transition-duration: .075s; }
 	.menu-sm :where(li) > * { padding: 0.35rem 0.6rem; font-size: 0.875rem; }
 	.menu-horizontal { flex-direction: row; align-items: center; }
 	.menu-horizontal > li { flex-direction: row; }
@@ -299,10 +296,13 @@
 	.tooltip-right > .tooltip-content, .tooltip-right:before { bottom: auto; top: 50%; left: 100%; transform: translateY(-50%) translateX(0.25rem); }
 	.tooltip-bottom-end > .tooltip-content, .tooltip-bottom-end:before { bottom: auto; top: 100%; left: auto; right: 0; transform: translateY(0.25rem); }
 
-	/* ---- collapse (details) ---- */
-	.collapse { position: relative; display: grid; overflow: hidden; }
-	.collapse-title { padding: 0.75rem 1rem; cursor: pointer; }
-	.collapse-content { padding: 0 1rem; }
+	/* ---- collapse ---- checkbox 는 제목 위에 겹친 투명 클릭 레이어, 내용은 grid rows 로 접고 편다 */
+	.collapse { position: relative; display: grid; grid-template-rows: max-content 0fr; overflow: hidden; transition: grid-template-rows .2s ease; }
+	.collapse > input[type="checkbox"] { grid-area: 1 / 1; appearance: none; -webkit-appearance: none; opacity: 0; width: 100%; height: 100%; margin: 0; padding: 0; cursor: pointer; z-index: 1; }
+	.collapse-title { grid-area: 1 / 1; padding: 0.75rem 1rem; cursor: pointer; }
+	.collapse-content { grid-row: 2; grid-column: 1; min-height: 0; visibility: hidden; padding: 0 1rem; }
+	.collapse:has(> input:checked) { grid-template-rows: max-content 1fr; }
+	.collapse:has(> input:checked) > .collapse-content { visibility: visible; padding-bottom: 0.75rem; }
 
 	/* ---- divider ---- */
 	.divider { display: flex; align-items: center; gap: 0.5rem; margin: 1rem 0; color: color-mix(in oklab, var(--color-base-content) 50%, transparent); font-size: 0.75rem; }
@@ -325,16 +325,11 @@
 	/* ---- skeleton (로딩 자리표시) ---- */
 	.skeleton { border-radius: var(--radius-field); background-color: var(--color-base-300); animation: skeleton-pulse 1.6s ease-in-out infinite; }
 
-	/* ---- indicator (아이콘 위 배지) ---- */
-	.indicator { position: relative; display: inline-flex; width: max-content; }
-	.indicator > .indicator-item { position: absolute; z-index: 1; top: 0; right: 0; transform: translate(50%, -50%); white-space: nowrap; }
-
 	/* ---- mockup-code (코드 블록) ---- */
 	.mockup-code { position: relative; overflow: auto; border-radius: var(--radius-box); background-color: var(--color-neutral); color: var(--color-neutral-content); padding: 1.25rem 1.5rem; font-family: var(--font-mono, monospace); font-size: 0.8125rem; line-height: 1.6; }
 
 	/* ---- loading 변형 (ring 은 spinner 로 대체) ---- */
 	.loading-ring { border-style: solid; }
-	.loading-dots { width: auto; height: auto; border: 0; animation: none; }
 
 	/* ---- tabs 크기 변형 ---- */
 	.tabs-xs .tab, .tab.tabs-xs { height: 1.5rem; padding-inline: 0.5rem; font-size: 0.75rem; }
@@ -365,6 +360,10 @@
 	.text-dividend { color: #26c281; font-weight: 600; }
 	[data-theme="dark"] .text-dividend { color: #69db7c; }
 }
+
+/* Tailwind 내장 유틸 .collapse(visibility: collapse)와 컴포넌트 .collapse 의 이름 충돌 해소.
+   레이어 밖(unlayered) 규칙이라 utilities 레이어보다 우선한다. 내용 숨김은 grid rows + .collapse-content 규칙이 담당. */
+.collapse { visibility: visible; }
 
 /* light/dark 토글 버튼 아이콘 */
 .theme-icon-dark { display: none; }

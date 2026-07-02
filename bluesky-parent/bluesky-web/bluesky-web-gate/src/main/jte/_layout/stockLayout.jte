@@ -22,7 +22,7 @@
 				<div class="fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-56 overflow-y-auto border-r border-base-200 bg-base-100 py-4 flex flex-col stock-sidebar">
 					@template._components.navmenu(menu = "stock", classAppend = "w-full")
 					<div class="mt-auto border-t border-base-200 px-2 pt-2">
-						<button type="button" class="sidebar-collapse-btn w-full font-medium rounded-box flex items-center gap-3 px-4 py-3 text-base-content/60 hover:bg-base-200 hover:text-base-content transition-all duration-200"
+						<button type="button" class="sidebar-collapse-btn w-full font-medium rounded-box flex items-center gap-3 px-4 py-3 text-base-content/60 hover:bg-base-200 hover:text-base-content transition-all duration-300 hover:duration-75"
 								onclick="document.documentElement.classList.toggle('sidebar-collapsed');try{localStorage.setItem('sidebarCollapsed',document.documentElement.classList.contains('sidebar-collapsed'));}catch(e){}"
 								title="${MessageUtil.getMessage("layout.sidebar.toggle")}" aria-label="${MessageUtil.getMessage("layout.sidebar.toggle")}">
 							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 sidebar-toggle-icon transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
