@@ -27,10 +27,9 @@
     java.time.LocalDate endDisplayLocal = endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1) : null;
 
     // Normalize model-provided `timeSeries` into `ts` for template use
-    List<TradeProfitTimeSeriesPoint> ts = null;
-    if (timeSeries instanceof List) {
-        ts = (List<TradeProfitTimeSeriesPoint>) timeSeries;
-    }
+    // (content block 내부 클래스에서 참조하므로 effectively final 이어야 한다 — 단일 할당)
+    @SuppressWarnings("unchecked")
+    List<TradeProfitTimeSeriesPoint> ts = timeSeries instanceof List ? (List<TradeProfitTimeSeriesPoint>) timeSeries : null;
 
     java.time.LocalDate today = java.time.LocalDate.now(zone);
     boolean canNext = !isAllMode && endLocal != null && endLocal.isBefore(today);
@@ -69,7 +68,7 @@
     String resetLabel = MessageUtil.getMessage("common.button.reset");
 }
 
-<div id="assetGrowthFragment" class="card bg-base-100 border border-base-200 rounded-box shadow-sm">
+@template._components.ui.tableCard(id = "assetGrowthFragment", body = @`
     <div class="card-body">
         <div class="flex items-center gap-2 mb-2">
             <h2 class="card-title text-base-content/70 m-0">${assetGrowthTitle}</h2>
@@ -517,4 +516,4 @@
         })();
     </script>
     @endif
-</div>
+`)

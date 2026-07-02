@@ -17,7 +17,7 @@
 }
 
 @if(isAuthenticated)
-<div class="card bg-base-100 border border-base-200 rounded-box shadow-sm mb-6">
+@template._components.ui.tableCard(cssClass = "mb-6", body = @`
     <div class="card-body">
         <h2 class="card-title text-2xl mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -81,5 +81,5 @@
             <div class="text-sm opacity-70">${pleaseWaitLabel}</div>
         </div>
     </div>
-</div>
+`)
 @endif

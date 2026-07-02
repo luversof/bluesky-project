@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.common.menu.domain.Pagination;
 import net.luversof.web.gate.stock.constant.TradeType;
 import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
@@ -411,6 +414,10 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     model.addAttribute("totalItems", totalItems);
     model.addAttribute("currentPage", currentPage);
     model.addAttribute("totalPages", totalPages);
+    model.addAttribute(
+        "pagination",
+        new Pagination(
+            new PageImpl<>(pagedTrades, PageRequest.of(currentPage - 1, size), totalItems)));
     model.addAttribute("pageSize", size);
     model.addAttribute("from", periodFrom);
     model.addAttribute("to", periodTo);

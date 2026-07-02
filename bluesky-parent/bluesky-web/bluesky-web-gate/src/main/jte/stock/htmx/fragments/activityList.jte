@@ -185,8 +185,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
 
         <!-- Card 1: 매매 현황 -->
-        <div class="card bg-base-100 shadow-sm border border-base-200">
-            <div class="card-body p-4">
+        @template._components.ui.card(body = @`
                 <div class="text-xs text-base-content/50 mb-1">${tradeStatusLabel}</div>
                 <div class="flex items-baseline gap-1 mb-2">
                     <span class="text-xl font-bold text-error amount-value">₩ ${df.format(safeBuy)}</span>
@@ -196,31 +195,26 @@
                     <span>${buyLabel} <span class="font-medium text-base-content/70">${countMessage.apply(buyCount)}</span></span>
                     <span>${sellLabel} <span class="font-medium text-info amount-value">₩ ${df.format(safeSell)}</span> <span class="text-base-content/70">${countMessage.apply(sellCount)}</span></span>
                 </div>
-            </div>
-        </div>
+        `)
 
         <!-- Card 2: 배당 수령 -->
-        <div class="card bg-base-100 shadow-sm border border-base-200">
-            <div class="card-body p-4">
+        @template._components.ui.card(body = @`
                 <div class="text-xs text-base-content/50 mb-1">${dividendReceivedLabel}</div>
                 <div class="flex items-baseline gap-1 mb-2">
                     <span class="text-xl font-bold text-dividend amount-value">₩ ${df.format(safeDividend)}</span>
                 </div>
                 <div class="text-xs text-base-content/50">${countMessage.apply(dividendCount)}</div>
-            </div>
-        </div>
+        `)
 
         <!-- Card 3: 전체 활동 -->
-        <div class="card bg-base-100 shadow-sm border border-base-200">
-            <div class="card-body p-4">
+        @template._components.ui.card(body = @`
                 <div class="text-xs text-base-content/50 mb-1">${totalActivityLabel}</div>
                 <div class="text-xl font-bold">${countMessage.apply(activities != null ? activities.size() : 0)}</div>
                 <div class="flex gap-4 text-xs text-base-content/50 mt-1">
                     <span>${tradeLabel} <span class="font-medium text-base-content/70">${countMessage.apply(buyCount + sellCount)}</span></span>
                     <span>${dividendLabel} <span class="font-medium text-base-content/70">${countMessage.apply(dividendCount)}</span></span>
                 </div>
-            </div>
-        </div>
+        `)
     </div>
         <div class="card-body">
             @if(activities == null || activities.isEmpty())

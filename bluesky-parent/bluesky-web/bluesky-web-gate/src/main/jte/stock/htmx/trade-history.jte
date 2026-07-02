@@ -5,6 +5,7 @@
 @import java.text.DecimalFormat
 @import net.luversof.web.gate.stock.dto.response.TradeResponse
 @import net.luversof.web.gate.stock.constant.TradeType
+@import net.luversof.web.common.menu.domain.Pagination
 @import io.github.luversof.boot.context.support.MessageUtil
 
 @param List<TradeResponse> trades
@@ -20,16 +21,13 @@
 @param BigDecimal totalFee = BigDecimal.ZERO
 @param BigDecimal totalTax = BigDecimal.ZERO
 @param String tradePeriod
+@param Pagination pagination = null
 
 !{
 DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
 DecimalFormat df = new DecimalFormat("#,##0");
 String safeFrom = from != null ? from : "";
 String safeTo = to != null ? to : "";
-int windowSize = 10;
-int startPage = Math.max(1, currentPage - windowSize / 2);
-int endPage = Math.min(totalPages, startPage + windowSize - 1);
-if (endPage - startPage < windowSize - 1) startPage = Math.max(1, endPage - windowSize + 1);
 BigDecimal safeBuy = totalBuy != null ? totalBuy : BigDecimal.ZERO;
 BigDecimal safeSell = totalSell != null ? totalSell : BigDecimal.ZERO;
 BigDecimal safeRp = totalRealizedProfit != null ? totalRealizedProfit : BigDecimal.ZERO;
@@ -58,8 +56,7 @@ String noTradeDataLabel = MessageUtil.getMessage("stock.trade.message.no.data");
 String sellCountPageLabel = java.text.MessageFormat.format(MessageUtil.getMessage("stock.trade.history.sell.count.page"), sellLabel, countMessage.apply(sellCount));
 }
 
-<div class="card bg-base-100 border border-base-200 rounded-box shadow-sm mt-4" id="trade-history-panel">
-<div class="card-body p-4">
+@template._components.ui.card(cssClass = "mt-4", id = "trade-history-panel", body = @`
 <div class="flex items-center justify-between mb-3">
 <h3 class="card-title text-base">
 ${historyTitle}
@@ -76,8 +73,7 @@ ${historyTitle}
 </div>
 @else
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-<div class="card bg-base-100 shadow-sm border border-base-200">
-<div class="card-body p-4">
+@template._components.ui.card(body = @`
 <div class="text-xs text-base-content/50 mb-1">${periodStatusLabel}</div>
 <div class="flex items-baseline gap-1 mb-2">
 <span class="text-xl font-bold text-error amount-value">&#x20A9;${df.format(safeBuy)}</span>
@@ -87,27 +83,22 @@ ${historyTitle}
 <span>${sellLabel} <span class="font-medium text-info amount-value">&#x20A9;${df.format(safeSell)}</span></span>
 <span class="ml-auto">${countMessage.apply(totalItems)}</span>
 </div>
-</div>
-</div>
-<div class="card bg-base-100 shadow-sm border border-base-200">
-<div class="card-body p-4">
+`)
+@template._components.ui.card(body = @`
 <div class="text-xs text-base-content/50 mb-1">${realizedProfitLabel}</div>
 <div class="text-xl font-bold ${rpPositive ? "text-profit" : "text-loss"} amount-value">
 ${rpPositive ? "+" : ""}&#x20A9;${df.format(safeRp)}
 </div>
 <div class="text-xs text-base-content/40 mt-1">${sellCountPageLabel}</div>
-</div>
-</div>
-<div class="card bg-base-100 shadow-sm border border-base-200">
-<div class="card-body p-4">
+`)
+@template._components.ui.card(body = @`
 <div class="text-xs text-base-content/50 mb-1">${tradingCostLabel}</div>
 <div class="text-xl font-bold amount-value">&#x20A9;${df.format(safeFee.add(safeTax))}</div>
 <div class="flex gap-4 text-xs text-base-content/50 mt-1">
 <span>${feeLabel} <span class="font-medium text-base-content/70 amount-value">&#x20A9;${df.format(safeFee)}</span></span>
 <span>${tradingTaxLabel} <span class="font-medium text-base-content/70 amount-value">&#x20A9;${df.format(safeTax)}</span></span>
 </div>
-</div>
-</div>
+`)
 </div>
 
 <div>
@@ -160,29 +151,12 @@ ${hasProfit && !isBuy ? df.format(trade.realizedProfit()) : ""}
 </table>
 </div>
 
-@if(totalPages > 1)
-<div class="flex justify-center p-2 border-t border-base-200 bg-base-100 mt-2">
-<div class="join">
-<button class="join-item btn btn-sm ${currentPage <= 1 ? "btn-disabled" : ""}"
-hx-get="/stock/htmx/trade-history?from=${safeFrom}&to=${safeTo}&page=1&size=${pageSize}"
-hx-target="#trade-history-panel" hx-swap="outerHTML">&laquo;</button>
-<button class="join-item btn btn-sm ${currentPage <= 1 ? "btn-disabled" : ""}"
-hx-get="/stock/htmx/trade-history?from=${safeFrom}&to=${safeTo}&page=${currentPage - 1}&size=${pageSize}"
-hx-target="#trade-history-panel" hx-swap="outerHTML">&lsaquo;</button>
-@for(int p = startPage; p <= endPage; p++)
-<button class="join-item btn btn-sm ${p == currentPage ? "btn-active" : ""}"
-hx-get="/stock/htmx/trade-history?from=${safeFrom}&to=${safeTo}&page=${p}&size=${pageSize}"
-hx-target="#trade-history-panel" hx-swap="outerHTML">${p}</button>
-@endfor
-<button class="join-item btn btn-sm ${currentPage >= totalPages ? "btn-disabled" : ""}"
-hx-get="/stock/htmx/trade-history?from=${safeFrom}&to=${safeTo}&page=${currentPage + 1}&size=${pageSize}"
-hx-target="#trade-history-panel" hx-swap="outerHTML">&rsaquo;</button>
-<button class="join-item btn btn-sm ${currentPage >= totalPages ? "btn-disabled" : ""}"
-hx-get="/stock/htmx/trade-history?from=${safeFrom}&to=${safeTo}&page=${totalPages}&size=${pageSize}"
-hx-target="#trade-history-panel" hx-swap="outerHTML">&raquo;</button>
-</div>
-</div>
+@if(pagination != null && totalPages > 1)
+@template._components.htmxPagination(
+	pagination = pagination,
+	url = "/stock/htmx/trade-history?from=" + safeFrom + "&to=" + safeTo + "&size=" + pageSize,
+	includeSelector = "this",
+	targetSelector = "#trade-history-panel")
 @endif
 @endif
-</div>
-</div>
+`)

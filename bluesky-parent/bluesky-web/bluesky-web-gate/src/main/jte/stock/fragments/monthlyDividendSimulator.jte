@@ -117,8 +117,7 @@
 
 	<div class="space-y-6">
 		<div class="space-y-6">
-			<section class="card border border-base-300 bg-base-100 shadow-sm">
-				<div class="card-body gap-5">
+			@template._components.ui.card(bodyClass = "gap-5", body = @`
 					<div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
 						<div class="space-y-2">
 							<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.simulator.monthly.form.title")}</h2>
@@ -154,8 +153,7 @@
 						</div>
 						<p class="text-xs leading-5 text-base-content/50 md:col-span-2 xl:col-span-4">${MessageUtil.getMessage("stock.simulator.monthly.form.hint")}</p>
 					</form>
-				</div>
-			</section>
+			`)
 		</div>
 
 		<div class="space-y-6">
@@ -232,8 +230,7 @@
 				</div>
 			</div>
 
-			<section class="card border border-base-300 bg-base-100 shadow-sm">
-				<div class="card-body gap-5">
+			@template._components.ui.card(bodyClass = "gap-5", body = @`
 					<div class="space-y-2">
 						<div class="space-y-2">
 							<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.simulator.monthly.section.table.title")}</h2>
@@ -586,11 +583,9 @@
 							</div>
 						</div>
 					@endif
-				</div>
-			</section>
+			`)
 
-			<aside class="card border border-base-300 bg-base-100 shadow-sm">
-				<div class="card-body gap-4">
+			@template._components.ui.card(bodyClass = "gap-4", body = @`
 					<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.simulator.monthly.section.criteria.title")}</h2>
 					<ul class="list-disc space-y-3 pl-5 text-sm leading-6 text-base-content/70">
 						<li>${MessageUtil.getMessage("stock.simulator.monthly.criteria.one")}</li>
@@ -598,8 +593,7 @@
 						<li>${MessageUtil.getMessage("stock.simulator.monthly.criteria.three")}</li>
 						<li>${MessageUtil.getMessage("stock.simulator.monthly.criteria.four")}</li>
 					</ul>
-				</div>
-			</aside>
+			`)
 		</div>
 	</div>
 </div>

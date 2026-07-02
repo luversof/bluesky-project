@@ -361,6 +361,12 @@
 	[data-theme="dark"] .text-dividend { color: #69db7c; }
 }
 
+/* 페이지 간 이동 시 크로스페이드 (Chrome/Edge/Safari). 미지원 브라우저는 기존 즉시 전환. */
+@view-transition { navigation: auto; }
+@media (prefers-reduced-motion: reduce) {
+	::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none; }
+}
+
 /* Tailwind 내장 유틸 .collapse(visibility: collapse)와 컴포넌트 .collapse 의 이름 충돌 해소.
    레이어 밖(unlayered) 규칙이라 utilities 레이어보다 우선한다. 내용 숨김은 grid rows + .collapse-content 규칙이 담당. */
 .collapse { visibility: visible; }

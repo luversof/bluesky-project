@@ -54,18 +54,17 @@
     </div>
 
     <!-- 2. Chart Area (Large) -->
-    <div class="card bg-base-100 border border-base-200 rounded-box shadow-sm overflow-hidden">
+    @template._components.ui.tableCard(cssClass = "overflow-hidden", body = @`
         <div class="card-body p-4 sm:p-5" style="min-height: 300px;">
             <h2 class="card-title text-base opacity-70 mb-3">${chartTitle != null ? chartTitle : ("bar".equals(chartType) ? barChartTitle : lineChartTitle)}</h2>
             <div class="relative w-full h-[260px] sm:h-[340px]">
                 <canvas id="${canvasId}" class="amount-chart"></canvas>
             </div>
         </div>
-    </div>
+    `)
 
     <!-- 3. Detailed Data Table -->
-    <div class="card bg-base-100 border border-base-200 rounded-box shadow-sm">
-        <div class="card-body p-0 overflow-x-auto">
+    @template._components.ui.card(bodyClass = "p-0 overflow-x-auto", body = @`
             <table class="table table-zebra w-full text-center">
                 <!-- Head -->
                 <thead class="bg-base-200">
@@ -129,8 +128,7 @@
                     @endif
                 </tbody>
             </table>
-        </div>
-    </div>
+    `)
 
     <!-- Chart Script -->
     <script>

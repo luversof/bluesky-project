@@ -180,8 +180,7 @@
     @endif
 
     <!-- 랭킹: 4개 카테고리 × (상위/하위) 를 탭으로 통합 -->
-    <div id="summaryRankPanel" class="card bg-base-100 border border-base-200 rounded-box shadow-sm">
-        <div class="card-body p-3">
+    @template._components.ui.card(id = "summaryRankPanel", bodyClass = "p-3", body = @`
             <div role="tablist" class="tabs tabs-box mb-3 flex-nowrap overflow-x-auto" data-rank-tabs>
                 <button type="button" role="tab" class="tab" data-rank-tab="0">${tabBuyingLabel}</button>
                 <button type="button" role="tab" class="tab" data-rank-tab="1">${tabRealizedLabel}</button>
@@ -332,8 +331,7 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+    `)
 </div>
 
 <script>

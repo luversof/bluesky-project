@@ -17,8 +17,7 @@
     String byAccountLabel = MessageUtil.getMessage("stock.label.by.account");
 }
 
-<div class="card bg-base-100 shadow-sm border border-base-200 flex-[2] min-w-[200px]">
-    <div class="card-body p-4">
+@template._components.ui.card(cssClass = "flex-[2] min-w-[200px]", body = @`
         <div class="flex items-center justify-between mb-2">
             <div class="text-sm font-bold" id="${titleId}">${resolvedTitle}</div>
             <div class="tabs tabs-box tabs-xs">
@@ -38,5 +37,4 @@
                 <div id="${legendId}" class="flex-1 min-h-0 overflow-y-auto text-[0.72rem]"></div>
             </div>
         </div>
-    </div>
-</div>
+`)

@@ -52,6 +52,7 @@
 		data-common-button-search="${MessageUtil.getMessage("common.button.search")}"
 		data-common-button-reset="${MessageUtil.getMessage("common.button.reset")}"
 		data-common-message-load-error="${MessageUtil.getMessage("common.message.load.error")}"
+		data-common-message-action-success="${MessageUtil.getMessage("common.message.action.success")}"
 		data-stock-label-buy="${MessageUtil.getMessage("stock.trade.label.buy")}"
 		data-stock-label-sell="${MessageUtil.getMessage("stock.trade.label.sell")}"
 		data-stock-chart-title-profit-contribution="${MessageUtil.getMessage("stock.trade.chart.title.profit.contribution")}"
@@ -68,7 +69,7 @@
 	<!-- 전역 상단 로딩바: htmx 요청 진행 중 표시 -->
 	<div id="app-progress" aria-hidden="true"></div>
 
-	<!-- 전역 토스트: htmx 요청 실패(서버 오류/네트워크/타임아웃) 알림 -->
+	<!-- 전역 토스트: htmx 요청 실패 알림 + 쓰기 요청(GET 외) 성공 알림 -->
 	<div id="app-toast" class="toast toast-top toast-end z-[100]"></div>
 	<script>
 	(function() {
@@ -95,25 +96,44 @@
 		}
 	})();
 	(function() {
-		function showLoadError() {
+		function showToast(msg, type, ttl) {
 			var toast = document.getElementById('app-toast');
 			if (!toast) return;
-			var cfg = document.getElementById('app-config');
-			var msg = (cfg && cfg.dataset.commonMessageLoadError) || 'Failed to load.';
 			var el = document.createElement('div');
-			el.className = 'alert alert-error shadow-lg cursor-pointer max-w-sm';
-			el.setAttribute('role', 'alert');
+			el.className = 'alert ' + (type === 'success' ? 'alert-success' : 'alert-error') + ' shadow-lg cursor-pointer max-w-sm';
+			el.setAttribute('role', type === 'success' ? 'status' : 'alert');
 			var span = document.createElement('span');
 			span.className = 'text-sm';
 			span.textContent = msg;
 			el.appendChild(span);
 			el.addEventListener('click', function() { el.remove(); });
 			toast.appendChild(el);
-			setTimeout(function() { if (el.parentNode) el.remove(); }, 5000);
+			setTimeout(function() { if (el.parentNode) el.remove(); }, ttl);
+		}
+		function cfgMessage(key, fallback) {
+			var cfg = document.getElementById('app-config');
+			return (cfg && cfg.dataset[key]) || fallback;
+		}
+		function showLoadError() {
+			showToast(cfgMessage('commonMessageLoadError', 'Failed to load.'), 'error', 5000);
 		}
 		document.body.addEventListener('htmx:responseError', showLoadError);
 		document.body.addEventListener('htmx:sendError', showLoadError);
 		document.body.addEventListener('htmx:timeout', showLoadError);
+
+		// 쓰기 요청(GET 외) 성공 토스트. afterRequest 는 outerHTML 스왑 시 body 까지
+		// 버블링되지 않을 수 있어, 로딩바와 같은 방식으로 XHR loadend 에 건다.
+		document.body.addEventListener('htmx:beforeSend', function(evt) {
+			var verb = evt.detail && evt.detail.requestConfig && evt.detail.requestConfig.verb;
+			if (!verb || verb === 'get') return;
+			var xhr = evt.detail.xhr;
+			if (!xhr || !xhr.addEventListener) return;
+			xhr.addEventListener('loadend', function() {
+				if (xhr.status >= 200 && xhr.status < 300) {
+					showToast(cfgMessage('commonMessageActionSuccess', 'Done.'), 'success', 2500);
+				}
+			}, { once: true });
+		});
 	})();
 	</script>
 

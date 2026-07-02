@@ -44,13 +44,15 @@
 	String payoutSymbolValue = payoutForm.getSymbol() != null ? payoutForm.getSymbol() : selectedMonthlyDividendSymbol;
 	String payoutImportSymbolValue = payoutImportForm.getSymbol() != null ? payoutImportForm.getSymbol() : selectedMonthlyDividendSymbol;
 	String sourceImportUrlValue = selectedMonthlyDividendSourceUrl != null ? selectedMonthlyDividendSourceUrl : "";
-	String payoutSymbolLabel = payoutSymbolValue;
+	// content block(내부 클래스)에서 참조하므로 effectively final 이어야 한다 — 가변 계산은 Tmp 에서 하고 한 번만 할당
+	String payoutSymbolLabelTmp = payoutSymbolValue;
 	for (StockItem stockItem : stockItems) {
 		if (stockItem.symbol() != null && stockItem.symbol().equalsIgnoreCase(payoutSymbolValue)) {
-			payoutSymbolLabel = stockItem.symbol() + " · " + stockItem.name();
+			payoutSymbolLabelTmp = stockItem.symbol() + " · " + stockItem.name();
 			break;
 		}
 	}
+	String payoutSymbolLabel = payoutSymbolLabelTmp;
 	String sourceUrlValue = profileForm.getSourceUrl() != null ? profileForm.getSourceUrl() : "";
 	String payoutWindowValue = profileForm.getPayoutWindow() != null ? profileForm.getPayoutWindow() : "UNKNOWN";
 	String noteValue = profileForm.getNote() != null ? profileForm.getNote() : "";
@@ -61,20 +63,21 @@
 	String profileDirectionValue = monthlyDividendProfileDirection != null ? monthlyDividendProfileDirection : "asc";
 	boolean profileReorderEnabled = "display-order".equals(profileSortValue) && "asc".equals(profileDirectionValue);
 	String profileOrderEndpoint = "/stock/dividend/monthly-reference/profile/order";
-	String referenceListBaseUrl = "/stock/admin?tab=monthly-reference";
+	StringBuilder referenceListBaseUrlSb = new StringBuilder("/stock/admin?tab=monthly-reference");
 	String monthlyDividendSimulatorUrl = "/stock/simulator?tab=monthly-dividend";
 	if (selectedMonthlyDividendSymbol != null && !selectedMonthlyDividendSymbol.isEmpty()) {
 		monthlyDividendSimulatorUrl += "&symbol=" + URLEncoder.encode(selectedMonthlyDividendSymbol, StandardCharsets.UTF_8);
 	}
 	if (selectedMonthlyDividendSymbol != null && !selectedMonthlyDividendSymbol.isEmpty()) {
-		referenceListBaseUrl += "&symbol=" + URLEncoder.encode(selectedMonthlyDividendSymbol, StandardCharsets.UTF_8);
+		referenceListBaseUrlSb.append("&symbol=").append(URLEncoder.encode(selectedMonthlyDividendSymbol, StandardCharsets.UTF_8));
 	}
 	if (selectedMonthlyDividendPayoutRecordDate != null && !selectedMonthlyDividendPayoutRecordDate.isEmpty()) {
-		referenceListBaseUrl += "&payoutRecordDate=" + URLEncoder.encode(selectedMonthlyDividendPayoutRecordDate, StandardCharsets.UTF_8);
+		referenceListBaseUrlSb.append("&payoutRecordDate=").append(URLEncoder.encode(selectedMonthlyDividendPayoutRecordDate, StandardCharsets.UTF_8));
 	}
 	if (selectedMonthlyDividendPayoutPayDate != null && !selectedMonthlyDividendPayoutPayDate.isEmpty()) {
-		referenceListBaseUrl += "&payoutPayDate=" + URLEncoder.encode(selectedMonthlyDividendPayoutPayDate, StandardCharsets.UTF_8);
+		referenceListBaseUrlSb.append("&payoutPayDate=").append(URLEncoder.encode(selectedMonthlyDividendPayoutPayDate, StandardCharsets.UTF_8));
 	}
+	String referenceListBaseUrl = referenceListBaseUrlSb.toString();
 	String displayOrderSortDirection = "display-order".equals(profileSortValue) && "asc".equals(profileDirectionValue) ? "desc" : "asc";
 	String symbolSortDirection = "symbol".equals(profileSortValue) && "asc".equals(profileDirectionValue) ? "desc" : "asc";
 	String payoutWindowSortDirection = "payout-window".equals(profileSortValue) && "asc".equals(profileDirectionValue) ? "desc" : "asc";
@@ -159,8 +162,7 @@
 
 	<div class="grid gap-6 xl:grid-cols-[24rem_minmax(0,1fr)]">
 		<div class="space-y-6">
-			<section class="card border border-base-300 bg-base-100 shadow-sm">
-				<div class="card-body gap-4">
+			@template._components.ui.card(bodyClass = "gap-4", body = @`
 					<div class="space-y-2">
 						<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.title")}</h2>
 						<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.desc")}</p>
@@ -226,11 +228,9 @@
 							<button type="submit" class="btn btn-error btn-outline w-full">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.delete")}</button>
 						</form>
 					@endif
-				</div>
-			</section>
+			`)
 
-			<section class="card border border-base-300 bg-base-100 shadow-sm">
-				<div class="card-body gap-4">
+			@template._components.ui.card(bodyClass = "gap-4", body = @`
 					<div class="space-y-2">
 						<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.title")}</h2>
 						<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.desc")}</p>
@@ -318,13 +318,11 @@
 							<button type="submit" class="btn btn-error btn-outline w-full">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.delete")}</button>
 						</form>
 					@endif
-				</div>
-			</section>
+			`)
 		</div>
 
 		<div class="space-y-6">
-			<section class="card border border-base-300 bg-base-100 shadow-sm">
-				<div class="card-body gap-5">
+			@template._components.ui.card(bodyClass = "gap-5", body = @`
 					<div class="space-y-2">
 						<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.title")}</h2>
 						<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.desc")}</p>
@@ -446,11 +444,9 @@
 							</table>
 						</div>
 					@endif
-				</div>
-			</section>
+			`)
 
-			<section class="card border border-base-300 bg-base-100 shadow-sm">
-				<div class="card-body gap-5">
+			@template._components.ui.card(bodyClass = "gap-5", body = @`
 					<div class="space-y-2">
 						<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.list.title")}</h2>
 						<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.list.desc")}</p>
@@ -485,8 +481,7 @@
 							</table>
 						</div>
 					@endif
-				</div>
-			</section>
+			`)
 		</div>
 	</div>
 </div>

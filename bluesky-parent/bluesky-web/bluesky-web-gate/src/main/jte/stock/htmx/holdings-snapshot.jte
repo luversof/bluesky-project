@@ -26,8 +26,7 @@
     String returnRateLabel = MessageUtil.getMessage("stock.label.return.rate");
 }
 
-<div class="card bg-base-100 border border-base-200 rounded-box shadow-sm mt-4">
-    <div class="card-body p-4">
+@template._components.ui.card(cssClass = "mt-4", body = @`
         <div class="flex items-center justify-between mb-3">
             <h3 class="card-title text-base">
                 &#128203; ${snapshotTitle}
@@ -128,5 +127,4 @@
                 </table>
             </div>
         @endif
-    </div>
-</div>
+`)

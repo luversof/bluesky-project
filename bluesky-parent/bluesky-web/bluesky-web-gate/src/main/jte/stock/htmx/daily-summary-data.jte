@@ -96,20 +96,17 @@
         </div>
     @else
         <!-- Chart Area -->
-        <div class="card bg-base-100 border border-base-200 rounded-box shadow-sm w-full">
-            <div class="card-body">
+        @template._components.ui.card(cssClass = "w-full", bodyClass = "", body = @`
                 <h2 class="card-title text-sm opacity-70">${chartTitle}</h2>
                 <div class="h-[300px] w-full relative">
                      <canvas id="${canvasId}" class="amount-chart"></canvas>
                 </div>
                 <div class="text-xs text-right opacity-50 mt-2">* ${topItemsLimitMessage}</div>
-            </div>
-        </div>
+        `)
     @endif
 
     <!-- Summary Table Area -->
-    <div class="card bg-base-100 border border-base-200 rounded-box shadow-sm w-full">
-        <div class="card-body overflow-x-auto p-0 scrollbar-thin">
+    @template._components.ui.card(cssClass = "w-full", bodyClass = "overflow-x-auto p-0 scrollbar-thin", body = @`
             <table class="table table-sm table-pin-rows">
                 <thead>
                     <tr class="bg-base-200">
@@ -272,8 +269,7 @@
                     </tfoot>
                 @endif
             </table>
-        </div>
-    </div>
+    `)
 </div>
 
 <!-- Chart Initialization Script -->

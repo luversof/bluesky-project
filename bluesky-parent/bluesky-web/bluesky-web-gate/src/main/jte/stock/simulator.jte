@@ -187,8 +187,7 @@
 				<script type="module" src="/js/stock/monthlyDividendProfileOrder.js"></script>
 			@else
 			<div class="grid gap-6 xl:grid-cols-[20rem_minmax(0,1fr)]">
-				<section class="card border border-base-300 bg-base-100 shadow-sm">
-					<div class="card-body gap-4">
+				@template._components.ui.card(bodyClass = "gap-4", body = @`
 						<div class="space-y-2">
 							<h2 class="card-title text-lg">${scenariosTitle}</h2>
 							<p class="text-sm leading-6 text-base-content/60">${scenariosDescription}</p>
@@ -200,12 +199,10 @@
 							<button id="stockSimulatorDeleteScenario" type="button" class="btn btn-outline btn-sm btn-error">${deleteScenario}</button>
 							<button id="stockSimulatorResetStorage" type="button" class="btn btn-ghost btn-sm col-span-2">${resetStorage}</button>
 						</div>
-					</div>
-				</section>
+				`)
 
 				<div class="space-y-6">
-					<section class="card border border-base-300 bg-base-100 shadow-sm">
-						<div class="card-body gap-5">
+					@template._components.ui.card(bodyClass = "gap-5", body = @`
 							<div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
 								<div class="space-y-2">
 									<h2 class="card-title text-lg">${inputsTitle}</h2>
@@ -270,8 +267,7 @@
 									</div>
 								</div>
 							</form>
-						</div>
-					</section>
+					`)
 
 					<div id="stockSimulatorSummaryCards" class="grid gap-4 md:grid-cols-2 xl:grid-cols-5"></div>
 
@@ -281,8 +277,7 @@
 							<p class="text-sm leading-6 text-base-content/60">${chartDescription}</p>
 						</div>
 						<div class="grid gap-4 xl:grid-cols-2">
-							<section class="card border border-base-300 bg-base-100 shadow-sm">
-								<div class="card-body gap-4">
+							@template._components.ui.card(bodyClass = "gap-4", body = @`
 									<div class="space-y-2">
 										<h3 class="card-title text-base">${cashFlowTitle}</h3>
 										<p class="text-sm leading-6 text-base-content/60">${cashFlowDescription}</p>
@@ -290,10 +285,8 @@
 									<div class="h-80 w-full rounded-2xl bg-base-100 p-2">
 										<canvas id="stockSimulatorCashFlowChart"></canvas>
 									</div>
-								</div>
-							</section>
-							<section class="card border border-base-300 bg-base-100 shadow-sm">
-								<div class="card-body gap-4">
+							`)
+							@template._components.ui.card(bodyClass = "gap-4", body = @`
 									<div class="space-y-2">
 										<h3 class="card-title text-base">${assetTitle}</h3>
 										<p class="text-sm leading-6 text-base-content/60">${assetDescription}</p>
@@ -301,16 +294,14 @@
 									<div class="h-80 w-full rounded-2xl bg-base-100 p-2">
 										<canvas id="stockSimulatorAssetChart"></canvas>
 									</div>
-								</div>
-							</section>
+							`)
 						</div>
 					</section>
 				</div>
 			</div>
 
 			<div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-				<section class="card border border-base-300 bg-base-100 shadow-sm">
-					<div class="card-body gap-4">
+				@template._components.ui.card(bodyClass = "gap-4", body = @`
 						<div class="space-y-2">
 							<h2 class="card-title text-lg">${compareTitle}</h2>
 							<p class="text-sm leading-6 text-base-content/60">${compareDescription}</p>
@@ -323,11 +314,9 @@
 							<span class="badge border-red-500 bg-red-50 text-red-700">${MessageUtil.getMessage("stock.simulator.timeline.phase.depleted")}</span>
 						</div>
 						<div id="stockSimulatorTimelineList" class="space-y-3"></div>
-					</div>
-				</section>
+				`)
 
-				<aside class="card border border-base-300 bg-base-100 shadow-sm">
-					<div class="card-body gap-4">
+				@template._components.ui.card(bodyClass = "gap-4", body = @`
 						<h2 class="card-title text-lg">${assumptionsTitle}</h2>
 						<ul class="list-disc space-y-3 pl-5 text-sm leading-6 text-base-content/70">
 							<li>${MessageUtil.getMessage("stock.simulator.assumption.one")}</li>
@@ -337,12 +326,10 @@
 							<li>${MessageUtil.getMessage("stock.simulator.assumption.five")}</li>
 							<li>${MessageUtil.getMessage("stock.simulator.assumption.six")}</li>
 						</ul>
-					</div>
-				</aside>
+				`)
 			</div>
 
-			<section class="card border border-base-300 bg-base-100 shadow-sm">
-				<div class="card-body gap-4">
+			@template._components.ui.card(bodyClass = "gap-4", body = @`
 					<div class="space-y-2">
 						<h2 class="card-title text-lg">${yearlyTitle}</h2>
 						<p class="text-sm leading-6 text-base-content/60">${yearlyDescription}</p>
@@ -368,8 +355,7 @@
 							<tbody id="stockSimulatorYearlyTableBody"></tbody>
 						</table>
 					</div>
-				</div>
-			</section>
+			`)
 
 			<script src="/js/stock/stockSimulator.js"></script>
 			@endif

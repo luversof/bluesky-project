@@ -18,7 +18,7 @@
     String cumulativeProfitAxisLabel = MessageUtil.getMessage("stock.asset.growth.axis.cumulative.profit");
 }
 
-<div class="card bg-base-100 border border-base-200 rounded-box shadow-sm">
+@template._components.ui.tableCard(body = @`
     <div class="card-body">
         <h2 class="card-title text-base-content/70">${assetGrowthTitle}</h2>
         <div class="h-96 w-full flex justify-center items-center">
@@ -148,6 +148,6 @@
         })();
     </script>
     @endif
-</div>
+`)
 
 
