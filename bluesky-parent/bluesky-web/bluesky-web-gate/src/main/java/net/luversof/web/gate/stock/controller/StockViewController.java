@@ -256,8 +256,7 @@ public class StockViewController {
       @RequestParam(required = false) String profileSort,
       @RequestParam(required = false) String profileDirection,
       @RequestParam(required = false) LocalDate payoutRecordDate,
-      @RequestParam(required = false) LocalDate payoutPayDate,
-      @RequestParam(required = false) String result) {
+      @RequestParam(required = false) LocalDate payoutPayDate) {
     if (isNotAuthenticated()) {
       return getLoginRedirectUrl(request);
     }
@@ -266,7 +265,7 @@ public class StockViewController {
 
     if (DIVIDEND_TAB_MONTHLY_REFERENCE.equals(dividendTab)) {
       return buildMonthlyDividendReferencePageRedirect(
-          symbol, profileSort, profileDirection, result, payoutRecordDate, payoutPayDate);
+          symbol, profileSort, profileDirection, payoutRecordDate, payoutPayDate);
     }
 
     if ("calendar".equals(dividendTab)) {
@@ -367,6 +366,7 @@ public class StockViewController {
   @PostMapping("/dividend/monthly-reference/profile")
   public String saveMonthlyDividendProfile(
       HttpServletRequest request,
+      RedirectAttributes redirectAttributes,
       Model model,
       @ModelAttribute MonthlyDividendProfileUpsertRequest monthlyDividendProfileForm) {
     if (isNotAuthenticated()) {
@@ -378,7 +378,7 @@ public class StockViewController {
       validateMonthlyDividendProfileRequest(monthlyDividendProfileForm);
       monthlyDividendProfileClient.upsertProfile(monthlyDividendProfileForm);
       return buildMonthlyDividendReferenceRedirect(
-          request, monthlyDividendProfileForm.getSymbol(), "profile-saved");
+          request, redirectAttributes, monthlyDividendProfileForm.getSymbol(), "profile-saved");
     } catch (IllegalArgumentException ex) {
       return renderMonthlyDividendReferenceError(
           request,
@@ -401,7 +401,10 @@ public class StockViewController {
   @BlueskyPreAuthorize
   @PostMapping("/dividend/monthly-reference/profile/delete")
   public String deleteMonthlyDividendProfile(
-      HttpServletRequest request, Model model, @RequestParam String symbol) {
+      HttpServletRequest request,
+      RedirectAttributes redirectAttributes,
+      Model model,
+      @RequestParam String symbol) {
     if (isNotAuthenticated()) {
       return getLoginRedirectUrl(request);
     }
@@ -410,7 +413,8 @@ public class StockViewController {
     try {
       validateMonthlyDividendSymbol(normalizedSymbol);
       monthlyDividendProfileClient.deleteProfile(normalizedSymbol);
-      return buildMonthlyDividendReferenceRedirect(request, normalizedSymbol, "profile-deleted");
+      return buildMonthlyDividendReferenceRedirect(
+          request, redirectAttributes, normalizedSymbol, "profile-deleted");
     } catch (IllegalArgumentException ex) {
       return renderMonthlyDividendReferenceError(
           request,
@@ -464,6 +468,7 @@ public class StockViewController {
   @PostMapping("/dividend/monthly-reference/payout")
   public String saveMonthlyDividendPayout(
       HttpServletRequest request,
+      RedirectAttributes redirectAttributes,
       Model model,
       @ModelAttribute MonthlyDividendPayoutUpsertRequest monthlyDividendPayoutForm) {
     if (isNotAuthenticated()) {
@@ -476,6 +481,7 @@ public class StockViewController {
       monthlyDividendPayoutClient.upsertPayout(monthlyDividendPayoutForm);
       return buildMonthlyDividendReferenceRedirect(
           request,
+          redirectAttributes,
           monthlyDividendPayoutForm.getSymbol(),
           "payout-saved",
           monthlyDividendPayoutForm.getRecordDate(),
@@ -503,6 +509,7 @@ public class StockViewController {
   @PostMapping("/dividend/monthly-reference/payout/import")
   public String importMonthlyDividendPayouts(
       HttpServletRequest request,
+      RedirectAttributes redirectAttributes,
       Model model,
       @ModelAttribute MonthlyDividendPayoutImportRequest monthlyDividendPayoutImportForm) {
     if (isNotAuthenticated()) {
@@ -520,7 +527,10 @@ public class StockViewController {
       saveMonthlyDividendPayoutRequests(importRequests);
 
       return buildMonthlyDividendReferenceRedirect(
-          request, monthlyDividendPayoutImportForm.getSymbol(), "payout-imported");
+          request,
+          redirectAttributes,
+          monthlyDividendPayoutImportForm.getSymbol(),
+          "payout-imported");
     } catch (IllegalArgumentException ex) {
       return renderMonthlyDividendReferenceError(
           request,
@@ -545,7 +555,10 @@ public class StockViewController {
   @BlueskyPreAuthorize
   @PostMapping("/dividend/monthly-reference/payout/import/source")
   public String importMonthlyDividendPayoutsFromSource(
-      HttpServletRequest request, Model model, @RequestParam String symbol) {
+      HttpServletRequest request,
+      RedirectAttributes redirectAttributes,
+      Model model,
+      @RequestParam String symbol) {
     if (isNotAuthenticated()) {
       return getLoginRedirectUrl(request);
     }
@@ -566,7 +579,7 @@ public class StockViewController {
               normalizedSymbol, profile.sourceUrl());
       saveMonthlyDividendPayoutRequests(importRequests);
       return buildMonthlyDividendReferenceRedirect(
-          request, normalizedSymbol, "payout-source-imported");
+          request, redirectAttributes, normalizedSymbol, "payout-source-imported");
     } catch (IllegalArgumentException ex) {
       return renderMonthlyDividendReferenceError(
           request,
@@ -708,6 +721,7 @@ public class StockViewController {
   @PostMapping("/dividend/monthly-reference/payout/delete")
   public String deleteMonthlyDividendPayout(
       HttpServletRequest request,
+      RedirectAttributes redirectAttributes,
       Model model,
       @RequestParam String symbol,
       @RequestParam LocalDate recordDate,
@@ -731,7 +745,8 @@ public class StockViewController {
         throw new IllegalArgumentException("실지급일은 필수입니다.");
       }
       monthlyDividendPayoutClient.deletePayout(normalizedSymbol, recordDate, payDate);
-      return buildMonthlyDividendReferenceRedirect(request, normalizedSymbol, "payout-deleted");
+      return buildMonthlyDividendReferenceRedirect(
+          request, redirectAttributes, normalizedSymbol, "payout-deleted");
     } catch (IllegalArgumentException ex) {
       return renderMonthlyDividendReferenceError(
           request,
@@ -820,7 +835,7 @@ public class StockViewController {
     model.addAttribute("stockItem", stockItem);
     UUID resolvedId = stockItem.id();
 
-    // 이 종목의 보유/손익 집계 (계좌 합산, 기간 적용)
+    // 기간 지표(실현손익·기간 매수원가)는 기간 적용 호출로 집계 (계좌 합산)
     TradeProfitRequest profitRequest = new TradeProfitRequest();
     profitRequest.setUserId(userId);
     profitRequest.setStockItemIdList(List.of(resolvedId));
@@ -830,20 +845,42 @@ public class StockViewController {
     if (profits == null) {
       profits = List.of();
     }
-    int holdingQuantity = profits.stream().mapToInt(TradeProfit::holdingQuantity).sum();
     BigDecimal totalBuyCost = sumTradeProfit(profits, TradeProfit::totalBuyCost);
-    BigDecimal evaluationAmount = sumTradeProfit(profits, TradeProfit::evaluationAmount);
-    BigDecimal evaluationProfit = sumTradeProfit(profits, TradeProfit::evaluationProfitNet);
     BigDecimal realizedProfit = sumTradeProfit(profits, TradeProfit::realizedProfitNet);
+
+    // 보유 스냅샷(수량·평균단가·현재가·평가)은 기간 미적용 호출로 구한다.
+    // API 의 totalBuyCost 는 "기간 내 매수원가"이고 holdingQuantity 는 전체 누적 보유량이라
+    // 기간 원가 ÷ 누적 수량 식의 혼합 계산은 잘못된 평균단가를 만들고,
+    // 기간이 지정되면(hasDateRange) API 가 현재가/평가를 계산하지 않아 0 으로 표시된다.
+    TradeProfitRequest snapshotRequest = new TradeProfitRequest();
+    snapshotRequest.setUserId(userId);
+    snapshotRequest.setStockItemIdList(List.of(resolvedId));
+    List<TradeProfit> snapshotProfits =
+        tradeProfitClient.calculateProfit(snapshotRequest.toParams());
+    if (snapshotProfits == null) {
+      snapshotProfits = List.of();
+    }
+    int holdingQuantity = snapshotProfits.stream().mapToInt(TradeProfit::holdingQuantity).sum();
+    BigDecimal evaluationAmount = sumTradeProfit(snapshotProfits, TradeProfit::evaluationAmount);
+    BigDecimal evaluationProfit = sumTradeProfit(snapshotProfits, TradeProfit::evaluationProfitNet);
     BigDecimal currentPrice =
-        profits.stream()
+        snapshotProfits.stream()
             .map(TradeProfit::currentPrice)
             .filter(java.util.Objects::nonNull)
+            .filter(price -> price.signum() > 0)
             .findFirst()
             .orElse(BigDecimal.ZERO);
+    // 평균단가 = 보유원가 합 ÷ 보유수량 합 (행별 averageBuyPrice 의 수량 가중 평균)
+    BigDecimal holdingCost =
+        snapshotProfits.stream()
+            .map(
+                p ->
+                    (p.averageBuyPrice() != null ? p.averageBuyPrice() : BigDecimal.ZERO)
+                        .multiply(BigDecimal.valueOf(p.holdingQuantity())))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
     BigDecimal averageBuyPrice =
         holdingQuantity > 0
-            ? totalBuyCost.divide(
+            ? holdingCost.divide(
                 BigDecimal.valueOf(holdingQuantity), 0, java.math.RoundingMode.HALF_UP)
             : BigDecimal.ZERO;
 
@@ -986,7 +1023,7 @@ public class StockViewController {
             });
     model.addAttribute("stockNameById", stockNameById);
 
-    // 이 계좌의 종목별 보유/손익 (기간 적용)
+    // 기간 지표(실현손익·기간 매수원가)는 기간 적용 호출로 집계
     TradeProfitRequest profitRequest = new TradeProfitRequest();
     profitRequest.setUserId(userId);
     profitRequest.setAccountIdList(List.of(resolvedId));
@@ -996,8 +1033,22 @@ public class StockViewController {
     if (profits == null) {
       profits = List.of();
     }
+    BigDecimal totalBuyCost = sumTradeProfit(profits, TradeProfit::totalBuyCost);
+    BigDecimal realizedProfit = sumTradeProfit(profits, TradeProfit::realizedProfitNet);
+
+    // 보유 종목 테이블/평가 합계는 기간 미적용 스냅샷 호출로 구한다.
+    // 기간이 지정되면(hasDateRange) API 가 현재가/평가를 계산하지 않아
+    // 보유 종목의 평가금액·평가손익이 전부 0 으로 표시되고 정렬도 무의미해진다.
+    TradeProfitRequest snapshotRequest = new TradeProfitRequest();
+    snapshotRequest.setUserId(userId);
+    snapshotRequest.setAccountIdList(List.of(resolvedId));
+    List<TradeProfit> snapshotProfits =
+        tradeProfitClient.calculateProfit(snapshotRequest.toParams());
+    if (snapshotProfits == null) {
+      snapshotProfits = List.of();
+    }
     List<TradeProfit> enriched =
-        profits.stream()
+        snapshotProfits.stream()
             .map(
                 p ->
                     TradeProfit.withNames(
@@ -1013,9 +1064,7 @@ public class StockViewController {
                     .reversed())
             .toList();
     BigDecimal evaluationAmount = sumTradeProfit(enriched, TradeProfit::evaluationAmount);
-    BigDecimal totalBuyCost = sumTradeProfit(enriched, TradeProfit::totalBuyCost);
     BigDecimal evaluationProfit = sumTradeProfit(enriched, TradeProfit::evaluationProfitNet);
-    BigDecimal realizedProfit = sumTradeProfit(enriched, TradeProfit::realizedProfitNet);
 
     // 매매 내역 (이 계좌, 최신순, 기간 적용)
     TradeSearchRequest tradeSearchRequest =
@@ -1672,15 +1721,18 @@ public class StockViewController {
   }
 
   private String buildMonthlyDividendReferenceRedirect(
-      HttpServletRequest request, String symbol, String result) {
-    return buildMonthlyDividendReferenceRedirect(request, symbol, result, null, null);
+      HttpServletRequest request,
+      RedirectAttributes redirectAttributes,
+      String symbol,
+      String result) {
+    return buildMonthlyDividendReferenceRedirect(
+        request, redirectAttributes, symbol, result, null, null);
   }
 
   private String buildMonthlyDividendReferencePageRedirect(
       String symbol,
       String profileSort,
       String profileDirection,
-      String result,
       LocalDate payoutRecordDate,
       LocalDate payoutPayDate) {
     String resolvedProfileSort = monthlyDividendViewSupport.resolveProfileSort(profileSort);
@@ -1693,23 +1745,28 @@ public class StockViewController {
     appendQueryParam(redirectUrl, "profileDirection", resolvedProfileDirection);
     appendQueryParam(redirectUrl, "payoutRecordDate", payoutRecordDate);
     appendQueryParam(redirectUrl, "payoutPayDate", payoutPayDate);
-    appendQueryParam(redirectUrl, "result", result);
     return redirectUrl.toString();
   }
 
   private String buildMonthlyDividendReferenceRedirect(
       HttpServletRequest request,
+      RedirectAttributes redirectAttributes,
       String symbol,
       String result,
       LocalDate payoutRecordDate,
       LocalDate payoutPayDate) {
+    // 결과 코드는 URL 이 아니라 flash 로 전달한다. URL 쿼리에 남기면 새로고침/재진입마다
+    // 이전 결과 메시지가 다시 표시되는 문제가 있다.
+    if (redirectAttributes != null && StringUtils.hasText(result)) {
+      redirectAttributes.addFlashAttribute("monthlyDividendReferenceResult", result);
+    }
     String profileSort =
         monthlyDividendViewSupport.resolveProfileSort(request.getParameter("profileSort"));
     String profileDirection =
         monthlyDividendViewSupport.resolveProfileDirection(
             profileSort, request.getParameter("profileDirection"));
     return buildMonthlyDividendReferencePageRedirect(
-        symbol, profileSort, profileDirection, result, payoutRecordDate, payoutPayDate);
+        symbol, profileSort, profileDirection, payoutRecordDate, payoutPayDate);
   }
 
   private String renderMonthlyDividendReferenceError(
@@ -2240,8 +2297,7 @@ public class StockViewController {
       @RequestParam(required = false) String profileSort,
       @RequestParam(required = false) String profileDirection,
       @RequestParam(required = false) LocalDate payoutRecordDate,
-      @RequestParam(required = false) LocalDate payoutPayDate,
-      @RequestParam(required = false) String result) {
+      @RequestParam(required = false) LocalDate payoutPayDate) {
     if (isNotAuthenticated()) {
       return getLoginRedirectUrl(request);
     }
@@ -2250,9 +2306,10 @@ public class StockViewController {
     model.addAttribute("adminTab", adminTab);
 
     if (DIVIDEND_TAB_MONTHLY_REFERENCE.equals(adminTab)) {
+      // 결과 코드(monthlyDividendReferenceResult)는 POST 후 flash 로만 전달된다.
+      // URL 쿼리로 받으면 새로고침마다 이전 결과 메시지가 재표시되는 버그가 있어 제거했다.
       populateMonthlyDividendReferenceModel(
           model, symbol, profileSort, profileDirection, payoutRecordDate, payoutPayDate);
-      model.addAttribute("monthlyDividendReferenceResult", result != null ? result : "");
     }
 
     return "stock/admin";

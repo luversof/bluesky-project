@@ -161,7 +161,9 @@
 								var __detailChart = window.StockCharts.createHoldingsChart('stockDetailChart', series, {
 									valueLabel: '${MessageUtil.getMessage("stock.item.detail.chart.value")}',
 									costLabel: '${MessageUtil.getMessage("stock.item.detail.chart.cost")}',
-									profitLabel: '${MessageUtil.getMessage("stock.profit.unrealized")}'
+									profitLabel: '${MessageUtil.getMessage("stock.profit.unrealized")}',
+									maxLabel: '${MessageUtil.getMessage("stock.chart.range.max")}',
+									minLabel: '${MessageUtil.getMessage("stock.chart.range.min")}'
 								}, { animate: true, showMarkers: true });
 								setTimeout(function() { try { if (__detailChart) __detailChart.resize(); } catch (e) {} }, 60);
 								setTimeout(function() { try { if (__detailChart) __detailChart.resize(); } catch (e) {} }, 250);

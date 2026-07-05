@@ -451,6 +451,8 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 	const animate = !!(opts && opts.animate);
 	const t = texts || {};
 	const o = opts || {};
+	// maxLabel/minLabel 이 주어진 차트만 범위 내 최고/최저 주석을 그린다
+	const showExtremes = !!(t.maxLabel && t.minLabel);
 
 	const tradeMarkersPlugin = {
 		id: "holdingsTradeMarkers",
@@ -503,9 +505,85 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 		},
 	};
 
+	// 범위 내 평가액 최고/최저 지점에 값 + 현재값 대비 % 주석 (네이버 주식 차트 스타일)
+	const rangeExtremesPlugin = {
+		id: "holdingsRangeExtremes",
+		afterDatasetsDraw: function (chart: any) {
+			const xAxis = chart.scales["x"];
+			const yAxis = chart.scales["y"];
+			if (!xAxis || !yAxis) return;
+			let maxIdx = -1;
+			let minIdx = -1;
+			let maxV = -Infinity;
+			let minV = Infinity;
+			let lastV = NaN;
+			for (let i = 0; i < valueData.length; i++) {
+				const v = parseFloat(valueData[i]);
+				if (isNaN(v)) continue;
+				if (v > maxV) {
+					maxV = v;
+					maxIdx = i;
+				}
+				if (v < minV) {
+					minV = v;
+					minIdx = i;
+				}
+				lastV = v;
+			}
+			if (maxIdx < 0 || minIdx < 0 || maxIdx === minIdx || isNaN(lastV)) return;
+			const ctx = chart.ctx;
+			const area = chart.chartArea;
+			let baseColor = "#6b7280";
+			try {
+				const cv = getComputedStyle(document.documentElement)
+					.getPropertyValue("--color-base-content")
+					.trim();
+				if (cv) baseColor = cv;
+			} catch (e) {}
+			function pctText(extreme: number) {
+				if (extreme === 0) return "";
+				const pct = ((lastV - extreme) / Math.abs(extreme)) * 100;
+				return " (" + (pct >= 0 ? "+" : "") + pct.toFixed(2) + "%)";
+			}
+			function drawExtreme(idx: number, v: number, isMax: boolean, label: string) {
+				const px = xAxis.getPixelForValue(idx);
+				if (px < area.left || px > area.right) return;
+				const py = yAxis.getPixelForValue(v);
+				const text =
+					(isMax ? "▼ " : "▲ ") +
+					label +
+					" " +
+					StockCharts.formatCurrency!(v) +
+					pctText(v);
+				ctx.save();
+				ctx.font = "11px sans-serif";
+				const w = ctx.measureText(text).width;
+				let tx = px - w / 2;
+				if (tx < area.left + 2) tx = area.left + 2;
+				if (tx + w > area.right - 2) tx = area.right - 2 - w;
+				let ty = isMax ? py - 8 : py + 16;
+				if (ty < area.top + 12) ty = py + 16;
+				if (ty > area.bottom - 4) ty = py - 8;
+				ctx.fillStyle = baseColor;
+				ctx.globalAlpha = 0.95;
+				ctx.beginPath();
+				ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.fillText(text, tx, ty);
+				ctx.restore();
+			}
+			drawExtreme(maxIdx, maxV, true, t.maxLabel);
+			drawExtreme(minIdx, minV, false, t.minLabel);
+		},
+	};
+
+	const inlinePlugins: any[] = [];
+	if (showMarkers) inlinePlugins.push(tradeMarkersPlugin);
+	if (showExtremes) inlinePlugins.push(rangeExtremesPlugin);
+
 	return {
 		type: "line",
-		plugins: showMarkers ? [tradeMarkersPlugin] : [],
+		plugins: inlinePlugins,
 		data: {
 			labels: labels,
 			datasets: [

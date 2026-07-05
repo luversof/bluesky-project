@@ -151,7 +151,9 @@
 								var __detailChart = window.StockCharts.createHoldingsChart('accountDetailChart', series, {
 									valueLabel: '${MessageUtil.getMessage("stock.item.detail.chart.value")}',
 									costLabel: '${MessageUtil.getMessage("stock.item.detail.chart.cost")}',
-									profitLabel: '${MessageUtil.getMessage("stock.profit.unrealized")}'
+									profitLabel: '${MessageUtil.getMessage("stock.profit.unrealized")}',
+									maxLabel: '${MessageUtil.getMessage("stock.chart.range.max")}',
+									minLabel: '${MessageUtil.getMessage("stock.chart.range.min")}'
 								}, {
 									animate: true,
 									showMarkers: true,

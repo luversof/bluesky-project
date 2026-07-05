@@ -38,6 +38,8 @@
 
     String assetGrowthTitle = MessageUtil.getMessage("stock.page.asset.growth.title");
     String noDataLabel = MessageUtil.getMessage("common.message.no.data");
+    String rangeMaxLabel = MessageUtil.getMessage("stock.chart.range.max");
+    String rangeMinLabel = MessageUtil.getMessage("stock.chart.range.min");
     String chartDescriptionLabel = MessageUtil.getMessage("stock.asset.growth.chart.description");
     String clickDateHoldingsLabel = MessageUtil.getMessage("stock.asset.growth.chart.click.date");
     String profitAnalysisLabel = MessageUtil.getMessage("stock.asset.growth.profit.analysis");
@@ -322,7 +324,9 @@
                     valueLabel: '${totalAssetDatasetLabel}',
                     costLabel: '${principalLabel}',
                     axisLabel: '${totalAssetAxisLabel}',
-                    profitLabel: '${unrealizedProfitLabel}'
+                    profitLabel: '${unrealizedProfitLabel}',
+                    maxLabel: '${rangeMaxLabel}',
+                    minLabel: '${rangeMinLabel}'
                 }, {
                     animate: true,
                     showMarkers: true,
