@@ -118,7 +118,8 @@
                 @endif
             </div>
             <!-- 선택 합산 패널: 수익률 랭킹(data-dividend-yield-selection-summary)과 동일한 UX -->
-            <div class="hidden rounded-2xl border border-info/15 bg-info/5 px-4 py-3 mb-3"
+            <div class="selection-reveal"><div>
+            <div class="rounded-2xl border border-info/15 bg-info/5 px-4 py-3 mb-3"
                  data-dividend-change-summary
                  data-count-template="${selectionCountTemplate}"
                  aria-live="polite">
@@ -144,6 +145,7 @@
                     </div>
                 </div>
             </div>
+            </div></div>
             <ul class="divide-y divide-base-200">
                 @for(int ci = 0; ci < Math.min(dividendChangeContributors.size(), 8); ci++)
                     !{
@@ -152,7 +154,7 @@
                         boolean isNew = ch.previousNet().signum() == 0 && ch.currentNet().signum() != 0;
                         boolean stopped = ch.currentNet().signum() == 0 && ch.previousNet().signum() != 0;
                     }
-                    <li class="flex items-center gap-2 py-1.5 text-sm cursor-pointer rounded-field"
+                    <li class="flex items-center gap-2 py-1.5 text-sm cursor-pointer rounded-field hover:bg-base-200 transition-colors duration-300 hover:duration-75"
                         data-dividend-change-row
                         tabindex="0"
                         role="button"
@@ -199,7 +201,8 @@
                 function update() {
                     if (!summary) return;
                     var selected = card.querySelectorAll('[data-dividend-change-row][aria-pressed="true"]');
-                    summary.classList.toggle('hidden', selected.length === 0);
+                    var reveal = summary.closest('.selection-reveal');
+                    if (reveal) reveal.classList.toggle('is-open', selected.length > 0);
                     if (selected.length === 0) return;
                     var prev = 0, current = 0, delta = 0;
                     for (var i = 0; i < selected.length; i++) {

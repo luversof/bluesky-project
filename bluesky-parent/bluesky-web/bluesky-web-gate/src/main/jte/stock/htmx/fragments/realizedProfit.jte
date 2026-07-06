@@ -462,7 +462,7 @@
                     !{double accRate = accSoldCost.compareTo(BigDecimal.ZERO) > 0 && acc.realizedProfit() != null
                         ? acc.realizedProfit().doubleValue() / accSoldCost.doubleValue() * 100
                         : 0.0;}
-                    <tr class="hover account-row" data-initial="${accIdx[0]}">
+                    <tr class="account-row" data-initial="${accIdx[0]}">
                         <td data-val="${entry.getKey()}">
                             <div class="font-semibold"><a href="/stock/account?accountId=${realizedAccountIdByName.get(entry.getKey()) != null ? realizedAccountIdByName.get(entry.getKey()).toString() : ""}" class="link link-hover">${entry.getKey()}</a></div>
                             <div class="text-xs opacity-50">${stockMenuLabel}</div>
@@ -551,7 +551,7 @@
                                 ? item.realizedProfitNet().doubleValue() / itemSoldCost.doubleValue() * 100
                                 : 0.0;}
                             
-                            <tr class="hover stock-row" data-initial="${rowIdx[0]}">
+                            <tr class="stock-row" data-initial="${rowIdx[0]}">
                                 <td data-val="${item.stockItemName() != null ? item.stockItemName() : ""}">
                                     <div class="font-semibold"><a href="/stock/item?stockItemId=${item.stockItemId() != null ? item.stockItemId().toString() : ""}" class="link link-hover">${item.stockItemName() != null ? item.stockItemName() : "-"}</a></div>
                                     <div class="flex items-center gap-1 mt-0.5">

@@ -197,7 +197,7 @@
                         ? principalReturnAmount.doubleValue() / profitBasis.doubleValue() * 100
                         : 0.0;}
                     !{String detailRowId = "asset-status-account-detail-" + Math.abs((entry.getKey() != null ? entry.getKey() : "account").hashCode());}
-                    <tr class="hover"
+                    <tr
                         data-account-selectable-row
                         data-sortable-row
                         data-selected="false"
@@ -411,7 +411,7 @@
             }
         </style>
         @template._components.ui.tableCard(cssClass = "overflow-x-auto", body = @`
-            <table class="table table-sm table-zebra w-full" data-sortable-table data-asset-status-stock-table>
+            <table class="table table-sm w-full" data-sortable-table data-asset-status-stock-table>
                 <thead class="bg-base-200">
                     <tr>
                         <th scope="col">
@@ -506,7 +506,7 @@
                                 ? item.evaluationAmount().divide(totalEvaluationAmount, 4, java.math.RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
                                 : BigDecimal.ZERO;}
                             !{String stockTagTooltip = stockTagTooltipById.apply(item.stockItemId());}
-                            <tr class="hover asset-status-stock-row"
+                            <tr class="asset-status-stock-row"
                                 data-sortable-row
                                 data-stock-selectable-row
                                 tabindex="0"

@@ -196,7 +196,7 @@
 										@for(TradeResponse trade : trades)
 											!{boolean isBuy = trade.type() == TradeType.BUY;}
 											!{long fees = (trade.fee() != null ? trade.fee().longValue() : 0) + (trade.tax() != null ? trade.tax().longValue() : 0);}
-											<tr class="hover">
+											<tr>
 												<td class="tabular-nums">${trade.tradeDate() != null ? trade.tradeDate().atZone(zone).toLocalDate().toString() : "-"}</td>
 												<td><span class="badge badge-sm ${isBuy ? "badge-error badge-outline" : "badge-info badge-outline"}">${isBuy ? MessageUtil.getMessage("stock.trade.label.buy") : MessageUtil.getMessage("stock.trade.label.sell")}</span></td>
 												<td class="text-right font-mono amount-value">${String.format("%,d", trade.quantity())}</td>
@@ -232,7 +232,7 @@
 									</thead>
 									<tbody>
 										@for(DividendResponse dividend : dividends)
-											<tr class="hover">
+											<tr>
 												<td class="tabular-nums">${dividend.payDate() != null ? dividend.payDate().atZone(zone).toLocalDate().toString() : "-"}</td>
 												<td class="text-right font-mono amount-value hidden sm:table-cell opacity-70">${String.format("%,d", dividend.grossAmount() != null ? dividend.grossAmount().longValue() : 0)}</td>
 												<td class="text-right font-mono amount-value hidden sm:table-cell opacity-60">${String.format("%,d", dividend.tax() != null ? dividend.tax().longValue() : 0)}</td>

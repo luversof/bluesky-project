@@ -34,7 +34,7 @@
 			@else
 				@for(int i = 0; i < page.getContent().size(); i++)
 					!{var boardArticle = page.getContent().get(i);}
-					<tr class="hover cursor-pointer transition-colors" data-boardArticleId="${boardArticle.id() != null ? boardArticle.id().toString() : ""}">
+					<tr class="cursor-pointer transition-colors" data-boardArticleId="${boardArticle.id() != null ? boardArticle.id().toString() : ""}">
 						<td class="text-center">${page.getTotalElements() - (page.getNumber() * page.getSize()) - i}</td>
 						<td>
 							<div class="font-medium">

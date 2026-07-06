@@ -91,7 +91,7 @@
                     @else
                         !{int count = 1;}
                         @for(AnalyticsRow row : tableData)
-                            <tr class="hover">
+                            <tr>
                                 <td>${count++}</td>
                                 <td class="font-mono text-sm">${row.key()}</td>
                                 <td class="text-left font-bold truncate max-w-[150px]" title="${row.subKey()}">${row.subKey()}</td>

@@ -312,7 +312,12 @@
 
             const selectedRows = table.tBodies[0].querySelectorAll('[data-dividend-yield-row][aria-pressed="true"]');
             const selectedCount = selectedRows.length;
-            summary.classList.toggle('hidden', selectedCount === 0);
+            const reveal = summary.closest('.selection-reveal');
+            if (reveal) {
+                reveal.classList.toggle('is-open', selectedCount > 0);
+            } else {
+                summary.classList.toggle('hidden', selectedCount === 0);
+            }
 
             if (selectedCount === 0) {
                 return;

@@ -253,7 +253,8 @@
 							<p class="text-xs text-base-content/50">${monthlySelectionHelperLabel}</p>
 							<div id="monthlyDividendSimulatorOrderStatus" class="hidden"></div>
 							<p class="text-xs ${monthlyDividendReorderEnabled ? "text-primary/70" : "text-base-content/40"}">${monthlyDividendReorderEnabled ? monthlyDividendReorderEnabledLabel : monthlyDividendReorderDisabledLabel}</p>
-							<div class="hidden rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3"
+							<div class="selection-reveal"><div>
+							<div class="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3"
 								 data-monthly-selection-summary
 								 data-count-template="${selectionCountTemplate}"
 								 data-total-expected-monthly-dividend="${totalExpectedMonthlyDividend.toPlainString()}"
@@ -343,6 +344,7 @@
 									</div>
 								</div>
 							</div>
+							</div></div>
 							<div class="overflow-x-auto">
 								<table class="table table-pin-rows table-zebra table-sm whitespace-nowrap" data-monthly-selection-table>
 								<thead>
@@ -466,7 +468,7 @@
 											!{String normalizedRowSymbol = row.stockItemSymbol() != null ? row.stockItemSymbol().trim().toUpperCase(java.util.Locale.ROOT) : "";}
 											!{Integer rowDisplayOrder = monthlyDividendProfileDisplayOrders != null ? monthlyDividendProfileDisplayOrders.get(normalizedRowSymbol) : null;}
 											!{boolean rowReorderable = monthlyDividendReorderEnabled && rowDisplayOrder != null;}
-											<tr class="monthly-dividend-row hover${rowReorderable ? " cursor-move" : ""}"
+											<tr class="monthly-dividend-row${rowReorderable ? " cursor-move" : ""}"
 												data-monthly-selection-row
 												data-profile-order-row="${rowDisplayOrder != null ? "true" : "false"}"
 												data-symbol="${normalizedRowSymbol}"
@@ -692,7 +694,12 @@
 
 			const selectedRows = table.tBodies[0].querySelectorAll('[data-monthly-selection-row][aria-pressed="true"]');
 			const selectedCount = selectedRows.length;
-			summary.classList.toggle('hidden', selectedCount === 0);
+			const reveal = summary.closest('.selection-reveal');
+			if (reveal) {
+				reveal.classList.toggle('is-open', selectedCount > 0);
+			} else {
+				summary.classList.toggle('hidden', selectedCount === 0);
+			}
 
 			if (selectedCount === 0) {
 				return;

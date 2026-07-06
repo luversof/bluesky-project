@@ -230,7 +230,8 @@
                 @else
                     <div class="mb-3 flex flex-col gap-3">
                         <p class="text-xs text-base-content/50">${stockYieldSelectionHelperLabel}</p>
-                        <div class="hidden rounded-2xl border border-info/15 bg-info/5 px-4 py-3"
+                        <div class="selection-reveal"><div>
+                        <div class="rounded-2xl border border-info/15 bg-info/5 px-4 py-3"
                              data-dividend-yield-selection-summary
                              data-count-template="${stockYieldSelectionCountLabel}"
                              data-total-net-amount="${safeAllNet.toPlainString()}"
@@ -273,6 +274,7 @@
                                 </div>
                             </div>
                         </div>
+                        </div></div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="table table-xs w-full" data-dividend-yield-selection-table data-dividend-yield-sortable-table>
@@ -383,7 +385,7 @@
                                 @for(DividendYieldGroupView row : stockYieldRows)
                                     !{BigDecimal rowTaxAmount = row.totalGrossAmount() != null && row.totalNetAmount() != null ? row.totalGrossAmount().subtract(row.totalNetAmount()) : null;}
                                     !{String stockTagTooltip = stockTagTooltipByName.apply(row.label());}
-                                    <tr class="dividend-yield-stock-row hover"
+                                    <tr class="dividend-yield-stock-row"
                                         data-dividend-yield-row
                                         data-selection-class="dividend-yield-stock-row-selected"
                                         tabindex="0"
@@ -443,7 +445,8 @@
                 @else
                     <div class="mb-3 flex flex-col gap-3">
                         <p class="text-xs text-base-content/50">${accountYieldSelectionHelperLabel}</p>
-                        <div class="hidden rounded-2xl border border-secondary/15 bg-secondary/5 px-4 py-3"
+                        <div class="selection-reveal"><div>
+                        <div class="rounded-2xl border border-secondary/15 bg-secondary/5 px-4 py-3"
                              data-dividend-yield-selection-summary
                              data-count-template="${accountYieldSelectionCountLabel}"
                              data-total-net-amount="${safeAllNet.toPlainString()}"
@@ -486,6 +489,7 @@
                                 </div>
                             </div>
                         </div>
+                        </div></div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="table table-xs w-full" data-dividend-yield-selection-table data-dividend-yield-sortable-table>
@@ -595,7 +599,7 @@
                             <tbody>
                                 @for(DividendYieldGroupView row : accountYieldRows)
                                     !{BigDecimal rowTaxAmount = row.totalGrossAmount() != null && row.totalNetAmount() != null ? row.totalGrossAmount().subtract(row.totalNetAmount()) : null;}
-                                    <tr class="dividend-yield-account-row hover"
+                                    <tr class="dividend-yield-account-row"
                                         data-dividend-yield-row
                                         data-selection-class="dividend-yield-account-row-selected"
                                         tabindex="0"

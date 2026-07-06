@@ -169,7 +169,7 @@
 		<section>
 			<h2 class="text-lg font-semibold mb-3">table (sm / zebra / hover / pin-rows)</h2>
 			<div class="max-h-40 overflow-auto border border-base-200 rounded-box">
-				<table class="table table-sm table-zebra table-hover table-pin-rows">
+				<table class="table table-sm table-zebra table-pin-rows">
 					<thead><tr><th>컬럼A</th><th>컬럼B</th><th class="text-right">금액</th></tr></thead>
 					<tbody>
 						<tr><td>1행</td><td><span class="badge badge-success badge-sm">badge</span></td><td class="text-right font-mono text-profit">+12,345</td></tr>

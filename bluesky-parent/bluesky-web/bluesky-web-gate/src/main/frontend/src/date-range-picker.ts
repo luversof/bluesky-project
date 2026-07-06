@@ -605,7 +605,7 @@ const DateRangePicker = (function () {
 				!isMtd &&
 				(mode === "ytd" ||
 					(mode === "" && !!start && start.slice(5) === "01-01"));
-			const edgeMode = isMtd ? "1" : isYtd ? "12" : mode;
+			let edgeMode = isMtd ? "1" : isYtd ? "12" : mode;
 			clearActive();
 			let startStr = "",
 				endStr = "";
@@ -617,6 +617,12 @@ const DateRangePicker = (function () {
 					);
 				} else if (isYtd) {
 					startStr = maxDate.getFullYear() + "-01-01";
+				} else if (edgeMode === "1" && isWholeMonthRange(start || "", getEnd() || "")) {
+					// 통월 뷰에서 끝으로 이동 = 이번달. 상대 1개월(오늘-1개월~오늘)로 변질시키지 않는다.
+					startStr = fmtDate(
+						new Date(maxDate.getFullYear(), maxDate.getMonth(), 1),
+					);
+					edgeMode = "mtd";
 				} else if (edgeMode && !isNaN(Number(edgeMode)) && +edgeMode > 0) {
 					const s = addMonthsClamped(maxDate, -+edgeMode);
 					startStr = fmtDate(s);
@@ -767,6 +773,17 @@ const DateRangePicker = (function () {
 						if (!shifted) return;
 						newStart = shifted.start;
 						newEnd = shifted.end;
+						// 통월(1개월) 뷰가 현재 달에 도달하면 '이번달(mtd)' 모드로 복원한다.
+						// (ytd 의 연도 복원과 대칭) 복원하지 않으면 7/1~오늘이 '1개월' 상대 구간이
+						// 되어 다음 '이전' 클릭이 6/1~6/7 처럼 구간을 훼손한다.
+						if (months === 1) {
+							const thisMonthFirstStr = fmtDate(
+								new Date(maxDate.getFullYear(), maxDate.getMonth(), 1),
+							);
+							if (newStart === thisMonthFirstStr && newEnd === maxStr) {
+								newMode = "mtd";
+							}
+						}
 					}
 				} catch (e) {
 					// On any unexpected error, gracefully bail out
@@ -796,10 +813,10 @@ const DateRangePicker = (function () {
 				Array.from(
 					(root as Element).querySelectorAll("." + cfg.btnClass),
 				).forEach((b: Element) => {
+					const onclick = b.getAttribute("onclick") || "";
 					if (
-						(b.getAttribute("onclick") || "").indexOf(
-							"set(" + newMode + ",",
-						) !== -1
+						onclick.indexOf("set(" + newMode + ",") !== -1 ||
+						onclick.indexOf("set('" + newMode + "'") !== -1
 					) {
 						b.classList.add(activeClass());
 						b.classList.remove("btn-ghost");

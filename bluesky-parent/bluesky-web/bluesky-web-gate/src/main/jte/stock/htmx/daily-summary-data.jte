@@ -145,7 +145,7 @@
                         </tr>
                     @else
                         @for(AnalyticsRow row : tableData)
-                            <tr class="hover">
+                            <tr>
                                 <td class="font-medium">${row.key()}</td>
                                 @if(subKeyLabel != null)
                                     <td class="text-sm opacity-80">${row.subKey()}</td>

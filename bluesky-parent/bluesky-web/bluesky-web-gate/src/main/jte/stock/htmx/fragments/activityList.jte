@@ -221,7 +221,7 @@
                 @template._components.ui.emptyState(message = noActivityDataLabel)
             @else
                 <div class="max-lg:overflow-x-auto">
-                    <table class="table table-hover w-full table-sm table-pin-rows pin-top-nav">
+                    <table class="table w-full table-sm table-pin-rows pin-top-nav">
                         <thead>
                             <tr class="bg-base-200">
                                 <th scope="col">${dateLabel}</th>
