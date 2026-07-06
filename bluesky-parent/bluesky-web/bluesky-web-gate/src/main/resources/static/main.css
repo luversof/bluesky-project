@@ -1894,9 +1894,6 @@
   .\!text-primary-content {
     color: var(--color-primary-content) !important;
   }
-  .text-accent {
-    color: var(--color-accent);
-  }
   .text-amber-700 {
     color: var(--color-amber-700);
   }
@@ -2034,9 +2031,6 @@
   }
   .text-success-content {
     color: var(--color-success-content);
-  }
-  .text-warning {
-    color: var(--color-warning);
   }
   .text-warning-content {
     color: var(--color-warning-content);
@@ -2268,6 +2262,11 @@
   .sm\:grid-cols-3 {
     @media (width >= 40rem) {
       grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .sm\:grid-cols-4 {
+    @media (width >= 40rem) {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
   .sm\:gap-4 {

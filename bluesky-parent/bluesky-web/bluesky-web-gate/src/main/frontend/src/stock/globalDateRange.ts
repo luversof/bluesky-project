@@ -181,7 +181,6 @@ function readGlobalRangeRaw(): string | null {
 					try {
 						const formsToTrigger = [
 							"tradeSearchForm",
-							"realizedProfitSearchForm",
 						];
 						formsToTrigger.forEach((id) => {
 							try {

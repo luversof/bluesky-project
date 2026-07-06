@@ -32,7 +32,10 @@ import net.luversof.web.common.menu.domain.Pagination;
 import net.luversof.web.gate.stock.constant.TradeType;
 import net.luversof.web.gate.stock.domain.Account;
 import net.luversof.web.gate.stock.domain.StockItem;
+import net.luversof.web.gate.stock.domain.TradeProfit;
+import net.luversof.web.gate.stock.domain.TradeProfitAggregator;
 import net.luversof.web.gate.stock.dto.request.DividendRequest;
+import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
 import net.luversof.web.gate.stock.dto.request.TradeSearchRequest;
 import net.luversof.web.gate.stock.dto.response.DividendResponse;
 import net.luversof.web.gate.stock.dto.response.TradeResponse;
@@ -325,6 +328,69 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
             .map(t -> t.realizedProfit() != null ? t.realizedProfit() : BigDecimal.ZERO)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+    // 실현손익 집계 (구 "실현 손익" 메뉴 통합) — 현재 필터(계좌/종목/태그/기간)와 동일한 조건으로 계산
+    boolean emptyStockSelection =
+        effectiveStockItemIdList != null && effectiveStockItemIdList.isEmpty();
+    TradeProfitRequest profitRequest = new TradeProfitRequest();
+    profitRequest.setUserId(userId);
+    profitRequest.setAccountIdList(effectiveAccountIdList);
+    profitRequest.setStockItemIdList(effectiveStockItemIdList);
+    profitRequest.setStartDate(startInst);
+    profitRequest.setEndDate(endInst);
+    profitRequest.setTimeZone(timeZone);
+
+    // 계좌별 실현손익 (보유량 0 포함: 전량 매도 종목의 실현손익도 반영)
+    List<TradeProfit> realizedEnrichedList =
+        emptyStockSelection ? List.of() : getEnrichedTradeProfits(profitRequest);
+    List<AccountRealizedRow> accountRealizedList = new ArrayList<>();
+    realizedEnrichedList.stream()
+        .collect(Collectors.groupingBy(TradeProfit::accountName))
+        .entrySet()
+        .stream()
+        .sorted(Map.Entry.comparingByKey(Comparator.nullsLast(Comparator.naturalOrder())))
+        .forEach(
+            entry -> {
+              var s = TradeProfitAggregator.aggregate(entry.getValue());
+              BigDecimal realizedNet =
+                  s.realizedProfitNet() != null ? s.realizedProfitNet() : BigDecimal.ZERO;
+              BigDecimal sellProceeds =
+                  s.totalSellProceeds() != null ? s.totalSellProceeds() : BigDecimal.ZERO;
+              accountRealizedList.add(
+                  new AccountRealizedRow(
+                      entry.getKey(),
+                      s.totalBuyAmount() != null ? s.totalBuyAmount() : BigDecimal.ZERO,
+                      s.totalSellAmount() != null ? s.totalSellAmount() : BigDecimal.ZERO,
+                      realizedNet,
+                      sellProceeds.subtract(realizedNet)));
+            });
+
+    // 종목별 실현손익 (계좌 무시, 보유량 0 포함) — 실현손익 발생 종목만, 실현손익 내림차순
+    List<TradeProfit> stockRealizedList =
+        (emptyStockSelection
+                ? Collections.<TradeProfit>emptyList()
+                : getStockGroupedTradeProfits(profitRequest, true))
+            .stream()
+                .map(this::toStockRealized)
+                .filter(
+                    tp ->
+                        tp.realizedProfitNet() != null
+                            && tp.realizedProfitNet().compareTo(BigDecimal.ZERO) != 0)
+                .sorted(
+                    Comparator.comparing(
+                            TradeProfit::realizedProfitNet,
+                            Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(
+                            TradeProfit::stockItemName,
+                            Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+    long realizedWinCount =
+        stockRealizedList.stream()
+            .filter(
+                tp ->
+                    tp.realizedProfitNet() != null
+                        && tp.realizedProfitNet().compareTo(BigDecimal.ZERO) > 0)
+            .count();
+
     if (size <= 0) size = 15;
     // 상세 목록은 페이징 없이 전체를 펼쳐서 표시(헤더 sticky로 스크롤). 한 페이지에 전부 담는다.
     if (!viewList.isEmpty()) size = viewList.size();
@@ -407,9 +473,21 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     model.addAttribute("totalAllRealizedProfit", totalAllRealizedProfit);
     model.addAttribute("rangeMode", rangeMode);
     model.addAttribute("dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");
+    model.addAttribute("accountRealizedList", accountRealizedList);
+    model.addAttribute("stockRealizedList", stockRealizedList);
+    model.addAttribute("realizedWinCount", realizedWinCount);
+    model.addAttribute("realizedStockCount", stockRealizedList.size());
 
     return "stock/htmx/tradeList";
   }
+
+  /** 계좌별 실현손익 요약 행 (매매 내역 화면용). */
+  public record AccountRealizedRow(
+      String name,
+      BigDecimal buyAmount,
+      BigDecimal sellAmount,
+      BigDecimal realizedNet,
+      BigDecimal soldCost) {}
 
   public record Activity(
       String type,

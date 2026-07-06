@@ -1181,13 +1181,11 @@ public class StockViewController {
     return "stock/assetGrowth";
   }
 
+  /** 구 "실현 손익" 페이지 — "매매 내역"으로 통합됨. 북마크 호환용 리다이렉트. */
   @BlueskyPreAuthorize
   @GetMapping("/realized-profit")
-  public String realizedProfitPage(HttpServletRequest request, Model model) {
-    if (isNotAuthenticated()) {
-      return getLoginRedirectUrl(request);
-    }
-    return "stock/realizedProfit";
+  public String realizedProfitPage() {
+    return "redirect:/stock/trade";
   }
 
   @BlueskyPreAuthorize

@@ -185,6 +185,36 @@ public abstract class StockBaseHtmxController {
     return requestCopy;
   }
 
+  /** 종목 단위(계좌 무시)로 그룹핑된 손익 목록을 반환한다. */
+  protected List<TradeProfit> getStockGroupedTradeProfits(
+      TradeProfitRequest request, boolean includeZeroHoldings) {
+    List<TradeProfit> stockGroupedTradeProfits =
+        new ArrayList<>(getEnrichedTradeProfits(request, TradeProfitRequestGroup.STOCKITEM));
+    if (!includeZeroHoldings) {
+      stockGroupedTradeProfits.removeIf(tp -> tp.holdingQuantity() == 0);
+    }
+    return stockGroupedTradeProfits;
+  }
+
+  /** 종목별 실현손익 행으로 변환한다 (수수료/세금 반영 + 매수/매도 금액 포함). */
+  protected TradeProfit toStockRealized(TradeProfit profit) {
+    return TradeProfit.ofStockRealized(
+        profit.stockItemId(),
+        profit.stockItemName(),
+        profit.holdingQuantity(),
+        profit.totalSellQuantity(),
+        profit.totalBuyAmount(),
+        profit.totalSellAmount(),
+        profit.evaluationAmount(),
+        profit.evaluationProfit(),
+        profit.realizedProfitNet(),
+        profit.totalBuyCost(),
+        profit.totalSellProceeds(),
+        profit.totalBuyFee(),
+        profit.totalSellFee(),
+        profit.totalSellTax());
+  }
+
   protected List<String> getAvailableStockTags(List<StockItem> stockItemList) {
     if (stockItemList == null || stockItemList.isEmpty()) {
       return List.of();
