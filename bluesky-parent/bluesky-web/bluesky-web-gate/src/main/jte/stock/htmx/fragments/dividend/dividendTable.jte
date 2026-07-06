@@ -46,7 +46,7 @@
         </summary>
 
         <div id="dividendListContainer" class="flex flex-col relative mt-2">
-            <div class="flex-1 min-h-0">
+            <div class="flex-1 min-h-0 max-lg:overflow-x-auto">
                 <table class="table table-hover w-full table-sm table-pin-rows pin-top-nav">
                     <thead>
                     <tr class="bg-base-200">

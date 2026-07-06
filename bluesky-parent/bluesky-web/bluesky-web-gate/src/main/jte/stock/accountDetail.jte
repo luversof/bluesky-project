@@ -182,6 +182,7 @@
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.account.detail.empty.holdings")}</div>
 						@else
 							@template._components.ui.tableCard(body = @`
+								<div class="max-lg:overflow-x-auto">
 								<table class="table table-sm w-full table-pin-rows pin-top-nav" data-sortable>
 									<thead class="bg-base-200">
 										<tr>
@@ -205,6 +206,7 @@
 										@endfor
 									</tbody>
 								</table>
+								</div>
 							`)
 						@endif
 					</div>
@@ -216,6 +218,7 @@
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.account.detail.empty.trades")}</div>
 						@else
 							@template._components.ui.tableCard(body = @`
+								<div class="max-lg:overflow-x-auto">
 								<table class="table table-sm w-full table-pin-rows pin-top-nav" data-sortable>
 									<thead class="bg-base-200">
 										<tr>
@@ -242,6 +245,7 @@
 										@endfor
 									</tbody>
 								</table>
+								</div>
 							`)
 						@endif
 					</div>
@@ -253,6 +257,7 @@
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.account.detail.empty.dividends")}</div>
 						@else
 							@template._components.ui.tableCard(body = @`
+								<div class="max-lg:overflow-x-auto">
 								<table class="table table-sm w-full table-pin-rows pin-top-nav" data-sortable>
 									<thead class="bg-base-200">
 										<tr>
@@ -276,6 +281,7 @@
 										@endfor
 									</tbody>
 								</table>
+								</div>
 							`)
 						@endif
 					</div>

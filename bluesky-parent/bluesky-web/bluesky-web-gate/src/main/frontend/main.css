@@ -266,13 +266,19 @@
 	.navbar-center { display: flex; align-items: center; gap: 0.5rem; }
 	.navbar-end { display: flex; align-items: center; gap: 0.5rem; flex: 1 1 0; justify-content: flex-end; }
 
-	/* ---- dock (mobile bottom nav) ---- */
-	.dock { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-around;
-		min-height: 4rem; background-color: var(--color-base-100); }
-	.dock > * { display: flex; flex-direction: column; align-items: center; gap: 0.125rem; flex: 1; padding: 0.25rem;
+	/* ---- dock (mobile bottom nav) ----
+	   메뉴가 많으면 좌우 스와이프로 넘긴다: 항목은 min-width 를 갖고(flex 축소 금지),
+	   합이 화면 폭을 넘으면 overflow-x 스크롤. 여유가 있으면 flex-grow 로 고르게 채움. */
+	.dock { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center;
+		min-height: 4rem; background-color: var(--color-base-100);
+		overflow-x: auto; scrollbar-width: none;
+		padding-bottom: env(safe-area-inset-bottom); /* iOS 홈 인디케이터와 겹침 방지 */ }
+	.dock::-webkit-scrollbar { display: none; }
+	.dock > * { display: flex; flex-direction: column; align-items: center; gap: 0.125rem;
+		flex: 1 0 auto; min-width: 4.25rem; padding: 0.25rem 0.5rem;
 		color: color-mix(in oklab, var(--color-base-content) 60%, transparent); }
 	.dock-active { color: var(--color-primary); }
-	.dock-label { font-size: 0.625rem; }
+	.dock-label { font-size: 0.625rem; white-space: nowrap; }
 	.dock-sm { min-height: 3.5rem; }
 
 	/* ---- dropdown ---- */

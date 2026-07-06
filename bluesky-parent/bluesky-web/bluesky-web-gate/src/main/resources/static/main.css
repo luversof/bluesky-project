@@ -2220,6 +2220,21 @@
       }
     }
   }
+  .max-lg\:overflow-x-auto {
+    @media (width < 64rem) {
+      overflow-x: auto;
+    }
+  }
+  .max-sm\:hidden {
+    @media (width < 40rem) {
+      display: none;
+    }
+  }
+  .max-sm\:px-2 {
+    @media (width < 40rem) {
+      padding-inline: calc(var(--spacing) * 2);
+    }
+  }
   .sm\:block {
     @media (width >= 40rem) {
       display: block;
@@ -2273,6 +2288,12 @@
   .sm\:text-right {
     @media (width >= 40rem) {
       text-align: right;
+    }
+  }
+  .sm\:text-xl {
+    @media (width >= 40rem) {
+      font-size: var(--text-xl);
+      line-height: var(--tw-leading, var(--text-xl--line-height));
     }
   }
   .md\:col-span-2 {
@@ -3138,17 +3159,23 @@
     bottom: 0;
     display: flex;
     align-items: center;
-    justify-content: space-around;
     min-height: 4rem;
     background-color: var(--color-base-100);
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .dock::-webkit-scrollbar {
+    display: none;
   }
   .dock > * {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.125rem;
-    flex: 1;
-    padding: 0.25rem;
+    flex: 1 0 auto;
+    min-width: 4.25rem;
+    padding: 0.25rem 0.5rem;
     color: color-mix(in srgb, #1a2233 60%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       color: color-mix(in oklab, var(--color-base-content) 60%, transparent);
@@ -3159,6 +3186,7 @@
   }
   .dock-label {
     font-size: 0.625rem;
+    white-space: nowrap;
   }
   .dock-sm {
     min-height: 3.5rem;

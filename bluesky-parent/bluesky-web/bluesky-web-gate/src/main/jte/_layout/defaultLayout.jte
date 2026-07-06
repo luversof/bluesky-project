@@ -11,6 +11,8 @@
 <!DOCTYPE html>
 <html lang="${org.springframework.context.i18n.LocaleContextHolder.getLocale().toLanguageTag()}" data-theme="light">
 <head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>${title}</title>
 	<script>
 		(function() {
