@@ -11,6 +11,8 @@
 @param BigDecimal totalRealizedProfit
 @param BigDecimal totalSellProceeds
 @param BigDecimal totalFees
+@param BigDecimal totalBuyFees = java.math.BigDecimal.ZERO
+@param BigDecimal totalSellCosts = java.math.BigDecimal.ZERO
 @param double winRate
 @param TradeProfit bestStock
 @param TradeProfit worstStock
@@ -81,7 +83,8 @@
             String bestStockLabel = MessageUtil.getMessage("stock.realized.summary.best.stock");
             String worstStockLabel = MessageUtil.getMessage("stock.realized.summary.worst.stock");
             String totalFeesLabel = MessageUtil.getMessage("stock.realized.summary.total.fees");
-            String totalFeesDescLabel = MessageUtil.getMessage("stock.realized.summary.total.fees.desc");
+            String buyFeesLabel = MessageUtil.getMessage("stock.realized.summary.buy.fees");
+            String sellCostsLabel = MessageUtil.getMessage("stock.realized.summary.sell.costs");
             String profitableStockRatioLabel = MessageUtil.getMessage("stock.summary.label.profitable.stock.ratio");
             String winCountLabel = java.text.MessageFormat.format(
                 MessageUtil.getMessage("stock.realized.summary.win.count"),
@@ -269,7 +272,11 @@
             <div class="stat-value text-base font-bold amount-value text-warning">
                 ${String.format("%,d", totalFees != null ? totalFees.longValue() : 0)}
             </div>
-            <div class="stat-desc mt-1 opacity-70">${totalFeesDescLabel}</div>
+            <!-- 매수 수수료는 매도 없이도 발생하므로, 실현손익 0인데 비용이 있는 이유가 보이게 내역을 나눠 표시 -->
+            <div class="stat-desc mt-1 opacity-70">
+                ${buyFeesLabel} <span class="amount-value">${String.format("%,d", totalBuyFees != null ? totalBuyFees.longValue() : 0)}</span>
+                · ${sellCostsLabel} <span class="amount-value">${String.format("%,d", totalSellCosts != null ? totalSellCosts.longValue() : 0)}</span>
+            </div>
         </div>
 
         <div class="stat">

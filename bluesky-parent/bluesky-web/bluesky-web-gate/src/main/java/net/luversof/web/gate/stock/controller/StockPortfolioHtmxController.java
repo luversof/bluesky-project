@@ -613,17 +613,24 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
             .map(TradeProfit::totalSellProceeds)
             .filter(Objects::nonNull)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalFees =
+    // 거래비용을 매수/매도 성격으로 분리 집계 — 매도가 없는 기간에도 매수 수수료가
+    // 잡히는 이유를 화면에서 알 수 있게 카드 설명에 내역으로 표시한다.
+    BigDecimal totalBuyFees =
+        enrichedList.stream()
+            .map(TradeProfit::totalBuyFee)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalSellCosts =
         enrichedList.stream()
             .map(
                 tp -> {
-                  BigDecimal fee = BigDecimal.ZERO;
-                  if (tp.totalBuyFee() != null) fee = fee.add(tp.totalBuyFee());
-                  if (tp.totalSellFee() != null) fee = fee.add(tp.totalSellFee());
-                  if (tp.totalSellTax() != null) fee = fee.add(tp.totalSellTax());
-                  return fee;
+                  BigDecimal cost = BigDecimal.ZERO;
+                  if (tp.totalSellFee() != null) cost = cost.add(tp.totalSellFee());
+                  if (tp.totalSellTax() != null) cost = cost.add(tp.totalSellTax());
+                  return cost;
                 })
             .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalFees = totalBuyFees.add(totalSellCosts);
     long winCount =
         stockRealizedList.stream()
             .filter(
@@ -842,6 +849,8 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     model.addAttribute("totalRealizedProfit", totalRealizedProfit);
     model.addAttribute("totalSellProceeds", totalSellProceeds);
     model.addAttribute("totalFees", totalFees);
+    model.addAttribute("totalBuyFees", totalBuyFees);
+    model.addAttribute("totalSellCosts", totalSellCosts);
     model.addAttribute("winRate", winRate);
     model.addAttribute("bestStock", bestStock);
     model.addAttribute("worstStock", worstStock);

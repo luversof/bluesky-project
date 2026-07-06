@@ -151,6 +151,18 @@
 						<div class="stat-desc">stat-desc</div>
 					</div>
 				</div>
+				<div class="stats border border-base-200 shadow-sm">
+					<div class="stat">
+						<div class="stat-figure text-primary">
+							<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+							</svg>
+						</div>
+						<div class="stat-title">stat-figure 포함</div>
+						<div class="stat-value text-profit">+1,234</div>
+						<div class="stat-desc">아이콘은 우측 세로중앙</div>
+					</div>
+				</div>
 			</div>
 		</section>
 
