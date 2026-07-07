@@ -298,9 +298,10 @@
                     }
                     <div class="rounded-2xl bg-base-100 p-3 shadow-sm">
                         <div class="text-sm font-bold mb-2">${monthTitle}</div>
-                        <div class="grid grid-cols-7 text-center text-[11px] text-base-content/50 mb-1">
-                            @for(String weekdayLabel : weekdayLabels)
-                                <div class="py-1">${weekdayLabel}</div>
+                        <!-- 날짜 그리드와 동일한 gap/패딩 + 가운데 정렬로 컬럼 라인을 맞춘다. 토/일은 빨간색 -->
+                        <div class="grid grid-cols-7 gap-1 text-[11px] text-base-content/50 mb-1 text-center">
+                            @for(int weekdayIndex = 0; weekdayIndex < weekdayLabels.length; weekdayIndex++)
+                                <div class="p-1${weekdayIndex == 0 || weekdayIndex == 6 ? " text-error" : ""}">${weekdayLabels[weekdayIndex]}</div>
                             @endfor
                         </div>
                         <div class="grid grid-cols-7 gap-1">
@@ -324,13 +325,20 @@
                                         }
                                     }
                                     boolean isToday = inMonth && cellDate.equals(today);
+                                    boolean isWeekend = cellIndex % 7 == 0 || cellIndex % 7 == 6;
+                                    String holidayName = inMonth ? net.luversof.web.gate.util.KoreanHolidays.holidayName(cellDate) : null;
+                                    boolean isRedDay = isWeekend || holidayName != null;
                                 }
-                                <div class="min-h-14 rounded-lg p-1 text-[11px] border ${isToday ? "border-primary" : "border-transparent"}${!inMonth ? " opacity-30" : ""}${hasActivity ? " cursor-pointer hover:bg-base-200 transition-colors duration-300 hover:duration-75" : ""}"
+                                <div class="min-h-14 rounded-lg p-1 text-[11px] text-center border ${isToday ? "border-primary" : "border-transparent"}${!inMonth ? " opacity-30" : ""}${hasActivity ? " cursor-pointer hover:bg-base-200 transition-colors duration-300 hover:duration-75" : ""}"
                                      data-cal-date="${hasActivity ? cellDate.toString() : null}"
-                                     data-cal-month="${hasActivity ? ymKey : null}">
-                                    <div class="font-medium ${isToday ? "text-primary" : "text-base-content/70"}">${cellDate.getDayOfMonth()}</div>
+                                     data-cal-month="${hasActivity ? ymKey : null}"
+                                     title="${holidayName}">
+                                    <div class="font-medium ${isToday ? "text-primary" : (isRedDay ? "text-error" : "text-base-content/70")}">${cellDate.getDayOfMonth()}</div>
+                                    @if(holidayName != null)
+                                        <div class="text-[9px] leading-tight text-error/80 truncate">${holidayName}</div>
+                                    @endif
                                     @if(hasActivity)
-                                        <div class="flex flex-wrap gap-x-1 leading-tight">
+                                        <div class="flex flex-wrap gap-x-1 justify-center leading-tight">
                                             @if(dayBuyCount > 0)<span class="text-profit">●${dayBuyCount}</span>@endif
                                             @if(daySellCount > 0)<span class="text-loss">●${daySellCount}</span>@endif
                                             @if(dayDividendCount > 0)<span class="text-dividend">●${dayDividendCount}</span>@endif

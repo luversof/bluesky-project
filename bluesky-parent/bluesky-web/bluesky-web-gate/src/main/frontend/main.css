@@ -148,6 +148,12 @@
 	.badge-error { background-color: var(--color-error); color: var(--color-error-content); border-color: transparent; }
 	.badge-ghost { background-color: var(--color-base-200); color: var(--color-base-content); border-color: transparent; }
 	.badge-outline { background-color: transparent; border-color: currentColor; color: inherit; }
+	/* outline + 의미색 조합: outline 의 color:inherit 가 의미색을 지우지 않도록 복원 (daisyUI 동작) */
+	.badge-primary.badge-outline { background-color: transparent; color: var(--color-primary); border-color: currentColor; }
+	.badge-secondary.badge-outline { background-color: transparent; color: var(--color-secondary); border-color: currentColor; }
+	.badge-info.badge-outline { background-color: transparent; color: var(--color-info); border-color: currentColor; }
+	.badge-success.badge-outline { background-color: transparent; color: var(--color-success); border-color: currentColor; }
+	.badge-error.badge-outline { background-color: transparent; color: var(--color-error); border-color: currentColor; }
 
 	/* ---- table ---- */
 	.table { width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left; }

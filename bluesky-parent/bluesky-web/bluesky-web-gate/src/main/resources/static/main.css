@@ -1868,6 +1868,9 @@
   .text-\[0\.72rem\] {
     font-size: 0.72rem;
   }
+  .text-\[9px\] {
+    font-size: 9px;
+  }
   .text-\[10px\] {
     font-size: 10px;
   }
@@ -2008,6 +2011,12 @@
   }
   .text-error-content {
     color: var(--color-error-content);
+  }
+  .text-error\/80 {
+    color: color-mix(in srgb, #c30115 80%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      color: color-mix(in oklab, var(--color-error) 80%, transparent);
+    }
   }
   .text-gray-400 {
     color: var(--color-gray-400);
@@ -2803,6 +2812,31 @@
     background-color: transparent;
     border-color: currentColor;
     color: inherit;
+  }
+  .badge-primary.badge-outline {
+    background-color: transparent;
+    color: var(--color-primary);
+    border-color: currentColor;
+  }
+  .badge-secondary.badge-outline {
+    background-color: transparent;
+    color: var(--color-secondary);
+    border-color: currentColor;
+  }
+  .badge-info.badge-outline {
+    background-color: transparent;
+    color: var(--color-info);
+    border-color: currentColor;
+  }
+  .badge-success.badge-outline {
+    background-color: transparent;
+    color: var(--color-success);
+    border-color: currentColor;
+  }
+  .badge-error.badge-outline {
+    background-color: transparent;
+    color: var(--color-error);
+    border-color: currentColor;
   }
   .table {
     width: 100%;
