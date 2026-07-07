@@ -103,6 +103,28 @@ const DateRangePicker = (function () {
 			btns(root).forEach((b) => b.classList.remove(activeClass()));
 		}
 
+		// CSP 정리로 프리셋 버튼의 인라인 onclick 이 제거되어(data-picker-action/arg 로 전환)
+		// 버튼-모드 매칭은 data 속성을 우선 사용하고, 과거 onclick 문자열 매칭은 폴백으로 유지한다.
+		const btnSetArg = (b: Element): string | null => {
+			const d = (b as HTMLElement).dataset;
+			if (!d || d.pickerAction !== "set" || d.pickerArg == null) return null;
+			return String(d.pickerArg);
+		};
+		const btnMatchesMode = (b: Element, mode: any): boolean => {
+			const modeStr = String(mode);
+			const arg = btnSetArg(b);
+			if (arg !== null) {
+				if (arg === modeStr) return true;
+				return modeStr === "all" && arg === "0";
+			}
+			const onclick = b.getAttribute("onclick") || "";
+			return (
+				onclick.indexOf("set(" + modeStr + ",") !== -1 ||
+				onclick.indexOf("set('" + modeStr + "'") !== -1 ||
+				(modeStr === "all" && onclick.indexOf("set(0,") !== -1)
+			);
+		};
+
 		const prevClassName = cfg.prevClass || "date-range-prev";
 		const nextClassName = cfg.nextClass || "date-range-next";
 
@@ -813,11 +835,7 @@ const DateRangePicker = (function () {
 				Array.from(
 					(root as Element).querySelectorAll("." + cfg.btnClass),
 				).forEach((b: Element) => {
-					const onclick = b.getAttribute("onclick") || "";
-					if (
-						onclick.indexOf("set(" + newMode + ",") !== -1 ||
-						onclick.indexOf("set('" + newMode + "'") !== -1
-					) {
+					if (btnMatchesMode(b, newMode)) {
 						b.classList.add(activeClass());
 						b.classList.remove("btn-ghost");
 					}
@@ -854,16 +872,9 @@ const DateRangePicker = (function () {
 									),
 								);
 								for (const c of candidates) {
-									const onclick = c.getAttribute("onclick") || "";
-									if (obj.mode) {
-										if (
-											onclick.indexOf("set(" + obj.mode + ",") !== -1 ||
-											onclick.indexOf("set('" + obj.mode + "'") !== -1 ||
-											(obj.mode === "all" && onclick.indexOf("set(0,") !== -1)
-										) {
-											foundBtn = c as Element;
-											break;
-										}
+									if (obj.mode && btnMatchesMode(c, obj.mode)) {
+										foundBtn = c as Element;
+										break;
 									}
 								}
 
@@ -871,12 +882,15 @@ const DateRangePicker = (function () {
 								if (!foundBtn && obj.start && obj.end) {
 									for (const c of candidates) {
 										try {
-											const onclick = c.getAttribute("onclick") || "";
-											const m = onclick.match(
-												/set\(\s*(?:'([^']+)'|"([^"]+)"|([^,\)\s]+))/,
-											);
-											if (!m) continue;
-											const arg = m[1] || m[2] || m[3];
+											let arg: string | null = btnSetArg(c);
+											if (arg === null) {
+												const onclick = c.getAttribute("onclick") || "";
+												const m = onclick.match(
+													/set\(\s*(?:'([^']+)'|"([^"]+)"|([^,\)\s]+))/,
+												);
+												if (!m) continue;
+												arg = m[1] || m[2] || m[3];
+											}
 											let months: any = arg;
 											if (/^\d+$/.test(String(arg))) months = Number(arg);
 											const computeRange = (monthsParam: any) => {
@@ -1044,14 +1058,7 @@ const DateRangePicker = (function () {
 										"." + (cfg.btnClass || ""),
 									),
 								).forEach((b: Element) => {
-									const onclick =
-										b.getAttribute && b.getAttribute("onclick")
-											? b.getAttribute("onclick") || ""
-											: "";
-									if (
-										onclick.indexOf("set(" + mode + ",") !== -1 ||
-										onclick.indexOf("set('" + mode + "'") !== -1
-									) {
+									if (btnMatchesMode(b, mode)) {
 										try {
 											b.classList.add(activeClass());
 											b.classList.remove("btn-ghost");

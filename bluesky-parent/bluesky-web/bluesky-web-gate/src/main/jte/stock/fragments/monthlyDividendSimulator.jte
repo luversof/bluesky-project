@@ -465,6 +465,10 @@
 											!{BigDecimal latestMonthlyDividendAmount = (row.latestMonthlyDividendPerShare() != null ? row.latestMonthlyDividendPerShare() : BigDecimal.ZERO).multiply(BigDecimal.valueOf(row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L));}
 											!{BigDecimal buyAmount = (row.averageBuyPrice() != null ? row.averageBuyPrice() : BigDecimal.ZERO).multiply(BigDecimal.valueOf(row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L));}
 											!{BigDecimal marketValue = row.currentMarketValue() != null ? row.currentMarketValue() : BigDecimal.ZERO;}
+											!{BigDecimal latestMonthlyYieldPct = marketValue.signum() > 0 ? latestMonthlyDividendAmount.multiply(BigDecimal.valueOf(100)).divide(marketValue, 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;}
+											!{BigDecimal latestAnnualYieldPct = latestMonthlyYieldPct.multiply(BigDecimal.valueOf(12));}
+											!{BigDecimal latestMonthlyYieldOnCostPct = buyAmount.signum() > 0 ? latestMonthlyDividendAmount.multiply(BigDecimal.valueOf(100)).divide(buyAmount, 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;}
+											!{BigDecimal latestAnnualYieldOnCostPct = latestMonthlyYieldOnCostPct.multiply(BigDecimal.valueOf(12));}
 											!{String normalizedRowSymbol = row.stockItemSymbol() != null ? row.stockItemSymbol().trim().toUpperCase(java.util.Locale.ROOT) : "";}
 											!{Integer rowDisplayOrder = monthlyDividendProfileDisplayOrders != null ? monthlyDividendProfileDisplayOrders.get(normalizedRowSymbol) : null;}
 											!{boolean rowReorderable = monthlyDividendReorderEnabled && rowDisplayOrder != null;}
@@ -561,15 +565,27 @@
 												</div>
 											</td>
 											<td class="align-top text-right">
-												<div class="space-y-1 tabular-nums">
-													<div>${percentFormat.format(row.expectedMonthlyYieldPct() != null ? row.expectedMonthlyYieldPct() : BigDecimal.ZERO)}%</div>
-													<div class="text-sm text-base-content/80">${percentFormat.format(row.expectedAnnualYieldPct() != null ? row.expectedAnnualYieldPct() : BigDecimal.ZERO)}%</div>
+												<div class="space-y-1 whitespace-nowrap tabular-nums">
+													<div>
+														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.short")}</span>
+														<span>${percentFormat.format(row.expectedMonthlyYieldPct() != null ? row.expectedMonthlyYieldPct() : BigDecimal.ZERO)}% · ${percentFormat.format(row.expectedAnnualYieldPct() != null ? row.expectedAnnualYieldPct() : BigDecimal.ZERO)}%</span>
+													</div>
+													<div class="text-sm text-base-content/80">
+														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.latest.short")}</span>
+														<span>${percentFormat.format(latestMonthlyYieldPct)}% · ${percentFormat.format(latestAnnualYieldPct)}%</span>
+													</div>
 												</div>
 											</td>
 											<td class="align-top text-right">
-												<div class="space-y-1 tabular-nums">
-													<div>${percentFormat.format(row.expectedMonthlyYieldOnCostPct() != null ? row.expectedMonthlyYieldOnCostPct() : BigDecimal.ZERO)}%</div>
-													<div class="text-sm text-base-content/80">${percentFormat.format(row.expectedAnnualYieldOnCostPct() != null ? row.expectedAnnualYieldOnCostPct() : BigDecimal.ZERO)}%</div>
+												<div class="space-y-1 whitespace-nowrap tabular-nums">
+													<div>
+														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.short")}</span>
+														<span>${percentFormat.format(row.expectedMonthlyYieldOnCostPct() != null ? row.expectedMonthlyYieldOnCostPct() : BigDecimal.ZERO)}% · ${percentFormat.format(row.expectedAnnualYieldOnCostPct() != null ? row.expectedAnnualYieldOnCostPct() : BigDecimal.ZERO)}%</span>
+													</div>
+													<div class="text-sm text-base-content/80">
+														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.latest.short")}</span>
+														<span>${percentFormat.format(latestMonthlyYieldOnCostPct)}% · ${percentFormat.format(latestAnnualYieldOnCostPct)}%</span>
+													</div>
 												</div>
 											</td>
 											<td class="align-top text-right">

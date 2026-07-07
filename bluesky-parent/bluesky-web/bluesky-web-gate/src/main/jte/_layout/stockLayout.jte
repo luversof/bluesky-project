@@ -23,7 +23,7 @@
 					@template._components.navmenu(menu = "stock", classAppend = "w-full")
 					<div class="mt-auto border-t border-base-200 px-2 pt-2">
 						<button type="button" class="sidebar-collapse-btn w-full font-medium rounded-box flex items-center justify-end gap-3 px-4 py-3 text-base-content/60 hover:bg-base-200 hover:text-base-content transition-all duration-300 hover:duration-75"
-								onclick="document.documentElement.classList.toggle('sidebar-collapsed');try{localStorage.setItem('sidebarCollapsed',document.documentElement.classList.contains('sidebar-collapsed'));}catch(e){}"
+								data-sidebar-collapse-toggle
 								title="${MessageUtil.getMessage("layout.sidebar.toggle")}" aria-label="${MessageUtil.getMessage("layout.sidebar.toggle")}">
 							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 sidebar-toggle-icon transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
@@ -32,6 +32,20 @@
 					</div>
 				</div>
 			</div>
+			<script>
+				(function() {
+					var button = document.querySelector('[data-sidebar-collapse-toggle]');
+					if (!button) {
+						return;
+					}
+					button.addEventListener('click', function() {
+						document.documentElement.classList.toggle('sidebar-collapsed');
+						try {
+							localStorage.setItem('sidebarCollapsed', document.documentElement.classList.contains('sidebar-collapsed'));
+						} catch (e) {}
+					});
+				})();
+			</script>
 			<div class="flex-1 min-w-0 p-4 pb-20 lg:pb-4 relative">
 				${contentStock}
 			</div>

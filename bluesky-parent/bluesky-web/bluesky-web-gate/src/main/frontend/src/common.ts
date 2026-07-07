@@ -53,6 +53,105 @@ document.addEventListener("click", (event) => {
 	}
 });
 
+// 활동 내역 [캘린더|타임라인|목록] 뷰 전환/복원 + 캘린더 날짜 상세 토글.
+// 프래그먼트 인라인 스크립트가 아니라 문서 위임 + htmx:afterSettle 복원으로 처리해서
+// htmx 스왑의 스크립트 실행 타이밍과 무관하게 항상 동작하게 한다.
+const ACTIVITY_VIEW_KEY = "activityViewMode";
+const ACTIVITY_TAB_ACTIVE_CLASSES = [
+	"tab-active",
+	"font-bold",
+	"!bg-primary",
+	"!text-primary-content",
+	"shadow-sm",
+];
+
+function applyActivityView(root: Element, rawMode: string | null) {
+	const mode =
+		rawMode === "timeline" || rawMode === "list" ? rawMode : "calendar";
+	const panels: Record<string, Element | null> = {
+		calendar: root.querySelector("#activityCalendarView"),
+		timeline: root.querySelector("#activityTimelineView"),
+		list: root.querySelector("#activityListView"),
+	};
+	Object.keys(panels).forEach((key) => {
+		const panel = panels[key];
+		if (panel) panel.classList.toggle("hidden", key !== mode);
+	});
+	root.querySelectorAll("[data-activity-view-tab]").forEach((tab) => {
+		const isActive = tab.getAttribute("data-activity-view-tab") === mode;
+		ACTIVITY_TAB_ACTIVE_CLASSES.forEach((cls) =>
+			tab.classList.toggle(cls, isActive),
+		);
+		tab.classList.toggle("text-base-content/60", !isActive);
+	});
+}
+
+function restoreActivityView() {
+	const root = document.getElementById("activityListFragment");
+	if (!root) return;
+	let saved: string | null = null;
+	try {
+		saved = localStorage.getItem(ACTIVITY_VIEW_KEY);
+	} catch (e) {
+		saved = null;
+	}
+	applyActivityView(root, saved);
+}
+
+document.addEventListener("click", (event) => {
+	const target = event.target as HTMLElement;
+	if (!target || !target.closest) return;
+
+	const tab = target.closest("[data-activity-view-tab]");
+	if (tab) {
+		const root = tab.closest("#activityListFragment");
+		if (!root) return;
+		const mode = tab.getAttribute("data-activity-view-tab");
+		applyActivityView(root, mode);
+		try {
+			localStorage.setItem(
+				ACTIVITY_VIEW_KEY,
+				mode === "timeline" || mode === "list" ? mode : "calendar",
+			);
+		} catch (e) {
+			// localStorage 불가 환경에서는 저장 없이 전환만
+		}
+		return;
+	}
+
+	const cell = target.closest("[data-cal-date]");
+	if (cell) {
+		const root = cell.closest("#activityListFragment");
+		if (!root) return;
+		const dateKey = cell.getAttribute("data-cal-date");
+		const monthKey = cell.getAttribute("data-cal-month");
+		const panel = root.querySelector('[data-cal-panel="' + monthKey + '"]');
+		if (!panel) return;
+		const detail = panel.querySelector('[data-cal-detail="' + dateKey + '"]');
+		if (!detail) return;
+		const isSameOpen =
+			panel.classList.contains("is-open") &&
+			!detail.classList.contains("hidden");
+		if (isSameOpen) {
+			panel.classList.remove("is-open");
+			cell.classList.remove("bg-base-200");
+			return;
+		}
+		panel
+			.querySelectorAll("[data-cal-detail]")
+			.forEach((other) => other.classList.add("hidden"));
+		root
+			.querySelectorAll("[data-cal-date].bg-base-200")
+			.forEach((selected) => selected.classList.remove("bg-base-200"));
+		detail.classList.remove("hidden");
+		panel.classList.add("is-open");
+		cell.classList.add("bg-base-200");
+	}
+});
+
+document.addEventListener("DOMContentLoaded", restoreActivityView);
+document.addEventListener("htmx:afterSettle", restoreActivityView);
+
 // HTMX beforeSwap 이벤트 처리
 document.addEventListener("htmx:beforeSwap", (event: any) => {
 	if ("hx-indicator" in event.target.attributes) {

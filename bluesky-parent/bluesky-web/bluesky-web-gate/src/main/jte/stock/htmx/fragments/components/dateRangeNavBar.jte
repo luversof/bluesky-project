@@ -37,21 +37,47 @@
 
 <div class="flex flex-wrap gap-2 mb-3 items-center">
     <span class="text-xs opacity-50 mr-1">${periodLabel}</span>
-    <button type="button" class="btn btn-xs btn-ghost date-range-prev${!canPrev ? " btn-disabled opacity-40" : ""}" $unsafe{!canPrev ? "disabled" : ""} onclick="${pickerName}.jumpToEdge('start')">«</button>
-    <button type="button" class="btn btn-xs btn-ghost date-range-prev${!canPrev ? " btn-disabled opacity-40" : ""}" title="${previousLabel}" aria-label="${previousLabel}" $unsafe{!canPrev ? "disabled" : ""} onclick="${pickerName}.shift(-1)">‹ ${useCompactEnglishLabels ? previousCompactLabel : previousLabel}</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("mtd") ? "btn-primary" : "btn-ghost"}" title="${thisMonthLabel}" aria-label="${thisMonthLabel}" onclick="${pickerName}.set('mtd',this)">${useCompactEnglishLabels ? thisMonthCompactLabel : thisMonthLabel}</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : "btn-ghost"}" title="${oneMonthLabel}" aria-label="${oneMonthLabel}" onclick="${pickerName}.set(1,this)">${useCompactEnglishLabels ? oneMonthCompactLabel : oneMonthLabel}</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("3") ? "btn-primary" : "btn-ghost"}" title="${threeMonthsLabel}" aria-label="${threeMonthsLabel}" onclick="${pickerName}.set(3,this)">${useCompactEnglishLabels ? threeMonthsCompactLabel : threeMonthsLabel}</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("6") ? "btn-primary" : "btn-ghost"}" title="${sixMonthsLabel}" aria-label="${sixMonthsLabel}" onclick="${pickerName}.set(6,this)">${useCompactEnglishLabels ? sixMonthsCompactLabel : sixMonthsLabel}</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("ytd") ? "btn-primary" : "btn-ghost"}" title="${thisYearLabel}" aria-label="${thisYearLabel}" onclick="${pickerName}.set('ytd',this)">${useCompactEnglishLabels ? thisYearCompactLabel : thisYearLabel}</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("12") ? "btn-primary" : "btn-ghost"}" title="${oneYearLabel}" aria-label="${oneYearLabel}" onclick="${pickerName}.set(12,this)">${useCompactEnglishLabels ? oneYearCompactLabel : oneYearLabel}</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("36") ? "btn-primary" : "btn-ghost"}" title="${threeYearsLabel}" aria-label="${threeYearsLabel}" onclick="${pickerName}.set(36,this)">${useCompactEnglishLabels ? threeYearsCompactLabel : threeYearsLabel}</button>
-    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("all") ? "btn-primary" : "btn-ghost"}" title="${allLabel}" aria-label="${allLabel}" onclick="${pickerName}.set(0,this)">${useCompactEnglishLabels ? allCompactLabel : allLabel}</button>
-    <button type="button" class="btn btn-xs btn-ghost date-range-next${!canNext ? " btn-disabled opacity-40" : ""}" title="${nextLabel}" aria-label="${nextLabel}" $unsafe{!canNext ? "disabled" : ""} onclick="${pickerName}.shift(1)">${useCompactEnglishLabels ? nextCompactLabel : nextLabel} ›</button>
-    <button type="button" class="btn btn-xs btn-ghost date-range-next${!canNext ? " btn-disabled opacity-40" : ""}" $unsafe{!canNext ? "disabled" : ""} onclick="${pickerName}.jumpToEdge('end')">»</button>
+    <button type="button" class="btn btn-xs btn-ghost date-range-prev${!canPrev ? " btn-disabled opacity-40" : ""}" $unsafe{!canPrev ? "disabled" : ""} data-picker="${pickerName}" data-picker-action="jump" data-picker-arg="start">«</button>
+    <button type="button" class="btn btn-xs btn-ghost date-range-prev${!canPrev ? " btn-disabled opacity-40" : ""}" title="${previousLabel}" aria-label="${previousLabel}" $unsafe{!canPrev ? "disabled" : ""} data-picker="${pickerName}" data-picker-action="shift" data-picker-arg="-1">‹ ${useCompactEnglishLabels ? previousCompactLabel : previousLabel}</button>
+    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("mtd") ? "btn-primary" : "btn-ghost"}" title="${thisMonthLabel}" aria-label="${thisMonthLabel}" data-picker="${pickerName}" data-picker-action="set" data-picker-arg="mtd">${useCompactEnglishLabels ? thisMonthCompactLabel : thisMonthLabel}</button>
+    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : "btn-ghost"}" title="${oneMonthLabel}" aria-label="${oneMonthLabel}" data-picker="${pickerName}" data-picker-action="set" data-picker-arg="1">${useCompactEnglishLabels ? oneMonthCompactLabel : oneMonthLabel}</button>
+    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("3") ? "btn-primary" : "btn-ghost"}" title="${threeMonthsLabel}" aria-label="${threeMonthsLabel}" data-picker="${pickerName}" data-picker-action="set" data-picker-arg="3">${useCompactEnglishLabels ? threeMonthsCompactLabel : threeMonthsLabel}</button>
+    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("6") ? "btn-primary" : "btn-ghost"}" title="${sixMonthsLabel}" aria-label="${sixMonthsLabel}" data-picker="${pickerName}" data-picker-action="set" data-picker-arg="6">${useCompactEnglishLabels ? sixMonthsCompactLabel : sixMonthsLabel}</button>
+    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("ytd") ? "btn-primary" : "btn-ghost"}" title="${thisYearLabel}" aria-label="${thisYearLabel}" data-picker="${pickerName}" data-picker-action="set" data-picker-arg="ytd">${useCompactEnglishLabels ? thisYearCompactLabel : thisYearLabel}</button>
+    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("12") ? "btn-primary" : "btn-ghost"}" title="${oneYearLabel}" aria-label="${oneYearLabel}" data-picker="${pickerName}" data-picker-action="set" data-picker-arg="12">${useCompactEnglishLabels ? oneYearCompactLabel : oneYearLabel}</button>
+    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("36") ? "btn-primary" : "btn-ghost"}" title="${threeYearsLabel}" aria-label="${threeYearsLabel}" data-picker="${pickerName}" data-picker-action="set" data-picker-arg="36">${useCompactEnglishLabels ? threeYearsCompactLabel : threeYearsLabel}</button>
+    <button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("all") ? "btn-primary" : "btn-ghost"}" title="${allLabel}" aria-label="${allLabel}" data-picker="${pickerName}" data-picker-action="set" data-picker-arg="0">${useCompactEnglishLabels ? allCompactLabel : allLabel}</button>
+    <button type="button" class="btn btn-xs btn-ghost date-range-next${!canNext ? " btn-disabled opacity-40" : ""}" title="${nextLabel}" aria-label="${nextLabel}" $unsafe{!canNext ? "disabled" : ""} data-picker="${pickerName}" data-picker-action="shift" data-picker-arg="1">${useCompactEnglishLabels ? nextCompactLabel : nextLabel} ›</button>
+    <button type="button" class="btn btn-xs btn-ghost date-range-next${!canNext ? " btn-disabled opacity-40" : ""}" $unsafe{!canNext ? "disabled" : ""} data-picker="${pickerName}" data-picker-action="jump" data-picker-arg="end">»</button>
     @if(showRangeText && (startDate != null || endDate != null))
         <span class="badge badge-ghost badge-sm font-medium text-base-content/80 ml-1 whitespace-nowrap">
             ${startDate != null ? startDate.toString() : "?"} ~ ${endDate != null ? endDate.minusDays(1).toString() : "?"}
         </span>
     @endif
 </div>
+
+<script>
+    // 이 컴포넌트는 htmx 스왑마다 재렌더되므로 document 위임 + 전역 1회 가드로 바인딩한다.
+    if (!window.__dateRangeNavBarBound) {
+        window.__dateRangeNavBarBound = true;
+        document.addEventListener('click', function(event) {
+            var button = event.target && event.target.closest ? event.target.closest('[data-picker-action]') : null;
+            if (!button) {
+                return;
+            }
+            var picker = window[button.dataset.picker];
+            if (!picker) {
+                return;
+            }
+            var action = button.dataset.pickerAction;
+            var arg = button.dataset.pickerArg;
+            if (action === 'jump') {
+                picker.jumpToEdge(arg);
+            } else if (action === 'shift') {
+                picker.shift(parseInt(arg, 10));
+            } else if (action === 'set') {
+                picker.set(/^-?\d+$/.test(arg) ? parseInt(arg, 10) : arg, button);
+            }
+        });
+    }
+</script>

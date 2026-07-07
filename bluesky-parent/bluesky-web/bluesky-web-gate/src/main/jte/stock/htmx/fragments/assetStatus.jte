@@ -216,7 +216,7 @@
                             @else
                                 <button type="button"
                                         class="btn btn-ghost btn-xs h-auto min-h-0 px-1 mt-1 text-xs text-base-content/60 hover:text-base-content"
-                                        onclick="toggleAssetStatusAccountDetail(this, '${detailRowId}')"
+                                        data-account-detail-toggle="${detailRowId}"
                                         aria-expanded="false"
                                         data-expand-label="${showHoldingsLabel}"
                                         data-collapse-label="${hideHoldingsLabel}">
@@ -702,6 +702,21 @@
         updateAssetStatusSortIndicators(table);
     }
 
+    function initializeAssetStatusDetailToggles() {
+        var buttons = document.querySelectorAll('[data-account-detail-toggle]');
+        for (var i = 0; i < buttons.length; i++) {
+            var button = buttons[i];
+            if (button.dataset.detailToggleBound === 'true') {
+                continue;
+            }
+
+            button.dataset.detailToggleBound = 'true';
+            button.addEventListener('click', function() {
+                toggleAssetStatusAccountDetail(this, this.dataset.accountDetailToggle);
+            });
+        }
+    }
+
     function initializeAssetStatusSortableTables() {
         var tables = document.querySelectorAll('[data-sortable-table]');
         for (var i = 0; i < tables.length; i++) {
@@ -1178,6 +1193,7 @@
         };
     }
 
+    initializeAssetStatusDetailToggles();
     initializeAssetStatusSortableTables();
     initializeAssetStatusAccountSelection();
     initializeAssetStatusStockSelection();

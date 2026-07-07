@@ -402,10 +402,19 @@ table[data-sortable] thead th { cursor: pointer; user-select: none; }
 table[data-sortable] thead th:hover { background-color: var(--color-base-300); }
 .sort-arrow { font-size: 0.7em; opacity: 0.7; }
 
-/* 접이식 사이드바 */
+/* 접이식 사이드바 — 라벨은 display 토글이 아니라 max-width+opacity 트랜지션으로 접고 편다.
+   display:none 토글은 펼침 시작 순간 라벨이 전폭으로 팝인되며 좁은 폭에서 줄바꿈돼 깜빡인다. */
 .stock-sidebar-spacer, .stock-sidebar { transition: width 0.2s ease; }
+.stock-sidebar .sidebar-label {
+	display: inline-block; white-space: nowrap; overflow: hidden;
+	max-width: 12rem; opacity: 1;
+	transition: max-width 0.2s ease, opacity 0.15s ease 0.05s;
+}
 html.sidebar-collapsed .stock-sidebar-spacer, html.sidebar-collapsed .stock-sidebar { width: 4rem; }
-html.sidebar-collapsed .stock-sidebar .sidebar-label { display: none; }
+html.sidebar-collapsed .stock-sidebar .sidebar-label {
+	max-width: 0; opacity: 0;
+	transition: max-width 0.2s ease, opacity 0.1s ease;
+}
 html.sidebar-collapsed .stock-sidebar .menu a,
 html.sidebar-collapsed .stock-sidebar .sidebar-collapse-btn { justify-content: center; gap: 0; padding-left: 0.5rem; padding-right: 0.5rem; }
 html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }

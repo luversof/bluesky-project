@@ -173,7 +173,7 @@
 						<label class="form-control">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.symbol")}</span></div>
 							<input type="hidden" name="symbol" value="${profileSymbolValue}" />
-							<select name="profileSymbolSelection" class="select select-bordered w-full" size="1" data-no-multi="1" required onchange="this.form.elements['symbol'].value = this.value">
+							<select name="profileSymbolSelection" class="select select-bordered w-full" size="1" data-no-multi="1" required data-sync-hidden-field="symbol">
 								@if(stockItems == null || stockItems.isEmpty())
 									<option value="" selected disabled>${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.symbol.empty")}</option>
 								@endif
@@ -485,3 +485,19 @@
 		</div>
 	</div>
 </div>
+
+<script>
+	(function() {
+		var selects = document.querySelectorAll('select[data-sync-hidden-field]');
+		for (var i = 0; i < selects.length; i++) {
+			var select = selects[i];
+			if (select.dataset.syncHiddenFieldBound === 'true') {
+				continue;
+			}
+			select.dataset.syncHiddenFieldBound = 'true';
+			select.addEventListener('change', function() {
+				this.form.elements[this.dataset.syncHiddenField].value = this.value;
+			});
+		}
+	})();
+</script>

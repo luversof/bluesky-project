@@ -70,6 +70,27 @@ const DateRangePicker = (function () {
         function clearActive(root) {
             btns(root).forEach((b) => b.classList.remove(activeClass()));
         }
+        // CSP 정리로 프리셋 버튼의 인라인 onclick 이 제거되어(data-picker-action/arg 로 전환)
+        // 버튼-모드 매칭은 data 속성을 우선 사용하고, 과거 onclick 문자열 매칭은 폴백으로 유지한다.
+        const btnSetArg = (b) => {
+            const d = b.dataset;
+            if (!d || d.pickerAction !== "set" || d.pickerArg == null)
+                return null;
+            return String(d.pickerArg);
+        };
+        const btnMatchesMode = (b, mode) => {
+            const modeStr = String(mode);
+            const arg = btnSetArg(b);
+            if (arg !== null) {
+                if (arg === modeStr)
+                    return true;
+                return modeStr === "all" && arg === "0";
+            }
+            const onclick = b.getAttribute("onclick") || "";
+            return (onclick.indexOf("set(" + modeStr + ",") !== -1 ||
+                onclick.indexOf("set('" + modeStr + "'") !== -1 ||
+                (modeStr === "all" && onclick.indexOf("set(0,") !== -1));
+        };
         const prevClassName = cfg.prevClass || "date-range-prev";
         const nextClassName = cfg.nextClass || "date-range-next";
         function canShift(dir) {
@@ -773,9 +794,7 @@ const DateRangePicker = (function () {
                     b.classList.add("btn-ghost");
                 });
                 Array.from(root.querySelectorAll("." + cfg.btnClass)).forEach((b) => {
-                    const onclick = b.getAttribute("onclick") || "";
-                    if (onclick.indexOf("set(" + newMode + ",") !== -1 ||
-                        onclick.indexOf("set('" + newMode + "'") !== -1) {
+                    if (btnMatchesMode(b, newMode)) {
                         b.classList.add(activeClass());
                         b.classList.remove("btn-ghost");
                     }
@@ -807,25 +826,23 @@ const DateRangePicker = (function () {
                             try {
                                 const candidates = Array.from(root.querySelectorAll("." + (cfg.btnClass || "")));
                                 for (const c of candidates) {
-                                    const onclick = c.getAttribute("onclick") || "";
-                                    if (obj.mode) {
-                                        if (onclick.indexOf("set(" + obj.mode + ",") !== -1 ||
-                                            onclick.indexOf("set('" + obj.mode + "'") !== -1 ||
-                                            (obj.mode === "all" && onclick.indexOf("set(0,") !== -1)) {
-                                            foundBtn = c;
-                                            break;
-                                        }
+                                    if (obj.mode && btnMatchesMode(c, obj.mode)) {
+                                        foundBtn = c;
+                                        break;
                                     }
                                 }
                                 // If explicit mode not present but start/end exist, try to infer which quick-button
                                 if (!foundBtn && obj.start && obj.end) {
                                     for (const c of candidates) {
                                         try {
-                                            const onclick = c.getAttribute("onclick") || "";
-                                            const m = onclick.match(/set\(\s*(?:'([^']+)'|"([^"]+)"|([^,\)\s]+))/);
-                                            if (!m)
-                                                continue;
-                                            const arg = m[1] || m[2] || m[3];
+                                            let arg = btnSetArg(c);
+                                            if (arg === null) {
+                                                const onclick = c.getAttribute("onclick") || "";
+                                                const m = onclick.match(/set\(\s*(?:'([^']+)'|"([^"]+)"|([^,\)\s]+))/);
+                                                if (!m)
+                                                    continue;
+                                                arg = m[1] || m[2] || m[3];
+                                            }
                                             let months = arg;
                                             if (/^\d+$/.test(String(arg)))
                                                 months = Number(arg);
@@ -990,11 +1007,7 @@ const DateRangePicker = (function () {
                         if (mode) {
                             try {
                                 Array.from(root.querySelectorAll("." + (cfg.btnClass || ""))).forEach((b) => {
-                                    const onclick = b.getAttribute && b.getAttribute("onclick")
-                                        ? b.getAttribute("onclick") || ""
-                                        : "";
-                                    if (onclick.indexOf("set(" + mode + ",") !== -1 ||
-                                        onclick.indexOf("set('" + mode + "'") !== -1) {
+                                    if (btnMatchesMode(b, mode)) {
                                         try {
                                             b.classList.add(activeClass());
                                             b.classList.remove("btn-ghost");

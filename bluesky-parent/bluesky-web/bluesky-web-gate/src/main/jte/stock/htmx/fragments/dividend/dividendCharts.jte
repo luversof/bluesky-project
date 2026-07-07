@@ -19,8 +19,8 @@
                     </div>
                     <div class="flex flex-col w-0 flex-1 h-[200px] overflow-hidden">
                         <div class="tabs tabs-box tabs-xs mb-1 w-fit flex-shrink-0">
-                            <a class="tab tab-active" id="donutTabStock" onclick="switchDonut('stock')">${byStockLabel}</a>
-                            <a class="tab" id="donutTabAccount" onclick="switchDonut('account')">${byAccountLabel}</a>
+                            <a class="tab tab-active" id="donutTabStock" data-dividend-donut-switch="stock">${byStockLabel}</a>
+                            <a class="tab" id="donutTabAccount" data-dividend-donut-switch="account">${byAccountLabel}</a>
                         </div>
                         <div id="donutLegend" class="flex-1 min-h-0 overflow-y-auto text-[0.72rem]"></div>
                     </div>
@@ -36,3 +36,17 @@
         `)
 
     </div>
+
+<script>
+    // 이 프래그먼트는 htmx 스왑마다 재렌더될 수 있으므로 document 위임 + 전역 1회 가드로 바인딩한다.
+    if (!window.__dividendDonutSwitchBound) {
+        window.__dividendDonutSwitchBound = true;
+        document.addEventListener('click', function(event) {
+            var tab = event.target && event.target.closest ? event.target.closest('[data-dividend-donut-switch]') : null;
+            if (!tab || typeof window.switchDonut !== 'function') {
+                return;
+            }
+            window.switchDonut(tab.dataset.dividendDonutSwitch);
+        });
+    }
+</script>

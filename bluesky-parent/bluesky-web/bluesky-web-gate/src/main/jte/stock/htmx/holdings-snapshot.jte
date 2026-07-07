@@ -35,7 +35,7 @@
                 @endif
             </h3>
             <button type="button" class="btn btn-xs btn-ghost btn-circle"
-                    onclick="document.getElementById('holdings-snapshot-container').innerHTML='';"
+                    data-holdings-snapshot-close
                     title="${closeLabel}">✕</button>
         </div>
 
@@ -128,3 +128,19 @@
             </div>
         @endif
 `)
+
+<script>
+    (function() {
+        var buttons = document.querySelectorAll('[data-holdings-snapshot-close]');
+        for (var i = 0; i < buttons.length; i++) {
+            var button = buttons[i];
+            if (button.dataset.holdingsSnapshotCloseBound === 'true') {
+                continue;
+            }
+            button.dataset.holdingsSnapshotCloseBound = 'true';
+            button.addEventListener('click', function() {
+                document.getElementById('holdings-snapshot-container').innerHTML = '';
+            });
+        }
+    })();
+</script>

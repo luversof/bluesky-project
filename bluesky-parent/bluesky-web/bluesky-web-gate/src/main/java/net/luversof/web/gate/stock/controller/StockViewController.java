@@ -1199,9 +1199,7 @@ public class StockViewController {
       @RequestParam(required = false) String keyword,
       @RequestParam(required = false) BigDecimal minAnnualYield,
       @RequestParam(defaultValue = "false") boolean positiveOnly,
-      @RequestParam(required = false) String symbol,
-      @RequestParam(required = false) String result,
-      @RequestParam(required = false) Integer savedCount) {
+      @RequestParam(required = false) String symbol) {
     if (isNotAuthenticated()) {
       return getLoginRedirectUrl(request);
     }
@@ -1211,10 +1209,10 @@ public class StockViewController {
 
     if ("monthly-dividend".equals(simulatorTab)) {
       UUID userId = UserUtil.getUserId();
+      // 결과 코드/저장건수는 POST 후 flash 로만 전달된다 (URL 쿼리로 받으면
+      // 새로고침마다 이전 결과 메시지가 재표시되는 버그가 있어 제거 — 관리 페이지와 동일 패턴).
       populateMonthlyDividendModel(
           model, userId, sort, direction, keyword, minAnnualYield, positiveOnly, symbol);
-      model.addAttribute("monthlyDividendResult", result != null ? result : "");
-      model.addAttribute("monthlyDividendSavedCount", savedCount);
     }
 
     return "stock/simulator";
@@ -1224,6 +1222,7 @@ public class StockViewController {
   @PostMapping("/simulator/monthly-dividend")
   public String saveMonthlyDividend(
       HttpServletRequest request,
+      RedirectAttributes redirectAttributes,
       Model model,
       @ModelAttribute MonthlyDividendSnapshotUpsertRequest monthlyDividendForm,
       @RequestParam(required = false) String sort,
@@ -1242,7 +1241,14 @@ public class StockViewController {
       validateMonthlyDividendRequest(monthlyDividendForm);
       monthlyDividendSnapshotClient.upsertSnapshot(monthlyDividendForm);
       return buildMonthlyDividendRedirect(
-          sort, direction, keyword, minAnnualYield, positiveOnly, "single-saved", 1);
+          redirectAttributes,
+          sort,
+          direction,
+          keyword,
+          minAnnualYield,
+          positiveOnly,
+          "single-saved",
+          1);
     } catch (IllegalArgumentException ex) {
       return renderMonthlyDividendError(
           model,
@@ -1303,6 +1309,7 @@ public class StockViewController {
   @PostMapping("/simulator/monthly-dividend/import-sheet")
   public String importMonthlyDividendFromSheet(
       HttpServletRequest request,
+      RedirectAttributes redirectAttributes,
       Model model,
       @RequestParam(required = false) String sort,
       @RequestParam(required = false) String direction,
@@ -1317,7 +1324,14 @@ public class StockViewController {
     try {
       int processed = stockAdminClient.monthlyDividendSnapshotImportFromSheet(userId);
       return buildMonthlyDividendRedirect(
-          sort, direction, keyword, minAnnualYield, positiveOnly, "sheet-imported", processed);
+          redirectAttributes,
+          sort,
+          direction,
+          keyword,
+          minAnnualYield,
+          positiveOnly,
+          "sheet-imported",
+          processed);
     } catch (Exception ex) {
       log.warn("배당주 검색 시트에서 월배당 보유/평단가 가져오기 실패: userId={}", userId, ex);
       return renderMonthlyDividendError(
@@ -1926,6 +1940,7 @@ public class StockViewController {
   }
 
   private String buildMonthlyDividendRedirect(
+      RedirectAttributes redirectAttributes,
       String sort,
       String direction,
       String keyword,
@@ -1933,6 +1948,13 @@ public class StockViewController {
       boolean positiveOnly,
       String result,
       Integer savedCount) {
+    // 결과 코드는 URL 이 아니라 flash 로 전달한다 (URL 잔류 시 새로고침마다 재표시되는 버그 방지)
+    if (redirectAttributes != null && StringUtils.hasText(result)) {
+      redirectAttributes.addFlashAttribute("monthlyDividendResult", result);
+      if (savedCount != null) {
+        redirectAttributes.addFlashAttribute("monthlyDividendSavedCount", savedCount);
+      }
+    }
     StringBuilder redirectUrl = new StringBuilder("redirect:/stock/simulator?tab=monthly-dividend");
     String resolvedSort = monthlyDividendViewSupport.resolveRowSort(sort);
     appendQueryParam(redirectUrl, "sort", resolvedSort);
@@ -1940,8 +1962,6 @@ public class StockViewController {
         redirectUrl,
         "direction",
         monthlyDividendViewSupport.resolveRowDirection(resolvedSort, direction));
-    appendQueryParam(redirectUrl, "result", result);
-    appendQueryParam(redirectUrl, "savedCount", savedCount);
     return redirectUrl.toString();
   }
 

@@ -16,6 +16,16 @@
 		var target = window.location.pathname + normalizedSearch + separator + 'locale=' + encodeURIComponent(localeCode) + (window.location.hash || '');
 		window.location.assign(target);
 	};
+
+	if (!window.__blueskyLocaleBound) {
+		window.__blueskyLocaleBound = true;
+		document.addEventListener('click', function(event) {
+			var button = event.target && event.target.closest ? event.target.closest('[data-locale-code]') : null;
+			if (button) {
+				window.blueskyChangeLocale(button.dataset.localeCode);
+			}
+		});
+	}
 </script>
 
 <div title="${MessageUtil.getMessage("common.label.locale")}" class="dropdown dropdown-end">
@@ -31,7 +41,7 @@
 			<button
 				type="button"
 				class="btn btn-sm btn-ghost justify-between"
-				onclick="window.blueskyChangeLocale('ko_KR')">
+				data-locale-code="ko_KR">
 				<span>${MessageUtil.getMessage("common.locale.korean")}</span>
 				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="${"ko_KR".equals(currentLocale) ? "visible" : "invisible"} h-3 w-3 shrink-0">
 					<path d="M20.285 2l-11.285 11.567-5.286-5.011-3.714 3.716 9 8.728 15-15.285z" />
@@ -40,7 +50,7 @@
 			<button
 				type="button"
 				class="btn btn-sm btn-ghost justify-between"
-				onclick="window.blueskyChangeLocale('en_US')">
+				data-locale-code="en_US">
 				<span>${MessageUtil.getMessage("common.locale.english.us")}</span>
 				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="${"en_US".equals(currentLocale) ? "visible" : "invisible"} h-3 w-3 shrink-0">
 					<path d="M20.285 2l-11.285 11.567-5.286-5.011-3.714 3.716 9 8.728 15-15.285z" />
