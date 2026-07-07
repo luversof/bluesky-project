@@ -19,6 +19,10 @@
 	<dependencies>
 		<dependency>
 			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-test</artifactId>
 		</dependency>
 	</dependencies>

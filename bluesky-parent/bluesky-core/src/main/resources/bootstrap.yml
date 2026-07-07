@@ -1,0 +1,112 @@
+management:
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+    env:
+      show-values: always
+    configprops.show-values: always
+  endpoints.web.exposure.include: '*'
+  tracing:
+    enabled: true
+    sampling.probability: 0.1
+  
+
+
+logging:
+  pattern.correlation: "[${spring.application.name:},%X{traceId:-},%X{spanId:-}]" 
+  include-application-name: false
+#eureka:
+#  instance:
+#    instance-id: ${spring.application.name}:${vcap.application.instance_id:${spring.application.instance_id:${random.value}}}
+
+
+---    
+spring:
+  config.activate.on-profile: localdev | opdev 
+  cloud:
+    config:
+      uri: http://config.cloud.bluesky.local/
+#    discovery:
+#      enabled: false
+  boot:
+    admin:
+      client:
+        enabled: false
+        url: http://admin.cloud.bluesky.local/
+eureka:
+  client:
+    registerWithEureka: false
+#    fetchRegistry: false
+    serviceUrl:
+      defaultZone: http://eureka1.cloud.bluesky.local/eureka/
+
+management.otlp:
+  tracing.endpoint: http://opentelemetry-collector.bluesky.local/v1/traces
+  logging.endpoint: http://opentelemetry-collector.bluesky.local/v1/logs
+
+---
+spring:
+  config.activate.on-profile: dockerdev
+  cloud:
+    inetutils:
+      ignored-interfaces:
+        - docker0
+        - veth.*
+      preferred-networks:
+        - 192.168
+        - 10.0
+    config:
+      uri: http://config-server:30101
+  boot:
+    admin:
+      client:
+        url: http://admin-server:30102
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://netflix-eureka-server:30100/eureka
+#  instance:
+#    ip-address: 10.0.75.1
+
+
+---
+spring:
+  config.activate.on-profile: k8sdev
+  cloud:
+    config:
+      uri: http://bluesky-cloud-config-server-service.default.svc.cluster.local:30101
+    kubernetes:
+      loadbalancer:
+        mode: SERVICE
+      discovery:
+        all-namespaces: true
+        service-labels:
+          spring-boot: true
+  boot:
+    admin:
+      client:
+        url: http://bluesky-cloud-admin-server-service.default.svc.cluster.local:30102
+        instance:
+          name: ${spring.application.name}-service
+          service-host-type: ip
+eureka:
+  instance:
+    prefer-ip-address: true
+    appname: ${spring.application.name}-service
+#    hostname: ${spring.application.name}-service.default.svc.cluster.local
+  client:
+    service-url:
+      defaultZone: http://bluesky-cloud-netflix-eureka-server-1-service.default.svc.cluster.local:30100/eureka/,http://bluesky-cloud-netflix-eureka-server-2-service.default.svc.cluster.local:30100/eureka/
+
+management.otlp:
+  tracing.endpoint: http://opentelemetry-collector-service.opensource.svc.cluster.local:4318/v1/traces
+  logging.endpoint: http://opentelemetry-collector-service.opensource.svc.cluster.local:4318/v1/logs

@@ -72,7 +72,8 @@
         @if(accountTotalMap != null && !accountTotalMap.isEmpty())
             <div class="mb-3 flex flex-col gap-3">
                 <p class="text-xs text-base-content/50">${accountSelectionHelpLabel}</p>
-                <div class="hidden rounded-2xl border border-secondary/15 bg-secondary/5 px-4 py-3"
+                <div class="selection-reveal"><div>
+                <div class="rounded-2xl border border-secondary/15 bg-secondary/5 px-4 py-3"
                      data-asset-status-account-selection-summary
                      data-count-template="${accountSelectionCountTemplate}"
                      data-total-evaluation-amount="${totalEvaluationAmount != null ? totalEvaluationAmount.toPlainString() : BigDecimal.ZERO.toPlainString()}"
@@ -110,6 +111,7 @@
                         </div>
                     </div>
                 </div>
+                </div></div>
             </div>
         @endif
         <style>
@@ -358,7 +360,8 @@
         @if(stockAggregated != null && !stockAggregated.isEmpty())
             <div class="mb-3 flex flex-col gap-3">
                 <p class="text-xs text-base-content/50">${stockSelectionHelpLabel}</p>
-                <div class="hidden rounded-2xl border border-info/15 bg-info/5 px-4 py-3"
+                <div class="selection-reveal"><div>
+                <div class="rounded-2xl border border-info/15 bg-info/5 px-4 py-3"
                      data-asset-status-stock-selection-summary
                      data-count-template="${stockSelectionCountTemplate}"
                      data-total-evaluation-amount="${totalEvaluationAmount != null ? totalEvaluationAmount.toPlainString() : BigDecimal.ZERO.toPlainString()}"
@@ -390,6 +393,7 @@
                         </div>
                     </div>
                 </div>
+                </div></div>
             </div>
         @endif
         <style>
@@ -811,7 +815,12 @@
 
         var selectedRows = table.tBodies[0].querySelectorAll('[data-account-selectable-row][data-selected="true"]');
         var selectedCount = selectedRows.length;
-        summary.classList.toggle('hidden', selectedCount === 0);
+        var reveal = summary.closest('.selection-reveal');
+        if (reveal) {
+            reveal.classList.toggle('is-open', selectedCount > 0);
+        } else {
+            summary.classList.toggle('hidden', selectedCount === 0);
+        }
 
         if (selectedCount === 0) {
             return;
@@ -910,7 +919,12 @@
 
         var selectedRows = table.tBodies[0].querySelectorAll('[data-stock-selectable-row][aria-pressed="true"]');
         var selectedCount = selectedRows.length;
-        summary.classList.toggle('hidden', selectedCount === 0);
+        var reveal = summary.closest('.selection-reveal');
+        if (reveal) {
+            reveal.classList.toggle('is-open', selectedCount > 0);
+        } else {
+            summary.classList.toggle('hidden', selectedCount === 0);
+        }
 
         if (selectedCount === 0) {
             return;

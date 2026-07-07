@@ -25,6 +25,7 @@
 		<module>bluesky-client</module>
 		<module>bluesky-test</module>
 		<module>bluesky-web</module>
+		<module>bluesky-core</module>
 	</modules>
 
 	<dependencies>
@@ -47,9 +48,8 @@
 		<dependencies>
 			<dependency>
 				<groupId>net.luversof</groupId>
-				<artifactId>bluesky-test</artifactId>
+				<artifactId>bluesky-core</artifactId>
 				<version>${bluesky-project.version}</version>
-				<scope>test</scope>
 			</dependency>
 			<dependency>
 				<groupId>net.luversof</groupId>
@@ -70,6 +70,12 @@
 				<groupId>net.luversof</groupId>
 				<artifactId>bluesky-web-common</artifactId>
 				<version>${bluesky-project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.luversof</groupId>
+				<artifactId>bluesky-test</artifactId>
+				<version>${bluesky-project.version}</version>
+				<scope>test</scope>
 			</dependency>
 
 			<dependency>
