@@ -1,6 +1,4 @@
 @import java.math.BigDecimal
-@import java.util.List
-@import net.luversof.web.gate.stock.domain.TradeProfit
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import io.github.luversof.boot.context.support.MessageUtil
 
@@ -9,23 +7,14 @@
 @param BigDecimal totalRealizedProfit
 @param BigDecimal totalDividend
 @param double winRate
-@param List<TradeProfit> topBuying
-@param List<TradeProfit> bottomBuying
-@param List<TradeProfit> topRealized
-@param List<TradeProfit> bottomRealized
-@param List<TradeProfit> topUnrealized
-@param List<TradeProfit> bottomUnrealized
-@param List<TradeProfit> topDividend
-@param List<TradeProfit> bottomDividend
-@param java.util.Map<String, BigDecimal> allocation
-@param java.util.Map<String, BigDecimal> accountAllocation
-@param java.util.Map<String, java.util.UUID> rankStockIdByName = java.util.Map.of()
 @param BigDecimal displayPrincipal
 @param BigDecimal displayCurrentEvaluationProfit
 @param BigDecimal combinedAdjustmentAmount
 @param BigDecimal holdingFeeAdjustment
 @param BigDecimal manualPrincipalAdjustment
-@param boolean showCharts = true
+@param String trendChartLabelsJs = "[]"
+@param String trendChartValuesJs = "[]"
+@param int trendPointCount = 0
 
 !{
     String currentTotalAssetLabel = MessageUtil.getMessage("stock.summary.label.current.total.asset");
@@ -44,19 +33,6 @@
     String combinedAdjustmentSubtractedLabel = MessageUtil.getMessage("stock.summary.label.combined.adjustment.subtracted");
     String winRateLabel = MessageUtil.getMessage("stock.summary.label.win.rate");
     String profitableStockRatioLabel = MessageUtil.getMessage("stock.summary.label.profitable.stock.ratio");
-    String topBuyingLabel = MessageUtil.getMessage("stock.summary.card.top.buying");
-    String bottomBuyingLabel = MessageUtil.getMessage("stock.summary.card.bottom.buying");
-    String topRealizedLabel = MessageUtil.getMessage("stock.summary.card.top.realized");
-    String bottomRealizedLabel = MessageUtil.getMessage("stock.summary.card.bottom.realized");
-    String topUnrealizedLabel = MessageUtil.getMessage("stock.summary.card.top.unrealized");
-    String bottomUnrealizedLabel = MessageUtil.getMessage("stock.summary.card.bottom.unrealized");
-    String noUnrealizedLossLabel = MessageUtil.getMessage("stock.summary.card.no.unrealized.loss");
-    String topDividendLabel = MessageUtil.getMessage("stock.summary.card.top.dividend");
-    String bottomDividendLabel = MessageUtil.getMessage("stock.summary.card.bottom.dividend");
-    String tabBuyingLabel = MessageUtil.getMessage("stock.summary.tab.buying");
-    String tabRealizedLabel = MessageUtil.getMessage("stock.summary.tab.realized");
-    String tabUnrealizedLabel = MessageUtil.getMessage("stock.summary.tab.unrealized");
-    String tabDividendLabel = MessageUtil.getMessage("stock.summary.tab.dividend");
 }
 
 !{BigDecimal currentPrincipal = displayPrincipal != null ? displayPrincipal : totalAsset.subtract(totalUnrealizedProfit);}
@@ -74,12 +50,16 @@
 !{String evalColor = currentEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";}
 !{String combinedColor = totalCombinedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";}
 !{String realizedColor = totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";}
+<%-- 1개 포인트는 선을 그릴 수 없으므로 2개 이상일 때만 트렌드 차트를 렌더 (미만이면 기존 3열 레이아웃 유지) --%>
+!{boolean hasTrendSeries = trendPointCount >= 2;}
 
 <div class="flex flex-col gap-4">
 
-    <!-- 핵심 요약: 총자산(히어로) + 통합손익 -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        @template._components.ui.card(cssClass = "lg:col-span-2", bodyClass = "p-5", body = @`
+    <!-- 히어로: 총자산/통합손익 카드 + 자산 추이 미니 차트(최근 6개월) -->
+    <div class="grid grid-cols-1 ${hasTrendSeries ? "lg:grid-cols-2" : "lg:grid-cols-3"} gap-3">
+        <%-- 시계열이 없으면 display:contents 로 기존 3열 배치(총자산 col-span-2 + 통합손익)를 유지한다 --%>
+        <div class="${hasTrendSeries ? "grid grid-cols-1 gap-3 content-start" : "contents"}">
+        @template._components.ui.card(cssClass = hasTrendSeries ? "" : "lg:col-span-2", bodyClass = "p-5", body = @`
             <div class="flex items-center gap-1 text-sm text-base-content/60">
                 <span>${currentTotalAssetLabel}</span>
                 <span class="tooltip tooltip-right" data-tip="보유 종목의 현재 평가액 합계 (원금 + 평가손익)">
@@ -144,6 +124,15 @@
                 <div class="text-sm font-semibold mt-1 ${combinedColor}">${returnRateLabel} ${String.format("%+.2f%%", combinedRate)}</div>
             </div>
         </div>
+        </div>
+
+        @if(hasTrendSeries)
+        @template._components.ui.card(cssClass = "h-full", bodyClass = "p-4 h-full", body = @`
+            <div class="relative w-full h-full" style="min-height:160px">
+                <canvas id="dashboardTrendChart" class="amount-chart"></canvas>
+            </div>
+        `)
+        @endif
     </div>
 
     <!-- 보조 지표 -->
@@ -170,185 +159,70 @@
             sub = profitableStockRatioLabel,
             amount = false)
     </div>
-
-    <!-- Charts Row -->
-    @if(showCharts)
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 w-full">
-         @template.stock.htmx.fragments.components.chartsAllocation(allocation = allocation)
-         @template.stock.htmx.fragments.components.chartsAccountAllocation(accountAllocation = accountAllocation)
-    </div>
-    @endif
-
-    <!-- 랭킹: 4개 카테고리 × (상위/하위) 를 탭으로 통합 -->
-    @template._components.ui.card(id = "summaryRankPanel", bodyClass = "p-3", body = @`
-            <div role="tablist" class="tabs tabs-box mb-3 flex-nowrap overflow-x-auto" data-rank-tabs>
-                <button type="button" role="tab" class="tab" data-rank-tab="0">${tabBuyingLabel}</button>
-                <button type="button" role="tab" class="tab" data-rank-tab="1">${tabRealizedLabel}</button>
-                <button type="button" role="tab" class="tab" data-rank-tab="2">${tabUnrealizedLabel}</button>
-                <button type="button" role="tab" class="tab" data-rank-tab="3">${tabDividendLabel}</button>
-            </div>
-
-            <!-- 0: 매수 집중 -->
-            <div data-rank-panel="0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                !{int c0a = 1;}
-                <div>
-                    <h3 class="text-sm text-base-content/60 mb-2">${topBuyingLabel}</h3>
-                    <div class="space-y-1">
-                        @if(topBuying != null && !topBuying.isEmpty())
-                        @for(TradeProfit item : topBuying)
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c0a++}</span><a href="/stock/item?stockItemId=${rankStockIdByName.get(item.stockItemName()) != null ? rankStockIdByName.get(item.stockItemName()).toString() : ""}" class="link link-hover truncate">${item.stockItemName()}</a></span>
-                            <span class="font-mono font-bold amount-value shrink-0">${String.format("%,d", item.totalBuyCost() != null ? item.totalBuyCost().longValue() : 0)}</span>
-                        </div>
-                        @endfor
-                        @else
-                        <div class="text-xs opacity-40">-</div>
-                        @endif
-                    </div>
-                </div>
-                !{int c0b = 1;}
-                <div>
-                    <h3 class="text-sm text-base-content/60 mb-2">${bottomBuyingLabel}</h3>
-                    <div class="space-y-1">
-                        @if(bottomBuying != null && !bottomBuying.isEmpty())
-                        @for(TradeProfit item : bottomBuying)
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c0b++}</span><a href="/stock/item?stockItemId=${rankStockIdByName.get(item.stockItemName()) != null ? rankStockIdByName.get(item.stockItemName()).toString() : ""}" class="link link-hover truncate">${item.stockItemName()}</a></span>
-                            <span class="font-mono font-bold amount-value shrink-0">${String.format("%,d", item.totalBuyCost() != null ? item.totalBuyCost().longValue() : 0)}</span>
-                        </div>
-                        @endfor
-                        @else
-                        <div class="text-xs opacity-40">-</div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-
-            <!-- 1: 실현손익 -->
-            <div data-rank-panel="1" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
-                !{int c1a = 1;}
-                <div>
-                    <h3 class="text-sm text-base-content/60 mb-2">${topRealizedLabel}</h3>
-                    <div class="space-y-1">
-                        @if(topRealized != null && !topRealized.isEmpty())
-                        @for(TradeProfit item : topRealized)
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c1a++}</span><a href="/stock/item?stockItemId=${rankStockIdByName.get(item.stockItemName()) != null ? rankStockIdByName.get(item.stockItemName()).toString() : ""}" class="link link-hover truncate">${item.stockItemName()}</a></span>
-                            <span class="font-mono font-bold text-profit amount-value shrink-0">${String.format("%+,d", item.realizedProfitNet() != null ? item.realizedProfitNet().longValue() : 0)}</span>
-                        </div>
-                        @endfor
-                        @else
-                        <div class="text-xs opacity-40">-</div>
-                        @endif
-                    </div>
-                </div>
-                !{int c1b = 1;}
-                <div>
-                    <h3 class="text-sm text-base-content/60 mb-2">${bottomRealizedLabel}</h3>
-                    <div class="space-y-1">
-                        @if(bottomRealized != null && !bottomRealized.isEmpty())
-                        @for(TradeProfit item : bottomRealized)
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c1b++}</span><a href="/stock/item?stockItemId=${rankStockIdByName.get(item.stockItemName()) != null ? rankStockIdByName.get(item.stockItemName()).toString() : ""}" class="link link-hover truncate">${item.stockItemName()}</a></span>
-                            <span class="font-mono font-bold text-loss amount-value shrink-0">${String.format("%+,d", item.realizedProfitNet() != null ? item.realizedProfitNet().longValue() : 0)}</span>
-                        </div>
-                        @endfor
-                        @else
-                        <div class="text-xs opacity-40">-</div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-
-            <!-- 2: 평가손익 -->
-            <div data-rank-panel="2" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
-                !{int c2a = 1;}
-                <div>
-                    <h3 class="text-sm text-base-content/60 mb-2">${topUnrealizedLabel}</h3>
-                    <div class="space-y-1">
-                        @if(topUnrealized != null && !topUnrealized.isEmpty())
-                        @for(TradeProfit item : topUnrealized)
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c2a++}</span><a href="/stock/item?stockItemId=${rankStockIdByName.get(item.stockItemName()) != null ? rankStockIdByName.get(item.stockItemName()).toString() : ""}" class="link link-hover truncate">${item.stockItemName()}</a></span>
-                            <span class="font-mono font-bold text-profit amount-value shrink-0">${String.format("%+,d", item.evaluationProfitNet() != null ? item.evaluationProfitNet().longValue() : 0)}</span>
-                        </div>
-                        @endfor
-                        @else
-                        <div class="text-xs opacity-40">-</div>
-                        @endif
-                    </div>
-                </div>
-                !{int c2b = 1;}
-                <div>
-                    <h3 class="text-sm text-base-content/60 mb-2">${bottomUnrealizedLabel}</h3>
-                    <div class="space-y-1">
-                        @if(bottomUnrealized != null && !bottomUnrealized.isEmpty())
-                        @for(TradeProfit item : bottomUnrealized)
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c2b++}</span><a href="/stock/item?stockItemId=${rankStockIdByName.get(item.stockItemName()) != null ? rankStockIdByName.get(item.stockItemName()).toString() : ""}" class="link link-hover truncate">${item.stockItemName()}</a></span>
-                            <span class="font-mono font-bold text-loss amount-value shrink-0">${String.format("%+,d", item.evaluationProfitNet() != null ? item.evaluationProfitNet().longValue() : 0)}</span>
-                        </div>
-                        @endfor
-                        @else
-                        <div class="text-xs opacity-40">${noUnrealizedLossLabel}</div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-
-            <!-- 3: 배당 -->
-            <div data-rank-panel="3" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
-                !{int c3a = 1;}
-                <div>
-                    <h3 class="text-sm text-base-content/60 mb-2">${topDividendLabel}</h3>
-                    <div class="space-y-1">
-                        @if(topDividend != null && !topDividend.isEmpty())
-                        @for(TradeProfit item : topDividend)
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c3a++}</span><a href="/stock/item?stockItemId=${rankStockIdByName.get(item.stockItemName()) != null ? rankStockIdByName.get(item.stockItemName()).toString() : ""}" class="link link-hover truncate">${item.stockItemName()}</a></span>
-                            <span class="font-mono font-bold text-dividend amount-value shrink-0">${String.format("%,d", item.realizedProfitNet() != null ? item.realizedProfitNet().longValue() : 0)}</span>
-                        </div>
-                        @endfor
-                        @else
-                        <div class="text-xs opacity-40">-</div>
-                        @endif
-                    </div>
-                </div>
-                !{int c3b = 1;}
-                <div>
-                    <h3 class="text-sm text-base-content/60 mb-2">${bottomDividendLabel}</h3>
-                    <div class="space-y-1">
-                        @if(bottomDividend != null && !bottomDividend.isEmpty())
-                        @for(TradeProfit item : bottomDividend)
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="flex items-center gap-2 min-w-0"><span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${c3b++}</span><a href="/stock/item?stockItemId=${rankStockIdByName.get(item.stockItemName()) != null ? rankStockIdByName.get(item.stockItemName()).toString() : ""}" class="link link-hover truncate">${item.stockItemName()}</a></span>
-                            <span class="font-mono font-bold text-dividend amount-value shrink-0">${String.format("%,d", item.realizedProfitNet() != null ? item.realizedProfitNet().longValue() : 0)}</span>
-                        </div>
-                        @endfor
-                        @else
-                        <div class="text-xs opacity-40">-</div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-    `)
 </div>
 
+@if(hasTrendSeries)
 <script>
 (function () {
-    var root = document.getElementById("summaryRankPanel");
-    if (!root || root.dataset.rankInit === "1") return;
-    root.dataset.rankInit = "1";
-    var tabs = root.querySelectorAll("[data-rank-tab]");
-    var panels = root.querySelectorAll("[data-rank-panel]");
-    function activate(idx) {
-        tabs.forEach(function (t) { t.classList.toggle("tab-active", t.dataset.rankTab === idx); });
-        panels.forEach(function (p) { p.classList.toggle("hidden", p.dataset.rankPanel !== idx); });
-    }
-    root.addEventListener("click", function (e) {
-        var t = e.target.closest("[data-rank-tab]");
-        if (t) activate(t.dataset.rankTab);
-    });
-    activate("0");
+    // 자산 추이 미니 차트 — Chart.js 는 stockLayout 에서 1회 로드됨.
+    // htmx 스왑 정착 후 실행(setTimeout 0): 스왑 중엔 이전/새 canvas 가 공존할 수 있다(activityList.jte 와 동일).
+    setTimeout(function () {
+        var trendCanvas = document.getElementById('dashboardTrendChart');
+        if (!trendCanvas || typeof Chart === 'undefined') return;
+        var trendLabels = $unsafe{trendChartLabelsJs};
+        var trendValues = $unsafe{trendChartValuesJs};
+        if (!trendLabels.length) return;
+        if (window.dashboardTrendChartInst) {
+            try { window.dashboardTrendChartInst.destroy(); } catch (e) {}
+            window.dashboardTrendChartInst = null;
+        }
+        window.dashboardTrendChartInst = new Chart(trendCanvas, {
+            type: 'line',
+            data: {
+                labels: trendLabels,
+                datasets: [{
+                    data: trendValues,
+                    borderColor: 'rgba(59,130,246,0.9)',
+                    backgroundColor: 'rgba(59,130,246,0.12)',
+                    fill: true,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) { return '₩' + (Number(ctx.parsed.y) || 0).toLocaleString(); }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 10 }, maxTicksLimit: 5, maxRotation: 0, autoSkip: true }
+                    },
+                    y: {
+                        grid: { color: 'rgba(128,128,128,0.1)' },
+                        ticks: {
+                            font: { size: 10 },
+                            maxTicksLimit: 4,
+                            callback: function (v) {
+                                if (v >= 100000000) return (v / 100000000).toFixed(1).replace('.0', '') + '억';
+                                if (v >= 10000) return (v / 10000).toFixed(0) + '만';
+                                return Number(v).toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }, 0);
 })();
 </script>
+@endif

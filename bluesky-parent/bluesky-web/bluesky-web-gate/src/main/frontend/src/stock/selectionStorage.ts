@@ -629,8 +629,6 @@ type SelectionObject = {
 						"/stock/htmx/summary",
 						"/stock/htmx/asset-status",
 						"/stock/htmx/recent-activities",
-						"/stock/htmx/daily-summary/view",
-						"/stock/htmx/analytics/data",
 						"asset-growth",
 						"trade-history",
 					];

@@ -173,7 +173,7 @@ public abstract class StockBaseHtmxController {
     return getEnrichedTradeProfits(requestCopy);
   }
 
-  private TradeProfitRequest copyTradeProfitRequest(TradeProfitRequest request) {
+  protected TradeProfitRequest copyTradeProfitRequest(TradeProfitRequest request) {
     TradeProfitRequest requestCopy = new TradeProfitRequest();
     requestCopy.setUserId(request.getUserId());
     requestCopy.setAccountIdList(request.getAccountIdList());

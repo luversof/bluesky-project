@@ -262,7 +262,7 @@
             + "var activityChartBuy=[" + chartBuySb + "];"
             + "var activityChartSell=[" + chartSellSb + "];"
             + "var activityChartDividend=[" + chartDividendSb + "];"
-            + "var activityChartSeriesLabels=[\"" + ej.apply(buyLabel) + "\",\"" + ej.apply(sellLabel) + "\",\"" + ej.apply(dividendLabel) + "\"];";
+            + "var activityChartSeriesLabels=[\"" + ej.apply(buyLabel) + "\",\"" + ej.apply(sellLabel) + "\",\"" + ej.apply(dividendLabel) + "\",\"" + ej.apply(MessageUtil.getMessage("stock.activity.chart.net.flow")) + "\"];";
     }
 
     <!-- 월별 활동 스택 바 차트 (모든 뷰 공통, 활동 없으면 미렌더) -->
@@ -580,14 +580,29 @@
             window.activityMonthlyChartInst = null;
         }
         var gridColor = 'rgba(128,128,128,0.1)';
+        // 현금 흐름 관점: 유입(매도+배당)은 0축 위로 스택, 유출(매수)은 음수로 아래에,
+        // 순흐름(유입-유출)은 라인으로 오버레이. (단순 3종 합산 스택은 방향이 달라 합계가 무의미)
+        var activityChartBuyOut = activityChartBuy.map(function(v) { return -Number(v || 0); });
+        var activityChartNetFlow = activityChartLabels.map(function(_, i) {
+            return Number(activityChartSell[i] || 0) + Number(activityChartDividend[i] || 0) - Number(activityChartBuy[i] || 0);
+        });
+        function formatSignedCompact(v) {
+            var n = Number(v) || 0;
+            var abs = Math.abs(n);
+            var sign = n < 0 ? '-' : '';
+            if (abs >= 100000000) return sign + (abs / 100000000).toFixed(0) + '억';
+            if (abs >= 10000) return sign + (abs / 10000).toFixed(0) + '만';
+            return n.toLocaleString();
+        }
         window.activityMonthlyChartInst = new Chart(chartCanvas, {
             type: 'bar',
             data: {
                 labels: activityChartLabels,
                 datasets: [
-                    { label: activityChartSeriesLabels[0], data: activityChartBuy, backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 3, maxBarThickness: 36 },
-                    { label: activityChartSeriesLabels[1], data: activityChartSell, backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 3, maxBarThickness: 36 },
-                    { label: activityChartSeriesLabels[2], data: activityChartDividend, backgroundColor: 'rgba(34,197,94,0.7)', borderRadius: 3, maxBarThickness: 36 }
+                    { label: activityChartSeriesLabels[1], data: activityChartSell, backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 3, maxBarThickness: 36, stack: 'flow', order: 1 },
+                    { label: activityChartSeriesLabels[2], data: activityChartDividend, backgroundColor: 'rgba(34,197,94,0.7)', borderRadius: 3, maxBarThickness: 36, stack: 'flow', order: 1 },
+                    { label: activityChartSeriesLabels[0], data: activityChartBuyOut, backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 3, maxBarThickness: 36, stack: 'flow', order: 1 },
+                    { label: activityChartSeriesLabels[3], data: activityChartNetFlow, type: 'line', borderColor: 'rgba(107,114,128,0.9)', backgroundColor: 'rgba(107,114,128,0.9)', borderWidth: 2, pointRadius: 3, fill: false, tension: 0, order: 0 }
                 ]
             },
             options: {
@@ -597,7 +612,20 @@
                     legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
                     tooltip: {
                         callbacks: {
-                            label: function(ctx) { return ctx.dataset.label + ': ₩' + (Number(ctx.parsed.y) || 0).toLocaleString(); }
+                            label: function(ctx) {
+                                var raw = Number(ctx.parsed.y) || 0;
+                                // 데이터셋별 명시적 판별:
+                                // - line(순흐름): 부호 그대로 (+/- 표기)
+                                // - 매수(인덱스 2, 음수로 넣은 유출): 절대값 표시
+                                // - 매도/배당: 값 그대로
+                                if (ctx.dataset.type === 'line') {
+                                    return ctx.dataset.label + ': ' + (raw >= 0 ? '+' : '-') + '₩' + Math.abs(raw).toLocaleString();
+                                }
+                                if (ctx.datasetIndex === 2) {
+                                    return ctx.dataset.label + ': ₩' + Math.abs(raw).toLocaleString();
+                                }
+                                return ctx.dataset.label + ': ₩' + raw.toLocaleString();
+                            }
                         }
                     }
                 },
@@ -606,14 +634,7 @@
                     y: {
                         stacked: true,
                         grid: { color: gridColor },
-                        ticks: {
-                            font: { size: 10 },
-                            callback: function(v) {
-                                if (v >= 100000000) return (v / 100000000).toFixed(0) + '억';
-                                if (v >= 10000) return (v / 10000).toFixed(0) + '만';
-                                return Number(v).toLocaleString();
-                            }
-                        }
+                        ticks: { font: { size: 10 }, callback: formatSignedCompact }
                     }
                 }
             }

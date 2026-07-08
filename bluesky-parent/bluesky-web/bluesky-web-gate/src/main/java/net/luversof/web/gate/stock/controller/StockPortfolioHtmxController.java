@@ -476,28 +476,6 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
   }
 
   @BlueskyPreAuthorize
-  @GetMapping("/charts/allocation")
-  public String allocationChart(TradeProfitRequest request, Model model) {
-    UUID userId = UserUtil.getUserId();
-    if (userId == null) return ERROR_VIEW;
-    request.setUserId(userId);
-
-    List<TradeProfit> profitList = getEnrichedTradeProfits(request);
-
-    Map<String, BigDecimal> allocation =
-        profitList.stream()
-            .filter(p -> p.evaluationAmount() != null)
-            .collect(
-                Collectors.toMap(
-                    p -> p.stockItemName() != null ? p.stockItemName() : msg("stock.label.unknown"),
-                    TradeProfit::evaluationAmount,
-                    BigDecimal::add));
-
-    model.addAttribute("allocation", allocation);
-    return "stock/htmx/fragments/chartsAllocation";
-  }
-
-  @BlueskyPreAuthorize
   @GetMapping("/charts/dividend")
   public String dividendChart(Model model) {
     UUID userId = UserUtil.getUserId();

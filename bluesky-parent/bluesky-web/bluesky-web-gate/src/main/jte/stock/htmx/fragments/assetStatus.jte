@@ -41,7 +41,6 @@
     String accountSelectionHelpLabel = MessageUtil.getMessage("stock.analytics.account.selection.helper");
     String accountSelectionSummaryLabel = MessageUtil.getMessage("stock.analytics.account.selection.summary");
     String accountSelectionCountTemplate = MessageUtil.getMessage("stock.analytics.account.selection.count");
-    String accountSelectionWeightLabel = MessageUtil.getMessage("stock.analytics.account.selection.weight");
     String stockSelectionHelpLabel = MessageUtil.getMessage("stock.analytics.selection.helper");
     String stockSelectionSummaryLabel = MessageUtil.getMessage("stock.analytics.selection.summary");
     String stockSelectionCountTemplate = MessageUtil.getMessage("stock.analytics.selection.count");
@@ -82,11 +81,10 @@
                         <div class="flex flex-wrap items-center gap-2">
                             <h3 class="text-sm font-semibold">${accountSelectionSummaryLabel}</h3>
                             <span class="badge badge-secondary badge-outline" data-account-selection-count>${accountSelectionSummaryLabel}</span>
-                            <span class="badge badge-ghost" data-account-selection-weight-badge>${accountSelectionWeightLabel} 0.0%</span>
                         </div>
                         <button type="button" class="btn btn-ghost btn-xs self-start" data-account-selection-clear>${stockSelectionClearLabel}</button>
                     </div>
-                    <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
                         <div class="rounded-box bg-base-100/80 px-3 py-2">
                             <div class="text-xs text-base-content/60">${buyAmountLabel}</div>
                             <div class="mt-1 font-mono font-semibold amount-value" data-account-selection-buy-amount>0</div>
@@ -108,6 +106,10 @@
                             <div class="text-xs text-base-content/60">${principalReturnLabel}</div>
                             <div class="mt-1 font-mono font-semibold amount-value" data-account-selection-principal-return>0</div>
                             <div class="text-xs text-base-content/60" data-account-selection-principal-return-rate>(0.0%)</div>
+                        </div>
+                        <div class="rounded-box bg-base-100/80 px-3 py-2">
+                            <div class="text-xs text-base-content/60">${weightLabel}</div>
+                            <div class="mt-1 font-mono font-semibold" data-account-selection-weight>0.0%</div>
                         </div>
                     </div>
                 </div>
@@ -181,6 +183,15 @@
                                 <span data-sort-indicator class="opacity-60">↕</span>
                             </button>
                         </th>
+                        <th scope="col" class="text-right">
+                            <button type="button"
+                                    class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+                                    data-sort-key="weight"
+                                    data-sort-type="number">
+                                <span>${weightLabel}</span>
+                                <span data-sort-indicator class="opacity-60">↕</span>
+                            </button>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -189,6 +200,9 @@
                     !{List<AssetStatusAccountHoldingView> holdings = accountHoldingMap != null && accountHoldingMap.get(entry.getKey()) != null ? accountHoldingMap.get(entry.getKey()) : List.of();}
                     !{BigDecimal buyAmount = acc.totalBuyCost() != null ? acc.totalBuyCost() : BigDecimal.ZERO;}
                     !{BigDecimal evaluationAmount = acc.evaluationAmount() != null ? acc.evaluationAmount() : BigDecimal.ZERO;}
+                    !{BigDecimal accountWeightPct = totalEvaluationAmount != null && totalEvaluationAmount.compareTo(BigDecimal.ZERO) > 0
+                        ? evaluationAmount.divide(totalEvaluationAmount, 4, java.math.RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
+                        : BigDecimal.ZERO;}
                     !{BigDecimal evaluationProfitAmount = acc.evaluationProfit() != null ? acc.evaluationProfit() : BigDecimal.ZERO;}
                     !{double evaluationProfitRate = buyAmount.compareTo(BigDecimal.ZERO) > 0
                         ? evaluationProfitAmount.doubleValue() / buyAmount.doubleValue() * 100
@@ -210,6 +224,7 @@
                         data-evaluation-profit="${evaluationProfitAmount.toPlainString()}"
                         data-principal="${profitBasis.toPlainString()}"
                         data-principal-return="${principalReturnAmount.toPlainString()}"
+                        data-weight="${accountWeightPct.toPlainString()}"
                         data-detail-row-id="${detailRowId}">
                         <td>
                             <div class="font-semibold"><a href="/stock/account?accountId=${accountIdByName.get(entry.getKey()) != null ? accountIdByName.get(entry.getKey()).toString() : ""}" class="link link-hover">${entry.getKey()}</a></div>
@@ -253,10 +268,11 @@
                                 (${String.format("%+.1f%%", rate)})
                             </div>
                         </td>
+                        <td class="text-right font-mono text-base-content/70">${String.format("%.1f%%", accountWeightPct.doubleValue())}</td>
                     </tr>
                     @if(!holdings.isEmpty())
                         <tr id="${detailRowId}" class="hidden bg-base-200/40">
-                            <td colspan="6" class="p-0">
+                            <td colspan="7" class="p-0">
                                 <div class="px-3 py-3">
                                     <div class="text-xs font-semibold text-base-content/60 mb-2">${accountHoldingsDetailLabel}</div>
                                     <div class="overflow-x-auto rounded-box border border-base-300/60 bg-base-100">
@@ -348,6 +364,7 @@
                                 (${String.format("%+.1f%%", totalPrincipalReturnRate)})
                             </div>
                         </td>
+                        <td class="text-right font-mono text-base-content/70">100.0%</td>
                     </tr>
                 </tfoot>
             </table>
@@ -857,9 +874,9 @@
             countLabel.textContent = formatAssetStatusMessage(summary.dataset.countTemplate, selectedCount);
         }
 
-        var weightBadge = summary.querySelector('[data-account-selection-weight-badge]');
-        if (weightBadge) {
-            weightBadge.textContent = '${accountSelectionWeightLabel} ' + formatAssetStatusNumber(totalWeightValue, 1) + '%';
+        var accountWeightLabel = summary.querySelector('[data-account-selection-weight]');
+        if (accountWeightLabel) {
+            accountWeightLabel.textContent = formatAssetStatusNumber(totalWeightValue, 1) + '%';
         }
 
         var buyAmountLabel = summary.querySelector('[data-account-selection-buy-amount]');

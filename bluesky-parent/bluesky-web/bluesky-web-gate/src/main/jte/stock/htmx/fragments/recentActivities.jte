@@ -27,10 +27,10 @@
     String monthSummaryLabel = java.text.MessageFormat.format(MessageUtil.getMessage("stock.recent.activity.month.summary"), thisMonthLabel);
 }
 
-@template._components.ui.card(body = @`
+@template._components.ui.card(cssClass = "h-full", body = @`
     <div class="flex justify-between items-center mb-3">
         <h2 class="card-title text-xl">${recentActivityTitle}</h2>
-        <a href="/stock/activity" class="btn btn-sm btn-ghost">${viewAllLabel}</a>
+        <a href="/stock/activity" class="link link-hover text-xs">${viewAllLabel} →</a>
     </div>
     <div class="flex gap-4">
         <%-- 좌: 활동 목록 --%>

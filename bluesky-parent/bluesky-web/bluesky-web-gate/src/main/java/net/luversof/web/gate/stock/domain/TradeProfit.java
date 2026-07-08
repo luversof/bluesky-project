@@ -52,67 +52,6 @@ public record TradeProfit(
 
   // --- 팩토리 메서드 ---
 
-  /** 실현 손익(수수료 반영) 요약 행 생성 */
-  public static TradeProfit ofRealizedSummary(String stockItemName, BigDecimal realizedProfitNet) {
-    return new TradeProfit(
-        null,
-        stockItemName,
-        null,
-        null,
-        null,
-        null,
-        0,
-        null,
-        null,
-        null,
-        0,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        realizedProfitNet,
-        null,
-        null);
-  }
-
-  /** 평가 손익(수수료 반영) 요약 행 생성 */
-  public static TradeProfit ofEvaluationSummary(
-      String stockItemName, BigDecimal evaluationProfitNet) {
-    return new TradeProfit(
-        null,
-        stockItemName,
-        null,
-        null,
-        null,
-        null,
-        0,
-        null,
-        null,
-        null,
-        0,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        evaluationProfitNet,
-        null);
-  }
-
   /** 자산 현황 - 계좌별 집계 행 생성 */
   public static TradeProfit ofAccountStatus(
       String accountName,
