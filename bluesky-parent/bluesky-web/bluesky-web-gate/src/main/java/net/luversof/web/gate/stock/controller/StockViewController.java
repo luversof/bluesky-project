@@ -1353,6 +1353,10 @@ public class StockViewController {
       return "monthly-dividend";
     }
 
+    if ("compound".equalsIgnoreCase(tab)) {
+      return "compound";
+    }
+
     return "sustainability";
   }
 
