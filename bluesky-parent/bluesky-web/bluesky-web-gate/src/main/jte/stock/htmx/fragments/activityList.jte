@@ -608,6 +608,7 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
                 plugins: {
                     legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
                     tooltip: {

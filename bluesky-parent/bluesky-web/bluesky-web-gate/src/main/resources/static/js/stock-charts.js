@@ -221,6 +221,7 @@ StockCharts.initMonthlyFromData = function (tradeData, canvasId = "tradeMonthlyC
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: { mode: "index", intersect: false },
             plugins: {
                 legend: {
                     position: "top",

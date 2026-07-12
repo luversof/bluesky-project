@@ -27,6 +27,7 @@
 	String principalHeader = MessageUtil.getMessage("stock.simulator.compound.table.principal");
 	String interestHeader = MessageUtil.getMessage("stock.simulator.compound.table.interest");
 	String balanceHeader = MessageUtil.getMessage("stock.simulator.compound.table.balance");
+	String ratioHeader = MessageUtil.getMessage("stock.simulator.compound.table.ratio");
 }
 
 <div id="stockCompoundSimulator" class="grid gap-6 xl:grid-cols-[24rem_minmax(0,1fr)]" data-series-principal="${seriesPrincipalLabel}" data-series-profit="${seriesProfitLabel}">
@@ -96,6 +97,16 @@
 					<h3 class="card-title text-base">${chartTitle}</h3>
 					<p class="text-sm leading-6 text-base-content/60">${chartDescription}</p>
 				</div>
+				<div id="stockCompoundRatio" class="space-y-1">
+					<div class="flex h-3 w-full overflow-hidden rounded-full bg-base-200">
+						<div id="stockCompoundRatioPrincipalBar" class="h-3" style="background: rgba(99,102,241,0.8)"></div>
+						<div id="stockCompoundRatioProfitBar" class="h-3" style="background: rgba(34,197,94,0.8)"></div>
+					</div>
+					<div class="flex justify-between text-xs text-base-content/60">
+						<span><span class="mr-1 inline-block h-2 w-2 rounded-full" style="background: rgba(99,102,241,0.8)"></span>${seriesPrincipalLabel} <span id="stockCompoundRatioPrincipalPct" class="font-mono tabular-nums font-semibold"></span></span>
+						<span><span class="mr-1 inline-block h-2 w-2 rounded-full" style="background: rgba(34,197,94,0.8)"></span>${seriesProfitLabel} <span id="stockCompoundRatioProfitPct" class="font-mono tabular-nums font-semibold"></span></span>
+					</div>
+				</div>
 				<div class="h-80 w-full rounded-2xl bg-base-100 p-2">
 					<canvas id="stockCompoundGrowthChart"></canvas>
 				</div>
@@ -115,6 +126,7 @@
 								<th scope="col" class="text-right">${principalHeader}</th>
 								<th scope="col" class="text-right">${interestHeader}</th>
 								<th scope="col" class="text-right">${balanceHeader}</th>
+								<th scope="col" class="text-right">${ratioHeader}</th>
 							</tr>
 						</thead>
 						<tbody id="stockCompoundYearlyTableBody"></tbody>

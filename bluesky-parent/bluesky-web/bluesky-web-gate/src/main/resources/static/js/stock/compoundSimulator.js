@@ -19,6 +19,11 @@
     const totalProfitEl = document.getElementById("stockCompoundTotalProfit");
     const totalReturnEl = document.getElementById("stockCompoundTotalReturn");
     const tableBody = document.getElementById("stockCompoundYearlyTableBody");
+    const ratioContainer = document.getElementById("stockCompoundRatio");
+    const ratioPrincipalBar = document.getElementById("stockCompoundRatioPrincipalBar");
+    const ratioProfitBar = document.getElementById("stockCompoundRatioProfitBar");
+    const ratioPrincipalPct = document.getElementById("stockCompoundRatioPrincipalPct");
+    const ratioProfitPct = document.getElementById("stockCompoundRatioProfitPct");
     const chartCanvas = document.getElementById("stockCompoundGrowthChart");
     const currencyFormatter = new Intl.NumberFormat("ko-KR");
     let growthChart = null;
@@ -138,6 +143,69 @@
             totalReturnEl.textContent = formatSignedPercent(returnPct);
             applyProfitColor(totalReturnEl, profit);
         }
+        renderRatio(finalValue, totalPrincipal, profit);
+    }
+    function renderRatio(finalValue, totalPrincipal, profit) {
+        if (!ratioContainer ||
+            !ratioPrincipalBar ||
+            !ratioProfitBar ||
+            !ratioPrincipalPct ||
+            !ratioProfitPct) {
+            return;
+        }
+        if (finalValue <= 0) {
+            ratioContainer.classList.add("hidden");
+            return;
+        }
+        ratioContainer.classList.remove("hidden");
+        const principalPct = (totalPrincipal / finalValue) * 100;
+        const profitPct = (profit / finalValue) * 100;
+        // 수익이 음수면 원금 바가 100%를 채우고 수익 비율은 음수로만 표기한다.
+        ratioPrincipalBar.style.width = `${Math.min(100, Math.max(0, principalPct))}%`;
+        ratioProfitBar.style.width = `${Math.min(100, Math.max(0, profitPct))}%`;
+        ratioPrincipalPct.textContent = `${principalPct.toFixed(1)}%`;
+        ratioProfitPct.textContent = `${profitPct.toFixed(1)}%`;
+    }
+    function ratioShares(row) {
+        if (row.balance <= 0) {
+            return null;
+        }
+        return {
+            principalPct: (row.cumulativePrincipal / row.balance) * 100,
+            profitPct: ((row.balance - row.cumulativePrincipal) / row.balance) * 100,
+        };
+    }
+    function buildRatioCell(row) {
+        const td = document.createElement("td");
+        td.className = "text-right";
+        const shares = ratioShares(row);
+        if (!shares) {
+            td.textContent = "-";
+            return td;
+        }
+        const wrapper = document.createElement("div");
+        wrapper.className = "flex items-center justify-end gap-2";
+        const bar = document.createElement("div");
+        bar.className =
+            "flex h-1.5 w-20 shrink-0 overflow-hidden rounded-full bg-base-200";
+        const principalSegment = document.createElement("div");
+        principalSegment.className = "h-1.5";
+        principalSegment.style.background = "rgba(99,102,241,0.8)";
+        principalSegment.style.width = `${Math.min(100, Math.max(0, shares.principalPct))}%`;
+        const profitSegment = document.createElement("div");
+        profitSegment.className = "h-1.5";
+        profitSegment.style.background = "rgba(34,197,94,0.8)";
+        profitSegment.style.width = `${Math.min(100, Math.max(0, shares.profitPct))}%`;
+        bar.appendChild(principalSegment);
+        bar.appendChild(profitSegment);
+        const text = document.createElement("span");
+        text.className =
+            "font-mono tabular-nums text-xs text-base-content/60 whitespace-nowrap";
+        text.textContent = `${shares.principalPct.toFixed(1)} / ${shares.profitPct.toFixed(1)}%`;
+        wrapper.appendChild(bar);
+        wrapper.appendChild(text);
+        td.appendChild(wrapper);
+        return td;
     }
     function renderTable(rows) {
         if (!tableBody) {
@@ -161,6 +229,7 @@
                 }
                 tr.appendChild(td);
             });
+            tr.appendChild(buildRatioCell(row));
             tableBody.appendChild(tr);
         }
     }
@@ -204,6 +273,10 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    mode: "index",
+                    intersect: false,
+                },
                 scales: {
                     x: { stacked: true },
                     y: {
@@ -216,7 +289,16 @@
                 plugins: {
                     tooltip: {
                         callbacks: {
-                            label: (context) => `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`,
+                            label: (context) => {
+                                const datasets = context.chart.data.datasets;
+                                const total = datasets.reduce((sum, dataset) => sum + Number(dataset.data[context.dataIndex] || 0), 0);
+                                const base = `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`;
+                                if (total <= 0) {
+                                    return base;
+                                }
+                                const pct = ((context.parsed.y / total) * 100).toFixed(1);
+                                return `${base} (${pct}%)`;
+                            },
                         },
                     },
                 },
