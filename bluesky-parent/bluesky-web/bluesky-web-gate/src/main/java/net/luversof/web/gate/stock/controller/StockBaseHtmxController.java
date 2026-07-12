@@ -19,7 +19,6 @@ import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.domain.TradeProfit;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup;
-import net.luversof.web.gate.stock.dto.response.DividendResponse;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
@@ -31,7 +30,6 @@ public abstract class StockBaseHtmxController {
 
   protected static final String ERROR_ATTRIBUTE = "error";
   protected static final String ERROR_VIEW = "stock/htmx/error";
-  protected static final int DIVIDEND_CHART_START_YEAR = 2015;
   protected static final List<String> ACCOUNT_PRINCIPAL_CONFIG_KEYS =
       List.of("manualPrincipalAmount", "manualPrincipal", "principalAmount", "principal");
 
@@ -61,26 +59,6 @@ public abstract class StockBaseHtmxController {
   protected String msg(String code, Object... args) {
     return messageSource.getMessage(
         code, args.length > 0 ? args : null, code, LocaleContextHolder.getLocale());
-  }
-
-  protected BigDecimal calculateDividendTax(DividendResponse d, boolean isDeferred) {
-    if (isDeferred) {
-      return BigDecimal.ZERO;
-    }
-    return d.tax() != null ? d.tax() : BigDecimal.ZERO;
-  }
-
-  protected BigDecimal calculateDividendTaxable(DividendResponse d, boolean isDeferred) {
-    if (isDeferred) {
-      return BigDecimal.ZERO;
-    }
-    if (d.taxableAmount() != null) {
-      return d.taxableAmount();
-    }
-    if (d.taxPerShare() != null && d.quantity() != null) {
-      return d.taxPerShare().multiply(BigDecimal.valueOf(d.quantity()));
-    }
-    return BigDecimal.ZERO;
   }
 
   protected BigDecimal resolveAccountManualPrincipal(Account account) {
@@ -279,25 +257,6 @@ public abstract class StockBaseHtmxController {
         .forEach(normalizedStockTags::add);
     return new ArrayList<>(normalizedStockTags);
   }
-
-  public record AnalyticsRow(
-      String key,
-      String subKey,
-      BigDecimal value1,
-      BigDecimal value2,
-      BigDecimal value3,
-      BigDecimal value4,
-      BigDecimal value5,
-      BigDecimal value6,
-      BigDecimal value7) {}
-
-  public record ChartDataset(
-      String label,
-      List<BigDecimal> data,
-      String backgroundColor,
-      String borderColor,
-      Integer borderWidth,
-      List<Integer> borderDash) {}
 
   protected record StockTagSelection(
       List<String> selectedStockTags, List<UUID> requestedStockItemIds, boolean hasFilter) {}
