@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import java.util.List
 @import java.util.UUID
 @import java.time.Instant
@@ -245,7 +246,7 @@
         totalLabel = totalLabel
     )
 
-    <script>
+    <script nonce="${CspNonceHolder.getNonce()}">
     (function() {
         $unsafe{dividendDataJs}
         const filterStartDate = "${startLocal != null ? startLocal.format(DateTimeFormatter.ofPattern("yyyy-MM")) : ""}";

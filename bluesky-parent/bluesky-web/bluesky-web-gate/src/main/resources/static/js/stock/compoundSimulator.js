@@ -9,6 +9,8 @@
     const MAX_YEARS = 100;
     const initialInput = document.getElementById("stockCompoundInitial");
     const contributionInput = document.getElementById("stockCompoundContribution");
+    const frequencySelect = document.getElementById("stockCompoundFrequency");
+    const monthlyNote = document.getElementById("stockCompoundMonthlyNote");
     const timingSelect = document.getElementById("stockCompoundTiming");
     const rateInput = document.getElementById("stockCompoundRatePct");
     const yearsInput = document.getElementById("stockCompoundYears");
@@ -62,6 +64,10 @@
             if (contributionInput && Number.isFinite(Number(saved.contribution))) {
                 contributionInput.value = String(saved.contribution);
             }
+            if (frequencySelect &&
+                (saved.frequency === "yearly" || saved.frequency === "monthly")) {
+                frequencySelect.value = saved.frequency;
+            }
             if (timingSelect &&
                 (saved.timing === "begin" || saved.timing === "end")) {
                 timingSelect.value = saved.timing;
@@ -82,6 +88,7 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify({
                 initial: readNumber(initialInput, 0),
                 contribution: readNumber(contributionInput, 0),
+                frequency: (frequencySelect === null || frequencySelect === void 0 ? void 0 : frequencySelect.value) === "monthly" ? "monthly" : "yearly",
                 timing: (timingSelect === null || timingSelect === void 0 ? void 0 : timingSelect.value) === "end" ? "end" : "begin",
                 ratePct: readNumber(rateInput, 0),
                 years: readNumber(yearsInput, 1),
@@ -96,22 +103,38 @@
         const contribution = Math.max(0, readNumber(contributionInput, 0));
         const rate = readNumber(rateInput, 0) / 100;
         const years = Math.min(MAX_YEARS, Math.max(1, Math.floor(readNumber(yearsInput, 1))));
+        const monthly = (frequencySelect === null || frequencySelect === void 0 ? void 0 : frequencySelect.value) === "monthly";
         const contributeAtBegin = (timingSelect === null || timingSelect === void 0 ? void 0 : timingSelect.value) !== "end";
+        // 매월 모드: 연 이율/12 의 월 이율로 월복리 (일반적인 적금 계산기 관례)
+        const periodsPerYear = monthly ? 12 : 1;
+        const periodRate = monthly ? rate / 12 : rate;
         const rows = [];
         let balance = initial;
         let cumulativePrincipal = initial;
         for (let year = 1; year <= years; year++) {
-            if (contributeAtBegin) {
-                balance += contribution;
-                cumulativePrincipal += contribution;
+            let yearContribution = 0;
+            let yearGain = 0;
+            for (let period = 0; period < periodsPerYear; period++) {
+                if (contributeAtBegin) {
+                    balance += contribution;
+                    yearContribution += contribution;
+                }
+                const gain = balance * periodRate;
+                balance += gain;
+                yearGain += gain;
+                if (!contributeAtBegin) {
+                    balance += contribution;
+                    yearContribution += contribution;
+                }
             }
-            const gain = balance * rate;
-            balance += gain;
-            if (!contributeAtBegin) {
-                balance += contribution;
-                cumulativePrincipal += contribution;
-            }
-            rows.push({ year, contribution, cumulativePrincipal, gain, balance });
+            cumulativePrincipal += yearContribution;
+            rows.push({
+                year,
+                contribution: yearContribution,
+                cumulativePrincipal,
+                gain: yearGain,
+                balance,
+            });
         }
         return rows;
     }
@@ -306,6 +329,9 @@
         });
     }
     function update() {
+        if (monthlyNote) {
+            monthlyNote.classList.toggle("hidden", (frequencySelect === null || frequencySelect === void 0 ? void 0 : frequencySelect.value) !== "monthly");
+        }
         const rows = simulate();
         renderPreviews();
         renderSummary(rows);

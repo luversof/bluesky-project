@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import io.github.luversof.boot.context.support.MessageUtil
 @import java.math.BigDecimal
 @import java.time.ZoneId
@@ -145,7 +146,7 @@
 								<div class="h-64"><canvas id="stockDetailChart" class="amount-chart"></canvas></div>
 							</div>
 						</div>
-						<script>
+						<script nonce="${CspNonceHolder.getNonce()}">
 						(function() {
 							if (typeof window.ensureStockCharts !== 'function') return;
 							var series = { labels: [], value: [], cost: [], buyCount: [], dailyRealized: [] };

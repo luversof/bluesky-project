@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @param gg.jte.Content content
 @param String title = "Bluesky Board"
 @param boolean isAuthenticated = false
@@ -14,11 +15,11 @@
 	content = @`
 		<script src="/js/vendor/dayjs.min.js"></script>
 		<script src="/js/vendor/dayjs.locale.ko.js"></script>
-		<script>
+		<script nonce="${CspNonceHolder.getNonce()}">
 			dayjs.locale('ko');
 		</script>
 		<script src="/js/vendor/dayjs.plugin.relativeTime.js"></script>
-		<script>
+		<script nonce="${CspNonceHolder.getNonce()}">
 			dayjs.extend(globalThis.dayjs_plugin_relativeTime);
 		</script>
 		<script type="module" src="/js/board/board.js"></script>

@@ -14,6 +14,10 @@
 	const contributionInput = document.getElementById(
 		"stockCompoundContribution",
 	) as HTMLInputElement | null;
+	const frequencySelect = document.getElementById(
+		"stockCompoundFrequency",
+	) as HTMLSelectElement | null;
+	const monthlyNote = document.getElementById("stockCompoundMonthlyNote");
 	const timingSelect = document.getElementById(
 		"stockCompoundTiming",
 	) as HTMLSelectElement | null;
@@ -102,6 +106,12 @@
 				contributionInput.value = String(saved.contribution);
 			}
 			if (
+				frequencySelect &&
+				(saved.frequency === "yearly" || saved.frequency === "monthly")
+			) {
+				frequencySelect.value = saved.frequency;
+			}
+			if (
 				timingSelect &&
 				(saved.timing === "begin" || saved.timing === "end")
 			) {
@@ -125,6 +135,8 @@
 				JSON.stringify({
 					initial: readNumber(initialInput, 0),
 					contribution: readNumber(contributionInput, 0),
+					frequency:
+						frequencySelect?.value === "monthly" ? "monthly" : "yearly",
 					timing: timingSelect?.value === "end" ? "end" : "begin",
 					ratePct: readNumber(rateInput, 0),
 					years: readNumber(yearsInput, 1),
@@ -143,24 +155,40 @@
 			MAX_YEARS,
 			Math.max(1, Math.floor(readNumber(yearsInput, 1))),
 		);
+		const monthly = frequencySelect?.value === "monthly";
 		const contributeAtBegin = timingSelect?.value !== "end";
+		// 매월 모드: 연 이율/12 의 월 이율로 월복리 (일반적인 적금 계산기 관례)
+		const periodsPerYear = monthly ? 12 : 1;
+		const periodRate = monthly ? rate / 12 : rate;
 
 		const rows: YearRow[] = [];
 		let balance = initial;
 		let cumulativePrincipal = initial;
 
 		for (let year = 1; year <= years; year++) {
-			if (contributeAtBegin) {
-				balance += contribution;
-				cumulativePrincipal += contribution;
+			let yearContribution = 0;
+			let yearGain = 0;
+			for (let period = 0; period < periodsPerYear; period++) {
+				if (contributeAtBegin) {
+					balance += contribution;
+					yearContribution += contribution;
+				}
+				const gain = balance * periodRate;
+				balance += gain;
+				yearGain += gain;
+				if (!contributeAtBegin) {
+					balance += contribution;
+					yearContribution += contribution;
+				}
 			}
-			const gain = balance * rate;
-			balance += gain;
-			if (!contributeAtBegin) {
-				balance += contribution;
-				cumulativePrincipal += contribution;
-			}
-			rows.push({ year, contribution, cumulativePrincipal, gain, balance });
+			cumulativePrincipal += yearContribution;
+			rows.push({
+				year,
+				contribution: yearContribution,
+				cumulativePrincipal,
+				gain: yearGain,
+				balance,
+			});
 		}
 
 		return rows;
@@ -388,6 +416,12 @@
 	}
 
 	function update() {
+		if (monthlyNote) {
+			monthlyNote.classList.toggle(
+				"hidden",
+				frequencySelect?.value !== "monthly",
+			);
+		}
 		const rows = simulate();
 		renderPreviews();
 		renderSummary(rows);

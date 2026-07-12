@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import java.util.List
 @import java.time.ZoneId
 @import java.time.format.DateTimeFormatter
@@ -213,7 +214,7 @@
         </div>
     </div>
 
-    <script>
+    <script nonce="${CspNonceHolder.getNonce()}">
     (function() {
         var assetPicker = DateRangePicker.create({
             formId:         'assetGrowthSearchForm',
@@ -249,7 +250,7 @@
     </script>
 
     @if(ts != null && !ts.isEmpty())
-    <script>
+    <script nonce="${CspNonceHolder.getNonce()}">
         (function() {
             if (typeof Chart === 'undefined') return;
             var ctxMain = document.getElementById('assetGrowthChart');

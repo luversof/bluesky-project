@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import io.github.luversof.boot.context.support.MessageUtil
 @import java.math.BigDecimal
 @import java.math.RoundingMode
@@ -635,7 +636,7 @@
 	}
 </style>
 
-<script>
+<script nonce="${CspNonceHolder.getNonce()}">
 	(function() {
 		function getMonthlyDividendSimulatorLocale() {
 			return document.documentElement.getAttribute('lang') || 'ko-KR';

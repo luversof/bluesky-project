@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import io.github.luversof.boot.context.support.MessageUtil
 
 !{
@@ -37,7 +38,7 @@
 
     </div>
 
-<script>
+<script nonce="${CspNonceHolder.getNonce()}">
     // 이 프래그먼트는 htmx 스왑마다 재렌더될 수 있으므로 document 위임 + 전역 1회 가드로 바인딩한다.
     if (!window.__dividendDonutSwitchBound) {
         window.__dividendDonutSwitchBound = true;

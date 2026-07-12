@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import io.github.luversof.boot.context.support.MessageUtil
 @import java.math.BigDecimal
 @import java.net.URLEncoder
@@ -486,7 +487,7 @@
 	</div>
 </div>
 
-<script>
+<script nonce="${CspNonceHolder.getNonce()}">
 	(function() {
 		var selects = document.querySelectorAll('select[data-sync-hidden-field]');
 		for (var i = 0; i < selects.length; i++) {

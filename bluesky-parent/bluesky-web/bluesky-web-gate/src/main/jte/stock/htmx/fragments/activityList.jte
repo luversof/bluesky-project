@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import java.util.List
 @import net.luversof.web.gate.stock.controller.StockTradeHtmxController.Activity
 @import net.luversof.web.gate.stock.domain.Account
@@ -528,7 +529,7 @@
         </div>
     </div>
 
-    <script>
+    <script nonce="${CspNonceHolder.getNonce()}">
     (function() {
         const activityPicker = DateRangePicker.create({
             formId:      'activitySearchForm',
@@ -565,7 +566,7 @@
 
     <!-- 뷰 전환 탭/캘린더 상세 토글은 common.js 의 문서 위임 + htmx:afterSettle 복원으로 처리된다 -->
 
-    <script>
+    <script nonce="${CspNonceHolder.getNonce()}">
     (function() {
         $unsafe{activityChartDataJs}
 

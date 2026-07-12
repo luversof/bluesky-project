@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import io.github.luversof.boot.context.support.MessageUtil
 @import java.math.BigDecimal
 @import java.util.List
@@ -90,7 +91,7 @@
 	contentStock = @`
 		<div id="stockSimulatorApp" class="space-y-6">
 			@if(!monthlyDividendTab && !compoundTab)
-				<script>
+				<script nonce="${CspNonceHolder.getNonce()}">
 					window.stockSimulatorI18n = {
 						defaultScenarioName: '${MessageUtil.getMessage("stock.simulator.default.scenario.name")}',
 						activeScenario: '${MessageUtil.getMessage("stock.simulator.state.active")}',

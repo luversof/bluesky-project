@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import java.util.List
 @import java.util.Map
 @import java.util.UUID
@@ -200,7 +201,7 @@
         sellLabel = sellLabel
     )
 
-    <script>
+    <script nonce="${CspNonceHolder.getNonce()}">
     (function() {
         $unsafe{tradeDataJs}
 

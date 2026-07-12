@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import io.github.luversof.boot.context.support.MessageUtil
 
 @param gg.jte.Content content
@@ -13,8 +14,10 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<%-- htmx 가 스왑한 fragment 의 인라인 스크립트에 현재 페이지의 CSP nonce 를 재부여한다 (fragment 는 별도 요청이라 nonce 가 다름) --%>
+	<meta name="htmx-config" content='{"inlineScriptNonce":"${CspNonceHolder.getNonce()}"}'>
 	<title>${title}</title>
-	<script>
+	<script nonce="${CspNonceHolder.getNonce()}">
 		(function() {
 			var t = localStorage.getItem('theme'); if (t) document.documentElement.setAttribute('data-theme', t);
 			if (localStorage.getItem('hideAmounts') === 'true') document.documentElement.classList.add('hide-amounts');
@@ -30,7 +33,7 @@
 	<script type="module" src="/js/stock/multiSelectInit.js"></script>
 	<script type="module" src="/js/stock/tagFilterChips.js"></script>
 
-	<script>
+	<script nonce="${CspNonceHolder.getNonce()}">
 		// Ensure stock-charts helper is available; loads /js/stock-charts.js on demand
 		window.ensureStockCharts = function(cb) {
 			if (window.StockCharts) {
@@ -73,7 +76,7 @@
 
 	<!-- 전역 토스트: htmx 요청 실패 알림 + 쓰기 요청(GET 외) 성공 알림 -->
 	<div id="app-toast" class="toast toast-top toast-end z-[100]"></div>
-	<script>
+	<script nonce="${CspNonceHolder.getNonce()}">
 	(function() {
 		// 전역 로딩바: 동시 요청 카운트로 표시/숨김.
 		// 감소는 XHR의 loadend(항상 발생)에 건다 — afterRequest는 outerHTML 스왑으로

@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import java.math.BigDecimal
 @import java.util.List
 @import java.util.Map
@@ -577,7 +578,7 @@
 
 </div>
 
-<script>
+<script nonce="${CspNonceHolder.getNonce()}">
     function toggleAssetStatusAccountDetail(button, rowId) {
         var detailRow = document.getElementById(rowId);
         if (!button || !detailRow) {

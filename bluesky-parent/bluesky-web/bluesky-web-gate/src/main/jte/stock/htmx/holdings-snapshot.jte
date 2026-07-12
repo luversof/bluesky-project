@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import java.util.List
 @import java.math.BigDecimal
 @import net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem
@@ -129,7 +130,7 @@
         @endif
 `)
 
-<script>
+<script nonce="${CspNonceHolder.getNonce()}">
     (function() {
         var buttons = document.querySelectorAll('[data-holdings-snapshot-close]');
         for (var i = 0; i < buttons.length; i++) {

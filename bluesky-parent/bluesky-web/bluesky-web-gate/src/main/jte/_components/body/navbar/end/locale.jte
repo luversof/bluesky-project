@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import io.github.luversof.boot.context.support.MessageUtil
 
 !{
@@ -5,7 +6,7 @@
 }
 
 
-<script>
+<script nonce="${CspNonceHolder.getNonce()}">
 	window.blueskyChangeLocale = window.blueskyChangeLocale || function(localeCode) {
 		var search = window.location.search || '';
 		if (search) {

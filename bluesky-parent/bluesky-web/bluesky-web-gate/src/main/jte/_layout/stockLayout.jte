@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import io.github.luversof.boot.context.support.MessageUtil
 @param gg.jte.Content contentStock
 @param boolean isAuthenticated = false
@@ -32,7 +33,7 @@
 					</div>
 				</div>
 			</div>
-			<script>
+			<script nonce="${CspNonceHolder.getNonce()}">
 				(function() {
 					var button = document.querySelector('[data-sidebar-collapse-toggle]');
 					if (!button) {
@@ -77,7 +78,7 @@
 				@endif
 			@endfor
 		</nav>
-		<script>
+		<script nonce="${CspNonceHolder.getNonce()}">
 			// dock 이 좌우 스크롤이라 현재 메뉴가 화면 밖일 수 있음 — 로드 시 가운데로 보이게
 			(function() {
 				var active = document.querySelector('.dock .dock-active');

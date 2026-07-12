@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import java.util.List
 @import java.time.LocalDate
 @import java.math.BigDecimal
@@ -176,7 +177,7 @@
             @if(dividendChangeContributors.size() > 8)
             <div class="text-xs text-base-content/40 mt-2">+ ${dividendChangeContributors.size() - 8}</div>
             @endif
-            <script>
+            <script nonce="${CspNonceHolder.getNonce()}">
             (function() {
                 // 변동 요인 행 선택 합산 — 수익률 랭킹의 선택 방식(행 클릭 토글 + 상단 요약 + 선택 해제)과 동일.
                 var card = document.getElementById('dividendChangeCard');

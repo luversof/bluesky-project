@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import java.util.List
 @import java.math.BigDecimal
 @import java.text.DecimalFormat
@@ -194,7 +195,7 @@
     </div>
     @endif
 
-    <script>
+    <script nonce="${CspNonceHolder.getNonce()}">
     (function() {
         // 계좌별/종목별 실현손익 행 선택 합산 — 배당 효율 랭킹과 동일한 UX
         // (행 클릭 토글 + 하이라이트 + 상단 요약 패널 펼침/접힘 + 선택 해제)

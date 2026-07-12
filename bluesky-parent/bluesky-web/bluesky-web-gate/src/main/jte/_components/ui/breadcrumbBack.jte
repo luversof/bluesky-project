@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @param String homeUrl = "/stock"
 @param String homeLabel = ""
 @param String categoryLabel = ""
@@ -18,7 +19,7 @@
 	</button>
 </div>
 
-<script>
+<script nonce="${CspNonceHolder.getNonce()}">
 	// 이 컴포넌트는 여러 페이지에서 include되고 htmx 스왑으로 재렌더될 수 있으므로 document 위임 + 전역 1회 가드로 바인딩한다.
 	if (!window.__breadcrumbBackBound) {
 		window.__breadcrumbBackBound = true;

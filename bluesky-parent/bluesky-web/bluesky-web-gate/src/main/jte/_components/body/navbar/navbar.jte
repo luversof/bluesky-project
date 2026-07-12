@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @param boolean isAuthenticated = false
 @param String username = ""
 @param String loginUrl = "https://user.web.bluesky.local/login/redirect"
@@ -60,7 +61,7 @@
 		@template._components.body.navbar.end.locale()
 		@template._components.body.navbar.end.theme()
 	</div>
-	<script>
+	<script nonce="${CspNonceHolder.getNonce()}">
 		document.addEventListener('DOMContentLoaded', function() {
 			var toggle = document.getElementById('hideAmountsToggle');
 			var label = document.getElementById('hideAmountsLabel');

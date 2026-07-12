@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import java.time.LocalDate
 @import java.time.Instant
 @import io.github.luversof.boot.context.support.MessageUtil
@@ -62,7 +63,7 @@
     <input type="hidden" name="rangeMode" id="${idPrefix}RangeModeInput" value="${rangeMode != null ? rangeMode : ""}">
 </form>
 
-<script>
+<script nonce="${CspNonceHolder.getNonce()}">
 (function() {
     if (typeof DateRangePicker === 'undefined') return;
     var picker = DateRangePicker.create({

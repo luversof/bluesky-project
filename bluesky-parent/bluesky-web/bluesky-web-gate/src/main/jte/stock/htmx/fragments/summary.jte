@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import java.math.BigDecimal
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import io.github.luversof.boot.context.support.MessageUtil
@@ -162,7 +163,7 @@
 </div>
 
 @if(hasTrendSeries)
-<script>
+<script nonce="${CspNonceHolder.getNonce()}">
 (function () {
     // 자산 추이 미니 차트 — Chart.js 는 stockLayout 에서 1회 로드됨.
     // htmx 스왑 정착 후 실행(setTimeout 0): 스왑 중엔 이전/새 canvas 가 공존할 수 있다(activityList.jte 와 동일).

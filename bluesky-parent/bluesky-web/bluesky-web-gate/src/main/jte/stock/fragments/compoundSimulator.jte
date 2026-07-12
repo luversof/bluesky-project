@@ -7,6 +7,10 @@
 	String inputsDescription = MessageUtil.getMessage("stock.simulator.compound.section.inputs.desc");
 	String initialLabel = MessageUtil.getMessage("stock.simulator.compound.field.initial");
 	String contributionLabel = MessageUtil.getMessage("stock.simulator.compound.field.contribution");
+	String frequencyLabel = MessageUtil.getMessage("stock.simulator.compound.field.frequency");
+	String frequencyYearlyLabel = MessageUtil.getMessage("stock.simulator.compound.frequency.yearly");
+	String frequencyMonthlyLabel = MessageUtil.getMessage("stock.simulator.compound.frequency.monthly");
+	String monthlyNote = MessageUtil.getMessage("stock.simulator.compound.monthly.note");
 	String timingLabel = MessageUtil.getMessage("stock.simulator.compound.field.timing");
 	String timingBeginLabel = MessageUtil.getMessage("stock.simulator.compound.timing.begin");
 	String timingEndLabel = MessageUtil.getMessage("stock.simulator.compound.timing.end");
@@ -54,6 +58,14 @@
 					</div>
 					<input id="stockCompoundContribution" name="contribution" type="number" min="0" step="10000" value="20000000" class="input input-bordered w-full" />
 				</label>
+				<label class="form-control">
+					<div class="label"><span class="label-text font-medium">${frequencyLabel}</span></div>
+					<select id="stockCompoundFrequency" name="frequency" class="select select-bordered w-full">
+						<option value="yearly" selected>${frequencyYearlyLabel}</option>
+						<option value="monthly">${frequencyMonthlyLabel}</option>
+					</select>
+				</label>
+				<p id="stockCompoundMonthlyNote" class="hidden text-xs leading-5 text-base-content/50">${monthlyNote}</p>
 				<label class="form-control">
 					<div class="label"><span class="label-text font-medium">${timingLabel}</span></div>
 					<select id="stockCompoundTiming" name="timing" class="select select-bordered w-full">

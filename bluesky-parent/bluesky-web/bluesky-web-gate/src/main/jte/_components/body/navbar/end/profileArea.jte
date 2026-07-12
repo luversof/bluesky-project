@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @param boolean isAuthenticated = false
 @param String username = ""
 @param String loginUrl = "https://user.web.bluesky.local/login/redirect"
@@ -24,7 +25,7 @@
 	<a class="btn btn-ghost" id="login-link" href="#">
 		@template._components.icons.login() 로그인
 	</a>
-	<script>
+	<script nonce="${CspNonceHolder.getNonce()}">
 	document.addEventListener('DOMContentLoaded', function() {
 		var loginLink = document.getElementById('login-link');
 		if (loginLink) {
