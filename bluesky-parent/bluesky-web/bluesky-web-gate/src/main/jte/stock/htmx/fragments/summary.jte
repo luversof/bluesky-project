@@ -34,6 +34,9 @@
     String combinedAdjustmentSubtractedLabel = MessageUtil.getMessage("stock.summary.label.combined.adjustment.subtracted");
     String winRateLabel = MessageUtil.getMessage("stock.summary.label.win.rate");
     String profitableStockRatioLabel = MessageUtil.getMessage("stock.summary.label.profitable.stock.ratio");
+    String trendChartTitleLabel = MessageUtil.getMessage("stock.summary.trend.title");
+    String trendChartCaptionLabel = MessageUtil.getMessage("stock.summary.trend.caption");
+    String assetGrowthMenuLabel = MessageUtil.getMessage("layout.menu.stock.assetGrowth");
 }
 
 !{BigDecimal currentPrincipal = displayPrincipal != null ? displayPrincipal : totalAsset.subtract(totalUnrealizedProfit);}
@@ -56,11 +59,9 @@
 
 <div class="flex flex-col gap-4">
 
-    <!-- 히어로: 총자산/통합손익 카드 + 자산 추이 미니 차트(최근 6개월) -->
-    <div class="grid grid-cols-1 ${hasTrendSeries ? "lg:grid-cols-2" : "lg:grid-cols-3"} gap-3">
-        <%-- 시계열이 없으면 display:contents 로 기존 3열 배치(총자산 col-span-2 + 통합손익)를 유지한다 --%>
-        <div class="${hasTrendSeries ? "grid grid-cols-1 gap-3 content-start" : "contents"}">
-        @template._components.ui.card(cssClass = hasTrendSeries ? "" : "lg:col-span-2", bodyClass = "p-5", body = @`
+    <!-- 히어로: 총자산(주 지표) 카드 하나 + 자산 추이 미니 차트 -->
+    <div class="grid grid-cols-1 ${hasTrendSeries ? "lg:grid-cols-2" : ""} gap-3">
+        @template._components.ui.card(bodyClass = "p-5", body = @`
             <div class="flex items-center gap-1 text-sm text-base-content/60">
                 <span>${currentTotalAssetLabel}</span>
                 <span class="tooltip tooltip-right" data-tip="보유 종목의 현재 평가액 합계 (원금 + 평가손익)">
@@ -71,10 +72,8 @@
             <div class="text-sm text-base-content/70 mt-2">
                 ${principalLabel} <span class="font-mono amount-value" title="${String.format("%,d원", currentPrincipal.longValue())}">${StockFormatUtil.compactKrw(currentPrincipal.longValue())}</span>
             </div>
-        `)
-
-        <div class="card bg-base-200 rounded-box">
-            <div class="card-body p-5 justify-center">
+            <%-- 통합손익은 총자산의 보조 지표로 같은 카드 하단에 배치한다 --%>
+            <div class="flex items-center justify-between border-t border-base-200 mt-4 pt-3">
                 <div class="flex items-center gap-1 text-sm text-base-content/60">
                     <span>${totalCombinedProfitLabel}</span>
                     <div class="tooltip tooltip-bottom-end shrink-0">
@@ -121,15 +120,20 @@
                         </button>
                     </div>
                 </div>
-                <div class="text-2xl lg:text-3xl font-bold amount-value mt-1 ${combinedColor}" title="${String.format("%,d원", totalCombinedProfit.longValue())}">${StockFormatUtil.compactKrw(totalCombinedProfit.longValue())}</div>
-                <div class="text-sm font-semibold mt-1 ${combinedColor}">${returnRateLabel} ${String.format("%+.2f%%", combinedRate)}</div>
+                <div class="text-right">
+                    <span class="text-xl font-bold amount-value ${combinedColor}" title="${String.format("%,d원", totalCombinedProfit.longValue())}">${StockFormatUtil.compactKrw(totalCombinedProfit.longValue())}</span>
+                    <span class="ml-2 text-sm font-semibold ${combinedColor}">${String.format("%+.2f%%", combinedRate)}</span>
+                </div>
             </div>
-        </div>
-        </div>
+        `)
 
         @if(hasTrendSeries)
-        @template._components.ui.card(cssClass = "h-full", bodyClass = "p-4 h-full", body = @`
-            <div class="relative w-full h-full" style="min-height:160px">
+        @template._components.ui.card(cssClass = "h-full", bodyClass = "p-4 h-full gap-2", body = @`
+            <div class="flex items-baseline justify-between gap-2">
+                <h3 class="text-sm font-semibold text-base-content/70">${trendChartTitleLabel} <span class="font-normal text-xs text-base-content/40">${trendChartCaptionLabel}</span></h3>
+                <a href="/stock/asset-growth" class="link link-hover text-xs shrink-0">${assetGrowthMenuLabel} →</a>
+            </div>
+            <div class="relative w-full flex-1" style="min-height:160px">
                 <canvas id="dashboardTrendChart" class="amount-chart"></canvas>
             </div>
         `)
@@ -138,27 +142,33 @@
 
     <!-- 보조 지표 -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <%-- 요약 지표는 히어로와 같은 축약 표기(억/만)로 통일 — 풀 숫자는 title 툴팁.
+         각 카드는 해당 상세 화면으로 이동한다 (drill-down) --%>
         @template._components.ui.statCard(
             label = currentEvaluationProfitLabel,
-            value = String.format("%,d", currentEvaluationProfit.longValue()),
+            value = StockFormatUtil.compactKrw(currentEvaluationProfit.longValue()),
             valueTitle = String.format("%,d원", currentEvaluationProfit.longValue()),
             sub = returnRateLabel + " " + String.format("%+.2f%%", unrealizedRate),
-            tone = evalColor)
+            tone = evalColor,
+            href = "/stock/analytics")
         @template._components.ui.statCard(
             label = realizedProfitLabel,
-            value = String.format("%,d", totalRealizedProfit.longValue()),
+            value = StockFormatUtil.compactKrw(totalRealizedProfit.longValue()),
             valueTitle = String.format("%,d원", totalRealizedProfit.longValue()),
-            tone = realizedColor)
+            tone = realizedColor,
+            href = "/stock/trade")
         @template._components.ui.statCard(
             label = cumulativeDividendLabel,
-            value = String.format("%,d", totalDividend.longValue()),
+            value = StockFormatUtil.compactKrw(totalDividend.longValue()),
             valueTitle = String.format("%,d원", totalDividend.longValue()),
-            tone = "text-dividend")
+            tone = "text-dividend",
+            href = "/stock/dividend")
         @template._components.ui.statCard(
             label = winRateLabel,
             value = String.format("%.1f", winRate) + "%",
             sub = profitableStockRatioLabel,
-            amount = false)
+            amount = false,
+            href = "/stock/analytics")
     </div>
 </div>
 
@@ -195,6 +205,9 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
+                // 차트 클릭 시 자산 성장 상세로 이동 (drill-down)
+                onClick: function () { window.location.href = '/stock/asset-growth'; },
+                onHover: function (evt, elements, chart) { chart.canvas.style.cursor = 'pointer'; },
                 plugins: {
                     legend: { display: false },
                     tooltip: {

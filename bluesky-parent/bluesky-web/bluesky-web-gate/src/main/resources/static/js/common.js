@@ -158,6 +158,51 @@ document.addEventListener("htmx:afterRequest", (event) => {
         globalThis.location.reload();
     }
 });
+// [data-params-from-query]: 페이지 최초 로드 fragment 요청에 현재 URL 쿼리를 병합한다.
+// 필터 조건이 URL 에 남아 있으면(아래 data-sync-url 로 기록됨) 새로고침/공유 시 그대로 복원된다.
+// URL 의 키는 hx-include(전역 기간 입력 등)로 들어온 같은 키를 덮어쓴다.
+document.addEventListener("htmx:configRequest", (event) => {
+    var _a, _b;
+    const el = (_a = event.detail) === null || _a === void 0 ? void 0 : _a.elt;
+    if (!((_b = el === null || el === void 0 ? void 0 : el.matches) === null || _b === void 0 ? void 0 : _b.call(el, "[data-params-from-query]")))
+        return;
+    const merged = {};
+    new URLSearchParams(globalThis.location.search).forEach((value, key) => {
+        (merged[key] = merged[key] || []).push(value);
+    });
+    for (const key in merged) {
+        event.detail.parameters[key] =
+            merged[key].length > 1 ? merged[key] : merged[key][0];
+    }
+});
+// [data-sync-url="<fragment 경로>"]: 화면 래퍼에 지정한 목록 엔드포인트로의 GET 이 성공하면
+// 그 조회 조건을 페이지 URL 에 반영한다(replaceState — 히스토리 오염 없음).
+// 요청 주체(elt)는 스왑 대상 div 일 수 있으므로, 스왑에서 살아남는 래퍼에서 경로를 대조한다.
+document.addEventListener("htmx:afterRequest", (event) => {
+    var _a, _b, _c, _d, _e;
+    const el = (_a = event.detail) === null || _a === void 0 ? void 0 : _a.elt;
+    if (!((_b = event.detail) === null || _b === void 0 ? void 0 : _b.successful))
+        return;
+    if (((_c = event.detail.requestConfig) === null || _c === void 0 ? void 0 : _c.verb) !== "get")
+        return;
+    const syncRoot = (_d = el === null || el === void 0 ? void 0 : el.closest) === null || _d === void 0 ? void 0 : _d.call(el, "[data-sync-url]");
+    if (!syncRoot)
+        return;
+    const responseUrl = ((_e = event.detail.xhr) === null || _e === void 0 ? void 0 : _e.responseURL) || "";
+    let pathname = "";
+    let query = "";
+    try {
+        const parsed = new URL(responseUrl);
+        pathname = parsed.pathname;
+        query = parsed.search;
+    }
+    catch (e) {
+        return;
+    }
+    if (pathname !== syncRoot.getAttribute("data-sync-url"))
+        return;
+    globalThis.history.replaceState(null, "", globalThis.location.pathname + query);
+});
 // [data-page-param-from-query="page"]: 현재 URL 쿼리의 페이지 번호를 요청 파라미터로 전달 (없으면 1)
 document.addEventListener("htmx:configRequest", (event) => {
     var _a, _b, _c;
@@ -166,6 +211,15 @@ document.addEventListener("htmx:configRequest", (event) => {
         event.detail.parameters[key] =
             new URLSearchParams(globalThis.location.search).get(key) || "1";
     }
+});
+// [data-empty-widen-range]: 빈 상태 CTA — 같은 화면의 기간 프리셋 '전체' 버튼을 눌러 기간을 넓힌다
+document.addEventListener("click", (event) => {
+    var _a, _b;
+    const cta = (_b = (_a = event.target).closest) === null || _b === void 0 ? void 0 : _b.call(_a, "[data-empty-widen-range]");
+    if (!cta)
+        return;
+    const allButton = document.querySelector('[data-picker-action="set"][data-picker-arg="0"]');
+    allButton === null || allButton === void 0 ? void 0 : allButton.click();
 });
 // HTMX beforeSwap 이벤트 처리
 document.addEventListener("htmx:beforeSwap", (event) => {

@@ -31,7 +31,6 @@
     String grossLabel = MessageUtil.getMessage("common.label.gross");
     String previousComparisonLabel = MessageUtil.getMessage("stock.dividend.summary.previous.comparison");
     String previousPeriodLabel = MessageUtil.getMessage("stock.dividend.summary.previous.period");
-    String comparisonEmptyLabel = MessageUtil.getMessage("stock.dividend.summary.select.period.compare");
     String monthlyAverageLabel = MessageUtil.getMessage("stock.dividend.summary.monthly.average");
     String changeTitleLabel = MessageUtil.getMessage("stock.dividend.change.title");
     String changeNewLabel = MessageUtil.getMessage("stock.dividend.change.new");
@@ -48,8 +47,8 @@
     String taxableNoteLabel = MessageUtil.getMessage("stock.dividend.taxable.note");
 }
 
-    <!-- Row 1: Summary Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+    <!-- Row 1: Summary Cards — 전기 대비가 불가능하면 카드를 빼고 2열로 렌더한다 -->
+    <div class="grid grid-cols-1 ${hasComparison ? "sm:grid-cols-3" : "sm:grid-cols-2"} gap-3 mb-4">
 
         <!-- Card 1: 기간 합계 (세전/세후/과세) -->
         @template._components.ui.card(body = @`
@@ -93,10 +92,6 @@
                     <span class="text-xs amount-value ${diffPositive ? "text-profit" : "text-loss"}">${diffPositive ? "+" : "-"}₩${decimalFormat.format(diffAmount.abs())}</span>
                 </div>
                 <div class="text-xs text-base-content/40">${previousPeriodLabel} <span class="amount-value">₩ ${decimalFormat.format(safePrevNet)}</span></div>
-        `)
-        @else
-        @template._components.ui.card(bodyClass = "p-4 items-center justify-center text-center", body = @`
-                <div class="text-xs text-base-content/30">${comparisonEmptyLabel}</div>
         `)
         @endif
 

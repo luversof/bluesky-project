@@ -11,10 +11,10 @@
 	loginUrl = loginUrl,
 	profile = profile,
 	contentStock = @`
-		<div class="space-y-6">
+		<div class="space-y-6" data-sync-url="/stock/htmx/activity-list">
 			@template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.page.activity.title"))
 
-			<div hx-get="/stock/htmx/activity-list" hx-trigger="load" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
+			<div data-params-from-query="true" hx-get="/stock/htmx/activity-list" hx-trigger="load" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
 				<div class="flex justify-center p-10">
 					<span class="loading loading-spinner loading-lg text-primary"></span>
 				</div>

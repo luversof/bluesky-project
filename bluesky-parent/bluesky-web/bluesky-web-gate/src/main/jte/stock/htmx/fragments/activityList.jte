@@ -285,9 +285,11 @@
     <!-- Calendar View -->
     <div id="activityCalendarView" class="hidden">
         @if(activityMonths.isEmpty())
-            @template._components.ui.emptyState(message = noActivityDataLabel)
+            @template._components.ui.emptyState(message = noActivityDataLabel, widenRangeAction = !isAllMode)
         @else
-            <div class="space-y-6">
+            <div class="space-y-3">
+                <%-- 기간이 길면 캘린더가 세로로 매우 길어지므로 최신 월만 펼치고 나머지는 접는다 --%>
+                !{java.time.YearMonth latestActivityMonth = activityMonths.get(activityMonths.size() - 1);}
                 @for(java.time.YearMonth activityMonth : activityMonths)
                     !{
                         String ymKey = activityMonth.toString();
@@ -296,9 +298,14 @@
                         int daysInMonth = activityMonth.lengthOfMonth();
                         int totalCells = ((startPad + daysInMonth + 6) / 7) * 7;
                         String monthTitle = activityMonth.getYear() + "." + String.format("%02d", activityMonth.getMonthValue());
+                        int monthActivityCount = activityByDate.subMap(monthFirstDay, true, activityMonth.atEndOfMonth(), true).values().stream().mapToInt(java.util.List::size).sum();
                     }
-                    <div class="rounded-2xl bg-base-100 p-3 shadow-sm">
-                        <div class="text-sm font-bold mb-2">${monthTitle}</div>
+                    <details class="rounded-2xl bg-base-100 p-3 shadow-sm" open="${activityMonth.equals(latestActivityMonth)}">
+                        <summary class="flex items-baseline gap-2 cursor-pointer select-none">
+                            <span class="text-sm font-bold">${monthTitle}</span>
+                            <span class="text-xs text-base-content/50">${countMessage.apply(monthActivityCount)}</span>
+                        </summary>
+                        <div class="mt-2">
                         <!-- 날짜 그리드와 동일한 gap/패딩 + 가운데 정렬로 컬럼 라인을 맞춘다. 토/일은 빨간색 -->
                         <div class="grid grid-cols-7 gap-1 text-[11px] text-base-content/50 mb-1 text-center">
                             @for(int weekdayIndex = 0; weekdayIndex < weekdayLabels.length; weekdayIndex++)
@@ -384,7 +391,8 @@
                                 @endfor
                             </div>
                         </div>
-                    </div>
+                        </div>
+                    </details>
                 @endfor
             </div>
         @endif
@@ -393,7 +401,7 @@
     <!-- Timeline View: 날짜 내림차순 세로 타임라인 -->
     <div id="activityTimelineView" class="hidden">
         @if(activityByDate.isEmpty())
-            @template._components.ui.emptyState(message = noActivityDataLabel)
+            @template._components.ui.emptyState(message = noActivityDataLabel, widenRangeAction = !isAllMode)
         @else
             <div class="rounded-2xl bg-base-100 p-4 shadow-sm">
                 <div class="relative border-l-2 border-base-300 ml-1.5 pl-6 space-y-6">
@@ -464,7 +472,7 @@
     <div id="activityListView" class="hidden">
         <div class="card-body">
             @if(activities == null || activities.isEmpty())
-                @template._components.ui.emptyState(message = noActivityDataLabel)
+                @template._components.ui.emptyState(message = noActivityDataLabel, widenRangeAction = !isAllMode)
             @else
                 <div class="max-lg:overflow-x-auto">
                     <table class="table w-full table-sm table-pin-rows pin-top-nav">

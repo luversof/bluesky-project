@@ -385,6 +385,32 @@
 }
 [data-theme="dark"] { --color-compound-profit: rgba(255, 107, 107, 0.75); }
 
+/* 선택 가능한 테이블 행의 발견성: 첫 셀 앞에 체크 인디케이터를 상시 표시.
+   행 클릭 = 선택 합산 인터랙션(자산 현황·배당 랭킹)이 도움말 없이도 드러나도록 한다. */
+tr[aria-pressed] > td:first-child::before {
+	content: "";
+	display: inline-block;
+	width: 0.7rem;
+	height: 0.7rem;
+	margin-right: 0.5rem;
+	border: 1.5px solid color-mix(in oklab, var(--color-base-content) 35%, transparent);
+	border-radius: 0.2rem;
+	vertical-align: -1px;
+	opacity: 0.55;
+	transition: opacity .3s ease, border-color .3s ease, background-color .3s ease;
+}
+tr[aria-pressed]:hover > td:first-child::before {
+	opacity: 1;
+	border-color: var(--color-primary);
+	transition-duration: .075s;
+}
+tr[aria-pressed="true"] > td:first-child::before {
+	opacity: 1;
+	border-color: var(--color-primary);
+	background-color: var(--color-primary);
+	box-shadow: inset 0 0 0 2.5px var(--color-base-100);
+}
+
 /* 목록 화면 상세 검색 필터 공통 그리드 (활동/매매/배당/자산성장 4곳 공유).
    종목 컬럼은 최소 9rem 보장 — minmax(0,1fr) 이면 1440px 에서 고정 컬럼에 밀려 붕괴한다. */
 .stock-filter-grid { display: grid; gap: 0.75rem; }

@@ -47,7 +47,7 @@
 	loginUrl = loginUrl,
 	profile = profile,
 	contentStock = @`
-		<div class="space-y-6">
+		<div class="space-y-6" data-sync-url="/stock/htmx/dividend/list">
 			@template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.page.dividend.title"))
 
 			<!-- 같은 페이지 탭: 클릭 시 이 페이지에서 내용만 교체된다 -->
@@ -99,7 +99,7 @@
 					@endif
 				@endif
 			@else
-				<div class="min-h-[200px]" hx-get="/stock/htmx/dividend/list" hx-trigger="load" hx-target="this" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
+				<div class="min-h-[200px]" data-params-from-query="true" hx-get="/stock/htmx/dividend/list" hx-trigger="load" hx-target="this" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
 					<div class="flex items-center gap-2 text-base-content/60">
 						<span class="loading loading-spinner loading-sm text-primary"></span>
 						<span>${MessageUtil.getMessage("common.message.loading")}</span>

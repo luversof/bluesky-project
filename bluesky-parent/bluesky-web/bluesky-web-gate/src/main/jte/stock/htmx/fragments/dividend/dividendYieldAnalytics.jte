@@ -189,11 +189,11 @@
                             <thead>
                                 <tr class="text-base-content/60">
                                     <th scope="col">${yearLabel}</th>
-                                    <th scope="col" class="text-right">${grossAmountLabel}</th>
+                                    <th scope="col" class="text-right hidden 2xl:table-cell">${grossAmountLabel}</th>
                                     <th scope="col" class="text-right">${netAmountLabel}</th>
-                                    <th scope="col" class="text-right">${taxLabel}</th>
-                                    <th scope="col" class="text-right">${taxableAmountLabel}</th>
-                                    <th scope="col" class="text-right">${dailyAverageInvestedCapitalLabel}</th>
+                                    <th scope="col" class="text-right hidden 2xl:table-cell">${taxLabel}</th>
+                                    <th scope="col" class="text-right hidden 2xl:table-cell">${taxableAmountLabel}</th>
+                                    <th scope="col" class="text-right hidden 2xl:table-cell">${dailyAverageInvestedCapitalLabel}</th>
                                     <th scope="col" class="text-right">${yieldOnDailyAverageCostLabel}</th>
                                     <th scope="col" class="text-right hidden xl:table-cell">${basisAverageInvestedCapitalLabel}</th>
                                     <th scope="col" class="text-right hidden xl:table-cell">${yieldOnBasisAverageCostLabel}</th>
@@ -205,11 +205,11 @@
                                     !{BigDecimal rowTaxAmount = row.totalGrossAmount() != null && row.totalNetAmount() != null ? row.totalGrossAmount().subtract(row.totalNetAmount()) : null;}
                                     <tr>
                                         <td class="font-medium">${row.label()}</td>
-                                        <td class="text-right amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
+                                        <td class="text-right hidden 2xl:table-cell amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
-                                        <td class="text-right amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
-                                        <td class="text-right amount-value">${decimalFormat.format(row.totalTaxableAmount())}</td>
-                                        <td class="text-right amount-value">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}</td>
+                                        <td class="text-right hidden 2xl:table-cell amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
+                                        <td class="text-right hidden 2xl:table-cell amount-value">${decimalFormat.format(row.totalTaxableAmount())}</td>
+                                        <td class="text-right hidden 2xl:table-cell amount-value">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}</td>
                                         <td class="text-right text-dividend font-medium">${percentFormat.apply(row.yieldOnDailyAverageCostPct())}</td>
                                         <td class="text-right hidden xl:table-cell amount-value">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}</td>
                                         <td class="text-right hidden xl:table-cell text-base-content/70">${percentFormat.apply(row.yieldOnCostPct())}</td>
@@ -289,7 +289,7 @@
                                             <span data-sort-indicator class="opacity-60">↕</span>
                                         </button>
                                     </th>
-                                    <th scope="col" class="text-right">
+                                    <th scope="col" class="text-right hidden 2xl:table-cell">
                                         <button type="button"
                                                 class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
                                                 data-sort-key="grossAmount"
@@ -307,7 +307,7 @@
                                             <span data-sort-indicator class="opacity-60">↕</span>
                                         </button>
                                     </th>
-                                    <th scope="col" class="text-right">
+                                    <th scope="col" class="text-right hidden 2xl:table-cell">
                                         <button type="button"
                                                 class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
                                                 data-sort-key="taxAmount"
@@ -316,7 +316,7 @@
                                             <span data-sort-indicator class="opacity-60">↕</span>
                                         </button>
                                     </th>
-                                    <th scope="col" class="text-right">
+                                    <th scope="col" class="text-right hidden 2xl:table-cell">
                                         <button type="button"
                                                 class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
                                                 data-sort-key="taxableAmount"
@@ -325,7 +325,7 @@
                                             <span data-sort-indicator class="opacity-60">↕</span>
                                         </button>
                                     </th>
-                                    <th scope="col" class="text-right">
+                                    <th scope="col" class="text-right hidden 2xl:table-cell">
                                         <button type="button"
                                                 class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
                                                 data-sort-key="averageDailyPrincipalCost"
@@ -403,11 +403,11 @@
                                         data-yield-on-market="${row.yieldOnMarketPct() != null ? row.yieldOnMarketPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-dividend-count="${String.valueOf(row.dividendCount())}">
                                         <td class="font-medium"><a href="/stock/item?stockItemId=${yieldStockIdByName.get(row.label()) != null ? yieldStockIdByName.get(row.label()).toString() : ""}" class="link link-hover" data-stock-tag-tooltip="${stockTagTooltip}">${row.label()}</a></td>
-                                        <td class="text-right amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
+                                        <td class="text-right hidden 2xl:table-cell amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
-                                        <td class="text-right amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
-                                        <td class="text-right amount-value">${decimalFormat.format(row.totalTaxableAmount())}</td>
-                                        <td class="text-right amount-value">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}</td>
+                                        <td class="text-right hidden 2xl:table-cell amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
+                                        <td class="text-right hidden 2xl:table-cell amount-value">${decimalFormat.format(row.totalTaxableAmount())}</td>
+                                        <td class="text-right hidden 2xl:table-cell amount-value">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}</td>
                                         <td class="text-right text-dividend font-medium">${percentFormat.apply(row.yieldOnDailyAverageCostPct())}</td>
                                         <td class="text-right hidden xl:table-cell amount-value">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}</td>
                                         <td class="text-right hidden xl:table-cell text-base-content/70">${percentFormat.apply(row.yieldOnCostPct())}</td>
@@ -419,11 +419,11 @@
                             <tfoot>
                                 <tr class="bg-base-200 font-bold">
                                     <td>${totalLabel}</td>
-                                    <td class="text-right font-mono amount-value">${decimalFormat.format(stockYieldFooterGrossAmount)}</td>
+                                    <td class="text-right hidden 2xl:table-cell font-mono amount-value">${decimalFormat.format(stockYieldFooterGrossAmount)}</td>
                                     <td class="text-right font-mono text-dividend amount-value">${decimalFormat.format(stockYieldFooterNetAmount)}</td>
-                                    <td class="text-right font-mono amount-value">${decimalFormat.format(stockYieldFooterTaxAmount)}</td>
-                                    <td class="text-right font-mono amount-value">${decimalFormat.format(stockYieldFooterTaxableAmount)}</td>
-                                    <td class="text-right font-mono amount-value">${decimalFormat.format(stockYieldFooterDailyPrincipalCost)}</td>
+                                    <td class="text-right hidden 2xl:table-cell font-mono amount-value">${decimalFormat.format(stockYieldFooterTaxAmount)}</td>
+                                    <td class="text-right hidden 2xl:table-cell font-mono amount-value">${decimalFormat.format(stockYieldFooterTaxableAmount)}</td>
+                                    <td class="text-right hidden 2xl:table-cell font-mono amount-value">${decimalFormat.format(stockYieldFooterDailyPrincipalCost)}</td>
                                     <td class="text-right text-dividend font-medium">${percentFormat.apply(stockYieldFooterYieldOnDailyAverageCostPct)}</td>
                                     <td class="text-right hidden xl:table-cell font-mono amount-value">${decimalFormat.format(stockYieldFooterPrincipalCost)}</td>
                                     <td class="text-right hidden xl:table-cell text-base-content/70">${percentFormat.apply(stockYieldFooterYieldOnCostPct)}</td>
@@ -504,7 +504,7 @@
                                             <span data-sort-indicator class="opacity-60">↕</span>
                                         </button>
                                     </th>
-                                    <th scope="col" class="text-right">
+                                    <th scope="col" class="text-right hidden 2xl:table-cell">
                                         <button type="button"
                                                 class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
                                                 data-sort-key="grossAmount"
@@ -522,7 +522,7 @@
                                             <span data-sort-indicator class="opacity-60">↕</span>
                                         </button>
                                     </th>
-                                    <th scope="col" class="text-right">
+                                    <th scope="col" class="text-right hidden 2xl:table-cell">
                                         <button type="button"
                                                 class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
                                                 data-sort-key="taxAmount"
@@ -531,7 +531,7 @@
                                             <span data-sort-indicator class="opacity-60">↕</span>
                                         </button>
                                     </th>
-                                    <th scope="col" class="text-right">
+                                    <th scope="col" class="text-right hidden 2xl:table-cell">
                                         <button type="button"
                                                 class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
                                                 data-sort-key="taxableAmount"
@@ -540,7 +540,7 @@
                                             <span data-sort-indicator class="opacity-60">↕</span>
                                         </button>
                                     </th>
-                                    <th scope="col" class="text-right">
+                                    <th scope="col" class="text-right hidden 2xl:table-cell">
                                         <button type="button"
                                                 class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
                                                 data-sort-key="averageDailyPrincipalCost"
@@ -617,11 +617,11 @@
                                         data-yield-on-market="${row.yieldOnMarketPct() != null ? row.yieldOnMarketPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-dividend-count="${String.valueOf(row.dividendCount())}">
                                         <td class="font-medium"><a href="/stock/account?accountId=${yieldAccountIdByName.get(row.label()) != null ? yieldAccountIdByName.get(row.label()).toString() : ""}" class="link link-hover">${row.label()}</a></td>
-                                        <td class="text-right amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
+                                        <td class="text-right hidden 2xl:table-cell amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
-                                        <td class="text-right amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
-                                        <td class="text-right amount-value">${decimalFormat.format(row.totalTaxableAmount())}</td>
-                                        <td class="text-right amount-value">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}</td>
+                                        <td class="text-right hidden 2xl:table-cell amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
+                                        <td class="text-right hidden 2xl:table-cell amount-value">${decimalFormat.format(row.totalTaxableAmount())}</td>
+                                        <td class="text-right hidden 2xl:table-cell amount-value">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}</td>
                                         <td class="text-right text-dividend font-medium">${percentFormat.apply(row.yieldOnDailyAverageCostPct())}</td>
                                         <td class="text-right hidden xl:table-cell amount-value">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}</td>
                                         <td class="text-right hidden xl:table-cell text-base-content/70">${percentFormat.apply(row.yieldOnCostPct())}</td>
@@ -633,11 +633,11 @@
                             <tfoot>
                                 <tr class="bg-base-200 font-bold">
                                     <td>${totalLabel}</td>
-                                    <td class="text-right font-mono amount-value">${decimalFormat.format(accountYieldFooterGrossAmount)}</td>
+                                    <td class="text-right hidden 2xl:table-cell font-mono amount-value">${decimalFormat.format(accountYieldFooterGrossAmount)}</td>
                                     <td class="text-right font-mono text-dividend amount-value">${decimalFormat.format(accountYieldFooterNetAmount)}</td>
-                                    <td class="text-right font-mono amount-value">${decimalFormat.format(accountYieldFooterTaxAmount)}</td>
-                                    <td class="text-right font-mono amount-value">${decimalFormat.format(accountYieldFooterTaxableAmount)}</td>
-                                    <td class="text-right font-mono amount-value">${decimalFormat.format(accountYieldFooterDailyPrincipalCost)}</td>
+                                    <td class="text-right hidden 2xl:table-cell font-mono amount-value">${decimalFormat.format(accountYieldFooterTaxAmount)}</td>
+                                    <td class="text-right hidden 2xl:table-cell font-mono amount-value">${decimalFormat.format(accountYieldFooterTaxableAmount)}</td>
+                                    <td class="text-right hidden 2xl:table-cell font-mono amount-value">${decimalFormat.format(accountYieldFooterDailyPrincipalCost)}</td>
                                     <td class="text-right text-dividend font-medium">${percentFormat.apply(accountYieldFooterYieldOnDailyAverageCostPct)}</td>
                                     <td class="text-right hidden xl:table-cell font-mono amount-value">${decimalFormat.format(accountYieldFooterPrincipalCost)}</td>
                                     <td class="text-right hidden xl:table-cell text-base-content/70">${percentFormat.apply(accountYieldFooterYieldOnCostPct)}</td>

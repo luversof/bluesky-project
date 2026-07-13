@@ -44,13 +44,20 @@
 				<%-- 좁은 카드라 한 줄 배지는 넘친다 — 일반 문단으로 표시 --%>
 				<p class="text-xs leading-5 text-base-content/50">${storageNote}</p>
 			</div>
-			<form id="stockCompoundForm" class="grid gap-4">
+			<%-- 우측 결과 영역과 높이 균형을 맞추기 위해 md 이상에서 2열 배치 --%>
+			<form id="stockCompoundForm" class="grid gap-4 md:grid-cols-2">
 				<label class="form-control">
 					<div class="label justify-between gap-3">
 						<span class="label-text font-medium">${initialLabel}</span>
 						<span id="stockCompoundInitialPreview" class="label-text-alt text-right font-medium text-base-content/60 amount-value"></span>
 					</div>
 					<input id="stockCompoundInitial" name="initial" type="number" min="0" step="10000" value="0" class="input input-bordered w-full" />
+					<%-- 0 개수를 세지 않도록 만원 단위 증감 버튼 제공 (클릭 시 즉시 재계산) --%>
+					<div class="mt-1 flex flex-wrap gap-1">
+						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundInitial" data-amount-add="1000000">+100만</button>
+						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundInitial" data-amount-add="10000000">+1,000만</button>
+						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundInitial" data-amount-add="0">0</button>
+					</div>
 				</label>
 				<label class="form-control">
 					<div class="label justify-between gap-3">
@@ -58,6 +65,11 @@
 						<span id="stockCompoundContributionPreview" class="label-text-alt text-right font-medium text-base-content/60 amount-value"></span>
 					</div>
 					<input id="stockCompoundContribution" name="contribution" type="number" min="0" step="10000" value="20000000" class="input input-bordered w-full" />
+					<div class="mt-1 flex flex-wrap gap-1">
+						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundContribution" data-amount-add="1000000">+100만</button>
+						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundContribution" data-amount-add="10000000">+1,000만</button>
+						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundContribution" data-amount-add="0">0</button>
+					</div>
 				</label>
 				<label class="form-control">
 					<div class="label"><span class="label-text font-medium">${frequencyLabel}</span></div>
@@ -66,7 +78,7 @@
 						<option value="monthly">${frequencyMonthlyLabel}</option>
 					</select>
 				</label>
-				<p id="stockCompoundMonthlyNote" class="hidden text-xs leading-5 text-base-content/50">${monthlyNote}</p>
+				<p id="stockCompoundMonthlyNote" class="hidden text-xs leading-5 text-base-content/50 md:col-span-2">${monthlyNote}</p>
 				<label class="form-control">
 					<div class="label"><span class="label-text font-medium">${timingLabel}</span></div>
 					<select id="stockCompoundTiming" name="timing" class="select select-bordered w-full">

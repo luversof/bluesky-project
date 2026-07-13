@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import io.github.luversof.boot.context.support.MessageUtil
 
 @param boolean isAuthenticated = false
@@ -14,6 +15,7 @@
     String updatePriceHistoriesConfirm = MessageUtil.getMessage("stock.admin.confirm.update.price.histories");
     String updatingLabel = MessageUtil.getMessage("stock.admin.message.updating");
     String pleaseWaitLabel = MessageUtil.getMessage("stock.admin.message.please.wait");
+    String lastRunLabel = MessageUtil.getMessage("stock.admin.label.last.run");
 }
 
 @if(isAuthenticated)
@@ -28,6 +30,7 @@
         </h2>
         <div class="flex flex-wrap gap-4">
             <button hx-post="/api/stock/admin/stock-items"
+                    data-admin-action="stock-items"
                     hx-swap="none"
                     hx-indicator="#update-loading"
                     hx-confirm="${updateStockItemsConfirm}"
@@ -39,6 +42,7 @@
                 ${updateStockItemsLabel}
             </button>
             <button hx-post="/api/stock/admin/trades"
+                    data-admin-action="trades"
                     hx-swap="none"
                     hx-indicator="#update-loading"
                     hx-confirm="${updateTradesConfirm}"
@@ -50,6 +54,7 @@
                 ${updateTradesLabel}
             </button>
             <button hx-post="/api/stock/admin/dividends"
+                    data-admin-action="dividends"
                     hx-swap="none"
                     hx-indicator="#update-loading"
                     hx-confirm="${updateDividendsConfirm}"
@@ -61,6 +66,7 @@
                 ${updateDividendsLabel}
             </button>
             <button hx-post="/api/stock/admin/price-histories"
+                    data-admin-action="price-histories"
                     hx-swap="none"
                     hx-indicator="#update-loading"
                     hx-confirm="${updatePriceHistoriesConfirm}"
@@ -72,6 +78,14 @@
                 ${updatePriceHistoriesLabel}
             </button>
         </div>
+        <%-- 갱신 이력은 서버에 없으므로 이 브라우저에서 실행한 시각을 localStorage 로 기억해 표시한다 --%>
+        <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-base-content/40">
+            <span class="font-semibold">${lastRunLabel}</span>
+            <span>${updateStockItemsLabel}: <span data-admin-last-run="stock-items">-</span></span>
+            <span>${updateTradesLabel}: <span data-admin-last-run="trades">-</span></span>
+            <span>${updateDividendsLabel}: <span data-admin-last-run="dividends">-</span></span>
+            <span>${updatePriceHistoriesLabel}: <span data-admin-last-run="price-histories">-</span></span>
+        </div>
     </div>
     
     <div id="update-loading" class="htmx-indicator fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
@@ -81,5 +95,28 @@
             <div class="text-sm opacity-70">${pleaseWaitLabel}</div>
         </div>
     </div>
+
+    <script nonce="${CspNonceHolder.getNonce()}">
+    (function() {
+        var STORAGE_KEY = 'stock.admin.lastRun.v1';
+        function readMap() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch (e) { return {}; }
+        }
+        // 저장된 실행 시각 표시
+        var lastRunMap = readMap();
+        document.querySelectorAll('[data-admin-last-run]').forEach(function(el) {
+            var ts = lastRunMap[el.getAttribute('data-admin-last-run')];
+            if (ts) el.textContent = new Date(ts).toLocaleString();
+        });
+        // 갱신 성공 시 시각 기록 (기록 후 data-reload-after-request 위임이 새로고침한다)
+        document.addEventListener('htmx:afterRequest', function(evt) {
+            var btn = evt.target && evt.target.closest ? evt.target.closest('[data-admin-action]') : null;
+            if (!btn || !evt.detail || !evt.detail.successful) return;
+            var map = readMap();
+            map[btn.getAttribute('data-admin-action')] = Date.now();
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(map)); } catch (e) {}
+        });
+    })();
+    </script>
 `)
 @endif

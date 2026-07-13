@@ -462,6 +462,20 @@
 		form.addEventListener("input", update);
 		form.addEventListener("change", update);
 		form.addEventListener("submit", (event) => event.preventDefault());
+		// 금액 증감 버튼: data-amount-add 만큼 더하고(0 이면 초기화) 즉시 재계산
+		form.addEventListener("click", (event) => {
+			const button = (event.target as HTMLElement).closest?.(
+				"[data-amount-add-target]",
+			) as HTMLElement | null;
+			if (!button) return;
+			const target = document.getElementById(
+				button.getAttribute("data-amount-add-target") || "",
+			) as HTMLInputElement | null;
+			if (!target) return;
+			const delta = Number(button.getAttribute("data-amount-add")) || 0;
+			target.value = String(delta === 0 ? 0 : readNumber(target, 0) + delta);
+			update();
+		});
 	}
 
 	restoreInputs();
