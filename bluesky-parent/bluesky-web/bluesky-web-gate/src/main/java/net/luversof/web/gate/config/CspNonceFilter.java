@@ -20,6 +20,11 @@ import net.luversof.web.gate.util.CspNonceHolder;
  *
  * <p>우선 Report-Only 로 적용해 위반 사항을 브라우저 콘솔에서 관찰한 뒤, 문제가 없으면 CONTENT_SECURITY_POLICY_REPORT_ONLY 를
  * enforcing 헤더(Content-Security-Policy)로 전환한다.
+ *
+ * <p>전제 조건: 정책에 'unsafe-eval' 이 없으므로 htmx 의 eval 기반 기능(hx-on:, hx-vals="js:")을 쓰면 안 된다 — 대신
+ * common.ts 의 데이터 속성 위임([data-reload-after-request], [data-page-param-from-query])을 사용할 것. 인라인
+ * 스크립트는 _components/ui/script.jte 래퍼로만 작성한다 (bare &lt;script&gt; 는 enforcing 시 차단됨). htmx 스왑
+ * fragment 의 nonce 재부여 트레이드오프는 defaultLayout.jte 의 htmx-config 주석 참고.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 100)

@@ -2,14 +2,15 @@
 	"name": "frontend",
 	"private": true,
 	"scripts": {
-		"build": "npm-run-all build:ts build:css build:vendor",
+		"build": "npm-run-all check:nonce build:ts build:css build:vendor",
 		"build:ts": "tsc",
 		"build:css": "tailwindcss -i ./main.css -o ../resources/static/main.css",
 		"build:vendor": "node copy-vendor.mjs",
 		"watch:css": "tailwindcss -i ./main.css -o ../resources/static/main.css --watch",
 		"watch:format": "chokidar \"src/**/*.ts\" -c \"prettier --write {path}\"",
 		"watch:ts": "tsc --watch",
-		"watch": "npm-run-all --parallel --print-label --color watch:css watch:ts"
+		"watch": "npm-run-all --parallel --print-label --color watch:css watch:ts",
+		"check:nonce": "node check-jte-script-nonce.mjs"
 	},
 	"devDependencies": {
 		"@tailwindcss/typography": "^0.5.16",

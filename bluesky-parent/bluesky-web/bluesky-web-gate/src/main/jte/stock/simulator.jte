@@ -34,29 +34,32 @@
 !{
 	boolean monthlyDividendTab = "monthly-dividend".equals(simulatorTab);
 	boolean compoundTab = "compound".equals(simulatorTab);
-	String pageTitle = compoundTab
-		? MessageUtil.getMessage("stock.page.simulator.compound.title")
-		: MessageUtil.getMessage("stock.page.simulator.title");
-	String description = compoundTab
-		? MessageUtil.getMessage("stock.simulator.compound.description")
-		: (monthlyDividendTab
-			? MessageUtil.getMessage("stock.simulator.monthly.description")
-			: MessageUtil.getMessage("stock.simulator.description"));
-	String storageNote = compoundTab
-		? MessageUtil.getMessage("stock.simulator.compound.storage.note")
-		: (monthlyDividendTab
-			? MessageUtil.getMessage("stock.simulator.monthly.storage.note")
-			: MessageUtil.getMessage("stock.simulator.local.storage.note"));
-	String toolTitle = compoundTab
-		? MessageUtil.getMessage("stock.simulator.compound.tool.title")
-		: (monthlyDividendTab
-			? MessageUtil.getMessage("stock.simulator.monthly.tool.title")
-			: MessageUtil.getMessage("stock.simulator.tool.dividend.title"));
-	String toolDescription = compoundTab
-		? MessageUtil.getMessage("stock.simulator.compound.tool.desc")
-		: (monthlyDividendTab
-			? MessageUtil.getMessage("stock.simulator.monthly.tool.desc")
-			: MessageUtil.getMessage("stock.simulator.tool.dividend.desc"));
+	boolean sustainabilityTab = !monthlyDividendTab && !compoundTab;
+	// 탭별 헤더 문구는 탭당 한 블록에서 일괄 할당한다 (탭 추가 시 블록 하나만 추가)
+	String pageTitle;
+	String description;
+	String storageNote;
+	String toolTitle;
+	String toolDescription;
+	if (compoundTab) {
+		pageTitle = MessageUtil.getMessage("stock.page.simulator.compound.title");
+		description = MessageUtil.getMessage("stock.simulator.compound.description");
+		storageNote = MessageUtil.getMessage("stock.simulator.compound.storage.note");
+		toolTitle = MessageUtil.getMessage("stock.simulator.compound.tool.title");
+		toolDescription = MessageUtil.getMessage("stock.simulator.compound.tool.desc");
+	} else if (monthlyDividendTab) {
+		pageTitle = MessageUtil.getMessage("stock.page.simulator.title");
+		description = MessageUtil.getMessage("stock.simulator.monthly.description");
+		storageNote = MessageUtil.getMessage("stock.simulator.monthly.storage.note");
+		toolTitle = MessageUtil.getMessage("stock.simulator.monthly.tool.title");
+		toolDescription = MessageUtil.getMessage("stock.simulator.monthly.tool.desc");
+	} else {
+		pageTitle = MessageUtil.getMessage("stock.page.simulator.title");
+		description = MessageUtil.getMessage("stock.simulator.description");
+		storageNote = MessageUtil.getMessage("stock.simulator.local.storage.note");
+		toolTitle = MessageUtil.getMessage("stock.simulator.tool.dividend.title");
+		toolDescription = MessageUtil.getMessage("stock.simulator.tool.dividend.desc");
+	}
 	String sustainabilityTabLabel = MessageUtil.getMessage("stock.simulator.tab.sustainability");
 	String monthlyDividendTabLabel = MessageUtil.getMessage("stock.simulator.tab.monthly.dividend");
 	String compoundTabLabel = MessageUtil.getMessage("stock.simulator.tab.compound");
@@ -90,7 +93,7 @@
 	profile = profile,
 	contentStock = @`
 		<div id="stockSimulatorApp" class="space-y-6">
-			@if(!monthlyDividendTab && !compoundTab)
+			@if(sustainabilityTab)
 				<script nonce="${CspNonceHolder.getNonce()}">
 					window.stockSimulatorI18n = {
 						defaultScenarioName: '${MessageUtil.getMessage("stock.simulator.default.scenario.name")}',
@@ -173,7 +176,7 @@
 			</div>
 
 			<div class="tabs tabs-box w-full bg-base-200/70 p-1">
-				<a href="/stock/simulator?tab=sustainability" class="${!monthlyDividendTab && !compoundTab ? activeSimulatorTabClass : inactiveSimulatorTabClass}">${sustainabilityTabLabel}</a>
+				<a href="/stock/simulator?tab=sustainability" class="${sustainabilityTab ? activeSimulatorTabClass : inactiveSimulatorTabClass}">${sustainabilityTabLabel}</a>
 				<a href="/stock/simulator?tab=monthly-dividend" class="${monthlyDividendTab ? activeSimulatorTabClass : inactiveSimulatorTabClass}">${monthlyDividendTabLabel}</a>
 				<a href="/stock/simulator?tab=compound" class="${compoundTab ? activeSimulatorTabClass : inactiveSimulatorTabClass}">${compoundTabLabel}</a>
 			</div>

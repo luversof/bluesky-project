@@ -14,7 +14,11 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<%-- htmx 가 스왑한 fragment 의 인라인 스크립트에 현재 페이지의 CSP nonce 를 재부여한다 (fragment 는 별도 요청이라 nonce 가 다름) --%>
+	<%-- htmx 가 스왑한 fragment 의 인라인 스크립트에 현재 페이지의 CSP nonce 를 재부여한다 (fragment 는 별도 요청이라 nonce 가 다름).
+	     [의도된 트레이드오프] 이 설정은 스왑된 콘텐츠 안의 "모든" <script> 에 nonce 를 부여하므로,
+	     htmx 스왑 경로로 주입된 마크업에 대해서는 nonce CSP 의 XSS 방어가 약해진다.
+	     fragment 는 전부 우리 서버가 렌더링하고 사용자 입력은 JTE 가 이스케이프한다는 전제 위의 결정이며,
+	     $unsafe{} 로 출력하는 값에 외부 입력이 섞이지 않도록 유지하는 것이 전제 조건이다. --%>
 	<meta name="htmx-config" content='{"inlineScriptNonce":"${CspNonceHolder.getNonce()}"}'>
 	<title>${title}</title>
 	<script nonce="${CspNonceHolder.getNonce()}">

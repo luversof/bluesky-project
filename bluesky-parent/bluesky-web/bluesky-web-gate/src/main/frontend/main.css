@@ -253,7 +253,7 @@
 	/* ---- tabs ---- */
 	.tabs { display: flex; flex-wrap: wrap; align-items: center; }
 	.tabs-box { background-color: var(--color-base-200); border-radius: var(--radius-box); padding: 0.25rem; gap: 0.25rem; }
-	.tab { display: inline-flex; align-items: center; gap: 0.5rem; height: 2rem; padding-inline: 0.75rem;
+	.tab { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; height: 2rem; padding-inline: 0.75rem;
 		font-size: 0.875rem; cursor: pointer; border-radius: var(--radius-field); color: color-mix(in oklab, var(--color-base-content) 70%, transparent); }
 	.tab-active, .tab.tab-active, .tab[aria-selected="true"] { background-color: var(--color-base-100); color: var(--color-base-content); font-weight: 600; }
 
@@ -375,6 +375,27 @@
 	.text-principal { color: color-mix(in oklab, var(--color-base-content) 80%, transparent); }
 	.text-dividend { color: #26c281; font-weight: 600; }
 	[data-theme="dark"] .text-dividend { color: #69db7c; }
+}
+
+/* 적립식 복리 시뮬레이터 시리즈 색 — JTE 인라인 스타일과 TS(Chart.js) 가 공유하는 단일 소스.
+   수익은 text-profit 과 같은 계열(빨강=수익 관례). */
+:root {
+	--color-compound-principal: rgba(99, 102, 241, 0.8);
+	--color-compound-profit: rgba(240, 68, 82, 0.75);
+}
+[data-theme="dark"] { --color-compound-profit: rgba(255, 107, 107, 0.75); }
+
+/* 목록 화면 상세 검색 필터 공통 그리드 (활동/매매/배당/자산성장 4곳 공유).
+   종목 컬럼은 최소 9rem 보장 — minmax(0,1fr) 이면 1440px 에서 고정 컬럼에 밀려 붕괴한다. */
+.stock-filter-grid { display: grid; gap: 0.75rem; }
+@media (min-width: 48rem) {
+	.stock-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 80rem) {
+	.stock-filter-grid {
+		grid-template-columns: minmax(0, 18rem) minmax(0, 20rem) minmax(9rem, 1fr) minmax(0, 17rem) minmax(0, auto);
+		align-items: start;
+	}
 }
 
 /* 페이지 간 이동 시 크로스페이드 (Chrome/Edge/Safari). 미지원 브라우저는 기존 즉시 전환.

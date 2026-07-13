@@ -67,8 +67,21 @@
 	}
 
 	function readNumber(input: HTMLInputElement | null, fallback: number) {
-		const value = Number(input?.value);
+		const raw = input?.value?.trim();
+		// Number("") === 0 이므로 빈 입력은 명시적으로 fallback 처리한다
+		if (!raw) {
+			return fallback;
+		}
+		const value = Number(raw);
 		return Number.isFinite(value) ? value : fallback;
+	}
+
+	// 시리즈 색은 main.css 의 CSS 변수(--color-compound-*)를 단일 소스로 사용한다
+	function seriesColor(name: string, fallback: string) {
+		const value = getComputedStyle(document.documentElement)
+			.getPropertyValue(name)
+			.trim();
+		return value || fallback;
 	}
 
 	function formatCurrency(value: number) {
@@ -287,11 +300,11 @@
 			"flex h-1.5 w-20 shrink-0 overflow-hidden rounded-full bg-base-200";
 		const principalSegment = document.createElement("div");
 		principalSegment.className = "h-1.5";
-		principalSegment.style.background = "rgba(99,102,241,0.8)";
+		principalSegment.style.background = "var(--color-compound-principal)";
 		principalSegment.style.width = `${Math.min(100, Math.max(0, shares.principalPct))}%`;
 		const profitSegment = document.createElement("div");
 		profitSegment.className = "h-1.5";
-		profitSegment.style.background = "rgba(34,197,94,0.8)";
+		profitSegment.style.background = "var(--color-compound-profit)";
 		profitSegment.style.width = `${Math.min(100, Math.max(0, shares.profitPct))}%`;
 		bar.appendChild(principalSegment);
 		bar.appendChild(profitSegment);
@@ -325,7 +338,7 @@
 				const td = document.createElement("td");
 				td.textContent = text;
 				if (index > 0) {
-					td.className = "text-right font-mono tabular-nums";
+					td.className = "text-right font-mono tabular-nums amount-value";
 				}
 				tr.appendChild(td);
 			});
@@ -364,14 +377,25 @@
 					{
 						label: principalLabel,
 						data: principalData,
-						backgroundColor: "rgba(99,102,241,0.8)",
+						// canvas 는 var() 를 해석하지 못하므로 계산된 값을 읽어 넣는다
+						backgroundColor: seriesColor(
+							"--color-compound-principal",
+							"rgba(99,102,241,0.8)",
+						),
 						stack: "total",
+						borderRadius: 3,
+						maxBarThickness: 36,
 					},
 					{
 						label: profitLabel,
 						data: profitData,
-						backgroundColor: "rgba(34,197,94,0.8)",
+						backgroundColor: seriesColor(
+							"--color-compound-profit",
+							"rgba(240,68,82,0.75)",
+						),
 						stack: "total",
+						borderRadius: 3,
+						maxBarThickness: 36,
 					},
 				],
 			},
@@ -396,13 +420,16 @@
 						callbacks: {
 							label: (context: any) => {
 								const datasets = context.chart.data.datasets;
-								const total = datasets.reduce(
-									(sum: number, dataset: any) =>
-										sum + Number(dataset.data[context.dataIndex] || 0),
+								const values = datasets.map((dataset: any) =>
+									Number(dataset.data[context.dataIndex] || 0),
+								);
+								const total = values.reduce(
+									(sum: number, v: number) => sum + v,
 									0,
 								);
 								const base = `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`;
-								if (total <= 0) {
+								// 수익이 음수인 해는 구성 비율이 성립하지 않으므로(원금이 100% 를 넘음) 금액만 표시
+								if (total <= 0 || values.some((v: number) => v < 0)) {
 									return base;
 								}
 								const pct = ((context.parsed.y / total) * 100).toFixed(1);

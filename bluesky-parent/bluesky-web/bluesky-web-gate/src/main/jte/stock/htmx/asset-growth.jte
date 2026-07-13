@@ -103,7 +103,7 @@
                   hx-select="#assetGrowthFragment"
                   hx-swap="outerHTML"
                   hx-trigger="submit">
-                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,18rem)_minmax(0,22rem)_minmax(0,1fr)_minmax(0,19rem)_minmax(0,auto)] xl:items-start">
+                <div class="stock-filter-grid">
                     <div class="form-control w-full">
                         <label class="label p-1" id="filterPeriodLabel"><span class="label-text text-xs">${periodLabel}</span></label>
                         <div class="join w-full" role="group" aria-labelledby="filterPeriodLabel">

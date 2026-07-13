@@ -33,9 +33,7 @@
 				hx-trigger="load delay:0s, listHtmxTrigger"
 				hx-swap="transition:true"
 				hx-indicator="#indicator"
-				hx-vals="js:{
-					'page': new URLSearchParams(window.location.search).get('page') || 1
-				}">
+				data-page-param-from-query="page">
 			</div>
 		</div>
 	`

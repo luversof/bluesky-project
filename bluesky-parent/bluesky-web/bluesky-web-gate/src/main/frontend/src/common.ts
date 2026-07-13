@@ -152,6 +152,29 @@ document.addEventListener("click", (event) => {
 document.addEventListener("DOMContentLoaded", restoreActivityView);
 document.addEventListener("htmx:afterSettle", restoreActivityView);
 
+// CSP 대응: hx-on:/hx-vals="js:" 는 htmx 가 eval 로 실행해 nonce 기반 CSP 와 함께 쓸 수 없다.
+// 아래 데이터 속성 + 문서 위임으로 대체한다.
+
+// [data-reload-after-request]: htmx 요청 성공 시 페이지 새로고침 (관리 데이터 갱신 버튼 등)
+document.addEventListener("htmx:afterRequest", (event: any) => {
+	const el = (event.target as HTMLElement)?.closest?.(
+		"[data-reload-after-request]",
+	);
+	if (el && event.detail?.successful) {
+		globalThis.location.reload();
+	}
+});
+
+// [data-page-param-from-query="page"]: 현재 URL 쿼리의 페이지 번호를 요청 파라미터로 전달 (없으면 1)
+document.addEventListener("htmx:configRequest", (event: any) => {
+	const key = (event.detail?.elt as HTMLElement | undefined)?.dataset
+		?.pageParamFromQuery;
+	if (key) {
+		event.detail.parameters[key] =
+			new URLSearchParams(globalThis.location.search).get(key) || "1";
+	}
+});
+
 // HTMX beforeSwap 이벤트 처리
 document.addEventListener("htmx:beforeSwap", (event: any) => {
 	if ("hx-indicator" in event.target.attributes) {

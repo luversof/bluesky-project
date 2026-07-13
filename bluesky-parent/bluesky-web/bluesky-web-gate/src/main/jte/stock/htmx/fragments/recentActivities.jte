@@ -41,24 +41,20 @@
                 <ul class="space-y-0">
                     @for(Activity activity : activities)
                         !{
-                            String dotColor = "bg-base-300";
                             String badgeClass = "badge-neutral";
                             String badgeText = "";
                             String amountColor = "text-base-content";
 
                             if ("DIVIDEND".equals(activity.type())) {
-                                dotColor = "bg-success";
                                 badgeClass = "badge-success badge-outline";
                                 badgeText = dividendLabel;
                                 amountColor = "text-dividend";
                             } else if ("TRADE".equals(activity.type())) {
                                 if ("BUY".equals(activity.tradeType())) {
-                                    dotColor = "bg-error";
                                     badgeClass = "badge-error badge-outline";
                                     badgeText = buyLabel;
                                     amountColor = "text-base-content/60";
                                 } else {
-                                    dotColor = "bg-info";
                                     badgeClass = "badge-info badge-outline";
                                     badgeText = sellLabel;
                                     amountColor = "text-info";
@@ -66,9 +62,6 @@
                             }
                         }
                         <li class="flex items-start gap-2 py-1.5 border-b border-base-200 last:border-0">
-                            <div class="pt-1.5 shrink-0">
-                                <div class="w-2 h-2 rounded-full ${dotColor}"></div>
-                            </div>
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-1.5 mb-0.5">
                                     <span class="badge badge-xs ${badgeClass}">${badgeText}</span>
@@ -96,7 +89,7 @@
             @endif
         </div>
         <%-- 우: 이번 달 요약 --%>
-        <div class="w-44 shrink-0 border-l border-base-200 pl-4">
+        <div class="w-36 shrink-0 border-l border-base-200 pl-3">
             <div class="text-xs font-semibold text-base-content/50 mb-2">${monthSummaryLabel}</div>
             <div class="space-y-2">
                 <div class="flex justify-between items-center">

@@ -41,20 +41,21 @@
 					<h2 class="card-title text-lg">${inputsTitle}</h2>
 					<p class="text-sm leading-6 text-base-content/60">${inputsDescription}</p>
 				</div>
-				<div class="badge badge-outline">${storageNote}</div>
+				<%-- 좁은 카드라 한 줄 배지는 넘친다 — 일반 문단으로 표시 --%>
+				<p class="text-xs leading-5 text-base-content/50">${storageNote}</p>
 			</div>
 			<form id="stockCompoundForm" class="grid gap-4">
 				<label class="form-control">
 					<div class="label justify-between gap-3">
 						<span class="label-text font-medium">${initialLabel}</span>
-						<span id="stockCompoundInitialPreview" class="label-text-alt text-right font-medium text-base-content/60"></span>
+						<span id="stockCompoundInitialPreview" class="label-text-alt text-right font-medium text-base-content/60 amount-value"></span>
 					</div>
 					<input id="stockCompoundInitial" name="initial" type="number" min="0" step="10000" value="0" class="input input-bordered w-full" />
 				</label>
 				<label class="form-control">
 					<div class="label justify-between gap-3">
 						<span class="label-text font-medium">${contributionLabel}</span>
-						<span id="stockCompoundContributionPreview" class="label-text-alt text-right font-medium text-base-content/60"></span>
+						<span id="stockCompoundContributionPreview" class="label-text-alt text-right font-medium text-base-content/60 amount-value"></span>
 					</div>
 					<input id="stockCompoundContribution" name="contribution" type="number" min="0" step="10000" value="20000000" class="input input-bordered w-full" />
 				</label>
@@ -88,15 +89,15 @@
 		<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 			@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
 					<div class="text-xs font-semibold text-base-content/50">${summaryFinalLabel}</div>
-					<div id="stockCompoundFinalValue" class="font-mono text-xl font-bold tabular-nums">-</div>
+					<div id="stockCompoundFinalValue" class="font-mono text-xl font-bold tabular-nums amount-value">-</div>
 			`)
 			@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
 					<div class="text-xs font-semibold text-base-content/50">${summaryPrincipalLabel}</div>
-					<div id="stockCompoundTotalPrincipal" class="font-mono text-xl font-bold tabular-nums">-</div>
+					<div id="stockCompoundTotalPrincipal" class="font-mono text-xl font-bold tabular-nums amount-value">-</div>
 			`)
 			@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
 					<div class="text-xs font-semibold text-base-content/50">${summaryProfitLabel}</div>
-					<div id="stockCompoundTotalProfit" class="font-mono text-xl font-bold tabular-nums text-profit">-</div>
+					<div id="stockCompoundTotalProfit" class="font-mono text-xl font-bold tabular-nums amount-value text-profit">-</div>
 			`)
 			@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
 					<div class="text-xs font-semibold text-base-content/50">${summaryReturnLabel}</div>
@@ -111,12 +112,12 @@
 				</div>
 				<div id="stockCompoundRatio" class="space-y-1">
 					<div class="flex h-3 w-full overflow-hidden rounded-full bg-base-200">
-						<div id="stockCompoundRatioPrincipalBar" class="h-3" style="background: rgba(99,102,241,0.8)"></div>
-						<div id="stockCompoundRatioProfitBar" class="h-3" style="background: rgba(34,197,94,0.8)"></div>
+						<div id="stockCompoundRatioPrincipalBar" class="h-3" style="background: var(--color-compound-principal)"></div>
+						<div id="stockCompoundRatioProfitBar" class="h-3" style="background: var(--color-compound-profit)"></div>
 					</div>
 					<div class="flex justify-between text-xs text-base-content/60">
-						<span><span class="mr-1 inline-block h-2 w-2 rounded-full" style="background: rgba(99,102,241,0.8)"></span>${seriesPrincipalLabel} <span id="stockCompoundRatioPrincipalPct" class="font-mono tabular-nums font-semibold"></span></span>
-						<span><span class="mr-1 inline-block h-2 w-2 rounded-full" style="background: rgba(34,197,94,0.8)"></span>${seriesProfitLabel} <span id="stockCompoundRatioProfitPct" class="font-mono tabular-nums font-semibold"></span></span>
+						<span><span class="mr-1 inline-block h-2 w-2 rounded-full" style="background: var(--color-compound-principal)"></span>${seriesPrincipalLabel} <span id="stockCompoundRatioPrincipalPct" class="font-mono tabular-nums font-semibold"></span></span>
+						<span><span class="mr-1 inline-block h-2 w-2 rounded-full" style="background: var(--color-compound-profit)"></span>${seriesProfitLabel} <span id="stockCompoundRatioProfitPct" class="font-mono tabular-nums font-semibold"></span></span>
 					</div>
 				</div>
 				<div class="h-80 w-full rounded-2xl bg-base-100 p-2">
