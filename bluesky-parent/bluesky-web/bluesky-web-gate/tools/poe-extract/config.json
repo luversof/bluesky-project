@@ -1,0 +1,226 @@
+{
+  "patch": "3.28.0.14.3",
+  "translations": [
+    "English",
+    "Korean"
+  ],
+  "tables": [
+    {
+      "name": "BaseItemTypes",
+      "columns": [
+        "Id",
+        "Name",
+        "DropLevel",
+        "ItemVisualIdentity",
+        "ItemClassesKey",
+        "Implicit_ModsKeys"
+      ]
+    },
+    {
+      "name": "SkillGems",
+      "columns": [
+        "BaseItemTypesKey",
+        "StrengthRequirementPercent",
+        "DexterityRequirementPercent",
+        "IntelligenceRequirementPercent",
+        "IsSupport",
+        "GemColour",
+        "IsVaalVariant",
+        "RegularVariant",
+        "AwakenedVariant",
+        "GemVariants"
+      ]
+    },
+    {
+      "name": "GemEffects",
+      "columns": [
+        "Id",
+        "Name",
+        "GrantedEffect",
+        "GrantedEffect2",
+        "SupportText",
+        "SupportName",
+        "GemTags"
+      ]
+    },
+    {
+      "name": "GemTags",
+      "columns": [
+        "Id",
+        "Tag"
+      ]
+    },
+    {
+      "name": "GrantedEffects",
+      "columns": [
+        "Id",
+        "IsSupport",
+        "CastTime",
+        "ActiveSkill"
+      ]
+    },
+    {
+      "name": "ActiveSkills",
+      "columns": [
+        "Id",
+        "DisplayedName",
+        "Description"
+      ]
+    },
+    {
+      "name": "GrantedEffectsPerLevel",
+      "columns": [
+        "GrantedEffect",
+        "Level",
+        "PlayerLevelReq",
+        "CostMultiplier",
+        "Cooldown",
+        "AttackSpeedMultiplier",
+        "CostAmounts",
+        "CostTypes",
+        "ManaReservationPercent",
+        "AttackTime"
+      ]
+    },
+    {
+      "name": "GrantedEffectStatSetsPerLevel",
+      "columns": [
+        "StatSet",
+        "GemLevel",
+        "PlayerLevelReq",
+        "SpellCritChance",
+        "AttackCritChance",
+        "BaseMultiplier",
+        "DamageEffectiveness",
+        "GrantedEffects",
+        "FloatStats",
+        "FloatStatsValues",
+        "BaseResolvedValues",
+        "AdditionalStats",
+        "AdditionalStatsValues",
+        "StatInterpolations",
+        "InterpolationBases"
+      ]
+    },
+    {
+      "name": "CostTypes",
+      "columns": [
+        "Id",
+        "FormatText"
+      ]
+    },
+    {
+      "name": "Stats",
+      "columns": [
+        "Id"
+      ]
+    },
+    {
+      "name": "GrantedEffectStatSets",
+      "columns": [
+        "Id",
+        "ImplicitStats",
+        "ConstantStats",
+        "ConstantStatsValues"
+      ]
+    },
+    {
+      "name": "Words",
+      "columns": [
+        "Wordlist",
+        "Text",
+        "Text2"
+      ]
+    },
+    {
+      "name": "ItemVisualIdentity",
+      "columns": [
+        "Id",
+        "DDSFile"
+      ]
+    },
+    {
+      "name": "PassiveSkills",
+      "columns": [
+        "Id",
+        "Stats",
+        "Stat1Value",
+        "Stat2Value",
+        "Stat3Value",
+        "Stat4Value",
+        "Stat5Value",
+        "PassiveSkillGraphId",
+        "Name",
+        "FlavourText"
+      ]
+    },
+    {
+      "name": "ItemClasses",
+      "columns": [
+        "Id",
+        "Name",
+        "ItemClassCategory"
+      ]
+    },
+    {
+      "name": "ArmourTypes",
+      "columns": [
+        "BaseItemTypesKey",
+        "ArmourMin",
+        "ArmourMax",
+        "EvasionMin",
+        "EvasionMax",
+        "EnergyShieldMin",
+        "EnergyShieldMax",
+        "WardMin",
+        "WardMax"
+      ]
+    },
+    {
+      "name": "WeaponTypes",
+      "columns": [
+        "BaseItemTypesKey",
+        "Critical",
+        "Speed",
+        "DamageMin",
+        "DamageMax",
+        "RangeMax"
+      ]
+    },
+    {
+      "name": "ComponentAttributeRequirements",
+      "columns": [
+        "BaseItemTypesKey",
+        "ReqStr",
+        "ReqDex",
+        "ReqInt"
+      ]
+    },
+    {
+      "name": "Mods",
+      "columns": [
+        "Id",
+        "Level",
+        "StatsKey1",
+        "StatsKey2",
+        "StatsKey3",
+        "StatsKey4",
+        "Stat1Min",
+        "Stat1Max",
+        "Stat2Min",
+        "Stat2Max",
+        "Stat3Min",
+        "Stat3Max",
+        "Stat4Min",
+        "Stat4Max"
+      ]
+    }
+  ],
+  "files": [
+    "metadata/statdescriptions/skill_stat_descriptions.txt",
+    "metadata/statdescriptions/stat_descriptions.txt",
+    "metadata/statdescriptions/active_skill_gem_stat_descriptions.txt",
+    "metadata/statdescriptions/gem_stat_descriptions.txt",
+    "metadata/statdescriptions/passive_skill_stat_descriptions.txt"
+  ]
+}

@@ -218,6 +218,24 @@ document.addEventListener("htmx:configRequest", (event: any) => {
 	}
 });
 
+// [data-overlay] 레이어 닫기: X 버튼([data-overlay-close]), 배경 클릭, ESC
+document.addEventListener("click", (event) => {
+	const target = event.target as HTMLElement;
+	const closeButton = target.closest?.("[data-overlay-close]");
+	if (closeButton) {
+		closeButton.closest("[data-overlay]")?.remove();
+		return;
+	}
+	if (target.matches?.("[data-overlay]")) {
+		target.remove();
+	}
+});
+document.addEventListener("keydown", (event) => {
+	if (event.key !== "Escape") return;
+	const overlays = document.querySelectorAll("[data-overlay]");
+	if (overlays.length) overlays[overlays.length - 1].remove();
+});
+
 // [data-empty-widen-range]: 빈 상태 CTA — 같은 화면의 기간 프리셋 '전체' 버튼을 눌러 기간을 넓힌다
 document.addEventListener("click", (event) => {
 	const cta = (event.target as HTMLElement).closest?.(

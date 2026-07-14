@@ -212,6 +212,26 @@ document.addEventListener("htmx:configRequest", (event) => {
             new URLSearchParams(globalThis.location.search).get(key) || "1";
     }
 });
+// [data-overlay] 레이어 닫기: X 버튼([data-overlay-close]), 배경 클릭, ESC
+document.addEventListener("click", (event) => {
+    var _a, _b, _c;
+    const target = event.target;
+    const closeButton = (_a = target.closest) === null || _a === void 0 ? void 0 : _a.call(target, "[data-overlay-close]");
+    if (closeButton) {
+        (_b = closeButton.closest("[data-overlay]")) === null || _b === void 0 ? void 0 : _b.remove();
+        return;
+    }
+    if ((_c = target.matches) === null || _c === void 0 ? void 0 : _c.call(target, "[data-overlay]")) {
+        target.remove();
+    }
+});
+document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape")
+        return;
+    const overlays = document.querySelectorAll("[data-overlay]");
+    if (overlays.length)
+        overlays[overlays.length - 1].remove();
+});
 // [data-empty-widen-range]: 빈 상태 CTA — 같은 화면의 기간 프리셋 '전체' 버튼을 눌러 기간을 넓힌다
 document.addEventListener("click", (event) => {
     var _a, _b;
