@@ -9,6 +9,9 @@
 @param int uniqueCount = 0
 @param int baseItemCount = 0
 @param boolean hasTreeData = false
+@param String dataDir = ""
+@param boolean imageMagickInstalled = false
+@param boolean engineAvailable = false
 
 !{
 	String pageTitle = MessageUtil.getMessage("poe.admin.title");
@@ -33,8 +36,13 @@
 			<div class="flex flex-wrap items-baseline gap-3">
 				<h1 class="text-2xl font-bold">${pageTitle}</h1>
 				<span class="badge badge-ghost">${patchLabel}</span>
+				<span class="text-xs text-base-content/40 font-mono">${dataDir}</span>
 			</div>
 
+			<%-- 최초 실행 안내: 데이터가 하나도 없을 때 --%>
+			@if(gemCount == 0 && uniqueCount == 0 && baseItemCount == 0 && !hasTreeData)
+				<div class="alert alert-info text-sm">${MessageUtil.getMessage("poe.admin.initial.hint")}</div>
+			@endif
 
 			<!-- 현재 데이터 상태 -->
 			<div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
@@ -56,12 +64,33 @@
 				`)
 			</div>
 
-			<!-- 추출 파이프라인 실행/상태 (fragment 가 스스로 폴링) -->
-			<div id="poeExtractStatus" hx-get="/poe/htmx/admin/status" hx-trigger="load" hx-swap="innerHTML">
-				<div class="flex justify-center p-6">
-					<span class="loading loading-spinner loading-md text-primary"></span>
-				</div>
-			</div>
+			<!-- 실행 환경: 없으면 설치 안내 (아이콘 = ImageMagick, 빌드/시뮬레이터 = LuaJIT+PoB 소스) -->
+			@template._components.ui.card(bodyClass = "gap-2", body = @`
+					<h2 class="text-sm font-bold text-base-content/70">${MessageUtil.getMessage("poe.admin.env.title")}</h2>
+					<div class="flex flex-wrap items-center gap-2 text-sm">
+						<span class="w-40 text-base-content/60">${MessageUtil.getMessage("poe.admin.env.imagemagick")}</span>
+						@if(imageMagickInstalled)
+							<span class="badge badge-success badge-outline badge-sm">${MessageUtil.getMessage("poe.admin.env.ok")}</span>
+						@else
+							<span class="badge badge-warning badge-outline badge-sm">${MessageUtil.getMessage("poe.admin.env.missing")}</span>
+							<code class="text-xs bg-base-200 rounded px-1.5 py-0.5">winget install ImageMagick.ImageMagick</code>
+							<span class="text-xs text-base-content/50">${MessageUtil.getMessage("poe.admin.env.imagemagick.hint")}</span>
+						@endif
+					</div>
+					<div class="flex flex-wrap items-center gap-2 text-sm">
+						<span class="w-40 text-base-content/60">${MessageUtil.getMessage("poe.admin.env.engine")}</span>
+						@if(engineAvailable)
+							<span class="badge badge-success badge-outline badge-sm">${MessageUtil.getMessage("poe.admin.env.ok")}</span>
+						@else
+							<span class="badge badge-warning badge-outline badge-sm">${MessageUtil.getMessage("poe.admin.env.missing")}</span>
+							<code class="text-xs bg-base-200 rounded px-1.5 py-0.5">winget install DEVCOM.LuaJIT</code>
+							<span class="text-xs text-base-content/50">${MessageUtil.getMessage("poe.admin.env.engine.hint")}</span>
+						@endif
+					</div>
+			`)
+
+			<!-- 추출 파이프라인 실행/상태 (고정 래퍼가 interval 폴링, 유휴 시 286 으로 중단) -->
+			@template.poe.htmx.extractWrap()
 		</div>
 	`
 )

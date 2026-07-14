@@ -19,6 +19,23 @@ export const loadTable = (lang, table) =>
 export const loadConfig = () =>
 	JSON.parse(fs.readFileSync(path.join(REPO_DIR, "config.json"), "utf8"));
 
+/** ImageMagick 설치 위치 탐색 — 표준 설치 폴더 경로, PATH 에 있으면 "PATH", 없으면 null */
+export function findImageMagick() {
+	try {
+		const magickDir = fs
+			.readdirSync("C:/Program Files")
+			.filter((d) => d.startsWith("ImageMagick"))
+			.map((d) => "C:/Program Files/" + d)[0];
+		if (magickDir) return magickDir;
+	} catch (e) { /* 비 Windows 등 */ }
+	try {
+		execSync("magick -version", { stdio: "ignore" });
+		return "PATH";
+	} catch (e) {
+		return null;
+	}
+}
+
 /** repo 의 config(또는 override)를 작업 디렉토리에 복사하고 pathofexile-dat CLI 를 실행한다. */
 export function runExtractor(configOverride) {
 	fs.mkdirSync(WORK_DIR, { recursive: true });
@@ -28,16 +45,11 @@ export function runExtractor(configOverride) {
 	// ImageMagick 이 PATH 에 없으면 표준 설치 경로를 붙인다 (DDS→PNG 변환용).
 	// 주의: Windows/JVM 경유 실행 시 환경변수 키가 "Path" 등 대소문자가 다를 수 있어 키를 탐색한다.
 	const env = { ...process.env };
-	try {
-		const magickDir = fs
-			.readdirSync("C:/Program Files")
-			.filter((d) => d.startsWith("ImageMagick"))
-			.map((d) => "C:/Program Files/" + d)[0];
-		if (magickDir) {
-			const pathKey = Object.keys(env).find((k) => k.toUpperCase() === "PATH") || "PATH";
-			env[pathKey] = magickDir + path.delimiter + (env[pathKey] || "");
-		}
-	} catch (e) { /* 비 Windows 등 — PATH 그대로 */ }
+	const magickDir = findImageMagick();
+	if (magickDir && magickDir !== "PATH") {
+		const pathKey = Object.keys(env).find((k) => k.toUpperCase() === "PATH") || "PATH";
+		env[pathKey] = magickDir + path.delimiter + (env[pathKey] || "");
+	}
 
 	const cli = path.join(REPO_DIR, "node_modules", "pathofexile-dat", "dist", "cli", "run.js");
 	// PATH 의존 없이 현재 node 바이너리로 실행

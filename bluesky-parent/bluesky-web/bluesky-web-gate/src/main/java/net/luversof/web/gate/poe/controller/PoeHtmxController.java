@@ -10,7 +10,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import net.luversof.web.gate.poe.service.PoeBaseItemDataService;
 import net.luversof.web.gate.poe.service.PoeExtractService;
 import net.luversof.web.gate.poe.service.PoeGemDataService;
+import net.luversof.web.gate.poe.service.PoeOptimizeService;
+import net.luversof.web.gate.poe.service.PoePobEngineService;
 import net.luversof.web.gate.poe.service.PoePobImportService;
+import net.luversof.web.gate.poe.service.PoeSimService;
 import net.luversof.web.gate.poe.service.PoeUniqueDataService;
 
 @Controller
@@ -22,18 +25,102 @@ public class PoeHtmxController {
   private final PoeBaseItemDataService poeBaseItemDataService;
   private final PoeExtractService poeExtractService;
   private final PoePobImportService poePobImportService;
+  private final PoePobEngineService poePobEngineService;
+  private final PoeSimService poeSimService;
+  private final PoeOptimizeService poeOptimizeService;
 
   public PoeHtmxController(
       PoeGemDataService poeGemDataService,
       PoeUniqueDataService poeUniqueDataService,
       PoeBaseItemDataService poeBaseItemDataService,
       PoeExtractService poeExtractService,
-      PoePobImportService poePobImportService) {
+      PoePobImportService poePobImportService,
+      PoePobEngineService poePobEngineService,
+      PoeSimService poeSimService,
+      PoeOptimizeService poeOptimizeService) {
     this.poeGemDataService = poeGemDataService;
     this.poeUniqueDataService = poeUniqueDataService;
     this.poeBaseItemDataService = poeBaseItemDataService;
     this.poeExtractService = poeExtractService;
     this.poePobImportService = poePobImportService;
+    this.poePobEngineService = poePobEngineService;
+    this.poeSimService = poeSimService;
+    this.poeOptimizeService = poeOptimizeService;
+  }
+
+  /**
+   * 최적 조합 탐색 상태 fragment — 고정 래퍼가 3초 간격으로 폴링한다(체인식 폴링은 요청 하나만 실패해도 영구히 끊겨 화면이 멈춘다). 유휴/완료 상태면 결과를
+   * 인라인으로 담고 HTTP 286 을 돌려줘 htmx 폴링을 중단시킨다.
+   */
+  @GetMapping("/sim/optimize/status")
+  public String optimizeStatus(
+      java.security.Principal principal,
+      Model model,
+      jakarta.servlet.http.HttpServletResponse response) {
+    boolean running = poeOptimizeService.isRunning();
+    model.addAttribute("isAuthenticated", principal != null);
+    model.addAttribute("available", poeOptimizeService.isAvailable());
+    model.addAttribute("running", running);
+    model.addAttribute("status", poeOptimizeService.lastStatus().name());
+    model.addAttribute("phase", poeOptimizeService.phase());
+    model.addAttribute("phaseDone", poeOptimizeService.phaseDone());
+    model.addAttribute("phaseTotal", poeOptimizeService.phaseTotal());
+    model.addAttribute("evalCount", poeOptimizeService.evalCount());
+    model.addAttribute("logLines", poeOptimizeService.logTail());
+    model.addAttribute("result", poeOptimizeService.lastResult());
+    if (!running) {
+      response.setStatus(286); // htmx: 폴링 중단
+    }
+    return "poe/htmx/simOptimizeStatus";
+  }
+
+  /** 최적 조합 탐색 시작 (로그인 필요) — 폴링 래퍼를 새로 내려 interval 을 재장전한다 */
+  @org.springframework.web.bind.annotation.PostMapping("/sim/optimize")
+  public String startOptimize(
+      @RequestParam String slug,
+      @RequestParam(required = false, defaultValue = "dps") String objective,
+      java.security.Principal principal) {
+    if (principal != null) {
+      poeOptimizeService.start(slug, objective);
+    }
+    return "poe/htmx/simOptimizeWrap";
+  }
+
+  /** 젬 랭킹 배치 상태 fragment — 고정 래퍼가 interval 폴링, 유휴 시 286 으로 중단 */
+  @GetMapping("/sim/status")
+  public String simStatus(
+      java.security.Principal principal,
+      Model model,
+      jakarta.servlet.http.HttpServletResponse response) {
+    boolean running = poeSimService.isRunning();
+    model.addAttribute("isAuthenticated", principal != null);
+    model.addAttribute("available", poeSimService.isAvailable());
+    model.addAttribute("running", running);
+    model.addAttribute("status", poeSimService.lastStatus().name());
+    model.addAttribute("progressDone", poeSimService.progressDone());
+    model.addAttribute("progressTotal", poeSimService.progressTotal());
+    model.addAttribute("logLines", poeSimService.logTail());
+    if (!running) {
+      response.setStatus(286); // htmx: 폴링 중단
+    }
+    return "poe/htmx/simStatus";
+  }
+
+  /** 젬 랭킹 배치 시작 (로그인 필요) — 폴링 래퍼를 새로 내려 interval 을 재장전한다 */
+  @org.springframework.web.bind.annotation.PostMapping("/sim/run")
+  public String startSim(java.security.Principal principal) {
+    if (principal != null) {
+      poeSimService.start();
+    }
+    return "poe/htmx/simWrap";
+  }
+
+  /** 젬 DPS 랭킹 목록 fragment */
+  @GetMapping("/sim/ranking")
+  public String simRanking(Model model) {
+    model.addAttribute("ranking", poeSimService.ranking());
+    model.addAttribute("rankingPatch", poeSimService.rankingPatch());
+    return "poe/htmx/simRanking";
   }
 
   /** PoB 공유 코드 임포트 → 빌드 요약 fragment. 형식 오류는 같은 fragment 의 오류 상태로 표시한다. */
@@ -41,10 +128,23 @@ public class PoeHtmxController {
   public String importBuild(@RequestParam String code, Model model) {
     try {
       model.addAttribute("build", poePobImportService.importCode(code));
+      model.addAttribute("engineAvailable", poePobEngineService.isAvailable());
     } catch (IllegalArgumentException e) {
       model.addAttribute("importError", true);
     }
     return "poe/htmx/buildSummary";
+  }
+
+  /** PoB 계산 엔진(헤드리스)으로 빌드 스탯 재계산 → 결과 fragment */
+  @org.springframework.web.bind.annotation.PostMapping("/build/recalc")
+  public String recalcBuild(@RequestParam String code, Model model) {
+    try {
+      String buildXml = poePobImportService.decodeToXml(code);
+      model.addAttribute("engineResult", poePobEngineService.recalculate(buildXml));
+    } catch (IllegalArgumentException | IllegalStateException e) {
+      model.addAttribute("engineError", true);
+    }
+    return "poe/htmx/buildEngineResult";
   }
 
   @GetMapping("/items")
@@ -67,24 +167,31 @@ public class PoeHtmxController {
     return "poe/htmx/itemDetail";
   }
 
-  /** 추출 파이프라인 상태 fragment — 실행 중이면 스스로 폴링한다 */
+  /** 추출 파이프라인 상태 fragment — 고정 래퍼가 interval 폴링, 유휴 시 286 으로 중단 */
   @GetMapping("/admin/status")
-  public String extractStatus(java.security.Principal principal, Model model) {
+  public String extractStatus(
+      java.security.Principal principal,
+      Model model,
+      jakarta.servlet.http.HttpServletResponse response) {
+    boolean running = poeExtractService.isRunning();
     model.addAttribute("isAuthenticated", principal != null);
     model.addAttribute("available", poeExtractService.isAvailable());
-    model.addAttribute("running", poeExtractService.isRunning());
+    model.addAttribute("running", running);
     model.addAttribute("status", poeExtractService.lastStatus().name());
     model.addAttribute("logLines", poeExtractService.logTail());
+    if (!running) {
+      response.setStatus(286); // htmx: 폴링 중단
+    }
     return "poe/htmx/extractStatus";
   }
 
-  /** 추출 파이프라인 시작 (로그인 필요) */
+  /** 추출 파이프라인 시작 (로그인 필요) — 폴링 래퍼를 새로 내려 interval 을 재장전한다 */
   @org.springframework.web.bind.annotation.PostMapping("/admin/extract")
-  public String startExtract(java.security.Principal principal, Model model) {
+  public String startExtract(java.security.Principal principal) {
     if (principal != null) {
       poeExtractService.start();
     }
-    return extractStatus(principal, model);
+    return "poe/htmx/extractWrap";
   }
 
   @GetMapping("/gems")

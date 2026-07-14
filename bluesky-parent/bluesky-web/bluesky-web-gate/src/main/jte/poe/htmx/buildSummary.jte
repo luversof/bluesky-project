@@ -3,6 +3,7 @@
 
 @param PoeBuild build = null
 @param boolean importError = false
+@param boolean engineAvailable = false
 
 @if(importError)
 	<div class="alert alert-error text-sm">${MessageUtil.getMessage("poe.build.error")}</div>
@@ -36,6 +37,18 @@
 							</div>
 						@endfor
 					</div>
+				@endif
+				@if(engineAvailable)
+					<div class="flex items-center gap-2">
+						<button type="button" class="btn btn-sm btn-outline btn-primary"
+						        hx-post="/poe/htmx/build/recalc"
+						        hx-include="#poeBuildImport textarea"
+						        hx-target="#poeEngineResult"
+						        hx-swap="innerHTML"
+						        hx-disabled-elt="this">${MessageUtil.getMessage("poe.build.engine.run")}</button>
+						<span class="text-xs text-base-content/50">${MessageUtil.getMessage("poe.build.engine.hint")}</span>
+					</div>
+					<div id="poeEngineResult"></div>
 				@endif
 		`)
 

@@ -3,7 +3,13 @@
 // 사용법: node icons.mjs  (사전 조건: extract.mjs + transform.mjs 실행 완료)
 import fs from "node:fs";
 import path from "node:path";
-import { DATA_DIR, FILES_DIR, loadConfig, loadTable, runExtractor } from "./paths.mjs";
+import { DATA_DIR, FILES_DIR, findImageMagick, loadConfig, loadTable, runExtractor } from "./paths.mjs";
+
+// DDS→PNG 변환은 ImageMagick 필수 — 없으면 이 단계만 건너뛰어 파이프라인 전체는 성공시킨다
+if (!findImageMagick()) {
+	console.warn("ImageMagick 이 없어 아이콘 단계를 건너뜁니다. 설치: winget install ImageMagick.ImageMagick (설치 후 데이터 갱신 재실행)");
+	process.exit(0);
+}
 
 const ICON_DIR = path.join(DATA_DIR, "icons", "gems");
 

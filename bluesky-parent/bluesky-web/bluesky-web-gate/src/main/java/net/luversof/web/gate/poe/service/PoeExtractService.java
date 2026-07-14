@@ -39,6 +39,7 @@ public class PoeExtractService {
   private final PoeGemDataService poeGemDataService;
   private final PoeUniqueDataService poeUniqueDataService;
   private final PoeBaseItemDataService poeBaseItemDataService;
+  private final PoeTreeGraphService poeTreeGraphService;
 
   private final AtomicBoolean running = new AtomicBoolean(false);
   private final Deque<String> logLines = new ArrayDeque<>();
@@ -48,16 +49,43 @@ public class PoeExtractService {
       @Value("${poe.extract-dir:tools/poe-extract}") String extractDir,
       PoeGemDataService poeGemDataService,
       PoeUniqueDataService poeUniqueDataService,
-      PoeBaseItemDataService poeBaseItemDataService) {
+      PoeBaseItemDataService poeBaseItemDataService,
+      PoeTreeGraphService poeTreeGraphService) {
     this.extractDir = Path.of(extractDir).toAbsolutePath();
     this.poeGemDataService = poeGemDataService;
     this.poeUniqueDataService = poeUniqueDataService;
     this.poeBaseItemDataService = poeBaseItemDataService;
+    this.poeTreeGraphService = poeTreeGraphService;
   }
 
   /** 파이프라인 스크립트가 서버 로컬에 존재하는가 (k8s 파드에서는 false) */
   public boolean isAvailable() {
     return Files.exists(extractDir.resolve("run-all.mjs"));
+  }
+
+  /** 아이콘 변환(DDS→PNG)에 필요한 ImageMagick 설치 여부 — 없으면 관리 화면에 설치 안내를 띄운다 */
+  public boolean isImageMagickInstalled() {
+    try (var programFiles = Files.list(Path.of("C:/Program Files"))) {
+      if (programFiles.anyMatch(dir -> dir.getFileName().toString().startsWith("ImageMagick"))) {
+        return true;
+      }
+    } catch (Exception e) {
+      // 비 Windows 등 — PATH 검사로 넘어간다
+    }
+    String pathValue =
+        System.getenv().entrySet().stream()
+            .filter(entry -> entry.getKey().equalsIgnoreCase("PATH"))
+            .map(java.util.Map.Entry::getValue)
+            .findFirst()
+            .orElse("");
+    for (String pathEntry : pathValue.split(java.io.File.pathSeparator)) {
+      if (!pathEntry.isBlank()
+          && (Files.exists(Path.of(pathEntry, "magick.exe"))
+              || Files.exists(Path.of(pathEntry, "magick")))) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public boolean isRunning() {
@@ -110,6 +138,7 @@ public class PoeExtractService {
                   poeGemDataService.reload();
                   poeUniqueDataService.reload();
                   poeBaseItemDataService.reload();
+                  poeTreeGraphService.reload();
                   appendLog("완료 — 화면을 새로고침하면 반영됩니다.");
                   lastStatus = Status.SUCCESS;
                 } else {

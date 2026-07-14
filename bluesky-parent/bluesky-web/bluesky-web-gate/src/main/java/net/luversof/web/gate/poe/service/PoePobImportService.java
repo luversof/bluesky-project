@@ -112,6 +112,11 @@ public class PoePobImportService {
    *
    * @throws IllegalArgumentException 코드가 base64/zlib/PoB XML 형식이 아닐 때
    */
+  /** PoB 공유 코드 → PoB XML 문자열 (엔진 재계산 등 XML 이 직접 필요할 때) */
+  public String decodeToXml(String code) {
+    return new String(inflate(decodeBase64Url(code)), java.nio.charset.StandardCharsets.UTF_8);
+  }
+
   public PoeBuild importCode(String code) {
     Document document = parseXml(inflate(decodeBase64Url(code)));
     Element root = document.getDocumentElement();
