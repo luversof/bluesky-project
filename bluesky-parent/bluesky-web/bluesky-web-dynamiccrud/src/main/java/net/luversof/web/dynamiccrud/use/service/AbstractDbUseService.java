@@ -26,6 +26,7 @@ import net.luversof.web.dynamiccrud.setting.domain.DbFieldSearchType;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuerySqlCommandType;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
+import net.luversof.web.dynamiccrud.setting.util.DynamicTableUtil;
 import net.luversof.web.dynamiccrud.setting.util.JSqlParserUtil;
 import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 import net.luversof.web.dynamiccrud.support.DynamicCrudSettingTransactionHandler;
@@ -55,15 +56,26 @@ public abstract class AbstractDbUseService implements UseService {
 
     RoutingDataSourceContextHolder.setContext(() -> dbQuery.getDataSourceName());
 
+    // 동적 테이블명(TABLE_NAME DbField)이 설정된 경우 파싱 전에 :columnId placeholder를 검증된 테이블명으로 치환.
+    // 테이블이 선택되지 않았으면 DYNAMIC_TABLE_NAME_REQUIRED를 던져 "테이블을 선택해 주세요." 안내를 표시한다.
+    var queryString =
+        DynamicTableUtil.resolveQueryString(dbQuery.getQueryString(), dbFieldList, dataMap);
+
     // count, paging query를 만들기 위해 생성
     PlainSelect selectQuery;
     PlainSelect countQuery;
     try {
-      selectQuery = (PlainSelect) CCJSqlParserUtil.parse(dbQuery.getQueryString());
-      countQuery = (PlainSelect) CCJSqlParserUtil.parse(dbQuery.getQueryString());
+      selectQuery = (PlainSelect) CCJSqlParserUtil.parse(queryString);
+      countQuery = (PlainSelect) CCJSqlParserUtil.parse(queryString);
     } catch (JSQLParserException e) {
       throw new RuntimeException(e);
     }
+
+    // 동적 테이블명 지정용 필드는 검색 조건(WHERE)이 아니므로 검색 처리 대상에서 제외
+    var searchFieldList =
+        dbFieldList.stream()
+            .filter(x -> !DbFieldColumnType.TABLE_NAME.equals(x.getColumnType()))
+            .toList();
 
     // 조건에 따라 처리를 하기 위해 3개 조건을 모두 가져와야 함.
     var dbQueryWhereClauseColumnNameList =
@@ -71,15 +83,15 @@ public abstract class AbstractDbUseService implements UseService {
     var dbQueryWhereClauseNamedParameterNameList =
         JSqlParserUtil.findWhereClauseNamedParameterNameList(selectQuery);
     var dbFieldSearchRequiredList =
-        dbFieldList.stream()
+        searchFieldList.stream()
             .filter(x -> DbFieldEnable.REQUIRED.equals(x.getEnableSearch()))
             .toList();
     var dbFieldSearchEnabledList =
-        dbFieldList.stream()
+        searchFieldList.stream()
             .filter(x -> DbFieldEnable.ENABLED.equals(x.getEnableSearch()))
             .toList();
     var dbFieldSearchDisabledList =
-        dbFieldList.stream()
+        searchFieldList.stream()
             .filter(x -> DbFieldEnable.DISABLED.equals(x.getEnableSearch()))
             .toList();
 
@@ -206,7 +218,9 @@ public abstract class AbstractDbUseService implements UseService {
   public Object create(SettingParameter settingParameter, Map<String, String> dataMap) {
     var dbQuery = SettingUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.INSERT);
     var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
-    return jdbcTemplateUpdate(dbQuery, dbFieldList, dataMap);
+    var queryString =
+        DynamicTableUtil.resolveQueryString(dbQuery.getQueryString(), dbFieldList, dataMap);
+    return jdbcTemplateUpdate(dbQuery, queryString, dbFieldList, dataMap);
   }
 
   /** insert/update query는 등록된 쿼리를 그대로 실행하고 넘겨받은 postData만 설정함 */
@@ -214,7 +228,9 @@ public abstract class AbstractDbUseService implements UseService {
   public Object update(SettingParameter settingParameter, Map<String, String> dataMap) {
     var dbQuery = SettingUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.UPDATE);
     var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
-    return jdbcTemplateUpdate(dbQuery, dbFieldList, dataMap);
+    var queryString =
+        DynamicTableUtil.resolveQueryString(dbQuery.getQueryString(), dbFieldList, dataMap);
+    return jdbcTemplateUpdate(dbQuery, queryString, dbFieldList, dataMap);
   }
 
   /** Delete의 경우 여러 건을 동시에 삭제할 수 있음. 삭제도 update 쿼리를 통해 수행함 */
@@ -222,6 +238,11 @@ public abstract class AbstractDbUseService implements UseService {
   public Object delete(SettingParameter settingParameter, MultiValueMap<String, String> dataMap) {
     var dbQuery = SettingUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.DELETE);
     var dbFieldList = SettingUtil.getDbFieldList(settingParameter);
+
+    // 테이블명은 삭제 대상 여러 건에 공통이므로 건별 반복 이전에 한 번만 치환
+    var queryString =
+        DynamicTableUtil.resolveQueryString(
+            dbQuery.getQueryString(), dbFieldList, dataMap.toSingleValueMap());
 
     List<Map<String, String>> dataMapList = new ArrayList<>();
 
@@ -242,7 +263,7 @@ public abstract class AbstractDbUseService implements UseService {
     List<Object> resultList = new ArrayList<Object>();
     dataMapList.forEach(
         map -> {
-          Object result = jdbcTemplateUpdate(dbQuery, dbFieldList, map);
+          Object result = jdbcTemplateUpdate(dbQuery, queryString, dbFieldList, map);
           resultList.add(result);
         });
     return resultList;
@@ -252,9 +273,9 @@ public abstract class AbstractDbUseService implements UseService {
    * jdbcTemplate은 insert, update, delete를 update method로 동일하게 수행 전달받은 dataMap을 기준으로 paramSource를 구성
    */
   private Object jdbcTemplateUpdate(
-      DbQuery dbQuery, List<DbField> dbFieldList, Map<String, String> dataMap) {
+      DbQuery dbQuery, String queryString, List<DbField> dbFieldList, Map<String, String> dataMap) {
     RoutingDataSourceContextHolder.setContext(() -> dbQuery.getDataSourceName());
-    var insertQueryBuilder = new StringBuilder(dbQuery.getQueryString() + " ");
+    var insertQueryBuilder = new StringBuilder(queryString + " ");
     var paramSource = new MapSqlParameterSource();
     setSqlParameterSourceRegisterSqlType(paramSource, dbFieldList);
 
