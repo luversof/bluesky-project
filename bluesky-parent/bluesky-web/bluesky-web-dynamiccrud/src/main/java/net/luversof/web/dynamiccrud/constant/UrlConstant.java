@@ -18,6 +18,10 @@ public final class UrlConstant {
   public static final String PATH_USE_FRAGMENT_PREFIX =
       PATH_USE_PREFIX + PATH_FRAGMENT_PREFIX + "/{projectId}/{mainMenuId}/{subMenuId}";
 
+  /** /{projectId}/setting/fragment/{mainMenuId}/{subMenuId}/bulkQuery */
+  public static final String PATH_SETTING_FRAGMENT_BULK_QUERY =
+      PATH_SETTING_FRAGMENT_PREFIX + "/bulkQuery";
+
   /** (s) setting path * */
 
   /** /{projectId}/setting/{mainMenuId}/{subMenuId} */
@@ -76,6 +80,9 @@ public final class UrlConstant {
   /** /{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/excel */
   public static final String PATH_USE_FRAGMENT_EXCEL = PATH_USE_FRAGMENT_PREFIX + "/excel";
 
+  /** /{adminProjectId}/use/fragment/{projectId}/{mainMenuId}/{subMenuId}/bulkQuery */
+  public static final String PATH_USE_FRAGMENT_BULK_QUERY = PATH_USE_FRAGMENT_PREFIX + "/bulkQuery";
+
   /** (e) use path * */
   public static enum UrlResolver {
     VIEW(PATH_SETTING_VIEW_INDEX, PATH_USE_VIEW_INDEX),
@@ -85,7 +92,8 @@ public final class UrlConstant {
         PATH_SETTING_FRAGMENT_MODAL_FORM_DELETE, PATH_USE_FRAGMENT_MODAL_FORM_DELETE),
     FRAGMENT_MODAL_BULK_FORM(
         PATH_SETTING_FRAGMENT_MODAL_BULK_FORM, PATH_USE_FRAGMENT_MODAL_BULK_FORM),
-    FRAGMENT_EXCEL(PATH_SETTING_FRAGMENT_EXCEL, PATH_USE_FRAGMENT_EXCEL);
+    FRAGMENT_EXCEL(PATH_SETTING_FRAGMENT_EXCEL, PATH_USE_FRAGMENT_EXCEL),
+    FRAGMENT_BULK_QUERY(PATH_SETTING_FRAGMENT_BULK_QUERY, PATH_USE_FRAGMENT_BULK_QUERY);
 
     private String settingUrl;
     private String useUrl;

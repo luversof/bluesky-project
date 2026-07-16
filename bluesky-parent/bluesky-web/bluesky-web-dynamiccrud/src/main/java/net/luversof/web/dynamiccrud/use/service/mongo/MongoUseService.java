@@ -18,6 +18,7 @@ import com.mongodb.client.MongoClient;
 
 import io.github.luversof.boot.connectioninfo.ConnectionInfoRegistry;
 import io.github.luversof.boot.connectioninfo.mongodb.MongoDbConnectionMapProperties;
+import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldEnable;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
@@ -180,6 +181,12 @@ public class MongoUseService implements UseService {
           resultList.add(result);
         });
     return resultList;
+  }
+
+  @Override
+  public Object executeRawQuery(SettingParameter settingParameter, String sql) {
+    // 벌크 SQL 쿼리 실행은 관계형 DB 전용 기능. Mongo subMenu에서는 버튼이 노출되지 않지만 방어적으로 차단한다.
+    throw new BlueskyException("UNSUPPORTED_BULK_QUERY_FOR_MONGO");
   }
 
   private Object runCommand(DbQuery dbQuery, Map<String, String> dataMap) {

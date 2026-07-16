@@ -2,13 +2,18 @@
 @import org.springframework.data.domain.Page
 @import net.luversof.web.dynamiccrud.use.domain.ContentInfo
 @import net.luversof.web.dynamiccrud.use.domain.ContentInfo.ContentKeyInfo
+@import org.springframework.context.MessageSource
+@import org.springframework.context.i18n.LocaleContextHolder
 @import net.luversof.web.dynamiccrud.util.TemplateUtil
 @import net.luversof.web.dynamiccrud.setting.domain.SubMenu
 @import net.luversof.web.dynamiccrud.util.MessageUtil
 @import com.fasterxml.jackson.databind.ObjectMapper
+@import net.luversof.web.dynamiccrud.setting.util.SecurityUtil
+@import net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType
 
 @param Page<?> page
 @param ContentInfo contentInfo
+@param MessageSource messageSource
 @param ObjectMapper jacksonObjectMapper
 
 !{
@@ -78,6 +83,17 @@
                                         ${MessageUtil.getMessage("button.text.excel")}
                                 </button>
                         </a>
+                        @endif
+                        @if(!TemplateUtil.isAdminMenu() && SecurityUtil.hasAnyAuthority("ROLE_MASTER", "ROLE_ADMIN") && targetSubMenu.getDbType() != SubMenuDbType.Mongo)
+                        <button class="btn btn-sm btn-outline"
+                                hx-get="${TemplateUtil.getUrl("FRAGMENT_BULK_QUERY")}"
+                                hx-target="#fragmentArea"
+                        >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z" />
+                                </svg>
+                                ${messageSource.getMessage("button.text.bulkQuery", null, LocaleContextHolder.getLocale())}
+                        </button>
                         @endif
                 </div>
         </div>

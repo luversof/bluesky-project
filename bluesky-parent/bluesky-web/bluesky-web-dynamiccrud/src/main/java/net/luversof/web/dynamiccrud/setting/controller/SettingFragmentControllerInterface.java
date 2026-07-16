@@ -77,4 +77,17 @@ public interface SettingFragmentControllerInterface {
       Map<String, String> paramMap,
       Pageable pageable,
       Model model);
+
+  /** 벌크 쿼리 실행 modal form (ROLE_MASTER/ROLE_ADMIN 전용) */
+  String bulkQueryForm(
+      String adminProjectId, String projectId, String mainMenuId, String subMenuId, Model model);
+
+  /** 벌크 쿼리 실행 요청 (ROLE_MASTER/ROLE_ADMIN 전용). 결과 fragment를 반환. */
+  String executeBulkQuery(
+      String adminProjectId,
+      String projectId,
+      String mainMenuId,
+      String subMenuId,
+      Map<String, String> dataMap,
+      Model model);
 }

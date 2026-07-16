@@ -30,6 +30,7 @@ import net.luversof.web.dynamiccrud.setting.util.DynamicTableUtil;
 import net.luversof.web.dynamiccrud.setting.util.JSqlParserUtil;
 import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 import net.luversof.web.dynamiccrud.support.DynamicCrudSettingTransactionHandler;
+import net.luversof.web.dynamiccrud.use.domain.BulkQueryResult;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
@@ -268,6 +269,45 @@ public abstract class AbstractDbUseService implements UseService {
         });
     return resultList;
   }
+  
+	/**
+	 * 사용자가 입력한 임의 SQL을 실행한다(벌크 쿼리 실행 기능).
+	 * DataSource는 해당 subMenu에 등록된 SELECT 쿼리의 연결명을 그대로 사용한다.
+	 * JSqlParser로 파싱해 SELECT면 결과 리스트, 그 외(DML)면 영향 행수를 반환한다.
+	 * 파싱 실패(잘못된 SQL)는 예외로 던져 호출부에서 사용자에게 표시한다.
+	 * ⚠️ 임의 SQL 실행이므로 호출부(컨트롤러)에서 ROLE_MASTER/ROLE_ADMIN 권한을 반드시 검증할 것.
+	 * @throws JSQLParserException 
+	 */
+	@Override
+	public Object executeRawQuery(SettingParameter settingParameter, String sql) throws JSQLParserException {
+		var dbQuery = SettingUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.SELECT);
+		RoutingDataSourceContextHolder.setContext(dbQuery::getDataSourceName);
+
+		// JDBC는 한 번에 여러 문장(';'로 구분)을 실행하지 못하므로, 입력을 문장 단위로 파싱해 순차 실행한다.
+		// (파싱 실패는 예외로 던져 호출부에서 전체 오류로 표시)
+		var statements = CCJSqlParserUtil.parseStatements(sql);
+		var results = new ArrayList<BulkQueryResult>();
+
+		for (var statement : statements.getStatements()) {
+			var single = statement.toString();
+			try {
+				if (statement instanceof net.sf.jsqlparser.statement.select.Select) {
+					List<Map<String, Object>> rows = dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(
+							() -> namedParameterJdbcTemplate.query(single, new MapSqlParameterSource(), ROW_MAPPER));
+					results.add(new BulkQueryResult(single, "select", rows, null, null));
+				} else {
+					Integer affected = dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(
+							() -> namedParameterJdbcTemplate.update(single, new MapSqlParameterSource()));
+					results.add(new BulkQueryResult(single, "update", null, affected, null));
+				}
+			} catch (Exception e) {
+				// 문장별 독립 실행이므로 오류 발생 시 이후 문장은 실행하지 않고 중단한다(부분 실행 확대 방지).
+				results.add(new BulkQueryResult(single, "error", null, null, e.getMessage()));
+				break;
+			}
+		}
+		return results;
+	}
 
   /**
    * jdbcTemplate은 insert, update, delete를 update method로 동일하게 수행 전달받은 dataMap을 기준으로 paramSource를 구성

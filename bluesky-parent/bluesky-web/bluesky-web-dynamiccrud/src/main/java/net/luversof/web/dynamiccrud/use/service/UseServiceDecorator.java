@@ -11,6 +11,7 @@ import org.springframework.util.MultiValueMap;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
 import net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType;
 import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
+import net.sf.jsqlparser.JSQLParserException;
 
 @Service
 public class UseServiceDecorator implements UseService {
@@ -45,6 +46,12 @@ public class UseServiceDecorator implements UseService {
   public Object delete(SettingParameter settingParameter, MultiValueMap<String, String> dataMap) {
     var useService = getUseService(settingParameter);
     return useService == null ? null : useService.delete(settingParameter, dataMap);
+  }
+
+  @Override
+  public Object executeRawQuery(SettingParameter settingParameter, String sql) throws JSQLParserException {
+    var useService = getUseService(settingParameter);
+    return useService == null ? null : useService.executeRawQuery(settingParameter, sql);
   }
 
   private UseService getUseService(SettingParameter settingParameter) {

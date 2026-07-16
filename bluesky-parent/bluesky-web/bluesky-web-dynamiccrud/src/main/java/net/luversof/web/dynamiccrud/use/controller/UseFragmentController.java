@@ -112,4 +112,26 @@ public class UseFragmentController extends AbstractSettingFragmentController {
       Model model) {
     return excel(adminProjectId, projectId, mainMenuId, subMenuId, paramMap, pageable, model);
   }
+
+  @GetMapping(UrlConstant.PATH_USE_FRAGMENT_BULK_QUERY)
+  @HtmxResponseHeader("'showModalFormFragmentResponseTrigger'")
+  public String useBulkQueryForm(
+      @PathVariable String adminProjectId,
+      @PathVariable String projectId,
+      @PathVariable String mainMenuId,
+      @PathVariable String subMenuId,
+      Model model) {
+    return bulkQueryForm(adminProjectId, projectId, mainMenuId, subMenuId, model);
+  }
+
+  @PostMapping(UrlConstant.PATH_USE_FRAGMENT_BULK_QUERY)
+  public String useExecuteBulkQuery(
+      @PathVariable String adminProjectId,
+      @PathVariable String projectId,
+      @PathVariable String mainMenuId,
+      @PathVariable String subMenuId,
+      @RequestParam Map<String, String> dataMap,
+      Model model) {
+    return executeBulkQuery(adminProjectId, projectId, mainMenuId, subMenuId, dataMap, model);
+  }
 }

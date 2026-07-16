@@ -6,6 +6,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +20,7 @@ import org.springframework.web.servlet.View;
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType;
 import net.luversof.web.dynamiccrud.setting.domain.SettingParameter;
+import net.luversof.web.dynamiccrud.setting.util.SecurityUtil;
 import net.luversof.web.dynamiccrud.setting.util.SettingUtil;
 import net.luversof.web.dynamiccrud.use.domain.ContentInfo;
 import net.luversof.web.dynamiccrud.use.service.UseServiceDecorator;
@@ -27,6 +30,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 public abstract class AbstractSettingFragmentController
     implements SettingFragmentControllerInterface {
+
+  private static final Logger log =
+      LoggerFactory.getLogger(SettingFragmentControllerInterface.class);
 
   @Autowired private UseServiceDecorator useService;
 
@@ -187,6 +193,58 @@ public abstract class AbstractSettingFragmentController
     return new UseExcelView();
   }
 
+  @Override
+  public String bulkQueryForm(
+      String adminProjectId, String projectId, String mainMenuId, String subMenuId, Model model) {
+    // 위험 기능이므로 모달을 여는 단계에서도 권한을 재검증한다(버튼 숨김만으로 우회되지 않도록).
+    assertBulkQueryAuthorized();
+    return "use/fragment/modalBulkQueryForm";
+  }
+
+  @Override
+  public String executeBulkQuery(
+      String adminProjectId,
+      String projectId,
+      String mainMenuId,
+      String subMenuId,
+      Map<String, String> dataMap,
+      Model model) {
+    // ⚠️ 임의 SQL 실행 — 반드시 서버측에서 ROLE_MASTER/ROLE_ADMIN을 재검증한다.
+    assertBulkQueryAuthorized();
+
+    var settingParameter = new SettingParameter(adminProjectId, projectId, mainMenuId, subMenuId);
+    var sql = dataMap.get("queryString");
+
+    // 감사 로그: 실행자·대상·쿼리를 남긴다(위험 작업).
+    log.warn(
+        "[BULK_QUERY] target={}/{}/{}/{} sql={}",
+        adminProjectId,
+        projectId,
+        mainMenuId,
+        subMenuId,
+        sql);
+
+    if (sql == null || sql.isBlank()) {
+      model.addAttribute("parseError", "실행할 쿼리를 입력해 주세요.");
+      return "use/fragment/bulkQueryResult";
+    }
+
+    try {
+      // 여러 문장을 순차 실행한 문장별 결과 리스트(List<BulkQueryResult>)를 반환한다.
+      model.addAttribute("results", useService.executeRawQuery(settingParameter, sql));
+    } catch (Exception e) {
+      // 파싱 실패 등 전체 실행 자체가 불가한 경우
+      model.addAttribute("parseError", e.getMessage());
+    }
+    return "use/fragment/bulkQueryResult";
+  }
+
+  private void assertBulkQueryAuthorized() {
+    if (!SecurityUtil.hasAnyAuthority("ROLE_MASTER", "ROLE_ADMIN")) {
+      throw new BlueskyException("ACCESS_DENIED");
+    }
+  }
+
   // DbFieldColumnType이 SPEL_FOR_EDIT인 경우 추가
   private void addSpelForEditColumnToDataMap(
       SettingParameter settingParameter, Map<String, String> dataMap) {
@@ -208,4 +266,5 @@ public abstract class AbstractSettingFragmentController
               });
     }
   }
+
 }
