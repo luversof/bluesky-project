@@ -56,6 +56,19 @@
 			<plugin>
 				<groupId>com.google.cloud.tools</groupId>
 				<artifactId>jib-maven-plugin</artifactId>
+				<configuration>
+					<!-- base 이미지는 공유 설정(temurin-alpine) 그대로. LuaJIT 등 엔진 런타임은
+					     bluesky-argocd-applications 의 initContainer 가 pod 기동 시 준비한다(이미지 관리 없음).
+					     엔진 스크립트(tools/poe-pob)만 앱 코드의 일부로 컨테이너 cwd(/usr/local/app) 에 baking. -->
+					<extraDirectories>
+						<paths>
+							<path>
+								<from>tools/poe-pob</from>
+								<into>/usr/local/app/tools/poe-pob</into>
+							</path>
+						</paths>
+					</extraDirectories>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

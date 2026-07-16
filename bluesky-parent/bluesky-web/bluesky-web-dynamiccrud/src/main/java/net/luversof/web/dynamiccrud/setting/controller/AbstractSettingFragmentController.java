@@ -266,5 +266,4 @@ public abstract class AbstractSettingFragmentController
               });
     }
   }
-
 }

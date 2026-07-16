@@ -49,7 +49,8 @@ public class UseServiceDecorator implements UseService {
   }
 
   @Override
-  public Object executeRawQuery(SettingParameter settingParameter, String sql) throws JSQLParserException {
+  public Object executeRawQuery(SettingParameter settingParameter, String sql)
+      throws JSQLParserException {
     var useService = getUseService(settingParameter);
     return useService == null ? null : useService.executeRawQuery(settingParameter, sql);
   }
