@@ -44,7 +44,7 @@
 					</span>
 				</div>
 				<div class="relative">
-					<canvas id="poeTreeCanvas" class="w-full h-[72vh] rounded-2xl shadow-sm cursor-grab" style="background:#0e1116"></canvas>
+					<canvas id="poeTreeCanvas" class="w-full h-[72vh] rounded-2xl shadow-sm cursor-grab" style="background:#0e1116" data-locale="${net.luversof.web.gate.poe.PoeText.isKorean() ? "ko" : "en"}"></canvas>
 					<div id="poeTreeTooltip" class="pointer-events-none absolute hidden z-10 max-w-xs rounded-box bg-neutral text-neutral-content shadow-xl border border-neutral-content/15 px-3 py-2"></div>
 				</div>
 				<script src="/js/poe/tree.js"></script>

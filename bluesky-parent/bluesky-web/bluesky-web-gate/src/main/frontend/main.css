@@ -455,22 +455,123 @@ table[data-sortable] thead th { cursor: pointer; user-select: none; }
 table[data-sortable] thead th:hover { background-color: var(--color-base-300); }
 .sort-arrow { font-size: 0.7em; opacity: 0.7; }
 
-/* 접이식 사이드바 — 라벨은 display 토글이 아니라 max-width+opacity 트랜지션으로 접고 편다.
-   display:none 토글은 펼침 시작 순간 라벨이 전폭으로 팝인되며 좁은 폭에서 줄바꿈돼 깜빡인다. */
+/* 접이식 사이드바 — 라벨은 absolute(흐름 밖)라 접을 때 아이콘 x 가 라벨 길이에 흔들리지 않는다.
+   아이콘은 링크의 padding 트랜지션으로만 좌→중앙으로 부드럽게 이동하고, 라벨은 opacity 로만 사라진다.
+   (예전엔 justify-content:center 로 [아이콘+라벨]을 함께 가운데 정렬해, 라벨 길이가 다른 항목들이
+    축소 도중 아이콘 x 가 제각각이 되어 삐뚤빼뚤해 보였다.) */
 .stock-sidebar-spacer, .stock-sidebar { transition: width 0.2s ease; }
-.stock-sidebar .sidebar-label {
-	display: inline-block; white-space: nowrap; overflow: hidden;
-	max-width: 12rem; opacity: 1;
-	transition: max-width 0.2s ease, opacity 0.15s ease 0.05s;
-}
+.stock-sidebar .sidebar-label { opacity: 1; transition: opacity 0.15s ease 0.05s; }
 html.sidebar-collapsed .stock-sidebar-spacer, html.sidebar-collapsed .stock-sidebar { width: 4rem; }
 html.sidebar-collapsed .stock-sidebar .sidebar-label {
-	max-width: 0; opacity: 0;
-	transition: max-width 0.2s ease, opacity 0.1s ease;
+	opacity: 0; pointer-events: none;
+	transition: opacity 0.1s ease;
 }
-html.sidebar-collapsed .stock-sidebar .menu a,
+/* 접힘: 아이콘(흐름의 유일한 자식)이 4rem 폭 중앙에 오도록 padding-left 조정 (border-l-4 = 4px 포함) */
+html.sidebar-collapsed .stock-sidebar .menu a { padding-left: 0.625rem; padding-right: 0; }
 html.sidebar-collapsed .stock-sidebar .sidebar-collapse-btn { justify-content: center; gap: 0; padding-left: 0.5rem; padding-right: 0.5rem; }
 html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
+
+/* PoE 게임식 아이템 툴팁 — 어두운 배경 + 희귀도색 테두리/헤더, 밝은 파란 모드 텍스트.
+   테마와 무관하게 항상 게임처럼 어둡게 고정. 희귀도 색은 인라인 border-color / --rarity 로 주입. */
+.poe-tooltip {
+	background: rgba(0, 0, 0, 0.92);
+	border: 1px solid;               /* border-color 는 인라인(희귀도) */
+	border-radius: 2px;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+	color: #fff;
+	font-family: ui-sans-serif, system-ui, sans-serif;
+}
+.poe-tt-header {
+	padding: 0.5rem 1.75rem 0.4rem;
+	/* 희귀도색을 아주 옅게 깐 헤더 밴드 (양끝 어둡게) */
+	background:
+		linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)),
+		radial-gradient(120% 140% at 50% 0%, color-mix(in srgb, var(--rarity, #af6025) 30%, transparent), transparent 70%);
+}
+.poe-tt-sep {
+	height: 0;
+	margin: 0 0.5rem;
+	border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+/* 게임 원본 아이템 헤더 밴드/구분선 (PoB 에셋, /poe-data/ui-assets 로 서빙).
+   좌/우 장식 캡(no-repeat) + 가운데 텍스처(repeat-x). 희귀도 클래스가 이미지 URL·색을 주입. */
+.poe-tt-band {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	min-height: 3.25rem;
+	padding: 0.3rem 3rem;
+	background-image: var(--band-mid), var(--band-left), var(--band-right);
+	background-repeat: repeat-x, no-repeat, no-repeat;
+	background-position: center, left center, right center;
+	background-size: auto 100%, auto 100%, auto 100%;
+}
+.poe-tt-sepimg {
+	height: 10px;
+	background-image: var(--band-sep);
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: 100% 100%;
+}
+.poe-rar-unique {
+	--rarity: #af6025;
+	--band-left: url("/poe-data/ui-assets/itemsheaderuniqueleft.png");
+	--band-mid: url("/poe-data/ui-assets/itemsheaderuniquemiddle.png");
+	--band-right: url("/poe-data/ui-assets/itemsheaderuniqueright.png");
+	--band-sep: url("/poe-data/ui-assets/itemsseparatorunique.png");
+}
+.poe-rar-rare {
+	--rarity: #ffff77;
+	--band-left: url("/poe-data/ui-assets/itemsheaderrareleft.png");
+	--band-mid: url("/poe-data/ui-assets/itemsheaderraremiddle.png");
+	--band-right: url("/poe-data/ui-assets/itemsheaderrareright.png");
+	--band-sep: url("/poe-data/ui-assets/itemsseparatorrare.png");
+}
+.poe-rar-magic {
+	--rarity: #8888ff;
+	--band-left: url("/poe-data/ui-assets/itemsheadermagicleft.png");
+	--band-mid: url("/poe-data/ui-assets/itemsheadermagicmiddle.png");
+	--band-right: url("/poe-data/ui-assets/itemsheadermagicright.png");
+	--band-sep: url("/poe-data/ui-assets/itemsseparatormagic.png");
+}
+.poe-rar-white {
+	--rarity: #c8c8c8;
+	--band-left: url("/poe-data/ui-assets/itemsheaderwhiteleft.png");
+	--band-mid: url("/poe-data/ui-assets/itemsheaderwhitemiddle.png");
+	--band-right: url("/poe-data/ui-assets/itemsheaderwhiteright.png");
+	--band-sep: url("/poe-data/ui-assets/itemsseparatorwhite.png");
+}
+/* poedb 식 부위 선택 칩 */
+.poe-chip {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.2rem 0.6rem;
+	font-size: 0.75rem;
+	line-height: 1;
+	border-radius: 9999px;
+	border: 1px solid var(--color-base-300, rgba(128,128,128,0.3));
+	background: var(--color-base-100, transparent);
+	color: var(--color-base-content, inherit);
+	cursor: pointer;
+	transition: background-color 0.12s, border-color 0.12s, color 0.12s;
+	white-space: nowrap;
+}
+.poe-chip:hover { border-color: var(--color-primary, #4f7bd4); }
+.poe-chip-active {
+	background: var(--color-primary, #4f7bd4);
+	border-color: var(--color-primary, #4f7bd4);
+	color: var(--color-primary-content, #fff);
+}
+.poe-rar-gem {
+	--rarity: #1ba29b;
+	--band-left: url("/poe-data/ui-assets/itemsheadergemleft.png");
+	--band-mid: url("/poe-data/ui-assets/itemsheadergemmiddle.png");
+	--band-right: url("/poe-data/ui-assets/itemsheadergemright.png");
+	--band-sep: url("/poe-data/ui-assets/itemsseparatorgem.png");
+}
 
 /* 전역 htmx 로딩바 */
 #app-progress { position: fixed; top: 0; left: 0; width: 100%; height: 3px; z-index: 200; overflow: hidden; opacity: 0; transition: opacity 0.2s ease; pointer-events: none; }

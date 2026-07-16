@@ -1,5 +1,5 @@
 @import java.util.List
-@import net.luversof.web.gate.poe.service.PoeGem
+@import net.luversof.web.gate.poe.dto.PoeGem
 @import io.github.luversof.boot.context.support.MessageUtil
 
 @param List<PoeGem> gems
@@ -32,21 +32,24 @@
 					case "blue" -> "bg-blue-500";
 					default -> "bg-gray-300";
 				};
-				String displayName = gem.nameKo() != null ? gem.nameKo() : gem.name();
-				String displayDescription = gem.descriptionKo() != null ? gem.descriptionKo() : gem.description();
-				List<String> displayTags = gem.tagsKo() != null && !gem.tagsKo().isEmpty() ? gem.tagsKo() : gem.tags();
+				String displayName = net.luversof.web.gate.poe.PoeText.name(gem.nameKo(), gem.name());
+				String displayDescription = net.luversof.web.gate.poe.PoeText.name(gem.descriptionKo(), gem.description());
+				List<String> displayTags = net.luversof.web.gate.poe.PoeText.lines(gem.tagsKo(), gem.tags());
 			}
-			<%-- 카드 클릭 → 게임 툴팁형 상세 레이어 --%>
-			<div class="card bg-base-100 shadow-sm border border-base-200 cursor-pointer transition-colors duration-300 hover:border-primary/40 hover:duration-75"
+			<%-- 카드 마우스오버 → 게임 툴팁형 상세 레이어(플로팅) --%>
+			<div class="poe-hover card bg-base-100 shadow-sm border border-base-200 cursor-help transition-colors duration-300 hover:border-primary/40 hover:duration-75"
 			     hx-get="/poe/htmx/gems/detail?slug=${gem.slug()}"
-			     hx-target="#poeGemDetail"
+			     hx-target="#poePreview"
+			     hx-trigger="mouseenter delay:100ms"
 			     hx-swap="innerHTML">
 				<div class="card-body p-4 gap-2">
 					<div class="flex items-center gap-2">
 						<img src="/poe-assets/gems/${gem.slug()}.png" class="w-8 h-8 object-contain shrink-0" alt="" loading="lazy">
 						<span class="w-2.5 h-2.5 rounded-full shrink-0 ${dotClass}"></span>
 						<span class="font-bold truncate" title="${gem.name()}">${displayName}</span>
-						<span class="text-xs text-base-content/40 truncate">${gem.name()}</span>
+						@if(net.luversof.web.gate.poe.PoeText.isKorean())
+							<span class="text-xs text-base-content/40 truncate">${gem.name()}</span>
+						@endif
 						<span class="badge badge-xs ${gem.isSupport() ? "badge-secondary badge-outline" : "badge-primary badge-outline"} ml-auto shrink-0">${gem.isSupport() ? supportBadgeLabel : activeBadgeLabel}</span>
 					</div>
 					@if(displayDescription != null && !displayDescription.isEmpty())

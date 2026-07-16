@@ -1,5 +1,5 @@
 @import io.github.luversof.boot.context.support.MessageUtil
-@import net.luversof.web.gate.poe.service.PoeBuild
+@import net.luversof.web.gate.poe.dto.PoeBuild
 
 @param PoeBuild build = null
 @param boolean importError = false
@@ -71,7 +71,7 @@
 										        class="badge badge-sm cursor-pointer transition-colors ${gem.isSupport() ? "badge-info badge-outline hover:bg-info/10" : "badge-success badge-outline hover:bg-success/10"}"
 										        hx-get="/poe/htmx/gems/detail?slug=${gem.slug()}&level=${gem.level()}"
 										        hx-target="#poeBuildDetail"
-										        hx-swap="innerHTML">${gem.nameKo() != null ? gem.nameKo() : gem.name()} <span class="opacity-60 font-mono">${gem.level()}/${gem.quality()}</span></button>
+										        hx-swap="innerHTML">${net.luversof.web.gate.poe.PoeText.name(gem.nameKo(), gem.name())} <span class="opacity-60 font-mono">${gem.level()}/${gem.quality()}</span></button>
 									@else
 										<span class="badge badge-sm badge-ghost">${gem.name()} <span class="opacity-60 font-mono">${gem.level()}/${gem.quality()}</span></span>
 									@endif
@@ -88,42 +88,49 @@
 					<h2 class="text-sm font-bold text-base-content/70">${MessageUtil.getMessage("poe.build.items")}</h2>
 					<div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
 						@for(PoeBuild.BuildItem item : build.items())
-							!{
-								String itemColor = "UNIQUE".equals(item.rarity()) || "RELIC".equals(item.rarity()) ? "text-orange-500"
+														!{
+								boolean isUnique = "UNIQUE".equals(item.rarity()) || "RELIC".equals(item.rarity());
+								String itemColor = isUnique ? "text-orange-500"
 									: "RARE".equals(item.rarity()) ? "text-yellow-500"
 									: "MAGIC".equals(item.rarity()) ? "text-blue-400" : "";
-								String detailUrl = item.uniqueSlug() != null ? "/poe/htmx/uniques/detail?slug=" + item.uniqueSlug()
-									: item.baseSlug() != null ? "/poe/htmx/items/detail?slug=" + item.baseSlug() : null;
+								String tipClass = isUnique ? "poe-rar-unique" : "RARE".equals(item.rarity()) ? "poe-rar-rare"
+									: "MAGIC".equals(item.rarity()) ? "poe-rar-magic" : "poe-rar-white";
+								String tipColor = isUnique ? "#af6025" : "RARE".equals(item.rarity()) ? "#ffff77"
+									: "MAGIC".equals(item.rarity()) ? "#8888ff" : "#c8c8c8";
+								String displayName = net.luversof.web.gate.poe.PoeText.name(item.nameKo(), item.name());
+								String displayBase = net.luversof.web.gate.poe.PoeText.name(item.baseTypeKo(), item.baseType());
+								java.util.List<String> displayMods = net.luversof.web.gate.poe.PoeText.lines(item.modLinesKo(), item.modLines());
+									boolean showMods = !isUnique && displayMods != null && !displayMods.isEmpty();
+								String itemClassLabel = item.base() != null ? net.luversof.web.gate.poe.PoeText.name(item.base().itemClassKo(), item.base().itemClass()) : null;
 							}
-							@if(detailUrl != null)
-								<button type="button" class="flex items-center gap-2 rounded-box bg-base-200/40 px-3 py-2 text-left cursor-pointer hover:bg-base-200 transition-colors"
-								        hx-get="${detailUrl}"
-								        hx-target="#poeBuildDetail"
-								        hx-swap="innerHTML">
+							@if(isUnique && item.uniqueSlug() != null)
+								<div class="poe-hover flex items-start gap-2 rounded-box bg-base-200/40 px-3 py-2 text-left cursor-help hover:bg-base-200 transition-colors"
+								     hx-get="/poe/htmx/uniques/detail?slug=${item.uniqueSlug()}"
+								     hx-target="#poePreview"
+								     hx-trigger="mouseenter delay:100ms"
+								     hx-swap="innerHTML">
 									@if(!item.slot().isEmpty())
-										<span class="badge badge-ghost badge-sm shrink-0 w-20 justify-center">${item.slotKo()}</span>
+										<span class="badge badge-ghost badge-sm shrink-0 w-20 justify-center mt-0.5">${item.slotKo()}</span>
 									@endif
-									<span class="min-w-0 truncate text-sm">
-										<span class="font-semibold ${itemColor}">${item.nameKo() != null ? item.nameKo() : item.name()}</span>
-										@if(!item.baseType().equals(item.name()))
-											<span class="text-xs text-base-content/50 ml-1">${item.baseTypeKo() != null ? item.baseTypeKo() : item.baseType()}</span>
-										@endif
-									</span>
-								</button>
+									<div class="min-w-0 text-sm truncate"><span class="font-semibold ${itemColor}">${displayName}</span>@if(!item.baseType().equals(item.name()))<span class="text-xs text-base-content/50 ml-1">${displayBase}</span>@endif</div>
+								</div>
 							@else
-								<div class="flex items-center gap-2 rounded-box bg-base-200/40 px-3 py-2">
+								<div class="poe-hover flex items-start gap-2 rounded-box bg-base-200/40 px-3 py-2 text-left cursor-help hover:bg-base-200 transition-colors">
 									@if(!item.slot().isEmpty())
-										<span class="badge badge-ghost badge-sm shrink-0 w-20 justify-center">${item.slotKo()}</span>
+										<span class="badge badge-ghost badge-sm shrink-0 w-20 justify-center mt-0.5">${item.slotKo()}</span>
 									@endif
-									<span class="min-w-0 truncate text-sm">
-										<span class="font-semibold ${itemColor}">${item.name()}</span>
-										@if(!item.baseType().equals(item.name()))
-											<span class="text-xs text-base-content/50 ml-1">${item.baseTypeKo() != null ? item.baseTypeKo() : item.baseType()}</span>
+									<div class="min-w-0 text-sm">
+										<div class="truncate"><span class="font-semibold ${itemColor}">${item.name()}</span>@if(!item.baseType().equals(item.name()))<span class="text-xs text-base-content/50 ml-1">${displayBase}</span>@endif</div>
+										@if(showMods)
+											<div class="text-[11px] leading-4 text-[#8888ff]/80 line-clamp-3">${String.join(" / ", displayMods)}</div>
 										@endif
-									</span>
+									</div>
+									<div data-poe-tip class="hidden">
+										@template.poe.htmx.itemTooltip(rarityClass = tipClass, nameColor = tipColor, rarityBorder = tipColor, name = item.name(), base = displayBase, itemClass = itemClassLabel, baseItem = item.base(), modLines = displayMods)
+									</div>
 								</div>
 							@endif
-						@endfor
+							@endfor
 					</div>
 			`)
 		@endif

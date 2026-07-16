@@ -232,6 +232,158 @@ document.addEventListener("keydown", (event) => {
     if (overlays.length)
         overlays[overlays.length - 1].remove();
 });
+// PoE 아이템 호버 미리보기 — .poe-hover 요소에 마우스를 올리면 hx-get 으로 로드된 게임 툴팁을
+// 요소 근처(뷰포트 안)에 띄운다. 툴팁은 pointer-events-none 이라 마우스가 카드를 벗어나면 사라진다.
+(() => {
+    let host = null;
+    let active = null;
+    function ensureHost() {
+        var _a;
+        if (host && ((_a = document.body) === null || _a === void 0 ? void 0 : _a.contains(host)))
+            return host;
+        if (!document.body)
+            return null;
+        host = document.createElement("div");
+        host.id = "poePreview";
+        host.className = "fixed z-[95] hidden";
+        host.style.pointerEvents = "none";
+        document.body.appendChild(host);
+        return host;
+    }
+    function position(trigger) {
+        const h = ensureHost();
+        if (!h || !h.firstElementChild)
+            return;
+        const r = trigger.getBoundingClientRect();
+        h.style.visibility = "hidden";
+        h.classList.remove("hidden");
+        const hw = h.offsetWidth;
+        const hh = h.offsetHeight;
+        let left = r.right + 12;
+        if (left + hw > window.innerWidth - 8)
+            left = r.left - hw - 12;
+        if (left < 8)
+            left = 8;
+        let top = r.top;
+        if (top + hh > window.innerHeight - 8)
+            top = window.innerHeight - hh - 8;
+        if (top < 8)
+            top = 8;
+        h.style.left = left + "px";
+        h.style.top = top + "px";
+        h.style.visibility = "";
+    }
+    // 클릭 시 툴팁을 고정(pinned)하면 상호작용 가능(레벨 버튼 등). 밖 클릭/ESC 로 해제.
+    let pinned = false;
+    function hide() {
+        if (pinned)
+            return;
+        host === null || host === void 0 ? void 0 : host.classList.add("hidden");
+        if (host)
+            host.replaceChildren();
+        active = null;
+    }
+    function unpin() {
+        pinned = false;
+        if (host)
+            host.style.pointerEvents = "none";
+        host === null || host === void 0 ? void 0 : host.classList.add("hidden");
+        if (host)
+            host.replaceChildren();
+        active = null;
+    }
+    function showInline(trigger) {
+        const inline = trigger.querySelector("[data-poe-tip]");
+        if (inline && !trigger.hasAttribute("hx-get")) {
+            const h = ensureHost();
+            if (h) {
+                h.innerHTML = inline.innerHTML;
+                position(trigger);
+                return true;
+            }
+        }
+        return false;
+    }
+    // htmx 가 hx-target="#poePreview" 를 찾을 수 있게 DOM 준비되면 미리 생성
+    if (document.body)
+        ensureHost();
+    else
+        document.addEventListener("DOMContentLoaded", () => ensureHost());
+    document.addEventListener("mouseover", (event) => {
+        var _a, _b;
+        if (pinned)
+            return;
+        const trigger = (_b = (_a = event.target) === null || _a === void 0 ? void 0 : _a.closest) === null || _b === void 0 ? void 0 : _b.call(_a, ".poe-hover");
+        if (!trigger || trigger === active)
+            return;
+        active = trigger;
+        // 인라인 툴팁: [data-poe-tip] 자식이 있으면 서버 왕복 없이 복제해 띄운다
+        // (hx-get 이 있는 요소는 htmx 가 로드 → afterSwap 에서 위치)
+        showInline(trigger);
+    });
+    document.addEventListener("mouseout", (event) => {
+        var _a, _b, _c;
+        if (pinned)
+            return;
+        const trigger = (_b = (_a = event.target) === null || _a === void 0 ? void 0 : _a.closest) === null || _b === void 0 ? void 0 : _b.call(_a, ".poe-hover");
+        if (!trigger)
+            return;
+        const to = event.relatedTarget;
+        if (!((_c = to === null || to === void 0 ? void 0 : to.closest) === null || _c === void 0 ? void 0 : _c.call(to, ".poe-hover")))
+            hide();
+    });
+    // 클릭: 트리거를 누르면 고정(상호작용 가능), 툴팁/트리거 밖을 누르면 해제
+    document.addEventListener("click", (event) => {
+        var _a, _b, _c, _d;
+        const trigger = (_b = (_a = event.target) === null || _a === void 0 ? void 0 : _a.closest) === null || _b === void 0 ? void 0 : _b.call(_a, ".poe-hover");
+        if (trigger) {
+            const h = ensureHost();
+            if (!h)
+                return;
+            active = trigger;
+            if (!h.firstElementChild)
+                showInline(trigger); // 아직 안 떴으면(인라인) 지금 띄운다
+            pinned = true;
+            h.style.pointerEvents = "auto";
+            h.classList.remove("hidden");
+            position(trigger);
+            return;
+        }
+        if (pinned && !((_d = (_c = event.target) === null || _c === void 0 ? void 0 : _c.closest) === null || _d === void 0 ? void 0 : _d.call(_c, "#poePreview")))
+            unpin();
+    });
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && pinned)
+            unpin();
+    });
+    document.addEventListener("htmx:afterSwap", (event) => {
+        var _a;
+        if (((_a = event.target) === null || _a === void 0 ? void 0 : _a.id) === "poePreview" && active)
+            position(active);
+    });
+    window.addEventListener("scroll", hide, true);
+})();
+// 부위 선택 칩(poedb 식): 클릭 시 활성 표시를 옮기고, 연결된 폼의 숨은 필터 값을 갱신 후
+// change 를 발생시켜 htmx 재요청(검색어 q 와 부위 필터가 함께 반영된다).
+document.addEventListener("click", (event) => {
+    var _a, _b;
+    const chip = (_b = (_a = event.target) === null || _a === void 0 ? void 0 : _a.closest) === null || _b === void 0 ? void 0 : _b.call(_a, ".poe-chip");
+    if (!chip)
+        return;
+    const group = chip.closest("[data-chip-group]");
+    group === null || group === void 0 ? void 0 : group.querySelectorAll(".poe-chip-active").forEach((c) => c.classList.remove("poe-chip-active"));
+    chip.classList.add("poe-chip-active");
+    const targetSel = group === null || group === void 0 ? void 0 : group.getAttribute("data-chip-target");
+    const field = group === null || group === void 0 ? void 0 : group.getAttribute("data-chip-field");
+    if (targetSel && field) {
+        const form = document.querySelector(targetSel);
+        const input = form === null || form === void 0 ? void 0 : form.querySelector(`[name="${field}"]`);
+        if (input) {
+            input.value = chip.getAttribute("data-chip-value") || "";
+            input.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+    }
+});
 // [data-empty-widen-range]: 빈 상태 CTA — 같은 화면의 기간 프리셋 '전체' 버튼을 눌러 기간을 넓힌다
 document.addEventListener("click", (event) => {
     var _a, _b;

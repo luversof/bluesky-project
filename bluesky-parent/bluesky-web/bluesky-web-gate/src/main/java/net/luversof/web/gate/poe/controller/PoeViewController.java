@@ -10,80 +10,77 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import net.luversof.web.gate.poe.service.PoeBaseItemDataService;
-import net.luversof.web.gate.poe.service.PoeExtractService;
-import net.luversof.web.gate.poe.service.PoeGemDataService;
-import net.luversof.web.gate.poe.service.PoePobEngineService;
-import net.luversof.web.gate.poe.service.PoeUniqueDataService;
+import net.luversof.web.gate.poe.httpexchange.PoeBuildClient;
+import net.luversof.web.gate.poe.httpexchange.PoeDataClient;
+import net.luversof.web.gate.poe.httpexchange.PoeExtractClient;
 
+/**
+ * PoE 화면 컨트롤러 — 데이터/엔진은 bluesky-api-poe 로 위임하고 여기선 뷰만 조립한다. 정적 게임 에셋(passive-tree.json/아이콘)은 게이트가
+ * {@code poe.data-dir}(dev=로컬, k8s=공유 볼륨)에서 계속 서빙하므로 트리 존재 여부만 로컬로 확인한다.
+ */
 @Controller
 @RequestMapping(value = "/poe", produces = MediaType.TEXT_HTML_VALUE)
 public class PoeViewController {
 
-  private final PoeGemDataService poeGemDataService;
-  private final PoeUniqueDataService poeUniqueDataService;
-  private final PoeBaseItemDataService poeBaseItemDataService;
-  private final PoeExtractService poeExtractService;
-  private final PoePobEngineService poePobEngineService;
+  private final PoeDataClient poeDataClient;
+  private final PoeBuildClient poeBuildClient;
+  private final PoeExtractClient poeExtractClient;
   private final String dataDir;
 
   public PoeViewController(
-      PoeGemDataService poeGemDataService,
-      PoeUniqueDataService poeUniqueDataService,
-      PoeBaseItemDataService poeBaseItemDataService,
-      PoeExtractService poeExtractService,
-      PoePobEngineService poePobEngineService,
+      PoeDataClient poeDataClient,
+      PoeBuildClient poeBuildClient,
+      PoeExtractClient poeExtractClient,
       @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
-    this.poeGemDataService = poeGemDataService;
-    this.poeUniqueDataService = poeUniqueDataService;
-    this.poeBaseItemDataService = poeBaseItemDataService;
-    this.poeExtractService = poeExtractService;
-    this.poePobEngineService = poePobEngineService;
+    this.poeDataClient = poeDataClient;
+    this.poeBuildClient = poeBuildClient;
+    this.poeExtractClient = poeExtractClient;
     this.dataDir = dataDir;
   }
 
   @GetMapping
   public String gems(Model model) {
-    model.addAttribute("patch", poeGemDataService.patch());
-    model.addAttribute("totalCount", poeGemDataService.totalCount());
+    var meta = poeDataClient.gemMeta();
+    model.addAttribute("patch", meta.patch());
+    model.addAttribute("totalCount", meta.totalCount());
     return "poe/gems";
   }
 
   @GetMapping("/uniques")
   public String uniques(Model model) {
-    model.addAttribute("patch", poeGemDataService.patch());
-    model.addAttribute("totalCount", poeUniqueDataService.totalCount());
-    model.addAttribute("categories", poeUniqueDataService.categories());
+    model.addAttribute("patch", poeDataClient.gemMeta().patch());
+    model.addAttribute("totalCount", poeDataClient.uniqueMeta().totalCount());
+    model.addAttribute("categories", poeDataClient.uniqueCategories());
     return "poe/uniques";
   }
 
   @GetMapping("/tree")
   public String tree(Model model) {
-    model.addAttribute("patch", poeGemDataService.patch());
+    model.addAttribute("patch", poeDataClient.gemMeta().patch());
     model.addAttribute("hasTreeData", Files.exists(Path.of(dataDir, "passive-tree.json")));
     return "poe/tree";
   }
 
   @GetMapping("/items")
   public String items(Model model) {
-    model.addAttribute("patch", poeGemDataService.patch());
-    model.addAttribute("totalCount", poeBaseItemDataService.totalCount());
-    model.addAttribute("itemClasses", poeBaseItemDataService.itemClasses());
+    model.addAttribute("patch", poeDataClient.gemMeta().patch());
+    model.addAttribute("totalCount", poeDataClient.baseItemMeta().totalCount());
+    model.addAttribute("itemClasses", poeDataClient.itemClasses());
     return "poe/items";
   }
 
   @GetMapping("/build")
   public String build(Model model) {
-    model.addAttribute("patch", poeGemDataService.patch());
+    model.addAttribute("patch", poeDataClient.gemMeta().patch());
     return "poe/build";
   }
 
   @GetMapping("/sim")
   public String sim(Model model) {
-    model.addAttribute("patch", poeGemDataService.patch());
+    model.addAttribute("patch", poeDataClient.gemMeta().patch());
     model.addAttribute(
         "activeGems",
-        poeGemDataService.search(null, "active", "all").stream()
+        poeDataClient.searchGems(null, "active", "all").stream()
             .sorted(
                 java.util.Comparator.comparing(
                     gem -> gem.nameKo() != null ? gem.nameKo() : gem.name()))
@@ -93,14 +90,14 @@ public class PoeViewController {
 
   @GetMapping("/admin")
   public String admin(Model model) {
-    model.addAttribute("patch", poeGemDataService.patch());
-    model.addAttribute("gemCount", poeGemDataService.totalCount());
-    model.addAttribute("uniqueCount", poeUniqueDataService.totalCount());
-    model.addAttribute("baseItemCount", poeBaseItemDataService.totalCount());
+    model.addAttribute("patch", poeDataClient.gemMeta().patch());
+    model.addAttribute("gemCount", poeDataClient.gemMeta().totalCount());
+    model.addAttribute("uniqueCount", poeDataClient.uniqueMeta().totalCount());
+    model.addAttribute("baseItemCount", poeDataClient.baseItemMeta().totalCount());
     model.addAttribute("hasTreeData", Files.exists(Path.of(dataDir, "passive-tree.json")));
     model.addAttribute("dataDir", dataDir);
-    model.addAttribute("imageMagickInstalled", poeExtractService.isImageMagickInstalled());
-    model.addAttribute("engineAvailable", poePobEngineService.isAvailable());
+    model.addAttribute("imageMagickInstalled", poeExtractClient.status().imageMagickInstalled());
+    model.addAttribute("engineAvailable", poeBuildClient.available());
     return "poe/admin";
   }
 }

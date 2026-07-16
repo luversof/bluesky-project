@@ -1,6 +1,6 @@
 @import java.util.List
 @import io.github.luversof.boot.context.support.MessageUtil
-@import net.luversof.web.gate.poe.service.PoeGem
+@import net.luversof.web.gate.poe.dto.PoeGem
 
 @param boolean isAuthenticated = false
 @param String username = ""
@@ -40,13 +40,34 @@
 				      hx-swap="outerHTML">
 					<select name="slug" class="select select-sm select-bordered w-full sm:w-72" required>
 						@for(PoeGem activeGem : activeGems)
-							<option value="${activeGem.slug()}">${activeGem.nameKo() != null ? activeGem.nameKo() : activeGem.name()} (${activeGem.name()})</option>
+							<option value="${activeGem.slug()}">${net.luversof.web.gate.poe.PoeText.name(activeGem.nameKo(), activeGem.name())} (${activeGem.name()})</option>
 						@endfor
 					</select>
 					<select name="objective" class="select select-sm select-bordered">
 						<option value="dps">${MessageUtil.getMessage("poe.sim.opt.objective.dps")}</option>
+						<option value="balanced">${MessageUtil.getMessage("poe.sim.opt.objective.balanced")}</option>
 						<option value="ehp">${MessageUtil.getMessage("poe.sim.opt.objective.ehp")}</option>
 					</select>
+					<select name="scenario" class="select select-sm select-bordered" title="${MessageUtil.getMessage("poe.sim.opt.scenario")}">
+						<option value="None">${MessageUtil.getMessage("poe.sim.opt.scenario.none")}</option>
+						<option value="Boss">${MessageUtil.getMessage("poe.sim.opt.scenario.boss")}</option>
+						<option value="Pinnacle" selected>${MessageUtil.getMessage("poe.sim.opt.scenario.pinnacle")}</option>
+						<option value="Uber">${MessageUtil.getMessage("poe.sim.opt.scenario.uber")}</option>
+					</select>
+					<select name="className" class="select select-sm select-bordered" title="${MessageUtil.getMessage("poe.sim.opt.class")}">
+						<option value="">${MessageUtil.getMessage("poe.sim.opt.class.auto")}</option>
+						<option value="Marauder">머라우더 (Marauder)</option>
+						<option value="Ranger">레인저 (Ranger)</option>
+						<option value="Witch">위치 (Witch)</option>
+						<option value="Duelist">듀얼리스트 (Duelist)</option>
+						<option value="Templar">템플러 (Templar)</option>
+						<option value="Shadow">섀도우 (Shadow)</option>
+						<option value="Scion">사이온 (Scion)</option>
+					</select>
+					<label class="flex items-center gap-1.5 text-sm cursor-pointer" title="${MessageUtil.getMessage("poe.sim.opt.buffs.hint")}">
+						<input type="checkbox" name="buffs" value="true" checked class="checkbox checkbox-sm">
+						<span>${MessageUtil.getMessage("poe.sim.opt.buffs")}</span>
+					</label>
 					<button type="submit" class="btn btn-primary btn-sm">${optimizeRun}</button>
 				</form>
 				@template.poe.htmx.simOptimizeWrap()

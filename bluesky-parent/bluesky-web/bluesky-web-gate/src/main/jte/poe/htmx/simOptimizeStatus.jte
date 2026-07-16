@@ -1,6 +1,6 @@
 @import java.util.List
 @import io.github.luversof.boot.context.support.MessageUtil
-@import net.luversof.web.gate.poe.service.PoeOptimizeResult
+@import net.luversof.web.gate.poe.dto.PoeOptimizeResult
 
 @param boolean isAuthenticated = false
 @param boolean available = false

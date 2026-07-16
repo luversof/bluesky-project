@@ -31,19 +31,22 @@
 
 			@template.poe.itemTabs(activeTab = "items")
 
-			<form id="poeItemFilter" class="flex flex-wrap gap-2 items-center rounded-2xl bg-base-100 p-3 shadow-sm"
-			      hx-get="/poe/htmx/items"
-			      hx-target="#poeItemList"
-			      hx-swap="innerHTML"
-			      hx-trigger="input changed delay:300ms, change">
-				<input type="search" name="q" class="input input-sm input-bordered w-full sm:w-72" placeholder="${searchPlaceholder}" autocomplete="off" autofocus>
-				<select name="itemClass" class="select select-sm select-bordered">
-					<option value="all">${classAllLabel}</option>
+			<div class="space-y-2 rounded-2xl bg-base-100 p-3 shadow-sm">
+				<form id="poeItemFilter" class="flex flex-wrap gap-2 items-center"
+				      hx-get="/poe/htmx/items"
+				      hx-target="#poeItemList"
+				      hx-swap="innerHTML"
+				      hx-trigger="input changed delay:300ms, change">
+					<input type="search" name="q" class="input input-sm input-bordered w-full sm:w-72" placeholder="${searchPlaceholder}" autocomplete="off" autofocus>
+					<input type="hidden" name="itemClass" value="all">
+				</form>
+				<div class="flex flex-wrap gap-1.5" data-chip-group data-chip-target="#poeItemFilter" data-chip-field="itemClass">
+					<button type="button" class="poe-chip poe-chip-active" data-chip-value="all">${classAllLabel}</button>
 					@for(Map.Entry<String, String> itemClassEntry : itemClasses.entrySet())
-						<option value="${itemClassEntry.getKey()}">${itemClassEntry.getValue()}</option>
+						<button type="button" class="poe-chip" data-chip-value="${itemClassEntry.getKey()}">${itemClassEntry.getValue()}</button>
 					@endfor
-				</select>
-			</form>
+				</div>
+			</div>
 
 			<div id="poeItemList" hx-get="/poe/htmx/items" hx-trigger="load" hx-swap="innerHTML">
 				<div class="flex justify-center p-10">

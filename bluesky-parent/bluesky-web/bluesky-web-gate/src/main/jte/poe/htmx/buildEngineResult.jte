@@ -1,8 +1,8 @@
 @import io.github.luversof.boot.context.support.MessageUtil
-@import net.luversof.web.gate.poe.service.PoeBuild
-@import net.luversof.web.gate.poe.service.PoePobEngineService
+@import net.luversof.web.gate.poe.dto.PoeBuild
+@import net.luversof.web.gate.poe.dto.EngineResult
 
-@param PoePobEngineService.EngineResult engineResult = null
+@param EngineResult engineResult = null
 @param boolean engineError = false
 
 @if(engineError)

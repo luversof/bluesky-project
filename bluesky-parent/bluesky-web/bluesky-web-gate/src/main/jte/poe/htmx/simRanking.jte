@@ -1,6 +1,6 @@
 @import java.util.List
 @import io.github.luversof.boot.context.support.MessageUtil
-@import net.luversof.web.gate.poe.service.PoeGemRank
+@import net.luversof.web.gate.poe.dto.PoeGemRank
 
 @param List<PoeGemRank> ranking = java.util.List.of()
 @param String rankingPatch = ""
@@ -47,7 +47,7 @@
 							<td class="text-right font-mono text-base-content/50">${rankIndex}</td>
 							<td>
 								<span class="inline-block w-2 h-2 rounded-full align-middle mr-1.5" style="background:${gemColor}"></span>
-								<span class="font-semibold">${rankEntry.nameKo() != null ? rankEntry.nameKo() : rankEntry.name()}</span>
+								<span class="font-semibold">${net.luversof.web.gate.poe.PoeText.name(rankEntry.nameKo(), rankEntry.name())}</span>
 								<span class="text-xs text-base-content/40 ml-1">${rankEntry.name()}</span>
 							</td>
 							<td class="hidden sm:table-cell text-xs text-base-content/50">${rankEntry.weapon() != null ? rankEntry.weapon() : "-"}</td>

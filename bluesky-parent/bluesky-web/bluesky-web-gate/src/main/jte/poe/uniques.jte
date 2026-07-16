@@ -32,19 +32,22 @@
 
 			@template.poe.itemTabs(activeTab = "uniques")
 
-			<form id="poeUniqueFilter" class="flex flex-wrap gap-2 items-center rounded-2xl bg-base-100 p-3 shadow-sm"
-			      hx-get="/poe/htmx/uniques"
-			      hx-target="#poeUniqueList"
-			      hx-swap="innerHTML"
-			      hx-trigger="input changed delay:300ms, change">
-				<input type="search" name="q" class="input input-sm input-bordered w-full sm:w-72" placeholder="${searchPlaceholder}" autocomplete="off" autofocus>
-				<select name="category" class="select select-sm select-bordered">
-					<option value="all">${categoryAllLabel}</option>
+			<div class="space-y-2 rounded-2xl bg-base-100 p-3 shadow-sm">
+				<form id="poeUniqueFilter" class="flex flex-wrap gap-2 items-center"
+				      hx-get="/poe/htmx/uniques"
+				      hx-target="#poeUniqueList"
+				      hx-swap="innerHTML"
+				      hx-trigger="input changed delay:300ms, change">
+					<input type="search" name="q" class="input input-sm input-bordered w-full sm:w-72" placeholder="${searchPlaceholder}" autocomplete="off" autofocus>
+					<input type="hidden" name="category" value="all">
+				</form>
+				<div class="flex flex-wrap gap-1.5" data-chip-group data-chip-target="#poeUniqueFilter" data-chip-field="category">
+					<button type="button" class="poe-chip poe-chip-active" data-chip-value="all">${categoryAllLabel}</button>
 					@for(String category : categories)
-						<option value="${category}">${MessageUtil.getMessage("poe.uniques.category." + category)}</option>
+						<button type="button" class="poe-chip" data-chip-value="${category}">${MessageUtil.getMessage("poe.uniques.category." + category)}</button>
 					@endfor
-				</select>
-			</form>
+				</div>
+			</div>
 
 			<div id="poeUniqueList" hx-get="/poe/htmx/uniques" hx-trigger="load" hx-swap="innerHTML">
 				<div class="flex justify-center p-10">

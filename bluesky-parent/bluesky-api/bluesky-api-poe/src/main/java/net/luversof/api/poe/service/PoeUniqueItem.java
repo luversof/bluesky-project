@@ -1,0 +1,18 @@
+package net.luversof.api.poe.service;
+
+import java.util.List;
+
+/** tools/poe-extract parse-uniques.mjs 가 생성한 표시용 고유 아이템 (PoB 데이터 + 한국어 이름 결합). */
+public record PoeUniqueItem(
+    String name,
+    String nameKo,
+    String slug,
+    String baseType,
+    String baseTypeKo,
+    String category,
+    Integer requiredLevel,
+    String league,
+    List<String> implicits,
+    List<String> implicitsKo,
+    List<String> explicits,
+    List<String> explicitsKo) {}

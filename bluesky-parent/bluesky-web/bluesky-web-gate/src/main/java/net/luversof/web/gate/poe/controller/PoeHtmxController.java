@@ -4,48 +4,46 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.RestClientException;
 
-import net.luversof.web.gate.poe.service.PoeBaseItemDataService;
-import net.luversof.web.gate.poe.service.PoeExtractService;
-import net.luversof.web.gate.poe.service.PoeGemDataService;
-import net.luversof.web.gate.poe.service.PoeOptimizeService;
-import net.luversof.web.gate.poe.service.PoePobEngineService;
-import net.luversof.web.gate.poe.service.PoePobImportService;
-import net.luversof.web.gate.poe.service.PoeSimService;
-import net.luversof.web.gate.poe.service.PoeUniqueDataService;
+import net.luversof.web.gate.poe.dto.PoeBaseItem;
+import net.luversof.web.gate.poe.dto.PoeGem;
+import net.luversof.web.gate.poe.dto.PoeJobStatus;
+import net.luversof.web.gate.poe.dto.PoeUniqueItem;
+import net.luversof.web.gate.poe.httpexchange.PoeBuildClient;
+import net.luversof.web.gate.poe.httpexchange.PoeDataClient;
+import net.luversof.web.gate.poe.httpexchange.PoeExtractClient;
+import net.luversof.web.gate.poe.httpexchange.PoeOptimizeClient;
+import net.luversof.web.gate.poe.httpexchange.PoeSimClient;
 
+/**
+ * PoE htmx fragment 컨트롤러 — 데이터/잡은 bluesky-api-poe 로 위임하고 여기선 로그인 게이팅 + fragment 렌더만 담당한다. 잡 시작은
+ * {@code principal != null} 일 때만 클라이언트로 전달한다.
+ */
 @Controller
 @RequestMapping(value = "/poe/htmx", produces = MediaType.TEXT_HTML_VALUE)
 public class PoeHtmxController {
 
-  private final PoeGemDataService poeGemDataService;
-  private final PoeUniqueDataService poeUniqueDataService;
-  private final PoeBaseItemDataService poeBaseItemDataService;
-  private final PoeExtractService poeExtractService;
-  private final PoePobImportService poePobImportService;
-  private final PoePobEngineService poePobEngineService;
-  private final PoeSimService poeSimService;
-  private final PoeOptimizeService poeOptimizeService;
+  private final PoeDataClient poeDataClient;
+  private final PoeBuildClient poeBuildClient;
+  private final PoeOptimizeClient poeOptimizeClient;
+  private final PoeSimClient poeSimClient;
+  private final PoeExtractClient poeExtractClient;
 
   public PoeHtmxController(
-      PoeGemDataService poeGemDataService,
-      PoeUniqueDataService poeUniqueDataService,
-      PoeBaseItemDataService poeBaseItemDataService,
-      PoeExtractService poeExtractService,
-      PoePobImportService poePobImportService,
-      PoePobEngineService poePobEngineService,
-      PoeSimService poeSimService,
-      PoeOptimizeService poeOptimizeService) {
-    this.poeGemDataService = poeGemDataService;
-    this.poeUniqueDataService = poeUniqueDataService;
-    this.poeBaseItemDataService = poeBaseItemDataService;
-    this.poeExtractService = poeExtractService;
-    this.poePobImportService = poePobImportService;
-    this.poePobEngineService = poePobEngineService;
-    this.poeSimService = poeSimService;
-    this.poeOptimizeService = poeOptimizeService;
+      PoeDataClient poeDataClient,
+      PoeBuildClient poeBuildClient,
+      PoeOptimizeClient poeOptimizeClient,
+      PoeSimClient poeSimClient,
+      PoeExtractClient poeExtractClient) {
+    this.poeDataClient = poeDataClient;
+    this.poeBuildClient = poeBuildClient;
+    this.poeOptimizeClient = poeOptimizeClient;
+    this.poeSimClient = poeSimClient;
+    this.poeExtractClient = poeExtractClient;
   }
 
   /**
@@ -57,31 +55,34 @@ public class PoeHtmxController {
       java.security.Principal principal,
       Model model,
       jakarta.servlet.http.HttpServletResponse response) {
-    boolean running = poeOptimizeService.isRunning();
+    PoeJobStatus.Optimize status = poeOptimizeClient.status();
     model.addAttribute("isAuthenticated", principal != null);
-    model.addAttribute("available", poeOptimizeService.isAvailable());
-    model.addAttribute("running", running);
-    model.addAttribute("status", poeOptimizeService.lastStatus().name());
-    model.addAttribute("phase", poeOptimizeService.phase());
-    model.addAttribute("phaseDone", poeOptimizeService.phaseDone());
-    model.addAttribute("phaseTotal", poeOptimizeService.phaseTotal());
-    model.addAttribute("evalCount", poeOptimizeService.evalCount());
-    model.addAttribute("logLines", poeOptimizeService.logTail());
-    model.addAttribute("result", poeOptimizeService.lastResult());
-    if (!running) {
+    model.addAttribute("available", status.available());
+    model.addAttribute("running", status.running());
+    model.addAttribute("status", status.status());
+    model.addAttribute("phase", status.phase());
+    model.addAttribute("phaseDone", status.phaseDone());
+    model.addAttribute("phaseTotal", status.phaseTotal());
+    model.addAttribute("evalCount", status.evalCount());
+    model.addAttribute("logLines", status.logLines());
+    model.addAttribute("result", status.result());
+    if (!status.running()) {
       response.setStatus(286); // htmx: 폴링 중단
     }
     return "poe/htmx/simOptimizeStatus";
   }
 
   /** 최적 조합 탐색 시작 (로그인 필요) — 폴링 래퍼를 새로 내려 interval 을 재장전한다 */
-  @org.springframework.web.bind.annotation.PostMapping("/sim/optimize")
+  @PostMapping("/sim/optimize")
   public String startOptimize(
       @RequestParam String slug,
       @RequestParam(required = false, defaultValue = "dps") String objective,
+      @RequestParam(required = false, defaultValue = "Pinnacle") String scenario,
+      @RequestParam(required = false, defaultValue = "false") boolean buffs,
+      @RequestParam(required = false, defaultValue = "") String className,
       java.security.Principal principal) {
     if (principal != null) {
-      poeOptimizeService.start(slug, objective);
+      poeOptimizeClient.start(slug, objective, scenario, buffs, className);
     }
     return "poe/htmx/simOptimizeWrap";
   }
@@ -92,25 +93,25 @@ public class PoeHtmxController {
       java.security.Principal principal,
       Model model,
       jakarta.servlet.http.HttpServletResponse response) {
-    boolean running = poeSimService.isRunning();
+    PoeJobStatus.Sim status = poeSimClient.status();
     model.addAttribute("isAuthenticated", principal != null);
-    model.addAttribute("available", poeSimService.isAvailable());
-    model.addAttribute("running", running);
-    model.addAttribute("status", poeSimService.lastStatus().name());
-    model.addAttribute("progressDone", poeSimService.progressDone());
-    model.addAttribute("progressTotal", poeSimService.progressTotal());
-    model.addAttribute("logLines", poeSimService.logTail());
-    if (!running) {
+    model.addAttribute("available", status.available());
+    model.addAttribute("running", status.running());
+    model.addAttribute("status", status.status());
+    model.addAttribute("progressDone", status.progressDone());
+    model.addAttribute("progressTotal", status.progressTotal());
+    model.addAttribute("logLines", status.logLines());
+    if (!status.running()) {
       response.setStatus(286); // htmx: 폴링 중단
     }
     return "poe/htmx/simStatus";
   }
 
   /** 젬 랭킹 배치 시작 (로그인 필요) — 폴링 래퍼를 새로 내려 interval 을 재장전한다 */
-  @org.springframework.web.bind.annotation.PostMapping("/sim/run")
+  @PostMapping("/sim/run")
   public String startSim(java.security.Principal principal) {
     if (principal != null) {
-      poeSimService.start();
+      poeSimClient.start();
     }
     return "poe/htmx/simWrap";
   }
@@ -118,52 +119,57 @@ public class PoeHtmxController {
   /** 젬 DPS 랭킹 목록 fragment */
   @GetMapping("/sim/ranking")
   public String simRanking(Model model) {
-    model.addAttribute("ranking", poeSimService.ranking());
-    model.addAttribute("rankingPatch", poeSimService.rankingPatch());
+    PoeJobStatus.SimRanking ranking = poeSimClient.ranking();
+    model.addAttribute("ranking", ranking.ranking());
+    model.addAttribute("rankingPatch", ranking.patch());
     return "poe/htmx/simRanking";
   }
 
   /** PoB 공유 코드 임포트 → 빌드 요약 fragment. 형식 오류는 같은 fragment 의 오류 상태로 표시한다. */
-  @org.springframework.web.bind.annotation.PostMapping("/build/import")
+  @PostMapping("/build/import")
   public String importBuild(@RequestParam String code, Model model) {
     try {
-      model.addAttribute("build", poePobImportService.importCode(code));
-      model.addAttribute("engineAvailable", poePobEngineService.isAvailable());
-    } catch (IllegalArgumentException e) {
+      model.addAttribute("build", poeBuildClient.importBuild(code));
+      model.addAttribute("engineAvailable", poeBuildClient.available());
+    } catch (RestClientException e) {
       model.addAttribute("importError", true);
     }
     return "poe/htmx/buildSummary";
   }
 
   /** PoB 계산 엔진(헤드리스)으로 빌드 스탯 재계산 → 결과 fragment */
-  @org.springframework.web.bind.annotation.PostMapping("/build/recalc")
+  @PostMapping("/build/recalc")
   public String recalcBuild(@RequestParam String code, Model model) {
     try {
-      String buildXml = poePobImportService.decodeToXml(code);
-      model.addAttribute("engineResult", poePobEngineService.recalculate(buildXml));
-    } catch (IllegalArgumentException | IllegalStateException e) {
+      model.addAttribute("engineResult", poeBuildClient.recalculate(code));
+    } catch (RestClientException e) {
       model.addAttribute("engineError", true);
     }
     return "poe/htmx/buildEngineResult";
   }
+
+  /** 목록 렌더 상한 — 전체(1000+)를 한 번에 그리면 느려서 상위 N개만, 나머지는 검색/부위로 좁힌다 */
+  private static final int LIST_LIMIT = 90;
 
   @GetMapping("/items")
   public String baseItemList(
       @RequestParam(required = false) String q,
       @RequestParam(required = false, defaultValue = "all") String itemClass,
       Model model) {
-    model.addAttribute("items", poeBaseItemDataService.search(q, itemClass));
-    model.addAttribute("totalCount", poeBaseItemDataService.totalCount());
+    var matched = poeDataClient.searchBaseItems(q, itemClass);
+    model.addAttribute(
+        "items", matched.size() > LIST_LIMIT ? matched.subList(0, LIST_LIMIT) : matched);
+    model.addAttribute("matchedCount", matched.size());
+    model.addAttribute("totalCount", poeDataClient.baseItemMeta().totalCount());
     return "poe/htmx/itemList";
   }
 
   @GetMapping("/items/detail")
   public String baseItemDetail(@RequestParam String slug, Model model) {
-    model.addAttribute(
-        "item",
-        poeBaseItemDataService
-            .findBySlug(slug)
-            .orElseThrow(() -> new IllegalArgumentException("unknown base item: " + slug)));
+    PoeBaseItem item = poeDataClient.baseItem(slug);
+    model.addAttribute("item", item);
+    // 이 베이스에 붙을 수 있는 모드 패밀리(티어표) — 큐레이티드 모드 풀 기준
+    model.addAttribute("modFamilies", poeDataClient.modFamiliesForItemClass(item.itemClass()));
     return "poe/htmx/itemDetail";
   }
 
@@ -173,23 +179,23 @@ public class PoeHtmxController {
       java.security.Principal principal,
       Model model,
       jakarta.servlet.http.HttpServletResponse response) {
-    boolean running = poeExtractService.isRunning();
+    PoeJobStatus.Extract status = poeExtractClient.status();
     model.addAttribute("isAuthenticated", principal != null);
-    model.addAttribute("available", poeExtractService.isAvailable());
-    model.addAttribute("running", running);
-    model.addAttribute("status", poeExtractService.lastStatus().name());
-    model.addAttribute("logLines", poeExtractService.logTail());
-    if (!running) {
+    model.addAttribute("available", status.available());
+    model.addAttribute("running", status.running());
+    model.addAttribute("status", status.status());
+    model.addAttribute("logLines", status.logLines());
+    if (!status.running()) {
       response.setStatus(286); // htmx: 폴링 중단
     }
     return "poe/htmx/extractStatus";
   }
 
   /** 추출 파이프라인 시작 (로그인 필요) — 폴링 래퍼를 새로 내려 interval 을 재장전한다 */
-  @org.springframework.web.bind.annotation.PostMapping("/admin/extract")
+  @PostMapping("/admin/extract")
   public String startExtract(java.security.Principal principal) {
     if (principal != null) {
-      poeExtractService.start();
+      poeExtractClient.start();
     }
     return "poe/htmx/extractWrap";
   }
@@ -200,8 +206,8 @@ public class PoeHtmxController {
       @RequestParam(required = false, defaultValue = "all") String type,
       @RequestParam(required = false, defaultValue = "all") String color,
       Model model) {
-    model.addAttribute("gems", poeGemDataService.search(q, type, color));
-    model.addAttribute("totalCount", poeGemDataService.totalCount());
+    model.addAttribute("gems", poeDataClient.searchGems(q, type, color));
+    model.addAttribute("totalCount", poeDataClient.gemMeta().totalCount());
     return "poe/htmx/gemList";
   }
 
@@ -210,18 +216,20 @@ public class PoeHtmxController {
       @RequestParam(required = false) String q,
       @RequestParam(required = false, defaultValue = "all") String category,
       Model model) {
-    model.addAttribute("items", poeUniqueDataService.search(q, category));
-    model.addAttribute("totalCount", poeUniqueDataService.totalCount());
+    var matched = poeDataClient.searchUniques(q, category);
+    model.addAttribute(
+        "items", matched.size() > LIST_LIMIT ? matched.subList(0, LIST_LIMIT) : matched);
+    model.addAttribute("matchedCount", matched.size());
+    model.addAttribute("totalCount", poeDataClient.uniqueMeta().totalCount());
     return "poe/htmx/uniqueList";
   }
 
   @GetMapping("/uniques/detail")
   public String uniqueDetail(@RequestParam String slug, Model model) {
-    model.addAttribute(
-        "item",
-        poeUniqueDataService
-            .findBySlug(slug)
-            .orElseThrow(() -> new IllegalArgumentException("unknown unique: " + slug)));
+    PoeUniqueItem item = poeDataClient.unique(slug);
+    model.addAttribute("item", item);
+    // 베이스 아이템(무기/방어 속성·아이템 클래스·요구사항)을 조인해 게임 툴팁처럼 채워 보여준다
+    model.addAttribute("base", poeDataClient.baseItemByName(item.baseType()));
     return "poe/htmx/uniqueDetail";
   }
 
@@ -231,10 +239,7 @@ public class PoeHtmxController {
       @RequestParam String slug,
       @RequestParam(required = false, defaultValue = "20") int level,
       Model model) {
-    var gem =
-        poeGemDataService
-            .findBySlug(slug)
-            .orElseThrow(() -> new IllegalArgumentException("unknown gem: " + slug));
+    PoeGem gem = poeDataClient.gem(slug);
     int maxLevel = gem.levels().isEmpty() ? 1 : gem.levels().get(gem.levels().size() - 1).level();
     int displayLevel = Math.min(Math.max(level, 1), maxLevel);
     model.addAttribute("gem", gem);

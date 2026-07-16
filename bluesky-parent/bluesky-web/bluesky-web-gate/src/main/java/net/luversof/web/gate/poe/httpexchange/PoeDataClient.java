@@ -1,0 +1,70 @@
+package net.luversof.web.gate.poe.httpexchange;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.service.annotation.GetExchange;
+import org.springframework.web.service.annotation.HttpExchange;
+
+import net.luversof.web.gate.poe.dto.ModFamily;
+import net.luversof.web.gate.poe.dto.PoeBaseItem;
+import net.luversof.web.gate.poe.dto.PoeGem;
+import net.luversof.web.gate.poe.dto.PoeJobStatus;
+import net.luversof.web.gate.poe.dto.PoeUniqueItem;
+
+/** bluesky-api-poe 정적 게임 데이터 조회 클라이언트. */
+@HttpExchange(url = "/api/poe", accept = MediaType.APPLICATION_JSON_VALUE)
+public interface PoeDataClient {
+
+  // ── 스킬젬 ──
+  @GetExchange("/gems/search")
+  List<PoeGem> searchGems(
+      @RequestParam(required = false) String q,
+      @RequestParam(required = false) String type,
+      @RequestParam(required = false) String color);
+
+  @GetExchange("/gems/{slug}")
+  PoeGem gem(@PathVariable String slug);
+
+  @GetExchange("/gems/meta")
+  PoeJobStatus.GemMeta gemMeta();
+
+  // ── 고유 아이템 ──
+  @GetExchange("/uniques/search")
+  List<PoeUniqueItem> searchUniques(
+      @RequestParam(required = false) String q, @RequestParam(required = false) String category);
+
+  @GetExchange("/uniques/{slug}")
+  PoeUniqueItem unique(@PathVariable String slug);
+
+  @GetExchange("/uniques/categories")
+  List<String> uniqueCategories();
+
+  @GetExchange("/uniques/meta")
+  PoeJobStatus.CountMeta uniqueMeta();
+
+  // ── 일반(베이스) 아이템 ──
+  @GetExchange("/base-items/search")
+  List<PoeBaseItem> searchBaseItems(
+      @RequestParam(required = false) String q, @RequestParam(required = false) String itemClass);
+
+  @GetExchange("/base-items/{slug}")
+  PoeBaseItem baseItem(@PathVariable String slug);
+
+  /** 이름으로 조인(없으면 null). */
+  @GetExchange("/base-items/by-name")
+  PoeBaseItem baseItemByName(@RequestParam String name);
+
+  @GetExchange("/base-items/item-classes")
+  Map<String, String> itemClasses();
+
+  @GetExchange("/base-items/meta")
+  PoeJobStatus.CountMeta baseItemMeta();
+
+  // ── 모드 풀 (일반 아이템 티어표) ──
+  @GetExchange("/mod-pool/for-item-class")
+  List<ModFamily> modFamiliesForItemClass(@RequestParam String itemClass);
+}
