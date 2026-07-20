@@ -26,29 +26,60 @@
 			!{
 				String displayName = PoeText.name(item.nameKo(), item.name());
 				String displayBase = PoeText.name(item.baseTypeKo(), item.baseType());
+				List<String> displayImplicits = PoeText.lines(item.implicitsKo(), item.implicits());
 				List<String> displayExplicits = PoeText.lines(item.explicitsKo(), item.explicits());
+				String strLabel = MessageUtil.getMessage("poe.gems.attr.red");
+				String dexLabel = MessageUtil.getMessage("poe.gems.attr.green");
+				String intLabel = MessageUtil.getMessage("poe.gems.attr.blue");
+				String levelLabel = MessageUtil.getMessage("poe.gems.detail.required.level");
 			}
 			<div class="poe-hover card bg-base-100 shadow-sm border border-base-200 cursor-pointer transition-colors duration-300 hover:border-orange-400/50 hover:duration-75"
 			     hx-get="/poe/htmx/uniques/detail?slug=${item.slug()}"
 			     hx-target="#poePreview"
 			     hx-trigger="mouseenter delay:100ms"
 			     hx-swap="innerHTML">
-				<div class="card-body p-4 gap-1">
+				<div class="card-body p-3.5">
+				<div class="flex gap-3">
+					@if(item.iconKey() != null)
+						<img src="/poe-assets/items/${item.iconKey()}.png" class="w-12 h-12 object-contain shrink-0 self-start drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" alt="" loading="lazy">
+					@endif
+					<div class="min-w-0 flex-1 space-y-1">
+					<%-- 제목 (고유색) --%>
 					<div class="flex items-baseline gap-2">
 						<span class="font-bold text-orange-600 dark:text-orange-400 truncate" title="${item.name()}">${displayName}</span>
 						@if(PoeText.isKorean())
 							<span class="text-xs text-base-content/40 truncate">${item.name()}</span>
 						@endif
 					</div>
-					<div class="flex items-center gap-2 text-xs text-base-content/60">
+					<%-- 베이스 + 요구조건(레벨·힘·민첩·지능, 0 은 생략) --%>
+					<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-base-content/55">
 						<span class="truncate">${displayBase}</span>
 						@if(item.requiredLevel() != null)
-							<span class="ml-auto shrink-0 text-base-content/40">Lv ${item.requiredLevel()}</span>
+							<span class="text-base-content/40">${levelLabel} ${item.requiredLevel()}</span>
+						@endif
+						@if(item.reqStr() != null && item.reqStr() > 0)
+							<span class="text-red-500/80">${strLabel} ${item.reqStr()}</span>
+						@endif
+						@if(item.reqDex() != null && item.reqDex() > 0)
+							<span class="text-green-500/80">${dexLabel} ${item.reqDex()}</span>
+						@endif
+						@if(item.reqInt() != null && item.reqInt() > 0)
+							<span class="text-blue-500/80">${intLabel} ${item.reqInt()}</span>
 						@endif
 					</div>
-					@if(!displayExplicits.isEmpty())
-						<p class="text-xs leading-5 text-base-content/50 line-clamp-2">${String.join(" / ", displayExplicits)}</p>
+					<%-- 옵션 — 한 줄에 하나씩 (암시=파랑, 폭발=회색) --%>
+					@if(!displayImplicits.isEmpty() || !displayExplicits.isEmpty())
+						<div class="mt-0.5 space-y-0.5">
+							@for(String imp : displayImplicits)
+								<div class="text-[11px] leading-5 text-sky-500/70">${imp}</div>
+							@endfor
+							@for(String ex : displayExplicits)
+								<div class="text-[11px] leading-5 text-base-content/60">${ex}</div>
+							@endfor
+						</div>
 					@endif
+					</div>
+				</div>
 				</div>
 			</div>
 		@endfor

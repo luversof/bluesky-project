@@ -459,7 +459,7 @@ public class PoeOptimizeService {
       if (!"ehp".equals(objective)) {
         phase = "supports";
         List<PoeGem> candidates =
-            poeGemDataService.search(null, "support", "all").stream()
+            poeGemDataService.search(null, "support", "all", null).stream()
                 .filter(support -> !support.levels().isEmpty())
                 .filter(this::isProvidedSupport)
                 .toList();
@@ -1203,7 +1203,7 @@ public class PoeOptimizeService {
    */
   private List<PoeUniqueItem> globalJewelCandidates(List<String> keywords) {
     record Scored(PoeUniqueItem item, int score) {}
-    return poeUniqueDataService.search(null, "jewel").stream()
+    return poeUniqueDataService.search(null, "jewel", null).stream()
         .filter(item -> item.requiredLevel() == null || item.requiredLevel() <= LEVEL)
         .filter(
             item ->
@@ -1238,7 +1238,7 @@ public class PoeOptimizeService {
       }
     }
     record Scored(PoeUniqueItem item, int score) {}
-    return poeUniqueDataService.search(null, "all").stream()
+    return poeUniqueDataService.search(null, "all", null).stream()
         .filter(item -> categories.contains(item.category()))
         .filter(item -> item.requiredLevel() == null || item.requiredLevel() <= LEVEL)
         .filter(item -> !equippedSlugs.contains(item.slug()))

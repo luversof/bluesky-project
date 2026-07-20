@@ -481,6 +481,9 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 	color: #fff;
 	font-family: ui-sans-serif, system-ui, sans-serif;
 }
+/* 젬/아이템 툴팁 고정 폭 — Tailwind 임의값(w-[25rem])이 이 프로젝트 빌드에서 누락돼
+   툴팁 폭이 안 잡히고 긴 설명이 한 줄로 늘어나는 문제가 있어 커스텀 CSS 로 고정한다. */
+.poe-tt-w-gem { width: 25rem; max-width: 92vw; }
 .poe-tt-header {
 	padding: 0.5rem 1.75rem 0.4rem;
 	/* 희귀도색을 아주 옅게 깐 헤더 밴드 (양끝 어둡게) */
@@ -504,10 +507,25 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 	justify-content: center;
 	min-height: 3.25rem;
 	padding: 0.3rem 3rem;
-	background-image: var(--band-mid), var(--band-left), var(--band-right);
-	background-repeat: repeat-x, no-repeat, no-repeat;
-	background-position: center, left center, right center;
+	/* 다중 배경은 먼저 선언한 레이어가 위 — 좌/우 장식 캡을 가운데 타일 위에 얹는다 */
+	background-image: var(--band-left), var(--band-right), var(--band-mid);
+	background-repeat: no-repeat, no-repeat, repeat-x;
+	background-position: left center, right center, center;
 	background-size: auto 100%, auto 100%, auto 100%;
+}
+/* 인게임 2줄 헤더(레어/유니크 전용 아트, 이름+베이스). --band2-* 미정의 희귀도는 1줄 아트로 폴백. */
+.poe-tt-band-2 {
+	min-height: 5.25rem;
+	padding: 0.4rem 4.25rem;
+	background-image: var(--band2-left, var(--band-left)), var(--band2-right, var(--band-right)),
+		var(--band2-mid, var(--band-mid));
+}
+/* 아트에 새겨진 가운데 구분선에 맞춰 이름/베이스 줄을 상·하 절반에 정렬 */
+.poe-tt-band-2 > div {
+	flex: 1 1 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 .poe-tt-sepimg {
 	height: 10px;
@@ -521,6 +539,9 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 	--band-left: url("/poe-data/ui-assets/itemsheaderuniqueleft.png");
 	--band-mid: url("/poe-data/ui-assets/itemsheaderuniquemiddle.png");
 	--band-right: url("/poe-data/ui-assets/itemsheaderuniqueright.png");
+	--band2-left: url("/poe-data/ui-assets/itemsheader2uniqueleft.png");
+	--band2-mid: url("/poe-data/ui-assets/itemsheader2uniquemiddle.png");
+	--band2-right: url("/poe-data/ui-assets/itemsheader2uniqueright.png");
 	--band-sep: url("/poe-data/ui-assets/itemsseparatorunique.png");
 }
 .poe-rar-rare {
@@ -528,6 +549,9 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 	--band-left: url("/poe-data/ui-assets/itemsheaderrareleft.png");
 	--band-mid: url("/poe-data/ui-assets/itemsheaderraremiddle.png");
 	--band-right: url("/poe-data/ui-assets/itemsheaderrareright.png");
+	--band2-left: url("/poe-data/ui-assets/itemsheader2rareleft.png");
+	--band2-mid: url("/poe-data/ui-assets/itemsheader2raremiddle.png");
+	--band2-right: url("/poe-data/ui-assets/itemsheader2rareright.png");
 	--band-sep: url("/poe-data/ui-assets/itemsseparatorrare.png");
 }
 .poe-rar-magic {

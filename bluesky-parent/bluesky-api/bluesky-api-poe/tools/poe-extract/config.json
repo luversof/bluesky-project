@@ -1,5 +1,5 @@
 {
-  "patch": "3.28.0.14.3",
+  "patch": "3.28.0.15",
   "translations": [
     "English",
     "Korean"
@@ -129,6 +129,14 @@
         "ImplicitStats",
         "ConstantStats",
         "ConstantStatsValues"
+      ]
+    },
+    {
+      "name": "GrantedEffectQualityStats",
+      "columns": [
+        "GrantedEffectsKey",
+        "StatsKeys",
+        "StatsValuesPermille"
       ]
     },
     {

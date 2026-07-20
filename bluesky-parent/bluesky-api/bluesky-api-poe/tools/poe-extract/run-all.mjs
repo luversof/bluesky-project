@@ -17,7 +17,7 @@ if (!fs.existsSync(path.join(here, "node_modules", "pathofexile-dat"))) {
 	execSync(`"${process.execPath}" "${npmCli}" install --no-audit --no-fund`, { stdio: "inherit", cwd: here });
 }
 
-const steps = ["extract.mjs", "transform.mjs", "parse-uniques.mjs", "parse-items.mjs", "parse-mods.mjs", "parse-tree.mjs", "icons.mjs", "tree-icons.mjs"];
+const steps = ["extract.mjs", "transform.mjs", "parse-uniques.mjs", "parse-items.mjs", "parse-mods.mjs", "parse-tree.mjs", "parse-atlas-tree.mjs", "tree-sprites.mjs", "icons.mjs", "item-icons.mjs", "ui-assets.mjs"];
 
 for (const step of steps) {
 	console.log(`\n===== ${step} =====`);

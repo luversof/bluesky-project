@@ -11,6 +11,8 @@
 @param java.util.List<String> modLines = null
 
 !{
+	// 이름+베이스 2줄이면 인게임 2줄 헤더 아트(레어/유니크에 --band2-* 정의, 그 외 1줄 아트 폴백)
+	boolean twoLine = base != null && !base.equals(name);
 	boolean hasWeapon = baseItem != null && baseItem.weapon() != null && baseItem.weapon().damageMax() > 0;
 	PoeBaseItem.Armour armour = baseItem != null ? baseItem.armour() : null;
 	boolean hasArmour = armour != null && (armour.armourMax() > 0 || armour.evasionMax() > 0 || armour.energyShieldMax() > 0 || armour.wardMax() > 0);
@@ -21,9 +23,9 @@
 
 <%-- 게임 아이템 툴팁 본문 (호버 레이어용) — 헤더 밴드 + 아이템클래스 + 베이스 속성 + 요구 + 롤 모드 --%>
 <div class="poe-tooltip ${rarityClass} w-80 max-h-[80vh] overflow-y-auto shadow-2xl" style="border-color:${rarityBorder}">
-	<div class="poe-tt-band">
+	<div class="poe-tt-band${twoLine ? " poe-tt-band-2" : ""}">
 		<div class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${nameColor}">${name}</div>
-		@if(base != null && !base.equals(name))
+		@if(twoLine)
 			<div class="text-center text-[13px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${nameColor}">${base}</div>
 		@endif
 	</div>

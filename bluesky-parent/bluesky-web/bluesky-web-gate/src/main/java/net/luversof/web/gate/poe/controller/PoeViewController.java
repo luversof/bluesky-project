@@ -2,6 +2,7 @@ package net.luversof.web.gate.poe.controller;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -9,7 +10,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
+import net.luversof.web.gate.poe.dto.PoeGroups;
 import net.luversof.web.gate.poe.httpexchange.PoeBuildClient;
 import net.luversof.web.gate.poe.httpexchange.PoeDataClient;
 import net.luversof.web.gate.poe.httpexchange.PoeExtractClient;
@@ -39,19 +42,50 @@ public class PoeViewController {
   }
 
   @GetMapping
-  public String gems(Model model) {
+  public String gems(
+      @RequestParam(required = false) String q,
+      @RequestParam(required = false, defaultValue = "all") String type,
+      @RequestParam(required = false, defaultValue = "all") String color,
+      @RequestParam(required = false, defaultValue = "all") String tag,
+      Model model) {
     var meta = poeDataClient.gemMeta();
     model.addAttribute("patch", meta.patch());
     model.addAttribute("totalCount", meta.totalCount());
+    model.addAttribute("tagGroups", poeDataClient.gemTagGroups());
+    model.addAttribute("initialQ", q == null ? "" : q);
+    model.addAttribute("initialType", type);
+    model.addAttribute("initialColor", color);
+    model.addAttribute("activeTag", tag);
     return "poe/gems";
   }
 
   @GetMapping("/uniques")
-  public String uniques(Model model) {
+  public String uniques(
+      @RequestParam(required = false) String q,
+      @RequestParam(required = false) String slot,
+      Model model) {
+    var groups = poeDataClient.uniqueCategoryGroups();
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
     model.addAttribute("totalCount", poeDataClient.uniqueMeta().totalCount());
-    model.addAttribute("categories", poeDataClient.uniqueCategories());
+    model.addAttribute("categoryGroups", groups);
+    model.addAttribute("initialQ", q == null ? "" : q);
+    model.addAttribute("activeValue", resolveSlot(groups, slot));
     return "poe/uniques";
+  }
+
+  /** 탭 전환 진입 slot 을 이 페이지의 필터 키로 해석 — slot 을 가진 첫 항목의 key, 없으면 all. */
+  private static String resolveSlot(List<? extends PoeGroups.Group> groups, String slot) {
+    if (slot == null || slot.isBlank()) {
+      return "all";
+    }
+    for (PoeGroups.Group group : groups) {
+      for (PoeGroups.Entry entry : group.entries()) {
+        if (slot.equals(entry.slot())) {
+          return entry.key();
+        }
+      }
+    }
+    return "all";
   }
 
   @GetMapping("/tree")
@@ -61,11 +95,24 @@ public class PoeViewController {
     return "poe/tree";
   }
 
+  @GetMapping("/atlas")
+  public String atlas(Model model) {
+    model.addAttribute("patch", poeDataClient.gemMeta().patch());
+    model.addAttribute("hasAtlasData", Files.exists(Path.of(dataDir, "atlas-tree.json")));
+    return "poe/atlas";
+  }
+
   @GetMapping("/items")
-  public String items(Model model) {
+  public String items(
+      @RequestParam(required = false) String q,
+      @RequestParam(required = false) String slot,
+      Model model) {
+    var groups = poeDataClient.itemClassGroups();
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
     model.addAttribute("totalCount", poeDataClient.baseItemMeta().totalCount());
-    model.addAttribute("itemClasses", poeDataClient.itemClasses());
+    model.addAttribute("classGroups", groups);
+    model.addAttribute("initialQ", q == null ? "" : q);
+    model.addAttribute("activeValue", resolveSlot(groups, slot));
     return "poe/items";
   }
 
@@ -80,7 +127,7 @@ public class PoeViewController {
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
     model.addAttribute(
         "activeGems",
-        poeDataClient.searchGems(null, "active", "all").stream()
+        poeDataClient.searchGems(null, "active", "all", null).stream()
             .sorted(
                 java.util.Comparator.comparing(
                     gem -> gem.nameKo() != null ? gem.nameKo() : gem.name()))
@@ -90,7 +137,10 @@ public class PoeViewController {
 
   @GetMapping("/admin")
   public String admin(Model model) {
-    model.addAttribute("patch", poeDataClient.gemMeta().patch());
+    var version = poeExtractClient.version();
+    model.addAttribute("patch", version.dataPatch());
+    model.addAttribute("latestPatch", version.latestPatch());
+    model.addAttribute("upToDate", version.upToDate());
     model.addAttribute("gemCount", poeDataClient.gemMeta().totalCount());
     model.addAttribute("uniqueCount", poeDataClient.uniqueMeta().totalCount());
     model.addAttribute("baseItemCount", poeDataClient.baseItemMeta().totalCount());

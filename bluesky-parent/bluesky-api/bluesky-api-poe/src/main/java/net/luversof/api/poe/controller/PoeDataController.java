@@ -49,8 +49,15 @@ public class PoeDataController {
   public List<PoeGem> searchGems(
       @RequestParam(required = false) String q,
       @RequestParam(required = false, defaultValue = "all") String type,
-      @RequestParam(required = false, defaultValue = "all") String color) {
-    return poeGemDataService.search(q, type, color);
+      @RequestParam(required = false, defaultValue = "all") String color,
+      @RequestParam(required = false, defaultValue = "all") String tag) {
+    return poeGemDataService.search(q, type, color, tag);
+  }
+
+  /** 태그 그룹(유형/원소·피해/전달/특성) — 그룹 칩 UI용 */
+  @GetMapping("/gems/tag-groups")
+  public List<PoeGemDataService.TagGroup> gemTagGroups() {
+    return poeGemDataService.tagGroups();
   }
 
   @GetMapping("/gems/{slug}")
@@ -67,8 +74,8 @@ public class PoeDataController {
   @GetMapping("/uniques/search")
   public List<PoeUniqueItem> searchUniques(
       @RequestParam(required = false) String q,
-      @RequestParam(required = false, defaultValue = "all") String category) {
-    return poeUniqueDataService.search(q, category);
+      @RequestParam(required = false, defaultValue = "all") String itemClass) {
+    return poeUniqueDataService.search(q, null, itemClass);
   }
 
   @GetMapping("/uniques/{slug}")
@@ -79,6 +86,12 @@ public class PoeDataController {
   @GetMapping("/uniques/categories")
   public List<String> uniqueCategories() {
     return poeUniqueDataService.categories();
+  }
+
+  /** 고유를 세부 itemClass 그룹(일반 아이템과 동일 분류)으로 — 그룹 칩 UI용 */
+  @GetMapping("/uniques/category-groups")
+  public List<PoeBaseItemDataService.ClassGroup> uniqueCategoryGroups() {
+    return poeUniqueDataService.categoryGroups();
   }
 
   @GetMapping("/uniques/meta")
@@ -108,6 +121,12 @@ public class PoeDataController {
   @GetMapping("/base-items/item-classes")
   public Map<String, String> itemClasses() {
     return poeBaseItemDataService.itemClasses();
+  }
+
+  /** 아이템 클래스를 PoB식 그룹(한손/양손 무기·방어구·장신구·플라스크·주얼)으로 — 그룹 칩 UI용 */
+  @GetMapping("/base-items/item-class-groups")
+  public List<PoeBaseItemDataService.ClassGroup> itemClassGroups() {
+    return poeBaseItemDataService.itemClassGroups();
   }
 
   @GetMapping("/base-items/meta")

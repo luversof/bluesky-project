@@ -145,7 +145,7 @@ public class PoeSimService {
     try {
       java.util.Set<String> seenNames = new java.util.HashSet<>();
       List<PoeGem> activeGems =
-          poeGemDataService.search(null, "active", "all").stream()
+          poeGemDataService.search(null, "active", "all", null).stream()
               .filter(gem -> !gem.levels().isEmpty())
               // dat 에 같은 이름의 젬이 중복 수록된 경우(변형 등) 첫 항목만 평가
               .filter(gem -> seenNames.add(gem.name()))

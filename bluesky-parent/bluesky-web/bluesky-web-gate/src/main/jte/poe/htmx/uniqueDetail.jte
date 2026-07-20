@@ -30,8 +30,8 @@
 
 <%-- PoE 게임 아이템 툴팁 (고유/주황) — 호버 시 #poePreview 에 떠서 표시(플로팅) --%>
 	<div class="poe-tooltip poe-rar-unique w-80 max-h-[80vh] overflow-y-auto shadow-2xl" style="border-color:${rarity}">
-		<%-- 헤더 밴드 --%>
-		<div class="poe-tt-band">
+		<%-- 헤더 밴드 (인게임 2줄 아트: 이름 + 베이스) --%>
+		<div class="poe-tt-band poe-tt-band-2">
 			<div class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${rarity}">${displayName}</div>
 			<div class="text-center text-[13px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${rarity}">${displayBase}</div>
 		</div>

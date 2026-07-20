@@ -1,22 +1,27 @@
-// PoE 패시브 트리 읽기 전용 뷰어 — /poe-data/passive-tree.json 을 캔버스에 렌더.
-// 팬(드래그) / 줌(휠, 커서 중심) / 호버 툴팁.
+// PoE 패시브/아틀라스 트리 읽기 전용 뷰어 — 공식 스프라이트시트로 게임식 렌더.
+// 데이터 소스는 캔버스 data-tree-src / data-sprites-src 로 지정(기본=스킬 트리) → 스킬·아틀라스 공용.
+// 그룹 배경 + 궤도 곡선 연결 + 스킬 아이콘/프레임 스프라이트 blit. 팬/줌/호버 툴팁/?nodes= 하이라이트/로케일.
 (() => {
 	const maybeCanvas = document.getElementById("poeTreeCanvas") as HTMLCanvasElement | null;
 	const tooltip = document.getElementById("poeTreeTooltip");
 	if (!maybeCanvas || maybeCanvas.dataset.poeTreeInitialized === "true") return;
-	const canvas = maybeCanvas; // 클로저 안에서도 non-null 로 좁혀지도록 고정
+	const canvas = maybeCanvas;
 	canvas.dataset.poeTreeInitialized = "true";
-	// 서버가 canvas 에 data-locale 을 심어줌 (en 이면 영어, 그 외 한국어 우선)
 	const isKorean = canvas.dataset.locale !== "en";
+	const treeSrc = canvas.dataset.treeSrc || "/poe-data/passive-tree.json";
+	const spritesSrc = canvas.dataset.spritesSrc || "/poe-data/tree-sprites-skill.json";
 	const maybeContext = canvas.getContext("2d");
 	if (!maybeContext) return;
-	const context = maybeContext; // 클로저 안에서도 non-null 로 좁혀지도록 고정
+	const context = maybeContext;
 
 	interface TreeNode {
 		id: number;
 		name: string;
 		nameKo: string | null;
 		type: string;
+		group: number;
+		orbit: number;
+		orbitIndex: number;
 		x: number;
 		y: number;
 		stats: string[];
@@ -24,11 +29,21 @@
 		ascendancy: string | null;
 		icon: string | null;
 	}
+	interface Group {
+		x: number;
+		y: number;
+		background: { image: string; isHalfImage?: boolean } | null;
+	}
+	interface Sprite {
+		file: string;
+		zoom: number;
+		coords: Record<string, { x: number; y: number; w: number; h: number }>;
+	}
 
-	// 노드 아이콘 이미지 지연 로드 캐시 (/poe-assets/tree/<key>.png)
-	const iconCache = new Map<string, HTMLImageElement>();
-	function getIcon(key: string): HTMLImageElement | null {
-		let img = iconCache.get(key);
+	// ---- 스프라이트 시트(이미지) 지연 로드 캐시 ----
+	const sheetCache = new Map<string, HTMLImageElement>();
+	function getSheet(file: string): HTMLImageElement | null {
+		let img = sheetCache.get(file);
 		if (img) return img.dataset.ready === "true" ? img : null;
 		img = new Image();
 		img.dataset.ready = "false";
@@ -36,12 +51,11 @@
 			img!.dataset.ready = "true";
 			scheduleDraw();
 		};
-		img.onerror = () => iconCache.set(key, img!); // 실패해도 재시도 안 함
-		img.src = "/poe-assets/tree/" + key;
-		iconCache.set(key, img);
+		img.onerror = () => sheetCache.set(file, img!);
+		img.src = "/poe-assets/" + file;
+		sheetCache.set(file, img);
 		return null;
 	}
-	// 로드 완료 시 과도한 재그리기 방지용 코얼레싱
 	let drawScheduled = false;
 	function scheduleDraw() {
 		if (drawScheduled) return;
@@ -52,38 +66,99 @@
 		});
 	}
 
-	const COLORS: Record<string, string> = {
-		normal: "#7d8590",
-		notable: "#d4a94e",
-		keystone: "#cf6642",
-		jewel: "#4ec9d4",
-		mastery: "#9a6ad4",
-		class: "#5a7bd4",
+	let sprites: Record<string, Sprite> = {};
+	// 스프라이트 1개를 (월드 중심 wx,wy)에 blit. coordKey 없으면 미그림. 반환: 그렸으면 월드 크기 반폭.
+	function blit(spriteKey: string, coordKey: string, wx: number, wy: number, clipCircle = false): number {
+		const sp = sprites[spriteKey];
+		if (!sp) return 0;
+		const c = sp.coords[coordKey];
+		if (!c) return 0;
+		const img = getSheet(sp.file);
+		const worldW = c.w / sp.zoom;
+		const worldH = c.h / sp.zoom;
+		if (!img) return worldW / 2;
+		const sx = wx * scale + offsetX;
+		const sy = wy * scale + offsetY;
+		const dw = worldW * scale;
+		const dh = worldH * scale;
+		if (clipCircle) {
+			context.save();
+			context.beginPath();
+			context.arc(sx, sy, Math.min(dw, dh) * 0.47, 0, Math.PI * 2);
+			context.clip();
+			context.drawImage(img, c.x, c.y, c.w, c.h, sx - dw / 2, sy - dh / 2, dw, dh);
+			context.restore();
+		} else {
+			context.drawImage(img, c.x, c.y, c.w, c.h, sx - dw / 2, sy - dh / 2, dw, dh);
+		}
+		return worldW / 2;
+	}
+
+	// 노드 타입 → 아이콘 시트 키(항상 Active=선명) / 프레임 coord 키(할당 상태별)
+	const ICON_SHEET: Record<string, string> = {
+		normal: "normalActive",
+		notable: "notableActive",
+		keystone: "keystoneActive",
+		wormhole: "wormholeActive",
+		mastery: "mastery",
 	};
-	const RADII: Record<string, number> = {
-		normal: 28,
-		notable: 44,
-		keystone: 62,
-		jewel: 40,
-		mastery: 34,
-		class: 90,
-	};
+	function frameCoord(type: string, allocated: boolean): string | null {
+		const st = allocated ? "Allocated" : "Unallocated";
+		switch (type) {
+			case "notable":
+				return "NotableFrame" + st;
+			case "keystone":
+			case "wormhole":
+				return "KeystoneFrame" + st;
+			case "jewel":
+				return "JewelFrame" + st;
+			case "normal":
+				return allocated ? "PSSkillFrameActive" : "PSSkillFrame";
+			default:
+				return null;
+		}
+	}
+
+	// 타입별 프레임 월드 반지름(히트테스트/LOD/폴백) — 매니페스트 로드 후 채움
+	const nodeRadiusWorld: Record<string, number> = { normal: 45, notable: 70, keystone: 95, jewel: 55, mastery: 55, wormhole: 95, class: 120 };
+	function computeRadii() {
+		const fr = sprites.frame;
+		if (!fr) return;
+		const pick = (k: string) => (fr.coords[k] ? fr.coords[k].w / fr.zoom / 2 : null);
+		nodeRadiusWorld.normal = pick("PSSkillFrame") ?? nodeRadiusWorld.normal;
+		nodeRadiusWorld.notable = pick("NotableFrameUnallocated") ?? nodeRadiusWorld.notable;
+		nodeRadiusWorld.keystone = pick("KeystoneFrameUnallocated") ?? nodeRadiusWorld.keystone;
+		nodeRadiusWorld.wormhole = nodeRadiusWorld.keystone;
+		nodeRadiusWorld.jewel = pick("JewelFrameUnallocated") ?? nodeRadiusWorld.jewel;
+		if (sprites.mastery) {
+			const anyM = Object.values(sprites.mastery.coords)[0];
+			if (anyM) nodeRadiusWorld.mastery = anyM.w / sprites.mastery.zoom / 2;
+		}
+	}
 
 	let nodes: TreeNode[] = [];
 	let edges: number[][] = [];
+	let groups: Record<string, Group> = {};
+	let orbitRadii: number[] = [0, 82, 162, 335, 493, 662, 846];
+	let skillsPerOrbit: number[] = [1, 6, 16, 16, 40, 72, 72];
 	const nodeById = new Map<number, TreeNode>();
 	let scale = 0.03;
 	let offsetX = 0;
 	let offsetY = 0;
 	let hovered: TreeNode | null = null;
 
-	// ?nodes=1,2,3 — PoB 빌드 임포트에서 넘어온 할당 노드 강조
 	const highlighted = new Set<number>();
 	for (const token of (new URLSearchParams(globalThis.location.search).get("nodes") || "").split(",")) {
 		const id = Number(token);
 		if (Number.isFinite(id) && id > 0) highlighted.add(id);
 	}
 	const hasHighlight = highlighted.size > 0;
+
+	// 노드의 궤도 각(월드). 위치식 x=group+r·sin(a), y=group-r·cos(a) → 캔버스각 θ=a-90°.
+	function orbitAngle(node: TreeNode): number {
+		const per = skillsPerOrbit[node.orbit] || 1;
+		return (2 * Math.PI * node.orbitIndex) / per - Math.PI / 2;
+	}
 
 	function draw() {
 		const width = canvas.clientWidth;
@@ -96,106 +171,132 @@
 		context.setTransform(ratio, 0, 0, ratio, 0, 0);
 		context.clearRect(0, 0, width, height);
 
-		// 게임식 배경 — 중앙이 살짝 밝은 어두운 청흑색 방사형 그라디언트
-		const bg = context.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, Math.max(width, height) * 0.75);
-		bg.addColorStop(0, "#141b26");
-		bg.addColorStop(0.6, "#0d1219");
-		bg.addColorStop(1, "#070a0e");
+		// 배경 — 어두운 청흑색 방사형
+		const bg = context.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, Math.max(width, height) * 0.8);
+		bg.addColorStop(0, "#0f1520");
+		bg.addColorStop(0.6, "#0a0e15");
+		bg.addColorStop(1, "#05070b");
 		context.fillStyle = bg;
 		context.fillRect(0, 0, width, height);
 
-		// 간선 — 미할당은 어둡게, 할당 경로는 금색 글로우로 덧그림
-		context.lineCap = "round";
-		context.strokeStyle = hasHighlight ? "rgba(120, 130, 145, 0.10)" : "rgba(140, 150, 165, 0.22)";
-		context.lineWidth = Math.max(0.4, 24 * scale);
-		context.beginPath();
-		for (const [fromId, toId] of edges) {
-			const from = nodeById.get(fromId);
-			const to = nodeById.get(toId);
-			if (!from || !to) continue;
-			context.moveTo(from.x * scale + offsetX, from.y * scale + offsetY);
-			context.lineTo(to.x * scale + offsetX, to.y * scale + offsetY);
+		const pad = 200 * scale;
+		const visible = (sx: number, sy: number, r: number) => sx > -r - pad && sy > -r - pad && sx < width + r + pad && sy < height + r + pad;
+
+		// 1) 그룹 배경 (궤도 링 아트) — 충분히 확대됐을 때만
+		if (scale > 0.02 && sprites.groupBackground) {
+			for (const g of Object.values(groups)) {
+				if (!g.background) continue;
+				const sx = g.x * scale + offsetX;
+				const sy = g.y * scale + offsetY;
+				const sp = sprites.groupBackground;
+				const c = sp.coords[g.background.image];
+				if (!c || !visible(sx, sy, (c.w / sp.zoom) * scale)) continue;
+				const img = getSheet(sp.file);
+				if (!img) continue;
+				const w = (c.w / sp.zoom) * scale;
+				const h = (c.h / sp.zoom) * scale;
+				context.globalAlpha = 0.55;
+				if (g.background.isHalfImage) {
+					// 상단 반쪽 이미지 → 아래로 상하 반전해 전체 링 구성
+					context.drawImage(img, c.x, c.y, c.w, c.h, sx - w / 2, sy - h, w, h);
+					context.save();
+					context.translate(sx, sy);
+					context.scale(1, -1);
+					context.drawImage(img, c.x, c.y, c.w, c.h, -w / 2, -h, w, h);
+					context.restore();
+				} else {
+					context.drawImage(img, c.x, c.y, c.w, c.h, sx - w / 2, sy - h / 2, w, h);
+				}
+			}
+			context.globalAlpha = 1;
 		}
-		context.stroke();
-		if (hasHighlight) {
-			context.save();
-			context.shadowColor = "rgba(224, 180, 90, 0.9)";
-			context.shadowBlur = Math.max(4, 60 * scale);
-			context.strokeStyle = "rgba(232, 194, 108, 0.95)";
-			context.lineWidth = Math.max(1, 30 * scale);
+
+		// 2) 연결선 — 같은 group·orbit 이면 궤도 따라 arc, 아니면 직선
+		function tracePath(onlyAllocated: boolean) {
 			context.beginPath();
 			for (const [fromId, toId] of edges) {
-				if (!highlighted.has(fromId) || !highlighted.has(toId)) continue;
+				if (onlyAllocated && (!highlighted.has(fromId) || !highlighted.has(toId))) continue;
 				const from = nodeById.get(fromId);
 				const to = nodeById.get(toId);
 				if (!from || !to) continue;
-				context.moveTo(from.x * scale + offsetX, from.y * scale + offsetY);
+				const ax = from.x * scale + offsetX;
+				const ay = from.y * scale + offsetY;
+				if (from.group === to.group && from.orbit === to.orbit && from.orbit > 0) {
+					const g = groups[from.group];
+					if (g) {
+						const cx = g.x * scale + offsetX;
+						const cy = g.y * scale + offsetY;
+						const r = orbitRadii[from.orbit] * scale;
+						let a1 = orbitAngle(from);
+						let a2 = orbitAngle(to);
+						let d = a2 - a1;
+						while (d > Math.PI) d -= 2 * Math.PI;
+						while (d < -Math.PI) d += 2 * Math.PI;
+						context.moveTo(ax, ay);
+						context.arc(cx, cy, r, a1, a1 + d, d < 0);
+						continue;
+					}
+				}
+				context.moveTo(ax, ay);
 				context.lineTo(to.x * scale + offsetX, to.y * scale + offsetY);
 			}
+		}
+		context.lineCap = "round";
+		context.strokeStyle = hasHighlight ? "rgba(120,130,145,0.10)" : "rgba(130,140,155,0.30)";
+		context.lineWidth = Math.max(0.4, 16 * scale);
+		tracePath(false);
+		context.stroke();
+		if (hasHighlight) {
+			context.save();
+			context.shadowColor = "rgba(224,180,90,0.9)";
+			context.shadowBlur = Math.max(4, 40 * scale);
+			context.strokeStyle = "rgba(232,194,108,0.95)";
+			context.lineWidth = Math.max(1, 22 * scale);
+			tracePath(true);
 			context.stroke();
 			context.restore();
 		}
 
-		// 노드 — 게임식 프레임(외곽 링 + 내부 채움), 할당 노드는 발광
+		// 3) 노드 — 아이콘(원 클립) + 프레임 스프라이트. 저줌에선 점만.
 		for (const node of nodes) {
-			const screenX = node.x * scale + offsetX;
-			const screenY = node.y * scale + offsetY;
-			const radius = Math.max((RADII[node.type] || 28) * scale, 1.2);
-			if (screenX < -radius || screenY < -radius || screenX > width + radius || screenY > height + radius) continue;
+			const sx = node.x * scale + offsetX;
+			const sy = node.y * scale + offsetY;
+			const rWorld = nodeRadiusWorld[node.type] || 45;
+			const rScreen = rWorld * scale;
+			if (!visible(sx, sy, rScreen)) continue;
 			const isAllocated = highlighted.has(node.id);
-			const color = COLORS[node.type] || COLORS.normal;
 			const dim = hasHighlight && !isAllocated;
-			context.globalAlpha = dim ? (node.ascendancy ? 0.14 : 0.28) : node.ascendancy ? 0.7 : 1;
+			context.globalAlpha = dim ? (node.ascendancy ? 0.18 : 0.4) : node.ascendancy ? 0.85 : 1;
 
-			context.save();
-			if (isAllocated) {
-				context.shadowColor = color;
-				context.shadowBlur = Math.max(3, radius * 1.4);
-			}
-			// 내부 채움 (할당=밝게, 미할당=어둡게 눌러 프레임만 보이게)
-			context.beginPath();
-			context.arc(screenX, screenY, radius, 0, Math.PI * 2);
-			context.fillStyle = isAllocated ? color : "#12171f";
-			context.fill();
-			context.restore();
-
-			// 게임 스킬 아이콘 — 원 안에 클립해서 그림 (충분히 확대됐을 때만, 성능/가독성)
-			// 클래스 시작 노드는 아이콘이 TEMP 플레이스홀더라 프레임만 표시
-			if (node.icon && node.type !== "class" && radius >= 7) {
-				const img = getIcon(node.icon);
-				if (img) {
-					context.save();
-					context.beginPath();
-					context.arc(screenX, screenY, radius * 0.86, 0, Math.PI * 2);
-					context.clip();
-					// 미할당은 살짝 어둡게 (프레임만 강조)
-					context.globalAlpha = dim ? 0.3 : isAllocated ? 1 : 0.82;
-					const d = radius * 1.72;
-					context.drawImage(img, screenX - d / 2, screenY - d / 2, d, d);
-					context.restore();
-				}
-			}
-
-			// 외곽 프레임 링
-			context.beginPath();
-			context.arc(screenX, screenY, radius, 0, Math.PI * 2);
-			context.lineWidth = Math.max(0.6, (isAllocated ? 9 : 6) * scale);
-			context.strokeStyle = isAllocated ? "#f0d089" : color;
-			context.stroke();
-
-			// 노터블/키스톤은 이중 링으로 강조
-			if ((node.type === "notable" || node.type === "keystone") && radius > 2) {
+			// 저줌: 스프라이트 대신 점(성능)
+			if (rScreen < 5) {
 				context.beginPath();
-				context.arc(screenX, screenY, radius * 0.62, 0, Math.PI * 2);
-				context.lineWidth = Math.max(0.4, 4 * scale);
-				context.strokeStyle = isAllocated ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.12)";
-				context.stroke();
+				context.arc(sx, sy, Math.max(1, rScreen), 0, Math.PI * 2);
+				context.fillStyle = isAllocated ? "#f0d089" : node.type === "notable" ? "#c8a24e" : node.type === "keystone" || node.type === "wormhole" ? "#cf6642" : "#6b7583";
+				context.fill();
+				continue;
 			}
+
+			if (isAllocated) {
+				context.save();
+				context.shadowColor = "rgba(240,208,137,0.9)";
+				context.shadowBlur = rScreen * 0.9;
+			}
+			if (node.type === "mastery") {
+				blit("mastery", node.icon || "", node.x, node.y);
+			} else if (node.icon) {
+				const sheet = ICON_SHEET[node.type];
+				if (sheet) blit(sheet, node.icon, node.x, node.y, true);
+			}
+			const fc = frameCoord(node.type, isAllocated || !hasHighlight ? isAllocated : false);
+			if (fc) blit("frame", fc, node.x, node.y);
+			else if (node.type === "jewel") blit("frame", "JewelFrameUnallocated", node.x, node.y);
+			if (isAllocated) context.restore();
 
 			if (node === hovered) {
 				context.globalAlpha = 1;
 				context.beginPath();
-				context.arc(screenX, screenY, radius + Math.max(1.5, 6 * scale), 0, Math.PI * 2);
+				context.arc(sx, sy, rScreen + Math.max(2, 6 * scale), 0, Math.PI * 2);
 				context.strokeStyle = "#ffffff";
 				context.lineWidth = 2;
 				context.stroke();
@@ -208,7 +309,7 @@
 		let best: TreeNode | null = null;
 		let bestDistance = Infinity;
 		for (const node of nodes) {
-			const radius = Math.max((RADII[node.type] || 28) * scale, 6);
+			const radius = Math.max((nodeRadiusWorld[node.type] || 45) * scale, 6);
 			const dx = node.x * scale + offsetX - screenX;
 			const dy = node.y * scale + offsetY - screenY;
 			const distance = Math.hypot(dx, dy);
@@ -240,7 +341,6 @@
 		tooltip.style.top = clientY - parentRect.top + 14 + "px";
 		tooltip.classList.remove("hidden");
 	}
-
 	function hideTooltip() {
 		tooltip?.classList.add("hidden");
 	}
@@ -275,11 +375,8 @@
 			hovered = node;
 			draw();
 		}
-		if (node && (node.name || node.stats.length)) {
-			showTooltip(node, event.clientX, event.clientY);
-		} else {
-			hideTooltip();
-		}
+		if (node && (node.name || node.stats.length)) showTooltip(node, event.clientX, event.clientY);
+		else hideTooltip();
 	});
 	canvas.addEventListener("mouseleave", () => {
 		hovered = null;
@@ -287,7 +384,7 @@
 		draw();
 	});
 
-	// 줌 (커서 위치 고정)
+	// 줌 (커서 고정)
 	canvas.addEventListener(
 		"wheel",
 		(event) => {
@@ -296,7 +393,7 @@
 			const mouseX = event.clientX - rect.left;
 			const mouseY = event.clientY - rect.top;
 			const factor = Math.pow(1.0015, -event.deltaY);
-			const nextScale = Math.min(0.6, Math.max(0.012, scale * factor));
+			const nextScale = Math.min(0.6, Math.max(0.008, scale * factor));
 			offsetX = mouseX - ((mouseX - offsetX) / scale) * nextScale;
 			offsetY = mouseY - ((mouseY - offsetY) / scale) * nextScale;
 			scale = nextScale;
@@ -308,32 +405,59 @@
 
 	globalThis.addEventListener("resize", draw);
 
-	fetch("/poe-data/passive-tree.json")
-		.then((response) => response.json())
-		.then((data) => {
-			nodes = data.nodes;
-			edges = data.edges;
-			for (const node of nodes) nodeById.set(node.id, node);
-			// 초기 배치: 전체 트리(하이라이트 모드면 할당 노드 영역)가 화면에 들어오도록 맞춤
-			let bounds = data.bounds;
-			if (hasHighlight) {
-				const allocated = nodes.filter((node) => highlighted.has(node.id));
-				if (allocated.length) {
-					const padding = 2200;
-					bounds = {
-						minX: Math.min(...allocated.map((node) => node.x)) - padding,
-						minY: Math.min(...allocated.map((node) => node.y)) - padding,
-						maxX: Math.max(...allocated.map((node) => node.x)) + padding,
-						maxY: Math.max(...allocated.map((node) => node.y)) + padding,
-					};
+	// 매니페스트 → 트리 데이터 순으로 로드
+	function loadTree() {
+		return fetch(treeSrc)
+				.then((response) => response.json())
+				.then((data) => {
+					nodes = data.nodes;
+					edges = data.edges;
+					groups = data.groups || {};
+					if (data.constants) {
+						orbitRadii = data.constants.orbitRadii || orbitRadii;
+						skillsPerOrbit = data.constants.skillsPerOrbit || skillsPerOrbit;
+					}
+					for (const node of nodes) nodeById.set(node.id, node);
+					let bounds = data.bounds;
+					if (hasHighlight) {
+						const allocated = nodes.filter((node) => highlighted.has(node.id));
+						if (allocated.length) {
+							const padding = 2200;
+							bounds = {
+								minX: Math.min(...allocated.map((n) => n.x)) - padding,
+								minY: Math.min(...allocated.map((n) => n.y)) - padding,
+								maxX: Math.max(...allocated.map((n) => n.x)) + padding,
+								maxY: Math.max(...allocated.map((n) => n.y)) + padding,
+							};
+						}
+					}
+					const width = canvas.clientWidth;
+					const height = canvas.clientHeight;
+					scale = Math.min(0.6, Math.min(width / (bounds.maxX - bounds.minX), height / (bounds.maxY - bounds.minY)) * 0.95);
+					offsetX = width / 2 - ((bounds.minX + bounds.maxX) / 2) * scale;
+					offsetY = height / 2 - ((bounds.minY + bounds.maxY) / 2) * scale;
+					draw();
+				})
+				.catch((error) => console.warn("passive tree load failed", error));
+	}
+
+	// 매니페스트는 항상 최신으로(no-store) — 시트 URL 에 박힌 ?v 로 시트 캐시가 갈리므로,
+	// 매니페스트만 새로 받으면 재생성된 시트를 일반 새로고침으로도 바로 받는다(깨진 캐시 회피).
+	fetch(spritesSrc, { cache: "no-store" })
+		.then((r) => r.json())
+		.then((m) => {
+			sprites = m;
+			computeRadii();
+			// 시트 미리 로드 — 큰 JPEG(skills)가 프레임보다 늦게 떠서 "아이콘 없는 빈 프레임"으로
+			// 보이는 창을 없앤다. 로드 완료 시 각자 scheduleDraw 로 재그림.
+			const seen = new Set<string>();
+			for (const sp of Object.values(sprites)) {
+				if (sp && sp.file && !seen.has(sp.file)) {
+					seen.add(sp.file);
+					getSheet(sp.file);
 				}
 			}
-			const width = canvas.clientWidth;
-			const height = canvas.clientHeight;
-			scale = Math.min(0.6, Math.min(width / (bounds.maxX - bounds.minX), height / (bounds.maxY - bounds.minY)) * 0.95);
-			offsetX = width / 2 - ((bounds.minX + bounds.maxX) / 2) * scale;
-			offsetY = height / 2 - ((bounds.minY + bounds.maxY) / 2) * scale;
-			draw();
 		})
-		.catch((error) => console.warn("passive tree load failed", error));
+		.catch((e) => console.warn("tree sprites load failed", e))
+		.then(loadTree);
 })();

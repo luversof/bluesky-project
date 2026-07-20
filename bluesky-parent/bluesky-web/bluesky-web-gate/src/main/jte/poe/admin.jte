@@ -5,6 +5,8 @@
 @param String loginUrl = "https://user.web.bluesky.local/login/redirect"
 @param String profile = "local"
 @param String patch = ""
+@param String latestPatch = null
+@param boolean upToDate = false
 @param int gemCount = 0
 @param int uniqueCount = 0
 @param int baseItemCount = 0
@@ -15,7 +17,6 @@
 
 !{
 	String pageTitle = MessageUtil.getMessage("poe.admin.title");
-	String patchLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.patch"), patch);
 	String dataStatusLabel = MessageUtil.getMessage("poe.admin.data.status");
 	String gemsLabel = MessageUtil.getMessage("poe.tab.gems");
 	String uniquesLabel = MessageUtil.getMessage("poe.tab.uniques");
@@ -33,10 +34,17 @@
 	profile = profile,
 	contentPoe = @`
 		<div class="space-y-4">
-			<div class="flex flex-wrap items-baseline gap-3">
-				<h1 class="text-2xl font-bold">${pageTitle}</h1>
-				<span class="badge badge-ghost">${patchLabel}</span>
-				<span class="text-xs text-base-content/40 font-mono">${dataDir}</span>
+			<div class="flex flex-wrap items-center gap-2">
+				<h1 class="text-2xl font-bold mr-1">${pageTitle}</h1>
+				<span class="badge badge-ghost">${MessageUtil.getMessage("poe.admin.version.current")}: ${patch}</span>
+				@if(latestPatch == null)
+					<span class="badge badge-ghost badge-outline text-base-content/50">${MessageUtil.getMessage("poe.admin.version.unknown")}</span>
+				@elseif(upToDate)
+					<span class="badge badge-success badge-outline">${MessageUtil.getMessage("poe.admin.version.uptodate")}</span>
+				@else
+					<span class="badge badge-warning">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.admin.version.outdated"), latestPatch)}</span>
+				@endif
+				<span class="text-xs text-base-content/40 font-mono ml-auto">${dataDir}</span>
 			</div>
 
 			<%-- 최초 실행 안내: 데이터가 하나도 없을 때 --%>

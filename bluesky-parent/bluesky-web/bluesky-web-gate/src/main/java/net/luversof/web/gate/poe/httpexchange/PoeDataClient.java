@@ -12,6 +12,7 @@ import org.springframework.web.service.annotation.HttpExchange;
 import net.luversof.web.gate.poe.dto.ModFamily;
 import net.luversof.web.gate.poe.dto.PoeBaseItem;
 import net.luversof.web.gate.poe.dto.PoeGem;
+import net.luversof.web.gate.poe.dto.PoeGroups;
 import net.luversof.web.gate.poe.dto.PoeJobStatus;
 import net.luversof.web.gate.poe.dto.PoeUniqueItem;
 
@@ -24,7 +25,11 @@ public interface PoeDataClient {
   List<PoeGem> searchGems(
       @RequestParam(required = false) String q,
       @RequestParam(required = false) String type,
-      @RequestParam(required = false) String color);
+      @RequestParam(required = false) String color,
+      @RequestParam(required = false) String tag);
+
+  @GetExchange("/gems/tag-groups")
+  List<PoeGroups.TagGroup> gemTagGroups();
 
   @GetExchange("/gems/{slug}")
   PoeGem gem(@PathVariable String slug);
@@ -35,13 +40,16 @@ public interface PoeDataClient {
   // ── 고유 아이템 ──
   @GetExchange("/uniques/search")
   List<PoeUniqueItem> searchUniques(
-      @RequestParam(required = false) String q, @RequestParam(required = false) String category);
+      @RequestParam(required = false) String q, @RequestParam(required = false) String itemClass);
 
   @GetExchange("/uniques/{slug}")
   PoeUniqueItem unique(@PathVariable String slug);
 
   @GetExchange("/uniques/categories")
   List<String> uniqueCategories();
+
+  @GetExchange("/uniques/category-groups")
+  List<PoeGroups.ClassGroup> uniqueCategoryGroups();
 
   @GetExchange("/uniques/meta")
   PoeJobStatus.CountMeta uniqueMeta();
@@ -60,6 +68,9 @@ public interface PoeDataClient {
 
   @GetExchange("/base-items/item-classes")
   Map<String, String> itemClasses();
+
+  @GetExchange("/base-items/item-class-groups")
+  List<PoeGroups.ClassGroup> itemClassGroups();
 
   @GetExchange("/base-items/meta")
   PoeJobStatus.CountMeta baseItemMeta();

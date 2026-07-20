@@ -4,8 +4,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -28,6 +31,66 @@ public class PoeGemDataService {
   private static final Logger logger = LoggerFactory.getLogger(PoeGemDataService.class);
 
   private record PoeGemData(String patch, List<PoeGem> gems) {}
+
+  /** 그룹 칩 UI용 — 한 태그(key=영문, ko=한국어) */
+  public record TagEntry(String key, String ko) {}
+
+  /** 태그 그룹(key=그룹 id, 라벨은 게이트가 메시지로 해석) */
+  public record TagGroup(String key, List<TagEntry> tags) {}
+
+  /** 큐레이션: 젬 태그 분류 (그룹 → 소속 태그 표시 순서). 데이터에 없는 태그는 자동 제외, 미분류는 other 그룹. */
+  private static final List<Map.Entry<String, List<String>>> TAG_GROUPS =
+      List.of(
+          Map.entry(
+              "type",
+              List.of(
+                  "Attack",
+                  "Spell",
+                  "Minion",
+                  "Aura",
+                  "Curse",
+                  "Hex",
+                  "Herald",
+                  "Warcry",
+                  "Brand",
+                  "Totem",
+                  "Trap",
+                  "Mine",
+                  "Golem",
+                  "Blessing",
+                  "Mark",
+                  "Guard",
+                  "Stance")),
+          Map.entry("damage", List.of("Physical", "Fire", "Cold", "Lightning", "Chaos")),
+          Map.entry(
+              "delivery",
+              List.of(
+                  "Projectile",
+                  "Melee",
+                  "AoE",
+                  "Nova",
+                  "Strike",
+                  "Slam",
+                  "Chaining",
+                  "Bow",
+                  "Channelling",
+                  "Movement",
+                  "Travel",
+                  "Blink",
+                  "Orb",
+                  "Link",
+                  "Retaliation")),
+          Map.entry(
+              "trait",
+              List.of(
+                  "Duration",
+                  "Trigger",
+                  "Critical",
+                  "Support",
+                  "Exceptional",
+                  "Vaal",
+                  "Arcane",
+                  "Prismatic")));
 
   private final Path dataFile;
   private volatile PoeGemData data;
@@ -81,9 +144,10 @@ public class PoeGemDataService {
    * @param type all | active | support
    * @param color all | red | green | blue | white
    */
-  public List<PoeGem> search(String query, String type, String color) {
+  public List<PoeGem> search(String query, String type, String color, String tag) {
     String normalizedQuery =
         query != null && !query.isBlank() ? query.trim().toLowerCase(Locale.ROOT) : null;
+    String tagFilter = tag != null && !tag.isBlank() && !"all".equals(tag) ? tag : null;
 
     return data.gems().stream()
         .filter(
@@ -97,6 +161,49 @@ public class PoeGemDataService {
                     || "all".equals(type)
                     || ("support".equals(type) ? gem.isSupport() : !gem.isSupport()))
         .filter(gem -> color == null || "all".equals(color) || color.equals(gem.color()))
+        .filter(gem -> tagFilter == null || (gem.tags() != null && gem.tags().contains(tagFilter)))
         .toList();
+  }
+
+  /** 태그를 큐레이션 그룹으로 묶어 반환(데이터에 존재하는 태그만, 미분류는 other 그룹). */
+  public List<TagGroup> tagGroups() {
+    // 태그 영문 → 한국어 (첫 등장 기준) + 존재 태그 집합
+    Map<String, String> tagKo = new LinkedHashMap<>();
+    for (PoeGem gem : data.gems()) {
+      if (gem.tags() == null) {
+        continue;
+      }
+      for (int i = 0; i < gem.tags().size(); i++) {
+        String key = gem.tags().get(i);
+        String ko = gem.tagsKo() != null && i < gem.tagsKo().size() ? gem.tagsKo().get(i) : key;
+        tagKo.putIfAbsent(key, ko);
+      }
+    }
+
+    List<TagGroup> groups = new ArrayList<>();
+    java.util.Set<String> placed = new java.util.LinkedHashSet<>();
+    for (Map.Entry<String, List<String>> group : TAG_GROUPS) {
+      List<TagEntry> entries = new ArrayList<>();
+      for (String key : group.getValue()) {
+        String ko = tagKo.get(key);
+        if (ko != null) {
+          entries.add(new TagEntry(key, ko));
+          placed.add(key);
+        }
+      }
+      if (!entries.isEmpty()) {
+        groups.add(new TagGroup(group.getKey(), entries));
+      }
+    }
+    List<TagEntry> others = new ArrayList<>();
+    for (Map.Entry<String, String> entry : tagKo.entrySet()) {
+      if (!placed.contains(entry.getKey())) {
+        others.add(new TagEntry(entry.getKey(), entry.getValue()));
+      }
+    }
+    if (!others.isEmpty()) {
+      groups.add(new TagGroup("other", others));
+    }
+    return groups;
   }
 }

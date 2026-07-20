@@ -15,4 +15,9 @@ public record PoeUniqueItem(
     List<String> implicits,
     List<String> implicitsKo,
     List<String> explicits,
-    List<String> explicitsKo) {}
+    List<String> explicitsKo,
+    // 목록/상세 표시용 — baseType→베이스 조인으로 서비스가 채움(JSON 엔 없음). 아이콘 키 = 베이스 slug.
+    Integer reqStr,
+    Integer reqDex,
+    Integer reqInt,
+    String iconKey) {}

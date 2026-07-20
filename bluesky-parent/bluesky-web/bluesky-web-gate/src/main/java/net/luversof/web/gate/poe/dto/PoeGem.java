@@ -19,4 +19,6 @@ public record PoeGem(
     String descriptionKo,
     List<String> tags,
     List<String> tagsKo,
+    List<String> qualityStatLines,
+    List<String> qualityStatLinesKo,
     List<PoeGemLevel> levels) {}

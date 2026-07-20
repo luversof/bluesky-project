@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestClientException;
 
+import net.luversof.web.gate.poe.config.PoeIconVersion;
 import net.luversof.web.gate.poe.dto.PoeBaseItem;
 import net.luversof.web.gate.poe.dto.PoeGem;
 import net.luversof.web.gate.poe.dto.PoeJobStatus;
@@ -32,18 +33,21 @@ public class PoeHtmxController {
   private final PoeOptimizeClient poeOptimizeClient;
   private final PoeSimClient poeSimClient;
   private final PoeExtractClient poeExtractClient;
+  private final PoeIconVersion poeIconVersion;
 
   public PoeHtmxController(
       PoeDataClient poeDataClient,
       PoeBuildClient poeBuildClient,
       PoeOptimizeClient poeOptimizeClient,
       PoeSimClient poeSimClient,
-      PoeExtractClient poeExtractClient) {
+      PoeExtractClient poeExtractClient,
+      PoeIconVersion poeIconVersion) {
     this.poeDataClient = poeDataClient;
     this.poeBuildClient = poeBuildClient;
     this.poeOptimizeClient = poeOptimizeClient;
     this.poeSimClient = poeSimClient;
     this.poeExtractClient = poeExtractClient;
+    this.poeIconVersion = poeIconVersion;
   }
 
   /**
@@ -180,22 +184,25 @@ public class PoeHtmxController {
       Model model,
       jakarta.servlet.http.HttpServletResponse response) {
     PoeJobStatus.Extract status = poeExtractClient.status();
+    PoeJobStatus.ExtractVersion version = poeExtractClient.version(); // 최신 버전은 API 에서 캐시(10분)
     model.addAttribute("isAuthenticated", principal != null);
     model.addAttribute("available", status.available());
     model.addAttribute("running", status.running());
     model.addAttribute("status", status.status());
     model.addAttribute("logLines", status.logLines());
+    model.addAttribute("latestPatch", version.latestPatch());
+    model.addAttribute("outdated", version.latestPatch() != null && !version.upToDate());
     if (!status.running()) {
       response.setStatus(286); // htmx: 폴링 중단
     }
     return "poe/htmx/extractStatus";
   }
 
-  /** 추출 파이프라인 시작 (로그인 필요) — 폴링 래퍼를 새로 내려 interval 을 재장전한다 */
+  /** 추출 파이프라인 시작 (로그인 필요) — config 패치를 최신으로 자동 교체 후 실행, 래퍼를 새로 내려 재장전 */
   @PostMapping("/admin/extract")
   public String startExtract(java.security.Principal principal) {
     if (principal != null) {
-      poeExtractClient.start();
+      poeExtractClient.start(true);
     }
     return "poe/htmx/extractWrap";
   }
@@ -205,18 +212,21 @@ public class PoeHtmxController {
       @RequestParam(required = false) String q,
       @RequestParam(required = false, defaultValue = "all") String type,
       @RequestParam(required = false, defaultValue = "all") String color,
+      @RequestParam(required = false, defaultValue = "all") String tag,
       Model model) {
-    model.addAttribute("gems", poeDataClient.searchGems(q, type, color));
-    model.addAttribute("totalCount", poeDataClient.gemMeta().totalCount());
+    var meta = poeDataClient.gemMeta();
+    model.addAttribute("gems", poeDataClient.searchGems(q, type, color, tag));
+    model.addAttribute("totalCount", meta.totalCount());
+    model.addAttribute("iconVersion", poeIconVersion.value()); // 아이콘 URL 캐시버스터(재생성 때마다 갱신)
     return "poe/htmx/gemList";
   }
 
   @GetMapping("/uniques")
   public String uniqueList(
       @RequestParam(required = false) String q,
-      @RequestParam(required = false, defaultValue = "all") String category,
+      @RequestParam(required = false, defaultValue = "all") String itemClass,
       Model model) {
-    var matched = poeDataClient.searchUniques(q, category);
+    var matched = poeDataClient.searchUniques(q, itemClass);
     model.addAttribute(
         "items", matched.size() > LIST_LIMIT ? matched.subList(0, LIST_LIMIT) : matched);
     model.addAttribute("matchedCount", matched.size());

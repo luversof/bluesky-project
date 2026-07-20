@@ -25,6 +25,7 @@ const en = {
 	costTypes: load("English", "CostTypes"),
 	stats: load("English", "Stats"),
 	statSets: load("English", "GrantedEffectStatSets"),
+	qualityStats: load("English", "GrantedEffectQualityStats"),
 };
 
 const describe = createStatDescriber(FILES_DIR);
@@ -40,6 +41,11 @@ for (const row of en.statSetsPerLevel) {
 	for (const effectIndex of row.GrantedEffects || []) {
 		statsByEffectLevel.set(effectIndex + ":" + row.GemLevel, row);
 	}
+}
+// GrantedEffect → 기본(첫) 퀄리티 스탯 세트 (20% 퀄리티 기준 값)
+const qualityByEffect = new Map();
+for (const row of en.qualityStats) {
+	if (!qualityByEffect.has(row.GrantedEffectsKey)) qualityByEffect.set(row.GrantedEffectsKey, row);
 }
 const ko = {
 	base: load("Korean", "BaseItemTypes"),
@@ -119,6 +125,18 @@ for (const gem of en.gems) {
 		};
 	});
 
+		// 퀄리티(20%)로 인한 추가 효과 — 젬 단위(레벨 무관). permille/1000 × 20 = 20% 퀄리티 값
+		const qualityRow = qualityByEffect.get(effect.GrantedEffect);
+		const qualityValues = new Map();
+		if (qualityRow) {
+			(qualityRow.StatsKeys || []).forEach((statIndex, i) => {
+				const perMille = (qualityRow.StatsValuesPermille || [])[i] || 0;
+				qualityValues.set(en.stats[statIndex].Id, Math.round((perMille / 1000) * 20));
+			});
+		}
+		const qualityStatLines = qualityValues.size ? describe(qualityValues, "English") : [];
+		const qualityStatLinesKo = qualityValues.size ? describe(qualityValues, "Korean") : [];
+
 	gems.push({
 		id: base.Id,
 		slug: base.Id.substring(base.Id.lastIndexOf("/") + 1),
@@ -139,6 +157,8 @@ for (const gem of en.gems) {
 				: null,
 		tags: tagNames,
 		tagsKo: tagNamesKo,
+		qualityStatLines,
+		qualityStatLinesKo,
 		levels,
 	});
 }

@@ -15,4 +15,8 @@ public record PoeUniqueItem(
     List<String> implicits,
     List<String> implicitsKo,
     List<String> explicits,
-    List<String> explicitsKo) {}
+    List<String> explicitsKo,
+    Integer reqStr,
+    Integer reqDex,
+    Integer reqInt,
+    String iconKey) {}

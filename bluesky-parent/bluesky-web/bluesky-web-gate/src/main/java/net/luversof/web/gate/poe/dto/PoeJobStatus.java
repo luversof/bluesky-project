@@ -39,6 +39,10 @@ public final class PoeJobStatus {
       String status,
       List<String> logLines) {}
 
+  /** {@code GET /api/poe/extract/version} — 현재 데이터/설정/최신 패치 버전 */
+  public record ExtractVersion(
+      String dataPatch, String configPatch, String latestPatch, boolean upToDate) {}
+
   /** {@code GET /api/poe/gems/meta} */
   public record GemMeta(String patch, int totalCount) {}
 

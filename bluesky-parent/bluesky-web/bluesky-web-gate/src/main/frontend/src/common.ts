@@ -360,6 +360,26 @@ document.addEventListener("click", (event) => {
 	}
 });
 
+// 아이템 탭 전환(일반↔고유): 현재 활성 칩의 정규 슬롯(data-slot) + 검색어를 ?slot&q 로 넘겨
+// 탭 이동 후에도 필터가 유지되게 한다("전체"이거나 검색어가 없으면 그대로 이동).
+document.addEventListener("click", (event) => {
+	const tab = (event.target as HTMLElement)?.closest?.(
+		"[data-poe-item-tab]",
+	) as HTMLAnchorElement | null;
+	if (!tab) return;
+	const activeChip = document.querySelector(".poe-chip-active") as HTMLElement | null;
+	const slot = (activeChip?.getAttribute("data-slot") || "").trim();
+	const q = (document.querySelector("input[name='q']") as HTMLInputElement | null)?.value?.trim() || "";
+	const params = new URLSearchParams();
+	if (slot) params.set("slot", slot);
+	if (q) params.set("q", q);
+	const qs = params.toString();
+	if (qs) {
+		event.preventDefault();
+		location.assign(tab.getAttribute("href") + "?" + qs);
+	}
+});
+
 // [data-empty-widen-range]: 빈 상태 CTA — 같은 화면의 기간 프리셋 '전체' 버튼을 눌러 기간을 넓힌다
 document.addEventListener("click", (event) => {
 	const cta = (event.target as HTMLElement).closest?.(
