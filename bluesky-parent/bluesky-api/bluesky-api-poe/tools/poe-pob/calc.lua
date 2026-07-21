@@ -28,6 +28,8 @@ local ok, err = pcall(function()
 		"CombinedDPS", "TotalDPS", "FullDPS", "AverageDamage", "Speed",
 		"Life", "LifeUnreserved", "EnergyShield", "Mana", "Ward",
 		"Armour", "Evasion", "TotalEHP",
+			"ManaReserved", "ManaReservedPercent", "ManaUnreserved", "ManaUnreservedPercent",
+			"LifeReserved", "LifeReservedPercent",
 		"FireResist", "ColdResist", "LightningResist", "ChaosResist",
 		"CritChance", "CritMultiplier", "EffectiveMovementSpeedMod",
 		-- 유형별 최대 피격 생존(단일 히트) — 방어 관점 가정 시뮬레이션

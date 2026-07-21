@@ -66,15 +66,39 @@ public class MonthlyDividendCalculator {
   /** 시뮬레이터 스냅샷 목록의 합계/예상 수익 집계 + 최선 종목 선정. */
   public MonthlyDividendSimulatorSummaryView buildSimulatorSummary(
       List<MonthlyDividendSnapshotResponse> rows) {
-    BigDecimal totalLatestMonthlyDividend =
-        rows.stream()
-            .map(
-                row ->
-                    safe(row.latestMonthlyDividendPerShare())
-                        .multiply(
-                            BigDecimal.valueOf(
-                                row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L)))
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    return buildSimulatorSummary(rows, java.util.Map.of());
+  }
+
+  /**
+   * 시뮬레이터 스냅샷 목록의 합계/예상 수익 집계 + 최선 종목 선정. payoutWindowBySymbol(정규화된 심볼 -> MID_MONTH/MONTH_END)이
+   * 주어지면 최근 월 배당금을 월중/월말로 나눠 함께 집계한다.
+   */
+  public MonthlyDividendSimulatorSummaryView buildSimulatorSummary(
+      List<MonthlyDividendSnapshotResponse> rows,
+      java.util.Map<String, String> payoutWindowBySymbol) {
+    java.util.Map<String, String> windowBySymbol =
+        payoutWindowBySymbol != null ? payoutWindowBySymbol : java.util.Map.of();
+    BigDecimal totalLatestMonthlyDividend = BigDecimal.ZERO;
+    BigDecimal totalLatestMonthlyDividendMidMonth = BigDecimal.ZERO;
+    BigDecimal totalLatestMonthlyDividendMonthEnd = BigDecimal.ZERO;
+    for (MonthlyDividendSnapshotResponse row : rows) {
+      BigDecimal rowLatest =
+          safe(row.latestMonthlyDividendPerShare())
+              .multiply(
+                  BigDecimal.valueOf(
+                      row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L));
+      totalLatestMonthlyDividend = totalLatestMonthlyDividend.add(rowLatest);
+      String symbol =
+          row.stockItemSymbol() != null
+              ? row.stockItemSymbol().trim().toUpperCase(Locale.ROOT)
+              : null;
+      String window = symbol != null ? windowBySymbol.get(symbol) : null;
+      if ("MID_MONTH".equals(window)) {
+        totalLatestMonthlyDividendMidMonth = totalLatestMonthlyDividendMidMonth.add(rowLatest);
+      } else if ("MONTH_END".equals(window)) {
+        totalLatestMonthlyDividendMonthEnd = totalLatestMonthlyDividendMonthEnd.add(rowLatest);
+      }
+    }
     BigDecimal totalBuyAmount =
         rows.stream()
             .map(
@@ -116,6 +140,8 @@ public class MonthlyDividendCalculator {
     return new MonthlyDividendSimulatorSummaryView(
         rows.size(),
         totalLatestMonthlyDividend,
+        totalLatestMonthlyDividendMidMonth,
+        totalLatestMonthlyDividendMonthEnd,
         totalExpectedMonthlyDividend,
         totalExpectedAnnualDividend,
         totalExpectedTaxableBaseAmount,

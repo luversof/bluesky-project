@@ -45,6 +45,11 @@ const DateRangePicker = (function () {
 				Math.min(date.getDate(), targetLastDay),
 			);
 		};
+		// 상대 개월 구간(1/3/6/12/36개월)은 "정확히 N개월"이어야 한다.
+		// minusMonths(N) 은 양끝 포함이라 N개월+1일이 되므로, 시작일은 +1일,
+		// (데이터 시작 앵커의) 종료일은 -1일 보정한다.
+		const addDays = (date: Date, days: number) =>
+			new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
 		const isWholeMonthRange = (startStr: string, endStr: string) => {
 			if (!startStr || !endStr) return false;
 			const startDate = parseLocalDate(startStr);
@@ -589,12 +594,12 @@ const DateRangePicker = (function () {
 					!atDataEnd && !!cfg.minDate && !!curStart && curStart <= cfg.minDate;
 				if (atDataStart) {
 					const minD = new Date(cfg.minDate + "T00:00:00");
-					let e = addMonthsClamped(minD, months);
+					let e = addDays(addMonthsClamped(minD, months), -1);
 					if (e > maxDate) e = new Date(maxDate);
 					startStr = fmtDate(minD);
 					endStr = fmtDate(e);
 				} else {
-					const s = addMonthsClamped(maxDate, -months);
+					const s = addDays(addMonthsClamped(maxDate, -months), 1);
 					startStr = fmtDate(s);
 					endStr = maxStr;
 				}
@@ -646,7 +651,7 @@ const DateRangePicker = (function () {
 					);
 					edgeMode = "mtd";
 				} else if (edgeMode && !isNaN(Number(edgeMode)) && +edgeMode > 0) {
-					const s = addMonthsClamped(maxDate, -+edgeMode);
+					const s = addDays(addMonthsClamped(maxDate, -+edgeMode), 1);
 					startStr = fmtDate(s);
 				} else {
 					const cs = getStart(),
@@ -672,7 +677,7 @@ const DateRangePicker = (function () {
 					endStr =
 						minYear === maxDate.getFullYear() ? maxStr : minYear + "-12-31";
 				} else if (edgeMode && !isNaN(Number(edgeMode)) && +edgeMode > 0) {
-					let e = addMonthsClamped(minD, +edgeMode);
+					let e = addDays(addMonthsClamped(minD, +edgeMode), -1);
 					if (e > maxDate) e = new Date(maxDate);
 					startStr = fmtDate(minD);
 					endStr = fmtDate(e);
@@ -931,12 +936,12 @@ const DateRangePicker = (function () {
 														curStart <= cfg.minDate;
 													if (atDataStart) {
 														const minD = new Date(cfg.minDate + "T00:00:00");
-														let e = addMonthsClamped(minD, monthsParam);
+														let e = addDays(addMonthsClamped(minD, monthsParam), -1);
 														if (e > maxDate) e = new Date(maxDate);
 														startStr = fmtDate(minD);
 														endStr = fmtDate(e);
 													} else {
-														const s = addMonthsClamped(maxDate, -monthsParam);
+														const s = addDays(addMonthsClamped(maxDate, -monthsParam), 1);
 														startStr = fmtDate(s);
 														endStr = maxStr;
 													}

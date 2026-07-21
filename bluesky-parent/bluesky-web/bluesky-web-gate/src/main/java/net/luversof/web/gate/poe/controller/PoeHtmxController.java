@@ -79,16 +79,40 @@ public class PoeHtmxController {
   /** 최적 조합 탐색 시작 (로그인 필요) — 폴링 래퍼를 새로 내려 interval 을 재장전한다 */
   @PostMapping("/sim/optimize")
   public String startOptimize(
-      @RequestParam String slug,
+      @RequestParam(required = false, defaultValue = "") String slug,
       @RequestParam(required = false, defaultValue = "dps") String objective,
       @RequestParam(required = false, defaultValue = "Pinnacle") String scenario,
       @RequestParam(required = false, defaultValue = "false") boolean buffs,
       @RequestParam(required = false, defaultValue = "") String className,
+      @RequestParam(required = false, defaultValue = "") String ascendancy,
+      @RequestParam(required = false) java.util.List<String> uniques,
+      @RequestParam(required = false) java.util.List<String> skills,
       java.security.Principal principal) {
     if (principal != null) {
-      poeOptimizeClient.start(slug, objective, scenario, buffs, className);
+      // 멀티셀렉트(반복 파라미터) 또는 콤마 텍스트 둘 다 수용 → 콤마 문자열로 합쳐 API 로 전달
+      poeOptimizeClient.start(
+          slug,
+          objective,
+          scenario,
+          buffs,
+          className,
+          ascendancy,
+          joinCsv(uniques),
+          joinCsv(skills));
     }
     return "poe/htmx/simOptimizeWrap";
+  }
+
+  /** 멀티셀렉트/텍스트 입력을 콤마 문자열로 정규화 (빈 값 제거). */
+  private static String joinCsv(java.util.List<String> values) {
+    if (values == null || values.isEmpty()) {
+      return "";
+    }
+    return values.stream()
+        .filter(v -> v != null && !v.isBlank())
+        .map(String::trim)
+        .reduce((a, b) -> a + "," + b)
+        .orElse("");
   }
 
   /** 젬 랭킹 배치 상태 fragment — 고정 래퍼가 interval 폴링, 유휴 시 286 으로 중단 */
@@ -150,6 +174,30 @@ public class PoeHtmxController {
       model.addAttribute("engineError", true);
     }
     return "poe/htmx/buildEngineResult";
+  }
+
+  /** 트리 에디터에서 찍은 트리를 PoB 엔진으로 실계산 — 순수 트리 기여분(장비/보조젬 없음). */
+  @PostMapping("/tree/stats")
+  public String treeStats(
+      @RequestParam(defaultValue = "0") int classId,
+      @RequestParam(required = false) String ascendancy,
+      @RequestParam String nodes,
+      @RequestParam(required = false) String gem,
+      @RequestParam(required = false) String masteries,
+      Model model) {
+    try {
+      model.addAttribute(
+          "treeEval",
+          poeBuildClient.treeStats(
+              classId,
+              ascendancy == null || ascendancy.isBlank() ? null : ascendancy,
+              nodes,
+              gem,
+              masteries));
+    } catch (RestClientException e) {
+      model.addAttribute("treeEvalError", true);
+    }
+    return "poe/htmx/treeStats";
   }
 
   /** 목록 렌더 상한 — 전체(1000+)를 한 번에 그리면 느려서 상위 N개만, 나머지는 검색/부위로 좁힌다 */

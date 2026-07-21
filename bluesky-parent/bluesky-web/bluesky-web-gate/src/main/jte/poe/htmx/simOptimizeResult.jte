@@ -9,6 +9,10 @@
 		String gemLabel = result.gemNameKo() != null ? result.gemNameKo() : result.gemName();
 		String objectiveLabel = MessageUtil.getMessage("poe.sim.opt.objective." + result.objective());
 		String nodesParam = String.join(",", result.treeNodeIds().stream().map(String::valueOf).toList());
+		// 트리 에디터가 직업/전직까지 복원하도록 함께 넘긴다(안 넘기면 사이온으로 열려 편집 시 트리가 날아감)
+		String treeLink = "/poe/tree?nodes=" + nodesParam
+			+ (result.className() != null ? "&class=" + java.net.URLEncoder.encode(result.className(), java.nio.charset.StandardCharsets.UTF_8) : "")
+			+ (result.ascendancy() != null ? "&asc=" + java.net.URLEncoder.encode(result.ascendancy(), java.nio.charset.StandardCharsets.UTF_8) : "");
 		String treeLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.sim.opt.result.tree"), result.treeNodeIds().size());
 		String durationLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.sim.opt.duration"), result.durationMs() / 1000, result.evalCount());
 	}
@@ -77,13 +81,32 @@
 			</div>
 		@endif
 
+		@if(result.auras() != null && !result.auras().isEmpty())
+			<div class="flex flex-wrap items-center gap-1.5">
+				<span class="text-xs font-semibold text-base-content/50 mr-1">${MessageUtil.getMessage("poe.sim.opt.result.auras")}</span>
+				@for(PoeOptimizeResult.SupportPick aura : result.auras())
+					<span class="badge badge-success badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(aura.nameKo(), aura.name())}</span>
+				@endfor
+			</div>
+		@endif
+
+		@if(result.additionalSkills() != null && !result.additionalSkills().isEmpty())
+			<div class="flex flex-wrap items-center gap-1.5">
+				<span class="text-xs font-semibold text-base-content/50 mr-1">${MessageUtil.getMessage("poe.sim.opt.result.extraskills")}</span>
+				@for(PoeOptimizeResult.SupportPick extra : result.additionalSkills())
+					<span class="badge badge-accent badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(extra.nameKo(), extra.name())}</span>
+				@endfor
+			</div>
+		@endif
+
+
 		@if(!result.treeNodeIds().isEmpty())
 			<div class="flex flex-wrap items-center gap-1.5">
 				<span class="text-xs font-semibold text-base-content/50 mr-1">${treeLabel}</span>
 				@for(String notable : result.treeNotables())
 					<span class="badge badge-warning badge-outline badge-sm">${notable}</span>
 				@endfor
-				<a class="link link-primary text-sm ml-1" href="/poe/tree?nodes=${nodesParam}">${MessageUtil.getMessage("poe.build.summary.tree.view")}</a>
+				<a class="link link-primary text-sm ml-1" href="${treeLink}">${MessageUtil.getMessage("poe.build.summary.tree.view")}</a>
 			</div>
 		@endif
 

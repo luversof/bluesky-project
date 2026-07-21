@@ -422,9 +422,30 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       LocalDate startLocal = startDate.atZone(zone).toLocalDate();
       LocalDate endLocal = endDate.atZone(zone).toLocalDate();
 
-      long durationDays = ChronoUnit.DAYS.between(startLocal, endLocal) + 1;
-      prevStartDate = startLocal.minusDays(durationDays);
-      prevEndDate = startLocal.minusDays(1);
+      if ("mtd".equals(rangeMode)) {
+        // 이번 달 선택 시 전기 = 전월 1일 ~ 말일 (달력 기준 통월)
+        LocalDate thisMonthFirst = startLocal.withDayOfMonth(1);
+        prevStartDate = thisMonthFirst.minusMonths(1);
+        prevEndDate = thisMonthFirst.minusDays(1);
+      } else if ("ytd".equals(rangeMode)) {
+        // 올해 선택 시 전기 = 전년 1/1 ~ 12/31 (달력 기준 통년)
+        LocalDate thisYearFirst = startLocal.withDayOfYear(1);
+        prevStartDate = thisYearFirst.minusYears(1);
+        prevEndDate = thisYearFirst.minusDays(1);
+      } else if (rangeMode != null
+          && rangeMode.matches("\\d+")
+          && Integer.parseInt(rangeMode) > 0) {
+        // 상대 N개월 프리셋(1/3/6/12/36개월). 전기 = 현재 시작 직전의 동일 N개월(달력 정렬).
+        // 예) 3개월(현재 04-22~07-21) -> 전기 01-22~04-21. 1년=12, 3년=36 도 동일 규칙.
+        int months = Integer.parseInt(rangeMode);
+        prevStartDate = startLocal.minusMonths(months);
+        prevEndDate = startLocal.minusDays(1);
+      } else {
+        // 그 외(수동 지정 등 달력 정렬 불가)는 직전 동일 길이 구간으로 비교
+        long durationDays = ChronoUnit.DAYS.between(startLocal, endLocal) + 1;
+        prevStartDate = startLocal.minusDays(durationDays);
+        prevEndDate = startLocal.minusDays(1);
+      }
 
       Instant prevStartInstant = prevStartDate.atStartOfDay(zone).toInstant();
       Instant prevEndInstant = prevEndDate.plusDays(1).atStartOfDay(zone).toInstant();
@@ -491,6 +512,14 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
                   v.stockItemName() != null ? v.stockItemName() : "-",
                   nz(v.netAmount()),
                   BigDecimal::add));
+      // 종목명 -> stockItemId (변동 요인 종목 상세 링크용)
+      Map<String, UUID> changeStockIdByName = new HashMap<>();
+      stockItemList.forEach(
+          s -> {
+            if (s != null && s.name() != null && s.id() != null) {
+              changeStockIdByName.putIfAbsent(s.name(), s.id());
+            }
+          });
       Set<String> changeNames = new HashSet<>();
       changeNames.addAll(curByStock.keySet());
       changeNames.addAll(prevByStock.keySet());
@@ -500,7 +529,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
                   n -> {
                     BigDecimal c = curByStock.getOrDefault(n, BigDecimal.ZERO);
                     BigDecimal p = prevByStock.getOrDefault(n, BigDecimal.ZERO);
-                    return new DividendChange(n, c, p, c.subtract(p));
+                    return new DividendChange(n, c, p, c.subtract(p), changeStockIdByName.get(n));
                   })
               .filter(ch -> ch.delta().signum() != 0)
               .sorted((a, b) -> b.delta().abs().compareTo(a.delta().abs()))
@@ -999,7 +1028,11 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
 
   /** 전기 대비 종목별 배당 증감(변동 요인 분해)용. */
   public record DividendChange(
-      String stockName, BigDecimal currentNet, BigDecimal previousNet, BigDecimal delta) {}
+      String stockName,
+      BigDecimal currentNet,
+      BigDecimal previousNet,
+      BigDecimal delta,
+      UUID stockItemId) {}
 
   private record PeriodPrincipalSummary(
       BigDecimal principalCostSum, Map<Integer, BigDecimal> principalCostSumByYear) {

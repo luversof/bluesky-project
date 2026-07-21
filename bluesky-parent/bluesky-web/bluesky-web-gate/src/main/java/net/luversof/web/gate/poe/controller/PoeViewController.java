@@ -92,6 +92,8 @@ public class PoeViewController {
   public String tree(Model model) {
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
     model.addAttribute("hasTreeData", Files.exists(Path.of(dataDir, "passive-tree.json")));
+    // 트리 계산에 쓸 주 스킬 후보 — datalist 로 넘겨 브라우저 기본 검색을 그대로 쓴다
+    model.addAttribute("activeGems", poeDataClient.searchGems(null, "active", "all", null));
     return "poe/tree";
   }
 
@@ -131,6 +133,14 @@ public class PoeViewController {
             .sorted(
                 java.util.Comparator.comparing(
                     gem -> gem.nameKo() != null ? gem.nameKo() : gem.name()))
+            .toList());
+    // 강제 장착 후보 유니크 — 아이템 슬롯에 장착 가능한 것만(주얼/팅크처/낚시 제외)
+    java.util.Set<String> nonEquip = java.util.Set.of("jewel", "tincture", "fishing");
+    model.addAttribute(
+        "uniqueItems",
+        poeDataClient.searchUniques(null, "all").stream()
+            .filter(u -> u.category() == null || !nonEquip.contains(u.category()))
+            .sorted(java.util.Comparator.comparing(u -> u.nameKo() != null ? u.nameKo() : u.name()))
             .toList());
     return "poe/sim";
   }

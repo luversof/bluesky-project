@@ -968,6 +968,32 @@ public class StockViewController {
     model.addAttribute("realizedProfit", realizedProfit);
     model.addAttribute("totalBuyCost", totalBuyCost);
     model.addAttribute("totalDividend", totalDividend);
+    // 계좌별 보유 현황 (이 종목을 보유한 계좌별 분해; 기간 미적용 스냅샷 기준)
+    Map<UUID, String> accountNameById = new HashMap<>();
+    List<Account> userAccounts = accountClient.getAccountsByUserId(userId);
+    if (userAccounts != null) {
+      for (Account acc : userAccounts) {
+        if (acc != null && acc.id() != null) {
+          accountNameById.put(acc.id(), acc.name() != null ? acc.name() : "-");
+        }
+      }
+    }
+    String resolvedStockName = stockItem.name() != null ? stockItem.name() : "-";
+    List<TradeProfit> accountHoldings =
+        snapshotProfits.stream()
+            .filter(p -> p.holdingQuantity() > 0)
+            .map(
+                p ->
+                    TradeProfit.withNames(
+                        p, resolvedStockName, accountNameById.getOrDefault(p.accountId(), "-")))
+            .sorted(
+                Comparator.comparing(
+                        (TradeProfit p) ->
+                            p.evaluationAmount() != null ? p.evaluationAmount() : BigDecimal.ZERO)
+                    .reversed())
+            .toList();
+    model.addAttribute("accountHoldings", accountHoldings);
+
     model.addAttribute("trades", trades);
     model.addAttribute("dividends", dividends);
     return "stock/stockItemDetail";
@@ -1853,9 +1879,22 @@ public class StockViewController {
             monthlyDividendDirection,
             monthlyDividendProfileDisplayOrders);
 
+    Map<String, String> monthlyDividendPayoutWindowBySymbol = new LinkedHashMap<>();
+    for (MonthlyDividendProfileResponse profile : monthlyDividendProfiles) {
+      String profileSymbol = normalizeMonthlyDividendSymbol(profile.stockItemSymbol());
+      if (profileSymbol != null
+          && profile.payoutWindow() != null
+          && !monthlyDividendPayoutWindowBySymbol.containsKey(profileSymbol)) {
+        monthlyDividendPayoutWindowBySymbol.put(profileSymbol, profile.payoutWindow());
+      }
+    }
+
     model.addAttribute("monthlyDividendRows", filteredRows);
     model.addAttribute(
-        "monthlyDividendSummary", monthlyDividendCalculator.buildSimulatorSummary(filteredRows));
+        "monthlyDividendSummary",
+        monthlyDividendCalculator.buildSimulatorSummary(
+            filteredRows, monthlyDividendPayoutWindowBySymbol));
+    model.addAttribute("monthlyDividendPayoutWindowBySymbol", monthlyDividendPayoutWindowBySymbol);
     model.addAttribute("monthlyDividendProfileDisplayOrders", monthlyDividendProfileDisplayOrders);
     model.addAttribute(
         "monthlyDividendProfileOrderedSymbols",

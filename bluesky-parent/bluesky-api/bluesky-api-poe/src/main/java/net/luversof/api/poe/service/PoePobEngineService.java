@@ -58,6 +58,8 @@ public class PoePobEngineService {
           "Armour",
           "Evasion",
           "TotalEHP",
+          "ManaReservedPercent",
+          "ManaUnreserved",
           "FireResist",
           "ColdResist",
           "LightningResist",
@@ -101,17 +103,62 @@ public class PoePobEngineService {
       @Value("${poe.pob.src-dir:${user.home}/.poe-gamedata/work/pob-src}") String sourceDir,
       @Value("${poe.pob.runner:tools/poe-pob/calc.lua}") String runnerScript,
       @Value("${poe.pob.worker:tools/poe-pob/worker.lua}") String workerScript,
-      @Value("${poe.pob.workers:6}") int poolSize,
+      @Value("${poe.pob.workers:0}") int poolSize,
       @Value("${poe.pob.eval-timeout-ms:120000}") long evalTimeoutMs,
       @Value("${poe.pob.worker-recycle-after:400}") int workerRecycleAfter,
       @Value("${poe.pob.luajit-path:}") String luajitPath) {
     this.sourceDir = Path.of(sourceDir);
     this.runnerScript = Path.of(runnerScript).toAbsolutePath();
     this.workerScript = Path.of(workerScript).toAbsolutePath();
-    this.poolSize = Math.max(1, poolSize);
+    this.poolSize = autoPoolSize(poolSize);
     this.evalTimeoutMs = evalTimeoutMs;
     this.workerRecycleAfter = workerRecycleAfter;
     this.luajitPath = resolveLuajit(luajitPath);
+  }
+
+  /** 상주 luajit 워커 상한 — 워커당 ~1.6GB 라 코어 + RAM 에서 자동 산정(다른 PC 이식성). 최소 예약: OS/JVM 용 코어. */
+  private static final int WORKER_CAP = 12; // 수확체감 + TREE_ROUND_CANDIDATES 정렬 상한
+
+  private static final int WORKER_RESERVE_CORES = 4; // OS/JVM/메인스레드 여유
+  private static final double WORKER_RAM_BUDGET_GB = 3.0; // 워커당 RAM 예산(~1.6GB 실사용 + 여유)
+
+  /** 설정값(>0)이 있으면 그대로, 없으면(≤0) 감지한 코어/총RAM 기준 자동 산정. */
+  static int autoPoolSize(int configured) {
+    if (configured > 0) {
+      return configured;
+    }
+    int cores = Runtime.getRuntime().availableProcessors();
+    int byCores = Math.max(2, cores - WORKER_RESERVE_CORES);
+    long totalGb = totalPhysicalMemoryGb();
+    int byRam = (int) Math.max(2, Math.floor(totalGb / WORKER_RAM_BUDGET_GB));
+    int chosen = Math.min(WORKER_CAP, Math.min(byCores, byRam));
+    logger.info(
+        "PoE 워커 풀 자동 산정: {} (코어 {} → {}, 총RAM {}GB → {}, 상한 {})",
+        chosen,
+        cores,
+        byCores,
+        totalGb,
+        byRam,
+        WORKER_CAP);
+    return chosen;
+  }
+
+  /** 총 물리 RAM(GB). 조회 불가 시 보수적으로 8. */
+  private static long totalPhysicalMemoryGb() {
+    try {
+      if (java.lang.management.ManagementFactory.getOperatingSystemMXBean()
+          instanceof com.sun.management.OperatingSystemMXBean os) {
+        return os.getTotalMemorySize() / (1024L * 1024 * 1024);
+      }
+    } catch (Throwable ignore) {
+      // com.sun 미지원 JVM 등 — 기본값 사용
+    }
+    return 8;
+  }
+
+  /** 현재 워커 풀 크기(= 최적화기 executor 병렬성 기준값) */
+  public int poolSize() {
+    return poolSize;
   }
 
   private boolean useWorkerPool() {

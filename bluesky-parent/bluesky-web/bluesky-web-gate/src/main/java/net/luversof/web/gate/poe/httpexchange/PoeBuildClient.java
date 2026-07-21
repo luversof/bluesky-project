@@ -21,4 +21,13 @@ public interface PoeBuildClient {
 
   @PostExchange("/recalculate")
   EngineResult recalculate(@RequestParam String code);
+
+  /** 트리 에디터에서 찍은 노드 그대로 실계산(장비/보조젬 없음). */
+  @PostExchange("/tree-stats")
+  net.luversof.web.gate.poe.dto.PoeTreeEvaluation treeStats(
+      @RequestParam int classId,
+      @RequestParam(required = false) String ascendancy,
+      @RequestParam String nodes,
+      @RequestParam(required = false) String gem,
+      @RequestParam(required = false) String masteries);
 }

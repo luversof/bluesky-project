@@ -18,7 +18,10 @@ public interface PoeOptimizeClient {
       @RequestParam(required = false) String objective,
       @RequestParam(required = false) String scenario,
       @RequestParam(required = false) Boolean buffs,
-      @RequestParam(required = false) String className);
+      @RequestParam(required = false) String className,
+      @RequestParam(required = false) String ascendancy,
+      @RequestParam(required = false) String uniques,
+      @RequestParam(required = false) String skills);
 
   @GetExchange("/status")
   PoeJobStatus.Optimize status();

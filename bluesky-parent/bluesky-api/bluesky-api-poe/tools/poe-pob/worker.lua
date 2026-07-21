@@ -18,6 +18,8 @@ local KEYS = {
 	"CombinedDPS", "TotalDPS", "FullDPS", "AverageDamage", "Speed",
 	"Life", "LifeUnreserved", "EnergyShield", "Mana", "Ward",
 	"Armour", "Evasion", "TotalEHP",
+	"ManaReserved", "ManaReservedPercent", "ManaUnreserved", "ManaUnreservedPercent",
+	"LifeReserved", "LifeReservedPercent",
 	"FireResist", "ColdResist", "LightningResist", "ChaosResist",
 	"CritChance", "CritMultiplier", "EffectiveMovementSpeedMod",
 	"PhysicalMaximumHitTaken", "FireMaximumHitTaken", "ColdMaximumHitTaken",

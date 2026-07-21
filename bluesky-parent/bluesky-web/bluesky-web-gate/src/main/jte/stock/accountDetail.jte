@@ -45,6 +45,8 @@
     ZoneId zone = ZoneId.systemDefault();
     String evalColor = evaluationProfit != null && evaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
     String realizedColor = realizedProfit != null && realizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
+    BigDecimal evalCostBasis = (evaluationAmount != null ? evaluationAmount : BigDecimal.ZERO).subtract(evaluationProfit != null ? evaluationProfit : BigDecimal.ZERO);
+    double evalProfitRatePct = evalCostBasis.signum() != 0 && evaluationProfit != null ? evaluationProfit.doubleValue() / evalCostBasis.doubleValue() * 100.0 : 0.0;
 }
 
 @template._layout.stockLayout(
@@ -112,6 +114,7 @@
 							label = MessageUtil.getMessage("stock.profit.unrealized"),
 							value = String.format("%+,d", evaluationProfit != null ? evaluationProfit.longValue() : 0),
 							valueTitle = String.format("%,d원", evaluationProfit != null ? evaluationProfit.longValue() : 0),
+							sub = String.format("%+.1f%%", evalProfitRatePct),
 							tone = evalColor)
 						@template._components.ui.statCard(
 							label = MessageUtil.getMessage("stock.profit.realized"),
@@ -192,17 +195,22 @@
 											<th scope="col" class="text-right hidden sm:table-cell">${MessageUtil.getMessage("stock.column.average.cost")}</th>
 											<th scope="col" class="text-right">${MessageUtil.getMessage("stock.profit.evaluation.amount")}</th>
 											<th scope="col" class="text-right">${MessageUtil.getMessage("stock.profit.unrealized")}</th>
+											<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analytics.account.holdings.weight")}</th>
 										</tr>
 									</thead>
 									<tbody>
 										@for(TradeProfit holding : holdings)
 											!{long evalProfit = holding.evaluationProfitNet() != null ? holding.evaluationProfitNet().longValue() : 0;}
+											!{double holdingWeightPct = evaluationAmount != null && evaluationAmount.signum() != 0 && holding.evaluationAmount() != null ? holding.evaluationAmount().doubleValue() / evaluationAmount.doubleValue() * 100 : 0.0;}
+											!{BigDecimal holdingCostBasis = (holding.evaluationAmount() != null ? holding.evaluationAmount() : BigDecimal.ZERO).subtract(holding.evaluationProfitNet() != null ? holding.evaluationProfitNet() : BigDecimal.ZERO);}
+											!{double holdingEvalRatePct = holdingCostBasis.signum() != 0 && holding.evaluationProfitNet() != null ? holding.evaluationProfitNet().doubleValue() / holdingCostBasis.doubleValue() * 100.0 : 0.0;}
 											<tr>
 												<td class="font-semibold"><a href="/stock/item?stockItemId=${holding.stockItemId() != null ? holding.stockItemId().toString() : ""}" class="link link-hover">${holding.stockItemName() != null ? holding.stockItemName() : "-"}</a></td>
 												<td class="text-right font-mono amount-value">${String.format("%,d", holding.holdingQuantity())}</td>
 												<td class="text-right font-mono amount-value hidden sm:table-cell">${String.format("%,d", holding.averageBuyPrice() != null ? holding.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
 												<td class="text-right font-mono amount-value">${String.format("%,d", holding.evaluationAmount() != null ? holding.evaluationAmount().longValue() : 0)}</td>
-												<td class="text-right font-mono amount-value ${evalProfit >= 0 ? "text-profit" : "text-loss"}">${String.format("%+,d", evalProfit)}</td>
+												<td class="text-right font-mono amount-value ${evalProfit >= 0 ? "text-profit" : "text-loss"}">${String.format("%+,d", evalProfit)} <span class="text-xs opacity-70">(${String.format("%+.1f%%", holdingEvalRatePct)})</span></td>
+													<td class="text-right font-mono text-base-content/70">${String.format("%.1f%%", holdingWeightPct)}</td>
 											</tr>
 										@endfor
 									</tbody>

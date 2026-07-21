@@ -65,6 +65,45 @@ public class PoeOptimizeService {
   /** 주얼 단계에서 평가할 최대 소켓 수 (가장 싸게 닿는 것부터) — 비용 제한 */
   private static final int JEWEL_MAX_SOCKETS = 5;
 
+  /** 방어 오라 최대 개수(마나 예약 한계로 실질 2~3개, PoB 가 초과 예약 시 효과를 깎아 greedy 가 자연 종료). */
+  private static final int MAX_AURAS = 4;
+
+  /**
+   * 오라 예약 현실성 신호 — PoB 는 ManaReservedPercent 를 100 에서 클램프하므로 초과 판정에 못 쓴다. 실제 초과 신호는
+   * ManaUnreserved(미예약 마나)가 음수가 되는 것이다(예약이 최대 마나를 초과). 미예약 마나가 이 값 미만이면 인게임에서 못 띄우는 조합으로 보고 채택하지
+   * 않는다(약간의 여유 허용).
+   */
+  private static final double MIN_UNRESERVED_MANA = -1.0;
+
+  /**
+   * 예약형 오라/헤럴드 후보(메인 스킬 외 별도 그룹). 방어 오라(EHP)+오펜스 오라(DPS)를 모두 넣고, greedy 가 현재 목표(dps/balanced/ehp)에
+   * 이득 되는 것만 채택 — 젬·빌드별로 데이터 기반 선택.
+   */
+  private static final Set<String> AURA_NAMES =
+      Set.of(
+          // 방어
+          "Determination",
+          "Grace",
+          "Discipline",
+          "Defiance Banner",
+          "Vitality",
+          "Purity of Elements",
+          "Purity of Fire",
+          "Purity of Ice",
+          "Purity of Lightning",
+          // 공격
+          "Anger",
+          "Hatred",
+          "Wrath",
+          "Malevolence",
+          "Pride",
+          "Zealotry",
+          "Herald of Ash",
+          "Herald of Ice",
+          "Herald of Thunder",
+          "Herald of Purity",
+          "Flesh and Stone");
+
   private static final Map<String, Integer> CLASS_IDS =
       Map.of(
           "Scion", 0,
@@ -172,7 +211,7 @@ public class PoeOptimizeService {
       PoeModPoolDataService poeModPoolDataService,
       @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir,
       @Value("${poe.sim.tree-version:3_28}") String treeVersion,
-      @Value("${poe.sim.parallelism:6}") int parallelism) {
+      @Value("${poe.sim.parallelism:0}") int parallelism) {
     this.poeGemDataService = poeGemDataService;
     this.poeUniqueDataService = poeUniqueDataService;
     this.poePobEngineService = poePobEngineService;
@@ -180,7 +219,9 @@ public class PoeOptimizeService {
     this.poeModPoolDataService = poeModPoolDataService;
     this.resultFile = Path.of(dataDir, "sim", "optimize-last.json");
     this.treeVersion = treeVersion;
-    this.parallelism = parallelism;
+    // 병렬성 미지정(≤0)이면 엔진 워커 풀 크기와 일치시킨다(executor 스레드마다 워커 1개 배정 →
+    // 스레드가 워커를 못 잡고 대기하는 낭비 없음). 워커 풀은 코어/RAM 자동 산정. 다른 PC 이식성.
+    this.parallelism = parallelism > 0 ? parallelism : poePobEngineService.poolSize();
     loadLastResult();
   }
 
@@ -256,17 +297,73 @@ public class PoeOptimizeService {
   /** 직업 고정 — null 이면 7직업 프로브로 자동 선택, 지정되면 그 직업으로만 계산 */
   private volatile String fixedClass;
 
+  /** 전직 고정 — 지정 시 해당 전직만 사용(렐리쿼리언 등 특정 전직 최적화용). null 이면 pickAscendancy 자동 선택 */
+  private volatile String fixedAscendancy;
+
+  /** 강제 장착 유니크 — 사용자가 선택한 유니크를 해당 슬롯에 고정하고 나머지 슬롯만 최적화. 비면 자동 탐색. */
+  private volatile List<PoeUniqueItem> fixedUniques = new ArrayList<>();
+
+  /**
+   * 추가 스킬 — 사용자가 메인 외 함께 쓰려고 선택한 액티브 스킬(오라/커스/헤럴드/가드 등). 각자 소켓그룹으로 emit 되어 PoB 가 역할대로 자동
+   * 반영(오라=예약+버프, 커스=적 약화 등). 메인 DPS 는 이들의 버프를 받은 값.
+   */
+  private volatile List<PoeGem> additionalSkills = new ArrayList<>();
+
   /** 선택된 혈맹의 PoB secondaryAscendClassId — 최종 빌드 XML 에만 반영(탐색 중엔 0, 노드 id 로 계산됨) */
   private volatile int secondaryAscendId;
+
+  /** 방어 오라 스테이지에서 채택된 오라 — 최종/일반 buildXml 이 2번째 스킬 그룹으로 emit(트라이얼은 명시 전달). */
+  private volatile List<PoeGem> selectedAuras = new ArrayList<>();
 
   /** 최적화 잡 시작 — 이미 실행 중이거나 젬이 없으면 false */
   public boolean start(
       String gemSlug, String objective, String scenario, boolean buffs, String className) {
+    return start(gemSlug, objective, scenario, buffs, className, null);
+  }
+
+  /** 최적화 잡 시작 — ascendancy 지정 시 그 전직으로 고정(자동 선택 대신) */
+  public boolean start(
+      String gemSlug,
+      String objective,
+      String scenario,
+      boolean buffs,
+      String className,
+      String ascendancy) {
+    return start(gemSlug, objective, scenario, buffs, className, ascendancy, null);
+  }
+
+  /** 최적화 잡 시작 — uniques(콤마구분 slug)를 지정하면 그 유니크들을 해당 슬롯에 강제 장착하고 나머지만 최적화 */
+  public boolean start(
+      String gemSlug,
+      String objective,
+      String scenario,
+      boolean buffs,
+      String className,
+      String ascendancy,
+      String uniques) {
+    return start(gemSlug, objective, scenario, buffs, className, ascendancy, uniques, null);
+  }
+
+  /** 최적화 잡 시작 — skills(콤마구분 slug)를 지정하면 메인 외 그 액티브 스킬들을 빌드에 함께 배치(오라/커스/버프 반영) */
+  public boolean start(
+      String gemSlug,
+      String objective,
+      String scenario,
+      boolean buffs,
+      String className,
+      String ascendancy,
+      String uniques,
+      String skills) {
     if (!isAvailable()) {
       return false;
     }
     PoeGem gem = poeGemDataService.findBySlug(gemSlug).orElse(null);
-    if (gem == null || gem.isSupport()) {
+    List<PoeUniqueItem> resolvedUniques = resolveFixedUniques(uniques);
+    List<PoeGem> resolvedSkills = resolveAdditionalSkills(skills, gemSlug);
+    // slug 미지정이면 선택된 스킬 중 최고를 메인으로(없으면 유니크 기준 전체에서). 스킬·유니크 다 없으면 실패.
+    boolean autoPickSkill =
+        gem == null && (!resolvedSkills.isEmpty() || !resolvedUniques.isEmpty());
+    if ((gem == null && !autoPickSkill) || (gem != null && gem.isSupport())) {
       return false;
     }
     String normalizedObjective =
@@ -274,8 +371,28 @@ public class PoeOptimizeService {
     this.enemyScenario = SCENARIO_KO.containsKey(scenario) ? scenario : "Pinnacle"; // 화이트리스트
     this.combatBuffs = buffs;
     this.secondaryAscendId = 0; // 혈맹 선택 초기화(잡마다)
+    this.selectedAuras = new ArrayList<>(); // 방어 오라 초기화(잡마다)
     // 직업 고정 — 유효한 직업명만 채택, 그 외(빈값/auto/미지)는 null(자동 프로브)
     this.fixedClass = className != null && CLASS_IDS.containsKey(className) ? className : null;
+    // 전직만 선택해도 직업을 도출 — 직업 미지정 + 유효 전직이면 그 전직의 소속 직업으로 고정
+    if (this.fixedClass == null && ascendancy != null && !ascendancy.isBlank()) {
+      String derived = poeTreeGraphService.classForAscendancy(ascendancy);
+      if (derived != null && CLASS_IDS.containsKey(derived)) {
+        this.fixedClass = derived;
+      }
+    }
+    // 전직 고정 — 지정 전직이 (고정)직업의 전직 목록에 있을 때만 채택, 그 외엔 null(자동)
+    this.fixedAscendancy =
+        ascendancy != null
+                && !ascendancy.isBlank()
+                && this.fixedClass != null
+                && poeTreeGraphService.ascendancies(this.fixedClass).contains(ascendancy)
+            ? ascendancy
+            : null;
+    // 강제 장착 유니크 (위에서 해석한 것 채택, 잡마다 초기화)
+    this.fixedUniques = resolvedUniques;
+    // 추가 스킬 (위에서 해석한 것 채택). slug 미지정 시 이 중 최고가 메인이 되고 나머지가 추가로 남음(runJob).
+    this.additionalSkills = new ArrayList<>(resolvedSkills);
     if (!running.compareAndSet(false, true)) {
       return false;
     }
@@ -285,17 +402,42 @@ public class PoeOptimizeService {
     evalCount.set(0);
     phaseDone.set(0);
     phaseTotal = 0;
+    // gem 이 null 이면(고유템 anchor) runJob 시작 시 스킬 프로브로 결정
     Thread thread = new Thread(() -> runJob(gem, normalizedObjective), "poe-optimize");
     thread.setDaemon(true);
     thread.start();
     return true;
   }
 
-  private void runJob(PoeGem gem, String objective) {
+  private void runJob(PoeGem gemArg, String objective) {
     long startedAt = System.currentTimeMillis();
     ExecutorService executor = Executors.newFixedThreadPool(parallelism);
     try {
       String objectiveKey = objective; // objectiveOf 가 objective 문자열을 해석 (dps/ehp/balanced)
+      // 메인 스킬 결정: slug 지정이면 그것, 아니면 (선택된 스킬 중 최고) 또는 (없으면 전체 데미지스킬 중 최고).
+      PoeGem resolved = gemArg;
+      if (resolved == null) {
+        List<PoeGem> pool = additionalSkills.stream().filter(this::isDamageSkill).toList();
+        if (pool.isEmpty() && !additionalSkills.isEmpty()) {
+          pool = additionalSkills; // 선택된 게 전부 비데미지면 그중에서
+        }
+        if (pool.isEmpty()) {
+          pool = allDamageSkills(); // 스킬 미선택(유니크 anchor) → 전체 데미지 스킬
+        }
+        resolved = pickBestSkill(executor, objectiveKey, pool);
+        if (resolved == null) {
+          log("스킬 자동선택 실패 — 후보 없음");
+          lastStatus = Status.FAILED;
+          return;
+        }
+        // 메인으로 뽑힌 스킬은 추가 스킬 목록에서 제외(중복 emit 방지)
+        final PoeGem picked = resolved;
+        this.additionalSkills =
+            additionalSkills.stream()
+                .filter(g -> !g.slug().equals(picked.slug()))
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+      }
+      final PoeGem gem = resolved; // 이후 람다에서 참조되므로 final 고정
       List<String> keywords = keywords(gem, objective);
       log(gem.name() + " / 목표 " + objectiveKey + " / 키워드 " + keywords);
 
@@ -309,7 +451,7 @@ public class PoeOptimizeService {
         if (poeTreeGraphService.classStart(candidateClass) == null) {
           continue;
         }
-        String candidateAscendancy = pickAscendancy(candidateClass, keywords);
+        String candidateAscendancy = chooseAscendancy(candidateClass, keywords);
         probes.add(
             new ClassProbe(
                 candidateClass,
@@ -338,7 +480,7 @@ public class PoeOptimizeService {
               .orElse(null);
       String className = bestProbe != null ? bestProbe.probeClass() : classFor(gem);
       String ascendancy =
-          bestProbe != null ? bestProbe.probeAscendancy() : pickAscendancy(className, keywords);
+          bestProbe != null ? bestProbe.probeAscendancy() : chooseAscendancy(className, keywords);
       for (Map.Entry<ClassProbe, Double> entry : probeResults.entrySet()) {
         log(
             "직업 프로브: "
@@ -359,6 +501,8 @@ public class PoeOptimizeService {
       Set<Integer> allocated = new LinkedHashSet<>();
       Set<Integer> ascendancyNodes = new LinkedHashSet<>();
       Map<Slot, Equipped> items = new EnumMap<>(Slot.class);
+      // 강제 장착 유니크를 미리 배치 → 모든 스테이지(트리/보조/오라/아이템)가 이 아이템 스탯을 반영
+      placeFixedUniques(items);
       Map<Integer, PoeUniqueItem> jewels = new LinkedHashMap<>(); // 소켓 노드 id → 유니크 주얼
 
       phase = "baseline";
@@ -462,6 +606,7 @@ public class PoeOptimizeService {
             poeGemDataService.search(null, "support", "all", null).stream()
                 .filter(support -> !support.levels().isEmpty())
                 .filter(this::isProvidedSupport)
+                .filter(support -> supportCompatible(gem, support))
                 .toList();
         long awakenedRemaining =
             candidates.stream()
@@ -675,6 +820,9 @@ public class PoeOptimizeService {
       // ── 4) 아이템 greedy (슬롯 순회) — 고유 후보 + 생성 레어(최상위 티어) 를 함께 평가 ──
       phase = "items";
       for (Slot slot : Slot.values()) {
+        if (items.containsKey(slot)) {
+          continue; // 강제 장착 유니크가 이미 점유한 슬롯 — 탐색 생략(고정)
+        }
         if (slot == Slot.WEAPON && "ehp".equals(objective)) {
           continue; // 무기 고유는 EHP 에 기여하지 않음 — 표준 무기 유지
         }
@@ -719,6 +867,110 @@ public class PoeOptimizeService {
           items.put(slot, best.getKey());
           current = best.getValue();
           log("장비 채택: " + slot.ko + " = " + equippedLabel(best.getKey()) + " → " + format(current));
+        }
+      }
+
+      // ── 4b) 오라/헤럴드 greedy — 예약형 오라를 2번째 스킬 그룹으로 추가(방어+공격 모두 후보) ──
+      // greedy 가 현재 목표에 이득 되는 오라만 채택: dps/balanced=데미지 오라, ehp=방어 오라.
+      // ⚠️ 반드시 최종 빌드와 동일 컨텍스트(주얼 포함)로 평가해야 한다 — "화염의 주문" 같은 주얼은
+      //    오라/헤럴드 개수에 비례해 데미지를 주므로, 주얼 없이 평가하면 오라가 손해로 보여 미채택됨.
+      {
+        phase = "auras";
+        List<PoeGem> auraPool =
+            poeGemDataService.search(null, "active", "all", null).stream()
+                .filter(a -> AURA_NAMES.contains(a.name()))
+                .filter(a -> !a.levels().isEmpty())
+                // 사용자가 추가 스킬로 이미 넣은 오라는 자동 선택에서 제외(중복 emit 방지)
+                .filter(a -> additionalSkills.stream().noneMatch(x -> x.slug().equals(a.slug())))
+                .toList();
+        // 오라 비교 기준 = 주얼 포함 · 오라 없는 빌드(current 는 주얼 제외 아이템 값이라 부적합)
+        double auraCurrent =
+            objectiveOf(
+                poePobEngineService.calculateValues(
+                    buildXmlAuras(
+                        gem,
+                        supports,
+                        className,
+                        ascendancy,
+                        ascendancyNodes,
+                        allocated,
+                        items,
+                        jewels,
+                        List.of())),
+                objectiveKey);
+        log("오라 후보: " + auraPool.size() + "개 (기준 " + format(auraCurrent) + ")");
+        // 예약 상한(MAX_RESERVE_PCT)을 넘겨 인게임에서 못 띄우는 오라는 차단 목록에 넣어 재선택에서 제외
+        Set<PoeGem> reserveBlocked = new java.util.HashSet<>();
+        boolean improved = true;
+        while (improved && selectedAuras.size() < MAX_AURAS) {
+          improved = false;
+          List<PoeGem> chosen = selectedAuras;
+          List<PoeGem> remaining =
+              auraPool.stream()
+                  .filter(a -> !chosen.contains(a) && !reserveBlocked.contains(a))
+                  .toList();
+          if (remaining.isEmpty()) break;
+          Map<PoeGem, Double> round =
+              evalBatch(
+                  executor,
+                  remaining,
+                  aura ->
+                      buildXmlAuras(
+                          gem,
+                          supports,
+                          className,
+                          ascendancy,
+                          ascendancyNodes,
+                          allocated,
+                          items,
+                          jewels,
+                          joined(chosen, aura)),
+                  objectiveKey);
+          // 이득 큰 순으로 후보를 보되, 예약 상한을 넘는 것은 건너뛰고 그 다음으로 이득 큰 실현 가능 오라를 채택
+          List<Map.Entry<PoeGem, Double>> ranked =
+              round.entrySet().stream()
+                  .sorted(Map.Entry.<PoeGem, Double>comparingByValue().reversed())
+                  .toList();
+          for (Map.Entry<PoeGem, Double> cand : ranked) {
+            if (cand.getValue() <= auraCurrent * 1.003) {
+              break; // 이득 없음 — 남은 후보는 더 낮으므로 종료
+            }
+            Map<String, Double> trialValues =
+                poePobEngineService.calculateValues(
+                    buildXmlAuras(
+                        gem,
+                        supports,
+                        className,
+                        ascendancy,
+                        ascendancyNodes,
+                        allocated,
+                        items,
+                        jewels,
+                        joined(chosen, cand.getKey())));
+            double unreserved = trialValues.getOrDefault("ManaUnreserved", 0d);
+            if (unreserved < MIN_UNRESERVED_MANA) {
+              reserveBlocked.add(cand.getKey());
+              log(
+                  "오라 예약 초과 제외: "
+                      + cand.getKey().name()
+                      + " (미예약 마나 "
+                      + Math.round(unreserved)
+                      + ")");
+              continue;
+            }
+            selectedAuras.add(cand.getKey());
+            auraCurrent = cand.getValue();
+            improved = true;
+            log(
+                "오라 채택: "
+                    + cand.getKey().name()
+                    + " → "
+                    + format(auraCurrent)
+                    + " (미예약 마나 "
+                    + Math.round(unreserved)
+                    + ")");
+            break;
+          }
         }
       }
 
@@ -830,6 +1082,18 @@ public class PoeOptimizeService {
                       support ->
                           new PoeOptimizeResult.SupportPick(
                               support.slug(), support.name(), support.nameKo()))
+                  .toList(),
+              selectedAuras.stream()
+                  .map(
+                      aura ->
+                          new PoeOptimizeResult.SupportPick(
+                              aura.slug(), aura.name(), aura.nameKo()))
+                  .toList(),
+              additionalSkills.stream()
+                  .map(
+                      extra ->
+                          new PoeOptimizeResult.SupportPick(
+                              extra.slug(), extra.name(), extra.nameKo()))
                   .toList(),
               List.copyOf(allNodes),
               notables,
@@ -964,6 +1228,38 @@ public class PoeOptimizeService {
     return tags != null && tags.contains("Exceptional");
   }
 
+  /** 하드 아키타입 태그 — 보조젬이 가졌는데 메인 스킬이 없으면 PoB 가 효과를 적용하지 않는다(평가 낭비). */
+  private static final List<String> ARCHETYPE_TAGS =
+      List.of("Minion", "Trap", "Mine", "Totem", "Brand", "Warcry", "Bow");
+
+  /**
+   * 보조젬이 메인 스킬에 적용될 여지가 있는지(성능용 사전 필터). PoB 가 어차피 0 이득 처리하는 조합만 제외하므로 품질 손실이 없다: (1) 아키타입
+   * 태그(미니언/덫/기뢰/토템/브랜드/함성/활)를 스킬이 없으면 제외, (2) 주문 전용 보조젬 ↔ 순수 공격 스킬(상호 배타) 제외. 태그가 없으면 보수적으로 통과.
+   */
+  private boolean supportCompatible(PoeGem skill, PoeGem support) {
+    List<String> st = support.tags() == null ? List.of() : support.tags();
+    List<String> gt = skill.tags() == null ? List.of() : skill.tags();
+    if (st.isEmpty() || gt.isEmpty()) {
+      return true; // 태그 정보 없으면 안전하게 통과
+    }
+    for (String arch : ARCHETYPE_TAGS) {
+      if (st.contains(arch) && !gt.contains(arch)) {
+        return false;
+      }
+    }
+    boolean supSpell = st.contains("Spell");
+    boolean supAttack = st.contains("Attack");
+    boolean skillSpell = gt.contains("Spell");
+    boolean skillAttack = gt.contains("Attack");
+    if (supSpell && !supAttack && skillAttack && !skillSpell) {
+      return false; // 주문 전용 보조젬 on 순수 공격 스킬
+    }
+    if (supAttack && !supSpell && skillSpell && !skillAttack) {
+      return false; // 공격 전용 보조젬 on 순수 주문 스킬
+    }
+    return true;
+  }
+
   private List<PoeGem> joined(List<PoeGem> supports, PoeGem extra) {
     List<PoeGem> result = new ArrayList<>(supports);
     result.add(extra);
@@ -980,6 +1276,62 @@ public class PoeOptimizeService {
 
   // ── 후보 선정 ────────────────────────────────────────────
 
+  /**
+   * 고유템 anchor 모드 — 강제 장착 유니크를 낀 최소 빌드로 데미지 스킬 후보를 엔진 프로브해 최고 objective 스킬 선택. 클래스는 스킬별 색상
+   * 휴리스틱(classFor) 또는 고정 직업. 선택 스킬로 이후 풀 최적화(직업/전직은 다시 정밀 프로브).
+   */
+  private List<PoeGem> allDamageSkills() {
+    return poeGemDataService.search(null, "active", "all", null).stream()
+        .filter(g -> !g.isSupport())
+        .filter(g -> !g.levels().isEmpty())
+        .filter(this::isDamageSkill)
+        .toList();
+  }
+
+  private PoeGem pickBestSkill(
+      ExecutorService executor, String objectiveKey, List<PoeGem> candidates) {
+    phase = "skill";
+    if (candidates.isEmpty()) {
+      return null;
+    }
+    if (candidates.size() == 1) {
+      return candidates.get(0); // 후보 하나면 프로브 불필요
+    }
+    Map<Slot, Equipped> baseItems = new EnumMap<>(Slot.class);
+    placeFixedUniques(baseItems);
+    log("스킬 자동선택: 후보 " + candidates.size() + "개 (강제유니크 " + fixedUniques.size() + "개)");
+    Map<PoeGem, Double> results =
+        evalBatch(
+            executor,
+            candidates,
+            g -> {
+              String cls = fixedClass != null ? fixedClass : classFor(g);
+              List<String> kw = keywords(g, objectiveKey);
+              String asc = chooseAscendancy(cls, kw);
+              Set<Integer> ascNodes = heuristicAscendancyNodes(asc, kw);
+              return buildXml(g, List.of(), cls, asc, ascNodes, Set.of(), baseItems);
+            },
+            objectiveKey);
+    PoeGem best =
+        results.entrySet().stream()
+            .filter(e -> e.getValue() >= 0)
+            .max(Map.Entry.comparingByValue())
+            .map(Map.Entry::getKey)
+            .orElse(null);
+    if (best != null) {
+      log("스킬 자동선택 결과: " + koName(best) + " (" + format(results.get(best)) + ")");
+    }
+    return best;
+  }
+
+  /** 메인 DPS 후보가 될 데미지 스킬인지 (공격/주문이면서 순수 오라/헤럴드/커스가 아님). */
+  private boolean isDamageSkill(PoeGem gem) {
+    List<String> tags = gem.tags() == null ? List.of() : gem.tags();
+    boolean damage = tags.contains("Attack") || tags.contains("Spell");
+    boolean utility = tags.contains("Aura") || tags.contains("Herald") || tags.contains("Curse");
+    return damage && !utility;
+  }
+
   /** 젬 색상(주 능력치) 기준 직업 선택 */
   private String classFor(PoeGem gem) {
     if ("red".equals(gem.color())) {
@@ -992,6 +1344,15 @@ public class PoeOptimizeService {
       return "Witch";
     }
     return "Scion";
+  }
+
+  /** 전직 결정 — 고정 전직(fixedAscendancy)이 이 직업의 전직 목록에 있으면 그것, 아니면 자동 선택 */
+  private String chooseAscendancy(String className, List<String> keywords) {
+    if (fixedAscendancy != null
+        && poeTreeGraphService.ascendancies(className).contains(fixedAscendancy)) {
+      return fixedAscendancy;
+    }
+    return pickAscendancy(className, keywords);
   }
 
   /** 전직 선택 — 각 전직 노터블의 키워드 점수 합이 가장 높은 전직 (전부 0점이면 첫 번째) */
@@ -1228,6 +1589,85 @@ public class PoeOptimizeService {
         .toList();
   }
 
+  /** 유니크 카테고리 → 고정 슬롯 (반지/플라스크/무기는 별도 처리) */
+  private static final Map<String, Slot> CATEGORY_SLOT =
+      Map.ofEntries(
+          Map.entry("helmet", Slot.HELMET),
+          Map.entry("body", Slot.BODY),
+          Map.entry("gloves", Slot.GLOVES),
+          Map.entry("boots", Slot.BOOTS),
+          Map.entry("amulet", Slot.AMULET),
+          Map.entry("belt", Slot.BELT),
+          Map.entry("shield", Slot.OFFHAND),
+          Map.entry("quiver", Slot.OFFHAND));
+
+  private static final Set<String> WEAPON_CATEGORIES =
+      Set.of("sword", "mace", "staff", "axe", "bow", "wand", "dagger", "claw", "sceptre");
+
+  /** 콤마구분 slug → 존재하는 유니크 목록(중복/미존재 제거). */
+  private List<PoeUniqueItem> resolveFixedUniques(String uniques) {
+    if (uniques == null || uniques.isBlank()) {
+      return new ArrayList<>();
+    }
+    List<PoeUniqueItem> resolved = new ArrayList<>();
+    Set<String> seen = new LinkedHashSet<>();
+    for (String slug : uniques.split(",")) {
+      String s = slug.trim();
+      if (s.isEmpty() || !seen.add(s)) {
+        continue;
+      }
+      poeUniqueDataService.findBySlug(s).ifPresent(resolved::add);
+    }
+    return resolved;
+  }
+
+  /** 콤마구분 slug → 메인젬 제외한 존재하는 액티브 스킬 목록(보조젬/중복/미존재 제거). */
+  private List<PoeGem> resolveAdditionalSkills(String skills, String mainSlug) {
+    if (skills == null || skills.isBlank()) {
+      return new ArrayList<>();
+    }
+    List<PoeGem> resolved = new ArrayList<>();
+    Set<String> seen = new LinkedHashSet<>();
+    for (String slug : skills.split(",")) {
+      String s = slug.trim();
+      if (s.isEmpty() || s.equals(mainSlug) || !seen.add(s)) {
+        continue;
+      }
+      poeGemDataService.findBySlug(s).filter(g -> !g.isSupport()).ifPresent(resolved::add);
+    }
+    return resolved;
+  }
+
+  /** 강제 장착 유니크를 카테고리 기준으로 슬롯에 배치. 반지 2·플라스크 5 는 순서대로, 무기류는 WEAPON. 슬롯 없음/중복은 건너뜀. */
+  private void placeFixedUniques(Map<Slot, Equipped> items) {
+    if (fixedUniques.isEmpty()) {
+      return;
+    }
+    Deque<Slot> rings = new ArrayDeque<>(List.of(Slot.RING1, Slot.RING2));
+    Deque<Slot> flasks =
+        new ArrayDeque<>(List.of(Slot.FLASK1, Slot.FLASK2, Slot.FLASK3, Slot.FLASK4, Slot.FLASK5));
+    for (PoeUniqueItem unique : fixedUniques) {
+      String cat = unique.category();
+      Slot slot;
+      if ("ring".equals(cat)) {
+        slot = rings.poll();
+      } else if ("flask".equals(cat)) {
+        slot = flasks.poll();
+      } else if (cat != null && WEAPON_CATEGORIES.contains(cat)) {
+        slot = Slot.WEAPON;
+      } else {
+        slot = CATEGORY_SLOT.get(cat);
+      }
+      String label = unique.nameKo() != null ? unique.nameKo() : unique.name();
+      if (slot == null || items.containsKey(slot)) {
+        log("강제 유니크 배치 불가(지원 슬롯 없음/중복): " + label + " [" + cat + "]");
+        continue;
+      }
+      items.put(slot, Equipped.ofUnique(unique));
+      log("강제 장착: " + slot.ko + " = " + label);
+    }
+  }
+
   private List<PoeUniqueItem> itemCandidates(
       Slot slot, PoeGem gem, List<String> keywords, Map<Slot, Equipped> equipped) {
     List<String> categories = slot == Slot.WEAPON ? weaponCategories(gem) : slot.categories;
@@ -1291,6 +1731,57 @@ public class PoeOptimizeService {
       Set<Integer> treeNodes,
       Map<Slot, Equipped> items,
       Map<Integer, PoeUniqueItem> jewels) {
+    // 탐색/최종 빌드는 현재까지 채택된 방어 오라를 함께 반영(오라 스테이지 트라이얼은 buildXmlAuras 로 명시 전달)
+    return buildXmlAuras(
+        gem,
+        supports,
+        className,
+        ascendancy,
+        ascendancyNodes,
+        treeNodes,
+        items,
+        jewels,
+        selectedAuras);
+  }
+
+  private String buildXmlAuras(
+      PoeGem gem,
+      List<PoeGem> supports,
+      String className,
+      String ascendancy,
+      Set<Integer> ascendancyNodes,
+      Set<Integer> treeNodes,
+      Map<Slot, Equipped> items,
+      Map<Integer, PoeUniqueItem> jewels,
+      List<PoeGem> auras) {
+    return buildXmlAuras(
+        gem,
+        supports,
+        className,
+        ascendancy,
+        ascendancyNodes,
+        treeNodes,
+        items,
+        jewels,
+        auras,
+        Map.of());
+  }
+
+  /**
+   * @param masteryEffects 마스터리 노드 id → 선택한 효과 id. PoB 는 어떤 효과를 골랐는지 알아야 계산에 반영한다 (Spec 의 {@code
+   *     masteryEffects="{노드,효과},…"} 속성). 비어 있으면 마스터리는 스탯 없이 노드만 찍힌 셈이 된다.
+   */
+  private String buildXmlAuras(
+      PoeGem gem,
+      List<PoeGem> supports,
+      String className,
+      String ascendancy,
+      Set<Integer> ascendancyNodes,
+      Set<Integer> treeNodes,
+      Map<Slot, Equipped> items,
+      Map<Integer, PoeUniqueItem> jewels,
+      List<PoeGem> auras,
+      Map<Integer, Integer> masteryEffects) {
     Set<Integer> specNodes = new LinkedHashSet<>(ascendancyNodes);
     specNodes.addAll(treeNodes);
     StringBuilder xml = new StringBuilder();
@@ -1329,7 +1820,29 @@ public class PoeOptimizeService {
             .append("\"/>");
       }
     }
-    xml.append("</Skill></SkillSet></Skills>")
+    xml.append("</Skill>");
+    // 오라 = 별도 스킬 그룹(메인 아님) — PoB 가 예약/버프로 DPS·EHP 에 반영한다.
+    // Enlighten(예약 감소)을 함께 넣어 마나 예약 여유를 확보(실제 빌드 관례) → 오라가 메인 스킬을 굶기지 않게.
+    // 각성한 계몽 5레벨 = 예약 감소 최대. 실측: 계몽3 → 4 → 각성5 로 갈수록 미예약 마나 136 → 151 → 165 로 늘어
+    // 오라가 1~2개 더 들어간다(본섀터 DPS 1,513,597 → 1,580,649). 나머지 젬 가정(20/20, 최상위 레어)과 같은 엔드게임 전제.
+    if (auras != null && !auras.isEmpty()) {
+      xml.append("<Skill enabled=\"true\" slot=\"Helmet\">")
+          .append(
+              "<Gem nameSpec=\"Awakened Enlighten\" level=\"5\" quality=\"0\" enabled=\"true\"/>");
+      for (PoeGem aura : auras) {
+        xml.append("<Gem nameSpec=\"")
+            .append(aura.name())
+            .append("\" level=\"20\" quality=\"20\" enabled=\"true\"/>");
+      }
+      xml.append("</Skill>");
+    }
+    // 추가 스킬(사용자 지정) — 각자 별도 그룹으로 emit. PoB 가 오라=예약+버프, 커스=적약화, 헤럴드/가드 등 역할대로 반영.
+    for (PoeGem extra : additionalSkills) {
+      xml.append("<Skill enabled=\"true\" slot=\"Gloves\"><Gem nameSpec=\"")
+          .append(extra.name())
+          .append("\" level=\"20\" quality=\"20\" enabled=\"true\"/></Skill>");
+    }
+    xml.append("</SkillSet></Skills>")
         .append("<Tree activeSpec=\"1\"><Spec treeVersion=\"")
         .append(treeVersion)
         .append("\" classId=\"")
@@ -1339,6 +1852,14 @@ public class PoeOptimizeService {
         .append(secondaryAscendId > 0 ? "\" secondaryAscendClassId=\"" + secondaryAscendId : "")
         .append("\" nodes=\"")
         .append(String.join(",", specNodes.stream().map(String::valueOf).toList()))
+        .append(
+            masteryEffects.isEmpty()
+                ? ""
+                : "\" masteryEffects=\""
+                    + masteryEffects.entrySet().stream()
+                        .filter(e -> specNodes.contains(e.getKey()))
+                        .map(e -> "{" + e.getKey() + "," + e.getValue() + "}")
+                        .collect(java.util.stream.Collectors.joining(",")))
         .append("\">")
         .append(sockets.length() > 0 ? "<Sockets>" + sockets + "</Sockets>" : "")
         .append("</Spec></Tree>");
@@ -1711,5 +2232,74 @@ public class PoeOptimizeService {
         .encodeToString(output.toByteArray())
         .replace('+', '-')
         .replace('/', '_');
+  }
+
+  /** 트리 에디터에서 직접 찍은 트리를 PoB 엔진으로 실계산한 결과. */
+  public record TreeEvaluation(
+      String className,
+      String classNameKo,
+      String ascendancy,
+      String gemName,
+      String gemNameKo,
+      int nodeCount,
+      List<PoeBuild.PlayerStat> stats,
+      String pobCode,
+      long durationMs) {}
+
+  /**
+   * 사용자가 트리 에디터에서 찍은 노드 집합을 그대로 평가한다(장비/보조젬 없음). 최적화기와 달리 탐색을 하지 않으므로 엔진 1회 호출로 끝난다.
+   *
+   * @param classId GGG classId (0=Scion..6=Shadow)
+   * @param ascendancy 전직 영문명(없으면 null)
+   * @param nodes 할당 노드 id (클래스/전직 시작 노드 포함 가능 — PoB 가 무시)
+   * @param gemSlug 주 스킬 젬 slug(없으면 방어 스탯만 의미 있음)
+   * @param masteryEffects 마스터리 노드 id → 선택 효과 id (없으면 마스터리 스탯 미반영)
+   */
+  public TreeEvaluation evaluateTree(
+      int classId,
+      String ascendancy,
+      Set<Integer> nodes,
+      String gemSlug,
+      Map<Integer, Integer> masteryEffects) {
+    String className =
+        CLASS_IDS.entrySet().stream()
+            .filter(e -> e.getValue() == classId)
+            .map(Map.Entry::getKey)
+            .findFirst()
+            .orElse("Scion");
+    PoeGem gem = null;
+    if (gemSlug != null && !gemSlug.isBlank()) {
+      gem = poeGemDataService.findBySlug(gemSlug).orElse(null);
+    }
+    if (gem == null) {
+      // 스킬 미지정 — 계산이 성립하도록 표준 스킬 하나를 끼운다(방어 스탯 확인용)
+      gem = allDamageSkills().stream().findFirst().orElse(null);
+    }
+    if (gem == null) {
+      throw new IllegalStateException("평가에 쓸 스킬 젬이 없습니다 (젬 데이터 미로드)");
+    }
+    String xml =
+        buildXmlAuras(
+            gem,
+            List.of(),
+            className,
+            ascendancy,
+            Set.of(),
+            nodes,
+            Map.of(),
+            Map.of(),
+            List.of(),
+            masteryEffects == null ? Map.of() : masteryEffects);
+    PoePobEngineService.EngineResult result = poePobEngineService.recalculate(xml);
+    return new TreeEvaluation(
+        className,
+        CLASS_KO.get(className),
+        ascendancy,
+        gem.name(),
+        gem.nameKo(),
+        nodes.size(),
+        result.stats(),
+        encodePobCode(xml),
+        result.durationMs());
   }
 }

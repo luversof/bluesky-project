@@ -1,5 +1,5 @@
 {
-  "patch": "3.28.0.15",
+  "patch": "3.28.0.16",
   "translations": [
     "English",
     "Korean"
@@ -235,6 +235,17 @@
         "SpawnWeight_TagsKeys",
         "SpawnWeight_Values"
       ]
+    },
+    {
+      "name": "PassiveSkillMasteryEffects",
+      "columns": [
+        "Id",
+        "HASH16",
+        "Stats",
+        "Stat1Value",
+        "Stat2Value",
+        "Stat3Value"
+      ]
     }
   ],
   "files": [
@@ -242,6 +253,7 @@
     "metadata/statdescriptions/stat_descriptions.txt",
     "metadata/statdescriptions/active_skill_gem_stat_descriptions.txt",
     "metadata/statdescriptions/gem_stat_descriptions.txt",
-    "metadata/statdescriptions/passive_skill_stat_descriptions.txt"
+    "metadata/statdescriptions/passive_skill_stat_descriptions.txt",
+    "metadata/statdescriptions/atlas_stat_descriptions.txt"
   ]
 }

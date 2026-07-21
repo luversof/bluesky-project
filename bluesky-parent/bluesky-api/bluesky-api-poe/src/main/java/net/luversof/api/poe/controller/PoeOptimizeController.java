@@ -37,12 +37,16 @@ public class PoeOptimizeController {
 
   @PostMapping("/start")
   public boolean start(
-      @RequestParam String slug,
+      @RequestParam(required = false, defaultValue = "") String slug,
       @RequestParam(required = false, defaultValue = "dps") String objective,
       @RequestParam(required = false, defaultValue = "Pinnacle") String scenario,
       @RequestParam(required = false, defaultValue = "false") boolean buffs,
-      @RequestParam(required = false, defaultValue = "") String className) {
-    return poeOptimizeService.start(slug, objective, scenario, buffs, className);
+      @RequestParam(required = false, defaultValue = "") String className,
+      @RequestParam(required = false, defaultValue = "") String ascendancy,
+      @RequestParam(required = false, defaultValue = "") String uniques,
+      @RequestParam(required = false, defaultValue = "") String skills) {
+    return poeOptimizeService.start(
+        slug, objective, scenario, buffs, className, ascendancy, uniques, skills);
   }
 
   @GetMapping("/status")

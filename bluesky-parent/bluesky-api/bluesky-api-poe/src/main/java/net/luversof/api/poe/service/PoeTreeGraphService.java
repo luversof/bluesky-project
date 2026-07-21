@@ -49,7 +49,12 @@ public class PoeTreeGraphService {
       List<String> statsKo,
       String ascendancy,
       // Jackson 3 는 primitive 에 null(필드 부재) 매핑을 거부하므로 래퍼 타입이어야 한다
-      Boolean ascendancyStart) {}
+      Boolean ascendancyStart,
+      // 마스터리 노드만 보유 — 효과 하나를 골라야 스탯이 붙는다(PoB Spec masteryEffects)
+      List<MasteryEffect> masteryEffects) {}
+
+  /** 마스터리가 제공하는 효과 하나. id 는 PoB/GGG 인코딩에 쓰이는 effect id. */
+  public record MasteryEffect(int id, List<String> stats, List<String> statsKo) {}
 
   /** 직업의 전직 목록 — 배열 순서가 PoB Spec 의 ascendClassId(1부터)와 일치 */
   public record ClassInfo(String name, List<String> ascendancies) {}
@@ -148,9 +153,36 @@ public class PoeTreeGraphService {
         .toList();
   }
 
+  /**
+   * 비전직 마스터리 노드 (효과를 가진 것만, id 정렬로 결정적).
+   *
+   * <p>마스터리는 같은 무리의 패시브에만 연결돼 있어, 그 무리를 이미 찍었다면 1포인트로 추가할 수 있다. 효과를 골라야 스탯이 붙으므로 최적화기는 효과까지 함께 평가해야
+   * 한다.
+   */
+  public List<TreeNode> masteryNodes() {
+    return nodeById.values().stream()
+        .filter(node -> node.ascendancy() == null && "mastery".equals(node.type()))
+        .filter(node -> node.masteryEffects() != null && !node.masteryEffects().isEmpty())
+        .sorted(java.util.Comparator.comparingInt(TreeNode::id))
+        .toList();
+  }
+
   /** 직업의 전직 목록 (순서 = PoB ascendClassId - 1) */
   public List<String> ascendancies(String className) {
     return ascendanciesByClass.getOrDefault(className, List.of());
+  }
+
+  /** 전직 이름 → 소속 직업 (역매핑). 없으면 null. 전직만 선택해도 직업을 도출하기 위함. */
+  public String classForAscendancy(String ascendancy) {
+    if (ascendancy == null || ascendancy.isBlank()) {
+      return null;
+    }
+    for (Map.Entry<String, List<String>> entry : ascendanciesByClass.entrySet()) {
+      if (entry.getValue().contains(ascendancy)) {
+        return entry.getKey();
+      }
+    }
+    return null;
   }
 
   /** PoB Spec 의 ascendClassId (1부터). 목록에 없으면 0 */
@@ -163,13 +195,34 @@ public class PoeTreeGraphService {
     return ascendancyStartByName.get(ascendancy);
   }
 
-  /** 해당 전직의 노터블 후보 (id 정렬로 결정적 순서) */
+  /**
+   * 해당 전직의 탐색 후보 노드 (id 정렬로 결정적 순서).
+   *
+   * <p>일반 전직은 notable 노드가 선택지다. 그러나 사이온 <b>렐리쿼리언</b>처럼 렐릭(유니크) 효과를 스탯으로 가진 노드가 대부분 {@code
+   * type:"normal"} 인 렐릭형 전직은 notable 만 잡으면 핵심 선택지를 통째로 놓친다. 스탯을 가진 normal 노드가 notable 보다 많으면(렐릭형)
+   * normal 노드도 후보에 포함한다. 이 판정은 전직별 노드 구성에서 자동 도출되므로 기존 6개 일반 전직은 동작이 바뀌지 않는다.
+   */
   public List<TreeNode> ascendancyCandidates(String ascendancy) {
-    return nodeById.values().stream()
-        .filter(node -> ascendancy.equals(node.ascendancy()))
-        .filter(node -> "notable".equals(node.type()))
+    List<TreeNode> all =
+        nodeById.values().stream().filter(node -> ascendancy.equals(node.ascendancy())).toList();
+    long notables = all.stream().filter(node -> "notable".equals(node.type())).count();
+    long relicNormals = all.stream().filter(this::isRelicNormal).count();
+    // 렐리쿼리언만 격리: notable 이 극히 적고(≤5) 렐릭 normal 이 이를 압도(>3배). 일반 전직(notable 7~12)·
+    // 어센던트(12)·모든 혈맹(렐릭 normal ≤6)은 이 조건에 안 걸려 기존 동작(notable 후보)이 유지된다.
+    boolean relicStyle = notables <= 5 && relicNormals > notables * 3L;
+    return all.stream()
+        .filter(node -> "notable".equals(node.type()) || (relicStyle && isRelicNormal(node)))
         .sorted(java.util.Comparator.comparingInt(TreeNode::id))
         .toList();
+  }
+
+  /** 렐릭형 선택 노드 = 스탯을 가진 normal 노드 (패시브포인트 부여·무기전시 등 노이즈 제외) */
+  private boolean isRelicNormal(TreeNode node) {
+    if (!"normal".equals(node.type()) || node.stats() == null || node.stats().isEmpty()) {
+      return false;
+    }
+    String name = node.name() == null ? "" : node.name();
+    return !"Passive Point".equals(name) && !name.contains("Display");
   }
 
   /** 전직 서브그래프 안에서의 최단 경로 (해당 전직 노드만 통과) */

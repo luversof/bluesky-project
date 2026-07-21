@@ -91,7 +91,7 @@
                         data-sell="${(row.sellAmount() != null ? row.sellAmount() : BigDecimal.ZERO).toPlainString()}"
                         data-net="${rowNet.toPlainString()}"
                         data-sold-cost="${rowSoldCost.toPlainString()}">
-                        <td class="font-semibold whitespace-nowrap">${row.name()}</td>
+                        <td class="font-semibold whitespace-nowrap">@if(row.accountId() != null)<a href="/stock/account?accountId=${row.accountId().toString()}" class="link link-hover">${row.name()}</a>@else${row.name()}@endif</td>
                         <td class="text-right font-mono amount-value">${decimalFormat.format(row.buyAmount() != null ? row.buyAmount() : BigDecimal.ZERO)}</td>
                         <td class="text-right font-mono amount-value">${decimalFormat.format(row.sellAmount() != null ? row.sellAmount() : BigDecimal.ZERO)}</td>
                         <td class="text-right font-bold font-mono amount-value ${rowPositive ? "text-profit" : "text-loss"}">

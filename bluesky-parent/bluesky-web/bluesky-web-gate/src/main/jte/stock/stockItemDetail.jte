@@ -5,6 +5,7 @@
 @import java.util.List
 @import net.luversof.web.gate.stock.constant.TradeType
 @import net.luversof.web.gate.stock.domain.StockItem
+@import net.luversof.web.gate.stock.domain.TradeProfit
 @import net.luversof.web.gate.stock.dto.response.TradeResponse
 @import net.luversof.web.gate.stock.dto.response.DividendResponse
 @import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint
@@ -37,11 +38,14 @@
 @param Instant filterEndInstant = null
 @param String filterTimeZone = null
 @param String filterRangeMode = null
+@param List<TradeProfit> accountHoldings = java.util.List.of()
 
 !{
     ZoneId zone = ZoneId.systemDefault();
     String evalColor = evaluationProfit != null && evaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
     String realizedColor = realizedProfit != null && realizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
+    BigDecimal evalCostBasis = (evaluationAmount != null ? evaluationAmount : BigDecimal.ZERO).subtract(evaluationProfit != null ? evaluationProfit : BigDecimal.ZERO);
+    double evalProfitRatePct = evalCostBasis.signum() != 0 && evaluationProfit != null ? evaluationProfit.doubleValue() / evalCostBasis.doubleValue() * 100.0 : 0.0;
 }
 
 @template._layout.stockLayout(
@@ -121,6 +125,7 @@
 							label = MessageUtil.getMessage("stock.profit.unrealized"),
 							value = String.format("%+,d", evaluationProfit != null ? evaluationProfit.longValue() : 0),
 							valueTitle = String.format("%,d원", evaluationProfit != null ? evaluationProfit.longValue() : 0),
+							sub = String.format("%+.1f%%", evalProfitRatePct),
 							tone = evalColor)
 						@template._components.ui.statCard(
 							label = MessageUtil.getMessage("stock.profit.realized"),
@@ -172,6 +177,45 @@
 						})();
 						</script>
 					@endif
+
+					<!-- 계좌별 보유 현황 -->
+					<div>
+						<h2 class="text-lg font-semibold mb-2 opacity-70">${MessageUtil.getMessage("stock.item.detail.account.holdings.title")}</h2>
+						@if(accountHoldings == null || accountHoldings.isEmpty())
+							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("common.message.no.data")}</div>
+						@else
+							@template._components.ui.tableCard(body = @`
+								<div class="max-lg:overflow-x-auto">
+								<table class="table table-sm w-full table-pin-rows pin-top-nav" data-sortable>
+									<thead class="bg-base-200">
+										<tr>
+											<th scope="col">${MessageUtil.getMessage("common.label.account")}</th>
+											<th scope="col" class="text-right">${MessageUtil.getMessage("common.label.quantity")}</th>
+											<th scope="col" class="text-right">${MessageUtil.getMessage("stock.profit.evaluation.amount")}</th>
+											<th scope="col" class="text-right">${MessageUtil.getMessage("stock.profit.unrealized")}</th>
+											<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analytics.account.holdings.weight")}</th>
+										</tr>
+									</thead>
+									<tbody>
+										@for(TradeProfit holding : accountHoldings)
+											!{long acctEvalProfit = holding.evaluationProfitNet() != null ? holding.evaluationProfitNet().longValue() : 0;}
+											!{double acctWeightPct = evaluationAmount != null && evaluationAmount.signum() != 0 && holding.evaluationAmount() != null ? holding.evaluationAmount().doubleValue() / evaluationAmount.doubleValue() * 100 : 0.0;}
+											!{BigDecimal acctCostBasis = (holding.evaluationAmount() != null ? holding.evaluationAmount() : BigDecimal.ZERO).subtract(holding.evaluationProfitNet() != null ? holding.evaluationProfitNet() : BigDecimal.ZERO);}
+											!{double acctEvalRatePct = acctCostBasis.signum() != 0 && holding.evaluationProfitNet() != null ? holding.evaluationProfitNet().doubleValue() / acctCostBasis.doubleValue() * 100.0 : 0.0;}
+											<tr>
+												<td class="font-semibold">${holding.accountName() != null ? holding.accountName() : "-"}</td>
+												<td class="text-right font-mono amount-value">${String.format("%,d", holding.holdingQuantity())}</td>
+												<td class="text-right font-mono amount-value">${String.format("%,d", holding.evaluationAmount() != null ? holding.evaluationAmount().longValue() : 0)}</td>
+												<td class="text-right font-mono amount-value ${acctEvalProfit >= 0 ? "text-profit" : "text-loss"}">${String.format("%+,d", acctEvalProfit)} <span class="text-xs opacity-70">(${String.format("%+.1f%%", acctEvalRatePct)})</span></td>
+												<td class="text-right font-mono text-base-content/70">${String.format("%.1f%%", acctWeightPct)}</td>
+											</tr>
+										@endfor
+									</tbody>
+								</table>
+								</div>
+							`)
+						@endif
+					</div>
 
 					<!-- 매매 내역 -->
 					<div>

@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { DATA_DIR, FILES_DIR, WORK_DIR, loadTable } from "./paths.mjs";
 import { createStatDescriber } from "./statDescriptions.mjs";
-import { buildTree } from "./tree-common.mjs";
+import { buildKoreanMap, buildTree } from "./tree-common.mjs";
 
 const RAW = path.join(WORK_DIR, "passive-tree-raw.json");
 const OUT = path.join(DATA_DIR, "passive-tree.json");
@@ -28,21 +28,35 @@ const describe = createStatDescriber(FILES_DIR, [
 const statsTable = loadTable("English", "Stats");
 const passivesEn = loadTable("English", "PassiveSkills");
 const passivesKo = loadTable("Korean", "PassiveSkills");
-const koByGraphId = new Map();
-passivesEn.forEach((passive, i) => {
-	if (passive.PassiveSkillGraphId == null) return;
-	const statValues = new Map();
-	(passive.Stats || []).forEach((statIndex, statPosition) => {
-		const value = passive["Stat" + (statPosition + 1) + "Value"] ?? 0;
-		statValues.set(statsTable[statIndex].Id, value);
-	});
-	koByGraphId.set(passive.PassiveSkillGraphId, {
-		nameKo: passivesKo[i]?.Name || null,
-		statsKo: describe(statValues, "Korean"),
-	});
-});
+const koByGraphId = buildKoreanMap({ describe, statsTable, passivesEn, passivesKo });
 
 const result = buildTree(tree, koByGraphId);
+
+// 마스터리 효과 한글: GGG 트리 익스포트는 완성된 영문 문장만 주므로, 게임 테이블
+// PassiveSkillMasteryEffects 의 HASH16(= 트리 export 의 effect id) 로 조인해 스탯을 한글로 서술한다.
+const masteryEn = loadTable("English", "PassiveSkillMasteryEffects");
+const koByEffectHash = new Map();
+for (const row of masteryEn) {
+	const statValues = new Map();
+	(row.Stats || []).forEach((statIndex, i) => {
+		statValues.set(statsTable[statIndex].Id, row["Stat" + (i + 1) + "Value"] ?? 0);
+	});
+	koByEffectHash.set(row.HASH16, describe(statValues, "Korean"));
+}
+let effectTotal = 0;
+let effectKo = 0;
+for (const node of result.nodes) {
+	for (const eff of node.masteryEffects || []) {
+		effectTotal++;
+		const lines = koByEffectHash.get(eff.id);
+		if (lines?.length) {
+			eff.statsKo = lines;
+			effectKo++;
+		}
+	}
+}
+console.log(`마스터리 노드 ${result.nodes.filter((n) => n.masteryEffects).length}개, 효과 ${effectTotal}개 중 한글 ${effectKo}개 (${((effectKo / effectTotal) * 100).toFixed(0)}%)`);
+
 fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.writeFileSync(OUT, JSON.stringify(result));
 console.log(`nodes ${result.nodes.length}, edges ${result.edges.length}, groups ${Object.keys(result.groups).length} → ${OUT}`);

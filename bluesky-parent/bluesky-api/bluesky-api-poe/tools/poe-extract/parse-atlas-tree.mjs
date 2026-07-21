@@ -1,11 +1,12 @@
 // GGG 공식 아틀라스 패시브 트리(grindinggear/atlastree-export data.json) → 뷰어용 경량 JSON.
 // 스킬 트리와 동일 포맷(groups/nodes/constants/sprites)이라 tree-common.buildTree 를 그대로 쓴다.
-// 아틀라스엔 직업/전직이 없고, 한국어 조인 테이블이 없어 영문 이름/스탯을 그대로 사용한다.
+// 아틀라스엔 직업/전직이 없다. 한국어는 스킬 트리와 같은 PassiveSkills 테이블에 들어 있어(867/867 조인) 동일하게 결합한다.
 // 사용법: node parse-atlas-tree.mjs  (스프라이트 시트는 tree-sprites.mjs 가 별도 처리)
 import fs from "node:fs";
 import path from "node:path";
-import { DATA_DIR, WORK_DIR } from "./paths.mjs";
-import { buildTree } from "./tree-common.mjs";
+import { DATA_DIR, FILES_DIR, WORK_DIR, loadTable } from "./paths.mjs";
+import { createStatDescriber } from "./statDescriptions.mjs";
+import { buildKoreanMap, buildTree } from "./tree-common.mjs";
 
 const RAW = path.join(WORK_DIR, "atlas-tree-raw.json");
 const OUT = path.join(DATA_DIR, "atlas-tree.json");
@@ -19,7 +20,22 @@ if (!fs.existsSync(RAW)) {
 }
 
 const tree = JSON.parse(fs.readFileSync(RAW, "utf8"));
-const result = buildTree(tree, null); // 아틀라스는 영문만
+
+// 아틀라스 스탯은 전용 설명 파일이 있다(패시브용으로는 308/866 밖에 못 만든다 → 전용 파일로 828/866)
+const describe = createStatDescriber(FILES_DIR, [
+	"metadata@statdescriptions@atlas_stat_descriptions.txt",
+]);
+const koByGraphId = buildKoreanMap({
+	describe,
+	statsTable: loadTable("English", "Stats"),
+	passivesEn: loadTable("English", "PassiveSkills"),
+	passivesKo: loadTable("Korean", "PassiveSkills"),
+});
+const result = buildTree(tree, koByGraphId);
+const named = result.nodes.filter((n) => n.type !== "mastery");
+console.log(
+	`한글 이름 ${named.filter((n) => n.nameKo).length}/${named.length}, 한글 스탯 ${named.filter((n) => n.statsKo?.length).length}/${named.filter((n) => n.stats.length).length}`,
+);
 fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.writeFileSync(OUT, JSON.stringify(result));
 console.log(`atlas nodes ${result.nodes.length}, edges ${result.edges.length}, groups ${Object.keys(result.groups).length} → ${OUT}`);

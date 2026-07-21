@@ -2,6 +2,29 @@
 // 스킬 트리와 아틀라스 트리가 동일 포맷(groups/nodes/constants/sprites)이라 이 로직을 공유한다.
 // 프론트가 게임식으로 그릴 수 있도록 궤도/그룹 구조(constants·groups·orbit)를 함께 emit 한다.
 
+/**
+ * 한국어 조인 맵 생성 — PassiveSkills(영/한) + 스탯 문장 파서.
+ * GGG 트리 익스포트(스킬/아틀라스 모두)는 영어 전용이라 PassiveSkillGraphId 로 조인한다.
+ * 아틀라스 노드도 같은 PassiveSkills 테이블에 들어 있다(867/867 조인 확인).
+ * @returns Map<graphId, {nameKo, statsKo}>
+ */
+export function buildKoreanMap({ describe, statsTable, passivesEn, passivesKo }) {
+	const koByGraphId = new Map();
+	passivesEn.forEach((passive, i) => {
+		if (passive.PassiveSkillGraphId == null) return;
+		const statValues = new Map();
+		(passive.Stats || []).forEach((statIndex, statPosition) => {
+			const value = passive["Stat" + (statPosition + 1) + "Value"] ?? 0;
+			statValues.set(statsTable[statIndex].Id, value);
+		});
+		koByGraphId.set(passive.PassiveSkillGraphId, {
+			nameKo: passivesKo[i]?.Name || null,
+			statsKo: describe(statValues, "Korean"),
+		});
+	});
+	return koByGraphId;
+}
+
 function nodeType(node) {
 	if (node.classStartIndex != null) return "class";
 	if (node.isKeystone) return "keystone";
@@ -42,6 +65,12 @@ export function buildTree(tree, koByGraphId = null) {
 			statsKo: ko?.statsKo?.length ? ko.statsKo : null,
 			ascendancy: node.ascendancyName || null,
 			ascendancyStart: node.isAscendancyStart ? true : undefined,
+			// 클러스터 주얼 소켓(트리 외곽)은 크기별 전용 프레임 아트를 쓴다. 0=Small 1=Medium 2=Large.
+			clusterSize: node.expansionJewel ? node.expansionJewel.size : undefined,
+			// 마스터리는 노드 자체가 아니라 "효과 하나"를 골라 찍는다. effect id 는 GGG URL 인코딩(마스터리 4바이트)에 그대로 들어감.
+			masteryEffects: node.masteryEffects?.length
+				? node.masteryEffects.map((eff) => ({ id: eff.effect, stats: eff.stats || [] }))
+				: undefined,
 			// icon = 원본 경로(스프라이트 coords 키와 정확히 일치) — 프론트가 타입별 시트에서 blit
 			icon: node.icon || null,
 		});
@@ -80,6 +109,13 @@ export function buildTree(tree, koByGraphId = null) {
 			name: cls.name,
 			ascendancies: (cls.ascendancies || []).map((asc) => asc.name),
 		})),
+		// 혈맹(대체 전직) — 배열 순서가 GGG URL 인코딩의 secondary ascendancy id 와 일치.
+		bloodlines: (tree.alternate_ascendancies || []).map((alt) => ({ id: alt.id, name: alt.name })),
+		// 최대 포인트 — 패시브 { totalPoints:123, ascendancyPoints:8 }, 아틀라스 { totalPoints:138 }
+		points: tree.points || null,
+		// 시작 노드 — 원본의 특수 노드 "root"(숫자 id 가 아니라 노드 목록에선 빠진다) 의 out.
+		// 패시브는 7개 직업 시작점, 아틀라스는 지도 중앙 1개. 아틀라스 할당 연결성 판정의 기준점이 된다.
+		startNodes: (tree.nodes?.root?.out || []).map(Number).filter(Number.isFinite),
 		groups,
 		nodes,
 		edges,

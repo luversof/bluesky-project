@@ -18,6 +18,8 @@ public record PoeOptimizeResult(
     String bloodline,
     String bloodlineKo,
     List<SupportPick> supports,
+    List<SupportPick> auras,
+    List<SupportPick> additionalSkills,
     List<Integer> treeNodeIds,
     List<String> treeNotables,
     List<SupportPick> jewels,

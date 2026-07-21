@@ -361,7 +361,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                       s.totalBuyAmount() != null ? s.totalBuyAmount() : BigDecimal.ZERO,
                       s.totalSellAmount() != null ? s.totalSellAmount() : BigDecimal.ZERO,
                       realizedNet,
-                      sellProceeds.subtract(realizedNet)));
+                      sellProceeds.subtract(realizedNet),
+                      entry.getValue().isEmpty() ? null : entry.getValue().get(0).accountId()));
             });
 
     // 종목별 실현손익 (계좌 무시, 보유량 0 포함) — 실현손익 발생 종목만, 실현손익 내림차순
@@ -487,7 +488,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
       BigDecimal buyAmount,
       BigDecimal sellAmount,
       BigDecimal realizedNet,
-      BigDecimal soldCost) {}
+      BigDecimal soldCost,
+      UUID accountId) {}
 
   public record Activity(
       String type,

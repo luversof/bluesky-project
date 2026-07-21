@@ -28,6 +28,7 @@
 @param Map<String, Integer> monthlyDividendProfileDisplayOrders = java.util.Map.of()
 @param List<String> monthlyDividendProfileOrderedSymbols = java.util.List.of()
 @param boolean monthlyDividendReorderEnabled = false
+@param Map<String, String> monthlyDividendPayoutWindowBySymbol = java.util.Map.of()
 
 !{
 	DecimalFormat amountFormat = new DecimalFormat("#,##0");
@@ -35,6 +36,8 @@
 	boolean monthlyDividendDisplayOrderSort = "display-order".equals(monthlyDividendSort);
 	MonthlyDividendSnapshotResponse bestChoice = monthlyDividendSummary != null ? monthlyDividendSummary.bestChoice() : null;
 	BigDecimal totalLatestMonthlyDividend = monthlyDividendSummary != null ? monthlyDividendSummary.totalLatestMonthlyDividend() : BigDecimal.ZERO;
+	BigDecimal totalLatestMonthlyDividendMidMonth = monthlyDividendSummary != null ? monthlyDividendSummary.totalLatestMonthlyDividendMidMonth() : BigDecimal.ZERO;
+	BigDecimal totalLatestMonthlyDividendMonthEnd = monthlyDividendSummary != null ? monthlyDividendSummary.totalLatestMonthlyDividendMonthEnd() : BigDecimal.ZERO;
 	BigDecimal totalExpectedMonthlyDividend = monthlyDividendSummary != null ? monthlyDividendSummary.totalExpectedMonthlyDividend() : BigDecimal.ZERO;
 	BigDecimal totalExpectedAnnualDividend = monthlyDividendSummary != null ? monthlyDividendSummary.totalExpectedAnnualDividend() : BigDecimal.ZERO;
 	BigDecimal totalExpectedTaxableBaseAmount = monthlyDividendSummary != null ? monthlyDividendSummary.totalExpectedTaxableBaseAmount() : BigDecimal.ZERO;
@@ -59,6 +62,8 @@
 	String minAnnualYieldValue = monthlyDividendMinAnnualYield != null ? monthlyDividendMinAnnualYield.stripTrailingZeros().toPlainString() : "";
 	String monthlyDividendReferenceManageUrl = "/stock/admin?tab=monthly-reference";
 	String totalLatestMonthlyDividendLabel = MessageUtil.getMessage("stock.simulator.monthly.summary.latest.monthly.dividend");
+	String payoutWindowMidMonthLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.mid.month");
+	String payoutWindowMonthEndLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.month.end");
 	String totalMonthlyTaxableBaseSummaryLabel = MessageUtil.getMessage("stock.simulator.monthly.summary.total.taxable.base");
 	String totalAnnualTaxableBaseSummaryLabel = MessageUtil.getMessage("stock.simulator.monthly.summary.total.annual.taxable.base");
 	String totalBuyAmountLabel = MessageUtil.getMessage("stock.simulator.monthly.table.header.buy.amount");
@@ -178,6 +183,7 @@
 						<div>
 							<div class="text-[11px] text-base-content/60">${totalLatestMonthlyDividendLabel}</div>
 							<div class="mt-1 font-mono font-semibold amount-value">₩${amountFormat.format(totalLatestMonthlyDividend)}</div>
+								<div class="mt-0.5 flex flex-wrap gap-x-2 text-[11px] text-base-content/60"><span>${payoutWindowMidMonthLabel} <span class="font-mono amount-value">₩${amountFormat.format(totalLatestMonthlyDividendMidMonth)}</span></span><span>${payoutWindowMonthEndLabel} <span class="font-mono amount-value">₩${amountFormat.format(totalLatestMonthlyDividendMonthEnd)}</span></span></div>
 						</div>
 						<div>
 							<div class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.total.monthly.dividend")}</div>
@@ -292,6 +298,7 @@
 											<div>
 												<div class="text-[11px] text-base-content/60">${totalLatestMonthlyDividendLabel}</div>
 												<div class="mt-1 font-mono font-semibold amount-value" data-monthly-selection-latest>₩0</div>
+													<div class="mt-0.5 flex flex-wrap gap-x-2 text-[11px] text-base-content/60"><span>${payoutWindowMidMonthLabel} <span class="font-mono amount-value" data-monthly-selection-latest-mid>₩0</span></span><span>${payoutWindowMonthEndLabel} <span class="font-mono amount-value" data-monthly-selection-latest-end>₩0</span></span></div>
 											</div>
 											<div>
 												<div class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.total.monthly.dividend")}</div>
@@ -485,7 +492,8 @@
 												data-buy-amount="${buyAmount.toPlainString()}"
 												data-expected-monthly-dividend="${(row.expectedMonthlyDividend() != null ? row.expectedMonthlyDividend() : BigDecimal.ZERO).toPlainString()}"
 												data-expected-taxable-base="${(row.expectedTaxableBaseAmount() != null ? row.expectedTaxableBaseAmount() : BigDecimal.ZERO).toPlainString()}"
-												data-current-market-value="${(row.currentMarketValue() != null ? row.currentMarketValue() : BigDecimal.ZERO).toPlainString()}">
+												data-current-market-value="${(row.currentMarketValue() != null ? row.currentMarketValue() : BigDecimal.ZERO).toPlainString()}"
+													data-payout-window="${monthlyDividendPayoutWindowBySymbol.getOrDefault(normalizedRowSymbol, "")}">
 												<td class="align-top pt-2">
 													<input type="checkbox"
 														class="checkbox checkbox-primary checkbox-sm"
@@ -723,6 +731,8 @@
 			}
 
 			let totalLatestMonthlyDividend = 0;
+			let totalLatestMonthlyDividendMid = 0;
+			let totalLatestMonthlyDividendEnd = 0;
 			let totalBuyAmount = 0;
 			let totalExpectedMonthlyDividend = 0;
 			let totalExpectedTaxableBase = 0;
@@ -730,7 +740,14 @@
 
 			for (let i = 0; i < selectedRows.length; i++) {
 				const row = selectedRows[i];
-				totalLatestMonthlyDividend += Number(row.dataset.latestMonthlyDividend || '0');
+				const rowLatestMonthlyDividend = Number(row.dataset.latestMonthlyDividend || '0');
+				totalLatestMonthlyDividend += rowLatestMonthlyDividend;
+				const rowPayoutWindow = row.dataset.payoutWindow || '';
+				if (rowPayoutWindow === 'MID_MONTH') {
+					totalLatestMonthlyDividendMid += rowLatestMonthlyDividend;
+				} else if (rowPayoutWindow === 'MONTH_END') {
+					totalLatestMonthlyDividendEnd += rowLatestMonthlyDividend;
+				}
 				totalBuyAmount += Number(row.dataset.buyAmount || '0');
 				totalExpectedMonthlyDividend += Number(row.dataset.expectedMonthlyDividend || '0');
 				totalExpectedTaxableBase += Number(row.dataset.expectedTaxableBase || '0');
@@ -778,6 +795,16 @@
 			const latestLabel = summary.querySelector('[data-monthly-selection-latest]');
 			if (latestLabel) {
 				latestLabel.textContent = formatMonthlyDividendSimulatorCurrency(totalLatestMonthlyDividend);
+			}
+
+			const latestMidLabel = summary.querySelector('[data-monthly-selection-latest-mid]');
+			if (latestMidLabel) {
+				latestMidLabel.textContent = formatMonthlyDividendSimulatorCurrency(totalLatestMonthlyDividendMid);
+			}
+
+			const latestEndLabel = summary.querySelector('[data-monthly-selection-latest-end]');
+			if (latestEndLabel) {
+				latestEndLabel.textContent = formatMonthlyDividendSimulatorCurrency(totalLatestMonthlyDividendEnd);
 			}
 
 			const monthlyLabel = summary.querySelector('[data-monthly-selection-monthly]');

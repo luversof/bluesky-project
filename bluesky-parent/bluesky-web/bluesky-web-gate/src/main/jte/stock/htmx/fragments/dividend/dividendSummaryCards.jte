@@ -158,7 +158,7 @@
                         data-prev="${ch.previousNet().toPlainString()}"
                         data-current="${ch.currentNet().toPlainString()}"
                         data-delta="${ch.delta().toPlainString()}">
-                        <span class="flex-1 min-w-0 truncate">${ch.stockName()}</span>
+                        <span class="flex-1 min-w-0 truncate">@if(ch.stockItemId() != null)<a href="/stock/item?stockItemId=${ch.stockItemId().toString()}" class="link link-hover">${ch.stockName()}</a>@else${ch.stockName()}@endif</span>
                         @if(isNew)
                         <span class="badge badge-xs badge-success badge-outline shrink-0">${changeNewLabel}</span>
                         @elseif(stopped)

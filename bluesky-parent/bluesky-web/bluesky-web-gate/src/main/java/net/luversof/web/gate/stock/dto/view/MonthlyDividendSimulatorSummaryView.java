@@ -7,6 +7,8 @@ import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse;
 public record MonthlyDividendSimulatorSummaryView(
     int itemCount,
     BigDecimal totalLatestMonthlyDividend,
+    BigDecimal totalLatestMonthlyDividendMidMonth,
+    BigDecimal totalLatestMonthlyDividendMonthEnd,
     BigDecimal totalExpectedMonthlyDividend,
     BigDecimal totalExpectedAnnualDividend,
     BigDecimal totalExpectedTaxableBaseAmount,
