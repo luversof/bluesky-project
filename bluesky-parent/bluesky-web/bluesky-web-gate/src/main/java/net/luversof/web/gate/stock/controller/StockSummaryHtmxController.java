@@ -3,7 +3,9 @@ package net.luversof.web.gate.stock.controller;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -27,10 +29,14 @@ import net.luversof.web.gate.stock.domain.TradeProfitAggregator;
 import net.luversof.web.gate.stock.dto.request.DividendRequest;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
 import net.luversof.web.gate.stock.dto.response.DividendResponse;
+import net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse;
+import net.luversof.web.gate.stock.dto.response.MonthlyDividendProfileResponse;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse;
 import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
+import net.luversof.web.gate.stock.httpexchange.MonthlyDividendPayoutClient;
+import net.luversof.web.gate.stock.httpexchange.MonthlyDividendProfileClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendSnapshotClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
@@ -42,6 +48,8 @@ import net.luversof.web.gate.stock.service.MonthlyDividendCalculator;
 public class StockSummaryHtmxController extends StockBaseHtmxController {
 
   private final MonthlyDividendSnapshotClient monthlyDividendSnapshotClient;
+  private final MonthlyDividendProfileClient monthlyDividendProfileClient;
+  private final MonthlyDividendPayoutClient monthlyDividendPayoutClient;
   private final MonthlyDividendCalculator monthlyDividendCalculator;
 
   public StockSummaryHtmxController(
@@ -51,6 +59,8 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
       StockItemClient stockItemClient,
       DividendClient dividendClient,
       MonthlyDividendSnapshotClient monthlyDividendSnapshotClient,
+      MonthlyDividendProfileClient monthlyDividendProfileClient,
+      MonthlyDividendPayoutClient monthlyDividendPayoutClient,
       MonthlyDividendCalculator monthlyDividendCalculator,
       MessageSource messageSource) {
     super(
@@ -61,6 +71,8 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
         dividendClient,
         messageSource);
     this.monthlyDividendSnapshotClient = monthlyDividendSnapshotClient;
+    this.monthlyDividendProfileClient = monthlyDividendProfileClient;
+    this.monthlyDividendPayoutClient = monthlyDividendPayoutClient;
     this.monthlyDividendCalculator = monthlyDividendCalculator;
   }
 
@@ -345,23 +357,122 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     params.add("userId", userId.toString());
     List<MonthlyDividendSnapshotResponse> snapshots =
         emptyIfNull(monthlyDividendSnapshotClient.findSnapshots(params));
+    model.addAttribute("hasSnapshots", !snapshots.isEmpty());
 
-    var simulatorSummary = monthlyDividendCalculator.buildSimulatorSummary(snapshots);
-    List<MonthlyDividendSnapshotResponse> topDividendSnapshots =
+    // 심볼 -> 지급 시기(MID_MONTH/MONTH_END)
+    Map<String, String> windowBySymbol = new HashMap<>();
+    for (MonthlyDividendProfileResponse profile :
+        emptyIfNull(monthlyDividendProfileClient.findProfiles(new LinkedMultiValueMap<>()))) {
+      String sym = normalizeSymbol(profile.stockItemSymbol());
+      if (sym != null && profile.payoutWindow() != null) {
+        windowBySymbol.putIfAbsent(sym, profile.payoutWindow());
+      }
+    }
+
+    // 실제 지급이력(payDate)에서 시기별 대표 지급일(day-of-month) 산출: 심볼별 최신 지급 1건만 사용
+    Map<String, MonthlyDividendPayoutResponse> latestPayoutBySymbol = new HashMap<>();
+    for (MonthlyDividendPayoutResponse p :
+        emptyIfNull(monthlyDividendPayoutClient.findPayouts(new LinkedMultiValueMap<>()))) {
+      if (p.payDate() == null) continue;
+      String sym = normalizeSymbol(p.stockItemSymbol());
+      if (sym == null) continue;
+      latestPayoutBySymbol.merge(sym, p, (a, b) -> a.payDate().isAfter(b.payDate()) ? a : b);
+    }
+    int midRepDay = representativePayDay(latestPayoutBySymbol, windowBySymbol, "MID_MONTH", 15);
+    int endRepDay = representativePayDay(latestPayoutBySymbol, windowBySymbol, "MONTH_END", 31);
+
+    // 사용자가 실제 보유(스냅샷 존재)한 시기 중, 오늘 기준 지급일이 가장 가까운 시기를 "다가올" 시기로 선택.
+    LocalDate today = LocalDate.now();
+    boolean holdsMid = holdsWindow(snapshots, windowBySymbol, "MID_MONTH");
+    boolean holdsEnd = holdsWindow(snapshots, windowBySymbol, "MONTH_END");
+    String nextWindow = null;
+    LocalDate nextPayDate = null;
+    if (holdsMid) {
+      nextWindow = "MID_MONTH";
+      nextPayDate = projectedPayDate(today, midRepDay);
+    }
+    if (holdsEnd) {
+      LocalDate endDate = projectedPayDate(today, endRepDay);
+      if (nextPayDate == null || endDate.isBefore(nextPayDate)) {
+        nextWindow = "MONTH_END";
+        nextPayDate = endDate;
+      }
+    }
+
+    // 다음 시기 종목: 시기 필터 → 예상 월배당 내림차순. (시기 미분류 종목만 있으면 전체 상위로 폴백)
+    final String window = nextWindow;
+    List<MonthlyDividendSnapshotResponse> windowRows =
         snapshots.stream()
-            .filter(snapshot -> snapshot.expectedMonthlyDividend() != null)
+            .filter(s -> s.expectedMonthlyDividend() != null)
+            .filter(
+                s ->
+                    window == null
+                        || window.equals(windowBySymbol.get(normalizeSymbol(s.stockItemSymbol()))))
             .sorted(
                 (left, right) ->
                     right.expectedMonthlyDividend().compareTo(left.expectedMonthlyDividend()))
-            .limit(5)
             .toList();
+    BigDecimal windowTotal =
+        windowRows.stream()
+            .map(MonthlyDividendSnapshotResponse::expectedMonthlyDividend)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    model.addAttribute("hasSnapshots", !snapshots.isEmpty());
-    model.addAttribute(
-        "totalAverageMonthlyDividend", simulatorSummary.totalExpectedMonthlyDividend());
-    model.addAttribute("totalLatestMonthlyDividend", simulatorSummary.totalLatestMonthlyDividend());
-    model.addAttribute("topDividendSnapshots", topDividendSnapshots);
+    String nextWindowLabel =
+        "MID_MONTH".equals(nextWindow)
+            ? msg("stock.page.dividend.monthly.reference.profile.payout.window.mid.month")
+            : "MONTH_END".equals(nextWindow)
+                ? msg("stock.page.dividend.monthly.reference.profile.payout.window.month.end")
+                : "";
+    String nextPayDateLabel =
+        nextPayDate != null
+            ? nextPayDate.getMonthValue() + "월 " + nextPayDate.getDayOfMonth() + "일"
+            : "";
+
+    model.addAttribute("nextWindowLabel", nextWindowLabel);
+    model.addAttribute("nextWindowIsMid", "MID_MONTH".equals(nextWindow));
+    model.addAttribute("nextPayDateLabel", nextPayDateLabel);
+    model.addAttribute("windowTotal", windowTotal);
+    model.addAttribute("topDividendSnapshots", windowRows.stream().limit(5).toList());
 
     return "stock/htmx/fragments/upcomingDividends";
+  }
+
+  private static String normalizeSymbol(String symbol) {
+    return symbol != null && !symbol.isBlank() ? symbol.trim().toUpperCase(Locale.ROOT) : null;
+  }
+
+  private static boolean holdsWindow(
+      List<MonthlyDividendSnapshotResponse> snapshots,
+      Map<String, String> windowBySymbol,
+      String window) {
+    return snapshots.stream()
+        .anyMatch(s -> window.equals(windowBySymbol.get(normalizeSymbol(s.stockItemSymbol()))));
+  }
+
+  /** 해당 시기 종목들의 최신 지급일 day-of-month 평균(반올림). 이력이 없으면 fallback. */
+  private static int representativePayDay(
+      Map<String, MonthlyDividendPayoutResponse> latestPayoutBySymbol,
+      Map<String, String> windowBySymbol,
+      String window,
+      int fallback) {
+    List<Integer> days =
+        latestPayoutBySymbol.entrySet().stream()
+            .filter(e -> window.equals(windowBySymbol.get(e.getKey())))
+            .map(e -> e.getValue().payDate().getDayOfMonth())
+            .toList();
+    if (days.isEmpty()) {
+      return fallback;
+    }
+    return (int) Math.round(days.stream().mapToInt(Integer::intValue).average().orElse(fallback));
+  }
+
+  /** 오늘 이후 가장 가까운 대표 지급일. 이번 달 지급일이 오늘 이후면 이번 달, 지났으면 다음 달. */
+  private static LocalDate projectedPayDate(LocalDate today, int repDay) {
+    LocalDate thisMonth = today.withDayOfMonth(Math.min(repDay, today.lengthOfMonth()));
+    if (!today.isAfter(thisMonth)) {
+      return thisMonth;
+    }
+    LocalDate nm = today.plusMonths(1);
+    return nm.withDayOfMonth(Math.min(repDay, nm.lengthOfMonth()));
   }
 }

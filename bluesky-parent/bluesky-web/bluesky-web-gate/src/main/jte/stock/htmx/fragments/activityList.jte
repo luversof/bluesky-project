@@ -583,7 +583,9 @@
         // 스왑 정착 후 실행(setTimeout 0): 스왑 중엔 이전/새 canvas 가 공존할 수 있다.
         setTimeout(function() {
         var chartCanvas = document.getElementById('activityMonthlyChart');
-        if (!chartCanvas || typeof Chart === 'undefined' || activityChartLabels.length === 0) return;
+        if (!chartCanvas || activityChartLabels.length === 0) return;
+        window.ensureStockCharts(function() {
+        if (typeof Chart === 'undefined') return;
         if (window.activityMonthlyChartInst) {
             try { window.activityMonthlyChartInst.destroy(); } catch (e) {}
             window.activityMonthlyChartInst = null;
@@ -648,6 +650,7 @@
                     }
                 }
             }
+        });
         });
         }, 0);
     })();

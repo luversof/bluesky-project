@@ -19,11 +19,15 @@ public record PoeOptimizeResult(
     String bloodlineKo,
     List<SupportPick> supports,
     List<SupportPick> auras,
+    // 마나 예약 상한에 걸려 못 띄운 오라(부족 마나 포함) — 결과 화면 설명용
+    List<BlockedAura> blockedAuras,
     List<SupportPick> additionalSkills,
     List<Integer> treeNodeIds,
     List<String> treeNotables,
     List<SupportPick> jewels,
     List<ItemPick> items,
+    // 속성 부족으로 실제 장착이 불가능한 장비
+    List<UnmetRequirement> unmetRequirements,
     List<SlotTierCompare> tierComparisons,
     List<ScenarioCell> scenarioMatrix,
     List<DefenseHit> defenseHits,
@@ -32,9 +36,27 @@ public record PoeOptimizeResult(
     String finalValue,
     String pobCode,
     long durationMs,
-    int evalCount) {
+    int evalCount,
+    // 결과 → 트리 에디터 왕복용(클러스터 c= / 주얼 j= 형식 문자열)
+    String treeClusters,
+    String treeJewels,
+    /** 트리 링크(tt=)로 되돌아갈 문신 구성 "노드:영문명|…" */
+    String treeTattoos,
+    /** 트리 링크용 마스터리 선택 "노드:효과,…" */
+    String treeMasteries,
+    /** 표시용 마스터리 요약("마스터리명 — 효과 첫 줄") */
+    java.util.List<String> treeMasteryLabels,
+    /** 표시용 문신 요약("한글명 ×N") */
+    java.util.List<String> treeTattooLabels) {
 
   public record SupportPick(String slug, String name, String nameKo) {}
+
+  /** 예약 초과로 제외된 오라. shortfall = 부족한 마나(양수). */
+  public record BlockedAura(String name, String nameKo, int shortfall) {}
+
+  /** 장착 요구 속성 미달 (attribute = str|dex|int) */
+  public record UnmetRequirement(
+      String name, String nameKo, String attribute, int required, int actual) {}
 
   /**
    * 장착 아이템 하나.

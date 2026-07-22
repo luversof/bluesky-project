@@ -204,7 +204,10 @@
 				<script type="module" src="/js/stock/monthlyDividendProfileOrder.js"></script>
 			@elseif(compoundTab)
 				@template.stock.fragments.compoundSimulator(storageNote = storageNote)
-				<script src="/js/stock/compoundSimulator.js"></script>
+				<%-- compoundSimulator.js 는 Chart 를 직접 쓰므로 이 화면에서만 Chart.js 를 먼저 로드한다
+					     (레이아웃 전역 선로드 제거 → 차트 없는 화면은 받지 않음) --%>
+					<script src="/js/vendor/chart.umd.min.js"></script>
+					<script src="/js/stock/compoundSimulator.js"></script>
 			@else
 			<div class="grid gap-6 xl:grid-cols-[20rem_minmax(0,1fr)]">
 				@template._components.ui.card(bodyClass = "gap-4", body = @`
@@ -377,6 +380,8 @@
 					</div>
 			`)
 
+			<%-- stockSimulator.js 는 Chart 를 직접 쓰므로 이 화면에서만 Chart.js 를 먼저 로드한다 --%>
+			<script src="/js/vendor/chart.umd.min.js"></script>
 			<script src="/js/stock/stockSimulator.js"></script>
 			@endif
 		</div>

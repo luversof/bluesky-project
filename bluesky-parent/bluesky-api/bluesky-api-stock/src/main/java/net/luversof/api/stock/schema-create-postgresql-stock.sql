@@ -77,6 +77,8 @@ CREATE TABLE "Trade" (
 
 CREATE INDEX idx_trade_accountId ON "Trade" ("account_id");
 CREATE INDEX idx_trade_accountId_stockItemId ON "Trade" ("account_id", "stockItem_id");
+-- 기간 조회(account_id IN (...) AND tradeDate BETWEEN ...)와 최초 거래일 집계(MIN(tradeDate))용
+CREATE INDEX idx_trade_accountId_tradeDate ON "Trade" ("account_id", "tradeDate");
 
 CREATE TABLE "Dividend" (
 	"id" UUID NOT NULL PRIMARY KEY,
@@ -96,6 +98,8 @@ CREATE TABLE "Dividend" (
 
 CREATE INDEX idx_dividend_accountId ON "Dividend" ("account_id");
 CREATE INDEX idx_dividend_accountId_stockItemId ON "Dividend" ("account_id", "stockItem_id");
+-- payDate 정렬/범위 조회와 최초 배당일 집계(MIN(payDate))용
+CREATE INDEX idx_dividend_accountId_payDate ON "Dividend" ("account_id", "payDate");
 
 CREATE TABLE "MonthlyDividendSnapshot" (
 	"id" UUID NOT NULL PRIMARY KEY,
@@ -156,4 +160,9 @@ CREATE TABLE "DailyAccountSnapshot" (
 
 CREATE INDEX idx_snapshot_userId ON "DailyAccountSnapshot" ("user_id");
 CREATE INDEX idx_snapshot_date ON "DailyAccountSnapshot" ("date");
+-- 계좌별 직전 스냅샷 조회(account_id = ? AND date < ? ORDER BY date DESC LIMIT 1) 용.
+-- account_id 단독 인덱스가 없어 이 조회들이 전체 스캔이었다.
+CREATE INDEX idx_snapshot_accountId_date ON "DailyAccountSnapshot" ("account_id", "date");
+-- 사용자 전체(account_id IS NULL) 스냅샷의 기간/직전 조회용
+CREATE INDEX idx_snapshot_userId_date ON "DailyAccountSnapshot" ("user_id", "date");
 

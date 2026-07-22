@@ -54,6 +54,11 @@ public class PoePobEngineService {
           "Speed",
           "Life",
           "EnergyShield",
+          // 속성 — 장비 요구치(힘/민첩/지능) 충족 여부를 화면에서 바로 볼 수 있게 표시
+          "Str",
+          "Dex",
+          "Int",
+          "AccuracyHitChance",
           "Mana",
           "Armour",
           "Evasion",

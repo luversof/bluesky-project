@@ -25,6 +25,23 @@ const FAMILIES = [
 		slots: ["body", "helmet", "gloves", "boots", "shield"] },
 	{ key: "esGlobal", gen: "prefix", pattern: "IncreasedEnergyShield", keywords: ["energy shield"],
 		slots: ["amulet", "ring"] },
+	// 방어구 로컬 방어력/회피 — 무기와 같은 구멍이었다. 없으면 방어구 레어가 생명력/저항만 받아
+	// "방어구인데 방어도가 안 오르는" 상태가 된다(실측: 방어도 2,100 → 3,360, EHP 28,139 → 29,190).
+	// ⚠ Local*Rating 은 이름과 달리 flat(+500 방어도)이고 퍼센트 증가는 …Percent 접미 패턴이다 — 둘 다 필요.
+	{ key: "armourLocal", gen: "prefix", pattern: "LocalIncreasedPhysicalDamageReductionRating", keywords: ["armour", "physical", "defence"],
+		slots: ["body", "helmet", "gloves", "boots", "shield"] },
+	{ key: "evasionLocal", gen: "prefix", pattern: "LocalIncreasedEvasionRating", keywords: ["evasion", "defence"],
+		slots: ["body", "helmet", "gloves", "boots", "shield"] },
+	{ key: "armourPctLocal", gen: "prefix", pattern: "LocalIncreasedPhysicalDamageReductionRatingPercent", keywords: ["armour", "physical", "defence"],
+		slots: ["body", "helmet", "gloves", "boots", "shield"] },
+	{ key: "evasionPctLocal", gen: "prefix", pattern: "LocalIncreasedEvasionRatingPercent", keywords: ["evasion", "defence"],
+		slots: ["body", "helmet", "gloves", "boots", "shield"] },
+	{ key: "esPctLocal", gen: "prefix", pattern: "LocalIncreasedEnergyShieldPercent", keywords: ["energy shield", "defence"],
+		slots: ["body", "helmet", "gloves", "boots", "shield"] },
+	// 방어구 로컬 방어력/회피 (접두) — 무기와 같은 구멍이었다. 이게 없으면 방어구 레어가 생명력/저항만 받아
+	// "방어구인데 방어도가 안 오르는" 상태가 되고 EHP 목표가 크게 과소평가된다.
+	// ⚠ Local*Rating 은 이름과 달리 flat(+500 방어도)이고, 퍼센트 증가는 …Percent 접미 패턴이다.
+	// 엔드게임 방어구의 핵심은 이 퍼센트 쪽이라 둘 다 넣어야 실제 방어력이 나온다.
 	// 저항 (접미)
 	{ key: "fireRes", gen: "suffix", pattern: "FireResist", keywords: ["fire resistance", "resistance"],
 		slots: ["body", "helmet", "gloves", "boots", "belt", "amulet", "ring", "shield", "quiver"] },
@@ -74,7 +91,7 @@ const FAMILIES = [
 	// 렌더돼 장비 모드로 부적합 → 제외. 치명은 critMulti 로 커버.
 	// 공격 피해 (접두/접미)
 	{ key: "addedPhys", gen: "prefix", pattern: "AddedPhysicalDamage", keywords: ["attack", "physical", "damage"],
-		slots: ["weaponAttack", "gloves", "ring", "amulet", "quiver"] },
+		slots: ["gloves", "ring", "amulet", "quiver"] },
 	{ key: "addedFire", gen: "prefix", pattern: "AddedFireDamage", keywords: ["attack", "fire", "damage"],
 		slots: ["weaponAttack", "gloves", "ring", "amulet", "quiver"] },
 	{ key: "addedCold", gen: "prefix", pattern: "AddedColdDamage", keywords: ["attack", "cold", "damage"],
@@ -82,9 +99,27 @@ const FAMILIES = [
 	{ key: "addedLight", gen: "prefix", pattern: "AddedLightningDamage", keywords: ["attack", "lightning", "damage"],
 		slots: ["weaponAttack", "gloves", "ring", "amulet", "quiver"] },
 	{ key: "attackSpeed", gen: "suffix", pattern: "IncreasedAttackSpeed", keywords: ["attack", "attack speed"],
-		slots: ["weaponAttack", "gloves", "ring", "amulet", "quiver"] },
+		slots: ["gloves", "ring", "amulet", "quiver"] },
 	{ key: "critChance", gen: "suffix", pattern: "CriticalStrikeChance", keywords: ["critical"],
 		slots: ["amulet"] },
+	// 주문 억제 — 현대 PoE 의 핵심 방어 모드(최대 100% 억제 시 주문 피해 절반). 없으면 EHP 가 구조적으로 과소평가된다.
+	{ key: "spellSuppress", gen: "suffix", pattern: "ChanceToSuppressSpells", keywords: ["defence", "spell", "suppress"],
+		slots: ["body", "helmet", "gloves", "boots", "shield"] },
+	// 명중 — 공격 빌드는 명중이 없으면 빗나가서 DPS 가 무의미해진다(무기에 하드코딩해 둔 가정을 데이터로 대체 가능하게).
+	{ key: "accuracyLocal", gen: "suffix", pattern: "LocalIncreasedAccuracy", keywords: ["attack", "accuracy"],
+		slots: ["weaponAttack"] },
+	{ key: "accuracy", gen: "suffix", pattern: "IncreasedAccuracy", keywords: ["attack", "accuracy"],
+		slots: ["gloves", "ring", "amulet", "quiver"] },
+	// 무기 로컬 모드 — 무기의 주력 모드는 전역(장신구용) 모드가 아니라 Local* 계열이다.
+	// 이게 빠져 있으면 크래프트 무기가 장신구 티어 수치(물리 15-26 등)만 받아 표준 무기조차 못 이긴다.
+	{ key: "localPhysPct", gen: "prefix", pattern: "LocalIncreasedPhysicalDamagePercent", keywords: ["attack", "physical", "damage"],
+		slots: ["weaponAttack"] },
+	{ key: "localAddedPhys", gen: "prefix", pattern: "LocalAddedPhysicalDamage", keywords: ["attack", "physical", "damage"],
+		slots: ["weaponAttack"] },
+	{ key: "localAttackSpeed", gen: "suffix", pattern: "LocalIncreasedAttackSpeed", keywords: ["attack", "attack speed"],
+		slots: ["weaponAttack"] },
+	{ key: "localCritChance", gen: "suffix", pattern: "LocalCriticalStrikeChance", keywords: ["critical"],
+		slots: ["weaponAttack"] },
 ];
 
 /** 모드 한 행의 스탯 → 최대 롤 값 맵 (StatsKey1..N + StatNMax) */

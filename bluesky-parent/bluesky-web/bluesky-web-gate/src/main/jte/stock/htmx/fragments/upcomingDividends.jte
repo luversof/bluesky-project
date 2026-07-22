@@ -4,27 +4,33 @@
 @import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse
 
 @param boolean hasSnapshots = false
-@param BigDecimal totalAverageMonthlyDividend = java.math.BigDecimal.ZERO
-@param BigDecimal totalLatestMonthlyDividend = java.math.BigDecimal.ZERO
+@param String nextWindowLabel = ""
+@param boolean nextWindowIsMid = false
+@param String nextPayDateLabel = ""
+@param BigDecimal windowTotal = java.math.BigDecimal.ZERO
 @param List<MonthlyDividendSnapshotResponse> topDividendSnapshots = java.util.List.of()
 
 !{
     String titleLabel = MessageUtil.getMessage("stock.dashboard.upcoming.dividend");
     String avgLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.average");
-    String latestLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.latest");
     String perMonthLabel = MessageUtil.getMessage("stock.dividend.calendar.per.month");
     String dividendMenuLabel = MessageUtil.getMessage("layout.menu.stock.dividend");
+    boolean hasWindow = nextWindowLabel != null && !nextWindowLabel.isEmpty();
 }
 <%-- outerHTML 스왑 대상이므로 데이터 유무와 무관하게 항상 최상위 요소(카드)를 출력한다 --%>
 @template._components.ui.card(cssClass = "h-full", body = @`
-    <div class="flex justify-between items-center mb-2">
-        <h2 class="card-title text-base m-0">${titleLabel}</h2>
-        <a href="/stock/dividend?tab=calendar" class="link link-hover text-xs">${dividendMenuLabel} →</a>
+    <div class="flex justify-between items-center gap-2 mb-2">
+        <div class="flex items-center gap-2 min-w-0">
+            <h2 class="card-title text-base m-0 shrink-0">${titleLabel}</h2>
+            @if(hasWindow)
+            <span class="badge badge-sm ${nextWindowIsMid ? "badge-info" : "badge-secondary"} badge-outline shrink-0 whitespace-nowrap">${nextWindowLabel}@if(nextPayDateLabel != null && !nextPayDateLabel.isEmpty()) · ${nextPayDateLabel}@endif</span>
+            @endif
+        </div>
+        <a href="/stock/dividend?tab=calendar" class="link link-hover text-xs shrink-0">${dividendMenuLabel} →</a>
     </div>
     @if(hasSnapshots)
     <div class="text-right leading-tight tabular-nums mb-2">
-        <div class="font-mono font-bold text-dividend amount-value" title="${String.format("%,d원", totalAverageMonthlyDividend != null ? totalAverageMonthlyDividend.longValue() : 0)}"><span class="mr-1 text-[11px] font-normal text-base-content/45">${avgLabel}</span>${String.format("%,d", totalAverageMonthlyDividend != null ? totalAverageMonthlyDividend.longValue() : 0)}<span class="text-xs font-normal text-base-content/40 ml-0.5">${perMonthLabel}</span></div>
-        <div class="font-mono font-bold text-dividend amount-value" title="${String.format("%,d원", totalLatestMonthlyDividend != null ? totalLatestMonthlyDividend.longValue() : 0)}"><span class="mr-1 text-[11px] font-normal text-base-content/45">${latestLabel}</span>${String.format("%,d", totalLatestMonthlyDividend != null ? totalLatestMonthlyDividend.longValue() : 0)}<span class="text-xs font-normal text-base-content/40 ml-0.5">${perMonthLabel}</span></div>
+        <div class="font-mono font-bold text-dividend amount-value" title="${String.format("%,d원", windowTotal != null ? windowTotal.longValue() : 0)}"><span class="mr-1 text-[11px] font-normal text-base-content/45">${avgLabel}</span>${String.format("%,d", windowTotal != null ? windowTotal.longValue() : 0)}<span class="text-xs font-normal text-base-content/40 ml-0.5">${perMonthLabel}</span></div>
     </div>
     <div class="space-y-1">
         !{int upcomingRank = 1;}

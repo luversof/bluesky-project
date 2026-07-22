@@ -20,8 +20,18 @@
     <svg xmlns="http://www.w3.org/2000/svg" class="${cssClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
 @elseif(iconKey.endsWith(".dividend") || name.contains("배당"))
     <svg xmlns="http://www.w3.org/2000/svg" class="${cssClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112-2h.5a1.5 1.5 0 001.5 1.5V6a2 2 0 00-2 2m-2 0V4a2 2 0 00-2-2h-.5A1.5 1.5 0 006 3.5V6a2 2 0 002 2M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8" /></svg>
-@elseif(iconKey.endsWith(".simulator") || name.contains("시뮬레이터"))
+@elseif(iconKey.endsWith(".simulator") || iconKey.endsWith(".poe.sim") || name.contains("시뮬레이터"))
     <svg xmlns="http://www.w3.org/2000/svg" class="${cssClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+@elseif(iconKey.endsWith(".poe.gems") || name.contains("스킬젬"))
+    <svg xmlns="http://www.w3.org/2000/svg" class="${cssClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+@elseif(iconKey.endsWith(".poe.items") || name.contains("아이템"))
+    <svg xmlns="http://www.w3.org/2000/svg" class="${cssClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+@elseif(iconKey.endsWith(".poe.tree") || name.contains("패시브"))
+    <svg xmlns="http://www.w3.org/2000/svg" class="${cssClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+@elseif(iconKey.endsWith(".poe.atlas") || name.contains("아틀라스"))
+    <svg xmlns="http://www.w3.org/2000/svg" class="${cssClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+@elseif(iconKey.endsWith(".poe.build") || name.contains("빌드"))
+    <svg xmlns="http://www.w3.org/2000/svg" class="${cssClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
 @elseif(iconKey.endsWith(".board") || name.contains("게시판") || name.contains("글"))
     <svg xmlns="http://www.w3.org/2000/svg" class="${cssClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2.5 2.5 0 00-2.5-2.5H14" /></svg>
 @elseif(iconKey.endsWith(".admin") || name.contains("설정") || name.contains("관리"))

@@ -21,7 +21,12 @@ public interface PoeOptimizeClient {
       @RequestParam(required = false) String className,
       @RequestParam(required = false) String ascendancy,
       @RequestParam(required = false) String uniques,
-      @RequestParam(required = false) String skills);
+      @RequestParam(required = false) String skills,
+      @RequestParam(required = false) String treeNodes,
+      @RequestParam(required = false) String masteries,
+      @RequestParam(required = false) String jewels,
+      @RequestParam(required = false) String clusters,
+      @RequestParam(required = false) String tattoos);
 
   @GetExchange("/status")
   PoeJobStatus.Optimize status();

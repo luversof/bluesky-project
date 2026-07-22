@@ -10,7 +10,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -70,11 +69,9 @@ public class StockItemService {
 
     String normalizedTag = tag.trim();
     List<UUID> stockItemIds =
-        StreamSupport.stream(stockItemTagRepository.findAll().spliterator(), false)
-            .filter(stockItemTag -> stockItemTag.getStockItemId() != null)
-            .filter(stockItemTag -> StringUtils.hasText(stockItemTag.getTag()))
-            .filter(stockItemTag -> normalizedTag.equals(stockItemTag.getTag().trim()))
+        stockItemTagRepository.findByTag(normalizedTag).stream()
             .map(StockItemTag::getStockItemId)
+            .filter(Objects::nonNull)
             .distinct()
             .toList();
     if (stockItemIds.isEmpty()) {
@@ -110,10 +107,11 @@ public class StockItemService {
       return;
     }
 
+    // 대상 종목의 태그만 조회한다. (findAll 후 자바 필터는 호출마다 태그 테이블 전량을 읽었다 —
+    // 손익/시계열 API 가 요청마다 attachTags 를 타므로 모든 요청에 얹히던 비용)
     Map<UUID, List<String>> tagsByStockItemId =
-        StreamSupport.stream(stockItemTagRepository.findAll().spliterator(), false)
-            .filter(
-                tag -> tag.getStockItemId() != null && stockItemIds.contains(tag.getStockItemId()))
+        stockItemTagRepository.findByStockItemIdIn(stockItemIds).stream()
+            .filter(tag -> tag.getStockItemId() != null)
             .filter(tag -> StringUtils.hasText(tag.getTag()))
             .collect(
                 Collectors.groupingBy(

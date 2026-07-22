@@ -51,7 +51,12 @@ public class PoeTreeGraphService {
       // Jackson 3 는 primitive 에 null(필드 부재) 매핑을 거부하므로 래퍼 타입이어야 한다
       Boolean ascendancyStart,
       // 마스터리 노드만 보유 — 효과 하나를 골라야 스탯이 붙는다(PoB Spec masteryEffects)
-      List<MasteryEffect> masteryEffects) {}
+      List<MasteryEffect> masteryEffects,
+      // 클러스터 주얼 소켓만 보유(0=소형 1=중형 2=대형). 일반 유니크 주얼은 이 소켓에 **못 넣는다**.
+      Integer clusterSize,
+      // 트리 좌표 — 반경 주얼이 어떤 패시브를 덮는지 계산할 때 쓴다(문신 자리 선정 등)
+      Double x,
+      Double y) {}
 
   /** 마스터리가 제공하는 효과 하나. id 는 PoB/GGG 인코딩에 쓰이는 effect id. */
   public record MasteryEffect(int id, List<String> stats, List<String> statsKo) {}
@@ -88,6 +93,21 @@ public class PoeTreeGraphService {
       for (TreeNode node : tree.nodes()) {
         nodes.put(node.id(), node);
       }
+      // 주얼 소켓 후보 구성이 바뀌면(=클러스터 소켓 제외) 로그로 확인할 수 있게 남긴다
+      long clusterSockets =
+          tree.nodes().stream()
+              .filter(
+                  n ->
+                      n.ascendancy() == null && "jewel".equals(n.type()) && n.clusterSize() != null)
+              .count();
+      long plainSockets =
+          tree.nodes().stream()
+              .filter(
+                  n ->
+                      n.ascendancy() == null && "jewel".equals(n.type()) && n.clusterSize() == null)
+              .count();
+      logger.info("주얼 소켓 {}개 사용(클러스터 전용 소켓 {}개 제외)", plainSockets, clusterSockets);
+
       Map<Integer, List<Integer>> edges = new HashMap<>();
       for (List<Integer> edge : tree.edges()) {
         edges.computeIfAbsent(edge.get(0), k -> new ArrayList<>()).add(edge.get(1));
@@ -130,6 +150,28 @@ public class PoeTreeGraphService {
     return nodeById.get(id);
   }
 
+  /**
+   * {@code start} 에서 {@code allowed} 안의 간선만 따라 도달 가능한 노드 집합. 고정 트리가 실제로 그 직업 시작점과 이어져 있는지 검사하는 용도 —
+   * PoB 는 연결되지 않은 노드를 조용히 버린다.
+   */
+  public java.util.Set<Integer> reachableFrom(int start, java.util.Set<Integer> allowed) {
+    java.util.Set<Integer> seen = new java.util.LinkedHashSet<>();
+    if (!allowed.contains(start)) {
+      return seen;
+    }
+    java.util.Deque<Integer> queue = new java.util.ArrayDeque<>();
+    queue.add(start);
+    seen.add(start);
+    while (!queue.isEmpty()) {
+      for (int next : adjacency.getOrDefault(queue.poll(), List.of())) {
+        if (allowed.contains(next) && seen.add(next)) {
+          queue.add(next);
+        }
+      }
+    }
+    return seen;
+  }
+
   /** PoB className → 트리 시작 노드 id (없으면 null) */
   public Integer classStart(String className) {
     return classStartByName.get(className);
@@ -144,10 +186,54 @@ public class PoeTreeGraphService {
         .toList();
   }
 
-  /** 비전직 주얼 소켓 노드 id (id 정렬로 결정적) */
+  /**
+   * 반경 주얼이 덮는 패시브 id — 소켓/마스터리/클래스 시작/전직 노드는 반경 효과 대상이 아니라 제외(공식 뷰어와 동일).
+   *
+   * @param radius 월드 단위 반경(3.16+: 소형 960 / 중형 1440 / 대형 1800 / 초대형 2400 / 거대 2880)
+   */
+  public List<Integer> nodesWithinRadius(int centerId, double radius) {
+    TreeNode center = nodeById.get(centerId);
+    if (center == null || center.x() == null || center.y() == null) {
+      return List.of();
+    }
+    double squared = radius * radius;
+    List<Integer> found = new ArrayList<>();
+    for (TreeNode node : nodeById.values()) {
+      if (node.id() == centerId
+          || node.x() == null
+          || node.ascendancy() != null
+          || "jewel".equals(node.type())
+          || "mastery".equals(node.type())
+          || "class".equals(node.type())) {
+        continue;
+      }
+      double dx = node.x() - center.x();
+      double dy = node.y() - center.y();
+      if (dx * dx + dy * dy <= squared) {
+        found.add(node.id());
+      }
+    }
+    // ⚠ nodeById 는 Map.copyOf — 자바의 불변 맵은 **JVM 실행마다 순회 순서가 무작위화**된다(ImmutableCollections SALT).
+    // 정렬하지 않으면 반경 내 후보 순서가 실행마다 달라져 그리디 채택 순서·결과가 흔들린다.
+    found.sort(null);
+    return found;
+  }
+
+  /** 이 노드와 선으로 이어진 노드들. 문신의 "인접 할당 수" 규칙 판정처럼 이웃이 필요할 때 쓴다. */
+  public List<Integer> neighbors(int id) {
+    return adjacency.getOrDefault(id, List.of());
+  }
+
+  /**
+   * 일반 유니크 주얼을 꽂을 수 있는 비전직 주얼 소켓 id (id 정렬로 결정적).
+   *
+   * <p><b>클러스터 주얼 소켓은 제외</b>한다 — 게임에서 그 소켓엔 클러스터 주얼만 들어가는데, PoB 는 검증하지 않아 일반 주얼을 꽂으면 스탯이 그대로 반영된다(=
+   * 게임에서 만들 수 없는 빌드가 더 높은 점수를 받는다). 전체 57개 중 42개가 클러스터 소켓이라 그냥 두면 후보의 대부분이 가짜다.
+   */
   public List<Integer> jewelSockets() {
     return nodeById.values().stream()
         .filter(node -> node.ascendancy() == null && "jewel".equals(node.type()))
+        .filter(node -> node.clusterSize() == null)
         .map(TreeNode::id)
         .sorted()
         .toList();
@@ -202,6 +288,21 @@ public class PoeTreeGraphService {
    * type:"normal"} 인 렐릭형 전직은 notable 만 잡으면 핵심 선택지를 통째로 놓친다. 스탯을 가진 normal 노드가 notable 보다 많으면(렐릭형)
    * normal 노드도 후보에 포함한다. 이 판정은 전직별 노드 구성에서 자동 도출되므로 기존 6개 일반 전직은 동작이 바뀌지 않는다.
    */
+  /**
+   * 해당 전직의 <b>스탯을 가진 모든 노드</b>(작은 노드 포함, 마스터리·시작 노드 제외).
+   *
+   * <p>노터블만 후보로 두면 남은 포인트로 닿는 노터블이 없을 때 전직 포인트가 그냥 남는다(실측 6/8). 잔여 포인트를 작은 노드로 마저 쓰기 위한 목록.
+   */
+  public List<TreeNode> ascendancyAllNodes(String ascendancy) {
+    return nodeById.values().stream()
+        .filter(node -> ascendancy.equals(node.ascendancy()))
+        .filter(
+            node -> !"mastery".equals(node.type()) && !Boolean.TRUE.equals(node.ascendancyStart()))
+        .filter(node -> node.stats() != null && !node.stats().isEmpty())
+        .sorted(java.util.Comparator.comparingInt(TreeNode::id))
+        .toList();
+  }
+
   public List<TreeNode> ascendancyCandidates(String ascendancy) {
     List<TreeNode> all =
         nodeById.values().stream().filter(node -> ascendancy.equals(node.ascendancy())).toList();

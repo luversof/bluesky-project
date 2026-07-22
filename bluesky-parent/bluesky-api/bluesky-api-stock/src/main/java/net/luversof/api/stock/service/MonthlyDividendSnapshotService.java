@@ -4,8 +4,13 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -34,8 +39,24 @@ public class MonthlyDividendSnapshotService {
       return List.of();
     }
 
-    return monthlyDividendSnapshotRepository.findByUserIdOrderByUpdatedDateDesc(userId).stream()
-        .map(snapshot -> toResponse(snapshot, null))
+    List<MonthlyDividendSnapshot> snapshots =
+        monthlyDividendSnapshotRepository.findByUserIdOrderByUpdatedDateDesc(userId);
+
+    // 종목 정보는 1회 일괄 조회한다. (행마다 findById 하면 행 수만큼 SELECT 가 나가는 N+1)
+    Map<UUID, StockItem> stockItemById = new HashMap<>();
+    Set<UUID> stockItemIds =
+        snapshots.stream()
+            .map(MonthlyDividendSnapshot::getStockItemId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+    if (!stockItemIds.isEmpty()) {
+      stockItemRepository
+          .findAllById(stockItemIds)
+          .forEach(item -> stockItemById.put(item.getId(), item));
+    }
+
+    return snapshots.stream()
+        .map(snapshot -> toResponse(snapshot, stockItemById.get(snapshot.getStockItemId())))
         .sorted(this::compareResponses)
         .toList();
   }

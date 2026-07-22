@@ -135,6 +135,12 @@ class StockBaseHtmxControllerTest {
       return List.of();
     }
 
+    @Override
+    public java.util.Map<String, List<HoldingsSnapshotItem>> holdingsSnapshotBatch(
+        MultiValueMap<String, String> params) {
+      return java.util.Map.of();
+    }
+
     private MultiValueMap<String, String> copyRequest(MultiValueMap<String, String> request) {
       LinkedMultiValueMap<String, String> copy = new LinkedMultiValueMap<>();
       request.forEach((key, value) -> copy.put(key, new ArrayList<>(value)));
@@ -207,6 +213,12 @@ class StockBaseHtmxControllerTest {
     @Override
     public List<DividendResponse> findDividends(MultiValueMap<String, String> request) {
       return List.of();
+    }
+
+    @Override
+    public net.luversof.web.gate.stock.dto.response.DividendMetaResponse findDividendMeta(
+        java.util.UUID userId) {
+      return new net.luversof.web.gate.stock.dto.response.DividendMetaResponse(null, List.of());
     }
   }
 }

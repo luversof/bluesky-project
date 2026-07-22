@@ -11,6 +11,7 @@
 @param int uniqueCount = 0
 @param int baseItemCount = 0
 @param boolean hasTreeData = false
+@param boolean hasAtlasData = false
 @param String dataDir = ""
 @param boolean imageMagickInstalled = false
 @param boolean engineAvailable = false
@@ -22,7 +23,8 @@
 	String uniquesLabel = MessageUtil.getMessage("poe.tab.uniques");
 	String treeLabel = MessageUtil.getMessage("poe.tab.tree");
 	String treeReadyLabel = MessageUtil.getMessage("poe.admin.tree.ready");
-	String treeMissingLabel = MessageUtil.getMessage("poe.gems.empty");
+	// 데이터 준비 여부 카드용 — 검색 결과 메시지(poe.gems.empty)를 재사용하면 "검색 결과가 없습니다"가 떠 뜻이 어긋난다
+	String treeMissingLabel = MessageUtil.getMessage("poe.admin.tree.missing");
 	String countUnit = MessageUtil.getMessage("common.count");
 }
 
@@ -69,6 +71,10 @@
 				@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
 						<div class="text-xs font-semibold text-base-content/50">${treeLabel}</div>
 						<div class="text-xl font-bold">${hasTreeData ? treeReadyLabel : treeMissingLabel}</div>
+				`)
+				@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
+						<div class="text-xs font-semibold text-base-content/50">${MessageUtil.getMessage("layout.menu.poe.atlas")}</div>
+						<div class="text-xl font-bold">${hasAtlasData ? treeReadyLabel : treeMissingLabel}</div>
 				`)
 			</div>
 

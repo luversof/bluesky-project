@@ -32,24 +32,42 @@
 	<script src="/js/vendor/htmx.min.js"></script>
 	<script src="/js/vendor/json-enc.js"></script>
 	<script src="/js/common.js"></script>
-	<script src="/js/date-range-picker.js"></script>
-	<script type="module" src="/js/stock/selectionStorage.js"></script>
-	<script type="module" src="/js/stock/multiSelectInit.js"></script>
-	<script type="module" src="/js/stock/tagFilterChips.js"></script>
+	<%-- stock 전용 스크립트(date-range-picker/selectionStorage/multiSelectInit/tagFilterChips)는
+	     stockLayout 으로 이동했다. board/poe/home 에서는 참조가 없어 로드할 필요가 없다. --%>
 
 	<script nonce="${CspNonceHolder.getNonce()}">
-		// Ensure stock-charts helper is available; loads /js/stock-charts.js on demand
-		window.ensureStockCharts = function(cb) {
-			if (window.StockCharts) {
-				if (typeof cb === 'function') cb();
-				return;
+		// 차트가 필요한 시점에만 Chart.js + stock-charts 헬퍼를 순서대로 로드한다.
+		// (차트 없는 화면에서 228KB 를 받지 않기 위함. 동시 호출은 큐로 모아 1회만 로드.)
+		window.ensureStockCharts = (function() {
+			var loading = false;
+			var queue = [];
+			function loadScript(src, done) {
+				var s = document.createElement('script');
+				s.src = src;
+				s.onload = function() { done(); };
+				s.onerror = function() { console.warn('Failed to load ' + src); done(); };
+				document.head.appendChild(s);
 			}
-			var s = document.createElement('script');
-			s.src = '/js/stock-charts.js';
-			s.onload = function() { if (typeof cb === 'function') cb(); };
-			s.onerror = function() { console.warn('Failed to load /js/stock-charts.js'); if (typeof cb === 'function') cb(); };
-			document.head.appendChild(s);
-		};
+			function flush() {
+				loading = false;
+				var cbs = queue;
+				queue = [];
+				cbs.forEach(function(cb) { try { cb(); } catch (e) { console.error(e); } });
+			}
+			return function(cb) {
+				if (typeof cb !== 'function') cb = function() {};
+				if (window.Chart && window.StockCharts) { cb(); return; }
+				queue.push(cb);
+				if (loading) return;
+				loading = true;
+				var afterChart = function() {
+					if (window.StockCharts) { flush(); return; }
+					loadScript('/js/stock-charts.js', flush);
+				};
+				if (window.Chart) { afterChart(); }
+				else { loadScript('/js/vendor/chart.umd.min.js', afterChart); }
+			};
+		})();
 	</script>
 </head>
 

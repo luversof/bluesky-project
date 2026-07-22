@@ -209,13 +209,8 @@ public class StockViewController {
       return getLoginRedirectUrl(request);
     }
 
-    UUID userId = UserUtil.getUserId();
-    var accounts = loadAccounts(userId);
-    model.addAttribute("accounts", accounts);
-    model.addAttribute("userId", userId);
-
-    var stockItems = loadStockItems();
-    model.addAttribute("stockItems", stockItems);
+    // dashboard.jte 는 셸만 렌더하고 데이터는 htmx 조각이 각자 로드한다.
+    // (계좌/종목 목록을 여기서 조회해도 템플릿이 쓰지 않아 API 2회가 낭비였다.)
     return "stock/dashboard";
   }
 

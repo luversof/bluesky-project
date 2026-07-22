@@ -14,8 +14,8 @@ const jsFiles = [
 	["htmx.org/dist/htmx.min.js", "htmx.min.js"],
 	["htmx-ext-json-enc/json-enc.js", "json-enc.js"],
 	["chart.js/dist/chart.umd.min.js", "chart.umd.min.js"],
-	["hammerjs/hammer.min.js", "hammer.min.js"],
-	["chartjs-plugin-zoom/dist/chartjs-plugin-zoom.min.js", "chartjs-plugin-zoom.min.js"],
+	// hammerjs / chartjs-plugin-zoom 은 코드 어디에서도 참조하지 않아 복사 대상에서 제외했다.
+	// (차트 줌/제스처 기능을 다시 쓰게 되면 여기에 되살릴 것)
 	["dayjs/dayjs.min.js", "dayjs.min.js"],
 	["dayjs/locale/ko.js", "dayjs.locale.ko.js"],
 	["dayjs/plugin/relativeTime.js", "dayjs.plugin.relativeTime.js"],

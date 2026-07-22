@@ -41,7 +41,8 @@
 				<div class="card-body p-3.5">
 				<div class="flex gap-3">
 					@if(item.iconKey() != null)
-						<img src="/poe-assets/items/${item.iconKey()}.png" class="w-12 h-12 object-contain shrink-0 self-start drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" alt="" loading="lazy">
+						<%-- 고유 전용 아이콘을 먼저 쓰고, 없으면 베이스 아이콘으로 폴백(고유 주얼이 전부 같은 그림으로 보이던 문제) --%>
+						<img src="/poe-assets/uniques/${item.slug()}.png" onerror="this.onerror=null;this.src='/poe-assets/items/${item.iconKey()}.png'" class="w-12 h-12 object-contain shrink-0 self-start drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" alt="" loading="lazy">
 					@endif
 					<div class="min-w-0 flex-1 space-y-1">
 					<%-- 제목 (고유색) --%>

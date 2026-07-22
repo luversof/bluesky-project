@@ -22,7 +22,9 @@ if (!fs.existsSync(RAW)) {
 const tree = JSON.parse(fs.readFileSync(RAW, "utf8"));
 
 // 아틀라스 스탯은 전용 설명 파일이 있다(패시브용으로는 308/866 밖에 못 만든다 → 전용 파일로 828/866)
+// 아틀라스 전용 파일 + 그것이 include 하는 map 설명 파일(울티메이텀 등 리그 문구가 여기에 있다)
 const describe = createStatDescriber(FILES_DIR, [
+	"metadata@statdescriptions@map_stat_descriptions.txt",
 	"metadata@statdescriptions@atlas_stat_descriptions.txt",
 ]);
 const koByGraphId = buildKoreanMap({

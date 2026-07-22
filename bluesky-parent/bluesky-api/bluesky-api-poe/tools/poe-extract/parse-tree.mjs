@@ -6,6 +6,7 @@ import path from "node:path";
 import { DATA_DIR, FILES_DIR, WORK_DIR, loadTable } from "./paths.mjs";
 import { createStatDescriber } from "./statDescriptions.mjs";
 import { buildKoreanMap, buildTree } from "./tree-common.mjs";
+import { createTemplateTranslator } from "./ko-templates.mjs";
 
 const RAW = path.join(WORK_DIR, "passive-tree-raw.json");
 const OUT = path.join(DATA_DIR, "passive-tree.json");
@@ -56,6 +57,47 @@ for (const node of result.nodes) {
 	}
 }
 console.log(`마스터리 노드 ${result.nodes.filter((n) => n.masteryEffects).length}개, 효과 ${effectTotal}개 중 한글 ${effectKo}개 (${((effectKo / effectTotal) * 100).toFixed(0)}%)`);
+
+// ---- 2차 한글화: 스탯 서술기가 문장을 못 만든 노드를 **문장 템플릿 사전**으로 메운다 ----
+// 1차 조인(PassiveSkills + 서술기)이 놓치는 노드가 24개 남는다(대부분 "Grants 1 Passive Skill Point").
+// 같은 문장이 다른 노드에선 한글로 나오므로, 그 쌍을 모아 사전을 만들어 되메운다.
+const translator = createTemplateTranslator();
+translator.addFromStats(describe, statsTable);
+translator.addPairs(result.nodes.map((node) => ({ en: node.stats || [], ko: node.statsKo || [] })));
+translator.addPairs(
+	result.nodes.flatMap((node) => (node.masteryEffects || []).map((eff) => ({ en: eff.stats || [], ko: eff.statsKo || [] }))),
+);
+// 게임 데이터가 한글 문장을 아예 안 주는 몇 개는 수동 번역(직접 옮긴 것임을 명시).
+const MANUAL_KO = {
+	"Grants 1 Passive Skill Point": "패시브 스킬 포인트 1 획득",
+};
+// 마스터리 효과도 같은 사전으로 보강 — 1825개 중 7개가 서술기에서 안 나온다
+let effectFilled = 0;
+for (const node of result.nodes) {
+	for (const eff of node.masteryEffects || []) {
+		if (eff.statsKo?.length || !eff.stats?.length) continue;
+		const lines = eff.stats.map((line) => MANUAL_KO[line] || translator.translate(line));
+		if (lines.every(Boolean)) {
+			eff.statsKo = lines;
+			effectFilled++;
+		}
+	}
+}
+let filled = 0;
+let stillMissing = 0;
+for (const node of result.nodes) {
+	if (!node.stats?.length || node.statsKo?.length) continue;
+	const lines = node.stats.map((line) => MANUAL_KO[line] || translator.translate(line));
+	if (lines.every(Boolean)) {
+		node.statsKo = lines;
+		filled++;
+	} else {
+		stillMissing++;
+	}
+}
+console.log(
+	`스탯 한글 보강: 템플릿 ${translator.size}개로 노드 ${filled}개 + 마스터리 효과 ${effectFilled}개 채움, 남은 미번역 노드 ${stillMissing}개`,
+);
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.writeFileSync(OUT, JSON.stringify(result));

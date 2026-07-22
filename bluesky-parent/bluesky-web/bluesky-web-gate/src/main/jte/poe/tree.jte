@@ -7,6 +7,7 @@
 @param String patch = ""
 @param boolean hasTreeData = false
 @param java.util.List<net.luversof.web.gate.poe.dto.PoeGem> activeGems = java.util.List.of()
+@param java.util.List<net.luversof.web.gate.poe.dto.PoeUniqueItem> jewelUniques = java.util.List.of()
 
 !{
 	String pageTitle = MessageUtil.getMessage("poe.tree.title");
@@ -47,6 +48,8 @@
 				<div id="poeTreeShell" class="bg-base-100">
 				<div class="flex flex-wrap items-center gap-2 mb-2">
 					<input id="poeTreeSearch" type="text" class="input input-sm input-bordered w-full sm:w-52" placeholder="${net.luversof.web.gate.poe.PoeText.isKorean() ? "검색 (노드/스탯)" : "Search (node/stat)"}">
+					<span id="poeTreeSearchCount" class="text-xs font-mono text-base-content/50"></span>
+					<span id="poeTreeNotice" class="text-xs font-mono text-warning"></span>
 					<select id="poeTreeClass" class="select select-sm select-bordered" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "캐릭터 직업" : "Class"}">
 						<option value="0">사이온 (Scion)</option>
 						<option value="1">머라우더 (Marauder)</option>
@@ -58,9 +61,16 @@
 					</select>
 					<select id="poeTreeAscend" class="select select-sm select-bordered" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "전직" : "Ascendancy"}"></select>
 					<select id="poeTreeBloodline" class="select select-sm select-bordered" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "혈맹" : "Bloodline"}"></select>
+					<button id="poeTreeUndo" type="button" class="btn btn-sm btn-ghost" disabled title="Ctrl+Z">${net.luversof.web.gate.poe.PoeText.isKorean() ? "실행취소" : "Undo"}</button>
+					<button id="poeTreeRedo" type="button" class="btn btn-sm btn-ghost" disabled title="Ctrl+Shift+Z">${net.luversof.web.gate.poe.PoeText.isKorean() ? "다시실행" : "Redo"}</button>
 					<button id="poeTreeReset" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "트리 초기화" : "Reset"}</button>
 					<button id="poeTreeStatsToggle" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "스탯 요약" : "Stat summary"}</button>
+					<input id="poeTreeImport" type="text" class="input input-sm input-bordered w-full sm:w-56" placeholder="${net.luversof.web.gate.poe.PoeText.isKorean() ? "공홈 트리 링크 붙여넣기" : "Paste official tree link"}">
+					<button id="poeTreeImportGo" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "가져오기" : "Import"}</button>
+					<button id="poeTreeCopy" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "링크 복사" : "Copy link"}</button>
+					<button id="poeTreeCopyOfficial" type="button" class="btn btn-sm btn-ghost" title="pathofexile.com">${net.luversof.web.gate.poe.PoeText.isKorean() ? "공홈 링크" : "Official link"}</button>
 					<button id="poeTreeEval" type="button" class="btn btn-sm btn-primary btn-outline">${MessageUtil.getMessage("poe.tree.eval")}</button>
+					<button id="poeTreeToSim" type="button" class="btn btn-sm btn-secondary btn-outline">${MessageUtil.getMessage("poe.tree.tosim")}</button>
 					<button id="poeTreeFullscreen" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "전체 화면" : "Fullscreen"}</button>
 					<span id="poeTreePoints" class="ml-auto flex items-center gap-2 text-sm text-base-content/70"></span>
 				</div>
@@ -81,6 +91,12 @@
 								@endfor
 							</datalist>
 						</div>
+						<!-- 주얼 슬롯 우클릭 메뉴에서 쓰는 유니크 주얼 목록(이름/설명을 data 속성으로 실어 보낸다) -->
+						<datalist id="poeTreeJewelList">
+							@for(net.luversof.web.gate.poe.dto.PoeUniqueItem jewel : jewelUniques)
+								<option data-slug="${jewel.slug()}" data-radius="${jewel.radius() == null ? "" : jewel.radius()}" data-mods="${String.join(" / ", net.luversof.web.gate.poe.PoeText.isKorean() && jewel.explicitsKo() != null && !jewel.explicitsKo().isEmpty() ? jewel.explicitsKo() : jewel.explicits())}" value="${net.luversof.web.gate.poe.PoeText.name(jewel.nameKo(), jewel.name())}"></option>
+							@endfor
+						</datalist>
 						<div id="poeTreeEvalBody" class="p-2"></div>
 					</div>
 					<div id="poeTreeStats" class="hidden absolute right-2 top-2 z-10 w-72 max-h-[60%] overflow-y-auto rounded shadow-2xl border border-amber-700/60 bg-stone-900/95">

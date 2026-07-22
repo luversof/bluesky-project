@@ -76,7 +76,7 @@
             <div class="flex items-center justify-between border-t border-base-200 mt-4 pt-3">
                 <div class="flex items-center gap-1 text-sm text-base-content/60">
                     <span>${totalCombinedProfitLabel}</span>
-                    <div class="tooltip tooltip-bottom-end shrink-0">
+                    <div class="tooltip tooltip-bottom-start shrink-0">
                         <div class="tooltip-content z-[20] w-64 sm:w-72 lg:w-80 max-w-[calc(100vw-2rem)] rounded-box bg-neutral text-neutral-content shadow-lg">
                             <div class="space-y-1 text-left text-xs leading-5">
                                 <div class="font-semibold mb-1">${calculationDetailsLabel}</div>
@@ -179,7 +179,9 @@
     // htmx 스왑 정착 후 실행(setTimeout 0): 스왑 중엔 이전/새 canvas 가 공존할 수 있다(activityList.jte 와 동일).
     setTimeout(function () {
         var trendCanvas = document.getElementById('dashboardTrendChart');
-        if (!trendCanvas || typeof Chart === 'undefined') return;
+        if (!trendCanvas) return;
+        window.ensureStockCharts(function () {
+        if (typeof Chart === 'undefined') return;
         var trendLabels = $unsafe{trendChartLabelsJs};
         var trendValues = $unsafe{trendChartValuesJs};
         if (!trendLabels.length) return;
@@ -235,6 +237,7 @@
                     }
                 }
             }
+        });
         });
     }, 0);
 })();

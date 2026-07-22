@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestClientException;
 
+import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.web.gate.poe.config.PoeIconVersion;
 import net.luversof.web.gate.poe.dto.PoeBaseItem;
 import net.luversof.web.gate.poe.dto.PoeGem;
@@ -87,6 +88,16 @@ public class PoeHtmxController {
       @RequestParam(required = false, defaultValue = "") String ascendancy,
       @RequestParam(required = false) java.util.List<String> uniques,
       @RequestParam(required = false) java.util.List<String> skills,
+      // 트리 에디터에서 확정한 트리(콤마 id) — 지정하면 트리 탐색을 건너뛰고 그 트리로 최적화
+      @RequestParam(required = false, defaultValue = "") String treeNodes,
+      // 트리에서 고른 마스터리 효과 — 같이 넘겨야 확정 트리가 설계대로 평가된다
+      @RequestParam(required = false, defaultValue = "") String masteries,
+      // 트리에서 소켓에 꽂아둔 주얼 — 최적화기는 나머지 소켓만 채운다
+      @RequestParam(required = false, defaultValue = "") String jewels,
+      // 트리에서 꽂아둔 클러스터 주얼 구성 — 없으면 생성 노드(id ≥ 65536)를 PoB 가 무시해 더 낮은 수치로 최적화된다
+      @RequestParam(required = false, defaultValue = "") String clusters,
+      // 트리에서 새긴 문신 — 없으면 최적화기가 원래 패시브로 계산해 화면 수치와 어긋난다
+      @RequestParam(required = false, defaultValue = "") String tattoos,
       java.security.Principal principal) {
     if (principal != null) {
       // 멀티셀렉트(반복 파라미터) 또는 콤마 텍스트 둘 다 수용 → 콤마 문자열로 합쳐 API 로 전달
@@ -98,7 +109,12 @@ public class PoeHtmxController {
           className,
           ascendancy,
           joinCsv(uniques),
-          joinCsv(skills));
+          joinCsv(skills),
+          treeNodes,
+          masteries,
+          jewels,
+          clusters,
+          tattoos);
     }
     return "poe/htmx/simOptimizeWrap";
   }
@@ -159,7 +175,7 @@ public class PoeHtmxController {
     try {
       model.addAttribute("build", poeBuildClient.importBuild(code));
       model.addAttribute("engineAvailable", poeBuildClient.available());
-    } catch (RestClientException e) {
+    } catch (RestClientException | BlueskyException e) {
       model.addAttribute("importError", true);
     }
     return "poe/htmx/buildSummary";
@@ -170,7 +186,7 @@ public class PoeHtmxController {
   public String recalcBuild(@RequestParam String code, Model model) {
     try {
       model.addAttribute("engineResult", poeBuildClient.recalculate(code));
-    } catch (RestClientException e) {
+    } catch (RestClientException | BlueskyException e) {
       model.addAttribute("engineError", true);
     }
     return "poe/htmx/buildEngineResult";
@@ -184,6 +200,11 @@ public class PoeHtmxController {
       @RequestParam String nodes,
       @RequestParam(required = false) String gem,
       @RequestParam(required = false) String masteries,
+      @RequestParam(required = false) String jewels,
+      // 클러스터 주얼 구성 — 생성 노드가 엔진에서 살아있으려면 함께 넘겨야 한다
+      @RequestParam(required = false) String clusters,
+      // 문신 — 그 패시브가 문신 노드로 교체돼 계산된다(반경 주얼과 짝지어 쓰는 실전 조합)
+      @RequestParam(required = false) String tattoos,
       Model model) {
     try {
       model.addAttribute(
@@ -193,8 +214,11 @@ public class PoeHtmxController {
               ascendancy == null || ascendancy.isBlank() ? null : ascendancy,
               nodes,
               gem,
-              masteries));
-    } catch (RestClientException e) {
+              masteries,
+              jewels,
+              clusters,
+              tattoos));
+    } catch (RestClientException | BlueskyException e) {
       model.addAttribute("treeEvalError", true);
     }
     return "poe/htmx/treeStats";
@@ -240,6 +264,10 @@ public class PoeHtmxController {
     model.addAttribute("logLines", status.logLines());
     model.addAttribute("latestPatch", version.latestPatch());
     model.addAttribute("outdated", version.latestPatch() != null && !version.upToDate());
+    // 버전 비교를 **버튼 옆에서 바로** 보여주기 위한 값들 — 페이지 상단 배지만으로는
+    // "검사를 했는지"조차 알 수 없다(최신일 때 아무 표시가 없었다).
+    model.addAttribute("dataPatch", version.dataPatch());
+    model.addAttribute("configPatch", version.configPatch());
     if (!status.running()) {
       response.setStatus(286); // htmx: 폴링 중단
     }
@@ -303,5 +331,18 @@ public class PoeHtmxController {
     model.addAttribute("gem", gem);
     model.addAttribute("displayLevel", displayLevel);
     return "poe/htmx/gemDetail";
+  }
+
+  /**
+   * API 호출 실패 공용 안전망 — htmx 핸들러 13곳이 try/catch 없이 API 를 부른다. 예외가 전역 핸들러로 새면 <b>빈 200</b> 이 내려가 htmx
+   * 대상이 빈 내용으로 스왑되고, 사용자는 "눌렀는데 아무 일도 없는" 침묵 실패를 본다 (빌드 가져오기에서 실측). 컨트롤러 스코프 핸들러가 전역보다 우선하므로 여기서 오류
+   * 프래그먼트를 렌더한다. (개별 핸들러의 try/catch 가 있으면 그쪽이 먼저 잡는다 — 맞춤 문구는 그대로 유지된다)
+   */
+  @org.springframework.web.bind.annotation.ExceptionHandler({
+    RestClientException.class,
+    BlueskyException.class
+  })
+  public String handleApiError(Exception e) {
+    return "poe/htmx/apiError";
   }
 }

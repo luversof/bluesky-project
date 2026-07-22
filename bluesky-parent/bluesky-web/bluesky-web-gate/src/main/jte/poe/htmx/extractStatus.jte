@@ -8,6 +8,8 @@
 @param List<String> logLines = java.util.List.of()
 @param String latestPatch = null
 @param boolean outdated = false
+@param String dataPatch = null
+@param String configPatch = null
 
 !{
 	// 최신과 다르면 버튼에 목표 버전 표기(원클릭 갱신), 같으면 재추출
@@ -24,6 +26,24 @@
 
 <div>
 	@template._components.ui.card(bodyClass = "gap-3", body = @`
+			<%-- 버전 비교 — 갱신 버튼 바로 옆. 최신이어도 "검사 결과"를 보여야 사용자가 확인 여부를 안다. --%>
+			<div class="flex flex-wrap items-center gap-2 text-xs">
+				<span class="text-base-content/50">${MessageUtil.getMessage("poe.admin.version.current")}</span>
+				<span class="font-mono font-semibold">${dataPatch == null ? "-" : dataPatch}</span>
+				<span class="text-base-content/30">→</span>
+				<span class="text-base-content/50">${MessageUtil.getMessage("poe.admin.version.latest")}</span>
+				<span class="font-mono font-semibold ${outdated ? "text-warning" : ""}">${latestPatch == null ? "?" : latestPatch}</span>
+				@if(latestPatch == null)
+					<span class="badge badge-ghost badge-sm">${MessageUtil.getMessage("poe.admin.version.unknown")}</span>
+				@elseif(outdated)
+					<span class="badge badge-warning badge-sm">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.admin.version.outdated"), latestPatch)}</span>
+				@else
+					<span class="badge badge-success badge-outline badge-sm">${MessageUtil.getMessage("poe.admin.version.uptodate")}</span>
+				@endif
+				@if(configPatch != null && dataPatch != null && !configPatch.equals(dataPatch))
+					<span class="badge badge-info badge-outline badge-sm">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.admin.version.config"), configPatch)}</span>
+				@endif
+			</div>
 			<div class="flex flex-wrap items-center gap-3">
 				<div class="text-sm leading-6 text-base-content/60 min-w-0 flex-1">${descriptionLabel}</div>
 				@if(!available)

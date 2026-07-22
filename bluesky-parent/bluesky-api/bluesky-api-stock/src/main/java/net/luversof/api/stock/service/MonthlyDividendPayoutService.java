@@ -4,8 +4,13 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -44,19 +49,38 @@ public class MonthlyDividendPayoutService {
                 stockItemId)
             : monthlyDividendPayoutRepository.findAllByOrderByPayDateDescRecordDateDesc();
 
-    return payouts.stream()
-        .filter(
-            payout ->
-                request == null
-                    || request.getStartDate() == null
-                    || !payout.getPayDate().isBefore(request.getStartDate()))
-        .filter(
-            payout ->
-                request == null
-                    || request.getEndDate() == null
-                    || !payout.getPayDate().isAfter(request.getEndDate()))
-        .map(payout -> toResponse(payout, null))
+    List<MonthlyDividendPayout> filtered =
+        payouts.stream()
+            .filter(
+                payout ->
+                    request == null
+                        || request.getStartDate() == null
+                        || !payout.getPayDate().isBefore(request.getStartDate()))
+            .filter(
+                payout ->
+                    request == null
+                        || request.getEndDate() == null
+                        || !payout.getPayDate().isAfter(request.getEndDate()))
+            .toList();
+
+    // 종목 정보는 1회 일괄 조회한다. (행마다 findById 하면 행 수만큼 SELECT 가 나가는 N+1)
+    Map<UUID, StockItem> stockItemById = loadStockItems(filtered);
+    return filtered.stream()
+        .map(payout -> toResponse(payout, stockItemById.get(payout.getStockItemId())))
         .toList();
+  }
+
+  private Map<UUID, StockItem> loadStockItems(List<MonthlyDividendPayout> payouts) {
+    Set<UUID> ids =
+        payouts.stream()
+            .map(MonthlyDividendPayout::getStockItemId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+    Map<UUID, StockItem> byId = new HashMap<>();
+    if (!ids.isEmpty()) {
+      stockItemRepository.findAllById(ids).forEach(item -> byId.put(item.getId(), item));
+    }
+    return byId;
   }
 
   public MonthlyDividendPayoutResponse upsert(MonthlyDividendPayoutUpsertRequest request) {

@@ -1,6 +1,7 @@
 package net.luversof.web.gate.stock.controller;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -27,11 +28,10 @@ import net.luversof.web.gate.stock.domain.TradeProfit;
 import net.luversof.web.gate.stock.domain.TradeProfitAggregator;
 import net.luversof.web.gate.stock.dto.request.DividendRequest;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
-import net.luversof.web.gate.stock.dto.request.TradeSearchRequest;
 import net.luversof.web.gate.stock.dto.response.AssetStatusAccountHoldingView;
 import net.luversof.web.gate.stock.dto.response.DividendResponse;
-import net.luversof.web.gate.stock.dto.response.TradeResponse;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
+import net.luversof.web.gate.stock.httpexchange.DataFirstDateClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
@@ -41,12 +41,15 @@ import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
 public class StockPortfolioHtmxController extends StockBaseHtmxController {
 
+  private final DataFirstDateClient dataFirstDateClient;
+
   public StockPortfolioHtmxController(
       TradeProfitClient tradeProfitClient,
       TradeClient tradeClient,
       AccountClient accountClient,
       StockItemClient stockItemClient,
       DividendClient dividendClient,
+      DataFirstDateClient dataFirstDateClient,
       MessageSource messageSource) {
     super(
         tradeProfitClient,
@@ -55,6 +58,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         stockItemClient,
         dividendClient,
         messageSource);
+    this.dataFirstDateClient = dataFirstDateClient;
   }
 
   @BlueskyPreAuthorize
@@ -70,32 +74,27 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
       return ERROR_VIEW;
     }
     request.setUserId(userId);
-    // Compute earliest trade date across all trades so the date-range nav
-    // can correctly enable/disable the Previous button.
-    List<TradeResponse> allTrades =
-        emptyIfNull(
-            tradeClient.findTrades(
-                new TradeSearchRequest(userId, null, null, null, null).toParams()));
+    // 날짜 범위 네비게이션의 하한(minDate)용 최초 거래일.
+    // 전체 거래를 내려받아 min() 하던 것을 DB 집계 엔드포인트 1회 호출로 대체했다.
     ZoneId dataZone =
         (request.getTimeZone() != null && !request.getTimeZone().isEmpty())
             ? ZoneId.of(request.getTimeZone())
             : ZoneId.systemDefault();
+    Instant tradeFirstInstant = dataFirstDateClient.findDataFirstDate(userId).tradeFirstDate();
     LocalDate dataFirstDate =
-        allTrades.stream()
-            .filter(t -> t.tradeDate() != null)
-            .map(t -> t.tradeDate().atZone(dataZone).toLocalDate())
-            .min(Comparator.naturalOrder())
-            .orElse(null);
+        tradeFirstInstant != null ? tradeFirstInstant.atZone(dataZone).toLocalDate() : null;
 
-    List<TradeProfit> enrichedList = new ArrayList<>(getEnrichedTradeProfits(request));
-
-    enrichedList.removeIf(tp -> tp.holdingQuantity() == 0);
-
+    // STOCK 뷰에서는 아래 종목 그룹 조회 결과만 쓰므로, 계좌 기준 조회를 미리 하지 않는다.
+    // (기존에는 조회 후 통째로 덮어써서 calculateProfit/종목/계좌 조회가 낭비됐다.)
+    List<TradeProfit> enrichedList;
     if ("STOCK".equals(viewGroupBy)) {
       enrichedList =
           getStockGroupedTradeProfits(request, false).stream()
               .map(this::toPortfolioStock)
               .collect(Collectors.toCollection(ArrayList::new));
+    } else {
+      enrichedList = new ArrayList<>(getEnrichedTradeProfits(request));
+      enrichedList.removeIf(tp -> tp.holdingQuantity() == 0);
     }
 
     Comparator<TradeProfit> comparator = null;
@@ -226,8 +225,11 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
             .filter(Objects::nonNull)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+    // 계좌 목록은 이 메서드에서 두 번 쓰이므로 1회만 조회해 재사용한다.
+    var accountList = emptyIfNull(accountClient.getAccountsByUserId(userId));
+
     Map<UUID, BigDecimal> accountPrincipalOverrideMap =
-        emptyIfNull(accountClient.getAccountsByUserId(userId)).stream()
+        accountList.stream()
             .filter(account -> account.id() != null)
             .flatMap(
                 account -> {
@@ -336,13 +338,12 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
 
     // 계좌명 → accountId (계좌 상세 링크용)
     Map<String, UUID> accountIdByName = new HashMap<>();
-    emptyIfNull(accountClient.getAccountsByUserId(userId))
-        .forEach(
-            a -> {
-              if (a != null && a.name() != null && a.id() != null) {
-                accountIdByName.putIfAbsent(a.name(), a.id());
-              }
-            });
+    accountList.forEach(
+        a -> {
+          if (a != null && a.name() != null && a.id() != null) {
+            accountIdByName.putIfAbsent(a.name(), a.id());
+          }
+        });
     model.addAttribute("accountIdByName", accountIdByName);
     return "stock/htmx/fragments/assetStatus";
   }

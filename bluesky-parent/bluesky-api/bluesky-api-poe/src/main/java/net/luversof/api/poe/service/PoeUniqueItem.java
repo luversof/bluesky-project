@@ -12,6 +12,9 @@ public record PoeUniqueItem(
     String category,
     Integer requiredLevel,
     String league,
+    // 반경 라벨(Small/Medium/Large/Very Large) — "…in Radius" 모드는 이 줄이 아이템 텍스트에 있어야
+    // PoB 가 반경 계산을 한다(없으면 그 모드는 조용히 무효).
+    String radius,
     List<String> implicits,
     List<String> implicitsKo,
     List<String> explicits,

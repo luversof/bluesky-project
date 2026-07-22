@@ -37,7 +37,7 @@ WANTED.set("ItemsBackgroundGem", "itemsbackgroundgem");
 
 // 1) atlas 좌표표 추출 (UTF-16LE)
 const baseConfig = loadConfig();
-runExtractor({ ...baseConfig, tables: [], files: ["art/uiimages1.txt"] });
+runExtractor({ ...baseConfig, tables: [], files: [...(baseConfig.files || []), "art/uiimages1.txt"] });
 const indexText = fs.readFileSync(path.join(FILES_DIR, "art@uiimages1.txt")).toString("utf16le");
 
 // 2) 필요한 항목의 좌표/시트 수집
@@ -53,7 +53,7 @@ const missing = [...WANTED.values()].filter((o) => !entries.some((e) => e.out ==
 console.log(`atlas 매칭: ${entries.length}/${WANTED.size}${missing.length ? " (누락: " + missing.join(", ") + ")" : ""}`);
 
 // 3) 필요한 4K 시트만 추출 (dds → png 는 pathofexile-dat + ImageMagick 이 처리)
-runExtractor({ ...baseConfig, tables: [], files: [...new Set(entries.map((e) => e.tex))] });
+runExtractor({ ...baseConfig, tables: [], files: [...(baseConfig.files || []), ...new Set(entries.map((e) => e.tex))] });
 
 // 4) 시트에서 crop
 fs.mkdirSync(OUT_DIR, { recursive: true });

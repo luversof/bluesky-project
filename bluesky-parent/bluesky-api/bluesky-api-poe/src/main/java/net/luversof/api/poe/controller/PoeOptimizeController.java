@@ -44,9 +44,26 @@ public class PoeOptimizeController {
       @RequestParam(required = false, defaultValue = "") String className,
       @RequestParam(required = false, defaultValue = "") String ascendancy,
       @RequestParam(required = false, defaultValue = "") String uniques,
-      @RequestParam(required = false, defaultValue = "") String skills) {
+      @RequestParam(required = false, defaultValue = "") String skills,
+      @RequestParam(required = false, defaultValue = "") String treeNodes,
+      @RequestParam(required = false, defaultValue = "") String masteries,
+      @RequestParam(required = false, defaultValue = "") String jewels,
+      @RequestParam(required = false, defaultValue = "") String clusters,
+      @RequestParam(required = false, defaultValue = "") String tattoos) {
     return poeOptimizeService.start(
-        slug, objective, scenario, buffs, className, ascendancy, uniques, skills);
+        slug,
+        objective,
+        scenario,
+        buffs,
+        className,
+        ascendancy,
+        uniques,
+        skills,
+        treeNodes,
+        masteries,
+        jewels,
+        clusters,
+        tattoos);
   }
 
   @GetMapping("/status")

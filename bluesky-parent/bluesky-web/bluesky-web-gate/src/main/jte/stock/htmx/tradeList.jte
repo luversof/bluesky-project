@@ -222,7 +222,8 @@
             if (elStock) elStock.classList.toggle('tab-active', window.currentGroupBy === 'stock');
             if (elAccount) elAccount.classList.toggle('tab-active', window.currentGroupBy === 'account');
 
-            if (window.StockCharts) {
+            window.ensureStockCharts(function() {
+                if (!window.StockCharts) return;
                 window.tradeDonutChartInst = window.StockCharts.initDonutFromData(tradeData, {
                     canvasId: 'tradeDonutChart',
                     legendId: 'tradeDonutLegend',
@@ -231,20 +232,22 @@
                     groupBy: window.currentGroupBy,
                     tooltipId: 'tradeDonutTooltipEl'
                 }, window.tradeDonutChartInst);
-            }
+            });
         };
 
         function initAll() {
-            if (!window.StockCharts) return;
-            window.tradeMonthlyChartInst = window.StockCharts.initMonthlyFromData(tradeData, 'tradeMonthlyChart', window.tradeMonthlyChartInst);
-            window.tradeDonutChartInst = window.StockCharts.initDonutFromData(tradeData, {
-                canvasId: 'tradeDonutChart',
-                legendId: 'tradeDonutLegend',
-                titleId: 'tradeDonutTitle',
-                metric: window.currentMetric,
-                groupBy: window.currentGroupBy,
-                tooltipId: 'tradeDonutTooltipEl'
-            }, window.tradeDonutChartInst);
+            window.ensureStockCharts(function() {
+                if (!window.StockCharts) return;
+                window.tradeMonthlyChartInst = window.StockCharts.initMonthlyFromData(tradeData, 'tradeMonthlyChart', window.tradeMonthlyChartInst);
+                window.tradeDonutChartInst = window.StockCharts.initDonutFromData(tradeData, {
+                    canvasId: 'tradeDonutChart',
+                    legendId: 'tradeDonutLegend',
+                    titleId: 'tradeDonutTitle',
+                    metric: window.currentMetric,
+                    groupBy: window.currentGroupBy,
+                    tooltipId: 'tradeDonutTooltipEl'
+                }, window.tradeDonutChartInst);
+            });
         }
 
         window.tradePicker = window.DateRangePicker

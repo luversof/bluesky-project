@@ -20,6 +20,17 @@
 			<span class="badge badge-accent badge-outline badge-sm">${gemLabel}</span>
 			<span class="text-base-content/50 font-mono">${meta}</span>
 		</div>
+		<!-- 계산 가정 — "장비 없음"이라고만 하면 공격 스킬에 들어간 표준 무기가 숨는다 -->
+		@if(treeEval.assumedWeapon() != null)
+			<div class="text-[10px] text-warning/80 font-mono">${MessageUtil.getMessage("poe.tree.eval.assumedweapon")}: ${net.luversof.web.gate.poe.PoeText.name(treeEval.assumedWeaponKo(), treeEval.assumedWeapon())}</div>
+		@endif
+		@if(treeEval.jewels() != null && !treeEval.jewels().isEmpty())
+			<div class="flex flex-wrap items-center gap-1">
+				@for(PoeTreeEvaluation.TreeJewel jewel : treeEval.jewels())
+					<span class="badge badge-warning badge-outline badge-sm">◈ ${net.luversof.web.gate.poe.PoeText.name(jewel.nameKo(), jewel.name())}</span>
+				@endfor
+			</div>
+		@endif
 		<div class="grid grid-cols-2 gap-1.5">
 			@for(PoeBuild.PlayerStat stat : treeEval.stats())
 				<div class="rounded bg-base-100/60 px-2 py-1">

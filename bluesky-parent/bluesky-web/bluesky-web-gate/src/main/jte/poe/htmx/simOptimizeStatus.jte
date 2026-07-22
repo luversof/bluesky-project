@@ -35,9 +35,6 @@
 		@endif
 	</div>
 @else
-	@if(!isAuthenticated)
-		<div class="text-sm text-base-content/50">${MessageUtil.getMessage("stock.label.login.required")}</div>
-	@endif
 	@if("FAILED".equals(status))
 		<div class="alert alert-error text-sm">${MessageUtil.getMessage("poe.admin.extract.status.failed")}</div>
 		@if(!logLines.isEmpty())

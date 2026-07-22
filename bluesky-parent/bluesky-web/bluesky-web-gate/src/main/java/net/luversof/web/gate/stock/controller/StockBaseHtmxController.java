@@ -115,15 +115,15 @@ public abstract class StockBaseHtmxController {
         emptyIfNull(tradeProfitClient.calculateProfit(request.toParams()));
     String unknownLabel = msg("stock.label.unknown");
 
+    // 계좌명은 사용자 계좌 목록 1회 조회로 해결한다.
+    // (이전엔 등장 계좌 수만큼 getAccountById 를 호출해 요청당 N번의 HTTP 왕복이 발생했다.)
     Map<UUID, String> accountNames =
-        tradeProfitList.stream()
-            .map(TradeProfit::accountId)
-            .filter(Objects::nonNull)
-            .distinct()
+        emptyIfNull(accountClient.getAccountsByUserId(request.getUserId())).stream()
+            .filter(account -> account != null && account.id() != null)
             .collect(
                 Collectors.toMap(
-                    id -> id,
-                    id -> accountClient.getAccountById(id).map(Account::name).orElse(unknownLabel),
+                    Account::id,
+                    account -> account.name() != null ? account.name() : unknownLabel,
                     (a, b) -> a));
 
     Map<UUID, String> stockItemNames =
@@ -136,7 +136,9 @@ public abstract class StockBaseHtmxController {
                 TradeProfit.withNames(
                     profit,
                     stockItemNames.getOrDefault(profit.stockItemId(), unknownLabel),
-                    profit.accountId() != null ? accountNames.get(profit.accountId()) : null))
+                    profit.accountId() != null
+                        ? accountNames.getOrDefault(profit.accountId(), unknownLabel)
+                        : null))
         .toList();
   }
 

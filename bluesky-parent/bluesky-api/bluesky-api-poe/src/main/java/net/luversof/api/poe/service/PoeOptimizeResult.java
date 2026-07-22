@@ -19,11 +19,15 @@ public record PoeOptimizeResult(
     String bloodlineKo,
     List<SupportPick> supports,
     List<SupportPick> auras,
+    // 마나 예약 상한에 걸려 못 띄운 오라 — 사용자가 "왜 오라가 이것뿐인지" 알 수 있게 부족 마나와 함께 노출
+    List<BlockedAura> blockedAuras,
     List<SupportPick> additionalSkills,
     List<Integer> treeNodeIds,
     List<String> treeNotables,
     List<SupportPick> jewels,
     List<ItemPick> items,
+    // 캐릭터 속성이 모자라 실제로는 장착 불가능한 장비 — 조용히 넘어가면 게임에서 못 쓰는 빌드가 나온다
+    List<UnmetRequirement> unmetRequirements,
     List<SlotTierCompare> tierComparisons,
     List<ScenarioCell> scenarioMatrix,
     List<DefenseHit> defenseHits,
@@ -32,9 +36,28 @@ public record PoeOptimizeResult(
     String finalValue,
     String pobCode,
     long durationMs,
-    int evalCount) {
+    int evalCount,
+    // 결과를 트리 에디터로 되돌릴 때 필요한 것들 — 없으면 클러스터 생성 노드가 "존재하지 않는 id" 가 되고
+    // 주얼도 빠져, 결과 화면의 수치와 트리 화면의 수치가 어긋난다.
+    String treeClusters,
+    String treeJewels,
+    /** 트리 링크(tt=)로 되돌아갈 수 있게 남기는 문신 구성 "노드:영문명|…" */
+    String treeTattoos,
+    /** 트리 링크로 되돌아갈 마스터리 선택 "노드:효과,…" — 없으면 트리 화면이 마스터리 스탯 빠진 약한 트리를 보여준다 */
+    String treeMasteries,
+    /** 표시용 마스터리 요약("마스터리명 — 효과 첫 줄") — 자동 채택된 효과를 사용자가 결과에서 봐야 한다 */
+    List<String> treeMasteryLabels,
+    /** 표시용 문신 요약("한글명 ×N") — treeTattoos 는 링크용 영문 dn 이라 그대로 보여줄 수 없다 */
+    List<String> treeTattooLabels) {
 
   public record SupportPick(String slug, String name, String nameKo) {}
+
+  /** 예약 초과로 제외된 오라. shortfall = 부족한 마나(양수). */
+  public record BlockedAura(String name, String nameKo, int shortfall) {}
+
+  /** 장착 요구 속성 미달 (attribute = str|dex|int) */
+  public record UnmetRequirement(
+      String name, String nameKo, String attribute, int required, int actual) {}
 
   /**
    * 장착 아이템 하나.

@@ -16,6 +16,37 @@ package.cpath = package.cpath .. ";../runtime/?.dll"
 local ok, err = pcall(function()
 	dofile("HeadlessWrapper.lua")
 
+-- PoB 의 HeadlessWrapper 는 Inflate/NewFileSearch 가 **빈 스텁**이라(원본 주석: "TODO: And this")
+-- 무궁한(타임리스) 주얼 데이터(Data/TimelessJewelData/*.zip)를 아예 못 읽는다 → 반경 변환이 계산되지 않는다.
+-- 우리는 파이프라인에서 .zip 을 미리 풀어 **.bin** 을 만들어 두고, 여기서 NewFileSearch 만 최소 구현해
+-- PoB 가 "압축 해제본이 최신" 경로를 타도록 한다(Inflate 없이 동작).
+function GetScriptPath()
+	return "."
+end
+local function fileExists(path)
+	local f = io.open(path, "rb")
+	if f then f:close() return true end
+	return false
+end
+local rawNewFileSearch = NewFileSearch
+function NewFileSearch(pattern, ...)
+	if type(pattern) == "string" and pattern:find("TimelessJewelData") and not pattern:find("%*") then
+		if not fileExists(pattern) then return nil end
+		-- .bin 을 항상 "더 최신"으로 보고해 압축 해제본 경로를 태운다
+		local modified = pattern:sub(-4) == ".bin" and 2 or 1
+		local name = pattern:match("[^/]+$") or pattern
+		return {
+			GetFileName = function() return name end,
+			GetFileModifiedTime = function() return modified end,
+			GetFileSize = function() return 0 end,
+			NextFile = function() return false end,
+		}
+	end
+	if rawNewFileSearch then return rawNewFileSearch(pattern, ...) end
+	return nil
+end
+
+
 	local file = assert(io.open(xmlPath, "rb"), "빌드 XML 열기 실패: " .. xmlPath)
 	local xmlText = file:read("*a")
 	file:close()
@@ -27,6 +58,10 @@ local ok, err = pcall(function()
 	local keys = {
 		"CombinedDPS", "TotalDPS", "FullDPS", "AverageDamage", "Speed",
 		"Life", "LifeUnreserved", "EnergyShield", "Mana", "Ward",
+		-- 속성: 장비 요구치(힘/민첩/지능) 충족 여부 판정에 쓴다
+		"Str", "Dex", "Int",
+	-- 명중/명중률 — 공격 빌드의 DPS 는 명중 가정에 크게 좌우된다(표준 무기 +2000 전제)
+	"Accuracy", "AccuracyHitChance",
 		"Armour", "Evasion", "TotalEHP",
 			"ManaReserved", "ManaReservedPercent", "ManaUnreserved", "ManaUnreservedPercent",
 			"LifeReserved", "LifeReservedPercent",

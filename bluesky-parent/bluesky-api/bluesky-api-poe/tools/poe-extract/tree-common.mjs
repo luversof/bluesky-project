@@ -8,6 +8,23 @@
  * 아틀라스 노드도 같은 PassiveSkills 테이블에 들어 있다(867/867 조인 확인).
  * @returns Map<graphId, {nameKo, statsKo}>
  */
+// 궤도별 각도 — GGG 공식 스펙(skilltree-export README): 16노드/40노드 궤도는 **균등 분할이 아니다**.
+// 균등식으로 계산하면 해당 궤도의 홀수 인덱스 노드가 최대 ~44단위(반지름 335 기준 7.5도) 어긋난다.
+// PoB(PassiveTree:CalcOrbitAngles)와 동일한 표를 쓴다.
+const ORBIT_ANGLES_16 = [0, 30, 45, 60, 90, 120, 135, 150, 180, 210, 225, 240, 270, 300, 315, 330];
+const ORBIT_ANGLES_40 = [
+	0, 10, 20, 30, 40, 45, 50, 60, 70, 80, 90, 100, 110, 120, 130, 135, 140, 150, 160, 170,
+	180, 190, 200, 210, 220, 225, 230, 240, 250, 260, 270, 280, 290, 300, 310, 315, 320, 330, 340, 350,
+];
+export function orbitAngle(orbit, orbitIndex, skillsPerOrbit) {
+	const count = skillsPerOrbit[orbit];
+	const table = count === 16 ? ORBIT_ANGLES_16 : count === 40 ? ORBIT_ANGLES_40 : null;
+	if (table) {
+		return ((table[orbitIndex % table.length] || 0) * Math.PI) / 180;
+	}
+	return (2 * Math.PI * orbitIndex) / count;
+}
+
 export function buildKoreanMap({ describe, statsTable, passivesEn, passivesKo }) {
 	const koByGraphId = new Map();
 	passivesEn.forEach((passive, i) => {
@@ -24,6 +41,17 @@ export function buildKoreanMap({ describe, statsTable, passivesEn, passivesKo })
 	});
 	return koByGraphId;
 }
+
+// 직업 시작 노드 아트 키(PoB PassiveTree.lua 와 동일 순서 = GGG classId)
+const CLASS_START_ART = [
+	"centerscion",
+	"centermarauder",
+	"centerranger",
+	"centerwitch",
+	"centerduelist",
+	"centertemplar",
+	"centershadow",
+];
 
 function nodeType(node) {
 	if (node.classStartIndex != null) return "class";
@@ -48,7 +76,7 @@ export function buildTree(tree, koByGraphId = null) {
 		if (node.group == null || node.orbit == null || node.orbitIndex == null) continue; // 클러스터 주얼 템플릿 등
 		const group = tree.groups[node.group];
 		if (!group) continue;
-		const angle = (2 * Math.PI * node.orbitIndex) / skillsPerOrbit[node.orbit];
+		const angle = orbitAngle(node.orbit, node.orbitIndex, skillsPerOrbit);
 		const radius = orbitRadii[node.orbit];
 		const ko = koByGraphId ? koByGraphId.get(Number(id)) : null;
 		nodes.push({
@@ -65,17 +93,52 @@ export function buildTree(tree, koByGraphId = null) {
 			statsKo: ko?.statsKo?.length ? ko.statsKo : null,
 			ascendancy: node.ascendancyName || null,
 			ascendancyStart: node.isAscendancyStart ? true : undefined,
+			// 프록시 그룹(isProxy) 노드는 게임 화면엔 없는 자리표시자다 — 클러스터 서브트리를 붙일 좌표 기준일 뿐.
+			// 표시하면 "위치 대행" 같은 노드를 실제로 찍어 포인트를 버리게 된다(실측으로 발각).
+			isProxy: group.isProxy ? true : undefined,
 			// 클러스터 주얼 소켓(트리 외곽)은 크기별 전용 프레임 아트를 쓴다. 0=Small 1=Medium 2=Large.
 			clusterSize: node.expansionJewel ? node.expansionJewel.size : undefined,
+			// 클러스터 주얼이 만들어내는 서브트리를 붙이는 데 필요한 참조.
+			// GGG 트리엔 서브트리 정의가 없고(정의는 PoB Data/ClusterJewels.lua) 이 참조만 있다:
+			//  proxy  = 생성 노드들이 매달릴 프록시 노드 id, parent = 상위 소켓(중첩 클러스터), index = 부모 안에서의 자리
+			expansionJewel: node.expansionJewel
+				? {
+						size: node.expansionJewel.size,
+						index: node.expansionJewel.index,
+						proxy: node.expansionJewel.proxy !== undefined ? Number(node.expansionJewel.proxy) : null,
+						parent: node.expansionJewel.parent !== undefined ? Number(node.expansionJewel.parent) : null,
+					}
+				: undefined,
 			// 마스터리는 노드 자체가 아니라 "효과 하나"를 골라 찍는다. effect id 는 GGG URL 인코딩(마스터리 4바이트)에 그대로 들어감.
 			masteryEffects: node.masteryEffects?.length
 				? node.masteryEffects.map((eff) => ({ id: eff.effect, stats: eff.stats || [] }))
 				: undefined,
 			// icon = 원본 경로(스프라이트 coords 키와 정확히 일치) — 프론트가 타입별 시트에서 blit
 			icon: node.icon || null,
+			// 직업 시작 노드의 중앙 아트(centerwitch 등) — 공식 뷰어는 선택된 직업만 이 아트를 켠다
+			startArt: node.classStartIndex != null ? CLASS_START_ART[node.classStartIndex] : undefined,
 		});
 		positioned.add(Number(id));
 	}
+
+	// 클러스터 주얼 노터블/키스톤 — **그룹이 없는** 노드로 트리에 들어 있다(좌표가 없어 위 루프에서 걸러진다).
+	// PoB 도 같은 규칙으로 clusterNodeMap 을 만든다(PassiveTree.lua: group 이 없고 type 이 Notable/Keystone).
+	// 주얼에 "1 Added Passive Skill is <이름>" 으로 얹히며, **이름이 하나라도 어긋나면 PoB 가 서브트리를 통째로 버린다**.
+	const clusterNotables = [];
+	for (const [id, node] of Object.entries(tree.nodes)) {
+		if (node.group != null || !node.name) continue;
+		if (!node.isNotable && !node.isKeystone) continue;
+		const ko = koByGraphId ? koByGraphId.get(Number(id)) : null;
+		clusterNotables.push({
+			name: node.name,
+			nameKo: ko?.nameKo || null,
+			stats: node.stats || [],
+			statsKo: ko?.statsKo?.length ? ko.statsKo : null,
+			keystone: node.isKeystone ? true : undefined,
+			icon: node.icon || null,
+		});
+	}
+	clusterNotables.sort((a, b) => a.name.localeCompare(b.name));
 
 	// 간선: out 기준, 양 끝이 배치된 노드일 때만(a<b 정규화로 중복 제거)
 	const edgeSet = new Set();
@@ -91,6 +154,14 @@ export function buildTree(tree, koByGraphId = null) {
 	const edges = [...edgeSet].map((k) => k.split("-").map(Number));
 
 	// 그룹: 좌표 + 배경(있으면). 프론트가 그룹 배경 스프라이트를 그리고, 궤도 arc 연결에 group/orbit 을 쓴다.
+	// 전직 배경 아트는 **전직 시작 노드가 속한 그룹**에 그린다(PoB renderGroup 과 동일).
+	// GGG 그룹 데이터엔 전직 이름이 없어 노드에서 역으로 채운다.
+	const ascendancyByGroup = new Map();
+	for (const node of Object.values(tree.nodes)) {
+		if (node.group != null && node.isAscendancyStart && node.ascendancyName) {
+			ascendancyByGroup.set(String(node.group), node.ascendancyName);
+		}
+	}
 	const groups = {};
 	for (const [gid, g] of Object.entries(tree.groups)) {
 		groups[gid] = {
@@ -98,6 +169,8 @@ export function buildTree(tree, koByGraphId = null) {
 			y: g.y,
 			orbits: g.orbits || [],
 			background: g.background || null,
+			// 이 그룹이 전직 시작 그룹이면 그 전직 이름(= 스프라이트 키 Classes<이름>)
+			ascendancyStart: ascendancyByGroup.get(gid) || undefined,
 		};
 	}
 
@@ -119,5 +192,10 @@ export function buildTree(tree, koByGraphId = null) {
 		groups,
 		nodes,
 		edges,
+		clusterNotables,
+		// 트리 배경 레이어(클래스 일러스트) — 좌표까지 데이터에 들어 있다. 이미지는 tree-layers.mjs 가 번들에서 뽑는다.
+		extraImages: Object.values(tree.extraImages || {})
+			.filter((entry) => entry?.image)
+			.map((entry) => ({ x: entry.x, y: entry.y, image: entry.image.split("/").pop().toLowerCase() })),
 	};
 }

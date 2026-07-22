@@ -55,7 +55,10 @@ public class PoeBuildController {
       @RequestParam(required = false) String ascendancy,
       @RequestParam String nodes,
       @RequestParam(required = false) String gem,
-      @RequestParam(required = false) String masteries) {
+      @RequestParam(required = false) String masteries,
+      @RequestParam(required = false) String jewels,
+      @RequestParam(required = false) String clusters,
+      @RequestParam(required = false) String tattoos) {
     java.util.Set<Integer> nodeIds =
         java.util.Arrays.stream(nodes.split(","))
             .map(String::trim)
@@ -76,8 +79,55 @@ public class PoeBuildController {
         }
       }
     }
+    // jewels = "소켓노드:유니크slug,..." — 소켓 노드가 할당돼 있어야만 실제 장착된다
+    java.util.Map<Integer, String> jewelSlugs = new java.util.LinkedHashMap<>();
+    if (jewels != null && !jewels.isBlank()) {
+      for (String pair : jewels.split(",")) {
+        String[] kv = pair.trim().split(":", 2);
+        if (kv.length == 2 && kv[0].matches("\\d+") && !kv[1].isBlank()) {
+          jewelSlugs.put(Integer.valueOf(kv[0]), kv[1].trim());
+        }
+      }
+    }
+    // clusters = "소켓:크기:노드수:스킬키,..." — 프론트가 생성한 서브트리를 PoB 도 같게 만들려면 주얼 자체가 필요하다
+    java.util.List<PoeOptimizeService.ClusterSpec> clusterSpecs = new java.util.ArrayList<>();
+    if (clusters != null && !clusters.isBlank()) {
+      for (String entry : clusters.split(",")) {
+        String[] parts = entry.trim().split(":");
+        if (parts.length >= 3 && parts[0].matches("[0-9]+") && parts[2].matches("[0-9]+")) {
+          // 5번째 필드 = 노터블 이름들('|' 구분). 이름은 PoB 가 트리에서 찾는 영문 원문 그대로여야 한다.
+          java.util.List<String> notables =
+              parts.length > 4 && !parts[4].isBlank()
+                  ? java.util.Arrays.stream(parts[4].split("\\|"))
+                      .map(String::trim)
+                      .filter(s -> !s.isEmpty())
+                      .toList()
+                  : java.util.List.of();
+          clusterSpecs.add(
+              new PoeOptimizeService.ClusterSpec(
+                  Integer.parseInt(parts[0]),
+                  parts[1],
+                  Integer.parseInt(parts[2]),
+                  parts.length > 3 ? parts[3] : "",
+                  notables,
+                  // 6번째 필드 = 주얼 소켓 수(중첩 클러스터를 꽂을 자리)
+                  parts.length > 5 && parts[5].matches("[0-9]+") ? Integer.parseInt(parts[5]) : 0));
+        }
+      }
+    }
+    // tattoos = "노드:문신영문명,..." — 그 패시브를 문신 노드로 통째 교체한다(할당된 노드만 유효)
+    java.util.Map<Integer, String> tattooDns = new java.util.LinkedHashMap<>();
+    if (tattoos != null && !tattoos.isBlank()) {
+      for (String pair : tattoos.split(",")) {
+        String[] kv = pair.trim().split(":", 2);
+        if (kv.length == 2 && kv[0].matches("[0-9]+") && !kv[1].isBlank()) {
+          tattooDns.put(Integer.valueOf(kv[0]), kv[1].trim());
+        }
+      }
+    }
     try {
-      return poeOptimizeService.evaluateTree(classId, ascendancy, nodeIds, gem, masteryEffects);
+      return poeOptimizeService.evaluateTree(
+          classId, ascendancy, nodeIds, gem, masteryEffects, jewelSlugs, clusterSpecs, tattooDns);
     } catch (IllegalArgumentException | IllegalStateException e) {
       throw new ResponseStatusException(
           org.springframework.http.HttpStatus.BAD_REQUEST, e.getMessage());

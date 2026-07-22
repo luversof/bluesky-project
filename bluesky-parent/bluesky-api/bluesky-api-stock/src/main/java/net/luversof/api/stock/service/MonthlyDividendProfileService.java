@@ -2,11 +2,15 @@ package net.luversof.api.stock.service;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -49,7 +53,21 @@ public class MonthlyDividendProfileService {
                 true)
             : monthlyDividendProfileRepository.findAllByOrderByDisplayOrderAscUpdatedDateDesc();
 
-    return profiles.stream().map(profile -> toResponse(profile, null)).toList();
+    // 종목 정보는 1회 일괄 조회한다. (행마다 findById 하면 행 수만큼 SELECT 가 나가는 N+1)
+    Map<UUID, StockItem> stockItemById = new HashMap<>();
+    Set<UUID> stockItemIds =
+        profiles.stream()
+            .map(MonthlyDividendProfile::getStockItemId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+    if (!stockItemIds.isEmpty()) {
+      stockItemRepository
+          .findAllById(stockItemIds)
+          .forEach(item -> stockItemById.put(item.getId(), item));
+    }
+    return profiles.stream()
+        .map(profile -> toResponse(profile, stockItemById.get(profile.getStockItemId())))
+        .toList();
   }
 
   public MonthlyDividendProfileResponse upsert(MonthlyDividendProfileUpsertRequest request) {

@@ -16,4 +16,12 @@ public record PoeTreeEvaluation(
     int nodeCount,
     List<PoeBuild.PlayerStat> stats,
     String pobCode,
-    long durationMs) {}
+    long durationMs,
+    List<TreeJewel> jewels,
+    // 공격 스킬은 무기 없이 계산이 성립하지 않아 표준 무기를 가정한다(주문은 null)
+    String assumedWeapon,
+    String assumedWeaponKo) {
+
+  /** 트리 평가에 실제 장착된 주얼(소켓 미할당·미존재 slug 는 API 가 걸러낸다) */
+  public record TreeJewel(String slug, String name, String nameKo) {}
+}

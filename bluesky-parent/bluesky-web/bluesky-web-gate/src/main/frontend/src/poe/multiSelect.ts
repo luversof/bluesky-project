@@ -194,4 +194,17 @@
 	}
 	document.addEventListener("htmx:afterSwap", enhanceAll);
 	document.addEventListener("htmx:afterSettle", enhanceAll);
+
+	// 트리 에디터에서 전직까지 정해 넘어온 경우(?ascendancy=) 최적화 폼 셀렉트에 반영한다.
+	// JTE 는 속성명 자리 표현식(`<option ${cond ? "selected" : ""}>`)을 금지해 서버 렌더로는 못 박는다.
+	// 반영하지 않으면 사용자가 고른 전직이 무시되고 최적화기가 임의로 다시 고른다.
+	function applyAscendancyFromUrl() {
+		const wanted = new URLSearchParams(globalThis.location.search).get("ascendancy");
+		if (!wanted) return;
+		const select = document.querySelector<HTMLSelectElement>('select[name="ascendancy"]');
+		if (select && Array.prototype.some.call(select.options, (o: HTMLOptionElement) => o.value === wanted)) {
+			select.value = wanted;
+		}
+	}
+	applyAscendancyFromUrl();
 })();

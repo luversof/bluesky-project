@@ -3,8 +3,8 @@
 	"private": true,
 	"scripts": {
 		"build": "npm-run-all check:nonce build:ts build:css build:vendor",
-		"build:ts": "tsc",
-		"build:css": "tailwindcss -i ./main.css -o ../resources/static/main.css",
+		"build:ts": "tsc && node minify-js.mjs",
+		"build:css": "tailwindcss -i ./main.css -o ../resources/static/main.css --minify",
 		"build:vendor": "node copy-vendor.mjs",
 		"watch:css": "tailwindcss -i ./main.css -o ../resources/static/main.css --watch",
 		"watch:format": "chokidar \"src/**/*.ts\" -c \"prettier --write {path}\"",
@@ -16,6 +16,7 @@
 		"@tailwindcss/typography": "^0.5.16",
 		"@tsconfig/recommended": "^1.0.10",
 		"chokidar-cli": "^3.0.0",
+		"esbuild": "^0.28.1",
 		"npm-run-all": "^4.1.5",
 		"prettier": "^3.6.2",
 		"typescript": "^5.9.3"

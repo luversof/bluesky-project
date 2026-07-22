@@ -16,6 +16,7 @@ import net.luversof.api.poe.service.PoeBaseItemDataService;
 import net.luversof.api.poe.service.PoeGem;
 import net.luversof.api.poe.service.PoeGemDataService;
 import net.luversof.api.poe.service.PoeModPoolDataService;
+import net.luversof.api.poe.service.PoeTattooDataService;
 import net.luversof.api.poe.service.PoeTreeGraphService;
 import net.luversof.api.poe.service.PoeUniqueDataService;
 import net.luversof.api.poe.service.PoeUniqueItem;
@@ -30,18 +31,21 @@ public class PoeDataController {
   private final PoeBaseItemDataService poeBaseItemDataService;
   private final PoeModPoolDataService poeModPoolDataService;
   private final PoeTreeGraphService poeTreeGraphService;
+  private final PoeTattooDataService poeTattooDataService;
 
   public PoeDataController(
       PoeGemDataService poeGemDataService,
       PoeUniqueDataService poeUniqueDataService,
       PoeBaseItemDataService poeBaseItemDataService,
       PoeModPoolDataService poeModPoolDataService,
-      PoeTreeGraphService poeTreeGraphService) {
+      PoeTreeGraphService poeTreeGraphService,
+      PoeTattooDataService poeTattooDataService) {
     this.poeGemDataService = poeGemDataService;
     this.poeUniqueDataService = poeUniqueDataService;
     this.poeBaseItemDataService = poeBaseItemDataService;
     this.poeModPoolDataService = poeModPoolDataService;
     this.poeTreeGraphService = poeTreeGraphService;
+    this.poeTattooDataService = poeTattooDataService;
   }
 
   // ── 스킬젬 ──
@@ -154,6 +158,23 @@ public class PoeDataController {
       throw notFound();
     }
     return node;
+  }
+
+  // ── 문신 ──
+  /**
+   * 특정 패시브에 새길 수 있는 문신 목록. 게임 규칙상 소형 패시브는 <b>속성 종류</b>까지 맞아야 한다(힘 소형에는 힘 문신 + 속성 공용 문신).
+   *
+   * @param nodeType 노드 종류(normal/notable/keystone/mastery) — 생략하면 소형으로 본다
+   * @param attribute 소형 속성 패시브의 속성(Strength/Dexterity/Intelligence)
+   */
+  @GetMapping("/tree/tattoos")
+  public List<PoeTattooDataService.Tattoo> tattoos(
+      @RequestParam(required = false) String nodeType,
+      @RequestParam(required = false) String attribute) {
+    if (nodeType == null && attribute == null) {
+      return poeTattooDataService.all();
+    }
+    return poeTattooDataService.candidates(nodeType, attribute);
   }
 
   private static ResponseStatusException notFound() {

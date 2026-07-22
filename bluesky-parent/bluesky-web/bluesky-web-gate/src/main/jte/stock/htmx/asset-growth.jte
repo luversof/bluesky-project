@@ -252,7 +252,8 @@
     @if(ts != null && !ts.isEmpty())
     <script nonce="${CspNonceHolder.getNonce()}">
         (function() {
-            if (typeof Chart === 'undefined') return;
+            // Chart.js 는 아래 window.ensureStockCharts 콜백에서 필요할 때 로드된다.
+            // 여기서 typeof Chart 로 조기 반환하면 로더를 부르기도 전에 끝나 차트가 영영 안 그려진다.
             var ctxMain = document.getElementById('assetGrowthChart');
             var ctxDividend = document.getElementById('dividendChart');
             if (!ctxMain || !ctxDividend) return;

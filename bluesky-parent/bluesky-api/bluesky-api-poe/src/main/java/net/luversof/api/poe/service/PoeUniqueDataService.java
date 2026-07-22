@@ -133,6 +133,7 @@ public class PoeUniqueDataService {
         it.category(),
         it.requiredLevel(),
         it.league(),
+        it.radius(),
         it.implicits(),
         it.implicitsKo(),
         it.explicits(),

@@ -14,9 +14,15 @@
 	profile = profile,
 	hideHamburger = true,
 	content = @`
-		<!-- 차트 라이브러리/헬퍼: 페이지·프래그먼트 스크립트보다 먼저 1회만 로드 -->
-		<script src="/js/vendor/chart.umd.min.js"></script>
-		<script src="/js/stock-charts.js"></script>
+		<!-- stock 전용 스크립트: 페이지·프래그먼트 스크립트보다 먼저 1회만 로드 (defaultLayout 에서 이관) -->
+		<script src="/js/date-range-picker.js"></script>
+		<script type="module" src="/js/stock/selectionStorage.js"></script>
+		<script type="module" src="/js/stock/multiSelectInit.js"></script>
+		<script type="module" src="/js/stock/tagFilterChips.js"></script>
+
+		<%-- 차트 라이브러리(chart.umd.min.js 203KB)+헬퍼는 전역 선로드하지 않는다.
+		     차트를 쓰는 화면에서 window.ensureStockCharts(cb) 로 필요할 때 로드한다.
+		     (Chart 를 직접 쓰는 simulator 화면만 예외로 자체 로드) --%>
 
 		<div class="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)]">
 			<div class="hidden lg:block lg:w-56 shrink-0 stock-sidebar-spacer">

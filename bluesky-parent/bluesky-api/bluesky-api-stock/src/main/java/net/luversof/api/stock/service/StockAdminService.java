@@ -519,6 +519,16 @@ public class StockAdminService {
       return null;
     }
 
+    // 주식 수가 비어 있는 행(구글 시트의 빈/요약 행 등)은 적재하지 않는다.
+    if (googleSheetsDividend.get주식수() == null) {
+      log.warn(
+          "Skip dividend row with empty share count. account: {}, stock: {}, payDate: {}",
+          accountName,
+          stockName,
+          payDate);
+      return null;
+    }
+
     var dividend = new Dividend();
     dividend.setAccountId(accountId);
     dividend.setStockItemId(stockItemId);

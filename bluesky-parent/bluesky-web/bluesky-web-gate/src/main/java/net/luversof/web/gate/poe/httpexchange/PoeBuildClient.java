@@ -29,5 +29,8 @@ public interface PoeBuildClient {
       @RequestParam(required = false) String ascendancy,
       @RequestParam String nodes,
       @RequestParam(required = false) String gem,
-      @RequestParam(required = false) String masteries);
+      @RequestParam(required = false) String masteries,
+      @RequestParam(required = false) String jewels,
+      @RequestParam(required = false) String clusters,
+      @RequestParam(required = false) String tattoos);
 }

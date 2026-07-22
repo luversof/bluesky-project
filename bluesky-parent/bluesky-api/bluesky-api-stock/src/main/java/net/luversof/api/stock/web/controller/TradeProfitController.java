@@ -1,7 +1,10 @@
 package net.luversof.api.stock.web.controller;
 
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,5 +48,31 @@ public class TradeProfitController {
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
       @RequestParam(required = false) UUID accountId) {
     return stockProfitService.getHoldingsSnapshot(userId, date, accountId);
+  }
+
+  /**
+   * 여러 날짜의 보유 스냅샷을 한 번에 조회한다.
+   *
+   * <p>호출자가 날짜마다 /holdingsSnapshot 을 순차 호출하면 날짜 수만큼 왕복이 발생한다(배당 분석은 기준일이 수십 개라 수 초가 걸렸다). 날짜별 결과를
+   * ISO 날짜 문자열을 키로 하는 맵으로 한 번에 돌려준다.
+   */
+  @GetMapping("/holdingsSnapshotBatch")
+  public Map<String, List<HoldingsSnapshotItem>> holdingsSnapshotBatch(
+      @RequestParam UUID userId,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) List<LocalDate> dates,
+      @RequestParam(required = false) UUID accountId) {
+    Map<String, List<HoldingsSnapshotItem>> result = new LinkedHashMap<>();
+    if (dates == null) {
+      return result;
+    }
+    dates.stream()
+        .filter(Objects::nonNull)
+        .distinct()
+        .forEach(
+            date ->
+                result.put(
+                    date.toString(),
+                    stockProfitService.getHoldingsSnapshot(userId, date, accountId)));
+    return result;
   }
 }

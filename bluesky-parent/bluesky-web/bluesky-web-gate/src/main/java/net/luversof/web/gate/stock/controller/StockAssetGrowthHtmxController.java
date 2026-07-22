@@ -39,6 +39,7 @@ import net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem;
 import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint;
 import net.luversof.web.gate.stock.dto.response.TradeResponse;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
+import net.luversof.web.gate.stock.httpexchange.DataFirstDateClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
@@ -50,12 +51,15 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
   private static final Logger logger =
       LoggerFactory.getLogger(StockAssetGrowthHtmxController.class);
 
+  private final DataFirstDateClient dataFirstDateClient;
+
   public StockAssetGrowthHtmxController(
       TradeProfitClient tradeProfitClient,
       TradeClient tradeClient,
       AccountClient accountClient,
       StockItemClient stockItemClient,
       DividendClient dividendClient,
+      DataFirstDateClient dataFirstDateClient,
       MessageSource messageSource) {
     super(
         tradeProfitClient,
@@ -64,6 +68,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
         stockItemClient,
         dividendClient,
         messageSource);
+    this.dataFirstDateClient = dataFirstDateClient;
   }
 
   @BlueskyPreAuthorize
@@ -127,25 +132,21 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     seriesParams.add("granularity", "AUTO");
     List<TradeProfitTimeSeriesPoint> timeSeries = tradeProfitClient.timeSeries(seriesParams);
 
-    // Earliest data date (full history, no date range) for the nav bar's "previous" guard.
-    var firstDateParams = request.toParams();
-    firstDateParams.remove("startDate");
-    firstDateParams.remove("endDate");
-    firstDateParams.add("granularity", "AUTO");
-    List<TradeProfitTimeSeriesPoint> fullSeries = tradeProfitClient.timeSeries(firstDateParams);
-    java.time.LocalDate dataFirstDate = null;
-    if (fullSeries != null && !fullSeries.isEmpty()) {
-      var zone =
-          (request.getTimeZone() != null && !request.getTimeZone().isEmpty())
-              ? java.time.ZoneId.of(request.getTimeZone())
-              : java.time.ZoneId.systemDefault();
-      dataFirstDate =
-          fullSeries.stream()
-              .filter(pt -> pt.timestamp() != null)
-              .map(pt -> pt.timestamp().atZone(zone).toLocalDate())
-              .min(java.util.Comparator.naturalOrder())
-              .orElse(null);
+    // 날짜 네비게이션의 "이전" 가드용 최초 데이터 일자.
+    // 전 기간 시계열을 다시 집계하면(기간 제거 timeSeries) 이 화면에서만 초 단위가 걸렸다.
+    // 집계 엔드포인트 1회로 대체한다.
+    var zone =
+        (request.getTimeZone() != null && !request.getTimeZone().isEmpty())
+            ? java.time.ZoneId.of(request.getTimeZone())
+            : java.time.ZoneId.systemDefault();
+    var firstDateResponse = dataFirstDateClient.findDataFirstDate(userId);
+    java.time.Instant firstInstant = firstDateResponse.tradeFirstDate();
+    if (firstDateResponse.dividendFirstDate() != null
+        && (firstInstant == null || firstDateResponse.dividendFirstDate().isBefore(firstInstant))) {
+      firstInstant = firstDateResponse.dividendFirstDate();
     }
+    java.time.LocalDate dataFirstDate =
+        firstInstant != null ? firstInstant.atZone(zone).toLocalDate() : null;
 
     model.addAttribute("timeSeries", timeSeries);
     model.addAttribute("dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");

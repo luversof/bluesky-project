@@ -12,9 +12,33 @@
 		// 트리 에디터가 직업/전직까지 복원하도록 함께 넘긴다(안 넘기면 사이온으로 열려 편집 시 트리가 날아감)
 		String treeLink = "/poe/tree?nodes=" + nodesParam
 			+ (result.className() != null ? "&class=" + java.net.URLEncoder.encode(result.className(), java.nio.charset.StandardCharsets.UTF_8) : "")
-			+ (result.ascendancy() != null ? "&asc=" + java.net.URLEncoder.encode(result.ascendancy(), java.nio.charset.StandardCharsets.UTF_8) : "");
+			+ (result.ascendancy() != null ? "&asc=" + java.net.URLEncoder.encode(result.ascendancy(), java.nio.charset.StandardCharsets.UTF_8) : "")
+			// 클러스터/주얼 구성도 함께 — 없으면 트리 화면에서 생성 노드가 사라져 결과 수치와 어긋난다
+			+ (result.treeClusters() != null && !result.treeClusters().isBlank() ? "&c=" + java.net.URLEncoder.encode(result.treeClusters(), java.nio.charset.StandardCharsets.UTF_8) : "")
+			+ (result.treeJewels() != null && !result.treeJewels().isBlank() ? "&j=" + java.net.URLEncoder.encode(result.treeJewels(), java.nio.charset.StandardCharsets.UTF_8) : "")
+			+ (result.treeTattoos() != null && !result.treeTattoos().isBlank() ? "&tt=" + java.net.URLEncoder.encode(result.treeTattoos(), java.nio.charset.StandardCharsets.UTF_8) : "")
+			// 마스터리 선택 — 빠지면 트리 화면 평가가 결과보다 약하게 나온다(표시=실제)
+			+ (result.treeMasteries() != null && !result.treeMasteries().isBlank() ? "&masteries=" + java.net.URLEncoder.encode(result.treeMasteries(), java.nio.charset.StandardCharsets.UTF_8) : "");
 		String treeLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.sim.opt.result.tree"), result.treeNodeIds().size());
 		String durationLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.sim.opt.duration"), result.durationMs() / 1000, result.evalCount());
+		// 현실성 점검 — 원소 저항 미달(75 미만)이나 유효 체력 바닥이면 인게임에서 못 쓰는 유리대포다
+		java.util.function.Function<String, Integer> statInt = key -> {
+			for (PoeBuild.PlayerStat st : result.stats()) {
+				if (st.key().equals(key)) {
+					try { return (int) Double.parseDouble(st.value().replace(",", "")); } catch (Exception e) { return null; }
+				}
+			}
+			return null;
+		};
+		Integer fireRes = statInt.apply("fireresist");
+		Integer coldRes = statInt.apply("coldresist");
+		Integer lightRes = statInt.apply("lightningresist");
+		Integer ehpValue = statInt.apply("totalehp");
+		java.util.List<String> uncapped = new java.util.ArrayList<>();
+		if (fireRes != null && fireRes < 75) uncapped.add(MessageUtil.getMessage("poe.sim.opt.result.defense.fire"));
+		if (coldRes != null && coldRes < 75) uncapped.add(MessageUtil.getMessage("poe.sim.opt.result.defense.cold"));
+		if (lightRes != null && lightRes < 75) uncapped.add(MessageUtil.getMessage("poe.sim.opt.result.defense.lightning"));
+		boolean fragile = (ehpValue != null && ehpValue < 10000) || !uncapped.isEmpty();
 	}
 	<div class="space-y-3 rounded-box border border-primary/25 bg-primary/5 p-4 mt-2">
 		<div class="flex flex-wrap items-center gap-2">
@@ -33,6 +57,19 @@
 			@endif
 			<span class="badge badge-ghost badge-sm font-mono">${durationLabel}</span>
 		</div>
+
+		@if(fragile)
+			<div class="flex flex-wrap items-center gap-2 rounded border border-warning/50 bg-warning/10 px-3 py-2 text-xs">
+				<span class="font-bold text-warning">${MessageUtil.getMessage("poe.sim.opt.result.fragile")}</span>
+				@if(!uncapped.isEmpty())
+					<span class="text-base-content/70">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.sim.opt.result.fragile.res"), String.join(", ", uncapped))}</span>
+				@endif
+				@if(ehpValue != null && ehpValue < 10000)
+					<span class="text-base-content/70">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.sim.opt.result.fragile.ehp"), ehpValue)}</span>
+				@endif
+				<span class="text-base-content/50 ml-auto">${MessageUtil.getMessage("poe.sim.opt.result.fragile.hint")}</span>
+			</div>
+		@endif
 
 		<div class="flex flex-wrap items-baseline gap-3">
 			<span class="text-sm text-base-content/50">${MessageUtil.getMessage("poe.sim.opt.result.baseline")} <span class="font-mono">${result.baselineValue()}</span></span>
@@ -90,6 +127,26 @@
 			</div>
 		@endif
 
+		@if(result.blockedAuras() != null && !result.blockedAuras().isEmpty())
+			<div class="flex flex-wrap items-center gap-1.5">
+				<span class="text-xs font-semibold text-base-content/50 mr-1" title="${MessageUtil.getMessage("poe.sim.opt.result.blocked.hint")}">${MessageUtil.getMessage("poe.sim.opt.result.blocked")}</span>
+				@for(PoeOptimizeResult.BlockedAura blocked : result.blockedAuras())
+					<span class="badge badge-sm badge-ghost text-base-content/50 line-through decoration-base-content/30">${net.luversof.web.gate.poe.PoeText.name(blocked.nameKo(), blocked.name())}</span>
+					<span class="text-[10px] font-mono text-base-content/40 -ml-1">−${blocked.shortfall()}</span>
+				@endfor
+			</div>
+		@endif
+
+		<!-- 속성 부족으로 실제로는 못 입는 장비 — 조용히 두면 게임에서 쓸 수 없는 빌드를 그대로 믿게 된다 -->
+		@if(result.unmetRequirements() != null && !result.unmetRequirements().isEmpty())
+			<div class="rounded border border-warning/40 bg-warning/10 px-3 py-2 text-xs space-y-1">
+				<div class="font-semibold text-warning">${MessageUtil.getMessage("poe.sim.opt.result.unmet")}</div>
+				@for(PoeOptimizeResult.UnmetRequirement unmet : result.unmetRequirements())
+					<div class="font-mono text-base-content/70">${net.luversof.web.gate.poe.PoeText.name(unmet.nameKo(), unmet.name())} — ${MessageUtil.getMessage("poe.build.stat." + unmet.attribute())} ${unmet.required()} / ${unmet.actual()}</div>
+				@endfor
+			</div>
+		@endif
+
 		@if(result.additionalSkills() != null && !result.additionalSkills().isEmpty())
 			<div class="flex flex-wrap items-center gap-1.5">
 				<span class="text-xs font-semibold text-base-content/50 mr-1">${MessageUtil.getMessage("poe.sim.opt.result.extraskills")}</span>
@@ -110,6 +167,45 @@
 			</div>
 		@endif
 
+		<!-- 마스터리 선택 — 자동 채택된 효과("양손 숙련 — 적중 피해 60% 증가")가 안 보이면 어디서 온 수치인지 알 수 없다 -->
+		@if(result.treeMasteryLabels() != null && !result.treeMasteryLabels().isEmpty())
+			<div class="flex flex-wrap items-center gap-1.5">
+				<span class="text-xs font-semibold text-base-content/50 mr-1">${net.luversof.web.gate.poe.PoeText.isKorean() ? "마스터리" : "Masteries"}</span>
+				@for(String label : result.treeMasteryLabels())
+					<span class="badge badge-outline badge-sm border-sky-400 text-sky-300">◇ ${label}</span>
+				@endfor
+			</div>
+		@endif
+
+		<!-- 문신 구성 — 문신은 패시브를 통째로 교체하므로, 안 보이면 트리 노드 목록과 실제 계산이 어긋나 보인다 -->
+		@if(result.treeTattooLabels() != null && !result.treeTattooLabels().isEmpty())
+			<div class="flex flex-wrap items-center gap-1.5">
+				<span class="text-xs font-semibold text-base-content/50 mr-1">${net.luversof.web.gate.poe.PoeText.isKorean() ? "문신" : "Tattoos"}</span>
+				@for(String label : result.treeTattooLabels())
+					<span class="badge badge-outline badge-sm border-purple-400 text-purple-300">${label}</span>
+				@endfor
+			</div>
+		@endif
+
+		<!-- 클러스터 주얼 구성 — 노터블만 보이면 "어떤 주얼로 얻은 건지"를 알 수 없다 -->
+		@if(result.treeClusters() != null && !result.treeClusters().isBlank())
+			<div class="flex flex-wrap items-center gap-1.5">
+				<span class="text-xs font-semibold text-base-content/50 mr-1">${net.luversof.web.gate.poe.PoeText.isKorean() ? "클러스터" : "Clusters"}</span>
+				@for(String entry : result.treeClusters().split(","))
+					!{
+						String[] parts = entry.split(":");
+						String sizeKo = parts.length > 1 ? switch (parts[1]) { case "Large" -> "대형"; case "Medium" -> "중형"; case "Small" -> "소형"; default -> parts[1]; } : "";
+						String sizeLabel = net.luversof.web.gate.poe.PoeText.isKorean() ? sizeKo : (parts.length > 1 ? parts[1] : "");
+						String nodeCount = parts.length > 2 ? parts[2] : "";
+						String notables = parts.length > 4 && !parts[4].isBlank() ? parts[4].replace("|", ", ") : "";
+					}
+					<span class="badge badge-secondary badge-outline badge-sm">
+						${sizeLabel} ${nodeCount}${net.luversof.web.gate.poe.PoeText.isKorean() ? "노드" : ""}${notables.isBlank() ? "" : " · " + notables}
+					</span>
+				@endfor
+			</div>
+		@endif
+
 		@if(result.jewels() != null && !result.jewels().isEmpty())
 			<div class="flex flex-wrap items-center gap-1.5">
 				<span class="text-xs font-semibold text-base-content/50 mr-1">${MessageUtil.getMessage("poe.sim.opt.result.jewels")}</span>
@@ -127,7 +223,7 @@
 						<div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm">
 							<span class="badge badge-ghost badge-sm shrink-0 w-16 justify-center">${item.slotKo()}</span>
 							@if("RARE".equals(item.rarity()))
-								<span class="font-semibold text-yellow-500">${MessageUtil.getMessage("poe.sim.opt.result.rare")} · ${item.name()}</span>
+								<span class="font-semibold text-yellow-500">${MessageUtil.getMessage("poe.sim.opt.result.rare")} · ${net.luversof.web.gate.poe.PoeText.name(item.nameKo(), item.name())}</span>
 								@if(!item.modLines().isEmpty())
 									<span class="text-xs text-base-content/60">${String.join(" / ", item.modLines())}</span>
 								@endif

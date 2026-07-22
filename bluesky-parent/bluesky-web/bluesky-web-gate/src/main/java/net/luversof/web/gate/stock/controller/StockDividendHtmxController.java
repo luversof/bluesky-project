@@ -110,35 +110,24 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     List<DividendResponse> dividends =
         emptyIfNull(dividendClient.findDividends(request.toParams()));
 
-    // Always fetch the global/all dividend set so we can offer "전체 기간" filtering
-    var globalReq = new DividendRequest();
-    globalReq.setUserId(userId);
-    List<DividendResponse> globalDividends =
-        emptyIfNull(dividendClient.findDividends(globalReq.toParams()));
+    // "전체 기간" 필터 UI 에 필요한 건 최초 기준일과 배당 보유 종목 ID 뿐이다.
+    // 전 기간 배당 이력을 통째로 내려받는 대신 메타 엔드포인트 1회로 대체한다.
+    var dividendMeta = dividendClient.findDividendMeta(userId);
     ZoneId zone =
         (timeZone != null && !timeZone.isEmpty()) ? ZoneId.of(timeZone) : ZoneId.systemDefault();
     LocalDate dataFirstDate =
-        globalDividends.stream()
-            .map(
-                d -> {
-                  Instant payDate = d.payDate();
-                  Instant recordDate = d.recordDate();
-                  if (payDate == null && recordDate == null) return null;
-                  if (payDate == null) return recordDate;
-                  if (recordDate == null) return payDate;
-                  return payDate.isBefore(recordDate) ? payDate : recordDate;
-                })
-            .filter(inst -> inst != null)
-            .map(inst -> inst.atZone(zone).toLocalDate())
-            .min(Comparator.naturalOrder())
-            .orElse(null);
+        dividendMeta != null && dividendMeta.firstBasisDate() != null
+            ? dividendMeta.firstBasisDate().atZone(zone).toLocalDate()
+            : null;
 
     var dividendAccountIds =
         dividends.stream().map(DividendResponse::accountId).collect(Collectors.toSet());
     var dividendStockIds =
         dividends.stream().map(DividendResponse::stockItemId).collect(Collectors.toSet());
     var globalDividendStockIds =
-        globalDividends.stream().map(DividendResponse::stockItemId).collect(Collectors.toSet());
+        dividendMeta != null && dividendMeta.stockItemIds() != null
+            ? java.util.Set.copyOf(dividendMeta.stockItemIds())
+            : java.util.Set.<UUID>of();
 
     List<Account> accounts = emptyIfNull(accountClient.getAccountsByUserId(userId));
     List<Account> filteredAccountList =
@@ -878,12 +867,23 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
   private Map<LocalDate, Map<UUID, HoldingsSnapshotItem>> loadSnapshotsByDate(
       UUID userId, Set<LocalDate> basisDates) {
     Map<LocalDate, Map<UUID, HoldingsSnapshotItem>> result = new LinkedHashMap<>();
+    if (basisDates == null || basisDates.isEmpty()) {
+      return result;
+    }
+
+    // 기준일마다 순차 호출하면 날짜 수만큼 왕복이 발생한다(전체 기간이면 수십 회, 수 초).
+    // 배치 엔드포인트로 1회에 받아온다.
+    var params = new org.springframework.util.LinkedMultiValueMap<String, String>();
+    params.add("userId", userId.toString());
+    params.add(
+        "dates", basisDates.stream().map(LocalDate::toString).collect(Collectors.joining(",")));
+    Map<String, List<HoldingsSnapshotItem>> batch = tradeProfitClient.holdingsSnapshotBatch(params);
+    if (batch == null) {
+      batch = Map.of();
+    }
+
     for (LocalDate basisDate : basisDates) {
-      var params = new org.springframework.util.LinkedMultiValueMap<String, String>();
-      params.add("userId", userId.toString());
-      params.add("date", basisDate.toString());
-      List<HoldingsSnapshotItem> snapshotItems =
-          emptyIfNull(tradeProfitClient.holdingsSnapshot(params));
+      List<HoldingsSnapshotItem> snapshotItems = emptyIfNull(batch.get(basisDate.toString()));
       Map<UUID, HoldingsSnapshotItem> itemsByStockId =
           snapshotItems.stream()
               .filter(item -> item.stockItemId() != null)

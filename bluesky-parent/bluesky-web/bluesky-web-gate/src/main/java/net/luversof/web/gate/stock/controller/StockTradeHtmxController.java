@@ -40,6 +40,7 @@ import net.luversof.web.gate.stock.dto.request.TradeSearchRequest;
 import net.luversof.web.gate.stock.dto.response.DividendResponse;
 import net.luversof.web.gate.stock.dto.response.TradeResponse;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
+import net.luversof.web.gate.stock.httpexchange.DataFirstDateClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
@@ -49,12 +50,15 @@ import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
 public class StockTradeHtmxController extends StockBaseHtmxController {
 
+  private final DataFirstDateClient dataFirstDateClient;
+
   public StockTradeHtmxController(
       TradeProfitClient tradeProfitClient,
       TradeClient tradeClient,
       AccountClient accountClient,
       StockItemClient stockItemClient,
       DividendClient dividendClient,
+      DataFirstDateClient dataFirstDateClient,
       MessageSource messageSource) {
     super(
         tradeProfitClient,
@@ -63,6 +67,19 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
         stockItemClient,
         dividendClient,
         messageSource);
+    this.dataFirstDateClient = dataFirstDateClient;
+  }
+
+  /** 거래/배당 중 이른 일자 (날짜 선택기 하한). 전체 이력 대신 집계 엔드포인트 1회로 구한다. */
+  private LocalDate resolveDataFirstDate(UUID userId, ZoneId zone, boolean includeDividend) {
+    var response = dataFirstDateClient.findDataFirstDate(userId);
+    Instant first = response.tradeFirstDate();
+    if (includeDividend
+        && response.dividendFirstDate() != null
+        && (first == null || response.dividendFirstDate().isBefore(first))) {
+      first = response.dividendFirstDate();
+    }
+    return first != null ? first.atZone(zone).toLocalDate() : null;
   }
 
   @BlueskyPreAuthorize
@@ -101,20 +118,10 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     TradeSearchRequest request = new TradeSearchRequest(userId, null, null, startInst, endInst);
     List<TradeResponse> allFromApi = emptyIfNull(tradeClient.findTrades(request.toParams()));
 
-    List<TradeResponse> globalTrades =
-        (startDate == null && endDate == null)
-            ? allFromApi
-            : emptyIfNull(
-                tradeClient.findTrades(
-                    new TradeSearchRequest(userId, null, null, null, null).toParams()));
     ZoneId zone =
         (timeZone != null && !timeZone.isEmpty()) ? ZoneId.of(timeZone) : ZoneId.systemDefault();
-    LocalDate dataFirstDate =
-        globalTrades.stream()
-            .filter(t -> t.tradeDate() != null)
-            .map(t -> t.tradeDate().atZone(zone).toLocalDate())
-            .min(Comparator.naturalOrder())
-            .orElse(null);
+    // 최초 거래일: 전 기간 거래를 다시 내려받는 대신 집계 엔드포인트 1회로 구한다.
+    LocalDate dataFirstDate = resolveDataFirstDate(userId, zone, false);
 
     List<Account> accountList = emptyIfNull(accountClient.getAccountsByUserId(userId));
     Map<UUID, String> accountNames =
@@ -808,15 +815,10 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     UUID userId = UserUtil.getUserId();
     if (userId == null) return ERROR_VIEW;
 
-    List<Activity> allActivities = getAllActivities(userId);
     ZoneId zone =
         (timeZone != null && !timeZone.isEmpty()) ? ZoneId.of(timeZone) : ZoneId.systemDefault();
-    LocalDate dataFirstDate =
-        allActivities.stream()
-            .filter(a -> a.date() != null)
-            .map(a -> a.date().atZone(zone).toLocalDate())
-            .min(Comparator.naturalOrder())
-            .orElse(null);
+    // 최초 활동일(거래·배당 중 이른 쪽): 전체 활동 이력을 내려받는 대신 집계 엔드포인트 1회로 구한다.
+    LocalDate dataFirstDate = resolveDataFirstDate(userId, zone, true);
 
     // Convert start/end Instants into Instants for the helper (they already are
     // Instants)
@@ -996,15 +998,14 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
           }
         });
 
-    // 활동 계좌명 → accountId (계좌 상세 링크용)
+    // 활동 계좌명 → accountId (계좌 상세 링크용). 위에서 조회한 accountList 재사용(중복 호출 제거).
     Map<String, UUID> activityAccountIdByName = new HashMap<>();
-    emptyIfNull(accountClient.getAccountsByUserId(userId))
-        .forEach(
-            a -> {
-              if (a != null && a.name() != null && a.id() != null) {
-                activityAccountIdByName.putIfAbsent(a.name(), a.id());
-              }
-            });
+    accountList.forEach(
+        a -> {
+          if (a != null && a.name() != null && a.id() != null) {
+            activityAccountIdByName.putIfAbsent(a.name(), a.id());
+          }
+        });
 
     // 화면에는 오름차순(오래된 것 위)으로 표시 — 조회는 그대로(날짜 desc).
     List<Activity> displayActivities = new ArrayList<>(activities);

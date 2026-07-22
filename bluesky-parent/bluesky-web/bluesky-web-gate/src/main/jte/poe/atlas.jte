@@ -41,7 +41,15 @@
 				<div id="poeTreeShell" class="relative bg-base-100">
 					<div class="flex flex-wrap items-center gap-2 mb-2">
 						<input id="poeTreeSearch" type="text" class="input input-sm input-bordered w-full sm:w-52" placeholder="${net.luversof.web.gate.poe.PoeText.isKorean() ? "검색 (노드/스탯)" : "Search (node/stat)"}">
-						<button id="poeTreeReset" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "초기화" : "Reset"}</button>
+					<span id="poeTreeSearchCount" class="text-xs font-mono text-base-content/50"></span>
+					<span id="poeTreeNotice" class="text-xs font-mono text-warning"></span>
+						<button id="poeTreeUndo" type="button" class="btn btn-sm btn-ghost" disabled title="Ctrl+Z">${net.luversof.web.gate.poe.PoeText.isKorean() ? "실행취소" : "Undo"}</button>
+					<button id="poeTreeRedo" type="button" class="btn btn-sm btn-ghost" disabled title="Ctrl+Shift+Z">${net.luversof.web.gate.poe.PoeText.isKorean() ? "다시실행" : "Redo"}</button>
+					<button id="poeTreeReset" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "초기화" : "Reset"}</button>
+					<input id="poeTreeImport" type="text" class="input input-sm input-bordered w-full sm:w-56" placeholder="${net.luversof.web.gate.poe.PoeText.isKorean() ? "아틀라스 링크 붙여넣기" : "Paste atlas link"}">
+					<button id="poeTreeImportGo" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "가져오기" : "Import"}</button>
+					<button id="poeTreeCopy" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "링크 복사" : "Copy link"}</button>
+					<button id="poeTreeCopyOfficial" type="button" class="btn btn-sm btn-ghost" title="pathofexile.com">${net.luversof.web.gate.poe.PoeText.isKorean() ? "공홈 링크" : "Official link"}</button>
 						<button id="poeTreeStatsToggle" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "스탯 요약" : "Stat summary"}</button>
 						<button id="poeTreeFullscreen" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "전체 화면" : "Fullscreen"}</button>
 						<span id="poeTreePoints" class="ml-auto flex items-center gap-2 text-sm text-base-content/70"></span>

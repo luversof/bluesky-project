@@ -48,12 +48,14 @@ function parseBlock(block, category) {
 	let variantCount = 0;
 	let requiredLevel = null;
 	let league = null;
+	let radius = null; // 반경 주얼("…in Radius")은 이 라벨이 없으면 PoB 가 반경 모드를 **조용히 무시**한다
 	let implicitCount = 0;
 	const modSection = []; // 메타 이후의 원시 라인들 (implicit 구분 전)
 
 	for (const line of lines.slice(2)) {
 		if (line.startsWith("Variant:")) { variantCount++; continue; }
 		if (line.startsWith("League:")) { league = line.slice(7).trim(); continue; }
+		if (line.startsWith("Radius:")) { radius = line.slice(7).trim(); continue; }
 		if (line.startsWith("LevelReq:")) { requiredLevel = Number(line.slice(9).trim()) || null; continue; }
 		if (line.startsWith("Requires Level")) {
 			const m = line.match(/Requires Level (\d+)/);
@@ -93,6 +95,7 @@ function parseBlock(block, category) {
 		category,
 		requiredLevel,
 		league,
+		radius,
 		implicits,
 		implicitsKo: toKo(implicits),
 		explicits,

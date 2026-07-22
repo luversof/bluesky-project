@@ -45,6 +45,10 @@
 			     hx-trigger="mouseenter delay:100ms"
 			     hx-swap="innerHTML">
 				<div class="card-body p-4 gap-1">
+					<div class="flex gap-3">
+						<!-- 베이스 아이콘 — 고유 아이템 목록과 동일 규격(아이콘 파일명 = 베이스 slug) -->
+						<img src="/poe-assets/items/${item.slug()}.png" class="w-12 h-12 object-contain shrink-0 self-start drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" alt="" loading="lazy">
+						<div class="min-w-0 flex-1 space-y-1">
 					<div class="flex items-baseline gap-2">
 						<span class="font-bold truncate" title="${item.name()}">${displayName}</span>
 						@if(net.luversof.web.gate.poe.PoeText.isKorean())
@@ -60,6 +64,8 @@
 						!{String implicitPreview = net.luversof.web.gate.poe.PoeText.name(item.implicits().get(0).ko(), item.implicits().get(0).en());}
 						<p class="text-xs leading-5 text-sky-600/70 dark:text-sky-300/70 line-clamp-1">${implicitPreview}</p>
 					@endif
+						</div>
+					</div>
 				</div>
 			</div>
 		@endfor

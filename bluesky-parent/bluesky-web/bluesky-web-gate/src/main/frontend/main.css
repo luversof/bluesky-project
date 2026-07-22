@@ -307,10 +307,15 @@
 		border-radius: var(--radius-field); background: var(--color-neutral); color: var(--color-neutral-content);
 	}
 	.tooltip:hover > .tooltip-content, .tooltip:hover:before { opacity: 1; visibility: visible; }
-	.tooltip-content { padding: 0; }
+	/* .tooltip:before(짧은 말풍선)와 달리 .tooltip-content 는 블록 내용을 담으므로
+	   자체 안쪽 여백을 준다. (0 이면 텍스트가 박스 가장자리에 붙어 답답해 보인다.) */
+	.tooltip-content { padding: 0.75rem; }
 	.tooltip-bottom > .tooltip-content, .tooltip-bottom:before { bottom: auto; top: 100%; transform: translateX(-50%) translateY(0.25rem); }
 	.tooltip-right > .tooltip-content, .tooltip-right:before { bottom: auto; top: 50%; left: 100%; transform: translateY(-50%) translateX(0.25rem); }
 	.tooltip-bottom-end > .tooltip-content, .tooltip-bottom-end:before { bottom: auto; top: 100%; left: auto; right: 0; transform: translateY(0.25rem); }
+	/* 트리거가 화면 왼쪽에 있을 때 쓰는 변형: 트리거 왼쪽 끝에 맞춰 오른쪽으로 펼친다.
+	   (-end 로 두면 넓은 툴팁이 왼쪽으로 펼쳐지며 뷰포트 밖으로 나가 잘린다.) */
+	.tooltip-bottom-start > .tooltip-content, .tooltip-bottom-start:before { bottom: auto; top: 100%; left: 0; right: auto; transform: translateY(0.25rem); }
 
 	/* ---- collapse ---- checkbox 는 제목 위에 겹친 투명 클릭 레이어, 내용은 grid rows 로 접고 편다 */
 	.collapse { position: relative; display: grid; grid-template-rows: max-content 0fr; overflow: hidden; transition: grid-template-rows .2s ease; }

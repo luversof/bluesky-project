@@ -94,6 +94,16 @@ public class PoeViewController {
     model.addAttribute("hasTreeData", Files.exists(Path.of(dataDir, "passive-tree.json")));
     // 트리 계산에 쓸 주 스킬 후보 — datalist 로 넘겨 브라우저 기본 검색을 그대로 쓴다
     model.addAttribute("activeGems", poeDataClient.searchGems(null, "active", "all", null));
+    // 주얼 슬롯에 끼울 유니크 주얼 목록.
+    // 타임리스(무궁한)는 **포함**한다 — 정복자·시드를 고르면 PoB 가 반경 변환을 실제로 계산한다(사이클 확인).
+    // 클러스터는 전용 소켓·전용 UI(우클릭 → 클러스터 주얼 장착)로 다루므로 여기선 제외.
+    model.addAttribute(
+        "jewelUniques",
+        // searchUniques 의 2번째 인자는 itemClass(세분류)라 "jewel" 로는 안 잡힌다 → 전체를 받아 category 로 거른다
+        poeDataClient.searchUniques(null, "all").stream()
+            .filter(u -> "jewel".equals(u.category()))
+            .filter(u -> u.baseType() == null || !u.baseType().contains("Cluster"))
+            .toList());
     return "poe/tree";
   }
 
@@ -125,7 +135,23 @@ public class PoeViewController {
   }
 
   @GetMapping("/sim")
-  public String sim(Model model) {
+  public String sim(
+      @RequestParam(required = false, defaultValue = "") String treeNodes,
+      @RequestParam(required = false, defaultValue = "") String masteries,
+      @RequestParam(required = false, defaultValue = "") String jewels,
+      @RequestParam(required = false, defaultValue = "") String clusters,
+      @RequestParam(required = false, defaultValue = "") String tattoos,
+      @RequestParam(required = false, defaultValue = "") String className,
+      @RequestParam(required = false, defaultValue = "") String ascendancy,
+      Model model) {
+    model.addAttribute("treeNodes", treeNodes);
+    model.addAttribute("masteries", masteries);
+    model.addAttribute("jewels", jewels);
+    model.addAttribute("clusters", clusters);
+    model.addAttribute("tattoos", tattoos);
+    // 고정 트리는 그 직업의 시작점에서만 연결된다 — 직업을 함께 고정하지 않으면 트리가 통째로 버려진다
+    model.addAttribute("fixedClassName", className);
+    model.addAttribute("fixedAscendancy", ascendancy);
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
     model.addAttribute(
         "activeGems",
@@ -155,6 +181,7 @@ public class PoeViewController {
     model.addAttribute("uniqueCount", poeDataClient.uniqueMeta().totalCount());
     model.addAttribute("baseItemCount", poeDataClient.baseItemMeta().totalCount());
     model.addAttribute("hasTreeData", Files.exists(Path.of(dataDir, "passive-tree.json")));
+    model.addAttribute("hasAtlasData", Files.exists(Path.of(dataDir, "atlas-tree.json")));
     model.addAttribute("dataDir", dataDir);
     model.addAttribute("imageMagickInstalled", poeExtractClient.status().imageMagickInstalled());
     model.addAttribute("engineAvailable", poeBuildClient.available());

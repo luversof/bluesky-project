@@ -46,12 +46,16 @@ public class PoeOptimizeService {
 
   private static final int LOG_LIMIT = 200;
   private static final int LEVEL = 90;
-  private static final int POINT_BUDGET = 100;
+  // 패시브 포인트 예산 — 레벨 90 기준 실제 획득량(레벨업 89 + 퀘스트 24 = 113). 이전엔 임의의 100 이었다.
+  private static final int POINT_BUDGET = 113;
   private static final int MAX_SUPPORTS = 5;
-  private static final int SUPPORT_SHORTLIST = 24;
-  private static final int TREE_ROUND_CANDIDATES = 12;
+  private static final int SUPPORT_SHORTLIST =
+      24; // 48 로 넓혀도 결과 동일(평가만 +11%) — 상위 24 안에 최적 보조젬이 이미 있다
+  // 라운드당 실측할 트리 후보 수. 12→64 로 넓히니 DPS +79%(3.34M→5.98M). 96 은 오히려 하락(그리디라 초반 선택이 바뀌며 다른 지역최적)
+  private static final int TREE_ROUND_CANDIDATES = 64;
   private static final int TREE_MAX_ROUNDS = 30;
-  private static final int ITEM_CANDIDATES = 10;
+  // 슬롯당 실측할 아이템 후보 수. 10→64 로 DPS 5.98M→22.9M(+283%). 128 은 동일값(64 면 후보 풀을 이미 전부 커버)
+  private static final int ITEM_CANDIDATES = 64;
 
   /** 전직 포인트 예산 (만렙 성역 8포인트, 시작 노드 제외) */
   private static final int ASCENDANCY_POINT_BUDGET = 8;
@@ -60,13 +64,22 @@ public class PoeOptimizeService {
   private static final int BLOODLINE_RESERVE = 2;
 
   /** 주얼 소켓용으로 트리 예산에서 예약하는 포인트 (너무 크면 트리 노터블 손실) */
-  private static final int JEWEL_RESERVE = 6;
+  private static final int JEWEL_RESERVE = 10;
 
   /** 주얼 단계에서 평가할 최대 소켓 수 (가장 싸게 닿는 것부터) — 비용 제한 */
   private static final int JEWEL_MAX_SOCKETS = 5;
 
+  /**
+   * 노터블/키스톤 문신을 시험해 볼 자리 수 상한. 이 문신들은 "Limited to 1" 이라 (문신 × 자리) 를 전부 평가해야 하는데, 키스톤 풀만 45종이라 자리를 안
+   * 막으면 평가 수가 곱으로 튄다.
+   */
+  private static final int TATTOO_MAX_SPOTS = 4;
+
+  /** 자동으로 새로 찍어 볼 마스터리 후보 수 상한 — 후보마다 (효과 수)번 평가하므로 키워드 점수 상위만 본다. */
+  private static final int MASTERY_MAX_NEW = 8;
+
   /** 방어 오라 최대 개수(마나 예약 한계로 실질 2~3개, PoB 가 초과 예약 시 효과를 깎아 greedy 가 자연 종료). */
-  private static final int MAX_AURAS = 4;
+  private static final int MAX_AURAS = 7;
 
   /**
    * 오라 예약 현실성 신호 — PoB 는 ManaReservedPercent 를 100 에서 클램프하므로 초과 판정에 못 쓴다. 실제 초과 신호는
@@ -102,7 +115,13 @@ public class PoeOptimizeService {
           "Herald of Ice",
           "Herald of Thunder",
           "Herald of Purity",
-          "Flesh and Stone");
+          "Flesh and Stone",
+          // 누락돼 있던 표준 오라 — 특히 Precision 은 명중이 중요한 공격 빌드에 핵심
+          "Precision",
+          "Haste",
+          "Dread Banner",
+          "Envy",
+          "Clarity");
 
   private static final Map<String, Integer> CLASS_IDS =
       Map.of(
@@ -190,6 +209,10 @@ public class PoeOptimizeService {
   private final PoePobEngineService poePobEngineService;
   private final PoeTreeGraphService poeTreeGraphService;
   private final PoeModPoolDataService poeModPoolDataService;
+  private final PoeBaseItemDataService poeBaseItemDataService;
+  private final PoeClusterJewelDataService poeClusterJewelDataService;
+  private final PoeSkillWeaponDataService poeSkillWeaponDataService;
+  private final PoeTattooDataService poeTattooDataService;
   private final Path resultFile;
   private final String treeVersion;
   private final int parallelism;
@@ -197,8 +220,41 @@ public class PoeOptimizeService {
   private final AtomicBoolean running = new AtomicBoolean(false);
   private final AtomicInteger phaseDone = new AtomicInteger();
   private final AtomicInteger evalCount = new AtomicInteger();
+
+  /**
+   * 엔진 평가 실패 수. 실패한 후보는 -1 점이 되어 <b>조용히 탈락</b>하므로, 실패가 생기면 그리디가 다른 경로를 타 결과가 크게 달라진다(실행 간 최종 DPS
+   * 2.4배 편차를 추적하다 계측을 넣었다). 보이지 않으면 원인을 못 잡는다.
+   */
+  private final AtomicInteger evalFailures = new AtomicInteger();
+
+  private volatile String firstEvalError = null;
   private volatile int phaseTotal;
   private volatile String phase = "";
+
+  /** 단계별 소요 계측 — 잡 완료 시 "단계별 소요" 로그로 요약한다(느린 단계를 찾으려면 눈에 보여야 한다). */
+  private volatile long phaseEnteredAt;
+
+  private final Map<String, Long> phaseDurations = new LinkedHashMap<>();
+
+  private void enterPhase(String next) {
+    long now = System.currentTimeMillis();
+    synchronized (phaseDurations) {
+      if (!phase.isEmpty() && phaseEnteredAt > 0) {
+        phaseDurations.merge(phase, now - phaseEnteredAt, Long::sum);
+      }
+    }
+    phaseEnteredAt = now;
+    phase = next;
+  }
+
+  private String phaseSummary() {
+    synchronized (phaseDurations) {
+      return phaseDurations.entrySet().stream()
+          .map(entry -> entry.getKey() + " " + Math.round(entry.getValue() / 1000.0) + "s")
+          .collect(java.util.stream.Collectors.joining(" · "));
+    }
+  }
+
   private volatile Status lastStatus = Status.IDLE;
   private final Deque<String> logLines = new ArrayDeque<>();
   private volatile PoeOptimizeResult lastResult;
@@ -209,16 +265,26 @@ public class PoeOptimizeService {
       PoePobEngineService poePobEngineService,
       PoeTreeGraphService poeTreeGraphService,
       PoeModPoolDataService poeModPoolDataService,
+      PoeBaseItemDataService poeBaseItemDataService,
+      PoeClusterJewelDataService poeClusterJewelDataService,
+      PoeSkillWeaponDataService poeSkillWeaponDataService,
+      PoeTattooDataService poeTattooDataService,
       @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir,
       @Value("${poe.sim.tree-version:3_28}") String treeVersion,
-      @Value("${poe.sim.parallelism:0}") int parallelism) {
+      @Value("${poe.sim.parallelism:0}") int parallelism,
+      @Value("${poe.pob.src-dir:${user.home}/.poe-gamedata/work/pob-src}") String pobSourceDir) {
     this.poeGemDataService = poeGemDataService;
     this.poeUniqueDataService = poeUniqueDataService;
     this.poePobEngineService = poePobEngineService;
     this.poeTreeGraphService = poeTreeGraphService;
     this.poeModPoolDataService = poeModPoolDataService;
+    this.poeBaseItemDataService = poeBaseItemDataService;
+    this.poeClusterJewelDataService = poeClusterJewelDataService;
+    this.poeSkillWeaponDataService = poeSkillWeaponDataService;
+    this.poeTattooDataService = poeTattooDataService;
     this.resultFile = Path.of(dataDir, "sim", "optimize-last.json");
     this.treeVersion = treeVersion;
+    this.pobSourceDir = pobSourceDir;
     // 병렬성 미지정(≤0)이면 엔진 워커 풀 크기와 일치시킨다(executor 스레드마다 워커 1개 배정 →
     // 스레드가 워커를 못 잡고 대기하는 낭비 없음). 워커 풀은 코어/RAM 자동 산정. 다른 PC 이식성.
     this.parallelism = parallelism > 0 ? parallelism : poePobEngineService.poolSize();
@@ -315,6 +381,55 @@ public class PoeOptimizeService {
   /** 방어 오라 스테이지에서 채택된 오라 — 최종/일반 buildXml 이 2번째 스킬 그룹으로 emit(트라이얼은 명시 전달). */
   private volatile List<PoeGem> selectedAuras = new ArrayList<>();
 
+  // 예약 초과로 제외된 오라(이름 → 부족 마나) — 결과 화면에서 "왜 오라가 이것뿐인지" 설명용
+  private volatile Map<PoeGem, Integer> blockedAuraShortfall = new LinkedHashMap<>();
+
+  // 사용자가 트리 에디터에서 확정한 트리(비어 있으면 탐색). 지정 시 트리 greedy 를 건너뛴다.
+  private volatile Set<Integer> fixedTree = Set.of();
+
+  /** 트리 에디터에서 확정한 마스터리 효과(노드 id → 효과 id). 고정 트리와 짝을 이룬다. */
+  private volatile Map<Integer, Integer> fixedMasteries = Map.of();
+
+  /** 트리 에디터에서 소켓에 꽂아둔 유니크 주얼(소켓 노드 id → slug). 최적화기는 나머지 소켓만 채운다. */
+  private volatile Map<Integer, String> fixedJewels = Map.of();
+
+  /**
+   * 트리 에디터에서 꽂아둔 클러스터 주얼. 이게 없으면 고정 트리에 들어 있는 생성 노드(id ≥ 65536)를 PoB 가 <b>존재하지 않는 노드로 무시</b>해, 트리
+   * 화면 수치보다 낮은 값으로 최적화가 돌아간다.
+   */
+  private volatile List<ClusterSpec> fixedClusters = List.of();
+
+  /** 트리 에디터에서 패시브에 새긴 문신(노드 id → 문신 dn). 지정하면 그 노드는 문신 노드로 교체돼 계산된다. */
+  private volatile Map<Integer, String> fixedTattoos = Map.of();
+
+  /** 최적화 잡 시작 — 클러스터 없이(옛 호출부 호환) */
+  public boolean start(
+      String gemSlug,
+      String objective,
+      String scenario,
+      boolean buffs,
+      String className,
+      String ascendancy,
+      String uniques,
+      String skills,
+      String treeNodes,
+      String masteries,
+      String jewels) {
+    return start(
+        gemSlug,
+        objective,
+        scenario,
+        buffs,
+        className,
+        ascendancy,
+        uniques,
+        skills,
+        treeNodes,
+        masteries,
+        jewels,
+        null);
+  }
+
   /** 최적화 잡 시작 — 이미 실행 중이거나 젬이 없으면 false */
   public boolean start(
       String gemSlug, String objective, String scenario, boolean buffs, String className) {
@@ -354,9 +469,96 @@ public class PoeOptimizeService {
       String ascendancy,
       String uniques,
       String skills) {
+    return start(gemSlug, objective, scenario, buffs, className, ascendancy, uniques, skills, null);
+  }
+
+  /**
+   * @param treeNodes 사용자가 트리 에디터에서 확정한 노드(콤마구분 id). 지정하면 트리 탐색을 건너뛰고 이 트리를 고정한 채 보조젬/주얼/장비/오라만
+   *     최적화한다. 비어 있으면 기존처럼 트리도 탐색한다.
+   */
+  public boolean start(
+      String gemSlug,
+      String objective,
+      String scenario,
+      boolean buffs,
+      String className,
+      String ascendancy,
+      String uniques,
+      String skills,
+      String treeNodes) {
+    return start(
+        gemSlug,
+        objective,
+        scenario,
+        buffs,
+        className,
+        ascendancy,
+        uniques,
+        skills,
+        treeNodes,
+        null,
+        null);
+  }
+
+  /**
+   * @param masteries 트리 에디터에서 고른 마스터리 효과("노드:효과,..."). 고정 트리와 함께 넘겨야 마스터리 스탯이 계산에 반영된다 — 안 넘기면 마스터리
+   *     노드만 찍힌 셈이라 사용자가 설계한 트리보다 약하게 평가된다.
+   */
+  public boolean start(
+      String gemSlug,
+      String objective,
+      String scenario,
+      boolean buffs,
+      String className,
+      String ascendancy,
+      String uniques,
+      String skills,
+      String treeNodes,
+      String masteries,
+      String jewels,
+      String clusters) {
+    return start(
+        gemSlug,
+        objective,
+        scenario,
+        buffs,
+        className,
+        ascendancy,
+        uniques,
+        skills,
+        treeNodes,
+        masteries,
+        jewels,
+        clusters,
+        null);
+  }
+
+  /**
+   * @param tattoos 트리 에디터에서 패시브에 새긴 문신("노드:영문명|…"). 안 넘기면 화면엔 문신이 보이는데 최적화는 원래 패시브로 돌아 사용자가 설계한 것보다
+   *     약한 트리를 평가한다(마스터리 효과와 같은 계열의 함정).
+   */
+  public boolean start(
+      String gemSlug,
+      String objective,
+      String scenario,
+      boolean buffs,
+      String className,
+      String ascendancy,
+      String uniques,
+      String skills,
+      String treeNodes,
+      String masteries,
+      String jewels,
+      String clusters,
+      String tattoos) {
     if (!isAvailable()) {
       return false;
     }
+    this.fixedTree = parseNodeIds(treeNodes);
+    this.fixedTattoos = parseTattoos(tattoos);
+    this.fixedMasteries = parseMasteries(masteries);
+    this.fixedJewels = parseJewels(jewels);
+    this.fixedClusters = parseClusters(clusters);
     PoeGem gem = poeGemDataService.findBySlug(gemSlug).orElse(null);
     List<PoeUniqueItem> resolvedUniques = resolveFixedUniques(uniques);
     List<PoeGem> resolvedSkills = resolveAdditionalSkills(skills, gemSlug);
@@ -372,6 +574,7 @@ public class PoeOptimizeService {
     this.combatBuffs = buffs;
     this.secondaryAscendId = 0; // 혈맹 선택 초기화(잡마다)
     this.selectedAuras = new ArrayList<>(); // 방어 오라 초기화(잡마다)
+    this.blockedAuraShortfall = new LinkedHashMap<>(); // 제외 오라 초기화(잡마다)
     // 직업 고정 — 유효한 직업명만 채택, 그 외(빈값/auto/미지)는 null(자동 프로브)
     this.fixedClass = className != null && CLASS_IDS.containsKey(className) ? className : null;
     // 전직만 선택해도 직업을 도출 — 직업 미지정 + 유효 전직이면 그 전직의 소속 직업으로 고정
@@ -400,6 +603,12 @@ public class PoeOptimizeService {
       logLines.clear();
     }
     evalCount.set(0);
+    evalFailures.set(0);
+    firstEvalError = null;
+    synchronized (phaseDurations) {
+      phaseDurations.clear();
+    }
+    phaseEnteredAt = 0;
     phaseDone.set(0);
     phaseTotal = 0;
     // gem 이 null 이면(고유템 anchor) runJob 시작 시 스킬 프로브로 결정
@@ -442,11 +651,19 @@ public class PoeOptimizeService {
       log(gem.name() + " / 목표 " + objectiveKey + " / 키워드 " + keywords);
 
       // ── 0) 직업 비교 프로브 — 직업별 (최적 전직 + 휴리스틱 8pt) 를 엔진 1회씩 평가해 최고 직업 선택 ──
-      phase = "class";
+      enterPhase("class");
       record ClassProbe(String probeClass, String probeAscendancy, Set<Integer> probeNodes) {}
       List<ClassProbe> probes = new ArrayList<>();
-      // 직업 고정 시 그 직업만, 아니면 전 직업 프로브
-      Set<String> classPool = fixedClass != null ? Set.of(fixedClass) : CLASS_IDS.keySet();
+      // 직업 고정 시 그 직업만, 아니면 전 직업 프로브.
+      // CLASS_IDS 는 Map.of 라 keySet() 순회가 실행마다 다르다 — 프로브 점수가 동점이면 승자가 실행마다
+      // 갈리므로 classId 순으로 고정한다(표준 무기 건과 같은 SALT 계열).
+      List<String> classPool =
+          fixedClass != null
+              ? List.of(fixedClass)
+              : CLASS_IDS.entrySet().stream()
+                  .sorted(Map.Entry.comparingByValue())
+                  .map(Map.Entry::getKey)
+                  .toList();
       for (String candidateClass : classPool) {
         if (poeTreeGraphService.classStart(candidateClass) == null) {
           continue;
@@ -457,6 +674,34 @@ public class PoeOptimizeService {
                 candidateClass,
                 candidateAscendancy,
                 heuristicAscendancyNodes(candidateAscendancy, keywords)));
+      }
+      // 프로브 입력 지문 — 프로세스 간 결과가 갈릴 때 "입력이 다른가, 엔진이 다른가"를 로그만으로 가른다.
+      // 노드 수/합이 아니라 **XML 전체 해시**여야 확정적이다(합은 다른 집합에서도 같을 수 있다).
+      for (ClassProbe probe : probes) {
+        String probeXml =
+            buildXml(
+                gem,
+                List.of(),
+                probe.probeClass(),
+                probe.probeAscendancy(),
+                probe.probeNodes(),
+                Set.of(),
+                Map.of());
+        // ⚠ `\R`(개행 매처)은 **문자 클래스 안에서는 불법**이라 `[^\R]` 로 쓰면 PatternSyntaxException 이 나고
+        //    잡이 통째로 실패한다(실제로 그렇게 터뜨렸다). 개행 다음 한 줄은 그냥 [^\n\r] 로 잡는다.
+        java.util.regex.Matcher nodesAttr =
+            java.util.regex.Pattern.compile("nodes=\"([^\"]*)\"").matcher(probeXml);
+        java.util.regex.Matcher weaponAttr =
+            java.util.regex.Pattern.compile("Sim Weapon[\\r\\n]+([^\\r\\n]*)").matcher(probeXml);
+        log(
+            "프로브 입력 "
+                + probe.probeClass()
+                + " · "
+                + probe.probeAscendancy()
+                + " · 무기 "
+                + (weaponAttr.find() ? weaponAttr.group(1) : "(없음)")
+                + " · nodes="
+                + (nodesAttr.find() ? nodesAttr.group(1) : "?"));
       }
       Map<ClassProbe, Double> probeResults =
           evalBatch(
@@ -505,7 +750,7 @@ public class PoeOptimizeService {
       placeFixedUniques(items);
       Map<Integer, PoeUniqueItem> jewels = new LinkedHashMap<>(); // 소켓 노드 id → 유니크 주얼
 
-      phase = "baseline";
+      enterPhase("baseline");
       Map<String, Double> baselineValues =
           poePobEngineService.calculateValues(
               buildXml(gem, supports, className, ascendancy, ascendancyNodes, allocated, items));
@@ -520,7 +765,7 @@ public class PoeOptimizeService {
       // 전직 8포인트 중 일부(BLOODLINE_RESERVE)를 혈맹에 배분하기 위해 직업 전직 예산을 줄인다
       int classAscBudget = ASCENDANCY_POINT_BUDGET - BLOODLINE_RESERVE;
       if (ascendancyStart != null) {
-        phase = "ascendancy";
+        enterPhase("ascendancy");
         current =
             greedyAscendancy(
                 executor,
@@ -541,7 +786,7 @@ public class PoeOptimizeService {
       String chosenBloodline = null;
       List<String> bloodlineOptions = poeTreeGraphService.bloodlines();
       if (BLOODLINE_RESERVE > 0 && !bloodlineOptions.isEmpty()) {
-        phase = "bloodline";
+        enterPhase("bloodline");
         record BloodlineProbe(String id, Set<Integer> nodes) {}
         List<BloodlineProbe> blProbes = new ArrayList<>();
         for (String bl : bloodlineOptions) {
@@ -583,7 +828,7 @@ public class PoeOptimizeService {
       if (chosenBloodline == null
           && ascendancyStart != null
           && classAscBudget < ASCENDANCY_POINT_BUDGET) {
-        phase = "ascendancy";
+        enterPhase("ascendancy");
         current =
             greedyAscendancy(
                 executor,
@@ -601,7 +846,7 @@ public class PoeOptimizeService {
 
       // ── 2) 보조젬 greedy (순수 EHP 목표에서만 생략 — dps/balanced 는 실행) ──
       if (!"ehp".equals(objective)) {
-        phase = "supports";
+        enterPhase("supports");
         List<PoeGem> candidates =
             poeGemDataService.search(null, "support", "all", null).stream()
                 .filter(support -> !support.levels().isEmpty())
@@ -668,89 +913,158 @@ public class PoeOptimizeService {
         }
       }
 
-      // ── 2) 패시브 트리 greedy — 관련 노터블/키스톤에 경로 비용 대비 최대 이득 순 할당 ──
-      phase = "tree";
-      Map<PoeTreeGraphService.TreeNode, Integer> candidateScores = new LinkedHashMap<>();
-      for (PoeTreeGraphService.TreeNode node : poeTreeGraphService.searchCandidates()) {
-        int score = score(node.stats(), keywords);
-        if (score > 0) {
-          candidateScores.put(node, score);
-        }
-      }
-      log("트리 후보 노터블/키스톤: " + candidateScores.size() + "개");
-
+      // ── 2) 패시브 트리 — 사용자가 확정한 트리가 있으면 그대로 쓰고, 없으면 greedy 탐색 ──
+      enterPhase("tree");
+      // 주얼 단계까지 공유하는 할당/포인트 상태 — 고정 트리든 탐색이든 동일하게 쓴다
       Set<Integer> allocatedWithStart = new LinkedHashSet<>();
       allocatedWithStart.add(classStart);
       int points = 0;
-      int treeBudget = POINT_BUDGET - JEWEL_RESERVE; // 주얼 소켓 경로용으로 일부 예약
-      for (int round = 0; round < TREE_MAX_ROUNDS && points < treeBudget; round++) {
-        record Reachable(PoeTreeGraphService.TreeNode node, List<Integer> path, double priority) {}
-        List<Reachable> reachable = new ArrayList<>();
-        for (Map.Entry<PoeTreeGraphService.TreeNode, Integer> entry : candidateScores.entrySet()) {
-          List<Integer> path =
-              poeTreeGraphService.shortestPath(allocatedWithStart, entry.getKey().id());
-          if (path == null || path.isEmpty() || points + path.size() > treeBudget) {
+      if (!fixedTree.isEmpty()) {
+        // 트리 에디터에서 넘어온 확정 트리 — 전직/클래스 노드는 별도 관리되므로 일반 노드만 반영
+        for (int id : fixedTree) {
+          // 클러스터 주얼이 만든 노드(id ≥ 65536)는 트리 데이터에 없다 — node() 가 null 이라
+          // 여기서 걸러지면 주얼을 아무리 끼워 넣어도 **할당이 안 돼 효과가 0** 이 된다.
+          if (id >= 0x10000) {
+            if (!fixedClusters.isEmpty()) {
+              allocated.add(id);
+            }
             continue;
           }
-          reachable.add(
-              new Reachable(entry.getKey(), path, entry.getValue() / (double) path.size()));
-        }
-        if (reachable.isEmpty()) {
-          break;
-        }
-        List<Reachable> topCandidates =
-            reachable.stream()
-                .sorted(Comparator.comparingDouble(Reachable::priority).reversed())
-                .limit(TREE_ROUND_CANDIDATES)
-                .toList();
-        double currentBeforeRound = current;
-        Map<Reachable, Double> round0 =
-            evalBatch(
-                executor,
-                topCandidates,
-                candidate -> {
-                  Set<Integer> trial = new LinkedHashSet<>(allocated);
-                  trial.addAll(candidate.path());
-                  return buildXml(
-                      gem, supports, className, ascendancy, ascendancyNodes, trial, items);
-                },
-                objectiveKey);
-        Reachable best = null;
-        double bestGainPerPoint = 0;
-        for (Map.Entry<Reachable, Double> entry : round0.entrySet()) {
-          double gainPerPoint =
-              (entry.getValue() - currentBeforeRound) / entry.getKey().path().size();
-          if (gainPerPoint > bestGainPerPoint) {
-            bestGainPerPoint = gainPerPoint;
-            best = entry.getKey();
+          PoeTreeGraphService.TreeNode node = poeTreeGraphService.node(id);
+          if (node != null && node.ascendancy() == null && !"class".equals(node.type())) {
+            allocated.add(id);
           }
         }
-        if (best == null) {
-          topCandidates.forEach(candidate -> candidateScores.remove(candidate.node()));
-          continue;
+        current =
+            objectiveOf(
+                poePobEngineService.calculateValues(
+                    buildXml(
+                        gem, supports, className, ascendancy, ascendancyNodes, allocated, items)),
+                objectiveKey);
+        allocatedWithStart.addAll(allocated);
+        points = allocated.size();
+        log("트리 고정(사용자 지정): " + allocated.size() + "노드 → " + format(current));
+        // 고정 트리는 그 직업의 시작점에서 연결돼야 PoB 가 할당한다. 다른 직업 트리를 넘기면 대부분이
+        // 연결되지 않아 조용히 버려지고(스탯 기여 0) 결과만 이상해진다 → 눈에 보이게 경고한다.
+        Set<Integer> reachable = poeTreeGraphService.reachableFrom(classStart, allocatedWithStart);
+        // 클러스터 생성 노드는 트리 그래프에 없어 항상 "도달 불가"로 나온다 — 주얼이 만든 노드라
+        // 연결성은 PoB 가 서브그래프로 보장한다. 세면 매번 가짜 경고가 뜬다.
+        int orphan =
+            (int)
+                allocated.stream()
+                    .filter(id -> id < 0x10000)
+                    .filter(id -> !reachable.contains(id))
+                    .count();
+        if (orphan > 0) {
+          log(
+              "⚠ 고정 트리 중 "
+                  + orphan
+                  + "노드가 "
+                  + className
+                  + " 시작점에서 연결되지 않아 계산에 반영되지 않습니다 (직업을 함께 지정했는지 확인)");
         }
-        allocated.addAll(best.path());
-        allocatedWithStart.addAll(best.path());
-        points += best.path().size();
-        current = round0.get(best);
-        candidateScores.remove(best.node());
-        log(
-            "트리 할당: "
-                + (best.node().nameKo() != null ? best.node().nameKo() : best.node().name())
-                + " (+"
-                + best.path().size()
-                + "pt, "
-                + points
-                + "/"
-                + POINT_BUDGET
-                + ") → "
-                + format(current));
+      } else {
+        Map<PoeTreeGraphService.TreeNode, Integer> candidateScores = new LinkedHashMap<>();
+        for (PoeTreeGraphService.TreeNode node : poeTreeGraphService.searchCandidates()) {
+          int score = score(node.stats(), keywords);
+          if (score > 0) {
+            candidateScores.put(node, score);
+          }
+        }
+        log("트리 후보 노터블/키스톤: " + candidateScores.size() + "개");
+
+        // 주얼 소켓 경로용으로 일부 예약.
+        // (마스터리용 추가 예약도 재 봤지만 — 4점 예약 시 마스터리 4개 채택으로 잡 내부 이득 +43%,
+        //  예약 없이 남는 점으로 1개 채택 시 +41% — 최종 DPS 는 2.44M vs 2.47M 로 차이가 없어 도입하지 않았다)
+        int treeBudget = POINT_BUDGET - JEWEL_RESERVE;
+        for (int round = 0; round < TREE_MAX_ROUNDS && points < treeBudget; round++) {
+          record Reachable(
+              PoeTreeGraphService.TreeNode node, List<Integer> path, double priority) {}
+          List<Reachable> reachable = new ArrayList<>();
+          for (Map.Entry<PoeTreeGraphService.TreeNode, Integer> entry :
+              candidateScores.entrySet()) {
+            List<Integer> path =
+                poeTreeGraphService.shortestPath(allocatedWithStart, entry.getKey().id());
+            if (path == null || path.isEmpty() || points + path.size() > treeBudget) {
+              continue;
+            }
+            reachable.add(
+                new Reachable(entry.getKey(), path, entry.getValue() / (double) path.size()));
+          }
+          if (reachable.isEmpty()) {
+            break;
+          }
+          List<Reachable> topCandidates =
+              reachable.stream()
+                  .sorted(Comparator.comparingDouble(Reachable::priority).reversed())
+                  .limit(TREE_ROUND_CANDIDATES)
+                  .toList();
+          double currentBeforeRound = current;
+          Map<Reachable, Double> round0 =
+              evalBatch(
+                  executor,
+                  topCandidates,
+                  candidate -> {
+                    Set<Integer> trial = new LinkedHashSet<>(allocated);
+                    trial.addAll(candidate.path());
+                    return buildXml(
+                        gem, supports, className, ascendancy, ascendancyNodes, trial, items);
+                  },
+                  objectiveKey);
+          Reachable best = null;
+          double bestGainPerPoint = 0;
+          for (Map.Entry<Reachable, Double> entry : round0.entrySet()) {
+            double gainPerPoint =
+                (entry.getValue() - currentBeforeRound) / entry.getKey().path().size();
+            if (gainPerPoint > bestGainPerPoint) {
+              bestGainPerPoint = gainPerPoint;
+              best = entry.getKey();
+            }
+          }
+          if (best == null) {
+            topCandidates.forEach(candidate -> candidateScores.remove(candidate.node()));
+            continue;
+          }
+          allocated.addAll(best.path());
+          allocatedWithStart.addAll(best.path());
+          points += best.path().size();
+          current = round0.get(best);
+          candidateScores.remove(best.node());
+          log(
+              "트리 할당: "
+                  + (best.node().nameKo() != null ? best.node().nameKo() : best.node().name())
+                  + " (+"
+                  + best.path().size()
+                  + "pt, "
+                  + points
+                  + "/"
+                  + POINT_BUDGET
+                  + ") → "
+                  + format(current));
+        }
       }
 
       // ── 3) 주얼 소켓 greedy — 트리에 연결 가능한 소켓에 전역 유니크 주얼을 꽂는다 ──
-      phase = "jewels";
+      enterPhase("jewels");
+      // 사용자가 트리 에디터에서 직접 꽂은 주얼을 먼저 확정한다(할당된 소켓만). 나머지 소켓은 아래 탐색이 채운다.
+      for (Map.Entry<Integer, String> fixed : fixedJewels.entrySet()) {
+        if (!allocated.contains(fixed.getKey())) {
+          log("⚠ 지정 주얼 소켓 " + fixed.getKey() + " 이 트리에 없어 건너뜁니다");
+          continue;
+        }
+        poeUniqueDataService
+            .findBySlug(fixed.getValue())
+            .ifPresent(
+                unique -> {
+                  jewels.put(fixed.getKey(), unique);
+                  log("주얼 고정(사용자 지정): " + unique.name());
+                });
+      }
+      // 타임리스는 반경 노드 변환 계산이 무거워(시드→노드 매핑 로드) 자동 탐색 풀에 넣으면 잡 전체가 느려진다.
+      // 대신 uniqueItemText() 가 타임리스 문구를 붙여, **트리에서 직접 꽂거나 강제 장착할 때** 제대로 계산되게 했다.
       List<PoeUniqueItem> jewelCandidates = globalJewelCandidates(keywords);
       if (!jewelCandidates.isEmpty()) {
+        log("주얼 후보 " + jewelCandidates.size() + "개 (자동 탐색; 타임리스는 소켓/강제 장착 시 반영)");
         Set<Integer> jewelReach = new LinkedHashSet<>(allocated);
         jewelReach.add(classStart);
         // 현재 트리에서 가장 싸게 닿는 소켓 순으로 정렬
@@ -771,16 +1085,34 @@ public class PoeOptimizeService {
         if (reachableSockets.size() > JEWEL_MAX_SOCKETS) {
           reachableSockets = new ArrayList<>(reachableSockets.subList(0, JEWEL_MAX_SOCKETS));
         }
-        int jewelBudget = 3; // 최대 3개 주얼
+        int jewelBudget = 5; // 주얼은 포인트당 이득이 트리 말단보다 커(실측 소켓당 +13~14%) 상한을 5로
         for (SocketPath socketPath : reachableSockets) {
           if (jewels.size() >= jewelBudget || points + socketPath.path().size() > POINT_BUDGET) {
             break;
+          }
+          // 사용자가 직접 꽂은 소켓은 탐색 대상에서 뺀다 — 안 그러면 바로 아래에서 덮어써 고정이 무의미해진다
+          if (fixedJewels.containsKey(socketPath.socketId())) {
+            continue;
+          }
+          // 같은 유니크 주얼은 게임의 "Limited to: N" 만큼만 장착할 수 있다 — 이미 채운 수를 빼고 후보를 만든다.
+          // (안 걸면 최적화기가 같은 주얼을 소켓마다 꽂아 실제로는 불가능한 빌드가 나온다 — 실측 Dissolution 4개)
+          Map<String, Long> used =
+              jewels.values().stream()
+                  .collect(
+                      java.util.stream.Collectors.groupingBy(
+                          PoeUniqueItem::name, java.util.stream.Collectors.counting()));
+          List<PoeUniqueItem> available =
+              jewelCandidates.stream()
+                  .filter(j -> used.getOrDefault(j.name(), 0L) < jewelLimit(j.name()))
+                  .toList();
+          if (available.isEmpty()) {
+            continue;
           }
           // 이 소켓에 후보 주얼들을 꽂아 평가 (경로도 함께 할당)
           Map<PoeUniqueItem, Double> results =
               evalBatch(
                   executor,
-                  jewelCandidates,
+                  available,
                   jewel -> {
                     Set<Integer> trialNodes = new LinkedHashSet<>(allocated);
                     trialNodes.addAll(socketPath.path());
@@ -818,8 +1150,16 @@ public class PoeOptimizeService {
       }
 
       // ── 4) 아이템 greedy (슬롯 순회) — 고유 후보 + 생성 레어(최상위 티어) 를 함께 평가 ──
-      phase = "items";
-      for (Slot slot : Slot.values()) {
+      enterPhase("items");
+      // 무기를 마지막에 본다 — 첫 슬롯에서 평가하면 아직 장비가 없어 속성이 낮고, 요구치 검사에 걸려
+      // 멀쩡한 무기가 전부 탈락한다(실측: 민첩 74 시점에 민첩 76 요구 베이스 전멸).
+      List<Slot> slotOrder = new ArrayList<>(List.of(Slot.values()));
+      slotOrder.remove(Slot.WEAPON);
+      slotOrder.add(Slot.WEAPON);
+      // 무기 뒤에 보조장비를 한 번 더 본다 — 활은 무기가 정해진 뒤에야 **화살통**이 후보가 되기 때문이다.
+      // (첫 순회 때는 아직 무기가 없어 방패만 후보였고, 활 빌드는 보조장비 슬롯이 통째로 비어 있었다)
+      slotOrder.add(Slot.OFFHAND);
+      for (Slot slot : slotOrder) {
         if (items.containsKey(slot)) {
           continue; // 강제 장착 유니크가 이미 점유한 슬롯 — 탐색 생략(고정)
         }
@@ -827,12 +1167,42 @@ public class PoeOptimizeService {
           continue; // 무기 고유는 EHP 에 기여하지 않음 — 표준 무기 유지
         }
         List<Equipped> slotCandidates = new ArrayList<>();
-        for (PoeUniqueItem unique : itemCandidates(slot, gem, keywords, items)) {
+        List<PoeUniqueItem> uniqueCandidates = itemCandidates(slot, gem, keywords, items);
+        for (PoeUniqueItem unique : uniqueCandidates) {
           slotCandidates.add(Equipped.ofUnique(unique));
         }
-        RareItem rare = craftRare(slot, gem, keywords, 0.0);
-        if (rare != null) {
-          slotCandidates.add(Equipped.ofRare(rare));
+        if (slot == Slot.WEAPON || slot == Slot.OFFHAND) {
+          // 무기/보조장비는 젬·현재 무기에 따라 후보 종류가 달라진다 — 무엇이 후보였는지 남긴다
+          long sceptres =
+              uniqueCandidates.stream()
+                  .filter(u -> u.baseType() != null && u.baseType().contains("Sceptre"))
+                  .count();
+          log(
+              slot.ko
+                  + " 후보 "
+                  + uniqueCandidates.size()
+                  + "개"
+                  + (sceptres > 0 ? " (셉터 " + sceptres + ")" : ""));
+        }
+        RareItem rare = null;
+        if (slot == Slot.WEAPON) {
+          // 무기는 베이스마다 기본 피해/요구치가 달라 하나로 고정하면 안 된다 — 상위 베이스들을 후보로 깔고
+          // 실제 속성으로 못 드는 것은 검증기가 걸러낸다(예: 카루이 대도끼 민첩 43 vs 바알 도끼 76).
+          String category =
+              (gem.tags() != null && gem.tags().contains("Attack"))
+                  ? "weaponAttack"
+                  : "weaponSpell";
+          for (PoeBaseItem base : weaponBaseCandidates(gem, 6, items.get(Slot.OFFHAND))) {
+            RareItem weaponRare = craftRare(category, base.name(), keywords, 0.0, false);
+            if (weaponRare != null) {
+              slotCandidates.add(Equipped.ofRare(weaponRare));
+            }
+          }
+        } else {
+          rare = craftRare(slot, gem, keywords, 0.0);
+          if (rare != null) {
+            slotCandidates.add(Equipped.ofRare(rare));
+          }
         }
         // 실전형 방어 레어(생명+저항+데미지)도 후보로 — 밸런스/생존 목표에서 유니크와 공정 경쟁
         RareItem defensiveRare = craftDefensiveRare(slot, gem, keywords);
@@ -860,11 +1230,22 @@ public class PoeOptimizeService {
                       trial,
                       jewels);
                 },
-                objectiveKey);
+                objectiveKey,
+                // 그 장비를 낀 상태의 실제 속성으로 요구치를 판정한다(장비가 주는 속성까지 포함되므로 순환이 풀린다)
+                this::meetsRequirements);
         Map.Entry<Equipped, Double> best =
             results.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
         if (best != null && best.getValue() > current * 1.002) {
+          // 양손 무기 ↔ 보조장비는 게임에서 동시 장착이 불가능하다. PoB 는 조용히 무시할 뿐이라
+          // 그대로 두면 결과 화면에 "있지만 아무 일도 안 하는 방패"가 남는다.
+          if (slot == Slot.OFFHAND && offhandBlocked(items)) {
+            log("보조장비 건너뜀(활이 아닌 양손 무기 장착 중): " + equippedLabel(best.getKey()));
+            continue;
+          }
           items.put(slot, best.getKey());
+          if (slot == Slot.WEAPON && offhandBlocked(items) && items.containsKey(Slot.OFFHAND)) {
+            log("보조장비 해제(양손 무기 채택): " + equippedLabel(items.remove(Slot.OFFHAND)));
+          }
           current = best.getValue();
           log("장비 채택: " + slot.ko + " = " + equippedLabel(best.getKey()) + " → " + format(current));
         }
@@ -875,7 +1256,7 @@ public class PoeOptimizeService {
       // ⚠️ 반드시 최종 빌드와 동일 컨텍스트(주얼 포함)로 평가해야 한다 — "화염의 주문" 같은 주얼은
       //    오라/헤럴드 개수에 비례해 데미지를 주므로, 주얼 없이 평가하면 오라가 손해로 보여 미채택됨.
       {
-        phase = "auras";
+        enterPhase("auras");
         List<PoeGem> auraPool =
             poeGemDataService.search(null, "active", "all", null).stream()
                 .filter(a -> AURA_NAMES.contains(a.name()))
@@ -950,6 +1331,8 @@ public class PoeOptimizeService {
             double unreserved = trialValues.getOrDefault("ManaUnreserved", 0d);
             if (unreserved < MIN_UNRESERVED_MANA) {
               reserveBlocked.add(cand.getKey());
+              // 부족 마나 = 미예약 마나가 음수로 내려간 만큼(결과 화면에서 사유 설명)
+              blockedAuraShortfall.put(cand.getKey(), (int) Math.ceil(-unreserved));
               log(
                   "오라 예약 초과 제외: "
                       + cand.getKey().name()
@@ -974,8 +1357,493 @@ public class PoeOptimizeService {
         }
       }
 
+      // ── 4) 마스터리 효과 greedy — 찍은 마스터리 노드마다 효과 하나를 고른다 ──
+      // 마스터리는 **효과를 골라야** 스탯이 붙는다(PoB Spec masteryEffects). 트리 greedy 는 노드만 찍으므로
+      // 이 단계가 없으면 자동 탐색 트리의 마스터리가 전부 빈 껍데기로 평가된다(사용자 지정 트리만 효과를 갖고 있었다).
+      // 문신 앞에 두는 이유: 룬 접합(마스터리 문신)이 "효과 있는 마스터리"와 제대로 비교돼야 교체 판단이 맞다.
+      {
+        java.util.function.Predicate<Integer> hasEffects =
+            id -> {
+              PoeTreeGraphService.TreeNode node = poeTreeGraphService.node(id);
+              return node != null
+                  && node.masteryEffects() != null
+                  && !node.masteryEffects().isEmpty();
+            };
+        List<Integer> masteryNodes =
+            new ArrayList<>(
+                allocated.stream()
+                    .filter(id -> !fixedMasteries.containsKey(id)) // 트리 에디터에서 고른 것은 존중
+                    .filter(hasEffects)
+                    .toList());
+        // 트리 greedy 는 노터블/키스톤만 노린다(searchCandidates) — **마스터리는 아예 후보에 없다**.
+        // 그런데 마스터리 하나가 "양손 적중 피해 60% 증가" 급이라 1포인트 대비 이득이 노터블보다 큰 경우가 많다.
+        // 할당 집합에 인접한 미할당 마스터리를 키워드 점수 상위로 추려 후보에 넣는다(효과까지 함께 평가).
+        Set<Integer> newMasteries = new LinkedHashSet<>();
+        if (points < POINT_BUDGET) {
+          record Candidate(int id, int score) {}
+          List<Candidate> scored = new ArrayList<>();
+          for (int id : new ArrayList<>(allocated)) {
+            for (int neighbor : poeTreeGraphService.neighbors(id)) {
+              if (allocated.contains(neighbor)
+                  || newMasteries.contains(neighbor)
+                  || !hasEffects.test(neighbor)) {
+                continue;
+              }
+              PoeTreeGraphService.TreeNode node = poeTreeGraphService.node(neighbor);
+              int best =
+                  node.masteryEffects().stream()
+                      .mapToInt(e -> score(e.stats(), keywords))
+                      .max()
+                      .orElse(0);
+              newMasteries.add(neighbor);
+              scored.add(new Candidate(neighbor, best));
+            }
+          }
+          // 키워드 점수 높은 것부터, 예산 안에서 상한만큼
+          scored.sort(java.util.Comparator.comparingInt(Candidate::score).reversed());
+          newMasteries.clear();
+          for (Candidate candidate : scored) {
+            if (newMasteries.size() >= MASTERY_MAX_NEW
+                || points + newMasteries.size() >= POINT_BUDGET) {
+              break;
+            }
+            newMasteries.add(candidate.id());
+          }
+          masteryNodes.addAll(newMasteries);
+        }
+        if (!masteryNodes.isEmpty()) {
+          enterPhase("masteries");
+          phaseDone.set(0);
+          log(
+              "마스터리 후보 "
+                  + masteryNodes.size()
+                  + "개(효과 미선택 "
+                  + (masteryNodes.size() - newMasteries.size())
+                  + ", 신규 할당 후보 "
+                  + newMasteries.size()
+                  + ") · 현재 "
+                  + format(current));
+          for (int nodeId : masteryNodes) {
+            PoeTreeGraphService.TreeNode node = poeTreeGraphService.node(nodeId);
+            // 신규 후보는 **노드 할당(1포인트)까지 포함**해 평가한다 — 이미 찍은 노드는 효과만 본다
+            boolean isNew = newMasteries.contains(nodeId);
+            if (isNew && points >= POINT_BUDGET) {
+              continue;
+            }
+            Set<Integer> trialNodes = allocated;
+            if (isNew) {
+              trialNodes = new LinkedHashSet<>(allocated);
+              trialNodes.add(nodeId);
+            }
+            // XML 조립은 공유 필드(fixedMasteries)를 쓰므로 **메인 스레드에서 미리** 만들어 둔다
+            // (evalBatch 는 워커 스레드에서 xmlFor 를 호출한다 — 거기서 필드를 바꾸면 경쟁 상태)
+            Map<Integer, String> xmlByEffect = new LinkedHashMap<>();
+            Map<Integer, Integer> saved = fixedMasteries;
+            for (PoeTreeGraphService.MasteryEffect effect : node.masteryEffects()) {
+              Map<Integer, Integer> trial = new LinkedHashMap<>(saved);
+              trial.put(nodeId, effect.id());
+              fixedMasteries = trial;
+              xmlByEffect.put(
+                  effect.id(),
+                  buildXml(
+                      gem,
+                      supports,
+                      className,
+                      ascendancy,
+                      ascendancyNodes,
+                      trialNodes,
+                      items,
+                      jewels));
+            }
+            fixedMasteries = saved;
+            List<Integer> effectIds = List.copyOf(xmlByEffect.keySet());
+            Map<Integer, Double> results =
+                evalBatch(executor, effectIds, xmlByEffect::get, objectiveKey);
+            Map.Entry<Integer, Double> best =
+                results.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+            // 이미 찍은 노드의 효과는 공짜라 조금이라도 나으면 채택. 신규 할당은 1포인트를 쓰니 문턱(+0.3%)을 둔다.
+            double threshold = isNew ? current * 1.003 : current;
+            if (best != null && best.getValue() > 0 && best.getValue() > threshold) {
+              Map<Integer, Integer> merged = new LinkedHashMap<>(fixedMasteries);
+              merged.put(nodeId, best.getKey());
+              fixedMasteries = merged;
+              if (isNew) {
+                allocated.add(nodeId);
+                points++;
+              }
+              current = best.getValue();
+              PoeTreeGraphService.MasteryEffect chosen =
+                  node.masteryEffects().stream()
+                      .filter(e -> e.id() == best.getKey())
+                      .findFirst()
+                      .orElse(null);
+              String effectText =
+                  chosen == null
+                      ? String.valueOf(best.getKey())
+                      : (chosen.statsKo() != null && !chosen.statsKo().isEmpty()
+                          ? chosen.statsKo().get(0)
+                          : chosen.stats().isEmpty() ? "" : chosen.stats().get(0));
+              log(
+                  (isNew ? "마스터리 신규(+1pt): " : "마스터리: ")
+                      + (node.nameKo() != null ? node.nameKo() : node.name())
+                      + " → "
+                      + effectText
+                      + " → "
+                      + format(current));
+            } else if (!isNew) {
+              // 방어 마스터리는 DPS 목표에서 지표가 안 움직인다 — 게임에선 효과 선택이 공짜라
+              // 사용자가 트리 에디터에서 직접 고르면 되므로, 비워둔 사실을 알려 준다.
+              log("마스터리 미선택(목표 이득 없음): " + (node.nameKo() != null ? node.nameKo() : node.name()));
+            } else {
+              // 신규 후보 탈락도 수치로 남긴다 — "시험은 했는데 얼마나 모자랐나"가 안 보이면
+              // 문턱(+0.3%)이 과한지, 후보 선정이 빗나갔는지 판단할 수 없다.
+              log(
+                  "마스터리 신규 탈락: "
+                      + (node.nameKo() != null ? node.nameKo() : node.name())
+                      + " → 최고 "
+                      + (best == null || best.getValue() <= 0 ? "평가불가" : format(best.getValue()))
+                      + " (현재 "
+                      + format(current)
+                      + ", 문턱 +0.3%)");
+            }
+          }
+        }
+      }
+
+      // ── 4) 문신 greedy — 할당한 소형 속성 패시브를 문신 노드로 교체 ──
+      // 게임에선 문신이 그 패시브를 **통째로 갈아끼운다**(스탯 추가가 아니다). 그래서 손해일 수도 있고,
+      // 반경 주얼(붉은 악몽 등)이 꽂혀 있으면 반경 안 저항 문신이 방어 확률로 변환돼 큰 이득이 되기도 한다.
+      // 아이템/오라 다음에 두는 이유: 저항·속성이 확정돼야 "이 문신이 실제로 이득인지"가 제대로 나온다.
+      if (poeTattooDataService.hasData()) {
+        enterPhase("tattoos");
+        phaseDone.set(0);
+        // 후보 노드 묶기 — **반경 주얼 안쪽을 먼저 따로** 본다.
+        // 반경 변환(붉은 악몽: 반경 내 저항 패시브 → 막기 확률)은 그 반경 안에서만 이득이라,
+        // 트리 전체에 한 종류를 바르는 방식으론 "전체로는 손해, 반경 안에선 이득"인 저항 문신이 영영 안 뽑힌다.
+        // 키는 "라벨|속성" — 라벨은 로그용, 속성은 후보 풀 선택용(힘 문신은 힘 소형에만).
+        Map<String, List<Integer>> tattooTargets = new LinkedHashMap<>();
+        Set<Integer> radiusCovered = new LinkedHashSet<>();
+        // 이번 잡에서 자동으로 새긴 노드 — 아래 혼합(스왑) 패스의 대상(사용자 지정은 건드리지 않는다)
+        List<Integer> autoInked = new ArrayList<>();
+        for (Map.Entry<Integer, PoeUniqueItem> socketed : jewels.entrySet()) {
+          double radius = jewelRadiusValue(socketed.getValue().radius());
+          if (radius <= 0 || !allocated.contains(socketed.getKey())) {
+            continue;
+          }
+          String label =
+              socketed.getValue().nameKo() != null
+                  ? socketed.getValue().nameKo()
+                  : socketed.getValue().name();
+          for (int nodeId : poeTreeGraphService.nodesWithinRadius(socketed.getKey(), radius)) {
+            if (!allocated.contains(nodeId) || fixedTattoos.containsKey(nodeId)) {
+              continue;
+            }
+            String attribute = smallAttributeOf(poeTreeGraphService.node(nodeId));
+            if (attribute != null && radiusCovered.add(nodeId)) {
+              tattooTargets
+                  .computeIfAbsent("반경:" + label + "|" + attribute, key -> new ArrayList<>())
+                  .add(nodeId);
+            }
+          }
+        }
+        for (int nodeId : allocated) {
+          if (fixedTattoos.containsKey(nodeId) || radiusCovered.contains(nodeId)) {
+            continue;
+          }
+          String attribute = smallAttributeOf(poeTreeGraphService.node(nodeId));
+          if (attribute != null) {
+            tattooTargets.computeIfAbsent("전체|" + attribute, key -> new ArrayList<>()).add(nodeId);
+          }
+        }
+        phaseTotal =
+            tattooTargets.keySet().stream()
+                .mapToInt(
+                    key ->
+                        poeTattooDataService
+                            .candidates("normal", key.substring(key.indexOf('|') + 1))
+                            .size())
+                .sum();
+        if (!tattooTargets.isEmpty()) {
+          log(
+              "문신 후보 패시브 "
+                  + tattooTargets.values().stream().mapToInt(List::size).sum()
+                  + "개("
+                  + tattooTargets.entrySet().stream()
+                      .map(e -> e.getKey() + " " + e.getValue().size())
+                      .collect(java.util.stream.Collectors.joining(", "))
+                  + ") · 현재 "
+                  + format(current));
+        }
+        for (Map.Entry<String, List<Integer>> group : tattooTargets.entrySet()) {
+          // 발동형(트리거) 문신은 소환수 스킬을 물고 들어와 평가가 불안정하다 — 스탯형만 본다
+          String groupAttribute = group.getKey().substring(group.getKey().indexOf('|') + 1);
+          String groupLabel = group.getKey().substring(0, group.getKey().indexOf('|'));
+          List<PoeTattooDataService.Tattoo> pool =
+              poeTattooDataService.candidates("normal", groupAttribute).stream()
+                  .filter(t -> !t.stats().isEmpty())
+                  .filter(t -> t.stats().stream().noneMatch(line -> line.startsWith("Trigger ")))
+                  .toList();
+          if (pool.isEmpty()) {
+            continue;
+          }
+          // 장착 한도("Limited to 1 …")가 그룹보다 작으면 남는 노드가 맨몸으로 남는다 —
+          // 채택할 때마다 새긴 자리를 빼고 **남은 노드로 반복**해 2등 문신까지 섞는다(혼합의 실체).
+          List<Integer> remaining = new ArrayList<>(group.getValue());
+          for (int round = 0; round < 4 && !remaining.isEmpty(); round++) {
+            // 이미 새겨진 문신의 남은 한도만큼만 시험(같은 문신을 한도 초과로 또 고르는 낭비 방지)
+            Map<String, Long> usedCounts =
+                fixedTattoos.values().stream()
+                    .collect(
+                        java.util.stream.Collectors.groupingBy(
+                            dn -> dn, java.util.stream.Collectors.counting()));
+            final List<Integer> targets = List.copyOf(remaining);
+            List<PoeTattooDataService.Tattoo> roundPool =
+                pool.stream()
+                    .filter(t -> usedCounts.getOrDefault(t.dn(), 0L) < tattooLimit(t))
+                    .toList();
+            if (roundPool.isEmpty()) {
+              break;
+            }
+            Map<PoeTattooDataService.Tattoo, Double> results =
+                evalBatch(
+                    executor,
+                    roundPool,
+                    tattoo -> {
+                      // 장착 한도와 연결 수 규칙을 모두 지키는 자리에만 새긴다
+                      Map<Integer, String> trial = new LinkedHashMap<>();
+                      for (int nodeId : tattooSpots(tattoo, targets)) {
+                        trial.put(nodeId, tattoo.dn());
+                      }
+                      return withTattoos(
+                          buildXml(
+                              gem,
+                              supports,
+                              className,
+                              ascendancy,
+                              ascendancyNodes,
+                              allocated,
+                              items,
+                              jewels),
+                          trial,
+                          allocated);
+                    },
+                    objectiveKey);
+            Map.Entry<PoeTattooDataService.Tattoo, Double> best =
+                results.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+            if (best == null || best.getValue() <= current * 1.003) {
+              break; // 더 이득이 없으면 이 그룹은 끝
+            }
+            PoeTattooDataService.Tattoo tattoo = best.getKey();
+            List<Integer> spots = tattooSpots(tattoo, targets);
+            Map<Integer, String> merged = new LinkedHashMap<>(fixedTattoos);
+            for (int nodeId : spots) {
+              merged.put(nodeId, tattoo.dn());
+            }
+            fixedTattoos = merged;
+            autoInked.addAll(spots);
+            remaining.removeAll(spots);
+            current = best.getValue();
+            log(
+                "문신["
+                    + groupLabel
+                    + "]: "
+                    + (tattoo.nameKo() != null ? tattoo.nameKo() : tattoo.dn())
+                    + " ×"
+                    + spots.size()
+                    + (remaining.isEmpty() ? "" : " (남은 자리 " + remaining.size() + ")")
+                    + " → "
+                    + format(current));
+          }
+        }
+
+        // ── 혼합(스왑) 패스 — 그룹 그리디는 "그룹당 한 종류"라, 노드별로 다른 문신이 더 나은 조합을 놓친다.
+        // 자동으로 새긴 각 노드에 대해 (다른 문신 전부 + 제거) 를 시험해 이득이면 바꾼다. 1라운드만(비용 통제).
+        if (!autoInked.isEmpty()) {
+          double beforeSwap = current;
+          // 같은 속성의 소형 노드는 스탯이 전부 동일(+10)이라 스왑 평가도 동일하다 —
+          // (속성|현재 문신|연결선 수 계층) 시그니처당 대표 1회만 시험해 평가 수를 줄인다.
+          Set<String> swapSeen = new LinkedHashSet<>();
+          for (int nodeId : autoInked) {
+            String attribute = smallAttributeOf(poeTreeGraphService.node(nodeId));
+            if (attribute == null) {
+              continue;
+            }
+            int linked = poeTreeGraphService.neighbors(nodeId).size();
+            String signature =
+                attribute
+                    + "|"
+                    + fixedTattoos.get(nodeId)
+                    + "|"
+                    + (linked >= 7 ? "hub" : linked <= 1 ? "leaf" : "mid");
+            if (!swapSeen.add(signature)) {
+              continue;
+            }
+            List<String> variants = new ArrayList<>();
+            variants.add(""); // 빈 문자열 = 문신 제거(원래 패시브 복원)
+            for (PoeTattooDataService.Tattoo tattoo :
+                poeTattooDataService.candidates("normal", attribute)) {
+              if (tattoo.stats().isEmpty()
+                  || tattoo.stats().stream().anyMatch(line -> line.startsWith("Trigger "))
+                  || tattoo.dn().equals(fixedTattoos.get(nodeId))
+                  || !tattooFits(tattoo, nodeId)) {
+                continue;
+              }
+              // 장착 한도 — 이미 다른 노드에 한도만큼 새겨져 있으면 이 노드로는 못 바꾼다
+              long used =
+                  fixedTattoos.entrySet().stream()
+                      .filter(e -> e.getKey() != nodeId && e.getValue().equals(tattoo.dn()))
+                      .count();
+              if (used >= tattooLimit(tattoo)) {
+                continue;
+              }
+              variants.add(tattoo.dn());
+            }
+            // 잡 경로 XML(buildXml)이 fixedTattoos 를 이미 싣는다 — 스왑 시험 동안 잠시 비우고 trial 만 넣는다
+            Map<Integer, String> savedTattoos = fixedTattoos;
+            Map<String, Double> swapResults;
+            try {
+              fixedTattoos = Map.of();
+              String baseXml =
+                  buildXml(
+                      gem,
+                      supports,
+                      className,
+                      ascendancy,
+                      ascendancyNodes,
+                      allocated,
+                      items,
+                      jewels);
+              swapResults =
+                  evalBatch(
+                      executor,
+                      variants,
+                      dn -> {
+                        Map<Integer, String> trial = new LinkedHashMap<>(savedTattoos);
+                        if (dn.isEmpty()) {
+                          trial.remove(nodeId);
+                        } else {
+                          trial.put(nodeId, dn);
+                        }
+                        return withTattoos(baseXml, trial, allocated);
+                      },
+                      objectiveKey);
+            } finally {
+              fixedTattoos = savedTattoos;
+            }
+            Map.Entry<String, Double> bestSwap =
+                swapResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+            if (bestSwap != null && bestSwap.getValue() > current * 1.003) {
+              Map<Integer, String> merged = new LinkedHashMap<>(fixedTattoos);
+              String dn = bestSwap.getKey();
+              if (dn.isEmpty()) {
+                merged.remove(nodeId);
+              } else {
+                merged.put(nodeId, dn);
+              }
+              fixedTattoos = merged;
+              current = bestSwap.getValue();
+              PoeTreeGraphService.TreeNode spot = poeTreeGraphService.node(nodeId);
+              log(
+                  "문신 스왑: "
+                      + (spot != null && spot.nameKo() != null
+                          ? spot.nameKo()
+                          : String.valueOf(nodeId))
+                      + " → "
+                      + (dn.isEmpty()
+                          ? "제거"
+                          : poeTattooDataService
+                              .findByDn(dn)
+                              .map(t -> t.nameKo() != null ? t.nameKo() : t.dn())
+                              .orElse(dn))
+                      + " → "
+                      + format(current));
+            }
+          }
+          if (current > beforeSwap) {
+            log("혼합 패스 이득: " + format(beforeSwap) + " → " + format(current));
+          }
+        }
+
+        // 노터블/키스톤 문신 — 대부분 "Limited to 1" 이라 **어느 노드에 새길지**까지 골라야 한다.
+        // (소형처럼 한 종류를 전부에 바르는 방식으론 노드 선택이 첫 번째로 고정돼 버린다)
+        // 마스터리 문신(룬 접합)도 같은 방식 — 마스터리 효과를 버리고 룬 접합 모드를 얻는 교환이라
+        // (실측: 생명력 마스터리 +30 이 사라지고 룬 접합이 붙는다) 이득일 때만 그리디가 채택한다.
+        for (String nodeType : List.of("notable", "keystone", "mastery")) {
+          List<Integer> spots =
+              allocated.stream()
+                  .filter(id -> !fixedTattoos.containsKey(id))
+                  .filter(
+                      id -> {
+                        PoeTreeGraphService.TreeNode node = poeTreeGraphService.node(id);
+                        // 전직 노드는 문신을 새길 수 없다(전용 승천 문신은 별도 종류)
+                        return node != null
+                            && nodeType.equals(node.type())
+                            && node.ascendancy() == null;
+                      })
+                  .limit(TATTOO_MAX_SPOTS)
+                  .toList();
+          List<PoeTattooDataService.Tattoo> pool =
+              poeTattooDataService.candidates(nodeType, null).stream()
+                  .filter(t -> !t.stats().isEmpty())
+                  .filter(t -> t.stats().stream().noneMatch(line -> line.startsWith("Trigger ")))
+                  .toList();
+          if (spots.isEmpty() || pool.isEmpty()) {
+            continue;
+          }
+          record Ink(int nodeId, PoeTattooDataService.Tattoo tattoo) {}
+          List<Ink> trials = new ArrayList<>();
+          for (PoeTattooDataService.Tattoo tattoo : pool) {
+            for (int nodeId : spots) {
+              if (tattooFits(tattoo, nodeId)) {
+                trials.add(new Ink(nodeId, tattoo));
+              }
+            }
+          }
+          if (trials.isEmpty()) {
+            continue;
+          }
+          Map<Ink, Double> results =
+              evalBatch(
+                  executor,
+                  trials,
+                  ink ->
+                      withTattoos(
+                          buildXml(
+                              gem,
+                              supports,
+                              className,
+                              ascendancy,
+                              ascendancyNodes,
+                              allocated,
+                              items,
+                              jewels),
+                          Map.of(ink.nodeId(), ink.tattoo().dn()),
+                          allocated),
+                  objectiveKey);
+          Map.Entry<Ink, Double> best =
+              results.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+          if (best != null && best.getValue() > current * 1.003) {
+            Map<Integer, String> merged = new LinkedHashMap<>(fixedTattoos);
+            merged.put(best.getKey().nodeId(), best.getKey().tattoo().dn());
+            fixedTattoos = merged;
+            current = best.getValue();
+            PoeTreeGraphService.TreeNode spot = poeTreeGraphService.node(best.getKey().nodeId());
+            PoeTattooDataService.Tattoo tattoo = best.getKey().tattoo();
+            log(
+                "문신: "
+                    + (tattoo.nameKo() != null ? tattoo.nameKo() : tattoo.dn())
+                    + " → "
+                    + (spot != null && spot.nameKo() != null
+                        ? spot.nameKo()
+                        : String.valueOf(best.getKey().nodeId()))
+                    + " 자리 → "
+                    + format(current));
+          }
+        }
+      }
+
       // ── 4) 레어 슬롯 티어 비교 — 채택된 레어를 T1/중/하 티어로 재계산 ──
-      phase = "tiers";
+      enterPhase("tiers");
       List<PoeOptimizeResult.SlotTierCompare> tierComparisons = new ArrayList<>();
       for (Map.Entry<Slot, Equipped> entry : items.entrySet()) {
         if (entry.getValue().isUnique()) {
@@ -1013,9 +1881,44 @@ public class PoeOptimizeService {
       }
 
       // ── 마무리: 최종 계산 + PoB 코드 ──
-      phase = "finish";
+      enterPhase("finish");
       phaseDone.set(0);
       phaseTotal = 0;
+      // 무기 합법화 패스 — 무기가 목표(특히 EHP)에 기여하지 않으면 그리디는 무기를 끝내 채택하지 않고
+      // XML 의 fallback 표준 무기가 남는데, 그건 요구 속성을 무시하므로 결과가 조용히 불법이 된다.
+      // 최종 속성으로 "실제로 들 수 있는" 최고 베이스를 골라 채워 넣는다.
+      if (!items.containsKey(Slot.WEAPON)) {
+        Map<String, Double> preValues =
+            poePobEngineService.calculateValues(
+                buildXml(
+                    gem,
+                    supports,
+                    className,
+                    ascendancy,
+                    ascendancyNodes,
+                    allocated,
+                    items,
+                    jewels));
+        evalCount.incrementAndGet();
+        String weaponCategory =
+            (gem.tags() != null && gem.tags().contains("Attack")) ? "weaponAttack" : "weaponSpell";
+        for (PoeBaseItem base : weaponBaseCandidates(gem, 12, items.get(Slot.OFFHAND))) {
+          if (!meets(base.reqStr(), preValues.get("Str"))
+              || !meets(base.reqDex(), preValues.get("Dex"))
+              || !meets(base.reqInt(), preValues.get("Int"))) {
+            continue;
+          }
+          // EHP 목표처럼 키워드가 방어 위주면 무기 모드가 하나도 안 잡혀 craftRare 가 null 을 준다.
+          // 그래도 "모드 없는 맨 베이스"가 불법 무기보다 낫다 — 빈 모드로라도 합법 무기를 채운다.
+          RareItem legalWeapon = craftRare(weaponCategory, base.name(), keywords, 0.0, false);
+          if (legalWeapon == null) {
+            legalWeapon = new RareItem(base.name(), List.of(), 0.0);
+          }
+          items.put(Slot.WEAPON, Equipped.ofRare(legalWeapon));
+          log("무기 합법화: " + base.name() + " (요구치 충족 베이스로 교체)");
+          break;
+        }
+      }
       String finalXml =
           buildXml(gem, supports, className, ascendancy, ascendancyNodes, allocated, items, jewels);
       Map<String, Double> finalValues;
@@ -1044,6 +1947,11 @@ public class PoeOptimizeService {
         if (node != null && ("notable".equals(node.type()) || "keystone".equals(node.type()))) {
           notables.add(node.nameKo() != null ? node.nameKo() : node.name());
         }
+      }
+      // 클러스터 주얼이 얹은 노터블은 트리 그래프에 없어(생성 노드) 위 루프에 안 걸린다 —
+      // 목록에서 빠지면 "무슨 노터블을 쓰는 빌드인지"가 결과 화면에서 사라진다.
+      for (ClusterSpec spec : fixedClusters) {
+        notables.addAll(spec.notables());
       }
       String ascendancyKo = ascendancy;
       if (ascendancyStart != null) {
@@ -1089,6 +1997,12 @@ public class PoeOptimizeService {
                           new PoeOptimizeResult.SupportPick(
                               aura.slug(), aura.name(), aura.nameKo()))
                   .toList(),
+              blockedAuraShortfall.entrySet().stream()
+                  .map(
+                      e ->
+                          new PoeOptimizeResult.BlockedAura(
+                              e.getKey().name(), e.getKey().nameKo(), e.getValue()))
+                  .toList(),
               additionalSkills.stream()
                   .map(
                       extra ->
@@ -1103,9 +2017,14 @@ public class PoeOptimizeService {
                           new PoeOptimizeResult.SupportPick(
                               jewel.slug(), jewel.name(), jewel.nameKo()))
                   .toList(),
-              items.entrySet().stream()
-                  .map(entry -> itemPick(entry.getKey(), entry.getValue()))
+              // 무기 유니크가 안 뽑히면 XML 에 표준 무기가 주입된다 — 목록에도 넣어야 화면과 실제 계산이 일치한다
+              // (없으면 사용자는 "무기 없는 근접 빌드"로 오해한다)
+              java.util.stream.Stream.concat(
+                      items.entrySet().stream()
+                          .map(entry -> itemPick(entry.getKey(), entry.getValue())),
+                      standardWeaponPick(gem, items).stream())
                   .toList(),
+              unmetRequirements(items, finalValues, standardWeapon(gem)),
               tierComparisons,
               scenarioMatrix,
               defenseHits,
@@ -1114,7 +2033,22 @@ public class PoeOptimizeService {
               format(displayMetric(finalValues, objective)),
               encodePobCode(finalXml),
               System.currentTimeMillis() - startedAt,
-              evalCount.get());
+              evalCount.get(),
+              // 트리 링크(c=/j=)로 그대로 되돌아갈 수 있게 구성을 문자열로 남긴다
+              serializeClusters(fixedClusters),
+              jewels.entrySet().stream()
+                  .map(entry -> entry.getKey() + ":" + entry.getValue().slug())
+                  .collect(java.util.stream.Collectors.joining(",")),
+              fixedTattoos.entrySet().stream()
+                  .map(entry -> entry.getKey() + ":" + entry.getValue())
+                  .collect(java.util.stream.Collectors.joining("|")),
+              // 최종 XML 에 실린 마스터리 선택 그대로 — 트리 링크가 이걸 잃으면 표시≠실제가 된다
+              fixedMasteries.entrySet().stream()
+                  .filter(entry -> allocated.contains(entry.getKey()))
+                  .map(entry -> entry.getKey() + ":" + entry.getValue())
+                  .collect(java.util.stream.Collectors.joining(",")),
+              masteryLabels(fixedMasteries, allocated),
+              tattooLabels(fixedTattoos));
 
       Files.createDirectories(resultFile.getParent());
       JsonMapper jsonMapper = JsonMapper.builder().build();
@@ -1129,7 +2063,20 @@ public class PoeOptimizeService {
               + (System.currentTimeMillis() - startedAt) / 1000
               + "초, 평가 "
               + evalCount.get()
-              + "회)");
+              + "회"
+              + (evalFailures.get() > 0 ? ", 실패 " + evalFailures.get() + "회" : "")
+              + ")");
+      // 실패가 있었다면 결과를 그대로 믿으면 안 된다 — 실패한 후보는 점수 -1 로 탈락해 탐색 경로가 바뀐다
+      if (evalFailures.get() > 0) {
+        log(
+            "⚠ 엔진 평가 "
+                + evalFailures.get()
+                + "회 실패 — 그만큼의 후보가 평가 없이 탈락했습니다 (첫 오류: "
+                + firstEvalError
+                + ")");
+      }
+      enterPhase(""); // 마지막 단계 소요 마감
+      log("단계별 소요: " + phaseSummary());
       lastStatus = Status.SUCCESS;
     } catch (Exception e) {
       lastStatus = Status.FAILED;
@@ -1154,6 +2101,19 @@ public class PoeOptimizeService {
       List<T> candidates,
       Function<T, String> xmlFor,
       String objectiveKey) {
+    return evalBatch(executor, candidates, xmlFor, objectiveKey, null);
+  }
+
+  /**
+   * @param validator 계산된 원시 스탯으로 후보를 걸러내는 검증기(null 이면 무검증). 장비 요구 속성처럼 <b>그 후보를 장착한 상태의 값</b>이 있어야
+   *     판정 가능한 조건에 쓴다 — 이미 돌린 계산 결과를 재사용하므로 엔진 호출이 늘지 않는다. 탈락은 -1 로 표시.
+   */
+  private <T> Map<T, Double> evalBatch(
+      ExecutorService executor,
+      List<T> candidates,
+      Function<T, String> xmlFor,
+      String objectiveKey,
+      java.util.function.BiPredicate<T, Map<String, Double>> validator) {
     phaseTotal = candidates.size();
     phaseDone.set(0);
     Map<T, Future<Double>> futures = new LinkedHashMap<>();
@@ -1163,9 +2123,18 @@ public class PoeOptimizeService {
           executor.submit(
               () -> {
                 try {
-                  return objectiveOf(
-                      poePobEngineService.calculateValues(xmlFor.apply(candidate)), objectiveKey);
+                  Map<String, Double> values =
+                      poePobEngineService.calculateValues(xmlFor.apply(candidate));
+                  if (validator != null && !validator.test(candidate, values)) {
+                    return -1d;
+                  }
+                  return objectiveOf(values, objectiveKey);
                 } catch (Exception e) {
+                  // 실패를 숨기지 않는다 — 몇 번, 왜 실패했는지 잡 로그로 드러낸다
+                  evalFailures.incrementAndGet();
+                  if (firstEvalError == null) {
+                    firstEvalError = phase + " 단계: " + e;
+                  }
                   return -1d;
                 } finally {
                   evalCount.incrementAndGet();
@@ -1290,7 +2259,7 @@ public class PoeOptimizeService {
 
   private PoeGem pickBestSkill(
       ExecutorService executor, String objectiveKey, List<PoeGem> candidates) {
-    phase = "skill";
+    enterPhase("skill");
     if (candidates.isEmpty()) {
       return null;
     }
@@ -1456,7 +2425,7 @@ public class PoeOptimizeService {
               + "pt, "
               + points
               + "/"
-              + ASCENDANCY_POINT_BUDGET
+              + budget // 혈맹이 예산 일부를 가져가므로 상수가 아니라 실제 예산을 찍는다(6/8 로 보여 낭비로 오독했음)
               + ") → "
               + format(current));
     }
@@ -1541,6 +2510,405 @@ public class PoeOptimizeService {
     return keywords;
   }
 
+  /** "12,34,56" → 노드 id 집합. 숫자가 아닌 토큰은 무시. */
+  private Set<Integer> parseNodeIds(String csv) {
+    if (csv == null || csv.isBlank()) {
+      return Set.of();
+    }
+    Set<Integer> ids = new LinkedHashSet<>();
+    for (String token : csv.split(",")) {
+      String trimmed = token.trim();
+      if (trimmed.matches("[0-9]+")) {
+        ids.add(Integer.valueOf(trimmed));
+      }
+    }
+    return ids;
+  }
+
+  /** "노드:효과,노드:효과" → 마스터리 맵. 같은 효과는 게임 규칙상 1회뿐이라 중복은 첫 것만 남긴다. */
+  private Map<Integer, Integer> parseMasteries(String csv) {
+    if (csv == null || csv.isBlank()) {
+      return Map.of();
+    }
+    Map<Integer, Integer> picks = new LinkedHashMap<>();
+    Set<Integer> seenEffects = new LinkedHashSet<>();
+    for (String pair : csv.split(",")) {
+      String[] kv = pair.trim().split(":");
+      if (kv.length == 2
+          && kv[0].matches("[0-9]+")
+          && kv[1].matches("[0-9]+")
+          && seenEffects.add(Integer.valueOf(kv[1]))) {
+        picks.put(Integer.valueOf(kv[0]), Integer.valueOf(kv[1]));
+      }
+    }
+    return picks;
+  }
+
+  /** "소켓노드:slug,..." → 주얼 맵. 없는 slug 는 잡 시작 시 조용히 걸러진다. */
+  /** ClusterSpec 목록 → 트리 URL 의 c= 형식 문자열(가져오기/링크 왕복용). */
+  private String serializeClusters(List<ClusterSpec> specs) {
+    return specs.stream()
+        .map(
+            spec ->
+                spec.socket()
+                    + ":"
+                    + spec.sizeName()
+                    + ":"
+                    + spec.nodeCount()
+                    + ":"
+                    + spec.skillKey()
+                    + (spec.notables().isEmpty() && spec.socketCount() == 0
+                        ? ""
+                        : ":" + String.join("|", spec.notables()))
+                    + (spec.socketCount() > 0 ? ":" + spec.socketCount() : ""))
+        .collect(java.util.stream.Collectors.joining(","));
+  }
+
+  /** clusters = "소켓:크기:노드수:스킬키:노터블|노터블:소켓수,..." — 트리 에디터/URL 과 같은 형식. */
+  private List<ClusterSpec> parseClusters(String csv) {
+    if (csv == null || csv.isBlank()) {
+      return List.of();
+    }
+    List<ClusterSpec> specs = new ArrayList<>();
+    for (String entry : csv.split(",")) {
+      String[] parts = entry.trim().split(":");
+      if (parts.length < 3 || !parts[0].matches("[0-9]+") || !parts[2].matches("[0-9]+")) {
+        continue;
+      }
+      List<String> notables =
+          parts.length > 4 && !parts[4].isBlank()
+              ? java.util.Arrays.stream(parts[4].split(java.util.regex.Pattern.quote("|")))
+                  .map(String::trim)
+                  .filter(n -> !n.isEmpty())
+                  .toList()
+              : List.of();
+      specs.add(
+          new ClusterSpec(
+              Integer.parseInt(parts[0]),
+              parts[1],
+              Integer.parseInt(parts[2]),
+              parts.length > 3 ? parts[3] : "",
+              notables,
+              parts.length > 5 && parts[5].matches("[0-9]+") ? Integer.parseInt(parts[5]) : 0));
+    }
+    return List.copyOf(specs);
+  }
+
+  private Map<Integer, String> parseJewels(String csv) {
+    if (csv == null || csv.isBlank()) {
+      return Map.of();
+    }
+    Map<Integer, String> picks = new LinkedHashMap<>();
+    for (String pair : csv.split(",")) {
+      String[] kv = pair.trim().split(":", 2);
+      if (kv.length == 2 && kv[0].matches("[0-9]+") && !kv[1].isBlank()) {
+        picks.put(Integer.valueOf(kv[0]), kv[1].trim());
+      }
+    }
+    return picks;
+  }
+
+  /**
+   * 문신을 새길 수 있는 소형 <b>속성</b> 패시브인지 — 맞으면 "Strength"/"Dexterity"/"Intelligence". 게임은 소형 패시브의 속성 종류까지
+   * 구분한다(힘 소형엔 힘 문신). 속성이 아닌 소형(예: 피해 증가)엔 새길 문신이 없다.
+   */
+  private String smallAttributeOf(PoeTreeGraphService.TreeNode node) {
+    if (node == null || !"normal".equals(node.type()) || node.stats() == null) {
+      return null;
+    }
+    for (String line : node.stats()) {
+      String trimmed = line.trim();
+      if (trimmed.endsWith("to Strength")) {
+        return "Strength";
+      }
+      if (trimmed.endsWith("to Dexterity")) {
+        return "Dexterity";
+      }
+      if (trimmed.endsWith("to Intelligence")) {
+        return "Intelligence";
+      }
+    }
+    return null;
+  }
+
+  /**
+   * 이 문신을 이 패시브에 새길 수 있는지 — 마캉가 계열처럼 <b>연결된 패시브 수</b> 조건이 붙은 문신이 11종 있다(7~8개 이상, 또는 1개 이하).
+   *
+   * <p>기준은 PoB 의 문신 목록 필터(`TreeTab.lua:854` {@code node.MinimumConnected <= numLinkedNodes})와 맞춘다 —
+   * 거기서 쓰는 numLinkedNodes 는 <b>할당 여부와 무관한 그 노드의 연결선 수</b>다. 계산 엔진이 PoB 인 이상 판정도 PoB 기준이어야 화면과 수치가
+   * 어긋나지 않는다. (조건부 스탯 "인접 8개 할당 시" 부분은 PoB 계산이 알아서 처리한다)
+   */
+  private boolean tattooFits(PoeTattooDataService.Tattoo tattoo, int nodeId) {
+    if (tattoo.minConnected() <= 0 && tattoo.maxConnected() >= 100) {
+      return true; // 대부분은 제약이 없다 — 이웃 세는 비용도 아낀다
+    }
+    int linked = poeTreeGraphService.neighbors(nodeId).size();
+    return linked >= tattoo.minConnected() && linked <= tattoo.maxConnected();
+  }
+
+  /** 이 문신을 실제로 새길 노드들 — 연결 수 규칙에 맞고 장착 한도 안쪽인 자리만. */
+  private List<Integer> tattooSpots(PoeTattooDataService.Tattoo tattoo, List<Integer> nodes) {
+    return nodes.stream()
+        .filter(nodeId -> tattooFits(tattoo, nodeId))
+        .limit(tattooLimit(tattoo))
+        .toList();
+  }
+
+  /** 반경 라벨 → 월드 단위 반경(3.16+ 트리 값). 반경 모드가 없는 주얼(라벨 없음)은 0. */
+  private double jewelRadiusValue(String label) {
+    if (label == null) {
+      return 0;
+    }
+    return switch (label) {
+      case "Small" -> 960;
+      case "Medium" -> 1440;
+      case "Large" -> 1800;
+      case "Very Large" -> 2400;
+      case "Massive" -> 2880;
+      default -> 0;
+    };
+  }
+
+  /** 표시용 마스터리 요약 — "마스터리명 — 고른 효과 첫 줄". 자동 채택된 효과가 결과 화면에 보여야 표시=실제다. */
+  private List<String> masteryLabels(Map<Integer, Integer> picks, Set<Integer> allocated) {
+    List<String> labels = new ArrayList<>();
+    for (Map.Entry<Integer, Integer> entry : picks.entrySet()) {
+      if (!allocated.contains(entry.getKey())) {
+        continue;
+      }
+      PoeTreeGraphService.TreeNode node = poeTreeGraphService.node(entry.getKey());
+      if (node == null || node.masteryEffects() == null) {
+        continue;
+      }
+      PoeTreeGraphService.MasteryEffect effect =
+          node.masteryEffects().stream()
+              .filter(e -> e.id() == entry.getValue())
+              .findFirst()
+              .orElse(null);
+      if (effect == null) {
+        continue;
+      }
+      String effectText =
+          effect.statsKo() != null && !effect.statsKo().isEmpty()
+              ? effect.statsKo().get(0)
+              : effect.stats().isEmpty() ? "" : effect.stats().get(0);
+      labels.add((node.nameKo() != null ? node.nameKo() : node.name()) + " — " + effectText);
+    }
+    return labels;
+  }
+
+  /** 표시용 문신 요약 — 같은 문신을 여러 패시브에 새기므로 "한글명 ×N" 으로 묶는다. */
+  private List<String> tattooLabels(Map<Integer, String> picks) {
+    Map<String, Integer> counts = new LinkedHashMap<>();
+    for (String dn : picks.values()) {
+      String label =
+          poeTattooDataService
+              .findByDn(dn)
+              .map(t -> t.nameKo() != null ? t.nameKo() : t.dn())
+              .orElse(dn);
+      counts.merge(label, 1, Integer::sum);
+    }
+    return counts.entrySet().stream().map(e -> e.getKey() + " ×" + e.getValue()).toList();
+  }
+
+  /** 문신 종류별 장착 한도 — 스탯 줄의 "Limited to N …" 문구가 근거(없으면 소형 문신처럼 사실상 무제한). */
+  private int tattooLimit(PoeTattooDataService.Tattoo tattoo) {
+    for (String line : tattoo.stats()) {
+      java.util.regex.Matcher matcher =
+          java.util.regex.Pattern.compile("^Limited to (\\d+) ").matcher(line.trim());
+      if (matcher.find()) {
+        return Integer.parseInt(matcher.group(1));
+      }
+    }
+    return Integer.MAX_VALUE;
+  }
+
+  /** 문신 지정 파싱 — "노드:영문명" 을 '|'(권장, 이름에 공백이 있어서) 또는 ',' 로 이은 문자열. */
+  private Map<Integer, String> parseTattoos(String text) {
+    if (text == null || text.isBlank()) {
+      return Map.of();
+    }
+    Map<Integer, String> picks = new LinkedHashMap<>();
+    for (String pair : text.split("[|,]")) {
+      String[] kv = pair.trim().split(":", 2);
+      if (kv.length == 2 && kv[0].matches("[0-9]+") && !kv[1].isBlank()) {
+        picks.put(Integer.valueOf(kv[0]), kv[1].trim());
+      }
+    }
+    return picks;
+  }
+
+  /**
+   * 유니크 주얼 장착 한도("Limited to: N"). 게임 데이터 추출본엔 이 값이 없어 PoB 소스의 {@code Data/Uniques/jewel.lua} 에서
+   * 읽는다(엔진용으로 이미 받아둔 소스라 추가 의존이 없다). 목록에 없으면 1 — PoE 유니크 주얼은 사실상 전부 한도가 있다.
+   */
+  private final String pobSourceDir;
+
+  private volatile Map<String, Integer> jewelLimits;
+
+  private int jewelLimit(String name) {
+    Map<String, Integer> limits = jewelLimits;
+    if (limits == null) {
+      limits = loadJewelLimits();
+      jewelLimits = limits;
+    }
+    return limits.getOrDefault(name, 1);
+  }
+
+  private Map<String, Integer> loadJewelLimits() {
+    Map<String, Integer> limits = new LinkedHashMap<>();
+    java.nio.file.Path file =
+        java.nio.file.Path.of(pobSourceDir, "src", "Data", "Uniques", "jewel.lua");
+    if (!java.nio.file.Files.isReadable(file)) {
+      logger.warn("주얼 한도 파일을 못 읽어 전부 1개로 제한합니다: {}", file);
+      return limits;
+    }
+    try {
+      String name = null;
+      for (String line : java.nio.file.Files.readAllLines(file)) {
+        String trimmed = line.trim();
+        if (trimmed.equals("[[") || trimmed.endsWith("[[")) {
+          name = null; // 다음 줄이 이름
+        } else if (name == null
+            && !trimmed.isEmpty()
+            && !trimmed.startsWith("--")
+            && !trimmed.startsWith("]]")) {
+          name = trimmed;
+        } else if (trimmed.startsWith("Limited to:") && name != null) {
+          String value = trimmed.substring("Limited to:".length()).trim();
+          if (value.matches("[0-9]+")) {
+            limits.put(name, Integer.valueOf(value));
+          }
+        } else if (trimmed.startsWith("]]")) {
+          name = null;
+        }
+      }
+    } catch (java.io.IOException e) {
+      logger.warn("주얼 한도 파싱 실패: {}", e.toString());
+    }
+    return limits;
+  }
+
+  /**
+   * 최종 빌드의 속성(힘/민첩/지능)으로 장착 불가능한 유니크를 찾아낸다. PoB 는 요구치 미달이어도 스탯을 그대로 계산하므로, 걸러내지 않으면 게임에서 입을 수 없는
+   * 장비가 낀 결과가 나온다(실측: 민첩 74 캐릭터에 민첩 170 요구 장비).
+   */
+  private List<PoeOptimizeResult.UnmetRequirement> unmetRequirements(
+      Map<Slot, Equipped> items, Map<String, Double> finalValues, String standardWeaponBase) {
+    int str = (int) Math.round(finalValues.getOrDefault("Str", 0d));
+    int dex = (int) Math.round(finalValues.getOrDefault("Dex", 0d));
+    int intel = (int) Math.round(finalValues.getOrDefault("Int", 0d));
+    List<PoeOptimizeResult.UnmetRequirement> unmet = new ArrayList<>();
+    // 무기 유니크가 없으면 XML 에 표준 무기가 주입된다 — 그 무기도 요구치 검사를 받아야 한다.
+    // (후보 무기는 검사에 걸려 탈락하는데 주입 무기만 무사통과하면 결과가 조용히 불법이 된다)
+    if (!items.containsKey(Slot.WEAPON) && standardWeaponBase != null) {
+      poeBaseItemDataService
+          .findByName(standardWeaponBase)
+          .ifPresent(
+              base -> {
+                if (base.reqStr() > str) {
+                  unmet.add(unmetOf(base, "str", base.reqStr(), str));
+                }
+                if (base.reqDex() > dex) {
+                  unmet.add(unmetOf(base, "dex", base.reqDex(), dex));
+                }
+                if (base.reqInt() > intel) {
+                  unmet.add(unmetOf(base, "int", base.reqInt(), intel));
+                }
+              });
+    }
+    for (Equipped equipped : items.values()) {
+      // 유니크는 자체 요구치, 레어는 베이스 아이템 요구치(우리가 베이스+모드로 조합하므로)
+      String name;
+      String nameKo;
+      Integer reqStr;
+      Integer reqDex;
+      Integer reqInt;
+      if (equipped.isUnique()) {
+        PoeUniqueItem unique = equipped.unique();
+        name = unique.name();
+        nameKo = unique.nameKo();
+        reqStr = unique.reqStr();
+        reqDex = unique.reqDex();
+        reqInt = unique.reqInt();
+      } else {
+        PoeBaseItem base =
+            poeBaseItemDataService.findByName(equipped.rare().baseType()).orElse(null);
+        if (base == null) {
+          continue;
+        }
+        name = base.name();
+        nameKo = base.nameKo();
+        reqStr = base.reqStr();
+        reqDex = base.reqDex();
+        reqInt = base.reqInt();
+      }
+      record Req(String attribute, Integer required, int actual) {}
+      for (Req req :
+          List.of(
+              new Req("str", reqStr, str),
+              new Req("dex", reqDex, dex),
+              new Req("int", reqInt, intel))) {
+        if (req.required() != null && req.required() > req.actual()) {
+          unmet.add(
+              new PoeOptimizeResult.UnmetRequirement(
+                  name, nameKo, req.attribute(), req.required(), req.actual()));
+        }
+      }
+    }
+    if (!unmet.isEmpty()) {
+      log(
+          "⚠ 속성 부족으로 장착 불가한 장비 "
+              + unmet.size()
+              + "건: "
+              + unmet.stream()
+                  .map(
+                      u ->
+                          u.name()
+                              + "("
+                              + u.attribute()
+                              + " "
+                              + u.required()
+                              + ">"
+                              + u.actual()
+                              + ")")
+                  .collect(java.util.stream.Collectors.joining(", ")));
+    }
+    return unmet;
+  }
+
+  /**
+   * 후보 장비가 그 빌드의 속성으로 실제 장착 가능한지. 유니크는 자체 요구치를, 레어는 <b>베이스 아이템의 요구치</b>를 본다 (레어는 우리가 베이스+모드로 조합하므로
+   * 요구치는 베이스가 결정한다 — 예: 우주의 판금 갑옷 = 힘 180).
+   */
+  private boolean meetsRequirements(Equipped candidate, Map<String, Double> values) {
+    if (candidate == null) {
+      return true;
+    }
+    if (candidate.isUnique()) {
+      PoeUniqueItem unique = candidate.unique();
+      return meets(unique.reqStr(), values.get("Str"))
+          && meets(unique.reqDex(), values.get("Dex"))
+          && meets(unique.reqInt(), values.get("Int"));
+    }
+    return poeBaseItemDataService
+        .findByName(candidate.rare().baseType())
+        .map(
+            base ->
+                meets(base.reqStr(), values.get("Str"))
+                    && meets(base.reqDex(), values.get("Dex"))
+                    && meets(base.reqInt(), values.get("Int")))
+        .orElse(true);
+  }
+
+  private static boolean meets(int required, Double actual) {
+    return meets(Integer.valueOf(required), actual);
+  }
+
+  private static boolean meets(Integer required, Double actual) {
+    return required == null || required <= 0 || (actual != null && actual >= required);
+  }
+
   private int score(List<String> lines, List<String> keywords) {
     if (lines == null) {
       return 0;
@@ -1562,25 +2930,150 @@ public class PoeOptimizeService {
    * 전역 유니크 주얼 후보 — 반경/변형/클러스터/타임리스 제외(효과가 주변 패시브·서브그래프 의존이라 단순 소켓 평가 부적합), 키워드 점수 상위 N. 소켓에 꽂으면 스탯이
    * 전역 적용된다.
    */
+  /**
+   * 무궁한(타임리스) 주얼 정의 — PoB `Data/Uniques/jewel.lua` 기준.
+   *
+   * <p>이 주얼들은 <b>시드</b>에 따라 반경 내 패시브가 통째로 바뀐다. PoB 가 그 변환을 계산하려면 아이템 문구에 ① {@code Radius: Large} ②
+   * {@code Passives in radius are Conquered by the <리그>} ③ 시드 줄이 <b>모두</b> 있어야 한다(하나라도 빠지면 조용히 무시 —
+   * 실측).
+   */
+  private record TimelessJewel(
+      String league,
+      String prefix,
+      String suffix,
+      int seedMin,
+      int seedMax,
+      List<String> conquerors) {}
+
+  private static final Map<String, TimelessJewel> TIMELESS_JEWELS =
+      Map.of(
+          "Brutal Restraint",
+              new TimelessJewel(
+                  "Maraketh",
+                  "Denoted service of ",
+                  " dekhara in the akhara of ",
+                  500,
+                  8000,
+                  List.of("Asenath", "Deshret", "Nasima", "Balbala")),
+          "Lethal Pride",
+              new TimelessJewel(
+                  "Karui",
+                  "Commanded leadership over ",
+                  " warriors under ",
+                  10000,
+                  18000,
+                  List.of("Kaom", "Kiloava", "Rakiata", "Akoya")),
+          "Glorious Vanity",
+              new TimelessJewel(
+                  "Vaal",
+                  "Bathed in the blood of ",
+                  " sacrificed in the name of ",
+                  100,
+                  8000,
+                  List.of("Doryani", "Xibaqua", "Zerphi", "Ahuana")),
+          "Militant Faith",
+              new TimelessJewel(
+                  "Templars",
+                  "Carved to glorify ",
+                  " new faithful converted by High Templar ",
+                  2000,
+                  10000,
+                  List.of("Avarius", "Dominus", "Venarius", "Maxarius")),
+          "Elegant Hubris",
+              new TimelessJewel(
+                  "Eternal Empire",
+                  "Commissioned ",
+                  " coins to commemorate ",
+                  2000,
+                  160000,
+                  List.of("Cadiro", "Chitus", "Victario", "Caspiro")),
+          "Heroic Tragedy",
+              new TimelessJewel(
+                  "Kalguur",
+                  "Remembrancing ",
+                  " songworthy deeds by the line of ",
+                  100,
+                  8000,
+                  List.of("Vorana", "Uhtred", "Medved")));
+
+  /**
+   * 타임리스 주얼에 <b>정복자·시드</b>를 지정한 사본을 만든다 — 같은 주얼이라도 이 둘에 따라 반경 패시브 변환 결과가 완전히 달라진다.
+   *
+   * <p>시드는 유효 범위로 클램프한다(범위 밖이면 PoB 가 데이터를 못 찾아 계산이 비어 버린다).
+   */
+  private PoeUniqueItem withTimeless(PoeUniqueItem item, String conqueror, String seedText) {
+    TimelessJewel def = TIMELESS_JEWELS.get(item.name());
+    if (def == null) {
+      return item;
+    }
+    String chosen =
+        def.conquerors().stream()
+            .filter(c -> c.equalsIgnoreCase(conqueror))
+            .findFirst()
+            .orElse(def.conquerors().get(0));
+    int seed = (def.seedMin() + def.seedMax()) / 2;
+    if (seedText != null && seedText.matches("[0-9]+")) {
+      seed = Math.max(def.seedMin(), Math.min(def.seedMax(), Integer.parseInt(seedText)));
+    }
+    List<String> lines = new ArrayList<>(item.explicits());
+    lines.add("Passives in radius are Conquered by the " + def.league());
+    lines.add(def.prefix() + seed + def.suffix() + chosen);
+    return new PoeUniqueItem(
+        item.name() + " (" + chosen + " " + seed + ")",
+        item.nameKo() != null ? item.nameKo() + " (" + chosen + " " + seed + ")" : null,
+        item.slug(),
+        item.baseType(),
+        item.baseTypeKo(),
+        item.category(),
+        item.requiredLevel(),
+        item.league(),
+        item.radius(),
+        item.implicits(),
+        item.implicitsKo(),
+        lines,
+        item.explicitsKo(),
+        item.reqStr(),
+        item.reqDex(),
+        item.reqInt(),
+        item.iconKey());
+  }
+
+  /** 타임리스 주얼이면 PoB 가 반경 변환을 계산하도록 문구 3종을 붙인다(없으면 조용히 무시). 첫 정복자·중앙 시드 기본값. */
+  private List<String> timelessLines(PoeUniqueItem item) {
+    // withTimeless() 로 이미 지정된 사본이면(이름에 정복자/시드가 붙고 문구도 들어 있다) 다시 붙이지 않는다
+    if (item.explicits().stream()
+        .anyMatch(line -> line.startsWith("Passives in radius are Conquered"))) {
+      return List.of();
+    }
+    TimelessJewel def = TIMELESS_JEWELS.get(item.name());
+    if (def == null) {
+      return List.of();
+    }
+    int seed = (def.seedMin() + def.seedMax()) / 2;
+    String conqueror = def.conquerors().get(0);
+    return List.of(
+        // 반경 라벨은 이제 고유 데이터(item.radius())가 들고 있다 — 중복 방지로 여기선 붙이지 않는다
+        "Passives in radius are Conquered by the " + def.league(),
+        def.prefix() + seed + def.suffix() + conqueror);
+  }
+
   private List<PoeUniqueItem> globalJewelCandidates(List<String> keywords) {
     record Scored(PoeUniqueItem item, int score) {}
     return poeUniqueDataService.search(null, "jewel", null).stream()
         .filter(item -> item.requiredLevel() == null || item.requiredLevel() <= LEVEL)
+        // 트리 소켓에 **꽂을 수 없는** 주얼을 후보에서 뺀다. PoB 는 소켓 종류를 검증하지 않으므로
+        // 그냥 두면 게임에서 만들 수 없는 빌드가 더 높은 점수를 받는다(사이클 110 의 클러스터 소켓과 같은 계열).
+        //  · Cluster/Timeless : 전용 소켓·전용 취급
+        //  · "… Eye Jewel"    : 어비스 주얼 — **장비의 심연 소켓 전용**이라 트리엔 못 넣는다(4종)
         .filter(
             item ->
                 item.baseType() == null
                     || (!item.baseType().contains("Cluster")
-                        && !item.baseType().contains("Timeless")))
-        .filter(
-            item ->
-                item.explicits().stream()
-                    .noneMatch(
-                        line -> {
-                          String lower = line.toLowerCase(Locale.ROOT);
-                          return lower.contains("radius")
-                              || lower.contains("in radius")
-                              || lower.contains("nearby");
-                        }))
+                        && !item.baseType().contains("Timeless")
+                        && !item.baseType().endsWith("Eye Jewel")))
+        // 반경 주얼은 **제외하지 않는다** — PoB 는 소켓 위치 기준으로 반경 안 패시브를 실제로 계산한다.
+        // 실측(소켓을 트리에 연결한 상태): 비옥한 정신 지능 82→102, 효율적 훈련 힘 24→44.
+        // 예전엔 "반경/근처" 문구를 통째로 걸러 유니크 주얼 179개 중 81개가 후보에서 빠져 있었다.
         .map(item -> new Scored(item, score(item.explicits(), keywords)))
         .filter(scored -> scored.score() > 0)
         .sorted(Comparator.comparingInt(Scored::score).reversed())
@@ -1663,23 +3156,50 @@ public class PoeOptimizeService {
         log("강제 유니크 배치 불가(지원 슬롯 없음/중복): " + label + " [" + cat + "]");
         continue;
       }
+      if (slot == Slot.OFFHAND && offhandBlocked(items)) {
+        log("강제 유니크 배치 불가(양손 무기와 동시 장착 불가): " + label);
+        continue;
+      }
       items.put(slot, Equipped.ofUnique(unique));
+      if (slot == Slot.WEAPON
+          && isTwoHandedUnique(unique)
+          && !"bow".equals(unique.category())
+          && items.containsKey(Slot.OFFHAND)) {
+        log("보조장비 해제(양손 유니크 강제 장착): " + equippedLabel(items.remove(Slot.OFFHAND)));
+      }
       log("강제 장착: " + slot.ko + " = " + label);
     }
   }
 
   private List<PoeUniqueItem> itemCandidates(
       Slot slot, PoeGem gem, List<String> keywords, Map<Slot, Equipped> equipped) {
-    List<String> categories = slot == Slot.WEAPON ? weaponCategories(gem) : slot.categories;
+    // 활을 들면 보조장비는 **화살통**이다(방패는 못 든다). 활 빌드에서 화살통을 아예 후보에서 빼면
+    // 게임에선 당연히 쓰는 슬롯을 통째로 비우게 된다.
+    List<String> categories =
+        slot == Slot.WEAPON
+            ? weaponCategories(gem)
+            : slot == Slot.OFFHAND && weaponIsBow(equipped) ? List.of("quiver") : slot.categories;
     Set<String> equippedSlugs = new LinkedHashSet<>();
     for (Map.Entry<Slot, Equipped> entry : equipped.entrySet()) {
       if (entry.getKey() != slot && entry.getValue().isUnique()) {
         equippedSlugs.add(entry.getValue().unique().slug());
       }
     }
+    // 셉터는 데이터상 category 가 "mace" 라, 주문 빌드 화이트리스트(wand/staff/dagger)로는 **한 자루도** 안 잡힌다.
+    // 도리아니의 촉매 같은 대표 캐스터 무기가 통째로 빠지므로 베이스 이름으로 따로 열어 준다.
+    boolean spellWeapon =
+        slot == Slot.WEAPON
+            && (poeSkillWeaponDataService.allowsSceptre(gem.name())
+                || (poeSkillWeaponDataService.categories(gem.name()).isEmpty()
+                    && categories.contains("wand")));
     record Scored(PoeUniqueItem item, int score) {}
     return poeUniqueDataService.search(null, "all", null).stream()
-        .filter(item -> categories.contains(item.category()))
+        .filter(
+            item ->
+                categories.contains(item.category())
+                    || (spellWeapon
+                        && item.baseType() != null
+                        && item.baseType().contains("Sceptre")))
         .filter(item -> item.requiredLevel() == null || item.requiredLevel() <= LEVEL)
         .filter(item -> !equippedSlugs.contains(item.slug()))
         .map(
@@ -1695,8 +3215,20 @@ public class PoeOptimizeService {
         .toList();
   }
 
-  /** 무기 슬롯 후보 카테고리 — 젬 태그 기준 */
+  /**
+   * 무기 슬롯 후보 카테고리.
+   *
+   * <p>스킬에 <b>무기 제한</b>이 있으면 그걸 그대로 쓴다(PoB 스킬 데이터). 젬 태그로는 알 수 없다 — 마력 착취는 태그가 [Critical, Attack,
+   * Projectile] 뿐인데 완드 전용이라, 태그 추정으로는 도끼/검을 쥐여 주게 된다.
+   */
   private List<String> weaponCategories(PoeGem gem) {
+    if (poeSkillWeaponDataService.requiresUnarmed(gem.name())) {
+      return List.of(); // 맨손 전용 — 무기 후보 없음
+    }
+    List<String> restricted = poeSkillWeaponDataService.categories(gem.name());
+    if (!restricted.isEmpty()) {
+      return restricted;
+    }
     List<String> tags = gem.tags() != null ? gem.tags() : List.of();
     if (tags.contains("Bow")) {
       return List.of("bow");
@@ -1754,17 +3286,32 @@ public class PoeOptimizeService {
       Map<Slot, Equipped> items,
       Map<Integer, PoeUniqueItem> jewels,
       List<PoeGem> auras) {
-    return buildXmlAuras(
-        gem,
-        supports,
-        className,
-        ascendancy,
-        ascendancyNodes,
-        treeNodes,
-        items,
-        jewels,
-        auras,
-        Map.of());
+    // 고정 클러스터 주얼은 이 경로(잡 전용)에서만 끼운다 — 트리 평가는 자기 인자로 따로 넣는다
+    return buildXmlWithClusters(
+        buildXmlAuras(
+            gem,
+            supports,
+            className,
+            ascendancy,
+            ascendancyNodes,
+            treeNodes,
+            items,
+            jewels,
+            auras,
+            // 트리 에디터에서 확정한 마스터리 효과 — 안 넘기면 마스터리 노드만 찍히고 스탯은 0 이 된다
+            fixedMasteries),
+        treeNodes);
+  }
+
+  /**
+   * 잡 경로용 XML — 고정 클러스터 주얼을 항상 끼워 넣는다. 트리 평가(evaluateTree)는 자기 인자로 따로 넣으므로 이 경로를 타지 않는다(잡 상태 오염
+   * 방지).
+   */
+  private String buildXmlWithClusters(String xml, Set<Integer> treeNodes) {
+    return withTattoos(
+        fixedClusters.isEmpty() ? xml : withClusterJewels(xml, fixedClusters, treeNodes),
+        fixedTattoos,
+        treeNodes);
   }
 
   /**
@@ -1782,6 +3329,43 @@ public class PoeOptimizeService {
       Map<Integer, PoeUniqueItem> jewels,
       List<PoeGem> auras,
       Map<Integer, Integer> masteryEffects) {
+    // 최적화 잡의 현재 설정(공유 필드)을 그대로 쓰는 기본 경로
+    return buildXmlAuras(
+        gem,
+        supports,
+        className,
+        ascendancy,
+        ascendancyNodes,
+        treeNodes,
+        items,
+        jewels,
+        auras,
+        masteryEffects,
+        enemyScenario,
+        combatBuffs,
+        additionalSkills,
+        secondaryAscendId);
+  }
+
+  /**
+   * 잡 설정을 명시적으로 받는 본체. 트리 평가처럼 최적화와 무관한 호출은 이쪽을 써야 한다 — 공유 필드(적 시나리오/전투 버프/추가 스킬/2차 전직)를 읽으면 <b>직전에
+   * 돌아간 최적화 잡의 설정이 그대로 섞여</b> 같은 트리가 다른 결과를 낸다(실측 DPS 4,021 ↔ 5,473).
+   */
+  private String buildXmlAuras(
+      PoeGem gem,
+      List<PoeGem> supports,
+      String className,
+      String ascendancy,
+      Set<Integer> ascendancyNodes,
+      Set<Integer> treeNodes,
+      Map<Slot, Equipped> items,
+      Map<Integer, PoeUniqueItem> jewels,
+      List<PoeGem> auras,
+      Map<Integer, Integer> masteryEffects,
+      String enemyScenario,
+      boolean combatBuffs,
+      List<PoeGem> additionalSkills,
+      int secondaryAscendId) {
     Set<Integer> specNodes = new LinkedHashSet<>(ascendancyNodes);
     specNodes.addAll(treeNodes);
     StringBuilder xml = new StringBuilder();
@@ -1895,6 +3479,16 @@ public class PoeOptimizeService {
         slots.append("<Slot name=\"Weapon 1\" itemId=\"").append(itemId).append("\"/>");
       }
     }
+    // 방패 필요 스킬(방패 강타·방패 돌진 등)은 방패가 없으면 PoB 가 스킬을 통째로 비활성 처리한다
+    // (실측: 방패 강타 기준값 0 · 최종 0). 아직 보조장비가 없으면 표준 방패를 지급한다.
+    if (!items.containsKey(Slot.OFFHAND) && poeSkillWeaponDataService.requiresShield(gem.name())) {
+      itemId++;
+      xml.append("<Item id=\"")
+          .append(itemId)
+          .append(
+              "\">\nRarity: RARE\nSim Shield\nColossal Tower Shield\nItem Level: 84\nImplicits: 0\n+300 to Armour\n+100 to maximum Life\n</Item>");
+      slots.append("<Slot name=\"Weapon 2\" itemId=\"").append(itemId).append("\"/>");
+    }
     // 주얼 아이템 (900번대 id, 소켓의 itemId 와 일치) — ItemSet 슬롯에는 넣지 않는다(트리 Sockets 로 연결)
     int jewelId = 900;
     for (PoeUniqueItem jewel : jewels.values()) {
@@ -1904,6 +3498,8 @@ public class PoeOptimizeService {
           .append(uniqueItemText(jewel))
           .append("</Item>");
     }
+    // 장비가 하나도 없어도 주얼만 있으면 ItemSet 을 내보내야 한다 — PoB 는 ItemSet 이 없으면
+    // Items 섹션 자체를 활성화하지 않아 트리 Sockets 로 연결한 주얼이 통째로 무시된다(트리 평가 경로에서 발견).
     if (itemId > 0) {
       xml.append("<ItemSet id=\"1\">").append(slots).append("</ItemSet>");
     }
@@ -2002,6 +3598,25 @@ public class PoeOptimizeService {
   }
 
   private String standardWeapon(PoeGem gem) {
+    // 맨손 전용 스킬(독성/폭발 혼합물)은 무기를 주면 안 된다 — 주는 순간 PoB 가 스킬을 비활성 처리해
+    // 수치가 통째로 0 이 된다(실측: 독성 혼합물 기준값 0 · 최종 0).
+    if (poeSkillWeaponDataService.requiresUnarmed(gem.name())) {
+      return null;
+    }
+    // 스킬에 무기 제한이 있으면 **그 종류의 표준 무기**를 준다. 안 그러면 탐색 내내 스킬이 비활성이라
+    // 기준값이 0 이 되고(실측: 마력 착취 프로브 0), 트리·보조젬 단계가 아무 신호 없이 돌아간다.
+    List<String> restricted = poeSkillWeaponDataService.itemClasses(gem.name());
+    if (!restricted.isEmpty()) {
+      String base =
+          STANDARD_WEAPON_BY_CLASS.entrySet().stream()
+              .filter(entry -> restricted.contains(entry.getKey()))
+              .map(Map.Entry::getValue)
+              .findFirst()
+              .orElse(null);
+      if (base != null) {
+        return base;
+      }
+    }
     List<String> tags = gem.tags() != null ? gem.tags() : List.of();
     if (tags.contains("Bow")) {
       return "Thicket Bow";
@@ -2010,6 +3625,36 @@ public class PoeOptimizeService {
       return "Vaal Axe";
     }
     return null;
+  }
+
+  /** 무기 종류별 표준(고티어) 베이스 — 무기 제한이 있는 스킬의 기본 무기로 쓴다. */
+  /**
+   * 무기 제한 스킬에 지급할 표준 무기 — 선언 순서가 곧 **선택 우선순위**다(여러 종류를 쓸 수 있는 스킬은 첫 매치 지급).
+   *
+   * <p>⚠ {@code new LinkedHashMap<>(Map.ofEntries(...))} 로 만들면 안 된다 — 자바 불변 맵의 순회 순서는 JVM 실행마다
+   * 무작위(SALT)라, 그 순서를 물려받은 LinkedHashMap 도 실행마다 다르다. 사이클론이 프로세스마다 Vaal Rapier / Imperial Maul /
+   * Imperial Claw 를 번갈아 받아 **최적화 결과 전체가 실행마다 갈렸다**(직업 프로브 지문으로 확정). 반드시 put 으로 선언 순서를 고정한다.
+   */
+  private static final Map<String, String> STANDARD_WEAPON_BY_CLASS = standardWeaponByClass();
+
+  private static Map<String, String> standardWeaponByClass() {
+    Map<String, String> map = new java.util.LinkedHashMap<>();
+    map.put("Bow", "Thicket Bow");
+    map.put("Wand", "Prophecy Wand");
+    map.put("Sceptre", "Void Sceptre");
+    map.put("Staff", "Judgement Staff");
+    map.put("Warstaff", "Eclipse Staff");
+    map.put("Claw", "Imperial Claw");
+    map.put("Dagger", "Platinum Kris");
+    map.put("Rune Dagger", "Platinum Kris");
+    map.put("Two Hand Axe", "Vaal Axe");
+    map.put("Two Hand Sword", "Exquisite Blade");
+    map.put("Two Hand Mace", "Imperial Maul");
+    map.put("One Hand Axe", "Siege Axe");
+    map.put("One Hand Sword", "Midnight Blade");
+    map.put("Thrusting One Hand Sword", "Vaal Rapier");
+    map.put("One Hand Mace", "Behemoth Mace");
+    return map;
   }
 
   // ── 레어 생성 ────────────────────────────────────────────
@@ -2131,6 +3776,13 @@ public class PoeOptimizeService {
     StringBuilder text = new StringBuilder();
     text.append("Rarity: RARE\nSim Craft\n").append(rare.baseType()).append("\n");
     text.append("Item Level: 86\nImplicits: 0\n");
+    // 공격 무기엔 명중을 기본 전제로 얹는다(표준 무기 fallback 과 동일 조건).
+    // accuracyLocal 패밀리가 생긴 뒤 이 줄을 빼고 실측했더니 DPS 6,490,767 → 4,008,572(−38%) 였다 —
+    // 크래프트로 얻는 명중(+360)은 턱없이 부족한데 fallback 무기엔 +2000 이 남아 비교가 불공정해진다.
+    // 근본 해결은 명중을 트리/오라(정밀함)까지 모델링하는 것. 그 전까지는 양쪽 같은 전제를 유지한다.
+    if (isAttackWeaponBase(rare.baseType())) {
+      text.append("+2000 to Accuracy Rating\n");
+    }
     for (PoeModPoolDataService.ModFamily family : rare.families()) {
       for (String line : tierAt(family, rare.tierFraction()).en()) {
         text.append(line).append("\n");
@@ -2139,11 +3791,236 @@ public class PoeOptimizeService {
     return text.toString();
   }
 
+  private PoeOptimizeResult.UnmetRequirement unmetOf(
+      PoeBaseItem base, String attribute, int required, int actual) {
+    return new PoeOptimizeResult.UnmetRequirement(
+        base.name(), base.nameKo(), attribute, required, actual);
+  }
+
+  /** 양손 무기 판정 — 보조장비(방패)와 동시에 들 수 없다. */
+  private static final Set<String> TWO_HANDED_CLASSES =
+      Set.of("Two Hand Axe", "Two Hand Sword", "Two Hand Mace", "Staff", "Bow");
+
+  /**
+   * 유니크가 양손 무기인지 — 활/지팡이는 카테고리만으로 확정, 나머지는 베이스의 itemClass 로 판정.
+   *
+   * <p>PoB 는 양손 무기를 든 상태의 보조장비를 계산에서 무시한다(실측). 그래서 스탯이 부풀지는 않지만, 결과 화면엔 <b>실제로는 아무 일도 안 하는 방패가 장착된
+   * 것처럼</b> 표시되고 평가 비용도 낭비된다.
+   */
+  private boolean isTwoHandedUnique(PoeUniqueItem unique) {
+    if (unique == null) {
+      return false;
+    }
+    String category = unique.category();
+    if ("bow".equals(category) || "staff".equals(category)) {
+      return true;
+    }
+    return unique.baseType() != null
+        && poeBaseItemDataService
+            .findByName(unique.baseType())
+            .map(base -> TWO_HANDED_CLASSES.contains(base.itemClass()))
+            .orElse(false);
+  }
+
+  /** 현재 무기가 활인지 — 활은 양손이지만 <b>화살통</b>은 함께 든다(방패만 불가). */
+  private boolean weaponIsBow(Map<Slot, Equipped> items) {
+    Equipped weapon = items.get(Slot.WEAPON);
+    if (weapon == null) {
+      return false;
+    }
+    if (weapon.isUnique()) {
+      return "bow".equals(weapon.unique().category());
+    }
+    return weapon.rare() != null
+        && weapon.rare().baseType() != null
+        && poeBaseItemDataService
+            .findByName(weapon.rare().baseType())
+            .map(base -> "Bow".equals(base.itemClass()))
+            .orElse(false);
+  }
+
+  /** 보조장비 슬롯을 아예 못 쓰는 상태인지 — 활이 아닌 양손 무기일 때만 막는다. */
+  private boolean offhandBlocked(Map<Slot, Equipped> items) {
+    return weaponIsTwoHanded(items) && !weaponIsBow(items);
+  }
+
+  /** 현재 무기가 양손인지(유니크/레어 공통) */
+  private boolean weaponIsTwoHanded(Map<Slot, Equipped> items) {
+    Equipped weapon = items.get(Slot.WEAPON);
+    if (weapon == null) {
+      return false;
+    }
+    if (weapon.isUnique()) {
+      return isTwoHandedUnique(weapon.unique());
+    }
+    return weapon.rare() != null
+        && weapon.rare().baseType() != null
+        && poeBaseItemDataService
+            .findByName(weapon.rare().baseType())
+            .map(base -> TWO_HANDED_CLASSES.contains(base.itemClass()))
+            .orElse(false);
+  }
+
+  /** 젬 종류에 맞는 무기 베이스 중 기본 DPS 상위 N개. 요구 속성은 후보 평가 단계에서 실제 값으로 걸러진다. */
+  private List<PoeBaseItem> weaponBaseCandidates(PoeGem gem, int limit, Equipped offhand) {
+    if (poeSkillWeaponDataService.requiresUnarmed(gem.name())) {
+      return List.of(); // 맨손 전용 — 크래프트 무기도 주지 않는다
+    }
+    List<String> restrictedClasses = poeSkillWeaponDataService.itemClasses(gem.name());
+    List<String> tags = gem.tags() != null ? gem.tags() : List.of();
+    List<String> classes;
+    if (!restrictedClasses.isEmpty()) {
+      classes = restrictedClasses;
+    } else if (tags.contains("Bow")) {
+      classes = List.of("Bow");
+    } else if (tags.contains("Attack")) {
+      classes =
+          List.of(
+              "Two Hand Axe",
+              "Two Hand Sword",
+              "Two Hand Mace",
+              "One Hand Axe",
+              "One Hand Sword",
+              "One Hand Mace",
+              "Claw",
+              "Dagger",
+              "Staff");
+    } else {
+      classes = List.of("Wand", "Sceptre");
+    }
+    // 보조장비를 이미 낀 상태면 양손 무기 제외 — 게임에서 방패와 양손 무기는 동시에 못 든다
+    boolean offhandOccupied = offhand != null;
+    return poeBaseItemDataService.search(null, null).stream()
+        .filter(base -> base.weapon() != null && classes.contains(base.itemClass()))
+        .filter(base -> !offhandOccupied || !TWO_HANDED_CLASSES.contains(base.itemClass()))
+        .filter(base -> base.dropLevel() <= LEVEL)
+        .sorted(
+            Comparator.comparingDouble(
+                    (PoeBaseItem base) ->
+                        (base.weapon().damageMin() + base.weapon().damageMax())
+                            / 2.0
+                            * base.weapon().attacksPerSecond())
+                .reversed())
+        .limit(limit)
+        .toList();
+  }
+
+  /**
+   * 트리 XML 에 클러스터 주얼을 꽂아 넣는다. PoB 는 <b>소켓에 꽂힌 주얼 아이템 문구</b>를 보고 서브트리를 생성하므로, 우리가 생성한 노드 id(≥65536)가
+   * Spec 의 nodes 에 있어도 <b>주얼이 없으면 그 노드는 존재하지 않아 무시된다</b>. 아이템 id 는 장비(1..N)/유니크 주얼(900번대)과 겹치지 않게
+   * 800번대를 쓴다.
+   */
+  private String withClusterJewels(String xml, List<ClusterSpec> specs, Set<Integer> nodes) {
+    if (specs == null || specs.isEmpty() || !poeClusterJewelDataService.hasData()) {
+      return xml;
+    }
+    StringBuilder items = new StringBuilder();
+    StringBuilder sockets = new StringBuilder();
+    int itemId = 800;
+    for (ClusterSpec spec : specs) {
+      if (!nodes.contains(spec.socket())) {
+        continue; // 할당되지 않은 소켓의 클러스터는 게임에서도 효과가 없다
+      }
+      var text =
+          poeClusterJewelDataService.itemText(
+              spec.sizeName(),
+              spec.nodeCount(),
+              spec.skillKey(),
+              spec.notables(),
+              spec.socketCount());
+      if (text.isEmpty()) {
+        continue;
+      }
+      items
+          .append("<Item id=\"")
+          .append(itemId)
+          .append("\">" + System.lineSeparator())
+          .append(text.get())
+          .append("</Item>");
+      sockets
+          .append("<Socket nodeId=\"")
+          .append(spec.socket())
+          .append("\" itemId=\"")
+          .append(itemId)
+          .append("\"/>");
+      itemId++;
+    }
+    if (sockets.length() == 0) {
+      return xml;
+    }
+    String out = xml;
+    if (out.contains("<Sockets>")) {
+      out = out.replace("<Sockets>", "<Sockets>" + sockets);
+    } else {
+      out = out.replace("</Spec>", "<Sockets>" + sockets + "</Sockets></Spec>");
+    }
+    return out.replace("<Items activeItemSet=\"1\">", "<Items activeItemSet=\"1\">" + items);
+  }
+
+  /**
+   * 문신(패시브 교체)을 XML 조립 후 Spec 에 끼운다 — PoB 는 {@code <Overrides><Override nodeId dn/></Overrides>} 를
+   * 읽어 그 노드를 {@code tree.tattoo.nodes[dn]} 으로 통째로 갈아끼운다.
+   *
+   * <p>할당되지 않은 노드의 문신은 게임에서도 효과가 없으므로 버린다. 알 수 없는 dn 은 PoB 가 무시하지만(에러 로그만) 우리 쪽에서 미리 걸러 낸다.
+   */
+  private String withTattoos(String xml, Map<Integer, String> tattooDns, Set<Integer> nodes) {
+    if (tattooDns == null || tattooDns.isEmpty() || !poeTattooDataService.hasData()) {
+      return xml;
+    }
+    StringBuilder overrides = new StringBuilder();
+    for (Map.Entry<Integer, String> entry : tattooDns.entrySet()) {
+      if (!nodes.contains(entry.getKey())) {
+        continue;
+      }
+      var tattoo = poeTattooDataService.findByDn(entry.getValue()).orElse(null);
+      if (tattoo == null) {
+        continue;
+      }
+      overrides
+          .append("<Override nodeId=\"")
+          .append(entry.getKey())
+          .append("\" dn=\"")
+          .append(escapeXml(tattoo.dn()))
+          .append("\" icon=\"")
+          .append(escapeXml(tattoo.icon()))
+          .append("\" activeEffectImage=\"\"/>");
+    }
+    if (overrides.length() == 0) {
+      return xml;
+    }
+    return xml.replace("</Spec>", "<Overrides>" + overrides + "</Overrides></Spec>");
+  }
+
+  private static String escapeXml(String value) {
+    return value == null
+        ? ""
+        : value
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;");
+  }
+
+  /** 공격용 무기 베이스인지 — 표준 무기와 동일 전제(명중)를 줄지 판단. */
+  private boolean isAttackWeaponBase(String baseType) {
+    // 베이스 데이터의 category 는 세부 무기종이 아니라 "weapon" 이다 — WEAPON_CATEGORIES 로 판정하면 항상 false 가 돼
+    // 명중이 안 붙고, 크래프트 무기가 표준 무기(명중 +2000)를 영원히 못 이긴다(이 함정으로 한 사이클 낭비).
+    return poeBaseItemDataService
+        .findByName(baseType)
+        .map(base -> base.weapon() != null)
+        .orElse(false);
+  }
+
   /** 레어의 한국어 모드 라인 (표시용) */
   private List<String> rareModLinesKo(RareItem rare) {
     List<String> lines = new ArrayList<>();
     for (PoeModPoolDataService.ModFamily family : rare.families()) {
       lines.addAll(tierAt(family, rare.tierFraction()).ko());
+    }
+    // rareItemText 가 공격 무기에 얹는 명중 전제도 함께 보여준다 — XML 엔 들어가는데 목록에만 없으면
+    // 화면의 모드 합이 실제 계산과 달라진다(표시=실제 원칙).
+    if (isAttackWeaponBase(rare.baseType())) {
+      lines.add("명중 +2000 (시뮬 가정)");
     }
     return lines;
   }
@@ -2164,6 +4041,28 @@ public class PoeOptimizeService {
     return "레어 " + equipped.rare().baseType();
   }
 
+  /** XML 에 주입되는 표준 무기를 결과 목록용 항목으로 (무기 유니크가 채택된 경우 빈 값). */
+  private java.util.Optional<PoeOptimizeResult.ItemPick> standardWeaponPick(
+      PoeGem gem, Map<Slot, Equipped> items) {
+    if (items.containsKey(Slot.WEAPON)) {
+      return java.util.Optional.empty();
+    }
+    String base = standardWeapon(gem);
+    if (base == null) {
+      return java.util.Optional.empty();
+    }
+    String nameKo = poeBaseItemDataService.findByName(base).map(PoeBaseItem::nameKo).orElse(null);
+    return java.util.Optional.of(
+        new PoeOptimizeResult.ItemPick(
+            Slot.WEAPON.pobName,
+            Slot.WEAPON.ko,
+            "RARE",
+            null,
+            base + " (시뮬 표준 무기)",
+            (nameKo != null ? nameKo : base) + " (시뮬 표준 무기)",
+            List.of("물리 피해 60-120 추가", "명중 +2000")));
+  }
+
   private PoeOptimizeResult.ItemPick itemPick(Slot slot, Equipped equipped) {
     if (equipped.isUnique()) {
       PoeUniqueItem unique = equipped.unique();
@@ -2177,8 +4076,11 @@ public class PoeOptimizeService {
           uniqueModLines(unique));
     }
     RareItem rare = equipped.rare();
+    // 레어도 베이스 한글명을 채운다 — 유니크만 한글로 나오고 레어는 영문이라 목록이 뒤죽박죽이었다
+    String baseNameKo =
+        poeBaseItemDataService.findByName(rare.baseType()).map(PoeBaseItem::nameKo).orElse(null);
     return new PoeOptimizeResult.ItemPick(
-        slot.pobName, slot.ko, "RARE", null, rare.baseType(), null, rareModLinesKo(rare));
+        slot.pobName, slot.ko, "RARE", null, rare.baseType(), baseNameKo, rareModLinesKo(rare));
   }
 
   /** 고유 아이템 표시용 모드 라인 (임플리싯 + 익스플리싯, 한국어 우선·없으면 영문). 레어와 표시 일관성. */
@@ -2207,12 +4109,21 @@ public class PoeOptimizeService {
         .append("\n")
         .append(item.baseType())
         .append("\n");
+    // 반경 라벨은 implicit 앞 **아이템 속성** 줄이다 — 빠지면 "…in Radius" 모드를 PoB 가 통째로 무시한다
+    // (붉은 악몽 실측: 라벨 없이는 반경 내 저항 패시브가 방어 확률로 전혀 바뀌지 않았다)
+    if (item.radius() != null && !item.radius().isBlank()) {
+      text.append("Radius: ").append(item.radius()).append("\n");
+    }
     text.append("Implicits: ").append(item.implicits().size()).append("\n");
     for (String implicit : item.implicits()) {
       text.append(implicit).append("\n");
     }
     for (String explicit : item.explicits()) {
       text.append(explicit).append("\n");
+    }
+    // 타임리스(무궁한) 주얼은 시드 줄이 있어야 PoB 가 반경 패시브 변환을 계산한다(없으면 평범한 스탯 주얼).
+    for (String line : timelessLines(item)) {
+      text.append(line).append("\n");
     }
     return text.toString();
   }
@@ -2244,7 +4155,24 @@ public class PoeOptimizeService {
       int nodeCount,
       List<PoeBuild.PlayerStat> stats,
       String pobCode,
-      long durationMs) {}
+      long durationMs,
+      List<TreeJewel> jewels,
+      /** 공격 스킬은 무기 없이 계산이 성립하지 않아 표준 무기를 가정한다(주문은 null). */
+      String assumedWeapon,
+      String assumedWeaponKo) {}
+
+  /** 트리 에디터에서 꽂은 클러스터 주얼 (소켓 노드 id + 크기/노드수/작은패시브 스킬키) */
+  /** notables = "1 Added Passive Skill is X" 로 얹을 클러스터 노터블 영문 이름들(순서 무관, PoB 가 정렬한다). */
+  public record ClusterSpec(
+      int socket,
+      String sizeName,
+      int nodeCount,
+      String skillKey,
+      List<String> notables,
+      int socketCount) {}
+
+  /** 트리 평가에 실제로 장착된 주얼 (요청 slug 중 존재하고 소켓이 할당된 것만) */
+  public record TreeJewel(String slug, String name, String nameKo) {}
 
   /**
    * 사용자가 트리 에디터에서 찍은 노드 집합을 그대로 평가한다(장비/보조젬 없음). 최적화기와 달리 탐색을 하지 않으므로 엔진 1회 호출로 끝난다.
@@ -2260,7 +4188,10 @@ public class PoeOptimizeService {
       String ascendancy,
       Set<Integer> nodes,
       String gemSlug,
-      Map<Integer, Integer> masteryEffects) {
+      Map<Integer, Integer> masteryEffects,
+      Map<Integer, String> jewelSlugs,
+      List<ClusterSpec> clusterSpecs,
+      Map<Integer, String> tattooDns) {
     String className =
         CLASS_IDS.entrySet().stream()
             .filter(e -> e.getValue() == classId)
@@ -2278,6 +4209,39 @@ public class PoeOptimizeService {
     if (gem == null) {
       throw new IllegalStateException("평가에 쓸 스킬 젬이 없습니다 (젬 데이터 미로드)");
     }
+    // 마스터리 효과는 게임 규칙상 트리 전체에서 1회만 고를 수 있다 — 같은 효과가 여러 노드에 들어오면
+    // (손댄 URL·옛 링크) 첫 것만 남긴다. 안 그러면 같은 효과가 중복 적용돼 스탯이 부풀려진다.
+    Map<Integer, Integer> effects = new LinkedHashMap<>();
+    if (masteryEffects != null) {
+      Set<Integer> seenEffects = new LinkedHashSet<>();
+      for (Map.Entry<Integer, Integer> entry : masteryEffects.entrySet()) {
+        if (seenEffects.add(entry.getValue())) {
+          effects.put(entry.getKey(), entry.getValue());
+        }
+      }
+    }
+    // 주얼: 소켓 노드가 실제 할당돼 있고 slug 가 존재하는 유니크일 때만 장착한다.
+    // (미할당 소켓에 주얼을 꽂으면 PoB 가 무시하는 게 아니라 스탯이 그대로 들어가 과대평가된다)
+    Map<Integer, PoeUniqueItem> jewels = new LinkedHashMap<>();
+    if (jewelSlugs != null) {
+      for (Map.Entry<Integer, String> entry : jewelSlugs.entrySet()) {
+        if (!nodes.contains(entry.getKey())) {
+          continue;
+        }
+        // 값은 "slug" 또는 타임리스 지정 "slug:정복자:시드" — 정복자/시드는 반경 변환 결과를 바꾼다
+        String[] spec = entry.getValue().split(":");
+        poeUniqueDataService
+            .findBySlug(spec[0].trim())
+            .ifPresent(
+                u ->
+                    jewels.put(
+                        entry.getKey(),
+                        spec.length >= 2
+                            ? withTimeless(
+                                u, spec[1].trim(), spec.length >= 3 ? spec[2].trim() : null)
+                            : u));
+      }
+    }
     String xml =
         buildXmlAuras(
             gem,
@@ -2287,9 +4251,18 @@ public class PoeOptimizeService {
             Set.of(),
             nodes,
             Map.of(),
-            Map.of(),
+            jewels,
             List.of(),
-            masteryEffects == null ? Map.of() : masteryEffects);
+            effects,
+            // 트리 평가는 최적화 잡과 독립이어야 한다 — 기본 가정(핀나클 보스 + 전투 버프)을 명시적으로 넘긴다
+            "Pinnacle",
+            true,
+            List.of(),
+            0);
+    // 클러스터 주얼은 XML 조립 후 삽입한다 — PoB 는 주얼 아이템 문구로 서브트리를 만들므로
+    // 생성 노드 id 가 nodes 에 있어도 주얼이 없으면 그 노드는 존재하지 않는 것으로 취급된다.
+    xml = withClusterJewels(xml, clusterSpecs, nodes);
+    xml = withTattoos(xml, tattooDns, nodes);
     PoePobEngineService.EngineResult result = poePobEngineService.recalculate(xml);
     return new TreeEvaluation(
         className,
@@ -2300,6 +4273,14 @@ public class PoeOptimizeService {
         nodes.size(),
         result.stats(),
         encodePobCode(xml),
-        result.durationMs());
+        result.durationMs(),
+        jewels.values().stream().map(u -> new TreeJewel(u.slug(), u.name(), u.nameKo())).toList(),
+        standardWeapon(gem),
+        standardWeapon(gem) == null
+            ? null
+            : poeBaseItemDataService
+                .findByName(standardWeapon(gem))
+                .map(PoeBaseItem::nameKo)
+                .orElse(null));
   }
 }

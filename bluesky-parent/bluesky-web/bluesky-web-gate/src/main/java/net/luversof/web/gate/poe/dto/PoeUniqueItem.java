@@ -12,6 +12,8 @@ public record PoeUniqueItem(
     String category,
     Integer requiredLevel,
     String league,
+    /** 반경 라벨(Small/Medium/Large/Very Large) — "…in Radius" 모드를 가진 주얼만 값이 있다. */
+    String radius,
     List<String> implicits,
     List<String> implicitsKo,
     List<String> explicits,
