@@ -849,6 +849,57 @@ const DateRangePicker = (function () {
 			applyRange(newStart, newEnd, newMode);
 		}
 
+		// 사용자가 날짜 입력을 직접 고치면 hidden Instant(startDate/endDate)로 동기화한다.
+		// 이게 없으면 화면의 날짜만 바뀌고 서버로는 이전 기간이 그대로 전송되어
+		// "기간을 지정하고 검색해도 적용되지 않는" 것처럼 보인다.
+		function syncManualInput() {
+			const se = el(cfg.startId) as HTMLInputElement | null;
+			const ee = el(cfg.endId) as HTMLInputElement | null;
+			if (!se || !ee) return;
+			const s = se.value || "";
+			const e2 = ee.value || "";
+			if (!s || !e2) return; // 한쪽만 입력된 중간 상태는 무시
+			// 시작이 종료보다 뒤면 사용자가 방금 고친 쪽을 기준으로 맞춰준다.
+			let start = s;
+			let end = e2;
+			if (start > end) {
+				if (document.activeElement === se) end = start;
+				else start = end;
+				se.value = start;
+				ee.value = end;
+			}
+			clearActive(); // 수동 지정이므로 프리셋 활성 표시 해제
+			applyRangeNoSubmit(start, end, "");
+			// 다른 화면에도 같은 기간이 이어지도록 전역 저장(프리셋 경로와 동일 형식).
+			try {
+				if (cfg.globalKey && typeof localStorage !== "undefined") {
+					const tz = resolvedTimeZone() || null;
+					localStorage.setItem(
+						cfg.globalKey,
+						JSON.stringify({ start: start, end: end, mode: "", timeZone: tz || "" }),
+					);
+				}
+			} catch (e) {}
+		}
+
+		try {
+			[cfg.startId, cfg.endId].forEach((id: string) => {
+				const inputEl = el(id) as HTMLInputElement | null;
+				if (!inputEl) return;
+				inputEl.addEventListener("change", syncManualInput);
+				// 달력 사용성: 데이터가 있는 구간으로 선택 범위를 제한하고,
+				// 입력 어디를 눌러도 달력이 열리게 한다(기본 동작은 작은 아이콘만 클릭 가능).
+				if (cfg.minDate) inputEl.min = cfg.minDate;
+				inputEl.max = maxDateStr();
+				inputEl.addEventListener("click", () => {
+					try {
+						const anyEl = inputEl as any;
+						if (typeof anyEl.showPicker === "function") anyEl.showPicker();
+					} catch (e) {}
+				});
+			});
+		} catch (e) {}
+
 		try {
 			updatePrevNextState();
 		} catch (e) {}

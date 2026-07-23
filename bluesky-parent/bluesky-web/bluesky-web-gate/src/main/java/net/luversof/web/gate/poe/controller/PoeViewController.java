@@ -59,6 +59,86 @@ public class PoeViewController {
     return "poe/gems";
   }
 
+  /** 젬 상세 페이지 — 호버 레이어(툴팁)를 그대로 바닥에 + 레벨별 진행표 등 상세 정보. */
+  @GetMapping("/gems/{slug}")
+  public String gemPage(
+      @org.springframework.web.bind.annotation.PathVariable String slug,
+      @RequestParam(required = false, defaultValue = "20") int level,
+      Model model) {
+    model.addAttribute("patch", poeDataClient.gemMeta().patch());
+    model.addAttribute("gem", poeDataClient.gem(slug));
+    model.addAttribute("displayLevel", level);
+    return "poe/gemPage";
+  }
+
+  /** 고유 아이템 상세 페이지 — 툴팁 + 베이스/영문/요구 정보. */
+  @GetMapping("/uniques/{slug}")
+  public String uniquePage(
+      @org.springframework.web.bind.annotation.PathVariable String slug, Model model) {
+    var item = poeDataClient.unique(slug);
+    model.addAttribute("patch", poeDataClient.gemMeta().patch());
+    model.addAttribute("item", item);
+    model.addAttribute("base", poeDataClient.baseItemByName(item.baseType()));
+    return "poe/uniquePage";
+  }
+
+  /** 베이스 아이템 상세 페이지 — 툴팁 + 모드 풀(티어표). */
+  @GetMapping("/items/{slug}")
+  public String itemPage(
+      @org.springframework.web.bind.annotation.PathVariable String slug,
+      @RequestParam(required = false, defaultValue = "") String influence,
+      Model model) {
+    var item = poeDataClient.baseItem(slug);
+    model.addAttribute("patch", poeDataClient.gemMeta().patch());
+    model.addAttribute("item", item);
+    model.addAttribute("modFamilies", poeDataClient.modFamiliesForItemClass(item.itemClass()));
+    // 상세 페이지엔 전체 모드 풀(poedb식)도 함께 — 장비 클래스만 mods.json 에 있고 플라스크/주얼은 없어 없으면 생략.
+    boolean isEquipClass =
+        poeDataClient.modItemClasses().stream()
+            .anyMatch(c -> c.itemClass().equals(item.itemClass()));
+    model.addAttribute(
+        "fullMods",
+        isEquipClass
+            ? poeDataClient.modsForItemClass(item.itemClass(), variantOf(item), influence)
+            : null);
+    // 엘드리치 임플리싯(총주교/포식자) — 방어구·목걸이 등 일부 슬롯만 부여 가능. 대상 아니면 API 가 null 반환.
+    model.addAttribute("eldritch", poeDataClient.eldritchForItemClass(item.itemClass()));
+    model.addAttribute("slug", slug);
+    return "poe/itemPage";
+  }
+
+  /**
+   * 이 베이스의 속성 변형 태그를 요구 속성으로 추론한다 — 방어구는 변형마다 붙는 모드가 달라(ES=지능, 방어도=힘, 회피=민첩) 그 베이스에 맞는 풀을 보여줘야 한다.
+   * 요구 속성이 없으면 빈 값(첫 변형/기본 풀).
+   */
+  private static String variantOf(net.luversof.web.gate.poe.dto.PoeBaseItem item) {
+    boolean str = item.reqStr() > 0;
+    boolean dex = item.reqDex() > 0;
+    boolean intel = item.reqInt() > 0;
+    if (str && dex && intel) {
+      return "str_dex_int_armour";
+    }
+    if (str && dex) {
+      return "str_dex_armour";
+    }
+    if (str && intel) {
+      return "str_int_armour";
+    }
+    if (dex && intel) {
+      return "dex_int_armour";
+    }
+    if (str) {
+      return "str_armour";
+    }
+    if (dex) {
+      return "dex_armour";
+    }
+    if (intel) {
+      return "int_armour";
+    }
+    return "";
+  }
+
   @GetMapping("/uniques")
   public String uniques(
       @RequestParam(required = false) String q,
@@ -80,7 +160,8 @@ public class PoeViewController {
     }
     for (PoeGroups.Group group : groups) {
       for (PoeGroups.Entry entry : group.entries()) {
-        if (slot.equals(entry.slot())) {
+        // 정규 슬롯명(탭 전환 링크) 외에 칩 키도 허용 — 필터 URL 동기화(?slot=키)가 새로고침에서 복원되도록
+        if (slot.equals(entry.slot()) || slot.equals(entry.key())) {
           return entry.key();
         }
       }
@@ -88,10 +169,47 @@ public class PoeViewController {
     return "all";
   }
 
+  /** trees/<ver> 아카이브 목록을 싣고, 유효한 ver 선택 시 그 스냅샷의 데이터 경로를 돌려준다(무효/미지정=현행). */
+  private String[] applyTreeVersion(Model model, String ver, String treeFile, String spritesFile) {
+    List<String> versions = List.of();
+    Path root = Path.of(dataDir, "trees");
+    if (Files.isDirectory(root)) {
+      try (var stream = Files.list(root)) {
+        versions =
+            stream
+                .filter(Files::isDirectory)
+                .map(p -> p.getFileName().toString())
+                // "3.9" < "3.28" — 문자열 비교가 아니라 숫자 비교로 내림차순
+                .sorted(
+                    java.util.Comparator.comparingDouble(
+                            (String v) -> {
+                              String[] parts = v.split("\\.");
+                              return Double.parseDouble(parts[0]) * 1000
+                                  + (parts.length > 1 ? Double.parseDouble(parts[1]) : 0);
+                            })
+                        .reversed())
+                .toList();
+      } catch (java.io.IOException ignored) {
+        // 아카이브 목록을 못 읽어도 현행 트리는 그대로 보여준다
+      }
+    }
+    model.addAttribute("treeVersions", versions);
+    boolean archived = ver != null && versions.contains(ver);
+    model.addAttribute("activeVer", archived ? ver : "");
+    return archived
+        ? new String[] {
+          "/poe-data/trees/" + ver + "/" + treeFile, "/poe-data/trees/" + ver + "/" + spritesFile
+        }
+        : new String[] {"/poe-data/" + treeFile, "/poe-data/" + spritesFile};
+  }
+
   @GetMapping("/tree")
-  public String tree(Model model) {
+  public String tree(@RequestParam(required = false) String ver, Model model) {
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
     model.addAttribute("hasTreeData", Files.exists(Path.of(dataDir, "passive-tree.json")));
+    String[] src = applyTreeVersion(model, ver, "passive-tree.json", "tree-sprites-skill.json");
+    model.addAttribute("treeSrc", src[0]);
+    model.addAttribute("spritesSrc", src[1]);
     // 트리 계산에 쓸 주 스킬 후보 — datalist 로 넘겨 브라우저 기본 검색을 그대로 쓴다
     model.addAttribute("activeGems", poeDataClient.searchGems(null, "active", "all", null));
     // 주얼 슬롯에 끼울 유니크 주얼 목록.
@@ -108,9 +226,12 @@ public class PoeViewController {
   }
 
   @GetMapping("/atlas")
-  public String atlas(Model model) {
+  public String atlas(@RequestParam(required = false) String ver, Model model) {
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
     model.addAttribute("hasAtlasData", Files.exists(Path.of(dataDir, "atlas-tree.json")));
+    String[] src = applyTreeVersion(model, ver, "atlas-tree.json", "tree-sprites-atlas.json");
+    model.addAttribute("treeSrc", src[0]);
+    model.addAttribute("spritesSrc", src[1]);
     return "poe/atlas";
   }
 
@@ -128,6 +249,29 @@ public class PoeViewController {
     return "poe/items";
   }
 
+  /** 모드(poedb Modifiers식) 페이지 — 아이템 클래스 선택 시 접두/접미 티어 사다리 표시. */
+  @GetMapping("/mods")
+  public String mods(
+      @RequestParam(required = false) String itemClass,
+      @RequestParam(required = false, defaultValue = "") String variant,
+      @RequestParam(required = false, defaultValue = "") String influence,
+      Model model) {
+    var classes = poeDataClient.modItemClasses();
+    model.addAttribute("patch", poeDataClient.gemMeta().patch());
+    model.addAttribute("modClasses", classes);
+    // 미지정이면 첫 클래스, 유효하지 않은 값이면 첫 클래스로 폴백
+    String active =
+        itemClass != null && classes.stream().anyMatch(c -> c.itemClass().equals(itemClass))
+            ? itemClass
+            : classes.isEmpty() ? null : classes.get(0).itemClass();
+    model.addAttribute("activeClass", active);
+    model.addAttribute(
+        "mods", active == null ? null : poeDataClient.modsForItemClass(active, variant, influence));
+    model.addAttribute(
+        "eldritch", active == null ? null : poeDataClient.eldritchForItemClass(active));
+    return "poe/mods";
+  }
+
   @GetMapping("/build")
   public String build(Model model) {
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
@@ -141,6 +285,7 @@ public class PoeViewController {
       @RequestParam(required = false, defaultValue = "") String jewels,
       @RequestParam(required = false, defaultValue = "") String clusters,
       @RequestParam(required = false, defaultValue = "") String tattoos,
+      @RequestParam(required = false, defaultValue = "") String anoint,
       @RequestParam(required = false, defaultValue = "") String className,
       @RequestParam(required = false, defaultValue = "") String ascendancy,
       Model model) {
@@ -149,6 +294,7 @@ public class PoeViewController {
     model.addAttribute("jewels", jewels);
     model.addAttribute("clusters", clusters);
     model.addAttribute("tattoos", tattoos);
+    model.addAttribute("anoint", anoint);
     // 고정 트리는 그 직업의 시작점에서만 연결된다 — 직업을 함께 고정하지 않으면 트리가 통째로 버려진다
     model.addAttribute("fixedClassName", className);
     model.addAttribute("fixedAscendancy", ascendancy);

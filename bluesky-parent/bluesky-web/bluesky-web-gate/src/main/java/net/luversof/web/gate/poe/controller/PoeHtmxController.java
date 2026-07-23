@@ -98,6 +98,8 @@ public class PoeHtmxController {
       @RequestParam(required = false, defaultValue = "") String clusters,
       // 트리에서 새긴 문신 — 없으면 최적화기가 원래 패시브로 계산해 화면 수치와 어긋난다
       @RequestParam(required = false, defaultValue = "") String tattoos,
+      // 트리에서 고른 도유 노터블 id — 없으면 최적화기가 자동 전수 스윕으로 고른다
+      @RequestParam(required = false, defaultValue = "") String anoint,
       java.security.Principal principal) {
     if (principal != null) {
       // 멀티셀렉트(반복 파라미터) 또는 콤마 텍스트 둘 다 수용 → 콤마 문자열로 합쳐 API 로 전달
@@ -114,7 +116,8 @@ public class PoeHtmxController {
           masteries,
           jewels,
           clusters,
-          tattoos);
+          tattoos,
+          anoint);
     }
     return "poe/htmx/simOptimizeWrap";
   }
@@ -205,6 +208,8 @@ public class PoeHtmxController {
       @RequestParam(required = false) String clusters,
       // 문신 — 그 패시브가 문신 노드로 교체돼 계산된다(반경 주얼과 짝지어 쓰는 실전 조합)
       @RequestParam(required = false) String tattoos,
+      // 도유 노터블 id — nodes 에 끼우면 PoB 가 미연결 노드로 해제하므로 별도 인자
+      @RequestParam(required = false) Integer anoint,
       Model model) {
     try {
       model.addAttribute(
@@ -217,7 +222,8 @@ public class PoeHtmxController {
               masteries,
               jewels,
               clusters,
-              tattoos));
+              tattoos,
+              anoint));
     } catch (RestClientException | BlueskyException e) {
       model.addAttribute("treeEvalError", true);
     }
@@ -238,6 +244,19 @@ public class PoeHtmxController {
     model.addAttribute("matchedCount", matched.size());
     model.addAttribute("totalCount", poeDataClient.baseItemMeta().totalCount());
     return "poe/htmx/itemList";
+  }
+
+  /** 모드 페이지 — 아이템 클래스 하나의 접두/접미 티어 fragment (칩 클릭 시 본문 교체). */
+  @GetMapping("/mods")
+  public String modClass(
+      @RequestParam String itemClass,
+      @RequestParam(required = false, defaultValue = "") String variant,
+      @RequestParam(required = false, defaultValue = "") String influence,
+      Model model) {
+    model.addAttribute("mods", poeDataClient.modsForItemClass(itemClass, variant, influence));
+    // 엘드리치 임플리싯(총주교/포식자) — 방어구·목걸이 등 대상 슬롯만. API 가 대상 아니면 null 반환.
+    model.addAttribute("eldritch", poeDataClient.eldritchForItemClass(itemClass));
+    return "poe/htmx/modClass";
   }
 
   @GetMapping("/items/detail")

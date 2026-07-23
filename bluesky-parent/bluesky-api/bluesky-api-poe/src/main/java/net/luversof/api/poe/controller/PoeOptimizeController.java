@@ -49,7 +49,8 @@ public class PoeOptimizeController {
       @RequestParam(required = false, defaultValue = "") String masteries,
       @RequestParam(required = false, defaultValue = "") String jewels,
       @RequestParam(required = false, defaultValue = "") String clusters,
-      @RequestParam(required = false, defaultValue = "") String tattoos) {
+      @RequestParam(required = false, defaultValue = "") String tattoos,
+      @RequestParam(required = false, defaultValue = "") String anoint) {
     return poeOptimizeService.start(
         slug,
         objective,
@@ -63,7 +64,8 @@ public class PoeOptimizeController {
         masteries,
         jewels,
         clusters,
-        tattoos);
+        tattoos,
+        anoint);
   }
 
   @GetMapping("/status")

@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { DATA_DIR, FILES_DIR, WORK_DIR, loadTable } from "./paths.mjs";
 import { createStatDescriber } from "./statDescriptions.mjs";
-import { buildKoreanMap, buildTree } from "./tree-common.mjs";
+import { alignKoToGameOrder, buildKoreanMap, buildTree, joinReminderKo } from "./tree-common.mjs";
 import { createTemplateTranslator } from "./ko-templates.mjs";
 
 const RAW = path.join(WORK_DIR, "passive-tree-raw.json");
@@ -42,16 +42,17 @@ for (const row of masteryEn) {
 	(row.Stats || []).forEach((statIndex, i) => {
 		statValues.set(statsTable[statIndex].Id, row["Stat" + (i + 1) + "Value"] ?? 0);
 	});
-	koByEffectHash.set(row.HASH16, describe(statValues, "Korean"));
+	// 영문 서술도 함께 — 게임 표기 순서(eff.stats)로 재배열할 때 다리(alignKoToGameOrder)
+	koByEffectHash.set(row.HASH16, { ko: describe(statValues, "Korean"), en: describe(statValues, "English") });
 }
 let effectTotal = 0;
 let effectKo = 0;
 for (const node of result.nodes) {
 	for (const eff of node.masteryEffects || []) {
 		effectTotal++;
-		const lines = koByEffectHash.get(eff.id);
-		if (lines?.length) {
-			eff.statsKo = lines;
+		const entry = koByEffectHash.get(eff.id);
+		if (entry?.ko?.length) {
+			eff.statsKo = alignKoToGameOrder(eff.stats, entry.ko, entry.en);
 			effectKo++;
 		}
 	}
@@ -70,6 +71,7 @@ translator.addPairs(
 // 게임 데이터가 한글 문장을 아예 안 주는 몇 개는 수동 번역(직접 옮긴 것임을 명시).
 const MANUAL_KO = {
 	"Grants 1 Passive Skill Point": "패시브 스킬 포인트 1 획득",
+	"Grants 2 Passive Skill Points": "패시브 스킬 포인트 2 획득",
 };
 // 마스터리 효과도 같은 사전으로 보강 — 1825개 중 7개가 서술기에서 안 나온다
 let effectFilled = 0;
@@ -95,9 +97,59 @@ for (const node of result.nodes) {
 		stillMissing++;
 	}
 }
+// 부분 미번역 줄 보강 — 게임 PassiveSkills 테이블엔 없고 트리 export 에만 있는 줄은
+// alignKoToGameOrder 가 영문 원문 그대로 넣어 둔다(정보 손실 방지). 그 줄들만 골라 사전으로 다시 옮긴다.
+let lineFilled = 0;
+let lineEnglish = 0;
+for (const node of result.nodes) {
+	const targets = [node, ...(node.masteryEffects || [])];
+	for (const t of targets) {
+		if (!t.statsKo?.length || !t.stats?.length) continue;
+		t.statsKo = t.statsKo.map((line) => {
+			if (!t.stats.includes(line)) return line; // 이미 한글
+			const ko = MANUAL_KO[line] || translator.translate(line);
+			if (ko) {
+				lineFilled++;
+				return ko;
+			}
+			lineEnglish++;
+			return line;
+		});
+	}
+}
 console.log(
 	`스탯 한글 보강: 템플릿 ${translator.size}개로 노드 ${filled}개 + 마스터리 효과 ${effectFilled}개 채움, 남은 미번역 노드 ${stillMissing}개`,
 );
+console.log(`부분 미번역 줄: ${lineFilled}줄 사전으로 한글화, ${lineEnglish}줄은 한글 소스 없어 영문 유지`);
+
+// 리마인더 한글 — 게임 테이블 ReminderText(EN/KO) 페어링 조인.
+// 테이블은 config 추가(2026-07) 후 추출부터 생긴다 — 옛 추출물로 parse 만 단독 재실행해도 죽지 않게 폴백.
+try {
+	const rem = joinReminderKo(result, loadTable("English", "ReminderText"), loadTable("Korean", "ReminderText"));
+	console.log(`리마인더 한글: ${rem.hit}/${rem.total}`);
+} catch {
+	console.log("리마인더 한글: ReminderText 테이블 없음(extract 먼저 실행 필요) — 영문 유지");
+}
+
+// 후행 스텝(parse-anoints)이 이 파일에 **주입**해 둔 것을 되살린다.
+// 이 파서만 단독 재실행하면 도유(성유) 470개 + 오일 14종이 통째로 날아가 노터블 툴팁의 기름 아이콘이 사라진다
+// (실제로 한 번 겪었다). 낡을 수는 있어도 없어지는 것보단 낫고, parse-anoints 를 다시 돌리면 갱신된다.
+if (fs.existsSync(OUT)) {
+	try {
+		const prev = JSON.parse(fs.readFileSync(OUT, "utf8"));
+		const anoints = new Map((prev.nodes || []).filter((n) => n.anoint).map((n) => [n.id, n.anoint]));
+		if (anoints.size) {
+			for (const node of result.nodes) {
+				const a = anoints.get(node.id);
+				if (a) node.anoint = a;
+			}
+			if (prev.oils) result.oils = prev.oils;
+			console.log(`이전 산출물에서 도유 ${anoints.size}개 노드 + 오일 ${Object.keys(prev.oils || {}).length}종 보존(갱신은 parse-anoints)`);
+		}
+	} catch {
+		console.log("이전 passive-tree.json 읽기 실패 — 주입분 보존 건너뜀");
+	}
+}
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.writeFileSync(OUT, JSON.stringify(result));

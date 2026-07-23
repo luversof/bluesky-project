@@ -58,14 +58,17 @@ public class PoeBuildController {
       @RequestParam(required = false) String masteries,
       @RequestParam(required = false) String jewels,
       @RequestParam(required = false) String clusters,
-      @RequestParam(required = false) String tattoos) {
+      @RequestParam(required = false) String tattoos,
+      // 도유 노터블 id — nodes 에 끼우면 PoB 가 미연결 노드로 보고 해제하므로 별도 인자(Allocates 아이템으로 변환)
+      @RequestParam(required = false) Integer anoint) {
     java.util.Set<Integer> nodeIds =
         java.util.Arrays.stream(nodes.split(","))
             .map(String::trim)
             .filter(s -> s.matches("\\d+"))
             .map(Integer::valueOf)
             .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
-    if (nodeIds.isEmpty()) {
+    if (nodeIds.isEmpty() && anoint == null) {
+      // 도유만 있는 트리도 유효한 계산 대상이다(아뮬렛 도유는 트리 없이도 스탯을 준다)
       throw new ResponseStatusException(
           org.springframework.http.HttpStatus.BAD_REQUEST, "nodes 가 비어 있습니다");
     }
@@ -127,7 +130,15 @@ public class PoeBuildController {
     }
     try {
       return poeOptimizeService.evaluateTree(
-          classId, ascendancy, nodeIds, gem, masteryEffects, jewelSlugs, clusterSpecs, tattooDns);
+          classId,
+          ascendancy,
+          nodeIds,
+          gem,
+          masteryEffects,
+          jewelSlugs,
+          clusterSpecs,
+          tattooDns,
+          anoint);
     } catch (IllegalArgumentException | IllegalStateException e) {
       throw new ResponseStatusException(
           org.springframework.http.HttpStatus.BAD_REQUEST, e.getMessage());

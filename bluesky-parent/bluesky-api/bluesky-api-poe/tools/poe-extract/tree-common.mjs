@@ -37,9 +37,45 @@ export function buildKoreanMap({ describe, statsTable, passivesEn, passivesKo })
 		koByGraphId.set(passive.PassiveSkillGraphId, {
 			nameKo: passivesKo[i]?.Name || null,
 			statsKo: describe(statValues, "Korean"),
+			// 같은 서술기의 영문 출력(statsKo 와 평행) — 게임 표기 순서로 재배열할 때 다리로 쓴다
+			statsEnDesc: describe(statValues, "English"),
+			// 키스톤 플레이버 한글 원문 — 트리 export 의 flavourText 와 짝(멀티라인 → 배열)
+			flavourKo: passivesKo[i]?.FlavourText ? passivesKo[i].FlavourText.split(/\r?\n/) : null,
 		});
 	});
 	return koByGraphId;
+}
+
+/**
+ * 한글 스탯 줄을 게임 표기 순서로 재배열 — 스탯 서술기 출력 순서는 서술 파일 순서라서
+ * 인게임(=트리 export 의 stats 배열) 순서와 다르다(예: 비전의 의지 — 마나 재생이 먼저 나옴).
+ * enLines(서술기 영문, koLines 와 평행)를 다리로 gameLines 순서에 맞춘다. 못 맞춘 줄은 뒤에 보존.
+ */
+export function alignKoToGameOrder(gameLines, koLines, enLines) {
+	if (!koLines?.length || !enLines?.length || koLines.length !== enLines.length) return koLines;
+	const norm = (s) => s.replace(/\s+/g, " ").trim().toLowerCase();
+	const pool = enLines.map((line, i) => ({ key: norm(line), i, used: false }));
+	const out = [];
+	const unmatched = []; // 게임 줄 중 영문 서술과 텍스트가 안 맞은 것 → out 의 자리만 잡아 둔다
+	for (const line of gameLines || []) {
+		const hit = pool.find((p) => !p.used && p.key === norm(line));
+		if (hit) {
+			hit.used = true;
+			out.push(koLines[hit.i]);
+		} else {
+			unmatched.push({ slot: out.length, line });
+			out.push(null);
+		}
+	}
+	// 안 쓰인 한글 줄을 게임 순서대로 빈 자리에 채운다(수치 표기 차이로 매칭만 실패한 경우).
+	const leftover = pool.filter((p) => !p.used).map((p) => koLines[p.i]);
+	unmatched.forEach((u, i) => {
+		// 한글 줄이 모자라면 GGG 트리 export 에만 있고 게임 테이블엔 없는 줄(트릭스터의 "주변 적 행동 속도" 등)이다.
+		// 한글 소스가 아예 없으므로 **영문 원문이라도 남긴다** — 버리면 한국어 툴팁에서 그 효과가 통째로 사라진다.
+		out[u.slot] = i < leftover.length ? leftover[i] : u.line;
+	});
+	for (let i = unmatched.length; i < leftover.length; i++) out.push(leftover[i]);
+	return out;
 }
 
 // 직업 시작 노드 아트 키(PoB PassiveTree.lua 와 동일 순서 = GGG classId)
@@ -90,7 +126,12 @@ export function buildTree(tree, koByGraphId = null) {
 			x: Math.round(group.x + radius * Math.sin(angle)),
 			y: Math.round(group.y - radius * Math.cos(angle)),
 			stats: node.stats || [],
-			statsKo: ko?.statsKo?.length ? ko.statsKo : null,
+			statsKo: ko?.statsKo?.length ? alignKoToGameOrder(node.stats, ko.statsKo, ko.statsEnDesc) : null,
+			// 공홈 툴팁 파리티: 리마인더(회색 괄호 부연)와 키스톤 플레이버(이탤릭 문구).
+			// 원본이 영어 전용이라 일단 영문 그대로 — 한글 조인은 게임 테이블 확보 시.
+			reminder: node.reminderText?.length ? node.reminderText : undefined,
+			flavour: node.flavourText?.length ? node.flavourText : undefined,
+			flavourKo: node.flavourText?.length && ko?.flavourKo?.length ? ko.flavourKo : undefined,
 			ascendancy: node.ascendancyName || null,
 			ascendancyStart: node.isAscendancyStart ? true : undefined,
 			// 프록시 그룹(isProxy) 노드는 게임 화면엔 없는 자리표시자다 — 클러스터 서브트리를 붙일 좌표 기준일 뿐.
@@ -111,7 +152,12 @@ export function buildTree(tree, koByGraphId = null) {
 				: undefined,
 			// 마스터리는 노드 자체가 아니라 "효과 하나"를 골라 찍는다. effect id 는 GGG URL 인코딩(마스터리 4바이트)에 그대로 들어감.
 			masteryEffects: node.masteryEffects?.length
-				? node.masteryEffects.map((eff) => ({ id: eff.effect, stats: eff.stats || [] }))
+				? node.masteryEffects.map((eff) => ({
+						id: eff.effect,
+						stats: eff.stats || [],
+						// 효과별 리마인더(525/1825개) — 픽커/툴팁에서 회색 부연으로 표시
+						reminder: eff.reminderText?.length ? eff.reminderText : undefined,
+					}))
 				: undefined,
 			// icon = 원본 경로(스프라이트 coords 키와 정확히 일치) — 프론트가 타입별 시트에서 blit
 			icon: node.icon || null,
@@ -133,7 +179,7 @@ export function buildTree(tree, koByGraphId = null) {
 			name: node.name,
 			nameKo: ko?.nameKo || null,
 			stats: node.stats || [],
-			statsKo: ko?.statsKo?.length ? ko.statsKo : null,
+			statsKo: ko?.statsKo?.length ? alignKoToGameOrder(node.stats, ko.statsKo, ko.statsEnDesc) : null,
 			keystone: node.isKeystone ? true : undefined,
 			icon: node.icon || null,
 		});
@@ -198,4 +244,32 @@ export function buildTree(tree, koByGraphId = null) {
 			.filter((entry) => entry?.image)
 			.map((entry) => ({ x: entry.x, y: entry.y, image: entry.image.split("/").pop().toLowerCase() })),
 	};
+}
+
+/**
+ * 리마인더 한글 조인 — 트리 export 의 reminderText(완성 영문 문장)를 게임 테이블
+ * ReminderText(EN/KO 같은 행 순서)로 페어링해 노드에 reminderKo 를 붙인다.
+ * 트리 문장과 테이블 문장이 괄호/공백만 다른 경우가 있어 정규화 후 매칭(실측 803/811).
+ * 못 찾은 줄은 영문 폴백으로 채워 배열 길이를 reminder 와 맞춘다.
+ */
+export function joinReminderKo(result, reminderEn, reminderKo) {
+	const norm = (s) => s.replace(/^\(|\)$/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+	const koByEn = new Map();
+	reminderEn.forEach((row, i) => {
+		if (row.Text && reminderKo[i]?.Text) koByEn.set(norm(row.Text), reminderKo[i].Text);
+	});
+	let hit = 0;
+	let total = 0;
+	const attach = (holder) => {
+		if (!holder.reminder?.length) return;
+		const lines = holder.reminder.map((line) => koByEn.get(norm(line)) || null);
+		total += lines.length;
+		hit += lines.filter(Boolean).length;
+		if (lines.some(Boolean)) holder.reminderKo = lines.map((ko, i) => ko || holder.reminder[i]);
+	};
+	for (const node of result.nodes) {
+		attach(node);
+		for (const eff of node.masteryEffects || []) attach(eff);
+	}
+	return { hit, total };
 }

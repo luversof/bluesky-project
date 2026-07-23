@@ -51,11 +51,13 @@
 		</div>
 
 		<!-- 모바일 하단 탭바 (lg 이상에서 숨김) -->
-		<nav class="dock dock-sm lg:hidden z-50 border-t border-base-200 bg-base-100/95 backdrop-blur">
+		<%-- 메뉴 7개가 좁은 화면(375px)에서 안 접혀 "시뮬레이터·데이터 관리"가 화면 밖으로 잘렸다(모바일 감사) —
+	     가로 스크롤을 허용하고 항목 수축을 막아 전 항목 접근 가능하게 한다 --%>
+		<nav class="dock dock-sm lg:hidden z-50 border-t border-base-200 bg-base-100/95 backdrop-blur overflow-x-auto">
 			@for(var menuItem : net.luversof.web.gate.util.TemplateUtil.getMenuList("poe"))
 				@if(menuItem instanceof net.luversof.web.common.menu.domain.Menu m)
 					@if(m.isDisplay())
-						<a href="${m.getUrl()}" class="${m.isCurrentMenu() ? "dock-active text-primary" : "text-base-content/60"}">
+						<a href="${m.getUrl()}" class="shrink-0 min-w-16 ${m.isCurrentMenu() ? "dock-active text-primary" : "text-base-content/60"}">
 							@template._components.menuIcon(messageCode = m.getMessageCode(), name = m.getName())
 							<span class="dock-label text-[10px]">${m.getName()}</span>
 						</a>

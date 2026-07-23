@@ -68,7 +68,8 @@
 							<img src="/poe-assets/gems/${gem.slug()}.png?v=${iconVersion}" class="w-10 h-10 object-contain shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" alt="" loading="lazy">
 							<div class="min-w-0 flex-1">
 								<div class="flex items-baseline gap-1.5">
-									<span class="font-semibold truncate" title="${gem.name()}">${displayName}</span>
+									<%-- 이름 클릭 → 상세 페이지 (호버 레이어 내용 + 레벨별 진행표) --%>
+								<a class="font-semibold truncate link-hover" href="/poe/gems/${gem.slug()}" title="${gem.name()}">${displayName}</a>
 									@if(korean)
 										<span class="text-[11px] text-base-content/40 truncate">${gem.name()}</span>
 									@endif

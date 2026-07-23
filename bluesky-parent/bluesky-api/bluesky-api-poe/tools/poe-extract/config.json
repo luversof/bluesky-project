@@ -233,7 +233,11 @@
 				"Stat4Min",
 				"Stat4Max",
 				"SpawnWeight_TagsKeys",
-				"SpawnWeight_Values"
+				"SpawnWeight_Values",
+				"Families",
+				"IsEssenceOnlyModifier",
+				"InfluenceTypes",
+				"ImplicitTagsKeys"
 			]
 		},
 		{
@@ -261,6 +265,13 @@
 				"Override",
 				"Set",
 				"OverrideType"
+			]
+		},
+		{
+			"name": "ReminderText",
+			"columns": [
+				"Id",
+				"Text"
 			]
 		},
 		{

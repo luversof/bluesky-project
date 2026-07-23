@@ -346,10 +346,14 @@ document.addEventListener("click", (event) => {
 	const chip = (event.target as HTMLElement)?.closest?.(".poe-chip") as HTMLElement | null;
 	if (!chip) return;
 	const group = chip.closest("[data-chip-group]") as HTMLElement | null;
-	group?.querySelectorAll(".poe-chip-active").forEach((c) => c.classList.remove("poe-chip-active"));
+	// 이 핸들러는 [data-chip-group] 필터 시스템 전용이다. 그룹 밖의 .poe-chip(모드 페이지 클래스/변형 칩처럼
+	// 서버가 활성 상태를 렌더하는 것들)에 손대면, 이전 활성을 지울 그룹이 없어 poe-chip-active 가 **누적**돼
+	// 고른 적 있는 칩이 전부 활성으로 보인다(사용자 지적 버그).
+	if (!group) return;
+	group.querySelectorAll(".poe-chip-active").forEach((c) => c.classList.remove("poe-chip-active"));
 	chip.classList.add("poe-chip-active");
-	const targetSel = group?.getAttribute("data-chip-target");
-	const field = group?.getAttribute("data-chip-field");
+	const targetSel = group.getAttribute("data-chip-target");
+	const field = group.getAttribute("data-chip-field");
 	if (targetSel && field) {
 		const form = document.querySelector(targetSel);
 		const input = form?.querySelector(`[name="${field}"]`) as HTMLInputElement | null;

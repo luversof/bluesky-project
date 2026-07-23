@@ -6,6 +6,10 @@
 @param String profile = "local"
 @param String patch = ""
 @param boolean hasAtlasData = false
+@param java.util.List<String> treeVersions = java.util.List.of()
+@param String activeVer = ""
+@param String treeSrc = "/poe-data/atlas-tree.json"
+@param String spritesSrc = "/poe-data/tree-sprites-atlas.json"
 
 !{
 	String pageTitle = MessageUtil.getMessage("poe.atlas.title");
@@ -26,6 +30,18 @@
 			<div class="flex flex-wrap items-baseline gap-3">
 				<h1 class="text-2xl font-bold">${pageTitle}</h1>
 				<span class="badge badge-ghost">${patchLabel}</span>
+				@if(!treeVersions.isEmpty())
+					<%-- 버전별 아카이브 조회 — 빈 값=현행(최신) 데이터 --%>
+					<select class="select select-xs select-bordered" onchange="var u=new URL(location.href); if(this.value) u.searchParams.set('ver', this.value); else u.searchParams.delete('ver'); location.href=u.toString();">
+						<option value="">${net.luversof.web.gate.poe.PoeText.isKorean() ? "최신" : "Latest"}</option>
+						@for(String v : treeVersions)
+							<option value="${v}" selected="${v.equals(activeVer)}">${v}</option>
+						@endfor
+					</select>
+				@endif
+				@if(!activeVer.isEmpty())
+					<span class="badge badge-warning badge-sm">${net.luversof.web.gate.poe.PoeText.isKorean() ? "아카이브 보기 — 계산·최적화는 최신 기준" : "Archive view — calc uses latest"}</span>
+				@endif
 			</div>
 
 			@if(!hasAtlasData)
@@ -54,10 +70,10 @@
 						<button id="poeTreeFullscreen" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "전체 화면" : "Fullscreen"}</button>
 						<span id="poeTreePoints" class="ml-auto flex items-center gap-2 text-sm text-base-content/70"></span>
 					</div>
-					<canvas id="poeTreeCanvas" class="w-full h-[72vh] rounded-2xl shadow-sm cursor-grab" style="background:#0e1116" data-locale="${net.luversof.web.gate.poe.PoeText.isKorean() ? "ko" : "en"}" data-tree-src="/poe-data/atlas-tree.json" data-sprites-src="/poe-data/tree-sprites-atlas.json"></canvas>
-					<div id="poeTreeTooltip" class="pointer-events-none absolute hidden z-10 max-w-xs rounded shadow-2xl overflow-hidden"></div>
-					<div id="poeTreeStats" class="hidden absolute right-2 top-2 z-10 w-72 max-h-[60%] overflow-y-auto rounded shadow-2xl border border-amber-700/60 bg-stone-900/95">
-						<div class="sticky top-0 border-b-2 border-amber-600/70 bg-gradient-to-b from-stone-700 to-stone-900 text-amber-100 text-center font-bold text-xs px-4 py-1">${net.luversof.web.gate.poe.PoeText.isKorean() ? "할당 스탯 합계" : "Allocated stats"}</div>
+					<canvas id="poeTreeCanvas" class="w-full h-[72vh] rounded-2xl shadow-sm cursor-grab" style="background:#0e1116" data-locale="${net.luversof.web.gate.poe.PoeText.isKorean() ? "ko" : "en"}" data-tree-src="${treeSrc}" data-sprites-src="${spritesSrc}"></canvas>
+					<div id="poeTreeTooltip" class="pointer-events-none absolute hidden z-10 max-w-xs poe-node-popup overflow-hidden"></div>
+					<div id="poeTreeStats" class="hidden absolute right-2 top-2 z-10 w-72 max-h-[60%] overflow-y-auto poe-node-popup">
+						<div class="sticky top-0 poe-popup-head text-xs">${net.luversof.web.gate.poe.PoeText.isKorean() ? "할당 스탯 합계" : "Allocated stats"}</div>
 						<div id="poeTreeStatsBody" class="py-1"></div>
 					</div>
 				</div>

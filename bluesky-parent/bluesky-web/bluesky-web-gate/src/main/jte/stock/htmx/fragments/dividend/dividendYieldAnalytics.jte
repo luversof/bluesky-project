@@ -14,6 +14,12 @@
 @param BigDecimal portfolioYieldOnDailyAverageCostPct
 @param BigDecimal portfolioYieldOnCostPct
 @param BigDecimal portfolioYieldOnMarketPct
+@param BigDecimal portfolioYieldAnnualizedPct = null
+@param long periodDayCount = 0
+@param BigDecimal periodStartPrincipal = null
+@param BigDecimal periodEndPrincipal = null
+@param BigDecimal periodPrincipalDelta = null
+@param BigDecimal periodPrincipalDeltaPct = null
 @param DividendYieldGroupView bestYieldStock
 @param DividendYieldGroupView bestYieldAccount
 @param List<DividendYieldGroupView> yearlyYieldRows
@@ -47,6 +53,12 @@
     String yieldOnBasisMarketLabel = MessageUtil.getMessage("stock.dividend.yield.column.yield.on.basis.market");
     String dividendYieldPeriodDailyLabel = MessageUtil.getMessage("stock.dividend.yield.summary.period.daily");
     String dividendYieldPeriodBasisLabel = MessageUtil.getMessage("stock.dividend.yield.summary.period.basis");
+    String annualizedLabel = MessageUtil.getMessage("stock.dividend.yield.summary.annualized");
+    String annualizedNoteLabel = java.text.MessageFormat.format(
+        MessageUtil.getMessage("stock.dividend.yield.summary.annualized.note"), periodDayCount);
+    String principalChangeLabel = MessageUtil.getMessage("stock.dividend.yield.summary.principal.change");
+    String principalStartLabel = MessageUtil.getMessage("stock.dividend.yield.summary.principal.start");
+    String principalEndLabel = MessageUtil.getMessage("stock.dividend.yield.summary.principal.end");
     String dividendYieldHelpTitleLabel = MessageUtil.getMessage("stock.dividend.yield.help.title");
     String dividendYieldHelpPrimaryLabel = MessageUtil.getMessage("stock.dividend.yield.help.primary");
     String dividendYieldHelpSecondaryLabel = MessageUtil.getMessage("stock.dividend.yield.help.secondary");
@@ -149,6 +161,29 @@
                 <div class="text-xl font-bold text-dividend">${percentFormat.apply(portfolioYieldOnDailyAverageCostPct)}</div>
                 <div class="text-xs text-base-content/40 mt-1">${dividendYieldPeriodBasisLabel} <span class="font-medium">${percentFormat.apply(portfolioYieldOnCostPct)}</span></div>
                 <div class="text-xs text-base-content/40 mt-1">${yieldOnBasisMarketLabel} <span class="font-medium">${percentFormat.apply(portfolioYieldOnMarketPct)}</span></div>
+                @if(portfolioYieldAnnualizedPct != null)
+                <div class="mt-2 border-t border-base-200/70 pt-2">
+                    <div class="text-xs text-base-content/50">${annualizedLabel}</div>
+                    <div class="text-lg font-bold text-dividend">${percentFormat.apply(portfolioYieldAnnualizedPct)}</div>
+                    <div class="text-[11px] text-base-content/40">${annualizedNoteLabel}</div>
+                </div>
+                @endif
+                @if(periodPrincipalDelta != null)
+                <div class="mt-2 border-t border-base-200/70 pt-2">
+                    <div class="text-xs text-base-content/50">${principalChangeLabel}</div>
+                    <div class="text-xs text-base-content/70 mt-0.5">
+                        <span class="text-base-content/45">${principalStartLabel}</span> <span class="font-mono amount-value">₩ ${decimalFormat.format(periodStartPrincipal)}</span>
+                        <span class="text-base-content/40 mx-1">→</span>
+                        <span class="text-base-content/45">${principalEndLabel}</span> <span class="font-mono amount-value">₩ ${decimalFormat.format(periodEndPrincipal)}</span>
+                    </div>
+                    <div class="text-sm font-semibold mt-0.5 ${periodPrincipalDelta.signum() > 0 ? "text-profit" : periodPrincipalDelta.signum() < 0 ? "text-loss" : "text-base-content/60"}">
+                        <span class="font-mono amount-value">${periodPrincipalDelta.signum() >= 0 ? "+" : "-"}₩ ${decimalFormat.format(periodPrincipalDelta.abs())}</span>
+                        @if(periodPrincipalDeltaPct != null)
+                        <span class="text-xs font-normal">(${periodPrincipalDeltaPct.signum() >= 0 ? "+" : ""}${percentFormat.apply(periodPrincipalDeltaPct)})</span>
+                        @endif
+                    </div>
+                </div>
+                @endif
         `)
 
         @template._components.ui.card(body = @`

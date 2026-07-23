@@ -11,9 +11,12 @@ import org.springframework.web.service.annotation.HttpExchange;
 
 import net.luversof.web.gate.poe.dto.ModFamily;
 import net.luversof.web.gate.poe.dto.PoeBaseItem;
+import net.luversof.web.gate.poe.dto.PoeEldritch;
 import net.luversof.web.gate.poe.dto.PoeGem;
 import net.luversof.web.gate.poe.dto.PoeGroups;
 import net.luversof.web.gate.poe.dto.PoeJobStatus;
+import net.luversof.web.gate.poe.dto.PoeModClass;
+import net.luversof.web.gate.poe.dto.PoeModItemClass;
 import net.luversof.web.gate.poe.dto.PoeUniqueItem;
 
 /** bluesky-api-poe 정적 게임 데이터 조회 클라이언트. */
@@ -78,4 +81,14 @@ public interface PoeDataClient {
   // ── 모드 풀 (일반 아이템 티어표) ──
   @GetExchange("/mod-pool/for-item-class")
   List<ModFamily> modFamiliesForItemClass(@RequestParam String itemClass);
+
+  @GetExchange("/mods/item-classes")
+  List<PoeModItemClass> modItemClasses();
+
+  @GetExchange("/mods/for-item-class")
+  PoeModClass modsForItemClass(
+      @RequestParam String itemClass, @RequestParam String variant, @RequestParam String influence);
+
+  @GetExchange("/eldritch/for-item-class")
+  PoeEldritch eldritchForItemClass(@RequestParam String itemClass);
 }

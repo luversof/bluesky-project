@@ -13,7 +13,7 @@ export function createTemplateTranslator() {
 
 	/** 영/한 한 쌍을 사전에 등록(먼저 등록된 것이 우선). */
 	function add(en, ko) {
-		if (!en || !ko) return;
+		if (!en || !ko || en === ko) return; // 한글 소스가 없어 영문을 그대로 채워 둔 줄 — 자기 자신 매핑이 되면 통계가 거짓말을 한다
 		if ((en.match(NUM_RE) || []).length !== (ko.match(NUM_RE) || []).length) return;
 		const k = key(en);
 		if (!templates.has(k)) templates.set(k, ko.replace(NUM_RE, "#"));

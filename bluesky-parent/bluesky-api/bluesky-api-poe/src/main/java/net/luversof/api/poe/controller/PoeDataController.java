@@ -13,8 +13,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import net.luversof.api.poe.service.PoeBaseItem;
 import net.luversof.api.poe.service.PoeBaseItemDataService;
+import net.luversof.api.poe.service.PoeEldritchDataService;
 import net.luversof.api.poe.service.PoeGem;
 import net.luversof.api.poe.service.PoeGemDataService;
+import net.luversof.api.poe.service.PoeModDataService;
 import net.luversof.api.poe.service.PoeModPoolDataService;
 import net.luversof.api.poe.service.PoeTattooDataService;
 import net.luversof.api.poe.service.PoeTreeGraphService;
@@ -30,6 +32,8 @@ public class PoeDataController {
   private final PoeUniqueDataService poeUniqueDataService;
   private final PoeBaseItemDataService poeBaseItemDataService;
   private final PoeModPoolDataService poeModPoolDataService;
+  private final PoeModDataService poeModDataService;
+  private final PoeEldritchDataService poeEldritchDataService;
   private final PoeTreeGraphService poeTreeGraphService;
   private final PoeTattooDataService poeTattooDataService;
 
@@ -38,12 +42,16 @@ public class PoeDataController {
       PoeUniqueDataService poeUniqueDataService,
       PoeBaseItemDataService poeBaseItemDataService,
       PoeModPoolDataService poeModPoolDataService,
+      PoeModDataService poeModDataService,
+      PoeEldritchDataService poeEldritchDataService,
       PoeTreeGraphService poeTreeGraphService,
       PoeTattooDataService poeTattooDataService) {
     this.poeGemDataService = poeGemDataService;
     this.poeUniqueDataService = poeUniqueDataService;
     this.poeBaseItemDataService = poeBaseItemDataService;
     this.poeModPoolDataService = poeModPoolDataService;
+    this.poeModDataService = poeModDataService;
+    this.poeEldritchDataService = poeEldritchDataService;
     this.poeTreeGraphService = poeTreeGraphService;
     this.poeTattooDataService = poeTattooDataService;
   }
@@ -143,6 +151,33 @@ public class PoeDataController {
   public List<PoeModPoolDataService.ModFamily> modFamiliesForItemClass(
       @RequestParam String itemClass) {
     return poeModPoolDataService.familiesForItemClass(itemClass);
+  }
+
+  // ── 전체 모드(poedb Modifiers식) ──
+  @GetMapping("/mods/item-classes")
+  public List<PoeModDataService.ModItemClass> modItemClasses() {
+    return poeModDataService.itemClasses();
+  }
+
+  @GetMapping("/mods/for-item-class")
+  public PoeModDataService.ClassMods modsForItemClass(
+      @RequestParam String itemClass,
+      @RequestParam(required = false, defaultValue = "") String variant,
+      @RequestParam(required = false, defaultValue = "") String influence) {
+    PoeModDataService.ClassMods mods =
+        poeModDataService.forItemClass(itemClass, variant, influence);
+    if (mods == null) {
+      throw notFound();
+    }
+    return mods;
+  }
+
+  // ── 엘드리치 임플리싯(총주교/포식자) ──
+  // 엘드리치 대상이 아닌 슬롯(무기/반지/허리띠 등)은 예외 대신 null(200) — 아이템 상세는 클래스마다 이걸
+  // 호출하므로, 404→500 래핑 예외가 페이지 로드마다 로그를 더럽히는 것을 피한다.
+  @GetMapping("/eldritch/for-item-class")
+  public PoeEldritchDataService.ClassEldritch eldritchForItemClass(@RequestParam String itemClass) {
+    return poeEldritchDataService.forItemClass(itemClass);
   }
 
   // ── 패시브 트리 ──

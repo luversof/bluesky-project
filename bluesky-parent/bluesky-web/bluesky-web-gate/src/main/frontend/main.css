@@ -480,6 +480,115 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 	border-top: 1px solid rgba(255, 255, 255, 0.14);
 }
 
+/* 인게임 패시브/아틀라스 트리 노드 팝업 — 아이템 툴팁(중앙정렬·희귀도 헤더 밴드)과 달리
+   민무늬 암색 패널 + 좌측정렬 + 제목 아래 장식 구분선(게임 추출 PassivePopupSeparator)만 쓴다. */
+.poe-node-popup {
+	min-width: 15rem;
+	background: rgba(0, 0, 0, 0.88);
+	border: 1px solid rgba(140, 140, 140, 0.3);
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+	color: #fff;
+	font-family: ui-sans-serif, system-ui, sans-serif;
+}
+.poe-popup-title {
+	padding: 0.55rem 1rem 0.3rem;
+	font-size: 0.95rem;
+	font-weight: 600;
+	color: #fff;
+}
+/* 인게임 노드 툴팁의 타입별 장식 헤더 밴드(금장 캡+암색 밴드, 게임 추출 아트).
+   아이템 밴드(.poe-tt-band)와 같은 3레이어 구성 — 타입 클래스가 --psh-* 이미지를 주입. */
+.poe-psheader {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 3rem;
+	padding: 0.4rem 2.6rem;
+	font-size: 1rem;
+	font-weight: 700;
+	color: #e8e0d0;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+	background-image: var(--psh-left), var(--psh-right), var(--psh-mid);
+	background-repeat: no-repeat, no-repeat, repeat-x;
+	background-position: left center, right center, center;
+	background-size: auto 100%, auto 100%, auto 100%;
+}
+.poe-psheader-normal {
+	--psh-left: url("/poe-data/ui-assets/psheadernormalleft.png");
+	--psh-mid: url("/poe-data/ui-assets/psheadernormalmiddle.png");
+	--psh-right: url("/poe-data/ui-assets/psheadernormalright.png");
+}
+.poe-psheader-notable {
+	--psh-left: url("/poe-data/ui-assets/psheadernotableleft.png");
+	--psh-mid: url("/poe-data/ui-assets/psheadernotablemiddle.png");
+	--psh-right: url("/poe-data/ui-assets/psheadernotableright.png");
+}
+.poe-psheader-keystone {
+	--psh-left: url("/poe-data/ui-assets/psheaderkeystoneleft.png");
+	--psh-mid: url("/poe-data/ui-assets/psheaderkeystonemiddle.png");
+	--psh-right: url("/poe-data/ui-assets/psheaderkeystoneright.png");
+}
+.poe-psheader-jewel {
+	--psh-left: url("/poe-data/ui-assets/psheaderjewelleft.png");
+	--psh-mid: url("/poe-data/ui-assets/psheaderjewelmiddle.png");
+	--psh-right: url("/poe-data/ui-assets/psheaderjewelright.png");
+}
+.poe-psheader-ascendancy {
+	--psh-left: url("/poe-data/ui-assets/psheaderascendancyleft.png");
+	--psh-mid: url("/poe-data/ui-assets/psheaderascendancymiddle.png");
+	--psh-right: url("/poe-data/ui-assets/psheaderascendancyright.png");
+}
+.poe-psheader-mastery {
+	--psh-left: url("/poe-data/ui-assets/psheadermasteryleft.png");
+	--psh-mid: url("/poe-data/ui-assets/psheadermasterymiddle.png");
+	--psh-right: url("/poe-data/ui-assets/psheadermasteryright.png");
+}
+.poe-popup-sep {
+	height: 8px;
+	margin: 0.15rem 0.4rem;
+	background-image: url("/poe-data/ui-assets/passivepopupseparator.png");
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: 100% 100%;
+}
+.poe-popup-body {
+	padding: 0.4rem 1rem 0.55rem;
+}
+/* 픽커/스탯 패널용 헤더 — sticky 에서도 안전하게 제목+구분선을 한 요소로(불투명 배경 + 하단 구분선 아트) */
+.poe-popup-head {
+	padding: 0.5rem 1rem 0.8rem;
+	font-size: 0.85rem;
+	font-weight: 600;
+	color: #fff;
+	text-align: center;
+	background-color: rgba(0, 0, 0, 0.95);
+	background-image: url("/poe-data/ui-assets/passivepopupseparator.png");
+	background-repeat: no-repeat;
+	background-position: center bottom 2px;
+	background-size: calc(100% - 0.8rem) 8px;
+}
+.poe-popup-stat {
+	font-size: 0.75rem;
+	line-height: 1.25rem;
+	color: #8888ff; /* 인게임 모드 파랑 */
+	white-space: pre-line;
+}
+.poe-popup-reminder {
+	font-size: 0.7rem;
+	line-height: 1.05rem;
+	color: #7f7f7f; /* 인게임 리마인더 회색 */
+	white-space: pre-line;
+	margin-top: 0.2rem;
+}
+.poe-popup-flavour {
+	font-size: 0.7rem;
+	line-height: 1.05rem;
+	font-style: italic;
+	color: #af6025; /* 인게임 플레이버 녹슨 금색 */
+	white-space: pre-line;
+	margin-top: 0.25rem;
+}
+
 /* 게임 원본 아이템 헤더 밴드/구분선 (PoB 에셋, /poe-data/ui-assets 로 서빙).
    좌/우 장식 캡(no-repeat) + 가운데 텍스처(repeat-x). 희귀도 클래스가 이미지 URL·색을 주입. */
 .poe-tt-band {

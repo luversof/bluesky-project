@@ -50,6 +50,12 @@
 @param BigDecimal portfolioYieldOnDailyAverageCostPct = null
 @param BigDecimal portfolioYieldOnCostPct = null
 @param BigDecimal portfolioYieldOnMarketPct = null
+@param BigDecimal portfolioYieldAnnualizedPct = null
+@param long periodDayCount = 0
+@param BigDecimal periodStartPrincipal = null
+@param BigDecimal periodEndPrincipal = null
+@param BigDecimal periodPrincipalDelta = null
+@param BigDecimal periodPrincipalDeltaPct = null
 @param DividendYieldGroupView bestYieldStock = null
 @param DividendYieldGroupView bestYieldAccount = null
 @param List<DividendYieldGroupView> stockYieldRows = java.util.List.of()
@@ -207,6 +213,12 @@
         portfolioYieldOnDailyAverageCostPct = portfolioYieldOnDailyAverageCostPct,
         portfolioYieldOnCostPct = portfolioYieldOnCostPct,
         portfolioYieldOnMarketPct = portfolioYieldOnMarketPct,
+        portfolioYieldAnnualizedPct = portfolioYieldAnnualizedPct,
+        periodDayCount = periodDayCount,
+        periodStartPrincipal = periodStartPrincipal,
+        periodEndPrincipal = periodEndPrincipal,
+        periodPrincipalDelta = periodPrincipalDelta,
+        periodPrincipalDeltaPct = periodPrincipalDeltaPct,
         bestYieldStock = bestYieldStock,
         bestYieldAccount = bestYieldAccount,
         yearlyYieldRows = yearlyYieldRows,

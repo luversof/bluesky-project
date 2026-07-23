@@ -17,7 +17,9 @@ if (!fs.existsSync(path.join(here, "node_modules", "pathofexile-dat"))) {
 	execSync(`"${process.execPath}" "${npmCli}" install --no-audit --no-fund`, { stdio: "inherit", cwd: here });
 }
 
-const steps = ["extract.mjs", "transform.mjs", "parse-uniques.mjs", "parse-items.mjs", "parse-mods.mjs", "parse-tree.mjs", "parse-atlas-tree.mjs", "parse-cluster-jewels.mjs", "parse-skill-weapons.mjs", "parse-tattoos.mjs", "tree-sprites.mjs", "tree-layers.mjs", "icons.mjs", "item-icons.mjs", "unique-icons.mjs", "timeless-bin.mjs", "ui-assets.mjs"];
+const steps = ["extract.mjs", "transform.mjs", "parse-uniques.mjs", "parse-items.mjs", "parse-mods.mjs", "parse-mods-full.mjs", "parse-eldritch.mjs", "parse-tree.mjs", "parse-atlas-tree.mjs", "parse-cluster-jewels.mjs", "parse-skill-weapons.mjs", "parse-tattoos.mjs",
+	// parse-anoints 는 runExtractor 로 테이블을 재추출(기존 산출물 대체)하므로 테이블 소비 파서들 **뒤**에 둔다
+	"parse-anoints.mjs", "tree-sprites.mjs", "archive-trees.mjs", "tree-layers.mjs", "icons.mjs", "item-icons.mjs", "unique-icons.mjs", "timeless-bin.mjs", "ui-assets.mjs"];
 
 for (const step of steps) {
 	console.log(`\n===== ${step} =====`);

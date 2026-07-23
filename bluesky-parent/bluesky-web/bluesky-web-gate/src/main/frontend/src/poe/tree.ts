@@ -26,15 +26,23 @@
 		y: number;
 		stats: string[];
 		statsKo: string[] | null;
+		// 공홈 툴팁 파리티 — 리마인더(회색 괄호 부연)와 키스톤 플레이버(이탤릭).
+		// reminderKo 는 게임 테이블 ReminderText 조인(미스 줄은 영문 폴백으로 채워져 길이가 같다).
+		reminder?: string[];
+		reminderKo?: string[];
+		flavour?: string[];
+		flavourKo?: string[];
 		ascendancy: string | null;
 		ascendancyStart?: boolean;
 		clusterSize?: number;
 	expansionJewel?: { size: number; index: number; proxy: number | null; parent: number | null };
 	isProxy?: boolean;
-		masteryEffects?: { id: number; stats: string[]; statsKo?: string[] }[];
+		masteryEffects?: { id: number; stats: string[]; statsKo?: string[]; reminder?: string[]; reminderKo?: string[] }[];
 		icon: string | null;
 		// 직업 시작 노드의 중앙 아트 키(centerwitch 등)
 		startArt?: string;
+		// 도유(성유) 레시피 — 이 노터블을 아뮬렛에 새길 기름 slug 3개(티어 오름차순, 인게임 헤더 표기)
+		anoint?: string[];
 	}
 	interface Group {
 		x: number;
@@ -76,6 +84,8 @@
 	}
 
 	let sprites: Record<string, Sprite> = {};
+	// 도유 오일 사전 (slug → 이름/아이콘) — 노터블 툴팁 헤더의 기름 3개 표기용
+	let oils: Record<string, { name: string; nameKo?: string; icon: string }> = {};
 	// 트리 배경 레이어(클래스 일러스트) — GGG 트리 데이터의 extraImages(좌표 포함), 이미지는 게임 번들 추출본.
 	let extraImages: Array<{ x: number; y: number; image: string }> = [];
 	// 이미지 파일명 → 그 아트가 대표하는 직업 id(선택한 직업만 선명하게)
@@ -300,6 +310,9 @@
 	const removalSet = new Set<number>(); // 할당 노드 호버 시 함께 해제될 노드(빨강 미리보기)
 	const masteryPicks = new Map<number, number>(); // 마스터리 노드 id → 선택한 효과 id
 	const jewelPicks = new Map<number, string>(); // 주얼 소켓 노드 id → 장착한 유니크 주얼 slug
+	// 아뮬렛 도유로 활성화한 노터블(게임: 아뮬렛 1개 = 도유 1개). 포인트 소모 없음, 연결 불필요 —
+	// 도유 전용 고립 노터블 30개는 이 방법으로만 켤 수 있다. GGG URL 엔 자리가 없어 an= 으로 따로 보존.
+	let anointPick: number | null = null;
 	// 문신: 패시브 노드 id → 문신 영문명(dn). 게임에선 그 패시브가 **다른 노드로 교체**된다.
 	// 반경 주얼(붉은 악몽 등)과 짝지어 반경 안 소형 패시브를 저항 문신으로 바꾸는 것이 실전 용법이다.
 	const tattooPicks = new Map<number, string>();
@@ -315,6 +328,42 @@
 		statsKo: string[] | null;
 	};
 	let tattooDefs: TattooDef[] | null = null; // null = 아직 안 받음
+
+	/**
+	 * 트리에서 얻은 속성 합계(힘/민첩/지능) — 시작 노드 카운터 링용. 문신이 새겨진 노드는 교체된 문신 스탯으로 센다.
+	 * (공홈 대조: 시작 게이트의 0/50/0 숫자가 이것이다)
+	 */
+	function attributeTotals(): { str: number; dex: number; int: number } {
+		const totals = { str: 0, dex: 0, int: 0 };
+		const RE = [
+			[/^\+?(\d+) to Strength$/, "str"],
+			[/^\+?(\d+) to Dexterity$/, "dex"],
+			[/^\+?(\d+) to Intelligence$/, "int"],
+			[/^\+?(\d+) to Strength and Dexterity$/, "strdex"],
+			[/^\+?(\d+) to Strength and Intelligence$/, "strint"],
+			[/^\+?(\d+) to Dexterity and Intelligence$/, "dexint"],
+			[/^\+?(\d+) to all Attributes$/, "all"],
+		] as const;
+		for (const id of highlighted) {
+			const node = nodeById.get(id);
+			if (!node || node.type === "class") continue;
+			const inked = tattooPicks.get(id);
+			const lines = inked ? tattooByDn(inked)?.stats || [] : node.stats || [];
+			for (const raw of lines) {
+				const line = raw.trim();
+				for (const [re, kind] of RE) {
+					const match = re.exec(line);
+					if (!match) continue;
+					const value = Number(match[1]);
+					if (kind === "str" || kind === "all" || kind === "strdex" || kind === "strint") totals.str += value;
+					if (kind === "dex" || kind === "all" || kind === "strdex" || kind === "dexint") totals.dex += value;
+					if (kind === "int" || kind === "all" || kind === "strint" || kind === "dexint") totals.int += value;
+					break;
+				}
+			}
+		}
+		return totals;
+	}
 
 	/** 이 노드에 새겨진 문신의 그림 정보(부족 배경 좌표 키가 실제로 있는 것만). 정의를 아직 못 받았으면 null. */
 	function tattooArt(nodeId: number): TattooDef | null {
@@ -472,6 +521,9 @@
 				socketCount: Number(socketCount) || 0,
 			});
 		}
+		// 도유(an=노드id) — 도유로 활성화한 노터블 하나
+		const an = Number(params.get("an"));
+		if (Number.isFinite(an) && an > 0) anointPick = an;
 		// 주얼(j=노드:slug,...) — 트리 인코딩과 무관하게 ?t= / ?nodes= 어느 쪽이든 함께 복원한다
 		for (const pair of (params.get("j") || "").split(",")) {
 			const sep = pair.indexOf(":");
@@ -556,9 +608,10 @@
 		if (!interactive) return;
 		const params = new URLSearchParams(globalThis.location.search);
 		if (isAtlas) {
-			// 아틀라스는 GGG 클래스 개념이 없어 콤마 id 로 동기화
-			params.set("nodes", Array.from(highlighted).join(","));
-			params.delete("t");
+			// 공홈 호환 t=(GGG 인코딩, class=0) 로 동기화 — 공홈 아틀라스 링크 복사/가져오기와 같은 코덱.
+			// 옛 `?nodes=` 링크는 loadFromUrl 이 계속 읽는다(레거시 호환).
+			params.set("t", encodeTree());
+			params.delete("nodes");
 		} else {
 			params.set("t", encodeTree());
 			params.delete("nodes");
@@ -580,6 +633,9 @@
 				.map(([nodeId, dn]) => nodeId + ":" + dn);
 			if (inked.length) params.set("tt", inked.join("|"));
 			else params.delete("tt");
+			// 도유(an=) — GGG 인코딩에 자리가 없어 우리 파라미터로 보존(주얼 j= 와 같은 이유)
+			if (anointPick !== null) params.set("an", String(anointPick));
+			else params.delete("an");
 		}
 		globalThis.history.replaceState(null, "", globalThis.location.pathname + "?" + params.toString());
 	}
@@ -662,6 +718,17 @@
 	}
 	// ---- 마스터리 효과 선택 팝업 (공식 뷰어와 동일하게 효과 하나를 골라야 할당된다) ----
 	const effectLines = (eff: { stats: string[]; statsKo?: string[] }) => (isKorean && eff.statsKo?.length ? eff.statsKo : eff.stats);
+	// 팝업 패널을 원하는 좌표 근처에 두되 host 안으로 클램프.
+	// 폭을 하드코딩(330/400 등)한 예전 방식은 모바일(375px)에서 w-96(384px) 패널이 화면 밖으로 나갔다 —
+	// append 후 실측 크기로 클램프하고, max-width 로 host 보다 넓어지는 것 자체를 막는다.
+	function placePanel(panel: HTMLElement, host: HTMLElement, px: number, py: number) {
+		panel.style.maxWidth = "calc(100% - 8px)";
+		host.appendChild(panel);
+		const w = panel.offsetWidth;
+		const h = panel.offsetHeight;
+		panel.style.left = Math.max(4, Math.min(px, host.clientWidth - w - 4)) + "px";
+		panel.style.top = Math.max(4, Math.min(py, host.clientHeight - h - 4)) + "px";
+	}
 	let masteryPicker: HTMLElement | null = null;
 	function closeMasteryPicker() {
 		masteryPicker?.remove();
@@ -671,11 +738,9 @@
 		closeMasteryPicker();
 		const host = canvas.parentElement as HTMLElement;
 		const panel = document.createElement("div");
-		panel.className =
-			"absolute z-20 max-h-[60%] w-80 overflow-y-auto rounded shadow-2xl border border-amber-700/60 bg-stone-900/97";
+		panel.className = "absolute z-20 max-h-[60%] w-80 overflow-y-auto poe-node-popup";
 		const head = document.createElement("div");
-		head.className =
-			"sticky top-0 border-y-2 border-amber-600/70 bg-gradient-to-b from-stone-700 to-stone-900 text-amber-100 text-center font-bold text-sm px-6 py-1.5";
+		head.className = "sticky top-0 poe-popup-head";
 		head.textContent = (isKorean && node.nameKo ? node.nameKo : node.name) + (isKorean ? " — 효과 선택" : " — pick effect");
 		panel.appendChild(head);
 		// 게임 규칙: 같은 마스터리 효과는 트리 전체에서 한 번만 고를 수 있다.
@@ -693,6 +758,13 @@
 				? "block w-full text-left px-4 py-2 text-xs leading-5 border-b border-stone-800 text-base-content/30 line-through cursor-not-allowed"
 				: "block w-full text-left px-4 py-2 text-xs text-sky-300 leading-5 hover:bg-amber-900/40 border-b border-stone-800";
 			row.textContent = effectLines(eff).join("\n") + (taken ? (isKorean ? "  (이미 선택함)" : "  (already taken)") : "");
+			// 효과 리마인더 — 공홈처럼 회색 부연으로 효과 밑에
+			for (const rem of (isKorean && eff.reminderKo) || eff.reminder || []) {
+				const remLine = document.createElement("div");
+				remLine.className = "text-[10px] text-base-content/50 leading-4";
+				remLine.textContent = rem;
+				row.appendChild(remLine);
+			}
 			if (taken) {
 				panel.appendChild(row);
 				continue;
@@ -714,9 +786,7 @@
 		}
 		const sx = node.x * scale + offsetX;
 		const sy = node.y * scale + offsetY;
-		panel.style.left = Math.max(0, Math.min(sx + 20, host.clientWidth - 330)) + "px";
-		panel.style.top = Math.max(0, Math.min(sy, host.clientHeight - 120)) + "px";
-		host.appendChild(panel);
+		placePanel(panel, host, sx + 20, sy);
 		masteryPicker = panel;
 		hideTooltip();
 	}
@@ -754,10 +824,9 @@
 		closeMasteryPicker();
 		const host = canvas.parentElement as HTMLElement;
 		const panel = document.createElement("div");
-		panel.className = "absolute z-30 w-56 rounded shadow-2xl border border-amber-700/60 bg-stone-900/97 overflow-hidden";
+		panel.className = "absolute z-30 w-56 poe-node-popup overflow-hidden";
 		const head = document.createElement("div");
-		head.className =
-			"border-b-2 border-amber-600/70 bg-gradient-to-b from-stone-700 to-stone-900 text-amber-100 text-center font-bold text-xs px-4 py-1";
+		head.className = "poe-popup-head text-xs";
 		head.textContent = isKorean && node.nameKo ? node.nameKo : node.name;
 		panel.appendChild(head);
 
@@ -800,30 +869,62 @@
 				draw();
 			});
 		}
+		// 클러스터 소켓: 주얼 구성을 골라 서브트리를 생성한다 — **할당 여부와 무관**.
+		// (예전엔 allocated 분기 안에 있어 미할당 소켓엔 장착 진입점이 없었다 — "먼저 꽂고
+		//  경로를 찍는" PoB·공홈식 순서가 막혔다)
+		if (node.type === "jewel" && node.expansionJewel && !isAtlas && clusterDefs) {
+			const cur = clusterPicks.get(node.id);
+			item(
+				cur ? (isKorean ? `클러스터 변경 (${cur.nodeCount}노드)` : `Change cluster (${cur.nodeCount})`) : isKorean ? "클러스터 주얼 장착" : "Socket cluster jewel",
+				() => openClusterPicker(node),
+			);
+			if (cur) {
+				item(isKorean ? "클러스터 제거" : "Remove cluster", () => {
+					const before = snapshot();
+					clusterPicks.delete(node.id);
+					rebuildClusterNodes();
+					updatePoints();
+					commit(before);
+					syncUrl();
+					draw();
+				});
+			}
+		}
+		// 도유 — 도유 레시피가 있는 노터블은 아뮬렛 도유로 포인트 없이 활성화할 수 있다(게임: 1개).
+		// 트리로 이미 찍은 노드엔 무의미하므로 미할당일 때만. 고립 노터블 30개는 이 방법이 유일하다.
+		if (!isAtlas && node.anoint?.length && !allocated && node.type === "notable") {
+			if (anointPick === node.id) {
+				item(isKorean ? "도유 해제" : "Remove anoint", () => {
+					const before = snapshot();
+					anointPick = null;
+					commit(before);
+					markEvalStale(true);
+					updateStatsPanel();
+					syncUrl();
+					draw();
+				});
+			} else {
+				const prev = anointPick !== null ? nodeById.get(anointPick) : null;
+				item(
+					(isKorean ? "도유로 할당 (포인트 0)" : "Anoint (0 points)") +
+						(prev ? (isKorean ? ` — ${(isKorean && prev.nameKo) || prev.name} 대체` : ` — replaces ${prev.name}`) : ""),
+					() => {
+						const before = snapshot();
+						anointPick = node.id;
+						commit(before);
+						markEvalStale(true);
+						updateStatsPanel();
+						syncUrl();
+						draw();
+					},
+				);
+			}
+		}
 		if (node.type !== "class") {
 			if (allocated) {
 				const cost = computeRemoval(node.id).length;
 				item((isKorean ? "여기부터 해제" : "Refund from here") + (cost > 1 ? ` (−${cost})` : ""), () => toggleNode(node));
 				if (node.masteryEffects?.length) item(isKorean ? "효과 변경" : "Change effect", () => openMasteryPicker(node));
-				// 클러스터 소켓: 주얼 구성을 골라 서브트리를 생성한다(렌더 우선, 할당/URL 은 다음 단계)
-				if (node.type === "jewel" && node.expansionJewel && !isAtlas && clusterDefs) {
-					const cur = clusterPicks.get(node.id);
-					item(
-						cur ? (isKorean ? `클러스터 변경 (${cur.nodeCount}노드)` : `Change cluster (${cur.nodeCount})`) : isKorean ? "클러스터 주얼 장착" : "Socket cluster jewel",
-						() => openClusterPicker(node),
-					);
-					if (cur) {
-						item(isKorean ? "클러스터 제거" : "Remove cluster", () => {
-							const before = snapshot();
-							clusterPicks.delete(node.id);
-							rebuildClusterNodes();
-							updatePoints();
-							commit(before);
-							syncUrl();
-							draw();
-						});
-					}
-				}
 				// 문신 — 할당한 패시브를 다른 노드로 교체한다. 소형은 속성 종류가 맞아야 새길 수 있다.
 				if (!isAtlas && tattooTarget(node)) {
 					const inked = tattooPicks.get(node.id);
@@ -879,9 +980,7 @@
 		});
 
 		const rect = canvas.getBoundingClientRect();
-		panel.style.left = Math.max(0, Math.min(clientX - rect.left, host.clientWidth - 230)) + "px";
-		panel.style.top = Math.max(0, Math.min(clientY - rect.top, host.clientHeight - 140)) + "px";
-		host.appendChild(panel);
+		placePanel(panel, host, clientX - rect.left, clientY - rect.top);
 		nodeMenu = panel;
 		hideTooltip();
 	}
@@ -898,6 +997,9 @@
 	// ---- 포인트 카운터 ----
 	// 패시브/전직 포인트를 따로 센다(공식: 패시브 123, 전직 8). 클래스 시작·전직 시작 노드는 무료.
 	function updatePoints() {
+		// 도유한 노드를 트리로도 찍으면 도유가 낭비 — 게임처럼 도유를 비워 다른 노터블에 쓸 수 있게 한다.
+		// (모든 변경 경로가 updatePoints 를 지나므로 여기서 정규화하면 경로별 누락이 없다)
+		if (anointPick !== null && highlighted.has(anointPick)) anointPick = null;
 		updateStatsPanel();
 		// 트리가 평가 시점과 달라졌으면 결과 패널을 낡음 처리(값 자체는 남겨 비교는 가능하게)
 		if (lastEvalSignature !== null) markEvalStale(lastEvalSignature !== snapshot());
@@ -990,6 +1092,11 @@
 			const mods = option?.dataset.mods;
 			if (mods) add(mods.split(" / "));
 		}
+		// 도유 노터블 — 포인트 없이 활성화된 트리의 일부(아뮬렛 도유). 트리로도 찍었다면 중복 합산 금지.
+		if (anointPick !== null && !highlighted.has(anointPick)) {
+			const anointNode = nodeById.get(anointPick);
+			if (anointNode) add(statLinesOf(anointNode));
+		}
 		const out: { text: string; count: number }[] = [];
 		for (const v of acc.values()) {
 			let text = v.parts[0] || "";
@@ -1008,7 +1115,10 @@
 	function appendKeyNodes(panel: HTMLElement) {
 		// 문신이 새겨진 노터블/키스톤은 다른 노드로 교체된 상태 — 원래 이름을 목록에 남기지 않는다
 		const picked = nodes.filter(
-			(n) => highlighted.has(n.id) && (n.type === "keystone" || n.type === "notable") && !tattooPicks.has(n.id),
+			(n) =>
+				(highlighted.has(n.id) || n.id === anointPick) &&
+				(n.type === "keystone" || n.type === "notable") &&
+				!tattooPicks.has(n.id),
 		);
 		const socketedJewels = Array.from(jewelPicks).filter(([nodeId]) => highlighted.has(nodeId));
 		// 룬 접합(문신)이 새겨진 마스터리는 효과가 **교체로 소멸**한 상태 — 옛 효과 줄을 남기면 표시≠실제가 된다
@@ -1032,11 +1142,15 @@
 				"block w-full text-left px-3 py-0.5 text-xs hover:bg-base-200/60 " +
 				(n.type === "keystone" ? "text-amber-300 font-semibold" : "text-base-content/80");
 			row.textContent = (n.type === "keystone" ? "◆ " : "• ") + (isKorean && n.nameKo ? n.nameKo : n.name);
-			// 이름만으론 무슨 효과인지 알 수 없다 — 마우스만 올려도 스탯을 보여준다(캔버스로 찾아갈 필요 없이)
+			// 설명을 title(브라우저 툴팁)에만 두면 화면에선 안 보인다(사용자 지적) — 행 아래 작은 글씨로 직접 표시
 			const stats = statLinesOf(n).filter((line) => line.trim());
-			row.title =
-				(stats.length ? stats.join("\n") + "\n\n" : "") +
-				(isKorean ? "클릭하면 해당 노드로 이동" : "Click to jump to node");
+			for (const line of stats) {
+				const sub = document.createElement("div");
+				sub.className = "text-[10px] leading-4 text-base-content/50 font-normal pl-4";
+				sub.textContent = line;
+				row.appendChild(sub);
+			}
+			row.title = isKorean ? "클릭하면 해당 노드로 이동" : "Click to jump to node";
 			row.addEventListener("click", () => {
 				centerOnNode(n.id, 0.35);
 				draw();
@@ -1219,6 +1333,7 @@
 			Array.from(jewelPicks),
 			Array.from(clusterPicks),
 			Array.from(tattooPicks),
+			anointPick,
 		]);
 	}
 	const undoStack: string[] = [];
@@ -1232,7 +1347,7 @@
 		updateHistoryButtons();
 	}
 	function restoreSnapshot(s: string) {
-		const [c, a, b, n, m, j, cl, tt] = JSON.parse(s) as [
+		const [c, a, b, n, m, j, cl, tt, an] = JSON.parse(s) as [
 			number,
 			number,
 			number,
@@ -1241,6 +1356,7 @@
 			[number, string][],
 			[number, { sizeName: string; nodeCount: number; skillKey: string; notables: string[]; socketCount: number }][],
 			[number, string][],
+			number | null,
 		];
 		currentClassId = c;
 		currentAscend = a;
@@ -1251,6 +1367,7 @@
 		for (const [k, v] of j || []) jewelPicks.set(k, v);
 		tattooPicks.clear();
 		for (const [k, v] of tt || []) tattooPicks.set(k, v);
+		anointPick = typeof an === "number" ? an : null;
 		// 클러스터를 **먼저** 되돌려 서브트리를 다시 만든 뒤에 할당을 복원한다 —
 		// 순서를 바꾸면 아직 존재하지 않는 생성 노드의 할당이 통째로 버려진다.
 		clusterPicks.clear();
@@ -1404,7 +1521,9 @@
 				).toLowerCase();
 				// 이름/스탯 텍스트 또는 분류어(키스톤·노터블·주얼·마스터리)로 찾는다.
 				// 분류어는 노드 텍스트에 안 들어 있어서 예전엔 "키스톤" 검색이 0건이었다(사용자가 자연히 시도하는 말인데).
-				if (hay.indexOf(q) !== -1 || SEARCH_TYPE_WORDS[q] === node.type) {
+				// "도유"는 타입이 아니라 속성(anoint 보유) — 도유 후보를 한눈에 훑을 때 쓴다.
+				const anointWord = (q === "도유" || q === "anoint") && !isAtlas && !!node.anoint?.length;
+				if (hay.indexOf(q) !== -1 || SEARCH_TYPE_WORDS[q] === node.type || anointWord) {
 					searchHits.add(node.id);
 					// 화면에 보이는 매치만 이동 대상 — 숨은(미선택 전직) 노드로 이동하면 빈 화면만 보인다
 					if (!first && nodeVisible(node)) first = node;
@@ -1503,7 +1622,8 @@
 					return n && n.type !== "class";
 				});
 				evalPanel.classList.remove("hidden");
-				if (!ids.length) {
+				if (!ids.length && anointPick === null) {
+					// 도유만 있어도 계산 대상이다(아뮬렛 도유는 트리 없이도 스탯을 준다)
 					evalBody.textContent = isKorean ? "할당한 노드가 없습니다." : "No allocated nodes.";
 					return;
 				}
@@ -1518,6 +1638,8 @@
 					.filter(([nodeId]) => highlighted.has(nodeId))
 					.map(([nodeId, effectId]) => nodeId + ":" + effectId);
 				if (picks.length) body.set("masteries", picks.join(","));
+				// 도유 — nodes 에 끼우면 PoB 가 미연결 노드로 보고 해제한다(실측). 서버가 Allocates 아이템으로 변환.
+				if (anointPick !== null) body.set("anoint", String(anointPick));
 				// 주 스킬: datalist 에서 고른 표시명 → data-slug 로 변환(미입력이면 서버가 표준 스킬 사용)
 				const gemInput = document.getElementById("poeTreeEvalGem") as HTMLInputElement | null;
 				const typed = gemInput?.value.trim();
@@ -1590,6 +1712,8 @@
 					.filter(([nodeId]) => highlighted.has(nodeId))
 					.map(([nodeId, dn]) => nodeId + ":" + dn);
 				if (inked.length) url += "&tattoos=" + encodeURIComponent(inked.join("|"));
+				// 도유도 인계 — 없으면 최적화기가 자동 스윕으로 사용자의 도유를 덮어쓴다
+				if (anointPick !== null) url += "&anoint=" + anointPick;
 				if (className) url += "&className=" + encodeURIComponent(className);
 				const ascName = currentAscName();
 				if (ascName) url += "&ascendancy=" + encodeURIComponent(ascName);
@@ -1621,6 +1745,13 @@
 				const before = snapshot();
 				currentAscend = Number(ascSel.value);
 				dropHiddenAllocations();
+				// 공홈 파리티: 전직을 고르면 전직 시작 노드가 자동 할당된다
+				// (비용은 없다 — updatePoints 가 ascendancyStart 를 제외하고 센다)
+				const ascName = currentAscName();
+				if (ascName) {
+					const ascStart = nodes.find((n) => n.ascendancy === ascName && n.ascendancyStart);
+					if (ascStart) highlighted.add(ascStart.id);
+				}
 				commit(before);
 				focusAscendancy(currentAscName());
 				updatePoints();
@@ -1635,6 +1766,12 @@
 				const before = snapshot();
 				currentBloodline = Number(bloodSel.value);
 				dropHiddenAllocations();
+				// 전직과 동일: 혈맹을 고르면 그 서브트리 시작 노드를 자동 할당(비용 0)
+				const blId = currentBloodlineId();
+				if (blId) {
+					const blStart = nodes.find((n) => n.ascendancy === blId && n.ascendancyStart);
+					if (blStart) highlighted.add(blStart.id);
+				}
 				commit(before);
 				focusAscendancy(currentBloodlineId());
 				updatePoints();
@@ -1648,6 +1785,7 @@
 			resetBtn.addEventListener("click", () => {
 				const before = snapshot();
 				highlighted.clear();
+				anointPick = null; // 트리 초기화 = 도유도 함께 — 남기면 "초기화했는데 노드가 켜져 있다"
 				const root = rootNode();
 				if (root !== undefined) highlighted.add(root);
 				commit(before);
@@ -1880,6 +2018,33 @@
 		const pad = 200 * scale;
 		const visible = (sx: number, sy: number, r: number) => sx > -r - pad && sy > -r - pad && sx < width + r + pad && sy < height + r + pad;
 
+		// 0-b') 아틀라스 벽화 — 공홈은 트리 전체 뒤에 거대한 벽화(AtlasPassiveBackground)를 깐다(대조로 발견).
+		// 트리 경계(x -5.8k~5.9k, y -10.8k~0)에 여백을 더해 한 장으로 늘려 그린다.
+		if (isAtlas && scale > 0.015) {
+			const sp = sprites.atlasBackground;
+			const coord = sp?.coords.AtlasPassiveBackground;
+			const img = coord ? getSheet(sp!.file) : null;
+			if (coord && img) {
+				const worldLeft = -7300;
+				const worldTop = -11600;
+				const worldW = 14600;
+				const worldH = worldW * (coord.h / coord.w); // 원본 비율 유지
+				context.globalAlpha = 0.5; // 노드 가독성 우선
+				context.drawImage(
+					img,
+					coord.x,
+					coord.y,
+					coord.w,
+					coord.h,
+					worldLeft * scale + offsetX,
+					worldTop * scale + offsetY,
+					worldW * scale,
+					worldH * scale,
+				);
+				context.globalAlpha = 1;
+			}
+		}
+
 		// 0-c) 클래스 일러스트 레이어 — 좌표는 트리 데이터(extraImages)가 준다(PoB 는 이걸 하드코딩했다).
 		// 고른 직업의 아트만 선명하게, 나머지는 흐리게 — 공식 뷰어처럼 "내 직업 영역"이 드러난다.
 		if (scale > 0.02 && extraImages.length) {
@@ -1991,21 +2156,37 @@
 			}
 		}
 		context.lineCap = "round";
-		context.strokeStyle = "rgba(130,140,155,0.30)";
+		// 미할당 연결선 — 공홈 나란히 대조(cmp-official/ours.png)에서 우리 회청색이 확연히 밝아
+		// 트리 전체가 회색 그물처럼 보였다. 공홈처럼 어두운 갈색 톤으로 배경에 가라앉힌다.
+		context.strokeStyle = "rgba(112,96,72,0.32)";
 		context.lineWidth = Math.max(0.4, 16 * scale);
 		tracePath("all");
 		context.stroke();
 		if (hasHighlight()) {
 			// 중간 단계 — 할당 노드에서 뻗어 나가는 길. 골드보다 어둡고 미할당보다 밝게.
-			context.strokeStyle = "rgba(170,178,192,0.55)";
+			// 회청(170,178,192)이던 시절엔 공홈의 갈색·앰버 톤과 이질적이었다(확대 대조) — 앰버 계열로 통일.
+			context.strokeStyle = "rgba(196,172,124,0.45)";
 			context.lineWidth = Math.max(0.6, 18 * scale);
 			tracePath("intermediate");
 			context.stroke();
+			// 할당 연결선 — 공홈 대조로 맞춘 이중선: 어두운 테(넓게) 위에 밝은 심(좁게).
+			// 단색 굵은 선은 공홈보다 채도가 높고 "젤리" 느낌이 났다(official-zoom.png 대조).
+			// 아틀라스는 공홈이 **파란 발광**을 쓴다(official-atlas-zoom.png) — 패시브의 골드와 구분.
+			const edge = isAtlas ? "rgba(38,84,150,0.9)" : "rgba(122,96,44,0.9)";
+			const core = isAtlas ? "rgba(168,214,255,0.95)" : "rgba(238,224,186,0.95)";
+			const glow = isAtlas ? "rgba(90,170,255,0.5)" : "rgba(224,190,120,0.55)";
+			// 아틀라스 확대 대조에서 우리 선이 공홈보다 ~1.5배 굵고 발광이 셌다 — 아틀라스만 얇게
+			const edgeWidth = isAtlas ? 17 : 24;
+			const coreWidth = isAtlas ? 9 : 13;
 			context.save();
-			context.shadowColor = "rgba(224,180,90,0.9)";
-			context.shadowBlur = Math.max(4, 40 * scale);
-			context.strokeStyle = "rgba(232,194,108,0.95)";
-			context.lineWidth = Math.max(1, 22 * scale);
+			context.strokeStyle = edge;
+			context.lineWidth = Math.max(1.4, edgeWidth * scale);
+			tracePath("allocated");
+			context.stroke();
+			context.shadowColor = glow;
+			context.shadowBlur = Math.max(3, 18 * scale);
+			context.strokeStyle = core;
+			context.lineWidth = Math.max(0.8, coreWidth * scale);
 			tracePath("allocated");
 			context.stroke();
 			context.restore();
@@ -2100,6 +2281,24 @@
 			context.restore();
 		}
 
+		// 2-b-0) 아틀라스 시작점 아트 — 공홈의 나침반 성반(AtlasPassiveSkillScreenStart).
+		// 없으면 시작점이 맨 소형 노드라 공홈 대조(cmp-atlas-*.png)에서 허전함이 바로 드러난다.
+		if (scale > 0.02 && sprites.startNode && isAtlas && atlasRoot !== null) {
+			const sp = sprites.startNode;
+			const img = getSheet(sp.file);
+			const c = sp.coords["AtlasPassiveSkillScreenStart"];
+			const rootNodeObj = nodeById.get(atlasRoot);
+			if (img && c && rootNodeObj) {
+				const sx = rootNodeObj.x * scale + offsetX;
+				const sy = rootNodeObj.y * scale + offsetY;
+				const w = (c.w / sp.zoom) * scale;
+				const h = (c.h / sp.zoom) * scale;
+				if (visible(sx, sy, Math.max(w, h) / 2)) {
+					context.drawImage(img, c.x, c.y, c.w, c.h, sx - w / 2, sy - h / 2, w, h);
+				}
+			}
+		}
+
 		// 2-b) 직업 시작 노드 아트 — 고른 직업만 그 직업 아트(centerwitch 등), 나머지는 비활성 배경.
 		// 공식 뷰어의 중앙 원판이 이것이다(없으면 트리 한가운데가 휑하다).
 		if (scale > 0.02 && sprites.startNode && !isAtlas) {
@@ -2118,6 +2317,32 @@
 					if (!visible(sx, sy, Math.max(w, h) / 2)) continue;
 					context.globalAlpha = isCurrent ? 1 : 0.6;
 					context.drawImage(img, c.x, c.y, c.w, c.h, sx - w / 2, sy - h / 2, w, h);
+					// 속성 카운터 링 — 공홈은 시작 노드 게이트에 트리에서 얻은 지능/힘/민첩 합계를 보여준다
+					// (공홈 대조 관측: 파랑 위 / 빨강 좌하 / 초록 우하, 0/50/0 형태)
+					if (isCurrent && scale > 0.05) {
+						const totals = attributeTotals();
+						const r = 118 * scale;
+						const badge = (dx: number, dy: number, color: string, value: number) => {
+							const bx = sx + dx;
+							const by = sy + dy;
+							const br = Math.max(8, 34 * scale);
+							context.beginPath();
+							context.arc(bx, by, br, 0, Math.PI * 2);
+							context.fillStyle = "rgba(10,12,18,0.85)";
+							context.fill();
+							context.lineWidth = Math.max(1.5, 5 * scale);
+							context.strokeStyle = color;
+							context.stroke();
+							context.fillStyle = "#e8e6df";
+							context.font = `bold ${Math.max(9, Math.round(30 * scale))}px sans-serif`;
+							context.textAlign = "center";
+							context.textBaseline = "middle";
+							context.fillText(String(value), bx, by);
+						};
+						badge(0, -r, "#3b82f6", totals.int); // 지능(파랑) — 위
+						badge(-r * 0.87, r * 0.5, "#dc2626", totals.str); // 힘(빨강) — 좌하
+						badge(r * 0.87, r * 0.5, "#16a34a", totals.dex); // 민첩(초록) — 우하
+					}
 				}
 				context.globalAlpha = 1;
 			}
@@ -2142,14 +2367,19 @@
 			const rWorld = nodeRadiusWorld[node.type] || 45;
 			const rScreen = rWorld * scale;
 			if (!visible(sx, sy, rScreen)) continue;
-			const isAllocated = highlighted.has(node.id);
-			context.globalAlpha = node.ascendancy ? 0.85 : 1;
+			const isAllocated = highlighted.has(node.id) || node.id === anointPick; // 도유 노터블은 할당된 것처럼 그린다
+			// 저줌(전체 뷰)에서 미할당 프레임(은회색 링)이 뭉개져 "회색 점 도배"로 보인다(공홈 대조).
+			// 공홈은 이 정도 줌아웃이 없어 직접 비교 불가 — 할당 경로가 도드라지도록 미할당만 가라앉힌다.
+			// 검색 결과는 디밍하지 않는다(강조가 목적이므로).
+			const dimUnallocated = scale < 0.1 && !isAllocated && !searchHits.has(node.id);
+			context.globalAlpha = (node.ascendancy ? 0.85 : 1) * (dimUnallocated ? 0.55 : 1);
 
-			// 저줌: 스프라이트 대신 점(성능)
+			// 저줌: 스프라이트 대신 점(성능). 미할당 점은 공홈처럼 어두운 톤 —
+			// 밝은 회청(#6b7583)이던 시절엔 전체 뷰가 회색 점 도배로 보였다(cmp 대조로 발각).
 			if (rScreen < 5) {
 				context.beginPath();
 				context.arc(sx, sy, Math.max(1, rScreen), 0, Math.PI * 2);
-				context.fillStyle = isAllocated ? "#f0d089" : node.type === "notable" ? "#c8a24e" : node.type === "keystone" || node.type === "wormhole" ? "#cf6642" : "#6b7583";
+				context.fillStyle = isAllocated ? "#f0d089" : node.type === "notable" ? "#8a6f3c" : node.type === "keystone" || node.type === "wormhole" ? "#8f4a30" : "#4c4a45";
 				context.fill();
 				continue;
 			}
@@ -2228,6 +2458,23 @@
 				context.arc(sx, sy, rScreen + Math.max(2, 7 * scale), 0, Math.PI * 2);
 				context.strokeStyle = "#e86e60";
 				context.lineWidth = Math.max(2, 6 * scale);
+				context.stroke();
+				context.restore();
+			}
+
+			// 도유 노드 — 황금 점선 링(할당 프레임과 구분). 이게 없으면 링크로 받은 트리에서
+			// 어느 노드가 도유인지(= 포인트를 안 쓰고 아뮬렛에 걸린 것인지) 알 방법이 없다.
+			if (node.id === anointPick) {
+				context.globalAlpha = 1;
+				context.save();
+				context.shadowColor = "rgba(255,193,77,0.9)";
+				context.shadowBlur = rScreen * 0.6;
+				context.beginPath();
+				context.setLineDash([Math.max(4, 10 * scale), Math.max(3, 6 * scale)]);
+				context.arc(sx, sy, rScreen + Math.max(4, 10 * scale), 0, Math.PI * 2);
+				context.strokeStyle = "#ffc14d";
+				// 검색 줌(scale ~0.35)에서 6*scale ≈ 2px 점선은 거의 안 보였다(실측 amber 19픽셀) — 하한을 올린다
+				context.lineWidth = Math.max(3.5, 8 * scale);
 				context.stroke();
 				context.restore();
 			}
@@ -2738,11 +2985,9 @@
 		}
 		const host = canvas.parentElement as HTMLElement;
 		const panel = document.createElement("div");
-		panel.className =
-			"absolute z-20 max-h-[60%] w-96 overflow-y-auto rounded shadow-2xl border border-amber-700/60 bg-stone-900/97";
+		panel.className = "absolute z-20 max-h-[60%] w-96 overflow-y-auto poe-node-popup";
 		const head = document.createElement("div");
-		head.className =
-			"sticky top-0 border-y-2 border-amber-600/70 bg-gradient-to-b from-stone-700 to-stone-900 text-amber-100 text-center font-bold text-sm px-6 py-1.5";
+		head.className = "sticky top-0 poe-popup-head";
 		head.textContent = bulk
 			? (isKorean ? `반경 내 ${targets!.length}개 패시브 — 문신 일괄` : `${targets!.length} passives in radius — bulk tattoo`)
 			: (isKorean && node.nameKo ? node.nameKo : node.name) + (isKorean ? " — 문신 새기기" : " — apply tattoo");
@@ -2821,9 +3066,7 @@
 		render();
 		const sx = node.x * scale + offsetX;
 		const sy = node.y * scale + offsetY;
-		panel.style.left = Math.max(0, Math.min(sx + 20, host.clientWidth - 400)) + "px";
-		panel.style.top = Math.max(0, Math.min(sy, host.clientHeight - 160)) + "px";
-		host.appendChild(panel);
+		placePanel(panel, host, sx + 20, sy);
 		tattooPicker = panel;
 		filter.focus();
 	}
@@ -2836,11 +3079,9 @@
 		if (!options.length) return;
 		const host = canvas.parentElement as HTMLElement;
 		const panel = document.createElement("div");
-		panel.className =
-			"absolute z-20 max-h-[60%] w-96 overflow-y-auto rounded shadow-2xl border border-amber-700/60 bg-stone-900/97";
+		panel.className = "absolute z-20 max-h-[60%] w-96 overflow-y-auto poe-node-popup";
 		const head = document.createElement("div");
-		head.className =
-			"sticky top-0 border-y-2 border-amber-600/70 bg-gradient-to-b from-stone-700 to-stone-900 text-amber-100 text-center font-bold text-sm px-6 py-1.5";
+		head.className = "sticky top-0 poe-popup-head";
 		head.textContent = (isKorean && node.nameKo ? node.nameKo : node.name) + (isKorean ? " — 주얼 장착" : " — socket jewel");
 		panel.appendChild(head);
 		const filter = document.createElement("input");
@@ -2958,9 +3199,7 @@
 		render();
 		const sx = node.x * scale + offsetX;
 		const sy = node.y * scale + offsetY;
-		panel.style.left = Math.max(0, Math.min(sx + 20, host.clientWidth - 400)) + "px";
-		panel.style.top = Math.max(0, Math.min(sy, host.clientHeight - 160)) + "px";
-		host.appendChild(panel);
+		placePanel(panel, host, sx + 20, sy);
 		jewelPicker = panel;
 		filter.focus();
 	}
@@ -3002,9 +3241,9 @@
 		let showAllNotables = false;
 
 		const panel = document.createElement("div");
-		panel.className = "absolute z-20 flex max-h-[70%] w-80 flex-col rounded shadow-2xl border border-purple-700/60 bg-stone-900/97";
+		panel.className = "absolute z-20 flex max-h-[70%] w-80 flex-col poe-node-popup";
 		const head = document.createElement("div");
-		head.className = "border-b-2 border-purple-500/70 bg-gradient-to-b from-stone-700 to-stone-900 text-purple-100 text-center font-bold text-sm px-6 py-1.5";
+		head.className = "poe-popup-head";
 		head.textContent = (isKorean ? "클러스터 주얼 — " : "Cluster jewel — ") + (isKorean ? CLUSTER_SIZE_KO[socket.expansionJewel?.size ?? 0] : sizeName);
 		panel.appendChild(head);
 		const body = document.createElement("div");
@@ -3194,9 +3433,7 @@
 
 		const sx = socket.x * scale + offsetX;
 		const sy = socket.y * scale + offsetY;
-		panel.style.left = Math.max(0, Math.min(sx + 20, host.clientWidth - 340)) + "px";
-		panel.style.top = Math.max(0, Math.min(sy, host.clientHeight - 200)) + "px";
-		host.appendChild(panel);
+		placePanel(panel, host, sx + 20, sy);
 		jewelPicker = panel;
 	}
 
@@ -3249,19 +3486,44 @@
 	function showTooltip(node: TreeNode, clientX: number, clientY: number) {
 		if (!tooltip) return;
 		tooltip.replaceChildren();
-		// 공식 뷰어식: 금색테 헤더(제목 중앙) + 어두운 본문(청색 스탯)
+		// 인게임 팝업 구조: 타입별 장식 헤더 밴드(게임 추출 아트) + 암색 본문 + 파란 스탯(좌측정렬).
+		// (민무늬 제목만 쓰던 버전은 인게임과 다르다는 사용자 재지적으로 밴드 아트 적용)
 		const displayName = isKorean && node.nameKo ? node.nameKo : node.name;
 		const header = document.createElement("div");
-		header.className =
-			"border-y-2 border-amber-600/70 bg-gradient-to-b from-stone-700 to-stone-900 text-amber-100 text-center font-bold text-sm px-6 py-1.5";
+		const headerType =
+			node.type === "keystone" || node.type === "notable" || node.type === "mastery" || node.type === "jewel"
+				? node.type
+				: node.type === "wormhole"
+					? "keystone" // 아틀라스 웜홀은 키스톤급 특수 노드 — 키스톤 밴드가 인게임 느낌에 가장 가깝다
+					: node.ascendancy
+						? "ascendancy"
+						: "normal";
+		header.className = "poe-psheader poe-psheader-" + headerType;
 		const inkedDn = tattooPicks.get(node.id);
 		// 문신이 새겨졌으면 그 패시브는 **교체**된 상태다 — 툴팁도 문신 이름/효과를 보여줘야 화면과 계산이 일치한다
 		header.textContent = inkedDn
 			? tattooLabel(inkedDn)
 			: displayName + (node.ascendancy ? " (" + ascendancyLabel(node.ascendancy) + ")" : "");
+		// 도유(성유) 레시피 — 인게임처럼 헤더 오른쪽에 기름 3개(제목 옆, 아틀라스/문신 상태 제외)
+		if (!inkedDn && !isAtlas && node.anoint?.length) {
+			const oilBox = document.createElement("span");
+			oilBox.className = "flex items-center gap-0.5 ml-2";
+			for (const slug of node.anoint) {
+				const oil = oils[slug];
+				if (!oil) continue;
+				const img = document.createElement("img");
+				img.src = "/poe-assets/" + oil.icon;
+				img.className = "w-6 h-6 object-contain";
+				img.title = (isKorean && oil.nameKo) || oil.name;
+				img.alt = img.title;
+				oilBox.appendChild(img);
+			}
+			if (oilBox.childElementCount) header.appendChild(oilBox);
+		}
 		tooltip.appendChild(header);
 		// 마스터리: 고른 효과가 있으면 그 문장을, 없으면 선택지 개수를 보여준다
 		let displayStats = isKorean && node.statsKo && node.statsKo.length ? node.statsKo : node.stats;
+		let reminderLines = (isKorean && node.reminderKo) || node.reminder || [];
 		if (inkedDn) displayStats = tattooLines(inkedDn);
 		else if (isAtlas && node.type === "mastery") {
 			// 아틀라스 마스터리는 할당 불가한 그룹 표지 — 이름만 있으면 클릭 가능해 보여 오해를 부른다
@@ -3272,14 +3534,30 @@
 			displayStats = eff
 				? effectLines(eff)
 				: [(isKorean ? "효과 " : "") + node.masteryEffects.length + (isKorean ? "개 중 선택 — 클릭" : " effects — click to pick")];
+			// 고른 효과의 리마인더를 노드 리마인더 자리에 — 마스터리 노드 자체엔 리마인더가 없다
+			reminderLines = eff ? (isKorean && eff.reminderKo) || eff.reminder || [] : [];
 		}
 		if (displayStats.length) {
 			const body = document.createElement("div");
-			body.className = "bg-stone-900/95 px-4 py-2 border-x border-b border-amber-900/50";
+			body.className = "poe-popup-body";
 			for (const stat of displayStats) {
 				const line = document.createElement("div");
-				line.className = "text-xs text-sky-300 whitespace-pre-line leading-5";
+				line.className = "poe-popup-stat";
 				line.textContent = stat;
+				body.appendChild(line);
+			}
+			// 인게임 파리티: 리마인더(회색 부연) — 스탯 밑에 작게
+			for (const rem of reminderLines) {
+				const line = document.createElement("div");
+				line.className = "poe-popup-reminder";
+				line.textContent = rem;
+				body.appendChild(line);
+			}
+			// 키스톤 플레이버 문구 — 인게임 녹슨 금색 이탤릭
+			for (const fl of (isKorean && node.flavourKo) || node.flavour || []) {
+				const line = document.createElement("div");
+				line.className = "poe-popup-flavour";
+				line.textContent = fl;
 				body.appendChild(line);
 			}
 			tooltip.appendChild(body);
@@ -3288,7 +3566,7 @@
 		// 클러스터 전용 소켓(트리 외곽 42개)은 반경 주얼을 넣는 자리가 아니다 — 반경 수치를 보여주면 오해를 부른다.
 		if (node.type === "jewel" && node.expansionJewel && !isAtlas) {
 			const box = document.createElement("div");
-			box.className = "bg-stone-900/95 px-4 py-2 border-x border-b border-amber-900/50";
+			box.className = "poe-popup-body border-t border-white/10";
 			const line = document.createElement("div");
 			line.className = "text-[11px] font-mono text-purple-300 leading-5";
 			const sizeName = CLUSTER_SIZE_KO[node.expansionJewel.size] || "";
@@ -3309,12 +3587,14 @@
 			}
 			const todo = document.createElement("div");
 			todo.className = "text-[10px] text-base-content/40 leading-4";
-			todo.textContent = isKorean ? "서브트리 편집은 아직 미지원" : "Subtree editing not supported yet";
+			// 클러스터 편집은 완성됐다(우클릭 픽커) — 옛 "미지원" 문구가 남아 오정보였다.
+			// 모바일엔 우클릭이 없어 롱프레스를 병기한다(터치 감지 분기보다 하이브리드 기기에 안전).
+			todo.textContent = isKorean ? "우클릭(길게 누르기)으로 클러스터 주얼 구성" : "Right-click (long-press) to configure cluster jewel";
 			box.appendChild(todo);
 			tooltip.appendChild(box);
 		} else if (node.type === "jewel" && !isAtlas) {
 			const box = document.createElement("div");
-			box.className = "bg-stone-900/95 px-4 py-2 border-x border-b border-amber-900/50";
+			box.className = "poe-popup-body border-t border-white/10";
 			const socketed = jewelPicks.get(node.id);
 			if (socketed) {
 				const line = document.createElement("div");
@@ -3335,7 +3615,18 @@
 		if (interactive && node.type !== "class" && !(isAtlas && node.type === "mastery")) {
 			let costText = "";
 			let costClass = "";
-			if (highlighted.has(node.id)) {
+			// 도유 전용 노터블(30개) — 트리에 간선이 아예 없어 어떤 경로로도 찍을 수 없고, 아뮬렛 도유로만 얻는다.
+			// 기존 "연결 불가" 는 할당 노드가 있을 때만 뜨는 데다 "지금은 경로가 없다" 는 뜻이라 이 경우와 구분되지 않았다
+			// (빈 트리에서는 아무 안내도 없어, 클릭해도 반응 없는 이유를 알 길이 없었다).
+			// 판정은 도유 보유 + 간선 0 — 클러스터 주얼로 생성되는 노드는 도유가 없어 걸리지 않는다.
+			const anointOnly = !isAtlas && !!node.anoint?.length && (adjacency.get(node.id)?.length || 0) === 0;
+			if (node.id === anointPick) {
+				costText = isKorean ? "도유로 할당됨 — 해제는 우클릭" : "Anointed — right-click to remove";
+				costClass = "text-amber-300";
+			} else if (anointOnly) {
+				costText = isKorean ? "도유 전용 — 우클릭으로 도유 할당" : "Anoint only — right-click to anoint";
+				costClass = "text-amber-200/70";
+			} else if (highlighted.has(node.id)) {
 				if (removalSet.size) {
 					costText = (isKorean ? "해제 −" : "Refund −") + removalSet.size + (isKorean ? " 포인트" : " points");
 					costClass = "text-rose-400";
@@ -3349,7 +3640,7 @@
 			}
 			if (costText) {
 				const foot = document.createElement("div");
-				foot.className = "bg-stone-950/95 px-4 py-1 border-x border-b border-amber-900/50 text-[11px] font-mono " + costClass;
+				foot.className = "poe-popup-body border-t border-white/10 text-[11px] font-mono " + costClass;
 				foot.textContent = costText;
 				tooltip.appendChild(foot);
 			}
@@ -3371,6 +3662,7 @@
 	let lastX = 0;
 	let lastY = 0;
 	canvas.addEventListener("mousedown", (event) => {
+		if (Date.now() < suppressMouseUntil) return; // 터치 직후의 합성 마우스 무시
 		if (event.button !== 0) return; // 좌클릭만 팬/할당 — 우클릭은 contextmenu 가 처리
 		dragging = true;
 		dragMoved = false;
@@ -3381,6 +3673,7 @@
 		canvas.style.cursor = "grabbing";
 	});
 	globalThis.addEventListener("mouseup", (event) => {
+		if (Date.now() < suppressMouseUntil) return; // 터치 직후의 합성 마우스 무시
 		if (dragging && !dragMoved) {
 			// 클릭 — 노드 토글 (열려 있던 팝업/메뉴는 먼저 닫는다)
 			closeMasteryPicker();
@@ -3392,6 +3685,132 @@
 		dragging = false;
 		canvas.style.cursor = "grab";
 	});
+	// ---- 터치 (모바일) — 마우스 핸들러만 있으면 팬/줌/할당이 전부 불가능하다(375px 감사에서 확인) ----
+	// 1지: 팬 + 탭 할당 + 길게 눌러 메뉴. 2지: 핀치 줌(커서 중심 고정과 같은 공식).
+	let touchPinchDist = 0;
+	// 터치 후 브라우저가 쏘는 **합성 마우스 이벤트**(mousedown/mouseup)를 무시할 마감 시각.
+	// 안 막으면 탭 한 번에 touchend 할당 + mouseup 재토글이 겹쳐 "탭이 안 먹는" 것처럼 보인다(실측).
+	let suppressMouseUntil = 0;
+	// 탭/롱프레스 직후의 합성 click 은 방금 연 픽커/메뉴가 손가락 위치에 겹치면 그 행을 그대로 눌러 버린다
+	// (실측: 마스터리 탭 → 픽커가 뜨자마자 임의 효과가 선택돼 "픽커가 안 뜨는" 것처럼 보였다).
+	// 합성 click 은 touchend 직후 · 같은 좌표에서만 오므로 250ms + 30px 근접일 때만 삼킨다 —
+	// 시간창만으로 삼키면(첫 구현) 합성 click 이 안 오는 경로(롱프레스)에서 무장이 남아
+	// 사용자의 다음 실제 탭(메뉴 버튼)을 먹어 버린다(실측).
+	let swallowClickUntil = 0;
+	let swallowClickX = 0;
+	let swallowClickY = 0;
+	document.addEventListener(
+		"click",
+		(event) => {
+			if (
+				Date.now() < swallowClickUntil &&
+				Math.abs(event.clientX - swallowClickX) + Math.abs(event.clientY - swallowClickY) < 30
+			) {
+				swallowClickUntil = 0;
+				event.stopPropagation();
+				event.preventDefault();
+			}
+		},
+		true,
+	);
+	let touchLongPress: ReturnType<typeof setTimeout> | null = null;
+	const cancelLongPress = () => {
+		if (touchLongPress !== null) {
+			clearTimeout(touchLongPress);
+			touchLongPress = null;
+		}
+	};
+	canvas.addEventListener(
+		"touchstart",
+		(event) => {
+			event.preventDefault(); // 페이지 스크롤/더블탭 확대와 충돌 방지
+			if (event.touches.length === 1) {
+				const t = event.touches[0];
+				dragging = true;
+				dragMoved = false;
+				downX = t.clientX;
+				downY = t.clientY;
+				lastX = t.clientX;
+				lastY = t.clientY;
+				// 길게 누르면 우클릭 메뉴 — 모바일엔 우클릭이 없다
+				cancelLongPress();
+				touchLongPress = setTimeout(() => {
+					touchLongPress = null;
+					if (dragging && !dragMoved) {
+						dragging = false;
+						const rect = canvas.getBoundingClientRect();
+						const node = findNodeAt(t.clientX - rect.left, t.clientY - rect.top);
+						if (node) openNodeMenu(node, t.clientX, t.clientY);
+					}
+				}, 550);
+			} else if (event.touches.length === 2) {
+				// 핀치 시작 — 팬/탭/롱프레스 취소
+				dragging = false;
+				cancelLongPress();
+				const [a, b] = [event.touches[0], event.touches[1]];
+				touchPinchDist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+			}
+		},
+		{ passive: false },
+	);
+	canvas.addEventListener(
+		"touchmove",
+		(event) => {
+			event.preventDefault();
+			if (event.touches.length === 1 && dragging) {
+				const t = event.touches[0];
+				if (Math.abs(t.clientX - downX) + Math.abs(t.clientY - downY) > 8) {
+					dragMoved = true;
+					cancelLongPress();
+				}
+				offsetX += t.clientX - lastX;
+				offsetY += t.clientY - lastY;
+				lastX = t.clientX;
+				lastY = t.clientY;
+				hideTooltip();
+				scheduleDraw();
+			} else if (event.touches.length === 2 && touchPinchDist > 0) {
+				const [a, b] = [event.touches[0], event.touches[1]];
+				const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+				const rect = canvas.getBoundingClientRect();
+				const midX = (a.clientX + b.clientX) / 2 - rect.left;
+				const midY = (a.clientY + b.clientY) / 2 - rect.top;
+				const nextScale = Math.min(0.6, Math.max(0.008, scale * (dist / touchPinchDist)));
+				offsetX = midX - ((midX - offsetX) / scale) * nextScale;
+				offsetY = midY - ((midY - offsetY) / scale) * nextScale;
+				scale = nextScale;
+				touchPinchDist = dist;
+				hideTooltip();
+				scheduleDraw();
+			}
+		},
+		{ passive: false },
+	);
+	canvas.addEventListener("touchend", (event) => {
+		suppressMouseUntil = Date.now() + 700;
+		const lastTouch = event.changedTouches[0];
+		if (lastTouch) {
+			swallowClickUntil = Date.now() + 250;
+			swallowClickX = lastTouch.clientX;
+			swallowClickY = lastTouch.clientY;
+		}
+		cancelLongPress();
+		if (event.touches.length > 0) return; // 아직 손가락이 남음(핀치 → 1지 전환 등)
+		touchPinchDist = 0;
+		if (dragging && !dragMoved) {
+			// 탭 = 클릭 할당
+			closeMasteryPicker();
+			closeNodeMenu();
+			const t = event.changedTouches[0];
+			if (t) {
+				const rect = canvas.getBoundingClientRect();
+				const node = findNodeAt(t.clientX - rect.left, t.clientY - rect.top);
+				if (node) toggleNode(node);
+			}
+		}
+		dragging = false;
+	});
+
 	// 우클릭 — 노드 메뉴 (브라우저 기본 메뉴는 막는다)
 	canvas.addEventListener("contextmenu", (event) => {
 		event.preventDefault();
@@ -3477,6 +3896,68 @@
 
 	globalThis.addEventListener("resize", scheduleDraw);
 
+	// ---- 캔버스 높이 = 뷰포트 잔여 높이 ----
+	// 고정 h-[72vh] 는 모바일에서 컨트롤 바가 위를 차지해 캔버스 하단(1149)이 폴드(988) 밖으로
+	// 넘쳤다(실측) — 스크롤해야 트리 아래쪽·줌 버튼이 보인다. 페이지 최상단 기준 캔버스 시작
+	// 위치를 빼고 남는 높이로 맞춘다(데스크톱에선 기존 72vh 와 거의 같은 값이 나온다).
+	let lastFitHeight = 0;
+	const fitCanvasHeight = () => {
+		const docTop = canvas.getBoundingClientRect().top + globalThis.scrollY;
+		const fit = Math.max(320, Math.round(globalThis.innerHeight - docTop - 16));
+		if (fit === lastFitHeight) return; // 같은 값이면 스킵 — ResizeObserver 재진입 루프 방지
+		lastFitHeight = fit;
+		canvas.style.height = fit + "px";
+		scheduleDraw();
+	};
+	fitCanvasHeight();
+	globalThis.addEventListener("resize", fitCanvasHeight);
+	document.addEventListener("fullscreenchange", fitCanvasHeight);
+	// 위쪽 콘텐츠(컨트롤 바 등)가 초기 계산 뒤에 렌더되며 캔버스를 밀어내면 docTop 이 커진다 —
+	// (실측: 모바일에서 1회 계산만으론 하단이 다시 폴드 밖 1040 > 988) body 레이아웃 변화마다 재계산.
+	new ResizeObserver(fitCanvasHeight).observe(document.body);
+
+	// ---- 줌 ＋/− 버튼 (공홈 뷰어 파리티) — 휠·핀치가 안 되는 환경(마우스 없는 태블릿 등)용 ----
+	{
+		const host = canvas.parentElement as HTMLElement;
+		const wrap = document.createElement("div");
+		wrap.id = "poeTreeZoomBtns";
+		// host 하단(bottom-3) 기준으로 붙이면 안 된다 — host 는 캔버스 아래 패널들까지 포함해
+		// 캔버스보다 길어서, 모바일에선 버튼이 뷰포트 밖(y 1165 > vh 988)으로 나갔다(실측).
+		// 캔버스 사각형의 우하단에 맞춰 직접 계산한다.
+		wrap.className = "absolute z-10 flex flex-col gap-1";
+		const zoomBy = (factor: number) => {
+			const cx = canvas.clientWidth / 2;
+			const cy = canvas.clientHeight / 2;
+			const nextScale = Math.min(0.6, Math.max(0.008, scale * factor));
+			offsetX = cx - ((cx - offsetX) / scale) * nextScale;
+			offsetY = cy - ((cy - offsetY) / scale) * nextScale;
+			scale = nextScale;
+			hideTooltip();
+			scheduleDraw();
+		};
+		const mk = (id: string, label: string, factor: number, title: string) => {
+			const b = document.createElement("button");
+			b.type = "button";
+			b.id = id;
+			b.className = "btn btn-sm btn-square border border-amber-700/60 bg-stone-900/85 text-amber-100 text-lg";
+			b.textContent = label;
+			b.title = title;
+			b.addEventListener("click", () => zoomBy(factor));
+			wrap.appendChild(b);
+		};
+		mk("poeTreeZoomIn", "+", 1.35, isKorean ? "확대" : "Zoom in");
+		mk("poeTreeZoomOut", "−", 1 / 1.35, isKorean ? "축소" : "Zoom out");
+		host.appendChild(wrap);
+		const positionZoomBtns = () => {
+			wrap.style.left = canvas.offsetLeft + canvas.clientWidth - wrap.offsetWidth - 12 + "px";
+			wrap.style.top = canvas.offsetTop + canvas.clientHeight - wrap.offsetHeight - 12 + "px";
+		};
+		positionZoomBtns();
+		globalThis.addEventListener("resize", positionZoomBtns);
+		// fitCanvasHeight 가 캔버스 높이를 바꿔도 따라가야 한다 — resize 이벤트만으론 못 잡는다(실측 1028 > 988)
+		new ResizeObserver(positionZoomBtns).observe(canvas);
+	}
+
 	// 매니페스트 → 트리 데이터 순으로 로드
 	function loadTree() {
 		// no-cache = 항상 서버에 재검증(ETag) — 게임 패치로 트리 JSON 이 바뀌어도 옛 캐시를 물지 않는다.
@@ -3490,6 +3971,7 @@
 					// 클러스터 주얼 노터블 — 좌표가 없어(그룹 밖) 일반 노드 목록엔 못 들어간다. 이름으로만 참조된다.
 					for (const cn of data.clusterNotables || []) clusterNotables.set(cn.name, cn);
 					extraImages = data.extraImages || [];
+					oils = data.oils || {};
 					if (data.constants) {
 						orbitRadii = data.constants.orbitRadii || orbitRadii;
 						skillsPerOrbit = data.constants.skillsPerOrbit || skillsPerOrbit;

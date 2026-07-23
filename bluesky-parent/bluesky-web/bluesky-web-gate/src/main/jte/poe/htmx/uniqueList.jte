@@ -47,7 +47,8 @@
 					<div class="min-w-0 flex-1 space-y-1">
 					<%-- 제목 (고유색) --%>
 					<div class="flex items-baseline gap-2">
-						<span class="font-bold text-orange-600 dark:text-orange-400 truncate" title="${item.name()}">${displayName}</span>
+						<%-- 이름 클릭 → 상세 페이지 --%>
+						<a class="font-bold text-orange-600 dark:text-orange-400 truncate link-hover" href="/poe/uniques/${item.slug()}" title="${item.name()}">${displayName}</a>
 						@if(PoeText.isKorean())
 							<span class="text-xs text-base-content/40 truncate">${item.name()}</span>
 						@endif

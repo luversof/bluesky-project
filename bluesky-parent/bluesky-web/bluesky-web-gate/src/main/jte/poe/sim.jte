@@ -15,6 +15,7 @@
 @param String jewels = ""
 @param String clusters = ""
 @param String tattoos = ""
+@param String anoint = ""
 @param String fixedClassName = ""
 
 !{
@@ -53,6 +54,7 @@
 						<input type="hidden" name="jewels" value="${jewels}">
 						<input type="hidden" name="clusters" value="${clusters}">
 						<input type="hidden" name="tattoos" value="${tattoos}">
+						<input type="hidden" name="anoint" value="${anoint}">
 						<input type="hidden" name="className" value="${fixedClassName}">
 						<div class="flex items-center gap-2 rounded border border-primary/40 bg-primary/5 px-3 py-1.5 text-xs">
 							<span class="font-semibold text-primary">${MessageUtil.getMessage("poe.sim.opt.fixedtree")}</span>

@@ -34,6 +34,8 @@ public record PoeOptimizeResult(
     List<PoeBuild.PlayerStat> stats,
     String baselineValue,
     String finalValue,
+    /** 어픽스 예산 축 — 레어 "필수 N개만 T1, 나머지 중위" 가정에서의 값(N=2/3/4). 레어가 없으면 빈 목록. */
+    List<AffixBudgetPoint> affixBudget,
     String pobCode,
     long durationMs,
     int evalCount,
@@ -48,7 +50,9 @@ public record PoeOptimizeResult(
     /** 표시용 마스터리 요약("마스터리명 — 효과 첫 줄") — 자동 채택된 효과를 사용자가 결과에서 봐야 한다 */
     List<String> treeMasteryLabels,
     /** 표시용 문신 요약("한글명 ×N") — treeTattoos 는 링크용 영문 dn 이라 그대로 보여줄 수 없다 */
-    List<String> treeTattooLabels) {
+    List<String> treeTattooLabels,
+    /** 트리 링크(an=)로 되돌아갈 도유 노터블 id — 없으면(null) 도유 미채택 */
+    Integer treeAnoint) {
 
   public record SupportPick(String slug, String name, String nameKo) {}
 
@@ -97,4 +101,7 @@ public record PoeOptimizeResult(
    * @param value 포맷된 최대 피격량
    */
   public record DefenseHit(String type, String value) {}
+
+  /** 어픽스 예산 축의 한 점 — 레어 필수 essentialCount 개를 T1 로 잡았을 때의 포맷된 값. */
+  public record AffixBudgetPoint(int essentialCount, String value) {}
 }

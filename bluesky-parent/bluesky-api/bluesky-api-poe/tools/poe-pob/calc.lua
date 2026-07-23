@@ -60,6 +60,8 @@ end
 		"Life", "LifeUnreserved", "EnergyShield", "Mana", "Ward",
 		-- 속성: 장비 요구치(힘/민첩/지능) 충족 여부 판정에 쓴다
 		"Str", "Dex", "Int",
+		-- 총 요구 속성(장비+젬 합산, PoB 집계) — 젬 요구치까지 포함한 실현 가능성 판정에 쓴다
+		"ReqStr", "ReqDex", "ReqInt",
 	-- 명중/명중률 — 공격 빌드의 DPS 는 명중 가정에 크게 좌우된다(표준 무기 +2000 전제)
 	"Accuracy", "AccuracyHitChance",
 		"Armour", "Evasion", "TotalEHP",

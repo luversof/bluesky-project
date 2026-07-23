@@ -5,6 +5,9 @@
 
 @param PoeGem gem
 @param int displayLevel = 20
+<%-- 상세 페이지 삽입 모드 — 레벨 전환을 htmx(#poePreview 교체) 대신 일반 링크(?level=)로.
+     (플로팅 프리뷰 호스트와 id 충돌을 피하고 새로고침/북마크에도 안전) --%>
+@param boolean pageMode = false
 
 !{
 	String levelLabel = MessageUtil.getMessage("poe.gems.detail.level");
@@ -21,13 +24,9 @@
 	String supportBadgeLabel = MessageUtil.getMessage("poe.gems.type.support");
 	String activeBadgeLabel = MessageUtil.getMessage("poe.gems.type.active");
 
-	// 젬 색상 = 이름 색 (게임 툴팁 관례)
-	String nameColor = switch (gem.color()) {
-		case "red" -> "#e05a4f";
-		case "green" -> "#4fb96a";
-		case "blue" -> "#6a8fe0";
-		default -> "#d8d8d8";
-	};
+	// 인게임 젬 툴팁의 이름 색은 젬 색상(빨/초/파)이 아니라 **젬 희귀도 색(청록)** 고정이다(사용자 지적으로 정정).
+	// 빨강/초록/파랑은 소켓 색일 뿐 이름에는 쓰이지 않는다.
+	String nameColor = "#1ba29b";
 	String displayName = PoeText.name(gem.nameKo(), gem.name());
 	String displayDescription = PoeText.name(gem.descriptionKo(), gem.description());
 	java.util.List<String> displayTags = PoeText.lines(gem.tagsKo(), gem.tags());
@@ -52,7 +51,8 @@
 
 		<%-- 태그 (인게임: 헤더 아래 젬 색) --%>
 		@if(displayTags != null && !displayTags.isEmpty())
-			<div class="px-4 pt-1 text-center text-[11.5px]" style="color:${nameColor}">${String.join(", ", displayTags)}</div>
+	<%-- 태그 줄은 인게임에서 회색(#7f7f7f) — 이름과 같은 색으로 칠하던 것 정정 --%>
+		<div class="px-4 pt-1 text-center text-[11.5px] text-[#7f7f7f]">${String.join(", ", displayTags)}</div>
 		@endif
 
 		<%-- 레벨/요구/소모/피해 등 수치 (중앙 정렬, 라벨 회색 · 수치 흰색) --%>
@@ -127,11 +127,16 @@
 			<div class="flex flex-wrap gap-1 items-center">
 				<span class="text-[11px] text-white/40 mr-1">${levelLabel}</span>
 				@for(int step : levelSteps)
-					<button type="button"
-					        class="px-1.5 py-0.5 rounded text-[11px] ${step == displayLevel ? "bg-[#1ba29b] text-white" : "bg-white/5 text-white/60 hover:bg-white/10"}"
-					        hx-get="/poe/htmx/gems/detail?slug=${gem.slug()}&level=${step}"
-					        hx-target="#poePreview"
-					        hx-swap="innerHTML">${step}</button>
+					@if(pageMode)
+						<a class="px-1.5 py-0.5 rounded text-[11px] ${step == displayLevel ? "bg-[#1ba29b] text-white" : "bg-white/5 text-white/60 hover:bg-white/10"}"
+						   href="/poe/gems/${gem.slug()}?level=${step}">${step}</a>
+					@else
+						<button type="button"
+						        class="px-1.5 py-0.5 rounded text-[11px] ${step == displayLevel ? "bg-[#1ba29b] text-white" : "bg-white/5 text-white/60 hover:bg-white/10"}"
+						        hx-get="/poe/htmx/gems/detail?slug=${gem.slug()}&level=${step}"
+						        hx-target="#poePreview"
+						        hx-swap="innerHTML">${step}</button>
+					@endif
 				@endfor
 				<span class="ml-auto text-[10px] px-1.5 py-0.5 rounded border ${gem.isSupport() ? "border-fuchsia-500/40 text-fuchsia-400" : "border-cyan-500/40 text-cyan-400"}">${gem.isSupport() ? supportBadgeLabel : activeBadgeLabel}</span>
 			</div>

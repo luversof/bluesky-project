@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { DATA_DIR, FILES_DIR, WORK_DIR, loadTable } from "./paths.mjs";
 import { createStatDescriber } from "./statDescriptions.mjs";
-import { buildKoreanMap, buildTree } from "./tree-common.mjs";
+import { buildKoreanMap, buildTree, joinReminderKo } from "./tree-common.mjs";
 
 const RAW = path.join(WORK_DIR, "atlas-tree-raw.json");
 const OUT = path.join(DATA_DIR, "atlas-tree.json");
@@ -38,6 +38,15 @@ const named = result.nodes.filter((n) => n.type !== "mastery");
 console.log(
 	`한글 이름 ${named.filter((n) => n.nameKo).length}/${named.length}, 한글 스탯 ${named.filter((n) => n.statsKo?.length).length}/${named.filter((n) => n.stats.length).length}`,
 );
+// 리마인더 한글 — 게임 테이블 ReminderText(EN/KO) 페어링 조인.
+// 테이블은 config 추가(2026-07) 후 추출부터 생긴다 — 옛 추출물로 parse 만 단독 재실행해도 죽지 않게 폴백.
+try {
+	const rem = joinReminderKo(result, loadTable("English", "ReminderText"), loadTable("Korean", "ReminderText"));
+	console.log(`리마인더 한글: ${rem.hit}/${rem.total}`);
+} catch {
+	console.log("리마인더 한글: ReminderText 테이블 없음(extract 먼저 실행 필요) — 영문 유지");
+}
+
 fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.writeFileSync(OUT, JSON.stringify(result));
 console.log(`atlas nodes ${result.nodes.length}, edges ${result.edges.length}, groups ${Object.keys(result.groups).length} → ${OUT}`);

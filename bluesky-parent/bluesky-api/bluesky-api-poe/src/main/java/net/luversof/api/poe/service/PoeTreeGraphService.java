@@ -56,7 +56,9 @@ public class PoeTreeGraphService {
       Integer clusterSize,
       // 트리 좌표 — 반경 주얼이 어떤 패시브를 덮는지 계산할 때 쓴다(문신 자리 선정 등)
       Double x,
-      Double y) {}
+      Double y,
+      // 아뮬렛 도유로 이 노터블을 부여할 때 드는 성유 3종(slug). 있으면 = 도유 가능 노터블.
+      List<String> anoint) {}
 
   /** 마스터리가 제공하는 효과 하나. id 는 PoB/GGG 인코딩에 쓰이는 effect id. */
   public record MasteryEffect(int id, List<String> stats, List<String> statsKo) {}
@@ -182,6 +184,17 @@ public class PoeTreeGraphService {
     return nodeById.values().stream()
         .filter(node -> node.ascendancy() == null)
         .filter(node -> "notable".equals(node.type()) || "keystone".equals(node.type()))
+        .sorted(java.util.Comparator.comparingInt(TreeNode::id))
+        .toList();
+  }
+
+  /**
+   * 아뮬렛 도유로 부여할 수 있는 노터블 — 트리에 연결된 것(470개)과 도유로만 얻는 고립 노터블(30개)이 모두 포함된다. id 정렬로 실행 간 결정적 순서 보장.
+   */
+  public List<TreeNode> anointableNotables() {
+    return nodeById.values().stream()
+        .filter(node -> node.anoint() != null && !node.anoint().isEmpty())
+        .filter(node -> node.ascendancy() == null)
         .sorted(java.util.Comparator.comparingInt(TreeNode::id))
         .toList();
   }

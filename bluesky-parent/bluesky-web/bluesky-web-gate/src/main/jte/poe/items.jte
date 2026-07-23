@@ -42,7 +42,8 @@
 				      hx-get="/poe/htmx/items"
 				      hx-target="#poeItemList"
 				      hx-swap="innerHTML"
-				      hx-trigger="input changed delay:300ms, change">
+				      hx-trigger="input changed delay:300ms, change"
+				      data-url-sync data-url-map="itemClass:slot">
 					<input type="search" name="q" value="${initialQ}" class="input input-sm input-bordered w-full sm:w-72" placeholder="${searchPlaceholder}" autocomplete="off" autofocus>
 					<input type="hidden" name="itemClass" value="${activeValue}">
 				</form>
@@ -56,6 +57,7 @@
 			</div>
 
 			<div id="poeItemDetail"></div>
+			<script src="/js/poe/filterUrl.js" defer></script>
 		</div>
 	`
 )

@@ -185,9 +185,35 @@ public class PoeOptimizeService {
     }
   }
 
-  /** 레어 아이템 — 베이스 + 선택된 모드 패밀리(문장은 tierFraction 으로 롤). tierFraction: 0=최상위 티어, 1=최하위 */
+  /**
+   * 레어 아이템 — 베이스 + 선택된 모드 패밀리. 기본은 모든 모드를 {@code tierFraction} 한 위치의 티어로 롤한다(0=최상위, 1=최하위). {@code
+   * perFractions} 가 있으면 패밀리별로 다른 티어를 준다(어픽스 예산 모델: 필수 N개는 T1, 나머지는 중위).
+   */
   private record RareItem(
-      String baseType, List<PoeModPoolDataService.ModFamily> families, double tierFraction) {}
+      String baseType,
+      List<PoeModPoolDataService.ModFamily> families,
+      double tierFraction,
+      List<Double> perFractions,
+      // 엘드리치 임플리싯(총주교/포식자) — 영문(PoB Implicits 용) + 한글(표시용) 스탯 줄. 없으면 빈 목록.
+      List<String> implicitLines,
+      List<String> implicitLinesKo) {
+    RareItem(String baseType, List<PoeModPoolDataService.ModFamily> families, double tierFraction) {
+      this(baseType, families, tierFraction, null, List.of(), List.of());
+    }
+
+    RareItem(
+        String baseType,
+        List<PoeModPoolDataService.ModFamily> families,
+        double tierFraction,
+        List<Double> perFractions) {
+      this(baseType, families, tierFraction, perFractions, List.of(), List.of());
+    }
+
+    /** i번째 패밀리에 적용할 티어 분수 — perFractions 가 있으면 그 값, 없으면 균일 tierFraction. */
+    double fractionFor(int i) {
+      return perFractions != null && i < perFractions.size() ? perFractions.get(i) : tierFraction;
+    }
+  }
 
   /** 슬롯에 장착된 것 — 유니크 또는 레어 (배타) */
   private record Equipped(PoeUniqueItem unique, RareItem rare) {
@@ -209,6 +235,8 @@ public class PoeOptimizeService {
   private final PoePobEngineService poePobEngineService;
   private final PoeTreeGraphService poeTreeGraphService;
   private final PoeModPoolDataService poeModPoolDataService;
+  private final PoeEldritchDataService poeEldritchDataService;
+  private final PoeModDataService poeModDataService;
   private final PoeBaseItemDataService poeBaseItemDataService;
   private final PoeClusterJewelDataService poeClusterJewelDataService;
   private final PoeSkillWeaponDataService poeSkillWeaponDataService;
@@ -265,6 +293,8 @@ public class PoeOptimizeService {
       PoePobEngineService poePobEngineService,
       PoeTreeGraphService poeTreeGraphService,
       PoeModPoolDataService poeModPoolDataService,
+      PoeEldritchDataService poeEldritchDataService,
+      PoeModDataService poeModDataService,
       PoeBaseItemDataService poeBaseItemDataService,
       PoeClusterJewelDataService poeClusterJewelDataService,
       PoeSkillWeaponDataService poeSkillWeaponDataService,
@@ -278,6 +308,8 @@ public class PoeOptimizeService {
     this.poePobEngineService = poePobEngineService;
     this.poeTreeGraphService = poeTreeGraphService;
     this.poeModPoolDataService = poeModPoolDataService;
+    this.poeEldritchDataService = poeEldritchDataService;
+    this.poeModDataService = poeModDataService;
     this.poeBaseItemDataService = poeBaseItemDataService;
     this.poeClusterJewelDataService = poeClusterJewelDataService;
     this.poeSkillWeaponDataService = poeSkillWeaponDataService;
@@ -381,6 +413,13 @@ public class PoeOptimizeService {
   /** 방어 오라 스테이지에서 채택된 오라 — 최종/일반 buildXml 이 2번째 스킬 그룹으로 emit(트라이얼은 명시 전달). */
   private volatile List<PoeGem> selectedAuras = new ArrayList<>();
 
+  // 이번 잡의 스킬 키워드 — XML 조립 시 유니크에 엘드리치 임플리싯을 고르는 데 쓴다(레어는 craft 시점에 이미 결정).
+  private volatile List<String> currentKeywords = List.of();
+  // 이 잡에서 아뮬렛에 걸 도유(잡마다 키워드가 정해질 때 1회 계산). null = 키워드에 맞는 노터블 없음
+  private volatile AnointPick currentAnoint = null;
+  // 이번 잡의 직업 — 레어 방어구의 속성 변형(힘=방어도/민첩=회피/지능=ES) 선택에 쓴다.
+  private volatile String currentClassName = "";
+
   // 예약 초과로 제외된 오라(이름 → 부족 마나) — 결과 화면에서 "왜 오라가 이것뿐인지" 설명용
   private volatile Map<PoeGem, Integer> blockedAuraShortfall = new LinkedHashMap<>();
 
@@ -401,6 +440,9 @@ public class PoeOptimizeService {
 
   /** 트리 에디터에서 패시브에 새긴 문신(노드 id → 문신 dn). 지정하면 그 노드는 문신 노드로 교체돼 계산된다. */
   private volatile Map<Integer, String> fixedTattoos = Map.of();
+
+  // 트리 에디터에서 사용자가 고른 도유 노터블 id — 지정 시 자동 전수 스윕 대신 이것으로 고정(사용자 지정은 존중)
+  private volatile Integer fixedAnoint = null;
 
   /** 최적화 잡 시작 — 클러스터 없이(옛 호출부 호환) */
   public boolean start(
@@ -551,11 +593,47 @@ public class PoeOptimizeService {
       String jewels,
       String clusters,
       String tattoos) {
+    return start(
+        gemSlug,
+        objective,
+        scenario,
+        buffs,
+        className,
+        ascendancy,
+        uniques,
+        skills,
+        treeNodes,
+        masteries,
+        jewels,
+        clusters,
+        tattoos,
+        null);
+  }
+
+  /**
+   * @param anoint 트리 에디터에서 고른 도유 노터블 id(없으면 null → 자동 전수 스윕). 문신/마스터리와 같은 "사용자 지정 존중" 원칙.
+   */
+  public boolean start(
+      String gemSlug,
+      String objective,
+      String scenario,
+      boolean buffs,
+      String className,
+      String ascendancy,
+      String uniques,
+      String skills,
+      String treeNodes,
+      String masteries,
+      String jewels,
+      String clusters,
+      String tattoos,
+      String anoint) {
     if (!isAvailable()) {
       return false;
     }
     this.fixedTree = parseNodeIds(treeNodes);
     this.fixedTattoos = parseTattoos(tattoos);
+    this.fixedAnoint = anoint != null && anoint.matches("\\d+") ? Integer.valueOf(anoint) : null;
     this.fixedMasteries = parseMasteries(masteries);
     this.fixedJewels = parseJewels(jewels);
     this.fixedClusters = parseClusters(clusters);
@@ -574,6 +652,9 @@ public class PoeOptimizeService {
     this.combatBuffs = buffs;
     this.secondaryAscendId = 0; // 혈맹 선택 초기화(잡마다)
     this.selectedAuras = new ArrayList<>(); // 방어 오라 초기화(잡마다)
+    this.currentKeywords = List.of(); // 키워드 초기화(잡마다)
+    this.currentAnoint = null; // 아뮬렛 도유 초기화(잡마다)
+    this.currentClassName = ""; // 직업 초기화(잡마다)
     this.blockedAuraShortfall = new LinkedHashMap<>(); // 제외 오라 초기화(잡마다)
     // 직업 고정 — 유효한 직업명만 채택, 그 외(빈값/auto/미지)는 null(자동 프로브)
     this.fixedClass = className != null && CLASS_IDS.containsKey(className) ? className : null;
@@ -648,6 +729,7 @@ public class PoeOptimizeService {
       }
       final PoeGem gem = resolved; // 이후 람다에서 참조되므로 final 고정
       List<String> keywords = keywords(gem, objective);
+      this.currentKeywords = keywords;
       log(gem.name() + " / 목표 " + objectiveKey + " / 키워드 " + keywords);
 
       // ── 0) 직업 비교 프로브 — 직업별 (최적 전직 + 휴리스틱 8pt) 를 엔진 1회씩 평가해 최고 직업 선택 ──
@@ -724,6 +806,7 @@ public class PoeOptimizeService {
               .map(Map.Entry::getKey)
               .orElse(null);
       String className = bestProbe != null ? bestProbe.probeClass() : classFor(gem);
+      this.currentClassName = className;
       String ascendancy =
           bestProbe != null ? bestProbe.probeAscendancy() : chooseAscendancy(className, keywords);
       for (Map.Entry<ClassProbe, Double> entry : probeResults.entrySet()) {
@@ -1199,6 +1282,9 @@ public class PoeOptimizeService {
             }
           }
         } else {
+          // 방어 변형(방어도/회피/ES)은 직업 주 속성 휴리스틱으로 하나만 만든다.
+          // ⚠ 세 변형을 모두 후보로 깔아 실측 선택하게 해 봤으나 **그리디 경로 의존**으로 결과가 나빠졌다
+          //   (위치 EHP 964,409 → 729,640). 후보가 늘면 초반 슬롯 선택이 바뀌고 뒤 슬롯 조합이 악화된다.
           rare = craftRare(slot, gem, keywords, 0.0);
           if (rare != null) {
             slotCandidates.add(Equipped.ofRare(rare));
@@ -1220,15 +1306,20 @@ public class PoeOptimizeService {
                 candidate -> {
                   Map<Slot, Equipped> trial = new EnumMap<>(items);
                   trial.put(slot, candidate);
-                  return buildXml(
-                      gem,
-                      supports,
-                      className,
-                      ascendancy,
-                      ascendancyNodes,
-                      allocated,
-                      trial,
-                      jewels);
+                  String xml =
+                      buildXml(
+                          gem,
+                          supports,
+                          className,
+                          ascendancy,
+                          ascendancyNodes,
+                          allocated,
+                          trial,
+                          jewels);
+                  // 최종 빌드엔 도유가 얹혀 있다 — 예산 축에서 빼면 "티어를 낮춰서" 가 아니라
+                  // "도유가 빠져서" 낮아진 값이 섞여 곡선이 오염된다
+                  AnointPick anoint = currentAnoint;
+                  return anoint != null ? withAnoint(xml, anoint.name()) : xml;
                 },
                 objectiveKey,
                 // 그 장비를 낀 상태의 실제 속성으로 요구치를 판정한다(장비가 주는 속성까지 포함되므로 순환이 풀린다)
@@ -1250,6 +1341,13 @@ public class PoeOptimizeService {
           log("장비 채택: " + slot.ko + " = " + equippedLabel(best.getKey()) + " → " + format(current));
         }
       }
+
+      // ── 4a') 속성 요구치 보정 — 부족하면 레어 접미어를 속성 모드로 교체/추가 ──
+      // 아이템 단계 검증기는 자동 후보만 거른다 — **강제 장착 유니크**(공허 충전기 지능 245 등)는 사용자
+      // 지정이라 못 거르고, 경고만 남던 마지막 구멍. 실제 게임의 해법(장비에 +속성 접미어)을 그대로 쓴다.
+      // 모든 슬롯이 유니크라 붙일 레어가 없으면 포기하고 기존 경고 경로에 맡긴다(정직한 실패).
+      repairAttributeShortfalls(
+          items, gem, supports, className, ascendancy, ascendancyNodes, allocated, jewels);
 
       // ── 4b) 오라/헤럴드 greedy — 예약형 오라를 2번째 스킬 그룹으로 추가(방어+공격 모두 후보) ──
       // greedy 가 현재 목표에 이득 되는 오라만 채택: dps/balanced=데미지 오라, ehp=방어 오라.
@@ -1517,6 +1615,31 @@ public class PoeOptimizeService {
       if (poeTattooDataService.hasData()) {
         enterPhase("tattoos");
         phaseDone.set(0);
+        // 문신은 속성 패시브를 **통째로 교체**해 지능/힘/민첩을 깎는다 — 아이템 단계에서 요구치를
+        // 통과한 장비(공허 충전기 지능 245 등)가 문신 뒤 장착 불가가 되는 실사고가 났다.
+        // 단계 시작 시점에 요구치가 충족돼 있을 때만 강제한다(강제 장착 유니크로 이미 미충족이면
+        // 모든 후보가 탈락해 단계가 통째로 멎는 것을 막기 위함 — 그 경우는 기존 경고 경로가 알린다).
+        boolean enforceItemReqs;
+        {
+          Map<String, Double> tattooBaseline =
+              poePobEngineService.calculateValues(
+                  buildXml(
+                      gem,
+                      supports,
+                      className,
+                      ascendancy,
+                      ascendancyNodes,
+                      allocated,
+                      items,
+                      jewels));
+          evalCount.incrementAndGet();
+          enforceItemReqs = allRequirementsMet(items, tattooBaseline);
+          if (!enforceItemReqs) {
+            log("문신 요구치 강제 꺼짐 — 단계 시작 시점에 이미 미충족 장비 존재(강제 장착 추정)");
+          }
+        }
+        final java.util.function.BiPredicate<Object, Map<String, Double>> reqValidator =
+            enforceItemReqs ? (candidate, values) -> allRequirementsMet(items, values) : null;
         // 후보 노드 묶기 — **반경 주얼 안쪽을 먼저 따로** 본다.
         // 반경 변환(붉은 악몽: 반경 내 저항 패시브 → 막기 확률)은 그 반경 안에서만 이득이라,
         // 트리 전체에 한 종류를 바르는 방식으론 "전체로는 손해, 반경 안에선 이득"인 저항 문신이 영영 안 뽑힌다.
@@ -1627,7 +1750,9 @@ public class PoeOptimizeService {
                           trial,
                           allocated);
                     },
-                    objectiveKey);
+                    objectiveKey,
+                    // 이 문신 조합으로 장비 요구치가 깨지면(속성 패시브 교체) 이득이 커도 탈락
+                    reqValidator == null ? null : reqValidator::test);
             Map.Entry<PoeTattooDataService.Tattoo, Double> best =
                 results.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
             if (best == null || best.getValue() <= current * 1.003) {
@@ -1726,7 +1851,8 @@ public class PoeOptimizeService {
                         }
                         return withTattoos(baseXml, trial, allocated);
                       },
-                      objectiveKey);
+                      objectiveKey,
+                      reqValidator == null ? null : reqValidator::test);
             } finally {
               fixedTattoos = savedTattoos;
             }
@@ -1861,15 +1987,20 @@ public class PoeOptimizeService {
                   Map<Slot, Equipped> trial = new EnumMap<>(items);
                   trial.put(
                       slot, Equipped.ofRare(craftRare(slot, gem, keywords, probe.fraction())));
-                  return buildXml(
-                      gem,
-                      supports,
-                      className,
-                      ascendancy,
-                      ascendancyNodes,
-                      allocated,
-                      trial,
-                      jewels);
+                  String xml =
+                      buildXml(
+                          gem,
+                          supports,
+                          className,
+                          ascendancy,
+                          ascendancyNodes,
+                          allocated,
+                          trial,
+                          jewels);
+                  // 최종 빌드엔 도유가 얹혀 있다 — 예산 축에서 빼면 "티어를 낮춰서" 가 아니라
+                  // "도유가 빠져서" 낮아진 값이 섞여 곡선이 오염된다
+                  AnointPick anoint = currentAnoint;
+                  return anoint != null ? withAnoint(xml, anoint.name()) : xml;
                 },
                 objectiveKey);
         List<PoeOptimizeResult.TierRow> rows = new ArrayList<>();
@@ -1929,6 +2060,162 @@ public class PoeOptimizeService {
         finalValues = poePobEngineService.calculateValues(finalXml);
       }
       evalCount.incrementAndGet();
+
+      // ── 아뮬렛 도유 ──
+      // 실제 빌드는 예외 없이 아뮬렛에 도유를 건다(노터블 하나를 공짜로 얻는 셈) — 빼고 계산하면 실전보다 약하게 나온다.
+      // 후보 전부를 **실제로 평가해서** 고른다. 키워드 점수는 조건절("방패를 들고 있는 동안")을 못 읽고,
+      // 컷은 점수 밖의 진짜 1위(오라 효과 등 간접 기여)를 놓친다(둘 다 실측). 완성 XML 에 한 줄만 얹어
+      // 재평가하므로 탐색 경로가 흔들리지 않는다.
+      Integer pinnedAnoint = fixedAnoint;
+      if (pinnedAnoint != null) {
+        // 트리 에디터에서 고른 도유 — 자동 스윕 대신 고정(문신/마스터리와 같은 존중 원칙)
+        PoeTreeGraphService.TreeNode node = poeTreeGraphService.node(pinnedAnoint);
+        if (node != null && node.anoint() != null && !node.anoint().isEmpty()) {
+          currentAnoint =
+              new AnointPick(
+                  node.id(),
+                  node.name(),
+                  node.nameKo() != null && !node.nameKo().isBlank() ? node.nameKo() : node.name());
+          finalXml = withAnoint(finalXml, node.name());
+          finalValues = poePobEngineService.calculateValues(finalXml);
+          evalCount.incrementAndGet();
+          log("아뮬렛 도유(사용자 고정): " + currentAnoint.nameKo() + " (" + node.name() + ")");
+        } else {
+          log("아뮬렛 도유(사용자 고정) 무시 — 도유 불가 노드 id " + pinnedAnoint);
+          pinnedAnoint = null;
+        }
+      }
+      List<PoeTreeGraphService.TreeNode> anointPool =
+          pinnedAnoint != null ? List.of() : anointCandidates();
+      if (!anointPool.isEmpty()) {
+        enterPhase("anoint");
+        final String baseXml = finalXml;
+        Map<String, Double> anointResults =
+            evalBatch(
+                executor,
+                anointPool.stream().map(PoeTreeGraphService.TreeNode::name).toList(),
+                name -> withAnoint(baseXml, name),
+                objectiveKey);
+        double anointBase = displayMetric(finalValues, objective);
+        String bestName = null;
+        double bestValue = anointBase;
+        for (PoeTreeGraphService.TreeNode node : anointPool) { // id 오름차순 순회 — 동점은 id 낮은 쪽(결정성)
+          Double value = anointResults.get(node.name());
+          if (value != null && value > bestValue) {
+            bestValue = value;
+            bestName = node.name();
+          }
+        }
+        if (bestName != null) {
+          final String picked = bestName;
+          PoeTreeGraphService.TreeNode node =
+              anointPool.stream().filter(n -> n.name().equals(picked)).findFirst().orElseThrow();
+          currentAnoint =
+              new AnointPick(
+                  node.id(),
+                  node.name(),
+                  node.nameKo() != null && !node.nameKo().isBlank() ? node.nameKo() : node.name());
+          finalXml = withAnoint(finalXml, bestName);
+          finalValues = poePobEngineService.calculateValues(finalXml);
+          evalCount.incrementAndGet();
+          log(
+              "아뮬렛 도유: "
+                  + currentAnoint.nameKo()
+                  + " ("
+                  + bestName
+                  + ") — "
+                  + format(anointBase)
+                  + " → "
+                  + format(bestValue)
+                  + " (후보 "
+                  + anointPool.size()
+                  + "개 평가)");
+        } else {
+          log("아뮬렛 도유: 후보 " + anointPool.size() + "개 모두 이득 없음 — 도유 없음");
+        }
+      }
+
+      // ── 오라 예약 최종 검증 ──
+      // 오라 단계 이후(마스터리·문신·도유 등)가 최대 마나/예약 효율을 바꿔 최종적으로 예약이 초과될 수 있다.
+      // 인게임에서 못 띄우는 오라가 결과에 남지 않도록, 초과 시 **한계 이득이 가장 작은 마지막 채택분부터** 해제한다.
+      {
+        double unreservedFinal = finalValues.getOrDefault("ManaUnreserved", 0d);
+        while (unreservedFinal < MIN_UNRESERVED_MANA && !selectedAuras.isEmpty()) {
+          PoeGem dropped = selectedAuras.remove(selectedAuras.size() - 1);
+          log(
+              "오라 최종 예약 초과 — 해제: "
+                  + dropped.name()
+                  + " (미예약 마나 "
+                  + Math.round(unreservedFinal)
+                  + ")");
+          finalXml =
+              buildXml(
+                  gem, supports, className, ascendancy, ascendancyNodes, allocated, items, jewels);
+          if (currentAnoint != null) {
+            finalXml = withAnoint(finalXml, currentAnoint.name());
+          }
+          finalValues = poePobEngineService.calculateValues(finalXml);
+          evalCount.incrementAndGet();
+          unreservedFinal = finalValues.getOrDefault("ManaUnreserved", 0d);
+        }
+      }
+
+      // ── 어픽스 예산 축(현실적 제작) 재평가 ──
+      // 기본 결과는 모든 레어 모드를 T1 로 가정한다(낙관적). 실제로는 보통 필수 옵션 2~4개만 T1 이고
+      // 나머지는 중위 티어다. 레어를 전부 "필수 N T1 + 나머지 중위"로 바꿔 N∈{2,3,4} 을 병렬 재계산해,
+      // "필수 옵션 수"에 따른 DPS 곡선을 사용자에게 보여준다(전부 T1 = finalValue = 상한).
+      List<PoeOptimizeResult.AffixBudgetPoint> affixBudget = new ArrayList<>();
+      boolean hasRare = items.values().stream().anyMatch(equipped -> !equipped.isUnique());
+      if (hasRare) {
+        enterPhase("budget");
+        List<Integer> essentialCounts = List.of(2, 3, 4);
+        Map<Integer, Double> budgetResults =
+            evalBatch(
+                executor,
+                essentialCounts,
+                essential -> {
+                  Map<Slot, Equipped> trial = new EnumMap<>(items);
+                  for (Map.Entry<Slot, Equipped> entry : items.entrySet()) {
+                    if (!entry.getValue().isUnique()) {
+                      trial.put(
+                          entry.getKey(),
+                          Equipped.ofRare(
+                              budgetVariant(entry.getValue().rare(), essential, BUDGET_FILLER)));
+                    }
+                  }
+                  String xml =
+                      buildXml(
+                          gem,
+                          supports,
+                          className,
+                          ascendancy,
+                          ascendancyNodes,
+                          allocated,
+                          trial,
+                          jewels);
+                  // 최종 빌드엔 도유가 얹혀 있다 — 예산 축에서 빼면 "티어를 낮춰서" 가 아니라
+                  // "도유가 빠져서" 낮아진 값이 섞여 곡선이 오염된다
+                  AnointPick anoint = currentAnoint;
+                  return anoint != null ? withAnoint(xml, anoint.name()) : xml;
+                },
+                objectiveKey);
+        for (int essential : essentialCounts) {
+          Double value = budgetResults.get(essential);
+          if (value != null && value > 0) {
+            affixBudget.add(new PoeOptimizeResult.AffixBudgetPoint(essential, format(value)));
+          }
+        }
+        if (!affixBudget.isEmpty()) {
+          log(
+              "어픽스 예산 축: "
+                  + affixBudget.stream()
+                      .map(point -> "필수" + point.essentialCount() + "=" + point.value())
+                      .collect(java.util.stream.Collectors.joining(" · "))
+                  + " (전체 T1="
+                  + format(displayMetric(finalValues, objective))
+                  + ")");
+        }
+      }
 
       // ── 가정별 성능 매트릭스: 최종 빌드를 적 시나리오 4종 × 버프 off/on 으로 재평가 ──
       // 완성된 XML 의 <Config> 만 바꿔 병렬 재계산(luajit 프로세스는 서로 독립). EHP 는 적/버프 무관이라 DPS 만.
@@ -2031,6 +2318,7 @@ public class PoeOptimizeService {
               poePobEngineService.formatStats(finalValues),
               format(displayMetric(baselineValues, objective)),
               format(displayMetric(finalValues, objective)),
+              affixBudget,
               encodePobCode(finalXml),
               System.currentTimeMillis() - startedAt,
               evalCount.get(),
@@ -2048,7 +2336,9 @@ public class PoeOptimizeService {
                   .map(entry -> entry.getKey() + ":" + entry.getValue())
                   .collect(java.util.stream.Collectors.joining(",")),
               masteryLabels(fixedMasteries, allocated),
-              tattooLabels(fixedTattoos));
+              tattooLabels(fixedTattoos),
+              // 트리 링크(an=)로 도유까지 되돌아가게 — 없으면 트리 화면 수치가 결과보다 약하게 나온다
+              currentAnoint != null ? currentAnoint.nodeId() : null);
 
       Files.createDirectories(resultFile.getParent());
       JsonMapper jsonMapper = JsonMapper.builder().build();
@@ -2856,6 +3146,20 @@ public class PoeOptimizeService {
         }
       }
     }
+    // 장비별 검사에 안 걸렸는데 총 요구치(장비+젬)가 미달이면 젬 요구치 미달이다 — 항목으로 드러낸다
+    for (Map.Entry<String, String> attrEntry :
+        Map.of("str", "Str", "dex", "Dex", "int", "Int").entrySet()) {
+      int required = (int) Math.round(finalValues.getOrDefault("Req" + attrEntry.getValue(), 0d));
+      int actual = (int) Math.round(finalValues.getOrDefault(attrEntry.getValue(), 0d));
+      boolean coveredByItem =
+          unmet.stream()
+              .anyMatch(u -> u.attribute().equals(attrEntry.getKey()) && u.required() >= required);
+      if (required > actual && !coveredByItem) {
+        unmet.add(
+            new PoeOptimizeResult.UnmetRequirement(
+                "Skill gem total", "스킬 젬 포함 총 요구치", attrEntry.getKey(), required, actual));
+      }
+    }
     if (!unmet.isEmpty()) {
       log(
           "⚠ 속성 부족으로 장착 불가한 장비 "
@@ -2881,6 +3185,176 @@ public class PoeOptimizeService {
    * 후보 장비가 그 빌드의 속성으로 실제 장착 가능한지. 유니크는 자체 요구치를, 레어는 <b>베이스 아이템의 요구치</b>를 본다 (레어는 우리가 베이스+모드로 조합하므로
    * 요구치는 베이스가 결정한다 — 예: 우주의 판금 갑옷 = 힘 180).
    */
+  /**
+   * 속성 요구치 보정 — 부족한 속성을 레어 장비의 접미어(+60 속성 T1)로 채운다.
+   *
+   * <p>대상 레어는 슬롯 순서대로 첫 후보(속성 패밀리 허용 슬롯 && 같은 속성 미보유). 접미어 3개가 차 있으면 마지막(키워드 점수 최하) 접미어를 교체하고, 여유가
+   * 있으면 추가한다 — 3접두+3접미 합법성이 유지된다. 이미 이 보정으로 넣은 속성 접미어는 교체 대상에서 제외(핑퐁 방지).
+   */
+  private void repairAttributeShortfalls(
+      Map<Slot, Equipped> items,
+      PoeGem gem,
+      List<PoeGem> supports,
+      String className,
+      String ascendancy,
+      Set<Integer> ascendancyNodes,
+      Set<Integer> allocated,
+      Map<Integer, PoeUniqueItem> jewels) {
+    Set<String> attrKeys = Set.of("str", "dex", "int");
+    for (int guard = 0; guard < 6; guard++) {
+      Map<String, Double> values =
+          poePobEngineService.calculateValues(
+              buildXml(
+                  gem, supports, className, ascendancy, ascendancyNodes, allocated, items, jewels));
+      evalCount.incrementAndGet();
+      // 가장 부족한 속성 하나 — PoB 총계(ReqStr/Dex/Int = 장비+젬 합산)로 판정한다.
+      // 아이템별 검사만 쓰면 스킬 젬 요구치(연쇄 번개 20레벨 = 지능 111)가 그물을 빠져나간다.
+      String worstAttr = null;
+      int worstShort = 0;
+      for (Map.Entry<String, String> attrEntry :
+          Map.of("str", "Str", "dex", "Dex", "int", "Int").entrySet()) {
+        int shortfall =
+            (int)
+                Math.ceil(
+                    values.getOrDefault("Req" + attrEntry.getValue(), 0d)
+                        - values.getOrDefault(attrEntry.getValue(), 0d));
+        if (shortfall > worstShort) {
+          worstShort = shortfall;
+          worstAttr = attrEntry.getKey();
+        }
+      }
+      if (worstAttr == null) {
+        return; // 전부 충족
+      }
+      final String attr = worstAttr; // 람다 캡처용
+      // 우선순위: ① 빈 슬롯에 속성 레어 신규 장착(기존 모드 손실 0) ② 기존 레어에 추가/교체(+60 단일)
+      // ③ 전체 속성(+35, 장신구) — 실측에서 +60×2 뒤 1 부족으로 멈춘 사례의 잔여분 커버.
+      Slot targetSlot = null;
+      Slot emptySlot = null;
+      PoeModPoolDataService.ModFamily attrFamily = null;
+      for (String familyKey : List.of(attr, "allattr")) {
+        PoeModPoolDataService.ModFamily candidate = null;
+        for (PoeModPoolDataService.ModFamily family : poeModPoolDataService.families()) {
+          if (family.key().equals(familyKey)) {
+            candidate = family;
+            break;
+          }
+        }
+        if (candidate == null) {
+          continue;
+        }
+        final PoeModPoolDataService.ModFamily fam = candidate;
+        // ① 비어 있는 슬롯(오프핸드 제외 — 양손 무기와 충돌)
+        for (Slot slot : Slot.values()) {
+          if (items.containsKey(slot)
+              || slot.modSlots.isEmpty()
+              || slot == Slot.OFFHAND
+              || slot.rareBase == null) {
+            continue;
+          }
+          if (fam.slots().contains(slot.modSlots.get(0))) {
+            emptySlot = slot;
+            attrFamily = fam;
+            break;
+          }
+        }
+        if (emptySlot != null) {
+          break;
+        }
+        // ② 기존 레어
+        for (Map.Entry<Slot, Equipped> entry : items.entrySet()) {
+          if (entry.getValue().isUnique() || entry.getKey().modSlots.isEmpty()) {
+            continue;
+          }
+          String category = entry.getKey().modSlots.get(0);
+          if (!fam.slots().contains(category)) {
+            continue;
+          }
+          boolean hasIt =
+              entry.getValue().rare().families().stream().anyMatch(f -> f.key().equals(fam.key()));
+          if (!hasIt) {
+            targetSlot = entry.getKey();
+            attrFamily = fam;
+            break;
+          }
+        }
+        if (targetSlot != null) {
+          break;
+        }
+      }
+      if (emptySlot != null) {
+        items.put(
+            emptySlot, Equipped.ofRare(new RareItem(emptySlot.rareBase, List.of(attrFamily), 0.0)));
+        log(
+            "속성 보정: "
+                + emptySlot.ko
+                + " 신규 레어(+"
+                + attrFamily.key()
+                + ") 장착 (부족 "
+                + worstShort
+                + ")");
+        continue;
+      }
+      if (targetSlot == null) {
+        log("속성 보정 불가 — " + worstAttr + " " + worstShort + " 부족인데 붙일 레어 슬롯이 없음(전 슬롯 유니크/보유)");
+        return;
+      }
+      RareItem rare = items.get(targetSlot).rare();
+      List<PoeModPoolDataService.ModFamily> families = new ArrayList<>(rare.families());
+      long suffixCount = families.stream().filter(f -> "suffix".equals(f.gen())).count();
+      String action;
+      if (suffixCount < 3) {
+        families.add(attrFamily);
+        action = "추가";
+      } else {
+        // 마지막 접미어(키워드 점수 최하)를 교체 — 단 이 보정이 넣은 속성 접미어는 건너뛴다(핑퐁 방지)
+        int replaceAt = -1;
+        for (int i = families.size() - 1; i >= 0; i--) {
+          if ("suffix".equals(families.get(i).gen()) && !attrKeys.contains(families.get(i).key())) {
+            replaceAt = i;
+            break;
+          }
+        }
+        if (replaceAt < 0) {
+          log("속성 보정 불가 — " + targetSlot.ko + " 접미어가 전부 속성(더 갈 곳 없음)");
+          return;
+        }
+        action = families.get(replaceAt).key() + " 교체";
+        families.set(replaceAt, attrFamily);
+      }
+      items.put(
+          targetSlot,
+          Equipped.ofRare(
+              new RareItem(
+                  rare.baseType(),
+                  List.copyOf(families),
+                  rare.tierFraction(),
+                  null, // perFractions 는 패밀리 인덱스 기반이라 구성이 바뀌면 무효 — 균일 분수로 재설정
+                  rare.implicitLines(),
+                  rare.implicitLinesKo())));
+      log(
+          "속성 보정: "
+              + targetSlot.ko
+              + " "
+              + action
+              + " → +"
+              + worstAttr
+              + " (부족 "
+              + worstShort
+              + ")");
+    }
+  }
+
+  /** 장착한 **모든** 장비의 속성 요구치가 계산값으로 충족되는가 — 문신 등 속성을 깎는 후행 단계의 검증기. */
+  private boolean allRequirementsMet(Map<Slot, Equipped> items, Map<String, Double> values) {
+    for (Equipped equipped : items.values()) {
+      if (!meetsRequirements(equipped, values)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   private boolean meetsRequirements(Equipped candidate, Map<String, Double> values) {
     if (candidate == null) {
       return true;
@@ -3454,8 +3928,12 @@ public class PoeOptimizeService {
     for (Map.Entry<Slot, Equipped> entry : items.entrySet()) {
       itemId++;
       Equipped equipped = entry.getValue();
+      // 유니크도 엘드리치 부여 대상 슬롯이면 임플리싯을 받는다 — 레어에만 주면 그 슬롯에서 레어가 부당하게 유리해진다.
+      // (아뮬렛 도유는 탐색이 끝난 뒤 withAnoint 로 얹는다 — 후보를 실제로 평가해 고르므로 여기서 붙이지 않는다)
       String itemText =
-          equipped.isUnique() ? uniqueItemText(equipped.unique()) : rareItemText(equipped.rare());
+          equipped.isUnique()
+              ? uniqueItemText(equipped.unique(), eldritchForSlot(entry.getKey()))
+              : rareItemText(equipped.rare());
       xml.append("<Item id=\"").append(itemId).append("\">\n").append(itemText).append("</Item>");
       slots
           .append("<Slot name=\"")
@@ -3514,11 +3992,27 @@ public class PoeOptimizeService {
   private String configBlock(String scenario, boolean buffs) {
     StringBuilder config = new StringBuilder();
     config.append("<Config><Input name=\"enemyIsBoss\" string=\"").append(scenario).append("\"/>");
+    // 참고: 보스 적 저항(Boss 40/25, Pinnacle·Uber 50/30)은 enemyIsBoss placeholder 경로로 헤드리스에서도
+    // 정상 반영된다 — 엔진 격리 실험으로 확인(화염 스킬: res0 5,022 / Pinnacle 2,511 = 명시 Input 50 과 동일).
+    // 순수 물리 빌드(별의 탄생 등)는 원소 저항 무관이라 None/Boss/Pinnacle DPS 가 같게 나오는 것이 **정상**이다.
     if (buffs) {
       config
           .append("<Input name=\"usePowerCharges\" boolean=\"true\"/>")
           .append("<Input name=\"useFrenzyCharges\" boolean=\"true\"/>")
-          .append("<Input name=\"buffOnslaught\" boolean=\"true\"/>");
+          .append("<Input name=\"useEnduranceCharges\" boolean=\"true\"/>") // 실측 DPS +2.17%, EHP
+          // +14.24%
+          .append("<Input name=\"buffOnslaught\" boolean=\"true\"/>")
+          // 격노/방어상승은 엔진이 스스로 게이트한다 — 원천(광전사 전직, 보조젬 등) 없는 빌드에선 0.00% 실측.
+          // 원천이 있으면 실전처럼 최대치 가정(전투 버프 토글의 기존 철학과 동일).
+          .append("<Input name=\"multiplierRage\" number=\"30\"/>")
+          .append("<Input name=\"buffFortify\" boolean=\"true\"/>")
+          // 적 상태 이상 조건 — 자기 빌드가 걸 수 있을 때만 효과가 붙는다(감전 능력 없는 빌드 0.00% 실측).
+          // 효과 수치 override 는 넣지 않는다(50% 수동 가정 시 +36% — 근거 없는 낙관이 된다).
+          .append("<Input name=\"conditionEnemyShocked\" boolean=\"true\"/>")
+          .append("<Input name=\"conditionEnemyChilled\" boolean=\"true\"/>")
+          .append("<Input name=\"conditionEnemyIgnited\" boolean=\"true\"/>")
+          .append("<Input name=\"conditionEnemyPoisoned\" boolean=\"true\"/>")
+          .append("<Input name=\"conditionEnemyBleeding\" boolean=\"true\"/>");
     }
     config.append("</Config>");
     return config.toString();
@@ -3700,7 +4194,31 @@ public class PoeOptimizeService {
       double tierFraction,
       boolean defensive) {
     record Scored(PoeModPoolDataService.ModFamily family, int score) {}
-    List<PoeModPoolDataService.ModFamily> pool = poeModPoolDataService.familiesForSlot(category);
+    // 방어구는 속성 변형(str/dex/int)마다 붙는 **로컬 방어 모드가 다르다**(방어도=힘, 회피=민첩, ES=지능).
+    // 큐레이션 풀은 슬롯 단위라 구분이 없어, 그대로 두면 지능 베이스(소서러 장갑)에 "방어도 +500" 같은
+    // 게임에 존재할 수 없는 아이템이 계산된다. 직업 주 속성에 맞는 베이스를 고르고 그 변형의 로컬만 남긴다.
+    Map<String, String> variantBases = ARMOUR_VARIANT_BASE.getOrDefault(category, Map.of());
+    String wanted = defenceTypeFor(currentClassName);
+    // 그 슬롯에 원하는 변형 베이스가 없으면(방패의 회피) 방어도 → ES 순으로 폴백
+    String variantBase = variantBases.get(wanted);
+    if (variantBase == null) {
+      variantBase = variantBases.getOrDefault("armour", variantBases.get("es"));
+    }
+    final String chosenBase = variantBase != null ? variantBase : rareBase;
+    rareBase = chosenBase;
+    // 합법성은 **고른 베이스 자체**로 게임 데이터에 물어본다 — 방어도/회피/ES 뿐 아니라 모든 모드가 속성 변형
+    // (힘/민첩/지능)마다 붙고 안 붙고가 갈리므로, 하드코딩 대신 전체 풀(mods.json)의 (클래스×변형) 스폰 여부로
+    // 판정한다. 베이스를 못 찾거나 그 풀을 모르면 판정을 보류해 기존 동작을 유지한다.
+    PoeBaseItem chosenBaseItem = poeBaseItemDataService.findByName(chosenBase).orElse(null);
+    final String baseClass = chosenBaseItem != null ? chosenBaseItem.itemClass() : null;
+    final String baseVariant = chosenBaseItem != null ? attributeVariantOf(chosenBaseItem) : null;
+    List<PoeModPoolDataService.ModFamily> pool =
+        poeModPoolDataService.familiesForSlot(category).stream()
+            .filter(
+                f ->
+                    baseClass == null
+                        || poeModDataService.canSpawn(baseClass, baseVariant, f.pattern()))
+            .toList();
     List<PoeModPoolDataService.ModFamily> prefixPool =
         pool.stream().filter(f -> "prefix".equals(f.gen())).toList();
     List<PoeModPoolDataService.ModFamily> suffixPool =
@@ -3749,7 +4267,125 @@ public class PoeOptimizeService {
     if (chosen.isEmpty()) {
       return null;
     }
-    return new RareItem(rareBase, chosen, tierFraction);
+    // 엘드리치 임플리싯(총주교 1 + 포식자 1) — 방어구/목걸이 슬롯이면 스킬 키워드에 맞는 최상위 티어를 얹는다.
+    EldritchPick eldritch = eldritchImplicits(category, keywords);
+    return new RareItem(rareBase, chosen, tierFraction, null, eldritch.en(), eldritch.ko());
+  }
+
+  /** 엘드리치 임플리싯 선택 결과 — 영문(XML)·한글(표시) 스탯 줄. */
+  private record EldritchPick(List<String> en, List<String> ko) {}
+
+  // 모드 풀 슬롯 카테고리 → 엘드리치 아이템 클래스. 엘드리치 대상 아닌 슬롯은 없음.
+  private static final Map<String, String> ELDRITCH_CLASS_BY_CATEGORY =
+      Map.of(
+          "body", "Body Armour",
+          "helmet", "Helmet",
+          "gloves", "Gloves",
+          "boots", "Boots",
+          "amulet", "Amulet");
+
+  /**
+   * 이 슬롯에 붙일 엘드리치 임플리싯 영문 스탯 줄 — 총주교 1개 + 포식자 1개(각 팩션에서 스킬 키워드 점수 최상위 계열의 최상위 티어). 대상 슬롯이 아니거나 데이터가
+   * 없으면 빈 목록.
+   */
+  private EldritchPick eldritchImplicits(String category, List<String> keywords) {
+    String itemClass = ELDRITCH_CLASS_BY_CATEGORY.get(category);
+    if (itemClass == null || !poeEldritchDataService.hasData()) {
+      return new EldritchPick(List.of(), List.of());
+    }
+    PoeEldritchDataService.ClassEldritch pools = poeEldritchDataService.forItemClass(itemClass);
+    if (pools == null) {
+      return new EldritchPick(List.of(), List.of());
+    }
+    List<String> en = new ArrayList<>();
+    List<String> ko = new ArrayList<>();
+    for (var pool : List.of(pools.exarch(), pools.eater())) {
+      var tier = bestEldritchTier(pool, keywords);
+      if (tier != null) {
+        en.addAll(tier.en());
+        ko.addAll(tier.ko());
+      }
+    }
+    return new EldritchPick(en, ko);
+  }
+
+  /** 한 팩션 계열들에서 키워드 점수 최상위 계열의 최상위 티어(tiers[0]=강함). 점수 0이면(무관) null. */
+  private PoeEldritchDataService.EldritchTier bestEldritchTier(
+      List<PoeEldritchDataService.EldritchFamily> families, List<String> keywords) {
+    PoeEldritchDataService.EldritchTier best = null;
+    int bestScore = 0;
+    for (PoeEldritchDataService.EldritchFamily family : families) {
+      if (family.tiers().isEmpty()) {
+        continue;
+      }
+      int s = score(family.tiers().get(0).en(), keywords);
+      if (s > bestScore) {
+        bestScore = s;
+        best = family.tiers().get(0);
+      }
+    }
+    return best;
+  }
+
+  /**
+   * 방어구 슬롯의 속성 변형별 레어 베이스 — 로컬 방어 모드는 변형에만 붙으므로(방어도=힘/회피=민첩/ES=지능) 쓰려는 방어 타입에 맞는 베이스를 골라야 게임에 실재하는
+   * 아이템이 된다. 동시에 그 직업이 실제로 장착 가능한 요구 속성이 된다.
+   */
+  private static final Map<String, Map<String, String>> ARMOUR_VARIANT_BASE =
+      Map.of(
+          "body",
+              Map.of(
+                  "armour", "Glorious Plate", "evasion", "Assassin's Garb", "es", "Vaal Regalia"),
+          "helmet",
+              Map.of("armour", "Royal Burgonet", "evasion", "Lion Pelt", "es", "Hubris Circlet"),
+          "gloves",
+              Map.of(
+                  "armour", "Titan Gauntlets", "evasion", "Slink Gloves", "es", "Sorcerer Gloves"),
+          "boots",
+              Map.of("armour", "Titan Greaves", "evasion", "Slink Boots", "es", "Sorcerer Boots"),
+          // 방패는 순수 민첩(회피) 베이스가 없다 — 힘/지능만 두고, 회피 요청은 아래에서 힘으로 폴백시킨다.
+          // (값이 겹치면 베이스→방어타입 역산이 비결정적이 되므로 중복 값을 두지 않는다)
+          "shield", Map.of("armour", "Colossal Tower Shield", "es", "Titanium Spirit Shield"));
+
+  /** 직업 주 속성 → 방어 타입. 그 직업이 실제로 입는 방어구 계열과 일치시킨다(미지/사이온은 ES). */
+  private static String defenceTypeFor(String className) {
+    if (className == null) {
+      return "es";
+    }
+    return switch (className) {
+      case "Marauder", "Duelist", "Templar" -> "armour";
+      case "Ranger", "Shadow" -> "evasion";
+      default -> "es"; // Witch, Scion, 미지정
+    };
+  }
+
+  /** 베이스의 속성 변형 태그를 요구 속성으로 추론한다 — mods.json 의 (클래스×변형) 풀 키와 맞춘다. 요구 속성이 없으면 빈 문자열(변형 없는 슬롯). */
+  private static String attributeVariantOf(PoeBaseItem item) {
+    boolean str = item.reqStr() > 0;
+    boolean dex = item.reqDex() > 0;
+    boolean intel = item.reqInt() > 0;
+    if (str && dex && intel) {
+      return "str_dex_int_armour";
+    }
+    if (str && dex) {
+      return "str_dex_armour";
+    }
+    if (str && intel) {
+      return "str_int_armour";
+    }
+    if (dex && intel) {
+      return "dex_int_armour";
+    }
+    if (str) {
+      return "str_armour";
+    }
+    if (dex) {
+      return "dex_armour";
+    }
+    if (intel) {
+      return "int_armour";
+    }
+    return "";
   }
 
   /** 슬롯의 카테고리/베이스만 뽑아 defensive 레어를 생성 (없으면 null) */
@@ -3771,11 +4407,26 @@ public class PoeOptimizeService {
     return family.keywords() != null && family.keywords().contains(keyword);
   }
 
-  /** 레어 → PoB 아이템 텍스트 (각 패밀리를 tierFraction 위치의 티어 최대 롤로) */
   private String rareItemText(RareItem rare) {
+    return rareItemText(rare, List.of());
+  }
+
+  /**
+   * 레어 → PoB 아이템 텍스트 (각 패밀리를 tierFraction 위치의 티어 최대 롤로)
+   *
+   * @param extraImplicits 임플리싯 뒤에 덧붙일 줄(아뮬렛 도유). Implicits 개수에 함께 반영해야 PoB 가 옳게 읽는다.
+   */
+  private String rareItemText(RareItem rare, List<String> extraImplicits) {
     StringBuilder text = new StringBuilder();
     text.append("Rarity: RARE\nSim Craft\n").append(rare.baseType()).append("\n");
-    text.append("Item Level: 86\nImplicits: 0\n");
+    // 엘드리치 임플리싯이 있으면 Implicits 개수에 반영하고 곧바로 그 줄들을 넣는다(PoB 는 Implicits:N 뒤 N줄을 임플리싯으로 읽는다).
+    List<String> implicits =
+        new ArrayList<>(rare.implicitLines() != null ? rare.implicitLines() : List.of());
+    implicits.addAll(extraImplicits != null ? extraImplicits : List.of());
+    text.append("Item Level: 86\nImplicits: ").append(implicits.size()).append("\n");
+    for (String line : implicits) {
+      text.append(line).append("\n");
+    }
     // 공격 무기엔 명중을 기본 전제로 얹는다(표준 무기 fallback 과 동일 조건).
     // accuracyLocal 패밀리가 생긴 뒤 이 줄을 빼고 실측했더니 DPS 6,490,767 → 4,008,572(−38%) 였다 —
     // 크래프트로 얻는 명중(+360)은 턱없이 부족한데 fallback 무기엔 +2000 이 남아 비교가 불공정해진다.
@@ -3783,8 +4434,8 @@ public class PoeOptimizeService {
     if (isAttackWeaponBase(rare.baseType())) {
       text.append("+2000 to Accuracy Rating\n");
     }
-    for (PoeModPoolDataService.ModFamily family : rare.families()) {
-      for (String line : tierAt(family, rare.tierFraction()).en()) {
+    for (int i = 0; i < rare.families().size(); i++) {
+      for (String line : tierAt(rare.families().get(i), rare.fractionFor(i)).en()) {
         text.append(line).append("\n");
       }
     }
@@ -3958,6 +4609,43 @@ public class PoeOptimizeService {
   }
 
   /**
+   * 트리 평가용 도유 — 아뮬렛 아이템의 {@code Allocates <노터블>} 로 전달한다(PoB 의 도유 시맨틱).
+   *
+   * <p>노드 id 를 nodes 목록에 끼우는 방식은 안 된다: PoB 가 시작점과 연결되지 않은 노드를 로드시 **해제
+   * 처리**해서(BuildAllDependsAndPaths) 스탯에 반영되지 않는다(실측: 고립 노터블 38706 을 nodes 에 넣어도 생명력 불변). 베이스는 임플리싯
+   * 줄을 안 넣으므로 부가 스탯 없음.
+   */
+  private String withAnointAmulet(String xml, Integer anointNodeId) {
+    if (anointNodeId == null) {
+      return xml;
+    }
+    PoeTreeGraphService.TreeNode node = poeTreeGraphService.node(anointNodeId);
+    if (node == null || node.anoint() == null || node.anoint().isEmpty()) {
+      return xml; // 도유 불가 노드 id — 조용히 무시(손댄 URL)
+    }
+    int maxId = 0;
+    java.util.regex.Matcher m =
+        java.util.regex.Pattern.compile("<Item id=\"(\\d+)\">").matcher(xml);
+    while (m.find()) {
+      maxId = Math.max(maxId, Integer.parseInt(m.group(1)));
+    }
+    int itemId = maxId + 1;
+    String item =
+        "<Item id=\""
+            + itemId
+            + "\">"
+            + System.lineSeparator()
+            + "Rarity: MAGIC\nSim Anoint Amulet\nJade Amulet\nItem Level: 86\nImplicits: 0\nAllocates "
+            + node.name()
+            + "\n</Item>";
+    // 슬롯은 반드시 <ItemSet> **안**에 — 느슨한 Slot(Items 직속)은 PoB 가 무시해서
+    // 아뮬렛이 장착되지 않고 GrantedPassive 도 조용히 사라진다(디버그로 확정한 함정).
+    String slot = "<Slot name=\"Amulet\" itemId=\"" + itemId + "\"/>";
+    return xml.replace("<Items activeItemSet=\"1\">", "<Items activeItemSet=\"1\">" + item)
+        .replace("<ItemSet id=\"1\">", "<ItemSet id=\"1\">" + slot);
+  }
+
+  /**
    * 문신(패시브 교체)을 XML 조립 후 Spec 에 끼운다 — PoB 는 {@code <Overrides><Override nodeId dn/></Overrides>} 를
    * 읽어 그 노드를 {@code tree.tattoo.nodes[dn]} 으로 통째로 갈아끼운다.
    *
@@ -4014,8 +4702,14 @@ public class PoeOptimizeService {
   /** 레어의 한국어 모드 라인 (표시용) */
   private List<String> rareModLinesKo(RareItem rare) {
     List<String> lines = new ArrayList<>();
-    for (PoeModPoolDataService.ModFamily family : rare.families()) {
-      lines.addAll(tierAt(family, rare.tierFraction()).ko());
+    // 엘드리치 임플리싯(총주교/포식자)을 맨 위에 — 게임에서도 임플리싯이 익스플리싯 위에 뜬다
+    if (rare.implicitLinesKo() != null) {
+      for (String line : rare.implicitLinesKo()) {
+        lines.add("(엘드리치) " + line);
+      }
+    }
+    for (int i = 0; i < rare.families().size(); i++) {
+      lines.addAll(tierAt(rare.families().get(i), rare.fractionFor(i)).ko());
     }
     // rareItemText 가 공격 무기에 얹는 명중 전제도 함께 보여준다 — XML 엔 들어가는데 목록에만 없으면
     // 화면의 모드 합이 실제 계산과 달라진다(표시=실제 원칙).
@@ -4023,6 +4717,32 @@ public class PoeOptimizeService {
       lines.add("명중 +2000 (시뮬 가정)");
     }
     return lines;
+  }
+
+  /** 어픽스 예산: 최적화기가 고른 순서(우선순위) 앞 essentialCount 개는 T1, 나머지는 fillerFraction 티어. */
+  private static final int BUDGET_ESSENTIAL = 3;
+
+  private static final double BUDGET_FILLER = 0.5;
+
+  /**
+   * 레어를 "현실적 제작" 변형으로 — 필수(우선순위 상위) 몇 개만 최상위 티어, 나머지는 중위 티어. 최적화기의 기본 가정("모든 모드 T1")은 과하게 낙관적이라, 보통
+   * 확보하는 필수 옵션 수만 T1 로 잡은 값을 함께 보여주기 위한 것.
+   */
+  private RareItem budgetVariant(RareItem rare, int essentialCount, double fillerFraction) {
+    if (rare.families().isEmpty()) {
+      return rare;
+    }
+    List<Double> fractions = new ArrayList<>();
+    for (int i = 0; i < rare.families().size(); i++) {
+      fractions.add(i < essentialCount ? 0.0 : fillerFraction);
+    }
+    return new RareItem(
+        rare.baseType(),
+        rare.families(),
+        0.0,
+        fractions,
+        rare.implicitLines(),
+        rare.implicitLinesKo());
   }
 
   /** tierFraction(0=best..1=worst) → 해당 패밀리 티어 (tiers 는 best-first) */
@@ -4066,21 +4786,26 @@ public class PoeOptimizeService {
   private PoeOptimizeResult.ItemPick itemPick(Slot slot, Equipped equipped) {
     if (equipped.isUnique()) {
       PoeUniqueItem unique = equipped.unique();
+      // XML 에 붙는 엘드리치 임플리싯을 표시에도 함께 — 없으면 화면의 모드 합이 실제 계산과 달라진다(표시=실제)
+      List<String> lines = new ArrayList<>();
+      for (String line : anointLineKo(slot)) {
+        lines.add(line);
+      }
+      for (String line : eldritchForSlotKo(slot)) {
+        lines.add("(엘드리치) " + line);
+      }
+      lines.addAll(uniqueModLines(unique));
       return new PoeOptimizeResult.ItemPick(
-          slot.pobName,
-          slot.ko,
-          "UNIQUE",
-          unique.slug(),
-          unique.name(),
-          unique.nameKo(),
-          uniqueModLines(unique));
+          slot.pobName, slot.ko, "UNIQUE", unique.slug(), unique.name(), unique.nameKo(), lines);
     }
     RareItem rare = equipped.rare();
     // 레어도 베이스 한글명을 채운다 — 유니크만 한글로 나오고 레어는 영문이라 목록이 뒤죽박죽이었다
     String baseNameKo =
         poeBaseItemDataService.findByName(rare.baseType()).map(PoeBaseItem::nameKo).orElse(null);
+    List<String> rareLines = new ArrayList<>(anointLineKo(slot));
+    rareLines.addAll(rareModLinesKo(rare));
     return new PoeOptimizeResult.ItemPick(
-        slot.pobName, slot.ko, "RARE", null, rare.baseType(), baseNameKo, rareModLinesKo(rare));
+        slot.pobName, slot.ko, "RARE", null, rare.baseType(), baseNameKo, rareLines);
   }
 
   /** 고유 아이템 표시용 모드 라인 (임플리싯 + 익스플리싯, 한국어 우선·없으면 영문). 레어와 표시 일관성. */
@@ -4102,7 +4827,93 @@ public class PoeOptimizeService {
   }
 
   /** 고유 아이템 → PoB 아이템 텍스트 (모드 범위 "(20-30)" 표기는 PoB 파서가 그대로 이해한다) */
+  /** 이 슬롯이 엘드리치 대상이면 이번 잡 키워드로 고른 총주교/포식자 임플리싯 영문 줄, 아니면 빈 목록. */
+  private List<String> eldritchForSlot(Slot slot) {
+    if (slot.modSlots.isEmpty()) {
+      return List.of();
+    }
+    return eldritchImplicits(slot.modSlots.get(0), currentKeywords).en();
+  }
+
+  /** 아뮬렛에 실제로 얹은 도유 — 결과 표시용(표시=실제). 도유가 없거나 다른 슬롯이면 빈 목록. */
+  private List<String> anointLineKo(Slot slot) {
+    AnointPick pick = currentAnoint;
+    return slot == Slot.AMULET && pick != null
+        ? List.of("(도유) " + pick.nameKo() + " 할당")
+        : List.of();
+  }
+
+  /** eldritchForSlot 의 한글판 — 결과 표시용. */
+  private List<String> eldritchForSlotKo(Slot slot) {
+    if (slot.modSlots.isEmpty()) {
+      return List.of();
+    }
+    return eldritchImplicits(slot.modSlots.get(0), currentKeywords).ko();
+  }
+
+  /** 아뮬렛 도유 선택 결과 — 노터블 영문/한글 이름. */
+  private record AnointPick(int nodeId, String name, String nameKo) {}
+
+  /**
+   * 도유 후보 — 도유 가능 노터블 **전부**(470개), id 오름차순(결정성).
+   *
+   * <p>키워드 점수 컷은 두 번 실패했다: ① 점수 1위 "공격적인 보루"는 조건절("방패를 들고 있는 동안")을 못 읽어 기여 0.00%, ② 상위 24 컷은 진짜 1위
+   * "반사신경"(+2.65%, 점수순위 45)을 놓쳤고, EHP 3위 "영향력"(오라 효과 — 방어 오라 간접 증폭)은 점수 0 이라 컷을 아무리 넓혀도 안 잡힌다. 전수
+   * 실평가만이 정답을 보장한다(전수 470건 실측 213초/HTTP·8병렬 — 인프로세스 풀은 더 빠르다, 1회성).
+   */
+  private List<PoeTreeGraphService.TreeNode> anointCandidates() {
+    if (!poeTreeGraphService.hasData()) {
+      return List.of();
+    }
+    return poeTreeGraphService.anointableNotables(); // 이미 id 오름차순
+  }
+
+  /**
+   * 완성된 빌드 XML 의 아뮬렛에 도유 한 줄을 얹는다 — PoB 는 {@code Allocates <노터블>} 을 GrantedPassive 로 읽는다.
+   *
+   * <p>줄을 넣으면 그 아이템의 {@code Implicits: N} 도 함께 올려야 PoB 가 뒤 줄들을 임플리싯으로 오독하지 않는다. 아이템 블록 단위로만 손대므로 병렬
+   * 평가에서 안전하다(공유 상태 없음).
+   */
+  private static String withAnoint(String xml, String notableName) {
+    java.util.regex.Matcher slot =
+        java.util.regex.Pattern.compile("<Slot name=\"Amulet\" itemId=\"(\\d+)\"").matcher(xml);
+    if (!slot.find()) {
+      return xml;
+    }
+    String itemId = slot.group(1);
+    java.util.regex.Matcher item =
+        java.util.regex.Pattern.compile(
+                "<Item id=\"" + itemId + "\">(.*?)</Item>", java.util.regex.Pattern.DOTALL)
+            .matcher(xml);
+    if (!item.find()) {
+      return xml;
+    }
+    String body = item.group(1);
+    java.util.regex.Matcher implicits =
+        java.util.regex.Pattern.compile("Implicits: (\\d+)\n").matcher(body);
+    if (!implicits.find()) {
+      return xml;
+    }
+    int count = Integer.parseInt(implicits.group(1)) + 1;
+    String newBody =
+        body.substring(0, implicits.start())
+            + "Implicits: "
+            + count
+            + "\nAllocates "
+            + notableName
+            + "\n"
+            + body.substring(implicits.end());
+    return xml.substring(0, item.start(1)) + newBody + xml.substring(item.end(1));
+  }
+
   private String uniqueItemText(PoeUniqueItem item) {
+    return uniqueItemText(item, List.of());
+  }
+
+  /**
+   * @param extraImplicits 유니크 자체 임플리싯 뒤에 덧붙일 줄(엘드리치). Implicits 개수에 함께 반영해야 PoB 가 옳게 읽는다.
+   */
+  private String uniqueItemText(PoeUniqueItem item, List<String> extraImplicits) {
     StringBuilder text = new StringBuilder();
     text.append("Rarity: UNIQUE\n")
         .append(item.name())
@@ -4114,8 +4925,12 @@ public class PoeOptimizeService {
     if (item.radius() != null && !item.radius().isBlank()) {
       text.append("Radius: ").append(item.radius()).append("\n");
     }
-    text.append("Implicits: ").append(item.implicits().size()).append("\n");
+    List<String> extras = extraImplicits != null ? extraImplicits : List.of();
+    text.append("Implicits: ").append(item.implicits().size() + extras.size()).append("\n");
     for (String implicit : item.implicits()) {
+      text.append(implicit).append("\n");
+    }
+    for (String implicit : extras) {
       text.append(implicit).append("\n");
     }
     for (String explicit : item.explicits()) {
@@ -4191,7 +5006,8 @@ public class PoeOptimizeService {
       Map<Integer, Integer> masteryEffects,
       Map<Integer, String> jewelSlugs,
       List<ClusterSpec> clusterSpecs,
-      Map<Integer, String> tattooDns) {
+      Map<Integer, String> tattooDns,
+      Integer anointNodeId) {
     String className =
         CLASS_IDS.entrySet().stream()
             .filter(e -> e.getValue() == classId)
@@ -4263,6 +5079,7 @@ public class PoeOptimizeService {
     // 생성 노드 id 가 nodes 에 있어도 주얼이 없으면 그 노드는 존재하지 않는 것으로 취급된다.
     xml = withClusterJewels(xml, clusterSpecs, nodes);
     xml = withTattoos(xml, tattooDns, nodes);
+    xml = withAnointAmulet(xml, anointNodeId);
     PoePobEngineService.EngineResult result = poePobEngineService.recalculate(xml);
     return new TreeEvaluation(
         className,

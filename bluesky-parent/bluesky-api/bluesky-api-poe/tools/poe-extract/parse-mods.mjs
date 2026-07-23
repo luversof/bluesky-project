@@ -60,6 +60,9 @@ const FAMILIES = [
 		slots: ["body", "helmet", "gloves", "boots", "belt", "amulet", "ring"] },
 	{ key: "int", gen: "suffix", pattern: "Intelligence", keywords: ["intelligence"],
 		slots: ["body", "helmet", "gloves", "boots", "belt", "amulet", "ring"] },
+	// 전체 속성 — 단일 속성 슬롯이 소진됐을 때 속성 보정의 2차 수단(장신구에만 스폰)
+	{ key: "allattr", gen: "suffix", pattern: "AllAttributes", keywords: ["attributes"],
+		slots: ["amulet", "ring"] },
 	// 주문 피해 (접두/접미)
 	{ key: "spellDamage", gen: "prefix", pattern: "SpellDamage", keywords: ["spell", "damage"],
 		slots: ["weaponSpell", "amulet", "shield"] },
@@ -106,9 +109,9 @@ const FAMILIES = [
 	{ key: "spellSuppress", gen: "suffix", pattern: "ChanceToSuppressSpells", keywords: ["defence", "spell", "suppress"],
 		slots: ["body", "helmet", "gloves", "boots", "shield"] },
 	// 명중 — 공격 빌드는 명중이 없으면 빗나가서 DPS 가 무의미해진다(무기에 하드코딩해 둔 가정을 데이터로 대체 가능하게).
-	{ key: "accuracyLocal", gen: "suffix", pattern: "LocalIncreasedAccuracy", keywords: ["attack", "accuracy"],
+	{ key: "accuracyLocal", gen: "suffix", pattern: "LocalIncreasedAccuracyNew", keywords: ["attack", "accuracy"],
 		slots: ["weaponAttack"] },
-	{ key: "accuracy", gen: "suffix", pattern: "IncreasedAccuracy", keywords: ["attack", "accuracy"],
+	{ key: "accuracy", gen: "suffix", pattern: "IncreasedAccuracyNew", keywords: ["attack", "accuracy"],
 		slots: ["gloves", "ring", "amulet", "quiver"] },
 	// 무기 로컬 모드 — 무기의 주력 모드는 전역(장신구용) 모드가 아니라 Local* 계열이다.
 	// 이게 빠져 있으면 크래프트 무기가 장신구 티어 수치(물리 15-26 등)만 받아 표준 무기조차 못 이긴다.
@@ -158,6 +161,9 @@ for (const family of FAMILIES) {
 		gen: family.gen,
 		slots: family.slots,
 		keywords: family.keywords,
+		// 게임 모드 Id 패턴 = 전체 풀(mods.json)의 패밀리 키. 시뮬레이터가 "이 베이스 변형에 실제로 붙는
+		// 모드인가"를 하드코딩이 아니라 게임 데이터로 판정하는 데 쓴다.
+		pattern: family.pattern,
 		tiers,
 	});
 }

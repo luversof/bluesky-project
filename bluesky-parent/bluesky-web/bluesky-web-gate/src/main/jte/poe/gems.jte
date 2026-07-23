@@ -53,7 +53,8 @@
 				      hx-get="/poe/htmx/gems"
 				      hx-target="#poeGemList"
 				      hx-swap="innerHTML"
-				      hx-trigger="input changed delay:300ms, change">
+				      hx-trigger="input changed delay:300ms, change"
+			      data-url-sync="true">
 					<input type="search" name="q" value="${initialQ}" class="input input-sm input-bordered w-full sm:w-72" placeholder="${searchPlaceholder}" autocomplete="off" autofocus>
 					<select name="type" class="select select-sm select-bordered">
 						<option value="all" selected="${"all".equals(initialType)}">${typeAllLabel}</option>
@@ -80,6 +81,7 @@
 
 			<!-- 젬 상세 레이어 컨테이너 (htmx 로 채워짐) -->
 			<div id="poeGemDetail"></div>
+			<script src="/js/poe/filterUrl.js" defer></script>
 		</div>
 	`
 )

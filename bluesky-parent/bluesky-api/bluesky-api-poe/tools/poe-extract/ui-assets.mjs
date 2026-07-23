@@ -34,6 +34,27 @@ for (const rarity of ["White", "Magic", "Rare", "Unique", "Gem"]) {
 	WANTED.set(`ItemsSeparator${rarity}`, `itemsseparator${rarity.toLowerCase()}`);
 }
 WANTED.set("ItemsBackgroundGem", "itemsbackgroundgem");
+// 패시브/아틀라스 트리 노드 팝업(툴팁)의 인게임 장식 구분선 — 팝업 자체는 민무늬 암색 패널이고
+// 제목 아래 이 구분선이 유일한 아트다(트리 툴팁 인게임화의 핵심 에셋).
+WANTED.set("PassiveSkillScreenPassivePopupSeparator", "passivepopupseparator");
+
+// 트리 노드 툴팁 프레임 — 인게임 패시브/아틀라스 트리 툴팁이 쓰는 공용 프레임은
+// InGame 이 아니라 Misc/4K 네임스페이스에 있다(TooltipTop=장식 헤더, Middle=본문 타일, Bottom=하단 마감).
+const WANTED_FULL = new Map([
+	["Art/2DArt/UIImages/Misc/4K/TooltipTop", "tooltiptop"],
+	["Art/2DArt/UIImages/Misc/4K/TooltipMiddle", "tooltipmiddle"],
+	["Art/2DArt/UIImages/Misc/4K/TooltipBottom", "tooltipbottom"],
+]);
+// 트리 노드 툴팁의 **타입별 장식 헤더 밴드**(금장 캡 + 암적색 밴드, 인게임 실물) — 4K 판이 없어
+// 기본 InGame 네임스페이스에서 추출한다(사용자 스크린샷 "비전의 의지" = Notable 헤더).
+for (const type of ["Normal", "Notable", "Keystone", "Jewel", "Ascendancy"]) {
+	for (const side of ["Left", "Middle", "Right"]) {
+		WANTED_FULL.set(`Art/2DArt/UIImages/InGame/${type}PassiveHeader${side}`, `psheader${type.toLowerCase()}${side.toLowerCase()}`);
+	}
+}
+for (const side of ["Left", "Middle", "Right"]) {
+	WANTED_FULL.set(`Art/2DArt/UIImages/InGame/PassiveMastery/MasteryPassiveHeader${side}`, `psheadermastery${side.toLowerCase()}`);
+}
 
 // 1) atlas 좌표표 추출 (UTF-16LE)
 const baseConfig = loadConfig();
@@ -44,13 +65,14 @@ const indexText = fs.readFileSync(path.join(FILES_DIR, "art@uiimages1.txt")).toS
 const entries = [];
 for (const line of indexText.split(/\r?\n/)) {
 	const m = line.match(/"([^"]+)"\s+"([^"]+)"\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/);
-	if (!m || !m[1].startsWith(PREFIX)) continue;
-	const out = WANTED.get(m[1].slice(PREFIX.length));
+	if (!m) continue;
+	const out = m[1].startsWith(PREFIX) ? WANTED.get(m[1].slice(PREFIX.length)) : WANTED_FULL.get(m[1]);
 	if (!out) continue;
 	entries.push({ out, tex: m[2].toLowerCase(), x: +m[3], y: +m[4], w: +m[5] - +m[3], h: +m[6] - +m[4] });
 }
-const missing = [...WANTED.values()].filter((o) => !entries.some((e) => e.out === o));
-console.log(`atlas 매칭: ${entries.length}/${WANTED.size}${missing.length ? " (누락: " + missing.join(", ") + ")" : ""}`);
+const wantedCount = WANTED.size + WANTED_FULL.size;
+const missing = [...WANTED.values(), ...WANTED_FULL.values()].filter((o) => !entries.some((e) => e.out === o));
+console.log(`atlas 매칭: ${entries.length}/${wantedCount}${missing.length ? " (누락: " + missing.join(", ") + ")" : ""}`);
 
 // 3) 필요한 4K 시트만 추출 (dds → png 는 pathofexile-dat + ImageMagick 이 처리)
 runExtractor({ ...baseConfig, tables: [], files: [...(baseConfig.files || []), ...new Set(entries.map((e) => e.tex))] });

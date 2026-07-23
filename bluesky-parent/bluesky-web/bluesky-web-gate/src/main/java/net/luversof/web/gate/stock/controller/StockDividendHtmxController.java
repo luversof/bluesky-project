@@ -591,6 +591,42 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         analyticsResult.portfolioYield() != null
             ? analyticsResult.portfolioYield().yieldOnMarketPct()
             : null);
+
+    // 연 환산 수익률: 기간 수익률 × (365 / 기간일수). 기간이 다른 구간끼리 비교할 수 있게 한다.
+    // (배당은 재투자 가정이 없으므로 복리가 아닌 단순 환산을 쓴다.)
+    BigDecimal periodYieldPct =
+        analyticsResult.portfolioYield() != null
+            ? analyticsResult.portfolioYield().yieldOnDailyAverageCostPct()
+            : null;
+    BigDecimal annualizedYieldPct = null;
+    if (periodYieldPct != null && analyticsResult.periodDayCount() > 0) {
+      annualizedYieldPct =
+          periodYieldPct
+              .multiply(BigDecimal.valueOf(365))
+              .divide(
+                  BigDecimal.valueOf(analyticsResult.periodDayCount()), 2, RoundingMode.HALF_UP);
+    }
+    model.addAttribute("portfolioYieldAnnualizedPct", annualizedYieldPct);
+    model.addAttribute("periodDayCount", analyticsResult.periodDayCount());
+
+    // 기간 중 원금 변동(기초 → 기말). 계산에는 이미 일평균으로 반영되지만, 변동 자체를 보여준다.
+    BigDecimal startPrincipal = analyticsResult.periodStartPrincipal();
+    BigDecimal endPrincipal = analyticsResult.periodEndPrincipal();
+    model.addAttribute("periodStartPrincipal", startPrincipal);
+    model.addAttribute("periodEndPrincipal", endPrincipal);
+    BigDecimal principalDelta = null;
+    BigDecimal principalDeltaPct = null;
+    if (startPrincipal != null && endPrincipal != null) {
+      principalDelta = endPrincipal.subtract(startPrincipal);
+      if (startPrincipal.compareTo(BigDecimal.ZERO) > 0) {
+        principalDeltaPct =
+            principalDelta
+                .multiply(BigDecimal.valueOf(100))
+                .divide(startPrincipal, 2, RoundingMode.HALF_UP);
+      }
+    }
+    model.addAttribute("periodPrincipalDelta", principalDelta);
+    model.addAttribute("periodPrincipalDeltaPct", principalDeltaPct);
     model.addAttribute(
         "bestYieldStock",
         analyticsResult.stockYieldRows().isEmpty()
@@ -729,6 +765,9 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     Map<UUID, YieldAccumulator> accountAccumulators = new LinkedHashMap<>();
     Map<Integer, YieldAccumulator> yearlyAccumulators = new LinkedHashMap<>();
     YieldAccumulator portfolioAccumulator = new YieldAccumulator("portfolio", totalPeriodDayCount);
+    // 기간 중 원금 변동 표시용: 포지션별 기초/기말 투입원금을 합산한다.
+    BigDecimal periodStartPrincipal = BigDecimal.ZERO;
+    BigDecimal periodEndPrincipal = BigDecimal.ZERO;
 
     for (Map.Entry<PositionKey, List<DividendView>> entry : dividendsByKey.entrySet()) {
       PositionKey key = entry.getKey();
@@ -814,6 +853,9 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
 
       PeriodPrincipalSummary periodPrincipalSummary =
           summarizePeriodPrincipalCosts(tradeList, periodStartDate, periodEndDate, zone);
+      periodStartPrincipal =
+          periodStartPrincipal.add(nz(periodPrincipalSummary.startPrincipalCost()));
+      periodEndPrincipal = periodEndPrincipal.add(nz(periodPrincipalSummary.endPrincipalCost()));
 
       stockAccumulators
           .computeIfAbsent(
@@ -861,7 +903,10 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         portfolioAccumulator.hasData() ? portfolioAccumulator.toView() : null,
         yearlyYieldRows,
         stockYieldRows,
-        accountYieldRows);
+        accountYieldRows,
+        periodStartPrincipal,
+        periodEndPrincipal,
+        totalPeriodDayCount);
   }
 
   private Map<LocalDate, Map<UUID, HoldingsSnapshotItem>> loadSnapshotsByDate(
@@ -968,6 +1013,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
 
     BigDecimal principalCostSum = BigDecimal.ZERO;
     Map<Integer, BigDecimal> principalCostSumByYear = new LinkedHashMap<>();
+    BigDecimal startPrincipalCost = null;
+    BigDecimal endPrincipalCost = null;
     LocalDate currentDate = periodStartDate;
     while (!currentDate.isAfter(periodEndDate)) {
       while (tradeIndex < tradeList.size()) {
@@ -985,11 +1032,18 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         principalCostSum = principalCostSum.add(principalCost);
         principalCostSumByYear.merge(currentDate.getYear(), principalCost, BigDecimal::add);
       }
+      // 기간 중 원금 변동 표시용: 첫날/마지막날 시점의 투입원금.
+      BigDecimal dayPrincipal = principalCost != null ? principalCost : BigDecimal.ZERO;
+      if (startPrincipalCost == null) {
+        startPrincipalCost = dayPrincipal;
+      }
+      endPrincipalCost = dayPrincipal;
 
       currentDate = currentDate.plusDays(1);
     }
 
-    return new PeriodPrincipalSummary(principalCostSum, principalCostSumByYear);
+    return new PeriodPrincipalSummary(
+        principalCostSum, principalCostSumByYear, startPrincipalCost, endPrincipalCost);
   }
 
   private static LocalDate resolveBasisDate(DividendView dividend, ZoneId zone) {
@@ -1034,11 +1088,20 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       BigDecimal delta,
       UUID stockItemId) {}
 
+  /**
+   * 기간 투입원금 요약.
+   *
+   * <p>principalCostSum 은 일별 투입원금의 합(시간가중 평균의 분자). startPrincipalCost/endPrincipalCost 는 기간
+   * 첫날/마지막날의 투입원금으로, 기간 중 원금이 얼마나 변했는지 보여주는 용도다.
+   */
   private record PeriodPrincipalSummary(
-      BigDecimal principalCostSum, Map<Integer, BigDecimal> principalCostSumByYear) {
+      BigDecimal principalCostSum,
+      Map<Integer, BigDecimal> principalCostSumByYear,
+      BigDecimal startPrincipalCost,
+      BigDecimal endPrincipalCost) {
 
     private static PeriodPrincipalSummary empty() {
-      return new PeriodPrincipalSummary(BigDecimal.ZERO, Map.of());
+      return new PeriodPrincipalSummary(BigDecimal.ZERO, Map.of(), null, null);
     }
   }
 
@@ -1047,10 +1110,14 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       DividendYieldGroupView portfolioYield,
       List<DividendYieldGroupView> yearlyYieldRows,
       List<DividendYieldGroupView> stockYieldRows,
-      List<DividendYieldGroupView> accountYieldRows) {
+      List<DividendYieldGroupView> accountYieldRows,
+      BigDecimal periodStartPrincipal,
+      BigDecimal periodEndPrincipal,
+      long periodDayCount) {
 
     private static DividendAnalyticsResult empty(List<DividendView> dividendViews) {
-      return new DividendAnalyticsResult(dividendViews, null, List.of(), List.of(), List.of());
+      return new DividendAnalyticsResult(
+          dividendViews, null, List.of(), List.of(), List.of(), null, null, 0L);
     }
   }
 

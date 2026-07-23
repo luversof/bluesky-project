@@ -50,7 +50,8 @@
 						<img src="/poe-assets/items/${item.slug()}.png" class="w-12 h-12 object-contain shrink-0 self-start drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" alt="" loading="lazy">
 						<div class="min-w-0 flex-1 space-y-1">
 					<div class="flex items-baseline gap-2">
-						<span class="font-bold truncate" title="${item.name()}">${displayName}</span>
+						<%-- 이름 클릭 → 상세 페이지 --%>
+						<a class="font-bold truncate link-hover" href="/poe/items/${item.slug()}" title="${item.name()}">${displayName}</a>
 						@if(net.luversof.web.gate.poe.PoeText.isKorean())
 							<span class="text-xs text-base-content/40 truncate">${item.name()}</span>
 						@endif
