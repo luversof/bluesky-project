@@ -24,6 +24,7 @@ public record PoeOptimizeResult(
     List<SupportPick> additionalSkills,
     List<Integer> treeNodeIds,
     List<String> treeNotables,
+    List<Integer> treeNotableIds,
     List<SupportPick> jewels,
     List<ItemPick> items,
     // 속성 부족으로 실제 장착이 불가능한 장비
@@ -75,7 +76,8 @@ public record PoeOptimizeResult(
       String slug,
       String name,
       String nameKo,
-      List<String> modLines) {}
+      List<String> modLines,
+      List<String> modLinesEn) {}
 
   /** 레어 슬롯의 티어별 성능 비교 (T1/중간/하위) */
   public record SlotTierCompare(String slot, String slotKo, List<TierRow> rows) {}

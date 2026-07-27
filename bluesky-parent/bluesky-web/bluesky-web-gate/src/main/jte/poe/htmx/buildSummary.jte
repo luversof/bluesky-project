@@ -9,7 +9,8 @@
 	<div class="alert alert-error text-sm">${MessageUtil.getMessage("poe.build.error")}</div>
 @elseif(build != null)
 	!{
-		String classLine = build.classNameKo() + (build.ascendClassName().isEmpty() ? "" : " · " + build.ascendClassNameKo());
+		String classLine = net.luversof.web.gate.poe.PoeText.name(build.classNameKo(), build.className())
+			+ (build.ascendClassName().isEmpty() ? "" : " · " + net.luversof.web.gate.poe.PoeText.name(build.ascendClassNameKo(), build.ascendClassName()));
 		String levelLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.build.summary.level"), build.level());
 		String nodesLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.build.summary.tree.nodes"), build.passiveNodeIds().size());
 		String nodesParam = String.join(",", build.passiveNodeIds().stream().map(String::valueOf).toList());
@@ -60,7 +61,7 @@
 						@for(PoeBuild.SkillGroup skillGroup : build.skillGroups())
 							<div class="flex flex-wrap items-center gap-1.5 rounded-box bg-base-200/40 px-3 py-2${skillGroup.enabled() ? "" : " opacity-45"}">
 								@if(!skillGroup.slot().isEmpty())
-									<span class="badge badge-ghost badge-sm shrink-0">${skillGroup.slotKo()}</span>
+									<span class="badge badge-ghost badge-sm shrink-0">${net.luversof.web.gate.poe.PoeText.name(skillGroup.slotKo(), skillGroup.slot())}</span>
 								@endif
 								@if(!skillGroup.enabled())
 									<span class="badge badge-sm shrink-0">${MessageUtil.getMessage("poe.build.disabled")}</span>
@@ -110,14 +111,14 @@
 								     hx-trigger="mouseenter delay:100ms"
 								     hx-swap="innerHTML">
 									@if(!item.slot().isEmpty())
-										<span class="badge badge-ghost badge-sm shrink-0 w-20 justify-center mt-0.5">${item.slotKo()}</span>
+										<span class="badge badge-ghost badge-sm shrink-0 w-20 justify-center mt-0.5">${net.luversof.web.gate.poe.PoeText.name(item.slotKo(), item.slot())}</span>
 									@endif
 									<div class="min-w-0 text-sm truncate"><span class="font-semibold ${itemColor}">${displayName}</span>@if(!item.baseType().equals(item.name()))<span class="text-xs text-base-content/50 ml-1">${displayBase}</span>@endif</div>
 								</div>
 							@else
 								<div class="poe-hover flex items-start gap-2 rounded-box bg-base-200/40 px-3 py-2 text-left cursor-help hover:bg-base-200 transition-colors">
 									@if(!item.slot().isEmpty())
-										<span class="badge badge-ghost badge-sm shrink-0 w-20 justify-center mt-0.5">${item.slotKo()}</span>
+										<span class="badge badge-ghost badge-sm shrink-0 w-20 justify-center mt-0.5">${net.luversof.web.gate.poe.PoeText.name(item.slotKo(), item.slot())}</span>
 									@endif
 									<div class="min-w-0 text-sm">
 										<div class="truncate"><span class="font-semibold ${itemColor}">${item.name()}</span>@if(!item.baseType().equals(item.name()))<span class="text-xs text-base-content/50 ml-1">${displayBase}</span>@endif</div>

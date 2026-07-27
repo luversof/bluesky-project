@@ -19,7 +19,11 @@ public record PoeModClass(
     /** 이 클래스가 가진 영향력 목록. */
     List<PoeModItemClass.Influence> influences,
     List<NamedFamily> prefixes,
-    List<NamedFamily> suffixes) {
+    List<NamedFamily> suffixes,
+    /** 바알 오브 부패 임플리싯 패밀리(영향력 무관). 없으면 빈 목록/null. */
+    List<NamedFamily> corrupted,
+    /** 플라스크 인챈트(주입/점화 오브) 패밀리 — 플라스크 클래스만. */
+    List<NamedFamily> enchants) {
 
   /** 패밀리 키 + 그 패밀리(gen + 티어 목록). */
   public record NamedFamily(String key, Family family) {}

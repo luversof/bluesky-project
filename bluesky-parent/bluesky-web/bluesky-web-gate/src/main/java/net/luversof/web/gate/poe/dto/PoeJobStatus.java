@@ -19,6 +19,23 @@ public final class PoeJobStatus {
       List<String> logLines,
       PoeOptimizeResult result) {}
 
+  /** {@code GET /api/poe/optimize/history} — 최근 결과 목록(최신순, 목록 표시용 요약). id = 저장 시각 epochMs. */
+  public record OptimizeHistoryEntry(
+      long id,
+      String gemName,
+      String gemNameKo,
+      String className,
+      String classNameKo,
+      String ascendancy,
+      String ascendancyKo,
+      String objective,
+      String scenario,
+      String scenarioKo,
+      boolean combatBuffs,
+      String finalValue,
+      int evalCount,
+      long durationMs) {}
+
   /** {@code GET /api/poe/sim/status} */
   public record Sim(
       boolean available,
@@ -39,9 +56,13 @@ public final class PoeJobStatus {
       String status,
       List<String> logLines) {}
 
-  /** {@code GET /api/poe/extract/version} — 현재 데이터/설정/최신 패치 버전 */
+  /** {@code GET /api/poe/extract/version} — 현재 데이터/설정/최신 패치 버전 + PoB 계산 엔진 버전 */
   public record ExtractVersion(
-      String dataPatch, String configPatch, String latestPatch, boolean upToDate) {}
+      String dataPatch,
+      String configPatch,
+      String latestPatch,
+      boolean upToDate,
+      String pobVersion) {}
 
   /** {@code GET /api/poe/gems/meta} */
   public record GemMeta(String patch, int totalCount) {}

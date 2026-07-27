@@ -55,8 +55,12 @@ public class PoeModDataService {
       List<String> prefixes,
       List<String> suffixes) {}
 
-  /** 풀 하나(클래스|변형) — 접두/접미 패밀리 키. */
-  private record Pool(List<String> prefixes, List<String> suffixes) {}
+  /** 풀 하나(클래스|변형) — 접두/접미 패밀리 키(+영향력 없음 풀엔 부패 임플리싯 키). */
+  private record Pool(
+      List<String> prefixes,
+      List<String> suffixes,
+      List<String> corrupted,
+      List<String> enchants) {}
 
   private record ModData(
       String patch,
@@ -74,7 +78,9 @@ public class PoeModDataService {
       String influence,
       List<ModInfluence> influences,
       List<NamedFamily> prefixes,
-      List<NamedFamily> suffixes) {}
+      List<NamedFamily> suffixes,
+      List<NamedFamily> corrupted,
+      List<NamedFamily> enchants) {}
 
   public record NamedFamily(String key, ModFamily family) {}
 
@@ -175,6 +181,12 @@ public class PoeModDataService {
     Pool pool = data.pools().get(itemClass + "|" + resolvedVariant + "|" + resolvedInfluence);
     List<String> prefixKeys = pool != null ? pool.prefixes() : List.of();
     List<String> suffixKeys = pool != null ? pool.suffixes() : List.of();
+    // 부패 임플리싯은 영향력과 무관 — 추출기가 영향력 없음("") 풀에만 담아두므로 항상 거기서 읽는다
+    Pool basePool = data.pools().get(itemClass + "|" + resolvedVariant + "|");
+    List<String> corruptedKeys =
+        basePool != null && basePool.corrupted() != null ? basePool.corrupted() : List.of();
+    List<String> enchantKeys =
+        basePool != null && basePool.enchants() != null ? basePool.enchants() : List.of();
     return new ClassMods(
         cls.itemClass(),
         cls.name(),
@@ -184,7 +196,9 @@ public class PoeModDataService {
         resolvedInfluence,
         cls.influences(),
         resolve(prefixKeys),
-        resolve(suffixKeys));
+        resolve(suffixKeys),
+        resolve(corruptedKeys),
+        resolve(enchantKeys));
   }
 
   private List<NamedFamily> resolve(List<String> keys) {

@@ -12,6 +12,7 @@
 @param int evalCount = 0
 @param List<String> logLines = java.util.List.of()
 @param PoeOptimizeResult result = null
+@param java.util.Map<String, String> tattooIcons = null
 
 @if(!available)
 	<div class="text-sm text-base-content/50">${MessageUtil.getMessage("poe.sim.unavailable")}</div>
@@ -42,5 +43,9 @@
 @endfor</pre>
 		@endif
 	@endif
-	@template.poe.htmx.simOptimizeResult(result = result)
+	@template.poe.htmx.simOptimizeResult(result = result, tattooIcons = tattooIcons)
+	<%-- 완료 결과가 있으면 최근 결과 목록을 OOB 로 새로 불러온다 — 방금 완료된 실행이 목록에 바로 반영된다. --%>
+	@if(result != null)
+		<div id="poeOptimizeHistory" class="mt-3" hx-swap-oob="true" hx-get="/poe/htmx/sim/optimize/history" hx-trigger="load" hx-swap="innerHTML"></div>
+	@endif
 @endif

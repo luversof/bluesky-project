@@ -5,7 +5,7 @@
 @param boolean ko = false
 
 <%-- 총주교/포식자 각 팩션의 계열 목록 — 접이식 카드, 티어 사다리(강→약) --%>
-<div class="grid gap-4 md:grid-cols-2">
+<div class="grid gap-4 md:grid-cols-2 [&>*]:min-w-0">
 	@for(var pair : java.util.List.of(
 			java.util.Map.entry(eldritch.exarchFaction(), eldritch.exarch()),
 			java.util.Map.entry(eldritch.eaterFaction(), eldritch.eater())))
@@ -23,7 +23,8 @@
 					!{
 						PoeEldritch.Tier top = fam.tiers().isEmpty() ? null : fam.tiers().get(0);
 					}
-					<details class="rounded-lg border border-base-200 bg-base-100 overflow-hidden" data-eldritch-family="${fam.key()}">
+					<%-- data-mod-family 병기 — 페이지 검색 필터(modFilterBar)가 엘드리치 카드에도 걸리게 --%>
+					<details class="rounded-lg border border-base-200 bg-base-100 overflow-hidden" data-eldritch-family="${fam.key()}" data-mod-family="eld-${fam.key()}">
 						<summary class="cursor-pointer select-none px-3 py-2 hover:bg-base-200/50 list-none flex items-center gap-2">
 							<span class="text-xs text-base-content/30 font-mono shrink-0">${fam.tiers().size()}T</span>
 							<span class="min-w-0 flex-1">

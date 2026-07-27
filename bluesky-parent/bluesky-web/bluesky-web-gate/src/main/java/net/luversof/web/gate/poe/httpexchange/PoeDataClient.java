@@ -91,4 +91,26 @@ public interface PoeDataClient {
 
   @GetExchange("/eldritch/for-item-class")
   PoeEldritch eldritchForItemClass(@RequestParam String itemClass);
+
+  /** 에센스 제작 정보 — 비대상 클래스(퀴버 등)는 null. */
+  @GetExchange("/essences/for-item-class")
+  java.util.List<net.luversof.web.gate.poe.dto.PoeEssenceEntry> essencesForItemClass(
+      @RequestParam String itemClass);
+
+  /** 클러스터 주얼 노터블 사전 — 브라우징 페이지용. */
+  @GetExchange("/tree/cluster-notables")
+  java.util.List<net.luversof.web.gate.poe.dto.PoeClusterNotable> clusterNotables();
+
+  /** 문신 목록 — nodeType/attribute 생략 시 전체(브라우징 페이지용). */
+  @GetExchange("/tree/tattoos")
+  java.util.List<net.luversof.web.gate.poe.dto.PoeTattoo> tattoos();
+
+  /** 장인 작업대(벤치크래프트) 모드 — 비대상 클래스는 null. */
+  @GetExchange("/bench/for-item-class")
+  java.util.List<net.luversof.web.gate.poe.dto.PoeBenchEntry> benchForItemClass(
+      @RequestParam String itemClass);
+
+  /** poedb 속성부여식 도유 목록(비싼 성유 우선 정렬) */
+  @GetExchange("/tree/anoints")
+  java.util.List<net.luversof.web.gate.poe.dto.PoeAnointEntry> anoints();
 }

@@ -12,11 +12,16 @@ const RAW = path.join(WORK_DIR, "atlas-tree-raw.json");
 const OUT = path.join(DATA_DIR, "atlas-tree.json");
 const SOURCE_URL = "https://raw.githubusercontent.com/grindinggear/atlastree-export/master/data.json";
 
-if (!fs.existsSync(RAW)) {
+// 아틀라스 트리도 항상 GGG master 에서 최신본을 받는다(RAW 캐시 고정 방지 — parse-tree 와 동일 함정).
+// 다운로드 실패 시에만 기존 캐시로 폴백한다.
+try {
 	console.log("다운로드:", SOURCE_URL);
 	const response = await fetch(SOURCE_URL);
 	if (!response.ok) throw new Error(`다운로드 실패: ${response.status}`);
 	fs.writeFileSync(RAW, await response.text());
+} catch (e) {
+	if (!fs.existsSync(RAW)) throw e; // 캐시조차 없으면 진짜 실패
+	console.warn("아틀라스 트리 다운로드 실패 — 기존 캐시로 폴백:", e.message);
 }
 
 const tree = JSON.parse(fs.readFileSync(RAW, "utf8"));

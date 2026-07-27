@@ -3,7 +3,7 @@
 // 사용법: node unique-icons.mjs  (ImageMagick 필요 — 없으면 이 단계만 건너뜀)
 import fs from "node:fs";
 import path from "node:path";
-import { DATA_DIR, FILES_DIR, findImageMagick, loadConfig, loadTable, runExtractor } from "./paths.mjs";
+import { DATA_DIR, FILES_DIR, TABLES_DIR, findImageMagick, loadConfig, loadTable, runExtractor } from "./paths.mjs";
 
 if (!findImageMagick()) {
 	console.warn("ImageMagick 이 없어 고유 아이콘 단계를 건너뜁니다.");
@@ -17,6 +17,13 @@ if (!fs.existsSync(uniquesFile)) {
 }
 const raw = JSON.parse(fs.readFileSync(uniquesFile, "utf8"));
 const items = Array.isArray(raw) ? raw : raw.items || [];
+
+// parse-anoints 의 부분 재추출(테이블 6종 대체)이 Words/UniqueStashLayout 을 지운다 — 없으면 전체 테이블을 복원한다.
+// (run-all 전체 실행에서 항상 밟는 경로 — 3.29.0.1 원클릭 갱신 2연속 실패의 원인이었다)
+if (["Words", "UniqueStashLayout", "ItemVisualIdentity"].some((t) => !fs.existsSync(path.join(TABLES_DIR, "English", t + ".json")))) {
+	console.log("필요 테이블 누락 — 기본 config 로 전체 테이블 재추출");
+	runExtractor(loadConfig());
+}
 
 const words = loadTable("English", "Words");
 const layout = loadTable("English", "UniqueStashLayout");

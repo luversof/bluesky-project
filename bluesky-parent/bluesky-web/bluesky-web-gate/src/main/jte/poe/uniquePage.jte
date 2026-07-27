@@ -30,6 +30,7 @@
 				<h1 class="text-2xl font-bold">${displayName}</h1>
 				@if(ko)<span class="text-base-content/40 text-sm">${item.name()}</span>@endif
 				<span class="badge badge-ghost">${patchLabel}</span>
+				<a class="btn btn-sm btn-primary btn-outline ml-auto" href="/poe/sim?uniques=${item.slug()}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 유니크로 최적화 →" : "Optimize with this unique →"}</a>
 			</div>
 
 			<div class="flex flex-wrap gap-6 items-start">

@@ -50,7 +50,9 @@ public class PoeOptimizeController {
       @RequestParam(required = false, defaultValue = "") String jewels,
       @RequestParam(required = false, defaultValue = "") String clusters,
       @RequestParam(required = false, defaultValue = "") String tattoos,
-      @RequestParam(required = false, defaultValue = "") String anoint) {
+      @RequestParam(required = false, defaultValue = "") String anoint,
+      // 최근 결과 이력 저장 여부 — 사용자 실행은 true(기본), QA 배터리는 false 로 이력 오염 방지
+      @RequestParam(required = false, defaultValue = "true") boolean saveHistory) {
     return poeOptimizeService.start(
         slug,
         objective,
@@ -65,7 +67,8 @@ public class PoeOptimizeController {
         jewels,
         clusters,
         tattoos,
-        anoint);
+        anoint,
+        saveHistory);
   }
 
   @GetMapping("/status")
@@ -80,5 +83,17 @@ public class PoeOptimizeController {
         poeOptimizeService.evalCount(),
         poeOptimizeService.logTail(),
         poeOptimizeService.lastResult());
+  }
+
+  /** 최근 결과 목록(최신순) — 목록 표시용 요약만. 전체 결과는 {@code /result?id=} 로 조회. */
+  @GetMapping("/history")
+  public List<PoeOptimizeService.OptimizeHistoryEntry> history() {
+    return poeOptimizeService.history();
+  }
+
+  /** 이력 결과 한 건 전체 조회 — 없거나 깨졌으면 null. */
+  @GetMapping("/result")
+  public PoeOptimizeResult result(@RequestParam long id) {
+    return poeOptimizeService.historyResult(id);
   }
 }

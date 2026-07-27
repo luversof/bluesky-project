@@ -63,13 +63,20 @@ public class PoePobEngineService {
           "Armour",
           "Evasion",
           "TotalEHP",
+          // 순생명재생 — 자가연소(정의의 화염류)에서만 계산됨(TotalBuildDegen!=0). 음수면 제 불에 타 죽는 지속불가 빌드.
+          "NetLifeRegen",
           "ManaReservedPercent",
           "ManaUnreserved",
           "FireResist",
           "ColdResist",
           "LightningResist",
           "ChaosResist",
-          "CritChance");
+          // 방어 레이어(현 패치 핵심) — 값 0 이면 toStats 가 생략(빌드에 없으면 미표시)
+          "SpellSuppressionChance",
+          "BlockChance",
+          "SpellBlockChance",
+          "CritChance",
+          "CritMultiplier");
 
   public record EngineResult(List<PoeBuild.PlayerStat> stats, long durationMs) {}
 
@@ -119,6 +126,24 @@ public class PoePobEngineService {
     this.evalTimeoutMs = evalTimeoutMs;
     this.workerRecycleAfter = workerRecycleAfter;
     this.luajitPath = resolveLuajit(luajitPath);
+  }
+
+  /**
+   * 클론된 PoB 엔진 버전(changelog.txt 첫 줄 {@code VERSION[2.66.2][날짜]}). 시뮬 계산은 이 엔진이 하므로 게임 데이터 패치와 별개로
+   * "엔진이 현재 패치 트리인지" 확인용(이번 3.28→3.29 정합 이슈의 가시화). 없으면 null.
+   */
+  public String pobVersion() {
+    try {
+      String head = Files.readString(sourceDir.resolve("changelog.txt")).stripLeading();
+      java.util.regex.Matcher m =
+          java.util.regex.Pattern.compile("^VERSION\\[([^\\]]+)\\]").matcher(head);
+      if (m.find()) {
+        return m.group(1);
+      }
+    } catch (Exception ignored) {
+      // changelog 없거나 못 읽으면 버전 미표기(엔진 미클론 등)
+    }
+    return null;
   }
 
   /** 상주 luajit 워커 상한 — 워커당 ~1.6GB 라 코어 + RAM 에서 자동 산정(다른 PC 이식성). 최소 예약: OS/JVM 용 코어. */
@@ -521,6 +546,21 @@ public class PoePobEngineService {
       }
       if ("FullDPS".equals(key) && value == 0) {
         continue; // 풀 DPS 미설정 빌드는 0 이라 표시하지 않는다
+      }
+      // 방어 레이어는 빌드에 없으면(0) 표시 생략 — 스탯시트 잡음 방지
+      if (value == 0
+          && ("SpellSuppressionChance".equals(key)
+              || "BlockChance".equals(key)
+              || "SpellBlockChance".equals(key))) {
+        continue;
+      }
+      // 치명타 배율은 PoB 처럼 배수(x1.5) 로 표기. 비치명타 빌드(<=1)는 의미 없어 생략.
+      if ("CritMultiplier".equals(key)) {
+        if (value <= 1) {
+          continue;
+        }
+        stats.add(new PoeBuild.PlayerStat(key.toLowerCase(Locale.ROOT), "x" + format(value)));
+        continue;
       }
       stats.add(new PoeBuild.PlayerStat(key.toLowerCase(Locale.ROOT), format(value)));
     }

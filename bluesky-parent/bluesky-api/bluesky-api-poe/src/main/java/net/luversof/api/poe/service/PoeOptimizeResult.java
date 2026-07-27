@@ -24,6 +24,8 @@ public record PoeOptimizeResult(
     List<SupportPick> additionalSkills,
     List<Integer> treeNodeIds,
     List<String> treeNotables,
+    /** treeNotables 와 인덱스 평행 — 트리 focus 딥링크용 노드 id(클러스터 생성 노터블은 0=링크 없음) */
+    List<Integer> treeNotableIds,
     List<SupportPick> jewels,
     List<ItemPick> items,
     // 캐릭터 속성이 모자라 실제로는 장착 불가능한 장비 — 조용히 넘어가면 게임에서 못 쓰는 빌드가 나온다
@@ -77,7 +79,8 @@ public record PoeOptimizeResult(
       String slug,
       String name,
       String nameKo,
-      List<String> modLines) {}
+      List<String> modLines,
+      List<String> modLinesEn) {}
 
   /** 레어 슬롯의 티어별 성능 비교 (T1/중간/하위) */
   public record SlotTierCompare(String slot, String slotKo, List<TierRow> rows) {}

@@ -46,7 +46,19 @@ public class PoePobImportService {
           "ColdResist",
           "LightningResist",
           "ChaosResist",
+          // 방어 레이어 — PoB 는 저장 시 Effective* 로 심는다(BuildDisplayStats). 표시 키는 결과 스탯시트(#200)와
+          // 같게 정규화(STAT_KEY_ALIAS)해 poe.build.stat.spellsuppressionchance 등 기존 라벨을 재사용한다.
+          "EffectiveSpellSuppressionChance",
+          "EffectiveBlockChance",
+          "EffectiveSpellBlockChance",
           "CritChance");
+
+  /** PoB 저장 키(Effective*) → 결과 스탯시트와 공유하는 표시 키. 라벨/일관성 재사용용. */
+  private static final Map<String, String> STAT_KEY_ALIAS =
+      Map.of(
+          "EffectiveSpellSuppressionChance", "spellsuppressionchance",
+          "EffectiveBlockChance", "blockchance",
+          "EffectiveSpellBlockChance", "spellblockchance");
 
   private static final Map<String, String> CLASS_KO =
       Map.of(
@@ -220,9 +232,22 @@ public class PoePobImportService {
       if (raw == null || raw.isBlank()) {
         continue;
       }
-      stats.add(new PoeBuild.PlayerStat(key.toLowerCase(Locale.ROOT), formatStatValue(raw)));
+      // 방어 레이어가 0 이면(빌드에 없음) 표시 생략 — 결과 스탯시트(#200)와 같은 잡음 방지
+      String outKey = STAT_KEY_ALIAS.getOrDefault(key, key.toLowerCase(Locale.ROOT));
+      if (STAT_KEY_ALIAS.containsKey(key) && isZero(raw)) {
+        continue;
+      }
+      stats.add(new PoeBuild.PlayerStat(outKey, formatStatValue(raw)));
     }
     return stats;
+  }
+
+  private boolean isZero(String raw) {
+    try {
+      return Double.parseDouble(raw) == 0;
+    } catch (NumberFormatException e) {
+      return false;
+    }
   }
 
   private String formatStatValue(String raw) {

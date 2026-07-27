@@ -8,6 +8,7 @@
 @param boolean hasAtlasData = false
 @param java.util.List<String> treeVersions = java.util.List.of()
 @param String activeVer = ""
+@param String activePatch = ""
 @param String treeSrc = "/poe-data/atlas-tree.json"
 @param String spritesSrc = "/poe-data/tree-sprites-atlas.json"
 
@@ -40,7 +41,7 @@
 					</select>
 				@endif
 				@if(!activeVer.isEmpty())
-					<span class="badge badge-warning badge-sm">${net.luversof.web.gate.poe.PoeText.isKorean() ? "아카이브 보기 — 계산·최적화는 최신 기준" : "Archive view — calc uses latest"}</span>
+					<span class="badge badge-warning badge-sm">${net.luversof.web.gate.poe.PoeText.isKorean() ? "아카이브 보기" : "Archive view"}@if(!activePatch.isEmpty()) · ${activePatch}@endif — ${net.luversof.web.gate.poe.PoeText.isKorean() ? "계산·최적화는 최신 기준" : "calc uses latest"}</span>
 				@endif
 			</div>
 

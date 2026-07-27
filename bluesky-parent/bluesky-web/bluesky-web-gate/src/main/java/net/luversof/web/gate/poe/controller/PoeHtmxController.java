@@ -71,10 +71,52 @@ public class PoeHtmxController {
     model.addAttribute("evalCount", status.evalCount());
     model.addAttribute("logLines", status.logLines());
     model.addAttribute("result", status.result());
+    model.addAttribute("tattooIcons", tattooIcons(status.result()));
     if (!status.running()) {
       response.setStatus(286); // htmx: 폴링 중단
     }
     return "poe/htmx/simOptimizeStatus";
+  }
+
+  /**
+   * 결과 문신 배지 아이콘 맵 — 한글명→아이콘 경로(tree-icons 평탄화). 문신이 없으면 빈 맵(추가 호출 없음). 실시간 상태와 이력 재조회가 같은 결과
+   * fragment 를 쓰므로 공용 헬퍼로 뽑았다.
+   */
+  private java.util.Map<String, String> tattooIcons(
+      net.luversof.web.gate.poe.dto.PoeOptimizeResult result) {
+    java.util.Map<String, String> tattooIcons = new java.util.LinkedHashMap<>();
+    if (result != null
+        && result.treeTattooLabels() != null
+        && !result.treeTattooLabels().isEmpty()) {
+      for (var t : poeDataClient.tattoos()) {
+        if (t.icon() != null && t.icon().contains("SkillIcons/")) {
+          tattooIcons.put(
+              t.nameKo() != null ? t.nameKo() : t.name(),
+              "tree/"
+                  + t.icon()
+                      .substring(t.icon().indexOf("SkillIcons/") + 11)
+                      .toLowerCase()
+                      .replace("/", "_"));
+        }
+      }
+    }
+    return tattooIcons;
+  }
+
+  /** 최근 결과 목록 fragment (최신순). sim 페이지의 이력 컨테이너가 로드/완료 시 채운다. */
+  @GetMapping("/sim/optimize/history")
+  public String optimizeHistory(Model model) {
+    model.addAttribute("history", poeOptimizeClient.history());
+    return "poe/htmx/simOptimizeHistory";
+  }
+
+  /** 이력 결과 한 건을 되살려 결과 fragment 로 렌더 — 실시간 상태와 동일한 결과 DOM 을 그대로 복원한다. */
+  @GetMapping("/sim/optimize/result")
+  public String optimizeHistoryResult(@RequestParam long id, Model model) {
+    net.luversof.web.gate.poe.dto.PoeOptimizeResult result = poeOptimizeClient.result(id);
+    model.addAttribute("result", result);
+    model.addAttribute("tattooIcons", tattooIcons(result));
+    return "poe/htmx/simOptimizeResult";
   }
 
   /** 최적 조합 탐색 시작 (로그인 필요) — 폴링 래퍼를 새로 내려 interval 을 재장전한다 */
@@ -256,6 +298,10 @@ public class PoeHtmxController {
     model.addAttribute("mods", poeDataClient.modsForItemClass(itemClass, variant, influence));
     // 엘드리치 임플리싯(총주교/포식자) — 방어구·목걸이 등 대상 슬롯만. API 가 대상 아니면 null 반환.
     model.addAttribute("eldritch", poeDataClient.eldritchForItemClass(itemClass));
+    // 도유(속성 부여) — 아뮬렛 전용. htmx 로 아뮬렛 칩에 전환해도 섹션이 나타나야 한다(전체 로드와 동일)
+    model.addAttribute("anoints", "Amulet".equals(itemClass) ? poeDataClient.anoints() : null);
+    model.addAttribute("essences", poeDataClient.essencesForItemClass(itemClass));
+    model.addAttribute("bench", poeDataClient.benchForItemClass(itemClass));
     return "poe/htmx/modClass";
   }
 
@@ -287,6 +333,7 @@ public class PoeHtmxController {
     // "검사를 했는지"조차 알 수 없다(최신일 때 아무 표시가 없었다).
     model.addAttribute("dataPatch", version.dataPatch());
     model.addAttribute("configPatch", version.configPatch());
+    model.addAttribute("pobVersion", version.pobVersion()); // PoB 계산 엔진 버전(현재 패치 트리 여부 가시화)
     if (!status.running()) {
       response.setStatus(286); // htmx: 폴링 중단
     }

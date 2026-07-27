@@ -56,6 +56,10 @@ public class PoeExtractService {
   private final PoeBaseItemDataService poeBaseItemDataService;
   private final PoeTreeGraphService poeTreeGraphService;
   private final PoeModPoolDataService poeModPoolDataService;
+  private final PoeModDataService poeModDataService;
+  private final PoeEldritchDataService poeEldritchDataService;
+  private final PoeEssenceDataService poeEssenceDataService;
+  private final PoeBenchDataService poeBenchDataService;
 
   private final AtomicBoolean running = new AtomicBoolean(false);
   private final Deque<String> logLines = new ArrayDeque<>();
@@ -70,13 +74,21 @@ public class PoeExtractService {
       PoeUniqueDataService poeUniqueDataService,
       PoeBaseItemDataService poeBaseItemDataService,
       PoeTreeGraphService poeTreeGraphService,
-      PoeModPoolDataService poeModPoolDataService) {
+      PoeModPoolDataService poeModPoolDataService,
+      PoeModDataService poeModDataService,
+      PoeEldritchDataService poeEldritchDataService,
+      PoeEssenceDataService poeEssenceDataService,
+      PoeBenchDataService poeBenchDataService) {
     this.extractDir = Path.of(extractDir).toAbsolutePath();
     this.poeGemDataService = poeGemDataService;
     this.poeUniqueDataService = poeUniqueDataService;
     this.poeBaseItemDataService = poeBaseItemDataService;
     this.poeTreeGraphService = poeTreeGraphService;
     this.poeModPoolDataService = poeModPoolDataService;
+    this.poeModDataService = poeModDataService;
+    this.poeEldritchDataService = poeEldritchDataService;
+    this.poeEssenceDataService = poeEssenceDataService;
+    this.poeBenchDataService = poeBenchDataService;
   }
 
   /** 파이프라인 스크립트가 서버 로컬에 존재하는가 (k8s 파드에서는 false) */
@@ -243,6 +255,11 @@ public class PoeExtractService {
                   poeUniqueDataService.reload();
                   poeTreeGraphService.reload();
                   poeModPoolDataService.reload();
+                  // 표시/탐색용 데이터도 함께 — 빠지면 원클릭 갱신 후 옛 풀이 그대로 보인다
+                  poeModDataService.reload();
+                  poeEldritchDataService.reload();
+                  poeEssenceDataService.reload();
+                  poeBenchDataService.reload();
                   appendLog("완료 — 화면을 새로고침하면 반영됩니다.");
                   lastStatus = Status.SUCCESS;
                 } else {

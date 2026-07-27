@@ -123,6 +123,16 @@ const FAMILIES = [
 		slots: ["weaponAttack"] },
 	{ key: "localCritChance", gen: "suffix", pattern: "LocalCriticalStrikeChance", keywords: ["critical"],
 		slots: ["weaponAttack"] },
+	// #3 정의의 화염류(RF) 핵심 크래프트 모드 — 반드시 **맨 뒤**에 추가한다.
+	// score(family.keywords, skillKeywords) 는 skillKeyword 가 family 줄의 부분문자열이면 +1 이므로,
+	// 줄에 "damage" 를 넣으면 모든 스킬이 가진 만능 키워드 "damage" 에 걸려 히트 빌드 후보를 오염시킨다.
+	// 그래서 줄을 fire/burning/life/regen 으로만 두어 RF 게이트(#4 burning, #2 life·regen)에서만 매칭되게 한다.
+	// FireDamageOverTimeMultiplier=화염 지속피해 다중(접미, 목걸이). LifeRegeneration=생명 재생(접미, 방어구·장신구).
+	// 히트/EHP 빌드는 fire·burning·life·regen 키워드를 안 받아 점수 0 → 미채택(사이클론/아크/ED/EHP 기준선 불변).
+	{ key: "fireDotMulti", gen: "suffix", pattern: "FireDamageOverTimeMultiplier", keywords: ["fire", "burning"],
+		slots: ["amulet"] },
+	{ key: "lifeRegen", gen: "suffix", pattern: "LifeRegeneration", keywords: ["life", "regen"],
+		slots: ["body", "helmet", "gloves", "boots", "belt", "amulet", "ring", "shield"] },
 ];
 
 /** 모드 한 행의 스탯 → 최대 롤 값 맵 (StatsKey1..N + StatNMax) */

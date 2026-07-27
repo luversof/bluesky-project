@@ -661,6 +661,48 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 	--band-sep: url("/poe-data/ui-assets/itemsseparatorwhite.png");
 }
 /* poedb 식 부위 선택 칩 */
+/* 모드 수치 강조 — 페이지(테마 배경)에선 본문 강조색, 고정 다크 레이어에선 흰색.
+   text-white 하드코딩이던 시절 라이트 모드에서 수치가 통째로 안 보였다(사용자 보고). */
+/* 모바일 글로벌 네비 — 375px 에서 navbar-end 가 +81px 가로 오버플로(실측, 사용자 보고).
+   마크업은 그대로 두고 아이콘 버튼 축소 + 여백 압축으로 한 화면에 들어가게 한다. */
+@media (max-width: 640px) {
+	.navbar { padding-inline: 0.25rem; }
+	.navbar-start { min-width: 0; }
+	.navbar-start .btn { padding-inline: 0.5rem; }
+	.navbar-end { gap: 0; }
+	.navbar-end .btn { padding-inline: 0.375rem; }
+	.navbar-end .btn-circle { height: 2.25rem; min-height: 2.25rem; width: 2.25rem; }
+	#hideAmountsLabel { padding-inline: 0.25rem; gap: 0.25rem; }
+}
+
+/* 트리 전체화면 — 셸 배경을 캔버스와 같은 다크로(남는 틈이 흰 띠로 보이는 것 방지) */
+#poeTreeShell:fullscreen { background: #0e1116; }
+
+.poe-val { color: var(--color-base-content, inherit); font-weight: 600; }
+/* 파생 섹션 강조색(에센스/작업대 요약줄·문신 이름) — 라이트 모드에선 -400 계열이 흰 바탕에서 옅다(#79/#81 계열).
+   라이트(기본)는 진한 톤, 다크는 기존 -400 톤 유지. unlayered 라 utilities 를 이긴다. */
+#mod-sec-essence .text-teal-400 { color: #0f766e; }
+[data-theme="dark"] #mod-sec-essence .text-teal-400 { color: #2dd4bf; }
+#mod-sec-bench .text-lime-400 { color: #4d7c0f; }
+[data-theme="dark"] #mod-sec-bench .text-lime-400 { color: #a3e635; }
+#poeTattooList .text-amber-400 { color: #b45309; }
+/* 시뮬 결과 배지(-300 계열: 마스터리 sky/문신 purple) — 같은 라이트 옅음 계열. 복합 선택자로 결과 배지에만 적용 */
+.border-sky-400.text-sky-300 { color: #0369a1; }
+[data-theme="dark"] .border-sky-400.text-sky-300 { color: #7dd3fc; }
+.border-purple-400.text-purple-300 { color: #7e22ce; }
+[data-theme="dark"] .border-purple-400.text-purple-300 { color: #d8b4fe; }
+/* 에센스/작업대 카드의 접두/접미 라벨(amber-400) — 라이트에서 옅음(감사 적발 ×114) */
+#mod-sec-essence .text-amber-400, #mod-sec-bench .text-amber-400 { color: #b45309; }
+[data-theme="dark"] #mod-sec-essence .text-amber-400, [data-theme="dark"] #mod-sec-bench .text-amber-400 { color: #fbbf24; }
+/* 방어 피격 범례 번개 색 — 전용 클래스로 테마 분기 */
+.poe-def-lightning { color: #ca8a04; }
+[data-theme="dark"] .poe-def-lightning { color: #facc15; }
+
+
+[data-theme="dark"] #poeTattooList .text-amber-400 { color: #fbbf24; }
+
+.poe-tooltip .poe-val, .poe-node-popup .poe-val { color: #fff; font-weight: 500; }
+
 .poe-chip {
 	display: inline-flex;
 	align-items: center;
@@ -669,9 +711,23 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 	line-height: 1;
 	border-radius: 9999px;
 	border: 1px solid var(--color-base-300, rgba(128,128,128,0.3));
+	cursor: pointer;
+}
+/* 배경/글자색은 활성 badge 변형이 아닐 때만 — 무조건 덮으면 badge-secondary/accent(선택 활성)가
+   ghost 와 똑같아 보인다(변형/영향력 탭 "선택 안 됨" 사용자 보고의 원인) */
+.poe-chip:not(.badge-secondary):not(.badge-accent):not(.badge-primary):not(.poe-chip-active) {
 	background: var(--color-base-100, transparent);
 	color: var(--color-base-content, inherit);
-	cursor: pointer;
+}
+.poe-chip.badge-secondary {
+	background: var(--color-secondary, #f000b8);
+	border-color: var(--color-secondary, #f000b8);
+	color: var(--color-secondary-content, #fff);
+}
+.poe-chip.badge-accent {
+	background: var(--color-accent, #37cdbe);
+	border-color: var(--color-accent, #37cdbe);
+	color: var(--color-accent-content, #163835);
 	transition: background-color 0.12s, border-color 0.12s, color 0.12s;
 	white-space: nowrap;
 }

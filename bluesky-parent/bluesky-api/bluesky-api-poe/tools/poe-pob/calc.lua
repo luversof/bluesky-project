@@ -65,9 +65,13 @@ end
 	-- 명중/명중률 — 공격 빌드의 DPS 는 명중 가정에 크게 좌우된다(표준 무기 +2000 전제)
 	"Accuracy", "AccuracyHitChance",
 		"Armour", "Evasion", "TotalEHP",
+		-- 생명 재생/순재생 — 정의의 화염류(자가연소) 지속력 판정용. NetLifeRegen<=0 이면 제 불에 타 죽는 빌드.
+		"LifeRegen", "LifeRegenRecovery", "NetLifeRegen",
 			"ManaReserved", "ManaReservedPercent", "ManaUnreserved", "ManaUnreservedPercent",
 			"LifeReserved", "LifeReservedPercent",
 		"FireResist", "ColdResist", "LightningResist", "ChaosResist",
+		-- 방어 레이어(현 패치 핵심): 주문 억제/막기/주문 막기 — PoB 스탯시트 파리티
+		"SpellSuppressionChance", "BlockChance", "SpellBlockChance",
 		"CritChance", "CritMultiplier", "EffectiveMovementSpeedMod",
 		-- 유형별 최대 피격 생존(단일 히트) — 방어 관점 가정 시뮬레이션
 		"PhysicalMaximumHitTaken", "FireMaximumHitTaken", "ColdMaximumHitTaken",

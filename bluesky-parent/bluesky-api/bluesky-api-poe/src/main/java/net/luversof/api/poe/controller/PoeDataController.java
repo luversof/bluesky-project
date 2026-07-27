@@ -13,7 +13,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import net.luversof.api.poe.service.PoeBaseItem;
 import net.luversof.api.poe.service.PoeBaseItemDataService;
+import net.luversof.api.poe.service.PoeBenchDataService;
 import net.luversof.api.poe.service.PoeEldritchDataService;
+import net.luversof.api.poe.service.PoeEssenceDataService;
 import net.luversof.api.poe.service.PoeGem;
 import net.luversof.api.poe.service.PoeGemDataService;
 import net.luversof.api.poe.service.PoeModDataService;
@@ -34,6 +36,8 @@ public class PoeDataController {
   private final PoeModPoolDataService poeModPoolDataService;
   private final PoeModDataService poeModDataService;
   private final PoeEldritchDataService poeEldritchDataService;
+  private final PoeEssenceDataService poeEssenceDataService;
+  private final PoeBenchDataService poeBenchDataService;
   private final PoeTreeGraphService poeTreeGraphService;
   private final PoeTattooDataService poeTattooDataService;
 
@@ -44,6 +48,8 @@ public class PoeDataController {
       PoeModPoolDataService poeModPoolDataService,
       PoeModDataService poeModDataService,
       PoeEldritchDataService poeEldritchDataService,
+      PoeEssenceDataService poeEssenceDataService,
+      PoeBenchDataService poeBenchDataService,
       PoeTreeGraphService poeTreeGraphService,
       PoeTattooDataService poeTattooDataService) {
     this.poeGemDataService = poeGemDataService;
@@ -52,6 +58,8 @@ public class PoeDataController {
     this.poeModPoolDataService = poeModPoolDataService;
     this.poeModDataService = poeModDataService;
     this.poeEldritchDataService = poeEldritchDataService;
+    this.poeEssenceDataService = poeEssenceDataService;
+    this.poeBenchDataService = poeBenchDataService;
     this.poeTreeGraphService = poeTreeGraphService;
     this.poeTattooDataService = poeTattooDataService;
   }
@@ -130,6 +138,12 @@ public class PoeDataController {
     return poeBaseItemDataService.findByName(name).orElse(null);
   }
 
+  /** poedb 속성부여식 도유 목록 — 노터블 + 성유 3종, 비싼 성유 우선 정렬. */
+  @GetMapping("/tree/anoints")
+  public java.util.List<net.luversof.api.poe.service.PoeTreeGraphService.AnointEntry> anoints() {
+    return poeTreeGraphService.anointList();
+  }
+
   @GetMapping("/base-items/item-classes")
   public Map<String, String> itemClasses() {
     return poeBaseItemDataService.itemClasses();
@@ -178,6 +192,26 @@ public class PoeDataController {
   @GetMapping("/eldritch/for-item-class")
   public PoeEldritchDataService.ClassEldritch eldritchForItemClass(@RequestParam String itemClass) {
     return poeEldritchDataService.forItemClass(itemClass);
+  }
+
+  // ── 에센스 제작 정보 ──
+  // 엘드리치와 같은 이유로 비대상 클래스(퀴버 등)는 예외 대신 null(200).
+  @GetMapping("/essences/for-item-class")
+  public List<PoeEssenceDataService.EssenceEntry> essencesForItemClass(
+      @RequestParam String itemClass) {
+    return poeEssenceDataService.forItemClass(itemClass);
+  }
+
+  // ── 장인 작업대(벤치크래프트) ──
+  @GetMapping("/bench/for-item-class")
+  public List<PoeBenchDataService.BenchEntry> benchForItemClass(@RequestParam String itemClass) {
+    return poeBenchDataService.forItemClass(itemClass);
+  }
+
+  /** 클러스터 주얼 노터블 사전 — 브라우징 페이지용. */
+  @GetMapping("/tree/cluster-notables")
+  public List<PoeTreeGraphService.ClusterNotable> clusterNotables() {
+    return poeTreeGraphService.clusterNotables();
   }
 
   // ── 패시브 트리 ──

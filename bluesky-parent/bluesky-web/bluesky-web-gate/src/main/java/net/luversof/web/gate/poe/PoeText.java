@@ -33,8 +33,8 @@ public final class PoeText {
           "[+\\-]?\\(?\\d+(?:\\.\\d+)?(?:\\s*[-~–]\\s*\\d+(?:\\.\\d+)?)?\\)?%?");
 
   /**
-   * 모드 라인의 변동 수치를 흰색으로 강조한 안전 HTML 문자열. HTML 이스케이프 후 숫자 토큰만 흰색 span 으로 감싼다. JTE 에서 {@code
-   * $unsafe{PoeText.highlightValues(line)}} 로 쓴다.
+   * 모드 라인의 변동 수치를 강조(poe-val: 다크 레이어=흰색, 테마 배경=본문 강조색)한 안전 HTML 문자열. HTML 이스케이프 후 숫자 토큰만 흰색 span 으로
+   * 감싼다. JTE 에서 {@code $unsafe{PoeText.highlightValues(line)}} 로 쓴다.
    */
   public static String highlightValues(String line) {
     if (line == null || line.isBlank()) {
@@ -45,7 +45,7 @@ public final class PoeText {
         .matcher(escaped)
         .replaceAll(
             match ->
-                "<span class=\"text-white\">"
+                "<span class=\"poe-val\">"
                     + java.util.regex.Matcher.quoteReplacement(match.group())
                     + "</span>");
   }

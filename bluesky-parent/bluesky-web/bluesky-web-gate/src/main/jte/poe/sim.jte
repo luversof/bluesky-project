@@ -16,6 +16,8 @@
 @param String clusters = ""
 @param String tattoos = ""
 @param String anoint = ""
+@param java.util.Set<String> preSkills = java.util.Set.of()
+@param java.util.Set<String> preUniques = java.util.Set.of()
 @param String fixedClassName = ""
 
 !{
@@ -81,7 +83,7 @@
 							<label class="block text-xs font-semibold text-base-content/70 mb-1">${MessageUtil.getMessage("poe.sim.opt.skills")}</label>
 							<select name="skills" multiple data-poe-multi data-placeholder="${MessageUtil.getMessage("poe.sim.opt.skills.placeholder")}" size="4" class="select select-sm select-bordered w-full sm:w-96">
 								@for(PoeGem skillOpt : activeGems)
-									<option value="${skillOpt.slug()}">${net.luversof.web.gate.poe.PoeText.name(skillOpt.nameKo(), skillOpt.name())}</option>
+									<option value="${skillOpt.slug()}" selected="${preSkills.contains(skillOpt.slug())}">${net.luversof.web.gate.poe.PoeText.name(skillOpt.nameKo(), skillOpt.name())}</option>
 								@endfor
 							</select>
 						</div>
@@ -89,7 +91,7 @@
 							<label class="block text-xs font-semibold text-base-content/70 mb-1">${MessageUtil.getMessage("poe.sim.opt.uniques")}</label>
 							<select name="uniques" multiple data-poe-multi data-placeholder="${MessageUtil.getMessage("poe.sim.opt.uniques.placeholder")}" size="4" class="select select-sm select-bordered w-full sm:w-96">
 								@for(PoeUniqueItem uniqueItem : uniqueItems)
-									<option value="${uniqueItem.slug()}">${net.luversof.web.gate.poe.PoeText.name(uniqueItem.nameKo(), uniqueItem.name())}</option>
+									<option value="${uniqueItem.slug()}" selected="${preUniques.contains(uniqueItem.slug())}">${net.luversof.web.gate.poe.PoeText.name(uniqueItem.nameKo(), uniqueItem.name())}</option>
 								@endfor
 							</select>
 						</div>
@@ -110,39 +112,39 @@
 						</select>
 						<select name="ascendancy" class="select select-sm select-bordered" title="${MessageUtil.getMessage("poe.sim.opt.ascendancy")}">
 							<option value="">${MessageUtil.getMessage("poe.sim.opt.ascendancy.auto")}</option>
-							<optgroup label="사이온 (Scion)">
-								<option value="Ascendant">어센던트 (Ascendant)</option>
-								<option value="Reliquarian">렐리쿼리언 (Reliquarian)</option>
+							<optgroup label="${net.luversof.web.gate.poe.PoeText.name("사이온", "Scion")}">
+								<option value="Ascendant">${net.luversof.web.gate.poe.PoeText.name("어센던트", "Ascendant")}</option>
+								<option value="Reliquarian">${net.luversof.web.gate.poe.PoeText.name("렐리쿼리언", "Reliquarian")}</option>
 							</optgroup>
-							<optgroup label="머라우더 (Marauder)">
-								<option value="Juggernaut">저거넛 (Juggernaut)</option>
-								<option value="Berserker">버서커 (Berserker)</option>
-								<option value="Chieftain">치프틴 (Chieftain)</option>
+							<optgroup label="${net.luversof.web.gate.poe.PoeText.name("머라우더", "Marauder")}">
+								<option value="Juggernaut">${net.luversof.web.gate.poe.PoeText.name("저거넛", "Juggernaut")}</option>
+								<option value="Berserker">${net.luversof.web.gate.poe.PoeText.name("버서커", "Berserker")}</option>
+								<option value="Chieftain">${net.luversof.web.gate.poe.PoeText.name("치프틴", "Chieftain")}</option>
 							</optgroup>
-							<optgroup label="레인저 (Ranger)">
-								<option value="Warden">워든 (Warden)</option>
-								<option value="Deadeye">데드아이 (Deadeye)</option>
-								<option value="Pathfinder">패스파인더 (Pathfinder)</option>
+							<optgroup label="${net.luversof.web.gate.poe.PoeText.name("레인저", "Ranger")}">
+								<option value="Warden">${net.luversof.web.gate.poe.PoeText.name("워든", "Warden")}</option>
+								<option value="Deadeye">${net.luversof.web.gate.poe.PoeText.name("데드아이", "Deadeye")}</option>
+								<option value="Pathfinder">${net.luversof.web.gate.poe.PoeText.name("패스파인더", "Pathfinder")}</option>
 							</optgroup>
-							<optgroup label="위치 (Witch)">
-								<option value="Occultist">오컬티스트 (Occultist)</option>
-								<option value="Elementalist">엘리멘탈리스트 (Elementalist)</option>
-								<option value="Necromancer">네크로맨서 (Necromancer)</option>
+							<optgroup label="${net.luversof.web.gate.poe.PoeText.name("위치", "Witch")}">
+								<option value="Occultist">${net.luversof.web.gate.poe.PoeText.name("오컬티스트", "Occultist")}</option>
+								<option value="Elementalist">${net.luversof.web.gate.poe.PoeText.name("엘리멘탈리스트", "Elementalist")}</option>
+								<option value="Necromancer">${net.luversof.web.gate.poe.PoeText.name("네크로맨서", "Necromancer")}</option>
 							</optgroup>
-							<optgroup label="듀얼리스트 (Duelist)">
-								<option value="Slayer">슬레이어 (Slayer)</option>
-								<option value="Gladiator">글래디에이터 (Gladiator)</option>
-								<option value="Champion">챔피언 (Champion)</option>
+							<optgroup label="${net.luversof.web.gate.poe.PoeText.name("듀얼리스트", "Duelist")}">
+								<option value="Slayer">${net.luversof.web.gate.poe.PoeText.name("슬레이어", "Slayer")}</option>
+								<option value="Gladiator">${net.luversof.web.gate.poe.PoeText.name("글래디에이터", "Gladiator")}</option>
+								<option value="Champion">${net.luversof.web.gate.poe.PoeText.name("챔피언", "Champion")}</option>
 							</optgroup>
-							<optgroup label="템플러 (Templar)">
-								<option value="Inquisitor">인퀴지터 (Inquisitor)</option>
-								<option value="Hierophant">하이로펀트 (Hierophant)</option>
-								<option value="Guardian">가디언 (Guardian)</option>
+							<optgroup label="${net.luversof.web.gate.poe.PoeText.name("템플러", "Templar")}">
+								<option value="Inquisitor">${net.luversof.web.gate.poe.PoeText.name("인퀴지터", "Inquisitor")}</option>
+								<option value="Hierophant">${net.luversof.web.gate.poe.PoeText.name("하이로펀트", "Hierophant")}</option>
+								<option value="Guardian">${net.luversof.web.gate.poe.PoeText.name("가디언", "Guardian")}</option>
 							</optgroup>
-							<optgroup label="섀도우 (Shadow)">
-								<option value="Assassin">어쌔신 (Assassin)</option>
-								<option value="Trickster">트릭스터 (Trickster)</option>
-								<option value="Saboteur">사보추어 (Saboteur)</option>
+							<optgroup label="${net.luversof.web.gate.poe.PoeText.name("섀도우", "Shadow")}">
+								<option value="Assassin">${net.luversof.web.gate.poe.PoeText.name("어쌔신", "Assassin")}</option>
+								<option value="Trickster">${net.luversof.web.gate.poe.PoeText.name("트릭스터", "Trickster")}</option>
+								<option value="Saboteur">${net.luversof.web.gate.poe.PoeText.name("사보추어", "Saboteur")}</option>
 							</optgroup>
 						</select>
 						<label class="flex items-center gap-1.5 text-sm cursor-pointer" title="${MessageUtil.getMessage("poe.sim.opt.buffs.hint")}">
@@ -159,6 +161,8 @@
 					</div>
 				</form>
 				@template.poe.htmx.simOptimizeWrap()
+				<!-- 최근 결과 이력 — 로드 시 채우고, 새 최적화 완료 시 상태 fragment 가 OOB 로 갱신 -->
+				<div id="poeOptimizeHistory" class="mt-3" hx-get="/poe/htmx/sim/optimize/history" hx-trigger="load" hx-swap="innerHTML"></div>
 			</div>
 
 			<!-- 젬 DPS 랭킹 — 페이지 제목이 시뮬레이터로 바뀌어 이 섹션에 자체 제목이 필요하다 -->

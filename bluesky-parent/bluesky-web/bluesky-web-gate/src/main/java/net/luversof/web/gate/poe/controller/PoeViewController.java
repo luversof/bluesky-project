@@ -103,6 +103,16 @@ public class PoeViewController {
             : null);
     // 엘드리치 임플리싯(총주교/포식자) — 방어구·목걸이 등 일부 슬롯만 부여 가능. 대상 아니면 API 가 null 반환.
     model.addAttribute("eldritch", poeDataClient.eldritchForItemClass(item.itemClass()));
+    model.addAttribute(
+        "anoints", "Amulet".equals(item.itemClass()) ? poeDataClient.anoints() : null);
+    model.addAttribute("essences", poeDataClient.essencesForItemClass(item.itemClass()));
+    model.addAttribute("bench", poeDataClient.benchForItemClass(item.itemClass()));
+    // poedb 식 — 이 베이스를 쓰는 고유 아이템 목록(클래스 검색 후 baseType 일치로 좁힘)
+    model.addAttribute(
+        "baseUniques",
+        poeDataClient.searchUniques(null, item.itemClass()).stream()
+            .filter(u -> item.name().equals(u.baseType()))
+            .toList());
     model.addAttribute("slug", slug);
     return "poe/itemPage";
   }
@@ -196,11 +206,33 @@ public class PoeViewController {
     model.addAttribute("treeVersions", versions);
     boolean archived = ver != null && versions.contains(ver);
     model.addAttribute("activeVer", archived ? ver : "");
+    // 아카이브 뷰일 때 그 스냅샷의 실제 패치(3.28.0.16 등)를 배지에 실어 "정말 바뀌었는지" 즉시 보이게 한다.
+    // trees/index.json = [{"ver":"3.28","patch":"3.28.0.16"}, ...] 을 가볍게 정규식으로 읽는다(작은 파일).
+    model.addAttribute("activePatch", archived ? patchForVersion(ver) : "");
     return archived
         ? new String[] {
           "/poe-data/trees/" + ver + "/" + treeFile, "/poe-data/trees/" + ver + "/" + spritesFile
         }
         : new String[] {"/poe-data/" + treeFile, "/poe-data/" + spritesFile};
+  }
+
+  /** trees/index.json 에서 해당 ver 의 게임 패치 문자열을 찾는다(없으면 빈 문자열). */
+  private String patchForVersion(String ver) {
+    try {
+      String json = Files.readString(Path.of(dataDir, "trees", "index.json"));
+      var m =
+          java.util.regex.Pattern.compile(
+                  "\"ver\"\\s*:\\s*\""
+                      + java.util.regex.Pattern.quote(ver)
+                      + "\"\\s*,\\s*\"patch\"\\s*:\\s*\"([^\"]+)\"")
+              .matcher(json);
+      if (m.find()) {
+        return m.group(1);
+      }
+    } catch (java.io.IOException ignored) {
+      // index.json 이 없거나 못 읽으면 패치 표기 없이 버전만 배지에 남는다
+    }
+    return "";
   }
 
   @GetMapping("/tree")
@@ -265,11 +297,32 @@ public class PoeViewController {
             ? itemClass
             : classes.isEmpty() ? null : classes.get(0).itemClass();
     model.addAttribute("activeClass", active);
+    // 아뮬렛엔 poedb 속성부여식 도유 목록도 — 도유는 아뮬렛 전용 부여라 다른 클래스엔 무의미
+    model.addAttribute("anoints", "Amulet".equals(active) ? poeDataClient.anoints() : null);
+    model.addAttribute(
+        "essences", active == null ? null : poeDataClient.essencesForItemClass(active));
+    model.addAttribute("bench", active == null ? null : poeDataClient.benchForItemClass(active));
     model.addAttribute(
         "mods", active == null ? null : poeDataClient.modsForItemClass(active, variant, influence));
     model.addAttribute(
         "eldritch", active == null ? null : poeDataClient.eldritchForItemClass(active));
     return "poe/mods";
+  }
+
+  /** 클러스터 주얼 노터블 페이지 — craftofexile Cluster 식 브라우징(검색). */
+  @GetMapping("/clusters")
+  public String clusters(Model model) {
+    model.addAttribute("patch", poeDataClient.gemMeta().patch());
+    model.addAttribute("notables", poeDataClient.clusterNotables());
+    return "poe/clusters";
+  }
+
+  /** 문신 목록 페이지 — poedb Tattoos 식 브라우징(타입 칩 + 검색). */
+  @GetMapping("/tattoos")
+  public String tattoos(Model model) {
+    model.addAttribute("patch", poeDataClient.gemMeta().patch());
+    model.addAttribute("tattoos", poeDataClient.tattoos());
+    return "poe/tattoos";
   }
 
   @GetMapping("/build")
@@ -286,6 +339,9 @@ public class PoeViewController {
       @RequestParam(required = false, defaultValue = "") String clusters,
       @RequestParam(required = false, defaultValue = "") String tattoos,
       @RequestParam(required = false, defaultValue = "") String anoint,
+      // 상세 페이지 "이 젬/유니크로 최적화" 바로가기 — 멀티셀렉트 프리셀렉트(콤마 구분 slug)
+      @RequestParam(required = false, defaultValue = "") String skills,
+      @RequestParam(required = false, defaultValue = "") String uniques,
       @RequestParam(required = false, defaultValue = "") String className,
       @RequestParam(required = false, defaultValue = "") String ascendancy,
       Model model) {
@@ -295,6 +351,8 @@ public class PoeViewController {
     model.addAttribute("clusters", clusters);
     model.addAttribute("tattoos", tattoos);
     model.addAttribute("anoint", anoint);
+    model.addAttribute("preSkills", java.util.Set.of(skills.split(",")));
+    model.addAttribute("preUniques", java.util.Set.of(uniques.split(",")));
     // 고정 트리는 그 직업의 시작점에서만 연결된다 — 직업을 함께 고정하지 않으면 트리가 통째로 버려진다
     model.addAttribute("fixedClassName", className);
     model.addAttribute("fixedAscendancy", ascendancy);

@@ -281,7 +281,9 @@
 	// 인터랙티브 편집: 할당 노드 집합 + 현재 직업/전직. 클래스 시작노드가 루트.
 	const highlighted = new Set<number>();
 	// 아틀라스는 클래스 루트가 없어 규칙이 다르다(자유 시작 + ?nodes= 동기화). 편집은 둘 다 가능.
-	const isAtlas = canvas.dataset.treeSrc === "/poe-data/atlas-tree.json";
+	// 아카이브 뷰(/poe-data/trees/<ver>/atlas-tree.json)도 아틀라스로 인식해야 한다 — 정확일치는 아카이브 경로를 놓쳐
+	// 옛 아틀라스를 스킬트리 모드로 잘못 렌더했다(밝은 픽셀 반토막). 파일명 부분일치로 판정.
+	const isAtlas = (canvas.dataset.treeSrc || "").includes("atlas-tree.json");
 	const interactive = true;
 	// 트리 데이터의 class 시작노드 이름 → GGG classId (0=Scion..6=Shadow)
 	const CLASS_START_CLASSID: Record<string, number> = { Seven: 0, MARAUDER: 1, RANGER: 2, WITCH: 3, DUELIST: 4, TEMPLAR: 5, SIX: 6 };
@@ -524,6 +526,9 @@
 		// 도유(an=노드id) — 도유로 활성화한 노터블 하나
 		const an = Number(params.get("an"));
 		if (Number.isFinite(an) && an > 0) anointPick = an;
+		// focus=노드id — 로드 후 그 노드를 화면 중앙에(도유 목록 → 트리 점프 등 딥링크용)
+		const fc = Number(params.get("focus"));
+		if (Number.isFinite(fc) && fc > 0) pendingFocus = fc;
 		// 주얼(j=노드:slug,...) — 트리 인코딩과 무관하게 ?t= / ?nodes= 어느 쪽이든 함께 복원한다
 		for (const pair of (params.get("j") || "").split(",")) {
 			const sep = pair.indexOf(":");
@@ -576,12 +581,15 @@
 		// 안 하면 사이온(0)으로 남아 루트가 어긋나고, 편집 시 고아 정리가 트리를 통째로 날린다.
 		pendingClass = params.get("class");
 		pendingAscend = params.get("asc");
+		pendingBloodline = params.get("bloodline");
 	}
 	// 클러스터는 트리 데이터 로드 후에야 생성할 수 있어 보류했다가 적용한다
 	const pendingClusters: Array<{ socketId: number; sizeName: string; nodeCount: number; skillKey: string; notables: string[]; socketCount: number }> = [];
 	const pendingClusterNodes: number[] = [];
 	let pendingClass: string | null = null;
+	let pendingFocus: number | null = null;
 	let pendingAscend: string | null = null;
+	let pendingBloodline: string | null = null;
 	// 트리 데이터 로드 후에만 이름→id 해석이 가능하므로 loadTree 에서 호출한다.
 	function applyPendingClass() {
 		if (pendingClass) {
@@ -599,8 +607,15 @@
 			const idx = list.findIndex((a) => a.toLowerCase() === pendingAscend!.toLowerCase());
 			if (idx >= 0) currentAscend = idx + 1;
 		}
+		if (pendingBloodline) {
+			// 혈맹(타살리오 등) 서브트리 노드는 혈맹 미선택이면 통째로 숨는다 — 결과 링크가 이걸 안 실으면
+			// 혈맹 노터블 focus 가 "화면에 없음"이 된다(실사고).
+			const idx = bloodlines.findIndex((b) => b.id.toLowerCase() === pendingBloodline!.toLowerCase());
+			if (idx >= 0) currentBloodline = idx + 1;
+		}
 		pendingClass = null;
 		pendingAscend = null;
+		pendingBloodline = null;
 	}
 	loadFromUrl();
 	// URL 을 현재 할당 상태로 갱신(실시간 반영). 편집 모드에서만.
@@ -1131,7 +1146,7 @@
 		if (!picked.length && !socketedJewels.length && !pickedMasteries.length && !socketedClusters.length) return;
 		picked.sort((a, b) => (a.type === b.type ? 0 : a.type === "keystone" ? -1 : 1));
 		const head = document.createElement("div");
-		head.className = "px-3 pt-2 pb-1 text-[10px] uppercase tracking-wide text-base-content/40";
+		head.className = "px-3 pt-2 pb-1 text-[10px] uppercase tracking-wide text-stone-400";
 		const total = picked.length + pickedMasteries.length + socketedJewels.length + socketedClusters.length;
 		head.textContent = isKorean ? `핵심 노드 ${total}개` : `Key nodes (${total})`;
 		panel.appendChild(head);
@@ -1139,14 +1154,15 @@
 			const row = document.createElement("button");
 			row.type = "button";
 			row.className =
-				"block w-full text-left px-3 py-0.5 text-xs hover:bg-base-200/60 " +
-				(n.type === "keystone" ? "text-amber-300 font-semibold" : "text-base-content/80");
+				"block w-full text-left px-3 py-0.5 text-xs hover:bg-stone-700/60 " +
+				// 노터블 행도 고정 밝은 색 — base-content 는 라이트 모드에서 어두워져 다크 패널 위에서 안 보인다
+				(n.type === "keystone" ? "text-amber-300 font-semibold" : "text-stone-200");
 			row.textContent = (n.type === "keystone" ? "◆ " : "• ") + (isKorean && n.nameKo ? n.nameKo : n.name);
 			// 설명을 title(브라우저 툴팁)에만 두면 화면에선 안 보인다(사용자 지적) — 행 아래 작은 글씨로 직접 표시
 			const stats = statLinesOf(n).filter((line) => line.trim());
 			for (const line of stats) {
 				const sub = document.createElement("div");
-				sub.className = "text-[10px] leading-4 text-base-content/50 font-normal pl-4";
+				sub.className = "text-[10px] leading-4 text-stone-300 font-normal pl-4";
 				sub.textContent = line;
 				row.appendChild(sub);
 			}
@@ -1166,7 +1182,7 @@
 			if (!node || !eff) continue;
 			const row = document.createElement("button");
 			row.type = "button";
-			row.className = "block w-full text-left px-3 py-0.5 text-xs text-sky-300 hover:bg-base-200/60";
+			row.className = "block w-full text-left px-3 py-0.5 text-xs text-sky-300 hover:bg-stone-700/60";
 			const lines = effectLines(eff);
 			row.textContent = "◇ " + (isKorean && node.nameKo ? node.nameKo : node.name) + " — " + (lines[0] || "");
 			row.title = lines.join("\n") + "\n\n" + (isKorean ? "클릭하면 해당 노드로 이동" : "Click to jump to node");
@@ -1180,7 +1196,7 @@
 		for (const [nodeId, slug] of socketedJewels) {
 			const row = document.createElement("button");
 			row.type = "button";
-			row.className = "block w-full text-left px-3 py-0.5 text-xs text-emerald-300 hover:bg-base-200/60";
+			row.className = "block w-full text-left px-3 py-0.5 text-xs text-emerald-300 hover:bg-stone-700/60";
 			row.textContent = "◈ " + jewelName(slug);
 			const mods = document.querySelector<HTMLOptionElement>('#poeTreeJewelList option[data-slug="' + slug + '"]')?.dataset.mods;
 			row.title =
@@ -1201,7 +1217,7 @@
 			const notableNames = (plan.notables || []).map((n) => (isKorean && clusterNotables.get(n)?.nameKo) || n);
 			const row = document.createElement("button");
 			row.type = "button";
-			row.className = "block w-full text-left px-3 py-0.5 text-xs text-purple-300 hover:bg-base-200/60";
+			row.className = "block w-full text-left px-3 py-0.5 text-xs text-purple-300 hover:bg-stone-700/60";
 			row.textContent =
 				"❖ " +
 				(isKorean ? sizeKo : plan.sizeName) +
@@ -1233,7 +1249,7 @@
 		appendKeyNodes(panel);
 		if (!rows.length) {
 			const empty = document.createElement("div");
-			empty.className = "text-xs text-base-content/40 px-3 py-2";
+			empty.className = "text-xs text-stone-400 px-3 py-2"; // 패널은 고정 다크 — 테마 토큰이면 라이트 모드에서 안 보인다
 			empty.textContent = isKorean ? "할당한 노드가 없습니다." : "No allocated nodes.";
 			panel.appendChild(empty);
 			return;
@@ -1247,7 +1263,7 @@
 			line.appendChild(text);
 			if (row.count > 1) {
 				const badge = document.createElement("span");
-				badge.className = "text-[10px] font-mono text-base-content/40 shrink-0";
+				badge.className = "text-[10px] font-mono text-stone-400 shrink-0";
 				badge.textContent = "×" + row.count;
 				line.appendChild(badge);
 			}
@@ -1612,6 +1628,10 @@
 			});
 		}
 		// 트리 계산 — 찍은 노드를 그대로 PoB 엔진에 보내 실계산(장비/보조젬 없음)
+		document.getElementById("poeTreeAnoint")?.addEventListener("click", () => openAnointPicker());
+		document.getElementById("poeTreeEvalClose")?.addEventListener("click", () => {
+			document.getElementById("poeTreeEvalPanel")?.classList.add("hidden");
+		});
 		const evalBtn = document.getElementById("poeTreeEval");
 		const evalPanel = document.getElementById("poeTreeEvalPanel");
 		const evalBody = document.getElementById("poeTreeEvalBody");
@@ -2987,10 +3007,19 @@
 		const panel = document.createElement("div");
 		panel.className = "absolute z-20 max-h-[60%] w-96 overflow-y-auto poe-node-popup";
 		const head = document.createElement("div");
-		head.className = "sticky top-0 poe-popup-head";
-		head.textContent = bulk
+		head.className = "sticky top-0 poe-popup-head flex items-center justify-between gap-2";
+		const tattooHeadTitle = document.createElement("span");
+		tattooHeadTitle.textContent = bulk
 			? (isKorean ? `반경 내 ${targets!.length}개 패시브 — 문신 일괄` : `${targets!.length} passives in radius — bulk tattoo`)
 			: (isKorean && node.nameKo ? node.nameKo : node.name) + (isKorean ? " — 문신 새기기" : " — apply tattoo");
+		head.appendChild(tattooHeadTitle);
+		// 문신 사전(/poe/tattoos) 바로가기 — 클러스터 픽커와 같은 관례
+		const tattooDictLink = document.createElement("a");
+		tattooDictLink.href = "/poe/tattoos";
+		tattooDictLink.target = "_blank";
+		tattooDictLink.className = "text-[11px] text-amber-300 underline decoration-dotted shrink-0";
+		tattooDictLink.textContent = isKorean ? "사전 ↗" : "Dictionary ↗";
+		head.appendChild(tattooDictLink);
 		panel.appendChild(head);
 		const filter = document.createElement("input");
 		filter.type = "text";
@@ -3068,6 +3097,109 @@
 		const sy = node.y * scale + offsetY;
 		placePanel(panel, host, sx + 20, sy);
 		tattooPicker = panel;
+		filter.focus();
+	}
+
+	// ---- 도유 픽커 (PoB 아뮬렛 도유 UX) ----
+	let anointPanel: HTMLElement | null = null;
+	function closeAnointPicker() {
+		anointPanel?.remove();
+		anointPanel = null;
+	}
+	function openAnointPicker() {
+		closeAnointPicker();
+		closeJewelPicker();
+		closeNodeMenu();
+		const host = canvas.parentElement as HTMLElement;
+		const panel = document.createElement("div");
+		panel.className = "absolute z-20 max-h-[60%] w-96 overflow-y-auto poe-node-popup";
+		const head = document.createElement("div");
+		head.className = "sticky top-0 poe-popup-head flex items-center justify-between gap-2";
+		const anointHeadTitle = document.createElement("span");
+		anointHeadTitle.textContent = isKorean ? "도유 선택 — 아뮬렛에 노터블 부여" : "Anoint — grant a notable";
+		head.appendChild(anointHeadTitle);
+		// 도유 사전(모드 페이지 아뮬렛 도유 섹션) 바로가기 — 문신/클러스터 픽커와 같은 관례
+		const anointDictLink = document.createElement("a");
+		anointDictLink.href = "/poe/mods?itemClass=Amulet#mod-sec-anoint";
+		anointDictLink.target = "_blank";
+		anointDictLink.className = "text-[11px] text-amber-300 underline decoration-dotted shrink-0";
+		anointDictLink.textContent = isKorean ? "사전 ↗" : "Dictionary ↗";
+		head.appendChild(anointDictLink);
+		panel.appendChild(head);
+		const filter = document.createElement("input");
+		filter.type = "text";
+		filter.className = "w-full px-3 py-1.5 text-xs bg-stone-800 text-amber-100 border-b border-stone-700 outline-none";
+		filter.placeholder = isKorean ? "노터블 이름/효과 검색" : "Filter by name or stat";
+		panel.appendChild(filter);
+		const list = document.createElement("div");
+		panel.appendChild(list);
+		const candidates = nodes
+			.filter((n) => n.anoint?.length && !n.ascendancy && n.type === "notable")
+			.sort((a, b) => a.id - b.id);
+		const applyAnoint = (id: number | null) => {
+			const before = snapshot();
+			anointPick = id;
+			commit(before);
+			closeAnointPicker();
+			markEvalStale(true);
+			updatePoints();
+			syncUrl();
+			if (id !== null) centerOnNode(id, 0.35); // 어디 붙었는지 바로 보여준다
+			draw();
+		};
+		const render = (query: string) => {
+			list.replaceChildren();
+			const q = query.trim().toLowerCase();
+			// 해제 행 — 현재 도유가 있을 때만
+			if (anointPick !== null) {
+				const clear = document.createElement("button");
+				clear.type = "button";
+				clear.className = "block w-full text-left px-3 py-1.5 text-xs text-rose-300 hover:bg-stone-700/60 border-b border-stone-800";
+				clear.textContent = isKorean ? "도유 해제" : "Remove anoint";
+				clear.addEventListener("click", () => applyAnoint(null));
+				list.appendChild(clear);
+			}
+			let shown = 0;
+			for (const n of candidates) {
+				const hay = ((n.nameKo || "") + " " + n.name + " " + n.stats.join(" ") + " " + (n.statsKo || []).join(" ")).toLowerCase();
+				if (q && hay.indexOf(q) === -1) continue;
+				if (++shown > 120) break; // 470개 전부 DOM 에 얹으면 필터 타이핑이 굼떠진다
+				const row = document.createElement("button");
+				row.type = "button";
+				row.className =
+					"block w-full text-left px-3 py-1.5 border-b border-stone-800 hover:bg-amber-900/40 " +
+					(n.id === anointPick ? "bg-amber-900/50" : "");
+				const title = document.createElement("div");
+				title.className = "flex items-center gap-1 text-[12px] font-semibold text-amber-200";
+				title.textContent = isKorean && n.nameKo ? n.nameKo : n.name;
+				for (const slug of n.anoint || []) {
+					const oil = oils[slug];
+					if (!oil) continue;
+					const img = document.createElement("img");
+					img.src = "/poe-assets/" + oil.icon;
+					img.className = "w-4 h-4 object-contain";
+					img.title = (isKorean && oil.nameKo) || oil.name;
+					title.appendChild(img);
+				}
+				row.appendChild(title);
+				const sub = document.createElement("div");
+				sub.className = "text-[10px] leading-4 text-stone-300 truncate";
+				sub.textContent = ((isKorean && n.statsKo?.length ? n.statsKo : n.stats) || []).join(" / ");
+				row.appendChild(sub);
+				row.addEventListener("click", () => applyAnoint(n.id));
+				list.appendChild(row);
+			}
+			if (!shown) {
+				const empty = document.createElement("div");
+				empty.className = "px-3 py-2 text-xs text-stone-400";
+				empty.textContent = isKorean ? "일치하는 노터블 없음" : "No matches";
+				list.appendChild(empty);
+			}
+		};
+		filter.addEventListener("input", () => render(filter.value));
+		render("");
+		placePanel(panel, host, 60, 40);
+		anointPanel = panel;
 		filter.focus();
 	}
 
@@ -3243,8 +3375,17 @@
 		const panel = document.createElement("div");
 		panel.className = "absolute z-20 flex max-h-[70%] w-80 flex-col poe-node-popup";
 		const head = document.createElement("div");
-		head.className = "poe-popup-head";
-		head.textContent = (isKorean ? "클러스터 주얼 — " : "Cluster jewel — ") + (isKorean ? CLUSTER_SIZE_KO[socket.expansionJewel?.size ?? 0] : sizeName);
+		head.className = "poe-popup-head flex items-center justify-between gap-2";
+		const headTitle = document.createElement("span");
+		headTitle.textContent = (isKorean ? "클러스터 주얼 — " : "Cluster jewel — ") + (isKorean ? CLUSTER_SIZE_KO[socket.expansionJewel?.size ?? 0] : sizeName);
+		head.appendChild(headTitle);
+		// 노터블 사전(/poe/clusters) 바로가기 — 픽커 목록은 요약뿐이라 전체 스탯 비교는 사전에서
+		const dictLink = document.createElement("a");
+		dictLink.href = "/poe/clusters";
+		dictLink.target = "_blank";
+		dictLink.className = "text-[11px] text-cyan-300 underline decoration-dotted shrink-0";
+		dictLink.textContent = isKorean ? "사전 ↗" : "Dictionary ↗";
+		head.appendChild(dictLink);
 		panel.appendChild(head);
 		const body = document.createElement("div");
 		body.className = "flex-1 overflow-y-auto";
@@ -3903,7 +4044,9 @@
 	let lastFitHeight = 0;
 	const fitCanvasHeight = () => {
 		const docTop = canvas.getBoundingClientRect().top + globalThis.scrollY;
-		const fit = Math.max(320, Math.round(globalThis.innerHeight - docTop - 16));
+		// 전체화면에선 하단 여백 16px 이 페이지 배경(라이트=흰색) 띠로 드러난다(사용자 보고 "아래 공백") — 0 으로
+		const bottomGap = document.fullscreenElement ? 0 : 16;
+		const fit = Math.max(320, Math.round(globalThis.innerHeight - docTop - bottomGap));
 		if (fit === lastFitHeight) return; // 같은 값이면 스킵 — ResizeObserver 재진입 루프 방지
 		lastFitHeight = fit;
 		canvas.style.height = fit + "px";
@@ -4042,6 +4185,11 @@
 					updatePoints();
 					draw();
 					setupControls();
+					// 딥링크 포커스는 **fit 계산 뒤**에 — 먼저 하면 위 offset/scale 재계산이 덮어쓴다
+					if (pendingFocus !== null && nodeById.has(pendingFocus)) {
+						centerOnNode(pendingFocus, 0.35);
+						pendingFocus = null;
+					}
 				})
 				.catch((error) => console.warn("passive tree load failed", error));
 	}

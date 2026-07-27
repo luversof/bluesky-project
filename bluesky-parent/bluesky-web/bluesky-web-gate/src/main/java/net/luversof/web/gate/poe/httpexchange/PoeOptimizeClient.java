@@ -7,6 +7,7 @@ import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
 
 import net.luversof.web.gate.poe.dto.PoeJobStatus;
+import net.luversof.web.gate.poe.dto.PoeOptimizeResult;
 
 /** bluesky-api-poe 최적 조합 탐색 잡 클라이언트. */
 @HttpExchange(url = "/api/poe/optimize", accept = MediaType.APPLICATION_JSON_VALUE)
@@ -31,4 +32,12 @@ public interface PoeOptimizeClient {
 
   @GetExchange("/status")
   PoeJobStatus.Optimize status();
+
+  /** 최근 결과 목록(최신순, 목록 표시용 요약). */
+  @GetExchange("/history")
+  java.util.List<PoeJobStatus.OptimizeHistoryEntry> history();
+
+  /** 이력 결과 한 건 전체 조회(id = 저장 시각 epochMs) — 없으면 null. */
+  @GetExchange("/result")
+  PoeOptimizeResult result(@RequestParam long id);
 }

@@ -30,6 +30,9 @@
 				<h1 class="text-2xl font-bold">${displayName}</h1>
 				@if(ko)<span class="text-base-content/40 text-sm">${gem.name()}</span>@endif
 				<span class="badge badge-ghost">${patchLabel}</span>
+				@if(!gem.isSupport())
+					<a class="btn btn-sm btn-primary btn-outline ml-auto" href="/poe/sim?skills=${gem.slug()}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 스킬로 최적화 →" : "Optimize with this skill →"}</a>
+				@endif
 			</div>
 
 			<div class="flex flex-wrap gap-6 items-start">

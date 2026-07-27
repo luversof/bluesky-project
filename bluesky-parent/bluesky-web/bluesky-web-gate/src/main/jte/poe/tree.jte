@@ -10,6 +10,7 @@
 @param java.util.List<net.luversof.web.gate.poe.dto.PoeUniqueItem> jewelUniques = java.util.List.of()
 @param java.util.List<String> treeVersions = java.util.List.of()
 @param String activeVer = ""
+@param String activePatch = ""
 @param String treeSrc = "/poe-data/passive-tree.json"
 @param String spritesSrc = "/poe-data/tree-sprites-skill.json"
 
@@ -44,7 +45,7 @@
 					</select>
 				@endif
 				@if(!activeVer.isEmpty())
-					<span class="badge badge-warning badge-sm">${net.luversof.web.gate.poe.PoeText.isKorean() ? "아카이브 보기 — 계산·최적화는 최신 기준" : "Archive view — calc uses latest"}</span>
+					<span class="badge badge-warning badge-sm">${net.luversof.web.gate.poe.PoeText.isKorean() ? "아카이브 보기" : "Archive view"}@if(!activePatch.isEmpty()) · ${activePatch}@endif — ${net.luversof.web.gate.poe.PoeText.isKorean() ? "계산·최적화는 최신 기준" : "calc uses latest"}</span>
 				@endif
 			</div>
 
@@ -67,19 +68,20 @@
 					<span id="poeTreeSearchCount" class="text-xs font-mono text-base-content/50"></span>
 					<span id="poeTreeNotice" class="text-xs font-mono text-warning"></span>
 					<select id="poeTreeClass" class="select select-sm select-bordered" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "캐릭터 직업" : "Class"}">
-						<option value="0">사이온 (Scion)</option>
-						<option value="1">머라우더 (Marauder)</option>
-						<option value="2">레인저 (Ranger)</option>
-						<option value="3">위치 (Witch)</option>
-						<option value="4">듀얼리스트 (Duelist)</option>
-						<option value="5">템플러 (Templar)</option>
-						<option value="6">섀도우 (Shadow)</option>
+						<option value="0">${net.luversof.web.gate.poe.PoeText.name("사이온", "Scion")}</option>
+						<option value="1">${net.luversof.web.gate.poe.PoeText.name("머라우더", "Marauder")}</option>
+						<option value="2">${net.luversof.web.gate.poe.PoeText.name("레인저", "Ranger")}</option>
+						<option value="3">${net.luversof.web.gate.poe.PoeText.name("위치", "Witch")}</option>
+						<option value="4">${net.luversof.web.gate.poe.PoeText.name("듀얼리스트", "Duelist")}</option>
+						<option value="5">${net.luversof.web.gate.poe.PoeText.name("템플러", "Templar")}</option>
+						<option value="6">${net.luversof.web.gate.poe.PoeText.name("섀도우", "Shadow")}</option>
 					</select>
 					<select id="poeTreeAscend" class="select select-sm select-bordered" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "전직" : "Ascendancy"}"></select>
 					<select id="poeTreeBloodline" class="select select-sm select-bordered" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "혈맹" : "Bloodline"}"></select>
 					<button id="poeTreeUndo" type="button" class="btn btn-sm btn-ghost" disabled title="Ctrl+Z">${net.luversof.web.gate.poe.PoeText.isKorean() ? "실행취소" : "Undo"}</button>
 					<button id="poeTreeRedo" type="button" class="btn btn-sm btn-ghost" disabled title="Ctrl+Shift+Z">${net.luversof.web.gate.poe.PoeText.isKorean() ? "다시실행" : "Redo"}</button>
 					<button id="poeTreeReset" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "트리 초기화" : "Reset"}</button>
+					<button id="poeTreeAnoint" type="button" class="btn btn-sm btn-ghost" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "아뮬렛 도유로 노터블 부여" : "Anoint a notable"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "도유" : "Anoint"}</button>
 					<button id="poeTreeStatsToggle" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "스탯 요약" : "Stat summary"}</button>
 					<input id="poeTreeImport" type="text" class="input input-sm input-bordered w-full sm:w-56" placeholder="${net.luversof.web.gate.poe.PoeText.isKorean() ? "공홈 트리 링크 붙여넣기" : "Paste official tree link"}">
 					<button id="poeTreeImportGo" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "가져오기" : "Import"}</button>
@@ -94,7 +96,10 @@
 					<canvas id="poeTreeCanvas" class="w-full h-[72vh] rounded-2xl shadow-sm cursor-grab" style="background:#0e1116" data-locale="${net.luversof.web.gate.poe.PoeText.isKorean() ? "ko" : "en"}" data-tree-src="${treeSrc}" data-sprites-src="${spritesSrc}"></canvas>
 					<div id="poeTreeTooltip" class="pointer-events-none absolute hidden z-10 max-w-xs poe-node-popup overflow-hidden"></div>
 					<div id="poeTreeEvalPanel" class="hidden absolute left-2 top-2 z-10 w-72 max-h-[70%] overflow-y-auto rounded shadow-2xl border border-primary/50 bg-base-300/95">
-						<div class="sticky top-0 border-b border-primary/40 bg-base-200 text-center font-bold text-xs px-4 py-1">${MessageUtil.getMessage("poe.tree.eval.title")}</div>
+						<div class="sticky top-0 border-b border-primary/40 bg-base-200 text-xs px-4 py-1 flex items-center">
+							<span class="flex-1 text-center font-bold">${MessageUtil.getMessage("poe.tree.eval.title")}</span>
+							<button id="poeTreeEvalClose" type="button" class="shrink-0 px-1 text-base-content/60 hover:text-base-content" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "닫기" : "Close"}">✕</button>
+						</div>
 						<div class="border-b border-primary/20 bg-base-200/60 p-2 space-y-1">
 							<div class="text-[10px] text-base-content/60 leading-4">${MessageUtil.getMessage("poe.tree.eval.gem.help")}</div>
 							<div class="flex items-center gap-1.5">

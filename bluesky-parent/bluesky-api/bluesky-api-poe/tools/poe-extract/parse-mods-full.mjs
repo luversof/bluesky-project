@@ -53,6 +53,23 @@ const CLASS_TAGS = {
 	"Two Hand Sword": ["sword", "weapon", "two_hand_weapon", "twohand", "melee"],
 	"Two Hand Axe": ["axe", "weapon", "two_hand_weapon", "twohand", "melee"],
 	"Two Hand Mace": ["mace", "weapon", "two_hand_weapon", "twohand", "melee"],
+	// 플라스크/주얼 — 장비(도메인 1)와 모드 도메인이 다르다(CLASS_DOMAIN 참고)
+	LifeFlask: ["life_flask", "flask"],
+	ManaFlask: ["mana_flask", "flask"],
+	HybridFlask: ["hybrid_flask", "flask"],
+	UtilityFlask: ["utility_flask", "flask"],
+	Jewel: ["jewel", "default"],
+	AbyssJewel: ["abyss_jewel", "default"],
+};
+
+// 클래스별 모드 도메인 — 기본 1(장비). 플라스크 2, 일반 주얼 10, 어비스 주얼 13(게임 테이블 실측).
+const CLASS_DOMAIN = {
+	LifeFlask: 2,
+	ManaFlask: 2,
+	HybridFlask: 2,
+	UtilityFlask: 2,
+	Jewel: 10,
+	AbyssJewel: 13,
 };
 // 이 파이프라인이 모드 풀을 보여줄 대상 = 장비(무기/방어/장신구)만. 플라스크/주얼은 별도 모드 도메인이라 제외.
 const wantedClasses = new Set(Object.keys(CLASS_TAGS));
@@ -161,19 +178,114 @@ const familyKey = (mod) => (mod.Id || "").replace(/\d+_?$/, "") || mod.Id;
 
 // 1) 장비 도메인 접두/접미 크래프팅 모드 수집 (Name 없는 내부 모드 제외)
 const GEN = { 1: "prefix", 2: "suffix" };
-const candidates = [];
+const WANTED_DOMAINS = new Set([1, ...Object.values(CLASS_DOMAIN)]);
+const candidatesByDomain = new Map(); // domain → [{mod,index}]
 mods.forEach((mod, index) => {
-	if (mod.Domain !== 1 || !GEN[mod.GenerationType] || !mod.Name) return;
+	if (!WANTED_DOMAINS.has(mod.Domain) || !GEN[mod.GenerationType] || !mod.Name) return;
 	if (!(mod.SpawnWeight_TagsKeys || []).length) return;
-	candidates.push({ mod, index });
+	let list = candidatesByDomain.get(mod.Domain);
+	if (!list) {
+		list = [];
+		candidatesByDomain.set(mod.Domain, list);
+	}
+	list.push({ mod, index });
+});
+
+// 1b) 바알 오브 부패 임플리싯(GenerationType 5) — 접두/접미와 같은 스폰웨이트 태그 매칭을 쓰지만
+// Name 이 빈 문자열이라 별도 수집. 영향력과 무관하게 붙으므로 영향력 없음("") 풀에만 담는다.
+// 플라스크 인챈트(주입 gen21/점화 gen22 오브) — 도메인 1 이지만 flask 태그로만 스폰. 플라스크 풀에만 담는다.
+const ENCHANT_GEN = { 21: { name: "Instilling", nameKo: "주입 오브" }, 22: { name: "Enkindling", nameKo: "점화 오브" } };
+const enchantCandidates = [];
+mods.forEach((mod, index) => {
+	if (mod.Domain !== 1 || !ENCHANT_GEN[mod.GenerationType]) return;
+	if (!(mod.SpawnWeight_TagsKeys || []).length) return;
+	enchantCandidates.push({ mod, index });
+});
+
+const corruptedByDomain = new Map(); // domain → [{mod,index}] (주얼 도메인 10/13 에도 부패 임플리싯이 있다 — "부패한 피 면역" 등)
+mods.forEach((mod, index) => {
+	if (!WANTED_DOMAINS.has(mod.Domain) || mod.GenerationType !== 5) return;
+	if (!(mod.SpawnWeight_TagsKeys || []).length) return;
+	let list = corruptedByDomain.get(mod.Domain);
+	if (!list) {
+		list = [];
+		corruptedByDomain.set(mod.Domain, list);
+	}
+	list.push({ mod, index });
 });
 
 // 2) (클래스×변형) 풀별 매칭 + 패밀리 구성
 const families = new Map(); // famKey → {gen, essence, tiers: Map<index, tier>}
 const perPool = new Map(); // "itemClass|variant" → Map<famKey, weight>
+const corruptedPerPool = new Map(); // "itemClass|variant|" → Set<famKey>
+const enchantPerPool = new Map(); // 플라스크 클래스 풀 → Set<famKey> (주입/점화 인챈트)
 for (const [poolKey, tagSets] of tagSetsByPool) {
+	if (poolKey.endsWith("|")) {
+		// 플라스크 풀엔 인챈트(주입/점화) 매칭
+		if (CLASS_DOMAIN[poolKey.split("|")[0]] === 2) {
+			const enchKeys = new Set();
+			enchantPerPool.set(poolKey, enchKeys);
+			for (const { mod, index } of enchantCandidates) {
+				let weight = 0;
+				for (const { tagSet } of tagSets) weight = Math.max(weight, spawnWeight(mod, tagSet));
+				if (weight <= 0) continue;
+				const key = familyKey(mod);
+				enchKeys.add(key);
+				let fam = families.get(key);
+				if (!fam) {
+					fam = { gen: "enchant", essence: false, tiers: new Map() };
+					families.set(key, fam);
+				}
+				if (!fam.tiers.has(index)) {
+					const label = ENCHANT_GEN[mod.GenerationType];
+					fam.tiers.set(index, {
+						id: mod.Id,
+						name: label.name,
+						nameKo: label.nameKo,
+						ilvl: mod.Level,
+						weight: weight,
+						en: describe(rollValues(mod, "max"), "English"),
+						enMin: describe(rollValues(mod, "min"), "English"),
+						ko: describe(rollValues(mod, "max"), "Korean"),
+						koMin: describe(rollValues(mod, "min"), "Korean"),
+					});
+				}
+			}
+		}
+		// 영향력 없음 풀에만 부패 임플리싯 매칭
+		const famKeys = new Set();
+		corruptedPerPool.set(poolKey, famKeys);
+		const corruptedCandidates = corruptedByDomain.get(CLASS_DOMAIN[poolKey.split("|")[0]] ?? 1) || [];
+		for (const { mod, index } of corruptedCandidates) {
+			let weight = 0;
+			for (const { tagSet } of tagSets) weight = Math.max(weight, spawnWeight(mod, tagSet));
+			if (weight <= 0) continue;
+			const key = familyKey(mod);
+			famKeys.add(key);
+			let fam = families.get(key);
+			if (!fam) {
+				fam = { gen: "corrupted", essence: false, tiers: new Map() };
+				families.set(key, fam);
+			}
+			if (!fam.tiers.has(index)) {
+				fam.tiers.set(index, {
+					id: mod.Id,
+					name: "Corrupted",
+					nameKo: "부패",
+					ilvl: mod.Level,
+					weight: weight,
+					en: describe(rollValues(mod, "max"), "English"),
+					enMin: describe(rollValues(mod, "min"), "English"),
+					ko: describe(rollValues(mod, "max"), "Korean"),
+					koMin: describe(rollValues(mod, "min"), "Korean"),
+				});
+			}
+		}
+	}
 	const famWeights = new Map();
 	perPool.set(poolKey, famWeights);
+	const poolClass = poolKey.split("|")[0];
+	const candidates = candidatesByDomain.get(CLASS_DOMAIN[poolClass] ?? 1) || [];
 	for (const { mod, index } of candidates) {
 		// 같은 변형 안의 베이스들끼리는 태그가 같으므로 max 로 합쳐도 섞이지 않는다
 		let weight = 0;
@@ -210,12 +322,16 @@ for (const [key, fam] of families) {
 	if (!tiers.some((t) => t.en?.length)) continue;
 	outFamilies[key] = { gen: fam.gen, essence: fam.essence || undefined, tiers };
 }
-// 풀(클래스|변형) → 접두/접미 패밀리 키
+// 풀(클래스|변형) → 접두/접미(+부패 임플리싯) 패밀리 키
 const outPools = {};
 for (const [poolKey, famWeights] of perPool) {
+	const corrupted = [...(corruptedPerPool.get(poolKey) || [])].filter((k) => outFamilies[k]?.gen === "corrupted").sort();
+	const enchants = [...(enchantPerPool.get(poolKey) || [])].filter((k) => outFamilies[k]?.gen === "enchant").sort();
 	outPools[poolKey] = {
 		prefixes: [...famWeights.keys()].filter((k) => outFamilies[k]?.gen === "prefix").sort(),
 		suffixes: [...famWeights.keys()].filter((k) => outFamilies[k]?.gen === "suffix").sort(),
+		...(corrupted.length ? { corrupted } : {}),
+		...(enchants.length ? { enchants } : {}),
 	};
 }
 // 클래스 목록 — 변형이 여럿이면 variants 로 노출(UI 가 하위 탭을 만든다). 변형 없으면 빈 목록.

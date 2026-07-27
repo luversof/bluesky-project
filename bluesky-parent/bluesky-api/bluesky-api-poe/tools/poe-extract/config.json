@@ -1,5 +1,5 @@
 {
-	"patch": "3.28.0.16",
+	"patch": "3.29.0.2.3",
 	"translations": [
 		"English",
 		"Korean"
@@ -286,6 +286,58 @@
 				"RequiresAdjacent",
 				"MaxAdjacent",
 				"Type"
+			]
+		},
+		{
+			"name": "Essences",
+			"columns": [
+				"BaseItemTypesKey",
+				"Level",
+				"IsScreamingEssence",
+				"ItemLevelRestriction",
+				"Helmet_ModsKey",
+				"BodyArmour_ModsKey",
+				"Boots_ModsKey",
+				"Gloves_ModsKey",
+				"Bow_ModsKey",
+				"Wand_ModsKey",
+				"Staff_ModsKey",
+				"TwoHandSword_ModsKey",
+				"TwoHandAxe_ModsKey",
+				"TwoHandMace_ModsKey",
+				"Claw_ModsKey",
+				"Dagger_ModsKey",
+				"OneHandSword_ModsKey",
+				"OneHandThrustingSword_ModsKey",
+				"OneHandAxe_ModsKey",
+				"OneHandMace_ModsKey",
+				"Sceptre_ModsKey",
+				"Belt_ModsKey",
+				"Amulet_ModsKey",
+				"Ring_ModsKey",
+				"Shield_ModsKey"
+			]
+		},
+		{
+			"name": "CraftingBenchOptions",
+			"columns": [
+				"AddMod",
+				"ItemClasses",
+				"RequiredLevel",
+				"IsDisabled",
+				"Tier",
+				"Cost_BaseItemTypes",
+				"Cost_Values",
+				"SortCategory",
+				"CraftingItemClassCategories"
+			]
+		},
+		{
+			"name": "CraftingItemClassCategories",
+			"columns": [
+				"Id",
+				"Text",
+				"ItemClasses"
 			]
 		}
 	],

@@ -52,12 +52,18 @@ local KEYS = {
 	"Life", "LifeUnreserved", "EnergyShield", "Mana", "Ward",
 	-- 속성: 장비 요구치(힘/민첩/지능) 충족 판정 — calc.lua 와 목록을 맞춰야 한다(둘 다 고쳐야 반영됨)
 	"Str", "Dex", "Int",
+	-- 총 요구 속성(장비+젬 합산) — 젬 요구치 포함 실현 가능성 판정용
+	"ReqStr", "ReqDex", "ReqInt",
 	-- 명중/명중률 — 공격 빌드의 DPS 는 명중 가정에 크게 좌우된다(표준 무기 +2000 전제)
 	"Accuracy", "AccuracyHitChance",
 	"Armour", "Evasion", "TotalEHP",
+	-- 생명 재생/순재생 — 정의의 화염류(자가연소) 지속력 판정용(NetLifeRegen<=0 이면 제 불에 타 죽음). calc.lua 와 목록 일치 필수.
+	"LifeRegen", "LifeRegenRecovery", "NetLifeRegen",
 	"ManaReserved", "ManaReservedPercent", "ManaUnreserved", "ManaUnreservedPercent",
 	"LifeReserved", "LifeReservedPercent",
 	"FireResist", "ColdResist", "LightningResist", "ChaosResist",
+	-- 방어 레이어(현 패치 핵심): 주문 억제/막기/주문 막기 — calc.lua 와 목록 일치 필수.
+	"SpellSuppressionChance", "BlockChance", "SpellBlockChance",
 	"CritChance", "CritMultiplier", "EffectiveMovementSpeedMod",
 	"PhysicalMaximumHitTaken", "FireMaximumHitTaken", "ColdMaximumHitTaken",
 	"LightningMaximumHitTaken", "ChaosMaximumHitTaken",

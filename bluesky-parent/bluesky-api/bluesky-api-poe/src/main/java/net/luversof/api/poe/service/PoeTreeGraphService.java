@@ -66,8 +66,30 @@ public class PoeTreeGraphService {
   /** 직업의 전직 목록 — 배열 순서가 PoB Spec 의 ascendClassId(1부터)와 일치 */
   public record ClassInfo(String name, List<String> ascendancies) {}
 
+  /** 성유(오일) 하나 — 도유 레시피 표시용. icon 은 /poe-assets/ 상대 경로. */
+  public record Oil(String name, String nameKo, String icon) {}
+
+  /** 도유 목록 한 줄 — poedb 속성부여식 표(노터블 + 성유 3개). */
+  public record AnointEntry(
+      int nodeId,
+      String name,
+      String nameKo,
+      List<String> stats,
+      List<String> statsKo,
+      List<OilRef> oils) {}
+
+  public record OilRef(String slug, String name, String nameKo, String icon) {}
+
+  /** 클러스터 주얼 노터블 정의 — 트리 노드가 아니라 생성 노드용 사전(passive-tree.json clusterNotables). */
+  public record ClusterNotable(
+      String name, String nameKo, List<String> stats, List<String> statsKo, String icon) {}
+
   private record PoeTreeFile(
-      List<ClassInfo> classes, List<TreeNode> nodes, List<List<Integer>> edges) {}
+      List<ClassInfo> classes,
+      List<TreeNode> nodes,
+      List<List<Integer>> edges,
+      java.util.Map<String, Oil> oils,
+      List<ClusterNotable> clusterNotables) {}
 
   private final Path dataFile;
   private volatile Map<Integer, TreeNode> nodeById = Map.of();
@@ -75,6 +97,8 @@ public class PoeTreeGraphService {
   private volatile Map<String, Integer> classStartByName = Map.of();
   private volatile Map<String, List<String>> ascendanciesByClass = Map.of();
   private volatile Map<String, Integer> ascendancyStartByName = Map.of();
+  private volatile Map<String, Oil> oils = Map.of();
+  private volatile List<ClusterNotable> clusterNotables = List.of();
 
   public PoeTreeGraphService(@Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
     this.dataFile = Path.of(dataDir, "passive-tree.json");
@@ -91,6 +115,13 @@ public class PoeTreeGraphService {
       JsonMapper jsonMapper = JsonMapper.builder().build();
       PoeTreeFile tree = jsonMapper.readValue(inputStream, PoeTreeFile.class);
 
+      this.oils = tree.oils() != null ? tree.oils() : Map.of();
+      this.clusterNotables =
+          tree.clusterNotables() != null
+              ? tree.clusterNotables().stream()
+                  .sorted(java.util.Comparator.comparing(ClusterNotable::name))
+                  .toList()
+              : List.of();
       Map<Integer, TreeNode> nodes = new HashMap<>();
       for (TreeNode node : tree.nodes()) {
         nodes.put(node.id(), node);
@@ -197,6 +228,50 @@ public class PoeTreeGraphService {
         .filter(node -> node.ascendancy() == null)
         .sorted(java.util.Comparator.comparingInt(TreeNode::id))
         .toList();
+  }
+
+  /** 성유 slug 의 등급 — mushruneuber 최상(99), 그 외 숫자부. 도유 목록 정렬(비싼 성유 우선)에 쓴다. */
+  private static int oilRank(String slug) {
+    if (slug == null) {
+      return -1;
+    }
+    if (slug.endsWith("uber")) {
+      return 99;
+    }
+    String digits = slug.replaceAll("\\D+", "");
+    return digits.isEmpty() ? -1 : Integer.parseInt(digits);
+  }
+
+  /** poedb 속성부여식 도유 목록 — 최고 성유 등급 내림차순(동급은 id). */
+  /** 클러스터 주얼 노터블 사전(이름 오름차순) — 브라우징 페이지용. */
+  public List<ClusterNotable> clusterNotables() {
+    return clusterNotables;
+  }
+
+  public List<AnointEntry> anointList() {
+    Map<String, Oil> oilMap = oils;
+    List<AnointEntry> out = new ArrayList<>();
+    for (TreeNode node : anointableNotables()) {
+      List<OilRef> refs = new ArrayList<>();
+      for (String slug : node.anoint()) {
+        Oil oil = oilMap.get(slug);
+        refs.add(
+            new OilRef(
+                slug,
+                oil != null ? oil.name() : slug,
+                oil != null ? oil.nameKo() : slug,
+                oil != null ? oil.icon() : null));
+      }
+      out.add(
+          new AnointEntry(
+              node.id(), node.name(), node.nameKo(), node.stats(), node.statsKo(), refs));
+    }
+    out.sort(
+        java.util.Comparator.<AnointEntry>comparingInt(
+                e -> e.oils().stream().mapToInt(o -> oilRank(o.slug())).max().orElse(-1))
+            .reversed()
+            .thenComparingInt(AnointEntry::nodeId));
+    return out;
   }
 
   /**

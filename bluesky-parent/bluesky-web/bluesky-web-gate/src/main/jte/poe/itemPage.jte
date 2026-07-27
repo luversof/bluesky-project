@@ -13,6 +13,10 @@
 @param net.luversof.web.gate.poe.dto.PoeModClass fullMods = null
 @param net.luversof.web.gate.poe.dto.PoeEldritch eldritch = null
 @param String slug = ""
+@param java.util.List<net.luversof.web.gate.poe.dto.PoeAnointEntry> anoints = null
+@param java.util.List<net.luversof.web.gate.poe.dto.PoeEssenceEntry> essences = null
+@param java.util.List<net.luversof.web.gate.poe.dto.PoeBenchEntry> bench = null
+@param java.util.List<net.luversof.web.gate.poe.dto.PoeUniqueItem> baseUniques = null
 
 !{
 	String displayName = PoeText.name(item.nameKo(), item.name());
@@ -38,6 +42,26 @@
 			<%-- 상세 레이어(툴팁+큐레이션 티어표)를 그대로 바닥에 --%>
 			@template.poe.htmx.itemDetail(item = item, modFamilies = modFamilies)
 
+			<%-- poedb 식 — 이 베이스를 쓰는 고유 아이템(호버 툴팁 + 상세 링크) --%>
+			@if(baseUniques != null && !baseUniques.isEmpty())
+				<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
+					<div class="mb-2 flex flex-wrap items-baseline gap-2">
+						<h2 class="font-bold text-orange-500">${ko ? "이 베이스의 고유 아이템" : "Uniques on this base"}</h2>
+						<span class="text-xs font-mono text-base-content/40">${baseUniques.size()}</span>
+					</div>
+					<div class="flex flex-wrap gap-x-4 gap-y-1">
+						@for(var u : baseUniques)
+							<a class="poe-hover font-semibold text-orange-500 link-hover cursor-pointer text-sm"
+							   href="/poe/uniques/${u.slug()}"
+							   hx-get="/poe/htmx/uniques/detail?slug=${u.slug()}"
+							   hx-target="#poePreview"
+							   hx-trigger="mouseenter delay:100ms"
+							   hx-swap="innerHTML">${PoeText.name(u.nameKo(), u.name())}</a>
+						@endfor
+					</div>
+				</div>
+			@endif
+
 			<%-- 전체 제작 모드 풀(poedb식) — 장비 클래스만. 큐레이션(위 툴팁)보다 훨씬 많아 별도 섹션으로 --%>
 			@if(fullMods != null)
 				<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
@@ -55,7 +79,7 @@
 					</div>
 					@template.poe.modFilterBar(scope = "#poeItemModBody", idPrefix = "poeItemMod")
 					<div id="poeItemModBody" class="mt-2">
-						@template.poe.htmx.modClass(mods = fullMods, showVariants = false, influenceHref = "/poe/items/" + slug + "?")
+						@template.poe.htmx.modClass(mods = fullMods, showVariants = false, influenceHref = "/poe/items/" + slug + "?", anoints = anoints, essences = essences, bench = bench)
 					</div>
 				</div>
 			@endif

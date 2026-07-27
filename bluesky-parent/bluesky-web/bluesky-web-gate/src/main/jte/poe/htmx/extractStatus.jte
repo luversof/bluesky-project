@@ -10,6 +10,7 @@
 @param boolean outdated = false
 @param String dataPatch = null
 @param String configPatch = null
+@param String pobVersion = null
 
 !{
 	// 최신과 다르면 버튼에 목표 버전 표기(원클릭 갱신), 같으면 재추출
@@ -42,6 +43,9 @@
 				@endif
 				@if(configPatch != null && dataPatch != null && !configPatch.equals(dataPatch))
 					<span class="badge badge-info badge-outline badge-sm">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.admin.version.config"), configPatch)}</span>
+				@endif
+				@if(pobVersion != null)
+					<span class="badge badge-ghost badge-sm" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "PoB 계산 엔진 버전(시뮬 트리 기준)" : "PoB calc engine version (sim tree basis)"}">PoB ${pobVersion}</span>
 				@endif
 			</div>
 			<div class="flex flex-wrap items-center gap-3">
