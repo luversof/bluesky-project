@@ -54,6 +54,15 @@ end
 	loadBuildFromXML(xmlText)
 
 	local output = build.calcsTab.mainOutput or {}
+	-- 미니언 빌드: 플레이어가 직접 안 때려 player output 의 DPS 는 0 이고 실제 피해는 미니언 output 에 있다.
+	-- DPS 키만 미니언 값으로 폴백(방어/생명 등은 플레이어 값 유지). 경로 전부 nil-guard → 미니언 없으면 무효(안전).
+	local minionOut = nil
+	do
+		local env = build.calcsTab.mainEnv
+		local ms = env and env.player and env.player.mainSkill
+		if ms and ms.minion then minionOut = ms.minion.output end
+	end
+	local MINION_DPS_KEYS = { CombinedDPS = true, TotalDPS = true, AverageDamage = true, FullDPS = true, FullDotDPS = true }
 	-- 표시/랭킹에 쓰는 핵심 스탯만 추린다 (없는 키는 그대로 생략됨)
 	local keys = {
 		"CombinedDPS", "TotalDPS", "FullDPS", "AverageDamage", "Speed",
@@ -80,6 +89,10 @@ end
 	local result = {}
 	for _, key in ipairs(keys) do
 		local value = output[key]
+		-- DPS 키가 0/부재이고 미니언 output 에 값이 있으면 미니언 값 사용
+		if minionOut and MINION_DPS_KEYS[key] and (not value or value == 0) and type(minionOut[key]) == "number" then
+			value = minionOut[key]
+		end
 		if type(value) == "number" and value == value and value ~= math.huge and value ~= -math.huge then
 			result[key] = value
 		end

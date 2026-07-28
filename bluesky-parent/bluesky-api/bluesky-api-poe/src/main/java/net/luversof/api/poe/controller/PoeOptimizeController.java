@@ -23,6 +23,23 @@ public class PoeOptimizeController {
     this.poeOptimizeService = poeOptimizeService;
   }
 
+  /**
+   * poe.ninja 실빌드 벤치마크 조회 — 결과 페이지에서 최적화 결과를 실빌드 중앙값과 비교 표시하는 용도. 정확 키(전직+스킬) 우선, 없으면 스킬 폴백. 데이터
+   * 없으면 null(게이트가 미표시).
+   */
+  @GetMapping("/archetype")
+  public PoeOptimizeService.ArchetypeBenchmark archetype(
+      @RequestParam(required = false, defaultValue = "") String skill,
+      @RequestParam(required = false, defaultValue = "") String ascendancy) {
+    return poeOptimizeService.ninjaBenchmark(ascendancy, skill);
+  }
+
+  /** 실행 중인 최적 조합 탐색 잡 중지 — 취소 요청 성공(실행 중이었음) 시 true. */
+  @PostMapping("/stop")
+  public boolean stop() {
+    return poeOptimizeService.cancel();
+  }
+
   /** 진행 상태 + (완료 시) 결과 스냅샷 */
   public record OptimizeStatus(
       boolean available,

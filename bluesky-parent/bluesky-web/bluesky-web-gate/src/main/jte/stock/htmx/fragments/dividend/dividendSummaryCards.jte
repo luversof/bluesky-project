@@ -24,9 +24,22 @@
 @param List<DividendChange> dividendChangeContributors
 @param String taxLabel
 @param String taxableAmountLabel
+@param BigDecimal midMonthNetAmount = BigDecimal.ZERO
+@param BigDecimal monthEndNetAmount = BigDecimal.ZERO
+@param BigDecimal otherWindowNetAmount = BigDecimal.ZERO
+@param long midMonthCount = 0
+@param long monthEndCount = 0
+@param long otherWindowCount = 0
 
 !{
     String periodDividendLabel = MessageUtil.getMessage("stock.dividend.summary.period.total");
+    String midMonthLabel = MessageUtil.getMessage("stock.dividend.summary.window.mid");
+    String monthEndLabel = MessageUtil.getMessage("stock.dividend.summary.window.end");
+    String otherWindowLabel = MessageUtil.getMessage("stock.dividend.summary.window.other");
+    String countPattern = MessageUtil.getMessage("common.count");
+    java.util.function.LongFunction<String> windowCount = c -> java.text.MessageFormat.format(countPattern, c);
+    // 월중/월말 태그가 붙은 배당이 하나라도 있으면 구분 표시(둘 다 없으면 의미 없음)
+    boolean hasWindowSplit = midMonthCount > 0 || monthEndCount > 0;
     String netLabel = MessageUtil.getMessage("common.label.net");
     String grossLabel = MessageUtil.getMessage("common.label.gross");
     String previousComparisonLabel = MessageUtil.getMessage("stock.dividend.summary.previous.comparison");
@@ -77,6 +90,31 @@
                     ${deductionLabel} = ${taxLabel} <span class="amount-value">₩${decimalFormat.format(safeAllTax)}</span>
                     + ${deductionOtherLabel} <span class="amount-value">₩${decimalFormat.format(allOtherDeduction)}</span>
                 </div>
+                <!-- 월중/월말 배당 구분(세후): 종목 태그(월중배당/월말배당) 기준. 태그 없는 종목은 기타. -->
+                @if(hasWindowSplit)
+                <div class="mt-2 pt-2 border-t border-base-200 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                    <span class="inline-flex items-baseline gap-1">
+                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-info"></span>
+                        <span class="text-base-content/50">${midMonthLabel}</span>
+                        <span class="font-semibold text-base-content/80 amount-value">₩ ${decimalFormat.format(midMonthNetAmount)}</span>
+                        <span class="text-base-content/40">${windowCount.apply(midMonthCount)}</span>
+                    </span>
+                    <span class="inline-flex items-baseline gap-1">
+                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                        <span class="text-base-content/50">${monthEndLabel}</span>
+                        <span class="font-semibold text-base-content/80 amount-value">₩ ${decimalFormat.format(monthEndNetAmount)}</span>
+                        <span class="text-base-content/40">${windowCount.apply(monthEndCount)}</span>
+                    </span>
+                    @if(otherWindowCount > 0)
+                    <span class="inline-flex items-baseline gap-1">
+                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-base-content/25"></span>
+                        <span class="text-base-content/50">${otherWindowLabel}</span>
+                        <span class="font-semibold text-base-content/80 amount-value">₩ ${decimalFormat.format(otherWindowNetAmount)}</span>
+                        <span class="text-base-content/40">${windowCount.apply(otherWindowCount)}</span>
+                    </span>
+                    @endif
+                </div>
+                @endif
         `)
 
         <!-- Card 2: 전기 대비 -->

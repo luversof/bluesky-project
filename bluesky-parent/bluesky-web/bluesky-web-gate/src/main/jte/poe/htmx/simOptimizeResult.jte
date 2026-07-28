@@ -4,6 +4,7 @@
 
 @param PoeOptimizeResult result = null
 @param java.util.Map<String, String> tattooIcons = null
+@param net.luversof.web.gate.poe.dto.ArchetypeBenchmark ninjaBenchmark = null
 
 @if(result != null)
 	!{
@@ -90,7 +91,11 @@
 				@if(unsustainable)
 					<span class="font-semibold text-rose-500">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.sim.opt.result.unsustainable"), netRegen)}</span>
 				@endif
-				<span class="text-base-content/50 ml-auto">${MessageUtil.getMessage("poe.sim.opt.result.fragile.hint")}</span>
+				@if("dps".equals(result.objective()))
+					<span class="text-base-content/50 ml-auto">${MessageUtil.getMessage("poe.sim.opt.result.fragile.hint")}</span>
+				@else
+					<span class="text-base-content/50 ml-auto">${MessageUtil.getMessage("poe.sim.opt.result.fragile.hint.balanced")}</span>
+				@endif
 			</div>
 		@endif
 
@@ -99,6 +104,46 @@
 			<span class="text-lg font-bold font-mono text-primary">→ ${result.finalValue()}</span>
 			<span class="text-[11px] text-base-content/40">${net.luversof.web.gate.poe.PoeText.isKorean() ? "(모든 레어 최상위 티어 가정)" : "(all rares at top tier)"}</span>
 		</div>
+
+		<%-- poe.ninja 실빌드 벤치마크 — 이 (전직×스킬)의 실 유저 빌드 중앙값과 비교. 결과가 실데이터에 근거함을 보여준다. --%>
+		@if(ninjaBenchmark != null && ninjaBenchmark.sample() > 0)
+			!{
+				boolean ko = net.luversof.web.gate.poe.PoeText.isKorean();
+				java.util.function.LongFunction<String> fmt = n -> {
+					if (n >= 1_000_000_000L) return String.format("%.1fB", n / 1_000_000_000.0);
+					if (n >= 1_000_000L) return String.format("%.1fM", n / 1_000_000.0);
+					if (n >= 1_000L) return String.format("%.0fk", n / 1_000.0);
+					return String.valueOf(n);
+				};
+				Integer myLife = statInt.apply("life");
+				Integer myEhp = statInt.apply("totalehp");
+				Integer myDps = statInt.apply("combineddps");
+				// 실빌드 중앙값 대비 60% 미만이면 "낮음"(참고용, 강제 아님)
+				java.util.function.BiFunction<Integer, Long, Boolean> low = (mine, med) -> mine != null && med > 0 && mine < med * 0.6;
+			}
+			<div class="rounded-box bg-base-100 px-3 py-2 text-xs space-y-1">
+				<div class="flex items-center gap-2">
+					<span class="font-bold text-info">${ko ? "poe.ninja 실빌드 중앙값" : "poe.ninja real-build median"}</span>
+					<span class="badge badge-ghost badge-xs">${ninjaBenchmark.mainSkill()}${ninjaBenchmark.ascendancy() != null && !ninjaBenchmark.ascendancy().isBlank() ? " · " + ninjaBenchmark.ascendancy() : ""}</span>
+					<span class="text-base-content/40">n=${ninjaBenchmark.sample()}</span>
+				</div>
+				<div class="flex flex-wrap gap-x-4 gap-y-1 font-mono">
+					<span>${ko ? "생명" : "Life"} <span class="text-base-content/60">${fmt.apply(ninjaBenchmark.life())}</span>${low.apply(myLife, ninjaBenchmark.life()) ? " " : ""}<span class="${low.apply(myLife, ninjaBenchmark.life()) ? "text-warning" : "text-base-content/40"}">(${ko ? "내" : "you"} ${myLife != null ? fmt.apply(myLife.longValue()) : "-"})</span></span>
+					<span>EHP <span class="text-base-content/60">${fmt.apply(ninjaBenchmark.ehp())}</span> <span class="${low.apply(myEhp, ninjaBenchmark.ehp()) ? "text-warning" : "text-base-content/40"}">(${ko ? "내" : "you"} ${myEhp != null ? fmt.apply(myEhp.longValue()) : "-"})</span></span>
+					<span>DPS <span class="text-base-content/60">${fmt.apply(ninjaBenchmark.dps())}</span> <span class="${low.apply(myDps, ninjaBenchmark.dps()) ? "text-warning" : "text-base-content/40"}">(${ko ? "내" : "you"} ${myDps != null ? fmt.apply(myDps.longValue()) : "-"})</span></span>
+				</div>
+				<%-- 실빌드 유형별 최대 피격(단일 히트 생존) — 결과 카드의 내 defenseHits 와 직접 비교. 물리가 대개 최약점. --%>
+				@if(ninjaBenchmark.physicalMax() > 0 || ninjaBenchmark.fireMax() > 0)
+					<div class="text-base-content/50">${ko ? "실빌드 최대피격" : "real-build max hit"} <span class="font-mono">${ko ? "물" : "Phys"} ${fmt.apply(ninjaBenchmark.physicalMax())} · ${ko ? "화" : "Fire"} ${fmt.apply(ninjaBenchmark.fireMax())} · ${ko ? "냉" : "Cold"} ${fmt.apply(ninjaBenchmark.coldMax())} · ${ko ? "번" : "Lit"} ${fmt.apply(ninjaBenchmark.lightningMax())}</span></div>
+				@endif
+				@if(ninjaBenchmark.topKeystones() != null && !ninjaBenchmark.topKeystones().isEmpty())
+					<div class="text-base-content/50">${ko ? "실빌드 키스톤" : "common keystones"}: ${String.join(", ", ninjaBenchmark.topKeystones())}</div>
+				@endif
+				@if(ninjaBenchmark.topCoSkills() != null && !ninjaBenchmark.topCoSkills().isEmpty())
+					<div class="text-base-content/50">${ko ? "함께 쓰는 스킬" : "common co-skills"}: ${String.join(", ", ninjaBenchmark.topCoSkills())}</div>
+				@endif
+			</div>
+		@endif
 
 		<%-- 어픽스 예산 축: "필수 옵션 수"에 따른 현실적 DPS 곡선 — 레어가 있을 때만. 필수 많을수록 finalValue 에 수렴 --%>
 		@if(result.affixBudget() != null && !result.affixBudget().isEmpty())

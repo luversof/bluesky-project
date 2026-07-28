@@ -54,6 +54,10 @@ import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
 public class StockDividendHtmxController extends StockBaseHtmxController {
 
+  // 월중/월말 배당 구분에 쓰는 종목 태그. 월배당(커버드콜 등) 종목에 부여되어 있다.
+  private static final String MID_MONTH_DIVIDEND_TAG = "월중배당";
+  private static final String MONTH_END_DIVIDEND_TAG = "월말배당";
+
   public StockDividendHtmxController(
       TradeProfitClient tradeProfitClient,
       TradeClient tradeClient,
@@ -401,6 +405,36 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     BigDecimal totalAllTax =
         viewList.stream().map(DividendView::tax).reduce(BigDecimal.ZERO, BigDecimal::add);
 
+    // 월중/월말 배당 구분: 종목 태그(월중배당/월말배당) 기준으로 기간 배당(세후)을 나눈다.
+    // 태그가 없는 종목(분기배당 등)은 '기타'로 집계한다. 전체 종목 리스트에서 태그를 조회한다.
+    Map<UUID, List<String>> tagsByStockId =
+        stockItemList.stream()
+            .collect(
+                Collectors.toMap(
+                    StockItem::id,
+                    s -> s.tags() != null ? s.tags() : List.of(),
+                    (left, right) -> left));
+    BigDecimal midMonthNetAmount = BigDecimal.ZERO;
+    BigDecimal monthEndNetAmount = BigDecimal.ZERO;
+    BigDecimal otherWindowNetAmount = BigDecimal.ZERO;
+    long midMonthCount = 0;
+    long monthEndCount = 0;
+    long otherWindowCount = 0;
+    for (DividendView d : viewList) {
+      List<String> tags = tagsByStockId.getOrDefault(d.stockItemId(), List.of());
+      BigDecimal net = nz(d.netAmount());
+      if (tags.contains(MID_MONTH_DIVIDEND_TAG)) {
+        midMonthNetAmount = midMonthNetAmount.add(net);
+        midMonthCount++;
+      } else if (tags.contains(MONTH_END_DIVIDEND_TAG)) {
+        monthEndNetAmount = monthEndNetAmount.add(net);
+        monthEndCount++;
+      } else {
+        otherWindowNetAmount = otherWindowNetAmount.add(net);
+        otherWindowCount++;
+      }
+    }
+
     BigDecimal prevPeriodNetAmount = null;
     LocalDate prevStartDate = null;
     LocalDate prevEndDate = null;
@@ -572,6 +606,12 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     model.addAttribute("totalAllNetAmount", totalAllNetAmount);
     model.addAttribute("totalAllTaxableAmount", totalAllTaxableAmount);
     model.addAttribute("totalAllTax", totalAllTax);
+    model.addAttribute("midMonthNetAmount", midMonthNetAmount);
+    model.addAttribute("monthEndNetAmount", monthEndNetAmount);
+    model.addAttribute("otherWindowNetAmount", otherWindowNetAmount);
+    model.addAttribute("midMonthCount", midMonthCount);
+    model.addAttribute("monthEndCount", monthEndCount);
+    model.addAttribute("otherWindowCount", otherWindowCount);
     model.addAttribute("prevPeriodNetAmount", prevPeriodNetAmount);
     model.addAttribute("dividendChangeContributors", dividendChangeContributors);
     model.addAttribute("prevStartDate", prevStartDate);
@@ -688,8 +728,12 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     Map<LocalDate, Map<UUID, HoldingsSnapshotItem>> snapshotByDate =
         loadSnapshotsByDate(userId, basisDates);
     LocalDate maxBasisDate = basisDates.stream().max(Comparator.naturalOrder()).orElse(null);
+    LocalDate minBasisDate = basisDates.stream().min(Comparator.naturalOrder()).orElse(null);
+    // 전체(all) 모드는 startInstant 이 없다. 이때 시작일을 maxBasisDate 로 잡으면 기간이
+    // [maxBasisDate, maxBasisDate] = 1일 로 붕괴해 연 환산 수익률이 폭주한다(예: 3432%).
+    // 시작일 미지정 시엔 가장 이른 배당 기준일을 기간 시작으로 사용한다.
     LocalDate periodStartDate =
-        startInstant != null ? startInstant.atZone(zone).toLocalDate() : maxBasisDate;
+        startInstant != null ? startInstant.atZone(zone).toLocalDate() : minBasisDate;
     LocalDate periodEndDate = resolvePeriodEndDate(endInstant, maxBasisDate, zone);
     Map<Integer, Long> periodDayCountsByYear =
         buildPeriodDayCountsByYear(periodStartDate, periodEndDate);

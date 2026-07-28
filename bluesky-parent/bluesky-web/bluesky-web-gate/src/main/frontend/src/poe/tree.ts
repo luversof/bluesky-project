@@ -7,6 +7,17 @@
 	if (!maybeCanvas || maybeCanvas.dataset.poeTreeInitialized === "true") return;
 	const canvas = maybeCanvas;
 	canvas.dataset.poeTreeInitialized = "true";
+	// 버전 아카이브 셀렉트 — 인라인 onchange 는 CSP(script-src nonce, unsafe-inline 없음)에 막혀 동작 안 함.
+	// 외부 스크립트(이 파일=CSP 허용)에서 addEventListener 로 처리해 버전 전환이 실제로 네비게이션되게 한다.
+	const verSelect = document.querySelector<HTMLSelectElement>("[data-poe-ver-select]");
+	if (verSelect) {
+		verSelect.addEventListener("change", () => {
+			const u = new URL(globalThis.location.href);
+			if (verSelect.value) u.searchParams.set("ver", verSelect.value);
+			else u.searchParams.delete("ver");
+			globalThis.location.href = u.toString();
+		});
+	}
 	const isKorean = canvas.dataset.locale !== "en";
 	const treeSrc = canvas.dataset.treeSrc || "/poe-data/passive-tree.json";
 	const spritesSrc = canvas.dataset.spritesSrc || "/poe-data/tree-sprites-skill.json";

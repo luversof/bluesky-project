@@ -43,6 +43,12 @@
 @param BigDecimal totalAllNetAmount = BigDecimal.ZERO
 @param BigDecimal totalAllTaxableAmount = BigDecimal.ZERO
 @param BigDecimal totalAllTax = BigDecimal.ZERO
+@param BigDecimal midMonthNetAmount = BigDecimal.ZERO
+@param BigDecimal monthEndNetAmount = BigDecimal.ZERO
+@param BigDecimal otherWindowNetAmount = BigDecimal.ZERO
+@param long midMonthCount = 0
+@param long monthEndCount = 0
+@param long otherWindowCount = 0
 @param BigDecimal prevPeriodNetAmount = null
 @param LocalDate prevStartDate = null
 @param LocalDate prevEndDate = null
@@ -200,7 +206,13 @@
         prevEndDate = prevEndDate,
         dividendChangeContributors = dividendChangeContributors,
         taxLabel = taxLabel,
-        taxableAmountLabel = taxableAmountLabel
+        taxableAmountLabel = taxableAmountLabel,
+        midMonthNetAmount = midMonthNetAmount,
+        monthEndNetAmount = monthEndNetAmount,
+        otherWindowNetAmount = otherWindowNetAmount,
+        midMonthCount = midMonthCount,
+        monthEndCount = monthEndCount,
+        otherWindowCount = otherWindowCount
     )
 
     @template.stock.htmx.fragments.dividend.dividendCharts()

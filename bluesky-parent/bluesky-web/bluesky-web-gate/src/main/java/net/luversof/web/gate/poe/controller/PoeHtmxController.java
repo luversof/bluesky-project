@@ -72,10 +72,28 @@ public class PoeHtmxController {
     model.addAttribute("logLines", status.logLines());
     model.addAttribute("result", status.result());
     model.addAttribute("tattooIcons", tattooIcons(status.result()));
+    model.addAttribute("ninjaBenchmark", benchmark(status.result()));
     if (!status.running()) {
       response.setStatus(286); // htmx: 폴링 중단
     }
     return "poe/htmx/simOptimizeStatus";
+  }
+
+  /**
+   * 결과의 (전직×메인스킬)에 해당하는 poe.ninja 실빌드 벤치마크 — 결과를 실빌드 중앙값과 비교 표시. api-poe 미가동/데이터 없음이면 null(게이트가
+   * 미표시).
+   */
+  private net.luversof.web.gate.poe.dto.ArchetypeBenchmark benchmark(
+      net.luversof.web.gate.poe.dto.PoeOptimizeResult result) {
+    if (result == null || result.gemName() == null || result.gemName().isBlank()) {
+      return null;
+    }
+    try {
+      return poeOptimizeClient.archetype(
+          result.gemName(), result.ascendancy() != null ? result.ascendancy() : "");
+    } catch (Exception e) {
+      return null;
+    }
   }
 
   /**
@@ -103,6 +121,16 @@ public class PoeHtmxController {
     return tattooIcons;
   }
 
+  /** 실행 중인 최적 조합 탐색 잡 중지 (로그인 필요) — 취소 요청만 보내고, UI 는 폴링 래퍼가 다음 상태로 갱신한다. */
+  @PostMapping("/sim/optimize/stop")
+  @org.springframework.web.bind.annotation.ResponseBody
+  public String stopOptimize(java.security.Principal principal) {
+    if (principal != null) {
+      poeOptimizeClient.stop();
+    }
+    return "";
+  }
+
   /** 최근 결과 목록 fragment (최신순). sim 페이지의 이력 컨테이너가 로드/완료 시 채운다. */
   @GetMapping("/sim/optimize/history")
   public String optimizeHistory(Model model) {
@@ -116,6 +144,7 @@ public class PoeHtmxController {
     net.luversof.web.gate.poe.dto.PoeOptimizeResult result = poeOptimizeClient.result(id);
     model.addAttribute("result", result);
     model.addAttribute("tattooIcons", tattooIcons(result));
+    model.addAttribute("ninjaBenchmark", benchmark(result));
     return "poe/htmx/simOptimizeResult";
   }
 

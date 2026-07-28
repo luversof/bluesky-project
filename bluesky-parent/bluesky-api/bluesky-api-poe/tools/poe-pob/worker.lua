@@ -94,9 +94,14 @@ while true do
 		local ok, err = pcall(function()
 			loadBuildFromXML(xml)
 			local output = build.calcsTab.mainOutput or {}
+			-- 미니언 빌드 DPS 폴백(calc.lua 와 동일·nil-guard): player DPS 0 이면 미니언 output 값 사용.
+			local minionOut = nil
+			do local env = build.calcsTab.mainEnv; local ms = env and env.player and env.player.mainSkill; if ms and ms.minion then minionOut = ms.minion.output end end
+			local MINION_DPS_KEYS = { CombinedDPS = true, TotalDPS = true, AverageDamage = true, FullDPS = true, FullDotDPS = true }
 			local result = {}
 			for _, key in ipairs(KEYS) do
 				local value = output[key]
+				if minionOut and MINION_DPS_KEYS[key] and (not value or value == 0) and type(minionOut[key]) == "number" then value = minionOut[key] end
 				if type(value) == "number" and value == value and value ~= math.huge and value ~= -math.huge then
 					result[key] = value
 				end

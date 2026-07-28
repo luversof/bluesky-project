@@ -40,6 +40,15 @@ for (const step of steps) {
 	execSync(`"${process.execPath}" "${path.join(here, step)}"`, { stdio: "inherit", cwd: here });
 }
 
+// poe.ninja 실빌드 시드 (최적화기 balanced 목표치의 아키타입 근거) — **네트워크 단계**라 비치명 처리.
+//   인자 없이 호출하면 현재 빌드 리그를 자동 감지한다. 사이트 불가/리그 변경 시에도 데이터 파이프라인은 계속.
+console.log("\n===== fetch-ninja-builds.mjs (poe.ninja 시드, 비치명) =====");
+try {
+	execSync(`"${process.execPath}" "${path.join(here, "fetch-ninja-builds.mjs")}"`, { stdio: "inherit", cwd: here });
+} catch (e) {
+	console.warn("poe.ninja 시드 갱신 실패 — 기존 시드/정적 floor 로 계속(오프라인/사이트 변경?):", e.message);
+}
+
 // PoB 엔진 소스 (빌드 재계산/시뮬레이터용) — 없으면 클론, 실패해도 데이터 파이프라인은 성공 처리
 const pobSrc = path.join(WORK_DIR, "pob-src");
 if (!fs.existsSync(pobSrc)) {

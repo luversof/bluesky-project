@@ -33,6 +33,10 @@ public interface PoeOptimizeClient {
   @GetExchange("/status")
   PoeJobStatus.Optimize status();
 
+  /** 실행 중인 잡 중지 — 실행 중이었으면 true. */
+  @PostExchange("/stop")
+  boolean stop();
+
   /** 최근 결과 목록(최신순, 목록 표시용 요약). */
   @GetExchange("/history")
   java.util.List<PoeJobStatus.OptimizeHistoryEntry> history();
@@ -40,4 +44,9 @@ public interface PoeOptimizeClient {
   /** 이력 결과 한 건 전체 조회(id = 저장 시각 epochMs) — 없으면 null. */
   @GetExchange("/result")
   PoeOptimizeResult result(@RequestParam long id);
+
+  /** poe.ninja 실빌드 벤치마크(결과 비교 표시용) — 데이터 없으면 null. */
+  @GetExchange("/archetype")
+  net.luversof.web.gate.poe.dto.ArchetypeBenchmark archetype(
+      @RequestParam String skill, @RequestParam String ascendancy);
 }

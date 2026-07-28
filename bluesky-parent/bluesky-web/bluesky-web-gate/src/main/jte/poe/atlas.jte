@@ -33,7 +33,7 @@
 				<span class="badge badge-ghost">${patchLabel}</span>
 				@if(!treeVersions.isEmpty())
 					<%-- 버전별 아카이브 조회 — 빈 값=현행(최신) 데이터 --%>
-					<select class="select select-xs select-bordered" onchange="var u=new URL(location.href); if(this.value) u.searchParams.set('ver', this.value); else u.searchParams.delete('ver'); location.href=u.toString();">
+					<select class="select select-xs select-bordered" data-poe-ver-select>
 						<option value="">${net.luversof.web.gate.poe.PoeText.isKorean() ? "최신" : "Latest"}</option>
 						@for(String v : treeVersions)
 							<option value="${v}" selected="${v.equals(activeVer)}">${v}</option>

@@ -401,8 +401,14 @@ public class TradeProfitService {
             && request.getAccountIdList() != null
             && request.getAccountIdList().size() == 1);
     boolean shouldReadCache = isReadUserRequest || isReadSingleAccountRequest;
+    // 시계열 평가액은 조회 창(시작일)과 무관하게 같은 날짜면 같아야 한다. 그런데 DailyAccountSnapshot
+    // 캐시는 한번 쓰이면 덮어쓰지 않아, 이후 거래 추가/정정·수정주가 반영이 생기면 stale 이 된다.
+    // 그 stale 스냅샷에서 상태를 시드하면 창마다 다른 시드를 써서 같은 날짜의 평가액이 달라지는
+    // 버그가 있었다(예: 2026-06-17 이 3개월/6개월/1년에서 서로 다른 값). 항상 첫 거래일부터
+    // 재시뮬레이션하여 창 독립적인 정확한 값을 보장한다. (실측상 캐시 시드 경로보다 오히려 빠름.)
+    boolean seedFromSnapshot = false;
     boolean restoredFromSnapshot = false;
-    if (shouldReadCache) {
+    if (seedFromSnapshot && shouldReadCache) {
       LocalDate targetDate = outputStart;
       DailyAccountSnapshot snap = null;
       if (isReadUserRequest) {
@@ -839,101 +845,166 @@ public class TradeProfitService {
 
   private List<TradeProfitTimeSeriesPoint> applyGranularity(
       List<TradeProfitTimeSeriesPoint> series, String granularity) {
-    if ("WEEKLY".equalsIgnoreCase(granularity)
-        || ("AUTO".equalsIgnoreCase(granularity) && series.size() > 180 && series.size() <= 730)) {
-      // 주별로 그룹핑 후 마지막 포인트(금요일 or 마지막 거래일)를 유지하되,
-      // 해당 주 전체의 tradeCount/dailyRealizedProfit을 합산하여 반영
-      return series.stream()
-          .collect(
-              Collectors.groupingBy(
-                  p -> {
-                    ZonedDateTime zdt = p.timestamp().atZone(ZoneId.systemDefault());
-                    // ISO week: Monday=1, Sunday=7 → 해당 주 월요일 날짜를 키로 사용
-                    return zdt.toLocalDate().with(java.time.temporal.WeekFields.ISO.dayOfWeek(), 1);
-                  }))
-          .values()
-          .stream()
-          .map(
-              week -> {
-                // 마지막 포인트(기준값: 총자산, 원금 등)를 base로 사용
-                TradeProfitTimeSeriesPoint last =
-                    week.stream()
-                        .max(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
-                        .orElse(null);
-                if (last == null) return null;
-                // 주 전체 tradeCount / buyCount / dailyRealizedProfit 합산
-                long weekTradeCount =
-                    week.stream().mapToLong(TradeProfitTimeSeriesPoint::tradeCount).sum();
-                long weekBuyCount =
-                    week.stream().mapToLong(TradeProfitTimeSeriesPoint::buyCount).sum();
-                BigDecimal weekDailyRealized =
-                    week.stream()
-                        .map(
-                            p ->
-                                p.dailyRealizedProfit() != null
-                                    ? p.dailyRealizedProfit()
-                                    : BigDecimal.ZERO)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-                return new TradeProfitTimeSeriesPoint(
-                    last.timestamp(),
-                    last.cumulativeRealizedProfit(),
-                    weekDailyRealized,
-                    weekTradeCount,
-                    weekBuyCount,
-                    last.tradeVolume(),
-                    last.totalHoldingsValue(),
-                    last.totalHoldingsCost(),
-                    last.cumulativeTotalProfit(),
-                    last.cumulativeDividend());
-              })
-          .filter(Objects::nonNull)
-          .sorted(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
-          .collect(Collectors.toList());
-    } else if ("MONTHLY".equalsIgnoreCase(granularity)
-        || ("AUTO".equalsIgnoreCase(granularity) && series.size() > 730)) {
-      // 월별로 그룹핑 후 마지막 포인트를 유지하되 tradeCount/dailyRealizedProfit 합산
-      return series.stream()
-          .collect(
-              Collectors.groupingBy(
-                  p -> YearMonth.from(p.timestamp().atZone(ZoneId.systemDefault()))))
-          .values()
-          .stream()
-          .map(
-              month -> {
-                TradeProfitTimeSeriesPoint last =
-                    month.stream()
-                        .max(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
-                        .orElse(null);
-                if (last == null) return null;
-                long monthTradeCount =
-                    month.stream().mapToLong(TradeProfitTimeSeriesPoint::tradeCount).sum();
-                long monthBuyCount =
-                    month.stream().mapToLong(TradeProfitTimeSeriesPoint::buyCount).sum();
-                BigDecimal monthDailyRealized =
-                    month.stream()
-                        .map(
-                            p ->
-                                p.dailyRealizedProfit() != null
-                                    ? p.dailyRealizedProfit()
-                                    : BigDecimal.ZERO)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-                return new TradeProfitTimeSeriesPoint(
-                    last.timestamp(),
-                    last.cumulativeRealizedProfit(),
-                    monthDailyRealized,
-                    monthTradeCount,
-                    monthBuyCount,
-                    last.tradeVolume(),
-                    last.totalHoldingsValue(),
-                    last.totalHoldingsCost(),
-                    last.cumulativeTotalProfit(),
-                    last.cumulativeDividend());
-              })
-          .filter(Objects::nonNull)
-          .sorted(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
-          .collect(Collectors.toList());
+    boolean weekly =
+        "WEEKLY".equalsIgnoreCase(granularity)
+            || ("AUTO".equalsIgnoreCase(granularity)
+                && series.size() > 180
+                && series.size() <= 730);
+    boolean monthly =
+        "MONTHLY".equalsIgnoreCase(granularity)
+            || ("AUTO".equalsIgnoreCase(granularity) && series.size() > 730);
+    if (!weekly && !monthly) {
+      return series;
     }
-    return series;
+    List<TradeProfitTimeSeriesPoint> downsampled =
+        weekly ? downsampleWeekly(series) : downsampleMonthly(series);
+    // 다운샘플은 각 버킷의 '마지막 거래일' 값만 남기므로, 버킷 중간(예: 주중)에 발생한 실제 일별
+    // 최고/최저 평가액이 후보에서 누락된다. 구간 내 실제 최고·최저 '그 날' 포인트를 결과 시리즈에
+    // 반드시 포함시켜, 차트의 최고/최저 주석이 정확한 값·날짜를 가리키고 선이 그 지점을 지나게 한다.
+    return mergeHoldingsValueExtremes(series, downsampled);
+  }
+
+  /** 구간 내 실제 일별 최고/최저 평가액 포인트를 다운샘플 결과에 병합한다(누락 시에만 추가). */
+  private List<TradeProfitTimeSeriesPoint> mergeHoldingsValueExtremes(
+      List<TradeProfitTimeSeriesPoint> daily, List<TradeProfitTimeSeriesPoint> downsampled) {
+    TradeProfitTimeSeriesPoint maxPoint = null;
+    TradeProfitTimeSeriesPoint minPoint = null;
+    for (TradeProfitTimeSeriesPoint p : daily) {
+      if (p == null || p.timestamp() == null || p.totalHoldingsValue() == null) {
+        continue;
+      }
+      if (maxPoint == null || p.totalHoldingsValue().compareTo(maxPoint.totalHoldingsValue()) > 0) {
+        maxPoint = p;
+      }
+      if (minPoint == null || p.totalHoldingsValue().compareTo(minPoint.totalHoldingsValue()) < 0) {
+        minPoint = p;
+      }
+    }
+    if (maxPoint == null) {
+      return downsampled;
+    }
+    Set<Instant> present =
+        downsampled.stream()
+            .map(TradeProfitTimeSeriesPoint::timestamp)
+            .collect(Collectors.toCollection(HashSet::new));
+    List<TradeProfitTimeSeriesPoint> result = new ArrayList<>(downsampled);
+    for (TradeProfitTimeSeriesPoint extreme : List.of(maxPoint, minPoint)) {
+      if (present.add(extreme.timestamp())) {
+        // 순수 평가액 waypoint: 거래 카운트/일별 실현손익은 이미 인접 버킷 합계에 반영되어 있으므로
+        // 0으로 두어 이중 계산을 막는다.
+        result.add(
+            new TradeProfitTimeSeriesPoint(
+                extreme.timestamp(),
+                extreme.cumulativeRealizedProfit(),
+                BigDecimal.ZERO,
+                0L,
+                0L,
+                extreme.tradeVolume(),
+                extreme.totalHoldingsValue(),
+                extreme.totalHoldingsCost(),
+                extreme.cumulativeTotalProfit(),
+                extreme.cumulativeDividend()));
+      }
+    }
+    result.sort(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp));
+    return result;
+  }
+
+  private List<TradeProfitTimeSeriesPoint> downsampleWeekly(
+      List<TradeProfitTimeSeriesPoint> series) {
+    // 주별로 그룹핑 후 마지막 포인트(금요일 or 마지막 거래일)를 유지하되,
+    // 해당 주 전체의 tradeCount/dailyRealizedProfit을 합산하여 반영
+    return series.stream()
+        .collect(
+            Collectors.groupingBy(
+                p -> {
+                  ZonedDateTime zdt = p.timestamp().atZone(ZoneId.systemDefault());
+                  // ISO week: Monday=1, Sunday=7 → 해당 주 월요일 날짜를 키로 사용
+                  return zdt.toLocalDate().with(java.time.temporal.WeekFields.ISO.dayOfWeek(), 1);
+                }))
+        .values()
+        .stream()
+        .map(
+            week -> {
+              // 마지막 포인트(기준값: 총자산, 원금 등)를 base로 사용
+              TradeProfitTimeSeriesPoint last =
+                  week.stream()
+                      .max(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
+                      .orElse(null);
+              if (last == null) return null;
+              // 주 전체 tradeCount / buyCount / dailyRealizedProfit 합산
+              long weekTradeCount =
+                  week.stream().mapToLong(TradeProfitTimeSeriesPoint::tradeCount).sum();
+              long weekBuyCount =
+                  week.stream().mapToLong(TradeProfitTimeSeriesPoint::buyCount).sum();
+              BigDecimal weekDailyRealized =
+                  week.stream()
+                      .map(
+                          p ->
+                              p.dailyRealizedProfit() != null
+                                  ? p.dailyRealizedProfit()
+                                  : BigDecimal.ZERO)
+                      .reduce(BigDecimal.ZERO, BigDecimal::add);
+              return new TradeProfitTimeSeriesPoint(
+                  last.timestamp(),
+                  last.cumulativeRealizedProfit(),
+                  weekDailyRealized,
+                  weekTradeCount,
+                  weekBuyCount,
+                  last.tradeVolume(),
+                  last.totalHoldingsValue(),
+                  last.totalHoldingsCost(),
+                  last.cumulativeTotalProfit(),
+                  last.cumulativeDividend());
+            })
+        .filter(Objects::nonNull)
+        .sorted(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
+        .collect(Collectors.toList());
+  }
+
+  private List<TradeProfitTimeSeriesPoint> downsampleMonthly(
+      List<TradeProfitTimeSeriesPoint> series) {
+    // 월별로 그룹핑 후 마지막 포인트를 유지하되 tradeCount/dailyRealizedProfit 합산
+    return series.stream()
+        .collect(
+            Collectors.groupingBy(
+                p -> YearMonth.from(p.timestamp().atZone(ZoneId.systemDefault()))))
+        .values()
+        .stream()
+        .map(
+            month -> {
+              TradeProfitTimeSeriesPoint last =
+                  month.stream()
+                      .max(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
+                      .orElse(null);
+              if (last == null) return null;
+              long monthTradeCount =
+                  month.stream().mapToLong(TradeProfitTimeSeriesPoint::tradeCount).sum();
+              long monthBuyCount =
+                  month.stream().mapToLong(TradeProfitTimeSeriesPoint::buyCount).sum();
+              BigDecimal monthDailyRealized =
+                  month.stream()
+                      .map(
+                          p ->
+                              p.dailyRealizedProfit() != null
+                                  ? p.dailyRealizedProfit()
+                                  : BigDecimal.ZERO)
+                      .reduce(BigDecimal.ZERO, BigDecimal::add);
+              return new TradeProfitTimeSeriesPoint(
+                  last.timestamp(),
+                  last.cumulativeRealizedProfit(),
+                  monthDailyRealized,
+                  monthTradeCount,
+                  monthBuyCount,
+                  last.tradeVolume(),
+                  last.totalHoldingsValue(),
+                  last.totalHoldingsCost(),
+                  last.cumulativeTotalProfit(),
+                  last.cumulativeDividend());
+            })
+        .filter(Objects::nonNull)
+        .sorted(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
+        .collect(Collectors.toList());
   }
 
   public List<TradeResponse> getTradeHistory(TradeSearchRequest request) {

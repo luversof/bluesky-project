@@ -13,6 +13,7 @@
 @param List<String> logLines = java.util.List.of()
 @param PoeOptimizeResult result = null
 @param java.util.Map<String, String> tattooIcons = null
+@param net.luversof.web.gate.poe.dto.ArchetypeBenchmark ninjaBenchmark = null
 
 @if(!available)
 	<div class="text-sm text-base-content/50">${MessageUtil.getMessage("poe.sim.unavailable")}</div>
@@ -26,6 +27,12 @@
 				<span class="font-mono text-base-content/60">${phaseDone}/${phaseTotal}</span>
 			@endif
 			<span class="badge badge-ghost badge-sm">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.sim.opt.evals"), evalCount)}</span>
+			@if(isAuthenticated)
+				<%-- 중지 버튼 — 잘못된 조건으로 시작한 실행을 취소. 다음 폴링(≤3초)에서 중지됨 상태로 갱신된다. --%>
+				<button type="button" class="btn btn-error btn-xs ml-auto"
+				        hx-post="/poe/htmx/sim/optimize/stop" hx-swap="none"
+				        onclick="this.disabled=true;this.textContent='${MessageUtil.getMessage("poe.sim.opt.stopping")}'">${MessageUtil.getMessage("poe.sim.opt.stop")}</button>
+			@endif
 		</div>
 		@if(phaseTotal > 0)
 			<progress class="progress progress-primary w-full" value="${phaseDone}" max="${phaseTotal}"></progress>
@@ -42,8 +49,10 @@
 			<pre class="max-h-40 overflow-y-auto rounded-box bg-neutral text-neutral-content/80 p-3 text-xs leading-5 whitespace-pre-wrap mt-2">@for(String logLine : logLines)${logLine}
 @endfor</pre>
 		@endif
+	@elseif("CANCELLED".equals(status))
+		<div class="alert alert-warning text-sm">${MessageUtil.getMessage("poe.sim.opt.cancelled")}</div>
 	@endif
-	@template.poe.htmx.simOptimizeResult(result = result, tattooIcons = tattooIcons)
+	@template.poe.htmx.simOptimizeResult(result = result, tattooIcons = tattooIcons, ninjaBenchmark = ninjaBenchmark)
 	<%-- 완료 결과가 있으면 최근 결과 목록을 OOB 로 새로 불러온다 — 방금 완료된 실행이 목록에 바로 반영된다. --%>
 	@if(result != null)
 		<div id="poeOptimizeHistory" class="mt-3" hx-swap-oob="true" hx-get="/poe/htmx/sim/optimize/history" hx-trigger="load" hx-swap="innerHTML"></div>
