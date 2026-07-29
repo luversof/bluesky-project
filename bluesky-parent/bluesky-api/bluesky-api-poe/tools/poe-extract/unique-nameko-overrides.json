@@ -1,0 +1,21 @@
+{
+  "_comment": "KR 클라이언트 Words 테이블에 번역이 없는 레거시/제거된 고유템의 한글명(커뮤니티 표준, best-effort). 영문명 기준. parse-uniques.mjs 가 nameKoByEn 조인 실패 시 이 맵으로 폴백한다. 값이 부정확하면 여기만 고치면 됨.",
+  "Binds of Bloody Vengeance": "피의 복수의 굴레",
+  "Emperor's Vigilance": "황제의 경계",
+  "Fortified Legion": "강화된 군단",
+  "Hotheaded": "다혈질",
+  "Ikiaho's Promise": "이키아호의 약속",
+  "Jack, the Axe": "도끼 잭",
+  "Leadership's Price": "지도력의 대가",
+  "Mercenary's Lot": "용병의 운명",
+  "Ngamahu's Sign": "나마후의 징표",
+  "Replica Tasalio's Sign": "복제품 타살리오의 징표",
+  "Rigwald's Charge": "리그왈드의 돌격",
+  "Seething Fury": "들끓는 분노",
+  "Tasalio's Sign": "타살리오의 징표",
+  "The Goddess Unleashed": "해방된 여신",
+  "Utula's Hunger": "우툴라의 굶주림",
+  "Veruso's Battering Rams": "베루소의 파성퇴",
+  "Victario's Flight": "빅타리오의 비행",
+  "Witchhunter's Judgment": "마녀사냥꾼의 심판"
+}

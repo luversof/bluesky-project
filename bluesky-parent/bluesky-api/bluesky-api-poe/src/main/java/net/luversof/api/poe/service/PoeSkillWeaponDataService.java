@@ -67,6 +67,9 @@ public class PoeSkillWeaponDataService {
   /** 방패가 있어야 쓸 수 있는 스킬(방패 강타·방패 돌진 등) — 없으면 PoB 가 스킬을 비활성 처리한다. */
   private volatile Set<String> shieldSkills = Set.of();
 
+  /** 쌍수(양손 무기)여야 쓸 수 있는 스킬(듀얼 스트라이크 등) — 오프핸드 무기가 없으면 PoB 가 스킬을 비활성 처리한다. */
+  private volatile Set<String> dualWieldSkills = Set.of();
+
   public PoeSkillWeaponDataService(
       @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
     Path file = Path.of(dataDir, "skill-weapons.json");
@@ -81,6 +84,9 @@ public class PoeSkillWeaponDataService {
       var shields = new java.util.LinkedHashSet<String>();
       full.path("requiresShield").forEach(n -> shields.add(n.asText()));
       this.shieldSkills = Set.copyOf(shields);
+      var duals = new java.util.LinkedHashSet<String>();
+      full.path("requiresDualWield").forEach(n -> duals.add(n.asText()));
+      this.dualWieldSkills = Set.copyOf(duals);
       var parsed = new java.util.LinkedHashMap<String, List<String>>();
       root.fieldNames()
           .forEachRemaining(
@@ -132,6 +138,11 @@ public class PoeSkillWeaponDataService {
   /** 방패가 있어야 동작하는 스킬인지 — 없으면 PoB 가 스킬을 비활성 처리해 수치가 0 이 된다. */
   public boolean requiresShield(String skillName) {
     return shieldSkills.contains(skillName);
+  }
+
+  /** 쌍수(오프핸드 무기)여야 동작하는 스킬인지 — 없으면 PoB 가 스킬을 비활성 처리해 수치가 0 이 된다. */
+  public boolean requiresDualWield(String skillName) {
+    return dualWieldSkills.contains(skillName);
   }
 
   public boolean hasData() {

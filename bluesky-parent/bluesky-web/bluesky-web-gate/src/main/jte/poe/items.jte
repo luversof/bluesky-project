@@ -46,8 +46,19 @@
 				      data-url-sync data-url-map="itemClass:slot">
 					<input type="search" name="q" value="${initialQ}" class="input input-sm input-bordered w-full sm:w-72" placeholder="${searchPlaceholder}" autocomplete="off" autofocus>
 					<input type="hidden" name="itemClass" value="${activeValue}">
+					<input type="hidden" name="attr" value="all">
 				</form>
 				@template.poe.groupChips(groups = classGroups, field = "itemClass", target = "#poeItemFilter", groupLabelPrefix = "poe.itemgroup.", allLabel = classAllLabel, activeValue = activeValue)
+				<%-- 방어구 속성 베이스 필터(힘=방어도/민첩=회피/지능=에너지보호막). 방어구 부위 선택 시에만 표시(아래 스크립트). --%>
+				!{ boolean itemsKo = net.luversof.web.gate.poe.PoeText.isKorean(); String[][] attrChips = {{"all", "전체", "All"}, {"str", "힘", "STR"}, {"dex", "민첩", "DEX"}, {"int", "지능", "INT"}, {"strdex", "힘·민첩", "STR/DEX"}, {"strint", "힘·지능", "STR/INT"}, {"dexint", "민첩·지능", "DEX/INT"}, {"strdexint", "힘·민첩·지능", "STR/DEX/INT"}}; }
+				<div id="poeItemAttrRow" class="flex flex-wrap gap-1.5 items-center border-t border-base-200 pt-2" style="display:none">
+					<span class="text-xs font-semibold text-base-content/50 mr-1">${itemsKo ? "방어구 속성" : "Defence base"}</span>
+					@for(String[] a : attrChips)
+						<button type="button" data-attr="${a[0]}"
+						        class="btn btn-xs ${"all".equals(a[0]) ? "btn-primary" : "btn-outline"}"
+						        onclick="var f=document.getElementById('poeItemFilter'); f.querySelector('input[name=attr]').value=this.dataset.attr; this.parentElement.querySelectorAll('button[data-attr]').forEach(function(b){b.classList.remove('btn-primary');b.classList.add('btn-outline');}); this.classList.remove('btn-outline'); this.classList.add('btn-primary'); f.dispatchEvent(new Event('change', {bubbles:true}));">${itemsKo ? a[1] : a[2]}</button>
+					@endfor
+				</div>
 			</div>
 
 			<div id="poeItemList" hx-get="${initialUrl}" hx-trigger="load" hx-swap="innerHTML">
@@ -58,6 +69,34 @@
 
 			<div id="poeItemDetail"></div>
 			<script src="/js/poe/filterUrl.js" defer></script>
+				<%-- 방어구 속성 칩은 방어구 부위(투구/갑옷/장갑/장화/방패) 선택 시에만 노출. 다른 부위면 숨기고 attr 초기화. --%>
+				<script>
+					(function () {
+						var ARMOUR = { Helmet: 1, "Body Armour": 1, Gloves: 1, Boots: 1, Shield: 1 };
+						var form = document.getElementById("poeItemFilter");
+						var row = document.getElementById("poeItemAttrRow");
+						if (!form || !row) return;
+						function sync() {
+							var el = form.querySelector("input[name=itemClass]");
+							var show = el && ARMOUR[el.value];
+							row.style.display = show ? "flex" : "none";
+							if (!show) {
+								var a = form.querySelector("input[name=attr]");
+								if (a && a.value !== "all") {
+									a.value = "all";
+									row.querySelectorAll("button[data-attr]").forEach(function (b) {
+										var on = b.dataset.attr === "all";
+										b.classList.toggle("btn-primary", on);
+										b.classList.toggle("btn-outline", !on);
+									});
+								}
+							}
+						}
+						document.addEventListener("click", function (e) { if (e.target.closest("[data-chip-group]")) setTimeout(sync, 0); });
+						form.addEventListener("change", function () { setTimeout(sync, 0); });
+						sync();
+					})();
+				</script>
 		</div>
 	`
 )

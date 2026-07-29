@@ -24,6 +24,16 @@ const nameKoByEn = new Map();
 wordsEn.forEach((w, i) => {
 	if (w.Text) nameKoByEn.set(w.Text, wordsKo[i]?.Text2 || null);
 });
+// KR 클라이언트 Words 테이블에 번역이 없는 레거시/제거 고유템의 한글명 폴백(영문명 기준, best-effort 커뮤니티 표준)
+const nameKoOverrides = (() => {
+	try {
+		const raw = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "unique-nameko-overrides.json"), "utf8"));
+		delete raw._comment;
+		return raw;
+	} catch {
+		return {};
+	}
+})();
 const baseEn = load("English", "BaseItemTypes");
 const baseKo = load("Korean", "BaseItemTypes");
 const baseKoByEn = new Map();
@@ -88,7 +98,7 @@ function parseBlock(block, category) {
 
 	return {
 		name,
-		nameKo: nameKoByEn.get(name) || null,
+		nameKo: nameKoByEn.get(name) || nameKoOverrides[name] || null,
 		slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
 		baseType,
 		baseTypeKo: baseKoByEn.get(baseType) || null,

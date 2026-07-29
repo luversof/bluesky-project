@@ -1,7 +1,9 @@
 package net.luversof.web.gate.poe.httpexchange;
 
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.service.annotation.DeleteExchange;
 import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
@@ -44,6 +46,9 @@ public interface PoeOptimizeClient {
   /** 이력 결과 한 건 전체 조회(id = 저장 시각 epochMs) — 없으면 null. */
   @GetExchange("/result")
   PoeOptimizeResult result(@RequestParam long id);
+
+  @DeleteExchange("/history/{id}")
+  boolean deleteHistory(@PathVariable long id);
 
   /** poe.ninja 실빌드 벤치마크(결과 비교 표시용) — 데이터 없으면 null. */
   @GetExchange("/archetype")

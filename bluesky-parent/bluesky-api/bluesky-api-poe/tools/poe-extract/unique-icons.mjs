@@ -1,14 +1,17 @@
 // 고유 아이템 **전용 아이콘** 추출 — 지금은 베이스 아이콘으로 대체돼 "고유 주얼이 일반 주얼로 보이는" 문제가 있다.
 // 연결 고리: UniqueStashLayout(WordsKey → ItemVisualIdentityKey) → ItemVisualIdentity.DDSFile → 번들에서 PNG.
 // 사용법: node unique-icons.mjs  (ImageMagick 필요 — 없으면 이 단계만 건너뜀)
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { DATA_DIR, FILES_DIR, TABLES_DIR, findImageMagick, loadConfig, loadTable, runExtractor } from "./paths.mjs";
 
-if (!findImageMagick()) {
+const magickDir = findImageMagick();
+if (!magickDir) {
 	console.warn("ImageMagick 이 없어 고유 아이콘 단계를 건너뜁니다.");
 	process.exit(0);
 }
+const MAGICK = magickDir === "PATH" ? "magick" : path.join(magickDir, "magick.exe");
 const OUT_DIR = path.join(DATA_DIR, "icons", "uniques");
 const uniquesFile = path.join(DATA_DIR, "unique-items.json");
 if (!fs.existsSync(uniquesFile)) {
@@ -54,12 +57,33 @@ const baseConfig = loadConfig();
 const ddsFiles = [...new Set(ddsBySlug.values())];
 runExtractor({ ...baseConfig, tables: baseConfig.tables, files: [...(baseConfig.files || []), ...ddsFiles] });
 
+// slug → category (플라스크 3프레임 합성 판단용)
+const catBySlug = new Map(items.map((i) => [i.slug, i.category]));
+
 fs.mkdirSync(OUT_DIR, { recursive: true });
-let done = 0;
+let done = 0, flaskComposited = 0;
 for (const [slug, dds] of ddsBySlug) {
 	const extracted = path.join(FILES_DIR, dds.replace(/\//g, "@").replace(/\.dds$/, ".png"));
 	if (!fs.existsSync(extracted)) continue;
-	fs.copyFileSync(extracted, path.join(OUT_DIR, `${slug}.png`));
+	const out = path.join(OUT_DIR, `${slug}.png`);
+	// 플라스크 아이콘은 [껍데기|마스크|내용물] 3프레임 가로 스트립(236x156)으로 추출된다.
+	// 그대로 쓰면 3개가 붙어 보이므로, 내용물(frame3) 위에 껍데기(frame1)를 얹어 채워진 플라스크 1개로 합성한다.
+	let composited = false;
+	if (catBySlug.get(slug) === "flask") {
+		try {
+			const b = fs.readFileSync(extracted);
+			if (b.readUInt32BE(16) === 236 && b.readUInt32BE(20) === 156) {
+				// ⚠ -flatten 은 기본 흰색 배경에 합성해 투명영역이 하얘진다 → 반드시 -background none 로 투명 유지.
+				execFileSync(MAGICK, ["(", extracted, "-crop", "78x156+158+0", "+repage", ")", "(", extracted, "-crop", "79x156+0+0", "+repage", ")", "-background", "none", "-flatten", out]);
+				composited = true;
+				flaskComposited++;
+			}
+		} catch (e) {
+			// 합성 실패 시 원본 복사로 폴백
+		}
+	}
+	if (!composited) fs.copyFileSync(extracted, out);
 	done++;
 }
+if (flaskComposited) console.log(`플라스크 3프레임 합성: ${flaskComposited}개`);
 console.log(`고유 아이콘 ${done}/${ddsBySlug.size}개 → ${OUT_DIR}`);

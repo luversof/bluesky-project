@@ -4,7 +4,8 @@
 
 @param List<PoeJobStatus.OptimizeHistoryEntry> history = java.util.List.of()
 
-<%-- 최근 결과 목록 — 항목 클릭 시 그 결과를 결과 fragment 로 되살려 상태 래퍼에 그대로 복원(실시간 결과와 동일 DOM). --%>
+<%-- 최근 결과 목록 — 항목 클릭 시 그 결과를 결과 fragment 로 되살려 **폴링과 분리된 지난-결과 뷰어**(#poeHistoryResultView)에 표시.
+     상태 래퍼(#poeOptimizeStatusWrap)에 넣으면 실행 중 3초 폴링이 로딩화면으로 덮어써 사라졌다 — 그래서 별도 뷰어로 분리. --%>
 @if(!history.isEmpty())
 	<div class="space-y-1.5">
 		<div class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.history")}</div>
@@ -18,11 +19,13 @@
 									: MessageUtil.getMessage("poe.sim.opt.objective.dps");
 					String when = new java.text.SimpleDateFormat("MM-dd HH:mm").format(new java.util.Date(h.id()));
 				}
+				<div class="flex items-stretch gap-1">
 				<button type="button"
-				        class="flex flex-wrap items-center gap-2 rounded border border-base-300 bg-base-100 px-3 py-1.5 text-left text-xs hover:border-primary hover:bg-primary/5"
+				        class="flex flex-1 flex-wrap items-center gap-2 rounded border border-base-300 bg-base-100 px-3 py-1.5 text-left text-xs hover:border-primary hover:bg-primary/5"
 				        hx-get="/poe/htmx/sim/optimize/result?id=${h.id()}"
-				        hx-target="#poeOptimizeStatusWrap"
-				        hx-swap="innerHTML">
+				        hx-target="#poeHistoryResultView"
+				        hx-swap="innerHTML"
+				        onclick="this.closest('#poeOptimizeHistory').querySelectorAll('button.poe-hist-active').forEach(function(b){b.classList.remove('poe-hist-active');}); this.classList.add('poe-hist-active');">
 					<span class="font-semibold">${net.luversof.web.gate.poe.PoeText.name(h.gemNameKo(), h.gemName())}</span>
 					@if(h.classNameKo() != null && !h.classNameKo().isBlank())
 						<span class="text-base-content/60">${net.luversof.web.gate.poe.PoeText.name(h.classNameKo(), h.className())}</span>
@@ -38,6 +41,15 @@
 					<span class="font-mono font-semibold text-primary">${h.finalValue()}</span>
 					<span class="ml-auto font-mono text-base-content/40">${when}</span>
 				</button>
+				<%-- 이력 삭제(사용자 요청) — 삭제 후 갱신된 목록 fragment 로 #poeOptimizeHistory 교체. 버튼 중첩 불가라 행 밖에 둔다 --%>
+				<button type="button"
+				        class="btn btn-ghost btn-xs px-2 text-base-content/40 hover:text-error shrink-0"
+				        title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 결과 삭제" : "Delete this result"}"
+				        hx-delete="/poe/htmx/sim/optimize/history/${h.id()}"
+				        hx-target="#poeOptimizeHistory"
+				        hx-swap="innerHTML"
+				        hx-confirm="${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 최근 결과를 삭제할까요?" : "Delete this saved result?"}">✕</button>
+				</div>
 			@endfor
 		</div>
 	</div>

@@ -148,6 +148,19 @@ public class PoeHtmxController {
     return "poe/htmx/simOptimizeResult";
   }
 
+  /** 최근 결과 한 건 삭제 (로그인 필요) — 삭제 후 갱신된 이력 목록 fragment 를 그대로 반환(htmx 가 목록만 교체). */
+  @org.springframework.web.bind.annotation.DeleteMapping("/sim/optimize/history/{id}")
+  public String deleteOptimizeHistory(
+      @org.springframework.web.bind.annotation.PathVariable long id,
+      java.security.Principal principal,
+      Model model) {
+    if (principal != null) {
+      poeOptimizeClient.deleteHistory(id);
+    }
+    model.addAttribute("history", poeOptimizeClient.history());
+    return "poe/htmx/simOptimizeHistory";
+  }
+
   /** 최적 조합 탐색 시작 (로그인 필요) — 폴링 래퍼를 새로 내려 interval 을 재장전한다 */
   @PostMapping("/sim/optimize")
   public String startOptimize(
@@ -308,8 +321,44 @@ public class PoeHtmxController {
   public String baseItemList(
       @RequestParam(required = false) String q,
       @RequestParam(required = false, defaultValue = "all") String itemClass,
+      // 방어구 속성 베이스 필터 — 순수 str=방어도(AR)/dex=회피(EV)/int=보호막(ES),
+      // 하이브리드 strdex=AR/EV, strint=AR/ES, dexint=EV/ES. 방어구 클래스에서만 적용한다.
+      @RequestParam(required = false, defaultValue = "all") String attr,
       Model model) {
     var matched = poeDataClient.searchBaseItems(q, itemClass);
+    // attr 는 방어구 부위(투구/갑옷/장갑/장화/방패)에서만 유효 — 무기 등에서 넘어와도 무시해 빈 목록을 막는다.
+    boolean armourClass =
+        switch (itemClass) {
+          case "Helmet", "Body Armour", "Gloves", "Boots", "Shield" -> true;
+          default -> false;
+        };
+    if (armourClass && !"all".equals(attr)) {
+      matched =
+          matched.stream()
+              .filter(
+                  it -> {
+                    var a = it.armour();
+                    if (a == null) {
+                      return false;
+                    }
+                    boolean ar = a.armourMax() > 0;
+                    boolean ev = a.evasionMax() > 0;
+                    boolean es = a.energyShieldMax() > 0;
+                    // 방어타입 완전 분할(겹침 없음): 순수 3 · 이중 3 · 삼중 1.
+                    return switch (attr) {
+                      case "str" -> ar && !ev && !es;
+                      case "dex" -> ev && !ar && !es;
+                      case "int" -> es && !ar && !ev;
+                      case "strdex" -> ar && ev && !es;
+                      case "strint" -> ar && es && !ev;
+                      case "dexint" -> ev && es && !ar;
+                      case "strdexint" -> ar && ev && es;
+                      default -> true;
+                    };
+                  })
+              .toList();
+    }
+    model.addAttribute("attr", attr);
     model.addAttribute(
         "items", matched.size() > LIST_LIMIT ? matched.subList(0, LIST_LIMIT) : matched);
     model.addAttribute("matchedCount", matched.size());
@@ -412,6 +461,21 @@ public class PoeHtmxController {
     // 베이스 아이템(무기/방어 속성·아이템 클래스·요구사항)을 조인해 게임 툴팁처럼 채워 보여준다
     model.addAttribute("base", poeDataClient.baseItemByName(item.baseType()));
     return "poe/htmx/uniqueDetail";
+  }
+
+  /**
+   * 게임 툴팁 형태의 문신 상세 레이어(#poePreview) — 결과/트리에서 문신 호버 시 유니크·젬과 동일한 아이템 레이어 파리티. name 은 한글명 또는 영문명(둘
+   * 다 매칭). 못 찾으면 빈 fragment.
+   */
+  @GetMapping("/tattoos/detail")
+  public String tattooDetail(@RequestParam String name, Model model) {
+    net.luversof.web.gate.poe.dto.PoeTattoo tattoo =
+        poeDataClient.tattoos().stream()
+            .filter(t -> name.equals(t.nameKo()) || name.equals(t.name()))
+            .findFirst()
+            .orElse(null);
+    model.addAttribute("tattoo", tattoo);
+    return "poe/htmx/tattooDetail";
   }
 
   /** 게임 툴팁 형태의 젬 상세 레이어. level 파라미터로 표시 레벨을 바꾼다 (기본 20). */

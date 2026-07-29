@@ -673,6 +673,21 @@ public class PoeOptimizeService {
     }
   }
 
+  /** 최근 결과 이력 한 건 삭제(사용자 요청). id = 저장 시각 epochMs. 삭제했으면 true. */
+  public boolean deleteHistory(long id) {
+    Path file = historyDir.resolve(id + ".json");
+    // 디렉토리 이탈 방지 — 정규화 경로가 historyDir 하위인지 확인
+    if (!file.normalize().startsWith(historyDir.normalize())) {
+      return false;
+    }
+    try {
+      return Files.deleteIfExists(file);
+    } catch (Exception e) {
+      logger.warn("PoE 최적화 이력 삭제 실패: {}", id, e);
+      return false;
+    }
+  }
+
   public boolean isAvailable() {
     return poePobEngineService.isAvailable()
         && poeGemDataService.hasData()
@@ -2858,7 +2873,8 @@ public class PoeOptimizeService {
                 items,
                 jewels,
                 keywords,
-                objectiveKey);
+                objectiveKey,
+                executor);
         if (es != null
             && objectiveOf(es.values(), objectiveKey)
                 > objectiveOf(finalValues, objectiveKey) * 1.003) {
@@ -5200,6 +5216,18 @@ public class PoeOptimizeService {
   }
 
   /**
+   * 다단계(skillPart) 스킬의 실빌드 표준 파트 — PoB 는 파트별 데미지가 크게 다른데(예: 칼날 소용돌이 파트3=칼날 10개), 미지정 시 파트1(소수 스택)로
+   * 계산돼 실플레이어 중앙값보다 낮게 나온다(실측 ninja 대비 BV 0.36×). PoB skillPart 는 1-base(파트1=기본).
+   */
+  private static final Map<String, Integer> SKILL_PART_BY_SKILL = Map.of("Blade Vortex", 3);
+
+  /** 메인 Skill 요소에 붙일 skillPart 속성 — 미등록 스킬은 빈 문자열(파트1 기본). */
+  private String skillPartAttr(String skillName) {
+    Integer part = skillName == null ? null : SKILL_PART_BY_SKILL.get(skillName);
+    return part == null ? "" : " skillPart=\"" + part + "\"";
+  }
+
+  /**
    * @param masteryEffects 마스터리 노드 id → 선택한 효과 id. PoB 는 어떤 효과를 골랐는지 알아야 계산에 반영한다 (Spec 의 {@code
    *     masteryEffects="{노드,효과},…"} 속성). 비어 있으면 마스터리는 스탯 없이 노드만 찍힌 셈이 된다.
    */
@@ -5269,6 +5297,9 @@ public class PoeOptimizeService {
         //   FullDPS 폴백 경로라 1,313,292→2,334,082 이탈했음. 토템은 calcFullDPS 가 count 집계 안 해 AW 회귀.)
         .append("<Skill mainActiveSkill=\"1\" enabled=\"true\"")
         .append(multiActorBuild ? " includeInFullDPS=\"true\"" : "")
+        // 다단계(skillPart) 스킬 — PoB 는 파트별로 데미지가 크게 다르다(예: 칼날 소용돌이 파트3=칼날 10개).
+        //   미지정 시 파트1(소수 칼날)로 계산돼 과소평가된다(실측 ninja 대비 0.36×). 실빌드 표준 파트를 지정.
+        .append(skillPartAttr(gem.name()))
         .append(" slot=\"Body Armour\">")
         .append("<Gem nameSpec=\"")
         .append(gem.name())
@@ -5351,12 +5382,11 @@ public class PoeOptimizeService {
     for (Map.Entry<Slot, Equipped> entry : items.entrySet()) {
       itemId++;
       Equipped equipped = entry.getValue();
-      // 유니크도 엘드리치 부여 대상 슬롯이면 임플리싯을 받는다 — 레어에만 주면 그 슬롯에서 레어가 부당하게 유리해진다.
-      // (아뮬렛 도유는 탐색이 끝난 뒤 withAnoint 로 얹는다 — 후보를 실제로 평가해 고르므로 여기서 붙이지 않는다)
+      // 엘드리치 임플리싯(포식자/총주교)은 게임에서 **non-unique(레어/매직/일반)에만** 부여된다 — 엘드리치
+      //   잉걸/영액은 고유템에 못 쓴다. 따라서 유니크엔 엘드리치를 붙이지 않는다(rareItemText 만 craft 시점에 반영).
+      //   (아뮬렛 도유는 탐색이 끝난 뒤 withAnoint 로 얹는다 — 후보를 실제로 평가해 고르므로 여기서 붙이지 않는다)
       String itemText =
-          equipped.isUnique()
-              ? uniqueItemText(equipped.unique(), eldritchForSlot(entry.getKey()))
-              : rareItemText(equipped.rare());
+          equipped.isUnique() ? uniqueItemText(equipped.unique()) : rareItemText(equipped.rare());
       xml.append("<Item id=\"").append(itemId).append("\">\n").append(itemText).append("</Item>");
       slots
           .append("<Slot name=\"")
@@ -5389,6 +5419,22 @@ public class PoeOptimizeService {
           .append(
               "\">\nRarity: RARE\nSim Shield\nColossal Tower Shield\nItem Level: 84\nImplicits: 0\n+300 to Armour\n+100 to maximum Life\n</Item>");
       slots.append("<Slot name=\"Weapon 2\" itemId=\"").append(itemId).append("\"/>");
+    }
+    // 쌍수 전용 스킬(듀얼 스트라이크 등)은 오프핸드 무기가 없으면 PoB 가 스킬을 비활성 처리한다(실측 5,168).
+    //   보조장비가 비어 있으면 주 무기와 같은 표준 무기를 두 번째 손에 지급해 쌍수를 성립시킨다.
+    if (!items.containsKey(Slot.OFFHAND)
+        && poeSkillWeaponDataService.requiresDualWield(gem.name())) {
+      String offWeapon = standardWeapon(gem);
+      if (offWeapon != null) {
+        itemId++;
+        xml.append("<Item id=\"")
+            .append(itemId)
+            .append("\">\nRarity: RARE\nSim Offhand\n")
+            .append(offWeapon)
+            .append(
+                "\nItem Level: 84\nImplicits: 0\nAdds 60 to 120 Physical Damage\n+2000 to Accuracy Rating\n</Item>");
+        slots.append("<Slot name=\"Weapon 2\" itemId=\"").append(itemId).append("\"/>");
+      }
     }
     // 주얼 아이템 (900번대 id, 소켓의 itemId 와 일치) — ItemSet 슬롯에는 넣지 않는다(트리 Sockets 로 연결)
     int jewelId = 900;
@@ -5739,6 +5785,19 @@ public class PoeOptimizeService {
             });
     List<PoeModPoolDataService.ModFamily> chosen = new ArrayList<>(prefixes);
     chosen.addAll(suffixes);
+    // 에센스는 아이템당 1개만 쓸 수 있다(에센스 1개 = 보장 모드 1개). 여러 에센스 계열이 뽑혔으면 최상위(먼저 뽑힌) 1개만
+    //   남긴다 — 안 그러면 게임에 존재할 수 없는 "에센스 모드 2개" 아이템이 계산된다.
+    boolean[] essenceSeen = {false};
+    chosen.removeIf(
+        f -> {
+          if (f.key() != null && f.key().startsWith("essence")) {
+            if (essenceSeen[0]) {
+              return true;
+            }
+            essenceSeen[0] = true;
+          }
+          return false;
+        });
     if (chosen.isEmpty()) {
       return null;
     }
@@ -6150,7 +6209,8 @@ public class PoeOptimizeService {
       Map<Slot, Equipped> lifeItems,
       Map<Integer, Equipped> jewels,
       List<String> keywords,
-      String objectiveKey) {
+      String objectiveKey,
+      ExecutorService executor) {
     // 1) CI 키스톤 노드
     PoeTreeGraphService.TreeNode ci = null;
     for (PoeTreeGraphService.TreeNode n : poeTreeGraphService.searchCandidates()) {
@@ -6164,58 +6224,8 @@ public class PoeOptimizeService {
     if (ci == null) {
       return null;
     }
-    // 2) 트리 — start→CI 강제, 이후 ES-가중 greedy
-    int budget = POINT_BUDGET - JEWEL_RESERVE;
-    Set<Integer> nodes = new LinkedHashSet<>();
-    Set<Integer> withStart = new LinkedHashSet<>();
-    withStart.add(classStart);
-    List<Integer> ciPath = poeTreeGraphService.shortestPath(withStart, ci.id());
-    if (ciPath == null || ciPath.isEmpty() || ciPath.size() > budget) {
-      return null;
-    }
-    nodes.addAll(ciPath);
-    withStart.addAll(ciPath);
-    int points = nodes.size();
-    Map<PoeTreeGraphService.TreeNode, Integer> scores = new LinkedHashMap<>();
-    for (PoeTreeGraphService.TreeNode n : poeTreeGraphService.searchCandidates()) {
-      if (n.id() == ci.id()) {
-        continue;
-      }
-      // 생명 빌드가 이미 채택한 노드엔 큰 보너스 — 그 트리는 파이프라인의 라운드별 PoB 실평가로 최적화된
-      //   데미지 노드라, ES 대안이 그 검증된 데미지 트리를 상속하게 한다(정적 스코어 greedy 의 근시안 보완).
-      int reuse = (lifeTree != null && lifeTree.contains(n.id())) ? 25 : 0;
-      int s = score(n.stats(), keywords) + esNodeScore(n) + reuse;
-      if (s > 0) {
-        scores.put(n, s);
-      }
-    }
-    for (int round = 0; round < TREE_MAX_ROUNDS && points < budget; round++) {
-      PoeTreeGraphService.TreeNode bestNode = null;
-      List<Integer> bestPath = null;
-      double bestPri = 0;
-      for (Map.Entry<PoeTreeGraphService.TreeNode, Integer> e : scores.entrySet()) {
-        if (nodes.contains(e.getKey().id())) {
-          continue;
-        }
-        List<Integer> p = poeTreeGraphService.shortestPath(withStart, e.getKey().id());
-        if (p == null || p.isEmpty() || points + p.size() > budget) {
-          continue;
-        }
-        double pri = e.getValue() / (double) p.size();
-        if (pri > bestPri) {
-          bestPri = pri;
-          bestNode = e.getKey();
-          bestPath = p;
-        }
-      }
-      if (bestNode == null) {
-        break;
-      }
-      nodes.addAll(bestPath);
-      withStart.addAll(bestPath);
-      points += bestPath.size();
-    }
-    // 3) 장비 — 방어 슬롯만 ES 베이스 레어로(강제 유니크 존중), 나머지는 생명 빌드 재사용
+    // 2) ES 장비 먼저 — 방어 슬롯만 ES 베이스 레어로(강제 유니크 존중). 트리 평가가 실제 ES 풀을 반영하도록
+    //   greedy 前에 만든다(안 그러면 ES 노드가 풀 없이 평가돼 무가치로 나온다).
     Map<Slot, Equipped> esItems = new EnumMap<>(lifeItems);
     boolean prev = forceEsBase;
     forceEsBase = true;
@@ -6232,6 +6242,91 @@ public class PoeOptimizeService {
       }
     } finally {
       forceEsBase = prev;
+    }
+    // 3) 트리 — start→CI 강제, 이후 **라운드별 PoB 실평가** greedy(생명 파이프라인과 동형). 정적 스코어로는
+    //   제한 포인트 내 데미지 vs ES% 균형을 못 잡아 CI 빌드가 경쟁력이 없었다 → 실평가로 gain/point 최대 노드 채택.
+    int budget = POINT_BUDGET - JEWEL_RESERVE;
+    Set<Integer> nodes = new LinkedHashSet<>();
+    Set<Integer> withStart = new LinkedHashSet<>();
+    withStart.add(classStart);
+    List<Integer> ciPath = poeTreeGraphService.shortestPath(withStart, ci.id());
+    if (ciPath == null || ciPath.isEmpty() || ciPath.size() > budget) {
+      return null;
+    }
+    nodes.addAll(ciPath);
+    withStart.addAll(ciPath);
+    int points = nodes.size();
+    Map<PoeTreeGraphService.TreeNode, Integer> scores = new LinkedHashMap<>();
+    for (PoeTreeGraphService.TreeNode n : poeTreeGraphService.searchCandidates()) {
+      if (n.id() == ci.id()) {
+        continue;
+      }
+      // 생명 빌드 채택 노드에 소보너스(검증된 데미지 노드 우선) + ES 노드 가중. 후보 shortlist 우선순위용일 뿐,
+      //   실제 채택은 아래 PoB 실평가가 결정한다.
+      int reuse = (lifeTree != null && lifeTree.contains(n.id())) ? 10 : 0;
+      int s = score(n.stats(), keywords) + esNodeScore(n) + reuse;
+      if (s > 0) {
+        scores.put(n, s);
+      }
+    }
+    double current =
+        objectiveOf(
+            poePobEngineService.calculateValues(
+                buildXml(
+                    gem, supports, className, ascendancy, ascendancyNodes, nodes, esItems, jewels)),
+            objectiveKey);
+    evalCount.incrementAndGet();
+    record Reachable(PoeTreeGraphService.TreeNode node, List<Integer> path, double priority) {}
+    for (int round = 0; round < TREE_MAX_ROUNDS && points < budget; round++) {
+      List<Reachable> reachable = new ArrayList<>();
+      for (Map.Entry<PoeTreeGraphService.TreeNode, Integer> entry : scores.entrySet()) {
+        if (nodes.contains(entry.getKey().id())) {
+          continue;
+        }
+        List<Integer> path = poeTreeGraphService.shortestPath(withStart, entry.getKey().id());
+        if (path == null || path.isEmpty() || points + path.size() > budget) {
+          continue;
+        }
+        reachable.add(new Reachable(entry.getKey(), path, entry.getValue() / (double) path.size()));
+      }
+      if (reachable.isEmpty()) {
+        break;
+      }
+      List<Reachable> topCandidates =
+          reachable.stream()
+              .sorted(Comparator.comparingDouble(Reachable::priority).reversed())
+              .limit(TREE_ROUND_CANDIDATES)
+              .toList();
+      double before = current;
+      Map<Reachable, Double> round0 =
+          evalBatch(
+              executor,
+              topCandidates,
+              candidate -> {
+                Set<Integer> trial = new LinkedHashSet<>(nodes);
+                trial.addAll(candidate.path());
+                return buildXml(
+                    gem, supports, className, ascendancy, ascendancyNodes, trial, esItems, jewels);
+              },
+              objectiveKey);
+      Reachable best = null;
+      double bestGainPerPoint = 0;
+      for (Map.Entry<Reachable, Double> entry : round0.entrySet()) {
+        double gainPerPoint = (entry.getValue() - before) / entry.getKey().path().size();
+        if (gainPerPoint > bestGainPerPoint) {
+          bestGainPerPoint = gainPerPoint;
+          best = entry.getKey();
+        }
+      }
+      if (best == null) {
+        topCandidates.forEach(candidate -> scores.remove(candidate.node()));
+        continue;
+      }
+      nodes.addAll(best.path());
+      withStart.addAll(best.path());
+      points += best.path().size();
+      current = round0.get(best);
+      scores.remove(best.node());
     }
     // 4) 완성 ES 빌드 평가
     String xml =
@@ -6681,20 +6776,12 @@ public class PoeOptimizeService {
   private PoeOptimizeResult.ItemPick itemPick(Slot slot, Equipped equipped) {
     if (equipped.isUnique()) {
       PoeUniqueItem unique = equipped.unique();
-      // XML 에 붙는 엘드리치 임플리싯을 표시에도 함께 — 없으면 화면의 모드 합이 실제 계산과 달라진다(표시=실제)
-      List<String> lines = new ArrayList<>();
-      for (String line : anointLineKo(slot)) {
-        lines.add(line);
-      }
-      for (String line : eldritchForSlotKo(slot)) {
-        lines.add("(엘드리치) " + line);
-      }
+      // 엘드리치 임플리싯은 유니크에 안 붙는다(게임 규칙: non-unique 전용) — 계산(buildXml)에서 뺐으므로 표시에도
+      //   붙이지 않는다(표시=실제 유지). 아뮬렛 도유만 유니크에도 얹힌다.
+      List<String> lines = new ArrayList<>(anointLineKo(slot));
       lines.addAll(uniqueModLines(unique));
       // EN 로케일용 병렬 라인 — 결과 페이지가 유일한 ko 전용 표면이었다(다른 페이지는 전부 이중언어)
       List<String> linesEn = new ArrayList<>(anointLineEn(slot));
-      for (String line : eldritchForSlot(slot)) {
-        linesEn.add("(eldritch) " + line);
-      }
       linesEn.addAll(uniqueModLinesEn(unique));
       return new PoeOptimizeResult.ItemPick(
           slot.pobName,

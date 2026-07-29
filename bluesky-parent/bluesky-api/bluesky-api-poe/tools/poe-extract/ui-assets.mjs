@@ -45,6 +45,10 @@ const WANTED_FULL = new Map([
 	["Art/2DArt/UIImages/Misc/4K/TooltipMiddle", "tooltipmiddle"],
 	["Art/2DArt/UIImages/Misc/4K/TooltipBottom", "tooltipbottom"],
 ]);
+// 참고: 시뮬 결과 장비 페이퍼돌 배경 `inventory-panel.png`(600x515)은 게임 번들이 아니라 **공식 웹 캐릭터시트**
+//   MainInventory.png(600x781, web.poecdn.com/protected/image/inventory/MainInventory.png)를 받아 장비영역만 크롭한 것.
+//   (게임 번들의 InventoryPanelUpperBackground(969x723)는 현행 웹/게임 캐릭터창과 레이아웃이 달라 사용하지 않음.)
+//   슬롯 좌표는 simOptimizeResult.jte dollSlots 에 배경 픽셀 밝기 프로파일로 검출한 값으로 하드코딩.
 // 트리 노드 툴팁의 **타입별 장식 헤더 밴드**(금장 캡 + 암적색 밴드, 인게임 실물) — 4K 판이 없어
 // 기본 InGame 네임스페이스에서 추출한다(사용자 스크린샷 "비전의 의지" = Notable 헤더).
 for (const type of ["Normal", "Notable", "Keystone", "Jewel", "Ascendancy"]) {

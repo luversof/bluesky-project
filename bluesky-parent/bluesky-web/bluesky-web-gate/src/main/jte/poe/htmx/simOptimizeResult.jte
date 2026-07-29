@@ -192,20 +192,38 @@
 			</div>
 		@endif
 
+		<%-- 보조젬 스킬 레이어 — 젬 아이콘 + 인게임 호버 툴팁(#poePreview) + 젬 상세 링크(젬 목록/랭킹과 동일 파리티) --%>
 		@if(!result.supports().isEmpty())
 			<div class="flex flex-wrap items-center gap-1.5">
 				<span class="text-xs font-semibold text-base-content/50 mr-1">${MessageUtil.getMessage("poe.sim.opt.result.supports")}</span>
 				@for(PoeOptimizeResult.SupportPick support : result.supports())
-					<span class="badge badge-info badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(support.nameKo(), support.name())}</span>
+					@if(support.slug() != null && !support.slug().isBlank())
+						<a class="poe-hover inline-flex items-center gap-1 badge badge-info badge-outline badge-sm cursor-pointer pl-1"
+						   href="/poe/gems/${support.slug()}"
+						   hx-get="/poe/htmx/gems/detail?slug=${support.slug()}"
+						   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
+							<img src="/poe-assets/gems/${support.slug()}.png" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" onerror="this.remove()">${net.luversof.web.gate.poe.PoeText.name(support.nameKo(), support.name())}</a>
+					@else
+						<span class="badge badge-info badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(support.nameKo(), support.name())}</span>
+					@endif
 				@endfor
 			</div>
 		@endif
 
+		<%-- 오라/헤럴드 스킬 레이어 — 보조젬과 동형 --%>
 		@if(result.auras() != null && !result.auras().isEmpty())
 			<div class="flex flex-wrap items-center gap-1.5">
 				<span class="text-xs font-semibold text-base-content/50 mr-1">${MessageUtil.getMessage("poe.sim.opt.result.auras")}</span>
 				@for(PoeOptimizeResult.SupportPick aura : result.auras())
-					<span class="badge badge-success badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(aura.nameKo(), aura.name())}</span>
+					@if(aura.slug() != null && !aura.slug().isBlank())
+						<a class="poe-hover inline-flex items-center gap-1 badge badge-success badge-outline badge-sm cursor-pointer pl-1"
+						   href="/poe/gems/${aura.slug()}"
+						   hx-get="/poe/htmx/gems/detail?slug=${aura.slug()}"
+						   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
+							<img src="/poe-assets/gems/${aura.slug()}.png" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" onerror="this.remove()">${net.luversof.web.gate.poe.PoeText.name(aura.nameKo(), aura.name())}</a>
+					@else
+						<span class="badge badge-success badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(aura.nameKo(), aura.name())}</span>
+					@endif
 				@endfor
 			</div>
 		@endif
@@ -230,11 +248,20 @@
 			</div>
 		@endif
 
+		<%-- 추가 스킬 레이어 — 보조젬/오라와 동형(젬 아이콘 + 인게임 호버 툴팁 #poePreview + 젬 상세 링크) --%>
 		@if(result.additionalSkills() != null && !result.additionalSkills().isEmpty())
 			<div class="flex flex-wrap items-center gap-1.5">
 				<span class="text-xs font-semibold text-base-content/50 mr-1">${MessageUtil.getMessage("poe.sim.opt.result.extraskills")}</span>
 				@for(PoeOptimizeResult.SupportPick extra : result.additionalSkills())
-					<span class="badge badge-accent badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(extra.nameKo(), extra.name())}</span>
+					@if(extra.slug() != null && !extra.slug().isBlank())
+						<a class="poe-hover inline-flex items-center gap-1 badge badge-accent badge-outline badge-sm cursor-pointer pl-1"
+						   href="/poe/gems/${extra.slug()}"
+						   hx-get="/poe/htmx/gems/detail?slug=${extra.slug()}"
+						   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
+							<img src="/poe-assets/gems/${extra.slug()}.png" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" onerror="this.remove()">${net.luversof.web.gate.poe.PoeText.name(extra.nameKo(), extra.name())}</a>
+					@else
+						<span class="badge badge-accent badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(extra.nameKo(), extra.name())}</span>
+					@endif
 				@endfor
 			</div>
 		@endif
@@ -287,7 +314,12 @@
 							@if(tattooIconPath != null)
 								<img src="/poe-assets/${tattooIconPath}" class="w-5 h-5 object-contain shrink-0" alt="" loading="lazy" onerror="this.remove()">
 							@endif
-							<span class="text-purple-700 dark:text-purple-300">${label}</span>
+							<%-- 문신 아이템 레이어 — 유니크/주얼과 동일한 인게임 호버 툴팁(#poePreview) + 사전 페이지 링크(href) --%>
+							<a class="poe-hover text-purple-700 dark:text-purple-300 link-hover underline decoration-dotted cursor-pointer"
+							   href="/poe/tattoos?q=${java.net.URLEncoder.encode(tattooNameKo, java.nio.charset.StandardCharsets.UTF_8)}"
+							   hx-get="/poe/htmx/tattoos/detail?name=${java.net.URLEncoder.encode(tattooNameKo, java.nio.charset.StandardCharsets.UTF_8)}"
+							   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML"
+							   title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "문신 사전에서 보기" : "Open in tattoos dictionary"}">${label}</a>
 						</div>
 					@endfor
 				</div>
@@ -326,7 +358,17 @@
 					@for(PoeOptimizeResult.SupportPick jewel : result.jewels())
 						<div class="flex items-center gap-2 text-sm">
 							<span class="badge badge-outline badge-sm shrink-0 w-16 justify-center border-cyan-500/40 text-cyan-500">${net.luversof.web.gate.poe.PoeText.isKorean() ? "주얼" : "Jewel"}</span>
-							<span class="text-cyan-500">${net.luversof.web.gate.poe.PoeText.name(jewel.nameKo(), jewel.name())}</span>
+							@if(jewel.slug() != null && !jewel.slug().isBlank())
+								<%-- 유니크 주얼 — 장비 유니크와 동일한 인게임 호버 툴팁(#poePreview) + 상세 페이지 링크(아이템 레이어 파리티) --%>
+								<a class="poe-hover font-medium text-cyan-500 link-hover cursor-pointer"
+								   href="/poe/uniques/${jewel.slug()}"
+								   hx-get="/poe/htmx/uniques/detail?slug=${jewel.slug()}"
+								   hx-target="#poePreview"
+								   hx-trigger="mouseenter delay:100ms"
+								   hx-swap="innerHTML">${net.luversof.web.gate.poe.PoeText.name(jewel.nameKo(), jewel.name())}</a>
+							@else
+								<span class="text-cyan-500">${net.luversof.web.gate.poe.PoeText.name(jewel.nameKo(), jewel.name())}</span>
+							@endif
 						</div>
 					@endfor
 				</div>
@@ -341,6 +383,55 @@
 				@if(resultHasFlask)
 					<span class="ml-2 text-[11px] text-base-content/40">${net.luversof.web.gate.poe.PoeText.isKorean() ? "· 플라스크는 상시 활성 가정(PoB 표준)" : "· Flasks assumed permanently active"}</span>
 				@endif
+				<%-- 인게임 캐릭터창식 페이퍼돌 — 슬롯을 실제 게임 배치로. 유니크는 slug 아이콘, 레어는 이름(테두리색=레어리티).
+				     호버는 상세 리스트와 동일(유니크=#poePreview, 레어=베이스 상세 링크). 인증 슬롯 프레임 텍스처는 미추출이라 CSS 게임풍 박스로 대체. --%>
+				!{
+					java.util.Map<String, PoeOptimizeResult.ItemPick> dollBySlot = new java.util.HashMap<>();
+					for (PoeOptimizeResult.ItemPick pick : result.items()) if (pick.slot() != null) dollBySlot.put(pick.slot(), pick);
+					// {영문슬롯, left%, top%, width%, height%} — 공식 MainInventory.png(600x781) 장비영역 크롭(600x515) 기준.
+					// 좌표는 눈대중이 아니라 배경 픽셀 밝기 프로파일로 리세스 경계를 검출해 도출(객관).
+					String[][] dollSlots = {
+						{"Weapon 1", "11.0", "21.6", "15.3", "36.3"}, {"Weapon 2", "73.0", "21.6", "15.3", "36.3"},
+						{"Helmet", "42.0", "19.2", "15.3", "17.7"}, {"Body Armour", "42.0", "40.0", "15.3", "26.8"}, {"Belt", "42.0", "69.9", "15.3", "8.3"},
+						{"Amulet", "61.8", "37.7", "6.5", "8.5"}, {"Ring 1", "30.7", "49.1", "6.7", "8.5"}, {"Ring 2", "61.8", "49.1", "6.5", "8.5"},
+						{"Gloves", "22.8", "60.6", "14.5", "17.9"}, {"Boots", "61.7", "60.6", "14.8", "17.7"},
+						{"Flask 1", "31.2", "81.2", "7.0", "17.7"}, {"Flask 2", "38.7", "81.2", "7.5", "17.7"}, {"Flask 3", "46.5", "81.2", "7.5", "17.7"},
+						{"Flask 4", "54.5", "81.2", "7.5", "17.7"}, {"Flask 5", "62.3", "81.2", "7.7", "17.7"}
+					};
+				}
+				<style>
+					.poe-doll-slot{position:absolute;display:flex;align-items:center;justify-content:center;padding:.4%;border-radius:.2rem;text-decoration:none;overflow:hidden}
+					.poe-doll-slot:hover{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+					.poe-doll-slot img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.75))}
+				</style>
+				<%-- 인게임 소지품 패널 배경(InventoryPanelUpperBackground) 위에 슬롯 좌표로 아이템을 절대배치.
+				     크기는 실제 <img> 로 확정(aspect-ratio CSS 의존 제거 — 브라우저 무관 정렬 보장). 슬롯은 이 컨테이너(=이미지) % 좌표. --%>
+				<div class="poe-doll mx-auto mb-2" style="position:relative;width:100%;max-width:34rem">
+					<img src="/poe-data/ui-assets/inventory-panel.png" alt="" style="display:block;width:100%;height:auto">
+					@for(String[] ds : dollSlots)
+						!{ PoeOptimizeResult.ItemPick di = dollBySlot.get(ds[0]); }
+						@if(di != null)
+							!{ boolean dRare = "RARE".equals(di.rarity()); String dName = net.luversof.web.gate.poe.PoeText.name(di.nameKo(), di.name()); String pos = "left:" + ds[1] + "%;top:" + ds[2] + "%;width:" + ds[3] + "%;height:" + ds[4] + "%"; boolean smallSlot = Double.parseDouble(ds[3]) < 10; }
+							@if(dRare)
+								<%-- 레어는 베이스 아이템 아이콘(/poe-assets/items/<baseSlug>.png) 표시. 인게임처럼 슬롯 테두리 없음(등급은 아이템/호버로). 로드 실패 시 이름 폴백. --%>
+								<a class="poe-doll-slot" style="${pos}" href="${di.slug() != null ? "/poe/items/" + di.slug() : "#"}" title="${dName}">
+									@if(di.slug() != null)
+										<img src="/poe-assets/items/${di.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden')">
+										<span class="hidden max-h-full overflow-hidden text-[8px] font-semibold text-yellow-500 text-center leading-[1.15]">${dName}</span>
+									@else
+										<span class="max-h-full overflow-hidden text-[8px] font-semibold text-yellow-500 text-center leading-[1.15] drop-shadow-[0_1px_1px_rgba(0,0,0,0.95)]">${dName}</span>
+									@endif
+								</a>
+							@else
+								<a class="poe-doll-slot poe-hover cursor-pointer" style="${pos}" href="/poe/uniques/${di.slug()}"
+								   hx-get="/poe/htmx/uniques/detail?slug=${di.slug()}" hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML" title="${dName}">
+									<img src="/poe-assets/uniques/${di.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden')">
+									<span class="hidden text-[8px] font-semibold text-orange-500 text-center leading-tight">${dName}</span>
+								</a>
+							@endif
+						@endif
+					@endfor
+				</div>
 				<div class="flex flex-col gap-1">
 					@for(PoeOptimizeResult.ItemPick item : result.items())
 						!{

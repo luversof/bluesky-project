@@ -3,7 +3,9 @@ package net.luversof.api.poe.controller;
 import java.util.List;
 
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -112,5 +114,11 @@ public class PoeOptimizeController {
   @GetMapping("/result")
   public PoeOptimizeResult result(@RequestParam long id) {
     return poeOptimizeService.historyResult(id);
+  }
+
+  /** 이력 한 건 삭제(사용자 요청). 삭제 성공 여부 반환. */
+  @DeleteMapping("/history/{id}")
+  public boolean deleteHistory(@PathVariable long id) {
+    return poeOptimizeService.deleteHistory(id);
   }
 }

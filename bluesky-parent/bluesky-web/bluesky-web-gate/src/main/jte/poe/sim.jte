@@ -163,6 +163,19 @@
 				@template.poe.htmx.simOptimizeWrap()
 				<!-- 최근 결과 이력 — 로드 시 채우고, 새 최적화 완료 시 상태 fragment 가 OOB 로 갱신 -->
 				<div id="poeOptimizeHistory" class="mt-3" hx-get="/poe/htmx/sim/optimize/history" hx-trigger="load" hx-swap="innerHTML"></div>
+				<%-- 지난 결과 뷰어 — 폴링 래퍼(#poeOptimizeStatusWrap)와 분리되어, 최적화 실행 중에도 이전 결과를 계속 볼 수 있다
+				     (예전엔 히스토리 결과를 폴링 래퍼에 넣어 3초 뒤 로딩화면으로 되돌아갔다). 로드되면 자동 표시. --%>
+				<%-- 보고 있는 히스토리 항목 활성 표시 — border-primary 는 컴파일된 유틸에 존재, 배경은 color-mix 로 테마 무관 --%>
+				<style>#poeOptimizeHistory button.poe-hist-active{border-color:var(--color-primary);background-color:color-mix(in oklch, var(--color-primary) 12%, transparent);font-weight:600}</style>
+				<div id="poeHistoryResultViewWrap" class="mt-3 hidden">
+					<div class="flex items-center justify-between mb-1.5">
+						<div class="text-xs font-semibold text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "지난 결과 보기" : "Saved result"}</div>
+						<button type="button" class="btn btn-ghost btn-xs"
+						        onclick="var v=document.getElementById('poeHistoryResultView'); if(v){v.innerHTML='';} this.closest('#poeHistoryResultViewWrap').classList.add('hidden'); document.querySelectorAll('#poeOptimizeHistory button.poe-hist-active').forEach(function(b){b.classList.remove('poe-hist-active');});">${net.luversof.web.gate.poe.PoeText.isKorean() ? "닫기 ✕" : "Close ✕"}</button>
+					</div>
+					<div id="poeHistoryResultView"
+					     hx-on::after-swap="var w=document.getElementById('poeHistoryResultViewWrap'); if(this.innerHTML.trim()){w.classList.remove('hidden'); w.scrollIntoView({block:'nearest'});}"></div>
+				</div>
 			</div>
 
 			<!-- 젬 DPS 랭킹 — 페이지 제목이 시뮬레이터로 바뀌어 이 섹션에 자체 제목이 필요하다 -->

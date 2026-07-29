@@ -16,8 +16,17 @@ public class PoeIconVersion {
 
   private final Path versionFile;
 
+  // 템플릿(JTE)에서 모델 주입 없이 캐시버스터를 쓰도록 정적 접근 제공(고유 아이콘 등 여러 표면 공용).
+  private static volatile PoeIconVersion instance;
+
   public PoeIconVersion(@Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
     this.versionFile = Path.of(dataDir, "icons", "version.txt");
+    instance = this;
+  }
+
+  /** JTE 에서 직접 호출하는 캐시버스터. 빈 초기화 전이면 "0". */
+  public static String current() {
+    return instance != null ? instance.value() : "0";
   }
 
   /** 아이콘 세트 버전 문자열. 파일이 없으면 "0"(초기/미생성 상태)을 돌려준다. */
