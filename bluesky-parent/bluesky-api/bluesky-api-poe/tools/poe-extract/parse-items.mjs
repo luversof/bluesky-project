@@ -29,6 +29,10 @@ const en = {
 	requirements: loadTable("English", "ComponentAttributeRequirements"),
 	mods: loadTable("English", "Mods"),
 	stats: loadTable("English", "Stats"),
+	flasks: loadTable("English", "Flasks"),
+	charges: loadTable("English", "ComponentCharges"),
+	buffs: loadTable("English", "BuffDefinitions"),
+	shields: loadTable("English", "ShieldTypes"),
 };
 const ko = {
 	base: loadTable("Korean", "BaseItemTypes"),
@@ -38,9 +42,14 @@ const ko = {
 const describe = createStatDescriber(FILES_DIR);
 
 const armourByBase = new Map(en.armour.map((row) => [row.BaseItemTypesKey, row]));
+// 방패 기본 막기 확률 (ShieldTypes.BaseItemTypesKey = 행 인덱스, Block = 정수 %)
+const shieldByBase = new Map(en.shields.map((row) => [row.BaseItemTypesKey, row]));
 const weaponByBase = new Map(en.weapon.map((row) => [row.BaseItemTypesKey, row]));
 // ComponentAttributeRequirements 는 행 인덱스가 아니라 BaseItemTypes.Id 문자열로 참조한다
 const requirementsByBase = new Map(en.requirements.map((row) => [row.BaseItemTypesKey, row]));
+// 플라스크 회복/지속 (Flasks.BaseItemTypesKey = 행 인덱스) + 충전 (ComponentCharges.BaseItemTypesKey = Id 문자열)
+const flaskByBase = new Map(en.flasks.map((row) => [row.BaseItemTypesKey, row]));
+const chargesByBase = new Map(en.charges.map((row) => [row.BaseItemTypesKey, row]));
 
 // 모드 → (한/영) 표시 문장. 값이 범위(min≠max)면 숫자 자리만 "min-max" 로 병합한다.
 function describeModRange(mod, lang) {
@@ -83,6 +92,34 @@ for (const base of en.base) {
 	const armour = armourByBase.get(base._index);
 	const weapon = weaponByBase.get(base._index);
 	const requirement = requirementsByBase.get(base.Id);
+	// 플라스크 속성 — Type 1=생명 2=마나 3=하이브리드 4=특수, RecoveryTime 단위=1/10초(게임 원본).
+	const flaskRow = category === "flask" ? flaskByBase.get(base._index) : null;
+	const chargeRow = category === "flask" ? chargesByBase.get(base.Id) : null;
+	// 특수(Type 4) 플라스크의 부여 버프 = BuffDefinitions.StatsKeys ↔ Flasks.BuffStatValues (임플리싯과 동형 describe).
+	let flaskBuffLines = [];
+	if (flaskRow && flaskRow.Type === 4 && flaskRow.BuffDefinitionsKey != null) {
+		const buffDef = en.buffs[flaskRow.BuffDefinitionsKey];
+		if (buffDef && buffDef.StatsKeys) {
+			const buffValues = new Map();
+			buffDef.StatsKeys.forEach((statIndex, i) => {
+				if (en.stats[statIndex]) buffValues.set(en.stats[statIndex].Id, (flaskRow.BuffStatValues || [])[i] ?? 0);
+			});
+			const buffEn = describe(buffValues, "English");
+			const buffKo = describe(buffValues, "Korean");
+			flaskBuffLines = buffEn.map((line, i) => ({ en: line, ko: buffKo[i] || null }));
+		}
+	}
+	const flask = flaskRow
+		? {
+				type: flaskRow.Type,
+				lifePerUse: flaskRow.LifePerUse || 0,
+				manaPerUse: flaskRow.ManaPerUse || 0,
+				durationSeconds: (flaskRow.RecoveryTime || 0) / 10,
+				maxCharges: chargeRow?.MaxCharges || 0,
+				perCharge: chargeRow?.PerCharge || 0,
+				buffLines: flaskBuffLines,
+			}
+		: null;
 	const implicitLines = (base.Implicit_ModsKeys || []).flatMap((modIndex) => {
 		const mod = en.mods[modIndex];
 		if (!mod) return [];
@@ -109,6 +146,7 @@ for (const base of en.base) {
 						evasionMin: armour.EvasionMin, evasionMax: armour.EvasionMax,
 						energyShieldMin: armour.EnergyShieldMin, energyShieldMax: armour.EnergyShieldMax,
 						wardMin: armour.WardMin, wardMax: armour.WardMax,
+						block: shieldByBase.get(base._index)?.Block || 0,
 					}
 				: null,
 		weapon:
@@ -120,6 +158,7 @@ for (const base of en.base) {
 						range: weapon.RangeMax,
 					}
 				: null,
+		flask,
 		implicits: implicitLines,
 	});
 }

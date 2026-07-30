@@ -366,6 +366,25 @@ public class PoeOptimizeService {
       JsonNode root = JsonMapper.builder().build().readTree(Files.readString(file));
       // (전직|스킬) 정확 매칭 시드
       JsonNode arr = root.get("archetypes");
+      // 성향(lean) 판정 기준선 = 전체 아키타입 DPS·EHP 중앙값(리그별로 갱신). 개별 벤치의 lean 산정 전에 먼저 계산.
+      if (arr != null && arr.isArray()) {
+        java.util.List<Double> dpsList = new java.util.ArrayList<>();
+        java.util.List<Double> ehpList = new java.util.ArrayList<>();
+        for (JsonNode a : arr) {
+          double d = a.path("medianDPS").asDouble();
+          double e = a.path("medianEHP").asDouble();
+          if (d > 0) dpsList.add(d);
+          if (e > 0) ehpList.add(e);
+        }
+        if (!dpsList.isEmpty()) {
+          java.util.Collections.sort(dpsList);
+          ninjaGlobalMedianDps = dpsList.get(dpsList.size() / 2);
+        }
+        if (!ehpList.isEmpty()) {
+          java.util.Collections.sort(ehpList);
+          ninjaGlobalMedianEhp = ehpList.get(ehpList.size() / 2);
+        }
+      }
       if (arr != null && arr.isArray()) {
         for (JsonNode a : arr) {
           String asc = a.path("ascendancy").asText();
@@ -425,7 +444,14 @@ public class PoeOptimizeService {
         }
       }
     }
-    return new NinjaSeed(target, ehp, a.path("sample").asInt(), keystones);
+    return new NinjaSeed(
+        target,
+        ehp,
+        a.path("sample").asInt(),
+        keystones,
+        (int) a.path("medianFireRes").asDouble(),
+        (int) a.path("medianColdRes").asDouble(),
+        (int) a.path("medianLightningRes").asDouble());
   }
 
   /** 아키타입 JSON 노드 → 벤치마크(표시용 전체 중앙값 프로파일). */
@@ -448,7 +474,8 @@ public class PoeOptimizeService {
         (int) a.path("medianLightningRes").asDouble(),
         (int) a.path("medianChaosRes").asDouble(),
         topNames(a.path("topKeystones"), 6),
-        topNames(a.path("topCoSkills"), 6));
+        topNames(a.path("topCoSkills"), 6),
+        leanOf(a.path("medianDPS").asDouble(), a.path("medianEHP").asDouble()));
   }
 
   private static List<String> topNames(JsonNode arr, int n) {
@@ -496,6 +523,9 @@ public class PoeOptimizeService {
   private void setSurvivalTargets(String ascendancy, String skill) {
     this.targetMaxHit = MAXHIT_FLOOR;
     this.targetEhp = EHP_FLOOR;
+    this.targetFireRes = 75;
+    this.targetColdRes = 75;
+    this.targetLightRes = 75;
     this.seededKeystones = List.of();
     this.esArchetype = false;
     this.targetEs = 0d;
@@ -536,6 +566,17 @@ public class PoeOptimizeService {
     }
     if (seed.targetEhp() > 0) {
       this.targetEhp = clampD(seed.targetEhp(), EHP_FLOOR, EHP_FLOOR * 8);
+    }
+    // 원소 저항 목표 — 아키타입 실측 중앙값을 [75, 90] 로 클램프(75 미만은 캡 미달이라 75 유지, 90=게임 최대저항 상한).
+    //   대부분 75(불변)지만 치프틴 RF/화염덫처럼 최대저항 90 특화 아키타입은 90을 목표로 → survivalScore/저항채움 반영.
+    this.targetFireRes = Math.max(75, Math.min(90, seed.fireRes()));
+    this.targetColdRes = Math.max(75, Math.min(90, seed.coldRes()));
+    this.targetLightRes = Math.max(75, Math.min(90, seed.lightRes()));
+    if (targetFireRes > 75 || targetColdRes > 75 || targetLightRes > 75) {
+      log(
+          String.format(
+              "poe.ninja 최대저항 특화 아키타입: 저항 목표 화%d/냉%d/번%d (75 캡 대신 아키타입 메타 사용)",
+              targetFireRes, targetColdRes, targetLightRes));
     }
     log(
         String.format(
@@ -841,7 +882,13 @@ public class PoeOptimizeService {
   //   balanced 목표의 생존 목표치(max hit / EHP)를 정적 floor 대신 **아키타입별 실측 중앙값**으로.
   //   파일 없으면 전부 정적 floor → 무회귀. dps/ehp 목표엔 애초에 balancedSurvival 미적용이라 기준선 불변.
   private record NinjaSeed(
-      double targetMaxHit, double targetEhp, int sample, List<String> keystones) {}
+      double targetMaxHit,
+      double targetEhp,
+      int sample,
+      List<String> keystones,
+      int fireRes,
+      int coldRes,
+      int lightRes) {}
 
   // key = "ascendancy|mainSkill"(정확) 및 "mainSkill"(전직 무관 폴백, 표본 최대 아키타입)
   private final Map<String, NinjaSeed> ninjaSeedByKey = new HashMap<>();
@@ -868,14 +915,44 @@ public class PoeOptimizeService {
       int lightningRes,
       int chaosRes,
       List<String> topKeystones,
-      List<String> topCoSkills) {}
+      List<String> topCoSkills,
+      // 실빌드 성향: 이 (전직×스킬) 실측 DPS·EHP 를 전체 아키타입 중앙값과 비교한 편향. dps=공격특화(저EHP·고DPS),
+      // ehp=생존특화(고EHP·저DPS), balanced=균형. 셀렉트 대신 이 성향으로 시뮬 목표를 정하는 근거(P2)이자 화면 표시용.
+      String lean) {}
 
   private final Map<String, ArchetypeBenchmark> ninjaBenchByKey = new HashMap<>();
   private final Map<String, ArchetypeBenchmark> ninjaBenchBySkill = new HashMap<>();
 
+  // 전체 아키타입의 DPS·EHP 중앙값 — 개별 (전직×스킬)의 성향(lean) 판정 기준선. loadNinjaSeeds 에서 리그 데이터로 채운다.
+  private volatile double ninjaGlobalMedianDps = 2_500_000;
+  private volatile double ninjaGlobalMedianEhp = 70_000;
+
+  /**
+   * 실빌드 성향 판정: 이 아키타입의 DPS·EHP 를 전체 중앙값과 로그비교. dps 축이 EHP 축보다 뚜렷이 높으면 "dps"(공격특화), 반대면 "ehp"(생존특화),
+   * 그 사이면 "balanced". 임계 0.35 dex ≈ 약 2.2배 차이.
+   */
+  private String leanOf(double dps, double ehp) {
+    if (dps <= 0 || ehp <= 0) {
+      return "balanced";
+    }
+    double diff = Math.log10(dps / ninjaGlobalMedianDps) - Math.log10(ehp / ninjaGlobalMedianEhp);
+    if (diff > 0.35) {
+      return "dps";
+    }
+    if (diff < -0.35) {
+      return "ehp";
+    }
+    return "balanced";
+  }
+
   // job-scoped 생존 목표치 — 기본 = 정적 floor, 아키타입 매칭 시 실측치로 override.
   private volatile double targetMaxHit = MAXHIT_FLOOR;
   private volatile double targetEhp = EHP_FLOOR;
+  // job-scoped 원소 저항 목표(화/냉/번) — 아키타입 실측 중앙값(75~90 클램프). 대부분 75지만 치프틴 RF 등
+  //   최대저항 특화 아키타입은 90 → survivalScore/저항채움이 90을 목표로(하드코딩 75 대체). 기본 75.
+  private volatile int targetFireRes = 75;
+  private volatile int targetColdRes = 75;
+  private volatile int targetLightRes = 75;
   // job-scoped 시드 키스톤(아키타입 실측 상위) — 트리 탐색 후보 풀에 주입(키워드 미매칭 방어 키스톤 포착용).
   private volatile List<String> seededKeystones = List.of();
   // job-scoped ES/CI(에너지실드 스태킹) 아키타입 여부 — poe.ninja 벤치마크로 판정. ES 서브시스템(트리/장비 시드)의 게이트.
@@ -1165,8 +1242,19 @@ public class PoeOptimizeService {
       if ((gem == null && !autoPickSkill) || (gem != null && gem.isSupport())) {
         return false;
       }
+      // objective 자동(성향 구동): 빈값/"auto" 면 선택 스킬×전직의 poe.ninja 실빌드 성향(lean)으로 목표축을 정한다
+      //   (dps편향→dps, ehp편향→ehp, 그 외/미매칭→balanced). 명시 objective(dps/ehp/balanced)는 그대로 존중 —
+      //   QA 배터리는 명시로 호출하므로 기준선 불변. 스킬 미지정(유니크 anchor)이면 스킬을 아직 몰라 balanced.
+      String resolvedObjective = objective;
+      if (resolvedObjective == null || resolvedObjective.isBlank() || "auto".equals(resolvedObjective)) {
+        String skillName = gem != null ? gem.name() : null;
+        ArchetypeBenchmark bench = skillName != null ? ninjaBenchmark(ascendancy, skillName) : null;
+        String lean = bench != null ? bench.lean() : null;
+        resolvedObjective = "dps".equals(lean) ? "dps" : "ehp".equals(lean) ? "ehp" : "balanced";
+        log("성향 자동 목표: " + (bench != null ? bench.mainSkill() + " → " + resolvedObjective + "(lean=" + lean + ")" : "미매칭 → balanced"));
+      }
       String normalizedObjective =
-          "ehp".equals(objective) || "balanced".equals(objective) ? objective : "dps";
+          "ehp".equals(resolvedObjective) || "balanced".equals(resolvedObjective) ? resolvedObjective : "dps";
       this.enemyScenario = SCENARIO_KO.containsKey(scenario) ? scenario : "Pinnacle"; // 화이트리스트
       this.combatBuffs = buffs;
       this.secondaryAscendId = 0; // 혈맹 선택 초기화(잡마다)
@@ -3416,12 +3504,15 @@ public class PoeOptimizeService {
     if (chaos > 0d && chaos < CHAOS_MAXHIT_FLOOR) {
       s *= Math.max(0.6, chaos / CHAOS_MAXHIT_FLOOR);
     }
-    // (2b) 원소 저항 캡(75) — **전 빌드 공통 관례**(생명 하드코딩과 달리 아키타입 편향 아님. 미캡=해당 원소 피해 그대로).
-    //   max hit 최솟값(물리 등)이 binding 일 때 원소 저항이 방치되는 걸 막는 명시 하드 게이트. 미달 1%당 2.5% 감쇠(하한 0.15).
-    for (String key : new String[] {"FireResist", "ColdResist", "LightningResist"}) {
-      double r = values.getOrDefault(key, 75d);
-      if (r < 75d) {
-        s *= Math.max(0.15, 1.0 - (75d - r) * 0.025);
+    // (2b) 원소 저항 캡 — 기본 75(전 빌드 공통)이나, 아키타입 실측(치프틴 RF 등 최대저항 특화)은 목표가 90.
+    //   목표 미달 1%당 2.5% 감쇠(하한 0.15). 목표를 아키타입 seed 로 잡아 90 특화 빌드가 75 에서 멈추지 않게 한다.
+    int[] resTargets = {targetFireRes, targetColdRes, targetLightRes};
+    String[] resKeys = {"FireResist", "ColdResist", "LightningResist"};
+    for (int i = 0; i < resKeys.length; i++) {
+      double target = resTargets[i];
+      double r = values.getOrDefault(resKeys[i], target);
+      if (r < target) {
+        s *= Math.max(0.15, 1.0 - (target - r) * 0.025);
       }
     }
     // (3) 지속 — 단일 히트가 아니라 도트/자가연소(RF) 지속 사망은 max hit 로 안 잡힌다. 순생명재생<0 near-hard 배제.
@@ -3573,6 +3664,8 @@ public class PoeOptimizeService {
   private List<PoeGem> allDamageSkills() {
     return poeGemDataService.search(null, "active", "all", null).stream()
         .filter(g -> !g.isSupport())
+        // 바알 젬은 브라우저 전용 — 소울/지속 업타임을 모델링하지 않아 DPS가 왜곡되므로 자동 스킬 후보에서 제외
+        .filter(g -> !g.isVaal())
         .filter(g -> !g.levels().isEmpty())
         .filter(this::isDamageSkill)
         .toList();
@@ -4607,7 +4700,12 @@ public class PoeOptimizeService {
         if (unfixable.contains(e.getKey())) {
           continue;
         }
-        double gap = 75d - values.getOrDefault(e.getValue(), 0d);
+        // 목표 저항 — 아키타입 특화(치프틴 RF 등)면 90, 그 외 75. (하드코딩 75 → 아키타입 타겟)
+        double resTarget =
+            "fireRes".equals(e.getKey())
+                ? targetFireRes
+                : "coldRes".equals(e.getKey()) ? targetColdRes : targetLightRes;
+        double gap = resTarget - values.getOrDefault(e.getValue(), 0d);
         if (gap > worstGap) {
           worstGap = gap;
           worst = e.getKey();
@@ -5833,11 +5931,17 @@ public class PoeOptimizeService {
     }
     List<String> en = new ArrayList<>();
     List<String> ko = new ArrayList<>();
-    for (var pool : List.of(pools.exarch(), pools.eater())) {
-      var tier = bestEldritchTier(pool, keywords);
+    // 표시용 ko 라인에 팩션 마커를 박아 화면에서 총주교/포식자를 구분한다(en 은 XML 용이라 원문 유지).
+    List<List<PoeEldritchDataService.EldritchFamily>> byFaction =
+        List.of(pools.exarch(), pools.eater());
+    String[] factionKo = {"총주교", "포식자"};
+    for (int fi = 0; fi < byFaction.size(); fi++) {
+      var tier = bestEldritchTier(byFaction.get(fi), keywords);
       if (tier != null) {
         en.addAll(tier.en());
-        ko.addAll(tier.ko());
+        for (String kline : tier.ko()) {
+          ko.add("(" + factionKo[fi] + ") " + kline);
+        }
       }
     }
     return new EldritchPick(en, ko);
@@ -6650,10 +6754,11 @@ public class PoeOptimizeService {
   /** 레어의 한국어 모드 라인 (표시용) */
   private List<String> rareModLinesKo(RareItem rare) {
     List<String> lines = new ArrayList<>();
-    // 엘드리치 임플리싯(총주교/포식자)을 맨 위에 — 게임에서도 임플리싯이 익스플리싯 위에 뜬다
+    // 엘드리치 임플리싯(총주교/포식자)을 맨 위에 — 게임에서도 임플리싯이 익스플리싯 위에 뜬다.
+    // ko 라인엔 이미 "(총주교)/(포식자)" 팩션 마커가 박혀 있다(eldritchImplicits) → 그대로 사용, 없으면 폴백.
     if (rare.implicitLinesKo() != null) {
       for (String line : rare.implicitLinesKo()) {
-        lines.add("(엘드리치) " + line);
+        lines.add(line.startsWith("(") ? line : "(엘드리치) " + line);
       }
     }
     for (int i = 0; i < rare.families().size(); i++) {
@@ -6677,6 +6782,34 @@ public class PoeOptimizeService {
       lines.add("명중 +2000 (시뮬 가정)");
     }
     return lines;
+  }
+
+  /**
+   * rareModLinesKo/En 와 1:1 정렬된 티어 라벨. 티어 없는 줄(임플리싯·명중가정)은 빈 문자열, 익스플리싯은 "T{순위}/{총티어}". ⚠
+   * rareModLinesKo 의 줄 생산 순서·개수를 **정확히 미러**해야 정렬이 어긋나지 않는다(임플리싯 → 패밀리별 tierAt().ko() → 명중). 순위는
+   * family.tiers()(best-first) 인덱스+1 로 /poe/mods 카드(T1..Tn)와 동일 관례.
+   */
+  private List<String> rareModTiers(RareItem rare) {
+    List<String> tiers = new ArrayList<>();
+    if (rare.implicitLinesKo() != null) {
+      for (int k = 0; k < rare.implicitLinesKo().size(); k++) {
+        tiers.add("");
+      }
+    }
+    for (int i = 0; i < rare.families().size(); i++) {
+      PoeModPoolDataService.ModFamily family = rare.families().get(i);
+      double fraction = rare.fractionFor(i);
+      int n = family.tiers().size();
+      int index = Math.min(Math.max((int) Math.round(fraction * (n - 1)), 0), Math.max(n - 1, 0));
+      String label = "T" + (index + 1) + "/" + n;
+      for (int k = 0; k < tierAt(family, fraction).ko().size(); k++) {
+        tiers.add(label);
+      }
+    }
+    if (isAttackWeaponBase(rare.baseType())) {
+      tiers.add("");
+    }
+    return tiers;
   }
 
   /** rareModLinesKo 의 영문판 — 마커도 영문 (prefix)/(suffix)/(essence·prefix)/(eldritch). */
@@ -6770,7 +6903,9 @@ public class PoeOptimizeService {
             base + " (시뮬 표준 무기)",
             (nameKo != null ? nameKo : base) + " (시뮬 표준 무기)",
             List.of("물리 피해 60-120 추가", "명중 +2000"),
-            List.of("Adds 60-120 Physical Damage", "+2000 Accuracy")));
+            List.of("Adds 60-120 Physical Damage", "+2000 Accuracy"),
+            // 시뮬 표준 무기는 실제 롤이 아닌 고정 가정 — 티어 없음
+            List.of("", "")));
   }
 
   private PoeOptimizeResult.ItemPick itemPick(Slot slot, Equipped equipped) {
@@ -6783,6 +6918,11 @@ public class PoeOptimizeService {
       // EN 로케일용 병렬 라인 — 결과 페이지가 유일한 ko 전용 표면이었다(다른 페이지는 전부 이중언어)
       List<String> linesEn = new ArrayList<>(anointLineEn(slot));
       linesEn.addAll(uniqueModLinesEn(unique));
+      // 유니크는 롤 가능한 티어가 없다 — 줄 수만큼 빈 티어로 정렬 유지(템플릿 인덱스 정합)
+      List<String> tiers = new ArrayList<>();
+      for (int k = 0; k < lines.size(); k++) {
+        tiers.add("");
+      }
       return new PoeOptimizeResult.ItemPick(
           slot.pobName,
           slot.ko,
@@ -6791,7 +6931,8 @@ public class PoeOptimizeService {
           unique.name(),
           unique.nameKo(),
           lines,
-          linesEn);
+          linesEn,
+          tiers);
     }
     RareItem rare = equipped.rare();
     // 레어도 베이스 한글명을 채운다 — 유니크만 한글로 나오고 레어는 영문이라 목록이 뒤죽박죽이었다
@@ -6801,6 +6942,12 @@ public class PoeOptimizeService {
     rareLines.addAll(rareModLinesKo(rare));
     List<String> rareLinesEn = new ArrayList<>(anointLineEn(slot));
     rareLinesEn.addAll(rareModLinesEn(rare));
+    // 티어: 도유 라인(선두)은 빈 티어, 이어서 레어 익스플리싯 티어(rareModTiers 가 rareModLinesKo 순서 미러)
+    List<String> rareTiers = new ArrayList<>();
+    for (int k = 0; k < anointLineKo(slot).size(); k++) {
+      rareTiers.add("");
+    }
+    rareTiers.addAll(rareModTiers(rare));
     return new PoeOptimizeResult.ItemPick(
         slot.pobName,
         slot.ko,
@@ -6810,7 +6957,8 @@ public class PoeOptimizeService {
         rare.baseType(),
         baseNameKo,
         rareLines,
-        rareLinesEn);
+        rareLinesEn,
+        rareTiers);
   }
 
   /** 고유 아이템 표시용 모드 라인 (임플리싯 + 익스플리싯, 한국어 우선·없으면 영문). 레어와 표시 일관성. */

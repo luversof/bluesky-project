@@ -24,4 +24,6 @@ public record ArchetypeBenchmark(
     int lightningRes,
     int chaosRes,
     List<String> topKeystones,
-    List<String> topCoSkills) {}
+    List<String> topCoSkills,
+    // 실빌드 성향: dps(공격특화·저EHP) | ehp(생존특화·고EHP) | balanced(균형). 구 히스토리엔 없어 null 가능.
+    String lean) {}

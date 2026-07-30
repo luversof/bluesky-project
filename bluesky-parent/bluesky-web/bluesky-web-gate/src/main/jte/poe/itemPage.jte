@@ -39,8 +39,8 @@
 				<span class="badge badge-ghost">${patchLabel}</span>
 			</div>
 
-			<%-- 상세 레이어(툴팁+큐레이션 티어표)를 그대로 바닥에 --%>
-			@template.poe.htmx.itemDetail(item = item, modFamilies = modFamilies)
+			<%-- 상세 레이어(게임 툴팁)를 그대로 바닥에. 모드 티어표는 아래 "전체 제작 모드" 섹션에서 제공. --%>
+			@template.poe.htmx.itemDetail(item = item)
 
 			<%-- poedb 식 — 이 베이스를 쓰는 고유 아이템(호버 툴팁 + 상세 링크) --%>
 			@if(baseUniques != null && !baseUniques.isEmpty())

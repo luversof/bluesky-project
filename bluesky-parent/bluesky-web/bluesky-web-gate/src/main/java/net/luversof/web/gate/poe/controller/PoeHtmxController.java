@@ -72,11 +72,36 @@ public class PoeHtmxController {
     model.addAttribute("logLines", status.logLines());
     model.addAttribute("result", status.result());
     model.addAttribute("tattooIcons", tattooIcons(status.result()));
+    model.addAttribute("rareBases", rareBases(status.result()));
     model.addAttribute("ninjaBenchmark", benchmark(status.result()));
     if (!status.running()) {
       response.setStatus(286); // htmx: 폴링 중단
     }
     return "poe/htmx/simOptimizeStatus";
+  }
+
+  /**
+   * 시뮬 폼 실시간 성향 미리보기 — 선택한 (첫 스킬 × 전직)의 poe.ninja 실빌드 성향/프로파일을 폼에서 바로 보여준다(실행 전).
+   * 전직=auto(빈값)면 서버가 스킬 단위 폴백. 스킬 미선택이면 빈 프래그먼트.
+   */
+  @GetMapping("/sim/archetype")
+  public String simArchetype(
+      @RequestParam(name = "skills", required = false) java.util.List<String> skills,
+      @RequestParam(required = false, defaultValue = "") String ascendancy,
+      Model model) {
+    net.luversof.web.gate.poe.dto.ArchetypeBenchmark bench = null;
+    if (skills != null && !skills.isEmpty() && skills.get(0) != null && !skills.get(0).isBlank()) {
+      try {
+        net.luversof.web.gate.poe.dto.PoeGem gem = poeDataClient.gem(skills.get(0));
+        if (gem != null && gem.name() != null && !gem.name().isBlank()) {
+          bench = poeOptimizeClient.archetype(gem.name(), ascendancy != null ? ascendancy : "");
+        }
+      } catch (Exception e) {
+        bench = null; // api-poe 미가동/미매칭 → 미표시
+      }
+    }
+    model.addAttribute("ninjaBenchmark", bench);
+    return "poe/htmx/archetypeHint";
   }
 
   /**
@@ -121,6 +146,31 @@ public class PoeHtmxController {
     return tattooIcons;
   }
 
+  /**
+   * 결과 레어 아이템의 베이스 조인 — 인게임 툴팁처럼 방어/무기 속성 + 요구사항을 보여주기 위함. 레어의 slug 는 베이스 slug 이므로 baseItem 으로
+   * 조회한다. RARE 만, 실패는 조용히 건너뜀(툴팁은 모드만이라도 표시).
+   */
+  private java.util.Map<String, PoeBaseItem> rareBases(
+      net.luversof.web.gate.poe.dto.PoeOptimizeResult result) {
+    java.util.Map<String, PoeBaseItem> map = new java.util.HashMap<>();
+    if (result == null || result.items() == null) {
+      return map;
+    }
+    for (var item : result.items()) {
+      if ("RARE".equals(item.rarity()) && item.slug() != null && !map.containsKey(item.slug())) {
+        try {
+          PoeBaseItem base = poeDataClient.baseItem(item.slug());
+          if (base != null) {
+            map.put(item.slug(), base);
+          }
+        } catch (Exception e) {
+          // 베이스 조회 실패 — 그 아이템은 모드만 표시
+        }
+      }
+    }
+    return map;
+  }
+
   /** 실행 중인 최적 조합 탐색 잡 중지 (로그인 필요) — 취소 요청만 보내고, UI 는 폴링 래퍼가 다음 상태로 갱신한다. */
   @PostMapping("/sim/optimize/stop")
   @org.springframework.web.bind.annotation.ResponseBody
@@ -144,6 +194,7 @@ public class PoeHtmxController {
     net.luversof.web.gate.poe.dto.PoeOptimizeResult result = poeOptimizeClient.result(id);
     model.addAttribute("result", result);
     model.addAttribute("tattooIcons", tattooIcons(result));
+    model.addAttribute("rareBases", rareBases(result));
     model.addAttribute("ninjaBenchmark", benchmark(result));
     return "poe/htmx/simOptimizeResult";
   }
@@ -165,7 +216,7 @@ public class PoeHtmxController {
   @PostMapping("/sim/optimize")
   public String startOptimize(
       @RequestParam(required = false, defaultValue = "") String slug,
-      @RequestParam(required = false, defaultValue = "dps") String objective,
+      @RequestParam(required = false, defaultValue = "auto") String objective,
       @RequestParam(required = false, defaultValue = "Pinnacle") String scenario,
       @RequestParam(required = false, defaultValue = "false") boolean buffs,
       @RequestParam(required = false, defaultValue = "") String className,
@@ -358,6 +409,11 @@ public class PoeHtmxController {
                   })
               .toList();
     }
+    // 상위 템부터 노출 — 드랍(요구) 레벨 내림차순 정렬 후 상한 적용 (사용자 요청)
+    matched =
+        matched.stream()
+            .sorted(java.util.Comparator.comparingInt(PoeBaseItem::dropLevel).reversed())
+            .toList();
     model.addAttribute("attr", attr);
     model.addAttribute(
         "items", matched.size() > LIST_LIMIT ? matched.subList(0, LIST_LIMIT) : matched);
@@ -387,8 +443,7 @@ public class PoeHtmxController {
   public String baseItemDetail(@RequestParam String slug, Model model) {
     PoeBaseItem item = poeDataClient.baseItem(slug);
     model.addAttribute("item", item);
-    // 이 베이스에 붙을 수 있는 모드 패밀리(티어표) — 큐레이티드 모드 풀 기준
-    model.addAttribute("modFamilies", poeDataClient.modFamiliesForItemClass(item.itemClass()));
+    // 가능 모드 열거는 레이어에서 제외(사용자 요청) — 전체 모드 풀은 상세 페이지에서 제공. 불필요한 API 호출 생략.
     return "poe/htmx/itemDetail";
   }
 

@@ -456,14 +456,69 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 
 /* PoE 게임식 아이템 툴팁 — 어두운 배경 + 희귀도색 테두리/헤더, 밝은 파란 모드 텍스트.
    테마와 무관하게 항상 게임처럼 어둡게 고정. 희귀도 색은 인라인 border-color / --rarity 로 주입. */
+/* 인게임 폰트(Fontin) self-host — PoE 클라이언트가 쓰는 실제 폰트. Latin/숫자는 Fontin,
+   한글 글리프는 없으므로 한글 폰트로 폴백(맑은 고딕 등). SmallCaps 는 아이템명/헤더 전용.
+   파일 출처: awakened-poe-trade 의 게임 추출 Fontin(자체 호스팅, 런타임 CDN 미사용). */
+@font-face {
+	font-family: "Fontin";
+	src: url("/fonts/Fontin-Regular-Hinted.ttf") format("truetype");
+	font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+	font-family: "Fontin";
+	src: url("/fonts/Fontin-Bold-Hinted.ttf") format("truetype");
+	font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+	font-family: "Fontin";
+	src: url("/fonts/Fontin-Italic-Hinted.ttf") format("truetype");
+	font-weight: 400; font-style: italic; font-display: swap;
+}
+@font-face {
+	font-family: "Fontin SmallCaps";
+	src: url("/fonts/Fontin-SmallCaps-Hinted.ttf") format("truetype");
+	font-weight: 400; font-style: normal; font-display: swap;
+}
+/* PoE 폰트 스택 — Fontin 우선, 한글은 시스템 한글 폰트 폴백. 공용 변수로 재사용. */
+:root {
+	--poe-font: "Fontin", "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
+	--poe-font-sc: "Fontin SmallCaps", "Fontin", "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
+}
+/* PoE 섹션 전체를 인게임 폰트로(숫자/영문=Fontin, 한글=폴백). poeLayout 래퍼에 부여. */
+.poe-scope { font-family: var(--poe-font); }
+
+/* poedb 식 아이템 슬롯 프레임 — 어두운 오목 배경 + 얇은 테두리에 큰 아이콘(72px). */
+.poe-item-slot {
+	width: 72px; height: 72px;
+	display: flex; align-items: center; justify-content: center;
+	padding: 4px;
+	border-radius: 4px;
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	background:
+		radial-gradient(120% 120% at 50% 30%, rgba(255, 255, 255, 0.05), transparent 70%),
+		rgba(0, 0, 0, 0.28);
+	box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.45);
+}
+[data-theme="light"] .poe-item-slot {
+	border-color: rgba(0, 0, 0, 0.14);
+	background:
+		radial-gradient(120% 120% at 50% 30%, rgba(0, 0, 0, 0.04), transparent 70%),
+		rgba(0, 0, 0, 0.06);
+	box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.12);
+}
+/* 세로 1:2 아이템(플라스크) 전용 — 세로로 긴 슬롯으로 아이콘을 크게. */
+.poe-item-slot-tall { width: 56px; height: 96px; }
+
 .poe-tooltip {
 	background: rgba(0, 0, 0, 0.92);
 	border: 1px solid;               /* border-color 는 인라인(희귀도) */
 	border-radius: 2px;
 	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 	color: #fff;
-	font-family: ui-sans-serif, system-ui, sans-serif;
+	font-family: var(--poe-font);
 }
+/* 아이템/젬/문신 툴팁의 이름·헤더 밴드는 인게임처럼 SmallCaps(Fontin SmallCaps). */
+.poe-tt-band, .poe-tt-band-2, .poe-psheader { font-family: var(--poe-font-sc); }
 /* 젬/아이템 툴팁 고정 폭 — Tailwind 임의값(w-[25rem])이 이 프로젝트 빌드에서 누락돼
    툴팁 폭이 안 잡히고 긴 설명이 한 줄로 늘어나는 문제가 있어 커스텀 CSS 로 고정한다. */
 .poe-tt-w-gem { width: 25rem; max-width: 92vw; }
@@ -488,7 +543,7 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 	border: 1px solid rgba(140, 140, 140, 0.3);
 	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
 	color: #fff;
-	font-family: ui-sans-serif, system-ui, sans-serif;
+	font-family: var(--poe-font);
 }
 .poe-popup-title {
 	padding: 0.55rem 1rem 0.3rem;

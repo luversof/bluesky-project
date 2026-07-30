@@ -65,11 +65,15 @@
 						     hx-target="#poePreview"
 						     hx-trigger="mouseenter delay:100ms"
 						     hx-swap="innerHTML">
-							<img src="/poe-assets/gems/${gem.slug()}.png?v=${iconVersion}" class="w-10 h-10 object-contain shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" alt="" loading="lazy">
+							<img src="/poe-assets/gems/${gem.slug()}.png?v=${iconVersion}" class="w-14 h-14 object-contain shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" alt="" loading="lazy">
 							<div class="min-w-0 flex-1">
 								<div class="flex items-baseline gap-1.5">
 									<%-- 이름 클릭 → 상세 페이지 (호버 레이어 내용 + 레벨별 진행표) --%>
-								<a class="font-semibold truncate link-hover" href="/poe/gems/${gem.slug()}" title="${gem.name()}">${displayName}</a>
+								<a class="font-semibold truncate link-hover ${gem.isVaal() ? "text-[#d20000]" : ""}" href="/poe/gems/${gem.slug()}" title="${gem.name()}">${displayName}</a>
+									@if(gem.isVaal())
+										<%-- 인게임 부패(corrupted) 관례: 바알 젬은 붉은색. 목록에서 바로 구분되게 배지 표시 --%>
+										<span class="shrink-0 text-[9px] font-bold px-1 rounded bg-[#d20000]/15 text-[#d20000] border border-[#d20000]/40" title="${korean ? "바알 스킬 (부패) — 브라우저 표시 전용, 최적화기 미포함" : "Vaal skill (corrupted) — browse only, excluded from optimizer"}">${korean ? "바알" : "Vaal"}</span>
+									@endif
 									@if(korean)
 										<span class="text-[11px] text-base-content/40 truncate">${gem.name()}</span>
 									@endif

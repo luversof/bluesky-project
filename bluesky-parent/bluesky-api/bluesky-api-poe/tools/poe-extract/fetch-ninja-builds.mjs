@@ -266,8 +266,21 @@ async function fetchLeague(league) {
 const _median = (arr) => { const s = arr.filter((v) => v != null && !Number.isNaN(v)).sort((a, x) => a - x); return s.length ? s[Math.floor(s.length / 2)] : 0; };
 const _topN = (counter, n) => Object.entries(counter).sort((a, x) => x[1] - a[1]).slice(0, n).map(([k, c]) => ({ name: k, count: c }));
 
+// 엔드게임(96레벨+) 표본만으로 프로파일을 낸다. 저레벨 캐릭터는 저항/EHP가 미완성이라
+// 아키타입 목표치를 끌어내려 시뮬레이션이 과소평가된다(치프틴 화염저항 90 미반영 사례).
+// 상위 10%는 "특화 판단"이 애매하므로(방어/공격 축이 상충) 사용자 결정에 따라 레벨 절단으로 대체.
+// 90+는 표본이 여전히 과다(중반 캐릭 다수 포함)라 96+로 상향(진성 엔드게임만).
+// 다만 96+ 표본이 지나치게 적은 소수 아키타입은 노이즈를 피해 전체 표본으로 폴백.
+const LEVEL_ENDGAME = 96;
+const ENDGAME_MIN_SAMPLE = 5;
+function endgameSubset(arr) {
+	const hi = arr.filter((b) => (b.level ?? 0) >= LEVEL_ENDGAME);
+	return hi.length >= ENDGAME_MIN_SAMPLE ? hi : arr;
+}
+
 /** 한 그룹(빌드 배열)의 중앙값 프로파일. base = 그룹 식별 필드({ascendancy?, mainSkill}). */
-function groupProfile(arr, base) {
+function groupProfile(fullArr, base) {
+	const arr = endgameSubset(fullArr);
 	const med = (f) => _median(arr.map(f));
 	const coCnt = {}, keyCnt = {};
 	for (const b of arr) {
@@ -275,7 +288,7 @@ function groupProfile(arr, base) {
 		for (const k of b.keystones) keyCnt[k] = (keyCnt[k] || 0) + 1;
 	}
 	return {
-		...base, sample: arr.length,
+		...base, sample: arr.length, sampleTotal: fullArr.length,
 		medianLevel: med((b) => b.level),
 		medianLife: med((b) => b.life), medianES: med((b) => b.energyShield),
 		medianEHP: med((b) => b.ehp), medianDPS: med((b) => b.dps),

@@ -96,14 +96,17 @@
 							</select>
 						</div>
 					</div>
+					<%-- 실시간 성향 미리보기 — 선택한 스킬×전직의 poe.ninja 실빌드 성향/프로파일(실행 전). 스킬/전직 변경 시 갱신. --%>
+					<div id="poeArchetypeHint"
+					     hx-get="/poe/htmx/sim/archetype"
+					     hx-trigger="load, change from:select[name='skills'], change from:select[name='ascendancy']"
+					     hx-include="select[name='skills'], select[name='ascendancy']"
+					     hx-target="this"
+					     hx-swap="innerHTML"></div>
 					<!-- 최적화 설정 -->
 					<div class="flex flex-wrap items-center gap-2">
-						<!-- 기본은 균형 — DPS 전용은 생명력 1·저항 미달 유리대포가 나와 실전에 못 쓴다(실측) -->
-						<select name="objective" class="select select-sm select-bordered" title="${MessageUtil.getMessage("poe.sim.opt.objective")}">
-							<option value="balanced" selected>${MessageUtil.getMessage("poe.sim.opt.objective.balanced")}</option>
-							<option value="dps">${MessageUtil.getMessage("poe.sim.opt.objective.dps")}</option>
-							<option value="ehp">${MessageUtil.getMessage("poe.sim.opt.objective.ehp")}</option>
-						</select>
+						<%-- 목표(objective) 셀렉트 제거(2026-07-30): poe.ninja 실빌드 성향이 목표축을 자동 결정(위 미리보기). objective=auto → API가 성향으로 dps/ehp/balanced 해석 --%>
+						<span class="text-xs text-base-content/60 self-center" title="선택한 스킬×전직의 poe.ninja 실빌드 성향으로 목표를 자동 결정">${net.luversof.web.gate.poe.PoeText.isKorean() ? "목표: 실빌드 성향 자동" : "Objective: auto (real-build lean)"}</span>
 						<select name="scenario" class="select select-sm select-bordered" title="${MessageUtil.getMessage("poe.sim.opt.scenario")}">
 							<option value="None">${MessageUtil.getMessage("poe.sim.opt.scenario.none")}</option>
 							<option value="Boss">${MessageUtil.getMessage("poe.sim.opt.scenario.boss")}</option>

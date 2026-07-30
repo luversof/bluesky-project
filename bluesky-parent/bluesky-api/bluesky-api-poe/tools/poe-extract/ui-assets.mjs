@@ -59,6 +59,12 @@ for (const type of ["Normal", "Notable", "Keystone", "Jewel", "Ascendancy"]) {
 for (const side of ["Left", "Middle", "Right"]) {
 	WANTED_FULL.set(`Art/2DArt/UIImages/InGame/PassiveMastery/MasteryPassiveHeader${side}`, `psheadermastery${side.toLowerCase()}`);
 }
+// 영향력/엘드리치 아이템 심볼 — 인게임 아이템 툴팁 헤더 좌우 상단 모서리에 뜨는 마크.
+// 총주교=CleansingFire, 포식자=Tangled(게임 내부명). 쉐이퍼/엘더는 동명.
+WANTED_FULL.set("Art/2DArt/UIImages/InGame/ShaperItemSymbol", "influence-shaper");
+WANTED_FULL.set("Art/2DArt/UIImages/InGame/ElderItemSymbol", "influence-elder");
+WANTED_FULL.set("Art/2DArt/UIImages/InGame/CleansingFireItemSymbol", "influence-exarch");
+WANTED_FULL.set("Art/2DArt/UIImages/InGame/TangledItemSymbol", "influence-eater");
 
 // 1) atlas 좌표표 추출 (UTF-16LE)
 const baseConfig = loadConfig();

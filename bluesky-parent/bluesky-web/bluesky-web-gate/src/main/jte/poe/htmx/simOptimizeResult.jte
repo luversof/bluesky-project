@@ -5,6 +5,7 @@
 @param PoeOptimizeResult result = null
 @param java.util.Map<String, String> tattooIcons = null
 @param net.luversof.web.gate.poe.dto.ArchetypeBenchmark ninjaBenchmark = null
+@param java.util.Map<String, net.luversof.web.gate.poe.dto.PoeBaseItem> rareBases = null
 
 @if(result != null)
 	!{
@@ -120,11 +121,21 @@
 				Integer myDps = statInt.apply("combineddps");
 				// 실빌드 중앙값 대비 60% 미만이면 "낮음"(참고용, 강제 아님)
 				java.util.function.BiFunction<Integer, Long, Boolean> low = (mine, med) -> mine != null && med > 0 && mine < med * 0.6;
+				// 실빌드 성향(lean): 이 (전직×스킬)을 실제 유저들이 공격특화/생존특화/균형 중 어디로 굴리는지. 시뮬 목표의 근거.
+				String lean = ninjaBenchmark.lean();
+				String leanLabel = "dps".equals(lean) ? (ko ? "공격 특화 (고DPS·저EHP)" : "Offense (high DPS)")
+					: "ehp".equals(lean) ? (ko ? "생존 특화 (고EHP)" : "Defense (high EHP)")
+					: (ko ? "균형형" : "Balanced");
+				String leanCls = "dps".equals(lean) ? "badge-error" : "ehp".equals(lean) ? "badge-info" : "badge-ghost";
 			}
 			<div class="rounded-box bg-base-100 px-3 py-2 text-xs space-y-1">
 				<div class="flex items-center gap-2">
 					<span class="font-bold text-info">${ko ? "poe.ninja 실빌드 중앙값" : "poe.ninja real-build median"}</span>
 					<span class="badge badge-ghost badge-xs">${ninjaBenchmark.mainSkill()}${ninjaBenchmark.ascendancy() != null && !ninjaBenchmark.ascendancy().isBlank() ? " · " + ninjaBenchmark.ascendancy() : ""}</span>
+					@if(lean != null)
+						<%-- 실빌드 성향 배지 — 이 조합의 실 유저 분포가 공격/생존 어느 쪽인지(시뮬이 미는 방향의 근거) --%>
+						<span class="badge badge-xs ${leanCls}" title="${ko ? "poe.ninja 실빌드 DPS·EHP 중앙값을 전체 아키타입과 비교한 성향" : "Real-build DPS/EHP tendency vs all archetypes"}">${leanLabel}</span>
+					@endif
 					<span class="text-base-content/40">n=${ninjaBenchmark.sample()}</span>
 				</div>
 				<div class="flex flex-wrap gap-x-4 gap-y-1 font-mono">
@@ -160,12 +171,18 @@
 		@endif
 
 		@if(!result.stats().isEmpty())
+			<%-- 오프셋(공격) 스탯이 0이면 숨김 — DoT/RF 빌드에서 총DPS·평균피해·공격속도·치명타 0 등은 노이즈(PoB 도 미표시).
+			     저항·방어·생명·순생명재생 등 방어/유틸 스탯은 0/음수도 중요하므로 항상 표시. --%>
+			!{ java.util.Set<String> hideIfZero = java.util.Set.of("totaldps", "averagedamage", "speed", "energyshield", "mana", "critchance"); }
 			<div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
 				@for(PoeBuild.PlayerStat stat : result.stats())
-					<div class="rounded-box bg-base-100 px-3 py-2">
-						<div class="text-[11px] font-semibold text-base-content/50">${MessageUtil.getMessage("poe.build.stat." + stat.key())}</div>
-						<div class="text-sm font-bold font-mono ${statColor.apply(stat.key(), stat.value())}">${stat.value()}</div>
-					</div>
+					!{ String sv = stat.value() == null ? "" : stat.value().replace(",", "").trim(); boolean isZero = sv.equals("0") || sv.equals("0.0") || sv.equals("0.00"); }
+					@if(!(hideIfZero.contains(stat.key()) && isZero))
+						<div class="rounded-box bg-base-100 px-3 py-2">
+							<div class="text-[11px] font-semibold text-base-content/50">${MessageUtil.getMessage("poe.build.stat." + stat.key())}</div>
+							<div class="text-sm font-bold font-mono ${statColor.apply(stat.key(), stat.value())}">${stat.value()}</div>
+						</div>
+					@endif
 				@endfor
 			</div>
 		@endif
@@ -202,7 +219,7 @@
 						   href="/poe/gems/${support.slug()}"
 						   hx-get="/poe/htmx/gems/detail?slug=${support.slug()}"
 						   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
-							<img src="/poe-assets/gems/${support.slug()}.png" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" onerror="this.remove()">${net.luversof.web.gate.poe.PoeText.name(support.nameKo(), support.name())}</a>
+							<img src="/poe-assets/gems/${support.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" onerror="this.remove()">${net.luversof.web.gate.poe.PoeText.name(support.nameKo(), support.name())}</a>
 					@else
 						<span class="badge badge-info badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(support.nameKo(), support.name())}</span>
 					@endif
@@ -220,7 +237,7 @@
 						   href="/poe/gems/${aura.slug()}"
 						   hx-get="/poe/htmx/gems/detail?slug=${aura.slug()}"
 						   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
-							<img src="/poe-assets/gems/${aura.slug()}.png" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" onerror="this.remove()">${net.luversof.web.gate.poe.PoeText.name(aura.nameKo(), aura.name())}</a>
+							<img src="/poe-assets/gems/${aura.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" onerror="this.remove()">${net.luversof.web.gate.poe.PoeText.name(aura.nameKo(), aura.name())}</a>
 					@else
 						<span class="badge badge-success badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(aura.nameKo(), aura.name())}</span>
 					@endif
@@ -258,7 +275,7 @@
 						   href="/poe/gems/${extra.slug()}"
 						   hx-get="/poe/htmx/gems/detail?slug=${extra.slug()}"
 						   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
-							<img src="/poe-assets/gems/${extra.slug()}.png" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" onerror="this.remove()">${net.luversof.web.gate.poe.PoeText.name(extra.nameKo(), extra.name())}</a>
+							<img src="/poe-assets/gems/${extra.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" onerror="this.remove()">${net.luversof.web.gate.poe.PoeText.name(extra.nameKo(), extra.name())}</a>
 					@else
 						<span class="badge badge-accent badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(extra.nameKo(), extra.name())}</span>
 					@endif
@@ -413,14 +430,16 @@
 						@if(di != null)
 							!{ boolean dRare = "RARE".equals(di.rarity()); String dName = net.luversof.web.gate.poe.PoeText.name(di.nameKo(), di.name()); String pos = "left:" + ds[1] + "%;top:" + ds[2] + "%;width:" + ds[3] + "%;height:" + ds[4] + "%"; boolean smallSlot = Double.parseDouble(ds[3]) < 10; }
 							@if(dRare)
-								<%-- 레어는 베이스 아이템 아이콘(/poe-assets/items/<baseSlug>.png) 표시. 인게임처럼 슬롯 테두리 없음(등급은 아이템/호버로). 로드 실패 시 이름 폴백. --%>
-								<a class="poe-doll-slot" style="${pos}" href="${di.slug() != null ? "/poe/items/" + di.slug() : "#"}" title="${dName}">
+								<%-- 레어: 베이스 아이콘 + 인게임 호버 툴팁. data-poe-tip 자식을 common.ts 가 #poePreview 로 복제해 띄운다(슬롯 overflow 클리핑 회피). 유니크와 동일한 레이어 파리티. --%>
+								!{ java.util.List<String> dLines = net.luversof.web.gate.poe.PoeText.isKorean() || di.modLinesEn() == null || di.modLinesEn().isEmpty() ? di.modLines() : di.modLinesEn(); }
+								<a class="poe-doll-slot poe-hover cursor-pointer" style="${pos}" href="${di.slug() != null ? "/poe/items/" + di.slug() : "#"}" title="${dName}">
 									@if(di.slug() != null)
 										<img src="/poe-assets/items/${di.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden')">
 										<span class="hidden max-h-full overflow-hidden text-[8px] font-semibold text-yellow-500 text-center leading-[1.15]">${dName}</span>
 									@else
 										<span class="max-h-full overflow-hidden text-[8px] font-semibold text-yellow-500 text-center leading-[1.15] drop-shadow-[0_1px_1px_rgba(0,0,0,0.95)]">${dName}</span>
 									@endif
+									<span data-poe-tip class="hidden">@template.poe.htmx.resultRareTooltip(name = di.name(), nameKo = di.nameKo(), modLines = dLines, modTiers = di.modTiers(), base = rareBases == null ? null : rareBases.get(di.slug()))</span>
 								</a>
 							@else
 								<a class="poe-doll-slot poe-hover cursor-pointer" style="${pos}" href="/poe/uniques/${di.slug()}"
@@ -460,9 +479,13 @@
 											// (엘드리치) 임플리싯은 구분선 위(인게임 배치), 나머지는 아래 — 마커별 인게임 배색. EN 마커도 인식
 											java.util.List<String> rtImplicits = new java.util.ArrayList<>();
 											java.util.List<String> rtExplicits = new java.util.ArrayList<>();
-											for (String ml : shownModLines) {
-												if (ml.startsWith("(엘드리치)") || ml.startsWith("(eldritch)")) rtImplicits.add(ml.substring(ml.indexOf(") ") + 2));
-												else rtExplicits.add(ml);
+											java.util.List<String> rtExplicitTiers = new java.util.ArrayList<>();
+											java.util.List<String> itemTiers = item.modTiers();
+											for (int mi = 0; mi < shownModLines.size(); mi++) {
+												String ml = shownModLines.get(mi);
+												String mlTier = itemTiers != null && mi < itemTiers.size() ? itemTiers.get(mi) : null;
+												if (ml.startsWith("(엘드리치)") || ml.startsWith("(eldritch)") || ml.startsWith("(총주교)") || ml.startsWith("(포식자)") || ml.startsWith("(exarch)") || ml.startsWith("(eater)")) rtImplicits.add(ml.substring(ml.indexOf(") ") + 2));
+												else { rtExplicits.add(ml); rtExplicitTiers.add(mlTier); }
 											}
 										}
 										@if(!rtImplicits.isEmpty())
@@ -475,19 +498,21 @@
 										@endif
 										<div class="poe-tt-sepimg"></div>
 										<div class="px-4 py-1.5 text-[12px] space-y-0.5 text-center">
-											@for(String ml : rtExplicits)
+											@for(int rti = 0; rti < rtExplicits.size(); rti++)
 												!{
+													String ml = rtExplicits.get(rti);
 													int rtEnd = ml.startsWith("(") ? ml.indexOf(") ") : -1;
 													String rtMk = rtEnd > 0 ? ml.substring(1, rtEnd) : null;
 													String rtRest = rtMk != null ? ml.substring(rtEnd + 2) : ml;
+													String rtTier = rti < rtExplicitTiers.size() ? rtExplicitTiers.get(rti) : null;
 												}
-												<div class="text-[#8888ff]">@if(rtMk != null)<span class="text-[10px] text-white/35">(${rtMk})</span> @endif${rtRest}</div>
+												<div class="text-[#8888ff]">@if(rtMk != null)<span class="text-[10px] text-white/35">(${rtMk})</span> @endif@if(rtTier != null && !rtTier.isEmpty())<span class="text-[10px] font-mono text-white/40 mr-0.5">${rtTier}</span> @endif${rtRest}</div>
 											@endfor
 										</div>
 									</div>
 								</span>
 								@if(!shownModLines.isEmpty())
-									@template.poe.htmx.resultModLines(modLines = shownModLines)
+									@template.poe.htmx.resultModLines(modLines = shownModLines, modTiers = item.modTiers())
 								@endif
 							@else
 								<%-- 유니크: 목록과 같은 호버 레이어(인게임 툴팁) + 상세 페이지 링크 — 결과에서 바로 아이템을 확인할 수 있게 --%>
@@ -502,7 +527,7 @@
 									<span class="font-semibold text-orange-500">${net.luversof.web.gate.poe.PoeText.name(item.nameKo(), item.name())}</span>
 								@endif
 								@if(!shownModLines.isEmpty())
-									@template.poe.htmx.resultModLines(modLines = shownModLines)
+									@template.poe.htmx.resultModLines(modLines = shownModLines, modTiers = item.modTiers())
 								@endif
 							@endif
 						</div>

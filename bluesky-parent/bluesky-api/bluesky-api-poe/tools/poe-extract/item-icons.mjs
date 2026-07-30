@@ -43,20 +43,53 @@ config.files = [...(config.files || []), ...new Set(ddsBySlug.values())];
 config.tables = [];
 runExtractor(config);
 
+// slug → category (플라스크 3프레임 합성 판단용)
+const catBySlug = new Map(bases.map((b) => [b.slug, b.category]));
+
 fs.mkdirSync(ICON_DIR, { recursive: true });
-let copied = 0;
+let copied = 0, flaskComposited = 0;
 const missing = [];
 for (const [slug, dds] of ddsBySlug) {
 	const escaped = dds.replace(/\//g, "@").replace(/\.dds$/, ".png");
 	const source = path.join(FILES_DIR, escaped);
-	if (fs.existsSync(source)) {
-		// 베이스 아이콘은 단일 이미지(그리드 크기별 WxH) — 여백만 다듬어 그대로 저장.
-		execFileSync(MAGICK, ["-background", "none", source, "-trim", "+repage", path.join(ICON_DIR, slug + ".png")]);
-		copied++;
-	} else {
+	if (!fs.existsSync(source)) {
 		missing.push(slug);
+		continue;
 	}
+	const out = path.join(ICON_DIR, slug + ".png");
+	// 플라스크 아이콘 = [껍데기|마스크|내용물] 3프레임 가로 스트립(각 W/3). **게임 규칙: 세 프레임을 같은 셀 위치에
+	// 그대로 겹친다(스케일 없음)** — 프레임들이 셀-상대 동일 x 오프셋에 그려져 자동 정렬되고, 액체(frame3)는 각 플라스크에
+	// 맞는 크기로 이미 그려져 있다. 따라서 내용물(frame3) 위에 껍데기(frame1)를 native 오버레이만 하면 전 티어(소형~영원의,
+	// 생명/마나/하이브리드/특수) 정확히 채워진다. ⚠ 과거 스케일 보정은 오판이었음(상위 티어 과대·세로 스트레치 유발).
+	//   frame2(마스크)는 부분충전 애니메이션용이라 정적 아이콘에선 안 쓴다. -flatten 기본 흰배경 방지 위해 -background none 필수.
+	let composited = false;
+	if (catBySlug.get(slug) === "flask") {
+		try {
+			const b = fs.readFileSync(source);
+			const W = b.readUInt32BE(16), H = b.readUInt32BE(20);
+			const fw = Math.round(W / 3);
+			execFileSync(MAGICK, [
+				"(", source, "-crop", `${fw}x${H}+${W - fw}+0`, "+repage", ")",
+				"(", source, "-crop", `${fw}x${H}+0+0`, "+repage", ")",
+				"-background", "none", "-flatten", "-trim", "+repage", out,
+			]);
+			composited = true;
+			flaskComposited++;
+		} catch (e) {
+			// 합성 실패 시 아래 일반 처리로 폴백
+		}
+	}
+	if (!composited) {
+		// 그 외 베이스 아이콘은 단일 이미지 — 여백만 다듬어 그대로 저장.
+		execFileSync(MAGICK, ["-background", "none", source, "-trim", "+repage", out]);
+	}
+	copied++;
 }
-// 캐시버스터(젬 아이콘과 동일 version.txt 재사용 안 함 — 아이템 전용)
-fs.writeFileSync(path.join(DATA_DIR, "icons", "items-version.txt"), String(Date.now()));
+if (flaskComposited) console.log(`플라스크 3프레임 합성: ${flaskComposited}개`);
+// 캐시버스터 — 템플릿(itemList/uniqueList/simOptimizeResult)의 아이템·고유 아이콘 URL 은
+// PoeIconVersion.current()=icons/version.txt 를 ?v 로 쓴다. 아이템 아이콘 재생성 시 이 공유 version.txt 를
+// 갱신해야 브라우저가 새 아이콘을 받는다(items-version.txt 는 아무도 안 읽어 잠복버그였음).
+const bust = String(Date.now());
+fs.writeFileSync(path.join(DATA_DIR, "icons", "version.txt"), bust);
+fs.writeFileSync(path.join(DATA_DIR, "icons", "items-version.txt"), bust);
 console.log(`복사 완료: ${copied}, 누락: ${missing.length}`);

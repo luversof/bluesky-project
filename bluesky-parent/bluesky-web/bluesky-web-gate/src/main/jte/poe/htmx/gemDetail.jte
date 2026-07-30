@@ -13,9 +13,12 @@
 	String levelLabel = MessageUtil.getMessage("poe.gems.detail.level");
 	String requiredLevelLabel = MessageUtil.getMessage("poe.gems.detail.required.level");
 	String costLabel = MessageUtil.getMessage("poe.gems.detail.cost");
+	String reservationLabel = MessageUtil.getMessage("poe.gems.detail.reservation");
 	String costMultiplierLabel = MessageUtil.getMessage("poe.gems.detail.cost.multiplier");
 	String castTimeLabel = MessageUtil.getMessage("poe.gems.label.cast.time");
 	String cooldownLabel = MessageUtil.getMessage("poe.gems.detail.cooldown");
+	String soulPreventionLabel = MessageUtil.getMessage("poe.gems.detail.soul.prevention");
+	String soulStoredLabel = MessageUtil.getMessage("poe.gems.detail.soul.stored");
 	String critChanceLabel = MessageUtil.getMessage("poe.gems.detail.crit.chance");
 	String damageLabel = MessageUtil.getMessage("poe.gems.detail.damage");
 	String damageEffectivenessLabel = MessageUtil.getMessage("poe.gems.detail.damage.effectiveness");
@@ -63,14 +66,24 @@
 				@if(current.cost() != null && current.cost() > 0)
 					<div><span class="${label}">${costLabel}: </span><span class="${value}">${current.costType()} ${current.cost()}</span></div>
 				@endif
+				@if(current.reservation() != null)
+					<div><span class="${label}">${reservationLabel}: </span><span class="${value}">${String.format("%.0f", current.reservation())}%</span></div>
+				@endif
 				@if(current.costMultiplier() != null && current.costMultiplier() != 100)
 					<div><span class="${label}">${costMultiplierLabel}: </span><span class="${value}">${current.costMultiplier()}%</span></div>
 				@endif
-				@if(gem.castTimeMs() != null)
+				@if(gem.castTimeMs() != null && gem.castTimeMs() > 0)
 					<div><span class="${label}">${castTimeLabel}: </span><span class="${value}">${String.format("%.2f", gem.castTimeMs() / 1000.0)}s</span></div>
 				@endif
 				@if(current.cooldownMs() != null)
 					<div><span class="${label}">${cooldownLabel}: </span><span class="${value}">${String.format("%.2f", current.cooldownMs() / 1000.0)}s</span></div>
+				@endif
+				<%-- 바알 스킬 영혼 정보(인게임 툴팁 파리티): 영혼 획득 방지 시간 · 저장 사용 횟수. 레벨 무관(젬 단위). --%>
+				@if(gem.soulPreventionSeconds() != null)
+					<div><span class="${label}">${soulPreventionLabel}: </span><span class="${value}">${String.format("%.2f", gem.soulPreventionSeconds()).replaceAll("\\.?0+$", "")}s</span></div>
+				@endif
+				@if(gem.storedUses() != null)
+					<div><span class="${label}">${soulStoredLabel}: </span><span class="${value}">${gem.storedUses()}</span></div>
 				@endif
 				@if(current.critChance() != null)
 					<div><span class="${label}">${critChanceLabel}: </span><span class="${value}">${String.format("%.2f", current.critChance())}%</span></div>
@@ -138,7 +151,13 @@
 						        hx-swap="innerHTML">${step}</button>
 					@endif
 				@endfor
-				<span class="ml-auto text-[10px] px-1.5 py-0.5 rounded border ${gem.isSupport() ? "border-fuchsia-500/40 text-fuchsia-400" : "border-cyan-500/40 text-cyan-400"}">${gem.isSupport() ? supportBadgeLabel : activeBadgeLabel}</span>
+				@if(gem.isVaal())
+					<%-- 인게임 부패(corrupted) 관례: 바알 스킬은 붉은색 표식 --%>
+					<span class="ml-auto text-[10px] px-1.5 py-0.5 rounded border border-[#d20000]/50 text-[#d20000]">${PoeText.isKorean() ? "바알 · 부패" : "Vaal · corrupted"}</span>
+					<span class="text-[10px] px-1.5 py-0.5 rounded border ${gem.isSupport() ? "border-fuchsia-500/40 text-fuchsia-400" : "border-cyan-500/40 text-cyan-400"}">${gem.isSupport() ? supportBadgeLabel : activeBadgeLabel}</span>
+				@else
+					<span class="ml-auto text-[10px] px-1.5 py-0.5 rounded border ${gem.isSupport() ? "border-fuchsia-500/40 text-fuchsia-400" : "border-cyan-500/40 text-cyan-400"}">${gem.isSupport() ? supportBadgeLabel : activeBadgeLabel}</span>
+				@endif
 			</div>
 		</div>
 	</div>

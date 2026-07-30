@@ -71,6 +71,8 @@ public record PoeOptimizeResult(
    * @param rarity UNIQUE | RARE
    * @param slug 유니크면 상세 링크용 slug, 레어면 null
    * @param modLines 레어면 한국어 모드 라인, 유니크면 빈 목록
+   * @param modTiers modLines 와 1:1 정렬된 티어 라벨("T{순위}/{총티어}") — 티어 없는 줄(임플리싯/도유/명중가정/유니크)은 빈 문자열. 레어
+   *     익스플리싯만 채워진다(인게임 Alt 고급 모드 설명의 티어 파리티).
    */
   public record ItemPick(
       String slot,
@@ -80,7 +82,8 @@ public record PoeOptimizeResult(
       String name,
       String nameKo,
       List<String> modLines,
-      List<String> modLinesEn) {}
+      List<String> modLinesEn,
+      List<String> modTiers) {}
 
   /** 레어 슬롯의 티어별 성능 비교 (T1/중간/하위) */
   public record SlotTierCompare(String slot, String slotKo, List<TierRow> rows) {}

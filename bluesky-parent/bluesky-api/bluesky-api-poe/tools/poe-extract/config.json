@@ -1,353 +1,389 @@
 {
-	"patch": "3.29.0.2.3",
-	"translations": [
-		"English",
-		"Korean"
-	],
-	"tables": [
-		{
-			"name": "BaseItemTypes",
-			"columns": [
-				"Id",
-				"Name",
-				"DropLevel",
-				"ItemVisualIdentity",
-				"ItemClassesKey",
-				"Implicit_ModsKeys",
-				"TagsKeys"
-			]
-		},
-		{
-			"name": "Tags",
-			"columns": [
-				"Id"
-			]
-		},
-		{
-			"name": "SkillGems",
-			"columns": [
-				"BaseItemTypesKey",
-				"StrengthRequirementPercent",
-				"DexterityRequirementPercent",
-				"IntelligenceRequirementPercent",
-				"IsSupport",
-				"GemColour",
-				"IsVaalVariant",
-				"RegularVariant",
-				"AwakenedVariant",
-				"GemVariants"
-			]
-		},
-		{
-			"name": "GemEffects",
-			"columns": [
-				"Id",
-				"Name",
-				"GrantedEffect",
-				"GrantedEffect2",
-				"SupportText",
-				"SupportName",
-				"GemTags"
-			]
-		},
-		{
-			"name": "GemTags",
-			"columns": [
-				"Id",
-				"Tag"
-			]
-		},
-		{
-			"name": "GrantedEffects",
-			"columns": [
-				"Id",
-				"IsSupport",
-				"CastTime",
-				"ActiveSkill"
-			]
-		},
-		{
-			"name": "ActiveSkills",
-			"columns": [
-				"Id",
-				"DisplayedName",
-				"Description"
-			]
-		},
-		{
-			"name": "GrantedEffectsPerLevel",
-			"columns": [
-				"GrantedEffect",
-				"Level",
-				"PlayerLevelReq",
-				"CostMultiplier",
-				"Cooldown",
-				"AttackSpeedMultiplier",
-				"CostAmounts",
-				"CostTypes",
-				"ManaReservationPercent",
-				"AttackTime"
-			]
-		},
-		{
-			"name": "GrantedEffectStatSetsPerLevel",
-			"columns": [
-				"StatSet",
-				"GemLevel",
-				"PlayerLevelReq",
-				"SpellCritChance",
-				"AttackCritChance",
-				"BaseMultiplier",
-				"DamageEffectiveness",
-				"GrantedEffects",
-				"FloatStats",
-				"FloatStatsValues",
-				"BaseResolvedValues",
-				"AdditionalStats",
-				"AdditionalStatsValues",
-				"StatInterpolations",
-				"InterpolationBases"
-			]
-		},
-		{
-			"name": "CostTypes",
-			"columns": [
-				"Id",
-				"FormatText"
-			]
-		},
-		{
-			"name": "Stats",
-			"columns": [
-				"Id"
-			]
-		},
-		{
-			"name": "GrantedEffectStatSets",
-			"columns": [
-				"Id",
-				"ImplicitStats",
-				"ConstantStats",
-				"ConstantStatsValues"
-			]
-		},
-		{
-			"name": "GrantedEffectQualityStats",
-			"columns": [
-				"GrantedEffectsKey",
-				"StatsKeys",
-				"StatsValuesPermille"
-			]
-		},
-		{
-			"name": "Words",
-			"columns": [
-				"Wordlist",
-				"Text",
-				"Text2"
-			]
-		},
-		{
-			"name": "ItemVisualIdentity",
-			"columns": [
-				"Id",
-				"DDSFile"
-			]
-		},
-		{
-			"name": "PassiveSkills",
-			"columns": [
-				"Id",
-				"Stats",
-				"Stat1Value",
-				"Stat2Value",
-				"Stat3Value",
-				"Stat4Value",
-				"Stat5Value",
-				"PassiveSkillGraphId",
-				"Name",
-				"FlavourText"
-			]
-		},
-		{
-			"name": "ItemClasses",
-			"columns": [
-				"Id",
-				"Name",
-				"ItemClassCategory"
-			]
-		},
-		{
-			"name": "ArmourTypes",
-			"columns": [
-				"BaseItemTypesKey",
-				"ArmourMin",
-				"ArmourMax",
-				"EvasionMin",
-				"EvasionMax",
-				"EnergyShieldMin",
-				"EnergyShieldMax",
-				"WardMin",
-				"WardMax"
-			]
-		},
-		{
-			"name": "WeaponTypes",
-			"columns": [
-				"BaseItemTypesKey",
-				"Critical",
-				"Speed",
-				"DamageMin",
-				"DamageMax",
-				"RangeMax"
-			]
-		},
-		{
-			"name": "ComponentAttributeRequirements",
-			"columns": [
-				"BaseItemTypesKey",
-				"ReqStr",
-				"ReqDex",
-				"ReqInt"
-			]
-		},
-		{
-			"name": "Mods",
-			"columns": [
-				"Id",
-				"ModTypeKey",
-				"Level",
-				"Domain",
-				"Name",
-				"GenerationType",
-				"StatsKey1",
-				"StatsKey2",
-				"StatsKey3",
-				"StatsKey4",
-				"Stat1Min",
-				"Stat1Max",
-				"Stat2Min",
-				"Stat2Max",
-				"Stat3Min",
-				"Stat3Max",
-				"Stat4Min",
-				"Stat4Max",
-				"SpawnWeight_TagsKeys",
-				"SpawnWeight_Values",
-				"Families",
-				"IsEssenceOnlyModifier",
-				"InfluenceTypes",
-				"ImplicitTagsKeys"
-			]
-		},
-		{
-			"name": "PassiveSkillMasteryEffects",
-			"columns": [
-				"Id",
-				"HASH16",
-				"Stats",
-				"Stat1Value",
-				"Stat2Value",
-				"Stat3Value"
-			]
-		},
-		{
-			"name": "UniqueStashLayout",
-			"columns": [
-				"WordsKey",
-				"ItemVisualIdentityKey"
-			]
-		},
-		{
-			"name": "PassiveSkillTattoos",
-			"columns": [
-				"Tattoo",
-				"Override",
-				"Set",
-				"OverrideType"
-			]
-		},
-		{
-			"name": "ReminderText",
-			"columns": [
-				"Id",
-				"Text"
-			]
-		},
-		{
-			"name": "PassiveSkillOverrides",
-			"columns": [
-				"Id",
-				"Name",
-				"NodeIcon",
-				"Stats",
-				"StatValues",
-				"PassiveBG",
-				"RequiresAdjacent",
-				"MaxAdjacent",
-				"Type"
-			]
-		},
-		{
-			"name": "Essences",
-			"columns": [
-				"BaseItemTypesKey",
-				"Level",
-				"IsScreamingEssence",
-				"ItemLevelRestriction",
-				"Helmet_ModsKey",
-				"BodyArmour_ModsKey",
-				"Boots_ModsKey",
-				"Gloves_ModsKey",
-				"Bow_ModsKey",
-				"Wand_ModsKey",
-				"Staff_ModsKey",
-				"TwoHandSword_ModsKey",
-				"TwoHandAxe_ModsKey",
-				"TwoHandMace_ModsKey",
-				"Claw_ModsKey",
-				"Dagger_ModsKey",
-				"OneHandSword_ModsKey",
-				"OneHandThrustingSword_ModsKey",
-				"OneHandAxe_ModsKey",
-				"OneHandMace_ModsKey",
-				"Sceptre_ModsKey",
-				"Belt_ModsKey",
-				"Amulet_ModsKey",
-				"Ring_ModsKey",
-				"Shield_ModsKey"
-			]
-		},
-		{
-			"name": "CraftingBenchOptions",
-			"columns": [
-				"AddMod",
-				"ItemClasses",
-				"RequiredLevel",
-				"IsDisabled",
-				"Tier",
-				"Cost_BaseItemTypes",
-				"Cost_Values",
-				"SortCategory",
-				"CraftingItemClassCategories"
-			]
-		},
-		{
-			"name": "CraftingItemClassCategories",
-			"columns": [
-				"Id",
-				"Text",
-				"ItemClasses"
-			]
-		}
-	],
-	"files": [
-		"metadata/statdescriptions/skill_stat_descriptions.txt",
-		"metadata/statdescriptions/stat_descriptions.txt",
-		"metadata/statdescriptions/active_skill_gem_stat_descriptions.txt",
-		"metadata/statdescriptions/gem_stat_descriptions.txt",
-		"metadata/statdescriptions/passive_skill_stat_descriptions.txt",
-		"metadata/statdescriptions/atlas_stat_descriptions.txt",
-		"metadata/statdescriptions/map_stat_descriptions.txt"
-	]
+  "patch": "3.29.0.2.3",
+  "translations": [
+    "English",
+    "Korean"
+  ],
+  "tables": [
+    {
+      "name": "BaseItemTypes",
+      "columns": [
+        "Id",
+        "Name",
+        "DropLevel",
+        "ItemVisualIdentity",
+        "ItemClassesKey",
+        "Implicit_ModsKeys",
+        "TagsKeys"
+      ]
+    },
+    {
+      "name": "Tags",
+      "columns": [
+        "Id"
+      ]
+    },
+    {
+      "name": "SkillGems",
+      "columns": [
+        "BaseItemTypesKey",
+        "StrengthRequirementPercent",
+        "DexterityRequirementPercent",
+        "IntelligenceRequirementPercent",
+        "IsSupport",
+        "GemColour",
+        "IsVaalVariant",
+        "RegularVariant",
+        "AwakenedVariant",
+        "GemVariants"
+      ]
+    },
+    {
+      "name": "GemEffects",
+      "columns": [
+        "Id",
+        "Name",
+        "GrantedEffect",
+        "GrantedEffect2",
+        "SupportText",
+        "SupportName",
+        "GemTags"
+      ]
+    },
+    {
+      "name": "GemTags",
+      "columns": [
+        "Id",
+        "Tag"
+      ]
+    },
+    {
+      "name": "GrantedEffects",
+      "columns": [
+        "Id",
+        "IsSupport",
+        "CastTime",
+        "ActiveSkill"
+      ]
+    },
+    {
+      "name": "ActiveSkills",
+      "columns": [
+        "Id",
+        "DisplayedName",
+        "Description"
+      ]
+    },
+    {
+      "name": "GrantedEffectsPerLevel",
+      "columns": [
+        "GrantedEffect",
+        "Level",
+        "PlayerLevelReq",
+        "CostMultiplier",
+        "Cooldown",
+        "AttackSpeedMultiplier",
+        "CostAmounts",
+        "CostTypes",
+        "ManaReservationPercent",
+        "AttackTime",
+        "SoulGainPreventionDuration",
+        "StoredUses"
+      ]
+    },
+    {
+      "name": "GrantedEffectStatSetsPerLevel",
+      "columns": [
+        "StatSet",
+        "GemLevel",
+        "PlayerLevelReq",
+        "SpellCritChance",
+        "AttackCritChance",
+        "BaseMultiplier",
+        "DamageEffectiveness",
+        "GrantedEffects",
+        "FloatStats",
+        "FloatStatsValues",
+        "BaseResolvedValues",
+        "AdditionalStats",
+        "AdditionalStatsValues",
+        "StatInterpolations",
+        "InterpolationBases"
+      ]
+    },
+    {
+      "name": "CostTypes",
+      "columns": [
+        "Id",
+        "FormatText"
+      ]
+    },
+    {
+      "name": "Stats",
+      "columns": [
+        "Id"
+      ]
+    },
+    {
+      "name": "GrantedEffectStatSets",
+      "columns": [
+        "Id",
+        "ImplicitStats",
+        "ConstantStats",
+        "ConstantStatsValues"
+      ]
+    },
+    {
+      "name": "GrantedEffectQualityStats",
+      "columns": [
+        "GrantedEffectsKey",
+        "StatsKeys",
+        "StatsValuesPermille"
+      ]
+    },
+    {
+      "name": "Words",
+      "columns": [
+        "Wordlist",
+        "Text",
+        "Text2"
+      ]
+    },
+    {
+      "name": "ItemVisualIdentity",
+      "columns": [
+        "Id",
+        "DDSFile"
+      ]
+    },
+    {
+      "name": "PassiveSkills",
+      "columns": [
+        "Id",
+        "Stats",
+        "Stat1Value",
+        "Stat2Value",
+        "Stat3Value",
+        "Stat4Value",
+        "Stat5Value",
+        "PassiveSkillGraphId",
+        "Name",
+        "FlavourText"
+      ]
+    },
+    {
+      "name": "ItemClasses",
+      "columns": [
+        "Id",
+        "Name",
+        "ItemClassCategory"
+      ]
+    },
+    {
+      "name": "ArmourTypes",
+      "columns": [
+        "BaseItemTypesKey",
+        "ArmourMin",
+        "ArmourMax",
+        "EvasionMin",
+        "EvasionMax",
+        "EnergyShieldMin",
+        "EnergyShieldMax",
+        "WardMin",
+        "WardMax"
+      ]
+    },
+    {
+      "name": "WeaponTypes",
+      "columns": [
+        "BaseItemTypesKey",
+        "Critical",
+        "Speed",
+        "DamageMin",
+        "DamageMax",
+        "RangeMax"
+      ]
+    },
+    {
+      "name": "ComponentAttributeRequirements",
+      "columns": [
+        "BaseItemTypesKey",
+        "ReqStr",
+        "ReqDex",
+        "ReqInt"
+      ]
+    },
+    {
+      "name": "Mods",
+      "columns": [
+        "Id",
+        "ModTypeKey",
+        "Level",
+        "Domain",
+        "Name",
+        "GenerationType",
+        "StatsKey1",
+        "StatsKey2",
+        "StatsKey3",
+        "StatsKey4",
+        "Stat1Min",
+        "Stat1Max",
+        "Stat2Min",
+        "Stat2Max",
+        "Stat3Min",
+        "Stat3Max",
+        "Stat4Min",
+        "Stat4Max",
+        "SpawnWeight_TagsKeys",
+        "SpawnWeight_Values",
+        "Families",
+        "IsEssenceOnlyModifier",
+        "InfluenceTypes",
+        "ImplicitTagsKeys"
+      ]
+    },
+    {
+      "name": "PassiveSkillMasteryEffects",
+      "columns": [
+        "Id",
+        "HASH16",
+        "Stats",
+        "Stat1Value",
+        "Stat2Value",
+        "Stat3Value"
+      ]
+    },
+    {
+      "name": "UniqueStashLayout",
+      "columns": [
+        "WordsKey",
+        "ItemVisualIdentityKey"
+      ]
+    },
+    {
+      "name": "PassiveSkillTattoos",
+      "columns": [
+        "Tattoo",
+        "Override",
+        "Set",
+        "OverrideType"
+      ]
+    },
+    {
+      "name": "ReminderText",
+      "columns": [
+        "Id",
+        "Text"
+      ]
+    },
+    {
+      "name": "PassiveSkillOverrides",
+      "columns": [
+        "Id",
+        "Name",
+        "NodeIcon",
+        "Stats",
+        "StatValues",
+        "PassiveBG",
+        "RequiresAdjacent",
+        "MaxAdjacent",
+        "Type"
+      ]
+    },
+    {
+      "name": "Essences",
+      "columns": [
+        "BaseItemTypesKey",
+        "Level",
+        "IsScreamingEssence",
+        "ItemLevelRestriction",
+        "Helmet_ModsKey",
+        "BodyArmour_ModsKey",
+        "Boots_ModsKey",
+        "Gloves_ModsKey",
+        "Bow_ModsKey",
+        "Wand_ModsKey",
+        "Staff_ModsKey",
+        "TwoHandSword_ModsKey",
+        "TwoHandAxe_ModsKey",
+        "TwoHandMace_ModsKey",
+        "Claw_ModsKey",
+        "Dagger_ModsKey",
+        "OneHandSword_ModsKey",
+        "OneHandThrustingSword_ModsKey",
+        "OneHandAxe_ModsKey",
+        "OneHandMace_ModsKey",
+        "Sceptre_ModsKey",
+        "Belt_ModsKey",
+        "Amulet_ModsKey",
+        "Ring_ModsKey",
+        "Shield_ModsKey"
+      ]
+    },
+    {
+      "name": "CraftingBenchOptions",
+      "columns": [
+        "AddMod",
+        "ItemClasses",
+        "RequiredLevel",
+        "IsDisabled",
+        "Tier",
+        "Cost_BaseItemTypes",
+        "Cost_Values",
+        "SortCategory",
+        "CraftingItemClassCategories"
+      ]
+    },
+    {
+      "name": "CraftingItemClassCategories",
+      "columns": [
+        "Id",
+        "Text",
+        "ItemClasses"
+      ]
+    },
+    {
+      "name": "Flasks",
+      "columns": [
+        "BaseItemTypesKey",
+        "LifePerUse",
+        "ManaPerUse",
+        "RecoveryTime",
+        "Type",
+        "BuffDefinitionsKey",
+        "BuffStatValues"
+      ]
+    },
+    {
+      "name": "ComponentCharges",
+      "columns": [
+        "BaseItemTypesKey",
+        "MaxCharges",
+        "PerCharge"
+      ]
+    },
+    {
+      "name": "BuffDefinitions",
+      "columns": [
+        "Id",
+        "StatsKeys"
+      ]
+    },
+    {
+      "name": "ShieldTypes",
+      "columns": [
+        "BaseItemTypesKey",
+        "Block"
+      ]
+    }
+  ],
+  "files": [
+    "metadata/statdescriptions/skill_stat_descriptions.txt",
+    "metadata/statdescriptions/stat_descriptions.txt",
+    "metadata/statdescriptions/active_skill_gem_stat_descriptions.txt",
+    "metadata/statdescriptions/gem_stat_descriptions.txt",
+    "metadata/statdescriptions/passive_skill_stat_descriptions.txt",
+    "metadata/statdescriptions/atlas_stat_descriptions.txt",
+    "metadata/statdescriptions/map_stat_descriptions.txt"
+  ]
 }

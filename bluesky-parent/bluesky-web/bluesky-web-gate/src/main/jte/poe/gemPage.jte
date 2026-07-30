@@ -30,7 +30,10 @@
 				<h1 class="text-2xl font-bold">${displayName}</h1>
 				@if(ko)<span class="text-base-content/40 text-sm">${gem.name()}</span>@endif
 				<span class="badge badge-ghost">${patchLabel}</span>
-				@if(!gem.isSupport())
+				@if(gem.isVaal())
+					<%-- 바알 스킬은 브라우저 표시 전용 — 소울/지속 업타임 미모델링으로 최적화기에서 제외한다 --%>
+					<span class="ml-auto text-[11px] px-2 py-1 rounded bg-[#d20000]/12 text-[#d20000] border border-[#d20000]/40" title="${ko ? "바알 스킬은 소울/지속 업타임을 모델링하지 않아 최적화기에서 제외됩니다" : "Vaal skills are excluded from the optimizer (souls/uptime not modeled)"}">${ko ? "바알 스킬 · 부패 (브라우저 전용)" : "Vaal skill · corrupted (browse only)"}</span>
+				@elseif(!gem.isSupport())
 					<a class="btn btn-sm btn-primary btn-outline ml-auto" href="/poe/sim?skills=${gem.slug()}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 스킬로 최적화 →" : "Optimize with this skill →"}</a>
 				@endif
 			</div>

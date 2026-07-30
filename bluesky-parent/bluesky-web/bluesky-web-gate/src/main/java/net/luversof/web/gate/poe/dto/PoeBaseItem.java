@@ -16,6 +16,7 @@ public record PoeBaseItem(
     int reqInt,
     Armour armour,
     Weapon weapon,
+    Flask flask,
     List<ModLine> implicits) {
 
   public record Armour(
@@ -26,10 +27,21 @@ public record PoeBaseItem(
       int energyShieldMin,
       int energyShieldMax,
       int wardMin,
-      int wardMax) {}
+      int wardMax,
+      int block) {}
 
   public record Weapon(
       int damageMin, int damageMax, double critChance, double attacksPerSecond, int range) {}
+
+  /** 플라스크 속성 — type 1=생명 2=마나 3=하이브리드 4=특수, durationSeconds=회복/지속(초). */
+  public record Flask(
+      int type,
+      int lifePerUse,
+      int manaPerUse,
+      double durationSeconds,
+      int maxCharges,
+      int perCharge,
+      List<ModLine> buffLines) {}
 
   public record ModLine(String en, String ko) {}
 }

@@ -57,15 +57,17 @@ const ko = {
 // GemColour: 1=힘(빨강), 2=민첩(초록), 3=지능(파랑), 그 외=화이트
 const COLORS = { 1: "red", 2: "green", 3: "blue" };
 
-// 개발용 더미 항목: DNT(Do Not Translate), [UNUSED], 이름이 점뿐인 것
-const junkName = /\bDNT\b|\[UNUSED\]|^[. ]+$/i;
+// 개발용 더미 항목: DNT(Do Not Translate), [UNUSED], WIP(미완성 표시명 — 예 "WIP Support"), 이름이 점뿐인 것
+const junkName = /\bDNT\b|\[UNUSED\]|\bWIP\b|^[. ]+$/i;
 
 const gems = [];
 for (const gem of en.gems) {
 	const base = en.base[gem.BaseItemTypesKey];
 	if (!base || !base.Name || junkName.test(base.Name)) continue;
 	if (base.Id.includes("Royale")) continue; // 로얄(배틀로얄 모드) 전용 제외
-	if (gem.IsVaalVariant) continue; // 바알 젬은 별도 항목으로 노출하지 않는다 (스파이크 범위)
+	// 바알 젬은 브라우저(목록/상세/툴팁)에는 노출하되 isVaal 플래그를 단다. 최적화기 자동 스킬 후보 풀에선
+	// 제외한다 — 소울 생성/지속 업타임을 모델링하지 않아 DPS가 왜곡되고 기존 기준선이 흔들리기 때문.
+	const isVaal = !!gem.IsVaalVariant;
 
 	const variantIndex = (gem.GemVariants || [])[0];
 	const effect = variantIndex != null ? en.effects[variantIndex] : null;
@@ -115,6 +117,8 @@ for (const gem of en.gems) {
 			requiredLevel: row.PlayerLevelReq,
 			cost: (row.CostAmounts || [])[0] ?? null,
 			costType,
+			// 오라/헤럴드 예약(마나 예약 %). 게임 원본은 permille 스케일(5000=50%) → /100.
+			reservation: row.ManaReservationPercent > 0 ? row.ManaReservationPercent / 100 : null,
 			costMultiplier: gem.IsSupport ? row.CostMultiplier : null,
 			cooldownMs: row.Cooldown > 0 ? row.Cooldown : null,
 			critChance: critChance > 0 ? critChance / 100 : null,
@@ -137,12 +141,28 @@ for (const gem of en.gems) {
 		const qualityStatLines = qualityValues.size ? describe(qualityValues, "English") : [];
 		const qualityStatLinesKo = qualityValues.size ? describe(qualityValues, "Korean") : [];
 
+		// 바알 스킬 영혼 정보(인게임 툴팁): 영혼 획득 방지 시간(ms→초)·저장 사용 횟수. 스킬 단위로 사실상 일정하므로
+		// GEPL 레벨행 중 값이 있는 첫 행에서 취한다(non-vaal 은 null).
+		let soulPreventionSeconds = null;
+		let storedUses = null;
+		if (isVaal) {
+			const rows = perLevelByEffect.get(effect.GrantedEffect) || [];
+			const r = rows.find((x) => x.SoulGainPreventionDuration > 0) || rows[0];
+			if (r) {
+				soulPreventionSeconds = r.SoulGainPreventionDuration > 0 ? r.SoulGainPreventionDuration / 1000 : null;
+				storedUses = r.StoredUses > 0 ? r.StoredUses : null;
+			}
+		}
+
 	gems.push({
 		id: base.Id,
 		slug: base.Id.substring(base.Id.lastIndexOf("/") + 1),
 		name: base.Name,
 		nameKo: baseKo ? baseKo.Name : null,
 		isSupport: !!gem.IsSupport,
+		isVaal,
+		soulPreventionSeconds,
+		storedUses,
 		color: COLORS[gem.GemColour] || "white",
 		dropLevel: base.DropLevel,
 		requiresStr: gem.StrengthRequirementPercent > 0,
@@ -161,6 +181,18 @@ for (const gem of en.gems) {
 		qualityStatLinesKo,
 		levels,
 	});
+}
+
+// 인게임에서 쓰이지 않는 플레이테스트(개발용) 젬 제외 — 목록·시뮬 후보 양쪽에서 빠져야 한다.
+// (SkillGemPlaytestAttack/Slam/Spell — 실제 획득/사용 불가한 개발 전용 스킬)
+{
+	const before = gems.length;
+	const kept = gems.filter((g) => !/Playtest/i.test(g.slug));
+	if (kept.length !== before) {
+		console.log(`플레이테스트 젬 제외: ${before - kept.length}`);
+		gems.length = 0;
+		gems.push(...kept);
+	}
 }
 
 // slug 는 상세 조회 키로 쓰므로 중복이 있으면 추출 단계에서 실패시킨다

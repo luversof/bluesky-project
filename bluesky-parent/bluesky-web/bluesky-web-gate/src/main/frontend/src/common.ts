@@ -296,9 +296,26 @@ document.addEventListener("keydown", (event) => {
 		}
 		return false;
 	}
+	// 레이어 캐시 — 같은 hx-get URL 을 이미 불러왔으면 재요청/로딩 없이 재사용(hx-get URL 키).
+	const layerCache = new Map<string, string>();
+	function showCached(trigger: Element): boolean {
+		const url = trigger.getAttribute("hx-get");
+		if (!url || !layerCache.has(url)) return false;
+		const h = ensureHost();
+		if (!h) return false;
+		h.innerHTML = layerCache.get(url) as string;
+		// 캐시본을 직접 주입했으므로 내부 상호작용 요소(예: 젬 레벨 버튼)를 htmx 에 다시 등록
+		const htmx = (window as any).htmx;
+		if (htmx) htmx.process(h);
+		position(trigger);
+		return true;
+	}
 	// htmx 가 hx-target="#poePreview" 를 찾을 수 있게 DOM 준비되면 미리 생성
 	if (document.body) ensureHost();
 	else document.addEventListener("DOMContentLoaded", () => ensureHost());
+	// 서버 왕복(hx-get) 동안 띄우는 로딩 툴팁 — 빈 화면 대신 스피너를 보여준다(afterSwap 이 교체).
+	const LOADING_TIP =
+		'<div class="poe-tooltip poe-rar-white shadow-2xl" style="border-color:#c8c8c8"><div class="px-6 py-4 flex items-center justify-center gap-2"><span class="loading loading-spinner loading-sm text-primary"></span><span class="text-[12px] text-white/60">불러오는 중…</span></div></div>';
 	document.addEventListener("mouseover", (event) => {
 		if (pinned) return;
 		const trigger = (event.target as Element)?.closest?.(".poe-hover");
@@ -306,7 +323,16 @@ document.addEventListener("keydown", (event) => {
 		active = trigger;
 		// 인라인 툴팁: [data-poe-tip] 자식이 있으면 서버 왕복 없이 복제해 띄운다
 		// (hx-get 이 있는 요소는 htmx 가 로드 → afterSwap 에서 위치)
-		showInline(trigger);
+		if (!showInline(trigger) && trigger.hasAttribute("hx-get")) {
+			// 캐시에 있으면 재사용(로딩 생략), 없으면 서버 왕복 동안 스피너
+			if (!showCached(trigger)) {
+				const h = ensureHost();
+				if (h) {
+					h.innerHTML = LOADING_TIP;
+					position(trigger);
+				}
+			}
+		}
 	});
 	document.addEventListener("mouseout", (event) => {
 		if (pinned) return;
@@ -334,8 +360,28 @@ document.addEventListener("keydown", (event) => {
 	document.addEventListener("keydown", (event) => {
 		if (event.key === "Escape" && pinned) unpin();
 	});
+	// 캐시에 있는 레이어면 서버 재요청을 아예 취소(mouseover 에서 이미 캐시본을 띄웠다).
+	document.addEventListener("htmx:beforeRequest", (event: any) => {
+		const elt = event.detail?.elt;
+		if (!elt || !elt.classList?.contains?.("poe-hover")) return;
+		const url = elt.getAttribute?.("hx-get");
+		if (url && layerCache.has(url)) event.preventDefault(); // 캐시 재사용 — 네트워크 생략
+	});
+	// 여러 아이템을 빠르게 옮겨 호버하면 이전 레이어의 hx-get 응답이 뒤늦게 도착해 최신 레이어를 덮는다.
+	// beforeSwap 에서 "지금 활성인 트리거의 응답"이 아니면 스왑을 취소해 항상 마지막 선택만 뜨게 한다.
+	document.addEventListener("htmx:beforeSwap", (event: any) => {
+		if (event.target?.id !== "poePreview") return;
+		const elt = event.detail?.requestConfig?.elt;
+		if (elt && active && elt !== active) {
+			event.detail.shouldSwap = false; // 낡은 응답 폐기 — 활성 트리거 응답만 반영
+		}
+	});
 	document.addEventListener("htmx:afterSwap", (event: any) => {
-		if (event.target?.id === "poePreview" && active) position(active);
+		if (event.target?.id !== "poePreview") return;
+		// 방금 스왑된 레이어를 URL 키로 캐시 → 다음 호출 때 재사용(재요청 없음)
+		const url = event.detail?.requestConfig?.elt?.getAttribute?.("hx-get");
+		if (url && host && host.innerHTML) layerCache.set(url, host.innerHTML);
+		if (active) position(active);
 	});
 	window.addEventListener("scroll", hide, true);
 })();

@@ -21,7 +21,8 @@
 @if(items.isEmpty())
 	@template._components.ui.emptyState(message = emptyLabel)
 @else
-	<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+	<%-- poedb 식 목록 — 인게임 아이템 슬롯(어두운 프레임)에 큰 아이콘(72px). 일반 아이템 목록과 동일 스타일. --%>
+	<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 		@for(PoeUniqueItem item : items)
 			!{
 				String displayName = PoeText.name(item.nameKo(), item.name());
@@ -38,12 +39,14 @@
 			     hx-target="#poePreview"
 			     hx-trigger="mouseenter delay:100ms"
 			     hx-swap="innerHTML">
-				<div class="card-body p-3.5">
-				<div class="flex gap-3">
+				<div class="card-body p-3">
+				<div class="flex gap-3 items-start">
 					@if(item.iconKey() != null)
-						<%-- 고유 전용 아이콘을 먼저 쓰고, 없으면 베이스 아이콘으로 폴백(고유 주얼이 전부 같은 그림으로 보이던 문제).
-						     플라스크는 아이콘이 세로 1:2 라 정사각 박스에선 좁게 보임 → 플라스크만 세로형 박스로 키운다. --%>
-						<img src="/poe-assets/uniques/${item.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" onerror="this.onerror=null;this.src='/poe-assets/items/${item.iconKey()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}'" class="${"flask".equals(item.category()) ? "w-10 h-20" : "w-12 h-12"} object-contain shrink-0 self-start drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" alt="" loading="lazy">
+						<%-- 인게임 아이템 슬롯 프레임 — 크기를 인벤토리 칸 비율(category 기준)로. 고유 전용 아이콘 우선, 없으면 베이스 아이콘 폴백. --%>
+						!{ int[] ucells = net.luversof.web.gate.poe.PoeText.invCells(item.category()); int uunit = 58; }
+						<div class="poe-item-slot shrink-0" style="width:${ucells[0] * uunit}px;height:${ucells[1] * uunit}px">
+							<img src="/poe-assets/uniques/${item.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" onerror="this.onerror=null;this.src='/poe-assets/items/${item.iconKey()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}'" class="max-w-full max-h-full object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]" alt="" loading="lazy">
+						</div>
 					@endif
 					<div class="min-w-0 flex-1 space-y-1">
 					<%-- 제목 (고유색) --%>
@@ -70,14 +73,20 @@
 							<span class="text-blue-500/80">${intLabel} ${item.reqInt()}</span>
 						@endif
 					</div>
-					<%-- 옵션 — 한 줄에 하나씩 (암시=파랑, 폭발=회색) --%>
+					<%-- 옵션 — 인게임 툴팁 구조: 고정(암시)은 상단, 구분선 아래 접두/접미(폭발).
+					     모드 텍스트는 인게임 모드 파랑, 변동 수치는 highlightValues 로 별도 색(.poe-val) 강조. --%>
 					@if(!displayImplicits.isEmpty() || !displayExplicits.isEmpty())
-						<div class="mt-0.5 space-y-0.5">
-							@for(String imp : displayImplicits)
-								<div class="text-[11px] leading-5 text-sky-500/70">${imp}</div>
-							@endfor
+						<div class="mt-1 space-y-0.5">
+							@if(!displayImplicits.isEmpty())
+								@for(String imp : displayImplicits)
+									<div class="text-[11px] leading-5 text-[#8888ff]">$unsafe{PoeText.highlightValues(imp)}</div>
+								@endfor
+								@if(!displayExplicits.isEmpty())
+									<div class="my-1 border-t border-base-content/15"></div>
+								@endif
+							@endif
 							@for(String ex : displayExplicits)
-								<div class="text-[11px] leading-5 text-base-content/60">${ex}</div>
+								<div class="text-[11px] leading-5 text-[#8888ff]">$unsafe{PoeText.highlightValues(ex)}</div>
 							@endfor
 						</div>
 					@endif

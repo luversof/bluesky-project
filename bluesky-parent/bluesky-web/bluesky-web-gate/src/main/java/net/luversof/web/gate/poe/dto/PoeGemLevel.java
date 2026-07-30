@@ -6,6 +6,7 @@ public record PoeGemLevel(
     int requiredLevel,
     Integer cost,
     String costType,
+    Double reservation,
     Integer costMultiplier,
     Integer cooldownMs,
     Double critChance,

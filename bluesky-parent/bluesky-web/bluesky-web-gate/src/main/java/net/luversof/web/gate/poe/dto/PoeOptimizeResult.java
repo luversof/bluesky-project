@@ -77,7 +77,9 @@ public record PoeOptimizeResult(
       String name,
       String nameKo,
       List<String> modLines,
-      List<String> modLinesEn) {}
+      List<String> modLinesEn,
+      // modLines 와 1:1 정렬된 티어 라벨("T{순위}/{총티어}"), 티어 없는 줄은 빈 문자열. 구 히스토리엔 없어 null 가능.
+      List<String> modTiers) {}
 
   /** 레어 슬롯의 티어별 성능 비교 (T1/중간/하위) */
   public record SlotTierCompare(String slot, String slotKo, List<TierRow> rows) {}

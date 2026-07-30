@@ -12,6 +12,13 @@
 	const verSelect = document.querySelector<HTMLSelectElement>("[data-poe-ver-select]");
 	if (verSelect) {
 		verSelect.addEventListener("change", () => {
+			// 버전 전환은 전체 페이지 네비게이션이라 뷰가 초기화된다 → 현재 확대/이동을 저장해
+			// 새 버전 로드 후 같은 위치로 복원한다(초기 화면으로 튀지 않게). 트리/아틀라스는 treeSrc 키로 구분.
+			try {
+				sessionStorage.setItem(viewKey, JSON.stringify({ scale, offsetX, offsetY }));
+			} catch (e) {
+				/* 세션 저장 불가시 그냥 초기 뷰로 */
+			}
 			const u = new URL(globalThis.location.href);
 			if (verSelect.value) u.searchParams.set("ver", verSelect.value);
 			else u.searchParams.delete("ver");
@@ -21,6 +28,9 @@
 	const isKorean = canvas.dataset.locale !== "en";
 	const treeSrc = canvas.dataset.treeSrc || "/poe-data/passive-tree.json";
 	const spritesSrc = canvas.dataset.spritesSrc || "/poe-data/tree-sprites-skill.json";
+	// 버전 전환 간 확대/이동을 이어붙이기 위한 저장 키 — treeSrc 는 버전별 경로라 키가 달라지므로
+	// 스킬/아틀라스만 구분하는 버전 무관 키를 쓴다(안 그러면 저장·복원 키가 어긋나 복원 실패).
+	const viewKey = /atlas/i.test(treeSrc) ? "poeTreeView:atlas" : "poeTreeView:skill";
 	const maybeContext = canvas.getContext("2d");
 	if (!maybeContext) return;
 	const context = maybeContext;
@@ -4193,6 +4203,21 @@
 					scale = Math.min(0.6, Math.min(width / (bounds.maxX - bounds.minX), height / (bounds.maxY - bounds.minY)) * 0.95);
 					offsetX = width / 2 - ((bounds.minX + bounds.maxX) / 2) * scale;
 					offsetY = height / 2 - ((bounds.minY + bounds.maxY) / 2) * scale;
+					// 버전 전환으로 넘어온 경우 저장해 둔 확대/이동을 복원해 같은 위치를 유지(초기 fit 덮어씀). 1회성 소비.
+					try {
+						const savedRaw = sessionStorage.getItem(viewKey);
+						if (savedRaw) {
+							sessionStorage.removeItem(viewKey);
+							const v = JSON.parse(savedRaw);
+							if (v && typeof v.scale === "number" && typeof v.offsetX === "number" && typeof v.offsetY === "number") {
+								scale = v.scale;
+								offsetX = v.offsetX;
+								offsetY = v.offsetY;
+							}
+						}
+					} catch (e) {
+						/* 저장값 손상 시 초기 fit 유지 */
+					}
 					updatePoints();
 					draw();
 					setupControls();

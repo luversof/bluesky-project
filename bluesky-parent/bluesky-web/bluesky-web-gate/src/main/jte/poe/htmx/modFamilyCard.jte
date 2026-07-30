@@ -29,7 +29,8 @@
 			<%-- 계산기 선택 — 클릭이 details 토글로 번지지 않게 onclick 전파 차단 --%>
 			<input type="checkbox" class="checkbox checkbox-xs poe-craft-pick shrink-0" onclick="event.stopPropagation()" title="${ko ? "동시 확률 계산에 포함" : "Include in combined odds"}">
 		@endif
-		<span class="text-xs text-base-content/30 font-mono shrink-0">${tiers.size()}T</span>
+		<%-- 티어 "개수"(펼치면 T1..Tn). 접힌 배지가 "티어5"로 오해되지 않게 title 로 명시. --%>
+		<span class="text-xs text-base-content/30 font-mono shrink-0" title="${ko ? "사용 가능 티어 수" : "Number of tiers"}">${tiers.size()}T</span>
 		<%-- 최상위 티어 요구 아이템 레벨 — 접힌 상태에서도 "이 옵션 T1 을 뜨게 하려면 몇 렙 아이템이 필요한지" 바로 보이게 --%>
 		@if(top != null)
 			<span class="text-[10px] font-mono text-base-content/40 shrink-0" data-top-ilvl title="${ko ? "최상위 티어 요구 아이템 레벨" : "Top tier required item level"}">i${top.ilvl()}</span>

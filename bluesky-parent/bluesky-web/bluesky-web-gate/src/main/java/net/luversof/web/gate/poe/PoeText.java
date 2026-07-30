@@ -27,6 +27,90 @@ public final class PoeText {
     return isKorean() && ko != null && !ko.isEmpty() ? ko : en;
   }
 
+  /**
+   * 인게임 인벤토리 칸 크기 {가로, 세로} — 아이템 목록에서 아이콘을 실제 게임 비율로 보여주기 위함. 베이스는 itemClass("Body Armour"…), 유니크는
+   * category("body"/"helmet"…) 두 키셋을 모두 수용한다. 유니크 무기 category 는 1손/2손을 구분하지 못해 보편값(2x3)으로 두되 활/지팡이만
+   * 2x4 로 처리한다.
+   */
+  public static int[] invCells(String key) {
+    if (key == null) {
+      return new int[] {2, 2};
+    }
+    switch (key) {
+      // ── 베이스 itemClass ──
+      case "Body Armour":
+      case "Shield":
+      case "Quiver":
+      case "Sceptre":
+      case "One Hand Sword":
+      case "One Hand Axe":
+      case "One Hand Mace":
+        return new int[] {2, 3};
+      case "Helmet":
+      case "Gloves":
+      case "Boots":
+      case "Claw":
+        return new int[] {2, 2};
+      case "Belt":
+        return new int[] {2, 1};
+      case "Amulet":
+      case "Ring":
+      case "Jewel":
+      case "AbyssJewel":
+        return new int[] {1, 1};
+      case "Dagger":
+      case "Rune Dagger":
+      case "Wand":
+        return new int[] {1, 3};
+      case "Thrusting One Hand Sword":
+        return new int[] {1, 4};
+      case "Two Hand Sword":
+      case "Two Hand Axe":
+      case "Two Hand Mace":
+      case "Staff":
+      case "Warstaff":
+      case "Bow":
+        return new int[] {2, 4};
+      case "LifeFlask":
+      case "ManaFlask":
+      case "HybridFlask":
+      case "UtilityFlask":
+        return new int[] {1, 2};
+      // ── 유니크 category (소문자) ──
+      case "body":
+      case "shield":
+      case "quiver":
+      case "axe":
+      case "mace":
+      case "sword":
+      case "sceptre":
+      case "fishing":
+        return new int[] {2, 3};
+      case "helmet":
+      case "gloves":
+      case "boots":
+      case "claw":
+        return new int[] {2, 2};
+      case "belt":
+        return new int[] {2, 1};
+      case "amulet":
+      case "ring":
+      case "jewel":
+        return new int[] {1, 1};
+      case "dagger":
+      case "wand":
+        return new int[] {1, 3};
+      case "bow":
+      case "staff":
+        return new int[] {2, 4};
+      case "flask":
+      case "tincture":
+        return new int[] {1, 2};
+      default:
+        return new int[] {2, 2};
+    }
+  }
+
   /** 변동 수치(숫자·범위·%·+/-) 토큰 — 예: +25%, (80-120), 30~50, 1.15, +2 */
   private static final java.util.regex.Pattern VALUE_TOKEN =
       java.util.regex.Pattern.compile(

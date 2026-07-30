@@ -47,7 +47,7 @@
 					<div class="rounded-lg border border-base-200 bg-base-100 px-3 py-2" data-cluster-notable>
 						<div class="flex items-center gap-2">
 							@if(clusterIcon != null)
-								<img src="/poe-assets/${clusterIcon}" class="w-7 h-7 object-contain shrink-0" alt="" loading="lazy" onerror="this.style.display='none'">
+								<img src="/poe-assets/${clusterIcon}" class="w-12 h-12 object-contain shrink-0" alt="" loading="lazy" onerror="this.style.display='none'">
 							@endif
 							<span class="font-semibold text-cyan-600">${PoeText.name(n.nameKo(), n.name())}</span>
 							<span class="hidden">${n.name()}</span>

@@ -22,6 +22,8 @@
 	PoeBaseItem.Armour armour = base != null ? base.armour() : null;
 	boolean hasArmour = armour != null && (armour.armourMax() > 0 || armour.evasionMax() > 0 || armour.energyShieldMax() > 0 || armour.wardMax() > 0);
 	boolean hasProps = hasWeapon || hasArmour;
+	// 유니크 플라스크: 베이스 플라스크의 회복/지속·충전 표시(고유 버프줄은 유니크 모드로 대체되므로 제외).
+	PoeBaseItem.Flask flask = base != null ? base.flask() : null;
 	// 값 색: 라벨 회색, 기본 수치 흰색, 증가(퀄리티/모드)는 파랑
 	String label = "text-[#7f7f7f]";
 	String value = "text-[#e0e0e0]";
@@ -44,6 +46,14 @@
 			</div>
 		@endif
 
+		<%-- 반경 (주얼: 대형/중형/소형 — 인게임 "반경: 대형") --%>
+		@if(item.radius() != null && !item.radius().isBlank())
+			<div class="poe-tt-sepimg"></div>
+			<div class="px-4 py-1.5 text-center text-[12px]">
+				<span class="${label}">${MessageUtil.getMessage("poe.items.detail.radius")}: </span><span class="${value}">${MessageUtil.getMessage("poe.radius." + item.radius(), item.radius())}</span>
+			</div>
+		@endif
+
 		<%-- 속성 (무기/방어) --%>
 		@if(hasProps)
 			<div class="poe-tt-sepimg"></div>
@@ -53,15 +63,36 @@
 					<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.physical.damage")}: </span><span class="${aug}">${String.format("%.1f", base.weapon().damageMin() * qMul)}–${String.format("%.1f", base.weapon().damageMax() * qMul)}</span></div>
 					<div><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.crit.chance")}: </span><span class="${value}">${String.format("%.2f", base.weapon().critChance())}%</span></div>
 					<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.attacks.per.second")}: </span><span class="${value}">${String.format("%.2f", base.weapon().attacksPerSecond())}</span></div>
-					@if(base.weapon().range() > 0)
+					@if(base.weapon().range() > 0 && base.weapon().range() < 100)
 						<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.range")}: </span><span class="${value}">${String.format("%.1f", base.weapon().range() / 10.0)}${PoeText.isKorean() ? "미터" : "m"}</span></div>
 					@endif
 				@endif
 				@if(hasArmour)
+					@if(armour.block() > 0)<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.block")}: </span><span class="${value}">${armour.block()}%</span></div>@endif
 					@if(armour.armourMax() > 0)<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.armour")}: </span><span class="${aug}">${Math.round(armour.armourMin() * qMul)}${armour.armourMin() != armour.armourMax() ? "–" + Math.round(armour.armourMax() * qMul) : ""}</span></div>@endif
 					@if(armour.evasionMax() > 0)<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.evasion")}: </span><span class="${aug}">${Math.round(armour.evasionMin() * qMul)}${armour.evasionMin() != armour.evasionMax() ? "–" + Math.round(armour.evasionMax() * qMul) : ""}</span></div>@endif
 					@if(armour.energyShieldMax() > 0)<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.energy.shield")}: </span><span class="${aug}">${Math.round(armour.energyShieldMin() * qMul)}${armour.energyShieldMin() != armour.energyShieldMax() ? "–" + Math.round(armour.energyShieldMax() * qMul) : ""}</span></div>@endif
 					@if(armour.wardMax() > 0)<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.ward")}: </span><span class="${aug}">${Math.round(armour.wardMin() * qMul)}</span></div>@endif
+				@endif
+			</div>
+		@endif
+
+		<%-- 플라스크 회복/지속 + 충전 (인게임: 베이스 속성) --%>
+		@if(flask != null)
+			<div class="poe-tt-sepimg"></div>
+			<div class="px-4 py-1.5 text-center text-[12px] space-y-0.5">
+				@if(flask.type() == 4)
+					<div class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.duration"), String.format("%.2f", flask.durationSeconds()))}</div>
+				@else
+					@if(flask.lifePerUse() > 0)
+						<div class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.life"), String.format("%.2f", flask.durationSeconds()), String.valueOf(flask.lifePerUse()))}</div>
+					@endif
+					@if(flask.manaPerUse() > 0)
+						<div class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.mana"), String.format("%.2f", flask.durationSeconds()), String.valueOf(flask.manaPerUse()))}</div>
+					@endif
+				@endif
+				@if(flask.maxCharges() > 0)
+					<div class="${label}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.charges"), String.valueOf(flask.maxCharges()), String.valueOf(flask.perCharge()))}</div>
 				@endif
 			</div>
 		@endif
@@ -71,10 +102,7 @@
 			<div class="poe-tt-sepimg"></div>
 			<div class="px-4 py-1.5 text-center text-[12px]">
 				<span class="${label}">${MessageUtil.getMessage("poe.items.detail.requirement")} </span>
-				@if(item.requiredLevel() != null)<span class="${label}">${MessageUtil.getMessage("poe.items.detail.level")} </span><span class="${value}">${item.requiredLevel()}</span>@endif
-				@if(base != null && base.reqStr() > 0)<span class="${value}">, ${base.reqStr()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.str")}</span>@endif
-				@if(base != null && base.reqDex() > 0)<span class="${value}">, ${base.reqDex()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.dex")}</span>@endif
-				@if(base != null && base.reqInt() > 0)<span class="${value}">, ${base.reqInt()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.int")}</span>@endif
+				@if(item.requiredLevel() != null)<span class="${label}">${MessageUtil.getMessage("poe.items.detail.level")} </span><span class="${value}">${item.requiredLevel()}</span>@endif@if(base != null && base.reqStr() > 0)<span class="${value}">, ${base.reqStr()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.str")}</span>@endif@if(base != null && base.reqDex() > 0)<span class="${value}">, ${base.reqDex()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.dex")}</span>@endif@if(base != null && base.reqInt() > 0)<span class="${value}">, ${base.reqInt()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.int")}</span>@endif
 			</div>
 		@endif
 
